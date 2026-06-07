@@ -14,7 +14,7 @@ import os
 from flask import Flask, render_template, request, abort, redirect, url_for
 
 from .rankings_data import all_schools, crest, get_row
-from .sim import run_dual_view, FIDELITIES
+from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS)
@@ -94,20 +94,21 @@ def create_app() -> Flask:
 
     @app.route("/dual")
     def dual():
-        schools = all_schools()
-        home = request.args.get("home", "Oregon")
-        away = request.args.get("away", "Stanford")
-        return render_template(
-            "dual_setup.html", active="Dual Simulator", schools=schools,
-            home=home, away=away, crest=crest, get_row=get_row,
-            fidelities=FIDELITIES,
-        )
+        division, gender, label, u = _universe(request)
+        schools = programs_for(division, gender)
+        ranks = {r.school: r for r in ranking_rows(division, gender)}
+        home = request.args.get("home") or ("Oregon" if "Oregon" in schools else schools[0])
+        away = request.args.get("away") or ("Stanford" if "Stanford" in schools else schools[1])
+        return render_template("dual_setup.html", active="Dual Simulator", schools=schools,
+                               home=home, away=away, crest=crest, ranks=ranks,
+                               fidelities=FIDELITIES, u=u, uni_label=label)
 
     @app.route("/dual/run")
     def dual_run():
-        schools = all_schools()
-        home = request.args.get("home", "Oregon")
-        away = request.args.get("away", "Stanford")
+        division, gender, label, u = _universe(request)
+        schools = programs_for(division, gender)
+        home = request.args.get("home") or schools[0]
+        away = request.args.get("away") or schools[1]
         if home == away:
             away = next(s for s in schools if s != home)
         try:
@@ -117,9 +118,9 @@ def create_app() -> Flask:
         fidelity = request.args.get("fidelity", "full")
         if fidelity not in FIDELITIES:
             fidelity = "full"
-        view = run_dual_view(home, away, seed=seed, fidelity=fidelity)
+        view = run_dual_view(division, gender, home, away, seed=seed, fidelity=fidelity)
         return render_template("dual_result.html", active="Dual Simulator", v=view,
-                               home=home, away=away)
+                               home=home, away=away, u=u)
 
     @app.route("/teams")
     def teams():
