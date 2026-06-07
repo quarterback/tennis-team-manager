@@ -11,13 +11,13 @@ DB path: $TENNIS_DB_PATH or ./tennis.db
 """
 from __future__ import annotations
 
-import os
 import sqlite3
 from contextlib import contextmanager
 
 from engine.match import MatchResult
+from .dbpath import resolve_db_path
 
-DB_PATH = os.environ.get("TENNIS_DB_PATH", os.path.join(os.getcwd(), "tennis.db"))
+DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS players (
