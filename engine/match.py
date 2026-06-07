@@ -1,0 +1,208 @@
+"""
+Point → game → set → match scoring for the full-fidelity engine.
+
+Scoring rules implemented:
+  - games: 0/15/30/40, deuce/advantage (or sudden-death point under no-ad)
+  - sets: first to 6 games, win by 2; tiebreak (first to 7, win by 2) at 6-6
+  - match: best-of-3 (or best-of-5); optional 10-point match tiebreak as the
+    deciding set
+  - serve alternates every game; the tiebreak consumes one serve-turn
+
+Determinism: all draws flow through `state.rng`. `simulate_match(..., seed=N)`
+with identical players + flags yields an identical transcript + scoreline.
+"""
+from __future__ import annotations
+
+import random
+from dataclasses import dataclass
+from typing import Optional
+
+from .state import MatchState, Player, PlayerStats
+from .rally import play_point
+from .format import MatchFormat, DEFAULT
+
+_POINT_LABELS = {0: "0", 1: "15", 2: "30", 3: "40"}
+
+
+@dataclass
+class MatchResult:
+    players: tuple[Player, Player]
+    winner: int
+    sets: list[int]
+    set_scores: list[tuple[int, int]]
+    games_won: tuple[int, int]
+    stats: tuple[PlayerStats, PlayerStats]
+    pbp: list[str]
+    fidelity: str = "full"
+
+    @property
+    def winner_name(self) -> str:
+        return self.players[self.winner].name
+
+    @property
+    def scoreline(self) -> str:
+        """e.g. '6-4 3-6 7-6' from the winner's perspective."""
+        w = self.winner
+        parts = []
+        for a, b in self.set_scores:
+            hi, lo = (a, b) if w == 0 else (b, a)
+            parts.append(f"{hi}-{lo}")
+        return " ".join(parts)
+
+
+def _point_score_str(state: MatchState) -> str:
+    s, r = state.server, state.returner
+    ps, pr = state.points[s], state.points[r]
+    if ps >= 3 and pr >= 3:
+        if ps == pr:
+            return "deuce"
+        return "Ad-server" if ps > pr else "Ad-returner"
+    return f"{_POINT_LABELS.get(ps, '40')}-{_POINT_LABELS.get(pr, '40')}"
+
+
+def _game_over(state: MatchState) -> Optional[int]:
+    s, r = state.server, state.returner
+    ps, pr = state.points[s], state.points[r]
+    if state.fmt.no_ad:
+        if ps >= 4 or pr >= 4:
+            return s if ps > pr else r
+        return None
+    if ps >= 4 and ps - pr >= 2:
+        return s
+    if pr >= 4 and pr - ps >= 2:
+        return r
+    return None
+
+
+def play_game(state: MatchState) -> int:
+    """Play one service game on `state.server`. Returns winner index."""
+    state.points = [0, 0]
+    s, r = state.server, state.returner
+    while True:
+        # Break-point detection (returner's perspective), before the point.
+        is_bp = state.points[r] >= 3 and state.points[r] > state.points[s]
+        if state.fmt.no_ad and state.points[s] == 3 and state.points[r] == 3:
+            is_bp = True  # deciding point: returner wins it → break
+
+        winner, kind = play_point(state)
+        state.points[winner] += 1
+
+        if is_bp:
+            state.stats[s].break_points_faced += 1
+            if winner == s:
+                state.stats[s].break_points_saved += 1
+            else:
+                state.stats[r].break_points_converted += 1
+
+        over = _game_over(state)
+        if over is not None:
+            return over
+
+
+def play_tiebreak(state: MatchState, target: int = 7) -> int:
+    """Play a tiebreak to `target` (win by 2). Serve: current server takes
+    the first point, then serve alternates every 2 points. Returns winner."""
+    pts = [0, 0]
+    first_server = state.server
+    served = 0
+    while True:
+        winner, kind = play_point(state)
+        pts[winner] += 1
+        served += 1
+        # Rotate serve: 1 point, then 2 at a time.
+        if served == 1 or (served - 1) % 2 == 0:
+            state.server = 1 - state.server
+        if (pts[0] >= target or pts[1] >= target) and abs(pts[0] - pts[1]) >= 2:
+            win = 0 if pts[0] > pts[1] else 1
+            state._tb_points = (pts[0], pts[1])  # type: ignore[attr-defined]
+            # Restore so the post-tiebreak serve flip behaves like a normal game.
+            state.server = first_server
+            return win
+
+
+def play_set(
+    state: MatchState,
+    is_final: bool,
+    target_games: Optional[int] = None,
+) -> tuple[int, tuple[int, int], tuple[int, int]]:
+    """Play one set. Returns (winner, game_score, games_won_pair).
+
+    A match-tiebreak deciding set returns the tiebreak point score as the
+    'game_score' and counts as a single game for rating. With
+    `set_tiebreak` off, the set is an advantage set (win by 2, no tiebreak)."""
+    fmt = state.fmt
+    state.games = [0, 0]
+
+    if is_final and fmt.final_set_tiebreak:
+        win = play_tiebreak(state, target=fmt.final_set_tiebreak_target)
+        state.server = 1 - state.server
+        pts = getattr(state, "_tb_points", (fmt.final_set_tiebreak_target, 0))
+        gw = (1, 0) if win == 0 else (0, 1)
+        return win, pts, gw
+
+    tg = target_games if target_games is not None else fmt.set_games
+    while True:
+        g_winner = play_game(state)
+        state.games[g_winner] += 1
+        state.server = 1 - state.server  # alternate serve each game
+
+        g0, g1 = state.games
+        if fmt.set_tiebreak and g0 == tg and g1 == tg:
+            tb_winner = play_tiebreak(state, target=fmt.set_tiebreak_target)
+            state.games[tb_winner] += 1
+            state.server = 1 - state.server
+            return tb_winner, (state.games[0], state.games[1]), (state.games[0], state.games[1])
+        if g0 >= tg and g0 - g1 >= 2:
+            return 0, (g0, g1), (g0, g1)
+        if g1 >= tg and g1 - g0 >= 2:
+            return 1, (g0, g1), (g0, g1)
+
+
+def simulate_match(
+    p0: Player,
+    p1: Player,
+    *,
+    seed: int,
+    fmt: Optional[MatchFormat] = None,
+    first_server: int = 0,
+    fidelity: str = "full",
+) -> MatchResult:
+    """Simulate a singles match under `fmt` (defaults to best-of-3 + 10-point
+    match tiebreak). `fidelity="fast"` routes to the game-level hold model
+    (scoreline only); `"full"` plays point-by-point."""
+    fmt = fmt or DEFAULT
+    if fidelity == "fast":
+        from .fast import simulate_fast
+        return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server)
+
+    state = MatchState(players=(p0, p1), rng=random.Random(seed), fmt=fmt, server=first_server)
+    games_won = [0, 0]
+
+    if fmt.pro_set:
+        winner, score, gw = play_set(state, is_final=False, target_games=fmt.pro_set_games)
+        state.sets[winner] += 1
+        state.set_scores.append(score)
+        games_won = [gw[0], gw[1]]
+        state.log(f"Pro set: {score[0]}-{score[1]}")
+    else:
+        sets_needed = fmt.best_of // 2 + 1
+        while max(state.sets) < sets_needed:
+            is_final = state.sets[0] == sets_needed - 1 and state.sets[1] == sets_needed - 1
+            winner, score, gw = play_set(state, is_final)
+            state.sets[winner] += 1
+            state.set_scores.append(score)
+            games_won[0] += gw[0]
+            games_won[1] += gw[1]
+            state.log(f"Set {len(state.set_scores)}: {score[0]}-{score[1]}")
+
+    overall = 0 if state.sets[0] > state.sets[1] else 1
+    return MatchResult(
+        players=(p0, p1),
+        winner=overall,
+        sets=list(state.sets),
+        set_scores=list(state.set_scores),
+        games_won=(games_won[0], games_won[1]),
+        stats=state.stats,
+        pbp=state.pbp,
+        fidelity="full",
+    )

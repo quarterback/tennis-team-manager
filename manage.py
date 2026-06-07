@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""
+Tennis-sim CLI.
+
+  python3 manage.py simulate-match --seed 7 [--format best_of_3_mtb] [--fidelity full]
+                                   [--gender male] [--region global] [--pbp]
+  python3 manage.py simulate-dual  --seed 7 [--fidelity full]
+  python3 manage.py gen-players    --seed 7 --n 8 [--gender female] [--region european]
+  python3 manage.py presets
+  python3 manage.py initdb
+
+Everything is seed-deterministic: the same seed + flags reproduces the
+transcript and scoreline exactly.
+"""
+from __future__ import annotations
+
+import argparse
+import random
+
+from engine import (
+    PRESETS, random_player, simulate_match, simulate_dual, Team, box_score, pbp_text,
+)
+from engine.format import MatchFormat
+from generators import make_name_picker, region_preset, list_presets
+
+
+def _picker(seed: int, gender: str, region: str):
+    rng = random.Random(seed ^ 0x5EED)
+    weights = region_preset(region) if region else None
+    return make_name_picker(rng, gender=gender, region_weights=weights)
+
+
+def _gen_player(rng: random.Random, name_fn, base: float = 0.5):
+    name, country = name_fn()
+    return random_player(rng, name, country, base=base)
+
+
+def cmd_simulate_match(args):
+    fmt = PRESETS.get(args.format, PRESETS["best_of_3_mtb"]) if args.format else None
+    name_fn = _picker(args.seed, args.gender, args.region)
+    rng = random.Random(args.seed)
+    p0 = _gen_player(rng, name_fn, base=0.58)
+    p1 = _gen_player(rng, name_fn, base=0.55)
+    result = simulate_match(p0, p1, seed=args.seed, fmt=fmt, fidelity=args.fidelity)
+    print(box_score(result))
+    if args.pbp:
+        print("\n--- play-by-play ---")
+        print(pbp_text(result))
+
+
+def cmd_simulate_dual(args):
+    name_fn = _picker(args.seed, args.gender, args.region)
+    rng = random.Random(args.seed)
+
+    def team(label, base):
+        return Team(name=label, singles=[_gen_player(rng, name_fn, base=base) for _ in range(6)])
+
+    home = team("Home U", 0.60)
+    away = team("Away State", 0.57)
+    res = simulate_dual(home, away, seed=args.seed, fidelity=args.fidelity)
+    wname = (home if res.winner == 0 else away).name
+    print(f"{home.name} {res.home_points} - {res.away_points} {away.name}   →  {wname}")
+    print(f"(doubles point: {[home.name, away.name][res.doubles_point]})\n")
+    for ln in res.lines:
+        if not ln.completed:
+            print(f"  {ln.slot}: (unfinished — clinched)")
+            continue
+        winside = home if ln.home_won else away
+        print(f"  {ln.slot}: {winside.name:<12} def.  {ln.result.scoreline}")
+
+
+def cmd_gen_players(args):
+    name_fn = _picker(args.seed, args.gender, args.region)
+    rng = random.Random(args.seed)
+    for _ in range(args.n):
+        p = _gen_player(rng, name_fn)
+        print(f"{p.name:<28} {p.country:<3}  overall={p.overall:.2f}  "
+              f"serve={p.serve_skill:.2f} rally={p.rally_skill:.2f}")
+
+
+def cmd_presets(args):
+    print("Match-format presets:")
+    for k, v in PRESETS.items():
+        print(f"  {k:<14} {v}")
+    print("\nName-region presets:")
+    print("  " + ", ".join(list_presets()))
+
+
+def cmd_initdb(args):
+    from app.db import init_db, DB_PATH
+    init_db()
+    print(f"Initialised DB at {DB_PATH}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Tennis-sim CLI")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    def add_common(p):
+        p.add_argument("--seed", type=int, default=1)
+        p.add_argument("--gender", default="mixed", choices=["male", "female", "mixed"])
+        p.add_argument("--region", default="global")
+        p.add_argument("--fidelity", default="full", choices=["full", "fast"])
+
+    m = sub.add_parser("simulate-match")
+    add_common(m)
+    m.add_argument("--format", default="best_of_3_mtb")
+    m.add_argument("--pbp", action="store_true")
+    m.set_defaults(func=cmd_simulate_match)
+
+    d = sub.add_parser("simulate-dual")
+    add_common(d)
+    d.set_defaults(func=cmd_simulate_dual)
+
+    g = sub.add_parser("gen-players")
+    add_common(g)
+    g.add_argument("--n", type=int, default=8)
+    g.set_defaults(func=cmd_gen_players)
+
+    sub.add_parser("presets").set_defaults(func=cmd_presets)
+    sub.add_parser("initdb").set_defaults(func=cmd_initdb)
+
+    args = ap.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
