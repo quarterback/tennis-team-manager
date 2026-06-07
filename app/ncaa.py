@@ -4,16 +4,17 @@ NCAA program model + division loader.
 Reads the conference/team JSON in data/ncaa/ (compiled from NCAA/ITA/Wikipedia)
 and turns each school into a `Program` with:
   - crest abbr + color (real overrides for marquee schools, deterministic else)
-  - a hidden **latent strength** in [0,1] — the program's true tennis quality,
+  - a hidden latent strength in [0,1] - the program's true tennis quality,
     seeded deterministically from (school, gender, season) with a per-conference
     prestige prior. The season is simulated from these; the Power Index (P5) then
-    *estimates* them back out of results. Strength is never shown directly.
+    estimates them back out of results. Strength is never shown directly.
 
 `build_squad()` turns a Program into a deterministic 6-player engine Team
-(ladder: court 1 strongest → court 6 weakest).
+(ladder: court 1 strongest -> court 6 weakest).
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import random
@@ -34,7 +35,7 @@ SCHOOL_META = {
     "Columbia": ("CLMB", "#9bcbeb"), "San Diego": ("USD", "#182b49"), "Old Dominion": ("ODU", "#003057"),
     "Cornell": ("COR", "#b31b1b"), "UC Santa Barbara": ("UCSB", "#003660"), "Pepperdine": ("PEPP", "#00205b"),
     "Harvard": ("HARV", "#a51c30"), "South Florida": ("USF", "#006747"), "Princeton": ("PRIN", "#ff6600"),
-    "UCLA": ("UCLA", "#2d68c4"), "Georgia": ("UGA", "#ba0c2f"), "Ohio State": ("OSU", "#bb0000"),
+    "UCLA": ("UCLA", "#2d68c4"), "Georgia": ("UGA", "#ba0c2f"),
     "North Carolina": ("UNC", "#4b9cd3"), "Duke": ("DUKE", "#003087"), "Notre Dame": ("ND", "#0c2340"),
 }
 
@@ -79,12 +80,16 @@ class Division:
 
 
 def crest(school: str) -> tuple[str, str]:
-    """(abbr, color) for a school — real override or deterministic fallback."""
+    """(abbr, color) for a school - real override or deterministic fallback."""
     if school in SCHOOL_META:
         return SCHOOL_META[school]
     abbr = "".join(w[0] for w in school.split()[:4]).upper() or school[:3].upper()
     hue = (sum(ord(c) for c in school) * 47) % 360
     return abbr, f"oklch(0.52 0.13 {hue})"
+
+
+def _stable_seed(value: str) -> int:
+    return int.from_bytes(hashlib.blake2s(value.encode("utf-8"), digest_size=8).digest(), "big")
 
 
 def _latent_strength(school: str, conf_abbr: str, gender: str, division: str) -> float:
@@ -94,7 +99,7 @@ def _latent_strength(school: str, conf_abbr: str, gender: str, division: str) ->
 
 
 def load_division(division: str, gender: str) -> Division:
-    """Load a division×gender universe from data/ncaa/<div>_<gender>.json."""
+    """Load a division x gender universe from data/ncaa/<div>_<gender>.json."""
     path = os.path.join(_DATA_DIR, f"{division.lower()}_{gender.lower()}.json")
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -127,7 +132,7 @@ def build_squad(p: Program) -> Team:
     if p.key in _squad_cache:
         return _squad_cache[p.key]
     base = _base_from_strength(p.strength)
-    seed = abs(hash(p.key)) & 0xFFFFFFFF
+    seed = _stable_seed(p.key) & 0xFFFFFFFF
     rng = random.Random(seed)
     from generators import make_name_picker, region_preset
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=p.gender,
