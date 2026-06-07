@@ -126,6 +126,8 @@ class Prospect:
     birthday: str = ""                                # cosmetic "Mar 14" (no year)
     secondary_country: str = ""                       # dual-nationality flavor tag
     elite_origin: bool = False                        # rolled a nation elite spike
+    homecooking: float = 0.0                           # 0..1 desire to stay near home
+                                                       # (recruit-side only; intl = 0)
     # Career log: one entry per season played — {year, school, class, str, rel,
     # w, l}. School changing between entries = a transfer (see app.league).
     history: list = field(default_factory=list)
@@ -271,6 +273,10 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     if city:
         p.hometown = f"{city}, {country}" if country else city
     p.high_school = roll_high_school(country, rng)
+    # Homecooking: a recruit-side desire to stay near home (some kids strongly,
+    # most a little, some not at all). International recruits have none — there
+    # are no schools near home — so their geographic pull is always zero.
+    p.homecooking = round(rng.random() ** 1.4, 3) if domestic else 0.0
     p.recruit_stars = p.star_rating()
     p.recruit_tier = TIERS[p.tier][0]
     return p

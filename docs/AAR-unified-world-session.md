@@ -63,36 +63,38 @@ Session retrospective for the work on branch `claude/awesome-ramanujan-mvMeN`.
   without DB/sim), and **re-simulating seasons on demand** from persisted
   rosters rather than storing every box score.
 
-## Remaining — designed, needs your input
+## Geography, homecooking, internationals, cross-division (shipped)
 
-### Geography (BLOCKER: need the data)
-You said school locations already exist "in the other folders," same system as
-the recruit/player hometowns. **That data is not in this repo** — the NCAA JSONs
-carry only `name`/`conf`/`teams`, and the only geo vocabulary present is the
-US-states/hometowns system in `generators/origins.py` + `app/juniors.py`.
+8. **Researched campus locations** (`data/ncaa/locations.json`). Real city +
+   state for all 1,086 programs, looked up per-school by parallel research
+   subagents and disambiguated by conference region (the right Trinity /
+   Concordia / Wesleyan campus). Programs carry city/state/region; a coarse
+   region map + adjacency drive proximity.
 
-To finish geography I need either (a) that school→location file dropped in (e.g.
-`data/ncaa/locations.json` keyed by school → state/region/lat-long), or (b) the
-go-ahead to derive each school's state from its conference (conferences are
-largely regional) as an interim, reusing the existing US-states vocabulary so it
-stays consistent with recruit/player hometowns.
+9. **Homecooking (recruit-side, one-way).** Each recruit rolls a homecooking
+   value; a homebody is pulled toward nearby programs that fit, while programs
+   do **not** hunt locals. Internationals have homecooking 0 — no schools near
+   home — so geography never moves them. Applied in the College List and the
+   world's signing model.
 
-Once locations exist:
-- **Recruiting proximity**: add a distance/region term to `program_appeal` so a
-  recruit's home state pulls them toward nearby schools.
-- See cross-division below.
+10. **International knob.** `RECRUIT_INTL_SHARE` sets how many internationals
+    exist; `INTL_TIER_PULL` routes them (D1 → D2 → elite D3; ordinary D3 stays
+    local), since internationals chase prestige/academics with no home pull.
+    Both are plainly tunable.
 
-### Cross-division scheduling (depends on geography)
-Captured constraints from this session:
-- Adjacent classifications only: **D1↔D2, D2↔D3** (and elite **D3→D1**),
-  mostly mid/low-major D1 vs D2 and D2 vs D3.
-- **Geography-driven** — nearby schools across classifications play.
-- **≤ 3 cross-classification duals per team per year.**
-- Higher classification typically hosts; these are non-conference, don't affect
-  conference standings (could inform rankings/RPI later).
+11. **Cross-division scheduling.** A geography-driven cross-class slate per year:
+    adjacent classes (D1↔D2, D2↔D3) plus elite (high-academic) D3 reaching D1,
+    ≤ 3 per team, higher classification hosts. Stored in `world_crossmatch`,
+    simulated on the year's first weekly tick (the lineup model rests starters
+    vs a weaker class, so bench/walk-ons play). Verified: ~1,040 men's cross
+    duals (D1-D2 444 / D2-D3 444 / D1-D3 151), every game same-or-adjacent
+    region.
 
-Architecture note: a cross-division dual spans two universe-seasons, which the
-current per-(division×gender) season-mode model doesn't represent. Cleanest fix:
-schedule + simulate these at the **world** level (a `world_crossmatch` slate per
-year), surfaced on team pages and the world hub, outside the per-universe
-season-mode schedules.
+## Remaining / next
+- **Surface cross-division results** on team pages (data + `cross_results_for`
+  exist; the team rail/box-score linking is the small remaining UI bit).
+- **Roster geographic realism** is emergent (P4 national/international, D3 local)
+  from homecooking + prestige + the intl knob; worth a calibration pass once
+  there's a target distribution to tune against.
+- Editor overrides and the legacy single-season `/season` page predate the world
+  and should eventually be reconciled with it (the redesign will revisit UI).

@@ -33,10 +33,11 @@ import sqlite3
 from dataclasses import asdict, fields
 
 import app.seasonmode as sm
+from .season import dual_between
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
-                   _talent_from_strength, _pick_gender, region_proximity,
+                   _talent_from_strength, _pick_gender, region_proximity, REGION_ADJACENT,
                    ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          home_region, GEO_WEIGHT)
@@ -68,6 +69,20 @@ RELIABILITY_GATE = 0.4
 RECRUIT_POOL = 2600
 RECRUIT_TALENT_MEAN = 40.0
 RECRUIT_TALENT_SD = 11.0
+# Share of the national class that is international. The single knob for HOW MANY
+# internationals exist — lower it for a more domestic world.
+RECRUIT_INTL_SHARE = 0.32
+# Where internationals land: a per-tier pull (D1 most, then D2, then academically
+# elite D3; ordinary D3 stays local). Tunable — internationals concentrate at the
+# top because they have no homecooking and chase prestige/academics. Real men's
+# D1 tennis runs very international; lower these to dampen it.
+INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15}
+
+
+def _intl_tier(division: str, academics: float) -> str:
+    if division == "D3":
+        return "D3_elite" if academics >= ELITE_D3_ACADEMICS else "D3"
+    return division
 
 
 # ==========================================================================
@@ -98,9 +113,19 @@ CREATE TABLE IF NOT EXISTS world_roster (
 CREATE TABLE IF NOT EXISTS world_signing (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, data TEXT
 );
+CREATE TABLE IF NOT EXISTS world_crossmatch (
+  world_id INTEGER, year INTEGER, gender TEXT, home TEXT, away TEXT,
+  home_div TEXT, away_div TEXT, home_pts INTEGER, away_pts INTEGER,
+  winner INTEGER, lines TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_wr ON world_roster(world_id, year);
 CREATE INDEX IF NOT EXISTS idx_ws ON world_signing(world_id, year, gender);
+CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
 """
+
+DIV_RANK = {"D1": 1, "D2": 2, "D3": 3}      # 1 = highest classification
+MAX_CROSS = 3                               # cross-classification duals per team / year
+ELITE_D3_ACADEMICS = 0.85                   # a D3 this academic can reach up to D1
 
 
 def _db() -> sqlite3.Connection:
@@ -262,7 +287,7 @@ def national_class(seed: int, year: int, gender: str) -> list:
         rng = random.Random(f"{seed}|worldrecruits|{gender}|{year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
                                gender=gender, talent_mean=RECRUIT_TALENT_MEAN,
-                               talent_sd=RECRUIT_TALENT_SD)
+                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE)
         _class_cache[key] = rank_class(klass)
     return _class_cache[key]
 
@@ -303,7 +328,7 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         taken[r["school"]] = taken.get(r["school"], 0) + 1
 
     progs = _flat_programs(gender)
-    traits = {s: (p.prestige, p.academics, p.region) for s, p in progs.items()}
+    traits = {s: (p.prestige, p.academics, p.region, p.division) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     avail = {s: cap.get(s, 0) - taken.get(s, 0) for s in progs}
     # Candidate indexing: each recruit only weighs programs near their athletic
@@ -323,6 +348,8 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
             continue
         cal, ac = recruit_caliber(p), recruit_academic01(p)
         hr = home_region(p)
+        hc = float(getattr(p, "homecooking", 0.0))
+        intl = not getattr(p, "domestic", False)
         lo = bisect.bisect_left(pres_arr, cal - 0.30)
         hi = bisect.bisect_left(pres_arr, cal + 0.30)
         cands = set(by_pres[lo:hi]) | set(academic_top)
@@ -331,11 +358,13 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         for s in cands:
             if avail.get(s, 0) <= 0:
                 continue
-            pres, acad, reg = traits[s]
+            pres, acad, reg, div = traits[s]
             athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
-            geo = region_proximity(hr, reg)
+            geo = hc * region_proximity(hr, reg)        # one-way; intl hc=0 → no geo
             score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
                      * (1.0 + GEO_WEIGHT * geo) * (1 + jit))
+            if intl:                                     # internationals route by tier
+                score *= INTL_TIER_PULL[_intl_tier(div, acad)]
             if score > best_score:
                 best, best_score = s, score
         if best is None:                              # no seats in range — widen once
@@ -601,6 +630,116 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
 
 
 # ==========================================================================
+# Cross-classification (cross-division) non-conference scheduling.
+#   • Adjacent classes (D1↔D2, D2↔D3) plus elite (high-academic) D3 reaching D1.
+#   • Geography-driven (same / adjacent region) and capped per team per year.
+#   • The higher classification hosts.
+# ==========================================================================
+from .ncaa import location  # noqa: E402  (geography for cross-division pairing)
+
+
+def _allowed_cross(a, b) -> bool:
+    """Is a cross-class dual between programs a, b allowed?"""
+    if a.division == b.division:
+        return False
+    ra, rb = DIV_RANK[a.division], DIV_RANK[b.division]
+    if abs(ra - rb) == 1:                                  # D1-D2 or D2-D3
+        return True
+    # D1-D3 only when the D3 program is academically elite (NESCAC/UAA-type).
+    d3 = a if a.division == "D3" else b
+    return d3.academics >= ELITE_D3_ACADEMICS
+
+
+def cross_schedule(seed: int, year: int) -> list[dict]:
+    """Deterministic cross-division non-conference slate. Each team gets up to
+    MAX_CROSS duals against nearby programs in an allowed other classification;
+    the higher classification hosts. Pure (no DB / no sim)."""
+    rng = random.Random(f"{seed}|cross|{year}")
+    out: list[dict] = []
+    for gender in GENDERS:
+        progs = _flat_programs(gender)
+        by_region: dict[str, list] = {}
+        for p in progs.values():
+            if p.region:
+                by_region.setdefault(p.region, []).append(p)
+        count = {s: 0 for s in progs}
+        pairs = set()
+        order = list(progs.values())
+        rng.shuffle(order)
+        for p in order:
+            # nearby pool = same region + adjacent regions
+            pool = list(by_region.get(p.region, []))
+            for r in REGION_ADJACENT.get(p.region, ()):
+                pool.extend(by_region.get(r, []))
+            tries = 0
+            while count[p.school] < MAX_CROSS and tries < 40 and pool:
+                tries += 1
+                o = rng.choice(pool)
+                if o.school == p.school or count[o.school] >= MAX_CROSS:
+                    continue
+                key = tuple(sorted((p.school, o.school)))
+                if key in pairs or not _allowed_cross(p, o):
+                    continue
+                pairs.add(key)
+                count[p.school] += 1
+                count[o.school] += 1
+                hi, lo = (p, o) if DIV_RANK[p.division] < DIV_RANK[o.division] else (o, p)
+                out.append({"gender": gender, "home": hi.school, "away": lo.school,
+                            "home_div": hi.division, "away_div": lo.division})
+    return out
+
+
+def simulate_cross(seed: int = DEFAULT_SEED) -> int:
+    """Generate + simulate this year's cross-division slate once, storing results.
+    Rosters are primed first so the duals use the world's current players (and
+    the lineup model rests starters vs a weaker class — bench/walk-ons play)."""
+    w = get_or_create(seed)
+    conn = _db()
+    have = conn.execute("SELECT COUNT(*) c FROM world_crossmatch WHERE world_id=? AND year=?",
+                        (w["id"], w["year"])).fetchone()["c"]
+    if have:
+        conn.close()
+        return 0
+    prime(seed)
+    progs = {g: _flat_programs(g) for g in GENDERS}
+    rows = []
+    for m in cross_schedule(seed, w["year"]):
+        a, b = progs[m["gender"]][m["home"]], progs[m["gender"]][m["away"]]
+        sd = int.from_bytes(__import__("hashlib").blake2s(
+            f"{seed}|{w['year']}|{m['home']}|{m['away']}".encode(), digest_size=4).digest(), "big")
+        rec = dual_between(a, b, seed=sd, conf=False, lineup_seed=year_seed(seed, w["year"]))
+        rows.append((w["id"], w["year"], m["gender"], m["home"], m["away"],
+                     m["home_div"], m["away_div"], rec["home_points"], rec["away_points"],
+                     0 if rec["home_won"] else 1, json.dumps(rec["lines"])))
+    conn.executemany("INSERT INTO world_crossmatch VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+    conn.commit()
+    conn.close()
+    return len(rows)
+
+
+def cross_results_for(seed: int, school: str) -> list[dict]:
+    """A school's cross-division results this world-year (for team pages)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    rows = conn.execute(
+        "SELECT home, away, home_div, away_div, home_pts, away_pts, winner FROM world_crossmatch"
+        " WHERE world_id=? AND year=? AND (home=? OR away=?)",
+        (w["id"], w["year"], school, school)).fetchall()
+    conn.close()
+    out = []
+    for r in rows:
+        home = r["home"] == school
+        out.append({"opp": r["away"] if home else r["home"],
+                    "opp_div": r["away_div"] if home else r["home_div"],
+                    "home": home, "won": (r["winner"] == 0) == home,
+                    "mine": r["home_pts"] if home else r["away_pts"],
+                    "theirs": r["away_pts"] if home else r["home_pts"]})
+    return out
+
+
+# ==========================================================================
 # The weekly driver.
 # ==========================================================================
 
@@ -612,6 +751,9 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
         return _finalize_year(seed, w)
 
     prime(seed)
+    cross = 0
+    if w["week"] == 0:                      # start of year: play the cross-division slate
+        cross = simulate_cross(seed)
     played = 0
     for (d, g) in UNIVERSES:
         sid = universe_sid(seed, w, d, g)
@@ -630,7 +772,7 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     conn.close()
     _primed.pop(seed, None)               # week advanced → re-prime (more dev) next access
     return {"event": "week", "year": w["year"], "week": w["week"] + 1,
-            "played": played, "signed": signed,
+            "played": played, "signed": signed, "cross": cross,
             "complete": _all_complete(seed, get_or_create(seed))}
 
 

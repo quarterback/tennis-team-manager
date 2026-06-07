@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 
 
-GEO_WEIGHT = 0.35           # how strongly home proximity pulls a recruit
+GEO_WEIGHT = 0.55           # max home-proximity pull, at homecooking=1, same region
 
 
 @dataclass
@@ -46,9 +46,10 @@ class School:
 
 
 def program_appeal(caliber: float, academic01: float, s: School,
-                   home_region: str = "") -> float:
+                   home_region: str = "", homecooking: float = 0.0) -> float:
     """How appealing program `s` is to a recruit of athletic `caliber` (0..1),
-    academic standing `academic01` (0..1), and home region `home_region`.
+    academic standing `academic01` (0..1), home region `home_region`, and
+    `homecooking` (0..1 desire to stay near home).
 
     Three pulls combine:
       • athletic — programs near the recruit's level fit, and prestige programs
@@ -56,14 +57,15 @@ def program_appeal(caliber: float, academic01: float, s: School,
       • academic — meaningful only when BOTH recruit and school are strong
         academically, so a smart, strong kid is genuinely drawn to an Ivy /
         NESCAC / academy even though its athletic tier is lower.
-      • geography — recruits lean toward programs near home (same state/region),
-        a real factor especially below the blue-chip tier.
+      • geography — ONE-WAY: a recruit who values home (high homecooking) leans
+        toward nearby programs that fit; programs don't seek locals. Internationals
+        have homecooking 0, so geography never moves them.
     """
     from app.ncaa import region_proximity
     prox = 1.0 - abs(s.prestige - caliber)
     athletic = 0.6 * prox + 0.4 * (s.prestige * caliber)
     academic = s.academics * academic01
-    geo = region_proximity(home_region, s.region)
+    geo = homecooking * region_proximity(home_region, s.region)
     return max(0.0, athletic) * (1.0 + 0.9 * academic) * (1.0 + GEO_WEIGHT * geo)
 
 
@@ -161,9 +163,10 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
     caliber = recruit_caliber(p)
     academic01 = recruit_academic01(p)
     hr = home_region(p)
+    hc = float(getattr(p, "homecooking", 0.0))
 
     def fit(s: School) -> float:
-        return program_appeal(caliber, academic01, s, hr)
+        return program_appeal(caliber, academic01, s, hr, hc)
 
     fmax = max((fit(s) for s in schools), default=1.0) or 1.0
     ranked = sorted(schools, key=lambda s: fit(s) + rng.uniform(-0.05, 0.05) * fmax, reverse=True)

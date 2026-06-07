@@ -87,6 +87,32 @@ def test_finalize_rollover_deterministic_full_and_brings_in_class():
                for sc in a.values() for ros in sc.values() for p in ros)
 
 
+def test_cross_schedule_respects_caps_and_hosting():
+    sched = world.cross_schedule(2026, 0)
+    assert sched, "expected a cross-division slate"
+    from collections import Counter
+    for gender in ("men", "women"):
+        games = [m for m in sched if m["gender"] == gender]
+        cnt = Counter()
+        for m in games:
+            cnt[m["home"]] += 1; cnt[m["away"]] += 1
+        assert max(cnt.values()) <= world.MAX_CROSS               # ≤ 3 cross duals / team
+    for m in sched:
+        assert m["home_div"] != m["away_div"]                    # genuinely cross-division
+        assert world.DIV_RANK[m["home_div"]] < world.DIV_RANK[m["away_div"]]  # higher hosts
+
+
+def test_homecooking_is_one_way_and_intl_zero():
+    from app.recruiting import program_appeal, School
+    s_home = School("Home U", 0.5, "D3", prestige=0.4, academics=0.6, region="W")
+    s_away = School("Away U", 0.5, "D3", prestige=0.4, academics=0.6, region="NE")
+    # a homebody from the West prefers the West school; a no-homecooking kid is indifferent
+    assert program_appeal(0.5, 0.5, s_home, "W", 0.9) > program_appeal(0.5, 0.5, s_away, "W", 0.9)
+    assert program_appeal(0.5, 0.5, s_home, "W", 0.0) == program_appeal(0.5, 0.5, s_away, "W", 0.0)
+    # international (no home region) is unmoved regardless
+    assert program_appeal(0.5, 0.5, s_home, "", 0.0) == program_appeal(0.5, 0.5, s_away, "", 0.0)
+
+
 def test_cross_division_portal_moves_by_prestige():
     r = _mini(n=14)
     star = next(iter(r[("D3", "men")].values()))[0]
