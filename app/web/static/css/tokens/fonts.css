@@ -1,0 +1,14 @@
+/* ============================================================
+   Baseline — Webfonts
+   Hanken Grotesk : clean geometric-grotesque sans for the entire
+                    UI, including numbers (tabular figures). Matches
+                    the utilitarian, system-sans feel of
+                    oregontennis.org, elevated a touch.
+   IBM Plex Mono  : kept for the rare code-like token (sim seed,
+                    model id). NOT used for stat numbers.
+   ------------------------------------------------------------
+   Loaded from Google Fonts (no binaries supplied). To self-host,
+   drop .woff2 files in assets/fonts/ and swap to @font-face.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap');

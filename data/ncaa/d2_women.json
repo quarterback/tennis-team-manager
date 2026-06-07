@@ -1,0 +1,464 @@
+{
+  "division": "D2",
+  "gender": "women",
+  "source_notes": "Compiled for the 2025-26 NCAA Division II academic year (current as of June 2026). Per task spec, ALL full member institutions of every D2 conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships (only the 'gender' field differs). Sources: Wikipedia 'List of NCAA Division II institutions' and individual conference pages (en.wikipedia.org); NCAA.com; conference official sites; inkblotsports.com D2 2025-26 conference rosters. autobid=true for all 23 conferences (each crowns a champion). Notable points/uncertainties: (1) 23 full D2 conferences covered. (2) Gulf South includes West Florida, which departs for D1/ASUN after 2025-26. (3) PacWest shows 13 full members for 2025-26 (Academy of Art dropped athletics after 2024-25; Menlo is in provisional/full transition). (4) CIAA reflects removal of Saint Augustine's beginning 2025-26. (5) Peach Belt includes Middle Georgia State (joined 2025-26) and Flagler (leaves for Sunshine State after 2026-27). (6) SIAC includes Tuskegee; Spring Hill leaves for Gulf South after 2026-27. (7) NSIC includes University of Jamestown (joined 2025). (8) PennWest campuses (California, Clarion, Edinboro) and Commonwealth University campuses (Bloomsburg, Lock Haven, Mansfield) are listed as separate PSAC members per their athletic branding. (9) Display names cleaned for consistency; Lincoln University appears in both GLVC (MO) and CIAA (PA) and is disambiguated.",
+  "conferences": [
+    {
+      "name": "Pennsylvania State Athletic Conference",
+      "abbr": "PSAC",
+      "autobid": true,
+      "teams": [
+        "Bloomsburg",
+        "Lock Haven",
+        "Mansfield",
+        "East Stroudsburg",
+        "Gannon",
+        "Indiana (PA)",
+        "Kutztown",
+        "Millersville",
+        "PennWest California",
+        "PennWest Clarion",
+        "PennWest Edinboro",
+        "Pitt-Johnstown",
+        "Seton Hill",
+        "Shepherd",
+        "Shippensburg",
+        "Slippery Rock",
+        "West Chester"
+      ]
+    },
+    {
+      "name": "Northern Sun Intercollegiate Conference",
+      "abbr": "NSIC",
+      "autobid": true,
+      "teams": [
+        "Augustana (SD)",
+        "Bemidji State",
+        "Concordia-St. Paul",
+        "Jamestown",
+        "Mary",
+        "Minnesota State",
+        "Minnesota State Moorhead",
+        "Minnesota Crookston",
+        "Minnesota Duluth",
+        "Minot State",
+        "Northern State",
+        "St. Cloud State",
+        "Sioux Falls",
+        "Southwest Minnesota State",
+        "Wayne State (NE)",
+        "Winona State"
+      ]
+    },
+    {
+      "name": "Conference Carolinas",
+      "abbr": "Conference Carolinas",
+      "autobid": true,
+      "teams": [
+        "Barton",
+        "Belmont Abbey",
+        "Chowan",
+        "Converse",
+        "Emmanuel (GA)",
+        "Erskine",
+        "Ferrum",
+        "Francis Marion",
+        "King (TN)",
+        "Lees-McRae",
+        "Mount Olive",
+        "North Greenville",
+        "Shorter",
+        "Southern Wesleyan",
+        "UNC Pembroke",
+        "Young Harris"
+      ]
+    },
+    {
+      "name": "Southern Intercollegiate Athletic Conference",
+      "abbr": "SIAC",
+      "autobid": true,
+      "teams": [
+        "Albany State",
+        "Allen",
+        "Benedict",
+        "Central State",
+        "Clark Atlanta",
+        "Edward Waters",
+        "Fort Valley State",
+        "Kentucky State",
+        "Lane",
+        "LeMoyne-Owen",
+        "Miles",
+        "Morehouse",
+        "Savannah State",
+        "Spring Hill",
+        "Tuskegee"
+      ]
+    },
+    {
+      "name": "Rocky Mountain Athletic Conference",
+      "abbr": "RMAC",
+      "autobid": true,
+      "teams": [
+        "Adams State",
+        "Black Hills State",
+        "Chadron State",
+        "Colorado Christian",
+        "Colorado Springs",
+        "Colorado Mesa",
+        "Colorado School of Mines",
+        "CSU Pueblo",
+        "Fort Lewis",
+        "MSU Denver",
+        "New Mexico Highlands",
+        "Regis",
+        "South Dakota Mines",
+        "Western Colorado",
+        "Westminster (UT)"
+      ]
+    },
+    {
+      "name": "Great Lakes Valley Conference",
+      "abbr": "GLVC",
+      "autobid": true,
+      "teams": [
+        "Drury",
+        "Illinois Springfield",
+        "Indianapolis",
+        "Lewis",
+        "Lincoln (MO)",
+        "Maryville",
+        "McKendree",
+        "Missouri S&T",
+        "Missouri-St. Louis",
+        "Quincy",
+        "Rockhurst",
+        "Southwest Baptist",
+        "Truman State",
+        "Upper Iowa",
+        "William Jewell"
+      ]
+    },
+    {
+      "name": "Mid-America Intercollegiate Athletics Association",
+      "abbr": "MIAA",
+      "autobid": true,
+      "teams": [
+        "Arkansas-Fort Smith",
+        "Central Missouri",
+        "Central Oklahoma",
+        "Emporia State",
+        "Fort Hays State",
+        "Missouri Southern",
+        "Missouri Western",
+        "Nebraska-Kearney",
+        "Newman",
+        "Northeastern State",
+        "Northwest Missouri State",
+        "Pittsburg State",
+        "Rogers State",
+        "Washburn"
+      ]
+    },
+    {
+      "name": "Pacific West Conference",
+      "abbr": "PacWest",
+      "autobid": true,
+      "teams": [
+        "Azusa Pacific",
+        "Biola",
+        "Chaminade",
+        "Concordia Irvine",
+        "Dominican (CA)",
+        "Fresno Pacific",
+        "Hawaii Pacific",
+        "Hawaii Hilo",
+        "Jessup",
+        "Menlo",
+        "Point Loma Nazarene",
+        "Vanguard",
+        "Westmont"
+      ]
+    },
+    {
+      "name": "Great Midwest Athletic Conference",
+      "abbr": "G-MAC",
+      "autobid": true,
+      "teams": [
+        "Ashland",
+        "Cedarville",
+        "Findlay",
+        "Hillsdale",
+        "Kentucky Wesleyan",
+        "Lake Erie",
+        "Malone",
+        "Northwood",
+        "Ohio Dominican",
+        "Thomas More",
+        "Tiffin",
+        "Ursuline",
+        "Walsh"
+      ]
+    },
+    {
+      "name": "Gulf South Conference",
+      "abbr": "GSC",
+      "autobid": true,
+      "teams": [
+        "Alabama-Huntsville",
+        "Auburn Montgomery",
+        "Christian Brothers",
+        "Delta State",
+        "Lee",
+        "Mississippi College",
+        "Montevallo",
+        "Trevecca Nazarene",
+        "Union (TN)",
+        "Valdosta State",
+        "West Alabama",
+        "West Florida"
+      ]
+    },
+    {
+      "name": "South Atlantic Conference",
+      "abbr": "SAC",
+      "autobid": true,
+      "teams": [
+        "Anderson (SC)",
+        "Carson-Newman",
+        "Catawba",
+        "Coker",
+        "Emory & Henry",
+        "Lenoir-Rhyne",
+        "Lincoln Memorial",
+        "Mars Hill",
+        "Newberry",
+        "Tusculum",
+        "UVA Wise",
+        "Wingate"
+      ]
+    },
+    {
+      "name": "Central Intercollegiate Athletic Association",
+      "abbr": "CIAA",
+      "autobid": true,
+      "teams": [
+        "Bluefield State",
+        "Bowie State",
+        "Claflin",
+        "Elizabeth City State",
+        "Fayetteville State",
+        "Johnson C. Smith",
+        "Lincoln (PA)",
+        "Livingstone",
+        "Shaw",
+        "Virginia State",
+        "Virginia Union",
+        "Winston-Salem State"
+      ]
+    },
+    {
+      "name": "California Collegiate Athletic Association",
+      "abbr": "CCAA",
+      "autobid": true,
+      "teams": [
+        "Cal Poly Humboldt",
+        "Cal Poly Pomona",
+        "Chico State",
+        "Cal State Dominguez Hills",
+        "Cal State East Bay",
+        "Cal State LA",
+        "Cal State Monterey Bay",
+        "Cal State San Bernardino",
+        "Cal State San Marcos",
+        "Stanislaus State",
+        "San Francisco State",
+        "UC Merced"
+      ]
+    },
+    {
+      "name": "Great American Conference",
+      "abbr": "GAC",
+      "autobid": true,
+      "teams": [
+        "Arkansas Tech",
+        "Arkansas-Monticello",
+        "East Central",
+        "Harding",
+        "Henderson State",
+        "Northwestern Oklahoma State",
+        "Oklahoma Baptist",
+        "Ouachita Baptist",
+        "Southeastern Oklahoma State",
+        "Southern Arkansas",
+        "Southern Nazarene",
+        "Southwestern Oklahoma State"
+      ]
+    },
+    {
+      "name": "Great Lakes Intercollegiate Athletic Conference",
+      "abbr": "GLIAC",
+      "autobid": true,
+      "teams": [
+        "Davenport",
+        "Ferris State",
+        "Grand Valley State",
+        "Lake Superior State",
+        "Michigan Tech",
+        "Northern Michigan",
+        "Purdue Northwest",
+        "Roosevelt",
+        "Saginaw Valley State",
+        "Wayne State (MI)",
+        "Wisconsin-Parkside"
+      ]
+    },
+    {
+      "name": "Mountain East Conference",
+      "abbr": "MEC",
+      "autobid": true,
+      "teams": [
+        "Charleston (WV)",
+        "Concord",
+        "Davis & Elkins",
+        "Fairmont State",
+        "Frostburg State",
+        "Glenville State",
+        "Point Park",
+        "West Liberty",
+        "West Virginia State",
+        "West Virginia Wesleyan",
+        "Wheeling"
+      ]
+    },
+    {
+      "name": "Sunshine State Conference",
+      "abbr": "SSC",
+      "autobid": true,
+      "teams": [
+        "Barry",
+        "Eckerd",
+        "Embry-Riddle",
+        "Florida Southern",
+        "Florida Tech",
+        "Lynn",
+        "Nova Southeastern",
+        "Palm Beach Atlantic",
+        "Rollins",
+        "Saint Leo",
+        "Tampa"
+      ]
+    },
+    {
+      "name": "Peach Belt Conference",
+      "abbr": "PBC",
+      "autobid": true,
+      "teams": [
+        "Augusta",
+        "Clayton State",
+        "Columbus State",
+        "Flagler",
+        "Georgia College",
+        "Georgia Southwestern",
+        "Lander",
+        "Middle Georgia State",
+        "North Georgia",
+        "USC Aiken",
+        "USC Beaufort"
+      ]
+    },
+    {
+      "name": "Central Atlantic Collegiate Conference",
+      "abbr": "CACC",
+      "autobid": true,
+      "teams": [
+        "Bridgeport",
+        "Caldwell",
+        "Chestnut Hill",
+        "Dominican (NY)",
+        "Felician",
+        "Georgian Court",
+        "Goldey-Beacom",
+        "Holy Family",
+        "Post",
+        "Thomas Jefferson",
+        "Wilmington (DE)"
+      ]
+    },
+    {
+      "name": "Northeast-10 Conference",
+      "abbr": "NE10",
+      "autobid": true,
+      "teams": [
+        "Adelphi",
+        "American International",
+        "Assumption",
+        "Bentley",
+        "Franklin Pierce",
+        "Pace",
+        "Saint Anselm",
+        "Saint Michael's",
+        "Southern Connecticut",
+        "Southern New Hampshire"
+      ]
+    },
+    {
+      "name": "Great Northwest Athletic Conference",
+      "abbr": "GNAC",
+      "autobid": true,
+      "teams": [
+        "Alaska Anchorage",
+        "Alaska Fairbanks",
+        "Central Washington",
+        "Montana State Billings",
+        "Northwest Nazarene",
+        "Saint Martin's",
+        "Seattle Pacific",
+        "Simon Fraser",
+        "Western Oregon",
+        "Western Washington"
+      ]
+    },
+    {
+      "name": "Lone Star Conference",
+      "abbr": "LSC",
+      "autobid": true,
+      "teams": [
+        "Angelo State",
+        "Cameron",
+        "Dallas Baptist",
+        "Eastern New Mexico",
+        "Lubbock Christian",
+        "Midwestern State",
+        "Oklahoma Christian",
+        "St. Edward's",
+        "St. Mary's (TX)",
+        "Sul Ross State",
+        "Texas A&M International",
+        "Texas A&M-Kingsville",
+        "Texas Woman's",
+        "UT Dallas",
+        "UT Permian Basin",
+        "UT Tyler",
+        "West Texas A&M",
+        "Western New Mexico"
+      ]
+    },
+    {
+      "name": "East Coast Conference",
+      "abbr": "ECC",
+      "autobid": true,
+      "teams": [
+        "Daemen",
+        "District of Columbia",
+        "D'Youville",
+        "Mercy",
+        "Molloy",
+        "Queens (NY)",
+        "Roberts Wesleyan",
+        "St. Thomas Aquinas",
+        "Staten Island"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+/* ============================================================
+   Baseline — Typography  (Hanken Grotesk, one family)
+   Utilitarian data tool: clean grotesque for everything, with
+   tabular figures for the dense stat tables. Mono is reserved
+   for code-like ids only.
+   ============================================================ */
+
+:root {
+  --font-display: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-text:    'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Sizes — compact, table-friendly */
+  --fs-display-xl: 40px;
+  --fs-display-l:  30px;
+  --fs-display-m:  24px;
+  --fs-display-s:  20px;
+
+  --fs-title-l:    18px;
+  --fs-title-m:    16px;
+  --fs-title-s:    15px;
+
+  --fs-body-l:     15px;
+  --fs-body-m:     14px;
+  --fs-body-s:     13px;
+  --fs-caption:    12px;
+  --fs-micro:      11px;   /* table column headers */
+
+  /* Weights */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+  --fw-black:   800;
+
+  /* Line heights */
+  --lh-tight:   1.1;
+  --lh-snug:    1.25;
+  --lh-normal:  1.45;
+  --lh-relaxed: 1.6;
+
+  /* Letter spacing */
+  --ls-tight:   -0.015em;
+  --ls-snug:    -0.008em;
+  --ls-normal:  0;
+  --ls-wide:    0.02em;
+  --ls-eyebrow: 0.06em;   /* uppercase column headers */
+}
+
+/* Reusable roles --------------------------------------------- */
+.t-eyebrow {
+  font-family: var(--font-text);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.t-display {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+.t-title {
+  font-family: var(--font-text);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-snug);
+}
+/* tabular numbers — the workhorse for every stat cell */
+.t-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv01' 1;
+}

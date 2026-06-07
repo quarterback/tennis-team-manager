@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Baseline{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <header class="bl-header">
+    <div class="bl-header-inner">
+      <div class="bl-brand">
+        <img src="{{ url_for('static', filename='assets/logo-mark-white.svg') }}" width="26" height="26" alt="">
+        <div class="bl-brand-text">
+          <span class="bl-brand-title">Baseline</span>
+          <span class="bl-brand-sub">College Dual-Match Simulator</span>
+        </div>
+      </div>
+      <nav class="bl-nav">
+        {% for label, href in nav %}
+          <a href="{{ href }}"{% if label == active %} class="active"{% endif %}>{{ label }}</a>
+        {% endfor %}
+        <a class="bl-run" href="{{ url_for('dual') }}">Run a Dual</a>
+      </nav>
+    </div>
+  </header>
+  {% block content %}{% endblock %}
+</body>
+</html>

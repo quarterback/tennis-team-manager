@@ -1,0 +1,82 @@
+/* ============================================================
+   Baseline — Color tokens  (light only)
+   Palette mirrors oregontennis.org: pine-green header, semantic
+   stat colors (Power Index blue, APR/FQI green), classification
+   badges (6A blue / 5A purple / small-class green), result tints,
+   gold top-ranks. Flat & utilitarian — borders, not shadows.
+   ============================================================ */
+
+:root {
+  /* ---- Brand: pine / sea green (header bar) ---- */
+  --green-800: oklch(0.38 0.075 162);
+  --green-700: oklch(0.45 0.090 162);
+  --green-600: oklch(0.525 0.098 162);   /* primary header + brand */
+  --green-500: oklch(0.60 0.110 162);
+  --green-200: oklch(0.88 0.055 162);
+  --green-100: oklch(0.94 0.038 162);
+  --green-50:  oklch(0.972 0.020 162);
+
+  /* ---- Semantic stat colors ---- */
+  --stat-power:        oklch(0.50 0.165 262);   /* Power Index — blue, bold */
+  --stat-power-bg:     oklch(0.96 0.025 262);
+  --stat-good:         oklch(0.555 0.125 160);  /* APR / FQI — green */
+  --stat-good-strong:  oklch(0.47 0.115 160);
+  --stat-muted:        oklch(0.66 0.010 255);   /* low/greyed stat */
+
+  --rank-gold:   oklch(0.70 0.135 78);
+  --rank-bronze: oklch(0.60 0.110 52);
+
+  /* ---- Classification badge colors ---- */
+  --cat-6a: oklch(0.55 0.165 260);   /* blue   */
+  --cat-5a: oklch(0.56 0.165 300);   /* purple */
+  --cat-sm: oklch(0.555 0.120 162);  /* 4A/3A/2A/1A — green */
+  --cat-d1: oklch(0.55 0.165 260);   /* (college reuse of 6A blue) */
+
+  /* ---- Result / H2H tints ---- */
+  --tint-win-bg:  oklch(0.93 0.055 160);  --tint-win-fg:  oklch(0.43 0.105 160);
+  --tint-loss-bg: oklch(0.935 0.045 27);  --tint-loss-fg: oklch(0.52 0.150 27);
+  --tint-even-bg: oklch(0.955 0.060 95);  --tint-even-fg: oklch(0.50 0.090 75);
+
+  /* ---- Neutrals: cool gray ---- */
+  --gray-50:  oklch(0.985 0.002 255);
+  --gray-100: oklch(0.970 0.003 255);
+  --gray-150: oklch(0.955 0.004 255);
+  --gray-200: oklch(0.928 0.005 255);
+  --gray-300: oklch(0.882 0.006 255);
+  --gray-400: oklch(0.735 0.008 255);
+  --gray-500: oklch(0.620 0.010 255);
+  --gray-600: oklch(0.515 0.011 255);
+  --gray-700: oklch(0.410 0.012 255);
+  --gray-800: oklch(0.320 0.013 255);
+  --gray-900: oklch(0.245 0.013 255);
+
+  /* ---- Semantic aliases ---- */
+  --surface-page:    oklch(1 0 0);
+  --surface-card:    oklch(1 0 0);
+  --surface-subtle:  var(--gray-50);
+  --surface-toolbar: var(--gray-100);
+  --surface-th:      var(--gray-100);     /* table header */
+  --surface-zebra:   var(--gray-50);      /* odd rows */
+  --surface-hover:   var(--green-50);
+  --surface-header:  var(--green-600);    /* the green nav bar */
+
+  --text-primary:   var(--gray-900);
+  --text-secondary: var(--gray-600);
+  --text-muted:     var(--gray-500);
+  --text-faint:     var(--gray-400);
+  --text-inverse:   oklch(1 0 0);
+  --text-link:      var(--stat-power);
+
+  --border-subtle:  var(--gray-200);
+  --border-default: var(--gray-300);
+  --border-strong:  var(--gray-400);
+
+  --brand:          var(--green-600);
+  --brand-strong:   var(--green-700);
+  --brand-contrast: oklch(1 0 0);
+  --accent:         var(--stat-power);
+
+  --focus-ring:     var(--green-600);
+
+  --signal-live:    oklch(0.585 0.205 25);  /* live dot */
+}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Power Index Methodology{% endblock %}
+{% block content %}
+<div class="bl-prose">
+  <h1>Power Index Methodology</h1>
+  <p class="lede">How Baseline rates and ranks college dual-match teams. The model is a direct sibling of
+    <a href="https://oregontennis.org" style="color:var(--text-link);font-weight:600">oregontennis.org</a>'s
+    Power Index — the same APR + FQI + oGS engine that seeds every simulation. It measures both winning
+    (through APR) and flight-level play against real competition (through FQI and oGS), because in tennis
+    not all wins are created equal.</p>
+
+  <div class="bl-toc">
+    <div class="bl-toc-title">On this page</div>
+    <ul>
+      <li><a href="#formula">Overview &amp; Formula</a></li>
+      <li><a href="#apr">APR (Adjusted Power Rating)</a></li>
+      <li><a href="#fqi">Flight Quality Index (FQI)</a></li>
+      <li><a href="#ogs">Opponent-Weighted Game Share (oGS)</a></li>
+      <li><a href="#h2h">Head-to-Head Tiebreakers</a></li>
+      <li><a href="#models">Alternative Models (A/B)</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+
+  <h2 id="formula">Overview &amp; Formula</h2>
+  <p>The <strong>Power Index</strong> is a composite rating combining three weighted components: a team's
+    <strong>Adjusted Power Rating (APR)</strong>, its <strong>Flight Quality Index (FQI)</strong>, and its
+    <strong>opponent-weighted Game Share (oGS)</strong>. Together they capture how often a team wins, how it
+    competes at the flight level against the opponents it faced, and how close those flights actually were in
+    games.</p>
+  <div class="bl-formula">Power Index = (APR × 40%) + (FQI × 40%) + (oGS × 20%)</div>
+  <p>APR measures team-level win/loss performance against a strength-of-schedule backdrop. FQI measures how many
+    individual flights a team wins, weighted both by the competitive significance of the flight (#1 flights count
+    more than #4 flights) and by opponent strength. oGS measures the share of games (not just flights) the team
+    won, scaled by the same opponent multiplier — so a 6–2 flight loss where the games went 49–30 reads as more
+    competitive than a 6–2 flight loss where the games went 50–5.</p>
+
+  <h2 id="apr">APR — Adjusted Power Rating</h2>
+  <p>APR is the standard RPI formula: a team's own winning percentage combined with its strength of schedule.
+    Ties count as half a win and half a loss.</p>
+  <div class="bl-formula">APR = (Win% × 25%) + (Opp Win% × 50%) + (Opp's Opp Win% × 25%)</div>
+  <p>Opponent win percentage is the largest component because strength of schedule matters most — beating a 14–1
+    team means more than beating a 1–14 team. APR alone is only half the story, though: a dual result is just
+    win/loss/tie and hides <em>how</em> a team won and against whom. FQI and oGS fill that gap.</p>
+
+  <h2 id="fqi">FQI — Flight Quality Index</h2>
+  <p>FQI measures how well a team plays at the flight level, weighted by the competitive significance of each
+    flight and by the strength of each opponent — a single 0–1 number. Each match's flight score is multiplied by
+    a factor based on the opponent's APR, normalized so a median-APR opponent is neutral (1.0), stronger opponents
+    amplify (&gt; 1.0), and weaker ones discount (&lt; 1.0).</p>
+  <table class="bl-protable">
+    <thead><tr><th>Flight</th><th>Weight</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>1st Singles</td><td class="w">1.00</td><td>Full weight — top competitive position</td></tr>
+      <tr><td>2nd Singles</td><td class="w">0.75</td><td>High competition, strong players</td></tr>
+      <tr><td>3rd Singles</td><td class="w">0.25</td><td>Developing position</td></tr>
+      <tr><td>4th Singles</td><td class="w">0.10</td><td>Often newest varsity player</td></tr>
+      <tr><td>1st Doubles</td><td class="w">1.00</td><td>Full weight — top competitive position</td></tr>
+      <tr><td>2nd Doubles</td><td class="w">0.50</td><td>Solid competitive position</td></tr>
+      <tr><td>3rd Doubles</td><td class="w">0.25</td><td>Developing position</td></tr>
+      <tr><td>4th Doubles</td><td class="w">0.10</td><td>Often newest varsity pair</td></tr>
+    </tbody>
+  </table>
+  <p>Per dual, flight-weighted performance is the sum of flight weights earned ÷ the sum of weights contested.
+    Weighting discourages stacking strong players at low flights and fattening a record against easy opponents;
+    it rewards flight-level competitiveness against strong opponents.</p>
+
+  <h2 id="ogs">oGS — Opponent-Weighted Game Share</h2>
+  <p>oGS is the opponent-weighted share of <em>games</em> (not flights) a team won. Where FQI tracks who won which
+    flights, oGS tracks how lopsided those flights were in actual games.</p>
+  <div class="bl-formula">mᵢ  = opp_APRᵢ / median_APR
+oGS = mean over duals of (games_won / games_played) × mᵢ</div>
+  <p>Set type matters: best-of-3 sets and <strong>8-game pro sets</strong> contribute raw game totals; a set
+    tiebreak (7–6) counts as one deciding game; a <strong>10-point match tiebreak in lieu of a third set</strong>
+    is one game to the winner, zero to the loser. (Both alternative formats Baseline supports — see the match-format
+    toggles — feed oGS this way.)</p>
+
+  <h2 id="h2h">Head-to-Head Tiebreakers</h2>
+  <p>After Power Index scores are computed, head-to-head results break ties in two phases: <strong>in-conference</strong>
+    (teams within 2 conference-rank positions swap to honor a direct result) and <strong>overall</strong> (adjacent
+    teams whose Power Index is within 2% swap if the lower-ranked team won the meeting). Split series fall back to the
+    higher FQI. Thresholds keep a single upset from leapfrogging large rating gaps.</p>
+
+  <h2 id="models">Alternative Models (A/B test)</h2>
+  <p>The Model selector above the rankings table re-binds the Rank / Power Index columns to a chosen model.</p>
+  <h3>TOSS — primary</h3>
+  <div class="bl-formula">Power Index = (APR × 40%) + (FQI × 40%) + (oGS × 20%)</div>
+  <h3>QWS — experimental (quality-weighted)</h3>
+  <p>Replaces RPI-style APR with an ITA-style quality-weighted-wins model, iterated to convergence: each win earns
+    points equal to the opponent's Power Index × 100, each loss costs a flat 50.</p>
+  <div class="bl-formula">Power Index_QWS = (APR_QWS × 50%) + (Normalized FWS × 50%)</div>
+  <h3>Legacy — pre-2026 RPI</h3>
+  <div class="bl-formula">Power Index_Legacy = (APR × 50%) + (Raw FWS × 50%)</div>
+
+  <h2 id="faq">FAQ</h2>
+  <h3>Why not just use RPI?</h3>
+  <p>RPI works where the final score reflects team quality. In tennis a dual result is win/loss/tie and hides what
+    happened underneath — a 5–3 win stacking the bottom of the lineup looks identical to a dominant 8–0. FQI and oGS
+    look at individual flights and games, weighted by significance and opponent strength.</p>
+  <h3>Where does the data come from?</h3>
+  <p>In Baseline, every number is produced by the simulation: the engine runs the doubles point and six singles for
+    each dual, and the season's results feed APR, FQI and oGS. Real schools, simulated players.</p>
+</div>
+{% endblock %}
