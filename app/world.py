@@ -155,6 +155,26 @@ def load_world(seed: int = DEFAULT_SEED) -> dict | None:
     return dict(row) if row else None
 
 
+def exists(seed: int = DEFAULT_SEED) -> bool:
+    return load_world(seed) is not None
+
+
+def current_year_seed(seed: int = DEFAULT_SEED) -> int:
+    w = load_world(seed)
+    return year_seed(seed, w["year"]) if w else seed
+
+
+def signed_counts(seed: int = DEFAULT_SEED) -> dict:
+    w = load_world(seed)
+    if not w:
+        return {}
+    conn = _db()
+    rows = conn.execute("SELECT gender, COUNT(*) c FROM world_signing WHERE world_id=? AND year=?"
+                        " GROUP BY gender", (w["id"], w["year"])).fetchall()
+    conn.close()
+    return {r["gender"]: r["c"] for r in rows}
+
+
 # ==========================================================================
 # Rosters as-of the current week: year-start rosters + a development replay.
 # ==========================================================================

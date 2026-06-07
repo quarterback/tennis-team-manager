@@ -20,7 +20,8 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     dashboard_view, team_results, season_match_view,
-                    conference_schools, team_conference)
+                    conference_schools, team_conference, world_hub)
+from app import world as wd
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
@@ -30,6 +31,7 @@ from .state import DEFAULT_SEED
 # label → route; drives the green TopNav across every page.
 NAV = [
     ("Dashboard", "/"),
+    ("World", "/world"),
     ("Rankings", "/rankings"),
     ("Season", "/season"),
     ("Dual Simulator", "/dual"),
@@ -60,6 +62,22 @@ def create_app() -> Flask:
     @app.context_processor
     def _inject_nav():
         return {"nav": NAV, "universes": UNIVERSES}
+
+    @app.before_request
+    def _prime_world():
+        # If a season-to-season world has been started, make every page reflect
+        # its current year. No world yet → pages show the deterministic baseline.
+        if wd.exists():
+            wd.prime()
+
+    @app.route("/world")
+    def world_view():
+        return render_template("world.html", active="World", hub=world_hub(), crest=crest)
+
+    @app.route("/world/advance", methods=["POST"])
+    def world_advance():
+        wd.advance_week()
+        return redirect(url_for("world_view"))
 
     @app.route("/")
     def dashboard():

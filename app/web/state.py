@@ -33,9 +33,16 @@ _bracket_cache: dict = {}
 
 
 def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
-    key = (division, gender, seed)
+    # When a saved world exists, every read surface reflects its CURRENT year:
+    # prime the shared roster cache and key the season by the world's year seed.
+    import app.world as world
+    eff = seed
+    if world.exists(seed):
+        world.prime(seed)
+        eff = world.current_year_seed(seed)
+    key = (division, gender, eff)
     if key not in _season_cache:
-        _season_cache[key] = run_season(division, gender, seed=seed)
+        _season_cache[key] = run_season(division, gender, seed=eff)
     return _season_cache[key]
 
 
@@ -427,6 +434,32 @@ def season_match_view(division: str, gender: str, idx: int, seed: int = DEFAULT_
             "conf": d["conf"], "home_points": d["home_points"],
             "away_points": d["away_points"], "winner": 0 if d["home_won"] else 1,
             "lines": d["lines"]}
+
+
+def world_hub(seed: int = DEFAULT_SEED):
+    """Overview for the unified-world hub: the shared clock, plus each division's
+    season phase, live top teams, champion, and the signing class so far."""
+    import app.world as world
+    import app.seasonmode as sm
+    w = world.get_or_create(seed)
+    world.prime(seed)
+    divisions = []
+    for val, division, gender, label in UNIVERSES:
+        sid = world.universe_sid(seed, w, division, gender)
+        s = sm.load_season(sid)
+        champ = s["champion"] if s["phase"] == "complete" else None
+        divisions.append({
+            "u": val, "label": label, "phase": s["phase"],
+            "week": s["current_week"], "total": s["total_weeks"],
+            "top": sm.national_top(sid, 4), "champion": champ,
+        })
+    signed = world.signed_counts(seed)
+    return {
+        "year": world.BASE_YEAR + w["year"], "season_no": w["year"] + 1,
+        "week": w["week"], "divisions": divisions, "signed": signed,
+        "signed_total": sum(signed.values()),
+        "complete": all(d["phase"] == "complete" for d in divisions),
+    }
 
 
 def all_gender_programs(gender: str):
