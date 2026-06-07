@@ -19,7 +19,7 @@ import random
 from dataclasses import dataclass, field
 
 from engine import simulate_dual, Team
-from .ncaa import Program, Division, load_division, build_squad, build_roster
+from .ncaa import Program, Division, load_division, build_squad, build_roster, squad_and_ladder
 from .rating import compute_ratings, RatingLine
 from .str_rating import converge_ids
 from .bracket import play_dual, _seed_positions
@@ -72,8 +72,20 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     }
 
 
-def _build_corpus(duals: list[dict]) -> dict[str, list[tuple]]:
+def dual_between(a: Program, b: Program, *, seed: int, conf: bool) -> dict:
+    """Simulate one dual between two programs (squads from their current rosters)
+    and return the record dict. Used by season mode to play duals one at a time."""
+    sa, la = squad_and_ladder(a)
+    sb, lb = squad_and_ladder(b)
+    return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf)
+
+
+def build_corpus(duals: list[dict]) -> dict[str, list[tuple]]:
     """Per-player singles match corpus: pid -> [(opp_pid, games_won, games_lost), ...]."""
+    return _build_corpus(duals)
+
+
+def _build_corpus(duals: list[dict]) -> dict[str, list[tuple]]:
     corpus: dict[str, list[tuple]] = {}
     for d in duals:
         for ln in d["lines"]:
