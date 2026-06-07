@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Baseline — {{ school }}{% endblock %}
 {% block content %}
-{% set grid = '40px minmax(140px,1fr) 36px 160px 150px 64px 56px 74px' %}
+{% set grid = '36px minmax(130px,1fr) 30px 140px 150px 150px 56px 52px 72px' %}
 
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('teams', u=u) }}">← All teams</a>
   <label class="bl-field"><span class="bl-field-label">Division</span>
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
@@ -16,40 +17,73 @@
 </div></div>
 </form>
 
-<div class="bl-board">
-  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
-    <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
-    <div><div class="tname">{{ school }}</div>
-      <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}</div></div>
-    {% if row %}<div style="text-align:right"><div class="bl-th" style="font-size:10px">POWER INDEX</div>
+<div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
+  <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
+  <div><div class="tname">{{ school }}</div>
+    <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}</div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    {% if row %}<div style="text-align:right;margin-right:6px"><div class="bl-th" style="font-size:10px">POWER INDEX</div>
       <span class="bl-stat power" style="font-size:18px">{{ row.fmt(row.pi) }}</span></div>{% endif %}
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', school=school, u=u) }}">Schedule</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('dual', home=school, u=u) }}">Simulate dual</a>
+  </div>
+</div>
+
+<div class="bl-board-grid" style="align-items:start">
+  <div class="bl-board">
+    <div class="bl-tablescroll">
+      <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
+        <div class="bl-thead">
+          <span class="bl-th">LN</span><span class="bl-th">PLAYER</span><span class="bl-th">CL</span>
+          <span class="bl-th">HOMETOWN</span><span class="bl-th">HIGH SCHOOL</span><span class="bl-th">MAJOR</span>
+          <span class="bl-th num">STR</span><span class="bl-th num">W-L</span><span class="bl-th">STATUS</span>
+        </div>
+        {% for r in rows %}
+        {% set p = r.p %}
+        <div class="bl-row">
+          <span class="bl-rank">{{ r.line if r.line else '—' }}</span>
+          <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
+          <span class="bl-conf">{{ p.class_year }}</span>
+          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
+          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.high_school }}</span>
+          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
+          <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
+          <span>{% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bl-notes"><div class="bl-note">
+      Lines 1–6 are the singles lineup (by STR). STR is the live, results-based rating;
+      reliability rises with matches played. The bottom of the roster are walk-ons (no scholarship)
+      until a school promotes them.</div></div>
   </div>
 
-  <div class="bl-tablescroll">
-    <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
-      <div class="bl-thead">
-        <span class="bl-th">LN</span><span class="bl-th">PLAYER</span><span class="bl-th">CL</span>
-        <span class="bl-th">HOMETOWN</span><span class="bl-th">MAJOR</span>
-        <span class="bl-th num">STR</span><span class="bl-th num">W-L</span><span class="bl-th">STATUS</span>
-      </div>
-      {% for r in rows %}
-      {% set p = r.p %}
-      <div class="bl-row">
-        <span class="bl-rank">{{ r.line if r.line else '—' }}</span>
-        <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-        <span class="bl-conf">{{ p.class_year }}</span>
-        <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
-        <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>
-        <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
-        <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
-        <span>{% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Coaching Staff</span></div>
+    <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:0">
+      {% for m in staff %}
+      <div style="padding:12px 0;{% if not loop.last %}border-bottom:1px solid var(--border-subtle){% endif %}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-weight:600">{{ m.coach.name }}</span>
+          <span class="bl-badge tier-MID" style="font-size:10px">{{ m.archetype }}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin:2px 0 8px">{{ m.title }} · {{ m.tenure }}{{ 'st' if m.tenure == 1 else 'nd' if m.tenure == 2 else 'rd' if m.tenure == 3 else 'th' }} yr</div>
+        <div class="bl-coachgrades">
+          <span><span class="bl-th" style="font-size:9px">DEV</span><b>{{ m.dev }}</b></span>
+          <span><span class="bl-th" style="font-size:9px">REC</span><b>{{ m.rec }}</b></span>
+          <span><span class="bl-th" style="font-size:9px">TAC</span><b>{{ m.tac }}</b></span>
+        </div>
       </div>
       {% endfor %}
     </div>
   </div>
-  <div class="bl-notes"><div class="bl-note">
-    Lines 1–6 are the singles lineup (by STR). STR is the live, results-based rating;
-    reliability rises with matches played. The bottom of the roster are walk-ons (no scholarship)
-    until a school promotes them.</div></div>
 </div>
+
+<style>
+.bl-coachgrades{display:flex;gap:18px}
+.bl-coachgrades span{display:flex;flex-direction:column;gap:1px}
+.bl-coachgrades b{font-size:15px;color:var(--brand-strong)}
+</style>
 {% endblock %}

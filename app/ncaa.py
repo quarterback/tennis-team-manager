@@ -14,6 +14,7 @@ and turns each school into a `Program` with:
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -137,19 +138,30 @@ def _pick_gender(g: str) -> str:
 
 _roster_cache: dict[str, list] = {}
 _squad_cache: dict[str, Team] = {}
+_eff_cache: dict[str, list] = {}             # roster AFTER editor overrides
+_index_cache: dict[str, object] = {}         # pid -> base Prospect, across all universes
+
+# Every division×gender universe — used to build the global pid→player index so
+# the editor can move a player from ANY program to ANY other.
+UNIVERSE_PAIRS = [("D1", "men"), ("D1", "women"), ("D2", "men"),
+                  ("D2", "women"), ("D3", "men"), ("D3", "women")]
 
 
 def reset_caches() -> None:
-    """Clear roster/squad caches — required when a League mutates rosters."""
+    """Clear roster/squad caches — required when a League mutates rosters or the
+    editor changes an override."""
     _roster_cache.clear()
     _squad_cache.clear()
+    _eff_cache.clear()
+    _index_cache.clear()
 
 
-def build_roster(p: Program):
+def _base_roster(p: Program):
     """Deterministic roster of persistent Prospects for a program (cached),
     sorted best → worst (the ladder). Talent prior tracks program strength;
     class years distributed Fr–Sr; top-6 scholarship / rest walk-ons; stable
-    pids. Each Prospect carries the full rich attribute model."""
+    pids. Each Prospect carries the full rich attribute model. This is the
+    un-edited base — `build_roster` layers editor overrides on top."""
     if p.key in _roster_cache:
         return _roster_cache[p.key]
     from generators import make_name_picker, region_preset
@@ -173,6 +185,68 @@ def build_roster(p: Program):
     for idx, pr in enumerate(roster):
         pr.walk_on = idx >= SCHOLARSHIP_SLOTS     # bottom of the roster = walk-ons
     _roster_cache[p.key] = roster
+    return roster
+
+
+def _global_index() -> dict:
+    """pid → base Prospect, over every program in every universe. Lets the editor
+    pull a moved-in player by pid regardless of their original school/division."""
+    if _index_cache:
+        return _index_cache
+    for division, gender in UNIVERSE_PAIRS:
+        try:
+            div = load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        for prog in div.programs:
+            for pr in _base_roster(prog):
+                _index_cache[pr.pid] = pr
+    return _index_cache
+
+
+def player_by_pid(pid: str):
+    """Look up a base Prospect by pid across all universes (editor support)."""
+    return _global_index().get(pid)
+
+
+def build_roster(p: Program):
+    """Program roster with editor overrides applied. With no overrides this is
+    exactly the deterministic `_base_roster`. Overrides can (a) move a player to
+    any program in any division and (b) pin a team's lineup order — so the dual
+    simulator, team pages and season sims all reflect your edits."""
+    from app import overrides as ov
+    if not ov.any_overrides():
+        return _base_roster(p)
+    if p.key in _eff_cache:
+        return _eff_cache[p.key]
+    moves = ov.get_moves()        # pid -> destination school
+    lineups = ov.get_lineups()    # school -> ordered pids
+
+    # Base players minus anyone moved away to a different school.
+    roster = [pr for pr in _base_roster(p)
+              if moves.get(pr.pid, p.school) == p.school]
+    # Players moved INTO this school from elsewhere (deep-copied so we never
+    # mutate the cached base roster of their origin program).
+    idx = _global_index()
+    present = {pr.pid for pr in roster}
+    pg = _pick_gender(p.gender)
+    for pid, dest in moves.items():
+        if dest == p.school and pid not in present and pid in idx:
+            src = idx[pid]
+            if getattr(src, "gender", pg) != pg:      # don't bleed across men's/women's
+                continue
+            roster.append(copy.deepcopy(src))
+            present.add(pid)
+
+    roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
+    order = lineups.get(p.school)
+    if order:
+        pos = {pid: i for i, pid in enumerate(order)}
+        big = len(order) + len(roster)
+        roster.sort(key=lambda pr: pos.get(pr.pid, big))   # stable; pinned to front
+    for i, pr in enumerate(roster):
+        pr.walk_on = i >= SCHOLARSHIP_SLOTS
+    _eff_cache[p.key] = roster
     return roster
 
 
