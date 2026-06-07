@@ -90,11 +90,30 @@ Session retrospective for the work on branch `claude/awesome-ramanujan-mvMeN`.
     duals (D1-D2 444 / D2-D3 444 / D1-D3 151), every game same-or-adjacent
     region.
 
+## Also shipped
+
+12. **FM-style app shell** (adopted from `claude/hopeful-dirac-ch1a8`, rewired to
+    the world). Grouped left sidebar (Your Team / World / Management / Simulate /
+    Tools), a game-context top bar showing the WORLD clock (season/year, week,
+    signed class) with an "Advance Week" that drives `world.advance_week`, and a
+    CSS-only off-canvas drawer for mobile. Season hub/standings/schedule/player
+    now read the world's current-year season so they stay consistent with the bar.
+
+13. **Scholarship economy** (`app/scholarships.py`). Scholarships are a finite
+    budget, not a headcount: per classification a count + an exchange rate (D1 =
+    1.0, diminishing by level) + fractional flag (D1/D2 split to quarters; D3
+    whole). `effective_value = count × rate` is the comparable spend power.
+    Academically elite D3 award D1-worth aid but fewer of it. Roster construction
+    funds scholarship slots per classification; the editor can set count + rate
+    per level live.
+
 ## Remaining / next
-- **Surface cross-division results** on team pages (data + `cross_results_for`
-  exist; the team rail/box-score linking is the small remaining UI bit).
-- **Roster geographic realism** is emergent (P4 national/international, D3 local)
-  from homecooking + prestige + the intl knob; worth a calibration pass once
-  there's a target distribution to tune against.
-- Editor overrides and the legacy single-season `/season` page predate the world
-  and should eventually be reconciled with it (the redesign will revisit UI).
+- **Recruiting ↔ scholarship spend**: wire the economic budget into actual offers
+  (recruits cost fractions of a scholarship; programs allocate their budget),
+  closing the loop between the scholarship economy and signings.
+- **Surface cross-division results** on team pages (`cross_results_for` exists).
+- **Calibrate** roster geographic/international distribution (P4 national,
+  D3 local) once there's a target to tune `RECRUIT_INTL_SHARE` / `INTL_TIER_PULL`
+  / homecooking against.
+- Editor overrides + the legacy single-season views predate the world; mostly
+  reconciled now (season views read the world year), but worth a cleanup pass.
