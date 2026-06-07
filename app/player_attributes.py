@@ -41,8 +41,6 @@ RICH_ATTRS = (
     "academic_fit", "team_culture", "leadership", "training_drive",
 )
 
-# The engine-facing driver names, repeated here to avoid importing engine from
-# app-level data code. Keep in sync with engine.state.ATTRS.
 DRIVER_ATTRS = (
     "serve_power", "serve_placement", "return_game", "forehand", "backhand",
     "movement", "stamina", "mental", "consistency",
@@ -55,8 +53,6 @@ TRAIT_DEFAULTS = {
     "temperament": "steady",
 }
 
-# Rich overall is a recruiting/career grade, not the engine formula. Weights are
-# deliberately broad but still privilege the skills that win college duals.
 OVERALL_WEIGHTS = {
     "first_serve_power": 0.040, "first_serve_accuracy": 0.038,
     "second_serve_quality": 0.032, "serve_variety": 0.018,
@@ -78,6 +74,7 @@ OVERALL_WEIGHTS = {
     "academic_fit": 0.004, "team_culture": 0.004, "leadership": 0.006,
     "training_drive": 0.012,
 }
+_WEIGHT_TOTAL = sum(OVERALL_WEIGHTS.values())
 
 
 def clamp_grade(v: float) -> float:
@@ -97,12 +94,6 @@ def _avg(values: tuple[float, ...]) -> float:
 
 
 def _legacy_to_rich(data: Mapping[str, float]) -> dict[str, float]:
-    """Expand the old nine-driver grade dict into the rich attribute set.
-
-    Tests and older saved prospects may still construct ``current`` and
-    ``potential`` with engine driver names. This bridge lets them keep working
-    while new generation stores the richer shape.
-    """
     base = {k: float(data[k]) for k in data if k in DRIVER_ATTRS}
     fallback = _avg(tuple(base.values())) if base else 50.0
 
@@ -220,7 +211,7 @@ class PlayerAttributes:
         return _avg((self.grades["slice_control"], self.grades["backhand_control"], self.grades["rally_patience"]))
 
     def overall_grade(self) -> float:
-        return sum(OVERALL_WEIGHTS[a] * self.grades[a] for a in RICH_ATTRS)
+        return sum(OVERALL_WEIGHTS[a] * self.grades[a] for a in RICH_ATTRS) / _WEIGHT_TOTAL
 
     def derive_driver_grades(self) -> dict[str, float]:
         g = self.grades
