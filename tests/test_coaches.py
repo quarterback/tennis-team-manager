@@ -1,10 +1,13 @@
 from app.coaches import (
+    ARCHETYPE_DEVELOPMENT_GURU,
+    ARCHETYPE_FORMER_PRO,
     Coach,
     RecruitingSkill,
     SOURCE_BLEND,
     SOURCE_HIGH_SCHOOL,
     SOURCE_INTERNATIONAL,
     coach_for_program,
+    generate_coach,
 )
 from app.development import Prospect
 from engine import ATTRS
@@ -22,7 +25,7 @@ def _prospect(country="US", region="domestic", domestic=True, academic=79):
     )
 
 
-def _coach(pref=SOURCE_BLEND):
+def _coach(pref=SOURCE_BLEND, home_country="US", archetype="coaching_lifer"):
     return Coach(
         name="Coach",
         school="Baseline State",
@@ -55,6 +58,8 @@ def _coach(pref=SOURCE_BLEND):
         source_preference=pref,
         region_pipelines={"domestic": 72, "europe": 45},
         country_pipelines={"ESP": 78},
+        home_country=home_country,
+        archetype=archetype,
     )
 
 
@@ -73,6 +78,15 @@ def test_country_pipeline_beats_region_pipeline():
     assert c.pipeline_multiplier(spanish) > 1.0
 
 
+def test_home_country_affinity_is_not_pipeline():
+    c = _coach(home_country="FRA")
+    french = _prospect(country="FRA", region="europe", domestic=False)
+    assert c.pipeline_grade(french) == 45
+    assert c.origin_affinity(french) > 0
+    unrelated = _prospect(country="JPN", region="asia_pacific", domestic=False)
+    assert c.origin_affinity(unrelated) == 0
+
+
 def test_source_preference_changes_recruiting_fit():
     domestic = _prospect(country="US", region="domestic", domestic=True)
     international = _prospect(country="ESP", region="europe", domestic=False)
@@ -89,10 +103,23 @@ def test_pipeline_improves_fit_for_target_area():
     assert c.recruiting_fit(domestic) > c.recruiting_fit(no_pipe)
 
 
+def test_archetype_shapes_generated_coach():
+    import random
+
+    dev = generate_coach(random.Random(1), "Dev", archetype=ARCHETYPE_DEVELOPMENT_GURU, home_country="ARG")
+    pro = generate_coach(random.Random(1), "Pro", archetype=ARCHETYPE_FORMER_PRO, home_country="ARG")
+    assert dev.archetype == ARCHETYPE_DEVELOPMENT_GURU
+    assert pro.archetype == ARCHETYPE_FORMER_PRO
+    assert dev.grade("teaching_skill") > pro.grade("teaching_skill")
+    assert pro.grade("charisma") > dev.grade("charisma")
+
+
 def test_program_coach_generation_is_deterministic():
     a = coach_for_program("Oregon", seed=2026)
     b = coach_for_program("Oregon", seed=2026)
     assert a.pid == b.pid
     assert a.attrs == b.attrs
+    assert a.home_country == b.home_country
+    assert a.archetype == b.archetype
     assert a.region_pipelines == b.region_pipelines
     assert a.country_pipelines == b.country_pipelines
