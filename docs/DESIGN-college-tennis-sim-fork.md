@@ -363,3 +363,40 @@ talent model.
   scouting reports; hidden potential/access/fog, `?debug=true` reveal).
 - **HS data sourcing (later):** scrape MaxPreps / On3 / recruiting sites for a
   national spread of high schools across all 50 states + DC.
+
+---
+
+## §12 — Build status (live state)
+
+**Engine:** deterministic singles (full) + fast model + NCAA dual layer;
+toggleable `MatchFormat` (no-ad, set/match tiebreaks, 8-game pro set);
+pazzah-style pressure/clutch. **Rating:** team Power Index (TOSS 40/40/20) +
+the **STR** results-based player rating (`app/str_rating.py`, 31–57 band,
+recency-weighted, ±2.00 exclusion, can decay down). **Seasons/brackets:** six
+universes (D1/D2/D3 × M/W) from real conference data; configurable bracket
+fields. **Players:** rich attribute model is being built by a separate agent
+(`docs/attribute-model-agent-brief.md`); current model is the
+potential/access-trajectory `Prospect` with development, scouting fog, gem/bust.
+
+**Persistent rosters + live STR (`app/season.py`, `app/ncaa.py`):** each program
+fields a persistent 8-player roster (stable pids, class years, scholarship vs
+**walk-on**); the season records per-singles-line results and computes **live
+STR** from them.
+
+**Multi-season League (`app/league.py`):** `advance_year` graduates, develops,
+retains deserving walk-ons (scholarship promotion), runs a high-churn
+**bidirectional transfer portal** (≈14% M / 11% W; stars up to ride lines 3–6 at
+powerhouses, buried starters down to play 1–3 or out to D2/D3, walk-ons seek
+scholarships), intakes freshmen, re-sims. Each player keeps a **career history**
+(school/class/STR/record per season → transfers visible). `manage.py league`.
+
+**Web (`app/web/`):** Rankings · Dual Simulator · Bracket · **Recruiting**
+(national/state/intl boards + tennisrecruiting.net-style recruit profile) ·
+**Teams** (live-STR roster, SIDEARM-style, scholarship/walk-on) + **player card**
+(Bio/season/Historical) · Methodology. Majors (`generators/majors.py`) on bios.
+
+**Open follow-ups:** wire the rich attribute model in once the agent delivers
+(preserve `Prospect`/STR interfaces); multi-year career view + match-by-match on
+the web (needs a cached League); cross-division transfer portal (D3→D2→D1);
+junior circuits (P6) feeding recruit Activity; recruiting/scholarship economy
+(P7: offers, commit prediction, academic fit, walk-on-vs-scholarship decisions).
