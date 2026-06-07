@@ -1,0 +1,733 @@
+{
+  "division": "D3",
+  "gender": "women",
+  "source_notes": "Compiled for the 2025-26 NCAA Division III academic year (current as of June 2026). Per task spec, ALL full member institutions of every D3 all-sports conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships and differ only in the 'gender' field. Sources: Wikipedia 'List of NCAA Division III institutions', 'NCAA Division III', and individual conference articles (en.wikipedia.org); NCAA.com. This covers all 42 D3 all-sports conferences (the Middle Atlantic Conferences are split into their two member leagues, MAC Commonwealth and MAC Freedom, for 43 conference entries total). Notes / uncertainties: (1) Rosters reflect the 2025-26 alignment BEFORE the July 2026 reshuffle (e.g., SUNY New Paltz to NJAC; Alfred State / SUNY Cobleskill / SUNY Delhi to SUNYAC; Luther to Midwest; Maryville & Wesleyan leaving CCS; McMurry & Schreiner back to ASC; Marywood & Neumann to MAC; Saint Francis (PA) to PAC are all 2026-27 changes and are NOT applied here). (2) MASCAC includes Anna Maria for 2025-26 only (the college is closing). (3) Liberty League: 'Rochester' competes as a Liberty League member for sports the UAA doesn't sponsor; Hobart and William Smith are listed as the combined institution 'Hobart and William Smith'. (4) C2C, SCAC, NCAC etc. reflect 2025-26 incoming members (John Carroll in NCAC; Johnson & Wales-Charlotte and Regent in C2C; LeTourneau and returning Hendrix in SCAC). (5) The American Southwest Conference (ASC) has contracted to 4 full members for 2025-26. (6) CUNYAC reflects its eight senior-college (D3) full members. autobid=true for all conferences (each crowns a champion eligible for an NCAA automatic bid).",
+  "conferences": [
+    {
+      "name": "New England Small College Athletic Conference",
+      "abbr": "NESCAC",
+      "autobid": true,
+      "teams": [
+        "Amherst",
+        "Bates",
+        "Bowdoin",
+        "Colby",
+        "Connecticut College",
+        "Hamilton",
+        "Middlebury",
+        "Trinity (CT)",
+        "Tufts",
+        "Wesleyan",
+        "Williams"
+      ]
+    },
+    {
+      "name": "University Athletic Association",
+      "abbr": "UAA",
+      "autobid": true,
+      "teams": [
+        "Brandeis",
+        "Carnegie Mellon",
+        "Case Western Reserve",
+        "Emory",
+        "NYU",
+        "Chicago",
+        "Rochester",
+        "Washington University in St. Louis"
+      ]
+    },
+    {
+      "name": "Centennial Conference",
+      "abbr": "Centennial",
+      "autobid": true,
+      "teams": [
+        "Bryn Mawr",
+        "Dickinson",
+        "Franklin & Marshall",
+        "Gettysburg",
+        "Haverford",
+        "Johns Hopkins",
+        "McDaniel",
+        "Muhlenberg",
+        "Swarthmore",
+        "Ursinus",
+        "Washington College"
+      ]
+    },
+    {
+      "name": "Liberty League",
+      "abbr": "Liberty League",
+      "autobid": true,
+      "teams": [
+        "Bard",
+        "Clarkson",
+        "Hobart and William Smith",
+        "Ithaca",
+        "RPI",
+        "Rochester",
+        "RIT",
+        "St. Lawrence",
+        "Skidmore",
+        "Union (NY)",
+        "Vassar"
+      ]
+    },
+    {
+      "name": "North Coast Athletic Conference",
+      "abbr": "NCAC",
+      "autobid": true,
+      "teams": [
+        "Denison",
+        "DePauw",
+        "John Carroll",
+        "Kenyon",
+        "Oberlin",
+        "Ohio Wesleyan",
+        "Wabash",
+        "Wittenberg",
+        "Wooster"
+      ]
+    },
+    {
+      "name": "Old Dominion Athletic Conference",
+      "abbr": "ODAC",
+      "autobid": true,
+      "teams": [
+        "Averett",
+        "Bridgewater (VA)",
+        "Eastern Mennonite",
+        "Guilford",
+        "Hampden-Sydney",
+        "Hollins",
+        "Lynchburg",
+        "Randolph",
+        "Randolph-Macon",
+        "Roanoke",
+        "Shenandoah",
+        "Sweet Briar",
+        "Virginia Wesleyan",
+        "Washington and Lee"
+      ]
+    },
+    {
+      "name": "Southern California Intercollegiate Athletic Conference",
+      "abbr": "SCIAC",
+      "autobid": true,
+      "teams": [
+        "Caltech",
+        "Cal Lutheran",
+        "Chapman",
+        "Claremont-Mudd-Scripps",
+        "La Verne",
+        "Occidental",
+        "Pomona-Pitzer",
+        "Redlands",
+        "Whittier"
+      ]
+    },
+    {
+      "name": "Minnesota Intercollegiate Athletic Conference",
+      "abbr": "MIAC",
+      "autobid": true,
+      "teams": [
+        "Augsburg",
+        "Bethel (MN)",
+        "Carleton",
+        "Concordia-Moorhead",
+        "Gustavus Adolphus",
+        "Hamline",
+        "Macalester",
+        "Saint Benedict",
+        "St. Catherine",
+        "Saint John's (MN)",
+        "Saint Mary's (MN)",
+        "St. Olaf",
+        "St. Scholastica"
+      ]
+    },
+    {
+      "name": "Wisconsin Intercollegiate Athletic Conference",
+      "abbr": "WIAC",
+      "autobid": true,
+      "teams": [
+        "UW-Eau Claire",
+        "UW-La Crosse",
+        "UW-Oshkosh",
+        "UW-Platteville",
+        "UW-River Falls",
+        "UW-Stevens Point",
+        "UW-Stout",
+        "UW-Whitewater"
+      ]
+    },
+    {
+      "name": "College Conference of Illinois and Wisconsin",
+      "abbr": "CCIW",
+      "autobid": true,
+      "teams": [
+        "Augustana (IL)",
+        "Carroll (WI)",
+        "Carthage",
+        "Elmhurst",
+        "Illinois Wesleyan",
+        "Millikin",
+        "North Central (IL)",
+        "North Park",
+        "Wheaton (IL)"
+      ]
+    },
+    {
+      "name": "New England Women's and Men's Athletic Conference",
+      "abbr": "NEWMAC",
+      "autobid": true,
+      "teams": [
+        "Babson",
+        "Clark (MA)",
+        "Coast Guard",
+        "Emerson",
+        "MIT",
+        "Mount Holyoke",
+        "Salve Regina",
+        "Smith",
+        "Springfield",
+        "Wellesley",
+        "Wheaton (MA)",
+        "WPI"
+      ]
+    },
+    {
+      "name": "Empire 8",
+      "abbr": "Empire 8",
+      "autobid": true,
+      "teams": [
+        "Alfred",
+        "Elmira",
+        "Hartwick",
+        "Houghton",
+        "Keuka",
+        "Nazareth",
+        "Russell Sage",
+        "St. John Fisher",
+        "SUNY Brockport",
+        "SUNY Geneseo",
+        "SUNY Poly",
+        "Utica"
+      ]
+    },
+    {
+      "name": "Landmark Conference",
+      "abbr": "Landmark",
+      "autobid": true,
+      "teams": [
+        "Catholic",
+        "Drew",
+        "Elizabethtown",
+        "Goucher",
+        "Juniata",
+        "Lycoming",
+        "Moravian",
+        "Scranton",
+        "Susquehanna",
+        "Wilkes"
+      ]
+    },
+    {
+      "name": "Middle Atlantic Conference Commonwealth",
+      "abbr": "MAC Commonwealth",
+      "autobid": true,
+      "teams": [
+        "Albright",
+        "Alvernia",
+        "Eastern",
+        "Hood",
+        "Messiah",
+        "Stevenson",
+        "Widener",
+        "York (PA)"
+      ]
+    },
+    {
+      "name": "Middle Atlantic Conference Freedom",
+      "abbr": "MAC Freedom",
+      "autobid": true,
+      "teams": [
+        "Arcadia",
+        "Delaware Valley",
+        "DeSales",
+        "FDU-Florham",
+        "King's (PA)",
+        "Lebanon Valley",
+        "Misericordia",
+        "Stevens"
+      ]
+    },
+    {
+      "name": "State University of New York Athletic Conference",
+      "abbr": "SUNYAC",
+      "autobid": true,
+      "teams": [
+        "Buffalo State",
+        "SUNY Canton",
+        "SUNY Cortland",
+        "SUNY Fredonia",
+        "SUNY Morrisville",
+        "SUNY New Paltz",
+        "SUNY Oneonta",
+        "SUNY Oswego",
+        "SUNY Plattsburgh",
+        "SUNY Potsdam"
+      ]
+    },
+    {
+      "name": "Little East Conference",
+      "abbr": "LEC",
+      "autobid": true,
+      "teams": [
+        "Eastern Connecticut State",
+        "Keene State",
+        "Plymouth State",
+        "Rhode Island College",
+        "UMass Boston",
+        "UMass Dartmouth",
+        "Southern Maine",
+        "Castleton",
+        "Western Connecticut State"
+      ]
+    },
+    {
+      "name": "New Jersey Athletic Conference",
+      "abbr": "NJAC",
+      "autobid": true,
+      "teams": [
+        "Kean",
+        "Montclair State",
+        "New Jersey City",
+        "Ramapo",
+        "Rowan",
+        "Rutgers-Camden",
+        "Rutgers-Newark",
+        "Stockton",
+        "TCNJ",
+        "William Paterson"
+      ]
+    },
+    {
+      "name": "Ohio Athletic Conference",
+      "abbr": "OAC",
+      "autobid": true,
+      "teams": [
+        "Baldwin Wallace",
+        "Capital",
+        "Heidelberg",
+        "Marietta",
+        "Mount Union",
+        "Muskingum",
+        "Ohio Northern",
+        "Otterbein",
+        "Wilmington (OH)"
+      ]
+    },
+    {
+      "name": "Heartland Collegiate Athletic Conference",
+      "abbr": "HCAC",
+      "autobid": true,
+      "teams": [
+        "Anderson (IN)",
+        "Berea",
+        "Bluffton",
+        "Earlham",
+        "Franklin",
+        "Hanover",
+        "Manchester",
+        "Mount St. Joseph",
+        "Rose-Hulman",
+        "Transylvania"
+      ]
+    },
+    {
+      "name": "American Southwest Conference",
+      "abbr": "ASC",
+      "autobid": true,
+      "teams": [
+        "East Texas Baptist",
+        "Hardin-Simmons",
+        "Howard Payne",
+        "Mary Hardin-Baylor"
+      ]
+    },
+    {
+      "name": "Southern Athletic Association",
+      "abbr": "SAA",
+      "autobid": true,
+      "teams": [
+        "Berry",
+        "Centre",
+        "Millsaps",
+        "Oglethorpe",
+        "Rhodes",
+        "Sewanee",
+        "Southwestern (TX)",
+        "Trinity (TX)"
+      ]
+    },
+    {
+      "name": "USA South Athletic Conference",
+      "abbr": "USA South",
+      "autobid": true,
+      "teams": [
+        "Brevard",
+        "Greensboro",
+        "Mary Baldwin",
+        "Meredith",
+        "Methodist",
+        "North Carolina Wesleyan",
+        "Pfeiffer",
+        "Salem",
+        "Southern Virginia",
+        "William Peace"
+      ]
+    },
+    {
+      "name": "Coast to Coast Athletic Conference",
+      "abbr": "C2C",
+      "autobid": true,
+      "teams": [
+        "Christopher Newport",
+        "Johnson & Wales (Charlotte)",
+        "Mary Washington",
+        "Regent",
+        "Salisbury",
+        "UC Santa Cruz",
+        "Warren Wilson"
+      ]
+    },
+    {
+      "name": "Skyline Conference",
+      "abbr": "Skyline",
+      "autobid": true,
+      "teams": [
+        "Mount Saint Vincent",
+        "Farmingdale State",
+        "Manhattanville",
+        "Mount Saint Mary (NY)",
+        "Purchase",
+        "Sarah Lawrence",
+        "St. Joseph's (Brooklyn)",
+        "St. Joseph's (Long Island)",
+        "SUNY Maritime",
+        "SUNY Old Westbury",
+        "Merchant Marine",
+        "Yeshiva"
+      ]
+    },
+    {
+      "name": "Allegheny Mountain Collegiate Conference",
+      "abbr": "AMCC",
+      "autobid": true,
+      "teams": [
+        "Alfred State",
+        "Carlow",
+        "Hilbert",
+        "La Roche",
+        "Mount Aloysius",
+        "Penn State Altoona",
+        "Penn State Behrend",
+        "Pitt-Bradford",
+        "Pitt-Greensburg"
+      ]
+    },
+    {
+      "name": "Great Northeast Athletic Conference",
+      "abbr": "GNAC",
+      "autobid": true,
+      "teams": [
+        "Albertus Magnus",
+        "Colby-Sawyer",
+        "Dean",
+        "Elms",
+        "Emmanuel (MA)",
+        "Lasell",
+        "Mitchell",
+        "New England College",
+        "Norwich",
+        "Regis (MA)",
+        "Rivier",
+        "Saint Joseph (CT)",
+        "Saint Joseph's (ME)",
+        "Simmons"
+      ]
+    },
+    {
+      "name": "Massachusetts State Collegiate Athletic Conference",
+      "abbr": "MASCAC",
+      "autobid": true,
+      "teams": [
+        "Anna Maria",
+        "Bridgewater State",
+        "Fitchburg State",
+        "Framingham State",
+        "MCLA",
+        "Massachusetts Maritime",
+        "Salem State",
+        "Westfield State",
+        "Worcester State"
+      ]
+    },
+    {
+      "name": "Northern Athletics Collegiate Conference",
+      "abbr": "NACC",
+      "autobid": true,
+      "teams": [
+        "Alverno",
+        "Aurora",
+        "Benedictine (IL)",
+        "Concordia Chicago",
+        "Concordia Wisconsin",
+        "Dominican (IL)",
+        "Edgewood",
+        "Illinois Tech",
+        "Lakeland",
+        "Marian (WI)",
+        "MSOE",
+        "Rockford",
+        "St. Norbert",
+        "Wisconsin Lutheran"
+      ]
+    },
+    {
+      "name": "St. Louis Intercollegiate Athletic Conference",
+      "abbr": "SLIAC",
+      "autobid": true,
+      "teams": [
+        "Blackburn",
+        "Eureka",
+        "Greenville",
+        "Lyon",
+        "Mississippi University for Women",
+        "Principia",
+        "Spalding",
+        "Webster",
+        "Westminster (MO)"
+      ]
+    },
+    {
+      "name": "Upper Midwest Athletic Conference",
+      "abbr": "UMAC",
+      "autobid": true,
+      "teams": [
+        "Bethany Lutheran",
+        "Crown (MN)",
+        "Martin Luther",
+        "Minnesota-Morris",
+        "North Central (MN)",
+        "Northwestern-St. Paul",
+        "UW-Superior"
+      ]
+    },
+    {
+      "name": "American Rivers Conference",
+      "abbr": "ARC",
+      "autobid": true,
+      "teams": [
+        "Buena Vista",
+        "Central (IA)",
+        "Coe",
+        "Dubuque",
+        "Loras",
+        "Luther",
+        "Nebraska Wesleyan",
+        "Simpson",
+        "Wartburg"
+      ]
+    },
+    {
+      "name": "Michigan Intercollegiate Athletic Association",
+      "abbr": "MIAA",
+      "autobid": true,
+      "teams": [
+        "Adrian",
+        "Albion",
+        "Alma",
+        "Calvin",
+        "Hope",
+        "Kalamazoo",
+        "Olivet",
+        "Saint Mary's (IN)",
+        "Trine"
+      ]
+    },
+    {
+      "name": "Conference of New England",
+      "abbr": "CNE",
+      "autobid": true,
+      "teams": [
+        "Curry",
+        "Endicott",
+        "Gordon",
+        "Hartford",
+        "Johnson & Wales (Providence)",
+        "New England",
+        "Nichols",
+        "Roger Williams",
+        "Suffolk",
+        "Wentworth",
+        "Western New England"
+      ]
+    },
+    {
+      "name": "Presidents' Athletic Conference",
+      "abbr": "PAC",
+      "autobid": true,
+      "teams": [
+        "Allegheny",
+        "Bethany (WV)",
+        "Chatham",
+        "Franciscan",
+        "Geneva",
+        "Grove City",
+        "Hiram",
+        "Saint Vincent",
+        "Thiel",
+        "Washington & Jefferson",
+        "Waynesburg",
+        "Westminster (PA)"
+      ]
+    },
+    {
+      "name": "Midwest Conference",
+      "abbr": "MWC",
+      "autobid": true,
+      "teams": [
+        "Beloit",
+        "Cornell College",
+        "Grinnell",
+        "Illinois College",
+        "Knox",
+        "Lake Forest",
+        "Lawrence",
+        "Monmouth (IL)",
+        "Ripon"
+      ]
+    },
+    {
+      "name": "Northwest Conference",
+      "abbr": "NWC",
+      "autobid": true,
+      "teams": [
+        "George Fox",
+        "Lewis & Clark",
+        "Linfield",
+        "Pacific (OR)",
+        "Pacific Lutheran",
+        "Puget Sound",
+        "Whitman",
+        "Whitworth",
+        "Willamette"
+      ]
+    },
+    {
+      "name": "North Atlantic Conference",
+      "abbr": "NAC",
+      "autobid": true,
+      "teams": [
+        "Husson",
+        "Lesley",
+        "Maine-Farmington",
+        "Maine-Presque Isle",
+        "Maine Maritime",
+        "SUNY Cobleskill",
+        "SUNY Delhi",
+        "Thomas (ME)",
+        "Northern Vermont-Johnson",
+        "Northern Vermont-Lyndon"
+      ]
+    },
+    {
+      "name": "United East Conference",
+      "abbr": "United East",
+      "autobid": true,
+      "teams": [
+        "Cairn",
+        "Cedar Crest",
+        "Gallaudet",
+        "Keystone",
+        "Lancaster Bible",
+        "Notre Dame of Maryland",
+        "Penn College",
+        "Penn State Abington",
+        "Penn State Berks",
+        "Penn State Brandywine",
+        "Penn State Harrisburg",
+        "Rosemont",
+        "St. Mary's (MD)",
+        "Valley Forge",
+        "Wilson (PA)"
+      ]
+    },
+    {
+      "name": "Atlantic East Conference",
+      "abbr": "Atlantic East",
+      "autobid": true,
+      "teams": [
+        "Centenary (NJ)",
+        "Gwynedd Mercy",
+        "Immaculata",
+        "Marymount (VA)",
+        "Marywood",
+        "Neumann",
+        "Pratt",
+        "Saint Elizabeth"
+      ]
+    },
+    {
+      "name": "Collegiate Conference of the South",
+      "abbr": "CCS",
+      "autobid": true,
+      "teams": [
+        "Agnes Scott",
+        "Asbury",
+        "Belhaven",
+        "Covenant",
+        "Huntingdon",
+        "LaGrange",
+        "Maryville (TN)",
+        "Piedmont",
+        "Wesleyan College"
+      ]
+    },
+    {
+      "name": "City University of New York Athletic Conference",
+      "abbr": "CUNYAC",
+      "autobid": true,
+      "teams": [
+        "Baruch",
+        "Brooklyn",
+        "CCNY",
+        "Hunter",
+        "John Jay",
+        "Lehman",
+        "Medgar Evers",
+        "York (NY)"
+      ]
+    },
+    {
+      "name": "Southern Collegiate Athletic Conference",
+      "abbr": "SCAC",
+      "autobid": true,
+      "teams": [
+        "Austin College",
+        "Centenary (LA)",
+        "Colorado College",
+        "Concordia Texas",
+        "Dallas",
+        "Hendrix",
+        "LeTourneau",
+        "McMurry",
+        "Ozarks",
+        "St. Thomas (TX)",
+        "Schreiner",
+        "Texas Lutheran"
+      ]
+    }
+  ]
+}

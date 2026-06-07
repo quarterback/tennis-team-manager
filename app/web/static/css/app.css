@@ -116,6 +116,9 @@
 .bl-badge.tier-P5 { background: var(--cat-6a); }
 .bl-badge.tier-MID { background: var(--cat-5a); }
 .bl-badge.tier-IVY { background: var(--cat-sm); }
+.bl-badge.tier-D1 { background: var(--gray-500); }
+.bl-badge.tier-D2 { background: var(--rank-bronze); }
+.bl-badge.tier-D3 { background: var(--gray-600); }
 
 .bl-confrk { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--text-secondary); font-weight: 500; }
 .bl-confrk.bronze { color: var(--rank-bronze); }

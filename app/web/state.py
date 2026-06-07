@@ -13,10 +13,14 @@ from app.bracket import select_field, run_bracket
 DEFAULT_SEED = 2026
 MY_TEAM = "Oregon"
 
-# Division×gender universes exposed in the UI.
+# Division×gender universes exposed in the UI (value, division, gender, label).
 UNIVERSES = [
-    ("D1", "men", "Men · D1"),
-    ("D1", "women", "Women · D1"),
+    ("D1-men", "D1", "men", "D1 Men"),
+    ("D1-women", "D1", "women", "D1 Women"),
+    ("D2-men", "D2", "men", "D2 Men"),
+    ("D2-women", "D2", "women", "D2 Women"),
+    ("D3-men", "D3", "men", "D3 Men"),
+    ("D3-women", "D3", "women", "D3 Women"),
 ]
 
 # Conference → display tier (mirrors the design's P5 / MID / IVY badges).
@@ -42,7 +46,9 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED):
     return _bracket_cache[key]
 
 
-def _tier(conf_abbr: str, conf: str) -> str:
+def _tier(division: str, conf_abbr: str, conf: str) -> str:
+    if division != "D1":
+        return division   # D2 / D3 — flat tiers, badge shows the division
     if conf == "Ivy League" or conf_abbr == "Ivy":
         return "IVY"
     return "P5" if conf_abbr in _P5 else "MID"
@@ -96,7 +102,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
         cr, cw, cl = conf_pos.get(p.school, (0, 0, 0))
         rows.append(LiveRow(
             rk=rk, school=p.school, conf=p.conf, conf_abbr=p.conf_abbr,
-            tier=_tier(p.conf_abbr, p.conf), cr=cr, rec=r.record, crec=f"{cw}-{cl}",
+            tier=_tier(division, p.conf_abbr, p.conf), cr=cr, rec=r.record, crec=f"{cw}-{cl}",
             pi=r.pi, apr=r.apr, fqi=r.fqi, me=(p.school == MY_TEAM),
         ))
     return rows

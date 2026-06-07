@@ -22,6 +22,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Strength-of-schedule nudge for APR. Deliberately GENTLE: it lifts teams
+# that beat strong fields without hard-tiering the table — we accept some
+# lossiness (a mid-major occasionally over-rated) over manufacturing weird
+# mismatches, and this matters less in D2/D3 where conference tiers are flat.
+K_SOS = 0.45
+SOS_ITERS = 12
+
 # College flight weights: #1 lines carry the most competitive weight.
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.85, "S3": 0.60, "S4": 0.45, "S5": 0.30, "S6": 0.20,
@@ -91,14 +98,24 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
         else:
             a.wins += 1; h.losses += 1
 
-    # --- APR (RPI) ---
+    # --- APR: iterated, strength-of-schedule-aware ---
+    # Classic RPI compresses (built for a single overlapping league). Here the
+    # field spans real conference tiers, so we iterate: a team's rating is its
+    # own win% adjusted by how strong its opponents proved to be. Quality
+    # propagates through the results graph, so beating power-conference teams
+    # rates far above running up an undefeated mid-major record.
     wp = {t: r.win_pct for t, r in teams.items()}
-    owp = {t: (sum(wp[o] for o in opps[t]) / len(opps[t]) if opps[t] else 0.0) for t in teams}
-    oowp = {t: (sum(owp[o] for o in opps[t]) / len(opps[t]) if opps[t] else 0.0) for t in teams}
+    S = dict(wp)
+    for _ in range(SOS_ITERS):
+        nS = {}
+        for t in teams:
+            sos = (sum(S[o] for o in opps[t]) / len(opps[t])) if opps[t] else 0.5
+            nS[t] = min(1.0, max(0.0, wp[t] + K_SOS * (sos - 0.5)))
+        S = nS
     for t, r in teams.items():
-        r.apr = 0.25 * wp[t] + 0.50 * owp[t] + 0.25 * oowp[t]
+        r.apr = S[t]
 
-    aprs = sorted(r.apr for r in teams.values())
+    aprs = sorted(S.values())
     median_apr = aprs[len(aprs) // 2] if aprs else 1.0
     median_apr = median_apr or 1.0
 

@@ -10,10 +10,11 @@
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:13px;color:var(--text-muted)">NCAA Division I Team Championship · {{ uni_label }}</span>
-  <span style="margin-left:auto">
-    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('rankings', gender=gender) }}">← Rankings</a>
-    <a class="bl-pill{% if gender == 'men' %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', gender='men') }}">Men</a>
-    <a class="bl-pill{% if gender == 'women' %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', gender='women') }}">Women</a>
+  <span style="margin-left:auto;display:inline-flex;gap:5px;flex-wrap:wrap">
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">← Rankings</a>
+    {% for val, d, g, lbl in universes %}
+      <a class="bl-pill{% if val == u %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=val) }}">{{ lbl }}</a>
+    {% endfor %}
   </span>
 </div></div>
 

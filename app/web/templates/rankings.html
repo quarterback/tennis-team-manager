@@ -10,8 +10,8 @@
       <span class="bl-select-wrap"><select class="bl-select" name="season" style="min-width:78px">
         <option>2026</option></select></span></label>
     <label class="bl-field"><span class="bl-field-label">Division</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:104px">
-        {% for d, g, lbl in universes %}<option value="{{ g }}"{% if g == gender %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
       </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Conference</span>
       <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:160px">
@@ -37,7 +37,7 @@
       <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
       </select></span></label>
-    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', gender=gender) }}">NCAA Bracket →</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">NCAA Bracket →</a>
   </div>
 </div>
 </form>
@@ -92,7 +92,7 @@
   <div class="bl-note new">
     <strong>Live from the sim:</strong> every program plays a full conference + non-conference
     schedule, conference tournaments crown automatic qualifiers, and the same Power Index seeds the
-    64-team NCAA bracket. <a href="{{ url_for('bracket', gender=gender) }}">View the bracket →</a>
+    64-team NCAA bracket. <a href="{{ url_for('bracket', u=u) }}">View the bracket →</a>
   </div>
 </div>
 {% endblock %}

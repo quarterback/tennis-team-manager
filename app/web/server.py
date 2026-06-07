@@ -26,16 +26,12 @@ NAV = [
     ("Methodology", "/methodology"),
 ]
 
-TIERS = ["All", "P5", "MID", "IVY"]
-
-
-def _universe(req) -> tuple[str, str, str]:
-    """Resolve (division, gender, label) from the request."""
-    gender = req.args.get("gender", "men")
-    if gender not in ("men", "women"):
-        gender = "men"
-    label = next((l for d, g, l in UNIVERSES if d == "D1" and g == gender), "Men · D1")
-    return "D1", gender, label
+def _universe(req) -> tuple[str, str, str, str]:
+    """Resolve (division, gender, label, u-key) from the request."""
+    u = req.args.get("u", "D1-men")
+    match = next((x for x in UNIVERSES if x[0] == u), UNIVERSES[0])
+    _, division, gender, label = match
+    return division, gender, label, match[0]
 
 
 def create_app() -> Flask:
@@ -47,12 +43,13 @@ def create_app() -> Flask:
 
     @app.route("/")
     def rankings():
-        division, gender, label = _universe(request)
+        division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
         rows = ranking_rows(division, gender)
         total = len(rows)
+        tiers = ["All"] + sorted({r.tier for r in rows})
         filtered = [r for r in rows
                     if (conf == "All" or r.conf == conf) and (tier == "All" or r.tier == tier)]
         if sort == "Power Index":
@@ -63,16 +60,16 @@ def create_app() -> Flask:
         shown = filtered if (conf != "All" or tier != "All") else filtered[:75]
         return render_template(
             "rankings.html", active="Rankings", rows=shown, total=total, shown=len(shown),
-            conferences=conferences_for(division, gender), tiers=TIERS,
-            conf=conf, tier=tier, sort=sort, gender=gender, uni_label=label,
+            conferences=conferences_for(division, gender), tiers=tiers,
+            conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
     @app.route("/bracket")
     def bracket():
-        division, gender, label = _universe(request)
+        division, gender, label, u = _universe(request)
         br = get_bracket(division, gender)
         return render_template("bracket.html", active="Bracket", br=br,
-                               gender=gender, uni_label=label, division=division)
+                               u=u, uni_label=label, division=division)
 
     @app.route("/methodology")
     def methodology():
