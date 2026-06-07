@@ -318,6 +318,27 @@ results don't lie. So:
 - `Prospect.engine_player()` feeds the match engine; `manage.py prospects
   [--reveal]` demos the gem/bust dynamic.
 
+**STR — the results-based rating (`app/str_rating.py`).** STR is the game's
+synthetic UTR, on a distinctive **31–57 band** (not raw UTR 1–17). The engine is
+results-based, not an ability readout: each match yields an opponent-anchored
+match rating (invert an expected-games-share logistic), so you get **credit for
+competing well vs good players and a boost for beating better players**. It's
+**recency-weighted over a rolling 30-match window** ("what have you done lately")
+— so a slump/inactivity makes STR **decay downward** even though ability never
+regresses. Reliable at ~5 matches; thin records blend toward a prior; matches
+with a >2.00-UTR (±3.35 STR) gap are excluded; opponent-rating reliability
+weights each result. `converge_ids()` solves a whole population to a fixed point.
+(Ability-derived STR from the development model seeds players without a match
+record; the results engine takes over once they've played.)
+
+**Juniors / recruiting surface (`app/juniors.py`).** Recruit-class generator
+with origins (US city+state, intl city+nation incl. Canada) and the ranking
+lists — National Top-N by class, state-by-state, international Top-N / Top-N by
+nation — with **count-based star tiers** (Blue Chip top 25 / 5★ / 4★ / 3★ /
+Unrated, TRN convention). Boards rank on consensus (visible STR + scouts'
+ceiling projection), so they can mis-rank gems/busts. Calibrated to
+`docs/calibration-tennis-trajectories.md`.
+
 **Deferred (large, separate system):** the **team-chemistry model** (Voice /
 Glue / Pull / Reach + Drama / Fit / Head, Franchise/Big-Stage/Baggage flags,
 coach archetypes, spine/resilience) from the user's chemistry post — to layer
@@ -342,3 +363,40 @@ talent model.
   scouting reports; hidden potential/access/fog, `?debug=true` reveal).
 - **HS data sourcing (later):** scrape MaxPreps / On3 / recruiting sites for a
   national spread of high schools across all 50 states + DC.
+
+---
+
+## §12 — Build status (live state)
+
+**Engine:** deterministic singles (full) + fast model + NCAA dual layer;
+toggleable `MatchFormat` (no-ad, set/match tiebreaks, 8-game pro set);
+pazzah-style pressure/clutch. **Rating:** team Power Index (TOSS 40/40/20) +
+the **STR** results-based player rating (`app/str_rating.py`, 31–57 band,
+recency-weighted, ±2.00 exclusion, can decay down). **Seasons/brackets:** six
+universes (D1/D2/D3 × M/W) from real conference data; configurable bracket
+fields. **Players:** rich attribute model is being built by a separate agent
+(`docs/attribute-model-agent-brief.md`); current model is the
+potential/access-trajectory `Prospect` with development, scouting fog, gem/bust.
+
+**Persistent rosters + live STR (`app/season.py`, `app/ncaa.py`):** each program
+fields a persistent 8-player roster (stable pids, class years, scholarship vs
+**walk-on**); the season records per-singles-line results and computes **live
+STR** from them.
+
+**Multi-season League (`app/league.py`):** `advance_year` graduates, develops,
+retains deserving walk-ons (scholarship promotion), runs a high-churn
+**bidirectional transfer portal** (≈14% M / 11% W; stars up to ride lines 3–6 at
+powerhouses, buried starters down to play 1–3 or out to D2/D3, walk-ons seek
+scholarships), intakes freshmen, re-sims. Each player keeps a **career history**
+(school/class/STR/record per season → transfers visible). `manage.py league`.
+
+**Web (`app/web/`):** Rankings · Dual Simulator · Bracket · **Recruiting**
+(national/state/intl boards + tennisrecruiting.net-style recruit profile) ·
+**Teams** (live-STR roster, SIDEARM-style, scholarship/walk-on) + **player card**
+(Bio/season/Historical) · Methodology. Majors (`generators/majors.py`) on bios.
+
+**Open follow-ups:** wire the rich attribute model in once the agent delivers
+(preserve `Prospect`/STR interfaces); multi-year career view + match-by-match on
+the web (needs a cached League); cross-division transfer portal (D3→D2→D1);
+junior circuits (P6) feeding recruit Activity; recruiting/scholarship economy
+(P7: offers, commit prediction, academic fit, walk-on-vs-scholarship decisions).

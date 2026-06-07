@@ -158,6 +158,59 @@ def cmd_prospects(args):
                   f"{p.ceiling_overall():>4} {proj:>4}  {TIERS[p.tier][0]:<13} {flag}")
 
 
+def cmd_recruits(args):
+    from app.juniors import (generate_class, national_rankings, state_rankings,
+                             international_rankings)
+    rng = random.Random(args.seed)
+    klass = generate_class(rng, n=args.n, grad_year=args.grad_year, gender=args.gender)
+    if args.state:
+        rows, title = state_rankings(klass, args.state), f"{args.state} — class of {args.grad_year}"
+    elif args.intl:
+        rows, title = international_rankings(klass), f"International — class of {args.grad_year}"
+    else:
+        rows, title = national_rankings(klass), f"National Top {args.top} — class of {args.grad_year}"
+    national_rankings(klass)   # assigns national rank + count-based tiers to all
+    print(f"\n{title} ({klass.gender})\n")
+    print(f"{'#':>3}  {'PLAYER':<24} {'HOMETOWN':<26} {'STR':>5} {'NAT':>5}  TIER")
+    for i, p in enumerate(rows[:args.top], 1):
+        stars = "*" * p.recruit_stars if p.recruit_stars else "-"
+        print(f"{i:>3}  {p.name:<24} {p.hometown:<26} {p.str_value():>5} {'#' + str(p.recruit_rank):>5}  "
+              f"{stars:<5} {p.recruit_tier}")
+
+
+def cmd_league(args):
+    from app.league import new_league, advance_year
+    lg = new_league(args.division, args.gender, seed=args.seed)
+
+    def top_players(n=10):
+        flat = []
+        for school, roster in lg.rosters.items():
+            for p in roster:
+                s, rel = lg.player_str.get(p.pid, (p.str_value(), 0.0))
+                flat.append((s, rel, p, school))
+        flat.sort(key=lambda x: -x[0])
+        return flat[:n]
+
+    print(f"\n{args.division} {args.gender} — League opening season (year 0)\n")
+    print(f"{'STR':>5} {'REL':>4}  {'CL':<3} {'PLAYER':<22} {'SCHOOL'}")
+    for s, rel, p, school in top_players():
+        print(f"{s:>5.1f} {rel:>4.2f}  {p.class_year:<3} {p.name:<22} {school}")
+
+    for _ in range(args.years):
+        summ = advance_year(lg)
+        print(f"\n— Year {summ['year']}: {summ['graduated']} grad · {summ['intake']} fresh · "
+              f"{summ['retained']} walk-ons kept · portal {summ['movers']} "
+              f"(up {summ['up']} / down {summ['down']} / scholarship {summ['schol']} / "
+              f"left div {summ['depart']}) —")
+        arrows = {"up": "^", "down": "v", "schol": "$"}
+        for kind, name, frm, to, s in summ["sample"][:8]:
+            print(f"   {arrows.get(kind, '-')} {name} (STR {s})  {frm} -> {to}")
+    print(f"\nTop players after {args.years} season(s):\n")
+    print(f"{'STR':>5} {'REL':>4}  {'CL':<3} {'PLAYER':<22} {'SCHOOL'}")
+    for s, rel, p, school in top_players():
+        print(f"{s:>5.1f} {rel:>4.2f}  {p.class_year:<3} {p.name:<22} {school}")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -203,6 +256,23 @@ def main():
     pr.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
     pr.add_argument("--reveal", action="store_true")
     pr.set_defaults(func=cmd_prospects)
+
+    lge = sub.add_parser("league")
+    lge.add_argument("--division", default="D1")
+    lge.add_argument("--gender", default="men", choices=["men", "women"])
+    lge.add_argument("--seed", type=int, default=2026)
+    lge.add_argument("--years", type=int, default=4)
+    lge.set_defaults(func=cmd_league)
+
+    rc = sub.add_parser("recruits")
+    rc.add_argument("--n", type=int, default=300)
+    rc.add_argument("--top", type=int, default=25)
+    rc.add_argument("--grad-year", type=int, default=2026, dest="grad_year")
+    rc.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
+    rc.add_argument("--state", default="", help="state name, e.g. 'California'")
+    rc.add_argument("--intl", action="store_true", help="international board")
+    rc.add_argument("--seed", type=int, default=1)
+    rc.set_defaults(func=cmd_recruits)
 
     se = sub.add_parser("season")
     se.add_argument("--division", default="D1")

@@ -119,7 +119,12 @@ class Prospect:
     recruit_tier: str = ""
     recruit_stars: int = 0
     pid: str = ""
-    class_year: int = 0
+    class_year: str = ""                              # eligibility: "Fr"/"So"/"Jr"/"Sr"
+    walk_on: bool = False                             # non-scholarship roster filler
+    major: str = ""                                   # academic major (bio flavor)
+    # Career log: one entry per season played — {year, school, class, str, rel,
+    # w, l}. School changing between entries = a transfer (see app.league).
+    history: list = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.current = normalize_grades(self.current)
@@ -130,10 +135,6 @@ class Prospect:
         self.traits = merged_traits
         if not self.pid:
             self.pid = make_pid(self.name, self.country, self.gender, self.consensus_seed)
-        if not self.class_year and self.grad_year:
-            self.class_year = self.grad_year
-        if not self.grad_year and self.class_year:
-            self.grad_year = self.class_year
         if not self.recruit_stars:
             self.recruit_stars = self.star_rating()
 
@@ -202,11 +203,14 @@ class Prospect:
 
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
-                      gender: str = "male", talent: float | None = None) -> Prospect:
+                      gender: str = "male", talent: float | None = None,
+                      pid: str = "") -> Prospect:
     """Create an incoming prospect with reproducible rich attributes.
 
     Ceilings cluster around ``talent``; maturity determines how much is visible
     today; the interest tier determines how fast the remaining gap closes.
+    `pid` lets callers (roster/juniors builders) assign a stable id; if omitted
+    a deterministic one is derived.
     """
     if talent is None:
         talent = _clamp(rng.gauss(46, 9), 24, 78)
@@ -217,16 +221,16 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     consensus_seed = rng.randrange(1 << 30)
     traits = _draw_traits(rng)
     domestic = country in {"US", "USA", "United States"}
-    grad_year = 0
+    from generators.majors import pick_major
     p = Prospect(
         name=name, country=country, gender=gender,
         current=current, potential=potential, traits=traits,
         academic_rating=_draw_academic_rating(rng, country),
         interest_rate=rate, tier=tier, tier_mult=mult,
         fog=rng.uniform(FOG_MIN, FOG_MAX),
-        consensus_seed=consensus_seed,
-        domestic=domestic, grad_year=grad_year, class_year=grad_year,
-        pid=make_pid(name, country, gender, consensus_seed),
+        consensus_seed=consensus_seed, domestic=domestic,
+        pid=pid or make_pid(name, country, gender, consensus_seed),
+        major=pick_major(rng),
     )
     p.recruit_stars = p.star_rating()
     p.recruit_tier = TIERS[p.tier][0]

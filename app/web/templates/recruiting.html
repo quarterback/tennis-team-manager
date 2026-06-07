@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Recruiting{% endblock %}
+{% block content %}
+{% set grid = '44px minmax(140px,1fr) 210px 64px 150px 100px' %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
+      {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Board</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:120px">
+      <option value="national"{% if scope=='national' %} selected{% endif %}>National</option>
+      <option value="state"{% if scope=='state' %} selected{% endif %}>By State</option>
+      <option value="intl"{% if scope=='intl' %} selected{% endif %}>International</option>
+    </select></span></label>
+  {% if scope == 'state' %}
+  <label class="bl-field"><span class="bl-field-label">State</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="state" onchange="this.form.submit()" style="min-width:150px">
+      {% for s in states %}<option{% if s == state %} selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></span></label>
+  {% endif %}
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ rows|length }}</strong> of {{ total }}</div>
+  <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
+    {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board</span>
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
+    <div class="bl-thead">
+      <span class="bl-th">RK</span><span class="bl-th">PLAYER</span><span class="bl-th">HOMETOWN</span>
+      <span class="bl-th num">STR</span><span class="bl-th">TIER</span><span class="bl-th">COMMIT</span>
+    </div>
+    {% for rk, p in rows %}
+    <div class="bl-row">
+      <span class="bl-rank {{ 'gold' if p.recruit_rank==1 else 'bronze' if p.recruit_rank<=3 else '' }}">{{ rk }}</span>
+      <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}">{{ p.name }}</a>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str_value()) }}</span></span>
+      <span><span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">
+        {{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} {{ p.recruit_tier }}</span></span>
+      <span class="bl-conf">{{ '—' if not p.committed else 'Committed' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div></div>
+
+<div class="bl-notes"><div class="bl-note">
+  Star tiers are count-based (Blue Chip = top 25 · 5★ 26–75 · 4★ 76–200 · 3★ 201–400). The board
+  ranks on a consensus of visible STR + scouts' ceiling projection — so it can mis-rank a late
+  bloomer (gem) or an early bloomer who plateaus (bust). Click a player for the full profile.
+</div></div>
+{% endblock %}
