@@ -1,5 +1,5 @@
 """
-Point → game → set → match scoring for the full-fidelity engine.
+Point -> game -> set -> match scoring for the full-fidelity engine.
 
 Scoring rules implemented:
   - games: 0/15/30/40, deuce/advantage (or sudden-death point under no-ad)
@@ -17,7 +17,7 @@ import random
 from dataclasses import dataclass
 from typing import Optional
 
-from .state import MatchState, Player, PlayerStats
+from .state import MatchState, MatchContext, Player, PlayerStats
 from .rally import play_point
 from .format import MatchFormat, DEFAULT
 
@@ -75,12 +75,10 @@ def _game_over(state: MatchState) -> Optional[int]:
 
 
 def _point_pressure(state: MatchState) -> float:
-    """How consequential the upcoming point is, 0 (routine) … 1 (match point).
-    Game point → 0.45; if winning that game wins the set → 0.7; if it wins the
-    match → 1.0. Drives the clutch model in rally.play_point."""
+    """How consequential the upcoming point is, 0 (routine) ... 1 (match point)."""
     ps, pr = state.points[state.server], state.points[state.returner]
     server_gp = ps >= 3 and ps > pr
-    returner_gp = pr >= 3 and pr > ps      # a break point for the returner
+    returner_gp = pr >= 3 and pr > ps
     deciding = state.fmt.no_ad and ps == 3 and pr == 3
     if not (server_gp or returner_gp or deciding):
         return 0.0
@@ -92,16 +90,16 @@ def _point_pressure(state: MatchState) -> float:
         sides.append(state.returner)
     for side in sides:
         gw, og = state.games[side] + 1, state.games[1 - side]
-        if gw >= state.set_target and gw - og >= 2:          # would win the set
+        if gw >= state.set_target and gw - og >= 2:
             pressure = max(pressure, 0.70)
-            if state.sets[side] + 1 >= state.sets_needed:     # …and the match
+            if state.sets[side] + 1 >= state.sets_needed:
                 pressure = max(pressure, 1.0)
     return pressure
 
 
 def _tb_pressure(pts: list[int], target: int, is_match: bool) -> float:
     hi, lo = max(pts), min(pts)
-    if hi >= target - 1 and hi >= lo + 1:                     # set/match point
+    if hi >= target - 1 and hi >= lo + 1:
         return 1.0 if is_match else 0.85
     return min(0.6, 0.20 + 0.40 * hi / target)
 
@@ -111,10 +109,9 @@ def play_game(state: MatchState) -> int:
     state.points = [0, 0]
     s, r = state.server, state.returner
     while True:
-        # Break-point detection (returner's perspective), before the point.
         is_bp = state.points[r] >= 3 and state.points[r] > state.points[s]
         if state.fmt.no_ad and state.points[s] == 3 and state.points[r] == 3:
-            is_bp = True  # deciding point: returner wins it → break
+            is_bp = True
 
         state.pressure = _point_pressure(state)
         winner, kind = play_point(state)
@@ -133,8 +130,7 @@ def play_game(state: MatchState) -> int:
 
 
 def play_tiebreak(state: MatchState, target: int = 7) -> int:
-    """Play a tiebreak to `target` (win by 2). Serve: current server takes
-    the first point, then serve alternates every 2 points. Returns winner."""
+    """Play a tiebreak to `target` (win by 2)."""
     pts = [0, 0]
     first_server = state.server
     served = 0
@@ -144,13 +140,11 @@ def play_tiebreak(state: MatchState, target: int = 7) -> int:
         winner, kind = play_point(state)
         pts[winner] += 1
         served += 1
-        # Rotate serve: 1 point, then 2 at a time.
         if served == 1 or (served - 1) % 2 == 0:
             state.server = 1 - state.server
         if (pts[0] >= target or pts[1] >= target) and abs(pts[0] - pts[1]) >= 2:
             win = 0 if pts[0] > pts[1] else 1
             state._tb_points = (pts[0], pts[1])  # type: ignore[attr-defined]
-            # Restore so the post-tiebreak serve flip behaves like a normal game.
             state.server = first_server
             return win
 
@@ -160,11 +154,7 @@ def play_set(
     is_final: bool,
     target_games: Optional[int] = None,
 ) -> tuple[int, tuple[int, int], tuple[int, int]]:
-    """Play one set. Returns (winner, game_score, games_won_pair).
-
-    A match-tiebreak deciding set returns the tiebreak point score as the
-    'game_score' and counts as a single game for rating. With
-    `set_tiebreak` off, the set is an advantage set (win by 2, no tiebreak)."""
+    """Play one set. Returns (winner, game_score, games_won_pair)."""
     fmt = state.fmt
     state.games = [0, 0]
     state.is_final_set = is_final or state.sets_needed == 1
@@ -181,7 +171,7 @@ def play_set(
     while True:
         g_winner = play_game(state)
         state.games[g_winner] += 1
-        state.server = 1 - state.server  # alternate serve each game
+        state.server = 1 - state.server
 
         g0, g1 = state.games
         if fmt.set_tiebreak and g0 == tg and g1 == tg:
@@ -203,16 +193,21 @@ def simulate_match(
     fmt: Optional[MatchFormat] = None,
     first_server: int = 0,
     fidelity: str = "full",
+    context: Optional[MatchContext] = None,
 ) -> MatchResult:
-    """Simulate a singles match under `fmt` (defaults to best-of-3 + 10-point
-    match tiebreak). `fidelity="fast"` routes to the game-level hold model
-    (scoreline only); `"full"` plays point-by-point."""
+    """Simulate a singles match under `fmt`.
+
+    `fidelity="fast"` routes to the game-level hold model. `context` is optional
+    hardcourt weather/venue context; omitted means neutral outdoor conditions.
+    """
     fmt = fmt or DEFAULT
+    context = context or MatchContext()
     if fidelity == "fast":
         from .fast import simulate_fast
-        return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server)
+        return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server, context=context)
 
-    state = MatchState(players=(p0, p1), rng=random.Random(seed), fmt=fmt, server=first_server)
+    state = MatchState(players=(p0, p1), rng=random.Random(seed), fmt=fmt,
+                       server=first_server, context=context)
     state.sets_needed = 1 if fmt.pro_set else fmt.best_of // 2 + 1
     games_won = [0, 0]
 
