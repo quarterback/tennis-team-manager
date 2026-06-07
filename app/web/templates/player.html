@@ -11,8 +11,11 @@
 <div class="bl-board">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
     <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
-    <div><div class="tname">{{ p.name }} <span style="font-size:13px;color:var(--text-muted)">{{ p.country }}</span></div>
-      <div class="tsub">{{ p.class_year }} · {{ school }} · {{ uni_label }}{% if p.walk_on %} · walk-on{% endif %}</div></div>
+    <div><div class="tname">
+        <span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span>
+        {{ p.name }}
+        <span style="font-size:13px;color:var(--text-muted)">{{ p.country|country_abbrev }}{% if p.secondary_country %} / {{ p.secondary_country|country_abbrev }}{% endif %}</span></div>
+      <div class="tsub">{{ p.class_year }} · {{ school }} · {{ uni_label }}{% if p.walk_on %} · walk-on{% endif %}{% if p.hometown %} · Born {{ p.hometown }}{% endif %}</div></div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
       <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(r.str) }}</span>
       <div class="tsub">reliability {{ "%.2f"|format(r.rel) }}</div></div>

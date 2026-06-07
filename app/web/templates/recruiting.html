@@ -43,7 +43,7 @@
     {% for rk, p in rows %}
     <div class="bl-row">
       <span class="bl-rank {{ 'gold' if p.recruit_rank==1 else 'bronze' if p.recruit_rank<=3 else '' }}">{{ rk }}</span>
-      <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}">{{ p.name }}</a>
+      <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
       <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
       <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str_value()) }}</span></span>
       <span><span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">

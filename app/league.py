@@ -201,7 +201,7 @@ def _refill(league: League, rng: random.Random) -> int:
         prng = random.Random(f"{prog.key}|intake|{league.year}")
         name_fn = make_name_picker(random.Random(f"{prog.key}|names|{league.year}"),
                                    gender=_pick_gender(prog.gender),
-                                   region_weights=region_preset("global"))
+                                   region_weights=region_preset("tennis_global"))
         tmean = _talent_from_strength(prog.strength)
         for k in range(need):
             name, country = name_fn()

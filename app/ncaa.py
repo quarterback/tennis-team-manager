@@ -157,7 +157,7 @@ def build_roster(p: Program):
     seed = _stable_seed(p.key) & 0xFFFFFFFF
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
-                               region_weights=region_preset("global"))
+                               region_weights=region_preset("tennis_global"))
     tmean = _talent_from_strength(p.strength)
     roster = []
     for i in range(ROSTER_SIZE):

@@ -36,7 +36,7 @@ def build_team(school: str, *, gender: str = "male") -> Team:
     seed = (hash(school) & 0xFFFFFF) ^ SEASON_SEED
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=gender,
-                               region_weights=region_preset("global"))
+                               region_weights=region_preset("tennis_global"))
     singles = []
     for i in range(6):
         name, country = name_fn()

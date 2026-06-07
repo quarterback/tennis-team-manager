@@ -36,7 +36,7 @@
       {% set p = r.p %}
       <div class="bl-row">
         <span class="bl-rank">{{ r.line if r.line else '—' }}</span>
-        <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}">{{ p.name }}</a>
+        <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
         <span class="bl-conf">{{ p.class_year }}</span>
         <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
         <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>

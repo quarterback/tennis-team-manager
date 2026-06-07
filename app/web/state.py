@@ -153,8 +153,25 @@ def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: st
     return list(enumerate(src, 1))      # (board_rank, Prospect)
 
 
+# Marquee attributes surfaced on the recruit/player scouting card (key, label),
+# mirroring viperball's ~dozen-bar ATTRIBUTES block.
+SCOUT_ATTRS = [
+    ("first_serve_power", "Serve Power"), ("first_serve_accuracy", "Serve Accuracy"),
+    ("return_quality", "Return"), ("forehand_power", "Forehand"),
+    ("backhand_power", "Backhand"), ("groundstroke_consistency", "Consistency"),
+    ("net_play", "Net Play"), ("speed", "Speed"), ("stamina", "Stamina"),
+    ("composure", "Composure"), ("clutch", "Clutch"),
+]
+
+
+def scout_bars(p):
+    """Visible per-attribute grades (20-80) for the scouting-bar block."""
+    return [(label, p.current_grade(key)) for key, label in SCOUT_ATTRS]
+
+
 def recruit_profile(p, gender: str, grad_year: int):
-    """Build the profile view: national/regional rankings + scouting reports."""
+    """Build the profile view: rankings, scouting reads, and the College List /
+    Dreamsheet / Timeline recruiting board."""
     klass = get_recruits(gender, grad_year)
     if p.domestic:
         regional = state_rankings(klass, p.region)
@@ -164,6 +181,12 @@ def recruit_profile(p, gender: str, grad_year: int):
         intl = international_rankings(klass)
         region_rank = next((i for i, q in enumerate(intl, 1) if q.pid == p.pid), None)
         region_label = "International"
+
+    from app.recruiting import build_recruiting, schools_from_rank_rows
+    from app.web.rankings_data import get_rankings
+    schools = schools_from_rank_rows(get_rankings())
+    rec = build_recruiting(p, schools, seed_salt=str(grad_year))
+
     return {
         "national_rank": p.recruit_rank,
         "region_rank": region_rank,
@@ -171,6 +194,8 @@ def recruit_profile(p, gender: str, grad_year: int):
         "service": overall_to_str(p.scouting_report("service")),   # two independent ceiling reads
         "dept": overall_to_str(p.scouting_report("dept")),
         "projection": overall_to_str(p.project(4)),
+        "recruiting": rec,
+        "scout_bars": scout_bars(p),
     }
 
 

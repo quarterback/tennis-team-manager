@@ -41,6 +41,12 @@ def _universe(req) -> tuple[str, str, str, str]:
 def create_app() -> Flask:
     app = Flask(__name__)
 
+    from .formatters import flag, flags, country_name, country_abbrev
+    app.jinja_env.filters["flag"] = flag
+    app.jinja_env.filters["flags"] = flags
+    app.jinja_env.filters["country_name"] = country_name
+    app.jinja_env.filters["country_abbrev"] = country_abbrev
+
     @app.context_processor
     def _inject_nav():
         return {"nav": NAV, "universes": UNIVERSES}
