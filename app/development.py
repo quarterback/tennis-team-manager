@@ -21,13 +21,14 @@ from dataclasses import dataclass, field
 from engine import Player, ATTRS
 from app.player_attributes import (
     GRADE_MIN, GRADE_MAX, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
-    clamp_grade, grade_to_unit, normalize_grades,
+    clamp_grade, normalize_grades,
 )
 
 GROWTH_K = 0.12
 FOG_MIN, FOG_MAX = 7, 31
 MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
 STR_MIN, STR_MAX = 31.0, 57.0
+ACADEMIC_MIN, ACADEMIC_MAX = 59, 99
 
 # Interest-rate tiers: (label, probability, rate range, growth multiplier).
 TIERS = {
@@ -78,6 +79,17 @@ def _draw_traits(rng: random.Random) -> dict[str, str]:
     }
 
 
+def _draw_academic_rating(rng: random.Random, country: str) -> int:
+    """Admissions-only academic index on a SAT-like 59-99 band.
+
+    This is not a tennis skill and never feeds the match engine. It exists so
+    Ivy/top-D3/high-academic programs can gate admissions or weight fit when the
+    recruiting layer evaluates offers.
+    """
+    base = 79 if country in {"US", "USA", "United States"} else 77
+    return int(_clamp(round(rng.gauss(base, 9)), ACADEMIC_MIN, ACADEMIC_MAX))
+
+
 @dataclass
 class Prospect:
     name: str
@@ -87,6 +99,7 @@ class Prospect:
     current: dict = field(default_factory=dict)      # visible rich grades (20-80)
     potential: dict = field(default_factory=dict)    # hidden rich ceilings (20-80)
     traits: dict = field(default_factory=lambda: dict(TRAIT_DEFAULTS))
+    academic_rating: int = 79                         # admissions-only, 59-99
     interest_rate: float = 0.2
     tier: int = 1
     tier_mult: float = 1.0
@@ -111,6 +124,7 @@ class Prospect:
     def __post_init__(self) -> None:
         self.current = normalize_grades(self.current)
         self.potential = normalize_grades(self.potential)
+        self.academic_rating = int(_clamp(round(self.academic_rating), ACADEMIC_MIN, ACADEMIC_MAX))
         merged_traits = dict(TRAIT_DEFAULTS)
         merged_traits.update(self.traits or {})
         self.traits = merged_traits
@@ -142,7 +156,16 @@ class Prospect:
 
     # ---- what the engine plays: always current ability ----
     def engine_player(self) -> Player:
-        return Player(name=self.name, country=self.country, **self._attrs().derive_drivers())
+        drivers = self._attrs().derive_drivers()
+        g = self.current
+        drivers.update({
+            "indoor_comfort": (g["indoor_comfort"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
+            "outdoor_comfort": (g["outdoor_comfort"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
+            "wind_tolerance": (g["wind_tolerance"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
+            "heat_tolerance": (g["heat_tolerance"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
+            "crowd_pressure": (g["crowd_pressure"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
+        })
+        return Player(name=self.name, country=self.country, **drivers)
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop_year(self) -> None:
@@ -174,7 +197,8 @@ class Prospect:
 
     def public_view(self) -> dict:
         return {"name": self.name, "country": self.country,
-                "str": self.str_value(), "stars": self.star_rating(), "year": self.year}
+                "str": self.str_value(), "stars": self.star_rating(),
+                "academic": self.academic_rating, "year": self.year}
 
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
@@ -197,6 +221,7 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     p = Prospect(
         name=name, country=country, gender=gender,
         current=current, potential=potential, traits=traits,
+        academic_rating=_draw_academic_rating(rng, country),
         interest_rate=rate, tier=tier, tier_mult=mult,
         fog=rng.uniform(FOG_MIN, FOG_MAX),
         consensus_seed=consensus_seed,
