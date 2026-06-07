@@ -40,6 +40,7 @@ class SeasonResult:
     duals: list[dict]
     rosters: dict = field(default_factory=dict)        # school -> list[Prospect] (full roster)
     player_str: dict = field(default_factory=dict)     # pid -> (STR, reliability)
+    player_record: dict = field(default_factory=dict)  # pid -> (singles wins, losses)
 
     def ranked(self) -> list[Program]:
         return sorted(self.programs, key=lambda p: self.ratings[p.school].pi, reverse=True)
@@ -173,7 +174,10 @@ def run_season(division: str = "D1", gender: str = "men", *, seed: int = 2026,
     corpus = _build_corpus(duals)
     priors = {pr.pid: pr.str_value() for s in rosters for pr in ladders[s]}
     player_str = converge_ids(corpus, priors=priors)
+    player_record = {pid: (sum(1 for (_, gw, gl) in ms if gw > gl),
+                           sum(1 for (_, gw, gl) in ms if gw <= gl))
+                     for pid, ms in corpus.items()}
 
     return SeasonResult(division, gender, seed, div.programs, ratings,
                         standings, champions, duals,
-                        rosters=rosters, player_str=player_str)
+                        rosters=rosters, player_str=player_str, player_record=player_record)

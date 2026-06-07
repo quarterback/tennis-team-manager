@@ -125,6 +125,9 @@ class Prospect:
     pid: str = ""
     class_year: str = ""                             # "Fr" / "So" / "Jr" / "Sr"
     walk_on: bool = False                            # non-scholarship roster filler
+    # Career log: one entry per season played — {year, school, class, str, rel,
+    # w, l}. School changing between entries = a transfer (see app.league).
+    history: list = field(default_factory=list)
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
