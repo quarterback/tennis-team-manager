@@ -122,6 +122,7 @@ class Prospect:
     pid: str = ""
     class_year: str = ""                              # eligibility: "Fr"/"So"/"Jr"/"Sr"
     walk_on: bool = False                             # non-scholarship roster filler
+    scholarship: float = 0.0                           # equivalency fraction (app.economy)
     major: str = ""                                   # academic major (bio flavor)
     birthday: str = ""                                # cosmetic "Mar 14" (no year)
     secondary_country: str = ""                       # dual-nationality flavor tag

@@ -22,6 +22,7 @@ import random
 from dataclasses import dataclass, field
 
 from engine import random_player, Team
+from generators.cities import program_city
 
 SEASON_SEED = 2026
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "ncaa")
@@ -63,10 +64,16 @@ class Program:
     color: str
     strength: float
     autobid: bool = True
+    city: str = ""              # home city (generated, deterministic — see generators.cities)
+    state: str = ""            # home state abbr
 
     @property
     def key(self) -> str:
         return f"{self.school}|{self.division}|{self.gender}"
+
+    @property
+    def location(self) -> str:
+        return f"{self.city}, {self.state}" if self.city else ""
 
 
 @dataclass
@@ -110,11 +117,13 @@ def load_division(division: str, gender: str) -> Division:
         members: list[Program] = []
         for school in c.get("teams", []):
             cab, color = crest(school)
+            city, st = program_city(school)
             members.append(Program(
                 school=school, conf=c["name"], conf_abbr=abbr,
                 division=division, gender=gender, abbr=cab, color=color,
                 strength=_latent_strength(school, abbr, gender, division),
                 autobid=bool(c.get("autobid", True)),
+                city=city, state=st,
             ))
         div.conferences[c["name"]] = members
         div.programs.extend(members)
@@ -182,8 +191,11 @@ def _base_roster(p: Program):
         # the player's nation (real city pools + flags), so no synthetic override.
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
-    for idx, pr in enumerate(roster):
-        pr.walk_on = idx >= SCHOLARSHIP_SLOTS     # bottom of the roster = walk-ons
+    # Equivalency scholarships: walk-ons (bottom of roster) + fractional aid
+    # spread across the recruited core within the division/gender cap.
+    from app import economy
+    economy.allocate_scholarships(roster, p.division, p.gender,
+                                  scholarship_slots=SCHOLARSHIP_SLOTS)
     _roster_cache[p.key] = roster
     return roster
 
@@ -244,8 +256,9 @@ def build_roster(p: Program):
         pos = {pid: i for i, pid in enumerate(order)}
         big = len(order) + len(roster)
         roster.sort(key=lambda pr: pos.get(pr.pid, big))   # stable; pinned to front
-    for i, pr in enumerate(roster):
-        pr.walk_on = i >= SCHOLARSHIP_SLOTS
+    from app import economy
+    economy.allocate_scholarships(roster, p.division, p.gender,
+                                  scholarship_slots=SCHOLARSHIP_SLOTS)
     _eff_cache[p.key] = roster
     return roster
 

@@ -4,11 +4,13 @@ from .flavor import (
     roll_hometown, roll_birthday, roll_secondary_country, roll_high_school,
     country_name, country_abbrev, flag_emoji,
 )
+from .cities import program_city, program_location
 from . import nation_talent
 
 __all__ = [
     "make_name_picker", "region_preset", "list_presets",
     "roll_hometown", "roll_birthday", "roll_secondary_country", "roll_high_school",
     "country_name", "country_abbrev", "flag_emoji",
+    "program_city", "program_location",
     "nation_talent",
 ]

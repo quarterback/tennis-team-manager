@@ -503,13 +503,18 @@ _str_cache: dict = {}
 def _pid_index(division: str, gender: str) -> dict:
     key = (division, gender)
     if key not in _pid_idx_cache:
+        from app import economy
         idx = {}
         for p in load_division(division, gender).programs:
             for pr in build_roster(p):
                 idx[pr.pid] = {"name": pr.name, "school": p.school, "class": pr.class_year,
                                "country": pr.country, "hometown": pr.hometown, "major": pr.major,
                                "walk_on": pr.walk_on, "high_school": pr.high_school,
-                               "secondary_country": pr.secondary_country}
+                               "secondary_country": pr.secondary_country,
+                               "school_city": p.location,
+                               "scholarship": getattr(pr, "scholarship", 0.0),
+                               "scholarship_label": economy.fraction_label(
+                                   getattr(pr, "scholarship", 0.0))}
         _pid_idx_cache[key] = idx
     return _pid_idx_cache[key]
 

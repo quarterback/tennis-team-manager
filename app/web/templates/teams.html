@@ -20,7 +20,7 @@
 <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
   <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
   <div><div class="tname">{{ school }}</div>
-    <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}</div></div>
+    <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}{% if city %} · {{ city }}{% endif %}</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     {% if row %}<div style="text-align:right;margin-right:6px"><div class="bl-th" style="font-size:10px">POWER INDEX</div>
       <span class="bl-stat power" style="font-size:18px">{{ row.fmt(row.pi) }}</span></div>{% endif %}
@@ -49,7 +49,7 @@
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>
           <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
           <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
-          <span>{% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
+          <span>{% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% elif r.schol and r.schol != '—' %}<span class="bl-badge tier-IVY" title="scholarship equivalency">{{ r.schol }}</span>{% else %}<span class="bl-badge tier-MID" title="recruited, no athletic aid">Recruited</span>{% endif %}</span>
         </div>
         {% endfor %}
       </div>
@@ -57,7 +57,19 @@
     <div class="bl-notes"><div class="bl-note">
       Lines 1–6 are the singles lineup (by STR). STR is the live, results-based rating;
       reliability rises with matches played. The bottom of the roster are walk-ons (no scholarship)
-      until a school promotes them.</div></div>
+      until a school promotes them.
+      {% if budget %}
+      <br><br>
+      {% if budget.offers_aid %}
+      <b>Scholarships:</b> {{ "%.2f"|format(budget.allocated) }} of {{ "%g"|format(budget.cap) }}
+      equivalencies committed ({{ "%.2f"|format(budget.remaining) }} open) —
+      {{ budget.full_rides }} full + {{ budget.partials }} partial, {{ budget.walk_ons }} walk-on(s).
+      Equivalency caps follow the real NCAA limits for this division.
+      {% else %}
+      <b>No athletic scholarships:</b> this division (D3) offers no athletic aid — the recruited
+      core are commitment slots; programs compete on academics and prestige instead.
+      {% endif %}
+      {% endif %}</div></div>
   </div>
 
   <div class="bl-panel">
