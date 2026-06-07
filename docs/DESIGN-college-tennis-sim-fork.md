@@ -292,8 +292,39 @@ HOF. The modified-UTR is the single currency spanning every tier.
   real upsets). Real **D1** conference data in `data/ncaa/d1_{men,women}.json`
   (32 conferences, 366 programs, full membership copied 1:1).
 
-**Next:** D2/D3 data + universes → then the **pazzah pressure/clutch port**
-(per the user) into `engine/rally.py`.
+**Done since:** D2/D3 data + all six universes; pazzah pressure/clutch port
+(`engine/rally.py` + `match.py`); configurable division bracket sizes
+(16–128, presets 32/64/76/96, default 64); and the **player talent &
+development model** (`app/development.py`).
+
+**Player talent & development model (`app/development.py`)** — adapted from the
+O27 baseball prospect model but **corrected for tennis**: you can't hide current
+ability behind scouting grades because every player has a UTR-style rating and
+results don't lie. So:
+- **Current ability is VISIBLE** — each attribute has a `current` value the
+  engine plays; results / ranking / **UTR** reflect it. You can see how good a
+  junior is *now*.
+- **The trajectory is HIDDEN** — each attribute has a true `potential` ceiling,
+  and a static `interest_rate` (tiers ordinary 75% / late bloomer 20% /
+  super-bloomer 5%) deterministically closes the gap each year. No rerolls, no
+  regression; the slope is set at birth, you just don't know it.
+- The recruiting gamble is **growth, not measurement**: the high-UTR early
+  bloomer near his ceiling is the bust; the modest-UTR late bloomer with a high
+  hidden ceiling + steep slope is the gem. `star_rating` tracks visible current
+  ability (so gems are under-rated, busts over-rated).
+- **Scouting fog:** two independent reports (shared service + own dept) project
+  the hidden *ceiling* ±fog (7–31). Per-attribute breakdowns hidden until a
+  recruit signs; ceiling stays a projection until the pro reveal.
+- `Prospect.engine_player()` feeds the match engine; `manage.py prospects
+  [--reveal]` demos the gem/bust dynamic.
+
+**Deferred (large, separate system):** the **team-chemistry model** (Voice /
+Glue / Pull / Reach + Drama / Fit / Head, Franchise/Big-Stage/Baggage flags,
+coach archetypes, spine/resilience) from the user's chemistry post — to layer
+on once rosters carry multi-year prospects.
+
+**Next:** the **juniors / HS circuits + recruiting** (P6/P7) on top of this
+talent model.
 
 **Juniors / HS + recruiting layer (P6/P7/P8) — reference to honor when built:**
 - **No HS teams rendered** — generate *players* only. Origin fields:

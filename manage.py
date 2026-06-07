@@ -123,6 +123,41 @@ def cmd_season(args):
             print(f"    {m.rnd}: #{m.lo_seed} {m.lo.school} d. #{m.hi_seed} {m.hi.school}")
 
 
+def cmd_prospects(args):
+    from app.development import generate_prospect, TIERS
+    from generators import make_name_picker, region_preset
+    rng = random.Random(args.seed)
+    name_fn = make_name_picker(random.Random(args.seed ^ 0x5EED), gender=args.gender,
+                               region_weights=region_preset("global"))
+    pros = []
+    for _ in range(args.n):
+        nm, co = name_fn()
+        pros.append(generate_prospect(rng, nm, co, gender=args.gender))
+    pros.sort(key=lambda p: (p.utr(), p.star_rating()), reverse=True)
+
+    if not args.reveal:
+        print("\nRECRUITING BOARD — public view (UTR · ranking · stars · scouting projections)\n")
+        print(f"{'#':>3}  {'PLAYER':<26} {'CTY':<3} {'UTR':>5} {'STARS':<7} {'SVC↑':>5} {'DEPT↑':>6}")
+        for i, p in enumerate(pros, 1):
+            print(f"{i:>3}  {p.name:<26} {p.country:<3} {p.utr():>5} {'*' * p.star_rating():<7} "
+                  f"{p.scouting_report('service'):>5} {p.scouting_report('dept'):>6}")
+        print("\nUTR/stars = current ability (visible, from results). SVC/DEPT = two scouts'")
+        print("independent CEILING projections (±fog). The trajectory is the gamble — --reveal.")
+    else:
+        print("\nREVEAL — current vs hidden ceiling vs 4-year projection\n")
+        print(f"{'#':>3}  {'PLAYER':<24} {'UTR':>5} {'STARS':<6} {'NOW':>4} {'CEIL':>4} {'4YR':>4}  {'TIER':<13} FLAG")
+        for i, p in enumerate(pros, 1):
+            proj = p.project(4)
+            growth = proj - p.current_overall()
+            flag = ""
+            if p.star_rating() <= 2 and growth >= 12:
+                flag = "GEM"          # modest now, big hidden upside (late/super bloomer)
+            elif p.star_rating() >= 4 and growth <= 3:
+                flag = "BUST"         # hyped now, but plateaus — peers pass him
+            print(f"{i:>3}  {p.name:<24} {p.utr():>5} {'*' * p.star_rating():<6} {p.current_overall():>4} "
+                  f"{p.ceiling_overall():>4} {proj:>4}  {TIERS[p.tier][0]:<13} {flag}")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -161,6 +196,13 @@ def main():
     rs = sub.add_parser("runserver")
     rs.add_argument("--port", type=int, default=5000)
     rs.set_defaults(func=cmd_runserver)
+
+    pr = sub.add_parser("prospects")
+    pr.add_argument("--n", type=int, default=20)
+    pr.add_argument("--seed", type=int, default=1)
+    pr.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
+    pr.add_argument("--reveal", action="store_true")
+    pr.set_defaults(func=cmd_prospects)
 
     se = sub.add_parser("season")
     se.add_argument("--division", default="D1")
