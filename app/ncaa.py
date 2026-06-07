@@ -22,6 +22,7 @@ import random
 from dataclasses import dataclass, field
 
 from engine import random_player, Team
+from . import scholarships
 
 SEASON_SEED = 2026
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "ncaa")
@@ -324,7 +325,7 @@ def _base_roster(p: Program):
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
     for idx, pr in enumerate(roster):
-        pr.walk_on = idx >= SCHOLARSHIP_SLOTS     # bottom of the roster = walk-ons
+        pr.walk_on = idx >= scholarships.slots(p)  # funded slots vary by classification
     _roster_cache[p.key] = roster
     return roster
 
@@ -385,8 +386,9 @@ def build_roster(p: Program):
         pos = {pid: i for i, pid in enumerate(order)}
         big = len(order) + len(roster)
         roster.sort(key=lambda pr: pos.get(pr.pid, big))   # stable; pinned to front
+    schol = scholarships.slots(p)
     for i, pr in enumerate(roster):
-        pr.walk_on = i >= SCHOLARSHIP_SLOTS
+        pr.walk_on = i >= schol
     _eff_cache[p.key] = roster
     return roster
 

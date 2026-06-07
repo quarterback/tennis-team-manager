@@ -309,9 +309,32 @@ def create_app() -> Flask:
         if rows is None:
             school = schools[0]
             rows, head = editor_roster(division, gender, school)
+        from app import scholarships as sch
+        schol = [{"division": d, **sch.limits(d)} for d in ("D1", "D2", "D3")]
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
-                               groups=all_programs_grouped(), ov=active_overrides())
+                               groups=all_programs_grouped(), ov=active_overrides(),
+                               scholarships=schol, schol_elite=sch.limits("D3", academics=0.95))
+
+    @app.route("/editor/scholarship", methods=["POST"])
+    def editor_scholarship():
+        from app import scholarships as sch
+        u = request.form.get("u", "D1-men")
+        for d in ("D1", "D2", "D3"):
+            try:
+                sch.set_limit(d, count=int(request.form.get(f"count_{d}")),
+                              rate=float(request.form.get(f"rate_{d}")))
+            except (TypeError, ValueError):
+                pass
+        reset_all()
+        return redirect(url_for("editor", u=u))
+
+    @app.route("/editor/scholarship/reset", methods=["POST"])
+    def editor_scholarship_reset():
+        from app import scholarships as sch
+        sch.clear_overrides()
+        reset_all()
+        return redirect(url_for("editor", u=request.form.get("u", "D1-men")))
 
     @app.route("/editor/move", methods=["POST"])
     def editor_move():
