@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Dual{% endblock %}
+{% block content %}
+{% set ha, hc = crest(d.home) %}
+{% set aa, ac = crest(d.away) %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Season › {{ d.round }} · {{ uni_label }}</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
+</div></div>
+<div class="bl-board">
+  <div class="bl-scorehdr">
+    <div class="team"><span class="bl-crest lg" style="background:{{ hc }}">{{ ha }}</span>
+      <div><div class="tname">{{ d.home }}</div></div></div>
+    <div class="status"><div class="bl-bigscore">
+      <span class="n{% if d.winner==0 %} win{% endif %}">{{ d.home_points }}</span>
+      <span class="dash">–</span>
+      <span class="n{% if d.winner==1 %} win{% endif %}">{{ d.away_points }}</span></div>
+      <div class="bl-th" style="justify-content:center;margin-top:6px">Final · First to 4</div></div>
+    <div class="team away"><div style="text-align:right"><div class="tname">{{ d.away }}</div></div>
+      <span class="bl-crest lg" style="background:{{ ac }}">{{ aa }}</span></div>
+  </div>
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Lines</span>
+      <span class="bl-panel-meta">3 doubles (→1 point) + 6 singles · games won shown</span></div>
+    <div>
+      {% for ln in d.lines %}
+      <div class="bl-matchrow" style="grid-template-columns:52px 1fr 90px">
+        <div class="bl-court"><span class="kind">{{ 'Dbl' if ln.slot.startswith('D') else 'Sgl' }}</span>
+          <span class="num">{{ ln.slot[1:] }}</span></div>
+        <div class="bl-match-sides">
+          {% if ln.completed %}
+          <div class="bl-side {{ 'won' if ln.home_won else '' }}"><span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ d.home }}</span>
+            <span class="bl-setnums"><span class="g {{ 'w' if ln.home_won }}">{{ ln.home_games }}</span></span></div>
+          <div class="bl-side {{ 'won' if not ln.home_won else '' }}"><span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ d.away }}</span>
+            <span class="bl-setnums"><span class="g {{ 'w' if not ln.home_won }}">{{ ln.away_games }}</span></span></div>
+          {% else %}<span class="nm" style="color:var(--text-faint)">Not played — clinched</span>{% endif %}
+        </div>
+        <div class="bl-final">{{ 'Final' if ln.completed else 'DNF' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

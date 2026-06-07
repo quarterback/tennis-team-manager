@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Season{% endblock %}
+{% block content %}
+{% set ph = s.phase %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <form method="get" style="display:contents">
+    <label class="bl-field"><span class="bl-field-label">Division</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select></span></label>
+  </form>
+  <span style="font-size:13px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
+  <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
+    <span class="bl-field-label">
+      {% if ph == 'regular' %}Week {{ [s.current_week, s.total_weeks]|min }} of {{ s.total_weeks }}
+      {% elif ph == 'conf_tournaments' %}Regular season complete — conference tournaments next
+      {% elif ph == 'ncaa' %}Conference tournaments done — NCAA next
+      {% else %}Season complete{% endif %}
+    </span>
+    {% if ph != 'complete' %}
+    <form method="post" action="{{ url_for('season_advance', u=u) }}" style="display:inline">
+      <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">
+        {% if ph == 'regular' %}Advance week →{% elif ph == 'conf_tournaments' %}Run conference tournaments →
+        {% elif ph == 'ncaa' %}Run NCAA bracket →{% endif %}
+      </button>
+    </form>
+    {% endif %}
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', u=u) }}">Schedule</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Bracket</a>
+  </span>
+</div></div>
+
+<div class="bl-board">
+  {% if ph == 'complete' and s.champion %}
+  <div class="bl-champ"><span class="bl-crest lg" style="background:{{ crest(s.champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(s.champion)[0] }}</span>
+    <div><div class="label">National Champion</div><div class="name">{{ s.champion }}</div>
+      <div class="sub">2026 {{ uni_label }} — won the NCAA dual-match championship</div></div></div>
+  {% endif %}
+
+  <div class="bl-board-grid" style="grid-template-columns:1fr 340px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      {% if upcoming %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">This week</span>
+        <span class="bl-panel-meta">week {{ s.current_week }} · {{ upcoming|length }} duals</span></div>
+        <div>{% for d in upcoming[:16] %}
+          <div class="bl-brk-match" style="grid-template-columns:1fr auto 1fr">
+            <span class="bl-brk-team"><span class="nm">{{ d.home }}</span></span>
+            <span class="bl-brk-seed">{{ 'conf' if d.is_conf else 'nc' }}</span>
+            <span class="bl-brk-team" style="justify-content:flex-end"><span class="nm">{{ d.away }}</span></span>
+          </div>{% endfor %}</div>
+      </div>{% endif %}
+      {% if last %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Last week results</span></div>
+        <div>{% for d in last if d.status == 'final' %}
+          <a class="bl-brk-match" style="grid-template-columns:1fr auto 1fr;text-decoration:none" href="{{ url_for('season_dual', dual_id=d.id, u=u) }}">
+            <span class="bl-brk-team {{ 'bl-brk-win' if d.winner==0 else 'bl-brk-lose' }}"><span class="nm">{{ d.home }}</span></span>
+            <span class="bl-stat">{{ d.home_points }}–{{ d.away_points }}</span>
+            <span class="bl-brk-team {{ 'bl-brk-win' if d.winner==1 else 'bl-brk-lose' }}" style="justify-content:flex-end"><span class="nm">{{ d.away }}</span></span>
+          </a>{% endfor %}</div>
+      </div>{% endif %}
+    </div>
+
+    <div class="bl-panel" style="align-self:start"><div class="bl-panel-head">
+      <span class="bl-panel-title">Power Index</span><span class="bl-panel-meta">live · season to date</span></div>
+      <div>{% if top %}{% for r in top %}
+        <div class="bl-brk-match" style="grid-template-columns:26px 1fr auto auto;gap:10px">
+          <span class="bl-rank {{ 'gold' if r.rk==1 else 'bronze' if r.rk<=3 else '' }}">{{ r.rk }}</span>
+          <a class="bl-brk-team" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="nm">{{ r.school }}</span></a>
+          <span class="bl-conf">{{ r.rec }}</span>
+          <span class="bl-stat power">{{ "%.3f"|format(r.pi) }}</span>
+        </div>{% endfor %}
+        {% else %}<div class="bl-panel-body"><p style="margin:0;color:var(--text-muted);font-size:13px">Advance a week to generate results.</p></div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

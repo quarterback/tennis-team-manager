@@ -349,6 +349,34 @@ def week_duals(season_id: int, week: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def national_top(season_id: int, n: int = 15) -> list[dict]:
+    """Live Power Index ranking from the season's completed duals so far."""
+    s = load_season(season_id)
+    div = load_division(s["division"], s["gender"])
+    conn = _db()
+    duals = _completed_reg_duals(conn, season_id)
+    conn.close()
+    if not duals:
+        return []
+    ratings = compute_ratings(duals)
+    ranked = sorted((p for p in div.programs if p.school in ratings),
+                    key=lambda p: ratings[p.school].pi, reverse=True)
+    return [{"rk": i, "school": p.school, "conf": p.conf_abbr,
+             "pi": ratings[p.school].pi, "rec": ratings[p.school].record}
+            for i, p in enumerate(ranked[:n], 1)]
+
+
+def dual_detail(dual_id: int) -> dict | None:
+    conn = _db()
+    r = conn.execute("SELECT * FROM duals WHERE id=?", (dual_id,)).fetchone()
+    conn.close()
+    if not r:
+        return None
+    d = dict(r)
+    d["lines"] = json.loads(d["lines_json"] or "[]")
+    return d
+
+
 def team_schedule(season_id: int, school: str) -> list[dict]:
     conn = _db()
     rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND (home=? OR away=?)"
