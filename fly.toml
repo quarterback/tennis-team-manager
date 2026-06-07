@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for tennis-team-manager on 2026-06-07T05:38:19Z
+# fly.toml app configuration file generated for tennis-team-manager on 2026-06-07T15:02:16Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -13,9 +13,6 @@ primary_region = 'iad'
   PORT = '8080'
   TENNIS_DB_PATH = '/data/tennis.db'
 
-# Persistent volume for saved seasons (season mode is DB-backed).
-# `initial_size` lets `fly deploy` auto-create the volume when a machine needs
-# one and none exists — so deploys work without a manual `fly volume create`.
 [[mounts]]
   source = 'tennis_data'
   destination = '/data'
