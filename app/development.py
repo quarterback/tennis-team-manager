@@ -1,56 +1,39 @@
 """
-Player talent + development model — the heart of the sim.
+Player talent + development model - the heart of the sim.
 
-Adapted from the O27 baseball prospect model (Ron Bronson's hidden-potential /
-deterministic-development / scouting-fog philosophy), but **corrected for
-tennis**: you can't hide current ability the way baseball hides scouting
-grades, because every player carries a UTR-style rating and results don't lie.
+Tennis prospects now persist a rich 20-80 attribute set, while the match engine
+continues to receive the compact nine-driver ``engine.Player`` it was built for.
+That keeps the point engine stable and gives career/recruiting mode a realistic
+profile: serve and return detail, groundstrokes, tactics, doubles tools,
+physical/mental traits, hardcourt conditions, and team/program fit.
 
-So in tennis what's visible vs hidden is different:
-
-  • CURRENT ability is VISIBLE. Each attribute has a `current` value (20–80);
-    the engine plays it and it's what a player's results / UTR reflect. You can
-    always see roughly how good a junior is *right now*.
-  • The TRAJECTORY is HIDDEN. Each attribute also has a true `potential`
-    ceiling, and the player has a static `interest_rate` (tiered: ordinary /
-    late bloomer / super-bloomer) that deterministically closes the gap between
-    current and ceiling each year. No rerolls, no regression — the slope is set
-    at birth; you just don't know it.
-  • Per-attribute breakdowns are hidden until a recruit SIGNS; the ceiling stays
-    a projection (two noisy scouting reports, ±fog) until the pro REVEAL.
-
-The recruiting gamble is therefore about growth, not measurement. A high-UTR
-early bloomer who's already near his ceiling is the bust; the modest-UTR late
-bloomer with a high hidden ceiling and steep slope is the gem. `star_rating`
-tracks the visible current ability (so gems are under-rated, busts over-rated).
-
-`Prospect.engine_player()` produces the `engine.Player` the match engine runs.
+Current ability is visible because match results and STR expose it. The hidden
+part is trajectory: true per-attribute ceilings plus a deterministic interest
+rate that closes the gap every year.
 """
 from __future__ import annotations
 
 import copy
+import hashlib
 import random
 from dataclasses import dataclass, field
 
 from engine import Player, ATTRS
+from app.player_attributes import (
+    GRADE_MIN, GRADE_MAX, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
+    clamp_grade, grade_to_unit, normalize_grades,
+)
 
-GRADE_MIN, GRADE_MAX = 20, 80
-GROWTH_K = 0.12                   # interest_rate × tier → fraction of the gap closed per year
+GROWTH_K = 0.12
 FOG_MIN, FOG_MAX = 7, 31
-MATURITY_MIN, MATURITY_MAX = 0.45, 0.95   # share of ceiling already realized at generation
+MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
+STR_MIN, STR_MAX = 31.0, 57.0
 
 # Interest-rate tiers: (label, probability, rate range, growth multiplier).
 TIERS = {
-    1: ("ordinary",      0.75, (0.05, 0.50), 1.0),
-    2: ("late bloomer",  0.20, (0.50, 1.20), 1.3),
+    1: ("ordinary", 0.75, (0.05, 0.50), 1.0),
+    2: ("late bloomer", 0.20, (0.50, 1.20), 1.3),
     3: ("super-bloomer", 0.05, (1.20, 2.20), 1.6),
-}
-
-# Overall-rating weights across the shot attributes (sum = 1).
-_W = {
-    "serve_power": 0.15, "serve_placement": 0.12, "return_game": 0.15,
-    "forehand": 0.15, "backhand": 0.13, "movement": 0.12,
-    "stamina": 0.06, "mental": 0.06, "consistency": 0.06,
 }
 
 
@@ -58,16 +41,22 @@ def _clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
 
 
-def grade_to_unit(g: float) -> float:
-    """20–80 scouting grade → 0–1 the engine tables expect."""
-    return _clamp((g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN), 0.0, 1.0)
-
-
 def overall_to_str(g: float) -> float:
-    """Map an overall grade (20–80) to a STR — this game's synthetic, UTR-style
-    rating (≈1.0–16.5). STR is opponent-relative and visible; it's the single
-    yardstick across juniors → college → pro."""
-    return round(1.0 + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * 15.5, 2)
+    """Map a 20-80 current grade onto Baseline's STR display band.
+
+    STR is intentionally game-native (31-57), not real UTR's public scale. Later
+    results-based STR can replace the source of the grade without changing the
+    visible band or callers that consume ``str_value()``.
+    """
+    return round(STR_MIN + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * (STR_MAX - STR_MIN), 2)
+
+
+def make_pid(*parts: object) -> str:
+    """Stable short id for generated prospects. Never use Python ``hash()`` for
+    this; it is salted per process and would break cross-run determinism.
+    """
+    raw = "|".join(str(p) for p in parts)
+    return hashlib.blake2s(raw.encode("utf-8"), digest_size=8).hexdigest()
 
 
 def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
@@ -79,52 +68,92 @@ def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
     return 1, rng.uniform(0.05, 0.50), 1.0
 
 
+def _draw_traits(rng: random.Random) -> dict[str, str]:
+    handedness = "left" if rng.random() < 0.12 else "right"
+    return {
+        "handedness": handedness,
+        "backhand_style": rng.choice(("two_handed", "one_handed")),
+        "play_style": rng.choice(("balanced", "aggressive_baseliner", "counterpuncher", "all_court", "serve_first")),
+        "temperament": rng.choice(("steady", "fiery", "analytical", "fearless", "volatile")),
+    }
+
+
 @dataclass
 class Prospect:
     name: str
     country: str = ""
     gender: str = "male"
     year: int = 0
-    current: dict = field(default_factory=dict)      # VISIBLE current ability (what plays / UTR reflects)
-    potential: dict = field(default_factory=dict)    # hidden true ceilings (20–80)
-    interest_rate: float = 0.2                        # hidden static development rate
+    current: dict = field(default_factory=dict)      # visible rich grades (20-80)
+    potential: dict = field(default_factory=dict)    # hidden rich ceilings (20-80)
+    traits: dict = field(default_factory=lambda: dict(TRAIT_DEFAULTS))
+    interest_rate: float = 0.2
     tier: int = 1
     tier_mult: float = 1.0
     fog: float = 15.0
     consensus_seed: int = 0
-    committed: bool = False                           # signed → per-attribute current grades visible to you
-    pro: bool = False                                # the reveal → the true ceiling is known
+    committed: bool = False
+    pro: bool = False
+
+    # Compatibility fields used by newer recruiting/league/web layers. They are
+    # intentionally light here; richer systems can fill them without changing the
+    # core development contract.
+    hometown: str = ""
+    region: str = "global"
+    domestic: bool = False
+    grad_year: int = 0
+    recruit_rank: int = 0
+    recruit_tier: str = ""
+    recruit_stars: int = 0
+    pid: str = ""
+    class_year: int = 0
+
+    def __post_init__(self) -> None:
+        self.current = normalize_grades(self.current)
+        self.potential = normalize_grades(self.potential)
+        merged_traits = dict(TRAIT_DEFAULTS)
+        merged_traits.update(self.traits or {})
+        self.traits = merged_traits
+        if not self.pid:
+            self.pid = make_pid(self.name, self.country, self.gender, self.consensus_seed)
+        if not self.class_year and self.grad_year:
+            self.class_year = self.grad_year
+        if not self.grad_year and self.class_year:
+            self.grad_year = self.class_year
+        if not self.recruit_stars:
+            self.recruit_stars = self.star_rating()
+
+    def _attrs(self, source: dict | None = None) -> PlayerAttributes:
+        return PlayerAttributes(source or self.current, **self.traits)
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
-        return int(_clamp(round(self.current[attr]), GRADE_MIN, GRADE_MAX))
+        return int(_clamp(round(self._attrs().grade(attr)), GRADE_MIN, GRADE_MAX))
 
     def current_overall(self) -> int:
-        return round(sum(_W[a] * self.current[a] for a in ATTRS))
+        return round(self._attrs().overall_grade())
 
     def str_value(self) -> float:
-        """The player's STR (synthetic UTR-style rating) — derived from current
-        ability, public. Results don't lie, so STR is visible; the trajectory
-        behind it is not."""
         return overall_to_str(self.current_overall())
 
     # ---- ceiling (hidden / projected) ----
     def ceiling_overall(self) -> int:
-        return round(sum(_W[a] * self.potential[a] for a in ATTRS))
+        return round(self._attrs(self.potential).overall_grade())
 
     # ---- what the engine plays: always current ability ----
     def engine_player(self) -> Player:
-        return Player(name=self.name, country=self.country,
-                      **{a: grade_to_unit(self.current[a]) for a in ATTRS})
+        return Player(name=self.name, country=self.country, **self._attrs().derive_drivers())
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop_year(self) -> None:
         frac = self.interest_rate * GROWTH_K * self.tier_mult
-        for a in ATTRS:
+        for a in RICH_ATTRS:
             gap = self.potential[a] - self.current[a]
             if gap > 0:
                 self.current[a] += max(0.0, min(gap, frac * gap))
+                self.current[a] = clamp_grade(self.current[a])
         self.year += 1
+        self.recruit_stars = self.star_rating()
 
     def project(self, years: int) -> int:
         clone = copy.deepcopy(self)
@@ -140,7 +169,7 @@ class Prospect:
 
     # ---- public prospect signal: a star rating off the VISIBLE current level ----
     def star_rating(self) -> int:
-        g = self.current_overall()       # tennis: stars track current results/UTR, not the hidden ceiling
+        g = self.current_overall()
         return 5 if g >= 62 else 4 if g >= 54 else 3 if g >= 46 else 2 if g >= 38 else 1
 
     def public_view(self) -> dict:
@@ -150,19 +179,30 @@ class Prospect:
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
                       gender: str = "male", talent: float | None = None) -> Prospect:
-    """Create an incoming prospect. Ceilings cluster around `talent`; a hidden
-    `maturity` sets how much of the ceiling is realized now (early vs late
-    bloomer), and a hidden interest tier sets how fast the gap closes."""
+    """Create an incoming prospect with reproducible rich attributes.
+
+    Ceilings cluster around ``talent``; maturity determines how much is visible
+    today; the interest tier determines how fast the remaining gap closes.
+    """
     if talent is None:
         talent = _clamp(rng.gauss(46, 9), 24, 78)
-    potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, GRADE_MAX) for a in ATTRS}
+    potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
     maturity = rng.uniform(MATURITY_MIN, MATURITY_MAX)
-    current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in ATTRS}
+    current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
     tier, rate, mult = _draw_interest(rng)
-    return Prospect(
+    consensus_seed = rng.randrange(1 << 30)
+    traits = _draw_traits(rng)
+    domestic = country in {"US", "USA", "United States"}
+    grad_year = 0
+    p = Prospect(
         name=name, country=country, gender=gender,
-        current=current, potential=potential,
+        current=current, potential=potential, traits=traits,
         interest_rate=rate, tier=tier, tier_mult=mult,
         fog=rng.uniform(FOG_MIN, FOG_MAX),
-        consensus_seed=rng.randrange(1 << 30),
+        consensus_seed=consensus_seed,
+        domestic=domestic, grad_year=grad_year, class_year=grad_year,
+        pid=make_pid(name, country, gender, consensus_seed),
     )
+    p.recruit_stars = p.star_rating()
+    p.recruit_tier = TIERS[p.tier][0]
+    return p
