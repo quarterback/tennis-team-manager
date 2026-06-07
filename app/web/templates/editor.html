@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Roster Editor{% endblock %}
+{% block content %}
+{% set grid = '34px 32px minmax(140px,1fr) 36px 150px 60px 60px 86px 220px' %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Team</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="school" onchange="this.form.submit()" style="min-width:200px">
+      {% for s in schools %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">Editor › move players across programs &amp; set lineups for testing</span>
+</div></div>
+</form>
+
+<div class="bl-board-grid" style="align-items:start">
+  <div class="bl-board">
+    <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
+      <span class="bl-crest lg" style="background:{{ head.color }};width:48px;height:48px;font-size:15px">{{ head.abbr }}</span>
+      <div><div class="tname">{{ school }}</div>
+        <div class="tsub">{{ uni_label }} · effective lineup (after edits)</div></div>
+    </div>
+
+    <div class="bl-tablescroll">
+      <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
+        <div class="bl-thead">
+          <span class="bl-th">LN</span><span class="bl-th"></span><span class="bl-th">PLAYER</span>
+          <span class="bl-th">CL</span><span class="bl-th">HOMETOWN</span>
+          <span class="bl-th num">OVR</span><span class="bl-th num">STR</span>
+          <span class="bl-th">STATUS</span><span class="bl-th">MOVE / ORDER</span>
+        </div>
+        {% for r in rows %}
+        <div class="bl-row"{% if r.moved_in %} style="background:rgba(80,160,110,.08)"{% endif %}>
+          <span class="bl-rank">{{ r.line if r.line else '—' }}</span>
+          <span style="display:flex;flex-direction:column;gap:2px">
+            <form method="post" action="{{ url_for('editor_lineup') }}" style="line-height:0">
+              <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+              <input type="hidden" name="pid" value="{{ r.pid }}"><input type="hidden" name="dir" value="up">
+              <button class="bl-pill" type="submit" title="Move up" style="padding:0 6px"{% if loop.first %} disabled{% endif %}>▲</button>
+            </form>
+            <form method="post" action="{{ url_for('editor_lineup') }}" style="line-height:0">
+              <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+              <input type="hidden" name="pid" value="{{ r.pid }}"><input type="hidden" name="dir" value="down">
+              <button class="bl-pill" type="submit" title="Move down" style="padding:0 6px"{% if loop.last %} disabled{% endif %}>▼</button>
+            </form>
+          </span>
+          <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=school, u=u) }}">{{ r.name }}{% if r.moved_in %} <span class="bl-badge tier-MID">moved in</span>{% endif %}</a>
+          <span class="bl-conf">{{ r.class_year }}</span>
+          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.hometown }}</span>
+          <span class="bl-cell-num">{{ "%.1f"|format(r.overall) }}</span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
+          <span>{% if r.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
+          <span>
+            <form method="post" action="{{ url_for('editor_move') }}" style="display:flex;gap:4px;align-items:center">
+              <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+              <input type="hidden" name="pid" value="{{ r.pid }}">
+              <select class="bl-select" name="dest" style="min-width:130px;font-size:12px">
+                {% for label, slist in groups %}<optgroup label="{{ label }}">
+                  {% for s in slist %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
+                </optgroup>{% endfor %}
+              </select>
+              <button class="bl-pill" type="submit">Move</button>
+            </form>
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="bl-notes"><div class="bl-note">
+      Reorder with ▲▼ to pin a custom lineup (lines 1–6 are the singles ladder). “Move” relocates a
+      player to any program in any division — drop a great D1 player onto a D3 roster and run a dual to
+      see what happens. Edits persist and feed the dual simulator, team pages, and new season sims.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Active overrides</span></div>
+      <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
+        {% if not ov.any %}<div style="color:var(--text-faint);font-size:13px">No edits yet — rosters are at their deterministic defaults.</div>{% endif %}
+        {% for m in ov.moves %}
+        <div class="bl-clinchrow" style="align-items:center">
+          <span class="bl-clinch-name" style="flex-direction:column;align-items:flex-start;gap:0">
+            <span>{{ m.name }} <span class="bl-stat power" style="font-size:12px">{{ m.str }}</span></span>
+            <span style="font-size:11px;color:var(--text-muted)">→ {{ m.dest }}</span></span>
+          <form method="post" action="{{ url_for('editor_clear_move') }}">
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+            <input type="hidden" name="pid" value="{{ m.pid }}">
+            <button class="bl-pill" type="submit">Undo</button></form>
+        </div>
+        {% endfor %}
+        {% for ln in ov.lineups %}
+        <div class="bl-clinchrow" style="align-items:center">
+          <span class="bl-clinch-name" style="font-size:12px">Lineup pinned · {{ ln.school }} ({{ ln.n }})</span>
+          <form method="post" action="{{ url_for('editor_clear_lineup') }}">
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ ln.school }}">
+            <button class="bl-pill" type="submit">Undo</button></form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% if ov.any %}
+    <form method="post" action="{{ url_for('editor_reset') }}">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+      <button class="bl-run-big" type="submit" style="margin-top:0;background:#7a2222">Reset all overrides</button>
+    </form>
+    {% endif %}
+    <div style="display:flex;gap:8px">
+      <a class="bl-pgbtn" style="flex:1;text-align:center;height:40px;line-height:40px"
+         href="{{ url_for('dual', home=school, u=u) }}">Test in dual sim →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

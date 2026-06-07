@@ -49,6 +49,16 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     return _bracket_cache[key]
 
 
+def reset_all() -> None:
+    """Drop every web-layer cache and the engine roster caches. Called after an
+    editor override changes, so rankings / teams / season all re-derive from the
+    edited rosters on the next request."""
+    from app import ncaa
+    _season_cache.clear()
+    _bracket_cache.clear()
+    ncaa.reset_caches()
+
+
 def _tier(division: str, conf_abbr: str, conf: str) -> str:
     if division != "D1":
         return division   # D2 / D3 — flat tiers, badge shows the division
@@ -190,15 +200,107 @@ def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     return sorted(groups.items())
 
 
-def head_coach(school: str, division: str = "D1", gender: str = "men"):
-    """A deterministic head coach (real name) for a program."""
+ARCHETYPE_LABELS = {
+    "coaching_lifer": "Coaching Lifer",
+    "former_pro": "Former Pro",
+    "recruiting_closer": "Recruiting Closer",
+    "development_guru": "Development Guru",
+    "tactician": "Tactician",
+}
+
+
+def _coach(school: str, gender: str, role: str, base: float):
+    """A deterministic coach (real name) for a program, seeded by role."""
     import random
     from generators import make_name_picker, region_preset
     from app.coaches import generate_coach
-    name_fn = make_name_picker(random.Random(f"coachname|{school}|{gender}"),
+    name_fn = make_name_picker(random.Random(f"coachname|{role}|{school}|{gender}"),
                                gender="mixed", region_weights=region_preset("global"))
     nm, _ = name_fn()
-    return generate_coach(random.Random(f"coach|{school}|{gender}"), nm, school=school)
+    return generate_coach(random.Random(f"coach|{role}|{school}|{gender}"), nm,
+                          school=school, base=base)
+
+
+def head_coach(school: str, division: str = "D1", gender: str = "men"):
+    """A deterministic head coach (real name) for a program."""
+    return _coach(school, gender, "head", base=54.0)
+
+
+def coaching_staff(division: str, gender: str, school: str):
+    """Head coach + associate + assistant, with display labels + a stable tenure.
+    Stronger programs (higher conference prestige) skew to higher-rated staff."""
+    import random
+    from app import ncaa
+    div = ncaa.load_division(division, gender)
+    prog = div.by_school(school)
+    base = 50.0 + (12.0 * prog.strength if prog else 0.0)
+    rng = random.Random(f"tenure|{school}|{gender}")
+    staff = []
+    for role, title, bump in (("head", "Head Coach", 4.0),
+                              ("assoc", "Associate Head Coach", -2.0),
+                              ("asst", "Assistant Coach", -6.0)):
+        c = _coach(school, gender, role, base=max(28.0, base + bump))
+        staff.append({
+            "coach": c, "title": title,
+            "archetype": ARCHETYPE_LABELS.get(c.archetype, c.archetype.replace("_", " ").title()),
+            "tenure": rng.randint(1, 14) if role == "head" else rng.randint(1, 8),
+            "dev": round(c.development_score), "rec": round(c.recruiting_score),
+            "tac": round(c.tactical_score),
+        })
+    return staff
+
+
+def editor_roster(division: str, gender: str, school: str):
+    """Effective (post-override) roster rows for the editor — what the lineup
+    looks like *after* moves + ordering are applied."""
+    from app import ncaa, overrides as ov
+    from .rankings_data import crest
+    div = ncaa.load_division(division, gender)
+    prog = div.by_school(school)
+    if prog is None:
+        return None, None
+    roster = ncaa.build_roster(prog)
+    base_pids = {pr.pid for pr in ncaa._base_roster(prog)}
+    rows = []
+    for i, pr in enumerate(roster, 1):
+        rows.append({
+            "pid": pr.pid, "name": pr.name,
+            "class_year": getattr(pr, "class_year", ""),
+            "overall": round(pr.current_overall(), 1),
+            "str": round(pr.str_value(), 1),
+            "line": i if i <= 6 else None,
+            "walk_on": getattr(pr, "walk_on", False),
+            "moved_in": pr.pid not in base_pids,
+            "hometown": getattr(pr, "hometown", ""),
+        })
+    abbr, color = crest(school)
+    return rows, {"school": school, "abbr": abbr, "color": color}
+
+
+def all_programs_grouped():
+    """[(universe_label, [school,...])] across every division×gender — the move
+    destination picker (optgroups)."""
+    from app import ncaa
+    out = []
+    for val, division, gender, label in UNIVERSES:
+        try:
+            div = ncaa.load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        out.append((label, sorted(p.school for p in div.programs)))
+    return out
+
+
+def active_overrides():
+    """Human-readable summary of current editor overrides for the panel."""
+    from app import ncaa, overrides as ov
+    moves = []
+    for pid, dest in sorted(ov.get_moves().items(), key=lambda kv: kv[1]):
+        pr = ncaa.player_by_pid(pid)
+        moves.append({"pid": pid, "name": pr.name if pr else pid,
+                      "str": round(pr.str_value(), 1) if pr else "—", "dest": dest})
+    lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
+    return {"moves": moves, "lineups": lineups, "any": bool(moves or lineups)}
 
 
 def team_roster(division: str, gender: str, school: str):
