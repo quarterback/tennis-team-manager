@@ -1,7 +1,11 @@
 import random
 
 from engine import ATTRS
-from app.development import generate_prospect, Prospect, GRADE_MIN, GRADE_MAX
+from app.development import (
+    ACADEMIC_MIN, ACADEMIC_MAX, STR_MIN, STR_MAX,
+    generate_prospect, Prospect, GRADE_MIN, GRADE_MAX,
+)
+from app.player_attributes import RICH_ATTRS, PlayerAttributes
 
 
 def _class(n=120, seed=1):
@@ -15,12 +19,31 @@ def _mk(current, ceiling, rate, tier, mult, fog=15):
                     tier=tier, tier_mult=mult, fog=fog, consensus_seed=1)
 
 
+def test_rich_attributes_derive_engine_drivers():
+    p = generate_prospect(random.Random(11), "X")
+    assert set(p.current) == set(RICH_ATTRS)
+    drivers = PlayerAttributes(p.current, **p.traits).derive_drivers()
+    assert set(drivers) == set(ATTRS)
+    assert all(0.0 <= v <= 1.0 for v in drivers.values())
+    assert GRADE_MIN <= PlayerAttributes(p.current).drop_shot <= GRADE_MAX
+
+
 def test_current_is_visible_and_drives_str():
     p = generate_prospect(random.Random(3), "X")
     assert GRADE_MIN <= p.current_overall() <= GRADE_MAX
-    # UTR is a monotone function of current ability
+    assert STR_MIN <= p.str_value() <= STR_MAX
+    # STR is a monotone function of current ability for now.
     lo, hi = _mk(35, 70, 0.2, 1, 1.0), _mk(60, 70, 0.2, 1, 1.0)
     assert hi.str_value() > lo.str_value()
+
+
+def test_academic_rating_is_admissions_only_band():
+    p = generate_prospect(random.Random(13), "X", "US")
+    assert ACADEMIC_MIN <= p.academic_rating <= ACADEMIC_MAX
+    assert p.public_view()["academic"] == p.academic_rating
+    before = p.engine_player().overall
+    p.academic_rating = ACADEMIC_MAX
+    assert p.engine_player().overall == before
 
 
 def test_current_grows_toward_ceiling_no_regression_no_overshoot():
@@ -29,18 +52,17 @@ def test_current_grows_toward_ceiling_no_regression_no_overshoot():
     for _ in range(6):
         p.develop_year()
         cur = p.current_overall()
-        assert cur >= prev                 # never regresses
+        assert cur >= prev
         prev = cur
-    assert p.current_overall() <= p.ceiling_overall() + 1   # never overshoots the ceiling
+    assert p.current_overall() <= p.ceiling_overall() + 1
 
 
 def test_late_bloomer_outgrows_early_bloomer_from_same_utr():
-    """Two juniors at the SAME current UTR: the one with the higher hidden
-    ceiling + steeper slope ends up far better — the gem vs the bust."""
-    early = _mk(45, 47, 0.2, 1, 1.0)     # near his ceiling, ordinary slope
-    late = _mk(45, 74, 2.0, 3, 1.6)      # lots of room, super-bloomer
-    assert abs(early.current_overall() - late.current_overall()) <= 1   # same now
-    assert late.project(4) > early.project(4) + 15                      # very different futures
+    """Two juniors at the SAME current STR can have very different futures."""
+    early = _mk(45, 47, 0.2, 1, 1.0)
+    late = _mk(45, 74, 2.0, 3, 1.6)
+    assert abs(early.current_overall() - late.current_overall()) <= 1
+    assert late.project(4) > early.project(4) + 15
 
 
 def test_engine_plays_current_ability():
@@ -61,15 +83,10 @@ def test_star_tracks_current_so_gems_are_underrated():
     klass = _class(160, seed=7)
     assert all(1 <= p.star_rating() <= 5 for p in klass)
 
-    # A constructed gem: modest current UTR (low star) but high hidden ceiling +
-    # super-bloomer slope ⇒ projects to a star player. And a bust: high current
-    # star, near his ceiling, ordinary slope ⇒ plateaus.
     gem = _mk(31, 72, 2.0, 3, 1.6)
     bust = _mk(55, 56, 0.15, 1, 1.0)
     assert gem.star_rating() <= 2 and (gem.project(4) - gem.current_overall()) >= 12
     assert bust.star_rating() >= 4 and (bust.project(4) - bust.current_overall()) <= 3
 
-    # Hidden trajectory creates real rank inversions: some lower-star prospect
-    # out-develops a higher-star one over four years.
     assert any(a.star_rating() < b.star_rating() and a.project(4) > b.project(4) + 4
                for a in klass for b in klass)

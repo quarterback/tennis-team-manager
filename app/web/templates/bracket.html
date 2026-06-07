@@ -1,68 +1,141 @@
 {% extends "base.html" %}
-{% block title %}Baseline — NCAA Bracket{% endblock %}
+{% block title %}Baseline - NCAA Bracket{% endblock %}
 {% block content %}
-{% macro team(p, seed, win) %}
-  <div class="bl-brk-team {{ 'bl-brk-win' if win else 'bl-brk-lose' }}">
+{% set total_upsets = namespace(count=0) %}
+{% for rnd in br.rounds %}{% for m in rnd %}{% if m.upset %}{% set total_upsets.count = total_upsets.count + 1 %}{% endif %}{% endfor %}{% endfor %}
+{% set first_round = br.rounds[0] if br.rounds else [] %}
+{% set final = br.rounds[-1][0] if br.rounds else none %}
+{% set semifinal_round = br.rounds[-2] if br.rounds|length > 1 else [] %}
+
+{% macro bid_tag(p) %}
+  {% if p.key in br.autobids %}<span class="bl-bid auto">AQ</span>{% else %}<span class="bl-bid">AL</span>{% endif %}
+{% endmacro %}
+
+{% macro team_line(p, seed, win=False, compact=False) %}
+  <div class="bl-bracket-team{% if win %} is-winner{% endif %}{% if compact %} compact{% endif %}">
+    <span class="bl-team-seed">{{ seed }}</span>
     <span class="bl-crest xs" style="background:{{ p.color }}">{{ p.abbr }}</span>
-    <span class="nm">{{ p.school }}</span>
+    <span class="bl-team-copy">
+      <span class="nm">{{ p.school }}</span>
+      <span class="meta">{{ p.conf_abbr }} {{ bid_tag(p) }}</span>
+    </span>
   </div>
 {% endmacro %}
 
-<div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">NCAA {{ division }} Team Championship · {{ uni_label }}</span>
-  <span style="margin-left:auto;display:inline-flex;gap:5px;flex-wrap:wrap">
-    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">← Rankings</a>
-    {% for val, d, g, lbl in universes %}
-      <a class="bl-pill{% if val == u %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=val, size=field) }}">{{ lbl }}</a>
-    {% endfor %}
-  </span>
-</div></div>
-<div class="bl-toolbar bl-toolbar--card"><div class="bl-toolbar-inner">
-  <span class="bl-field-label" style="font-size:13px">Field size</span>
-  <span style="display:inline-flex;gap:5px">
-    {% for sz in field_presets %}
-      <a class="bl-pill{% if sz == field %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=u, size=sz) }}">{{ sz }}</a>
-    {% endfor %}
-  </span>
-  <span style="font-size:12.5px;color:var(--text-muted)">64 is the real-life default · any 16–128 works</span>
-</div></div>
-
-<div class="bl-board">
-  <div class="bl-champ">
-    <span class="bl-crest lg" style="background:{{ br.champion.color }};width:56px;height:56px;font-size:16px">{{ br.champion.abbr }}</span>
-    <div style="flex:1">
-      <div class="label">National Champion</div>
-      <div class="name">{{ br.champion.school }}</div>
-      <div class="sub">#{{ br.seed_of(br.champion) }} seed · {{ br.champion.conf }} ·
-        def. #{{ br.seed_of(br.runner_up) }} {{ br.runner_up.school }} in the final</div>
-    </div>
-    <div style="text-align:right">
-      <div class="label">Field</div>
-      <div style="font-size:22px;font-weight:800;color:var(--text-primary)">{{ br.seeds|length }}</div>
-      <div class="sub">{{ br.autobids|length }} autobids · {{ br.seeds|length - br.autobids|length }} at-large</div>
-    </div>
-  </div>
-
-  <div class="bl-rounds">
-    {% for rnd in br.rounds %}
-    <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
-        <span class="bl-panel-meta">{{ rnd|length }} {{ 'match' if rnd|length == 1 else 'matches' }}</span></div>
+<div class="bl-bracket-hero">
+  <div class="bl-bracket-hero-inner">
+    <div class="bl-kicker">NCAA {{ division }} Team Championship</div>
+    <div class="bl-bracket-title-row">
       <div>
-        {% for m in rnd %}
-        <div class="bl-brk-match">
-          <span class="bl-brk-seed">{{ m.hi_seed }}</span>
-          {{ team(m.hi, m.hi_seed, m.winner_seed == m.hi_seed) }}
-          <span class="bl-brk-seed">{{ m.lo_seed }}</span>
-          <div style="display:flex;align-items:center">
-            {{ team(m.lo, m.lo_seed, m.winner_seed == m.lo_seed) }}
-            {% if m.upset %}<span class="bl-upset">upset</span>{% endif %}
-          </div>
-        </div>
-        {% endfor %}
+        <h1>{{ uni_label }} Bracket Simulator</h1>
+        <p>Power Index selection, automatic qualifiers, at-large bids, and dual-match simulations through the national final.</p>
+      </div>
+      <div class="bl-bracket-actions">
+        <a class="bl-pill" href="{{ url_for('rankings', u=u) }}">Rankings</a>
+        <a class="bl-pill active" href="{{ url_for('dual') }}">Run Dual</a>
       </div>
     </div>
-    {% endfor %}
   </div>
+</div>
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner bl-bracket-controls">
+  <span class="bl-field-label">Universe</span>
+  <span class="bl-bracket-pills">
+    {% for val, d, g, lbl in universes %}
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('bracket', u=val, size=field) }}">{{ lbl }}</a>
+    {% endfor %}
+  </span>
+  <span class="bl-field-label">Field</span>
+  <span class="bl-bracket-pills">
+    {% for sz in field_presets %}
+      <a class="bl-pill{% if sz == field %} active{% endif %}" href="{{ url_for('bracket', u=u, size=sz) }}">{{ sz }}</a>
+    {% endfor %}
+  </span>
+  <span class="bl-bracket-control-note">64 mirrors the current NCAA team field; larger fields create play-in pressure.</span>
+</div></div>
+
+<div class="bl-bracket-shell">
+  <section class="bl-bracket-summary">
+    <div class="bl-title-card champion">
+      <span class="bl-crest lg" style="background:{{ br.champion.color }}">{{ br.champion.abbr }}</span>
+      <div>
+        <div class="bl-card-label">National Champion</div>
+        <div class="bl-card-title">#{{ br.seed_of(br.champion) }} {{ br.champion.school }}</div>
+        <div class="bl-card-sub">{{ br.champion.conf }} champion run{% if final %} over #{{ br.seed_of(br.runner_up) }} {{ br.runner_up.school }}{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="bl-metric-grid">
+      <div class="bl-metric"><span class="lbl">Field</span><strong>{{ br.seeds|length }}</strong><span>{{ br.autobids|length }} AQ / {{ br.seeds|length - br.autobids|length }} at-large</span></div>
+      <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ br.rounds|length }}</strong><span>{{ first_round|length }} opening matchups</span></div>
+      <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower seed advanced</span></div>
+      <div class="bl-metric"><span class="lbl">Runner-up</span><strong>#{{ br.seed_of(br.runner_up) }}</strong><span>{{ br.runner_up.school }}</span></div>
+    </div>
+  </section>
+
+  <section class="bl-bracket-layout">
+    <aside class="bl-sim-sidebar">
+      <div class="bl-panel bl-panel-tight">
+        <div class="bl-panel-head"><span class="bl-panel-title">Committee Sheet</span><span class="bl-panel-meta">Top seeds</span></div>
+        <div class="bl-seed-list">
+          {% for p in br.seeds[:8] %}
+            <a class="bl-seed-row" href="{{ url_for('dual', home=p.school) }}">
+              <span class="seed">{{ loop.index }}</span>
+              <span class="bl-crest xs" style="background:{{ p.color }}">{{ p.abbr }}</span>
+              <span class="school">{{ p.school }}</span>
+              <span class="conf">{{ p.conf_abbr }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="bl-panel bl-panel-tight">
+        <div class="bl-panel-head"><span class="bl-panel-title">Final Four</span><span class="bl-panel-meta">sim path</span></div>
+        <div class="bl-path-list">
+          {% for m in semifinal_round %}
+            <div class="bl-path-row">
+              {{ team_line(m.hi, m.hi_seed, m.winner_seed == m.hi_seed, True) }}
+              {{ team_line(m.lo, m.lo_seed, m.winner_seed == m.lo_seed, True) }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="bl-note bl-bracket-note">
+        <strong>Selection model:</strong> conference tournament champions lock automatic bids, then the Power Index fills and seeds the at-large field. Every game here is a simulated college dual, not a bracket coin flip.
+      </div>
+    </aside>
+
+    <main class="bl-tournament-main">
+      <div class="bl-rounds-header">
+        <div>
+          <div class="bl-card-label">Tournament Board</div>
+          <h2>Round-by-round results</h2>
+        </div>
+        <div class="bl-legend"><span><i class="auto"></i>AQ</span><span><i></i>At-large</span><span><i class="upset"></i>Upset</span></div>
+      </div>
+
+      <div class="bl-rounds bl-rounds-sim">
+        {% for rnd in br.rounds %}
+        <section class="bl-panel bl-round-panel">
+          <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
+            <span class="bl-panel-meta">{{ rnd|length }} {{ 'dual' if rnd|length == 1 else 'duals' }}</span></div>
+          <div class="bl-round-body">
+            {% for m in rnd %}
+            <article class="bl-brk-match{% if m.upset %} has-upset{% endif %}">
+              <div class="bl-match-topline">
+                <span>{{ m.rnd }}</span>
+                {% if m.upset %}<span class="bl-upset">upset</span>{% endif %}
+              </div>
+              {{ team_line(m.hi, m.hi_seed, m.winner_seed == m.hi_seed) }}
+              {{ team_line(m.lo, m.lo_seed, m.winner_seed == m.lo_seed) }}
+            </article>
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+      </div>
+    </main>
+  </section>
 </div>
 {% endblock %}

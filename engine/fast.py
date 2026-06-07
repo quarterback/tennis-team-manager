@@ -1,5 +1,5 @@
 """
-Fast game-level model — scoreline only, for bulk juniors / HS volume.
+Fast game-level model - scoreline only, for bulk juniors / HS volume.
 
 Instead of resolving every point, each game is a single Bernoulli draw on
 the server's hold probability (a function of the rating gap). Sets,
@@ -13,15 +13,16 @@ from __future__ import annotations
 import math
 import random
 
-from .state import Player, PlayerStats
+from .state import MatchContext, Player, PlayerStats
 from .format import MatchFormat, DEFAULT
 # Imported lazily by match.simulate_match; import the result type here.
 from .match import MatchResult
 
 TUNE = {
-    "hold_base_logit": 0.9,   # baseline server advantage (≈0.71 hold at parity)
-    "skill_slope": 3.0,       # how hard the overall-rating gap tilts holds
-    "tb_slope": 2.5,          # tiebreak coin-flip sensitivity to the gap
+    "hold_base_logit": 0.9,
+    "skill_slope": 3.0,
+    "tb_slope": 2.5,
+    "context_slope": 0.18,
 }
 
 
@@ -29,19 +30,29 @@ def _logistic(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
-def _hold_prob(server: Player, returner: Player) -> float:
+def _context_edge(server: Player, returner: Player, context: MatchContext) -> float:
+    venue = (server.indoor_comfort - returner.indoor_comfort) if context.indoor else (server.outdoor_comfort - returner.outdoor_comfort)
+    wind = context.wind * (server.wind_tolerance - returner.wind_tolerance)
+    heat = context.heat * (server.heat_tolerance - returner.heat_tolerance)
+    crowd = context.crowd * (server.crowd_pressure - returner.crowd_pressure)
+    return venue + wind + heat + crowd
+
+
+def _hold_prob(server: Player, returner: Player, context: MatchContext) -> float:
     diff = server.overall - returner.overall
-    return _logistic(TUNE["hold_base_logit"] + TUNE["skill_slope"] * diff)
+    return _logistic(TUNE["hold_base_logit"] + TUNE["skill_slope"] * diff
+                     + TUNE["context_slope"] * _context_edge(server, returner, context))
 
 
-def _tb_prob(p0: Player, p1: Player) -> float:
-    return _logistic(TUNE["tb_slope"] * (p0.overall - p1.overall))
+def _tb_prob(p0: Player, p1: Player, context: MatchContext) -> float:
+    return _logistic(TUNE["tb_slope"] * (p0.overall - p1.overall)
+                     + TUNE["context_slope"] * _context_edge(p0, p1, context))
 
 
-def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int):
+def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int, context: MatchContext):
     """Returns (winner, (g0,g1), next_server)."""
     if final_tb:
-        win = 0 if rng.random() < _tb_prob(players[0], players[1]) else 1
+        win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
         return win, ((1, 0) if win == 0 else (0, 1)), 1 - server
 
     games = [0, 0]
@@ -49,14 +60,14 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int):
     while True:
         r = players[1 - server]
         s = players[server]
-        if rng.random() < _hold_prob(s, r):
+        if rng.random() < _hold_prob(s, r, context):
             games[server] += 1
         else:
             games[1 - server] += 1
         server = 1 - server
 
         if fmt.set_tiebreak and games[0] == tg and games[1] == tg:
-            win = 0 if rng.random() < _tb_prob(players[0], players[1]) else 1
+            win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
             games[win] += 1
             return win, (games[0], games[1]), 1 - server
         if games[0] >= tg and games[0] - games[1] >= 2:
@@ -72,8 +83,10 @@ def simulate_fast(
     seed: int,
     fmt: MatchFormat = None,
     first_server: int = 0,
+    context: MatchContext | None = None,
 ) -> MatchResult:
     fmt = fmt or DEFAULT
+    context = context or MatchContext()
     rng = random.Random(seed)
     players = (p0, p1)
     sets = [0, 0]
@@ -82,7 +95,7 @@ def simulate_fast(
     server = first_server
 
     if fmt.pro_set:
-        win, score, server = _play_set(rng, players, server, fmt, False, fmt.pro_set_games)
+        win, score, server = _play_set(rng, players, server, fmt, False, fmt.pro_set_games, context)
         sets[win] += 1
         set_scores.append(score)
         games_won = [score[0], score[1]]
@@ -98,7 +111,7 @@ def simulate_fast(
         is_final = sets[0] == sets_needed - 1 and sets[1] == sets_needed - 1
         win, score, server = _play_set(
             rng, players, server, fmt,
-            is_final and fmt.final_set_tiebreak, fmt.set_games,
+            is_final and fmt.final_set_tiebreak, fmt.set_games, context,
         )
         sets[win] += 1
         set_scores.append(score)
