@@ -10,10 +10,11 @@ onto a D3 roster and watch what happens.
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 
-DB_PATH = os.environ.get("TENNIS_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "tennis.db"))
+from .dbpath import resolve_db_path
+
+DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS roster_overrides (

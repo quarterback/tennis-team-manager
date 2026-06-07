@@ -28,7 +28,9 @@ from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import select_field, run_bracket, _seed_positions, ROUND_NAMES, clamp_field
 
-DB_PATH = os.environ.get("TENNIS_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "tennis.db"))
+from .dbpath import resolve_db_path
+
+DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
 # Tuned to docs/calibration-season-schedule.md: ~13-14 weeks, ~22 duals/team,
 # non-conf front-loaded, conference single round-robin (double only for small
 # leagues), 1-2 duals/week.
