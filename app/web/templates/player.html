@@ -10,8 +10,11 @@
 <div class="bl-board">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
     <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
-    <div><div class="tname">{{ info.name }} <span style="font-size:13px;color:var(--text-muted)">{{ info.country }}</span></div>
-      <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}</div></div>
+    <div><div class="tname">
+        <span class="player-flag" title="{{ info.country|country_name }}">{{ info.country|flags(info.secondary_country) }}</span>
+        {{ info.name }}
+        <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
+      <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div></div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
       <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
       <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
@@ -46,7 +49,9 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Bio</span></div>
         <div class="bl-panel-body"><table class="bl-protable"><tbody>
           <tr><td>Class</td><td>{{ info.class }}</td></tr>
+          <tr><td>Nationality</td><td><span class="player-flag">{{ info.country|flags(info.secondary_country) }}</span> {{ info.country|country_name }}{% if info.secondary_country %} / {{ info.secondary_country|country_name }}{% endif %}</td></tr>
           <tr><td>Hometown</td><td>{{ info.hometown }}</td></tr>
+          {% if info.high_school %}<tr><td>High School</td><td>{{ info.high_school }}</td></tr>{% endif %}
           <tr><td>Major</td><td>{{ info.major }}</td></tr>
           <tr><td>Status</td><td>{{ "Walk-on" if info.walk_on else "Scholarship" }}</td></tr>
           <tr><td>Record</td><td>{{ wins }}-{{ losses }}</td></tr>

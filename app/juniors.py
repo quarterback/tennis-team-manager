@@ -23,7 +23,8 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from generators import make_name_picker, region_preset
+from generators import (make_name_picker, region_preset, roll_hometown,
+                        country_abbrev)
 from .development import Prospect, generate_prospect, make_pid
 
 # US states + DC (name, abbr).
@@ -46,11 +47,12 @@ US_STATES = [
 _STATE_WEIGHT = {"CA": 8, "FL": 7, "TX": 7, "NY": 5, "GA": 4, "NC": 3, "IL": 3,
                  "PA": 3, "OH": 3, "VA": 3, "NJ": 3, "AZ": 2, "WA": 2, "MA": 2}
 
-# Synthetic city pool (placeholder until real HS data) — generic, broadly plausible.
-_CITIES = ["Springfield", "Riverside", "Fairview", "Kingsport", "Oakdale", "Bridgeport",
-           "Lakewood", "Highland", "Westport", "Ashford", "Brookfield", "Clearwater",
-           "Maplewood", "Stonebridge", "Cedar Park", "Glenwood", "Hartwell", "Ridgefield",
-           "Auburn", "Belmont", "Carmel", "Dover", "Easton", "Franklin"]
+_STATE_ABBR = dict(US_STATES)   # full state name -> postal abbr
+
+# Fallback city pool for nations with no entry in hometowns.json — generic but
+# broadly plausible, so an international recruit always has a believable city.
+_CITIES = ["Riverside", "Fairview", "Oakdale", "Lakewood", "Highland", "Westport",
+           "Brookfield", "Clearwater", "Maplewood", "Glenwood", "Belmont", "Franklin"]
 
 
 # Count-based recruiting tiers by national rank (TennisRecruiting.net convention,
@@ -88,8 +90,11 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     distribution real recruiting has (see calibration brief)."""
     us_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                region_weights=region_preset("us_only"))
+    # International board = the tennis world minus the US (domestic is handled
+    # separately), so an "international" recruit is never an American.
+    intl_weights = {k: v for k, v in region_preset("tennis_global").items() if k != "us"}
     intl_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
-                                 region_weights=region_preset("global"))
+                                 region_weights=intl_weights)
     state_names = [s[0] for s in US_STATES]
     state_weights = [_STATE_WEIGHT.get(s[1], 1) for s in US_STATES]
 
@@ -100,14 +105,19 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
             name, _ = us_name()
             state = rng.choices(state_names, weights=state_weights, k=1)[0]
             region, country = state, "US"
+            # Real US city from the hometowns pool; suffix the drawn state
+            # (cosmetic — the state is the recruiting-board dimension).
+            city = roll_hometown("US", rng) or rng.choice(_CITIES)
+            hometown = f"{city}, {_STATE_ABBR.get(state, state)}"
         else:
             name, country = intl_name()
             region = country or "INT"
-        city = rng.choice(_CITIES)
+            city = roll_hometown(country, rng) or rng.choice(_CITIES)
+            hometown = f"{city}, {country_abbrev(country)}" if country else city
         talent = max(24.0, min(80.0, rng.gauss(talent_mean, talent_sd)))
         p = generate_prospect(rng, name, country, gender=gender, talent=talent,
                               pid=make_pid("recruit", grad_year, gender, i))
-        p.hometown = f"{city}, {region}"
+        p.hometown = hometown
         p.region = region
         p.domestic = domestic
         p.grad_year = grad_year

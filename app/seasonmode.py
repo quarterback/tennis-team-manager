@@ -508,7 +508,8 @@ def _pid_index(division: str, gender: str) -> dict:
             for pr in build_roster(p):
                 idx[pr.pid] = {"name": pr.name, "school": p.school, "class": pr.class_year,
                                "country": pr.country, "hometown": pr.hometown, "major": pr.major,
-                               "walk_on": pr.walk_on}
+                               "walk_on": pr.walk_on, "high_school": pr.high_school,
+                               "secondary_country": pr.secondary_country}
         _pid_idx_cache[key] = idx
     return _pid_idx_cache[key]
 

@@ -123,6 +123,9 @@ class Prospect:
     class_year: str = ""                              # eligibility: "Fr"/"So"/"Jr"/"Sr"
     walk_on: bool = False                             # non-scholarship roster filler
     major: str = ""                                   # academic major (bio flavor)
+    birthday: str = ""                                # cosmetic "Mar 14" (no year)
+    secondary_country: str = ""                       # dual-nationality flavor tag
+    elite_origin: bool = False                        # rolled a nation elite spike
     # Career log: one entry per season played — {year, school, class, str, rel,
     # w, l}. School changing between entries = a transfer (see app.league).
     history: list = field(default_factory=list)
@@ -213,16 +216,35 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     `pid` lets callers (roster/juniors builders) assign a stable id; if omitted
     a deterministic one is derived.
     """
+    from generators import (nation_talent, roll_hometown, roll_birthday,
+                            roll_secondary_country, roll_high_school)
+    from generators.majors import pick_major
+
     if talent is None:
         talent = _clamp(rng.gauss(46, 9), 24, 78)
+    # Expansive world model: a nation's grassroots breadth lifts (or, for the
+    # weakest, nudges) the average ceiling of every player it produces. Nations
+    # absent from the table are neutral (shift 0), so non-major markets are
+    # never penalised — they generate at tour-average with full variance.
+    talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, float(GRADE_MAX))
     potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
+
+    # Elite spike: a small, investment-scaled chance the nation produced a
+    # blue-chip. Floors the ceiling bands so the player reads world-class at
+    # seed time (Elite+ growth is still earned through development).
+    elite = nation_talent.roll_elite(country, rng)
+    if elite:
+        marquee = rng.sample(RICH_ATTRS, k=max(1, len(RICH_ATTRS) // 4))
+        for a in RICH_ATTRS:
+            band = nation_talent.ELITE_HEADLINE if a in marquee else nation_talent.ELITE_SUPPORT
+            potential[a] = _clamp(max(potential[a], rng.uniform(*band)), GRADE_MIN, GRADE_MAX)
+
     maturity = rng.uniform(MATURITY_MIN, MATURITY_MAX)
     current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
     tier, rate, mult = _draw_interest(rng)
     consensus_seed = rng.randrange(1 << 30)
     traits = _draw_traits(rng)
     domestic = country in {"US", "USA", "United States"}
-    from generators.majors import pick_major
     p = Prospect(
         name=name, country=country, gender=gender,
         current=current, potential=potential, traits=traits,
@@ -232,7 +254,17 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
         consensus_seed=consensus_seed, domestic=domestic,
         pid=pid or make_pid(name, country, gender, consensus_seed),
         major=pick_major(rng),
+        birthday=roll_birthday(rng),
+        secondary_country=roll_secondary_country(country, rng),
+        elite_origin=elite,
     )
+    # Believable birthplace from the nation's city pool. Stored "City, CC" so
+    # every roster/recruit player carries a wired hometown; juniors overrides
+    # domestic recruits with a US state for the state-by-state board.
+    city = roll_hometown(country, rng)
+    if city:
+        p.hometown = f"{city}, {country}" if country else city
+    p.high_school = roll_high_school(country, rng)
     p.recruit_stars = p.star_rating()
     p.recruit_tier = TIERS[p.tier][0]
     return p

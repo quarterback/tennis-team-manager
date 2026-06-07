@@ -2295,6 +2295,21 @@
         "croatian"
       ]
     },
+    "serbia": {
+      "_doc": [
+        "A tennis powerhouse far out of proportion to its size (Djokovic,",
+        "Jankovic, Ivanovic, Tipsarevic). Own curated Serbian first/surname",
+        "pool, keyed to RS."
+      ],
+      "label": "Serbia",
+      "country": "RS",
+      "first_keys": [
+        "serbian"
+      ],
+      "surname_keys": [
+        "serbian"
+      ]
+    },
     "slovenia": {
       "_doc": [
         "Emerging European baseball nation (Euro debut 10th, 1995). Promoted",
@@ -2844,6 +2859,50 @@
     }
   },
   "presets": {
+    "tennis_global": {
+      "label": "Tennis Global (realistic tour talent geography)",
+      "_doc": [
+        "Tennis-shaped world. The developed-tennis bloc (USA, the Spanish/",
+        "French/Italian/German Western-Europe pool, Eastern Europe, Russia,",
+        "Australasia, South America, East Asia, Britain, the Balkans, Canada,",
+        "Switzerland, the Nordics) carries ~88% of draws. The remaining block",
+        "below is a deliberate >=10% RESERVE for the rest of the world so",
+        "talent keeps emerging outside the majors -- those nations fall back",
+        "to neutral 50/50 in nation_talent.json, so they generate at",
+        "tour-average with full variance and still surface the occasional gem."
+      ],
+      "weights": {
+        "us": 0.16,
+        "spain": 0.09,
+        "europe_western": 0.16,
+        "italy": 0.06,
+        "europe_eastern": 0.09,
+        "russia": 0.05,
+        "serbia": 0.03,
+        "south_america": 0.06,
+        "anzac": 0.05,
+        "east_asia": 0.05,
+        "british_isles": 0.04,
+        "europe_southeast": 0.04,
+        "germany": 0.03,
+        "canada": 0.03,
+        "switzerland": 0.02,
+        "nordic": 0.02,
+        "belgium": 0.015,
+        "austria": 0.015,
+        "kazakhstan": 0.01,
+        "africa": 0.02,
+        "south_asia": 0.02,
+        "north_africa": 0.015,
+        "southeast_asia": 0.015,
+        "central_west_asia": 0.015,
+        "turkey": 0.01,
+        "mexico": 0.01,
+        "caribbean_cricket": 0.01,
+        "pacific_islands": 0.008,
+        "philippines": 0.007
+      }
+    },
     "americas_pro": {
       "label": "Americas Pro (MLB-like — pre-cricket-pipeline baseline)",
       "weights": {
