@@ -318,6 +318,27 @@ results don't lie. So:
 - `Prospect.engine_player()` feeds the match engine; `manage.py prospects
   [--reveal]` demos the gem/bust dynamic.
 
+**STR — the results-based rating (`app/str_rating.py`).** STR is the game's
+synthetic UTR, on a distinctive **31–57 band** (not raw UTR 1–17). The engine is
+results-based, not an ability readout: each match yields an opponent-anchored
+match rating (invert an expected-games-share logistic), so you get **credit for
+competing well vs good players and a boost for beating better players**. It's
+**recency-weighted over a rolling 30-match window** ("what have you done lately")
+— so a slump/inactivity makes STR **decay downward** even though ability never
+regresses. Reliable at ~5 matches; thin records blend toward a prior; matches
+with a >2.00-UTR (±3.35 STR) gap are excluded; opponent-rating reliability
+weights each result. `converge_ids()` solves a whole population to a fixed point.
+(Ability-derived STR from the development model seeds players without a match
+record; the results engine takes over once they've played.)
+
+**Juniors / recruiting surface (`app/juniors.py`).** Recruit-class generator
+with origins (US city+state, intl city+nation incl. Canada) and the ranking
+lists — National Top-N by class, state-by-state, international Top-N / Top-N by
+nation — with **count-based star tiers** (Blue Chip top 25 / 5★ / 4★ / 3★ /
+Unrated, TRN convention). Boards rank on consensus (visible STR + scouts'
+ceiling projection), so they can mis-rank gems/busts. Calibrated to
+`docs/calibration-tennis-trajectories.md`.
+
 **Deferred (large, separate system):** the **team-chemistry model** (Voice /
 Glue / Pull / Reach + Drama / Fit / Head, Franchise/Big-Stage/Baggage flags,
 coach archetypes, spine/resilience) from the user's chemistry post — to layer

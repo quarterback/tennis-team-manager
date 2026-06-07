@@ -69,11 +69,15 @@ def grade_to_unit(g: float) -> float:
     return _clamp((g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN), 0.0, 1.0)
 
 
+# STR display band — this game's distinctive scale (NOT raw UTR's 1–17).
+STR_MIN, STR_MAX = 31.0, 57.0
+
+
 def overall_to_str(g: float) -> float:
     """Map an overall grade (20–80) to a STR — this game's synthetic, UTR-style
-    rating (≈1.0–16.5). STR is opponent-relative and visible; it's the single
-    yardstick across juniors → college → pro."""
-    return round(1.0 + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * 15.5, 2)
+    rating, remapped to the distinctive 31–57 band. STR is opponent-relative and
+    visible; it's the single yardstick across juniors → college → pro."""
+    return round(STR_MIN + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * (STR_MAX - STR_MIN), 2)
 
 
 def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
