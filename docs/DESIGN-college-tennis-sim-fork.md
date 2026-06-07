@@ -273,3 +273,41 @@ HOF. The modified-UTR is the single currency spanning every tier.
 4. **Surfaces in v1** (hard/clay/grass), or defer?
 5. **Tunable defaults:** top-N pro-defection size; D1 domestic-signing %; D3/Ivy
    prestige multiplier magnitude.
+
+---
+
+## §11 — Build log + juniors/recruiting reference (banked from the user)
+
+**What's built (this fork, not the doc's hypothetical):**
+- **Engine:** deterministic singles (full) + fast model + NCAA dual layer
+  (`engine/`), with toggleable `MatchFormat` (no-ad, set tiebreak, 10-pt
+  match-tiebreak-in-lieu-of-3rd-set, **8-game pro set**).
+- **Web UI (Flask, `app/web/`)** in the oregontennis.org "Baseline" design
+  language: Power Index rankings (live), Dual Simulator (setup + scoreboard +
+  win-prob sweep), NCAA Bracket, Methodology.
+- **P4/P5:** `app/season.py` (schedule → sim → standings → conference
+  tournaments/autobids), `app/rating.py` (Power Index = 40% APR + 40% FQI +
+  20% oGS), `app/bracket.py` (autobids + at-large, PI seeding, single-elim
+  **dual-match bracket** modeled on March-Madness sims — favorites favored,
+  real upsets). Real **D1** conference data in `data/ncaa/d1_{men,women}.json`
+  (32 conferences, 366 programs, full membership copied 1:1).
+
+**Next:** D2/D3 data + universes → then the **pazzah pressure/clutch port**
+(per the user) into `engine/rally.py`.
+
+**Juniors / HS + recruiting layer (P6/P7/P8) — reference to honor when built:**
+- **No HS teams rendered** — generate *players* only. Origin fields:
+  **US = birth city + state**; **international (incl. Canada) = birth city +
+  nation**.
+- **Ranking tiers:** juniors carry an **ITF junior world ranking + national
+  ranking**; HS kids carry **UTR + state rankings**. Mirror
+  **tennisrecruiting.net**: National / Regional / State lists, **star ratings**
+  (Blue Chip / 5-star…), TennisRPI, "activity vs star tiers," commitments feed.
+- **Recruit profile page** = the tennisrecruiting.net player-record layout
+  (rankings panel · highest rankings · schools-of-interest/commitment ·
+  activity overview). Reuse the **recruit-page models already in `viperball`
+  (Recruiting Hub + recruit profile w/ commit-prediction %, dreamsheet,
+  timeline, scouting report) and `superinnings`** (displayed-grades vs noisy
+  scouting reports; hidden potential/access/fog, `?debug=true` reveal).
+- **HS data sourcing (later):** scrape MaxPreps / On3 / recruiting sites for a
+  national spread of high schools across all 50 states + DC.

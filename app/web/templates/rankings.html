@@ -1,29 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Baseline — Power Index{% endblock %}
 {% block content %}
-{% set grid = '38px minmax(120px,1fr) 50px 58px 92px 62px 66px 66px 96px 62px 62px' %}
+{% set grid = '38px minmax(120px,1fr) 50px 58px 110px 62px 70px 96px 62px 62px' %}
 
 <form method="get">
 <div class="bl-toolbar">
   <div class="bl-toolbar-inner">
     <label class="bl-field"><span class="bl-field-label">Season</span>
       <span class="bl-select-wrap"><select class="bl-select" name="season" style="min-width:78px">
-        <option>2026</option><option>2025</option><option>2024</option></select></span></label>
+        <option>2026</option></select></span></label>
     <label class="bl-field"><span class="bl-field-label">Division</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="division" style="min-width:104px">
-        <option>Men · D1</option><option>Women · D1</option></select></span></label>
+      <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:104px">
+        {% for d, g, lbl in universes %}<option value="{{ g }}"{% if g == gender %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Conference</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:118px">
+      <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:160px">
         {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
       </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Tier</span>
       <span class="bl-select-wrap"><select class="bl-select" name="tier" onchange="this.form.submit()" style="min-width:78px">
         {% for t in tiers %}<option{% if t == tier %} selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></span></label>
-    <label class="bl-field"><span class="bl-field-label">Search</span>
-      <input class="bl-input" name="q" value="" placeholder="School…" style="width:150px"></label>
-    <label class="bl-field"><span class="bl-field-label">Min Duals</span>
-      <input class="bl-input" name="min" value="10" style="width:54px"></label>
   </div>
 </div>
 <div class="bl-toolbar bl-toolbar--card">
@@ -37,19 +34,18 @@
       </div>
     </div>
     <label class="bl-field"><span class="bl-field-label">Model A/B</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="model" style="min-width:182px">
+      <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
       </select></span></label>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', gender=gender) }}">NCAA Bracket →</a>
   </div>
 </div>
 </form>
 
 <div class="bl-container">
   <div class="bl-entries">
-    <div class="bl-entries-left">Show
-      <span class="bl-select-wrap"><select class="bl-select" style="min-width:58px"><option>25</option><option selected>50</option><option>100</option></select></span>
-      entries</div>
-    <span class="bl-entries-right">Showing 1–{{ rows|length }} of 121 · filtered from 1,140 D1 programs</span>
+    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ shown }}</strong> of {{ total }} programs</div>
+    <span class="bl-entries-right">{{ uni_label }} · {{ conferences|length - 1 }} conferences · simulated season</span>
   </div>
 </div>
 
@@ -59,25 +55,23 @@
       <div class="bl-thead">
         <span class="bl-th">RK <span class="caret">▴▾</span></span>
         <span class="bl-th">SCHOOL <span class="caret">▴▾</span></span>
-        <span class="bl-th">TIER <span class="caret">▴▾</span></span>
-        <span class="bl-th">CONF RK <span class="caret">▴▾</span></span>
-        <span class="bl-th">CONFERENCE <span class="caret">▴▾</span></span>
-        <span class="bl-th">RECORD <span class="caret">▴▾</span></span>
-        <span class="bl-th">H2H <span class="caret">▴▾</span></span>
-        <span class="bl-th">CONF REC <span class="caret">▴▾</span></span>
+        <span class="bl-th">TIER</span>
+        <span class="bl-th">CONF RK</span>
+        <span class="bl-th">CONFERENCE</span>
+        <span class="bl-th">RECORD</span>
+        <span class="bl-th">CONF REC</span>
         <span class="bl-th num">POWER INDEX <span class="caret">▴▾</span></span>
         <span class="bl-th num">APR <span class="caret">▴▾</span></span>
-        <span class="bl-th num">FQI <span class="caret">▴▾</span></span>
+        <span class="bl-th num">FQI</span>
       </div>
       {% for r in rows %}
       <div class="bl-row{% if r.me %} me{% endif %}">
         <span class="bl-rank {{ r.rank_class }}">{{ r.rk }}</span>
-        <a class="bl-school" href="{{ url_for('teams') }}">{{ r.school }}</a>
+        <a class="bl-school" href="{{ url_for('dual', home=r.school) }}">{{ r.school }}</a>
         <span><span class="bl-badge tier-{{ r.tier }}">{{ r.tier }}</span></span>
         <span class="bl-confrk {{ r.confrk_class }}">{{ r.cr }}</span>
-        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.rec }}</span>
-        <span><span class="bl-h2h {{ r.h2h_tone }}">{{ r.h2h_text }}</span></span>
         <span class="bl-crec">{{ r.crec }}</span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ r.fmt(r.pi) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat {{ r.apr_kind }}">{{ r.fmt(r.apr) }}</span></span>
@@ -88,28 +82,17 @@
   </div>
 </div>
 
-<div class="bl-pager">
-  <span class="bl-pager-info">Page 1 of 6</span>
-  <div class="bl-pagination">
-    <span class="bl-pgbtn disabled">Prev</span>
-    {% for n in range(1, 7) %}
-      <span class="bl-pgbtn{% if n == 1 %} active{% endif %}">{{ n }}</span>
-    {% endfor %}
-    <span class="bl-pgbtn">Next</span>
-  </div>
-</div>
-
 <div class="bl-notes">
   <div class="bl-note">
-    <strong>Power Index</strong> (TOSS model) = 50% APR + 50% FQI.
-    <strong>FQI</strong> (Flight Quality Index) = per-court rubber performance scaled by opponent
-    strength, averaged across dual matches.
+    <strong>Power Index</strong> (TOSS model) = 40% APR + 40% FQI + 20% oGS, computed from every
+    simulated dual this season. <strong>FQI</strong> (Flight Quality Index) = flight-weighted line
+    wins scaled by opponent strength; <strong>oGS</strong> = opponent-weighted game share.
     <a href="{{ url_for('methodology') }}">How does this work? →</a>
   </div>
   <div class="bl-note new">
-    <strong>New for 2026:</strong> the dual simulator runs the doubles point and all six singles using
-    each team’s APR-weighted flight ratings, then reports clinch probability. The same Power Index seeds
-    every matchup. <a href="{{ url_for('methodology') }}">Methodology →</a>
+    <strong>Live from the sim:</strong> every program plays a full conference + non-conference
+    schedule, conference tournaments crown automatic qualifiers, and the same Power Index seeds the
+    64-team NCAA bracket. <a href="{{ url_for('bracket', gender=gender) }}">View the bracket →</a>
   </div>
 </div>
 {% endblock %}

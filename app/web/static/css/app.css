@@ -291,3 +291,25 @@
 .bl-clinch-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 .bl-pips { display: flex; gap: 5px; }
 .bl-pip { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border-default); }
+
+/* ---- Bracket ---- */
+.bl-champ {
+  display: flex; align-items: center; gap: 18px; background: var(--green-50);
+  border: 1px solid var(--green-200); border-left: 4px solid var(--brand); border-radius: 10px;
+  padding: 20px 24px; margin-bottom: 18px;
+}
+.bl-champ .label { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--brand-strong); font-weight: 700; }
+.bl-champ .name { font-family: var(--font-display); font-weight: 800; font-size: 28px; color: var(--text-primary); letter-spacing: -0.015em; }
+.bl-champ .sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.bl-rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; align-items: start; }
+.bl-brk-match {
+  display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: center;
+  padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); font-size: 13px;
+}
+.bl-brk-match:last-child { border-bottom: none; }
+.bl-brk-seed { font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; text-align: right; }
+.bl-brk-team { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.bl-brk-team .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-brk-win .nm { font-weight: 700; color: var(--text-primary); }
+.bl-brk-lose .nm { color: var(--text-muted); }
+.bl-upset { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tint-loss-fg); background: var(--tint-loss-bg); border-radius: 4px; padding: 1px 4px; margin-left: 6px; }

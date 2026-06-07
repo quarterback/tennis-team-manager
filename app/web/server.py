@@ -13,17 +13,29 @@ from __future__ import annotations
 import os
 from flask import Flask, render_template, request
 
-from .rankings_data import get_rankings, CONFERENCES, TIERS, all_schools, crest, get_row
+from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES
+from .state import ranking_rows, conferences_for, get_bracket, UNIVERSES
 
 # label → route; drives the green TopNav across every page.
 NAV = [
     ("Rankings", "/"),
     ("Dual Simulator", "/dual"),
+    ("Bracket", "/bracket"),
     ("Teams", "/teams"),
-    ("Schedule", "/schedule"),
     ("Methodology", "/methodology"),
 ]
+
+TIERS = ["All", "P5", "MID", "IVY"]
+
+
+def _universe(req) -> tuple[str, str, str]:
+    """Resolve (division, gender, label) from the request."""
+    gender = req.args.get("gender", "men")
+    if gender not in ("men", "women"):
+        gender = "men"
+    label = next((l for d, g, l in UNIVERSES if d == "D1" and g == gender), "Men · D1")
+    return "D1", gender, label
 
 
 def create_app() -> Flask:
@@ -31,18 +43,36 @@ def create_app() -> Flask:
 
     @app.context_processor
     def _inject_nav():
-        return {"nav": NAV}
+        return {"nav": NAV, "universes": UNIVERSES}
 
     @app.route("/")
     def rankings():
+        division, gender, label = _universe(request)
         conf = request.args.get("conf", "All")
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
-        rows = get_rankings(conf=conf, tier=tier, sort=sort)
+        rows = ranking_rows(division, gender)
+        total = len(rows)
+        filtered = [r for r in rows
+                    if (conf == "All" or r.conf == conf) and (tier == "All" or r.tier == tier)]
+        if sort == "Power Index":
+            filtered = sorted(filtered, key=lambda r: r.pi, reverse=True)
+        elif sort == "APR":
+            filtered = sorted(filtered, key=lambda r: r.apr, reverse=True)
+        # Unfiltered view shows the top of the table; filtered shows all matches.
+        shown = filtered if (conf != "All" or tier != "All") else filtered[:75]
         return render_template(
-            "rankings.html", active="Rankings", rows=rows,
-            conferences=CONFERENCES, tiers=TIERS, conf=conf, tier=tier, sort=sort,
+            "rankings.html", active="Rankings", rows=shown, total=total, shown=len(shown),
+            conferences=conferences_for(division, gender), tiers=TIERS,
+            conf=conf, tier=tier, sort=sort, gender=gender, uni_label=label,
         )
+
+    @app.route("/bracket")
+    def bracket():
+        division, gender, label = _universe(request)
+        br = get_bracket(division, gender)
+        return render_template("bracket.html", active="Bracket", br=br,
+                               gender=gender, uni_label=label, division=division)
 
     @app.route("/methodology")
     def methodology():
