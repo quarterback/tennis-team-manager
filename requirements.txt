@@ -1,3 +1,5 @@
 # Engine + CLI run on the standard library only.
+# Web UI:
+flask>=3.0
 # Dev / test:
 pytest>=7.0

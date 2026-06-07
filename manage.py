@@ -92,6 +92,13 @@ def cmd_initdb(args):
     print(f"Initialised DB at {DB_PATH}")
 
 
+def cmd_runserver(args):
+    import os
+    os.environ.setdefault("PORT", str(args.port))
+    from app.web import main as web_main
+    web_main()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Tennis-sim CLI")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -119,6 +126,10 @@ def main():
 
     sub.add_parser("presets").set_defaults(func=cmd_presets)
     sub.add_parser("initdb").set_defaults(func=cmd_initdb)
+
+    rs = sub.add_parser("runserver")
+    rs.add_argument("--port", type=int, default=5000)
+    rs.set_defaults(func=cmd_runserver)
 
     args = ap.parse_args()
     args.func(args)

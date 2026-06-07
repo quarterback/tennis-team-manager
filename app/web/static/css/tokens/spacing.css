@@ -1,0 +1,40 @@
+/* ============================================================
+   Baseline — Spacing, radii, sizing
+   4px base grid. Court-line discipline: tight, rhythmic.
+   ============================================================ */
+
+:root {
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+  --space-11: 80px;
+  --space-12: 96px;
+
+  /* Radii — restrained. Cards crisp, chips/pills round. */
+  --radius-xs:  3px;
+  --radius-sm:  5px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-pill: 999px;
+
+  /* Control sizing */
+  --control-h-sm: 30px;
+  --control-h-md: 38px;
+  --control-h-lg: 46px;
+
+  /* Layout */
+  --container-max: 1180px;
+  --gutter:        24px;
+
+  /* Hairline — the "court line" — used for table rules & borders */
+  --hairline: 1px;
+}

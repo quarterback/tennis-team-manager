@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Baseline">
+  <rect x="13" y="12" width="38" height="40" rx="1.5" fill="none" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.4"></rect>
+  <line x1="13" y1="32" x2="51" y2="32" stroke="#ffffff" stroke-opacity="0.65" stroke-width="2.4"></line>
+  <line x1="9" y1="48" x2="55" y2="48" stroke="#ffffff" stroke-width="4" stroke-linecap="round"></line>
+  <circle cx="32" cy="48" r="7.5" fill="#e6f24a" stroke="#ffffff" stroke-width="2"></circle>
+</svg>
