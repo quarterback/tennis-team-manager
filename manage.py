@@ -158,6 +158,23 @@ def cmd_prospects(args):
                   f"{p.ceiling_overall():>4} {proj:>4}  {TIERS[p.tier][0]:<13} {flag}")
 
 
+def cmd_recruits(args):
+    from app.juniors import (generate_class, national_rankings, state_rankings,
+                             international_rankings)
+    rng = random.Random(args.seed)
+    klass = generate_class(rng, n=args.n, grad_year=args.grad_year, gender=args.gender)
+    if args.state:
+        rows, title = state_rankings(klass, args.state), f"{args.state} — class of {args.grad_year}"
+    elif args.intl:
+        rows, title = international_rankings(klass), f"International — class of {args.grad_year}"
+    else:
+        rows, title = national_rankings(klass), f"National Top {args.top} — class of {args.grad_year}"
+    print(f"\n{title} ({klass.gender})\n")
+    print(f"{'#':>3}  {'PLAYER':<24} {'HOMETOWN':<24} {'STR':>5} {'STARS':<6}")
+    for i, p in enumerate(rows[:args.top], 1):
+        print(f"{i:>3}  {p.name:<24} {p.hometown:<24} {p.str_value():>5} {'*' * p.star_rating()}")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -203,6 +220,16 @@ def main():
     pr.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
     pr.add_argument("--reveal", action="store_true")
     pr.set_defaults(func=cmd_prospects)
+
+    rc = sub.add_parser("recruits")
+    rc.add_argument("--n", type=int, default=300)
+    rc.add_argument("--top", type=int, default=25)
+    rc.add_argument("--grad-year", type=int, default=2026, dest="grad_year")
+    rc.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
+    rc.add_argument("--state", default="", help="state name, e.g. 'California'")
+    rc.add_argument("--intl", action="store_true", help="international board")
+    rc.add_argument("--seed", type=int, default=1)
+    rc.set_defaults(func=cmd_recruits)
 
     se = sub.add_parser("season")
     se.add_argument("--division", default="D1")

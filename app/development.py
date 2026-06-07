@@ -94,6 +94,11 @@ class Prospect:
     consensus_seed: int = 0
     committed: bool = False                           # signed → per-attribute current grades visible to you
     pro: bool = False                                # the reveal → the true ceiling is known
+    # Origin / recruiting context (set by app.juniors; US = city+state, intl = city+nation)
+    hometown: str = ""
+    region: str = ""                                 # US state name, or nation
+    domestic: bool = True                            # US recruit?
+    grad_year: int = 0                               # graduating class
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
