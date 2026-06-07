@@ -28,19 +28,69 @@ from app import seasonmode as sm
 from app import overrides as ov
 from .state import DEFAULT_SEED
 
-# label → route; drives the green TopNav across every page.
-NAV = [
-    ("Dashboard", "/"),
-    ("World", "/world"),
-    ("Rankings", "/rankings"),
-    ("Season", "/season"),
-    ("Dual Simulator", "/dual"),
-    ("Bracket", "/bracket"),
-    ("Recruiting", "/recruiting"),
-    ("Teams", "/teams"),
-    ("Editor", "/editor"),
-    ("Methodology", "/methodology"),
+MY_TEAM = "Oregon"          # the club the human manages
+
+# Grouped sidebar nav (Football-Manager style). Each item's href is resolved
+# per-request so the universe `u` carries through. "World" is the primary
+# season-to-season surface; the legacy per-universe season views sit under it.
+NAV_GROUPS = [
+    ("Your Team", [
+        {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {"school": MY_TEAM}},
+        {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+    ]),
+    ("World", [
+        {"id": "world",     "label": "World Hub",    "icon": "🌎", "endpoint": "world_view",       "args": {}},
+        {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
+        {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
+        {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
+        {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
+    ]),
+    ("Management", [
+        {"id": "recruiting","label": "Recruiting",   "icon": "🎓", "endpoint": "recruiting",       "args": {}},
+    ]),
+    ("Simulate", [
+        {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
+        {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
+        {"id": "bracket",   "label": "NCAA Bracket", "icon": "🥇", "endpoint": "bracket",          "args": {}},
+    ]),
+    ("Tools", [
+        {"id": "editor",    "label": "Editor",       "icon": "🛠️", "endpoint": "editor",          "args": {}},
+        {"id": "methodology","label": "Methodology", "icon": "📐", "endpoint": "methodology",      "args": {}},
+    ]),
 ]
+
+
+def _active_nav(req) -> str:
+    p = req.path
+    if p == "/":                          return "dashboard"
+    if p.startswith("/world"):            return "world"
+    if p.startswith("/rankings"):         return "rankings"
+    if p.startswith("/season/standings"): return "standings"
+    if p.startswith("/season/schedule"):  return "schedule"
+    if p.startswith("/season"):           return "season"
+    if p.startswith("/dual"):             return "dual"
+    if p.startswith("/bracket"):          return "bracket"
+    if p.startswith("/recruit"):          return "recruiting"
+    if p.startswith("/teams") or p.startswith("/player"):
+        return "roster" if req.args.get("school") == MY_TEAM else "teams"
+    if p.startswith("/editor"):           return "editor"
+    if p.startswith("/methodology"):      return "methodology"
+    return ""
+
+
+def _game_context():
+    """Persistent world state for the top bar (year / week / signed class).
+    None before a world is started, so the bar hides cleanly."""
+    try:
+        if not wd.exists():
+            return None
+        w = wd.load_world()
+        return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
+                "week": w["week"], "phase": "Regular season", "complete": False,
+                "signed": sum(wd.signed_counts().values())}
+    except Exception:
+        return None
+
 
 def _universe(req) -> tuple[str, str, str, str]:
     """Resolve (division, gender, label, u-key) from the request."""
@@ -60,8 +110,17 @@ def create_app() -> Flask:
     app.jinja_env.filters["country_abbrev"] = country_abbrev
 
     @app.context_processor
-    def _inject_nav():
-        return {"nav": NAV, "universes": UNIVERSES}
+    def _inject_chrome():
+        """Everything the persistent FM shell needs on every page: grouped
+        sidebar (hrefs resolved with the current universe), active item, and the
+        world game-context top bar."""
+        division, gender, label, u = _universe(request)
+        groups = [(glabel, [{**it, "href": url_for(it["endpoint"], u=u, **it["args"])}
+                            for it in items])
+                  for glabel, items in NAV_GROUPS]
+        return {"universes": UNIVERSES, "u": u, "uni_label": label, "my_team": MY_TEAM,
+                "nav_groups": groups, "active_nav": _active_nav(request),
+                "game": _game_context()}
 
     @app.before_request
     def _prime_world():
@@ -197,7 +256,7 @@ def create_app() -> Flask:
     @app.route("/player/<pid>")
     def player(pid):
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         info = sm.player_info(sid, pid)
         if not info:
             abort(404)
@@ -312,7 +371,7 @@ def create_app() -> Flask:
     @app.route("/season")
     def season_hub():
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         s = sm.load_season(sid)
         cw, tw = s["current_week"], s["total_weeks"]
         upcoming = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
@@ -329,21 +388,21 @@ def create_app() -> Flask:
     @app.route("/season/advance", methods=["POST"])
     def season_advance():
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         sm.advance(sid)
         return redirect(url_for("season_hub", u=u))
 
     @app.route("/season/standings")
     def season_standings():
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
                                standings=sm.standings(sid))
 
     @app.route("/season/schedule")
     def season_schedule():
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         groups = dict(conference_schools(division, gender))
         conferences = sorted(groups)
         conf = request.args.get("conf")
