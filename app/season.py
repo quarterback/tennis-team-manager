@@ -46,16 +46,77 @@ class SeasonResult:
         return sorted(self.programs, key=lambda p: self.ratings[p.school].pi, reverse=True)
 
 
-def _doubles_pair(ladder: list, slot_no: int) -> list:
-    """The two Prospects who play doubles court `slot_no` (1..3), matching the
-    engine's default pairing (1/2, 3/4, 5/6 of the ladder)."""
-    lo = (slot_no - 1) * 2
-    return ladder[lo:lo + 2]
+# Coach lineup model -----------------------------------------------------------
+# Players on a roster are close in ability, so RESULTS (live STR) drive the
+# ladder, with a stable per-season noise term standing in for coach preference.
+# Against clearly weaker opponents coaches rest a starter or two and give the
+# bench / walk-ons match reps — so everyone on the roster gets evaluated rather
+# than the bottom of the bench never seeing the court.
+LINEUP_NOISE = 1.4
+# Doubles pairing permutations (index pairs into the chosen six); the coach picks
+# one per season, so pairings persist but vary program to program / year to year.
+DOUBLES_PERMS = [
+    [(0, 1), (2, 3), (4, 5)], [(0, 2), (1, 3), (4, 5)],
+    [(0, 1), (2, 4), (3, 5)], [(0, 3), (1, 2), (4, 5)],
+    [(0, 2), (1, 4), (3, 5)],
+]
 
 
-def _line_identity(slot: str, la: list, lb: list) -> dict:
+def _form_str(form, p) -> float | None:
+    if not form:
+        return None
+    v = form.get(p.pid)
+    if v is None:
+        return None
+    return v[0] if isinstance(v, tuple) else v
+
+
+BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs a peer
+
+
+def coach_lineup(prog: Program, roster: list, form: dict | None,
+                 opp_prestige: float, lineup_seed: int, dual_seed: int = 0):
+    """Return (engine Team, chosen Prospects) for `prog` this dual.
+
+    The ladder is set by live results STR (ability before results exist) plus a
+    season-stable coach-preference noise, so the persistent order is dictated by
+    results with a little coach discretion. Bench/walk-ons get reps two ways:
+    the coach rests starters against weaker opponents, and there's a baseline
+    chance of a look even against a peer — and *which* bench players come in
+    rotates per dual, so over a season everyone on the roster gets evaluated.
+    `chosen[i]` is exactly Team.singles[i] so line identity stays unambiguous."""
+    srng = random.Random(f"{prog.key}|lineup|{lineup_seed}")    # season-stable ladder
+
+    def score(p):
+        base = _form_str(form, p)
+        if base is None:
+            base = p.str_value()
+        return base + srng.gauss(0, LINEUP_NOISE)
+
+    order = sorted(roster, key=score, reverse=True)
+    starters, bench = order[:6], order[6:]
+    drng = random.Random(f"{prog.key}|rot|{dual_seed}")         # per-dual rotation
+    gap = getattr(prog, "prestige", 0.5) - opp_prestige
+    rotate = 2 if gap > 0.18 else 1 if gap > 0.05 else 0
+    if rotate == 0 and drng.random() < BASELINE_REP_CHANCE:
+        rotate = 1
+    rotate = min(rotate, len(bench))
+    if rotate:
+        picks = drng.sample(bench, rotate)                      # varied bench each time
+        chosen = starters[:6 - rotate] + picks
+    else:
+        chosen = starters
+    doubles = srng.choice(DOUBLES_PERMS)
+    team = Team(name=prog.school, singles=[p.engine_player() for p in chosen],
+                doubles=[tuple(x) for x in doubles])
+    return team, chosen
+
+
+def _line_identity(slot: str, la: list, lb: list,
+                   ha_dbl: list, aw_dbl: list) -> dict:
     """Who played a line, both sides, so box scores can show position↔player.
-    Singles also carry stable pids (STR/record are singles-based)."""
+    Singles carry stable pids (STR/record are singles-based); doubles use the
+    actual (possibly permuted) pairing for each side."""
     out: dict = {}
     if slot.startswith("S"):
         i = int(slot[1:]) - 1
@@ -65,19 +126,22 @@ def _line_identity(slot: str, la: list, lb: list) -> dict:
                        home_player=hp.name, away_player=ap.name,
                        home_country=hp.country, away_country=ap.country)
     else:                                        # doubles — a pair per side, no pid
-        i = int(slot[1:])
-        hp, ap = _doubles_pair(la, i), _doubles_pair(lb, i)
-        if hp and ap:
-            out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
-                       away_player=" / ".join(p.name.split()[-1] for p in ap))
+        i = int(slot[1:]) - 1
+        if 0 <= i < len(ha_dbl) and i < len(aw_dbl):
+            hp = [la[x] for x in ha_dbl[i] if x < len(la)]
+            ap = [lb[x] for x in aw_dbl[i] if x < len(lb)]
+            if hp and ap:
+                out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
+                           away_player=" / ".join(p.name.split()[-1] for p in ap))
     return out
 
 
 def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                  la: list, lb: list, *, seed: int, conf: bool) -> dict:
-    """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the top-6
-    Prospect ladders (la[i] ↔ sa.singles[i]) so every line carries the identity
-    of who played that position (singles pids + names; doubles pair names)."""
+    """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the
+    Prospects who played (la[i] ↔ sa.singles[i]) so every line carries the
+    identity of who played that position (singles pids + names; doubles names
+    from the actual pairing)."""
     res = simulate_dual(sa, sb, seed=seed, fidelity="fast")
     lines = []
     for ln in res.lines:
@@ -88,7 +152,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
         rec = {"slot": ln.slot, "completed": True, "home_won": ln.home_won,
                "home_games": gw[0], "away_games": gw[1],
                "sets": [[h, a] for (h, a) in ln.result.set_scores]}
-        rec.update(_line_identity(ln.slot, la, lb))
+        rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles))
         lines.append(rec)
     return {
         "home": a.school, "away": b.school, "conf": conf,
@@ -98,11 +162,14 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     }
 
 
-def dual_between(a: Program, b: Program, *, seed: int, conf: bool) -> dict:
-    """Simulate one dual between two programs (squads from their current rosters)
-    and return the record dict. Used by season mode to play duals one at a time."""
-    sa, la = squad_and_ladder(a)
-    sb, lb = squad_and_ladder(b)
+def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
+                 form: dict | None = None, lineup_seed: int = 0) -> dict:
+    """Simulate one dual between two programs and return the record dict. Each
+    coach sets a lineup from their full roster (results-driven ladder + coach
+    noise, rotating bench/walk-ons in against weaker opponents), so the bottom of
+    the roster actually gets evaluated. Used by season mode (the world)."""
+    sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5), lineup_seed, seed)
+    sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5), lineup_seed, seed)
     return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf)
 
 

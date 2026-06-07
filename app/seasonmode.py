@@ -93,14 +93,30 @@ def _gen_regular_schedule(div, seed: int):
                     conf_games.append((y, x, name))
 
     allschools = [p.school for p in div.programs]
+    prestige = {p.school: getattr(p, "prestige", 0.5) for p in div.programs}
     nc_count = {s: 0 for s in allschools}
     pairs = set()
     nonconf = []
     order = allschools[:]
     rng.shuffle(order)
+
+    def _accept(s, o) -> float:
+        """How likely program s schedules o non-conference. Powerhouses load up
+        on mid/low-majors (and host them); they rarely play each other in the
+        regular season because a loss dents record + seeding."""
+        ps, po = prestige[s], prestige[o]
+        if ps > 0.62 and po > 0.62:
+            return 0.05                         # two heavyweights — almost never
+        gap = ps - po
+        if gap > 0.08:
+            return 0.92                         # classic cupcake / regional draw
+        if gap < -0.08:
+            return 0.45                         # scheduling up (guarantee game)
+        return 0.55                             # non-elite peers
+
     for s in order:
         tries = 0
-        while nc_count[s] < NONCONF_PER_TEAM and tries < 60:
+        while nc_count[s] < NONCONF_PER_TEAM and tries < 140:
             tries += 1
             o = rng.choice(allschools)
             if o == s or school_conf[o] == school_conf[s] or nc_count[o] >= NONCONF_PER_TEAM:
@@ -108,10 +124,17 @@ def _gen_regular_schedule(div, seed: int):
             key = tuple(sorted((s, o)))
             if key in pairs:
                 continue
+            if rng.random() > _accept(s, o):
+                continue
             pairs.add(key)
             nc_count[s] += 1
             nc_count[o] += 1
-            home, away = (s, o) if rng.random() < 0.5 else (o, s)
+            # The stronger program almost always hosts; the cupcake travels.
+            host_strong = prestige[s] >= prestige[o]
+            if rng.random() < 0.8:
+                home, away = (s, o) if host_strong else (o, s)
+            else:
+                home, away = (o, s) if host_strong else (s, o)
             nonconf.append((home, away, None))
 
     # assign to weeks: non-conf first, then conference
@@ -186,9 +209,10 @@ def list_seasons() -> list[dict]:
 def _programs(division: str, gender: str) -> dict:
     return {p.school: p for p in load_division(division, gender).programs}
 
-def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag):
+def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
     rec = dual_between(progs[home], progs[away],
-                       seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf))
+                       seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
+                       form=form, lineup_seed=s["seed"])
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
@@ -268,8 +292,10 @@ def advance(season_id: int) -> dict:
         wk = s["current_week"]
         due = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND week=?"
                            " AND status='scheduled'", (season_id, wk)).fetchall()
+        form = season_player_str(season_id)        # results so far drive this week's lineups
         for d in due:
-            _play_and_store(conn, s, progs, d["id"], d["home"], d["away"], d["is_conf"], f"reg{wk}")
+            _play_and_store(conn, s, progs, d["id"], d["home"], d["away"], d["is_conf"],
+                            f"reg{wk}", form=form)
         nxt = wk + 1
         phase = "regular" if nxt <= s["total_weeks"] else "conf_tournaments"
         conn.execute("UPDATE seasons SET current_week=?, phase=? WHERE id=?", (nxt, phase, season_id))
@@ -298,9 +324,10 @@ def _sim_round(conn, s, progs, rnd_tag, round_no, prefix):
     """Sim all scheduled duals of one tournament round; return list of rows."""
     due = conn.execute("SELECT * FROM duals WHERE season_id=? AND round=? AND round_no=?"
                        " AND status='scheduled'", (s["id"], rnd_tag, round_no)).fetchall()
+    form = season_player_str(s["id"])              # postseason lineups off full-season form
     for d in due:
         _play_and_store(conn, s, progs, d["id"], d["home"], d["away"], d["is_conf"],
-                        f"{prefix}{round_no}b{d['bpos']}")
+                        f"{prefix}{round_no}b{d['bpos']}", form=form)
     return due
 
 
