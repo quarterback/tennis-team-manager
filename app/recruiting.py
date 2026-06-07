@@ -29,6 +29,7 @@ _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 
 
 GEO_WEIGHT = 0.55           # max home-proximity pull, at homecooking=1, same region
+FAC_WEIGHT = 0.25           # how much a program's facilities grade lifts appeal
 
 
 @dataclass
@@ -41,6 +42,7 @@ class School:
     color: str = ""
     prestige: float = 0.50   # athletic brand pull
     academics: float = 0.50  # academic profile
+    facilities: float = 0.50 # facilities grade
     division: str = "D1"
     region: str = ""         # coarse geographic region code (for proximity)
 
@@ -66,7 +68,8 @@ def program_appeal(caliber: float, academic01: float, s: School,
     athletic = 0.6 * prox + 0.4 * (s.prestige * caliber)
     academic = s.academics * academic01
     geo = homecooking * region_proximity(home_region, s.region)
-    return max(0.0, athletic) * (1.0 + 0.9 * academic) * (1.0 + GEO_WEIGHT * geo)
+    return (max(0.0, athletic) * (1.0 + 0.9 * academic)
+            * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * s.facilities))
 
 
 # Full US state name → coarse region code (recruits store the full state name).
@@ -92,6 +95,7 @@ def schools_from_programs(programs, *, pi: dict | None = None) -> list["School"]
             name=p.school, strength=float(level if level is not None else p.strength),
             tier=p.division, abbr=abbr, color=color,
             prestige=getattr(p, "prestige", 0.5), academics=getattr(p, "academics", 0.5),
+            facilities=getattr(p, "facilities", 0.5),
             division=p.division, region=getattr(p, "region", ""),
         ))
     return out

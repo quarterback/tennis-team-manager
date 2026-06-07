@@ -121,6 +121,13 @@ def _academics(school: str, conf_abbr: str, division: str) -> float:
     return max(0.20, min(0.99, a + jitter * 0.06))
 
 
+def _facilities(school: str, conf_abbr: str, division: str) -> float:
+    """A plain 0..1 facilities grade — tracks prestige with per-school spread."""
+    pres = _prestige(school, conf_abbr, division)
+    jitter = (_stable_seed(f"fac|{school}") % 1000) / 1000.0 - 0.5
+    return max(0.20, min(0.97, 0.30 + 0.55 * pres + 0.30 * jitter))
+
+
 # --------------------------------------------------------------------------
 # Geography — real campus locations (data/ncaa/locations.json, researched per
 # school). State → coarse region drives recruiting proximity and cross-division
@@ -197,6 +204,7 @@ class Program:
     strength: float
     prestige: float = 0.50
     academics: float = 0.50
+    facilities: float = 0.50
     city: str = ""
     state: str = ""
     region: str = ""
@@ -255,6 +263,7 @@ def load_division(division: str, gender: str) -> Division:
                 strength=_latent_strength(school, abbr, gender, division),
                 prestige=_prestige(school, abbr, division),
                 academics=_academics(school, abbr, division),
+                facilities=_facilities(school, abbr, division),
                 city=city, state=state, region=region,
                 autobid=bool(c.get("autobid", True)),
             ))

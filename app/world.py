@@ -40,7 +40,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _pick_gender, region_proximity, REGION_ADJACENT,
                    ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
-                         home_region, GEO_WEIGHT)
+                         home_region, GEO_WEIGHT, FAC_WEIGHT)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker, region_preset
 
@@ -328,7 +328,8 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         taken[r["school"]] = taken.get(r["school"], 0) + 1
 
     progs = _flat_programs(gender)
-    traits = {s: (p.prestige, p.academics, p.region, p.division) for s, p in progs.items()}
+    traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
+              for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     avail = {s: cap.get(s, 0) - taken.get(s, 0) for s in progs}
     # Candidate indexing: each recruit only weighs programs near their athletic
@@ -358,11 +359,11 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         for s in cands:
             if avail.get(s, 0) <= 0:
                 continue
-            pres, acad, reg, div = traits[s]
+            pres, acad, reg, div, fac = traits[s]
             athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
             geo = hc * region_proximity(hr, reg)        # one-way; intl hc=0 → no geo
             score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
-                     * (1.0 + GEO_WEIGHT * geo) * (1 + jit))
+                     * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
             if intl:                                     # internationals route by tier
                 score *= INTL_TIER_PULL[_intl_tier(div, acad)]
             if score > best_score:
@@ -480,6 +481,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         pool.update(schools)
     schools = [s for s in pool if s in progs]
     prestige = {s: progs[s].prestige for s in schools}
+    facilities = {s: progs[s].facilities for s in schools}
     level = {s: _prog_level(progs[s]) for s in schools}
     strs = {s: sorted(_str_of(player_str, p) for p in pool[s]) for s in schools}
     schol = {s: _scholarship_count(pool[s]) for s in schools}
@@ -541,10 +543,12 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
                 out["depart"] += 1
             continue
 
-        up_dest = None                     # highest-prestige reach where they'd contribute
-        for d in reversed(band(src_pres + 1e-9, src_pres + PRESTIGE_BAND)):
+        up_dest, up_draw = None, -1.0      # best reach where they'd contribute
+        for d in band(src_pres + 1e-9, src_pres + PRESTIGE_BAND):
             if open_slot(d) and line_of(d, s) <= 6:
-                up_dest = d; break
+                draw = prestige[d] + 0.3 * facilities[d]   # facilities sweeten the move
+                if draw > up_draw:
+                    up_dest, up_draw = d, draw
         down_dest, down_line = None, cl    # weaker program where they'd play higher
         for d in band(src_pres - PRESTIGE_BAND, src_pres):
             if open_slot(d):
