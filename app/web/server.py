@@ -19,11 +19,12 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    dashboard_view)
+                    dashboard_view, team_budget)
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
 from app import overrides as ov
+from app.ncaa import load_division
 from .state import DEFAULT_SEED
 
 # label → route; drives the green TopNav across every page.
@@ -156,9 +157,12 @@ def create_app() -> Flask:
         schools = [r.school for r in ranking_rows(division, gender)]
         abbr, color = crest(school)
         row = get_row(school)
+        prog = load_division(division, gender).by_school(school)
         return render_template("teams.html", active="Teams", rows=rows, school=school,
                                abbr=abbr, color=color, row=row, schools=schools, u=u,
-                               uni_label=label, staff=coaching_staff(division, gender, school))
+                               uni_label=label, staff=coaching_staff(division, gender, school),
+                               city=(prog.location if prog else ""),
+                               budget=team_budget(division, gender, school))
 
     @app.route("/player/<pid>")
     def player(pid):

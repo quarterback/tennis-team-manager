@@ -92,6 +92,40 @@ def cmd_initdb(args):
     print(f"Initialised DB at {DB_PATH}")
 
 
+def cmd_persist_rosters(args):
+    """Generate program rosters and write them to the DB — origins, scholarships
+    and all. Exercises the persistence path the live (in-memory) app sidesteps,
+    so rosters survive on disk with their hometowns/majors/aid intact."""
+    from app.db import init_db, connect, save_prospect, DB_PATH
+    from app.ncaa import load_division, build_roster, UNIVERSE_PAIRS, reset_caches
+    from app import economy
+
+    init_db()
+    pairs = ([(args.division, args.gender)] if args.division
+             else UNIVERSE_PAIRS)
+    reset_caches()
+    total = 0
+    conn = connect()
+    try:
+        for division, gender in pairs:
+            try:
+                div = load_division(division, gender)
+            except FileNotFoundError:
+                continue
+            for prog in div.programs:
+                roster = build_roster(prog)
+                for pr in roster:
+                    save_prospect(conn, pr, school=prog.school, division=division)
+                    total += 1
+            cap = economy.cap_for(division, gender)
+            print(f"  {division} {gender}: {len(div.programs)} programs "
+                  f"(cap {cap:g} schol./team)")
+        conn.commit()
+    finally:
+        conn.close()
+    print(f"Persisted {total} players to {DB_PATH}")
+
+
 def cmd_season(args):
     from app.season import run_season
     from app.bracket import select_field, run_bracket, clamp_field
@@ -268,6 +302,13 @@ def main():
 
     sub.add_parser("presets").set_defaults(func=cmd_presets)
     sub.add_parser("initdb").set_defaults(func=cmd_initdb)
+
+    persist = sub.add_parser("persist-rosters",
+                             help="generate rosters and write them (origins + "
+                                  "scholarships) to the DB")
+    persist.add_argument("--division", default="", help="one division (e.g. D1); omit for all")
+    persist.add_argument("--gender", default="men", choices=["men", "women"])
+    persist.set_defaults(func=cmd_persist_rosters)
 
     sm = sub.add_parser("seasonmode")
     sm.add_argument("--division", default="D1")

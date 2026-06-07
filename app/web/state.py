@@ -376,13 +376,23 @@ def active_overrides():
 
 def team_roster(division: str, gender: str, school: str):
     """Roster rows for a Team page: (player, line, live STR, reliability, W-L)."""
+    from app import economy
     sr = get_season(division, gender)
     roster = sr.rosters.get(school, [])
     rows = []
     for p in sorted(roster, key=lambda q: q.current_overall(), reverse=True):
         s, rel = sr.player_str.get(p.pid, (p.str_value(), 0.0))
         w, l = sr.player_record.get(p.pid, (0, 0))
-        rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l})
+        rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l,
+                     "schol": economy.fraction_label(getattr(p, "scholarship", 0.0))})
     for i, r in enumerate(rows, 1):
         r["line"] = i if i <= 6 else None       # top 6 are the singles lineup
     return rows
+
+
+def team_budget(division: str, gender: str, school: str) -> dict:
+    """Scholarship-equivalency ledger for a program's team page."""
+    from app import economy
+    sr = get_season(division, gender)
+    roster = sr.rosters.get(school, [])
+    return economy.budget_summary(roster, division, gender)
