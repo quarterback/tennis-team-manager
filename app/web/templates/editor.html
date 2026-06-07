@@ -19,18 +19,20 @@
 
 <div class="bl-container" style="padding-top:14px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification</span>
-      <span class="bl-panel-meta">finite budget · exchange rate diminishes by level (D1 = 1.0)</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification &amp; gender</span>
+      <span class="bl-panel-meta">finite budget · caps differ by gender (women's tennis is a headcount sport) · exchange rate diminishes by level (D1 = 1.0)</span></div>
     <form method="post" action="{{ url_for('editor_scholarship') }}">
       <input type="hidden" name="u" value="{{ u }}">
       <div class="bl-schol-grid">
         {% for s in scholarships %}
         <div class="bl-schol-cell">
-          <div class="t-eyebrow">{{ s.division }}{% if s.fractional %} · splits to ¼{% endif %}</div>
+          <div class="t-eyebrow">{{ s.division }} · {{ s.gender }}{% if s.fractional %} · splits to ¼{% endif %}</div>
+          <label class="bl-schol-f">Cap (equiv.)
+            <input class="bl-input" type="number" name="cap_{{ s.division }}_{{ s.gender }}" value="{{ s.cap }}" min="0" max="16" step="0.5"></label>
           <label class="bl-schol-f">Count
-            <input class="bl-input" type="number" name="count_{{ s.division }}" value="{{ s.count }}" min="0" max="12" step="1"></label>
+            <input class="bl-input" type="number" name="count_{{ s.division }}_{{ s.gender }}" value="{{ s.count }}" min="0" max="12" step="1"></label>
           <label class="bl-schol-f">Rate
-            <input class="bl-input" type="number" name="rate_{{ s.division }}" value="{{ s.rate }}" min="0" max="1" step="0.05"></label>
+            <input class="bl-input" type="number" name="rate_{{ s.division }}_{{ s.gender }}" value="{{ s.rate }}" min="0" max="1" step="0.05"></label>
           <div class="bl-schol-val">value <b>{{ s.effective_value }}</b></div>
         </div>
         {% endfor %}

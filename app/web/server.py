@@ -19,13 +19,14 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    dashboard_view, team_results, season_match_view,
+                    dashboard_view, team_budget, team_results, season_match_view,
                     conference_schools, team_conference, world_hub)
 from app import world as wd
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
 from app import overrides as ov
+from app.ncaa import load_division
 from .state import DEFAULT_SEED
 
 MY_TEAM = "Oregon"          # the club the human manages
@@ -234,10 +235,13 @@ def create_app() -> Flask:
         schools = [r.school for r in ranking_rows(division, gender)]
         abbr, color = crest(school)
         row = get_row(school)
+        prog = load_division(division, gender).by_school(school)
         return render_template("teams.html", active="Teams", rows=rows, school=school,
                                abbr=abbr, color=color, row=row, schools=schools, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
-                               results=team_results(division, gender, school), crest=crest)
+                               results=team_results(division, gender, school), crest=crest,
+                               city=(prog.location if prog else ""),
+                               budget=team_budget(division, gender, school))
 
     @app.route("/teams/match")
     def team_match():
@@ -310,22 +314,43 @@ def create_app() -> Flask:
             school = schools[0]
             rows, head = editor_roster(division, gender, school)
         from app import scholarships as sch
-        schol = [{"division": d, **sch.limits(d)} for d in ("D1", "D2", "D3")]
+        # Per (classification, gender) — women's tennis is a headcount sport,
+        # men's an equivalency sport, so the caps differ by gender like real life.
+        schol = [{"division": d, "gender": g, **sch.limits(d, g)}
+                 for d in ("D1", "D2", "D3") for g in ("men", "women")]
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
                                groups=all_programs_grouped(), ov=active_overrides(),
-                               scholarships=schol, schol_elite=sch.limits("D3", academics=0.95))
+                               scholarships=schol,
+                               schol_elite=sch.limits("D3", "men", academics=0.95))
 
     @app.route("/editor/scholarship", methods=["POST"])
     def editor_scholarship():
         from app import scholarships as sch
         u = request.form.get("u", "D1-men")
         for d in ("D1", "D2", "D3"):
-            try:
-                sch.set_limit(d, count=int(request.form.get(f"count_{d}")),
-                              rate=float(request.form.get(f"rate_{d}")))
-            except (TypeError, ValueError):
-                pass
+            for g in ("men", "women"):
+                kwargs = {}
+                count_raw = request.form.get(f"count_{d}_{g}")
+                cap_raw = request.form.get(f"cap_{d}_{g}")
+                rate_raw = request.form.get(f"rate_{d}_{g}")
+                if count_raw not in (None, ""):
+                    try:
+                        kwargs["count"] = int(count_raw)
+                    except ValueError:
+                        pass
+                if cap_raw not in (None, ""):
+                    try:
+                        kwargs["cap"] = float(cap_raw)
+                    except ValueError:
+                        pass
+                if rate_raw not in (None, ""):
+                    try:
+                        kwargs["rate"] = float(rate_raw)
+                    except ValueError:
+                        pass
+                if kwargs:
+                    sch.set_limit(d, g, **kwargs)
         reset_all()
         return redirect(url_for("editor", u=u))
 

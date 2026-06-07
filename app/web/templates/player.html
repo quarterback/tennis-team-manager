@@ -53,7 +53,8 @@
           <tr><td>Hometown</td><td>{{ info.hometown }}</td></tr>
           {% if info.high_school %}<tr><td>High School</td><td>{{ info.high_school }}</td></tr>{% endif %}
           <tr><td>Major</td><td>{{ info.major }}</td></tr>
-          <tr><td>Status</td><td>{{ "Walk-on" if info.walk_on else "Scholarship" }}</td></tr>
+          {% if info.school_city %}<tr><td>Program</td><td>{{ info.school }} · {{ info.school_city }}</td></tr>{% endif %}
+          <tr><td>Scholarship</td><td>{% if info.walk_on %}Walk-on{% elif info.scholarship and info.scholarship > 0 %}{{ info.scholarship_label }} ride ({{ "%.2f"|format(info.scholarship) }} equiv.){% else %}Recruited (no athletic aid){% endif %}</td></tr>
           <tr><td>Record</td><td>{{ wins }}-{{ losses }}</td></tr>
         </tbody></table></div>
       </div>

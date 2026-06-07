@@ -205,14 +205,18 @@ class Program:
     prestige: float = 0.50
     academics: float = 0.50
     facilities: float = 0.50
-    city: str = ""
+    city: str = ""              # real campus location (data/ncaa/locations.json)
     state: str = ""
-    region: str = ""
+    region: str = ""            # coarse region (STATE_REGION) for recruiting proximity
     autobid: bool = True
 
     @property
     def key(self) -> str:
         return f"{self.school}|{self.division}|{self.gender}"
+
+    @property
+    def location(self) -> str:
+        return f"{self.city}, {self.state}" if self.city else ""
 
 
 @dataclass
@@ -333,8 +337,11 @@ def _base_roster(p: Program):
         # the player's nation (real city pools + flags), so no synthetic override.
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
-    for idx, pr in enumerate(roster):
-        pr.walk_on = idx >= scholarships.slots(p)  # funded slots vary by classification
+    # Funded headcount varies by classification (app.scholarships); the
+    # equivalency split + display fractions layer on top (app.economy).
+    from app import economy
+    economy.allocate_scholarships(roster, p.division, p.gender,
+                                  scholarship_slots=scholarships.slots(p))
     _roster_cache[p.key] = roster
     return roster
 
@@ -395,9 +402,9 @@ def build_roster(p: Program):
         pos = {pid: i for i, pid in enumerate(order)}
         big = len(order) + len(roster)
         roster.sort(key=lambda pr: pos.get(pr.pid, big))   # stable; pinned to front
-    schol = scholarships.slots(p)
-    for i, pr in enumerate(roster):
-        pr.walk_on = i >= schol
+    from app import economy
+    economy.allocate_scholarships(roster, p.division, p.gender,
+                                  scholarship_slots=scholarships.slots(p))
     _eff_cache[p.key] = roster
     return roster
 

@@ -110,6 +110,8 @@ class Offer:
     interest: str            # Hot / Warm / Cold
     strikeprediction: int    # commit-% (0 when not a contender)
     status: str              # 'Finalist' | 'Top School' | ''
+    scholarship: float = 0.0    # equivalency fraction the program put on the table
+    scholarship_label: str = "—"
 
 
 @dataclass
@@ -183,6 +185,18 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
     tot = sum(raw) or 1.0
     shares = [int(round(100 * r / tot)) for r in raw]
 
+    from app import economy
+    gender = getattr(p, "gender", "male")
+
+    def _aid(s: School) -> tuple[float, str]:
+        """Scholarship a program of this tier would offer the recruit. The
+        ranking board is the D1 universe; a non-aid program (modelled via its
+        prestige tier) instead leans on brand, surfaced as a label."""
+        frac = economy.offered_fraction("D1", gender, caliber)
+        if frac <= 0:
+            return 0.0, "Prestige"
+        return frac, economy.fraction_label(frac)
+
     offers: list[Offer] = []
     for i, s in enumerate(chosen):
         is_contender = i < len(contenders)
@@ -195,9 +209,11 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
             status = "Top School"
         else:
             status = ""
+        frac, frac_label = _aid(s)
         offers.append(Offer(
             school=s.name, abbr=s.abbr, color=s.color, offered=True,
             interest=_interest(fit(s) / fmax, rng), strikeprediction=pct, status=status,
+            scholarship=frac, scholarship_label=frac_label,
         ))
 
     # Dreamsheet: the recruit's aspirational picks — top programs by combined
