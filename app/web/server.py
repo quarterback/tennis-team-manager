@@ -11,17 +11,21 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, abort
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES
-from .state import ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS
+from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
+                    recruit_rows, get_recruit, recruit_profile, team_roster,
+                    RECRUIT_GENDERS)
+from app.juniors import US_STATES
 
 # label → route; drives the green TopNav across every page.
 NAV = [
     ("Rankings", "/"),
     ("Dual Simulator", "/dual"),
     ("Bracket", "/bracket"),
+    ("Recruiting", "/recruiting"),
     ("Teams", "/teams"),
     ("Methodology", "/methodology"),
 ]
@@ -115,17 +119,61 @@ def create_app() -> Flask:
 
     @app.route("/teams")
     def teams():
-        return render_template("placeholder.html", active="Teams",
-                               title="Teams", phase="P8 · team pages",
-                               blurb="Roster ladder (singles 1–6, doubles pairings) and dual results, "
-                                     "with each player's modified-UTR and reliability.")
+        division, gender, label, u = _universe(request)
+        school = request.args.get("school", "Oregon")
+        rows = team_roster(division, gender, school)
+        if not rows:                                  # fall back to a real school
+            school = ranking_rows(division, gender)[0].school
+            rows = team_roster(division, gender, school)
+        schools = [r.school for r in ranking_rows(division, gender)]
+        abbr, color = crest(school)
+        row = get_row(school)
+        return render_template("teams.html", active="Teams", rows=rows, school=school,
+                               abbr=abbr, color=color, row=row, schools=schools, u=u,
+                               uni_label=label)
 
-    @app.route("/schedule")
-    def schedule():
-        return render_template("placeholder.html", active="Schedule",
-                               title="Schedule", phase="P4 · leagues & seasons",
-                               blurb="Season schedules and standings across the six concurrent "
-                                     "divisions (D1/D2/D3 × men's/women's).")
+    @app.route("/player/<pid>")
+    def player(pid):
+        division, gender, label, u = _universe(request)
+        school = request.args.get("school", "Oregon")
+        rows = team_roster(division, gender, school)
+        r = next((x for x in rows if x["p"].pid == pid), None)
+        if r is None:
+            abort(404)
+        return render_template("player.html", active="Teams", r=r, school=school,
+                               crest=crest, u=u, uni_label=label)
+
+    @app.route("/recruiting")
+    def recruiting():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        scope = request.args.get("scope", "national")
+        state = request.args.get("state", "California")
+        rows = recruit_rows(rg, grad_year, scope=scope, state=state)
+        return render_template("recruiting.html", active="Recruiting", rows=rows[:100],
+                               total=len(rows), gender=gender, grad_year=grad_year,
+                               scope=scope, state=state, u=u, uni_label=label,
+                               states=[s for s, _ in US_STATES],
+                               grad_years=[2026, 2027, 2028, 2029])
+
+    @app.route("/recruit/<pid>")
+    def recruit(pid):
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        p = get_recruit(rg, grad_year, pid)
+        if p is None:
+            abort(404)
+        view = recruit_profile(p, rg, grad_year)
+        return render_template("recruit.html", active="Recruiting", p=p, view=view,
+                               gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
     return app
 

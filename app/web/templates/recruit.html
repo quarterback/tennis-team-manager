@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Baseline — {{ p.name }}{% endblock %}
+{% block content %}
+{% set parts = p.name.split() %}
+{% set initials = (parts[0][0] ~ parts[-1][0])|upper %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Recruiting › class of {{ grad_year }} › Profile</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('recruiting', u=u, grad_year=grad_year) }}">← Recruiting board</a>
+</div></div>
+
+<div class="bl-board">
+  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
+    <span class="bl-crest lg" style="background:var(--brand);width:56px;height:56px;font-size:16px">{{ initials }}</span>
+    <div><div class="tname">{{ p.name }} <span style="font-size:13px;color:var(--text-muted)">{{ p.country }}</span></div>
+      <div class="tsub">Class of {{ grad_year }} · {{ p.hometown }} ·
+        <span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">
+          {{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} {{ p.recruit_tier }}</span></div></div>
+    <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
+      <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(p.str_value()) }}</span>
+      <div class="tsub">current (projection)</div></div>
+  </div>
+
+  <div class="bl-board-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Rankings</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable"><tbody>
+            <tr><td>National (class of {{ grad_year }})</td><td class="w">#{{ view.national_rank }}</td></tr>
+            <tr><td>{{ view.region_label }}</td><td class="w">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</td></tr>
+            <tr><td>STR</td><td class="w">{{ "%.1f"|format(p.str_value()) }}</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Scouting</span>
+        <span class="bl-panel-meta">two independent ceiling reads (±fog)</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable"><tbody>
+            <tr><td>Shared service (consensus)</td><td class="w">{{ "%.1f"|format(view.service) }}</td></tr>
+            <tr><td>Your department</td><td class="w">{{ "%.1f"|format(view.dept) }}</td></tr>
+            <tr><td>4-year projection</td><td class="w">{{ "%.1f"|format(view.projection) }}</td></tr>
+          </tbody></table>
+          <p style="margin:10px 0 0;font-size:13px;color:var(--text-secondary);line-height:1.5">
+            STR is what he does <em>now</em>; the scouts project the <em>ceiling</em>. When they disagree,
+            that's the gem/bust call — a modest STR with a high projection is a riser; a high STR that
+            barely projects up is an early bloomer who may plateau.</p>
+        </div>
+      </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Activity</span></div>
+        <div class="bl-panel-body"><p style="margin:0;font-size:13px;color:var(--text-muted)">
+          Junior results / tournament record render here once the junior circuits are simulated (P6).</p></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Recruiting</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable"><tbody>
+            <tr><td>Intended major</td><td>{{ p.major }}</td></tr>
+            <tr><td>Origin</td><td>{{ 'Domestic' if p.domestic else 'International' }}</td></tr>
+            <tr><td>Commitment</td><td>{{ 'Committed' if p.committed else 'Uncommitted' }}</td></tr>
+          </tbody></table>
+          <p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);line-height:1.5">
+            Schools of interest, scholarship offers and commit prediction land here with the
+            recruiting layer (P7).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

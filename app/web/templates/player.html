@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Baseline — {{ r.p.name }}{% endblock %}
+{% block content %}
+{% set p = r.p %}
+{% set abbr, color = crest(school) %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Teams › {{ school }} › Player</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=school, u=u) }}">← {{ school }} roster</a>
+</div></div>
+
+<div class="bl-board">
+  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
+    <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
+    <div><div class="tname">{{ p.name }} <span style="font-size:13px;color:var(--text-muted)">{{ p.country }}</span></div>
+      <div class="tsub">{{ p.class_year }} · {{ school }} · {{ uni_label }}{% if p.walk_on %} · walk-on{% endif %}</div></div>
+    <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
+      <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(r.str) }}</span>
+      <div class="tsub">reliability {{ "%.2f"|format(r.rel) }}</div></div>
+  </div>
+
+  <div class="bl-board-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Bio</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable"><tbody>
+            <tr><td>Class</td><td>{{ p.class_year }}</td></tr>
+            <tr><td>Hometown</td><td>{{ p.hometown }}</td></tr>
+            <tr><td>Major</td><td>{{ p.major }}</td></tr>
+            <tr><td>Lineup</td><td>{% if r.line %}Singles line {{ r.line }}{% else %}Reserve{% endif %}</td></tr>
+            <tr><td>Status</td><td>{{ "Walk-on" if p.walk_on else "Scholarship" }}</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">This season</span></div>
+        <div class="bl-panel-body">
+          <p style="margin:0;font-size:14px;color:var(--text-secondary)">
+            Singles record <strong style="color:var(--text-primary)">{{ r.w }}-{{ r.l }}</strong> ·
+            live STR <span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span>
+            (reliability {{ "%.2f"|format(r.rel) }}).</p>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Historical</span></div>
+        <div class="bl-panel-body">
+          <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5">
+            Year-by-year career (school each season, STR, record — transfers visible) is tracked
+            across a multi-season league run. <code style="font-family:var(--font-mono)">manage.py league</code>
+            logs it today; the multi-year web view is the next step.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

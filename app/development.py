@@ -117,6 +117,7 @@ class Prospect:
     region: str = ""                                 # US state name, or nation
     domestic: bool = True                            # US recruit?
     grad_year: int = 0                               # graduating class
+    major: str = ""                                  # academic major (bio flavor)
     # Recruiting-board placement (set by app.juniors.rank_class)
     recruit_rank: int = 0
     recruit_tier: str = ""
@@ -194,10 +195,11 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     maturity = rng.uniform(MATURITY_MIN, MATURITY_MAX)
     current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in ATTRS}
     tier, rate, mult = _draw_interest(rng)
+    from generators.majors import pick_major
     return Prospect(
         name=name, country=country, gender=gender,
         current=current, potential=potential,
         interest_rate=rate, tier=tier, tier_mult=mult,
         fog=rng.uniform(FOG_MIN, FOG_MAX),
-        consensus_seed=rng.randrange(1 << 30), pid=pid,
+        consensus_seed=rng.randrange(1 << 30), pid=pid, major=pick_major(rng),
     )

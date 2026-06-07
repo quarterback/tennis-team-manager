@@ -5,6 +5,7 @@ the Power Index table.
 """
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 
 from app.season import run_season
@@ -113,3 +114,75 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
 def conferences_for(division: str, gender: str) -> list[str]:
     sr = get_season(division, gender)
     return ["All"] + sorted(sr.standings.keys())
+
+
+# --------------------------------------------------------------------------
+# Recruiting (juniors) — board + profile
+# --------------------------------------------------------------------------
+from app.juniors import (generate_class, national_rankings, state_rankings,
+                         international_rankings, US_STATES)
+from app.development import overall_to_str
+
+_recruit_cache: dict = {}
+RECRUIT_GENDERS = {"men": "male", "women": "female"}
+
+
+def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """Cached recruiting class. `gender` is "male"/"female" (juniors vocab)."""
+    key = (gender, grad_year, seed)
+    if key not in _recruit_cache:
+        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
+        klass = generate_class(rng, n=400, grad_year=grad_year, gender=gender)
+        national_rankings(klass)        # assigns recruit_rank / tier / stars
+        _recruit_cache[key] = klass
+    return _recruit_cache[key]
+
+
+def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED):
+    return next((p for p in get_recruits(gender, grad_year, seed).recruits if p.pid == pid), None)
+
+
+def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: str = ""):
+    klass = get_recruits(gender, grad_year)
+    if scope == "state":
+        src = state_rankings(klass, state)
+    elif scope == "intl":
+        src = international_rankings(klass)
+    else:
+        src = national_rankings(klass)
+    return list(enumerate(src, 1))      # (board_rank, Prospect)
+
+
+def recruit_profile(p, gender: str, grad_year: int):
+    """Build the profile view: national/regional rankings + scouting reports."""
+    klass = get_recruits(gender, grad_year)
+    if p.domestic:
+        regional = state_rankings(klass, p.region)
+        region_rank = next((i for i, q in enumerate(regional, 1) if q.pid == p.pid), None)
+        region_label = p.region
+    else:
+        intl = international_rankings(klass)
+        region_rank = next((i for i, q in enumerate(intl, 1) if q.pid == p.pid), None)
+        region_label = "International"
+    return {
+        "national_rank": p.recruit_rank,
+        "region_rank": region_rank,
+        "region_label": region_label,
+        "service": overall_to_str(p.scouting_report("service")),   # two independent ceiling reads
+        "dept": overall_to_str(p.scouting_report("dept")),
+        "projection": overall_to_str(p.project(4)),
+    }
+
+
+def team_roster(division: str, gender: str, school: str):
+    """Roster rows for a Team page: (player, line, live STR, reliability, W-L)."""
+    sr = get_season(division, gender)
+    roster = sr.rosters.get(school, [])
+    rows = []
+    for p in sorted(roster, key=lambda q: q.current_overall(), reverse=True):
+        s, rel = sr.player_str.get(p.pid, (p.str_value(), 0.0))
+        w, l = sr.player_record.get(p.pid, (0, 0))
+        rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l})
+    for i, r in enumerate(rows, 1):
+        r["line"] = i if i <= 6 else None       # top 6 are the singles lineup
+    return rows

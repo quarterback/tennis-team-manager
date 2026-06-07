@@ -24,7 +24,7 @@ import random
 from dataclasses import dataclass
 
 from generators import make_name_picker, region_preset
-from .development import Prospect, generate_prospect
+from .development import Prospect, generate_prospect, make_pid
 
 # US states + DC (name, abbr).
 US_STATES = [
@@ -94,7 +94,7 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     state_weights = [_STATE_WEIGHT.get(s[1], 1) for s in US_STATES]
 
     recruits: list[Prospect] = []
-    for _ in range(n):
+    for i in range(n):
         domestic = rng.random() >= intl_share
         if domestic:
             name, _ = us_name()
@@ -105,7 +105,8 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
             region = country or "INT"
         city = rng.choice(_CITIES)
         talent = max(24.0, min(80.0, rng.gauss(talent_mean, talent_sd)))
-        p = generate_prospect(rng, name, country, gender=gender, talent=talent)
+        p = generate_prospect(rng, name, country, gender=gender, talent=talent,
+                              pid=make_pid("recruit", grad_year, gender, i))
         p.hometown = f"{city}, {region}"
         p.region = region
         p.domestic = domestic
