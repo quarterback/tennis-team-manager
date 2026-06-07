@@ -38,9 +38,11 @@ def test_recruits_deterministic(client):
     assert a == b and len(set(a)) == len(a)        # cached + stable, unique pids
 
 
-def test_team_and_player_pages(client):
+def test_team_and_player_pages(client, tmp_path):
+    import app.seasonmode as sm
+    sm.DB_PATH = str(tmp_path / "season.db")          # player card reads season-mode data
     assert client.get("/teams?u=D1-men&school=Oregon").status_code == 200
     pid = team_roster("D1", "men", "Oregon")[0]["p"].pid
     r = client.get(f"/player/{pid}?u=D1-men&school=Oregon")
     assert r.status_code == 200
-    assert b"Historical" in r.data
+    assert b"match by match" in r.data and b"Bio" in r.data

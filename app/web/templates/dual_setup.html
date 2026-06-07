@@ -2,18 +2,25 @@
 {% block title %}Baseline — Dual Simulator{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Simulate › New dual match</span>
+  <form method="get" style="display:contents">
+    <label class="bl-field"><span class="bl-field-label">Division</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select></span></label>
+  </form>
+  <span style="font-size:13px;color:var(--text-muted)">Simulate › new dual · {{ uni_label }} · {{ schools|length }} programs</span>
 </div></div>
 
 <form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
+  <input type="hidden" name="u" value="{{ u }}">
   <h1>Simulate a Dual</h1>
-  <p class="intro">Pick two teams. Baseline builds each squad from its Power Index, runs the doubles point
-    and all six singles to a clinch, and sweeps the fast model to estimate who wins.</p>
+  <p class="intro">Pick any two programs in {{ uni_label }}. Baseline plays the doubles point and all
+    six singles from each team's real roster, then sweeps the fast model to estimate who wins.</p>
 
   <div class="bl-slots">
     {% for slot, sel in [('home', home), ('away', away)] %}
     {% set abbr, color = crest(sel) %}
-    {% set row = get_row(sel) %}
+    {% set row = ranks.get(sel) %}
     <div class="bl-slot">
       <div class="bl-th" style="margin-bottom:8px">{{ 'HOME' if slot == 'home' else 'AWAY' }}</div>
       <div class="bl-slot-card">
@@ -24,7 +31,7 @@
           </select>
           <div class="bl-slot-meta">
             {% if row %}<span class="bl-badge tier-{{ row.tier }}">{{ row.tier }}</span>
-            <span>{{ row.conf }} · {{ row.rec }}</span>{% endif %}
+            <span>{{ row.conf_abbr }} · {{ row.rec }}</span>{% endif %}
           </div>
         </div>
         {% if row %}<div style="text-align:right">
@@ -44,9 +51,9 @@
     </div>
     <div class="bl-cfgrow">
       <div><div class="lbl">Fidelity</div><div class="hint">Point-by-point, or the fast game-level model</div></div>
-      <div class="bl-seg" id="fidseg">
+      <div class="bl-seg">
         {% for f in fidelities %}
-        <button type="button" class="{{ 'active' if f == 'full' else '' }}" data-fid="{{ f }}"
+        <button type="button" class="{{ 'active' if f == 'full' else '' }}"
           onclick="document.getElementById('fid').value='{{ f }}';for(b of this.parentNode.children)b.classList.remove('active');this.classList.add('active')">{{ f|capitalize }}</button>
         {% endfor %}
       </div>

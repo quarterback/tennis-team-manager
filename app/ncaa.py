@@ -153,6 +153,7 @@ def build_roster(p: Program):
     if p.key in _roster_cache:
         return _roster_cache[p.key]
     from generators import make_name_picker, region_preset
+    from generators.origins import pick_origin
     from .development import generate_prospect, make_pid
     seed = _stable_seed(p.key) & 0xFFFFFFFF
     rng = random.Random(seed)
@@ -166,6 +167,9 @@ def build_roster(p: Program):
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(p.key, i))
         pr.class_year = CLASS_YEARS[i % len(CLASS_YEARS)]
+        o = pick_origin(rng, country)
+        pr.hometown, pr.region = o["hometown"], o["region"]
+        pr.high_school, pr.domestic = o["high_school"], o["domestic"]
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
     for idx, pr in enumerate(roster):

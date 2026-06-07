@@ -51,7 +51,8 @@
           </div>{% endfor %}</div>
       </div>{% endif %}
       {% if last %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Last week results</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Latest results</span>
+        <span class="bl-panel-meta">{{ last[0].round if last[0].round != 'REG' else 'week ' ~ last[0].week }}</span></div>
         <div>{% for d in last if d.status == 'final' %}
           <a class="bl-brk-match" style="grid-template-columns:1fr auto 1fr;text-decoration:none" href="{{ url_for('season_dual', dual_id=d.id, u=u) }}">
             <span class="bl-brk-team {{ 'bl-brk-win' if d.winner==0 else 'bl-brk-lose' }}"><span class="nm">{{ d.home }}</span></span>

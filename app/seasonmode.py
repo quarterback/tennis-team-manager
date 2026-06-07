@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS seasons (
 CREATE TABLE IF NOT EXISTS duals (
   id INTEGER PRIMARY KEY, season_id INTEGER, week INTEGER, round TEXT,
   conf TEXT, is_conf INTEGER, home TEXT, away TEXT, status TEXT,
-  home_points INTEGER, away_points INTEGER, winner INTEGER, lines_json TEXT
+  home_points INTEGER, away_points INTEGER, winner INTEGER, lines_json TEXT,
+  round_no INTEGER DEFAULT 0, bpos INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_duals_season ON duals(season_id, round, week);
 """
@@ -56,6 +57,11 @@ def _db() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.executescript(_SCHEMA)
+    for col in ("round_no INTEGER DEFAULT 0", "bpos INTEGER DEFAULT 0"):
+        try:
+            conn.execute(f"ALTER TABLE duals ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
     return conn
 
 
@@ -188,6 +194,67 @@ def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag):
     return rec
 
 
+def _completed(conn, season_id, rounds=("REG", "CT", "NCAA")) -> list[dict]:
+    """All completed duals (any phase by default) as record dicts."""
+    qs = ",".join("?" for _ in rounds)
+    rows = conn.execute(
+        f"SELECT home, away, round, is_conf, home_points, away_points, winner, lines_json"
+        f" FROM duals WHERE season_id=? AND status='final' AND round IN ({qs})",
+        (season_id, *rounds)).fetchall()
+    out = []
+    for r in rows:
+        out.append({"home": r["home"], "away": r["away"], "round": r["round"],
+                    "conf": bool(r["is_conf"]), "home_won": r["winner"] == 0,
+                    "home_points": r["home_points"], "away_points": r["away_points"],
+                    "lines": json.loads(r["lines_json"] or "[]")})
+    return out
+
+
+def _completed_reg_duals(conn, season_id) -> list[dict]:
+    return _completed(conn, season_id, ("REG",))
+
+
+def _conf_standings(duals, div):
+    wl = {}
+    for d in duals:
+        if not d["conf"]:
+            continue
+        for t in (d["home"], d["away"]):
+            wl.setdefault(t, [0, 0])
+        if d["home_won"]:
+            wl[d["home"]][0] += 1; wl[d["away"]][1] += 1
+        else:
+            wl[d["away"]][0] += 1; wl[d["home"]][1] += 1
+    return wl
+
+
+def _winpct(wl, school):
+    w, l = wl.get(school, [0, 0])
+    return w / (w + l) if (w + l) else 0.0
+
+
+def _pow2_le(n: int) -> int:
+    p = 1
+    while p * 2 <= n:
+        p *= 2
+    return p
+
+
+def _round1_pairs(seeded: list[str]) -> list[tuple[int, str, str]]:
+    n = _pow2_le(len(seeded))
+    seeded = seeded[:n]
+    pos = _seed_positions(n)
+    slots = [seeded[i - 1] for i in pos]
+    return [(k, slots[2 * k], slots[2 * k + 1]) for k in range(n // 2)]
+
+
+def _insert_dual(conn, sid, week, rnd, conf, is_conf, round_no, bpos, home, away):
+    conn.execute(
+        "INSERT INTO duals (season_id, week, round, conf, is_conf, round_no, bpos, home, away,"
+        " status) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (sid, week, rnd, conf, is_conf, round_no, bpos, home, away, "scheduled"))
+
+
 def advance(season_id: int) -> dict:
     s = load_season(season_id)
     if not s or s["phase"] == "complete":
@@ -208,106 +275,128 @@ def advance(season_id: int) -> dict:
         return {"phase": "regular", "week": wk, "played": len(due), "next_phase": phase}
 
     if s["phase"] == "conf_tournaments":
-        champions = _run_conf_tournaments(conn, s, progs)
-        conn.execute("UPDATE seasons SET phase='ncaa', champion=? WHERE id=?",
-                     (json.dumps(champions), season_id))
+        out = _advance_conf_round(conn, s, progs)
         conn.commit(); conn.close()
-        return {"phase": "conf_tournaments", "champions": champions}
+        return out
 
     if s["phase"] == "ncaa":
-        champ = _run_ncaa(conn, s, progs)
-        conn.execute("UPDATE seasons SET phase='complete', champion=? WHERE id=?", (champ, season_id))
+        out = _advance_ncaa_round(conn, s, progs)
         conn.commit(); conn.close()
-        return {"phase": "ncaa", "champion": champ}
+        return out
 
     conn.close()
     return {"phase": s["phase"]}
 
 
-def _completed_reg_duals(conn, season_id) -> list[dict]:
-    rows = conn.execute("SELECT home, away, is_conf, home_points, away_points, winner, lines_json"
-                        " FROM duals WHERE season_id=? AND round='REG' AND status='final'",
-                        (season_id,)).fetchall()
-    out = []
-    for r in rows:
-        out.append({"home": r["home"], "away": r["away"], "conf": bool(r["is_conf"]),
-                    "home_won": r["winner"] == 0, "home_points": r["home_points"],
-                    "away_points": r["away_points"], "lines": json.loads(r["lines_json"] or "[]")})
-    return out
+def _next_post_week(conn, sid):
+    return (conn.execute("SELECT MAX(week) w FROM duals WHERE season_id=?", (sid,)).fetchone()["w"] or 0) + 1
 
 
-def _conf_standings(duals, div):
-    wl = {}
-    for d in duals:
-        if not d["conf"]:
-            continue
-        for t in (d["home"], d["away"]):
-            wl.setdefault(t, [0, 0])
-        if d["home_won"]:
-            wl[d["home"]][0] += 1; wl[d["away"]][1] += 1
-        else:
-            wl[d["away"]][0] += 1; wl[d["home"]][1] += 1
-    return wl
+def _sim_round(conn, s, progs, rnd_tag, round_no, prefix):
+    """Sim all scheduled duals of one tournament round; return list of rows."""
+    due = conn.execute("SELECT * FROM duals WHERE season_id=? AND round=? AND round_no=?"
+                       " AND status='scheduled'", (s["id"], rnd_tag, round_no)).fetchall()
+    for d in due:
+        _play_and_store(conn, s, progs, d["id"], d["home"], d["away"], d["is_conf"],
+                        f"{prefix}{round_no}b{d['bpos']}")
+    return due
 
 
-def _run_conf_tournaments(conn, s, progs) -> dict:
+def _advance_conf_round(conn, s, progs) -> dict:
+    sid = s["id"]
     div = load_division(s["division"], s["gender"])
-    duals = _completed_reg_duals(conn, season_id=s["id"])
-    wl = _conf_standings(duals, div)
-    ratings = compute_ratings(duals)
+    reg = _completed(conn, sid, ("REG",))
+    wl = _conf_standings(reg, div)
+    ratings = compute_ratings(reg)
+    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='CT'",
+                            (sid,)).fetchone()["c"]
+    if existing == 0:                                  # seed round 1 for every conference
+        week = _next_post_week(conn, sid)
+        for conf, members in div.conferences.items():
+            order = sorted(members, key=lambda p: (_winpct(wl, p.school),
+                           ratings[p.school].pi if p.school in ratings else 0), reverse=True)
+            field = _pow2_le(min(CONF_TOURNEY_FIELD, len(order)))
+            if field < 2:
+                continue
+            for bpos, h, a in _round1_pairs([p.school for p in order[:field]]):
+                _insert_dual(conn, sid, week, "CT", conf, 1, 1, bpos, h, a)
+        round_no = 1
+    else:
+        row = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='CT'"
+                           " AND status='scheduled'", (sid,)).fetchone()
+        round_no = row["r"]
+    if round_no is None:
+        return _finish_conf_phase(conn, s, div, wl)
+
+    due = _sim_round(conn, s, progs, "CT", round_no, "ct")
+    next_week = _next_post_week(conn, sid)
+    for conf in {d["conf"] for d in due}:
+        wins = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='CT'"
+                            " AND conf=? AND round_no=? ORDER BY bpos", (sid, conf, round_no)).fetchall()
+        winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
+        if len(winners) > 1:
+            for k in range(len(winners) // 2):
+                _insert_dual(conn, sid, next_week, "CT", conf, 1, round_no + 1, k,
+                             winners[2 * k], winners[2 * k + 1])
+    remaining = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='CT'"
+                             " AND status='scheduled'", (sid,)).fetchone()["c"]
+    if remaining == 0:
+        return _finish_conf_phase(conn, s, div, wl)
+    return {"phase": "conf_tournaments", "round": round_no, "played": len(due)}
+
+
+def _finish_conf_phase(conn, s, div, wl) -> dict:
     champions = {}
     for conf, members in div.conferences.items():
-        order = sorted(members, key=lambda p: (wl.get(p.school, [0, 0])[0]
-                       / max(1, sum(wl.get(p.school, [0, 0]))), ratings[p.school].pi
-                       if p.school in ratings else 0), reverse=True)
-        seeds = order[:min(CONF_TOURNEY_FIELD, len(order))]
-        champ = _single_elim(conn, s, progs, seeds, conf)
-        champions[conf] = champ
-    return champions
+        last = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='CT'"
+                            " AND conf=? ORDER BY round_no DESC, bpos ASC LIMIT 1",
+                            (s["id"], conf)).fetchone()
+        if last:
+            champions[conf] = last["home"] if last["winner"] == 0 else last["away"]
+        elif members:
+            champions[conf] = max(members, key=lambda p: _winpct(wl, p.school)).school
+    conn.execute("UPDATE seasons SET phase='ncaa', champion=? WHERE id=?",
+                 (json.dumps(champions), s["id"]))
+    return {"phase": "conf_tournaments", "done": True, "champions": len(champions)}
 
 
-def _single_elim(conn, s, progs, seeds, conf_tag) -> str:
-    import random
-    n = 1
-    while n < len(seeds):
-        n *= 2
-    positions = _seed_positions(n)
-    slots = [seeds[i - 1].school if i <= len(seeds) else None for i in positions]
-    rnd = 1
-    while len([x for x in slots if x]) > 1:
-        nxt = []
-        for i in range(0, len(slots), 2):
-            a, b = slots[i], slots[i + 1]
-            if not a or not b:
-                nxt.append(a or b); continue
-            cur = conn.execute(
-                "INSERT INTO duals (season_id, week, round, conf, is_conf, home, away, status)"
-                " VALUES (?,?,?,?,?,?,?,?)",
-                (s["id"], 0, f"CT-{conf_tag}", conf_tag, 1, a, b, "scheduled"))
-            rec = _play_and_store(conn, s, progs, cur.lastrowid, a, b, 1, f"ct{conf_tag}{rnd}")
-            nxt.append(a if rec["home_won"] else b)
-        slots = nxt; rnd += 1
-    return next(x for x in slots if x)
-
-
-def _run_ncaa(conn, s, progs) -> str:
+def _advance_ncaa_round(conn, s, progs) -> dict:
+    sid = s["id"]
     div = load_division(s["division"], s["gender"])
-    duals = _completed_reg_duals(conn, season_id=s["id"])
-    ratings = compute_ratings(duals)
-    champs_map = json.loads(load_season(s["id"])["champion"] or "{}")
-    champions = [progs[v] for v in champs_map.values() if v in progs]
-    seeded, autobids = select_field(div.programs, ratings, champions, size=NATIONAL_FIELD)
-    br = run_bracket(seeded, autobids, seed=s["seed"], fidelity="fast", final_fidelity="fast")
-    seedmap = {p.school: i + 1 for i, p in enumerate(seeded)}
-    for rnd in br.rounds:
-        for m in rnd:
-            conn.execute(
-                "INSERT INTO duals (season_id, week, round, conf, is_conf, home, away, status,"
-                " winner) VALUES (?,?,?,?,?,?,?,?,?)",
-                (s["id"], 0, f"NCAA-{m.rnd}", None, 0, m.hi.school, m.lo.school, "final",
-                 0 if m.winner is m.hi else 1))
-    conn.commit()
-    return br.champion.school
+    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='NCAA'",
+                            (sid,)).fetchone()["c"]
+    if existing == 0:                                  # select + seed the 64-team field
+        ratings = compute_ratings(_completed(conn, sid, ("REG", "CT")))
+        champs_map = json.loads(load_season(sid)["champion"] or "{}")
+        champions = [progs[v] for v in champs_map.values() if v in progs]
+        seeded, _ = select_field(div.programs, ratings, champions, size=NATIONAL_FIELD)
+        week = _next_post_week(conn, sid)
+        for bpos, h, a in _round1_pairs([p.school for p in seeded]):
+            _insert_dual(conn, sid, week, "NCAA", _round_name(NATIONAL_FIELD), 0, 1, bpos, h, a)
+        round_no = 1
+    else:
+        round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='NCAA'"
+                                " AND status='scheduled'", (sid,)).fetchone()["r"]
+
+    due = _sim_round(conn, s, progs, "NCAA", round_no, "ncaa")
+    wins = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='NCAA'"
+                        " AND round_no=? ORDER BY bpos", (sid, round_no)).fetchall()
+    winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
+    if len(winners) > 1:
+        week = _next_post_week(conn, sid)
+        alive = len(winners)
+        for k in range(len(winners) // 2):
+            _insert_dual(conn, sid, week, "NCAA", _round_name(alive), 0, round_no + 1, k,
+                         winners[2 * k], winners[2 * k + 1])
+        return {"phase": "ncaa", "round": round_no, "round_name": _round_name(alive * 2),
+                "played": len(due)}
+    champ = winners[0]
+    conn.execute("UPDATE seasons SET phase='complete', champion=? WHERE id=?", (champ, sid))
+    return {"phase": "ncaa", "champion": champ}
+
+
+def _round_name(alive: int) -> str:
+    return ROUND_NAMES.get(alive, f"Round of {alive}")
 
 
 # --------------------------------------------------------------------------
@@ -318,9 +407,8 @@ def standings(season_id: int) -> dict:
     s = load_season(season_id)
     div = load_division(s["division"], s["gender"])
     conn = _db()
-    duals = _completed_reg_duals(conn, season_id)
+    duals = _completed(conn, season_id)        # overall counts every phase, incl. postseason
     conn.close()
-    # overall + conference W/L
     ov, cf = {}, {}
     for d in duals:
         for t in (d["home"], d["away"]):
@@ -328,7 +416,7 @@ def standings(season_id: int) -> dict:
         hw = d["home_won"]
         ov[d["home"]][0 if hw else 1] += 1
         ov[d["away"]][1 if hw else 0] += 1
-        if d["conf"]:
+        if d["round"] == "REG" and d["conf"]:   # conference record is regular-season only
             cf[d["home"]][0 if hw else 1] += 1
             cf[d["away"]][1 if hw else 0] += 1
     out = {}
@@ -339,6 +427,21 @@ def standings(season_id: int) -> dict:
                       "ol": ov.get(p.school, [0, 0])[1], "cw": cf.get(p.school, [0, 0])[0],
                       "cl": cf.get(p.school, [0, 0])[1]} for p in table]
     return out
+
+
+def recent_duals(season_id: int) -> list[dict]:
+    """The most recently completed slate (last regular week or last postseason
+    round) — drives the hub's 'latest results'."""
+    conn = _db()
+    mw = conn.execute("SELECT MAX(week) w FROM duals WHERE season_id=? AND status='final'",
+                      (season_id,)).fetchone()["w"]
+    if mw is None:
+        conn.close()
+        return []
+    rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND status='final' AND week=?"
+                        " ORDER BY round, bpos, home", (season_id, mw)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def week_duals(season_id: int, week: int) -> list[dict]:
@@ -383,3 +486,82 @@ def team_schedule(season_id: int, school: str) -> list[dict]:
                         " ORDER BY week", (season_id, school, school)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# --------------------------------------------------------------------------
+# Player cards — match-by-match log + season STR
+# --------------------------------------------------------------------------
+
+from .ncaa import build_roster
+
+_pid_idx_cache: dict = {}
+_str_cache: dict = {}
+
+
+def _pid_index(division: str, gender: str) -> dict:
+    key = (division, gender)
+    if key not in _pid_idx_cache:
+        idx = {}
+        for p in load_division(division, gender).programs:
+            for pr in build_roster(p):
+                idx[pr.pid] = {"name": pr.name, "school": p.school, "class": pr.class_year,
+                               "country": pr.country, "hometown": pr.hometown, "major": pr.major,
+                               "walk_on": pr.walk_on}
+        _pid_idx_cache[key] = idx
+    return _pid_idx_cache[key]
+
+
+def player_info(season_id: int, pid: str) -> dict | None:
+    s = load_season(season_id)
+    return _pid_index(s["division"], s["gender"]).get(pid)
+
+
+def season_player_str(season_id: int) -> dict:
+    """Live STR/reliability for every player, from the season's completed duals
+    (cached by how many duals are final, so it refreshes as the season advances)."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key in _str_cache:
+        conn.close()
+        return _str_cache[key]
+    duals = _completed(conn, season_id)
+    conn.close()
+    s = load_season(season_id)
+    priors = {pr.pid: pr.str_value() for p in load_division(s["division"], s["gender"]).programs
+              for pr in build_roster(p)}
+    res = converge_ids(build_corpus(duals), priors=priors)
+    _str_cache.clear()
+    _str_cache[key] = res
+    return res
+
+
+def player_log(season_id: int, pid: str) -> list[dict]:
+    """A player's match-by-match singles results across the whole season
+    (regular + conference tournament + NCAA), newest phase last."""
+    s = load_season(season_id)
+    idx = _pid_index(s["division"], s["gender"])
+    conn = _db()
+    rows = conn.execute("SELECT week, round, conf, home, away, winner, lines_json FROM duals"
+                        " WHERE season_id=? AND status='final' AND lines_json LIKE ?"
+                        " ORDER BY week", (season_id, f"%{pid}%")).fetchall()
+    conn.close()
+    log = []
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            if ln.get("home_pid") == pid:
+                gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
+                                                ln["home_won"], ln.get("away_pid"), r["away"])
+            elif ln.get("away_pid") == pid:
+                gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
+                                                not ln["home_won"], ln.get("home_pid"), r["home"])
+            else:
+                continue
+            phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
+            log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
+                        "opp": idx.get(opp, {}).get("name", "—"), "opp_school": opp_school,
+                        "gf": gf, "ga": ga, "won": won})
+    return log

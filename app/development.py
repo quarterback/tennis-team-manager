@@ -112,6 +112,7 @@ class Prospect:
     # intentionally light here; richer systems can fill them without changing the
     # core development contract.
     hometown: str = ""
+    high_school: str = ""
     region: str = "global"
     domestic: bool = False
     grad_year: int = 0
