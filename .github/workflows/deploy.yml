@@ -35,9 +35,15 @@ jobs:
 
       - name: Deploy to Fly.io
         run: |
+          # --ha=false: deploy a SINGLE machine. The app runs one gunicorn
+          # worker with an in-process cache (see wsgi.py), so it is
+          # single-machine by design — and a single machine needs only the
+          # one `tennis_data` volume, which fly auto-creates from the mount's
+          # initial_size. (HA would spin up a 2nd machine needing a 2nd volume
+          # that nothing provisions, which is what was failing the deploy.)
           for attempt in 1 2 3; do
             echo "Deploy attempt $attempt..."
-            if flyctl deploy --remote-only; then
+            if flyctl deploy --remote-only --ha=false; then
               echo "Deploy succeeded on attempt $attempt"
               exit 0
             fi
