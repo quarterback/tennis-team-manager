@@ -88,6 +88,31 @@ def test_stat_invariants():
         assert 0.0 <= s.first_serve_pct <= 1.0
 
 
+def test_clutch_matters_on_big_points():
+    """Two otherwise-identical players: the high-mental one wins more, because
+    pressure swings break/set/match points (pazzah-style clutch)."""
+    from engine import Player, ATTRS
+
+    def mk(mental):
+        a = {x: 0.55 for x in ATTRS}
+        a["mental"] = mental
+        return Player(name=f"M{mental}", **a)
+
+    clutch, choker = mk(0.9), mk(0.2)
+    wins = [0, 0]
+    for s in range(200):
+        wins[simulate_match(clutch, choker, seed=s).winner] += 1
+    assert wins[0] > wins[1]                      # clutch edge is real
+    # …but it doesn't make tennis deterministic — the choker still steals some.
+    assert wins[1] >= 20
+
+    # Equal mental ⇒ no clutch edge (stays a coin flip).
+    even = [0, 0]
+    for s in range(200):
+        even[simulate_match(mk(0.55), mk(0.55), seed=s).winner] += 1
+    assert 70 <= even[0] <= 130
+
+
 def test_stronger_player_wins_more():
     wins = [0, 0]
     for s in range(120):

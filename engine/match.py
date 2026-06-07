@@ -74,6 +74,38 @@ def _game_over(state: MatchState) -> Optional[int]:
     return None
 
 
+def _point_pressure(state: MatchState) -> float:
+    """How consequential the upcoming point is, 0 (routine) … 1 (match point).
+    Game point → 0.45; if winning that game wins the set → 0.7; if it wins the
+    match → 1.0. Drives the clutch model in rally.play_point."""
+    ps, pr = state.points[state.server], state.points[state.returner]
+    server_gp = ps >= 3 and ps > pr
+    returner_gp = pr >= 3 and pr > ps      # a break point for the returner
+    deciding = state.fmt.no_ad and ps == 3 and pr == 3
+    if not (server_gp or returner_gp or deciding):
+        return 0.0
+    pressure = 0.45
+    sides = []
+    if server_gp or deciding:
+        sides.append(state.server)
+    if returner_gp or deciding:
+        sides.append(state.returner)
+    for side in sides:
+        gw, og = state.games[side] + 1, state.games[1 - side]
+        if gw >= state.set_target and gw - og >= 2:          # would win the set
+            pressure = max(pressure, 0.70)
+            if state.sets[side] + 1 >= state.sets_needed:     # …and the match
+                pressure = max(pressure, 1.0)
+    return pressure
+
+
+def _tb_pressure(pts: list[int], target: int, is_match: bool) -> float:
+    hi, lo = max(pts), min(pts)
+    if hi >= target - 1 and hi >= lo + 1:                     # set/match point
+        return 1.0 if is_match else 0.85
+    return min(0.6, 0.20 + 0.40 * hi / target)
+
+
 def play_game(state: MatchState) -> int:
     """Play one service game on `state.server`. Returns winner index."""
     state.points = [0, 0]
@@ -84,6 +116,7 @@ def play_game(state: MatchState) -> int:
         if state.fmt.no_ad and state.points[s] == 3 and state.points[r] == 3:
             is_bp = True  # deciding point: returner wins it → break
 
+        state.pressure = _point_pressure(state)
         winner, kind = play_point(state)
         state.points[winner] += 1
 
@@ -105,7 +138,9 @@ def play_tiebreak(state: MatchState, target: int = 7) -> int:
     pts = [0, 0]
     first_server = state.server
     served = 0
+    is_match_tb = state.is_final_set or (max(state.sets) >= state.sets_needed - 1)
     while True:
+        state.pressure = _tb_pressure(pts, target, is_match_tb)
         winner, kind = play_point(state)
         pts[winner] += 1
         served += 1
@@ -132,6 +167,8 @@ def play_set(
     `set_tiebreak` off, the set is an advantage set (win by 2, no tiebreak)."""
     fmt = state.fmt
     state.games = [0, 0]
+    state.is_final_set = is_final or state.sets_needed == 1
+    state.set_target = target_games if target_games is not None else fmt.set_games
 
     if is_final and fmt.final_set_tiebreak:
         win = play_tiebreak(state, target=fmt.final_set_tiebreak_target)
@@ -176,6 +213,7 @@ def simulate_match(
         return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server)
 
     state = MatchState(players=(p0, p1), rng=random.Random(seed), fmt=fmt, server=first_server)
+    state.sets_needed = 1 if fmt.pro_set else fmt.best_of // 2 + 1
     games_won = [0, 0]
 
     if fmt.pro_set:

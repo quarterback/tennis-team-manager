@@ -118,6 +118,12 @@ class MatchState:
     rng: random.Random
     fmt: "object" = None              # engine.format.MatchFormat (rule toggles)
 
+    # situational context for the pressure/clutch model (set by match.py)
+    pressure: float = 0.0             # 0 (routine) … 1 (match point)
+    set_target: int = 6              # games to win the current set
+    sets_needed: int = 2             # sets to win the match
+    is_final_set: bool = False
+
     # live score
     server: int = 0                   # index of current server
     points: list[int] = field(default_factory=lambda: [0, 0])    # within current game

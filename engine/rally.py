@@ -35,6 +35,13 @@ TUNE = {
     # Of the points won/lost in a rally, how many are "decisive" shots vs errors.
     "winner_share": 0.42,       # fraction of won rally points credited as winners
     "unforced_share": 0.55,     # fraction of lost rally points that are unforced
+    # --- Pressure / clutch (pazzah-style, adapted) ---
+    # On big points (break/set/match points, late tiebreaks) the clutch gap
+    # (server.mental - returner.mental) swings the point. Non-linear in pressure
+    # so routine points are barely affected and championship points swing hard.
+    "clutch_logit": 1.15,       # rally win-prob logit swing at full pressure × full mental gap
+    "clutch_exp": 1.6,          # >1 ⇒ pressure bites mostly on the biggest points
+    "clutch_serve": 0.07,       # 2nd-serve-in swing (the non-clutch server double-faults under pressure)
 }
 
 
@@ -63,13 +70,24 @@ def _ace_prob(server: Player, returner: Player, first: bool) -> float:
     return _clamp01(base + t["ace_swing"] * edge)
 
 
-def _server_rally_win_prob(server: Player, returner: Player, first: bool) -> float:
-    """Probability the server wins a rally that reached neutral play."""
+def _server_rally_win_prob(server: Player, returner: Player, first: bool,
+                           bonus: float = 0.0) -> float:
+    """Probability the server wins a rally that reached neutral play.
+    `bonus` is an additive logit term (clutch swing on big points)."""
     t = TUNE
     serve_plus = t["serve_plus_first"] if first else t["serve_plus_second"]
     diff = (server.rally_skill - returner.rally_skill)
     # serve_plus is an additive logit bump for holding serve.
-    return _logistic(t["rally_slope"] * diff + serve_plus)
+    return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
+
+
+def _clutch(state: MatchState, server: Player, returner: Player) -> float:
+    """Signed clutch term in [-1, 1]-ish: positive favours the server.
+    Non-linear in the point's pressure; scaled by the mental-toughness gap."""
+    pressure = getattr(state, "pressure", 0.0)
+    if pressure <= 0.0:
+        return 0.0
+    return (pressure ** TUNE["clutch_exp"]) * (server.mental - returner.mental)
 
 
 def play_point(state: MatchState) -> tuple[int, str]:
@@ -92,6 +110,7 @@ def play_point(state: MatchState) -> tuple[int, str]:
         return winner, kind
 
     rng = state.rng
+    clutch = _clutch(state, server, returner)
 
     # --- First serve ---
     s_stat.first_serve_points += 1
@@ -99,10 +118,11 @@ def play_point(state: MatchState) -> tuple[int, str]:
         s_stat.first_serves_in += 1
         first = True
     else:
-        # Fault — go to second serve.
+        # Fault — go to second serve. Under pressure the less-clutch server
+        # double-faults more (clutch term lowers the second-serve-in rate).
         s_stat.second_serve_points += 1
-        if rng.random() >= _second_serve_in_prob(server):
-            # Double fault.
+        second_in = _clamp01(_second_serve_in_prob(server) + TUNE["clutch_serve"] * clutch)
+        if rng.random() >= second_in:
             s_stat.double_faults += 1
             return award(r_idx, "double_fault")
         first = False
@@ -113,8 +133,9 @@ def play_point(state: MatchState) -> tuple[int, str]:
         s_stat.winners += 1
         return award(s_idx, "ace")
 
-    # --- Rally ---
-    if rng.random() < _server_rally_win_prob(server, returner, first):
+    # --- Rally (clutch swings the big points) ---
+    if rng.random() < _server_rally_win_prob(server, returner, first,
+                                             bonus=TUNE["clutch_logit"] * clutch):
         # Server wins the rally.
         if rng.random() < TUNE["winner_share"]:
             s_stat.winners += 1
