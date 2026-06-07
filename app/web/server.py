@@ -18,7 +18,7 @@ from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
-                    active_overrides, reset_all)
+                    active_overrides, reset_all, teams_by_conference, coaching_staff)
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
@@ -128,7 +128,13 @@ def create_app() -> Flask:
     @app.route("/teams")
     def teams():
         division, gender, label, u = _universe(request)
-        school = request.args.get("school", "Oregon")
+        school = request.args.get("school")
+        # No school selected → conference index (browse by conference/gender).
+        if not school:
+            conf = request.args.get("conf", "All")
+            return render_template("teams_index.html", active="Teams", u=u, uni_label=label,
+                                   groups=teams_by_conference(division, gender, conf),
+                                   conferences=conferences_for(division, gender), conf=conf)
         rows = team_roster(division, gender, school)
         if not rows:                                  # fall back to a real school
             school = ranking_rows(division, gender)[0].school
@@ -138,7 +144,7 @@ def create_app() -> Flask:
         row = get_row(school)
         return render_template("teams.html", active="Teams", rows=rows, school=school,
                                abbr=abbr, color=color, row=row, schools=schools, u=u,
-                               uni_label=label)
+                               uni_label=label, staff=coaching_staff(division, gender, school))
 
     @app.route("/player/<pid>")
     def player(pid):

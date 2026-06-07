@@ -200,15 +200,54 @@ def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     return sorted(groups.items())
 
 
-def head_coach(school: str, division: str = "D1", gender: str = "men"):
-    """A deterministic head coach (real name) for a program."""
+ARCHETYPE_LABELS = {
+    "coaching_lifer": "Coaching Lifer",
+    "former_pro": "Former Pro",
+    "recruiting_closer": "Recruiting Closer",
+    "development_guru": "Development Guru",
+    "tactician": "Tactician",
+}
+
+
+def _coach(school: str, gender: str, role: str, base: float):
+    """A deterministic coach (real name) for a program, seeded by role."""
     import random
     from generators import make_name_picker, region_preset
     from app.coaches import generate_coach
-    name_fn = make_name_picker(random.Random(f"coachname|{school}|{gender}"),
+    name_fn = make_name_picker(random.Random(f"coachname|{role}|{school}|{gender}"),
                                gender="mixed", region_weights=region_preset("global"))
     nm, _ = name_fn()
-    return generate_coach(random.Random(f"coach|{school}|{gender}"), nm, school=school)
+    return generate_coach(random.Random(f"coach|{role}|{school}|{gender}"), nm,
+                          school=school, base=base)
+
+
+def head_coach(school: str, division: str = "D1", gender: str = "men"):
+    """A deterministic head coach (real name) for a program."""
+    return _coach(school, gender, "head", base=54.0)
+
+
+def coaching_staff(division: str, gender: str, school: str):
+    """Head coach + associate + assistant, with display labels + a stable tenure.
+    Stronger programs (higher conference prestige) skew to higher-rated staff."""
+    import random
+    from app import ncaa
+    div = ncaa.load_division(division, gender)
+    prog = div.by_school(school)
+    base = 50.0 + (12.0 * prog.strength if prog else 0.0)
+    rng = random.Random(f"tenure|{school}|{gender}")
+    staff = []
+    for role, title, bump in (("head", "Head Coach", 4.0),
+                              ("assoc", "Associate Head Coach", -2.0),
+                              ("asst", "Assistant Coach", -6.0)):
+        c = _coach(school, gender, role, base=max(28.0, base + bump))
+        staff.append({
+            "coach": c, "title": title,
+            "archetype": ARCHETYPE_LABELS.get(c.archetype, c.archetype.replace("_", " ").title()),
+            "tenure": rng.randint(1, 14) if role == "head" else rng.randint(1, 8),
+            "dev": round(c.development_score), "rec": round(c.recruiting_score),
+            "tac": round(c.tactical_score),
+        })
+    return staff
 
 
 def editor_roster(division: str, gender: str, school: str):

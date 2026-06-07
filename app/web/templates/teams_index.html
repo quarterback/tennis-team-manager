@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Teams{% endblock %}
+{% block content %}
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
+      {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ groups|length }} conference{{ '' if groups|length == 1 else 's' }}</span>
+</div></div>
+</form>
+
+<div class="bl-prose" style="max-width:none">
+  {% for conf, teams in groups %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">{{ conf }}</span>
+      <span class="bl-panel-meta">{{ teams|length }} teams · ranked by Power Index</span>
+    </div>
+    <div class="bl-confgrid">
+      {% for t in teams %}
+      <a class="bl-teamcard" href="{{ url_for('teams', school=t.school, u=u) }}">
+        <span class="bl-crest md" style="background:{{ t.color }}">{{ t.abbr }}</span>
+        <span class="bl-teamcard-body">
+          <span class="bl-teamcard-name">{{ t.school }}</span>
+          <span class="bl-teamcard-meta">
+            <span class="bl-badge tier-{{ t.tier }}">{{ t.tier }}</span>
+            <span>{{ t.rec }}</span>
+          </span>
+        </span>
+        <span class="bl-teamcard-pi"><span class="bl-th" style="font-size:9px">PWR</span>
+          <span class="bl-stat power">{{ "%.3f"|format(t.pi) }}</span></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.bl-confgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;padding:12px}
+.bl-teamcard{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-subtle);
+  border-radius:10px;text-decoration:none;color:inherit;background:var(--surface);transition:border-color .12s}
+.bl-teamcard:hover{border-color:var(--brand)}
+.bl-teamcard-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.bl-teamcard-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-teamcard-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.bl-teamcard-pi{text-align:right;display:flex;flex-direction:column;gap:1px}
+</style>
+{% endblock %}
