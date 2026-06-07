@@ -1,0 +1,34 @@
+# Fly.io deployment (same pattern as the baseball sim).
+#   flyctl launch --no-deploy   # first time, to create the app
+#   flyctl deploy
+# The app is stateless (seasons are simulated + cached in memory), so no
+# persistent volume is required.
+app = "tennis-team-manager"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "5s"
+
+[[vm]]
+  # Season aggregation is CPU-bound (~2s on first hit per universe, then cached).
+  # shared-cpu-2x is fine for light traffic; bump to performance-1x if first
+  # hits feel slow under load.
+  size = "shared-cpu-2x"
+  memory = "1024mb"
