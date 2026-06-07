@@ -17,10 +17,12 @@ from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
-                    RECRUIT_GENDERS)
+                    RECRUIT_GENDERS, editor_roster, all_programs_grouped,
+                    active_overrides, reset_all)
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
+from app import overrides as ov
 from .state import DEFAULT_SEED
 
 # label → route; drives the green TopNav across every page.
@@ -31,6 +33,7 @@ NAV = [
     ("Bracket", "/bracket"),
     ("Recruiting", "/recruiting"),
     ("Teams", "/teams"),
+    ("Editor", "/editor"),
     ("Methodology", "/methodology"),
 ]
 
@@ -182,6 +185,75 @@ def create_app() -> Flask:
         view = recruit_profile(p, rg, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    # ------------------------------------------------------------------ Editor
+    @app.route("/editor")
+    def editor():
+        division, gender, label, u = _universe(request)
+        schools = [r.school for r in ranking_rows(division, gender)]
+        school = request.args.get("school") or (schools[0] if schools else "")
+        rows, head = editor_roster(division, gender, school)
+        if rows is None:
+            school = schools[0]
+            rows, head = editor_roster(division, gender, school)
+        return render_template("editor.html", active="Editor", u=u, uni_label=label,
+                               school=school, schools=schools, rows=rows, head=head,
+                               groups=all_programs_grouped(), ov=active_overrides())
+
+    @app.route("/editor/move", methods=["POST"])
+    def editor_move():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        pid = request.form.get("pid", "")
+        dest = request.form.get("dest", "")
+        if pid and dest:
+            ov.set_move(pid, dest)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/lineup", methods=["POST"])
+    def editor_lineup():
+        division, gender, label, u = _universe(request)
+        school = request.form.get("school", "")
+        pid = request.form.get("pid", "")
+        direction = request.form.get("dir", "")
+        rows, _ = editor_roster(division, gender, school)
+        order = [r["pid"] for r in (rows or [])]
+        if pid in order:
+            i = order.index(pid)
+            j = i - 1 if direction == "up" else i + 1
+            if 0 <= j < len(order):
+                order[i], order[j] = order[j], order[i]
+                ov.set_lineup(school, order)
+                reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/clear_move", methods=["POST"])
+    def editor_clear_move():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        pid = request.form.get("pid", "")
+        if pid:
+            ov.clear_move(pid)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/clear_lineup", methods=["POST"])
+    def editor_clear_lineup():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        if school:
+            ov.clear_lineup(school)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/reset", methods=["POST"])
+    def editor_reset():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        ov.clear_all()
+        reset_all()
+        return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/season")
     def season_hub():
