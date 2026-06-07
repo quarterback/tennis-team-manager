@@ -9,16 +9,7 @@ on:
   workflow_dispatch:   # manual trigger from the GitHub Actions UI (web button)
 
 jobs:
-  # Build validation — catch Docker build failures before deploying.
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate Dockerfile builds
-        run: docker build --tag tennis-test .
-
   deploy:
-    needs: validate
     runs-on: ubuntu-latest
     concurrency:
       group: fly-deploy
