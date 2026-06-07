@@ -8,7 +8,8 @@ but it never becomes a player's tennis talent.
 
 All ratings use the same 20-80 scouting scale used by players. Pipeline strengths
 are also 20-80 grades and answer a narrower question: "how much does this coach
-help with recruits from this region or country?"
+help with recruits from this region or country?" Coach origin is separate: it
+creates a recruit favorability nudge, not a pipeline.
 """
 from __future__ import annotations
 
@@ -19,7 +20,8 @@ from typing import Mapping
 
 GRADE_MIN, GRADE_MAX = 20, 80
 PIPELINE_MIN, PIPELINE_MAX = 20, 80
-HOME_COUNTRY_PIPELINE = 66.0
+HOME_COUNTRY_AFFINITY = 4.0
+HOME_REGION_AFFINITY = 1.5
 
 SOURCE_HIGH_SCHOOL = "high_school"
 SOURCE_INTERNATIONAL = "international"
@@ -113,7 +115,7 @@ def _normalize_grades(data: Mapping[str, float] | None, keys: tuple[str, ...], d
 
 def _normalize_pipeline(data: Mapping[str, float] | None) -> dict[str, float]:
     data = data or {}
-    return {str(k): _clamp(float(v), PIPELINE_MIN, PIPELINE_MAX) for k, v in data.items()}
+    return {str(k).upper() if len(str(k)) <= 3 else str(k): _clamp(float(v), PIPELINE_MIN, PIPELINE_MAX) for k, v in data.items()}
 
 
 def _apply_archetype(attrs: dict[str, float], recruiting: dict[str, float], archetype: str) -> None:
@@ -225,23 +227,33 @@ class Coach:
     def home_country_match(self, prospect) -> bool:
         return _normalize_country(getattr(prospect, "country", "")) == self.home_country
 
-    def pipeline_grade(self, prospect) -> float:
-        """Return the best region/country pipeline grade for a prospect.
+    def origin_affinity(self, prospect) -> float:
+        """Recruit favorability nudge from shared origin, separate from pipelines.
 
-        Explicit country pipelines beat the automatic home-country boost. The
-        home-country boost still beats broad region pipelines because a coach's
-        personal network should matter even without a formal pipeline entry.
+        This should be used by the future recruit decision model when comparing
+        offers. It is not a scouting pipeline and should not imply the coach has
+        formal access to that recruit's club, academy, or federation.
+        """
+        country = _normalize_country(getattr(prospect, "country", ""))
+        region = getattr(prospect, "region", "") or _region_for_country(country)
+        if country and country == self.home_country:
+            return HOME_COUNTRY_AFFINITY
+        if region and region == self.home_region and self.home_region != "global":
+            return HOME_REGION_AFFINITY
+        return 0.0
+
+    def pipeline_grade(self, prospect) -> float:
+        """Return formal region/country pipeline grade for a prospect.
+
+        Pipelines are access networks. Coach hometown/home-country affinity is
+        deliberately excluded and exposed via ``origin_affinity`` instead.
         """
         country = _normalize_country(getattr(prospect, "country", "") or "")
         region = getattr(prospect, "region", "") or ""
         if country in self.country_pipelines:
             return self.country_pipelines[country]
-        if country == self.home_country:
-            return HOME_COUNTRY_PIPELINE
         if region in self.region_pipelines:
             return self.region_pipelines[region]
-        if region == self.home_region and self.home_region != "global":
-            return 56.0
         return 50.0
 
     def source_fit(self, prospect) -> float:
@@ -275,7 +287,8 @@ class Coach:
 
         This is not the final recruit decision model. It is the coach contribution
         that later systems can combine with school prestige, scholarship money,
-        playing-time path, academic admissions, and recruit motivations.
+        playing-time path, academic admissions, recruit motivations, and the
+        separate ``origin_affinity`` favorability nudge.
         """
         domestic = bool(getattr(prospect, "domestic", False))
         base = self.recruiting.domestic_score if domestic else self.recruiting.international_score
