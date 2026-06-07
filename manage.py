@@ -169,10 +169,13 @@ def cmd_recruits(args):
         rows, title = international_rankings(klass), f"International — class of {args.grad_year}"
     else:
         rows, title = national_rankings(klass), f"National Top {args.top} — class of {args.grad_year}"
+    national_rankings(klass)   # assigns national rank + count-based tiers to all
     print(f"\n{title} ({klass.gender})\n")
-    print(f"{'#':>3}  {'PLAYER':<24} {'HOMETOWN':<24} {'STR':>5} {'STARS':<6}")
+    print(f"{'#':>3}  {'PLAYER':<24} {'HOMETOWN':<26} {'STR':>5} {'NAT':>5}  TIER")
     for i, p in enumerate(rows[:args.top], 1):
-        print(f"{i:>3}  {p.name:<24} {p.hometown:<24} {p.str_value():>5} {'*' * p.star_rating()}")
+        stars = "*" * p.recruit_stars if p.recruit_stars else "-"
+        print(f"{i:>3}  {p.name:<24} {p.hometown:<26} {p.str_value():>5} {'#' + str(p.recruit_rank):>5}  "
+              f"{stars:<5} {p.recruit_tier}")
 
 
 def cmd_runserver(args):

@@ -53,6 +53,18 @@ _CITIES = ["Springfield", "Riverside", "Fairview", "Kingsport", "Oakdale", "Brid
            "Auburn", "Belmont", "Carmel", "Dover", "Easton", "Franklin"]
 
 
+# Count-based recruiting tiers by national rank (TennisRecruiting.net convention,
+# per docs/calibration-tennis-trajectories.md): ~400 "named" recruits per class.
+TIER_CUTOFFS = [(25, "Blue Chip", 5), (75, "5-Star", 5), (200, "4-Star", 4), (400, "3-Star", 3)]
+
+
+def tier_for_rank(rank: int) -> tuple[str, int]:
+    for cut, label, stars in TIER_CUTOFFS:
+        if rank <= cut:
+            return label, stars
+    return "Unrated", 0
+
+
 @dataclass
 class RecruitClass:
     grad_year: int
@@ -67,8 +79,13 @@ def _recruiting_score(p: Prospect) -> float:
 
 
 def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
-                   gender: str = "male", intl_share: float = 0.35) -> RecruitClass:
-    """Generate a recruiting class: `intl_share` of the pool is international."""
+                   gender: str = "male", intl_share: float = 0.35,
+                   talent_mean: float = 50.0, talent_sd: float = 12.0) -> RecruitClass:
+    """Generate a recruiting class: `intl_share` of the pool is international.
+
+    Per-recruit talent is drawn from N(talent_mean, talent_sd) so the elite tail
+    reaches blue-chip STR (~13+) while the bulk sit lower — the bottom-heavy
+    distribution real recruiting has (see calibration brief)."""
     us_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                region_weights=region_preset("us_only"))
     intl_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
@@ -87,7 +104,8 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
             name, country = intl_name()
             region = country or "INT"
         city = rng.choice(_CITIES)
-        p = generate_prospect(rng, name, country, gender=gender)
+        talent = max(24.0, min(80.0, rng.gauss(talent_mean, talent_sd)))
+        p = generate_prospect(rng, name, country, gender=gender, talent=talent)
         p.hometown = f"{city}, {region}"
         p.region = region
         p.domestic = domestic
@@ -96,8 +114,18 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     return RecruitClass(grad_year=grad_year, gender=gender, recruits=recruits)
 
 
+def rank_class(klass: RecruitClass) -> list[Prospect]:
+    """Assign each recruit a national rank + count-based star tier (Blue Chip /
+    5★ / 4★ / 3★ / Unrated). Returns the nationally-ranked list."""
+    ranked = sorted(klass.recruits, key=_recruiting_score, reverse=True)
+    for i, p in enumerate(ranked, 1):
+        p.recruit_rank = i
+        p.recruit_tier, p.recruit_stars = tier_for_rank(i)
+    return ranked
+
+
 def national_rankings(klass: RecruitClass) -> list[Prospect]:
-    return sorted(klass.recruits, key=_recruiting_score, reverse=True)
+    return rank_class(klass)
 
 
 def state_rankings(klass: RecruitClass, state: str) -> list[Prospect]:

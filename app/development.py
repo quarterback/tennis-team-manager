@@ -35,9 +35,15 @@ from dataclasses import dataclass, field
 from engine import Player, ATTRS
 
 GRADE_MIN, GRADE_MAX = 20, 80
-GROWTH_K = 0.12                   # interest_rate × tier → fraction of the gap closed per year
+# Calibrated to docs/calibration-tennis-trajectories.md: real development over the
+# recruiting→college window is ~+0.5–1.5 STR (early bloomers), ~+1–2.5 (typical),
+# ~+2.5–3.5 (late). With STR≈overall/60*15.5, that's only ~+4–14 overall points —
+# so recruits start CLOSE to their ceiling (high maturity) and close a capped
+# fraction of the small remaining gap each year.
+GROWTH_K = 0.30                  # interest_rate × tier → fraction of the gap closed per year
+MAX_FRAC = 0.45                  # cap per-year gap-closing so growth is gradual, not a year-1 jump
 FOG_MIN, FOG_MAX = 7, 31
-MATURITY_MIN, MATURITY_MAX = 0.45, 0.95   # share of ceiling already realized at generation
+MATURITY_MIN, MATURITY_MAX = 0.75, 0.95   # share of ceiling already realized at generation
 
 # Interest-rate tiers: (label, probability, rate range, growth multiplier).
 TIERS = {
@@ -99,6 +105,10 @@ class Prospect:
     region: str = ""                                 # US state name, or nation
     domestic: bool = True                            # US recruit?
     grad_year: int = 0                               # graduating class
+    # Recruiting-board placement (set by app.juniors.rank_class)
+    recruit_rank: int = 0
+    recruit_tier: str = ""
+    recruit_stars: int = 0
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
@@ -124,7 +134,7 @@ class Prospect:
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop_year(self) -> None:
-        frac = self.interest_rate * GROWTH_K * self.tier_mult
+        frac = min(MAX_FRAC, self.interest_rate * GROWTH_K * self.tier_mult)
         for a in ATTRS:
             gap = self.potential[a] - self.current[a]
             if gap > 0:
