@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Baseline — {{ v.home.school }} vs {{ v.away.school }}{% endblock %}
+{% block content %}
+{% macro matchrow(m) %}
+  <div class="bl-matchrow">
+    <div class="bl-court"><span class="kind">{{ m.kind }}</span><span class="num">{{ m.court }}</span></div>
+    <div class="bl-match-sides">
+      {% for side in m.sides %}
+      <div class="bl-side{% if side.won %} won{% endif %}">
+        <span class="nm">{% if side.won %}<span class="chk">✓</span>{% endif %}{{ side.name }}</span>
+        <span class="bl-setnums">
+          {% for s in side.sets %}<span class="g{% if s.w %} w{% endif %}">{{ s.g }}</span>{% endfor %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="bl-final">Final</div>
+  </div>
+{% endmacro %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Dual Simulator › Result · seed {{ v.seed }} · {{ v.fidelity }}</span>
+</div></div>
+
+<div class="bl-board">
+  <div class="bl-scorehdr">
+    <div class="team">
+      <span class="bl-crest lg" style="background:{{ v.home.color }}">{{ v.home.abbr }}</span>
+      <div><div class="tname">{{ v.home.school }}</div><div class="tsub">#{{ v.home.rk }} · {{ v.home.rec }}</div></div>
+    </div>
+    <div class="status">
+      <div class="bl-bigscore">
+        <span class="n{% if v.home_points > v.away_points %} win{% endif %}">{{ v.home_points }}</span>
+        <span class="dash">–</span>
+        <span class="n{% if v.away_points > v.home_points %} win{% endif %}">{{ v.away_points }}</span>
+      </div>
+      <div class="bl-th" style="justify-content:center;margin-top:6px">Final · First to 4</div>
+    </div>
+    <div class="team away">
+      <div style="text-align:right"><div class="tname">{{ v.away.school }}</div><div class="tsub">#{{ v.away.rk }} · {{ v.away.rec }}</div></div>
+      <span class="bl-crest lg" style="background:{{ v.away.color }}">{{ v.away.abbr }}</span>
+    </div>
+  </div>
+
+  <div class="bl-board-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel">
+        <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span>
+          <span class="bl-panel-meta">Win 2 of 3 — 1 team point · {{ v.doubles_point_name }}</span></div>
+        <div>{% for m in v.doubles %}{{ matchrow(m) }}{% endfor %}</div>
+      </div>
+      <div class="bl-panel">
+        <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
+          <span class="bl-panel-meta">6 courts · 1 point each</span></div>
+        <div>
+          {% for m in v.singles %}
+            {% if m.completed %}{{ matchrow(m) }}{% else %}
+            <div class="bl-matchrow">
+              <div class="bl-court"><span class="kind">Sgl</span><span class="num">{{ m.slot[1:] }}</span></div>
+              <div class="bl-match-sides" style="color:var(--text-faint);font-size:13px">Not played — dual already clinched</div>
+              <div class="bl-final unfinished">DNF</div>
+            </div>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Win probability</span>
+        <span class="bl-panel-meta">{{ v.sims }} fast sims</span></div>
+        <div class="bl-panel-body">
+          <div class="bl-winprob-head">
+            <span style="color:var(--brand-strong)">{{ v.home.abbr }} {{ v.win_prob }}%</span>
+            <span style="color:var(--text-muted)">{{ 100 - v.win_prob }}% {{ v.away.abbr }}</span>
+          </div>
+          <div class="bl-winprob-bar">
+            <span style="width:{{ v.win_prob }}%;background:{{ v.home.color }}"></span>
+            <span style="width:{{ 100 - v.win_prob }}%;background:{{ v.away.color }}"></span>
+          </div>
+          <p class="bl-winprob-note"><strong style="color:var(--brand-strong)">{{ v.winner_name }}</strong>
+            wins this dual {{ v.home_points }}–{{ v.away_points }}.</p>
+        </div>
+      </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Clinch tracker</span></div>
+        <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:12px">
+          {% for t, pts in [(v.home, v.home_points), (v.away, v.away_points)] %}
+          <div class="bl-clinchrow">
+            <span class="bl-clinch-name"><span class="bl-crest sm" style="background:{{ t.color }}">{{ t.abbr }}</span>{{ t.school }}</span>
+            <span class="bl-pips">
+              {% for i in range(4) %}<span class="bl-pip" style="{% if i < pts %}background:{{ t.color }};border-color:{{ t.color }}{% endif %}"></span>{% endfor %}
+            </span>
+          </div>
+          {% if not loop.last %}<div style="height:1px;background:var(--border-subtle)"></div>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a class="bl-run-big" style="margin-top:0;text-align:center;line-height:44px;text-decoration:none"
+           href="{{ url_for('dual_run', home=home, away=away, seed=v.seed + 1, fidelity=v.fidelity) }}">Re-run</a>
+        <a class="bl-pgbtn" style="height:44px;line-height:44px;flex:1;text-align:center"
+           href="{{ url_for('dual', home=home, away=away) }}">Change teams</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

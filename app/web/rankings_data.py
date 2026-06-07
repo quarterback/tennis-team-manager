@@ -91,6 +91,38 @@ _SEED = [
 CONFERENCES = ["All", "ACC", "SEC", "Big Ten", "Big 12", "Ivy", "WCC", "Sun Belt", "Big West", "AAC"]
 TIERS = ["All", "P5", "MID", "IVY"]
 
+# School → (crest abbr, team color) — team colors are data (drive crests + win bars).
+SCHOOL_META = {
+    "TCU": ("TCU", "#4d1979"), "Ohio State": ("OSU", "#bb0000"), "Texas": ("TEX", "#bf5700"),
+    "Wake Forest": ("WAKE", "#9e7e38"), "Virginia": ("UVA", "#232d4b"), "Kentucky": ("UK", "#0033a0"),
+    "Stanford": ("STAN", "#8c1515"), "Tennessee": ("TENN", "#ff8200"), "Oregon": ("ORE", "#154733"),
+    "Florida": ("FLA", "#0021a5"), "USC": ("USC", "#990000"), "Baylor": ("BAY", "#154734"),
+    "Texas A&M": ("TAMU", "#500000"), "Michigan": ("MICH", "#00274c"), "NC State": ("NCST", "#cc0000"),
+    "Columbia": ("CLMB", "#9bcbeb"), "San Diego": ("USD", "#182b49"), "Old Dominion": ("ODU", "#003057"),
+    "Cornell": ("COR", "#b31b1b"), "UC Santa Barbara": ("UCSB", "#003660"), "Pepperdine": ("PEPP", "#00205b"),
+    "Harvard": ("HARV", "#a51c30"), "South Florida": ("USF", "#006747"), "Princeton": ("PRIN", "#ff6600"),
+}
+
+
+def crest(school: str) -> tuple[str, str]:
+    """(abbr, color) for a school, with a deterministic fallback."""
+    if school in SCHOOL_META:
+        return SCHOOL_META[school]
+    abbr = "".join(w[0] for w in school.split()[:4]).upper() or school[:3].upper()
+    hue = (sum(ord(c) for c in school) * 47) % 360
+    return abbr, f"oklch(0.5 0.12 {hue})"
+
+
+def all_schools() -> list[str]:
+    return [school for (_, school, *_) in _SEED]
+
+
+def get_row(school: str) -> "RankRow | None":
+    for r in get_rankings():
+        if r.school == school:
+            return r
+    return None
+
 
 def get_rankings(conf: str = "All", tier: str = "All", sort: str = "Rank") -> list[RankRow]:
     rows = [

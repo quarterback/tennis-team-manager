@@ -13,7 +13,8 @@ from __future__ import annotations
 import os
 from flask import Flask, render_template, request
 
-from .rankings_data import get_rankings, CONFERENCES, TIERS
+from .rankings_data import get_rankings, CONFERENCES, TIERS, all_schools, crest, get_row
+from .sim import run_dual_view, FIDELITIES
 
 # label → route; drives the green TopNav across every page.
 NAV = [
@@ -49,11 +50,32 @@ def create_app() -> Flask:
 
     @app.route("/dual")
     def dual():
-        return render_template("placeholder.html", active="Dual Simulator",
-                               title="Dual Simulator", phase="P2 · dual-match team layer",
-                               blurb="Pick two programs, set the format, and run the doubles point "
-                                     "plus six singles to a clinch. The engine is built "
-                                     "(engine/dual.py); this screen wires it to the web.")
+        schools = all_schools()
+        home = request.args.get("home", "Oregon")
+        away = request.args.get("away", "Stanford")
+        return render_template(
+            "dual_setup.html", active="Dual Simulator", schools=schools,
+            home=home, away=away, crest=crest, get_row=get_row,
+            fidelities=FIDELITIES,
+        )
+
+    @app.route("/dual/run")
+    def dual_run():
+        schools = all_schools()
+        home = request.args.get("home", "Oregon")
+        away = request.args.get("away", "Stanford")
+        if home == away:
+            away = next(s for s in schools if s != home)
+        try:
+            seed = int(request.args.get("seed", "7"))
+        except ValueError:
+            seed = 7
+        fidelity = request.args.get("fidelity", "full")
+        if fidelity not in FIDELITIES:
+            fidelity = "full"
+        view = run_dual_view(home, away, seed=seed, fidelity=fidelity)
+        return render_template("dual_result.html", active="Dual Simulator", v=view,
+                               home=home, away=away)
 
     @app.route("/teams")
     def teams():

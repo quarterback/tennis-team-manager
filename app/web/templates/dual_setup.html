@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Dual Simulator{% endblock %}
+{% block content %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Simulate › New dual match</span>
+</div></div>
+
+<form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
+  <h1>Simulate a Dual</h1>
+  <p class="intro">Pick two teams. Baseline builds each squad from its Power Index, runs the doubles point
+    and all six singles to a clinch, and sweeps the fast model to estimate who wins.</p>
+
+  <div class="bl-slots">
+    {% for slot, sel in [('home', home), ('away', away)] %}
+    {% set abbr, color = crest(sel) %}
+    {% set row = get_row(sel) %}
+    <div class="bl-slot">
+      <div class="bl-th" style="margin-bottom:8px">{{ 'HOME' if slot == 'home' else 'AWAY' }}</div>
+      <div class="bl-slot-card">
+        <span class="bl-crest lg" style="background:{{ color }}">{{ abbr }}</span>
+        <div style="flex:1;min-width:0">
+          <select class="bl-select" name="{{ slot }}" onchange="this.form.action='{{ url_for('dual') }}';this.form.submit()">
+            {% for s in schools %}<option{% if s == sel %} selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+          <div class="bl-slot-meta">
+            {% if row %}<span class="bl-badge tier-{{ row.tier }}">{{ row.tier }}</span>
+            <span>{{ row.conf }} · {{ row.rec }}</span>{% endif %}
+          </div>
+        </div>
+        {% if row %}<div style="text-align:right">
+          <div class="bl-th" style="font-size:10px">POWER</div>
+          <span class="bl-stat power" style="font-size:16px">{{ row.fmt(row.pi) }}</span>
+        </div>{% endif %}
+      </div>
+    </div>
+    {% if slot == 'home' %}<div class="bl-vs">VS</div>{% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="bl-config">
+    <div class="bl-cfgrow">
+      <div><div class="lbl">Format</div><div class="hint">NCAA dual: no-ad, 8-game doubles pro sets, full third set</div></div>
+      <div class="bl-seg"><button type="button" class="active">NCAA dual</button></div>
+    </div>
+    <div class="bl-cfgrow">
+      <div><div class="lbl">Fidelity</div><div class="hint">Point-by-point, or the fast game-level model</div></div>
+      <div class="bl-seg" id="fidseg">
+        {% for f in fidelities %}
+        <button type="button" class="{{ 'active' if f == 'full' else '' }}" data-fid="{{ f }}"
+          onclick="document.getElementById('fid').value='{{ f }}';for(b of this.parentNode.children)b.classList.remove('active');this.classList.add('active')">{{ f|capitalize }}</button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="fidelity" id="fid" value="full">
+    </div>
+    <div class="bl-cfgrow">
+      <div><div class="lbl">Seed</div><div class="hint">Same seed ⇒ identical dual</div></div>
+      <input class="bl-input" name="seed" value="7" style="width:90px">
+    </div>
+  </div>
+
+  <button class="bl-run-big" type="submit">Run Simulation →</button>
+  <div class="bl-engine-note">Engine: <code>Baseline dual engine (NCAA, clinch-at-4)</code> · seed-deterministic</div>
+</form>
+{% endblock %}
