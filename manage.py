@@ -133,19 +133,19 @@ def cmd_prospects(args):
     for _ in range(args.n):
         nm, co = name_fn()
         pros.append(generate_prospect(rng, nm, co, gender=args.gender))
-    pros.sort(key=lambda p: (p.utr(), p.star_rating()), reverse=True)
+    pros.sort(key=lambda p: (p.str_value(), p.star_rating()), reverse=True)
 
     if not args.reveal:
-        print("\nRECRUITING BOARD — public view (UTR · ranking · stars · scouting projections)\n")
-        print(f"{'#':>3}  {'PLAYER':<26} {'CTY':<3} {'UTR':>5} {'STARS':<7} {'SVC↑':>5} {'DEPT↑':>6}")
+        print("\nRECRUITING BOARD — public view (STR · ranking · stars · scouting projections)\n")
+        print(f"{'#':>3}  {'PLAYER':<26} {'CTY':<3} {'STR':>5} {'STARS':<7} {'SVC↑':>5} {'DEPT↑':>6}")
         for i, p in enumerate(pros, 1):
-            print(f"{i:>3}  {p.name:<26} {p.country:<3} {p.utr():>5} {'*' * p.star_rating():<7} "
+            print(f"{i:>3}  {p.name:<26} {p.country:<3} {p.str_value():>5} {'*' * p.star_rating():<7} "
                   f"{p.scouting_report('service'):>5} {p.scouting_report('dept'):>6}")
-        print("\nUTR/stars = current ability (visible, from results). SVC/DEPT = two scouts'")
+        print("\nSTR/stars = current ability (visible, from results). SVC/DEPT = two scouts'")
         print("independent CEILING projections (±fog). The trajectory is the gamble — --reveal.")
     else:
         print("\nREVEAL — current vs hidden ceiling vs 4-year projection\n")
-        print(f"{'#':>3}  {'PLAYER':<24} {'UTR':>5} {'STARS':<6} {'NOW':>4} {'CEIL':>4} {'4YR':>4}  {'TIER':<13} FLAG")
+        print(f"{'#':>3}  {'PLAYER':<24} {'STR':>5} {'STARS':<6} {'NOW':>4} {'CEIL':>4} {'4YR':>4}  {'TIER':<13} FLAG")
         for i, p in enumerate(pros, 1):
             proj = p.project(4)
             growth = proj - p.current_overall()
@@ -154,7 +154,7 @@ def cmd_prospects(args):
                 flag = "GEM"          # modest now, big hidden upside (late/super bloomer)
             elif p.star_rating() >= 4 and growth <= 3:
                 flag = "BUST"         # hyped now, but plateaus — peers pass him
-            print(f"{i:>3}  {p.name:<24} {p.utr():>5} {'*' * p.star_rating():<6} {p.current_overall():>4} "
+            print(f"{i:>3}  {p.name:<24} {p.str_value():>5} {'*' * p.star_rating():<6} {p.current_overall():>4} "
                   f"{p.ceiling_overall():>4} {proj:>4}  {TIERS[p.tier][0]:<13} {flag}")
 
 

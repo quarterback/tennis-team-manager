@@ -63,8 +63,10 @@ def grade_to_unit(g: float) -> float:
     return _clamp((g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN), 0.0, 1.0)
 
 
-def overall_to_utr(g: float) -> float:
-    """Map an overall grade (20–80) to a UTR-style number (≈1.0–16.5)."""
+def overall_to_str(g: float) -> float:
+    """Map an overall grade (20–80) to a STR — this game's synthetic, UTR-style
+    rating (≈1.0–16.5). STR is opponent-relative and visible; it's the single
+    yardstick across juniors → college → pro."""
     return round(1.0 + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * 15.5, 2)
 
 
@@ -100,9 +102,11 @@ class Prospect:
     def current_overall(self) -> int:
         return round(sum(_W[a] * self.current[a] for a in ATTRS))
 
-    def utr(self) -> float:
-        """The player's UTR-style rating — derived from current ability, public."""
-        return overall_to_utr(self.current_overall())
+    def str_value(self) -> float:
+        """The player's STR (synthetic UTR-style rating) — derived from current
+        ability, public. Results don't lie, so STR is visible; the trajectory
+        behind it is not."""
+        return overall_to_str(self.current_overall())
 
     # ---- ceiling (hidden / projected) ----
     def ceiling_overall(self) -> int:
@@ -141,7 +145,7 @@ class Prospect:
 
     def public_view(self) -> dict:
         return {"name": self.name, "country": self.country,
-                "utr": self.utr(), "stars": self.star_rating(), "year": self.year}
+                "str": self.str_value(), "stars": self.star_rating(), "year": self.year}
 
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",

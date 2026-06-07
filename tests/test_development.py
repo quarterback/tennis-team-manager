@@ -15,12 +15,12 @@ def _mk(current, ceiling, rate, tier, mult, fog=15):
                     tier=tier, tier_mult=mult, fog=fog, consensus_seed=1)
 
 
-def test_current_is_visible_and_drives_utr():
+def test_current_is_visible_and_drives_str():
     p = generate_prospect(random.Random(3), "X")
     assert GRADE_MIN <= p.current_overall() <= GRADE_MAX
     # UTR is a monotone function of current ability
     lo, hi = _mk(35, 70, 0.2, 1, 1.0), _mk(60, 70, 0.2, 1, 1.0)
-    assert hi.utr() > lo.utr()
+    assert hi.str_value() > lo.str_value()
 
 
 def test_current_grows_toward_ceiling_no_regression_no_overshoot():
