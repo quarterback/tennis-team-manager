@@ -1,11 +1,11 @@
-# Fly.io deployment (same pattern as the baseball sim).
-#   flyctl launch --no-deploy   # first time, to create the app
-#   flyctl deploy
-# The app is stateless (seasons are simulated + cached in memory), so no
-# persistent volume is required.
+# Fly.io deployment for tennis-team-manager.
+# Deploys run from the GitHub Action (.github/workflows/deploy.yml) on push to
+# main, which builds THIS Dockerfile and deploys it (no cached image).
 app = "tennis-team-manager"
 primary_region = "iad"
 
+# Build the gunicorn Dockerfile (NOT a buildpack — that produced the broken
+# `flask run` image).
 [build]
   dockerfile = "Dockerfile"
 
@@ -15,9 +15,10 @@ primary_region = "iad"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "suspend"
+  auto_stop_machines = "suspend"   # snapshot+resume keeps the in-memory cache warm
   auto_start_machines = true
   min_machines_running = 0
+  processes = ["app"]
 
   [[http_service.checks]]
     grace_period = "10s"
@@ -27,8 +28,8 @@ primary_region = "iad"
     timeout = "5s"
 
 [[vm]]
-  # Season aggregation is CPU-bound (~2s on first hit per universe, then cached).
-  # shared-cpu-2x is fine for light traffic; bump to performance-1x if first
-  # hits feel slow under load.
-  size = "shared-cpu-2x"
-  memory = "1024mb"
+  # Env-accurate sizing. Season aggregation is CPU-bound (~2s on first hit per
+  # universe, then cached); bump to a dedicated CPU if first hits feel slow.
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
