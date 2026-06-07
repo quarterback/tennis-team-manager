@@ -108,6 +108,22 @@ def init_db(path: str | None = None) -> None:
         conn.commit()
 
 
+def bootstrap() -> None:
+    """Create every module's schema once, eagerly, at process start.
+
+    All these modules share one SQLite file. If a table is created lazily for
+    the first time *inside* another module's open write transaction (e.g.
+    overrides during world seeding), the two writers deadlock → 'database is
+    locked'. Creating all schemas up front, before any long transaction, makes
+    every later connection a clean read/write under WAL. Safe to call repeatedly.
+    """
+    init_db()
+    from app import overrides, seasonmode, world
+    overrides.init_schema()
+    seasonmode.init_schema()
+    world.init_schema()
+
+
 # ---------------------------------------------------------------------------
 # Prospect persistence — write a generated roster to disk, origins and all.
 # ---------------------------------------------------------------------------

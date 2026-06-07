@@ -34,6 +34,7 @@ from dataclasses import asdict, fields
 
 import app.seasonmode as sm
 from .season import dual_between
+from . import dbpath
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
@@ -128,11 +129,25 @@ MAX_CROSS = 3                               # cross-classification duals per tea
 ELITE_D3_ACADEMICS = 0.85                   # a D3 this academic can reach up to D1
 
 
-def _db() -> sqlite3.Connection:
-    conn = sqlite3.connect(WORLD_DB)
-    conn.row_factory = sqlite3.Row
+_schema_ready_for = None        # the WORLD_DB the schema was last created for
+
+
+def init_schema() -> None:
+    """Eagerly create the world schema (auto-committing connection) so the lazy
+    path never writes inside a held transaction."""
+    global _schema_ready_for
+    conn = dbpath.connect(WORLD_DB)
     conn.executescript(_SCHEMA)
-    return conn
+    conn.commit()
+    conn.close()
+    _schema_ready_for = WORLD_DB
+
+
+def _db() -> sqlite3.Connection:
+    """Tuned connection (WAL + busy timeout); schema created once per (path)."""
+    if _schema_ready_for != WORLD_DB:
+        init_schema()
+    return dbpath.connect(WORLD_DB)
 
 
 def _save_rosters(conn, world_id, year, rosters) -> None:

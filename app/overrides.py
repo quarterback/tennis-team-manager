@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
+from . import dbpath
 from .dbpath import resolve_db_path
 
 DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
@@ -22,11 +23,27 @@ CREATE TABLE IF NOT EXISTS roster_overrides (
 );
 """
 
+_schema_ready_for = None        # the DB_PATH the schema was last created for
+
+
+def init_schema() -> None:
+    """Create the schema eagerly with a short-lived, auto-committing connection.
+    Call this at startup BEFORE any long write transaction so the lazy path in
+    `_db()` never has to write (which would deadlock against a held sim lock)."""
+    global _schema_ready_for
+    conn = dbpath.connect(DB_PATH, row=False)
+    conn.executescript(_SCHEMA)
+    conn.commit()
+    conn.close()
+    _schema_ready_for = DB_PATH
+
 
 def _db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.executescript(_SCHEMA)
-    return conn
+    """Tuned connection. Schema is created once per (path), not on every call,
+    so read helpers don't take a write lock while a sim holds one open."""
+    if _schema_ready_for != DB_PATH:
+        init_schema()
+    return dbpath.connect(DB_PATH, row=False)
 
 
 def get_moves() -> dict:
