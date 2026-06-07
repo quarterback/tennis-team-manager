@@ -11,7 +11,7 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request, abort
+from flask import Flask, render_template, request, abort, redirect, url_for
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES
@@ -20,9 +20,13 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS)
 from app.juniors import US_STATES
 
+from app import seasonmode as sm
+from .state import DEFAULT_SEED
+
 # label → route; drives the green TopNav across every page.
 NAV = [
     ("Rankings", "/"),
+    ("Season", "/season"),
     ("Dual Simulator", "/dual"),
     ("Bracket", "/bracket"),
     ("Recruiting", "/recruiting"),
@@ -174,6 +178,55 @@ def create_app() -> Flask:
         view = recruit_profile(p, rg, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/season")
+    def season_hub():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        s = sm.load_season(sid)
+        cw, tw = s["current_week"], s["total_weeks"]
+        upcoming = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
+        last = sm.week_duals(sid, cw - 1) if cw > 1 else []
+        champions = {}
+        if s["phase"] in ("ncaa", "complete") and s["champion"]:
+            try:
+                champions = __import__("json").loads(s["champion"]) if s["phase"] == "ncaa" else {}
+            except Exception:
+                champions = {}
+        return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
+                               upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest)
+
+    @app.route("/season/advance", methods=["POST"])
+    def season_advance():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sm.advance(sid)
+        return redirect(url_for("season_hub", u=u))
+
+    @app.route("/season/standings")
+    def season_standings():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        return render_template("season_standings.html", active="Season", u=u, uni_label=label,
+                               standings=sm.standings(sid))
+
+    @app.route("/season/schedule")
+    def season_schedule():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        school = request.args.get("school", "Oregon")
+        schools = [r.school for r in ranking_rows(division, gender)]
+        return render_template("season_schedule.html", active="Season", u=u, uni_label=label,
+                               rows=sm.team_schedule(sid, school), school=school, schools=schools)
+
+    @app.route("/season/dual/<int:dual_id>")
+    def season_dual(dual_id):
+        division, gender, label, u = _universe(request)
+        d = sm.dual_detail(dual_id)
+        if not d:
+            abort(404)
+        return render_template("season_dual.html", active="Season", u=u, uni_label=label,
+                               d=d, crest=crest)
 
     return app
 

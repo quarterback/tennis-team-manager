@@ -211,6 +211,29 @@ def cmd_league(args):
         print(f"{s:>5.1f} {rel:>4.2f}  {p.class_year:<3} {p.name:<22} {school}")
 
 
+def cmd_seasonmode(args):
+    from app import seasonmode as sm
+    sid = sm.get_or_create(args.division, args.gender, seed=args.seed)
+    for _ in range(args.advance):
+        if sm.load_season(sid)["phase"] == "complete":
+            break
+        r = sm.advance(sid)
+        if r.get("phase") == "regular":
+            print(f"  week {r['week']}: {r['played']} duals played")
+        else:
+            print(f"  {r}")
+    s = sm.load_season(sid)
+    print(f"\nSeason {sid}: {args.division} {args.gender} · phase={s['phase']} "
+          f"· week {min(s['current_week'], s['total_weeks'])}/{s['total_weeks']}"
+          f"{' · champion ' + s['champion'] if s['phase'] == 'complete' else ''}")
+    # standings snapshot for one conference
+    st = sm.standings(sid)
+    conf = next(iter(st))
+    print(f"\n{conf} (overall · conf):")
+    for r in st[conf][:6]:
+        print(f"  {r['school']:<22} {r['ow']}-{r['ol']}  ({r['cw']}-{r['cl']})")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -245,6 +268,13 @@ def main():
 
     sub.add_parser("presets").set_defaults(func=cmd_presets)
     sub.add_parser("initdb").set_defaults(func=cmd_initdb)
+
+    sm = sub.add_parser("seasonmode")
+    sm.add_argument("--division", default="D1")
+    sm.add_argument("--gender", default="men", choices=["men", "women"])
+    sm.add_argument("--seed", type=int, default=2026)
+    sm.add_argument("--advance", type=int, default=99, help="advance this many steps/weeks")
+    sm.set_defaults(func=cmd_seasonmode)
 
     rs = sub.add_parser("runserver")
     rs.add_argument("--port", type=int, default=5000)

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Baseline — {{ school }} Schedule{% endblock %}
+{% block content %}
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Season › Schedule</span>
+  <label class="bl-field" style="margin-left:12px"><span class="bl-field-label">Team</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="school" onchange="this.form.submit()" style="min-width:200px">
+      {% for s in schools %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></span></label>
+  <input type="hidden" name="u" value="{{ u }}">
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
+</div></div>
+</form>
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ school }} — 2026 schedule</span>
+      <span class="bl-panel-meta">{{ rows|length }} duals</span></div>
+    <div>
+      {% for d in rows %}
+      {% set home = d.home == school %}
+      {% set opp = d.away if home else d.home %}
+      <div class="bl-matchrow" style="grid-template-columns:48px 1fr 90px 70px">
+        <div class="bl-court"><span class="kind">Wk</span><span class="num" style="font-size:14px">{{ d.week }}</span></div>
+        <div class="bl-match-sides"><span class="nm" style="font-size:14px">{{ 'vs' if home else 'at' }} {{ opp }}
+          <span class="bl-conf">{{ '· conf' if d.is_conf else '· non-conf' }}</span></span></div>
+        {% if d.status == 'final' %}
+          {% set won = (home and d.winner==0) or (not home and d.winner==1) %}
+          {% set me = d.home_points if home else d.away_points %}
+          {% set them = d.away_points if home else d.home_points %}
+          <a href="{{ url_for('season_dual', dual_id=d.id, u=u) }}" style="text-decoration:none">
+            <span class="bl-badge {{ 'tier-IVY' if won else 'tier-D3' }}">{{ 'W' if won else 'L' }} {{ me }}-{{ them }}</span></a>
+          <span class="bl-final">Final</span>
+        {% else %}
+          <span class="bl-conf">—</span><span class="bl-final">scheduled</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
