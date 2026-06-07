@@ -60,6 +60,24 @@
       until a school promotes them.</div></div>
   </div>
 
+  <div style="display:flex;flex-direction:column;gap:16px">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Results</span>
+      <span class="bl-panel-meta">{{ results.wins }}-{{ results.losses }} · 2026</span></div>
+    <div class="bl-results">
+      {% for m in results.results %}
+      <a class="bl-result" href="{{ url_for('team_match', i=m.idx, school=school, u=u) }}">
+        <span class="ha">{{ 'vs' if m.home else 'at' }}</span>
+        <span class="bl-crest xs" style="background:{{ m.color }}">{{ m.abbr }}</span>
+        <span class="opp">{{ m.opp }}</span>
+        <span class="tag">{{ 'conf' if m.conf else 'nc' }}</span>
+        <span class="wl {{ 'win' if m.won else 'loss' }}">{{ 'W' if m.won else 'L' }} {{ m.mine }}–{{ m.theirs }}</span>
+      </a>
+      {% endfor %}
+      {% if not results.results %}<div class="bl-panel-body"><span class="bl-conf">No duals scheduled.</span></div>{% endif %}
+    </div>
+  </div>
+
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Coaching Staff</span></div>
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:0">
@@ -78,6 +96,7 @@
       </div>
       {% endfor %}
     </div>
+  </div>
   </div>
 </div>
 

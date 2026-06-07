@@ -34,6 +34,28 @@
     {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board</span>
 </div></div>
 
+<div class="bl-container">
+  <details class="bl-explainer">
+    <summary>How recruiting works</summary>
+    <div class="bl-explainer-body">
+      <p>Every prospect is built by the <strong>same talent &amp; attribute model as the players already on
+        rosters</strong> (serve, return, groundstrokes, physical/mental traits) — they're just younger, so
+        less of their ceiling is visible yet. The pool that feeds each division is centred at that level:
+        <strong>{{ uni_label }}</strong> prospects run hotter than D2/D3, exactly like the rostered players do.</p>
+      <ol>
+        <li><strong>Generation.</strong> A 400-player class per gender &amp; grad year, ~35% international,
+          each with a hidden development ceiling and a visible current ability (shown as STR).</li>
+        <li><strong>Consensus board.</strong> Rank = 60% visible current ability + 40% the scouting service's
+          noisy read of the ceiling — so the board mis-ranks late bloomers (gems) and early peakers (busts).</li>
+        <li><strong>Star tiers</strong> are count-based: Blue Chip = top 25 · 5★ 26–75 · 4★ 76–200 · 3★ 201–400.</li>
+        <li><strong>Offers &amp; commitment.</strong> Open any prospect for their College List — the real
+          {{ uni_label }} programs (by Power Index) that fit their level draw interest, with a
+          StrikePrediction commit-% favourite, a Dreamsheet, and a recruiting timeline.</li>
+      </ol>
+    </div>
+  </details>
+</div>
+
 <div class="bl-container"><div class="bl-tablescroll">
   <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
     <div class="bl-thead">

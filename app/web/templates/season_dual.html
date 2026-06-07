@@ -1,43 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Baseline — Dual{% endblock %}
+{% block title %}Baseline — {{ d.home }} vs {{ d.away }}{% endblock %}
 {% block content %}
 {% set ha, hc = crest(d.home) %}
 {% set aa, ac = crest(d.away) %}
+
+{# One scoreline row: position ↔ player(s) for both sides, with set scores. #}
+{% macro line_row(ln, clinch=false) %}
+  {% set is_d = ln.slot.startswith('D') %}
+  <div class="bl-matchrow{{ ' clinch' if clinch else '' }}">
+    <div class="bl-court">
+      <span class="kind">{{ 'Doubles' if is_d else 'Singles' }}</span>
+      <span class="num">{{ ln.slot[1:] }}</span>
+    </div>
+    <div class="bl-match-sides">
+      {% if ln.completed %}
+        {% for who in ['home', 'away'] %}
+        {% set won = ln.home_won if who == 'home' else not ln.home_won %}
+        {% set player = ln.get(who ~ '_player') %}
+        {% set country = ln.get(who ~ '_country') %}
+        {% set school = d.home if who == 'home' else d.away %}
+        <div class="bl-side {{ 'won' if won else '' }}">
+          <span class="nm">{% if won %}<span class="chk">✓</span>{% endif %}
+            {% if country %}<span class="player-flag">{{ country|flag }}</span> {% endif %}
+            {% if player %}{{ player }} <span class="bl-court-team">{{ school }}</span>
+            {% else %}{{ school }}{% endif %}</span>
+          <span class="bl-setnums">
+            {% if ln.sets %}{% for s in ln.sets %}{% set sw = (s[0] > s[1]) if who == 'home' else (s[1] > s[0]) %}<span class="g {{ 'w' if sw }}">{{ s[0] if who == 'home' else s[1] }}</span>{% endfor %}
+            {% else %}<span class="g {{ 'w' if won }}">{{ ln.home_games if who == 'home' else ln.away_games }}</span>{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <span class="nm" style="color:var(--text-faint)">Not played — dual clinched</span>
+      {% endif %}
+    </div>
+    <div class="bl-final {{ '' if ln.completed else 'unfinished' }}">{{ 'Final' if ln.completed else 'DNF' }}</div>
+  </div>
+{% endmacro %}
+
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Season › {{ d.round }} · {{ uni_label }}</span>
+  <span style="font-size:13px;color:var(--text-muted)">
+    {{ 'Teams' if active == 'Teams' else 'Season' }} › Box Score · {{ d.round }} · {{ uni_label }}</span>
+  {% if back_school is defined and back_school %}
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=back_school, u=u) }}">← {{ back_school }}</a>
+  {% else %}
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
+  {% endif %}
 </div></div>
+
 <div class="bl-board">
   <div class="bl-scorehdr">
     <div class="team"><span class="bl-crest lg" style="background:{{ hc }}">{{ ha }}</span>
-      <div><div class="tname">{{ d.home }}</div></div></div>
+      <div><div class="tname">{{ d.home }}</div><div class="tsub">Home</div></div></div>
     <div class="status"><div class="bl-bigscore">
       <span class="n{% if d.winner==0 %} win{% endif %}">{{ d.home_points }}</span>
       <span class="dash">–</span>
       <span class="n{% if d.winner==1 %} win{% endif %}">{{ d.away_points }}</span></div>
-      <div class="bl-th" style="justify-content:center;margin-top:6px">Final · First to 4</div></div>
-    <div class="team away"><div style="text-align:right"><div class="tname">{{ d.away }}</div></div>
+      <div class="bl-th" style="justify-content:center;margin-top:6px">Final · {{ 'Conference' if d.conf else 'Non-conference' }}</div></div>
+    <div class="team away"><div style="text-align:right"><div class="tname">{{ d.away }}</div><div class="tsub">Away</div></div>
       <span class="bl-crest lg" style="background:{{ ac }}">{{ aa }}</span></div>
   </div>
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Lines</span>
-      <span class="bl-panel-meta">3 doubles (→1 point) + 6 singles · games won shown</span></div>
-    <div>
-      {% for ln in d.lines %}
-      <div class="bl-matchrow" style="grid-template-columns:52px 1fr 90px">
-        <div class="bl-court"><span class="kind">{{ 'Dbl' if ln.slot.startswith('D') else 'Sgl' }}</span>
-          <span class="num">{{ ln.slot[1:] }}</span></div>
-        <div class="bl-match-sides">
-          {% if ln.completed %}
-          <div class="bl-side {{ 'won' if ln.home_won else '' }}"><span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ d.home }}</span>
-            <span class="bl-setnums"><span class="g {{ 'w' if ln.home_won }}">{{ ln.home_games }}</span></span></div>
-          <div class="bl-side {{ 'won' if not ln.home_won else '' }}"><span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ d.away }}</span>
-            <span class="bl-setnums"><span class="g {{ 'w' if not ln.home_won }}">{{ ln.away_games }}</span></span></div>
-          {% else %}<span class="nm" style="color:var(--text-faint)">Not played — clinched</span>{% endif %}
-        </div>
-        <div class="bl-final">{{ 'Final' if ln.completed else 'DNF' }}</div>
-      </div>
-      {% endfor %}
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span>
+        <span class="bl-panel-meta">win 2 of 3 → 1 team point</span></div>
+      <div>{% for ln in d.lines if ln.slot[0] == 'D' %}{{ line_row(ln) }}{% endfor %}</div>
+    </div>
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
+        <span class="bl-panel-meta">6 courts · 1 team point each · clinch at 4</span></div>
+      <div>{% for ln in d.lines if ln.slot[0] == 'S' %}{{ line_row(ln) }}{% endfor %}</div>
     </div>
   </div>
 </div>

@@ -46,10 +46,38 @@ class SeasonResult:
         return sorted(self.programs, key=lambda p: self.ratings[p.school].pi, reverse=True)
 
 
+def _doubles_pair(ladder: list, slot_no: int) -> list:
+    """The two Prospects who play doubles court `slot_no` (1..3), matching the
+    engine's default pairing (1/2, 3/4, 5/6 of the ladder)."""
+    lo = (slot_no - 1) * 2
+    return ladder[lo:lo + 2]
+
+
+def _line_identity(slot: str, la: list, lb: list) -> dict:
+    """Who played a line, both sides, so box scores can show position↔player.
+    Singles also carry stable pids (STR/record are singles-based)."""
+    out: dict = {}
+    if slot.startswith("S"):
+        i = int(slot[1:]) - 1
+        if 0 <= i < len(la) and i < len(lb):
+            hp, ap = la[i], lb[i]
+            out.update(home_pid=hp.pid, away_pid=ap.pid,
+                       home_player=hp.name, away_player=ap.name,
+                       home_country=hp.country, away_country=ap.country)
+    else:                                        # doubles — a pair per side, no pid
+        i = int(slot[1:])
+        hp, ap = _doubles_pair(la, i), _doubles_pair(lb, i)
+        if hp and ap:
+            out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
+                       away_player=" / ".join(p.name.split()[-1] for p in ap))
+    return out
+
+
 def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                  la: list, lb: list, *, seed: int, conf: bool) -> dict:
     """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the top-6
-    Prospect ladders (la[i] ↔ sa.singles[i]) so singles lines carry player ids."""
+    Prospect ladders (la[i] ↔ sa.singles[i]) so every line carries the identity
+    of who played that position (singles pids + names; doubles pair names)."""
     res = simulate_dual(sa, sb, seed=seed, fidelity="fast")
     lines = []
     for ln in res.lines:
@@ -58,11 +86,9 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
             continue
         gw = ln.result.games_won
         rec = {"slot": ln.slot, "completed": True, "home_won": ln.home_won,
-               "home_games": gw[0], "away_games": gw[1]}
-        if ln.slot.startswith("S"):              # singles only — STR is singles-based
-            i = int(ln.slot[1:]) - 1
-            if 0 <= i < len(la) and i < len(lb):
-                rec["home_pid"], rec["away_pid"] = la[i].pid, lb[i].pid
+               "home_games": gw[0], "away_games": gw[1],
+               "sets": [[h, a] for (h, a) in ln.result.set_scores]}
+        rec.update(_line_identity(ln.slot, la, lb))
         lines.append(rec)
     return {
         "home": a.school, "away": b.school, "conf": conf,

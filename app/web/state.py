@@ -182,24 +182,34 @@ from app.development import overall_to_str
 _recruit_cache: dict = {}
 RECRUIT_GENDERS = {"men": "male", "women": "female"}
 
+# Recruit-pool caliber by division — the class that feeds each division is drawn
+# from the SAME talent/attribute model as that division's rostered players
+# (app.development.generate_prospect), just centred lower because these are
+# pre-college prospects who develop once on a roster. D1 boards run hotter than
+# D2/D3, exactly as the rostered-player talent does (app.ncaa._talent_from_strength).
+_DIVISION_TALENT = {"D1": 48.0, "D2": 43.0, "D3": 39.0}
 
-def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+
+def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division: str = "D1"):
     """Cached recruiting class. `gender` is "male"/"female" (juniors vocab)."""
-    key = (gender, grad_year, seed)
+    key = (gender, grad_year, seed, division)
     if key not in _recruit_cache:
-        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
-        klass = generate_class(rng, n=400, grad_year=grad_year, gender=gender)
+        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}|{division}")
+        klass = generate_class(rng, n=400, grad_year=grad_year, gender=gender,
+                               talent_mean=_DIVISION_TALENT.get(division, 48.0))
         national_rankings(klass)        # assigns recruit_rank / tier / stars
         _recruit_cache[key] = klass
     return _recruit_cache[key]
 
 
-def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED):
-    return next((p for p in get_recruits(gender, grad_year, seed).recruits if p.pid == pid), None)
+def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division: str = "D1"):
+    return next((p for p in get_recruits(gender, grad_year, seed, division).recruits
+                 if p.pid == pid), None)
 
 
-def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: str = ""):
-    klass = get_recruits(gender, grad_year)
+def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: str = "",
+                 division: str = "D1"):
+    klass = get_recruits(gender, grad_year, division=division)
     if scope == "state":
         src = state_rankings(klass, state)
     elif scope == "intl":
@@ -225,10 +235,15 @@ def scout_bars(p):
     return [(label, p.current_grade(key)) for key, label in SCOUT_ATTRS]
 
 
-def recruit_profile(p, gender: str, grad_year: int):
+def recruit_profile(p, division: str, gender: str, grad_year: int):
     """Build the profile view: rankings, scouting reads, and the College List /
-    Dreamsheet / Timeline recruiting board."""
-    klass = get_recruits(gender, grad_year)
+    Dreamsheet / Timeline recruiting board.
+
+    The College List is drawn from the LIVE programs of this division×gender —
+    the same generated teams shown on the Rankings/Teams pages — so a recruit's
+    offers come from real programs at their level, not a static seed list."""
+    rg = RECRUIT_GENDERS.get(gender, "male") if gender in RECRUIT_GENDERS else gender
+    klass = get_recruits(rg, grad_year, division=division)
     if p.domestic:
         regional = state_rankings(klass, p.region)
         region_rank = next((i for i, q in enumerate(regional, 1) if q.pid == p.pid), None)
@@ -239,9 +254,10 @@ def recruit_profile(p, gender: str, grad_year: int):
         region_label = "International"
 
     from app.recruiting import build_recruiting, schools_from_rank_rows
-    from app.web.rankings_data import get_rankings
-    schools = schools_from_rank_rows(get_rankings())
-    rec = build_recruiting(p, schools, seed_salt=str(grad_year))
+    # Live programs for this universe → recruiting Schools (LiveRow exposes the
+    # same .school/.pi/.tier the adapter reads).
+    schools = schools_from_rank_rows(ranking_rows(division, gender))
+    rec = build_recruiting(p, schools, seed_salt=f"{division}|{grad_year}")
 
     return {
         "national_rank": p.recruit_rank,
@@ -372,6 +388,59 @@ def active_overrides():
                       "str": round(pr.str_value(), 1) if pr else "—", "dest": dest})
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
     return {"moves": moves, "lineups": lineups, "any": bool(moves or lineups)}
+
+
+def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SEED):
+    """A school's full-season dual results (from the cached season) shaped for a
+    real team page: opponent, home/away, W/L, team score, and a stable index so
+    each result links to its box score. Newest-feel order = schedule order."""
+    from .rankings_data import crest
+    sr = get_season(division, gender, seed)
+    out = []
+    wins = losses = 0
+    for idx, d in enumerate(sr.duals):
+        if school not in (d["home"], d["away"]):
+            continue
+        is_home = d["home"] == school
+        opp = d["away"] if is_home else d["home"]
+        won = d["home_won"] if is_home else not d["home_won"]
+        mine = d["home_points"] if is_home else d["away_points"]
+        theirs = d["away_points"] if is_home else d["home_points"]
+        wins += won
+        losses += not won
+        abbr, color = crest(opp)
+        out.append({"idx": idx, "opp": opp, "abbr": abbr, "color": color,
+                    "home": is_home, "won": won, "mine": mine, "theirs": theirs,
+                    "conf": d["conf"]})
+    return {"results": out, "wins": wins, "losses": losses}
+
+
+def season_match_view(division: str, gender: str, idx: int, seed: int = DEFAULT_SEED):
+    """Box-score view of the idx-th dual in the cached season — shaped exactly
+    like seasonmode.dual_detail so the shared box-score template renders both."""
+    sr = get_season(division, gender, seed)
+    if idx < 0 or idx >= len(sr.duals):
+        return None
+    d = sr.duals[idx]
+    return {"home": d["home"], "away": d["away"], "round": "REG",
+            "conf": d["conf"], "home_points": d["home_points"],
+            "away_points": d["away_points"], "winner": 0 if d["home_won"] else 1,
+            "lines": d["lines"]}
+
+
+def conference_schools(division: str, gender: str):
+    """[(conference, [school, ...]), ...] — drives the schedule page's
+    conference→team drill-down dropdowns."""
+    from app import ncaa
+    div = ncaa.load_division(division, gender)
+    return sorted((conf, sorted(p.school for p in members))
+                  for conf, members in div.conferences.items())
+
+
+def team_conference(division: str, gender: str, school: str) -> str:
+    from app import ncaa
+    prog = ncaa.load_division(division, gender).by_school(school)
+    return prog.conf if prog else ""
 
 
 def team_roster(division: str, gender: str, school: str):

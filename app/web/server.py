@@ -19,7 +19,8 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    dashboard_view)
+                    dashboard_view, team_results, season_match_view,
+                    conference_schools, team_conference)
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
@@ -158,7 +159,22 @@ def create_app() -> Flask:
         row = get_row(school)
         return render_template("teams.html", active="Teams", rows=rows, school=school,
                                abbr=abbr, color=color, row=row, schools=schools, u=u,
-                               uni_label=label, staff=coaching_staff(division, gender, school))
+                               uni_label=label, staff=coaching_staff(division, gender, school),
+                               results=team_results(division, gender, school), crest=crest)
+
+    @app.route("/teams/match")
+    def team_match():
+        division, gender, label, u = _universe(request)
+        try:
+            idx = int(request.args.get("i", "0"))
+        except ValueError:
+            idx = 0
+        d = season_match_view(division, gender, idx)
+        if not d:
+            abort(404)
+        back = request.args.get("school") or d["home"]
+        return render_template("season_dual.html", active="Teams", u=u, uni_label=label,
+                               d=d, crest=crest, back_school=back)
 
     @app.route("/player/<pid>")
     def player(pid):
@@ -184,7 +200,7 @@ def create_app() -> Flask:
             grad_year = 2026
         scope = request.args.get("scope", "national")
         state = request.args.get("state", "California")
-        rows = recruit_rows(rg, grad_year, scope=scope, state=state)
+        rows = recruit_rows(rg, grad_year, scope=scope, state=state, division=division)
         return render_template("recruiting.html", active="Recruiting", rows=rows[:100],
                                total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, state=state, u=u, uni_label=label,
@@ -199,10 +215,10 @@ def create_app() -> Flask:
             grad_year = int(request.args.get("grad_year", "2026"))
         except ValueError:
             grad_year = 2026
-        p = get_recruit(rg, grad_year, pid)
+        p = get_recruit(rg, grad_year, pid, division=division)
         if p is None:
             abort(404)
-        view = recruit_profile(p, rg, grad_year)
+        view = recruit_profile(p, division, gender, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
@@ -310,10 +326,32 @@ def create_app() -> Flask:
     def season_schedule():
         division, gender, label, u = _universe(request)
         sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
-        school = request.args.get("school", "Oregon")
-        schools = [r.school for r in ranking_rows(division, gender)]
+        groups = dict(conference_schools(division, gender))
+        conferences = sorted(groups)
+        conf = request.args.get("conf")
+        school = request.args.get("school")
+        # Resolve a (conference, team) pair from whatever was passed: a chosen
+        # conference narrows the team list; otherwise derive the conference from
+        # the team so the two dropdowns always stay in sync.
+        if conf in groups:
+            schools = groups[conf]
+            if school not in schools:
+                school = schools[0]
+        else:
+            school = school or ("Oregon" if "Oregon" in [s for g in groups.values() for s in g]
+                                else conferences and groups[conferences[0]][0])
+            conf = team_conference(division, gender, school) or (conferences[0] if conferences else "")
+            schools = groups.get(conf, [school])
+        rows = sm.team_schedule(sid, school)
+        import datetime
+        base = datetime.date(2026, 1, 16)        # season opens mid-January
+        for r in rows:
+            day = base + datetime.timedelta(weeks=int(r["week"]) - 1)
+            r["date"] = day.strftime("%a, %b %-d")
         return render_template("season_schedule.html", active="Season", u=u, uni_label=label,
-                               rows=sm.team_schedule(sid, school), school=school, schools=schools)
+                               rows=rows, school=school, schools=schools,
+                               conferences=conferences, conf=conf, crest=crest,
+                               abbr=crest(school)[0], color=crest(school)[1])
 
     @app.route("/season/dual/<int:dual_id>")
     def season_dual(dual_id):
