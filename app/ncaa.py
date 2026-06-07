@@ -120,6 +120,70 @@ def _academics(school: str, conf_abbr: str, division: str) -> float:
     return max(0.20, min(0.99, a + jitter * 0.06))
 
 
+# --------------------------------------------------------------------------
+# Geography — real campus locations (data/ncaa/locations.json, researched per
+# school). State → coarse region drives recruiting proximity and cross-division
+# scheduling (nearby schools across classifications can meet).
+# --------------------------------------------------------------------------
+STATE_REGION = {
+    # Northeast
+    "ME": "NE", "NH": "NE", "VT": "NE", "MA": "NE", "RI": "NE", "CT": "NE",
+    # Mid-Atlantic
+    "NY": "MATL", "NJ": "MATL", "PA": "MATL", "MD": "MATL", "DE": "MATL", "DC": "MATL",
+    # Southeast
+    "VA": "SE", "WV": "SE", "NC": "SE", "SC": "SE", "GA": "SE", "FL": "SE",
+    "KY": "SE", "TN": "SE", "AL": "SE", "MS": "SE",
+    # Midwest
+    "OH": "MW", "MI": "MW", "IN": "MW", "IL": "MW", "WI": "MW", "MN": "MW",
+    "IA": "MW", "MO": "MW", "ND": "MW", "SD": "MW", "NE": "MW", "KS": "MW",
+    # South Central
+    "TX": "SC", "OK": "SC", "AR": "SC", "LA": "SC",
+    # Mountain / West
+    "CO": "MTN", "UT": "MTN", "NV": "MTN", "AZ": "MTN", "NM": "MTN",
+    "MT": "MTN", "ID": "MTN", "WY": "MTN",
+    # Pacific
+    "CA": "W", "OR": "W", "WA": "W", "AK": "W", "HI": "W", "BC": "W",
+}
+# Adjacent regions (share a meaningful border) → a mid proximity bump.
+REGION_ADJACENT = {
+    "NE": {"MATL"}, "MATL": {"NE", "SE", "MW"}, "SE": {"MATL", "MW", "SC"},
+    "MW": {"MATL", "SE", "SC", "MTN"}, "SC": {"SE", "MW", "MTN"},
+    "MTN": {"MW", "SC", "W"}, "W": {"MTN"},
+}
+
+_LOCATIONS: dict | None = None
+
+
+def _locations() -> dict:
+    global _LOCATIONS
+    if _LOCATIONS is None:
+        path = os.path.join(_DATA_DIR, "locations.json")
+        try:
+            with open(path, encoding="utf-8") as fh:
+                _LOCATIONS = json.load(fh).get("schools", {})
+        except FileNotFoundError:
+            _LOCATIONS = {}
+    return _LOCATIONS
+
+
+def location(school: str) -> tuple[str, str, str]:
+    """(city, state, region) for a school; ('', '', '') if unknown."""
+    loc = _locations().get(school)
+    if not loc:
+        return "", "", ""
+    state = loc.get("state", "")
+    return loc.get("city", ""), state, STATE_REGION.get(state, "")
+
+
+def region_proximity(region_a: str, region_b: str) -> float:
+    """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
+    if not region_a or not region_b:
+        return 0.0
+    if region_a == region_b:
+        return 1.0
+    return 0.5 if region_b in REGION_ADJACENT.get(region_a, ()) else 0.0
+
+
 @dataclass
 class Program:
     school: str
@@ -132,6 +196,9 @@ class Program:
     strength: float
     prestige: float = 0.50
     academics: float = 0.50
+    city: str = ""
+    state: str = ""
+    region: str = ""
     autobid: bool = True
 
     @property
@@ -180,12 +247,14 @@ def load_division(division: str, gender: str) -> Division:
         members: list[Program] = []
         for school in c.get("teams", []):
             cab, color = crest(school)
+            city, state, region = location(school)
             members.append(Program(
                 school=school, conf=c["name"], conf_abbr=abbr,
                 division=division, gender=gender, abbr=cab, color=color,
                 strength=_latent_strength(school, abbr, gender, division),
                 prestige=_prestige(school, abbr, division),
                 academics=_academics(school, abbr, division),
+                city=city, state=state, region=region,
                 autobid=bool(c.get("autobid", True)),
             ))
         div.conferences[c["name"]] = members

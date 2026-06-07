@@ -36,8 +36,10 @@ import app.seasonmode as sm
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
-                   _talent_from_strength, _pick_gender, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
-from .recruiting import program_appeal, recruit_caliber, recruit_academic01
+                   _talent_from_strength, _pick_gender, region_proximity,
+                   ROSTER_SIZE, SCHOLARSHIP_SLOTS)
+from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
+                         home_region, GEO_WEIGHT)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker, region_preset
 
@@ -301,7 +303,7 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         taken[r["school"]] = taken.get(r["school"], 0) + 1
 
     progs = _flat_programs(gender)
-    traits = {s: (p.prestige, p.academics) for s, p in progs.items()}
+    traits = {s: (p.prestige, p.academics, p.region) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     avail = {s: cap.get(s, 0) - taken.get(s, 0) for s in progs}
     # Candidate indexing: each recruit only weighs programs near their athletic
@@ -320,6 +322,7 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         if p.pid in signed:
             continue
         cal, ac = recruit_caliber(p), recruit_academic01(p)
+        hr = home_region(p)
         lo = bisect.bisect_left(pres_arr, cal - 0.30)
         hi = bisect.bisect_left(pres_arr, cal + 0.30)
         cands = set(by_pres[lo:hi]) | set(academic_top)
@@ -328,9 +331,11 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         for s in cands:
             if avail.get(s, 0) <= 0:
                 continue
-            pres, acad = traits[s]
+            pres, acad, reg = traits[s]
             athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
-            score = max(0.0, athletic) * (1.0 + 0.9 * acad * ac) * (1 + jit)
+            geo = region_proximity(hr, reg)
+            score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
+                     * (1.0 + GEO_WEIGHT * geo) * (1 + jit))
             if score > best_score:
                 best, best_score = s, score
         if best is None:                              # no seats in range — widen once

@@ -28,6 +28,9 @@ from dataclasses import dataclass, field
 _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 
 
+GEO_WEIGHT = 0.35           # how strongly home proximity pulls a recruit
+
+
 @dataclass
 class School:
     """A program the recruiting model can reason about."""
@@ -39,30 +42,45 @@ class School:
     prestige: float = 0.50   # athletic brand pull
     academics: float = 0.50  # academic profile
     division: str = "D1"
+    region: str = ""         # coarse geographic region code (for proximity)
 
 
-def program_appeal(caliber: float, academic01: float, s: School) -> float:
-    """How appealing program `s` is to a recruit of athletic `caliber` (0..1)
-    and academic standing `academic01` (0..1).
+def program_appeal(caliber: float, academic01: float, s: School,
+                   home_region: str = "") -> float:
+    """How appealing program `s` is to a recruit of athletic `caliber` (0..1),
+    academic standing `academic01` (0..1), and home region `home_region`.
 
-    Two pulls combine:
+    Three pulls combine:
       • athletic — programs near the recruit's level fit, and prestige programs
         actively court higher-caliber talent (brand pull).
-      • academic — meaningful only when BOTH the recruit and the school are
-        strong academically, so a smart, strong kid is genuinely drawn to an
-        Ivy / NESCAC / academy even though its athletic tier is lower. This is
-        what lets high-academic programs recruit above their athletic station.
+      • academic — meaningful only when BOTH recruit and school are strong
+        academically, so a smart, strong kid is genuinely drawn to an Ivy /
+        NESCAC / academy even though its athletic tier is lower.
+      • geography — recruits lean toward programs near home (same state/region),
+        a real factor especially below the blue-chip tier.
     """
+    from app.ncaa import region_proximity
     prox = 1.0 - abs(s.prestige - caliber)
     athletic = 0.6 * prox + 0.4 * (s.prestige * caliber)
     academic = s.academics * academic01
-    return max(0.0, athletic) * (1.0 + 0.9 * academic)
+    geo = region_proximity(home_region, s.region)
+    return max(0.0, athletic) * (1.0 + 0.9 * academic) * (1.0 + GEO_WEIGHT * geo)
+
+
+# Full US state name → coarse region code (recruits store the full state name).
+def home_region(p) -> str:
+    if not getattr(p, "domestic", False):
+        return ""
+    from app.ncaa import STATE_REGION
+    from app.juniors import US_STATES
+    code = dict(US_STATES).get(getattr(p, "region", ""), "")
+    return STATE_REGION.get(code, "")
 
 
 def schools_from_programs(programs, *, pi: dict | None = None) -> list["School"]:
-    """Build recruiting Schools from ncaa.Program objects, carrying prestige +
-    academics. `pi` optionally maps school→Power Index for the athletic level;
-    otherwise the program's latent strength is used."""
+    """Build recruiting Schools from ncaa.Program objects, carrying prestige,
+    academics and region. `pi` optionally maps school→Power Index for the
+    athletic level; otherwise the program's latent strength is used."""
     from app.ncaa import crest
     out: list[School] = []
     for p in programs:
@@ -72,7 +90,7 @@ def schools_from_programs(programs, *, pi: dict | None = None) -> list["School"]
             name=p.school, strength=float(level if level is not None else p.strength),
             tier=p.division, abbr=abbr, color=color,
             prestige=getattr(p, "prestige", 0.5), academics=getattr(p, "academics", 0.5),
-            division=p.division,
+            division=p.division, region=getattr(p, "region", ""),
         ))
     return out
 
@@ -142,9 +160,10 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
     stars = int(getattr(p, "recruit_stars", 0) or 0)
     caliber = recruit_caliber(p)
     academic01 = recruit_academic01(p)
+    hr = home_region(p)
 
     def fit(s: School) -> float:
-        return program_appeal(caliber, academic01, s)
+        return program_appeal(caliber, academic01, s, hr)
 
     fmax = max((fit(s) for s in schools), default=1.0) or 1.0
     ranked = sorted(schools, key=lambda s: fit(s) + rng.uniform(-0.05, 0.05) * fmax, reverse=True)
