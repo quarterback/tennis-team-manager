@@ -93,8 +93,9 @@ def cmd_initdb(args):
 
 
 def cmd_season(args):
-    from app.season import run_season, NATIONAL_FIELD
-    from app.bracket import select_field, run_bracket
+    from app.season import run_season
+    from app.bracket import select_field, run_bracket, clamp_field
+    field = clamp_field(args.field)
     sr = run_season(args.division, args.gender, seed=args.seed)
     ranked = sr.ranked()
     print(f"\n{args.division} {args.gender} — {len(sr.programs)} programs, "
@@ -105,7 +106,7 @@ def cmd_season(args):
         print(f"{i:>3}  {p.school:<22} {p.conf_abbr:<8} {r.record:>7}  "
               f"{r.pi:.4f} {r.apr:.4f} {r.fqi:.4f}")
 
-    seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=NATIONAL_FIELD)
+    seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=field)
     br = run_bracket(seeded, autobids, seed=args.seed)
     print(f"\nNCAA bracket — {len(seeded)} teams "
           f"({len(autobids)} autobids + {len(seeded) - len(autobids)} at-large)")
@@ -165,6 +166,7 @@ def main():
     se.add_argument("--division", default="D1")
     se.add_argument("--gender", default="men", choices=["men", "women"])
     se.add_argument("--seed", type=int, default=2026)
+    se.add_argument("--field", type=int, default=64, help="bracket field size (16–128; 64 default)")
     se.set_defaults(func=cmd_season)
 
     args = ap.parse_args()

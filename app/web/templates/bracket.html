@@ -9,13 +9,22 @@
 {% endmacro %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">NCAA Division I Team Championship · {{ uni_label }}</span>
+  <span style="font-size:13px;color:var(--text-muted)">NCAA {{ division }} Team Championship · {{ uni_label }}</span>
   <span style="margin-left:auto;display:inline-flex;gap:5px;flex-wrap:wrap">
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">← Rankings</a>
     {% for val, d, g, lbl in universes %}
-      <a class="bl-pill{% if val == u %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=val) }}">{{ lbl }}</a>
+      <a class="bl-pill{% if val == u %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=val, size=field) }}">{{ lbl }}</a>
     {% endfor %}
   </span>
+</div></div>
+<div class="bl-toolbar bl-toolbar--card"><div class="bl-toolbar-inner">
+  <span class="bl-field-label" style="font-size:13px">Field size</span>
+  <span style="display:inline-flex;gap:5px">
+    {% for sz in field_presets %}
+      <a class="bl-pill{% if sz == field %} active{% endif %}" style="text-decoration:none" href="{{ url_for('bracket', u=u, size=sz) }}">{{ sz }}</a>
+    {% endfor %}
+  </span>
+  <span style="font-size:12.5px;color:var(--text-muted)">64 is the real-life default · any 16–128 works</span>
 </div></div>
 
 <div class="bl-board">

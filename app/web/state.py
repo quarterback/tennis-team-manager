@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.season import run_season, NATIONAL_FIELD
-from app.bracket import select_field, run_bracket
+from app.season import run_season
+from app.bracket import select_field, run_bracket, clamp_field, FIELD_DEFAULT
 
 DEFAULT_SEED = 2026
 MY_TEAM = "Oregon"
+FIELD_PRESETS = [32, 64, 76, 96]    # offered in the UI; any 16–128 works
 
 # Division×gender universes exposed in the UI (value, division, gender, label).
 UNIVERSES = [
@@ -37,11 +38,12 @@ def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
     return _season_cache[key]
 
 
-def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED):
-    key = (division, gender, seed)
+def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = FIELD_DEFAULT):
+    size = clamp_field(size)
+    key = (division, gender, seed, size)
     if key not in _bracket_cache:
         sr = get_season(division, gender, seed)
-        seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=NATIONAL_FIELD)
+        seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=size)
         _bracket_cache[key] = run_bracket(seeded, autobids, seed=seed)
     return _bracket_cache[key]
 

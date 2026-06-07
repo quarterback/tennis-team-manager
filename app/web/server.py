@@ -15,7 +15,7 @@ from flask import Flask, render_template, request
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES
-from .state import ranking_rows, conferences_for, get_bracket, UNIVERSES
+from .state import ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS
 
 # label → route; drives the green TopNav across every page.
 NAV = [
@@ -67,9 +67,14 @@ def create_app() -> Flask:
     @app.route("/bracket")
     def bracket():
         division, gender, label, u = _universe(request)
-        br = get_bracket(division, gender)
-        return render_template("bracket.html", active="Bracket", br=br,
-                               u=u, uni_label=label, division=division)
+        try:
+            size = int(request.args.get("size", 64))
+        except ValueError:
+            size = 64
+        br = get_bracket(division, gender, size=size)
+        return render_template("bracket.html", active="Bracket", br=br, u=u,
+                               uni_label=label, division=division,
+                               field=len(br.seeds), field_presets=FIELD_PRESETS)
 
     @app.route("/methodology")
     def methodology():

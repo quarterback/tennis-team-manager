@@ -23,6 +23,25 @@ from .ncaa import Program, build_squad
 ROUND_NAMES = {64: "Round of 64", 32: "Round of 32", 16: "Round of 16",
                8: "Quarterfinals", 4: "Semifinals", 2: "Final"}
 
+FIELD_DEFAULT = 64
+FIELD_MIN, FIELD_MAX = 16, 128
+
+
+def clamp_field(size: int) -> int:
+    return max(FIELD_MIN, min(FIELD_MAX, int(size)))
+
+
+def _is_pow2(n: int) -> bool:
+    return n > 0 and (n & (n - 1)) == 0
+
+
+def _round_name(alive: int) -> str:
+    if alive in ROUND_NAMES:
+        return ROUND_NAMES[alive]
+    if _is_pow2(alive):
+        return f"Round of {alive}"
+    return "First Round"     # play-in round for a non-power-of-two field
+
 
 def _seed_positions(n: int) -> list[int]:
     """Standard bracket seeding order for a power-of-two size n
@@ -102,9 +121,11 @@ def run_bracket(seeded: list[Program], autobids: set[str], *, seed: int,
 
     res = BracketResult(seeds=seeded, autobids=autobids)
     rng = random.Random(seed)
-    rnd_size = n
-    while len([s for s in slots if s is not None]) > 1 or rnd_size > 2:
-        name = ROUND_NAMES.get(rnd_size, f"Round of {rnd_size}")
+    while True:
+        alive = sum(1 for s in slots if s is not None)
+        if alive <= 1:
+            break
+        name = _round_name(alive)
         matchups: list[Matchup] = []
         nxt: list[Program | None] = []
         for i in range(0, len(slots), 2):
@@ -118,17 +139,18 @@ def run_bracket(seeded: list[Program], autobids: set[str], *, seed: int,
             sa, sb = seed_of[a.key], seed_of[b.key]
             hi, lo = (a, b) if sa < sb else (b, a)
             hs, ls = (sa, sb) if sa < sb else (sb, sa)
-            fid = final_fidelity if rnd_size <= 4 else fidelity
+            fid = final_fidelity if alive <= 4 else fidelity
             w = play_dual(hi, lo, seed=rng.randint(1, 10**9), fidelity=fid)
             ws = seed_of[w.key]
-            matchups.append(Matchup(name, hs, ls, hi, lo, ws, w, upset=(ws == ls)))
+            m = Matchup(name, hs, ls, hi, lo, ws, w, upset=(ws == ls))
+            matchups.append(m)
             nxt.append(w)
-        res.rounds.append(matchups)
-        if rnd_size == 2:
+        if matchups:
+            res.rounds.append(matchups)
+        if alive == 2:
             final = matchups[0]
             res.champion = final.winner
             res.runner_up = final.lo if final.winner is final.hi else final.hi
             break
         slots = nxt
-        rnd_size //= 2
     return res
