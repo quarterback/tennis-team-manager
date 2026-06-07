@@ -129,6 +129,27 @@ _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 _MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
+# High-school / academy flavor (synthetic placeholders until real HS data is
+# scraped). International juniors skew toward the famous tennis academies.
+_HS_SUFFIX = ("High", "High", "Prep", "Academy", "Catholic", "Day School", "Christian")
+_ACADEMIES = ("IMG Academy", "Saddlebrook Prep", "Evert Academy", "Weil Tennis Academy",
+              "Smith Stearns Academy", "Mouratoglou Academy", "Rafa Nadal Academy",
+              "Sánchez-Casal Academy", "Bollettieri Prep")
+_GENERIC_TOWNS = ("Riverside", "Fairview", "Oakdale", "Lakewood", "Highland",
+                  "Brookfield", "Clearwater", "Maplewood", "Glenwood", "Franklin")
+
+
+def roll_high_school(country_code: str, rng: random.Random) -> str:
+    """A believable high school / academy for a player's bio. International
+    players skew toward the marquee academies; everyone else gets a
+    '{City} {Suffix}' school named off the nation's real city pool."""
+    domestic = (country_code or "").upper() in {"US", ""}
+    academy_p = 0.18 if domestic else 0.35
+    if rng.random() < academy_p:
+        return rng.choice(_ACADEMIES)
+    cities = _load_hometowns().get((country_code or "").upper()) or _GENERIC_TOWNS
+    return f"{rng.choice(cities)} {rng.choice(_HS_SUFFIX)}"
+
 
 def roll_hometown(country_code: str, rng: random.Random) -> str:
     """A believable birthplace city for a player from `country_code`.

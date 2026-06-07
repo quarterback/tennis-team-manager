@@ -89,6 +89,29 @@ Ivanović), added a `serbia` region (RS), an `RS` nation-talent row (74/54),
 an `RS` hometown pool, the `RS → Serbia/SRB` display entry, and weighted
 `serbia` at 0.03 in `tennis_global` (rest-of-world floor still 11.3%).
 
+## Merge reconciliation with parallel season-mode work
+A parallel branch landed on `main` (season mode, a dual-sim rewrite onto real
+rosters, a teams-by-conference index, and a `generators/origins.py` that gave
+roster players synthetic-placeholder hometowns + a **high school**). Reconciled:
+- Kept **my** richer system as the source of truth for hometowns (real
+  per-nation city pools + flags + nation talent) — dropped `pick_origin`'s
+  synthetic hometown/region override in `ncaa.build_roster`.
+- Kept **their** `high_school` field, but moved its generation into
+  `flavor.roll_high_school` called from `generate_prospect`, so *every*
+  prospect (recruits included, not just rosters) now gets a high school.
+- Player page is now season-mode-driven (`info` dict): added flag(s),
+  `Nationality`, `Born`, and `High School` to it; surfaced `high_school` +
+  `secondary_country` through `seasonmode._pid_index`.
+- Took their `sim.py` (the old `build_team` my preset edit touched is gone;
+  squads now come from `build_squad`, which still flows through the
+  `tennis_global` preset via `build_roster`).
+- `generators/origins.py` is left in place but is now unused (superseded by
+  `flavor.roll_hometown` + `roll_high_school`).
+
+Post-merge: `pytest tests/` → **77 passed**; all web routes render (player card
+shows flag + Nationality + Born + High School; recruit profile keeps College
+List / Dreamsheet / Timeline).
+
 ## Not done (deliberately)
 - No live nation-talent drift (static JSON only).
 - US recruit `City, ST` pairs the drawn city with the drawn state

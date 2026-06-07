@@ -11,18 +11,22 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request, abort
+from flask import Flask, render_template, request, abort, redirect, url_for
 
 from .rankings_data import all_schools, crest, get_row
-from .sim import run_dual_view, FIDELITIES
+from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS)
 from app.juniors import US_STATES
 
+from app import seasonmode as sm
+from .state import DEFAULT_SEED
+
 # label → route; drives the green TopNav across every page.
 NAV = [
     ("Rankings", "/"),
+    ("Season", "/season"),
     ("Dual Simulator", "/dual"),
     ("Bracket", "/bracket"),
     ("Recruiting", "/recruiting"),
@@ -96,20 +100,21 @@ def create_app() -> Flask:
 
     @app.route("/dual")
     def dual():
-        schools = all_schools()
-        home = request.args.get("home", "Oregon")
-        away = request.args.get("away", "Stanford")
-        return render_template(
-            "dual_setup.html", active="Dual Simulator", schools=schools,
-            home=home, away=away, crest=crest, get_row=get_row,
-            fidelities=FIDELITIES,
-        )
+        division, gender, label, u = _universe(request)
+        schools = programs_for(division, gender)
+        ranks = {r.school: r for r in ranking_rows(division, gender)}
+        home = request.args.get("home") or ("Oregon" if "Oregon" in schools else schools[0])
+        away = request.args.get("away") or ("Stanford" if "Stanford" in schools else schools[1])
+        return render_template("dual_setup.html", active="Dual Simulator", schools=schools,
+                               home=home, away=away, crest=crest, ranks=ranks,
+                               fidelities=FIDELITIES, u=u, uni_label=label)
 
     @app.route("/dual/run")
     def dual_run():
-        schools = all_schools()
-        home = request.args.get("home", "Oregon")
-        away = request.args.get("away", "Stanford")
+        division, gender, label, u = _universe(request)
+        schools = programs_for(division, gender)
+        home = request.args.get("home") or schools[0]
+        away = request.args.get("away") or schools[1]
         if home == away:
             away = next(s for s in schools if s != home)
         try:
@@ -119,9 +124,9 @@ def create_app() -> Flask:
         fidelity = request.args.get("fidelity", "full")
         if fidelity not in FIDELITIES:
             fidelity = "full"
-        view = run_dual_view(home, away, seed=seed, fidelity=fidelity)
+        view = run_dual_view(division, gender, home, away, seed=seed, fidelity=fidelity)
         return render_template("dual_result.html", active="Dual Simulator", v=view,
-                               home=home, away=away)
+                               home=home, away=away, u=u)
 
     @app.route("/teams")
     def teams():
@@ -141,12 +146,15 @@ def create_app() -> Flask:
     @app.route("/player/<pid>")
     def player(pid):
         division, gender, label, u = _universe(request)
-        school = request.args.get("school", "Oregon")
-        rows = team_roster(division, gender, school)
-        r = next((x for x in rows if x["p"].pid == pid), None)
-        if r is None:
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        info = sm.player_info(sid, pid)
+        if not info:
             abort(404)
-        return render_template("player.html", active="Teams", r=r, school=school,
+        log = sm.player_log(sid, pid)
+        strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
+        wins = sum(1 for m in log if m["won"])
+        return render_template("player.html", active="Teams", pid=pid, info=info, log=log,
+                               strv=strv, rel=rel, wins=wins, losses=len(log) - wins,
                                crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")
@@ -180,6 +188,55 @@ def create_app() -> Flask:
         view = recruit_profile(p, rg, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/season")
+    def season_hub():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        s = sm.load_season(sid)
+        cw, tw = s["current_week"], s["total_weeks"]
+        upcoming = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
+        last = sm.recent_duals(sid)
+        champions = {}
+        if s["phase"] in ("ncaa", "complete") and s["champion"]:
+            try:
+                champions = __import__("json").loads(s["champion"]) if s["phase"] == "ncaa" else {}
+            except Exception:
+                champions = {}
+        return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
+                               upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest)
+
+    @app.route("/season/advance", methods=["POST"])
+    def season_advance():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        sm.advance(sid)
+        return redirect(url_for("season_hub", u=u))
+
+    @app.route("/season/standings")
+    def season_standings():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        return render_template("season_standings.html", active="Season", u=u, uni_label=label,
+                               standings=sm.standings(sid))
+
+    @app.route("/season/schedule")
+    def season_schedule():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        school = request.args.get("school", "Oregon")
+        schools = [r.school for r in ranking_rows(division, gender)]
+        return render_template("season_schedule.html", active="Season", u=u, uni_label=label,
+                               rows=sm.team_schedule(sid, school), school=school, schools=schools)
+
+    @app.route("/season/dual/<int:dual_id>")
+    def season_dual(dual_id):
+        division, gender, label, u = _universe(request)
+        d = sm.dual_detail(dual_id)
+        if not d:
+            abort(404)
+        return render_template("season_dual.html", active="Season", u=u, uni_label=label,
+                               d=d, crest=crest)
 
     return app
 

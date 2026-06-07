@@ -96,9 +96,9 @@
       </div>
       <div style="display:flex;gap:10px">
         <a class="bl-run-big" style="margin-top:0;text-align:center;line-height:44px;text-decoration:none"
-           href="{{ url_for('dual_run', home=home, away=away, seed=v.seed + 1, fidelity=v.fidelity) }}">Re-run</a>
+           href="{{ url_for('dual_run', home=home, away=away, seed=v.seed + 1, fidelity=v.fidelity, u=u) }}">Re-run</a>
         <a class="bl-pgbtn" style="height:44px;line-height:44px;flex:1;text-align:center"
-           href="{{ url_for('dual', home=home, away=away) }}">Change teams</a>
+           href="{{ url_for('dual', home=home, away=away, u=u) }}">Change teams</a>
       </div>
     </div>
   </div>

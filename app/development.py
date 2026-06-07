@@ -112,6 +112,7 @@ class Prospect:
     # intentionally light here; richer systems can fill them without changing the
     # core development contract.
     hometown: str = ""
+    high_school: str = ""
     region: str = "global"
     domestic: bool = False
     grad_year: int = 0
@@ -215,7 +216,8 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     `pid` lets callers (roster/juniors builders) assign a stable id; if omitted
     a deterministic one is derived.
     """
-    from generators import nation_talent, roll_hometown, roll_birthday, roll_secondary_country
+    from generators import (nation_talent, roll_hometown, roll_birthday,
+                            roll_secondary_country, roll_high_school)
     from generators.majors import pick_major
 
     if talent is None:
@@ -262,6 +264,7 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     city = roll_hometown(country, rng)
     if city:
         p.hometown = f"{city}, {country}" if country else city
+    p.high_school = roll_high_school(country, rng)
     p.recruit_stars = p.star_rating()
     p.recruit_tier = TIERS[p.tier][0]
     return p

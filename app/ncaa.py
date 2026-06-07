@@ -166,6 +166,8 @@ def build_roster(p: Program):
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(p.key, i))
         pr.class_year = CLASS_YEARS[i % len(CLASS_YEARS)]
+        # hometown / high_school / domestic are wired by generate_prospect from
+        # the player's nation (real city pools + flags), so no synthetic override.
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
     for idx, pr in enumerate(roster):

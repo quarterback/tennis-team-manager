@@ -11,6 +11,12 @@ primary_region = "iad"
 
 [env]
   PORT = "8080"
+  TENNIS_DB_PATH = "/data/tennis.db"   # saved seasons live on the persistent volume
+
+# Persistent volume for saved seasons (season mode is DB-backed).
+[[mounts]]
+  source = "tennis_data"
+  destination = "/data"
 
 [http_service]
   internal_port = 8080

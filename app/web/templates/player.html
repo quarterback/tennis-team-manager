@@ -1,56 +1,61 @@
 {% extends "base.html" %}
-{% block title %}Baseline — {{ r.p.name }}{% endblock %}
+{% block title %}Baseline — {{ info.name }}{% endblock %}
 {% block content %}
-{% set p = r.p %}
-{% set abbr, color = crest(school) %}
+{% set abbr, color = crest(info.school) %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Teams › {{ school }} › Player</span>
-  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=school, u=u) }}">← {{ school }} roster</a>
+  <span style="font-size:13px;color:var(--text-muted)">Teams › {{ info.school }} › Player</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=info.school, u=u) }}">← {{ info.school }} roster</a>
 </div></div>
 
 <div class="bl-board">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
     <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
     <div><div class="tname">
-        <span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span>
-        {{ p.name }}
-        <span style="font-size:13px;color:var(--text-muted)">{{ p.country|country_abbrev }}{% if p.secondary_country %} / {{ p.secondary_country|country_abbrev }}{% endif %}</span></div>
-      <div class="tsub">{{ p.class_year }} · {{ school }} · {{ uni_label }}{% if p.walk_on %} · walk-on{% endif %}{% if p.hometown %} · Born {{ p.hometown }}{% endif %}</div></div>
+        <span class="player-flag" title="{{ info.country|country_name }}">{{ info.country|flags(info.secondary_country) }}</span>
+        {{ info.name }}
+        <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
+      <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div></div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
-      <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(r.str) }}</span>
-      <div class="tsub">reliability {{ "%.2f"|format(r.rel) }}</div></div>
+      <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
+      <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
   </div>
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Bio</span></div>
-        <div class="bl-panel-body">
-          <table class="bl-protable"><tbody>
-            <tr><td>Class</td><td>{{ p.class_year }}</td></tr>
-            <tr><td>Hometown</td><td>{{ p.hometown }}</td></tr>
-            <tr><td>Major</td><td>{{ p.major }}</td></tr>
-            <tr><td>Lineup</td><td>{% if r.line %}Singles line {{ r.line }}{% else %}Reserve{% endif %}</td></tr>
-            <tr><td>Status</td><td>{{ "Walk-on" if p.walk_on else "Scholarship" }}</td></tr>
-          </tbody></table>
-        </div>
-      </div>
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">This season</span></div>
-        <div class="bl-panel-body">
-          <p style="margin:0;font-size:14px;color:var(--text-secondary)">
-            Singles record <strong style="color:var(--text-primary)">{{ r.w }}-{{ r.l }}</strong> ·
-            live STR <span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span>
-            (reliability {{ "%.2f"|format(r.rel) }}).</p>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Singles — match by match</span>
+        <span class="bl-panel-meta">{{ wins }}-{{ losses }} this season (incl. postseason)</span></div>
+        <div class="bl-tablescroll" style="border:none">
+          <div class="bl-table" style="--bl-grid-cols: 70px 50px minmax(120px,1fr) 130px 70px 60px">
+            <div class="bl-thead">
+              <span class="bl-th">PHASE</span><span class="bl-th">LINE</span><span class="bl-th">OPPONENT</span>
+              <span class="bl-th">SCHOOL</span><span class="bl-th">GAMES</span><span class="bl-th">RESULT</span>
+            </div>
+            {% for m in log %}
+            <div class="bl-row">
+              <span class="bl-conf" style="font-size:12px">{{ m.phase }}</span>
+              <span class="bl-conf">{{ m.slot }}</span>
+              <span class="bl-rec">{{ m.opp }}</span>
+              <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.opp_school }}</span>
+              <span class="bl-rec">{{ m.gf }}-{{ m.ga }}</span>
+              <span><span class="bl-badge {{ 'tier-IVY' if m.won else 'tier-D3' }}">{{ 'W' if m.won else 'L' }}</span></span>
+            </div>
+            {% endfor %}
+            {% if not log %}<div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No matches yet — advance the season.</span></div>{% endif %}
+          </div>
         </div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Historical</span></div>
-        <div class="bl-panel-body">
-          <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5">
-            Year-by-year career (school each season, STR, record — transfers visible) is tracked
-            across a multi-season league run. <code style="font-family:var(--font-mono)">manage.py league</code>
-            logs it today; the multi-year web view is the next step.</p>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Bio</span></div>
+        <div class="bl-panel-body"><table class="bl-protable"><tbody>
+          <tr><td>Class</td><td>{{ info.class }}</td></tr>
+          <tr><td>Nationality</td><td><span class="player-flag">{{ info.country|flags(info.secondary_country) }}</span> {{ info.country|country_name }}{% if info.secondary_country %} / {{ info.secondary_country|country_name }}{% endif %}</td></tr>
+          <tr><td>Hometown</td><td>{{ info.hometown }}</td></tr>
+          {% if info.high_school %}<tr><td>High School</td><td>{{ info.high_school }}</td></tr>{% endif %}
+          <tr><td>Major</td><td>{{ info.major }}</td></tr>
+          <tr><td>Status</td><td>{{ "Walk-on" if info.walk_on else "Scholarship" }}</td></tr>
+          <tr><td>Record</td><td>{{ wins }}-{{ losses }}</td></tr>
+        </tbody></table></div>
       </div>
     </div>
   </div>

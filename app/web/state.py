@@ -199,6 +199,33 @@ def recruit_profile(p, gender: str, grad_year: int):
     }
 
 
+def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
+    """[(conference, [ {school, abbr, color, pi, rec, tier} ... ]) ...] for the
+    Teams index — teams grouped by conference, ranked within each by Power Index."""
+    from .rankings_data import crest
+    rows = ranking_rows(division, gender)
+    groups: dict[str, list] = {}
+    for r in rows:
+        if conf_filter != "All" and r.conf != conf_filter:
+            continue
+        abbr, color = crest(r.school)
+        groups.setdefault(r.conf, []).append(
+            {"school": r.school, "abbr": abbr, "color": color, "pi": r.pi,
+             "rec": r.rec, "tier": r.tier})
+    return sorted(groups.items())
+
+
+def head_coach(school: str, division: str = "D1", gender: str = "men"):
+    """A deterministic head coach (real name) for a program."""
+    import random
+    from generators import make_name_picker, region_preset
+    from app.coaches import generate_coach
+    name_fn = make_name_picker(random.Random(f"coachname|{school}|{gender}"),
+                               gender="mixed", region_weights=region_preset("global"))
+    nm, _ = name_fn()
+    return generate_coach(random.Random(f"coach|{school}|{gender}"), nm, school=school)
+
+
 def team_roster(division: str, gender: str, school: str):
     """Roster rows for a Team page: (player, line, live STR, reliability, W-L)."""
     sr = get_season(division, gender)

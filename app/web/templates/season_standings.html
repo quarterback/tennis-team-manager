@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Standings{% endblock %}
+{% block content %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Season › Standings · {{ uni_label }}</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
+</div></div>
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+  {% for conf, table in standings.items() %}
+  <div class="bl-panel" style="margin-bottom:14px">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }}</span>
+      <span class="bl-panel-meta">conference · overall</span></div>
+    <div>
+      {% for r in table %}
+      <div class="bl-brk-match" style="grid-template-columns:24px 1fr 80px 80px">
+        <span class="bl-rank">{{ loop.index }}</span>
+        <a class="bl-brk-team" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="nm">{{ r.school }}</span></a>
+        <span class="bl-rec">{{ r.cw }}-{{ r.cl }}</span>
+        <span class="bl-conf">{{ r.ow }}-{{ r.ol }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
