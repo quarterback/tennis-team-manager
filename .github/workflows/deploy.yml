@@ -1,0 +1,72 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:   # manual trigger from the GitHub Actions UI (web button)
+
+jobs:
+  # Build validation — catch Docker build failures before deploying.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Dockerfile builds
+        run: docker build --tag tennis-test .
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # First run creates the app from fly.toml; later runs are a no-op.
+      - name: Ensure Fly app exists
+        run: flyctl apps create tennis-team-manager || true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy to Fly.io
+        run: |
+          for attempt in 1 2 3; do
+            echo "Deploy attempt $attempt..."
+            if flyctl deploy --remote-only; then
+              echo "Deploy succeeded on attempt $attempt"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep_time=$((attempt * 10))
+              echo "Deploy failed, retrying in ${sleep_time}s..."
+              sleep "$sleep_time"
+            fi
+          done
+          echo "Deploy failed after 3 attempts"
+          exit 1
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Verify deployment health
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          for attempt in 1 2 3 4 5; do
+            echo "Health check attempt $attempt..."
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://tennis-team-manager.fly.dev/api/health || true)
+            if [ "$status" = "200" ]; then
+              echo "Health check passed (HTTP 200)"
+              exit 0
+            fi
+            echo "Got HTTP $status, retrying in 15s..."
+            sleep 15
+          done
+          echo "WARNING: Health check did not return 200 after 5 attempts"
+          exit 1
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

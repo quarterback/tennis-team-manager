@@ -23,11 +23,24 @@ python3 manage.py runserver          # dev server, http://localhost:5000
 gunicorn wsgi:app                    # production server (what the container runs)
 ```
 
-## Fly.io (same as the baseball sim)
-```
-flyctl launch --no-deploy            # first time — creates the app from fly.toml
-flyctl deploy
-```
+## Fly.io via GitHub Actions (web-only, no CLI)
+Deploys run automatically from `.github/workflows/deploy.yml` — same pattern as
+the other sims. **Every push to `main` builds the Docker image and deploys to
+Fly** (also runnable on demand via the Actions tab → "Deploy to Fly.io" → "Run
+workflow").
+
+One-time setup, all in the browser:
+1. **Get a Fly token** — Fly.io dashboard → Account → **Tokens** → create a
+   deploy token; copy it.
+2. **Add it to GitHub** — repo → Settings → Secrets and variables → Actions →
+   **New repository secret**, name `FLY_API_TOKEN`, paste the token.
+3. **Merge to `main`.** The workflow creates the Fly app (`tennis-team-manager`)
+   on its first run and deploys it; afterwards every merge re-deploys.
+
+The workflow validates the Docker build, deploys with retries, then health-checks
+`https://tennis-team-manager.fly.dev/api/health`. (If that app name is taken,
+change `app =` in `fly.toml` and the two `tennis-team-manager` references in the
+workflow to a free name.)
 
 ## Render / Railway / any container host
 - Build with the `Dockerfile`, or use the `Procfile`:
