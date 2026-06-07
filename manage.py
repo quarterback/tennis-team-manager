@@ -92,6 +92,36 @@ def cmd_initdb(args):
     print(f"Initialised DB at {DB_PATH}")
 
 
+def cmd_season(args):
+    from app.season import run_season, NATIONAL_FIELD
+    from app.bracket import select_field, run_bracket
+    sr = run_season(args.division, args.gender, seed=args.seed)
+    ranked = sr.ranked()
+    print(f"\n{args.division} {args.gender} — {len(sr.programs)} programs, "
+          f"{len(sr.standings)} conferences, {len(sr.champions)} champions\n")
+    print(f"{'#':>3}  {'SCHOOL':<22} {'CONF':<8} {'REC':>7}  {'POWER':>7} {'APR':>6} {'FQI':>6}")
+    for i, p in enumerate(ranked[:25], 1):
+        r = sr.ratings[p.school]
+        print(f"{i:>3}  {p.school:<22} {p.conf_abbr:<8} {r.record:>7}  "
+              f"{r.pi:.4f} {r.apr:.4f} {r.fqi:.4f}")
+
+    seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=NATIONAL_FIELD)
+    br = run_bracket(seeded, autobids, seed=args.seed)
+    print(f"\nNCAA bracket — {len(seeded)} teams "
+          f"({len(autobids)} autobids + {len(seeded) - len(autobids)} at-large)")
+    print(f"  Champion:  #{br.seed_of(br.champion)} {br.champion.school}")
+    print(f"  Runner-up: #{br.seed_of(br.runner_up)} {br.runner_up.school}")
+    print("  Final Four:")
+    for m in br.rounds[-2]:
+        print(f"    #{m.hi_seed} {m.hi.school} vs #{m.lo_seed} {m.lo.school} "
+              f"→ #{m.winner_seed} {m.winner.school}{'  (UPSET)' if m.upset else ''}")
+    upsets = [m for rnd in br.rounds for m in rnd if m.upset and m.lo_seed - m.hi_seed >= 8]
+    if upsets:
+        print(f"  Notable upsets ({len(upsets)}):")
+        for m in upsets[:6]:
+            print(f"    {m.rnd}: #{m.lo_seed} {m.lo.school} d. #{m.hi_seed} {m.hi.school}")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -130,6 +160,12 @@ def main():
     rs = sub.add_parser("runserver")
     rs.add_argument("--port", type=int, default=5000)
     rs.set_defaults(func=cmd_runserver)
+
+    se = sub.add_parser("season")
+    se.add_argument("--division", default="D1")
+    se.add_argument("--gender", default="men", choices=["men", "women"])
+    se.add_argument("--seed", type=int, default=2026)
+    se.set_defaults(func=cmd_season)
 
     args = ap.parse_args()
     args.func(args)
