@@ -18,7 +18,8 @@ from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
-                    active_overrides, reset_all, teams_by_conference, coaching_staff)
+                    active_overrides, reset_all, teams_by_conference, coaching_staff,
+                    dashboard_view)
 from app.juniors import US_STATES
 
 from app import seasonmode as sm
@@ -27,7 +28,8 @@ from .state import DEFAULT_SEED
 
 # label → route; drives the green TopNav across every page.
 NAV = [
-    ("Rankings", "/"),
+    ("Dashboard", "/"),
+    ("Rankings", "/rankings"),
     ("Season", "/season"),
     ("Dual Simulator", "/dual"),
     ("Bracket", "/bracket"),
@@ -53,6 +55,12 @@ def create_app() -> Flask:
         return {"nav": NAV, "universes": UNIVERSES}
 
     @app.route("/")
+    def dashboard():
+        division, gender, label, u = _universe(request)
+        return render_template("dashboard.html", active="Dashboard", u=u, uni_label=label,
+                               d=dashboard_view(division, gender))
+
+    @app.route("/rankings")
     def rankings():
         division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")

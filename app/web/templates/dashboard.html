@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Baseline — Dashboard{% endblock %}
+{% block content %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ d.n_programs }} programs · {{ d.n_conferences }} conferences · simulated 2026 season</span>
+</div></div>
+</form>
+
+<div class="bl-dash">
+  <!-- quick links -->
+  <div class="bl-quick">
+    <a class="bl-quickcard" href="{{ url_for('rankings', u=u) }}">
+      <span class="bl-quick-k">Power Index</span><span class="bl-quick-v">Full Rankings →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('season_hub', u=u) }}">
+      <span class="bl-quick-k">Season Mode</span><span class="bl-quick-v">Advance week-by-week →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('bracket', u=u) }}">
+      <span class="bl-quick-k">NCAA Bracket</span><span class="bl-quick-v">64-team field →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('dual', u=u) }}">
+      <span class="bl-quick-k">Dual Simulator</span><span class="bl-quick-v">Run any matchup →</span></a>
+  </div>
+
+  <div class="bl-board-grid" style="align-items:start">
+    <!-- Top programs -->
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Top Programs</span>
+        <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">Power Index · all {{ d.n_programs }} →</a></div>
+      <div class="bl-table" style="--bl-grid-cols: 34px auto 1fr 64px 88px">
+        <div class="bl-thead">
+          <span class="bl-th">RK</span><span class="bl-th"></span><span class="bl-th">SCHOOL</span>
+          <span class="bl-th num">REC</span><span class="bl-th num">PWR</span></div>
+        {% for t in d.top_programs %}
+        <div class="bl-row">
+          <span class="bl-rank {{ t.row.rank_class }}">{{ t.row.rk }}</span>
+          <span class="bl-crest sm" style="background:{{ t.color }}">{{ t.abbr }}</span>
+          <a class="bl-school" href="{{ url_for('teams', school=t.row.school, u=u) }}">{{ t.row.school }}
+            <span class="bl-badge tier-{{ t.row.tier }}" style="font-size:9px">{{ t.row.tier }}</span></a>
+          <span class="bl-cell-num"><span class="bl-rec">{{ t.row.rec }}</span></span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ t.row.fmt(t.row.pi) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- STR leaders -->
+      <div class="bl-panel">
+        <div class="bl-panel-head"><span class="bl-panel-title">STR Leaders</span>
+          <span class="bl-panel-meta">live results rating</span></div>
+        <div class="bl-table" style="--bl-grid-cols: 28px 1fr 52px 56px">
+          <div class="bl-thead">
+            <span class="bl-th">#</span><span class="bl-th">PLAYER</span>
+            <span class="bl-th num">W-L</span><span class="bl-th num">STR</span></div>
+          {% for p in d.leaders %}
+          <div class="bl-row">
+            <span class="bl-rank">{{ loop.index }}</span>
+            <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}" style="display:flex;align-items:center;gap:6px;min-width:0">
+              <span class="bl-crest sm" style="background:{{ p.color }}">{{ p.abbr }}</span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span></a>
+            <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span></span>
+            <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str) }}</span></span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Bracket teaser -->
+      <div class="bl-panel">
+        <div class="bl-panel-head"><span class="bl-panel-title">NCAA Top Seeds</span>
+          <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Full bracket →</a></div>
+        <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:7px">
+          {% if d.champion %}<div class="bl-champ" style="margin-bottom:4px">🏆 Projected champion: <strong>{{ d.champion }}</strong></div>{% endif %}
+          {% for s in d.top_seeds %}
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="bl-rank" style="width:20px">{{ loop.index }}</span>
+            <span class="bl-crest sm" style="background:{{ s.color }}">{{ s.abbr }}</span>
+            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.school }}
+              {% if s.autobid %}<span class="bl-badge tier-IVY" style="font-size:9px">AQ</span>{% endif %}</span>
+            <span class="bl-rec" style="font-size:12px">{{ s.rec }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.bl-dash{max-width:1180px;margin:0 auto;padding:16px}
+.bl-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.bl-quickcard{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--border-subtle);
+  border-radius:12px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .12s}
+.bl-quickcard:hover{border-color:var(--brand)}
+.bl-quick-k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+.bl-quick-v{font-weight:600;color:var(--brand-strong)}
+@media (max-width:780px){.bl-quick{grid-template-columns:repeat(2,1fr)}}
+</style>
+{% endblock %}

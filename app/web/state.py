@@ -121,6 +121,52 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     return rows
 
 
+def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
+    """Everything the landing dashboard shows for one universe, built from the
+    cached ratings season + NCAA bracket (no heavy season-mode creation)."""
+    from .rankings_data import crest
+    sr = get_season(division, gender, seed)
+    rows = ranking_rows(division, gender, seed)
+
+    # Player STR leaders — map each rated pid back to its player + school.
+    pid_to = {}
+    for school, roster in sr.rosters.items():
+        for pr in roster:
+            pid_to[pr.pid] = (pr, school)
+    leaders = []
+    for pid, (s, rel) in sr.player_str.items():
+        if pid in pid_to:
+            pr, school = pid_to[pid]
+            w, l = sr.player_record.get(pid, (0, 0))
+            abbr, color = crest(school)
+            leaders.append({"name": pr.name, "school": school, "abbr": abbr,
+                            "color": color, "str": round(s, 1), "rel": rel,
+                            "w": w, "l": l, "pid": pid})
+    leaders.sort(key=lambda d: d["str"], reverse=True)
+
+    br = get_bracket(division, gender, seed)
+    top_seeds = []
+    for p in br.seeds[:8]:
+        r = sr.ratings[p.school]
+        abbr, color = crest(p.school)
+        top_seeds.append({"school": p.school, "abbr": abbr, "color": color,
+                          "pi": r.pi, "rec": r.record, "autobid": p.key in br.autobids})
+
+    top = []
+    for r in rows[:10]:
+        abbr, color = crest(r.school)
+        top.append({"row": r, "abbr": abbr, "color": color})
+
+    return {
+        "top_programs": top,
+        "leaders": leaders[:10],
+        "top_seeds": top_seeds,
+        "champion": br.champion.school if br.champion else None,
+        "n_programs": len(rows),
+        "n_conferences": len(sr.standings),
+    }
+
+
 def conferences_for(division: str, gender: str) -> list[str]:
     sr = get_season(division, gender)
     return ["All"] + sorted(sr.standings.keys())
