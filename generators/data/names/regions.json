@@ -2295,6 +2295,21 @@
         "croatian"
       ]
     },
+    "serbia": {
+      "_doc": [
+        "A tennis powerhouse far out of proportion to its size (Djokovic,",
+        "Jankovic, Ivanovic, Tipsarevic). Own curated Serbian first/surname",
+        "pool, keyed to RS."
+      ],
+      "label": "Serbia",
+      "country": "RS",
+      "first_keys": [
+        "serbian"
+      ],
+      "surname_keys": [
+        "serbian"
+      ]
+    },
     "slovenia": {
       "_doc": [
         "Emerging European baseball nation (Euro debut 10th, 1995). Promoted",
@@ -2863,6 +2878,7 @@
         "italy": 0.06,
         "europe_eastern": 0.09,
         "russia": 0.05,
+        "serbia": 0.03,
         "south_america": 0.06,
         "anzac": 0.05,
         "east_asia": 0.05,

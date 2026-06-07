@@ -79,10 +79,18 @@ Two mechanisms, both verified by tests:
   Timeline, StrikePrediction, Attributes, `Born`, Finalist all present; a
   dual-citizen recruit renders both flags.
 
+## Follow-up: Serbian pool
+The scraped `serbian` name buckets were polluted (team names like "Borussia"/
+"Chicago", cities, and mixed-in Bosniak/Albanian names) and no region mapped to
+`RS`, so Serbia — a tennis power well out of proportion to its size — never
+generated. Replaced the three buckets with curated authentic Serbian lists
+(70 male / 60 female firsts, 90 `-ić` surnames incl. Đoković/Janković/
+Ivanović), added a `serbia` region (RS), an `RS` nation-talent row (74/54),
+an `RS` hometown pool, the `RS → Serbia/SRB` display entry, and weighted
+`serbia` at 0.03 in `tennis_global` (rest-of-world floor still 11.3%).
+
 ## Not done (deliberately)
 - No live nation-talent drift (static JSON only).
-- No Serbian name pool (no source bucket exists); the Balkans tennis world is
-  represented via the Greece/Croatia/Slovenia + Eastern-Europe pools.
 - US recruit `City, ST` pairs the drawn city with the drawn state
   cosmetically; they aren't geographically matched (same as the prior behavior,
   now with real city names).

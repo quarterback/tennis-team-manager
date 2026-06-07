@@ -99,6 +99,20 @@ def test_recruiting_handles_no_schools():
     assert prof.n_offers == 0 and prof.offers == [] and prof.predicted_school == ""
 
 
+def test_serbia_pool_generates_clean():
+    # Serbia (RS) is a tennis power; it generates authentic names, a flag, a
+    # hometown, and a positive talent profile.
+    assert country_name("RS") == "Serbia" and country_abbrev("RS") == "SRB"
+    assert nation_talent.talent_shift("RS") > 0
+    assert roll_hometown("RS", random.Random(1))           # has a city pool
+    fn = make_name_picker(random.Random(5), gender="male", region_weights={"serbia": 1.0})
+    pollution = {"Atlanta", "Borussia", "Chicago", "Inter", "Real", "United", "Telekom"}
+    for _ in range(40):
+        full, cc = fn()
+        assert cc == "RS"
+        assert not (set(full.split()) & pollution)         # no scraped team-name junk
+
+
 def test_tennis_global_preset_loads():
     w = region_preset("tennis_global")
     assert w and "us" in w

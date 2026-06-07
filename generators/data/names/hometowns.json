@@ -1066,6 +1066,22 @@
       "Sliven",
       "Dobrich",
       "Haskovo"
+    ],
+    "RS": [
+      "Belgrade",
+      "Novi Sad",
+      "Niš",
+      "Kragujevac",
+      "Subotica",
+      "Zrenjanin",
+      "Pančevo",
+      "Čačak",
+      "Kraljevo",
+      "Novi Pazar",
+      "Leskovac",
+      "Smederevo",
+      "Valjevo",
+      "Užice"
     ]
   }
 }
