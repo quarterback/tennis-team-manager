@@ -29,10 +29,18 @@ tracks the visible current ability (so gems are under-rated, busts over-rated).
 from __future__ import annotations
 
 import copy
+import hashlib
 import random
 from dataclasses import dataclass, field
 
 from engine import Player, ATTRS
+
+
+def make_pid(*parts) -> str:
+    """Stable, process-independent player id from seed parts. Never use hash()
+    for ids/seeds — it's salted per process and breaks determinism."""
+    raw = "|".join(str(p) for p in parts)
+    return "P" + hashlib.blake2s(raw.encode(), digest_size=6).hexdigest()
 
 GRADE_MIN, GRADE_MAX = 20, 80
 # Calibrated to docs/calibration-tennis-trajectories.md: real development over the
@@ -113,6 +121,10 @@ class Prospect:
     recruit_rank: int = 0
     recruit_tier: str = ""
     recruit_stars: int = 0
+    # Persistent identity (stable across develop_year / graduation / transfer)
+    pid: str = ""
+    class_year: str = ""                             # "Fr" / "So" / "Jr" / "Sr"
+    walk_on: bool = False                            # non-scholarship roster filler
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
@@ -168,7 +180,8 @@ class Prospect:
 
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
-                      gender: str = "male", talent: float | None = None) -> Prospect:
+                      gender: str = "male", talent: float | None = None,
+                      pid: str = "") -> Prospect:
     """Create an incoming prospect. Ceilings cluster around `talent`; a hidden
     `maturity` sets how much of the ceiling is realized now (early vs late
     bloomer), and a hidden interest tier sets how fast the gap closes."""
@@ -183,5 +196,5 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
         current=current, potential=potential,
         interest_rate=rate, tier=tier, tier_mult=mult,
         fog=rng.uniform(FOG_MIN, FOG_MAX),
-        consensus_seed=rng.randrange(1 << 30),
+        consensus_seed=rng.randrange(1 << 30), pid=pid,
     )

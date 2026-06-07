@@ -14,6 +14,7 @@ and turns each school into a `Program` with:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import random
@@ -115,27 +116,74 @@ def load_division(division: str, gender: str) -> Division:
     return div
 
 
-def _base_from_strength(s: float) -> float:
-    return max(0.38, min(0.74, 0.40 + 0.34 * s))
+ROSTER_SIZE = 8
+SCHOLARSHIP_SLOTS = 6        # top of the roster carry scholarships; the rest are walk-ons
+CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 
 
+def _talent_from_strength(s: float) -> float:
+    """Program latent strength (0–1) → a talent-grade mean (20–80) for the roster,
+    targeting the calibration STR bands (top D1 ~52–55, low-major ~44)."""
+    return max(24.0, min(78.0, 32.0 + 44.0 * s))
+
+
+def _pick_gender(g: str) -> str:
+    return "male" if g == "men" else "female" if g == "women" else g
+
+
+def _roster_seed(p: Program) -> int:
+    return int(hashlib.blake2s(p.key.encode(), digest_size=8).hexdigest(), 16) & 0xFFFFFFFF
+
+
+_roster_cache: dict[str, list[Prospect]] = {}
 _squad_cache: dict[str, Team] = {}
 
 
+def reset_caches() -> None:
+    """Clear roster/squad caches — required when a League mutates rosters."""
+    _roster_cache.clear()
+    _squad_cache.clear()
+
+
+def build_roster(p: Program) -> list[Prospect]:
+    """Deterministic roster of persistent Prospects for a program (cached),
+    sorted best → worst (the ladder). Talent prior tracks program strength;
+    class years distributed Fr–Sr. Each player gets a stable pid."""
+    if p.key in _roster_cache:
+        return _roster_cache[p.key]
+    from generators import make_name_picker, region_preset
+    from .development import generate_prospect, make_pid
+    seed = _roster_seed(p)
+    rng = random.Random(seed)
+    name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
+                               region_weights=region_preset("global"))
+    tmean = _talent_from_strength(p.strength)
+    roster: list[Prospect] = []
+    for i in range(ROSTER_SIZE):
+        name, country = name_fn()
+        talent = max(24.0, min(80.0, rng.gauss(tmean, 5.0)))
+        pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
+                               talent=talent, pid=make_pid(p.key, i))
+        pr.class_year = CLASS_YEARS[i % len(CLASS_YEARS)]
+        roster.append(pr)
+    roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
+    for idx, pr in enumerate(roster):
+        pr.walk_on = idx >= SCHOLARSHIP_SLOTS     # bottom of the roster = walk-ons
+    _roster_cache[p.key] = roster
+    return roster
+
+
+def squad_and_ladder(p: Program) -> tuple[Team, list[Prospect]]:
+    """(engine Team, top-6 ladder of Prospects). The Team's singles[i] is exactly
+    ladder[i], so a singles line's player identity (pid) is unambiguous."""
+    ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(), reverse=True)[:6]
+    return Team(name=p.school, singles=[pr.engine_player() for pr in ladder]), ladder
+
+
 def build_squad(p: Program) -> Team:
-    """Deterministic 6-player squad for a program (cached)."""
+    """Deterministic engine Team (top-6 ladder) for a program (cached)."""
     if p.key in _squad_cache:
         return _squad_cache[p.key]
-    base = _base_from_strength(p.strength)
-    seed = abs(hash(p.key)) & 0xFFFFFFFF
-    rng = random.Random(seed)
-    from generators import make_name_picker, region_preset
-    name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=p.gender,
-                               region_weights=region_preset("global"))
-    singles = []
-    for i in range(6):
-        name, country = name_fn()
-        singles.append(random_player(rng, name, country, base=base - i * 0.012))
-    team = Team(name=p.school, singles=singles)
+    team = squad_and_ladder(p)[0]
     _squad_cache[p.key] = team
     return team
