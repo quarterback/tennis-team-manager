@@ -76,6 +76,10 @@ def create_app() -> Flask:
                                uni_label=label, division=division,
                                field=len(br.seeds), field_presets=FIELD_PRESETS)
 
+    @app.route("/api/health")
+    def health():
+        return {"status": "ok"}, 200
+
     @app.route("/methodology")
     def methodology():
         return render_template("methodology.html", active="Methodology")

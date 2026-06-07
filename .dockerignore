@@ -1,5 +1,11 @@
-fly.toml
 .git/
 __pycache__/
-.envrc
+*.py[cod]
+.pytest_cache/
 .venv/
+venv/
+.envrc
+*.db
+node_modules/
+.DS_Store
+fly.toml
