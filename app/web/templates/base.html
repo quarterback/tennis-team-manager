@@ -6,26 +6,88 @@
 <title>{% block title %}Baseline{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bracket.css') }}">
 </head>
 <body>
-  <header class="bl-header">
-    <div class="bl-header-inner">
-      <a class="bl-brand" href="{{ url_for('dashboard') }}" style="text-decoration:none;color:inherit">
-        <img src="{{ url_for('static', filename='assets/logo-mark-white.svg') }}" width="26" height="26" alt="">
-        <div class="bl-brand-text">
-          <span class="bl-brand-title">Baseline</span>
-          <span class="bl-brand-sub">College Dual-Match Simulator</span>
-        </div>
+  <div class="fm-shell">
+    <input type="checkbox" id="fm-navtoggle" class="fm-navtoggle" hidden>
+    <label for="fm-navtoggle" class="fm-scrim" aria-hidden="true"></label>
+
+    <!-- ============ Left sidebar: grouped navigation ============ -->
+    <aside class="fm-sidebar">
+      <a class="fm-brand" href="{{ url_for('world_view', u=u) }}">
+        <img src="{{ url_for('static', filename='assets/logo-mark.svg') }}" width="28" height="28" alt="">
+        <span class="fm-brand-text">
+          <span class="fm-brand-title">Baseline</span>
+          <span class="fm-brand-sub">Tennis Manager</span>
+        </span>
       </a>
-      <nav class="bl-nav">
-        {% for label, href in nav %}
-          <a href="{{ href }}"{% if label == active %} class="active"{% endif %}>{{ label }}</a>
+
+      <nav class="fm-nav">
+        {% for glabel, items in nav_groups %}
+        <div class="fm-navgroup">
+          <div class="fm-navgroup-label">{{ glabel }}</div>
+          {% for it in items %}
+          <a class="fm-navitem{% if it.id == active_nav %} active{% endif %}" href="{{ it.href }}">
+            <span class="fm-navicon">{{ it.icon }}</span>
+            <span class="fm-navlabel">{{ it.label }}</span>
+          </a>
+          {% endfor %}
+        </div>
         {% endfor %}
-        <a class="bl-run" href="{{ url_for('dual') }}">Run a Dual</a>
       </nav>
+    </aside>
+
+    <!-- ============ Main column: top bar + content ============ -->
+    <div class="fm-main">
+      <header class="fm-topbar">
+        <label for="fm-navtoggle" class="fm-hamburger" aria-label="Toggle navigation">☰</label>
+
+        {% if game %}
+        <div class="fm-gc fm-gc-team">
+          <span class="fm-gc-stack">
+            <span class="fm-gc-k">Season {{ game.season_no }}</span>
+            <span class="fm-gc-v">{{ game.year }}</span>
+          </span>
+        </div>
+        <div class="fm-gc fm-gc-sep">
+          <span class="fm-gc-stack">
+            <span class="fm-gc-k">World</span>
+            <span class="fm-gc-v">Week {{ game.week }}
+              <span class="fm-gc-sub">· {{ game.phase }}</span></span>
+          </span>
+        </div>
+        {% if game.signed %}
+        <div class="fm-gc fm-gc-sep fm-gc-next">
+          <span class="fm-gc-stack">
+            <span class="fm-gc-k">Class Signed</span>
+            <span class="fm-gc-v">{{ game.signed }}</span>
+          </span>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <div class="fm-topbar-right">
+          <form method="get" class="fm-uniform">
+            <span class="bl-select-wrap">
+              <select class="bl-select" name="u" onchange="this.form.submit()" aria-label="Universe">
+                {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+              </select>
+            </span>
+          </form>
+          <form method="post" action="{{ url_for('world_advance', u=u) }}">
+            <button class="fm-advance" type="submit">
+              <span class="fm-advance-label">{{ 'Finalize season' if game and game.complete else 'Advance week' }}</span>
+              <span aria-hidden="true">⏭</span></button>
+          </form>
+        </div>
+      </header>
+
+      <main class="fm-content">
+        {% block content %}{% endblock %}
+      </main>
     </div>
-  </header>
-  {% block content %}{% endblock %}
+  </div>
 </body>
 </html>

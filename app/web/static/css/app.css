@@ -316,3 +316,145 @@
 .bl-brk-win .nm { font-weight: 700; color: var(--text-primary); }
 .bl-brk-lose .nm { color: var(--text-muted); }
 .bl-upset { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tint-loss-fg); background: var(--tint-loss-bg); border-radius: 4px; padding: 1px 4px; margin-left: 6px; }
+
+/* ============================================================
+   Box score — position ↔ player identity
+   ============================================================ */
+.bl-court-team { color: var(--text-muted); font-size: 12px; font-weight: 500; margin-left: 3px; }
+.bl-side .nm .player-flag { margin-right: 2px; }
+
+/* ============================================================
+   Team page — results rail
+   ============================================================ */
+.bl-results { display: flex; flex-direction: column; max-height: 560px; overflow-y: auto; }
+.bl-result {
+  display: grid; grid-template-columns: 26px 20px 1fr auto auto; gap: 8px; align-items: center;
+  padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);
+}
+.bl-result:last-child { border-bottom: none; }
+.bl-result:hover { background: var(--surface-hover); }
+.bl-result .ha { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.bl-result .opp { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-result .tag { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); }
+
+/* ============================================================
+   Schedule — real-sport row layout
+   ============================================================ */
+.bl-sched-head, .bl-sched-row {
+  display: grid; grid-template-columns: 138px 30px 1fr 96px 104px; gap: 12px; align-items: center;
+}
+.bl-sched-head {
+  padding: 10px 18px; background: var(--surface-th); border-bottom: 1px solid var(--border-default);
+  font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
+  color: var(--text-muted); font-weight: 600;
+}
+.bl-sched-row { padding: 11px 18px; border-bottom: 1px solid var(--border-subtle); color: inherit; }
+.bl-sched-row:last-child { border-bottom: none; }
+.bl-sched-row.is-final { cursor: pointer; }
+.bl-sched-row.is-final:hover { background: var(--surface-hover); }
+.bl-sched-row .c-date { display: flex; flex-direction: column; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.bl-sched-row .c-date .wk { font-size: 10.5px; font-weight: 500; color: var(--text-faint); margin-top: 1px; }
+.bl-sched-row .c-site { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.bl-sched-row .c-opp { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.bl-sched-row .c-opp .nm { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-sched-row .c-res { display: flex; align-items: center; gap: 8px; }
+.bl-sched-row .c-res .score { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13.5px; }
+.bl-sched-row .c-res .upcoming { font-size: 12px; color: var(--text-faint); }
+
+.bl-tag { display: inline-flex; height: 19px; align-items: center; padding: 0 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.bl-tag.conf { background: var(--green-100); color: var(--green-800); }
+.bl-tag.nc { background: var(--gray-150); color: var(--text-muted); }
+
+/* Win/loss chip — shared by the results rail and schedule */
+.wl { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 7px; border-radius: 5px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wl.win { background: var(--tint-win-bg); color: var(--tint-win-fg); }
+.wl.loss { background: var(--tint-loss-bg); color: var(--tint-loss-fg); }
+
+/* ============================================================
+   Explainer (details / summary) — "how it works" panels
+   ============================================================ */
+.bl-explainer { margin: 14px 0 4px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden; }
+.bl-explainer > summary { cursor: pointer; padding: 12px 16px; font-size: 13.5px; font-weight: 700; color: var(--text-primary); list-style: none; display: flex; align-items: center; gap: 8px; }
+.bl-explainer > summary::before { content: '\25B8'; color: var(--text-muted); transition: transform var(--dur-fast) var(--ease-in-out); }
+.bl-explainer[open] > summary::before { transform: rotate(90deg); }
+.bl-explainer > summary::-webkit-details-marker { display: none; }
+.bl-explainer-body { padding: 2px 16px 14px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.bl-explainer-body p { margin: 0 0 8px; }
+.bl-explainer-body ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.bl-explainer-body strong { color: var(--text-primary); }
+
+/* ============================================================
+   Responsive
+   Templates set many grids + control widths inline, so the rules
+   below override with !important on narrow viewports. Goal: nothing
+   overflows the viewport; controls are tappable full-width.
+   ============================================================ */
+
+/* Global safety nets — never let media/controls force horizontal overflow. */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, table { max-width: 100%; }
+.bl-select, .bl-input { max-width: 100%; }
+
+/* Tablet / small laptop — collapse the two-column boards. */
+@media (max-width: 880px) {
+  .bl-board-grid { grid-template-columns: 1fr !important; }
+  .bl-scorehdr { grid-template-columns: 1fr !important; gap: 12px !important; text-align: center; }
+  .bl-scorehdr .team, .bl-scorehdr .team.away { justify-content: center; }
+  .bl-rounds { grid-template-columns: 1fr; }
+}
+
+/* Large phone / phone landscape. */
+@media (max-width: 720px) {
+  .bl-header-inner { flex-wrap: wrap; height: auto; padding: 9px 12px; gap: 8px; }
+  .bl-nav { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px; scrollbar-width: none; }
+  .bl-nav::-webkit-scrollbar { display: none; }
+  .bl-nav a { white-space: nowrap; flex: none; padding: 7px 10px; }
+  .bl-run { margin-left: auto; }
+
+  /* Toolbars: each field stacks full-width; selects fill + stay tappable
+     (override the inline min-width on the controls). */
+  .bl-toolbar-inner { padding: 10px 12px; gap: 8px 12px; }
+  .bl-field { width: 100%; justify-content: space-between; }
+  .bl-field .bl-select-wrap { flex: 1 1 auto; }
+  .bl-select-wrap { width: 100%; }
+  .bl-select, .bl-input { min-width: 0 !important; width: 100%; }
+
+  /* Tighter gutters across the main containers. */
+  .bl-container, .bl-board, .bl-notes, .bl-pager, .bl-prose, .bl-setup {
+    padding-left: 14px; padding-right: 14px;
+  }
+
+  /* Wide stat tables: keep the scroller but pack tighter + lower the floor. */
+  .bl-table { min-width: 640px; }
+  .bl-thead, .bl-row { padding-left: 12px; padding-right: 12px; gap: 8px; }
+  .bl-th { font-size: 10px; }
+  .bl-school, .bl-conf, .bl-rec, .bl-crec, .bl-stat { font-size: 12.5px; }
+
+  /* Schedule rows reflow: date + result on top, opponent below. */
+  .bl-sched-head { display: none; }
+  .bl-sched-row { grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 3px; padding: 11px 14px; }
+  .bl-sched-row .c-date { grid-row: 1; grid-column: 1; }
+  .bl-sched-row .c-res  { grid-row: 1; grid-column: 2; justify-content: flex-end; }
+  .bl-sched-row .c-opp  { grid-row: 2; grid-column: 1 / -1; }
+  .bl-sched-row .c-site, .bl-sched-row .c-type { display: none; }
+}
+
+/* Phone portrait — scale display type down, simplify match rows. */
+@media (max-width: 600px) {
+  .bl-bigscore .n { font-size: 30px; }
+  .bl-scorehdr .tname { font-size: 16px; }
+  .bl-prose h1 { font-size: 24px; }
+  .bl-champ { padding: 16px; gap: 12px; }
+  .bl-champ .name { font-size: 22px; }
+  .bl-slots { flex-direction: column; align-items: stretch; }
+  .bl-vs { align-self: center; margin: 4px 0; }
+  .bl-entries { flex-wrap: wrap; gap: 4px; }
+}
+
+@media (max-width: 520px) {
+  .bl-matchrow { grid-template-columns: 40px 1fr; column-gap: 10px; padding: 10px 14px; }
+  .bl-matchrow .bl-final { display: none; }
+  .bl-side .nm { white-space: normal; }
+  .bl-court-team { display: block; margin-left: 0; }
+}

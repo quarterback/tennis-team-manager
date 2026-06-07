@@ -56,14 +56,17 @@ def test_d1_men_split_is_partials_not_eight_full_rides():
 
 
 def test_d3_offers_no_athletic_aid_but_has_recruited_core():
+    from app import scholarships
     reset_caches()
-    roster = build_roster(_prog("Liberal Arts C", 0.6, "D3", "men"))
+    prog = _prog("Liberal Arts C", 0.6, "D3", "men")
+    roster = build_roster(prog)
     summ = economy.budget_summary(roster, "D3", "men")
     assert summ["cap"] == 0.0 and summ["allocated"] == 0.0
     assert not summ["offers_aid"]
     assert all(p.scholarship == 0.0 for p in roster)
-    # the core are still recruited (not all walk-ons)
-    assert sum(not p.walk_on for p in roster) == SCHOLARSHIP_SLOTS
+    # the core are still recruited (not all walk-ons) — funded headcount comes
+    # from app.scholarships (D3 funds fewer slots than D1/D2).
+    assert sum(not p.walk_on for p in roster) == scholarships.slots(prog)
 
 
 def test_allocation_deterministic():

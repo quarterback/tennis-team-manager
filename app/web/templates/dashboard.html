@@ -30,6 +30,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Top Programs</span>
         <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">Power Index · all {{ d.n_programs }} →</a></div>
+      <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px auto 1fr 64px 88px">
         <div class="bl-thead">
           <span class="bl-th">RK</span><span class="bl-th"></span><span class="bl-th">SCHOOL</span>
@@ -45,6 +46,7 @@
         </div>
         {% endfor %}
       </div>
+      </div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:16px">
@@ -52,6 +54,7 @@
       <div class="bl-panel">
         <div class="bl-panel-head"><span class="bl-panel-title">STR Leaders</span>
           <span class="bl-panel-meta">live results rating</span></div>
+        <div class="bl-tablescroll">
         <div class="bl-table" style="--bl-grid-cols: 28px 1fr 52px 56px">
           <div class="bl-thead">
             <span class="bl-th">#</span><span class="bl-th">PLAYER</span>
@@ -66,6 +69,7 @@
             <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str) }}</span></span>
           </div>
           {% endfor %}
+        </div>
         </div>
       </div>
 
@@ -99,5 +103,9 @@
 .bl-quick-k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
 .bl-quick-v{font-weight:600;color:var(--brand-strong)}
 @media (max-width:780px){.bl-quick{grid-template-columns:repeat(2,1fr)}}
+/* Dashboard tables are compact (≤5 narrow columns) — opt out of the global
+   640px wide-table floor so they fit a phone instead of overflowing. The
+   .bl-tablescroll wrappers remain as a safety net. */
+@media (max-width:720px){.bl-dash .bl-table{min-width:0}}
 </style>
 {% endblock %}

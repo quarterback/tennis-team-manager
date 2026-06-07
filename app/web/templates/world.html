@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Baseline — The World{% endblock %}
+{% block content %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Unified World · one calendar across every division &amp; gender</span>
+  <form method="post" action="{{ url_for('world_advance') }}" style="margin-left:auto">
+    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 16px;font-size:13px">
+      {{ 'Finalize season + recruit →' if hub.complete else 'Advance week →' }}
+    </button>
+  </form>
+</div></div>
+
+<div class="bl-board">
+  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:18px">
+    <div><div class="label t-eyebrow" style="color:var(--brand-strong)">Season {{ hub.season_no }}</div>
+      <div class="tname" style="font-size:30px">{{ hub.year }}</div></div>
+    <div style="text-align:center">
+      <div class="bl-th" style="justify-content:center">Week</div>
+      <div class="bl-stat power" style="font-size:30px">{{ hub.week }}</div>
+      <div class="tsub">{{ 'postseason — ready to finalize' if hub.complete else 'regular season in progress' }}</div></div>
+    <div style="text-align:right"><div class="bl-th" style="font-size:10px">CLASS SIGNED</div>
+      <span class="bl-stat" style="font-size:22px">{{ hub.signed_total }}</span>
+      <div class="tsub">{% for g, n in hub.signed.items() %}{{ n }} {{ g }}{{ ' · ' if not loop.last }}{% endfor %}
+        {% if not hub.signed %}commitments roll in weekly{% endif %}</div></div>
+  </div>
+
+  <div class="bl-note" style="margin-bottom:16px">
+    Each week simulates every division's slate, develops players a little, and signs more of the
+    next national class. When all six brackets finish, <strong>finalize</strong> graduates seniors,
+    runs the cross-division transfer portal off the season's results, and brings in the signed class.
+  </div>
+
+  <div class="bl-world-grid">
+    {% for d in hub.divisions %}
+    <div class="bl-panel">
+      <div class="bl-panel-head">
+        <a class="bl-panel-title" style="text-decoration:none" href="{{ url_for('rankings', u=d.u) }}">{{ d.label }}</a>
+        <span class="bl-panel-meta">
+          {% if d.phase == 'regular' %}wk {{ d.week }}/{{ d.total }}
+          {% elif d.phase == 'conf_tournaments' %}conf tourneys
+          {% elif d.phase == 'ncaa' %}NCAA bracket
+          {% else %}complete{% endif %}</span>
+      </div>
+      <div>
+        {% if d.champion %}
+        <div class="bl-result" style="grid-template-columns:auto 1fr;background:var(--green-50)">
+          <span class="t-eyebrow" style="color:var(--brand-strong)">CHAMP</span>
+          <span class="opp" style="font-weight:700">{{ d.champion }}</span></div>
+        {% endif %}
+        {% for t in d.top %}
+        <a class="bl-result" style="grid-template-columns:24px 1fr auto" href="{{ url_for('teams', school=t.school, u=d.u) }}">
+          <span class="bl-rank {{ 'gold' if t.rk==1 else 'bronze' if t.rk<=3 else '' }}">{{ t.rk }}</span>
+          <span class="opp">{{ t.school }}</span>
+          <span class="bl-stat power">{{ "%.3f"|format(t.pi) }}</span>
+        </a>
+        {% endfor %}
+        {% if not d.top %}<div class="bl-panel-body"><span class="bl-conf">Advance a week to generate results.</span></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+.bl-world-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
+</style>
+{% endblock %}

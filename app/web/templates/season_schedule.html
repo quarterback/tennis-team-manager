@@ -3,40 +3,65 @@
 {% block content %}
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Season › Schedule</span>
-  <label class="bl-field" style="margin-left:12px"><span class="bl-field-label">Team</span>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, dd, gg, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:150px">
+      {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Team</span>
     <span class="bl-select-wrap"><select class="bl-select" name="school" onchange="this.form.submit()" style="min-width:200px">
       {% for s in schools %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
     </select></span></label>
-  <input type="hidden" name="u" value="{{ u }}">
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
 </div></div>
 </form>
-<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ school }} — 2026 schedule</span>
-      <span class="bl-panel-meta">{{ rows|length }} duals</span></div>
-    <div>
-      {% for d in rows %}
-      {% set home = d.home == school %}
-      {% set opp = d.away if home else d.home %}
-      <div class="bl-matchrow" style="grid-template-columns:48px 1fr 90px 70px">
-        <div class="bl-court"><span class="kind">Wk</span><span class="num" style="font-size:14px">{{ d.week }}</span></div>
-        <div class="bl-match-sides"><span class="nm" style="font-size:14px">{{ 'vs' if home else 'at' }} {{ opp }}
-          <span class="bl-conf">{{ '· conf' if d.is_conf else '· non-conf' }}</span></span></div>
-        {% if d.status == 'final' %}
-          {% set won = (home and d.winner==0) or (not home and d.winner==1) %}
-          {% set me = d.home_points if home else d.away_points %}
-          {% set them = d.away_points if home else d.home_points %}
-          <a href="{{ url_for('season_dual', dual_id=d.id, u=u) }}" style="text-decoration:none">
-            <span class="bl-badge {{ 'tier-IVY' if won else 'tier-D3' }}">{{ 'W' if won else 'L' }} {{ me }}-{{ them }}</span></a>
-          <span class="bl-final">Final</span>
-        {% else %}
-          <span class="bl-conf">—</span><span class="bl-final">scheduled</span>
-        {% endif %}
-      </div>
-      {% endfor %}
+
+<div class="bl-board" style="max-width:980px">
+  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
+    <span class="bl-crest lg" style="background:{{ color }};width:52px;height:52px;font-size:15px">{{ abbr }}</span>
+    <div><div class="tname">{{ school }}</div>
+      <div class="tsub">{{ conf }} · 2026 schedule · {{ uni_label }}</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a class="bl-pill" style="text-decoration:none" href="{{ url_for('teams', school=school, u=u) }}">Team page</a>
+      <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
     </div>
   </div>
+
+  <div class="bl-panel">
+    <div class="bl-sched-head">
+      <span class="c-date">Date</span><span class="c-site"></span><span class="c-opp">Opponent</span>
+      <span class="c-type">Type</span><span class="c-res">Result</span>
+    </div>
+    {% for d in rows %}
+    {% set home = d.home == school %}
+    {% set opp = d.away if home else d.home %}
+    {% set oa, oc = crest(opp) %}
+    {% set won = (home and d.winner==0) or (not home and d.winner==1) %}
+    {% set final = d.status == 'final' %}
+    {% set link = url_for('season_dual', dual_id=d.id, u=u) if final else None %}
+    <{{ 'a' if link else 'div' }} class="bl-sched-row{{ ' is-final' if final else '' }}"{% if link %} href="{{ link }}"{% endif %}>
+      <span class="c-date">{{ d.date }}<span class="wk">Wk {{ d.week }}</span></span>
+      <span class="c-site">{{ 'vs' if home else 'at' }}</span>
+      <span class="c-opp"><span class="bl-crest sm" style="background:{{ oc }}">{{ oa }}</span><span class="nm">{{ opp }}</span></span>
+      <span class="c-type"><span class="bl-tag {{ 'conf' if d.is_conf else 'nc' }}">{{ 'Conf' if d.is_conf else 'Non-conf' }}</span></span>
+      <span class="c-res">
+        {% if final %}
+          {% set me = d.home_points if home else d.away_points %}
+          {% set them = d.away_points if home else d.home_points %}
+          <span class="wl {{ 'win' if won else 'loss' }}">{{ 'W' if won else 'L' }}</span>
+          <span class="score">{{ me }}–{{ them }}</span>
+        {% else %}<span class="upcoming">Upcoming</span>{% endif %}
+      </span>
+    </{{ 'a' if link else 'div' }}>
+    {% endfor %}
+    {% if not rows %}<div class="bl-panel-body"><span class="bl-conf">No duals scheduled.</span></div>{% endif %}
+  </div>
+  <div class="bl-notes"><div class="bl-note">
+    Final results are clickable for the full box score (who played each singles & doubles court).
+    Advance the season from the <a href="{{ url_for('season_hub', u=u) }}">Season</a> hub to play upcoming duals.
+  </div></div>
 </div>
 {% endblock %}

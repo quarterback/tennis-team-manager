@@ -22,7 +22,7 @@ import random
 from dataclasses import dataclass, field
 
 from engine import random_player, Team
-from generators.cities import program_city
+from . import scholarships
 
 SEASON_SEED = 2026
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "ncaa")
@@ -52,6 +52,145 @@ CONF_PRESTIGE = {
     "SWAC": 0.38, "MEAC": 0.38, "America East": 0.44,
 }
 
+# --------------------------------------------------------------------------
+# Prestige + academics — the two recruiting levers.
+#   • prestige  = athletic brand pull (a low-major D1 still outdraws most D3s).
+#   • academics = academic profile (Ivies, NESCAC/UAA/Centennial D3s, the
+#     service academies). High-academic recruits weigh this heavily, so a
+#     smart, strong kid can pick an Ivy or a NESCAC school over a low-major D1 —
+#     which is exactly how the real tennis world distributes that talent.
+# Both are stable program traits in [0,1], separate from the hidden per-season
+# `strength` (current on-court quality).
+# --------------------------------------------------------------------------
+DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.40, "D3": 0.30}
+
+# Athletic blue-bloods get a brand bump on top of their conference prior.
+PRESTIGE_SCHOOLS = {
+    "TCU": 0.12, "Texas": 0.12, "USC": 0.10, "UCLA": 0.10, "Georgia": 0.10,
+    "Florida": 0.10, "Ohio State": 0.10, "Virginia": 0.10, "Wake Forest": 0.10,
+    "Baylor": 0.08, "Kentucky": 0.08, "Tennessee": 0.08, "Stanford": 0.10,
+    "Texas A&M": 0.08, "North Carolina": 0.08, "Michigan": 0.06, "Pepperdine": 0.06,
+}
+
+# Per-conference academic prior (default by division below). Academic leagues
+# across all three divisions.
+ACADEMIC_CONF = {
+    "Ivy": 0.97, "Patriot": 0.82, "Big East": 0.62, "ACC": 0.62, "Big Ten": 0.60,
+    # D3 academic conferences
+    "NESCAC": 0.96, "UAA": 0.95, "Centennial": 0.92, "Liberty League": 0.86,
+    "NEWMAC": 0.86, "SCIAC": 0.86, "NCAC": 0.82, "MWC": 0.80, "SAA": 0.80,
+    "ODAC": 0.70, "CCIW": 0.68, "Empire 8": 0.66,
+}
+
+# Academic powerhouses regardless of league (overrides the conference prior).
+ACADEMIC_SCHOOLS = {
+    # D1
+    "Stanford": 0.97, "Duke": 0.95, "Northwestern": 0.93, "Vanderbilt": 0.93,
+    "Notre Dame": 0.93, "Rice": 0.93, "Virginia": 0.90, "Georgia Tech": 0.90,
+    "Michigan": 0.88, "North Carolina": 0.88, "California": 0.90, "Wake Forest": 0.88,
+    "Boston College": 0.85, "USC": 0.82, "Columbia": 0.97, "Cornell": 0.95,
+    "Harvard": 0.99, "Princeton": 0.99, "Yale": 0.98, "Pennsylvania": 0.97,
+    "Brown": 0.96, "Dartmouth": 0.96, "Army": 0.86, "Navy": 0.86, "Air Force": 0.85,
+    # D3 academic flagships
+    "MIT": 0.99, "Caltech": 0.99, "Chicago": 0.98, "Washington University": 0.96,
+    "Johns Hopkins": 0.96, "Emory": 0.95, "Carnegie Mellon": 0.95, "Swarthmore": 0.97,
+    "Williams": 0.96, "Amherst": 0.96, "Pomona-Pitzer": 0.95, "Bowdoin": 0.95,
+    "Middlebury": 0.94, "Tufts": 0.93, "Wellesley": 0.93, "Carleton": 0.94,
+    "Haverford": 0.93, "Wesleyan": 0.92, "Bates": 0.91, "Colby": 0.91,
+    "Case Western Reserve": 0.92, "Brandeis": 0.92, "NYU": 0.90, "Rochester": 0.90,
+    "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93,
+}
+
+
+def _prestige(school: str, conf_abbr: str, division: str) -> float:
+    base = DIVISION_PRESTIGE.get(division, 0.40)
+    conf = CONF_PRESTIGE.get(conf_abbr, 0.50)
+    p = base + (conf - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
+    return max(0.12, min(0.97, p))
+
+
+def _academics(school: str, conf_abbr: str, division: str) -> float:
+    if school in ACADEMIC_SCHOOLS:
+        a = ACADEMIC_SCHOOLS[school]
+    elif conf_abbr in ACADEMIC_CONF:
+        a = ACADEMIC_CONF[conf_abbr]
+    else:
+        a = {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
+    # Small deterministic per-school spread so unlisted peers aren't identical.
+    jitter = (_stable_seed(f"acad|{school}") % 1000) / 1000.0 - 0.5
+    return max(0.20, min(0.99, a + jitter * 0.06))
+
+
+def _facilities(school: str, conf_abbr: str, division: str) -> float:
+    """A plain 0..1 facilities grade — tracks prestige with per-school spread."""
+    pres = _prestige(school, conf_abbr, division)
+    jitter = (_stable_seed(f"fac|{school}") % 1000) / 1000.0 - 0.5
+    return max(0.20, min(0.97, 0.30 + 0.55 * pres + 0.30 * jitter))
+
+
+# --------------------------------------------------------------------------
+# Geography — real campus locations (data/ncaa/locations.json, researched per
+# school). State → coarse region drives recruiting proximity and cross-division
+# scheduling (nearby schools across classifications can meet).
+# --------------------------------------------------------------------------
+STATE_REGION = {
+    # Northeast
+    "ME": "NE", "NH": "NE", "VT": "NE", "MA": "NE", "RI": "NE", "CT": "NE",
+    # Mid-Atlantic
+    "NY": "MATL", "NJ": "MATL", "PA": "MATL", "MD": "MATL", "DE": "MATL", "DC": "MATL",
+    # Southeast
+    "VA": "SE", "WV": "SE", "NC": "SE", "SC": "SE", "GA": "SE", "FL": "SE",
+    "KY": "SE", "TN": "SE", "AL": "SE", "MS": "SE",
+    # Midwest
+    "OH": "MW", "MI": "MW", "IN": "MW", "IL": "MW", "WI": "MW", "MN": "MW",
+    "IA": "MW", "MO": "MW", "ND": "MW", "SD": "MW", "NE": "MW", "KS": "MW",
+    # South Central
+    "TX": "SC", "OK": "SC", "AR": "SC", "LA": "SC",
+    # Mountain / West
+    "CO": "MTN", "UT": "MTN", "NV": "MTN", "AZ": "MTN", "NM": "MTN",
+    "MT": "MTN", "ID": "MTN", "WY": "MTN",
+    # Pacific
+    "CA": "W", "OR": "W", "WA": "W", "AK": "W", "HI": "W", "BC": "W",
+}
+# Adjacent regions (share a meaningful border) → a mid proximity bump.
+REGION_ADJACENT = {
+    "NE": {"MATL"}, "MATL": {"NE", "SE", "MW"}, "SE": {"MATL", "MW", "SC"},
+    "MW": {"MATL", "SE", "SC", "MTN"}, "SC": {"SE", "MW", "MTN"},
+    "MTN": {"MW", "SC", "W"}, "W": {"MTN"},
+}
+
+_LOCATIONS: dict | None = None
+
+
+def _locations() -> dict:
+    global _LOCATIONS
+    if _LOCATIONS is None:
+        path = os.path.join(_DATA_DIR, "locations.json")
+        try:
+            with open(path, encoding="utf-8") as fh:
+                _LOCATIONS = json.load(fh).get("schools", {})
+        except FileNotFoundError:
+            _LOCATIONS = {}
+    return _LOCATIONS
+
+
+def location(school: str) -> tuple[str, str, str]:
+    """(city, state, region) for a school; ('', '', '') if unknown."""
+    loc = _locations().get(school)
+    if not loc:
+        return "", "", ""
+    state = loc.get("state", "")
+    return loc.get("city", ""), state, STATE_REGION.get(state, "")
+
+
+def region_proximity(region_a: str, region_b: str) -> float:
+    """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
+    if not region_a or not region_b:
+        return 0.0
+    if region_a == region_b:
+        return 1.0
+    return 0.5 if region_b in REGION_ADJACENT.get(region_a, ()) else 0.0
+
 
 @dataclass
 class Program:
@@ -63,9 +202,13 @@ class Program:
     abbr: str
     color: str
     strength: float
+    prestige: float = 0.50
+    academics: float = 0.50
+    facilities: float = 0.50
+    city: str = ""              # real campus location (data/ncaa/locations.json)
+    state: str = ""
+    region: str = ""            # coarse region (STATE_REGION) for recruiting proximity
     autobid: bool = True
-    city: str = ""              # home city (generated, deterministic — see generators.cities)
-    state: str = ""            # home state abbr
 
     @property
     def key(self) -> str:
@@ -117,13 +260,16 @@ def load_division(division: str, gender: str) -> Division:
         members: list[Program] = []
         for school in c.get("teams", []):
             cab, color = crest(school)
-            city, st = program_city(school)
+            city, state, region = location(school)
             members.append(Program(
                 school=school, conf=c["name"], conf_abbr=abbr,
                 division=division, gender=gender, abbr=cab, color=color,
                 strength=_latent_strength(school, abbr, gender, division),
+                prestige=_prestige(school, abbr, division),
+                academics=_academics(school, abbr, division),
+                facilities=_facilities(school, abbr, division),
+                city=city, state=state, region=region,
                 autobid=bool(c.get("autobid", True)),
-                city=city, state=st,
             ))
         div.conferences[c["name"]] = members
         div.programs.extend(members)
@@ -191,11 +337,11 @@ def _base_roster(p: Program):
         # the player's nation (real city pools + flags), so no synthetic override.
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
-    # Equivalency scholarships: walk-ons (bottom of roster) + fractional aid
-    # spread across the recruited core within the division/gender cap.
+    # Funded headcount varies by classification (app.scholarships); the
+    # equivalency split + display fractions layer on top (app.economy).
     from app import economy
     economy.allocate_scholarships(roster, p.division, p.gender,
-                                  scholarship_slots=SCHOLARSHIP_SLOTS)
+                                  scholarship_slots=scholarships.slots(p))
     _roster_cache[p.key] = roster
     return roster
 
@@ -258,7 +404,7 @@ def build_roster(p: Program):
         roster.sort(key=lambda pr: pos.get(pr.pid, big))   # stable; pinned to front
     from app import economy
     economy.allocate_scholarships(roster, p.division, p.gender,
-                                  scholarship_slots=SCHOLARSHIP_SLOTS)
+                                  scholarship_slots=scholarships.slots(p))
     _eff_cache[p.key] = roster
     return roster
 

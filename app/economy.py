@@ -101,11 +101,19 @@ def _norm_gender(gender: str) -> str:
 
 
 def cap_for(division: str, gender: str) -> float:
-    """Scholarship-equivalency cap for a (division, gender). Unknown pairings
-    fall back to the D1-men cap so a custom universe still gets *an* economy."""
-    return SCHOLARSHIP_CAPS.get(
-        (_norm_division(division), _norm_gender(gender)), 4.5
-    )
+    """Scholarship-equivalency cap for a (division, gender).
+
+    Sourced from `app.scholarships`, which owns the editable per-(division,
+    gender) limits — so a cap edited live in the editor flows straight through
+    the fractional allocation here. The module-level `SCHOLARSHIP_CAPS` below is
+    the documented baseline / fallback if scholarships can't be imported."""
+    try:
+        from app import scholarships
+        return scholarships.cap(division, gender)
+    except Exception:
+        return SCHOLARSHIP_CAPS.get(
+            (_norm_division(division), _norm_gender(gender)), 4.5
+        )
 
 
 def offers_aid(division: str, gender: str) -> bool:
