@@ -139,12 +139,15 @@ def create_app() -> Flask:
     @app.route("/player/<pid>")
     def player(pid):
         division, gender, label, u = _universe(request)
-        school = request.args.get("school", "Oregon")
-        rows = team_roster(division, gender, school)
-        r = next((x for x in rows if x["p"].pid == pid), None)
-        if r is None:
+        sid = sm.get_or_create(division, gender, seed=DEFAULT_SEED)
+        info = sm.player_info(sid, pid)
+        if not info:
             abort(404)
-        return render_template("player.html", active="Teams", r=r, school=school,
+        log = sm.player_log(sid, pid)
+        strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
+        wins = sum(1 for m in log if m["won"])
+        return render_template("player.html", active="Teams", pid=pid, info=info, log=log,
+                               strv=strv, rel=rel, wins=wins, losses=len(log) - wins,
                                crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")
@@ -186,7 +189,7 @@ def create_app() -> Flask:
         s = sm.load_season(sid)
         cw, tw = s["current_week"], s["total_weeks"]
         upcoming = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
-        last = sm.week_duals(sid, cw - 1) if cw > 1 else []
+        last = sm.recent_duals(sid)
         champions = {}
         if s["phase"] in ("ncaa", "complete") and s["champion"]:
             try:
