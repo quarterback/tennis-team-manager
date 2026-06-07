@@ -253,11 +253,12 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         region_rank = next((i for i, q in enumerate(intl, 1) if q.pid == p.pid), None)
         region_label = "International"
 
-    from app.recruiting import build_recruiting, schools_from_rank_rows
-    # Live programs for this universe → recruiting Schools (LiveRow exposes the
-    # same .school/.pi/.tier the adapter reads).
-    schools = schools_from_rank_rows(ranking_rows(division, gender))
-    rec = build_recruiting(p, schools, seed_salt=f"{division}|{grad_year}")
+    from app.recruiting import build_recruiting, schools_from_programs
+    # One national pool: every gender-matched program across ALL divisions, so a
+    # recruit's board can mix a low-major D1, an Ivy and a NESCAC school — the
+    # appeal model (prestige + academics) decides the order.
+    schools = schools_from_programs(all_gender_programs(gender))
+    rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
 
     return {
         "national_rank": p.recruit_rank,
@@ -426,6 +427,19 @@ def season_match_view(division: str, gender: str, idx: int, seed: int = DEFAULT_
             "conf": d["conf"], "home_points": d["home_points"],
             "away_points": d["away_points"], "winner": 0 if d["home_won"] else 1,
             "lines": d["lines"]}
+
+
+def all_gender_programs(gender: str):
+    """Every program for one gender across D1+D2+D3 — the national recruiting
+    pool (a recruit can choose any division)."""
+    from app import ncaa
+    progs = []
+    for division in ("D1", "D2", "D3"):
+        try:
+            progs.extend(ncaa.load_division(division, gender).programs)
+        except FileNotFoundError:
+            continue
+    return progs
 
 
 def conference_schools(division: str, gender: str):

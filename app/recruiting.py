@@ -32,10 +32,49 @@ _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 class School:
     """A program the recruiting model can reason about."""
     name: str
-    strength: float          # 0..1 prestige (normalised Power Index)
-    tier: str                # 'P5' | 'MID' | 'IVY'
+    strength: float          # 0..1 athletic level (normalised Power Index / latent)
+    tier: str                # 'P5' | 'MID' | 'IVY' | 'D2' | 'D3'
     abbr: str = ""
     color: str = ""
+    prestige: float = 0.50   # athletic brand pull
+    academics: float = 0.50  # academic profile
+    division: str = "D1"
+
+
+def program_appeal(caliber: float, academic01: float, s: School) -> float:
+    """How appealing program `s` is to a recruit of athletic `caliber` (0..1)
+    and academic standing `academic01` (0..1).
+
+    Two pulls combine:
+      • athletic — programs near the recruit's level fit, and prestige programs
+        actively court higher-caliber talent (brand pull).
+      • academic — meaningful only when BOTH the recruit and the school are
+        strong academically, so a smart, strong kid is genuinely drawn to an
+        Ivy / NESCAC / academy even though its athletic tier is lower. This is
+        what lets high-academic programs recruit above their athletic station.
+    """
+    prox = 1.0 - abs(s.prestige - caliber)
+    athletic = 0.6 * prox + 0.4 * (s.prestige * caliber)
+    academic = s.academics * academic01
+    return max(0.0, athletic) * (1.0 + 0.9 * academic)
+
+
+def schools_from_programs(programs, *, pi: dict | None = None) -> list["School"]:
+    """Build recruiting Schools from ncaa.Program objects, carrying prestige +
+    academics. `pi` optionally maps school→Power Index for the athletic level;
+    otherwise the program's latent strength is used."""
+    from app.ncaa import crest
+    out: list[School] = []
+    for p in programs:
+        abbr, color = crest(p.school)
+        level = pi.get(p.school) if pi else None
+        out.append(School(
+            name=p.school, strength=float(level if level is not None else p.strength),
+            tier=p.division, abbr=abbr, color=color,
+            prestige=getattr(p, "prestige", 0.5), academics=getattr(p, "academics", 0.5),
+            division=p.division,
+        ))
+    return out
 
 
 @dataclass
@@ -82,29 +121,39 @@ def _interest(fit: float, rng: random.Random) -> str:
     return _HOT if roll >= 0.62 else _WARM if roll >= 0.38 else _COLD
 
 
+def recruit_caliber(p) -> float:
+    """Visible athletic caliber on a 0..1 scale."""
+    return max(0.0, min(1.0, (p.current_overall() - 20) / 60.0))
+
+
+def recruit_academic01(p) -> float:
+    """Academic standing on 0..1 from the 59-99 admissions index."""
+    return max(0.0, min(1.0, (getattr(p, "academic_rating", 79) - 59) / 40.0))
+
+
 def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> RecruitingProfile:
-    """Deterministic recruiting board for prospect `p` over `schools`."""
+    """Deterministic recruiting board for prospect `p` over `schools` (which may
+    span every division — one national pool). Offers + commit favourite are
+    ranked by prestige+academics appeal, so high-academic talent surfaces Ivy /
+    NESCAC / academy offers alongside (or above) low-major athletic options."""
     if not schools:
         return RecruitingProfile()
     rng = random.Random(f"{getattr(p, 'pid', '')}|recruiting|{seed_salt}")
     stars = int(getattr(p, "recruit_stars", 0) or 0)
-    # Recruit caliber on a 0..1 scale (visible current ability).
-    caliber = max(0.0, min(1.0, (p.current_overall() - 20) / 60.0))
+    caliber = recruit_caliber(p)
+    academic01 = recruit_academic01(p)
 
-    # Mutual fit: a recruit and a program fit when their levels are close;
-    # prestige programs also lean toward higher-caliber recruits.
     def fit(s: School) -> float:
-        proximity = 1.0 - abs(s.strength - caliber)
-        pull = 0.65 * proximity + 0.35 * (1.0 - abs(s.strength - caliber) ** 1.5)
-        return max(0.0, min(1.0, pull))
+        return program_appeal(caliber, academic01, s)
 
-    ranked = sorted(schools, key=lambda s: fit(s) + rng.uniform(-0.05, 0.05), reverse=True)
+    fmax = max((fit(s) for s in schools), default=1.0) or 1.0
+    ranked = sorted(schools, key=lambda s: fit(s) + rng.uniform(-0.05, 0.05) * fmax, reverse=True)
     n = min(_offer_count(stars, rng), len(ranked))
     chosen = ranked[:n]
 
     # StrikePrediction: softmax-ish share over the top contenders only.
     contenders = chosen[: min(5, len(chosen))]
-    raw = [max(0.01, fit(s)) ** 3 for s in contenders]
+    raw = [max(0.01, fit(s) / fmax) ** 3 for s in contenders]
     tot = sum(raw) or 1.0
     shares = [int(round(100 * r / tot)) for r in raw]
 
@@ -122,13 +171,14 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
             status = ""
         offers.append(Offer(
             school=s.name, abbr=s.abbr, color=s.color, offered=True,
-            interest=_interest(fit(s), rng), strikeprediction=pct, status=status,
+            interest=_interest(fit(s) / fmax, rng), strikeprediction=pct, status=status,
         ))
 
-    # Dreamsheet: the recruit's aspirational picks — the most prestigious
-    # programs overall, tagged when they've actually offered.
+    # Dreamsheet: the recruit's aspirational picks — top programs by combined
+    # athletic prestige + academic draw, tagged when they've actually offered.
     offered_names = {o.school for o in offers}
-    dream_src = sorted(schools, key=lambda s: s.strength, reverse=True)[: max(3, 2 + stars // 2)]
+    dream_src = sorted(schools, key=lambda s: s.prestige + 0.6 * s.academics,
+                       reverse=True)[: max(3, 2 + stars // 2)]
     dreamsheet = [
         Offer(school=s.name, abbr=s.abbr, color=s.color,
               offered=s.name in offered_names, interest="", strikeprediction=0, status="")

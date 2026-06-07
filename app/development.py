@@ -173,15 +173,21 @@ class Prospect:
         return Player(name=self.name, country=self.country, **drivers)
 
     # ---- development: deterministically close the gap to the ceiling ----
-    def develop_year(self) -> None:
-        frac = self.interest_rate * GROWTH_K * self.tier_mult
+    def develop(self, scale: float = 1.0) -> None:
+        """Close part of the gap to the ceiling. `scale` < 1 applies a fraction
+        of a year's growth — the season-long weekly drip (the world advances a
+        slice each week and trues up to a full year at season's end)."""
+        frac = self.interest_rate * GROWTH_K * self.tier_mult * scale
         for a in RICH_ATTRS:
             gap = self.potential[a] - self.current[a]
             if gap > 0:
                 self.current[a] += max(0.0, min(gap, frac * gap))
                 self.current[a] = clamp_grade(self.current[a])
-        self.year += 1
         self.recruit_stars = self.star_rating()
+
+    def develop_year(self) -> None:
+        self.develop(1.0)
+        self.year += 1
 
     def project(self, years: int) -> int:
         clone = copy.deepcopy(self)
