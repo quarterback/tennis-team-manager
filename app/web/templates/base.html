@@ -11,13 +11,13 @@
 <body>
   <header class="bl-header">
     <div class="bl-header-inner">
-      <div class="bl-brand">
+      <a class="bl-brand" href="{{ url_for('dashboard') }}" style="text-decoration:none;color:inherit">
         <img src="{{ url_for('static', filename='assets/logo-mark-white.svg') }}" width="26" height="26" alt="">
         <div class="bl-brand-text">
           <span class="bl-brand-title">Baseline</span>
           <span class="bl-brand-sub">College Dual-Match Simulator</span>
         </div>
-      </div>
+      </a>
       <nav class="bl-nav">
         {% for label, href in nav %}
           <a href="{{ href }}"{% if label == active %} class="active"{% endif %}>{{ label }}</a>
