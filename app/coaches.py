@@ -41,18 +41,70 @@ ARCHETYPES = (
     ARCHETYPE_TACTICIAN,
 )
 
+# Coach origin → recruiting-region map. Keyed primarily by ISO 3166-1 alpha-2
+# codes so it speaks the same language as the rest of the sim (the name picker,
+# player nations, and generators.flavor all use alpha-2). The legacy 3-letter
+# aliases are retained so older saves / direct callers keep resolving.
 COUNTRY_REGIONS = {
-    "US": "domestic", "USA": "domestic", "CAN": "canada",
+    # Domestic
+    "US": "domestic", "USA": "domestic",
+    # Canada
+    "CA": "canada", "CAN": "canada",
+    # Latin America & Caribbean
+    "MX": "latin_america", "DO": "latin_america", "PR": "latin_america",
+    "CU": "latin_america", "JM": "latin_america", "TT": "latin_america",
+    "SR": "latin_america", "GY": "latin_america", "CW": "latin_america",
+    "HT": "latin_america", "AW": "latin_america", "BB": "latin_america",
+    "BS": "latin_america", "BM": "latin_america", "VE": "latin_america",
+    "CO": "latin_america", "BR": "latin_america", "AR": "latin_america",
+    "CL": "latin_america", "PE": "latin_america", "PA": "latin_america",
+    "NI": "latin_america",
+    "MEX": "latin_america", "ARG": "latin_america", "BRA": "latin_america",
+    "COL": "latin_america", "CHI": "latin_america",
+    # Europe
+    "GB": "europe", "IE": "europe", "NL": "europe", "IT": "europe",
+    "CZ": "europe", "FI": "europe", "GR": "europe", "SE": "europe",
+    "NO": "europe", "DK": "europe", "DE": "europe", "AT": "europe",
+    "CH": "europe", "HR": "europe", "SI": "europe", "HU": "europe",
+    "SK": "europe", "RU": "europe", "UA": "europe", "LT": "europe",
+    "TR": "europe", "SM": "europe", "ES": "europe", "PL": "europe",
+    "BE": "europe", "FR": "europe", "PT": "europe", "RO": "europe",
+    "BG": "europe", "RS": "europe",
     "ESP": "europe", "FRA": "europe", "GBR": "europe", "GER": "europe",
     "ITA": "europe", "SWE": "europe", "CZE": "europe", "SRB": "europe",
-    "ARG": "latin_america", "BRA": "latin_america", "COL": "latin_america",
-    "MEX": "latin_america", "CHI": "latin_america",
-    "AUS": "australia", "NZL": "australia",
+    # Africa
+    "ZA": "africa", "ZW": "africa", "NA": "africa", "CV": "africa",
+    "MU": "africa", "UG": "africa", "NG": "africa", "GH": "africa",
+    "ET": "africa", "KE": "africa", "TZ": "africa", "AO": "africa",
+    "MZ": "africa", "MG": "africa", "EG": "africa", "MA": "africa",
+    "DZ": "africa", "TN": "africa", "LY": "africa",
+    "RSA": "africa", "MAR": "africa", "TUN": "africa",
+    # Asia-Pacific (incl. alt-history Zaryanovia / Far East)
+    "IN": "asia_pacific", "PK": "asia_pacific", "MY": "asia_pacific",
+    "PH": "asia_pacific", "JP": "asia_pacific", "KR": "asia_pacific",
+    "TW": "asia_pacific", "LK": "asia_pacific", "BD": "asia_pacific",
+    "NP": "asia_pacific", "AF": "asia_pacific", "IL": "asia_pacific",
+    "ID": "asia_pacific", "TH": "asia_pacific", "KZ": "asia_pacific",
+    "HK": "asia_pacific", "IR": "asia_pacific", "PS": "asia_pacific",
+    "LB": "asia_pacific", "SA": "asia_pacific", "CN": "asia_pacific",
+    "ZR": "asia_pacific",
     "JPN": "asia_pacific", "CHN": "asia_pacific", "KOR": "asia_pacific",
     "IND": "asia_pacific",
-    "RSA": "africa", "MAR": "africa", "TUN": "africa",
+    # Australia / Oceania
+    "AU": "australia", "NZ": "australia", "FJ": "australia",
+    "GU": "australia", "WS": "australia",
+    "AUS": "australia", "NZL": "australia",
 }
-COUNTRY_POOL = tuple(COUNTRY_REGIONS.keys())
+
+# Fallback origin pool, used only when a coach is generated without an explicit
+# home country (the seat-filling path in app.coachgen now always threads the
+# name picker's nation through). Kept as alpha-2 so generated pipelines key on
+# the same codes players carry. A spread of real tennis nations.
+COUNTRY_POOL = (
+    "US", "CA", "ES", "FR", "GB", "DE", "IT", "SE", "CZ", "RS", "RU",
+    "AR", "BR", "CO", "MX", "CL", "AU", "NZ", "JP", "CN", "KR", "IN",
+    "ZA", "MA", "TN", "CH", "AT", "HR", "NL", "BE",
+)
 
 COACH_ATTRS = (
     "teaching_skill",
