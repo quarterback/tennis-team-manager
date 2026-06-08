@@ -37,7 +37,8 @@ import app.seasonmode as sm
 from .season import dual_between
 from . import dbpath, worldconfig
 from .dbpath import resolve_db_path
-from .development import Prospect, generate_prospect, make_pid, overall_to_str
+from .development import (Prospect, generate_prospect, make_pid, overall_to_str,
+                          stagger_scale)
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
@@ -306,17 +307,25 @@ def _base_rosters(world: dict) -> dict:
 
 
 def developed_rosters(world: dict) -> dict:
-    """Year-start rosters advanced by `week` development drips (deterministic)."""
+    """Year-start rosters advanced to `week` of STAGGERED development (deterministic).
+
+    Players don't all develop at once: each banks a full year of growth inside a
+    phase-shifted window of the DEV_WEEKS-long season (app.development.stagger_scale),
+    so midseason some have already jumped, some are mid-climb, and some haven't moved
+    — but by season's end everyone has banked the same year. Replayed week-by-week so
+    any week's snapshot is reproducible."""
     key = (world["id"], world["year"], world["week"])
     if key in _dev_cache:
         return _dev_cache[key]
     rosters = {uni: {s: [copy.deepcopy(p) for p in r] for s, r in schools.items()}
                for uni, schools in _base_rosters(world).items()}
-    for _ in range(world["week"]):
+    for wk in range(world["week"]):
         for schools in rosters.values():
             for roster in schools.values():
                 for p in roster:
-                    p.develop(1.0 / DEV_WEEKS)
+                    s = stagger_scale(p.pid, wk, DEV_WEEKS)
+                    if s:
+                        p.develop(s)
     _dev_cache[key] = rosters
     return rosters
 

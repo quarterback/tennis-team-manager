@@ -41,9 +41,67 @@
             <tr><td>National (class of {{ grad_year }})</td><td class="w">#{{ view.national_rank }}</td></tr>
             <tr><td>{{ view.region_label }}</td><td class="w">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</td></tr>
             <tr><td>STR</td><td class="w">{{ "%.1f"|format(p.str_value()) }}</td></tr>
+            {% if p.junior_str %}<tr><td>Junior STR <span style="color:var(--text-muted);font-size:11px">(results-based)</span></td>
+              <td class="w">{{ "%.1f"|format(p.junior_str) }}</td></tr>{% endif %}
           </tbody></table>
         </div>
       </div>
+
+      {% if p.junior_badges %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span>
+        <span class="bl-panel-meta">permanent milestones</span></div>
+        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for b in p.junior_badges %}
+          <span class="bl-pill" style="border-color:var(--brand)">{{ b }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if p.junior_results %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Results</span>
+        <span class="bl-panel-meta">tournament history</span></div>
+        <div class="bl-tablescroll">
+          <div class="bl-table" style="--bl-grid-cols: 84px minmax(140px,1fr) 96px 110px">
+            <div class="bl-thead">
+              <span class="bl-th">DATE</span><span class="bl-th">TOURNAMENT</span>
+              <span class="bl-th">LEVEL</span><span class="bl-th">RESULT</span>
+            </div>
+            {% for r in p.junior_results %}
+            <div class="bl-row">
+              <span style="color:var(--text-muted)">{{ r.date }}</span>
+              <span class="bl-school" style="font-weight:600">{{ r.tournament }}</span>
+              <span><span class="bl-pill" style="font-size:10px">{{ r.level }}</span></span>
+              <span style="font-weight:600;color:{{ '#3a7' if r.result=='Champion' else 'var(--text-primary)' }}">{{ r.result }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if p.junior_matches %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Match Record</span>
+        <span class="bl-panel-meta">every opponent was a fellow recruit</span></div>
+        <div class="bl-tablescroll">
+          <div class="bl-table" style="--bl-grid-cols: 76px minmax(120px,1fr) 40px minmax(120px,1fr) 96px">
+            <div class="bl-thead">
+              <span class="bl-th">DATE</span><span class="bl-th">TOURNAMENT</span>
+              <span class="bl-th">W/L</span><span class="bl-th">OPPONENT</span><span class="bl-th">SCORE</span>
+            </div>
+            {% for m in p.junior_matches %}
+            <div class="bl-row">
+              <span style="color:var(--text-muted)">{{ m.date }}</span>
+              <span>{{ m.tournament }} <span style="color:var(--text-muted);font-size:11px">{{ m.round }}</span></span>
+              <span style="font-weight:700;color:{{ '#3a7' if m.won else '#c55' }}">{{ 'W' if m.won else 'L' }}</span>
+              <span class="bl-school">{{ m.opponent }}</span>
+              <span style="font-variant-numeric:tabular-nums">{{ m.score }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       {% if rec.offers %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
@@ -94,6 +152,28 @@
         </div>
       </div>
 
+      {% if p.ranking_history %}
+      {% set rh0 = p.ranking_history[0] %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Ranking History</span>
+        <span class="bl-panel-meta">junior progression</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable" style="width:100%"><thead>
+            <tr><td class="bl-th">DATE</td>
+              <td class="bl-th w">{{ rh0.primary_label|upper }}</td>
+              <td class="bl-th w">{{ rh0.secondary_label|upper }}</td>
+              <td class="bl-th w">STR</td></tr>
+          </thead><tbody>
+            {% for h in p.ranking_history %}
+            <tr><td>{{ h.date }}</td>
+              <td class="w">{% if h.primary %}#{{ h.primary }}{% else %}—{% endif %}</td>
+              <td class="w">{% if h.secondary %}#{{ h.secondary }}{% else %}—{% endif %}</td>
+              <td class="w">{{ "%.1f"|format(h.str) }}</td></tr>
+            {% endfor %}
+          </tbody></table>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
         <span class="bl-panel-meta">visible current grades (20–80)</span></div>
         <div class="bl-panel-body">
@@ -111,6 +191,7 @@
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
             <tr><td>Intended major</td><td>{{ p.major }}</td></tr>
+            {% if p.junior_tier %}<tr><td>Junior tier</td><td>{{ view.junior_tier_label }}</td></tr>{% endif %}
             <tr><td>Origin</td><td>{{ 'Domestic' if p.domestic else 'International' }}{% if p.secondary_country %} · dual citizen{% endif %}</td></tr>
             <tr><td>Commitment</td><td>{{ 'Committed' if p.committed else 'Uncommitted' }}</td></tr>
           </tbody></table>
