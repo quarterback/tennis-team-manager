@@ -89,84 +89,95 @@ their last ~30 matches, reliability rising to 1.0 after ~5. **STR is an output**
 (it then orders lineups and rankings); it does not feed match probability.
 
 - Display band: **STR 31–57** (game-native; `_STR_PER_UTR ≈ 1.677`, so the band
-  spans ~15.5 UTR points). Ability prior: `overall_to_str(grade)` maps grade
-  20–80 → 31–57.
+  spans ~15.5 UTR points — i.e. **2 STR ≈ 1.2 UTR**; the extra resolution means
+  the model leans less on decimals than UTR does). Ability prior:
+  `overall_to_str(grade)` maps grade 20–80 → 31–57.
 - Empirical map (engine overall → ability STR): **STR ≈ 31.0 + 25.94 × overall**,
-  i.e. **1.0 STR ≈ 0.0385 overall**.
-- Measured ability spread (D1 men): mean **40.1**, sd **4.5**, range **31–54**.
+  i.e. **1.0 UTR ≈ 0.065 overall**.
+- After the §5 calibration, D1-men ability sits at **UTR-eq p50 ≈ 11.6, p99 ≈
+  14.2** (dense, high), not the old flat mean of ~UTR 5.
 
 ---
 
-## 4. Calibration: STR gap → win probability
+## 4. Calibration: UTR gap → win probability
 
-Targets (your domain guidance; the article's "~80%+ to the higher-rated" holds in
-aggregate):
+Targets are in **UTR magnitude** (the band is ~1.677 STR/UTR, so these are ~2.5 /
+3.35 / 5 STR):
 
-| ΔSTR | intended |
+| ΔUTR | intended |
 |---|---|
-| ≤ 1.5 | toss-up, decided by attributes (~50–68%) |
+| ≤ 1.5 | comes down to attributes (~55–65%) |
 | ~2 | ~75% favorite |
 | ≥ 3 | ~90% favorite |
 
-**Achieved** with `skill_slope = 3.6` (flat-attribute pairing, single match):
-ΔSTR 1→62%, 1.5→68%, 2→**75%**, 2.5→79%, 3→84%, 4→90%, 5→95%.
+**Achieved** with `skill_slope = 2.2`, `tb_slope = 1.65` (flat pairing, single
+match): ΔUTR 1→62%, 1.5→69%, 2→**75%**, 3→84%, 4→91%, 5→95%. (A single logistic
+can't be both flat-low and steep-high, so we anchor on 2 UTR → 75% and let
+cross-flight gaps run ~90%+.)
 
-**Realized over a full simulated D1-men season** (emergent, talent vs talent):
+**Realized over a full simulated D1-men season** (emergent, talent vs talent),
+bucketed by UTR gap:
 
-| ΔSTR gap | favorite wins | n |
+| ΔUTR gap | favorite wins | matches |
 |---|---|---|
-| 0–0.5 | 56% | 1110 |
-| 0.5–1 | 63% | 1056 |
-| 1–1.5 | 68% | 1060 |
-| 1.5–2 | 73% | 975 |
-| 2–3 | 80% | 1814 |
-| 3–5 | 91% | 3558 |
-| 5+ | 98% | 3656 |
-| **overall** | **83%** | — |
+| 0–0.5 | 55% | 2509 |
+| 0.5–1 | 61% | 4394 |
+| 1–1.5 | 66% | 3312 |
+| 1.5–2 | 72% | 2198 |
+| 2–3 | 82% | 1824 |
+| 3+ | 90% | 295 |
+| **overall** | **66%** | — |
+
+The per-gap curve matches the targets — but note the **match counts**: ~10k of
+~14.5k matches fall in the 0–1.5 UTR band (55–66%), and only 295 have a 3+ gap,
+because the talent is densely packed (§5). So the overall favorite rate is just
+**66%** — college tennis where most matches are within a margin of error and
+outcomes aren't predetermined. *Density, not the engine, drives the
+competitiveness.*
 
 Sanity: at **equal `overall`**, win rate is ~50% regardless of grit/stamina/
-consistency profile — confirming no outcome-rigging.
+consistency profile — no outcome-rigging.
 
-**The one dial:** `skill_slope` (with `tb_slope`). Raise → favorites win more;
-lower → more competitive. Everything else about competitiveness comes from the
-talent distribution (next section).
+**The one engine dial:** `skill_slope` (with `tb_slope`). Everything else about
+competitiveness comes from the talent distribution (next section).
 
 ---
 
-## 5. Ratings vs the real world (UTR anchors) — open calibration
+## 5. The talent distribution (one scale) — implemented
 
-Reference UTR (late 2025), our real-life anchor:
+Reference UTR (late 2025), our real-life anchor: pro men ~16.4 / women ~13.2;
+**college men ~14.3 / women ~11.6**; U18/HS ~13.9–14.8 / ~11.1–11.9. The shape we
+want is **bulb-like**: a high floor (bad players don't play college tennis — even
+D3 is all-state-relative), a dense mass of similar talent, only a few elites — so
+that at the top of each classification many players sit within a margin of error
+and just play, outcomes not predetermined.
 
-| cohort | top men/boys | top women/girls | gap |
-|---|---|---|---|
-| Pro | ~16.4 | ~13.2 | ~3.2 |
-| **College** | **~14.3** | **~11.6** | **~2.7** |
-| U18 / HS | ~13.9–14.8 | ~11.1–11.9 | ~2.7 |
+**One talent scale** (`app/ncaa.py:_talent_mean(strength, division, gender)`)
+feeds everything — rosters, recruits, stars (STR is the separate results rating).
 
-Key real-world properties to mirror:
-
-1. **Men/women ceilings differ by ~2.5–3.** Today talent generation is
-   **gender-agnostic** (`app/development.py:generate_prospect` → `talent =
-   gauss(46, 9)`, no gender term; `app/ncaa.py:_talent_from_strength` likewise).
-   → *Proposed:* a gender talent shift so the women's distribution sits a fixed
-   offset below men's.
-2. **A governor on the top.** Even the best college players sit well below the
-   pro/theoretical ceiling, and within the college pool the top ~1% should reach
-   only ~the 90th percentile of the scale, with rare exceptions beyond. Today the
-   best ability STR (~54) already sits near the 57 ceiling; the top is not
-   reserved. → *Proposed:* compress/soft-cap the top of the talent→STR mapping so
-   the ceiling is rarely approached.
-3. **Dense decimal bands.** Tens of thousands of players cluster in narrow
-   ranges; that density (not match-time dials) is what keeps same-level matches
-   competitive — and it's why decimals matter. The current sd (~4.5 STR) is
-   moderately dense; the top of real college tennis is *extremely* tight
-   (#1–#25 men within ~0.6 UTR). → *Proposed:* verify/tighten per-cohort density.
-4. **Optional:** remap the STR *display* onto a UTR-like scale (≈1–16.x) so the
-   numbers read like real life. Larger ripple (templates, awards copy);
-   deferred unless wanted.
-
-These are **not yet implemented** — they're the next calibration pass, to be
-evaluated across a season the same way as §4.
+- **Rosters** (`_base_roster`): per-program talent from `_talent_mean` (D1>D2>D3,
+  men a ceiling above women), tight within-program spread (σ≈2.5 → dense
+  lineups), and **class-scaled maturity** (`_CLASS_MATURITY`, Fr→Sr 0.83→0.99) so
+  college ability is realized with headroom for freshmen. The grade-80 / STR-57
+  clamp is the **governor** — the best sit near, but rarely at, the top.
+  Resulting D1-men ability: UTR-eq p50 ≈ 11.6, p99 ≈ 14.2; D1 women ≈ 9.3 / 12.1;
+  D3 lower. Top-12 programs' #1s span just **~0.8 UTR** (a margin of error), and
+  elite-vs-elite duals go to the higher-rated only ~69%.
+- **Recruits** — **one national pool per gender** (`get_recruits`, thousands),
+  split nationally / by state / internationally; **every program D1–D3 recruits
+  from the same pool**, ranks and stars are national (no per-division pools or
+  stars). Drawn from the same `_talent_mean` scale (centred on a mid D2 program),
+  tight σ → thin margins between tiers, with development headroom (juniors stay at
+  the low maturity range, so they grow into rosters and the distribution persists
+  year over year). The world's annual signing pool (`world.national_class`) uses
+  the identical scale.
+- **Stars are a function of talent** — rank within the (gender) class, a full
+  pyramid (`juniors.TIER_CUTOFFS`): Blue Chip ~1.5%, 5★ ~2.5%, 4★ 8%, 3★ 18%,
+  2★ 28%, 1★ 27%, unrated 15%. Thin gaps between tiers; talent develops, so a
+  lower star can still become elite, and allocation lets real talent fall to a
+  smaller program.
+- **STR** stays results-based (§3): assumed from the ability prior at first, then
+  earned by match play.
 
 ---
 
@@ -184,8 +195,14 @@ evaluated across a season the same way as §4.
 
 ## 7. Growth areas
 
-- Gender-differentiated talent + the governor + density pass (§5).
+- **Recruiting allocation** — model which programs sign which recruits (talent
+  can fall to a smaller school); today's roster/recruit talent is calibrated but
+  the matching is simple.
+- **Multi-year stability** — sim several years and confirm the distribution holds
+  as recruits develop and replace graduates (the scales are aligned for this, but
+  it wants a dedicated eval).
 - Distinct *playstyles* emerging from the attribute mix (big server, grinder,
   shot-maker) — only if they arise from talent/structure, not bespoke dials.
 - Doubles as its own model (currently synthetic pair-average).
-- Optionally surface form/momentum in the UI without it altering match odds.
+- Slightly widen the men/women top gap (currently ~2.3 UTR vs ~2.7 real) if
+  desired; the lever is `_TALENT` women bases in `app/ncaa.py`.

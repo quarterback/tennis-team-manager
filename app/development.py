@@ -217,7 +217,7 @@ class Prospect:
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
                       gender: str = "male", talent: float | None = None,
-                      pid: str = "") -> Prospect:
+                      pid: str = "", maturity_range: tuple | None = None) -> Prospect:
     """Create an incoming prospect with reproducible rich attributes.
 
     Ceilings cluster around ``talent``; maturity determines how much is visible
@@ -248,7 +248,8 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
             band = nation_talent.ELITE_HEADLINE if a in marquee else nation_talent.ELITE_SUPPORT
             potential[a] = _clamp(max(potential[a], rng.uniform(*band)), GRADE_MIN, GRADE_MAX)
 
-    maturity = rng.uniform(MATURITY_MIN, MATURITY_MAX)
+    lo, hi = maturity_range or (MATURITY_MIN, MATURITY_MAX)
+    maturity = rng.uniform(lo, hi)
     current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
     tier, rate, mult = _draw_interest(rng)
     consensus_seed = rng.randrange(1 << 30)

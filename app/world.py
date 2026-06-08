@@ -38,8 +38,8 @@ from . import dbpath
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
-                   _talent_from_strength, _pick_gender, region_proximity, REGION_ADJACENT,
-                   ROSTER_SIZE, SCHOLARSHIP_SLOTS)
+                   _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
+                   REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          home_region, GEO_WEIGHT, FAC_WEIGHT)
 from .juniors import generate_class, rank_class
@@ -68,8 +68,17 @@ RELIABILITY_GATE = 0.4
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
 RECRUIT_POOL = 2600
-RECRUIT_TALENT_MEAN = 40.0
-RECRUIT_TALENT_SD = 11.0
+# The national recruit pool is drawn from the ONE talent scale (ncaa._talent_mean),
+# centred on a mid-tier (D2, median-strength) program for that gender — a dense,
+# bulb-shaped class: a high floor (only college-caliber juniors), a thick middle,
+# a thin elite tail. The blue-chip top develops into D1 stars; recruiting
+# allocation tiers the pool to programs (so genuine talent can fall to a smaller
+# school). Women's ceiling sits below men's. Small SD → thin margins between tiers.
+RECRUIT_TALENT_SD = 7.0
+
+
+def _recruit_talent_mean(gender: str) -> float:
+    return _talent_mean(0.5, "D2", gender)
 # Share of the national class that is international. The single knob for HOW MANY
 # internationals exist — lower it for a more domestic world.
 RECRUIT_INTL_SHARE = 0.32
@@ -348,7 +357,7 @@ def national_class(seed: int, year: int, gender: str) -> list:
     if key not in _class_cache:
         rng = random.Random(f"{seed}|worldrecruits|{gender}|{year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
-                               gender=gender, talent_mean=RECRUIT_TALENT_MEAN,
+                               gender=gender, talent_mean=_recruit_talent_mean(gender),
                                talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE)
         _class_cache[key] = rank_class(klass)
     return _class_cache[key]
@@ -469,7 +478,7 @@ def _rel_of(player_str: dict, p: Prospect) -> float:
 
 
 def _prog_level(prog: Program) -> float:
-    return overall_to_str(_talent_from_strength(prog.prestige))
+    return overall_to_str(_talent_from_strength(prog.prestige, prog.division, prog.gender))
 
 
 def _scholarship_count(roster: list) -> int:
@@ -655,7 +664,7 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
                                        region_weights=region_preset("tennis_global"))
-            tmean = max(28.0, _talent_from_strength(prog.strength) - 8.0)
+            tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()
                 talent = max(24.0, min(70.0, prng.gauss(tmean, 5.0)))

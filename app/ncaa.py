@@ -281,10 +281,39 @@ SCHOLARSHIP_SLOTS = 6        # top of the roster carry scholarships; the rest ar
 CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 
 
-def _talent_from_strength(s: float) -> float:
-    """Program latent strength (0–1) → a talent-grade mean (20–80) for the roster,
-    targeting the calibration STR bands (top D1 ~52–55, low-major ~44)."""
-    return max(24.0, min(78.0, 32.0 + 44.0 * s))
+# --- Talent calibration (grade units, 20-80) -----------------------------------
+# Visible college ability (after class-scaled development) should land in
+# realistic UTR-equivalent STR bands per division x gender: D1 > D2 > D3, men a
+# ~2.6-UTR ceiling above women, dense within a flight. The grade clamp (80) and
+# overall_to_str ceiling (57) act as the governor — even the best sit near, but
+# rarely at, the top of the band.
+# Per (division, gender): (talent-grade mean at MEDIAN program strength, spread
+# across program tiers). Men sit a ceiling above women, and the women's pools use
+# a flatter spread so their distribution is *compressed* (lower top, not merely
+# shifted) — mirroring real UTR, where the women's band is both lower and tighter
+# than the men's. D1 > D2 > D3.
+_TALENT = {
+    ("D1", "men"):   (68.5, 12.0), ("D1", "women"): (58.0, 8.0),
+    ("D2", "men"):   (63.5, 12.0), ("D2", "women"): (53.0, 8.0),
+    ("D3", "men"):   (58.5, 12.0), ("D3", "women"): (48.0, 8.0),
+}
+# College players are largely developed; class year scales how much of the
+# ceiling is realized (freshmen keep headroom to grow year over year).
+_CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
+                   "Jr": (0.90, 0.96), "Sr": (0.93, 0.99)}
+
+
+def _talent_mean(strength: float, division: str, gender: str) -> float:
+    """Program strength + division + gender → a roster talent-grade mean."""
+    base, spread = _TALENT.get((division, gender), (60.0, 12.0))
+    return max(24.0, min(80.0, base + spread * (strength - 0.5)))
+
+
+def _talent_from_strength(strength: float, division: str = "D1", gender: str = "men") -> float:
+    """Back-compat alias for `_talent_mean` (callers should pass the program's
+    division/gender so recruit + transfer talent stay on the same calibrated
+    scale as rosters)."""
+    return _talent_mean(strength, division, gender)
 
 
 def _pick_gender(g: str) -> str:
@@ -325,14 +354,16 @@ def _base_roster(p: Program):
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=region_preset("tennis_global"))
-    tmean = _talent_from_strength(p.strength)
+    tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(ROSTER_SIZE):
         name, country = name_fn()
-        talent = max(24.0, min(80.0, rng.gauss(tmean, 5.0)))
+        cls = CLASS_YEARS[i % len(CLASS_YEARS)]
+        talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
-                               talent=talent, pid=make_pid(p.key, i))
-        pr.class_year = CLASS_YEARS[i % len(CLASS_YEARS)]
+                               talent=talent, pid=make_pid(p.key, i),
+                               maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))
+        pr.class_year = cls
         # hometown / high_school / domestic are wired by generate_prospect from
         # the player's nation (real city pools + flags), so no synthetic override.
         roster.append(pr)

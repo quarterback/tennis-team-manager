@@ -105,7 +105,7 @@ def _scholarship_count(roster: list) -> int:
 
 def _program_level(prog: Program) -> float:
     """The STR a program 'expects' to field — used as the transfer-up bar."""
-    return overall_to_str(_talent_from_strength(prog.strength))
+    return overall_to_str(_talent_from_strength(prog.strength, prog.division, prog.gender))
 
 
 def _pstr(league: League, p) -> float:
@@ -202,7 +202,7 @@ def _refill(league: League, rng: random.Random) -> int:
         name_fn = make_name_picker(random.Random(f"{prog.key}|names|{league.year}"),
                                    gender=_pick_gender(prog.gender),
                                    region_weights=region_preset("tennis_global"))
-        tmean = _talent_from_strength(prog.strength)
+        tmean = _talent_from_strength(prog.strength, prog.division, prog.gender)
         for k in range(need):
             name, country = name_fn()
             talent = max(24.0, min(80.0, prng.gauss(tmean, 5.0)))

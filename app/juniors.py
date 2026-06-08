@@ -55,14 +55,20 @@ _CITIES = ["Riverside", "Fairview", "Oakdale", "Lakewood", "Highland", "Westport
            "Brookfield", "Clearwater", "Maplewood", "Glenwood", "Belmont", "Franklin"]
 
 
-# Count-based recruiting tiers by national rank (TennisRecruiting.net convention,
-# per docs/calibration-tennis-trajectories.md): ~400 "named" recruits per class.
-TIER_CUTOFFS = [(25, "Blue Chip", 5), (75, "5-Star", 5), (200, "4-Star", 4), (400, "3-Star", 3)]
+# Recruiting tiers as a fraction of the ranked class — a full TennisRecruiting.net
+# pyramid: a thin elite top (Blue Chip / 5-star), a thick 3-2 star body, a long
+# 1-star tail, then unrated. Stars are a pure function of talent (rank sorts on
+# ability + ceiling), so this scales to any class size. (cum_fraction, label, stars)
+TIER_CUTOFFS = [
+    (0.015, "Blue Chip", 5), (0.04, "5-Star", 5), (0.12, "4-Star", 4),
+    (0.30, "3-Star", 3), (0.58, "2-Star", 2), (0.85, "1-Star", 1),
+]
 
 
-def tier_for_rank(rank: int) -> tuple[str, int]:
+def tier_for_rank(rank: int, class_size: int = 400) -> tuple[str, int]:
+    q = rank / max(1, class_size)
     for cut, label, stars in TIER_CUTOFFS:
-        if rank <= cut:
+        if q <= cut:
             return label, stars
     return "Unrated", 0
 
@@ -129,9 +135,10 @@ def rank_class(klass: RecruitClass) -> list[Prospect]:
     """Assign each recruit a national rank + count-based star tier (Blue Chip /
     5★ / 4★ / 3★ / Unrated). Returns the nationally-ranked list."""
     ranked = sorted(klass.recruits, key=_recruiting_score, reverse=True)
+    n = len(ranked)
     for i, p in enumerate(ranked, 1):
         p.recruit_rank = i
-        p.recruit_tier, p.recruit_stars = tier_for_rank(i)
+        p.recruit_tier, p.recruit_stars = tier_for_rank(i, n)
     return ranked
 
 

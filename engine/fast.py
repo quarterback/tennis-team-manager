@@ -27,8 +27,8 @@ TUNE = {
     # (a flat-attribute pairing); a dense, realistic talent distribution is what
     # keeps same-level college matches competitive, not match-time dials.
     "hold_base_logit": 0.9,     # server's natural hold advantage
-    "skill_slope": 3.6,         # how hard the overall gap bites, per game
-    "tb_slope": 2.7,            # tiebreaks a touch more volatile than a set
+    "skill_slope": 2.2,         # how hard the overall gap bites, per game
+    "tb_slope": 1.65,           # tiebreaks a touch more volatile than a set
     "context_slope": 0.18,      # venue / wind / heat / crowd comfort
 }
 
