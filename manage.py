@@ -353,6 +353,13 @@ def main():
     se.set_defaults(func=cmd_season)
 
     args = ap.parse_args()
+    # Create all DB schemas up front so CLI sims never deadlock on first-time
+    # table creation inside a held transaction.
+    try:
+        from app.db import bootstrap
+        bootstrap()
+    except Exception:
+        pass
     args.func(args)
 
 

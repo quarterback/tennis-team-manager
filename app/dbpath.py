@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sqlite3
 import tempfile
 
 log = logging.getLogger("baseline.dbpath")
@@ -32,6 +33,27 @@ def _writable_dir(path: str) -> bool:
         return True
     except OSError:
         return False
+
+
+def connect(path: str, *, row: bool = True, timeout: float = 5.0) -> sqlite3.Connection:
+    """Open a SQLite connection tuned for this app's many short-lived, nested
+    connections to the SAME file.
+
+    The web app opens a fresh connection per helper call, and a sim holds one
+    open (mid-write) while read helpers like `overrides.any_overrides()` open
+    their own. Default SQLite errors that second connection out instantly with
+    "database is locked". WAL lets readers run alongside a writer, and a busy
+    timeout makes any genuine write contention WAIT rather than 500.
+    """
+    conn = sqlite3.connect(path, timeout=timeout)
+    if row:
+        conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout=5000")
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass            # e.g. a filesystem that can't do WAL — degrade, don't crash
+    return conn
 
 
 def resolve_db_path() -> str:

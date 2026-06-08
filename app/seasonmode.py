@@ -22,6 +22,8 @@ import json
 import os
 import sqlite3
 
+from . import dbpath
+
 from .ncaa import load_division
 from .season import dual_between, build_corpus
 from .rating import compute_ratings
@@ -55,16 +57,33 @@ CREATE INDEX IF NOT EXISTS idx_duals_season ON duals(season_id, round, week);
 """
 
 
-def _db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+_schema_ready_for = None        # the DB_PATH the schema was last created for
+
+
+def init_schema() -> None:
+    """Eagerly create schema + column migrations (auto-committing connection)
+    so the lazy path never writes inside a held transaction — the cause of the
+    'database is locked' 500s during sim."""
+    global _schema_ready_for
+    conn = dbpath.connect(DB_PATH)
     conn.executescript(_SCHEMA)
     for col in ("round_no INTEGER DEFAULT 0", "bpos INTEGER DEFAULT 0"):
         try:
             conn.execute(f"ALTER TABLE duals ADD COLUMN {col}")
         except sqlite3.OperationalError:
             pass
-    return conn
+    conn.commit()
+    conn.close()
+    _schema_ready_for = DB_PATH
+
+
+def _db() -> sqlite3.Connection:
+    """Tuned connection (WAL + busy timeout). Schema is created once per (path),
+    eagerly, so read helpers don't take a write lock while a sim holds one open.
+    Keyed on DB_PATH so tests that repoint the DB still get a schema."""
+    if _schema_ready_for != DB_PATH:
+        init_schema()
+    return dbpath.connect(DB_PATH)
 
 
 def _dual_seed(seed: int, home: str, away: str, tag: str) -> int:

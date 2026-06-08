@@ -104,6 +104,11 @@ def _universe(req) -> tuple[str, str, str, str]:
 def create_app() -> Flask:
     app = Flask(__name__)
 
+    # Create every DB schema up front (before any sim transaction) so nested
+    # connections never deadlock on first-time table creation.
+    from app import db as _db
+    _db.bootstrap()
+
     from .formatters import flag, flags, country_name, country_abbrev
     app.jinja_env.filters["flag"] = flag
     app.jinja_env.filters["flags"] = flags
