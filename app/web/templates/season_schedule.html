@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
 {% block title %}Play to Clinch — {{ school }} Schedule{% endblock %}
 {% block content %}
 <form method="get">
@@ -21,7 +22,7 @@
 
 <div class="bl-board" style="max-width:980px">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
-    <span class="bl-crest lg" style="background:{{ color }};width:52px;height:52px;font-size:15px">{{ abbr }}</span>
+    {{ crest_box(school, abbr, color, 'lg', 'width:52px;height:52px;font-size:15px') }}
     <div><div class="tname">{{ school }}</div>
       <div class="tsub">{{ conf }} · 2026 schedule · {{ uni_label }}</div></div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -45,7 +46,7 @@
     <{{ 'a' if link else 'div' }} class="bl-sched-row{{ ' is-final' if final else '' }}"{% if link %} href="{{ link }}"{% endif %}>
       <span class="c-date">{{ d.date }}<span class="wk">Wk {{ d.week }}</span></span>
       <span class="c-site">{{ 'vs' if home else 'at' }}</span>
-      <span class="c-opp"><span class="bl-crest sm" style="background:{{ oc }}">{{ oa }}</span><span class="nm">{{ opp }}</span></span>
+      <span class="c-opp">{{ crest_box(opp, oa, oc, 'sm') }}<span class="nm">{{ opp }}</span></span>
       <span class="c-type"><span class="bl-tag {{ 'conf' if d.is_conf else 'nc' }}">{{ 'Conf' if d.is_conf else 'Non-conf' }}</span></span>
       <span class="c-res">
         {% if final %}

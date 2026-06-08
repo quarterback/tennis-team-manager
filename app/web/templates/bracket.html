@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
 {% block title %}Play to Clinch - NCAA Bracket{% endblock %}
 {% block content %}
 {% if not br %}
@@ -23,7 +24,7 @@
 {% macro team_line(p, seed, win=False, compact=False) %}
   <div class="bl-bracket-team{% if win %} is-winner{% endif %}{% if compact %} compact{% endif %}">
     <span class="bl-team-seed">{{ seed }}</span>
-    <span class="bl-crest xs" style="background:{{ p.color }}">{{ p.abbr }}</span>
+    {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
     <span class="bl-team-copy">
       <span class="nm">{{ p.school }}</span>
       <span class="meta">{{ p.conf_abbr }} {{ bid_tag(p) }}</span>
@@ -66,7 +67,7 @@
 <div class="bl-bracket-shell">
   <section class="bl-bracket-summary">
     <div class="bl-title-card champion">
-      <span class="bl-crest lg" style="background:{{ br.champion.color }}">{{ br.champion.abbr }}</span>
+      {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
       <div>
         <div class="bl-card-label">National Champion</div>
         <div class="bl-card-title">#{{ br.seed_of(br.champion) }} {{ br.champion.school }}</div>
@@ -90,7 +91,7 @@
           {% for p in br.seeds[:8] %}
             <a class="bl-seed-row" href="{{ url_for('dual', home=p.school) }}">
               <span class="seed">{{ loop.index }}</span>
-              <span class="bl-crest xs" style="background:{{ p.color }}">{{ p.abbr }}</span>
+              {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
               <span class="school">{{ p.school }}</span>
               <span class="conf">{{ p.conf_abbr }}</span>
             </a>

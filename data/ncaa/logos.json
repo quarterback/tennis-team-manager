@@ -832,7 +832,7 @@
     "slug": "concordia-st-paul"
   },
   "Connecticut College": {
-    "espn_id": "2115",
+    "placeholder": true,
     "slug": "connecticut-college"
   },
   "Converse": {
@@ -1028,7 +1028,7 @@
     "slug": "eastern"
   },
   "Eastern Connecticut State": {
-    "espn_id": "2843",
+    "placeholder": true,
     "slug": "eastern-connecticut-state"
   },
   "Eastern Illinois": {
@@ -2588,7 +2588,7 @@
     "slug": "northwestern"
   },
   "Northwestern Oklahoma State": {
-    "espn_id": "2927",
+    "placeholder": true,
     "slug": "northwestern-oklahoma-state"
   },
   "Northwestern State": {
@@ -2928,7 +2928,7 @@
     "slug": "redlands"
   },
   "Regent": {
-    "espn_id": "2524",
+    "placeholder": true,
     "slug": "regent"
   },
   "Regis": {
@@ -4116,7 +4116,7 @@
     "slug": "west-liberty"
   },
   "West Texas A&M": {
-    "espn_id": "2837",
+    "placeholder": true,
     "slug": "west-texas-a-m"
   },
   "West Virginia": {
@@ -4168,7 +4168,7 @@
     "slug": "western-oregon"
   },
   "Western Washington": {
-    "espn_id": "331",
+    "placeholder": true,
     "slug": "western-washington"
   },
   "Westfield State": {

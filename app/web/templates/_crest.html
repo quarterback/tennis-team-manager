@@ -1,0 +1,12 @@
+{# Team crest: the school's real logo when we have art for it, else the
+   monogram badge (abbr on the team color). Mirrors the flag/logo pattern —
+   logo lookup via the team_logo_src filter. `size` is a .bl-crest modifier
+   (xs/sm/md/lg); `style` is an optional inline override (e.g. a custom px). #}
+{% macro crest_box(school, abbr, color, size='sm', style='') -%}
+{%- set _logo = school | team_logo_src -%}
+{%- if _logo -%}
+<span class="bl-crest {{ size }} has-logo"{% if style %} style="{{ style }}"{% endif %}><img src="{{ _logo }}" alt="{{ school }}"></span>
+{%- else -%}
+<span class="bl-crest {{ size }}" style="background:{{ color }}{% if style %};{{ style }}{% endif %}">{{ abbr }}</span>
+{%- endif -%}
+{%- endmacro %}
