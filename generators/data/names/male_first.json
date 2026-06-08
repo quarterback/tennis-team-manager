@@ -75,7 +75,10 @@
     "Sina",
     "Soroush",
     "Vahid",
-    "Voria"
+    "Voria",
+    "Carlos",
+    "Mike",
+    "Steven"
   ],
   "lithuanian": [
     "Adas",
@@ -130,7 +133,11 @@
     "Vaidas",
     "Vytautas",
     "Šarūnas",
-    "Žygimantas"
+    "Žygimantas",
+    "Houston",
+    "Indiana",
+    "Memphis",
+    "Valencia"
   ],
   "cuban": [
     "Yoenis",
@@ -233,7 +240,8 @@
     "Welington",
     "Yefri",
     "Ángel",
-    "Élan"
+    "Élan",
+    "Houston"
   ],
   "venezuelan": [
     "Alcides",
@@ -319,7 +327,8 @@
     "Yeferson",
     "Yohán",
     "Yordan",
-    "Águilas"
+    "Águilas",
+    "Philadelphia"
   ],
   "aboriginal_australian": [
     "Bindi",
@@ -1241,7 +1250,18 @@
     "Álex",
     "Édouard",
     "Éric",
-    "Óscar"
+    "Óscar",
+    "Atlanta",
+    "Bakken",
+    "Bali",
+    "Fortuna",
+    "Houston",
+    "Motala",
+    "Philadelphia",
+    "Rivers",
+    "Royal",
+    "Stockton",
+    "Valencia"
   ],
   "afrikaner": [
     "Aaron",
@@ -1503,7 +1523,8 @@
     "Xavier",
     "Yannic",
     "Yannick",
-    "Zira"
+    "Zira",
+    "Philadelphia"
   ],
   "akan": [
     "Abdul",
@@ -4489,7 +4510,14 @@
     "Vince",
     "Wade",
     "Will",
-    "Xavier"
+    "Xavier",
+    "Atlanta",
+    "Cleveland",
+    "Fortuna",
+    "Orlando",
+    "San",
+    "Shimane",
+    "Washington"
   ],
   "anglo_nz": [
     "Aaron",
@@ -4577,7 +4605,8 @@
     "Wellington",
     "Will",
     "Winston",
-    "Yanni"
+    "Yanni",
+    "Cairns"
   ],
   "arabic": [
     "Abbas",
@@ -5045,7 +5074,9 @@
     "Ziad",
     "Zidane",
     "Zineddine",
-    "Ziyed"
+    "Ziyed",
+    "Dallas",
+    "Taraji"
   ],
   "argentinian": [
     "Adrián",
@@ -5135,7 +5166,8 @@
     "Walter",
     "Willy",
     "Ángel",
-    "Éver"
+    "Éver",
+    "Indiana"
   ],
   "argentinian_german": [
     "Klaus",
@@ -5603,7 +5635,8 @@
     "Xavier",
     "Zae",
     "Zaydrius",
-    "Zion"
+    "Zion",
+    "Philadelphia"
   ],
   "brazilian": [
     "Adriano",
@@ -5692,7 +5725,12 @@
     "Wesley",
     "Yan",
     "Éder",
-    "Éverton"
+    "Éverton",
+    "Cleveland",
+    "Memphis",
+    "San",
+    "Sydney",
+    "Washington"
   ],
   "brazilian_japanese": [
     "Hideki",
@@ -6613,7 +6651,9 @@
     "Zvezdan",
     "Zvjezdan",
     "Šime",
-    "Žan"
+    "Žan",
+    "Bilbao",
+    "Valencia"
   ],
   "curacao_papiamento": [
     "Andruw",
@@ -6900,7 +6940,8 @@
     "Wout",
     "Wouter",
     "Xavi",
-    "Yannick"
+    "Yannick",
+    "Memphis"
   ],
   "east_african": [
     "Abdul",
@@ -7515,7 +7556,8 @@
     "Virgilio",
     "Wilfredo",
     "Willie",
-    "Yeng"
+    "Yeng",
+    "Brooklyn"
   ],
   "filipino_chinese": [
     "Alfred",
@@ -7739,7 +7781,13 @@
     "Édouard",
     "Élie",
     "Émile",
-    "Étienne"
+    "Étienne",
+    "Atlanta",
+    "Boston",
+    "Charlotte",
+    "Orlando",
+    "Valencia",
+    "Washington"
   ],
   "german": [
     "Alan",
@@ -7855,7 +7903,13 @@
     "Waldemar",
     "Werner",
     "Wolfgang",
-    "Youssoufa"
+    "Youssoufa",
+    "Alba",
+    "Boston",
+    "Dallas",
+    "Houston",
+    "Indiana",
+    "Orlando"
   ],
   "greek": [
     "Achilleas",
@@ -7914,7 +7968,9 @@
     "Tyler",
     "Vangelis",
     "Vasilis",
-    "Vassilios"
+    "Vassilios",
+    "Dallas",
+    "Memphis"
   ],
   "hausa": [
     "Abubakar",
@@ -8036,7 +8092,10 @@
     "William",
     "Yusuf",
     "Zaidu",
-    "Zubair"
+    "Zubair",
+    "Orlando",
+    "Rivers",
+    "Stockton"
   ],
   "hawaiian": [
     "Bronson",
@@ -8127,7 +8186,9 @@
     "Zoltán",
     "Zsolt",
     "Ádám",
-    "Ákos"
+    "Ákos",
+    "Niigata",
+    "Philadelphia"
   ],
   "igbo": [
     "Ademola",
@@ -8244,7 +8305,10 @@
     "Vincent",
     "Wilfred",
     "William",
-    "Zaidu"
+    "Zaidu",
+    "Orlando",
+    "Rivers",
+    "Stockton"
   ],
   "indian": [
     "Aarav",
@@ -8753,7 +8817,9 @@
     "Vishal",
     "Vishaul",
     "Vivek",
-    "Yannic"
+    "Yannic",
+    "Charleston",
+    "Hartford"
   ],
   "indo_fijian": [
     "Anil",
@@ -9128,7 +9194,8 @@
     "Yosef",
     "Yovel",
     "Yuval",
-    "Ziv"
+    "Ziv",
+    "Washington"
   ],
   "italian": [
     "Achille",
@@ -9229,7 +9296,9 @@
     "Tommaso",
     "Valerio",
     "Vincenzo",
-    "Vittorio"
+    "Vittorio",
+    "Orlando",
+    "San"
   ],
   "japanese": [
     "Akira",
@@ -9470,7 +9539,8 @@
     "Tylor",
     "Wachira",
     "Wahome",
-    "Wanyama"
+    "Wanyama",
+    "Bakken"
   ],
   "korean": [
     "Bora",
@@ -10038,7 +10108,15 @@
     "Élan",
     "Érick",
     "Éver",
-    "Óscar"
+    "Óscar",
+    "Atlanta",
+    "Brooklyn",
+    "Fukushima",
+    "Golden",
+    "Houston",
+    "Indiana",
+    "Philadelphia",
+    "San"
   ],
   "latino_hispanic": [
     "Adrian",
@@ -10159,7 +10237,8 @@
     "Owino",
     "Owuor",
     "Tom",
-    "Tylor"
+    "Tylor",
+    "Bakken"
   ],
   "lusophone_african": [
     "Aboubakar",
@@ -10333,7 +10412,11 @@
     "Zito",
     "Zé",
     "Álex",
-    "Óscar"
+    "Óscar",
+    "Atlanta",
+    "Fortuna",
+    "Philadelphia",
+    "Rayo"
   ],
   "malagasy": [
     "Andry",
@@ -10449,7 +10532,8 @@
     "Yusof",
     "Zaki",
     "Zubair",
-    "Zulkifli"
+    "Zulkifli",
+    "Natxo"
   ],
   "maori": [
     "Tamati",
@@ -11132,7 +11216,8 @@
     "Wiktor",
     "Wojciech",
     "Zbigniew",
-    "Łukasz"
+    "Łukasz",
+    "Fortuna"
   ],
   "portuguese": [
     "Adrien",
@@ -11298,7 +11383,8 @@
     "Vasile",
     "Victor",
     "Vlad",
-    "Ștefan"
+    "Ștefan",
+    "Rayo"
   ],
   "russian": [
     "Alan",
@@ -11672,7 +11758,11 @@
     "Zoran",
     "Élan",
     "Žan",
-    "Žiga"
+    "Žiga",
+    "Alba",
+    "Dallas",
+    "Palau",
+    "Valencia"
   ],
   "southeast_asian": [
     "Anon",
@@ -11854,7 +11944,12 @@
     "Álex",
     "Álvaro",
     "Ángel",
-    "Óscar"
+    "Óscar",
+    "Charlotte",
+    "Dallas",
+    "Houston",
+    "Memphis",
+    "Valencia"
   ],
   "sri_lankan_sinhalese": [
     "Kumar",
@@ -12141,7 +12236,8 @@
     "Weerathep",
     "Wirat",
     "Worachit",
-    "Worawit"
+    "Worawit",
+    "Milovan"
   ],
   "tongan": [
     "Aisake",
@@ -12266,7 +12362,10 @@
     "Çağlar",
     "Ömer",
     "Şehmus",
-    "Şenol"
+    "Şenol",
+    "Cleveland",
+    "Fortuna",
+    "Houston"
   ],
   "uk_european": [
     "Adam",
@@ -12567,7 +12666,8 @@
     "Đạt",
     "Đặng",
     "Đỗ",
-    "Đức"
+    "Đức",
+    "Park"
   ],
   "welsh": [
     "Aaron",
@@ -12822,7 +12922,10 @@
     "Wilfred",
     "William",
     "Yemi",
-    "Zaidu"
+    "Zaidu",
+    "Orlando",
+    "Rivers",
+    "Stockton"
   ],
   "zulu": [
     "Aaron",
@@ -13614,7 +13717,44 @@
     "Zdravko",
     "Zoran",
     "Zvezdan",
-    "Zvjezdan"
+    "Zvjezdan",
+    "Novak",
+    "Vukašin",
+    "Andrej",
+    "Mihailo",
+    "Đorđe",
+    "Bogdan",
+    "Miljan",
+    "Slobodan",
+    "Radoslav",
+    "Pavle",
+    "Janko",
+    "Relja",
+    "Vukan",
+    "Mateja",
+    "Danilo",
+    "Ilija",
+    "Jovan",
+    "Milutin",
+    "Ranko",
+    "Tadija",
+    "Vidoje",
+    "Borislav",
+    "Časlav",
+    "Dimitrije",
+    "Gavrilo",
+    "Kosta",
+    "Lavoslav",
+    "Milorad",
+    "Radovan",
+    "Viktor",
+    "Željko",
+    "Aleksej",
+    "Dragoslav",
+    "Konstantin",
+    "Miloje",
+    "Ratko",
+    "Svetozar"
   ],
   "american_general": [
     "Aidan",
@@ -13776,7 +13916,17 @@
     "Yunus",
     "Zac",
     "Zach",
-    "Zachary"
+    "Zachary",
+    "Boston",
+    "Charlotte",
+    "Cleveland",
+    "Dallas",
+    "Golden",
+    "Houston",
+    "Indiana",
+    "Memphis",
+    "Orlando",
+    "San"
   ],
   "french_african": [
     "Aaron",
@@ -14087,7 +14237,11 @@
     "Yves",
     "Zakaria",
     "Édouard",
-    "Éric"
+    "Éric",
+    "Atlanta",
+    "Fortuna",
+    "Rayo",
+    "Valencia"
   ],
   "latvian": [
     "Aigars",
@@ -14305,7 +14459,8 @@
     "Simon",
     "Taulant",
     "Thomas",
-    "Ylber"
+    "Ylber",
+    "Rayo"
   ],
   "austrian": [
     "Aleksandar",

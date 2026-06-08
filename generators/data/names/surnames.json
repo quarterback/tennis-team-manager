@@ -98,7 +98,10 @@
     "Vahedi",
     "Yakhchali",
     "Yousefi",
-    "Zangeneh"
+    "Zangeneh",
+    "Bečirovič",
+    "Kings",
+    "Queiroz"
   ],
   "lithuanian": [
     "Adomaitis",
@@ -165,7 +168,9 @@
     "Šiškauskas",
     "Žemaitis",
     "Žibėnas",
-    "Žukauskas"
+    "Žukauskas",
+    "Grizzlies",
+    "Kings"
   ],
   "cuban": [
     "Abreu",
@@ -259,7 +264,10 @@
     "Tejada",
     "Valdez",
     "Vargas",
-    "Ynoa"
+    "Ynoa",
+    "Fortuna",
+    "Rico",
+    "Towns"
   ],
   "venezuelan": [
     "Cabrera",
@@ -1190,7 +1198,17 @@
     "Zokora",
     "Zouzoua",
     "Zulu",
-    "Zwane"
+    "Zwane",
+    "Berkane",
+    "Bilbao",
+    "Charleroi",
+    "Kalev",
+    "Kings",
+    "Lens",
+    "Nice",
+    "Saint-Étienne",
+    "Start",
+    "Valladolid"
   ],
   "afrikaner": [
     "van der Merwe",
@@ -1353,7 +1371,9 @@
     "Walsh",
     "Washington",
     "Williams",
-    "Wiltshire"
+    "Wiltshire",
+    "Hallgrímsson",
+    "Pride"
   ],
   "afro_guyanese": [
     "Gibson",
@@ -5874,7 +5894,12 @@
     "Zivkovic",
     "Zubich",
     "Zummo",
-    "Zusi"
+    "Zusi",
+    "Kings",
+    "Mönchengladbach",
+    "Pride",
+    "Storm",
+    "Vitória"
   ],
   "amharic": [
     "Abate",
@@ -6148,7 +6173,11 @@
     "Yallop",
     "Yazbek",
     "Yengi",
-    "Young"
+    "Young",
+    "Kings",
+    "Niigata",
+    "Pride",
+    "Storm"
   ],
   "anglo_nz": [
     "Allen",
@@ -6259,7 +6288,9 @@
     "Wilkinson",
     "Williamson",
     "Wisnewski",
-    "Young"
+    "Young",
+    "Klimková",
+    "Vučinić"
   ],
   "arabic": [
     "Abada",
@@ -6981,7 +7012,30 @@
     "Ziyech",
     "Zniti",
     "Zorgane",
-    "Zouhair"
+    "Zouhair",
+    "Bravo",
+    "Düverioğlu",
+    "Gardner",
+    "Halilhodžić",
+    "Häcken",
+    "Ivanković",
+    "Kings",
+    "Mancini",
+    "Mazembe",
+    "Mönchengladbach",
+    "Nice",
+    "Palma",
+    "Queiroz",
+    "Radulović",
+    "Renard",
+    "Rico",
+    "Saint-Étienne",
+    "Soukup",
+    "Tucker",
+    "Valladolid",
+    "Verbeek",
+    "Vitória",
+    "Weiss"
   ],
   "argentinian": [
     "Pérez",
@@ -7440,7 +7494,12 @@
     "Telles",
     "Varejão",
     "Vieira",
-    "Zaneratto"
+    "Zaneratto",
+    "Granada",
+    "Grizzlies",
+    "Kings",
+    "Pride",
+    "Vitória"
   ],
   "bulgarian": [
     "Ivanov",
@@ -7773,7 +7832,14 @@
     "Yatimov",
     "Yusupov",
     "Zaripov",
-    "Zhanibekov"
+    "Zhanibekov",
+    "Iwata",
+    "Kings",
+    "Kojo",
+    "Lens",
+    "Maier",
+    "Tagoe",
+    "Tarkovič"
   ],
   "chamorro": [
     "Aguon",
@@ -8129,7 +8195,12 @@
     "Šimić",
     "Škorić",
     "Šutalo",
-    "Žorić"
+    "Žorić",
+    "Lafayette",
+    "Repeša",
+    "Schildenfeld",
+    "Smith",
+    "Sosa"
   ],
   "curacao_papiamento": [
     "Bogaerts",
@@ -8460,7 +8531,9 @@
     "Willems",
     "Wilms",
     "Wolters",
-    "Zirkzee"
+    "Zirkzee",
+    "Damer",
+    "Lens"
   ],
   "east_african": [
     "Asiimwe",
@@ -9076,7 +9149,13 @@
     "Velasco",
     "Villanueva",
     "Villar",
-    "Younghusband"
+    "Younghusband",
+    "Black",
+    "Eriksson",
+    "Jota",
+    "Kalmar",
+    "Sawicki",
+    "Schröck"
   ],
   "filipino_chinese": [
     "Ang",
@@ -9452,7 +9531,9 @@
     "Zaïre-Emery",
     "Zouma",
     "Éloissaint",
-    "Époupa"
+    "Époupa",
+    "Landes",
+    "Storm"
   ],
   "german": [
     "Adeyemi",
@@ -9631,7 +9712,10 @@
     "Zieler",
     "Zimmermann",
     "Zipser",
-    "Özil"
+    "Özil",
+    "Granada",
+    "Mönchengladbach",
+    "Thomaidis"
   ],
   "greek": [
     "Agravanis",
@@ -9740,7 +9824,10 @@
     "Vougioukas",
     "Vyntra",
     "Zisis",
-    "Zografos"
+    "Zografos",
+    "Dorsey",
+    "Grizzlies",
+    "Itoudis"
   ],
   "hausa": [
     "Abubakar",
@@ -9878,7 +9965,11 @@
     "Vojvoda",
     "Váradi",
     "Vécsei",
-    "Ádám"
+    "Ádám",
+    "Allen",
+    "Braine",
+    "Hopkins",
+    "Ivković"
   ],
   "igbo": [
     "Achebe",
@@ -9990,7 +10081,8 @@
     "Trivedi",
     "Verma",
     "Wangjam",
-    "Yadav"
+    "Yadav",
+    "Štimac"
   ],
   "indian_east": [
     "Banerjee",
@@ -10506,7 +10598,11 @@
     "Wahyudi",
     "Wibowo",
     "Wijaya",
-    "Yudhoyono"
+    "Yudhoyono",
+    "Haag",
+    "Sleman",
+    "Solo",
+    "Walsh"
   ],
   "irish": [
     "Adair",
@@ -10641,7 +10737,8 @@
     "Weiss",
     "Yosef",
     "Zalmanson",
-    "Zoosman"
+    "Zoosman",
+    "Simms"
   ],
   "italian": [
     "Abass",
@@ -10855,7 +10952,8 @@
     "Vitali",
     "Zaccagni",
     "Zambrotta",
-    "Zandalasini"
+    "Zandalasini",
+    "Datome"
   ],
   "japanese": [
     "Abe",
@@ -12079,7 +12177,21 @@
     "Álvarez",
     "Ángel",
     "Ávalos",
-    "Ávila"
+    "Ávila",
+    "Anderson",
+    "Armani",
+    "Christiansen",
+    "Hagen",
+    "Herrmann",
+    "Kings",
+    "Lake",
+    "Lampe",
+    "Lassiter",
+    "Lens",
+    "Nice",
+    "Peseiro",
+    "Pride",
+    "Saint-Étienne"
   ],
   "latino_hispanic": [
     "Aguilar",
@@ -12375,7 +12487,12 @@
     "Vieira",
     "Vilanculos",
     "Xavier",
-    "Zakakiou"
+    "Zakakiou",
+    "Borains",
+    "Charleroi",
+    "Dunkerque",
+    "Lugo",
+    "Voigt"
   ],
   "malagasy": [
     "Andriamahefa",
@@ -12484,7 +12601,10 @@
     "Yaacob",
     "Yahya",
     "Yusof",
-    "Zainal"
+    "Zainal",
+    "Josué",
+    "Morales",
+    "Wilkin"
   ],
   "maori": [
     "Te Aroha",
@@ -12721,7 +12841,8 @@
     "Árnason",
     "Ívarsdóttir",
     "Þorvaldsdóttir",
-    "Þróttur"
+    "Þróttur",
+    "Pride"
   ],
   "oromo": [
     "Abera",
@@ -13002,7 +13123,12 @@
     "Łączyński",
     "Świderski",
     "Świerczok",
-    "Żurkowski"
+    "Żurkowski",
+    "Cash",
+    "Lens",
+    "Miličić",
+    "Nice",
+    "Sousa"
   ],
   "portuguese": [
     "Abreu",
@@ -13556,7 +13682,10 @@
     "Zolotareva",
     "Zubkov",
     "Zvereva",
-    "Zvonareva"
+    "Zvonareva",
+    "Capello",
+    "Fernandes",
+    "Lopes"
   ],
   "samoan": [
     "Tuilagi",
@@ -13814,7 +13943,8 @@
     "Šimko",
     "Škriniar",
     "Škrtel",
-    "Štrba"
+    "Štrba",
+    "Tarkovič"
   ],
   "slovenian": [
     "Balažič",
@@ -13913,7 +14043,12 @@
     "Šporar",
     "Šuler",
     "Žagar",
-    "Žugelj"
+    "Žugelj",
+    "Burgos",
+    "Charleroi",
+    "Jordi",
+    "Kaltsidou",
+    "Rico"
   ],
   "southeast_asian": [
     "Chaiyaporn",
@@ -14163,7 +14298,10 @@
     "Yamal",
     "Zornoza",
     "Zubimendi",
-    "Álvarez"
+    "Álvarez",
+    "Brown",
+    "Grizzlies",
+    "Landes"
   ],
   "sri_lankan_sinhalese": [
     "Perera",
@@ -14392,7 +14530,10 @@
     "Wisutthi",
     "Wonggorn",
     "Yodyardthai",
-    "Yooyen"
+    "Yooyen",
+    "Do",
+    "Ishii",
+    "Rajevac"
   ],
   "tongan": [
     "Tupou",
@@ -14548,7 +14689,10 @@
     "Şanlı",
     "Şengün",
     "Şenyürek",
-    "Şimşek"
+    "Şimşek",
+    "Hollingsworth",
+    "Larkin",
+    "Preldžić"
   ],
   "uk_european": [
     "Bakker",
@@ -14675,7 +14819,9 @@
     "Yatsenko",
     "Zabirchenko",
     "Zotov",
-    "Zubkov"
+    "Zubkov",
+    "Hill",
+    "Kings"
   ],
   "uzbek": [
     "Karimov",
@@ -14824,7 +14970,8 @@
     "Thomas",
     "Vaughan",
     "Williams",
-    "Wynn"
+    "Wynn",
+    "Nice"
   ],
   "xhosa": [
     "Mandela",
@@ -15058,7 +15205,17 @@
     "Väisänen",
     "Väänänen",
     "Westerlund",
-    "Öling"
+    "Öling",
+    "Hradecky",
+    "Huff",
+    "Häcken",
+    "Ivanov",
+    "Kalmar",
+    "Lam",
+    "Little",
+    "Madsen",
+    "Markkanen",
+    "Murphy"
   ],
   "swedish": [
     "Andersson",
@@ -15183,7 +15340,10 @@
     "Wallin",
     "Wikström",
     "Åberg",
-    "Åkesson"
+    "Åkesson",
+    "Durmaz",
+    "Kulusevski",
+    "Mušović"
   ],
   "norwegian": [
     "Aas",
@@ -15286,7 +15446,8 @@
     "Utland",
     "Vik",
     "Wold",
-    "Åsland"
+    "Åsland",
+    "Damer"
   ],
   "danish": [
     "Agger",
@@ -15404,7 +15565,10 @@
     "Wass",
     "Wind",
     "Worsøe",
-    "Østergaard"
+    "Østergaard",
+    "Damer",
+    "Mönchengladbach",
+    "Nice"
   ],
   "haitian": [
     "Joseph",
@@ -15768,7 +15932,65 @@
     "Štimac",
     "Šunjić",
     "Žigić",
-    "Živković"
+    "Živković",
+    "Đoković",
+    "Marković",
+    "Stojanović",
+    "Milošević",
+    "Kovačević",
+    "Lazić",
+    "Tomić",
+    "Simić",
+    "Ranković",
+    "Todorović",
+    "Vasić",
+    "Milić",
+    "Savić",
+    "Damjanović",
+    "Aleksić",
+    "Stevanović",
+    "Vučić",
+    "Milojević",
+    "Blagojević",
+    "Bogdanović",
+    "Cvetković",
+    "Damnjanović",
+    "Gavrilović",
+    "Knežević",
+    "Lalić",
+    "Nešić",
+    "Pantić",
+    "Perić",
+    "Radosavljević",
+    "Spasić",
+    "Vukotić",
+    "Zdravković",
+    "Tipsarević",
+    "Troicki",
+    "Lajović",
+    "Kecmanović",
+    "Krajinović",
+    "Đere",
+    "Zimonjić",
+    "Milinković",
+    "Mihajlović",
+    "Bjeković",
+    "Ćirković",
+    "Đukić",
+    "Filipović",
+    "Jakšić",
+    "Kalinić",
+    "Lukovič",
+    "Nenadović",
+    "Obrenović",
+    "Radenković",
+    "Stamenković",
+    "Tešić",
+    "Urošević",
+    "Vučković",
+    "Zarić",
+    "Đurić",
+    "Šaponjić"
   ],
   "latvian": [
     "Bertāns",
@@ -15797,7 +16019,8 @@
     "Šmits",
     "Šteinberga",
     "Šķēle",
-    "Žagars"
+    "Žagars",
+    "Baško"
   ],
   "belgian": [
     "Alderweireld",
@@ -15905,7 +16128,11 @@
     "Wijnants",
     "Wilmots",
     "Witsel",
-    "Wullaert"
+    "Wullaert",
+    "Kees",
+    "Lens",
+    "Massey",
+    "Mönchengladbach"
   ],
   "estonian": [
     "Dorbek",
@@ -16026,7 +16253,12 @@
     "Zeqiri",
     "Zesiger",
     "Ziegler",
-    "Zuber"
+    "Zuber",
+    "Mönchengladbach",
+    "Nice",
+    "Nielsen",
+    "Saint-Étienne",
+    "Toone"
   ],
   "albanian": [
     "Abrashi",
@@ -16130,7 +16362,9 @@
     "Wimmer",
     "Wöber",
     "Zadrazil",
-    "Zinsberger"
+    "Zinsberger",
+    "Lens",
+    "Mönchengladbach"
   ],
   "georgian": [
     "Altunashvili",
