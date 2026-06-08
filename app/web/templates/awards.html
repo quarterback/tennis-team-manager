@@ -21,6 +21,7 @@
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · singles honors · selected from {{ aw.player_count }} rated players</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('hall_of_fame', u=u) }}">🏛️ Hall of Fame — past winners →</a>
 </div></div></form>
 
 <div class="bl-container">

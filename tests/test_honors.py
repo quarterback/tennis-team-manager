@@ -14,6 +14,20 @@ def test_honor_records_cover_all_award_types():
     assert sum(1 for r in recs if r["award"] == "national_poty") == 1
 
 
+def test_hall_of_fame_archives_stamped_years():
+    import app.world as wd
+    app = create_app()
+    wd.start_new()
+    c = app.test_client()
+    assert c.get("/hall-of-fame?u=D1-men").status_code == 200      # empty is fine
+    stamp_world_honors()
+    assert 2026 in honors.years()
+    champs = honors.winners(2026, ["national_champion"])
+    assert champs and all(r["award"] == "national_champion" for r in champs)
+    body = c.get("/hall-of-fame?u=D1-men").get_data(as_text=True)
+    assert "2026" in body and "Player of the Year" in body
+
+
 def test_stamp_persists_and_follows_pid():
     create_app()
     poty = next(r for r in honor_records("D1", "men") if r["award"] == "national_poty")

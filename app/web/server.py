@@ -48,6 +48,7 @@ NAV_GROUPS = [
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
+        {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
@@ -71,6 +72,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/awards"):           return "awards"
+    if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
     if p.startswith("/season/schedule"):  return "schedule"
     if p.startswith("/season"):           return "season"
@@ -229,6 +231,29 @@ def create_app() -> Flask:
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
                                coach_awards=coach_awards, u=u, uni_label=label, crest=crest)
+
+    @app.route("/hall-of-fame")
+    def hall_of_fame():
+        division, gender, label, u = _universe(request)
+        import app.honors as honors
+        uni_label = {(d, g): lbl for _v, d, g, lbl in UNIVERSES}
+        archive = []
+        for y in honors.years():
+            rows = honors.winners(y, ["national_champion", "national_poty", "national_coty"])
+            unis: dict = {}
+            for r in rows:
+                slot = unis.setdefault((r["division"], r["gender"]), {})
+                if r["award"] == "national_champion":
+                    slot.setdefault("champion", r["school"])      # one per team
+                else:
+                    slot[r["award"]] = r
+            archive.append({
+                "year": y,
+                "universes": [(uni_label.get(k, f"{k[0]} {k[1]}"), v)
+                              for k, v in sorted(unis.items())],
+            })
+        return render_template("hall_of_fame.html", active="Hall of Fame",
+                               archive=archive, u=u, uni_label=label, crest=crest)
 
     @app.route("/bracket")
     def bracket():

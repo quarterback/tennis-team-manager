@@ -110,6 +110,27 @@ def has_season(year: int, division: str, gender: str) -> bool:
     return row is not None
 
 
+def years() -> list[int]:
+    """Distinct stamped season-years, newest first (the Hall of Fame index)."""
+    conn = _conn()
+    rows = conn.execute("SELECT DISTINCT year FROM honors ORDER BY year DESC").fetchall()
+    conn.close()
+    return [r["year"] for r in rows]
+
+
+def winners(year: int, awards: list[str]) -> list[dict]:
+    """Honor rows for a year filtered to the given award keys."""
+    if not awards:
+        return []
+    ph = ",".join("?" * len(awards))
+    conn = _conn()
+    rows = conn.execute(
+        f"SELECT * FROM honors WHERE year=? AND award IN ({ph}) ORDER BY division, gender, sort DESC",
+        (year, *awards)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 def reset() -> None:
     conn = _conn()
     conn.execute("DELETE FROM honors")
