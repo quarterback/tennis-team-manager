@@ -207,9 +207,52 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     return recs
 
 
+def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Coach of the Year (national + per conference) and team titles for the
+    head coach of each champion. Keyed to the coach's stable id so they follow
+    the coach between schools."""
+    import app.world as world
+    from .state import head_coach, get_season, get_bracket
+
+    rows = ranking_rows(division, gender, seed)
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+    year, season_no = 2026 + yr, yr + 1
+    recs: list[dict] = []
+
+    def add_head(school, award, label, sort):
+        hc = head_coach(division, gender, school)
+        if not hc:
+            return
+        recs.append({"subject_type": "coach", "subject_id": hc["coach_id"],
+                     "name": hc["coach"].name, "year": year, "season_no": season_no,
+                     "division": division, "gender": gender, "school": school,
+                     "award": award, "label": label, "sort": sort})
+
+    # Coach of the Year — head coach of the top-PI team, national + per conference.
+    if rows:
+        top = max(rows, key=lambda r: r.pi)
+        add_head(top.school, "national_coty", "National Coach of the Year", 95)
+    by_conf: dict[str, list] = {}
+    for r in rows:
+        by_conf.setdefault(r.conf, []).append(r)
+    for conf, rs in by_conf.items():
+        best = max(rs, key=lambda r: r.pi)
+        add_head(best.school, "conf_coty", f"{conf} Coach of the Year", 58)
+
+    # Team titles for the head coach of each champion.
+    sr = get_season(division, gender, seed)
+    confmap = {r.school: r.conf for r in rows}
+    for prog in getattr(sr, "champions", []) or []:
+        add_head(prog.school, "conf_champion", f"{confmap.get(prog.school, 'Conference')} Champion", 55)
+    br = get_bracket(division, gender, seed)
+    if getattr(br, "champion", None):
+        add_head(br.champion.school, "national_champion", "National Champion", 110)
+    return recs
+
+
 def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
-    """Compute and persist this season-year's honors for every universe. The
-    'awards phase' action — idempotent, so it can be (re)run safely."""
+    """Compute and persist this season-year's honors (players + coaches) for
+    every universe. The 'awards phase' action — idempotent, re-runnable."""
     import app.world as world
     import app.honors as honors
     from .state import UNIVERSES
@@ -219,7 +262,23 @@ def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
     for _u, division, gender, _label in UNIVERSES:
         honors.clear_season(year, division, gender)
         total += honors.stamp(honor_records(division, gender, seed))
+        total += honors.stamp(coach_honor_records(division, gender, seed))
     return total
+
+
+def coach_career_honors(division: str, gender: str, coach_id: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """A coach's honors grouped by season-year (persisted + live current year)."""
+    import app.world as world
+    import app.honors as honors
+    groups = honors.career_by_year(coach_id, "coach")
+    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    if not any(g["year"] == cur_year for g in groups):
+        live = [r for r in coach_honor_records(division, gender, seed) if r["subject_id"] == coach_id]
+        if live:
+            live.sort(key=lambda r: r["sort"], reverse=True)
+            groups.insert(0, {"year": cur_year, "season_no": live[0]["season_no"],
+                              "school": live[0]["school"], "awards": live, "live": True})
+    return groups
 
 
 def player_career_honors(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED) -> list[dict]:

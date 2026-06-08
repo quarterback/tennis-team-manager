@@ -64,6 +64,7 @@ def reset_all() -> None:
     from . import awards
     _season_cache.clear()
     _bracket_cache.clear()
+    _staff_cache.clear()
     awards.reset_cache()
     ncaa.reset_caches()
 
@@ -323,11 +324,18 @@ def head_coach(school: str, division: str = "D1", gender: str = "men"):
     return _coach(school, gender, "head", base=54.0)
 
 
+_staff_cache: dict = {}
+
+
 def coaching_staff(division: str, gender: str, school: str):
-    """Head coach + associate + assistant, with display labels + a stable tenure.
-    Stronger programs (higher conference prestige) skew to higher-rated staff."""
+    """Head coach + associate + assistant, each a persisted entity with a stable
+    coach_id (so they get their own page and honors that follow them). Stronger
+    programs skew to higher-rated staff. Cached per (division, gender, school)."""
     import random
-    from app import ncaa
+    from app import ncaa, coachreg
+    key = (division, gender, school)
+    if key in _staff_cache:
+        return _staff_cache[key]
     div = ncaa.load_division(division, gender)
     prog = div.by_school(school)
     base = 50.0 + (12.0 * prog.strength if prog else 0.0)
@@ -337,14 +345,38 @@ def coaching_staff(division: str, gender: str, school: str):
                               ("assoc", "Associate Head Coach", -2.0),
                               ("asst", "Assistant Coach", -6.0)):
         c = _coach(school, gender, role, base=max(28.0, base + bump))
-        staff.append({
-            "coach": c, "title": title,
-            "archetype": ARCHETYPE_LABELS.get(c.archetype, c.archetype.replace("_", " ").title()),
-            "tenure": rng.randint(1, 14) if role == "head" else rng.randint(1, 8),
-            "dev": round(c.development_score), "rec": round(c.recruiting_score),
-            "tac": round(c.tactical_score),
-        })
+        dev, rec, tac = round(c.development_score), round(c.recruiting_score), round(c.tactical_score)
+        tenure = rng.randint(1, 14) if role == "head" else rng.randint(1, 8)
+        archetype = ARCHETYPE_LABELS.get(c.archetype, c.archetype.replace("_", " ").title())
+        cid = coachreg.seat_coach_id(division, gender, school, role, name=c.name,
+                                     home_country=c.home_country, archetype=archetype,
+                                     dev=dev, rec=rec, tac=tac, tenure=tenure)
+        staff.append({"coach": c, "coach_id": cid, "title": title, "role": role,
+                      "archetype": archetype, "tenure": tenure,
+                      "dev": dev, "rec": rec, "tac": tac})
+    _staff_cache[key] = staff
     return staff
+
+
+def head_coach(division: str, gender: str, school: str) -> dict | None:
+    """The head-coach staff entry (with coach_id) for a school, or None."""
+    for s in coaching_staff(division, gender, school):
+        if s["role"] == "head":
+            return s
+    return None
+
+
+def get_coach(coach_id: str) -> dict | None:
+    """Resolve a coach page: identity + current seat + their team's record."""
+    import app.coachreg as coachreg
+    c = coachreg.get(coach_id)
+    if not c or not c.get("school"):
+        return c
+    c["role_label"] = {"head": "Head Coach", "assoc": "Associate Head Coach",
+                       "asst": "Assistant Coach"}.get(c.get("role"), "Coach")
+    rec = team_results(c["division"], c["gender"], c["school"])
+    c["team_w"], c["team_l"] = rec["wins"], rec["losses"]
+    return c
 
 
 def editor_roster(division: str, gender: str, school: str):

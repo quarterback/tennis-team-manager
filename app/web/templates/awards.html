@@ -78,6 +78,32 @@
 
 <div class="bl-container">
   <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">🧑‍🏫 Coach of the Year</span>
+      <span class="bl-panel-meta">national &amp; conference</span></div>
+    <div class="bl-panel-body">
+      {% if coach_awards.national %}{% set cn = coach_awards.national %}{% set abbr, color = crest(cn.school) %}
+      <div class="aw-poty-nat">
+        <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
+        <div><div class="aw-poty-label">National Coach of the Year</div>
+          <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=cn.subject_id, u=u) }}">{{ cn.name }}</a>
+          <div class="bl-conf">{{ cn.school }}</div></div>
+      </div>{% else %}<p class="aw-empty">Awarded at season's end.</p>{% endif %}
+      {% if coach_awards.conference %}<div class="aw-cpoty-grid">
+        {% for cc in coach_awards.conference %}
+        <div class="aw-row">
+          {% set abbr, color = crest(cc.school) %}
+          <span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
+          <a class="bl-school aw-name" href="{{ url_for('coach', coach_id=cc.subject_id, u=u) }}">{{ cc.name }}</a>
+          <span class="bl-conf aw-school">{{ cc.school }}</span>
+        </div>
+        {% endfor %}
+      </div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="bl-container">
+  <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">🏅 All-Americans</span>
       <span class="bl-panel-meta">national · by Power Index STR</span></div>
     <div class="bl-panel-body">

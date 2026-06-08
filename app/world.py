@@ -219,9 +219,11 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     sconn.executescript("DELETE FROM duals; DELETE FROM seasons;")
     sconn.commit()
     sconn.close()
-    # Career honors are season-to-season state too.
+    # Career honors + coach identities are season-to-season state too.
     import app.honors as honors
+    import app.coachreg as coachreg
     honors.reset()
+    coachreg.reset()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
     _dev_cache.clear()

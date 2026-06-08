@@ -20,11 +20,12 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     dashboard_view, team_budget, team_results, season_match_view,
-                    conference_schools, team_conference, world_hub, player_career)
+                    conference_schools, team_conference, world_hub, player_career, get_coach)
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
-from .awards import season_awards, player_career_honors, stamp_world_honors
+from .awards import (season_awards, player_career_honors, stamp_world_honors,
+                     coach_career_honors, coach_honor_records)
 
 from app import seasonmode as sm
 from app import overrides as ov
@@ -203,13 +204,31 @@ def create_app() -> Flask:
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
+    @app.route("/coach/<coach_id>")
+    def coach(coach_id):
+        division, gender, label, u = _universe(request)
+        c = get_coach(coach_id)
+        if not c:
+            abort(404)
+        div = c.get("division", division)
+        gen = c.get("gender", gender)
+        honor_years = coach_career_honors(div, gen, coach_id)
+        return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
+                               crest=crest, u=u, uni_label=label)
+
     @app.route("/awards")
     def awards():
         division, gender, label, u = _universe(request)
         aw = season_awards(division, gender)
+        coty = coach_honor_records(division, gender)
+        coach_awards = {
+            "national": next((r for r in coty if r["award"] == "national_coty"), None),
+            "conference": sorted((r for r in coty if r["award"] == "conf_coty"),
+                                 key=lambda r: r["label"]),
+        }
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
-                               u=u, uni_label=label, crest=crest)
+                               coach_awards=coach_awards, u=u, uni_label=label, crest=crest)
 
     @app.route("/bracket")
     def bracket():
