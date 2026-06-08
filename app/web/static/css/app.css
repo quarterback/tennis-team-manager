@@ -395,6 +395,31 @@ html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, table { max-width: 100%; }
 .bl-select, .bl-input { max-width: 100%; }
 
+/* Player honors badges (All-American / All-Conference). */
+.pl-honors { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pl-honor {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: var(--radius-pill);
+  color: var(--text-secondary); background: var(--surface-subtle); border: 1px solid var(--border-subtle);
+}
+.pl-honor.aa { color: #8a5a00; background: #fff6e0; border-color: #f0d28a; }
+
+/* Career honors panel (player/coach cards). */
+.pl-honyear { padding: 8px 0; border-top: 1px solid var(--border-subtle); }
+.pl-honyear:first-child { border-top: none; padding-top: 0; }
+.pl-honyear-head { font-size: 12px; font-weight: 800; color: var(--text-primary); margin-bottom: 5px;
+  display: flex; align-items: center; gap: 8px; }
+.pl-honyear-school { font-weight: 600; color: var(--text-muted); font-size: 11px; }
+.pl-live { font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--brand-strong); background: var(--green-50); border-radius: var(--radius-pill); padding: 1px 6px; }
+.pl-honitem { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary);
+  padding: 3px 0; }
+.pl-hondot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--border-strong); }
+.pl-hondot.national_poty, .pl-hondot.national_champion { background: #d4a017; }
+.pl-hondot.conf_poty, .pl-hondot.conf_champion { background: var(--brand); }
+.pl-hondot.all_american { background: #c0852a; }
+.pl-hondot.all_conference { background: #6b8cae; }
+
 /* Season divider inside a match-by-match table (player career view). */
 .bl-yeardiv {
   display: flex; align-items: center; justify-content: space-between;

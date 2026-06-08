@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Hall of Fame{% endblock %}
+{% block meta_description %}The Play to Clinch Hall of Fame — every past season's national champions, Players of the Year, and Coaches of the Year, archived year by year.{% endblock %}
+{% block content %}
+
+<div class="bl-container">
+  <div class="bl-prose" style="padding-top:18px">
+    <h1 style="margin:0">🏛️ Hall of Fame</h1>
+    <p class="lede" style="margin:6px 0 0">Season-by-season champions and national honorees. Each season is
+      archived here once its awards phase is run.</p>
+  </div>
+</div>
+
+{% if not archive %}
+<div class="bl-container"><div class="bl-note" style="margin-top:14px">
+  No seasons archived yet. Finish a season and run its <strong>awards phase</strong> — its winners land here.
+</div></div>
+{% endif %}
+
+{% for season in archive %}
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ season.year }} — Season {{ season.year - 2025 }}</span>
+      <span class="bl-panel-meta">national honors</span></div>
+    <div class="bl-panel-body">
+      <div class="hof-grid">
+        {% for ulabel, slot in season.universes %}
+        <div class="hof-uni">
+          <div class="hof-uni-head">{{ ulabel }}</div>
+          {% if slot.champion %}{% set abbr, color = crest(slot.champion) %}
+          <div class="hof-row"><span class="hof-k">🏆 Champion</span>
+            <span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
+            <a class="bl-school" href="{{ url_for('teams', school=slot.champion, u=u) }}">{{ slot.champion }}</a></div>
+          {% endif %}
+          {% if slot.national_poty %}{% set p = slot.national_poty %}
+          <div class="hof-row"><span class="hof-k">👑 Player of the Year</span>
+            <a class="bl-school" href="{{ url_for('player', pid=p.subject_id, school=p.school, u=u) }}">{{ p.name }}</a>
+            <span class="bl-conf">{{ p.school }}</span></div>
+          {% endif %}
+          {% if slot.national_coty %}{% set c = slot.national_coty %}
+          <div class="hof-row"><span class="hof-k">🧑‍🏫 Coach of the Year</span>
+            <a class="bl-school" href="{{ url_for('coach', coach_id=c.subject_id, u=u) }}">{{ c.name }}</a>
+            <span class="bl-conf">{{ c.school }}</span></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<style>
+.hof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.hof-uni-head { font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--brand-strong); padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 8px; }
+.hof-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
+.hof-k { width: 130px; flex: none; font-size: 11px; font-weight: 700; color: var(--text-muted); }
+</style>
+{% endblock %}

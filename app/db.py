@@ -118,10 +118,12 @@ def bootstrap() -> None:
     every later connection a clean read/write under WAL. Safe to call repeatedly.
     """
     init_db()
-    from app import overrides, seasonmode, world
+    from app import overrides, seasonmode, world, honors, coachreg
     overrides.init_schema()
     seasonmode.init_schema()
     world.init_schema()
+    honors.init_schema()
+    coachreg.init_schema()
 
 
 # ---------------------------------------------------------------------------
