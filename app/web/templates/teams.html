@@ -18,7 +18,9 @@
 </form>
 
 <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
-  <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
+  {% set _logo = school | team_logo_src %}
+  {% if _logo %}<span class="bl-crest lg" style="background:#fff;width:56px;height:56px;padding:6px"><img src="{{ _logo }}" alt="{{ school }}" style="width:100%;height:100%;object-fit:contain"></span>
+  {% else %}<span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>{% endif %}
   <div><div class="tname">{{ school }}</div>
     <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}{% if city %} · {{ city }}{% endif %}</div></div>
   <div style="display:flex;gap:8px;align-items:center">

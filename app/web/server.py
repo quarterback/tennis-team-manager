@@ -119,11 +119,17 @@ def create_app() -> Flask:
     from app import db as _db
     _db.bootstrap()
 
-    from .formatters import flag, flags, country_name, country_abbrev
+    from .formatters import (
+        flag, flags, country_name, country_abbrev,
+        team_logo, has_team_logo, team_logo_src,
+    )
     app.jinja_env.filters["flag"] = flag
     app.jinja_env.filters["flags"] = flags
     app.jinja_env.filters["country_name"] = country_name
     app.jinja_env.filters["country_abbrev"] = country_abbrev
+    app.jinja_env.filters["team_logo"] = team_logo
+    app.jinja_env.filters["has_team_logo"] = has_team_logo
+    app.jinja_env.filters["team_logo_src"] = team_logo_src
 
     @app.context_processor
     def _inject_chrome():

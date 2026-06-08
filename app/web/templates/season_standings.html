@@ -14,7 +14,7 @@
       {% for r in table %}
       <div class="bl-brk-match" style="grid-template-columns:24px 1fr 80px 80px">
         <span class="bl-rank">{{ loop.index }}</span>
-        <a class="bl-brk-team" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="nm">{{ r.school }}</span></a>
+        <a class="bl-brk-team" style="text-decoration:none;display:flex;align-items:center;gap:7px" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}<span class="nm">{{ r.school }}</span></a>
         <span class="bl-rec">{{ r.cw }}-{{ r.cl }}</span>
         <span class="bl-conf">{{ r.ow }}-{{ r.ol }}</span>
       </div>
