@@ -1,4 +1,10 @@
-# AAR — OOM Mitigation: Recruit Cadre + Per-Universe World Seeding
+# AAR — Memory & Preseason segment: OOM fix, nationality bands, universe selection, preseason gate
+
+This segment started as an out-of-memory firefight and grew into the memory and
+onboarding/preseason controls around it. Four shipped pieces: (1) the first-load
+OOM fix, (2) onboarding nationality bands, (3) universe selection (run only chosen
+divisions/genders in detail), and (4) the preseason gate. Sections below.
+
 
 ## Problem
 
@@ -78,9 +84,22 @@ Done in a second pass on this branch:
   unless you narrow it. Threaded through `world.py` (`_active_unis`, gated
   prime/advance/finalize/cross/recruiting) + `worldconfig` + onboarding.
 
-Still open:
+- **Preseason gate** — at the start of each year (world week 0) the World Hub's
+  primary action becomes **"⚙ Preseason setup →"** instead of advancing directly.
+  It opens `/preseason` (also in the **Your Team** nav): a checklist of the things
+  that happen every year — recruiting drip, the set schedule, auto-shuffle lineups
+  — each marked as AI-handled by default with a link into the existing surface
+  (recruiting board / schedule / editor) to steer it. A **"Sim to first week →"**
+  button locks it in and plays week 1; the gate reappears next preseason. Skipping
+  any step is fine — the AI does it, exactly as it does for every other program.
+  Deliberately thin: no new "manage one team" feature, no new editors — it gates
+  advancement over actions that already exist. (`state.preseason_view`,
+  `/preseason` route, `preseason.html`, gated `world_hub` primary.)
 
-- **Preseason gate** — a thin page that lists the actions about to happen
-  (recruiting drip, schedule, auto-shuffle lineups) and gates "advance" so you
-  can optionally edit first; skip anything and the AI does it, as it already does
-  for every other program. Schedule/lineup edits ride the existing editor.
+## Scope notes
+
+- Dropped a speculative "manage one team" non-conference scheduler hook mid-segment
+  after the design clarified that teams are already editor-configurable (auto-shuffle
+  by strength) and the schedule just needs editing — no dedicated single-team mode.
+- All four pieces default to the prior behaviour (all six universes, AI-driven
+  preseason), so an existing world is unaffected until the player opts in.

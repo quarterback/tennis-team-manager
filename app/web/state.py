@@ -538,8 +538,13 @@ def world_hub(seed: int = DEFAULT_SEED):
     else:
         stage = "offseason" if awards_done else "awards"
     if stage in ("regular", "conf_tournaments", "ncaa"):
-        primary = {"endpoint": "world_advance",
-                   "label": "Advance week →" if stage == "regular" else "Advance postseason →"}
+        if w["week"] == 0 and stage == "regular":
+            # Preseason: gate the first advance behind the setup page so the
+            # player can (optionally) steer recruiting / schedule / lineups first.
+            primary = {"endpoint": "preseason_view", "label": "⚙ Preseason setup →", "link": True}
+        else:
+            primary = {"endpoint": "world_advance",
+                       "label": "Advance week →" if stage == "regular" else "Advance postseason →"}
     elif stage == "awards":
         primary = {"endpoint": "world_awards", "label": "🏅 Run awards →"}
     else:
@@ -557,6 +562,35 @@ def world_hub(seed: int = DEFAULT_SEED):
         "complete": complete, "awards_done": awards_done,
         "stage": stage, "primary": primary, "stages": stages,
     }
+
+
+def preseason_view(seed: int = DEFAULT_SEED) -> dict:
+    """The preseason gate: a checklist of the things that happen every year (and
+    are AI-driven by default), with a link into each so the player can steer them
+    before locking in the schedule and playing week 1. Skipping any step is fine
+    — the AI does it, exactly as it does for every other program."""
+    import app.world as world
+    from app import worldconfig
+    w = world.get_or_create(seed)
+    year = world.BASE_YEAR + w["year"]
+    active = [lbl for (_v, d, g, lbl) in UNIVERSES if worldconfig.is_active(d, g)]
+    dormant = [lbl for (_v, d, g, lbl) in UNIVERSES if not worldconfig.is_active(d, g)]
+    steps = [
+        {"icon": "🎓", "title": "Recruiting",
+         "auto": "Your class signs automatically, a slice each week.",
+         "desc": "Open the board to track the pool and steer your targets.",
+         "label": "Open recruiting →", "endpoint": "recruiting", "args": {}},
+        {"icon": "📅", "title": "Schedule",
+         "auto": "Every team's non-conference + conference slate is already set.",
+         "desc": "Review your slate, or edit a team's schedule in the editor.",
+         "label": "View schedule →", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+        {"icon": "🎾", "title": "Lineups",
+         "auto": "Ladders auto-shuffle by player strength.",
+         "desc": "Reorder any ladder in the editor to override the auto order.",
+         "label": "Open editor →", "endpoint": "editor", "args": {}},
+    ]
+    return {"year": year, "active": active, "dormant": dormant, "steps": steps,
+            "is_preseason": w["week"] == 0}
 
 
 def all_gender_programs(gender: str):
