@@ -104,8 +104,21 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
         if teams:
             all_conference.append((conf, teams))
 
+    # Player of the Year (national + per conference) and team champions.
+    national_poty = players[0] if players else None
+    conf_poty = sorted(({"conf": c, **ps[0]} for c, ps in by_conf.items() if ps),
+                       key=lambda p: p["conf"])
+    sr = get_season(division, gender, seed)
+    confmap = {r.school: r.conf for r in ranking_rows(division, gender, seed)}
+    conf_champions = sorted(((confmap.get(p.school, ""), p.school)
+                             for p in getattr(sr, "champions", []) or []))
+    br = get_bracket(division, gender, seed)
+    national_champion = br.champion.school if getattr(br, "champion", None) else None
+
     result = {"all_american": all_american, "all_conference": all_conference,
-              "by_pid": by_pid, "player_count": len(players)}
+              "by_pid": by_pid, "player_count": len(players),
+              "national_poty": national_poty, "conf_poty": conf_poty,
+              "conf_champions": conf_champions, "national_champion": national_champion}
     _cache[key] = result
     return result
 

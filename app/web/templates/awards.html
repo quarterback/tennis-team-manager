@@ -24,6 +24,59 @@
 </div></div></form>
 
 <div class="bl-container">
+  <div class="aw-top">
+    <div class="bl-panel aw-poty">
+      <div class="bl-panel-head"><span class="bl-panel-title">👑 Player of the Year</span>
+        <span class="bl-panel-meta">national &amp; conference</span></div>
+      <div class="bl-panel-body">
+        {% if aw.national_poty %}
+        {% set p = aw.national_poty %}{% set abbr, color = crest(p.school) %}
+        <div class="aw-poty-nat">
+          <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
+          <div><div class="aw-poty-label">National Player of the Year</div>
+            <a class="bl-school aw-poty-name" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}">{{ p.name }}</a>
+            <div class="bl-conf">{{ p.school }} · {{ p.w }}-{{ p.l }} · STR {{ "%.1f"|format(p.str) }}</div></div>
+        </div>
+        {% else %}<p class="aw-empty">Awarded at season's end.</p>{% endif %}
+        {% if aw.conf_poty %}<div class="aw-cpoty-grid">
+          {% for p in aw.conf_poty %}
+          <div class="aw-row">
+            {% set abbr, color = crest(p.school) %}
+            <span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
+            <a class="bl-school aw-name" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}">{{ p.name }}</a>
+            <span class="bl-conf aw-school">{{ p.conf_abbr }} POY</span>
+            <span class="bl-stat power aw-str">{{ "%.1f"|format(p.str) }}</span>
+          </div>
+          {% endfor %}
+        </div>{% endif %}
+      </div>
+    </div>
+    <div class="bl-panel aw-champs">
+      <div class="bl-panel-head"><span class="bl-panel-title">🏆 Champions</span></div>
+      <div class="bl-panel-body">
+        {% if aw.national_champion %}{% set abbr, color = crest(aw.national_champion) %}
+        <div class="aw-natchamp">
+          <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
+          <div><div class="aw-poty-label">National Champion</div>
+            <a class="bl-school aw-poty-name" href="{{ url_for('teams', school=aw.national_champion, u=u) }}">{{ aw.national_champion }}</a></div>
+        </div>{% else %}<p class="aw-empty">No national champion yet.</p>{% endif %}
+        {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference Champions</div>
+        <div class="aw-cpoty-grid">
+          {% for conf, school in aw.conf_champions %}
+          <div class="aw-row">
+            {% set abbr, color = crest(school) %}
+            <span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
+            <a class="bl-school aw-name" href="{{ url_for('teams', school=school, u=u) }}">{{ school }}</a>
+            <span class="bl-conf aw-school">{{ conf }}</span>
+          </div>
+          {% endfor %}
+        </div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bl-container">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">🏅 All-Americans</span>
       <span class="bl-panel-meta">national · by Power Index STR</span></div>
@@ -76,6 +129,13 @@
 </div></div>
 
 <style>
+.aw-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .aw-top { grid-template-columns: 1fr; } }
+.aw-poty-nat, .aw-natchamp { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
+.aw-poty-label { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
+.aw-poty-name { font-size: 18px; font-weight: 800; display: block; }
+.aw-cpoty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 14px; border-top: 1px solid var(--border-subtle); padding-top: 8px; }
+.aw-confchamp-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
 .aw-aa-grid, .aw-conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .aw-team-head { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
   color: var(--brand-strong); padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
