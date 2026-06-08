@@ -154,8 +154,11 @@ def create_app() -> Flask:
     @app.route("/world/new", methods=["POST"])
     def world_new():
         # Reset any existing world and begin a fresh league at preseason (week 0,
-        # nothing played), then drop into the week-by-week World hub.
+        # nothing played), then drop into the week-by-week World hub. Clear the
+        # web-layer caches too, so no stale season/bracket/coach data (e.g. coach
+        # ids wiped by the reset) survives into the new league.
         wd.start_new()
+        reset_all()
         return redirect(url_for("world_view"))
 
     @app.route("/world")
