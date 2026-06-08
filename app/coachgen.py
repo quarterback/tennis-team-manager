@@ -23,11 +23,15 @@ _ROLE_BUMP = {"head": 4.0, "assoc": -2.0, "asst": -6.0}
 
 
 def _generate(school: str, gender: str, role: str, base: float):
+    # Coaches are former players of this tennis world, so draw their identity
+    # from the same international pool the players come from (tennis_global) and
+    # — crucially — keep the picker's nation so the name and home country stay
+    # culturally coherent (a "Đặng Oanh" is from VN, not a random ARG).
     name_fn = make_name_picker(random.Random(f"coachname|{role}|{school}|{gender}"),
-                               gender="mixed", region_weights=region_preset("global"))
-    nm, _ = name_fn()
+                               gender="mixed", region_weights=region_preset("tennis_global"))
+    nm, country = name_fn()
     return generate_coach(random.Random(f"coach|{role}|{school}|{gender}"), nm,
-                          school=school, base=base)
+                          school=school, base=base, home_country=country or None)
 
 
 def ensure(division: str, gender: str, school: str, role: str) -> dict:
