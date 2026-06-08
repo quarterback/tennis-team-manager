@@ -20,6 +20,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards,
+                    junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
@@ -65,6 +66,7 @@ NAV_GROUPS = [
     ]),
     ("Tools", [
         {"id": "editor",    "label": "Editor",       "icon": "🛠️", "endpoint": "editor",          "args": {}},
+        {"id": "junior_setup","label": "Junior Setup","icon": "🎛️", "endpoint": "junior_setup",    "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "📐", "endpoint": "methodology",      "args": {}},
     ]),
 ]
@@ -83,6 +85,7 @@ def _active_nav(req) -> str:
     if p.startswith("/season"):           return "season"
     if p.startswith("/dual"):             return "dual"
     if p.startswith("/bracket"):          return "bracket"
+    if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
@@ -432,6 +435,18 @@ def create_app() -> Flask:
                                p=pg, total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, nation=nation, boards=boards, u=u, uni_label=label,
                                grad_years=[2026, 2027, 2028, 2029])
+
+    @app.route("/tools/junior-setup", methods=["GET", "POST"])
+    def junior_setup():
+        division, gender, label, u = _universe(request)
+        if request.method == "POST":
+            if request.form.get("reset"):
+                reset_junior_setup()
+            else:
+                save_junior_setup(request.form)
+            return redirect(url_for("junior_setup", u=u))
+        return render_template("junior_setup.html", active="Tools",
+                               view=junior_setup_view(), u=u, uni_label=label)
 
     # ------------------------------------------------------------------ Editor
     @app.route("/editor")

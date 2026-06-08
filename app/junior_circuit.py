@@ -59,25 +59,34 @@ from .development import stagger_scale
 # Tiers, highest first (also the points-table keys):
 #   Grand Slam > Masters > Major > Premier > National > Developmental > State
 # --------------------------------------------------------------------------
+# These module constants are the DEFAULTS; the in-game Junior Setup menu can
+# override SEASON_WEEKS / DRAW_SIZE / BANDS / JUNIOR_DEV_YEARS / DOUBLES_WEIGHT via
+# `app.worldconfig` (read at build time — see `_jr_config`). Edit there, not here.
 SEASON_WEEKS = 14
 DRAW_SIZE = 32                 # one single-elim draw per 32 players in a band (ITF-ish)
 
-# The four Junior Grand Slams land on these weeks; only the top DRAW_SIZE by ranking
-# get in. They are the only fixed-name events.
-GS_SCHEDULE = {2: "Australian Open Junior Championships",
-               6: "Roland-Garros Junior Championships",
-               9: "Wimbledon Junior Championships",
-               12: "US Open Junior Championships"}
+# The four Junior Grand Slams (only the top DRAW_SIZE by ranking get in). They are
+# spread across the season and are the only fixed-name events.
+GS_NAMES = ["Australian Open Junior Championships", "Roland-Garros Junior Championships",
+            "Wimbledon Junior Championships", "US Open Junior Championships"]
+
+
+def _gs_weeks(season_weeks: int) -> dict:
+    """Place the four slams across a season of any length (week -> name)."""
+    out: dict[int, str] = {}
+    for frac, name in zip((0.15, 0.42, 0.65, 0.85), GS_NAMES):
+        wk = max(1, min(season_weeks, round(frac * season_weeks)))
+        while wk in out and wk < season_weeks:   # avoid collisions on short seasons
+            wk += 1
+        out[wk] = name
+    return out
+
 
 # Each week the ranked field is sliced into these tiers by cumulative fraction, and
 # each slice split into DRAW_SIZE draws. (On a slam week the top DRAW_SIZE are pulled
 # into the slam first and these bands fill the remainder.)
 BANDS = [("Masters", 0.08), ("Major", 0.22), ("Premier", 0.42),
          ("National", 0.62), ("Developmental", 0.82), ("State", 1.00)]
-
-# Snapshot weeks the ranking history reports at (four points across the season).
-SNAP_WEEKS = [("Early", max(1, SEASON_WEEKS // 4)), ("Mid", SEASON_WEEKS // 2),
-              ("Late", (3 * SEASON_WEEKS) // 4), ("Final", SEASON_WEEKS)]
 
 # Tournament-name flavor by tier; the city rolls from the hometowns database, so
 # names read like "Nice Open", "Sendai Classic", "Madrid Masters".
@@ -177,11 +186,11 @@ def _ranked_win_bonus(rank: int | None) -> int:
     return 0
 
 
-def _freeze_points(recruits: list, c: "_Circuit") -> None:
+def _freeze_points(recruits: list, c: "_Circuit", doubles_weight: float = DOUBLES_WEIGHT) -> None:
     """Freeze each recruit's junior ranking POINTS onto them. ITF Combined Junior
-    Ranking: best-6 singles results (+ best-6 ranked-win bonuses) plus ¼ of best-6
-    doubles results — one ledger, no separate doubles ranking. Two-pass: provisional
-    combined order decides which singles wins earn a ranked-win bonus."""
+    Ranking: best-6 singles results (+ best-6 ranked-win bonuses) plus `doubles_weight`
+    of best-6 doubles results — one ledger, no separate doubles ranking. Two-pass:
+    provisional combined order decides which singles wins earn a ranked-win bonus."""
     singles, doubles, played, dbl_played = {}, {}, {}, {}
     for p in recruits:
         s = sorted((event_points(lv, f) for (_m, _t, lv, f) in c.finishes.get(p.pid, [])),
@@ -192,7 +201,7 @@ def _freeze_points(recruits: list, c: "_Circuit") -> None:
         doubles[p.pid] = sum(d[:BEST_N])
         played[p.pid] = len(c.finishes.get(p.pid, []))
         dbl_played[p.pid] = len(c.dbl_finishes.get(p.pid, []))
-    prov_base = {pid: singles[pid] + DOUBLES_WEIGHT * doubles[pid] for pid in singles}
+    prov_base = {pid: singles[pid] + doubles_weight * doubles[pid] for pid in singles}
     prov = sorted(recruits, key=lambda q: (-prov_base[q.pid], q.pid))
     prov_rank = {q.pid: i for i, q in enumerate(prov, 1)}
     for p in recruits:
@@ -201,7 +210,7 @@ def _freeze_points(recruits: list, c: "_Circuit") -> None:
                          reverse=True)
         p.singles_points = int(singles[p.pid] + sum(bonuses[:BEST_N]))
         p.doubles_points = int(doubles[p.pid])
-        p.junior_points = int(p.singles_points + DOUBLES_WEIGHT * p.doubles_points)
+        p.junior_points = int(p.singles_points + doubles_weight * p.doubles_points)
         p.tournaments_played = played[p.pid]
         p.doubles_played = dbl_played[p.pid]
 
@@ -420,24 +429,58 @@ def _chunks(seq: list, n: int):
         yield seq[i:i + n]
 
 
-def _schedule_week(ranked: list, week: int, used: set, rng: random.Random) -> list:
-    """Rank-gate the whole field into this week's parallel draws. The top DRAW_SIZE
+def _clean_bands(raw) -> list:
+    """Validate stored bands → [(tier, cumulative-fraction)] ascending, last == 1.0."""
+    try:
+        base = dict(BANDS)
+        fr = {t: float(f) for t, f in raw}
+        out, prev = [], 0.0
+        for tier, _ in BANDS:
+            f = max(prev, min(1.0, fr.get(tier, base[tier])))
+            out.append((tier, f))
+            prev = f
+        out[-1] = (out[-1][0], 1.0)
+        return out
+    except (TypeError, ValueError):
+        return list(BANDS)
+
+
+def _jr_config() -> dict:
+    """Live junior-circuit knobs from the in-game Junior Setup menu (app.worldconfig),
+    falling back to the module defaults. Read once per build, so a run stays
+    deterministic given the saved config + seed."""
+    try:
+        from . import worldconfig as wc
+        raw = wc.get_json("jr_bands", None)
+        return {"weeks": wc.get_int("jr_season_weeks", SEASON_WEEKS, lo=4, hi=40),
+                "draw": wc.get_int("jr_draw_size", DRAW_SIZE, lo=8, hi=64),
+                "dev": wc.get_float("jr_dev_years", JUNIOR_DEV_YEARS, lo=0.0, hi=3.0),
+                "doubles_weight": wc.get_float("jr_doubles_weight", DOUBLES_WEIGHT, lo=0.0, hi=1.0),
+                "bands": _clean_bands(raw) if raw else list(BANDS)}
+    except Exception:
+        return {"weeks": SEASON_WEEKS, "draw": DRAW_SIZE, "dev": JUNIOR_DEV_YEARS,
+                "doubles_weight": DOUBLES_WEIGHT, "bands": list(BANDS)}
+
+
+def _schedule_week(ranked: list, week: int, used: set, rng: random.Random,
+                   draw_size: int, bands: list, gs_weeks: dict) -> list:
+    """Rank-gate the whole field into this week's parallel draws. The top `draw_size`
     play the Grand Slam on slam weeks; the rest are sliced into tier bands and each
-    band split into DRAW_SIZE draws, so everyone plays at their level. Returns a list
+    band split into `draw_size` draws, so everyone plays at their level. Returns a list
     of (name, tier, field)."""
     events: list[tuple[str, str, list]] = []
     i = 0
-    if week in GS_SCHEDULE:
-        events.append((GS_SCHEDULE[week], "Grand Slam", ranked[:DRAW_SIZE]))
-        i = min(DRAW_SIZE, len(ranked))
+    if week in gs_weeks:
+        events.append((gs_weeks[week], "Grand Slam", ranked[:draw_size]))
+        i = min(draw_size, len(ranked))
     rest = ranked[i:]
     n = len(rest)
     start = 0
-    for k, (tier, frac) in enumerate(BANDS):
-        end = n if k == len(BANDS) - 1 else round(frac * n)
+    for k, (tier, frac) in enumerate(bands):
+        end = n if k == len(bands) - 1 else round(frac * n)
         band = rest[start:end]
         start = end
-        for chunk in _chunks(band, DRAW_SIZE):
+        for chunk in _chunks(band, draw_size):
             events.append((_gen_tournament_name(tier, rng, used), tier, chunk))
     return events
 
@@ -475,6 +518,12 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
         return
     recruits = klass.recruits
     rng = random.Random(f"{seed}|junior-circuit|{klass.gender}|{klass.grad_year}")
+    cfg = _jr_config()            # live knobs from the Junior Setup menu (or defaults)
+    weeks, draw, bands = cfg["weeks"], cfg["draw"], cfg["bands"]
+    dev_years, dbl_w = cfg["dev"], cfg["doubles_weight"]
+    gs_weeks = _gs_weeks(weeks)
+    snap_weeks = [("Early", max(1, weeks // 4)), ("Mid", max(1, weeks // 2)),
+                  ("Late", max(1, (3 * weeks) // 4)), ("Final", weeks)]
 
     # Throwaway "junior selves": start each recruit at their younger self and develop
     # back up to current across the season. The recruit object itself is untouched,
@@ -482,7 +531,7 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     # junior matches/STR reflect the climb.
     selves = {p.pid: copy.deepcopy(p) for p in recruits}
     for p in recruits:
-        selves[p.pid].regress_to_younger(JUNIOR_DEV_YEARS)
+        selves[p.pid].regress_to_younger(dev_years)
     # The younger ability is the PRIOR the results-based rating regresses toward, so
     # thin early-season records sit low and rise with results — the arc shows.
     priors = {p.pid: selves[p.pid].str_value() for p in recruits}
@@ -498,14 +547,14 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     # rank-gate everyone into parallel graded draws so all play at their level. ----
     standing = {p.pid: 0.0 for p in recruits}     # running points → next week's gate
     used_names: set = set()
-    for week in range(1, SEASON_WEEKS + 1):
+    for week in range(1, weeks + 1):
         for p in recruits:
-            sc = stagger_scale(p.pid, week - 1, SEASON_WEEKS, total=JUNIOR_DEV_YEARS)
+            sc = stagger_scale(p.pid, week - 1, weeks, total=dev_years)
             if sc:
                 selves[p.pid].develop(sc)
                 c.engine_players[p.pid] = selves[p.pid].engine_player()
         ranked = sorted(recruits, key=lambda p: (-standing[p.pid], -priors[p.pid], p.pid))
-        for (name, tier, field) in _schedule_week(ranked, week, used_names, rng):
+        for (name, tier, field) in _schedule_week(ranked, week, used_names, rng, draw, bands, gs_weeks):
             if len(field) >= 2:
                 _run_event(c, name, tier, week, field, rng)
         for p in recruits:                         # refresh the running ranking
@@ -523,9 +572,9 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     for p in intl:
         nation_pools.setdefault(p.region, []).append(p)
 
-    _rank_and_freeze(recruits, domestic, c, priors, SNAP_WEEKS, state_pools,
+    _rank_and_freeze(recruits, domestic, c, priors, snap_weeks, state_pools,
                      "National", "State", US_NATIONAL_BADGES, US_STATE_BADGES)
-    _rank_and_freeze(recruits, intl, c, priors, SNAP_WEEKS, nation_pools,
+    _rank_and_freeze(recruits, intl, c, priors, snap_weeks, nation_pools,
                      "Global", "Nation", INTL_GLOBAL_BADGES, INTL_NATION_BADGES)
 
     # ---- freeze the evolved STR + the résumé (finishes + per-match lore) ----
@@ -539,7 +588,7 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     dbl_final = converge_ids(
         {p.pid: list(c.dbl_corpus.get(p.pid, [])) for p in recruits},
         priors=priors, iterations=_FINAL_ITERS)
-    _freeze_points(recruits, c)
+    _freeze_points(recruits, c, dbl_w)
     for p in recruits:
         s, rel = final.get(p.pid, (priors[p.pid], 0.0))
         p.junior_str = round(s, 2)

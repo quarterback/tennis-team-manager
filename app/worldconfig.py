@@ -52,6 +52,30 @@ def set(key: str, value: str) -> None:        # noqa: A001 (tiny config API)
     _cache[key] = value
 
 
+# --- Typed accessors (caller supplies the default, so the code stays the single
+# source of truth — config only OVERRIDES). Malformed/out-of-range values fall back.
+def get_int(key: str, default: int, *, lo: int = 1, hi: int = 10_000) -> int:
+    try:
+        return max(lo, min(hi, int(float(get(key)))))
+    except (ValueError, TypeError):
+        return default
+
+
+def get_float(key: str, default: float, *, lo: float = 0.0, hi: float = 1e9) -> float:
+    try:
+        return max(lo, min(hi, float(get(key))))
+    except (ValueError, TypeError):
+        return default
+
+
+def get_json(key: str, default):
+    try:
+        raw = get(key)
+        return json.loads(raw) if raw else default
+    except (ValueError, TypeError):
+        return default
+
+
 def name_preset() -> str:
     """The nationality-band preset for roster/coach/recruit generation."""
     p = get("name_preset")

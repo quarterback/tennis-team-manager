@@ -298,6 +298,58 @@ def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
             for nat, players in nation_points_top(klass)]
 
 
+# ---- Junior Setup: in-game tuning of the junior-circuit knobs (no code editor) ----
+_JR_KEYS = {"jr_season_weeks", "jr_draw_size", "jr_dev_years", "jr_doubles_weight", "jr_bands"}
+
+
+def junior_setup_view() -> dict:
+    """Current junior-circuit knobs (live values + code defaults) for the setup form."""
+    from app.junior_circuit import (_jr_config, BANDS, SEASON_WEEKS, DRAW_SIZE,
+                                    JUNIOR_DEV_YEARS, DOUBLES_WEIGHT)
+    cur = _jr_config()
+    return {
+        "weeks": cur["weeks"], "draw": cur["draw"], "dev": cur["dev"],
+        "doubles_weight": cur["doubles_weight"],
+        # bands as (tier, cumulative %) rows; State is pinned to 100%.
+        "bands": [(t, round(f * 100)) for t, f in cur["bands"]],
+        "defaults": {"weeks": SEASON_WEEKS, "draw": DRAW_SIZE, "dev": JUNIOR_DEV_YEARS,
+                     "doubles_weight": DOUBLES_WEIGHT,
+                     "bands": [(t, round(f * 100)) for t, f in BANDS]},
+    }
+
+
+def save_junior_setup(form) -> None:
+    """Persist the junior-circuit knobs and bust the recruit cache so the next class
+    regenerates with them."""
+    import json
+    from app import worldconfig
+    from app.junior_circuit import BANDS
+
+    def _num(key, default):
+        try:
+            return float(form.get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    worldconfig.set("jr_season_weeks", str(int(_num("season_weeks", 14))))
+    worldconfig.set("jr_draw_size", str(int(_num("draw_size", 32))))
+    worldconfig.set("jr_dev_years", str(_num("dev_years", 1.0)))
+    worldconfig.set("jr_doubles_weight", str(_num("doubles_weight", 0.25)))
+    base = dict(BANDS)
+    bands = [[tier, max(0.0, min(1.0, _num(f"band_{tier}", base[tier] * 100) / 100.0))]
+             for tier, _ in BANDS]
+    worldconfig.set("jr_bands", json.dumps(bands))
+    _recruit_cache.clear()
+
+
+def reset_junior_setup() -> None:
+    """Clear every junior knob back to the code defaults + bust the recruit cache."""
+    from app import worldconfig
+    for k in _JR_KEYS:
+        worldconfig.set(k, "")
+    _recruit_cache.clear()
+
+
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
     return next((p for p in get_recruits(gender, grad_year, seed).recruits
                  if p.pid == pid), None)

@@ -196,3 +196,16 @@ running in parallel weekly — confirmed it). Rebuilt the scheduler:
 Result: every recruit plays exactly `SEASON_WEEKS` events with generated names at
 their level; a 1000-player class builds in ~10s (cached once). Tests that asserted
 the old closed calendar were updated; full suite green (165).
+
+## Addendum 3 — Junior Setup menu (tune without a code editor)
+
+The user wanted the new dials editable in-game. The circuit's knobs (`SEASON_WEEKS`,
+`DRAW_SIZE`, the tier `BANDS`, `JUNIOR_DEV_YEARS`, `DOUBLES_WEIGHT`) are now read at
+build time from `app.worldconfig` (the existing tiny persisted key/value store),
+falling back to the module constants — so **the code stays the single source of
+truth and config only overrides** (`_jr_config`; typed `worldconfig.get_int/get_float/
+get_json` take the caller's default). A **Tools → Junior Setup** page
+(`/tools/junior-setup`) edits them, validates (bands clamped ascending, State pinned
+to 100%), and busts the recruit cache so the next class regenerates. The four Grand
+Slams now re-space across any season length (`_gs_weeks`). Reset-to-defaults clears
+the keys. Deterministic given saved config + seed.

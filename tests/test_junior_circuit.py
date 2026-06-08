@@ -243,6 +243,19 @@ def test_points_rank_diverges_from_recruiting_board():
     assert all(not p.domestic for _n, players in boards for p in players)
 
 
+def test_junior_setup_config_overrides_the_circuit():
+    """The Junior Setup knobs (app.worldconfig) override season length at build time —
+    so the menu tweaks take effect without a code change."""
+    from app import worldconfig as wc
+    try:
+        wc.set("jr_season_weeks", "6")
+        k = _class(n=160)
+        assert max(p.tournaments_played for p in k.recruits) == 6   # one event per week
+    finally:
+        wc.set("jr_season_weeks", "")                               # restore default
+    assert max(p.tournaments_played for p in _class(n=160).recruits) == SEASON_WEEKS
+
+
 def test_super_bloomers_climb_while_early_bloomers_plateau():
     """Staggered junior development surfaces the bloom/plateau arc: across the season
     high-interest recruits (super-bloomers) climb the national board on average,
