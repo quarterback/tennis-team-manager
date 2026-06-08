@@ -70,6 +70,13 @@ Done in a second pass on this branch:
   USA-heavy / European / Americas / Asia-Pacific, threaded through rosters,
   coaches, walk-ons and the recruit international pool. Verified: us_majority →
   US-dominant, european → FR/GB/DE, asian_pro → JP/KR/TW.
+- **Per-region/nation fidelity** — the band is now just a starting weight map;
+  onboarding has a collapsible editor (all 83 regions grouped by continent) where
+  any region/nation can be dialed 0×–8×. `worldconfig.region_weights()` resolves
+  band × multipliers (a region absent from the band is introduced at a small
+  floor when boosted, so rare nations can surface), and every generator now reads
+  it. Stored sparsely (only changed regions). Verified: boosting Africa 8× /
+  Oceania 4–8× lifts their share ~9× / ~3× in generated names.
 - **Unsigned-recruit → walk-on**: moot at the current sizing — the 1000-cadre is
   smaller than total openings, so every recruit signs and walk-ons backfill the
   rest (the intended behaviour already).

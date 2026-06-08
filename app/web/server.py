@@ -154,7 +154,9 @@ def create_app() -> Flask:
     def onboarding():
         from app import worldconfig
         return render_template("onboarding.html", active="World",
-                               bands=worldconfig.BANDS, band=worldconfig.name_preset())
+                               bands=worldconfig.BANDS, band=worldconfig.name_preset(),
+                               region_groups=worldconfig.region_groups(),
+                               mult_choices=worldconfig.MULT_CHOICES)
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
@@ -163,6 +165,15 @@ def create_app() -> Flask:
         from app import worldconfig
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
         worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
+        # Per-region tuning: read mult_<region> for every region in the editor.
+        mult = {}
+        for grp in worldconfig.region_groups():
+            for r in grp["regions"]:
+                try:
+                    mult[r["id"]] = float(request.form.get(f"mult_{r['id']}", "1"))
+                except (TypeError, ValueError):
+                    pass
+        worldconfig.set_region_mult(mult)
         wd.start_new()
         return redirect(url_for("world_view"))
 

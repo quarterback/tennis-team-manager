@@ -89,18 +89,21 @@ def _recruiting_score(p: Prospect) -> float:
 def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
                    gender: str = "male", intl_share: float = 0.35,
                    talent_mean: float = 50.0, talent_sd: float = 12.0,
-                   intl_preset: str = "tennis_global") -> RecruitClass:
+                   intl_weights: dict | None = None) -> RecruitClass:
     """Generate a recruiting class: `intl_share` of the pool is international.
 
-    `intl_preset` is the nationality band for the international pool (the
-    onboarding choice); the domestic pool is always US. Per-recruit talent is
-    drawn from N(talent_mean, talent_sd) so the elite tail reaches blue-chip STR
-    while the bulk sit lower — the bottom-heavy distribution real recruiting has."""
+    `intl_weights` is the effective {region: weight} mix for the international
+    pool (the onboarding band + any per-region tuning); the domestic pool is
+    always US. Per-recruit talent is drawn from N(talent_mean, talent_sd) so the
+    elite tail reaches blue-chip STR while the bulk sit lower — the bottom-heavy
+    distribution real recruiting has."""
     us_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                region_weights=region_preset("us_only"))
-    # International board = the chosen band minus the US (domestic is handled
+    # International board = the chosen mix minus the US (domestic is handled
     # separately), so an "international" recruit is never an American.
-    intl_weights = {k: v for k, v in region_preset(intl_preset).items() if k != "us"}
+    if intl_weights is None:
+        intl_weights = region_preset("tennis_global")
+    intl_weights = {k: v for k, v in intl_weights.items() if k != "us"}
     intl_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                  region_weights=intl_weights)
     state_names = [s[0] for s in US_STATES]

@@ -23,6 +23,33 @@
         </select>
         <span class="ob-field-hint">Where players, coaches &amp; recruits come from — fixed for this world.</span>
       </label>
+
+      <details class="ob-regions">
+        <summary>Fine-tune by nation/region <span class="ob-opt">optional</span></summary>
+        <p class="ob-regions-hint">
+          The mix above is the starting point. Dial any region up or down to change how
+          many of its players appear — e.g. crank Africa or Oceania to make them proliferate.
+          <em>1× leaves a region as the preset has it; ×% shows its share in the current preset.</em>
+        </p>
+        {% for grp in region_groups %}
+        <details class="ob-cont">
+          <summary>{{ grp.continent }} <span class="ob-cont-n">{{ grp.regions|length }}</span></summary>
+          <div class="ob-rgrid">
+            {% for r in grp.regions %}
+            <div class="ob-rrow">
+              <span class="ob-rlabel">{{ r.label }}{% if r.base_pct %}<span class="ob-rpct">{{ r.base_pct }}%</span>{% endif %}</span>
+              <select name="mult_{{ r.id }}" class="ob-rmult{% if r.mult != 1.0 %} on{% endif %}">
+                {% for c in mult_choices %}
+                <option value="{{ c }}" {% if c == r.mult %}selected{% endif %}>{{ '%g'|format(c) }}×{% if c == 0 %} off{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+        </details>
+        {% endfor %}
+      </details>
+
       <label class="ob-field">
         <span class="ob-field-k">Run in detail</span>
         <div class="ob-checks">
@@ -66,6 +93,19 @@
 .ob-checks { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
 .ob-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
 .ob-chk-sep { width: 1px; height: 18px; background: var(--border-subtle); }
+.ob-regions { border: 1px solid var(--border-subtle); border-radius: 10px; padding: 4px 12px; background: var(--surface-card); }
+.ob-regions > summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--text-primary); padding: 6px 0; }
+.ob-opt { font-size: 11px; font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-left: 4px; }
+.ob-regions-hint { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 2px 0 10px; }
+.ob-cont { border-top: 1px solid var(--border-subtle); }
+.ob-cont > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-primary); padding: 8px 0; }
+.ob-cont-n { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+.ob-rgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; padding: 4px 0 12px; }
+.ob-rrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ob-rlabel { font-size: 12.5px; color: var(--text-secondary); display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.ob-rpct { font-size: 10.5px; color: var(--text-muted); }
+.ob-rmult { font-size: 12px; padding: 2px 4px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-page); color: var(--text-primary); flex: 0 0 auto; }
+.ob-rmult.on { border-color: var(--brand); color: var(--brand); font-weight: 600; }
 .ob-btn-primary { cursor: pointer; font-size: 15px; font-weight: 700;
   color: var(--brand-contrast); background: var(--brand); border: 1px solid var(--brand);
   border-radius: 9px; padding: 12px 20px; transition: background var(--dur-fast, .12s); }

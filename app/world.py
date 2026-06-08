@@ -44,7 +44,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          home_region, GEO_WEIGHT, FAC_WEIGHT)
 from .juniors import generate_class, rank_class
-from generators import make_name_picker, region_preset
+from generators import make_name_picker
 
 WORLD_DB = resolve_db_path()        # shares the file with season mode; own tables
 UNIVERSES = [("D1", "men"), ("D1", "women"), ("D2", "men"),
@@ -388,7 +388,7 @@ def national_class(seed: int, year: int, gender: str) -> list:
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
                                talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE,
-                               intl_preset=worldconfig.name_preset())
+                               intl_weights=worldconfig.region_weights())
         _class_cache[key] = rank_class(klass)
     return _class_cache[key]
 
@@ -701,7 +701,7 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
-                                       region_weights=region_preset(worldconfig.name_preset()))
+                                       region_weights=worldconfig.region_weights())
             tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()

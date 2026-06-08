@@ -264,7 +264,7 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
         tmean = ncaa._talent_mean(0.5, "D2", _GENDER_VOCAB.get(gender, "men"))
         klass = generate_class(rng, n=RECRUIT_BOARD_N, grad_year=grad_year, gender=gender,
                                talent_mean=tmean, talent_sd=_RECRUIT_SD,
-                               intl_preset=worldconfig.name_preset())
+                               intl_weights=worldconfig.region_weights())
         national_rankings(klass)        # one national rank/star ladder for the whole class
         _recruit_cache[key] = klass
     return _recruit_cache[key]
