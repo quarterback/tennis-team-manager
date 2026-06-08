@@ -134,11 +134,16 @@ class Prospect:
     history: list = field(default_factory=list)
 
     # Junior circuit (app.junior_circuit): the pre-college résumé frozen onto the
-    # recruit before recruiting opens — a competitive tier (1-4), tournament
-    # results, a ranking-history progression, and permanent achievement badges.
+    # recruit before recruiting opens. The full match engine plays out a junior
+    # season in a closed ecosystem (every opponent is another recruit), so STR is
+    # results-based and dynamic — it grows and regresses with actual form, exactly
+    # like the college STR (seeded by ability, solved from results).
     junior_tier: int = 0
+    junior_str: float = 0.0                              # results-based STR (evolved)
+    junior_str_reliability: float = 0.0                  # 0..1, grows with match count
     junior_results: list = field(default_factory=list)   # [{date, tournament, level, result}]
-    ranking_history: list = field(default_factory=list)  # [{date, primary*, secondary*}]
+    junior_matches: list = field(default_factory=list)   # [{date, tournament, round, opponent, score, won}]
+    ranking_history: list = field(default_factory=list)  # [{date, primary*, secondary*, str}]
     junior_badges: list = field(default_factory=list)    # permanent profile labels
 
     def __post_init__(self) -> None:

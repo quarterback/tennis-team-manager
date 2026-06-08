@@ -95,22 +95,57 @@ def test_every_recruit_has_a_lived_in_resume():
         assert set(p.junior_badges) <= _ALL_BADGES
 
 
-def test_results_are_participation_and_finish_only():
-    """No scores, no opponent names, no match logs — only tournament + finish."""
+def test_matches_carry_scores_and_opponents():
+    """The full engine plays real matches — scores and opponent names on record."""
     k = _class()
     for p in k.recruits:
-        for r in p.junior_results:
-            assert set(r.keys()) == {"date", "tournament", "level", "result"}
-            assert r["tournament"] in _CALENDAR_NAMES        # closed, real events
+        assert p.junior_matches                               # everyone played
+        for m in p.junior_matches:
+            assert set(m.keys()) == {"date", "tournament", "round", "opponent", "score", "won"}
+            assert m["tournament"] in _CALENDAR_NAMES         # closed, real events
+            assert m["opponent"] and m["opponent"] != p.name  # a real, different rival
+            assert "-" in m["score"]                          # a real scoreline
 
 
-def test_closed_ecosystem_titles_go_to_recruits():
-    """Every champion is a recruit in the class (no synthetic opponents)."""
+def test_closed_ecosystem_every_opponent_is_a_recruit():
+    """No anonymous opponents or synthetic filler — every rival is in the class."""
     k = _class()
-    champions = [p for p in k.recruits
-                 if any(r["result"] == "Champion" for r in p.junior_results)]
-    assert champions                                          # someone won something
-    assert all(p in k.recruits for p in champions)
+    names = {p.name for p in k.recruits}
+    for p in k.recruits:
+        for m in p.junior_matches:
+            assert m["opponent"] in names
+
+
+def test_matches_are_reciprocal():
+    """If A played B, B's record shows the same match with the result flipped."""
+    k = _class(n=120)
+    by_name = {p.name: p for p in k.recruits}
+    for p in k.recruits:
+        for m in p.junior_matches:
+            opp = by_name[m["opponent"]]
+            mirror = [q for q in opp.junior_matches
+                      if q["opponent"] == p.name and q["tournament"] == m["tournament"]
+                      and q["round"] == m["round"]]
+            assert mirror, f"{opp.name} is missing the mirror of {p.name}'s match"
+            assert mirror[0]["won"] != m["won"]               # exactly one winner
+
+
+def test_str_is_results_based_and_dynamic():
+    """STR evolves from results: anchored near ability but it grows and regresses,
+    and reliability builds with matches played."""
+    k = _class()
+    for p in k.recruits:
+        assert p.junior_str > 0
+        assert 0.0 <= p.junior_str_reliability <= 1.0
+    deltas = [p.junior_str - p.str_value() for p in k.recruits]
+    assert any(d > 0.3 for d in deltas)                       # someone grew
+    assert any(d < -0.3 for d in deltas)                      # someone regressed
+
+
+def test_ranking_history_carries_evolving_str():
+    k = _class()
+    p = max(k.recruits, key=lambda x: len(x.junior_matches))
+    assert all("str" in h and h["str"] > 0 for h in p.ranking_history)
 
 
 def test_ranking_history_progresses_in_time():
