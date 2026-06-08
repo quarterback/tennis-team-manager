@@ -10,7 +10,9 @@ def client():
 
 
 def test_nav_has_recruiting(client):
-    assert b"Recruiting" in client.get("/").data
+    # / renders the dashboard, or redirects to onboarding before a league exists;
+    # both carry the shell nav.
+    assert b"Recruiting" in client.get("/", follow_redirects=True).data
 
 
 def test_recruiting_board(client):

@@ -5,7 +5,7 @@ from app.web.server import create_app
 def test_season_web_flow(tmp_path):
     sm.DB_PATH = str(tmp_path / "season.db")
     c = create_app().test_client()
-    assert b"Season" in c.get("/").data                       # nav
+    assert b"Season" in c.get("/", follow_redirects=True).data   # nav (dashboard, or onboarding if no world yet)
     assert c.get("/season?u=D1-men").status_code == 200       # creates the season
     assert c.post("/season/advance?u=D1-men").status_code in (302, 303)
     hub = c.get("/season?u=D1-men")
