@@ -117,6 +117,63 @@ JUNIOR_DEV_YEARS = 1.0
 # A draw is capped at this size; bigger fields split into parallel sections (real
 # junior tennis runs many L4/L5 draws at once), so every recruit gets matches.
 SECTION_CAP = 32
+
+# ---- Junior ranking POINTS (USTA Junior Tournaments single-elimination table) ----
+# Distinct from STR (a rating) and the recruiting board (consensus ability): this is
+# an accomplishment LEDGER — points earned by round reached, scaled by event level,
+# best six results counted, plus a bonus for beating ranked players. Our calendar
+# tiers map onto USTA Levels 1-5. See docs/DEV-MODEL-tennis-adaptation.md.
+_LEVEL_TO_USTA = {"Major": 1, "Premier": 2, "National": 3, "Development": 4, "State": 5}
+# finish_label -> {USTA level: points}. Single-elim has no 3rd-place playoff, so both
+# semifinal losers take the "4th Place/Semifinalist" row.
+JUNIOR_POINTS = {
+    "Champion":        {1: 3000, 2: 1650, 3: 900, 4: 540, 5: 300},
+    "Finalist":        {1: 2400, 2: 1238, 3: 675, 4: 405, 5: 225},
+    "Semifinalist":    {1: 1800, 2: 825,  3: 450, 4: 270, 5: 150},
+    "Quarterfinalist": {1: 1110, 2: 578,  3: 315, 4: 189, 5: 105},
+    "R16":             {1: 750,  2: 297,  3: 162, 4: 97,  5: 54},
+    "R32":             {1: 450,  2: 165,  3: 90,  4: 54,  5: 30},
+    "R64":             {1: 270,  2: 99,   3: 54,  4: 32,  5: 18},
+    "R128":            {1: 120,  2: 66,   3: 36,  4: 22,  5: 12},
+}
+# USTA "Bonus Points for Wins vs. Ranked Opponents" — (rank ceiling, bonus), by the
+# opponent's standing in the provisional points order.
+_RANKED_WIN_BONUS = [(10, 225), (25, 203), (50, 169), (75, 135), (100, 101),
+                     (150, 68), (250, 45), (350, 23), (500, 11)]
+BEST_N = 6        # only a player's best six results (and best six ranked wins) count
+
+
+def event_points(level: str, finish: str) -> int:
+    return JUNIOR_POINTS.get(finish, {}).get(_LEVEL_TO_USTA.get(level, 0), 0)
+
+
+def _ranked_win_bonus(rank: int | None) -> int:
+    if rank is None:
+        return 0
+    for ceil, pts in _RANKED_WIN_BONUS:
+        if rank <= ceil:
+            return pts
+    return 0
+
+
+def _freeze_points(recruits: list, c: "_Circuit") -> None:
+    """Freeze each recruit's junior ranking POINTS (best-6 results + best-6
+    ranked-win bonuses) and tournaments-played count. Two-pass like USTA: base
+    points set a provisional order that decides which wins earn a ranked-win bonus."""
+    base, played = {}, {}
+    for p in recruits:
+        evs = sorted((event_points(lv, f) for (_m, _t, lv, f) in c.finishes.get(p.pid, [])),
+                     reverse=True)
+        base[p.pid] = sum(evs[:BEST_N])
+        played[p.pid] = len(c.finishes.get(p.pid, []))
+    prov = sorted(recruits, key=lambda q: (-base[q.pid], q.pid))
+    prov_rank = {q.pid: i for i, q in enumerate(prov, 1)}
+    for p in recruits:
+        bonuses = sorted((_ranked_win_bonus(prov_rank.get(opp))
+                          for (_m, opp, _mg, _og, won) in c.corpus.get(p.pid, []) if won),
+                         reverse=True)
+        p.junior_points = int(base[p.pid] + sum(bonuses[:BEST_N]))
+        p.tournaments_played = played[p.pid]
 # Probability a tier-eligible player actually enters a given event (varies résumés).
 ENTER_P = 0.72
 # Iterations for the results-based STR fixed point (cheaper per snapshot, full final).
@@ -218,11 +275,12 @@ def _run_event(c: _Circuit, name: str, level: str, month: int, field: list,
                 hg, lg = res.games_won            # (side0=hi, side1=lo)
                 for player, opp, pi, mg, og in (
                         (hp, lp, 0, hg, lg), (lp, hp, 1, lg, hg)):
+                    won = (res.winner == pi)
                     c.matches.setdefault(player.pid, []).append({
                         "date": date, "tournament": name, "round": m.rnd,
                         "opponent": opp.name, "score": _score_str(res.set_scores, pi),
-                        "won": (res.winner == pi)})
-                    c.corpus.setdefault(player.pid, []).append((month, opp.pid, mg, og))
+                        "won": won})
+                    c.corpus.setdefault(player.pid, []).append((month, opp.pid, mg, og, won))
 
 
 def _eligible_field(recruits: list, event: str, rng: random.Random) -> list:
@@ -246,7 +304,7 @@ def _solve_str(recruits: list, corpus: dict, priors: dict, month: int,
     so everyone is rankable from the first snapshot."""
     by_player = {p.pid: [] for p in recruits}
     for pid, entries in corpus.items():
-        by_player[pid] = [(opp, mg, og) for (m, opp, mg, og) in entries if m <= month]
+        by_player[pid] = [(opp, mg, og) for (m, opp, mg, og, _won) in entries if m <= month]
     solved = converge_ids(by_player, priors=priors, iterations=iterations)
     return {pid: priors.get(pid, 44.0) for pid in by_player} | {
         pid: v[0] for pid, v in solved.items()}
@@ -345,9 +403,10 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
 
     # ---- freeze the evolved STR + the résumé (finishes + per-match lore) ----
     final = converge_ids(
-        {p.pid: [(o, mg, og) for (_m, o, mg, og) in c.corpus.get(p.pid, [])]
+        {p.pid: [(o, mg, og) for (_m, o, mg, og, _w) in c.corpus.get(p.pid, [])]
          for p in recruits},
         priors=priors, iterations=_FINAL_ITERS)
+    _freeze_points(recruits, c)
     for p in recruits:
         s, rel = final.get(p.pid, (priors[p.pid], 0.0))
         p.junior_str = round(s, 2)

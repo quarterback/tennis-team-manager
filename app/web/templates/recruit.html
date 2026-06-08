@@ -38,8 +38,10 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Rankings</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
-            <tr><td>National (class of {{ grad_year }})</td><td class="w">#{{ view.national_rank }}</td></tr>
+            <tr><td>Recruiting board <span style="color:var(--text-muted);font-size:11px">(consensus)</span></td><td class="w">#{{ view.national_rank }}</td></tr>
             <tr><td>{{ view.region_label }}</td><td class="w">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</td></tr>
+            {% if view.points_rank %}<tr><td><a href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">Ranking points</a> <span style="color:var(--text-muted);font-size:11px">({{ view.junior_points }} pts · {{ view.tournaments_played }} events)</span></td>
+              <td class="w">#{{ view.points_rank }}</td></tr>{% endif %}
             <tr><td>STR</td><td class="w">{{ "%.1f"|format(p.str_value()) }}</td></tr>
             {% if p.junior_str %}<tr><td>Junior STR <span style="color:var(--text-muted);font-size:11px">(results-based)</span></td>
               <td class="w">{{ "%.1f"|format(p.junior_str) }}</td></tr>{% endif %}

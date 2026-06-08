@@ -167,3 +167,49 @@ def top_by_nation(klass: RecruitClass, per: int = 10) -> dict[str, list[Prospect
         if len(out[p.region]) < per:
             out[p.region].append(p)
     return out
+
+
+# ---- POINTS rankings (the junior accomplishment ledger; see junior_circuit) ----
+# Distinct from the recruiting board above: this ranks on what a recruit EARNED on
+# the junior circuit (best-6 results + ranked-win bonuses), not consensus ability.
+# The two diverging is the gem signal — a kid buried on the board but high on points
+# is a riser; the reverse is an over-scouted name.
+
+def points_rankings(klass: RecruitClass) -> list[Prospect]:
+    """Whole pool ranked #1..N by junior ranking points (pid breaks ties). Assigns
+    `points_rank` to every recruit."""
+    ranked = sorted(klass.recruits,
+                    key=lambda p: (-getattr(p, "junior_points", 0), p.pid))
+    for i, p in enumerate(ranked, 1):
+        p.points_rank = i
+    return ranked
+
+
+def us_points_rankings(klass: RecruitClass) -> list[Prospect]:
+    return [p for p in points_rankings(klass) if p.domestic]
+
+
+def dense_nations(klass: RecruitClass, min_players: int = 8) -> list[str]:
+    """International nations with enough pool depth to warrant a Top-10 board,
+    ordered by that depth (talent density)."""
+    counts: dict[str, int] = {}
+    for p in klass.recruits:
+        if not p.domestic:
+            counts[p.region] = counts.get(p.region, 0) + 1
+    return [n for n, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+            if c >= min_players]
+
+
+def nation_points_top(klass: RecruitClass, per: int = 10,
+                      min_players: int = 8) -> list[tuple[str, list[Prospect]]]:
+    """[(nation, top-`per` by points)] for each talent-dense nation, densest first."""
+    order = dense_nations(klass, min_players)
+    dense = set(order)
+    out: dict[str, list[Prospect]] = {}
+    for p in points_rankings(klass):
+        if p.domestic or p.region not in dense:
+            continue
+        out.setdefault(p.region, [])
+        if len(out[p.region]) < per:
+            out[p.region].append(p)
+    return [(n, out[n]) for n in order if n in out]

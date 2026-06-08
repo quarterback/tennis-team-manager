@@ -194,3 +194,49 @@ sport:
 | Junior-circuit climb replay + bloom/plateau | `app/junior_circuit.py` |
 | Scouting fog (consensus + your department) | `app/development.py` → `scouting_report` |
 | Tests | `tests/test_development.py`, `tests/test_junior_circuit.py` |
+
+---
+
+## Rankings vs. ratings vs. evaluation (three honest numbers)
+
+Real tennis keeps the *ranking* (what you earned) separate from the *rating* (how
+good you are) — the ITA college table shows Points **and** WTN; the ITF/USTA junior
+tours rank on a points ledger while WTN/UTR sits beside it. The sim mirrors that
+split instead of collapsing everything into one number.
+
+**Junior ranking points (`app/junior_circuit.py` → `JUNIOR_POINTS`, `_freeze_points`).**
+An accomplishment ledger modelled on the USTA Junior Tournaments points table. Each
+event awards points by **round reached × level** (our calendar tiers Major / Premier
+/ National / Development / State map onto USTA Levels 1–5 — a Major title is 3000, a
+State quarterfinal 105). Only a player's **best six** results count, plus their best
+six **ranked-win bonuses** (beating a Top-10 junior is +225, USTA-style, resolved
+off a provisional points order). It is deliberately *not* a rating: it rewards deep
+runs at strong events and rewards activity, with no ability prior and no recency
+weighting — start-from-scratch, like the real tours.
+
+**The three numbers, and why they differ:**
+
+| Number | Question it answers | Source |
+| --- | --- | --- |
+| Ranking points | What did you *earn* on the junior circuit? | best-6 results + ranked wins |
+| STR | How *good* are you (strength/form)? | results-based rating (WTN analogue) |
+| Recruiting board | What's your *ceiling* worth to a coach? | consensus ability + scouting |
+
+Their **divergence is the gameplay**. A recruit ranked high on points but buried on
+the board is a riser who earned it on court; a board darling with thin points is an
+over-scouted name; a high-STR kid ranked low on points skipped events. The junior
+rankings pages (International / US Top 100 / per-nation Top 10) rank on points and
+show STR as the WTN-style column, and the recruit profile lays all three side by
+side so the gaps pop.
+
+**Teams (`app/rating.py`).** The college Power Index is already a season-only,
+no-prior, iterated-strength-of-schedule rating — the same family as the ITA Points
+algorithm, but richer (it sees flight and game data the ITA team algorithm can't).
+The one ITA borrow is the **+10% road-win bonus**: an away win counts 1.10× toward
+APR, so a team that won on the road rates a hair above an identical home record.
+
+| Piece | Where |
+| --- | --- |
+| Junior points ledger + ranked-win bonus | `app/junior_circuit.py` |
+| Points ranking surfaces (intl / US / by-nation) | `app/juniors.py` |
+| ITA road-win bonus | `app/rating.py` |

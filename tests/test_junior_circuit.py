@@ -182,6 +182,41 @@ def test_domestic_and_international_use_different_ladders():
             assert badges <= intl_labels
 
 
+def test_points_ledger_is_frozen_and_bounded():
+    """Every recruit gets junior_points + tournaments_played; points are a best-6
+    ledger so they stay bounded, and the field champion sits at/near the top."""
+    from app.junior_circuit import event_points, JUNIOR_POINTS, BEST_N
+    k = _class(n=300)
+    assert event_points("Major", "Champion") == 3000        # USTA L1 title
+    assert event_points("State", "Quarterfinalist") == 105  # USTA L5 QF
+    assert event_points("Major", "did-not-play") == 0
+    for p in k.recruits:
+        assert isinstance(p.junior_points, int) and p.junior_points >= 0
+        assert p.tournaments_played == len(p.junior_results)   # count matches the résumé
+    # The fallback gets nearly everyone at least one event.
+    assert sum(1 for p in k.recruits if p.tournaments_played >= 1) >= 0.9 * len(k.recruits)
+    # Best-6 cap: even a busy player can't exceed 6 Major titles + 6 top bonuses.
+    ceiling = BEST_N * max(JUNIOR_POINTS["Champion"].values()) + BEST_N * 225
+    assert all(p.junior_points <= ceiling for p in k.recruits)
+
+
+def test_points_rank_diverges_from_recruiting_board():
+    """The points ledger and the consensus recruiting board are different rankings —
+    that divergence is the gem signal — yet broadly agree at the very top."""
+    from app.juniors import points_rankings, us_points_rankings, nation_points_top
+    k = _class(n=400)
+    ranked = points_rankings(k)
+    assert [p.points_rank for p in ranked[:5]] == [1, 2, 3, 4, 5]
+    assert ranked[0].junior_points >= ranked[-1].junior_points
+    # Distinct orderings (not a relabel of the board).
+    assert any(p.points_rank != p.recruit_rank for p in ranked)
+    # US board is domestic-only; nation boards are international, densest first.
+    assert all(p.domestic for p in us_points_rankings(k))
+    boards = nation_points_top(k, per=10, min_players=5)
+    assert boards and all(len(players) <= 10 for _n, players in boards)
+    assert all(not p.domestic for _n, players in boards for p in players)
+
+
 def test_super_bloomers_climb_while_early_bloomers_plateau():
     """Staggered junior development surfaces the bloom/plateau arc: across the season
     high-interest recruits (super-bloomers) climb the national board on average,
