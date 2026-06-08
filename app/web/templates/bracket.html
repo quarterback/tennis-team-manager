@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Baseline - NCAA Bracket{% endblock %}
+{% block title %}Play to Clinch - NCAA Bracket{% endblock %}
 {% block content %}
 {% set total_upsets = namespace(count=0) %}
 {% for rnd in br.rounds %}{% for m in rnd %}{% if m.upset %}{% set total_upsets.count = total_upsets.count + 1 %}{% endif %}{% endfor %}{% endfor %}

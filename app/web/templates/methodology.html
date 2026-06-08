@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Baseline — Power Index Methodology{% endblock %}
+{% block title %}Play to Clinch — Power Index Methodology{% endblock %}
 {% block content %}
 <div class="bl-prose">
   <h1>Power Index Methodology</h1>
-  <p class="lede">How Baseline rates and ranks college dual-match teams. The model is a direct sibling of
+  <p class="lede">How Play to Clinch rates and ranks college dual-match teams. The model is a direct sibling of
     <a href="https://oregontennis.org" style="color:var(--text-link);font-weight:600">oregontennis.org</a>'s
     Power Index — the same APR + FQI + oGS engine that seeds every simulation. It measures both winning
     (through APR) and flight-level play against real competition (through FQI and oGS), because in tennis
@@ -72,7 +72,7 @@
 oGS = mean over duals of (games_won / games_played) × mᵢ</div>
   <p>Set type matters: best-of-3 sets and <strong>8-game pro sets</strong> contribute raw game totals; a set
     tiebreak (7–6) counts as one deciding game; a <strong>10-point match tiebreak in lieu of a third set</strong>
-    is one game to the winner, zero to the loser. (Both alternative formats Baseline supports — see the match-format
+    is one game to the winner, zero to the loser. (Both alternative formats Play to Clinch supports — see the match-format
     toggles — feed oGS this way.)</p>
 
   <h2 id="h2h">Head-to-Head Tiebreakers</h2>
@@ -98,7 +98,7 @@ oGS = mean over duals of (games_won / games_played) × mᵢ</div>
     happened underneath — a 5–3 win stacking the bottom of the lineup looks identical to a dominant 8–0. FQI and oGS
     look at individual flights and games, weighted by significance and opponent strength.</p>
   <h3>Where does the data come from?</h3>
-  <p>In Baseline, every number is produced by the simulation: the engine runs the doubles point and six singles for
+  <p>In Play to Clinch, every number is produced by the simulation: the engine runs the doubles point and six singles for
     each dual, and the season's results feed APR, FQI and oGS. Real schools, simulated players.</p>
 </div>
 {% endblock %}

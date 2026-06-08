@@ -1,5 +1,5 @@
 """
-Baseline web app (Flask) — the only way users touch the sim, mirroring the
+Play to Clinch web app (Flask) — the only way users touch the sim, mirroring the
 O27 baseball model (web UI over a sim engine).
 
 Implemented now: the **Rankings / Power Index** flagship (design kit
