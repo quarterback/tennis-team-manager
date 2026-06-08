@@ -212,6 +212,42 @@ def cmd_recruits(args):
               f"{stars:<5} {p.recruit_tier}")
 
 
+def cmd_junior_circuit(args):
+    from app.juniors import generate_class, national_rankings
+    from app.junior_circuit import run_junior_circuit, TIER_LABELS
+    rng = random.Random(args.seed)
+    klass = generate_class(rng, n=args.n, grad_year=args.grad_year, gender=args.gender)
+    national_rankings(klass)
+    run_junior_circuit(klass, seed=args.seed)
+
+    # Tier distribution — the schedule-driven pyramid.
+    tiers: dict[int, int] = {}
+    for p in klass.recruits:
+        tiers[p.junior_tier] = tiers.get(p.junior_tier, 0) + 1
+    print(f"\nJunior circuit — class of {args.grad_year} ({klass.gender}), "
+          f"{len(klass.recruits)} recruits\n")
+    print("Tiers:")
+    for t in sorted(tiers):
+        print(f"  Tier {t} {TIER_LABELS[t]:<24} {tiers[t]:>4}")
+
+    # Most-badged recruit's résumé — the lived-in profile this feature exists for.
+    spotlight = max(klass.recruits, key=lambda p: (len(p.junior_badges), p.str_value()))
+    print(f"\nSpotlight — {spotlight.name} ({spotlight.country}), STR {spotlight.str_value()}, "
+          f"Tier {spotlight.junior_tier} {TIER_LABELS[spotlight.junior_tier]}")
+    print("\n  Badges:")
+    for b in spotlight.junior_badges:
+        print(f"    • {b}")
+    print("\n  Results:")
+    print(f"    {'DATE':<10} {'TOURNAMENT':<26} {'LEVEL':<12} RESULT")
+    for r in spotlight.junior_results:
+        print(f"    {r['date']:<10} {r['tournament']:<26} {r['level']:<12} {r['result']}")
+    print("\n  Ranking history:")
+    for h in spotlight.ranking_history:
+        sec = f"#{h['secondary']}" if h['secondary'] else "—"
+        print(f"    {h['date']:<10} {h['primary_label']} #{h['primary']:<5} "
+              f"{h['secondary_label']} {sec}")
+
+
 def cmd_league(args):
     from app.league import new_league, advance_year
     lg = new_league(args.division, args.gender, seed=args.seed)
@@ -344,6 +380,14 @@ def main():
     rc.add_argument("--intl", action="store_true", help="international board")
     rc.add_argument("--seed", type=int, default=1)
     rc.set_defaults(func=cmd_recruits)
+
+    jc = sub.add_parser("junior-circuit",
+                        help="generate a class, run the junior circuit, show a résumé")
+    jc.add_argument("--n", type=int, default=300)
+    jc.add_argument("--grad-year", type=int, default=2026, dest="grad_year")
+    jc.add_argument("--gender", default="male", choices=["male", "female", "mixed"])
+    jc.add_argument("--seed", type=int, default=1)
+    jc.set_defaults(func=cmd_junior_circuit)
 
     se = sub.add_parser("season")
     se.add_argument("--division", default="D1")

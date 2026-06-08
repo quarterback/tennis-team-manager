@@ -133,6 +133,14 @@ class Prospect:
     # w, l}. School changing between entries = a transfer (see app.league).
     history: list = field(default_factory=list)
 
+    # Junior circuit (app.junior_circuit): the pre-college résumé frozen onto the
+    # recruit before recruiting opens — a competitive tier (1-4), tournament
+    # results, a ranking-history progression, and permanent achievement badges.
+    junior_tier: int = 0
+    junior_results: list = field(default_factory=list)   # [{date, tournament, level, result}]
+    ranking_history: list = field(default_factory=list)  # [{date, primary*, secondary*}]
+    junior_badges: list = field(default_factory=list)    # permanent profile labels
+
     def __post_init__(self) -> None:
         self.current = normalize_grades(self.current)
         self.potential = normalize_grades(self.potential)

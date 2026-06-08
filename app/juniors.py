@@ -78,6 +78,7 @@ class RecruitClass:
     grad_year: int
     gender: str
     recruits: list[Prospect]
+    circuit_done: bool = False   # guard: junior circuit has been run + frozen on
 
 
 def _recruiting_score(p: Prospect) -> float:

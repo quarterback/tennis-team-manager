@@ -266,6 +266,11 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
                                talent_mean=tmean, talent_sd=_RECRUIT_SD,
                                intl_weights=worldconfig.region_weights())
         national_rankings(klass)        # one national rank/star ladder for the whole class
+        # Run the junior circuit once per class (before recruiting opens) so every
+        # recruit arrives with a lived-in résumé: tier, results, ranking history,
+        # badges. Cached with the class, so the cost is paid once.
+        from app.junior_circuit import run_junior_circuit
+        run_junior_circuit(klass, seed=seed)
         _recruit_cache[key] = klass
     return _recruit_cache[key]
 
@@ -328,10 +333,12 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
     schools = schools_from_programs(all_gender_programs(gender))
     rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
 
+    from app.junior_circuit import TIER_LABELS
     return {
         "national_rank": p.recruit_rank,
         "region_rank": region_rank,
         "region_label": region_label,
+        "junior_tier_label": TIER_LABELS.get(p.junior_tier, ""),
         "service": overall_to_str(p.scouting_report("service")),   # two independent ceiling reads
         "dept": overall_to_str(p.scouting_report("dept")),
         "projection": overall_to_str(p.project(4)),

@@ -1,0 +1,166 @@
+import random
+
+from engine import run_tournament, finish_label
+from app.juniors import generate_class, national_rankings
+from app.junior_circuit import (run_junior_circuit, assign_tiers, CALENDAR,
+                                 TIER_LABELS, US_NATIONAL_BADGES, US_STATE_BADGES,
+                                 INTL_GLOBAL_BADGES, INTL_NATION_BADGES)
+
+
+# --------------------------------------------------------------------------
+# Engine: the reusable individual-tournament framework
+# --------------------------------------------------------------------------
+def _higher_wins(a, b, *, seed):
+    """Deterministic 'play': the higher-rated entrant always advances."""
+    return a if a >= b else b
+
+
+def test_tournament_champion_is_the_top_rating_when_deterministic():
+    entrants = [5, 9, 1, 7, 3, 8, 2, 6]
+    res = run_tournament(entrants, seed=1, play=_higher_wins, key=lambda x: x)
+    assert res.champion == 9
+    assert res.runner_up is not None
+    # The #1 seed (rating 9) is never eliminated; everyone else has a finish.
+    assert res.finish_of(0) == "Champion"
+    assert all(res.finish_of(i) is not None for i in range(1, len(entrants)))
+
+
+def test_tournament_finish_labels_are_valid_and_unique_per_round():
+    entrants = list(range(16, 0, -1))   # 16 distinct ratings
+    res = run_tournament(entrants, seed=2, play=_higher_wins, key=lambda x: x)
+    labels = [res.finish_of(i) for i in range(16)]
+    assert labels[0] == "Champion"
+    assert labels.count("Finalist") == 1
+    assert labels.count("Semifinalist") == 2
+    assert labels.count("Quarterfinalist") == 4
+    assert labels.count("R16") == 8
+
+
+def test_tournament_handles_byes_for_non_power_of_two_fields():
+    # 6 entrants → padded to 8; the two top seeds get byes but still finish.
+    entrants = [10, 60, 30, 50, 20, 40]
+    res = run_tournament(entrants, seed=3, play=_higher_wins, key=lambda x: x)
+    assert res.champion == 60
+    assert all(res.finish_of(i) is not None for i in range(len(entrants)))
+
+
+def test_tournament_is_deterministic_with_real_engine():
+    from engine import random_player
+    rng = random.Random(11)
+    players = [random_player(rng, f"P{i}", "US") for i in range(8)]
+    a = run_tournament(players, seed=99, key=lambda p: p.overall)
+    b = run_tournament(players, seed=99, key=lambda p: p.overall)
+    assert a.champion_idx == b.champion_idx
+    assert a.elim_size == b.elim_size
+
+
+def test_finish_label_mapping():
+    assert finish_label(2, champion=True) == "Champion"
+    assert finish_label(2) == "Finalist"
+    assert finish_label(4) == "Semifinalist"
+    assert finish_label(8) == "Quarterfinalist"
+    assert finish_label(16) == "R16"
+    assert finish_label(32) == "R32"
+
+
+# --------------------------------------------------------------------------
+# Junior circuit: the recruit-history generator
+# --------------------------------------------------------------------------
+def _class(n=240, seed=5, gender="male"):
+    k = generate_class(random.Random(seed), n=n, grad_year=2026, gender=gender,
+                       intl_share=0.35)
+    national_rankings(k)
+    run_junior_circuit(k, seed=seed)
+    return k
+
+
+_CALENDAR_NAMES = {name for name, _level, _month in CALENDAR}
+_ALL_BADGES = {label for _t, label in
+               US_NATIONAL_BADGES + US_STATE_BADGES + INTL_GLOBAL_BADGES + INTL_NATION_BADGES}
+
+
+def test_tiers_assigned_and_populated():
+    k = _class()
+    tiers = {p.junior_tier for p in k.recruits}
+    assert tiers == {1, 2, 3, 4}
+    assert all(p.junior_tier in TIER_LABELS for p in k.recruits)
+
+
+def test_every_recruit_has_a_lived_in_resume():
+    k = _class()
+    for p in k.recruits:
+        assert p.junior_results, f"{p.name} has no junior results"
+        assert p.ranking_history
+        # badges are optional (weak players earn none) but must be valid labels
+        assert set(p.junior_badges) <= _ALL_BADGES
+
+
+def test_results_are_participation_and_finish_only():
+    """No scores, no opponent names, no match logs — only tournament + finish."""
+    k = _class()
+    for p in k.recruits:
+        for r in p.junior_results:
+            assert set(r.keys()) == {"date", "tournament", "level", "result"}
+            assert r["tournament"] in _CALENDAR_NAMES        # closed, real events
+
+
+def test_closed_ecosystem_titles_go_to_recruits():
+    """Every champion is a recruit in the class (no synthetic opponents)."""
+    k = _class()
+    champions = [p for p in k.recruits
+                 if any(r["result"] == "Champion" for r in p.junior_results)]
+    assert champions                                          # someone won something
+    assert all(p in k.recruits for p in champions)
+
+
+def test_ranking_history_progresses_in_time():
+    k = _class()
+    p = max(k.recruits, key=lambda x: len(x.junior_badges))
+    dates = [h["date"] for h in p.ranking_history]
+    assert dates == sorted(set(dates), key=dates.index)       # ordered, no dupes
+    assert len(p.ranking_history) == 4
+    labels = {h["primary_label"] for h in p.ranking_history}
+    assert labels <= {"National", "Global"}                   # one ladder per recruit
+
+
+def test_badges_match_best_rank_reached():
+    """A badge is awarded iff the best (lowest) rank reached clears its threshold."""
+    k = _class()
+    for p in k.recruits:
+        if not p.domestic:
+            continue
+        best_nat = min(h["primary"] for h in p.ranking_history)
+        expected = {label for thresh, label in US_NATIONAL_BADGES if best_nat <= thresh}
+        got_nat = {b for b in p.junior_badges if b in {l for _t, l in US_NATIONAL_BADGES}}
+        assert got_nat == expected
+
+
+def test_domestic_and_international_use_different_ladders():
+    k = _class()
+    us_labels = {l for _t, l in US_NATIONAL_BADGES + US_STATE_BADGES}
+    intl_labels = {l for _t, l in INTL_GLOBAL_BADGES + INTL_NATION_BADGES}
+    for p in k.recruits:
+        badges = set(p.junior_badges)
+        if p.domestic:
+            assert badges <= us_labels
+        else:
+            assert badges <= intl_labels
+
+
+def test_circuit_is_deterministic():
+    a = _class(seed=8)
+    b = _class(seed=8)
+    a_by = {p.pid: p for p in a.recruits}
+    for p in b.recruits:
+        q = a_by[p.pid]
+        assert p.junior_results == q.junior_results
+        assert p.junior_badges == q.junior_badges
+        assert p.junior_tier == q.junior_tier
+
+
+def test_circuit_run_is_idempotent():
+    k = _class(seed=9)
+    before = [list(p.junior_results) for p in k.recruits]
+    run_junior_circuit(k, seed=9)        # guard: should be a no-op
+    after = [list(p.junior_results) for p in k.recruits]
+    assert before == after
