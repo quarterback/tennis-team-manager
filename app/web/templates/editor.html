@@ -51,6 +51,26 @@
   </div>
 </div>
 
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Program prestige — {{ school }}</span>
+      <span class="bl-panel-meta">athletic brand pull (0–100); drives recruiting appeal independent of current roster strength{% if prestige.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}</span></div>
+    <form method="post" action="{{ url_for('editor_prestige') }}">
+      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="school" value="{{ school }}">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;flex-wrap:wrap">
+        <label class="bl-schol-f" style="max-width:160px">Prestige (0–100)
+          <input class="bl-input" type="number" name="prestige" value="{{ prestige.value }}" min="0" max="100" step="1"></label>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save prestige</button>
+        {% if prestige.overridden %}
+        <button class="bl-pill" formaction="{{ url_for('editor_prestige_clear') }}" style="cursor:pointer">Reset to default</button>
+        {% endif %}
+        <span style="font-size:12px;color:var(--text-muted)">Bump a program above its conference default so it stands out and recruits accordingly.</span>
+      </div>
+    </form>
+  </div>
+</div>
+
 <style>
 .bl-schol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 14px 16px; }
 .bl-schol-cell { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; }
@@ -140,6 +160,14 @@
           <span class="bl-clinch-name" style="font-size:12px">Lineup pinned · {{ ln.school }} ({{ ln.n }})</span>
           <form method="post" action="{{ url_for('editor_clear_lineup') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ ln.school }}">
+            <button class="bl-pill" type="submit">Undo</button></form>
+        </div>
+        {% endfor %}
+        {% for pr in ov.prestige %}
+        <div class="bl-clinchrow" style="align-items:center">
+          <span class="bl-clinch-name" style="font-size:12px">Prestige · {{ pr.school }} → <b class="bl-stat power">{{ pr.value }}</b></span>
+          <form method="post" action="{{ url_for('editor_prestige_clear') }}">
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ pr.school }}">
             <button class="bl-pill" type="submit">Undo</button></form>
         </div>
         {% endfor %}

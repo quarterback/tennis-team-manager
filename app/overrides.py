@@ -88,6 +88,34 @@ def clear_lineup(school: str) -> None:
     conn.commit(); conn.close()
 
 
+def get_prestige() -> dict:
+    """school -> overridden prestige (0..1)."""
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='prestige'").fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        try:
+            out[k] = float(v)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def set_prestige(school: str, prestige: float) -> None:
+    prestige = max(0.0, min(1.0, float(prestige)))
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value) VALUES ('prestige',?,?)",
+                 (school, f"{prestige:.4f}"))
+    conn.commit(); conn.close()
+
+
+def clear_prestige(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='prestige' AND key=?", (school,))
+    conn.commit(); conn.close()
+
+
 def clear_all() -> None:
     conn = _db()
     conn.execute("DELETE FROM roster_overrides")

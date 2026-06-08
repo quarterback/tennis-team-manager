@@ -88,3 +88,9 @@ def program_location(school: str) -> str:
     """'City, ST' display string (empty when the school is unknown)."""
     city, state = program_city(school)
     return f"{city}, {state}" if city else ""
+
+
+def random_town(rng) -> tuple[str, str]:
+    """A random real (city, state-abbr) from the US college-town pool — used for
+    American player hometowns so they read 'City, ST' with a real state."""
+    return rng.choice(_COLLEGE_TOWNS)

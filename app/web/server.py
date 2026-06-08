@@ -160,8 +160,11 @@ def create_app() -> Flask:
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
-        # Persist the chosen nationality band BEFORE seeding (generation reads it),
-        # then reset any existing world and begin a fresh league at preseason.
+        # Persist the nationality band, per-region tuning and active universes
+        # BEFORE seeding (generation reads them). Then reset any existing world and
+        # begin a fresh league at preseason (week 0, nothing played), clearing the
+        # web-layer caches too so no stale season/bracket/coach data (e.g. coach ids
+        # wiped by the reset) survives into the new league.
         from app import worldconfig
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
         worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
@@ -175,6 +178,7 @@ def create_app() -> Flask:
                     pass
         worldconfig.set_region_mult(mult)
         wd.start_new()
+        reset_all()
         return redirect(url_for("world_view"))
 
     @app.route("/preseason")
@@ -423,11 +427,36 @@ def create_app() -> Flask:
         # men's an equivalency sport, so the caps differ by gender like real life.
         schol = [{"division": d, "gender": g, **sch.limits(d, g)}
                  for d in ("D1", "D2", "D3") for g in ("men", "women")]
+        prog = load_division(division, gender).by_school(school)
+        prestige = {"value": round((prog.prestige if prog else 0.5) * 100),
+                    "overridden": school in ov.get_prestige()}
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
                                groups=all_programs_grouped(), ov=active_overrides(),
-                               scholarships=schol,
+                               scholarships=schol, prestige=prestige,
                                schol_elite=sch.limits("D3", "men", academics=0.95))
+
+    @app.route("/editor/prestige", methods=["POST"])
+    def editor_prestige():
+        school = request.form.get("school", "")
+        u = request.form.get("u", "D1-men")
+        try:
+            val = float(request.form.get("prestige", "50")) / 100.0
+        except ValueError:
+            val = 0.5
+        if school:
+            ov.set_prestige(school, val)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/prestige/clear", methods=["POST"])
+    def editor_prestige_clear():
+        school = request.form.get("school", "")
+        u = request.form.get("u", "D1-men")
+        if school:
+            ov.clear_prestige(school)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/scholarship", methods=["POST"])
     def editor_scholarship():
