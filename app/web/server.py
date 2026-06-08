@@ -24,6 +24,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
+from .awards import season_awards, player_honors
 
 from app import seasonmode as sm
 from app import overrides as ov
@@ -45,6 +46,7 @@ NAV_GROUPS = [
         {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
+        {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
@@ -67,6 +69,7 @@ def _active_nav(req) -> str:
     if p == "/":                          return "dashboard"
     if p.startswith("/world"):            return "world"
     if p.startswith("/rankings"):         return "rankings"
+    if p.startswith("/awards"):           return "awards"
     if p.startswith("/season/standings"): return "standings"
     if p.startswith("/season/schedule"):  return "schedule"
     if p.startswith("/season"):           return "season"
@@ -189,6 +192,14 @@ def create_app() -> Flask:
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
+    @app.route("/awards")
+    def awards():
+        division, gender, label, u = _universe(request)
+        aw = season_awards(division, gender)
+        conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
+        return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
+                               u=u, uni_label=label, crest=crest)
+
     @app.route("/bracket")
     def bracket():
         division, gender, label, u = _universe(request)
@@ -292,9 +303,10 @@ def create_app() -> Flask:
         sr = get_season(division, gender)
         strv, rel = sr.player_str.get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
+        honors = player_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, strv=strv, rel=rel, wins=wins, losses=losses,
-                               crest=crest, u=u, uni_label=label)
+                               honors=honors, crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")
     def recruiting():

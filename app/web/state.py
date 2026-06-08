@@ -61,8 +61,10 @@ def reset_all() -> None:
     editor override changes, so rankings / teams / season all re-derive from the
     edited rosters on the next request."""
     from app import ncaa
+    from . import awards
     _season_cache.clear()
     _bracket_cache.clear()
+    awards.reset_cache()
     ncaa.reset_caches()
 
 

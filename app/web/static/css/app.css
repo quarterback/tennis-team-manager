@@ -395,6 +395,15 @@ html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, table { max-width: 100%; }
 .bl-select, .bl-input { max-width: 100%; }
 
+/* Player honors badges (All-American / All-Conference). */
+.pl-honors { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pl-honor {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: var(--radius-pill);
+  color: var(--text-secondary); background: var(--surface-subtle); border: 1px solid var(--border-subtle);
+}
+.pl-honor.aa { color: #8a5a00; background: #fff6e0; border-color: #f0d28a; }
+
 /* Season divider inside a match-by-match table (player career view). */
 .bl-yeardiv {
   display: flex; align-items: center; justify-content: space-between;
