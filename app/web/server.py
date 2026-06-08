@@ -21,6 +21,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
+from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -39,6 +40,7 @@ MY_TEAM = "Oregon"          # the club the human manages
 # season-to-season surface; the legacy per-universe season views sit under it.
 NAV_GROUPS = [
     ("Your Team", [
+        {"id": "preseason", "label": "Preseason",     "icon": "⚙️", "endpoint": "preseason_view",   "args": {}},
         {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {"school": MY_TEAM}},
         {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
     ]),
@@ -69,6 +71,7 @@ NAV_GROUPS = [
 def _active_nav(req) -> str:
     p = req.path
     if p == "/":                          return "dashboard"
+    if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/awards"):           return "awards"
@@ -149,17 +152,38 @@ def create_app() -> Flask:
 
     @app.route("/start")
     def onboarding():
-        return render_template("onboarding.html", active="World")
+        from app import worldconfig
+        return render_template("onboarding.html", active="World",
+                               bands=worldconfig.BANDS, band=worldconfig.name_preset(),
+                               region_groups=worldconfig.region_groups(),
+                               mult_choices=worldconfig.MULT_CHOICES)
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
-        # Reset any existing world and begin a fresh league at preseason (week 0,
-        # nothing played), then drop into the week-by-week World hub. Clear the
-        # web-layer caches too, so no stale season/bracket/coach data (e.g. coach
-        # ids wiped by the reset) survives into the new league.
+        # Persist the nationality band, per-region tuning and active universes
+        # BEFORE seeding (generation reads them). Then reset any existing world and
+        # begin a fresh league at preseason (week 0, nothing played), clearing the
+        # web-layer caches too so no stale season/bracket/coach data (e.g. coach ids
+        # wiped by the reset) survives into the new league.
+        from app import worldconfig
+        worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
+        worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
+        # Per-region tuning: read mult_<region> for every region in the editor.
+        mult = {}
+        for grp in worldconfig.region_groups():
+            for r in grp["regions"]:
+                try:
+                    mult[r["id"]] = float(request.form.get(f"mult_{r['id']}", "1"))
+                except (TypeError, ValueError):
+                    pass
+        worldconfig.set_region_mult(mult)
         wd.start_new()
         reset_all()
         return redirect(url_for("world_view"))
+
+    @app.route("/preseason")
+    def preseason_view():
+        return render_template("preseason.html", active="Preseason", ps=preseason_view_data())
 
     @app.route("/world")
     def world_view():

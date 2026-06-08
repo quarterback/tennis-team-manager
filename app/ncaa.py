@@ -359,12 +359,13 @@ def _base_roster(p: Program):
     un-edited base — `build_roster` layers editor overrides on top."""
     if p.key in _roster_cache:
         return _roster_cache[p.key]
-    from generators import make_name_picker, region_preset
+    from generators import make_name_picker
     from .development import generate_prospect, make_pid
+    from . import worldconfig
     seed = _stable_seed(p.key) & 0xFFFFFFFF
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
-                               region_weights=region_preset("tennis_global"))
+                               region_weights=worldconfig.region_weights())
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(ROSTER_SIZE):

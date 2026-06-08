@@ -30,11 +30,12 @@ import copy
 import json
 import random
 import sqlite3
+import threading
 from dataclasses import asdict, fields
 
 import app.seasonmode as sm
 from .season import dual_between
-from . import dbpath
+from . import dbpath, worldconfig
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
@@ -43,7 +44,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          home_region, GEO_WEIGHT, FAC_WEIGHT)
 from .juniors import generate_class, rank_class
-from generators import make_name_picker, region_preset
+from generators import make_name_picker
 
 WORLD_DB = resolve_db_path()        # shares the file with season mode; own tables
 UNIVERSES = [("D1", "men"), ("D1", "women"), ("D2", "men"),
@@ -67,7 +68,9 @@ RELIABILITY_GATE = 0.4
 
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
-RECRUIT_POOL = 2600
+RECRUIT_POOL = 1000     # a bounded recruiting cadre, not a full-blast class; teams
+                        # sign from it, unsigned become walk-ons, and remaining
+                        # roster seats are backfilled with generated walk-ons.
 # The national recruit pool is drawn from the ONE talent scale (ncaa._talent_mean),
 # centred on a mid-tier (D2, median-strength) program for that gender — a dense,
 # bulb-shaped class: a high floor (only college-caliber juniors), a thick middle,
@@ -167,11 +170,20 @@ def _save_rosters(conn, world_id, year, rosters) -> None:
     conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
 
 
-def _load_rosters(conn, world_id, year) -> dict:
+def _active_unis() -> list[tuple[str, str]]:
+    """The division×gender universes the player chose to run in detail. The rest
+    are seeded (players exist) but left dormant — the memory/CPU saving."""
+    return [(d, g) for (d, g) in UNIVERSES if worldconfig.is_active(d, g)]
+
+
+def _load_rosters(conn, world_id, year, unis=None) -> dict:
     rows = conn.execute("SELECT division, gender, school, data FROM world_roster"
                         " WHERE world_id=? AND year=?", (world_id, year)).fetchall()
+    active = set(unis) if unis is not None else None
     out: dict = {}
     for r in rows:
+        if active is not None and (r["division"], r["gender"]) not in active:
+            continue                      # dormant universe — don't materialise it
         out.setdefault((r["division"], r["gender"]), {}).setdefault(r["school"], []).append(
             prospect_from_dict(json.loads(r["data"])))
     return out
@@ -190,9 +202,19 @@ def get_or_create(seed: int = DEFAULT_SEED) -> dict:
         return dict(row)
     cur = conn.execute("INSERT INTO world (seed, year, week) VALUES (?,0,0)", (seed,))
     wid = cur.lastrowid
-    reset_caches()                                   # year-0 rosters = deterministic seed rosters
-    rosters = {(d, g): _seed_year0(d, g) for (d, g) in UNIVERSES}
-    _save_rosters(conn, wid, 0, rosters)
+    # Seed year-0 rosters ONE universe at a time, persisting and freeing each
+    # before building the next. Building all six universes' rich rosters at once
+    # (~17k prospects) was the memory spike behind the OOM; this caps the peak at
+    # roughly a single universe.
+    reset_caches()
+    conn.execute("DELETE FROM world_roster WHERE world_id=? AND year=?", (wid, 0))
+    for (d, g) in UNIVERSES:
+        uni = _seed_year0(d, g)
+        rows = [(wid, 0, d, g, school, p.pid, json.dumps(prospect_to_dict(p)))
+                for school, roster in uni.items() for p in roster]
+        conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
+        del uni, rows
+        reset_caches()                               # free this universe before the next
     conn.commit()
     row = conn.execute("SELECT * FROM world WHERE id=?", (wid,)).fetchone()
     conn.close()
@@ -271,13 +293,14 @@ def signed_counts(seed: int = DEFAULT_SEED) -> dict:
 _base_cache: dict = {}      # (world_id, year) -> year-start rosters
 _dev_cache: dict = {}       # (world_id, year, week) -> developed rosters
 _primed: dict = {}          # seed -> (world_id, year, week) currently in ncaa cache
+_prime_lock = threading.Lock()   # serialize the ~170MB cache build across gthreads
 
 
 def _base_rosters(world: dict) -> dict:
     key = (world["id"], world["year"])
     if key not in _base_cache:
         conn = _db()
-        _base_cache[key] = _load_rosters(conn, world["id"], world["year"])
+        _base_cache[key] = _load_rosters(conn, world["id"], world["year"], _active_unis())
         conn.close()
     return _base_cache[key]
 
@@ -306,13 +329,19 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     stamp = (w["id"], w["year"], w["week"])
     if _primed.get(seed) == stamp and _roster_cache:
         return w
-    rosters = developed_rosters(w)
-    reset_caches()
-    for (division, gender), schools in rosters.items():
-        for school, roster in schools.items():
-            _roster_cache[f"{school}|{division}|{gender}"] = roster
-    sm._pid_idx_cache.clear(); sm._str_cache.clear()
-    _primed[seed] = stamp
+    # Only one thread builds the full-world cache at a time; the rest wait and
+    # reuse it. Without this, concurrent gthreads each materialise ~170MB of
+    # rosters on a cold cache and the worker OOMs.
+    with _prime_lock:
+        if _primed.get(seed) == stamp and _roster_cache:     # built while we waited
+            return w
+        rosters = developed_rosters(w)
+        reset_caches()
+        for (division, gender), schools in rosters.items():
+            for school, roster in schools.items():
+                _roster_cache[f"{school}|{division}|{gender}"] = roster
+        sm._pid_idx_cache.clear(); sm._str_cache.clear()
+        _primed[seed] = stamp
     return w
 
 
@@ -335,7 +364,7 @@ def universe_sid(seed: int, world: dict, division: str, gender: str) -> int:
 def universe_states(seed: int = DEFAULT_SEED) -> list[dict]:
     w = get_or_create(seed)
     out = []
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         s = sm.load_season(universe_sid(seed, w, d, g))
         out.append({"division": d, "gender": g, **s})
     return out
@@ -343,7 +372,7 @@ def universe_states(seed: int = DEFAULT_SEED) -> list[dict]:
 
 def _all_complete(seed: int, world: dict) -> bool:
     return all(sm.load_season(universe_sid(seed, world, d, g))["phase"] == "complete"
-               for (d, g) in UNIVERSES)
+               for (d, g) in _active_unis())
 
 
 # ==========================================================================
@@ -358,7 +387,8 @@ def national_class(seed: int, year: int, gender: str) -> list:
         rng = random.Random(f"{seed}|worldrecruits|{gender}|{year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
-                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE)
+                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE,
+                               intl_weights=worldconfig.region_weights())
         _class_cache[key] = rank_class(klass)
     return _class_cache[key]
 
@@ -671,7 +701,7 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
-                                       region_weights=region_preset("tennis_global"))
+                                       region_weights=worldconfig.region_weights())
             tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()
@@ -857,8 +887,11 @@ def simulate_cross(seed: int = DEFAULT_SEED) -> int:
         return 0
     prime(seed)
     progs = {g: _flat_programs(g) for g in GENDERS}
+    active = set(_active_unis())
     rows = []
     for m in cross_schedule(seed, w["year"]):
+        if (m["home_div"], m["gender"]) not in active or (m["away_div"], m["gender"]) not in active:
+            continue                      # skip matchups touching a dormant universe
         a, b = progs[m["gender"]][m["home"]], progs[m["gender"]][m["away"]]
         sd = int.from_bytes(__import__("hashlib").blake2s(
             f"{seed}|{w['year']}|{m['home']}|{m['away']}".encode(), digest_size=4).digest(), "big")
@@ -910,16 +943,16 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     if w["week"] == 0:                      # start of year: play the cross-division slate
         cross = simulate_cross(seed)
     played = 0
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         sid = universe_sid(seed, w, d, g)
         if sm.load_season(sid)["phase"] != "complete":
             res = sm.advance(sid)
             played += res.get("played", 0)
 
-    # Recruiting drip: sign a slice of each gender's class this week.
+    # Recruiting drip: sign a slice of each active gender's class this week.
     conn = _db()
     signed = 0
-    for gender in GENDERS:
+    for gender in worldconfig.active_genders():
         quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // SIGNING_WEEKS)
         signed += _sign_batch(conn, w, gender, quota)
     conn.execute("UPDATE world SET week=? WHERE id=?", (w["week"] + 1, w["id"]))
@@ -936,14 +969,18 @@ def _finalize_year(seed: int, w: dict) -> dict:
     prime(seed)
     # Results-based STR from the just-finished seasons drives the portal.
     player_str: dict = {}
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
 
     rosters = developed_rosters(w)        # full-year developed copy
+    # season_player_str above needed the primed cache; the rollover works on
+    # `rosters` (an independent copy), so free the ~170MB primed roster cache now
+    # rather than holding it alongside `rosters` through the heavy rollover.
+    reset_caches(); _primed.pop(seed, None)
     conn = _db()
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives.
-    for gender in GENDERS:
+    for gender in worldconfig.active_genders():
         _sign_batch(conn, w, gender, RECRUIT_POOL)
     conn.commit()
     signings = _load_signings(conn, w)
@@ -952,6 +989,18 @@ def _finalize_year(seed: int, w: dict) -> dict:
 
     new_year = w["year"] + 1
     _save_rosters(conn, w["id"], new_year, rosters)
+    # Dormant universes don't develop or roll over — carry their rosters forward
+    # unchanged with a cheap SQL copy (no Python materialisation), so their
+    # players still exist next year.
+    active = set(_active_unis())
+    for (d, g) in UNIVERSES:
+        if (d, g) in active:
+            continue
+        conn.execute(
+            "INSERT INTO world_roster (world_id, year, division, gender, school, pid, data) "
+            "SELECT world_id, ?, division, gender, school, pid, data FROM world_roster "
+            "WHERE world_id=? AND year=? AND division=? AND gender=?",
+            (new_year, w["id"], w["year"], d, g))
     conn.execute("UPDATE world SET year=?, week=0 WHERE id=?", (new_year, w["id"]))
     conn.commit()
     conn.close()
