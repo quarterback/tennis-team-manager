@@ -30,6 +30,14 @@ MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
 STR_MIN, STR_MAX = 31.0, 57.0
 ACADEMIC_MIN, ACADEMIC_MAX = 59, 99
 
+# Staggered development: a league doesn't develop all at once. Each player develops
+# inside a window of `STAGGER_BLOCK_FRAC` of the season's ticks, phase-shifted by a
+# stable per-player key (senate-style staggered terms). By the final tick everyone
+# has banked the same year of growth — only the *timing* differs, so at any midseason
+# snapshot some players have already jumped, some are mid-climb, and some haven't
+# moved yet. See docs/DEV-MODEL-tennis-adaptation.md.
+STAGGER_BLOCK_FRAC = 0.45
+
 # Interest-rate tiers: (label, probability, rate range, growth multiplier).
 TIERS = {
     1: ("ordinary", 0.75, (0.05, 0.50), 1.0),
@@ -58,6 +66,34 @@ def make_pid(*parts: object) -> str:
     """
     raw = "|".join(str(p) for p in parts)
     return hashlib.blake2s(raw.encode("utf-8"), digest_size=8).hexdigest()
+
+
+def _stable_phase(key: str, slots: int) -> int:
+    """Deterministic phase in [0, slots) from a stable key — never Python ``hash()``
+    (salted per process). Drives which window of the season a player develops in."""
+    if slots <= 1:
+        return 0
+    h = int(hashlib.blake2s(str(key).encode("utf-8"), digest_size=4).hexdigest(), 16)
+    return h % slots
+
+
+def stagger_scale(key: str, tick: int, ticks: int, *, total: float = 1.0,
+                  block_frac: float = STAGGER_BLOCK_FRAC) -> float:
+    """How much of a year's development a player keyed by `key` banks at 0-indexed
+    `tick` of a `ticks`-long season, under staggered (not all-at-once) development.
+
+    Each player's growth is concentrated in a contiguous window of ``block``
+    consecutive ticks whose START is phase-shifted by `key`. The per-tick slices in
+    a player's window sum to `total`, and every window finishes by the final tick,
+    so the season-end total is identical for everyone — only WHEN they climb differs
+    (senate-style staggered terms). Deterministic; no RNG.
+    """
+    if ticks <= 0:
+        return 0.0
+    block = max(1, min(ticks, round(ticks * block_frac)))
+    phase = _stable_phase(key, ticks - block + 1)
+    return (total / block) if phase <= tick < phase + block else 0.0
+
 
 
 def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
@@ -204,6 +240,22 @@ class Prospect:
     def develop_year(self) -> None:
         self.develop(1.0)
         self.year += 1
+
+    def regress_to_younger(self, years: float = 1.0) -> None:
+        """Roll CURRENT *back* toward where this player was ~`years` ago, given their
+        fixed development rate — the exact inverse of ``develop``. Nobody actually
+        regresses in the model; this only REPLAYS the climb, letting the junior
+        circuit start a recruit at their younger self and develop them back up to
+        their current (recruiting-time) ability across the junior season. A
+        super-bloomer was far weaker at 14; an early bloomer was always near here."""
+        frac = min(0.9, self.interest_rate * GROWTH_K * self.tier_mult * years)
+        if frac <= 0:
+            return
+        for a in RICH_ATTRS:
+            pot, cur = self.potential[a], self.current[a]
+            prev = (cur - frac * pot) / (1.0 - frac)      # invert cur += frac*(pot-cur)
+            self.current[a] = clamp_grade(min(cur, prev))
+        self.recruit_stars = self.star_rating()
 
     def project(self, years: int) -> int:
         clone = copy.deepcopy(self)

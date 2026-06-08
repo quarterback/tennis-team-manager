@@ -34,11 +34,13 @@ the same class + seed reproduce identical résumés.
 """
 from __future__ import annotations
 
+import copy
 import random
 from dataclasses import dataclass
 
 from engine import run_tournament, simulate_match
 from .str_rating import converge_ids
+from .development import stagger_scale
 
 # --------------------------------------------------------------------------
 # Tournament calendar — the schedule IS the tier system. A player reveals their
@@ -101,6 +103,16 @@ INTL_SNAPSHOTS = [("Jan", 1), ("May", 5), ("Oct", 10), ("Dec", 12)]
 
 _MONTH_ABBR = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
                7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
+
+# Junior development: a recruit's CURRENT (recruiting-time) ability is the END of
+# the junior climb. We replay that climb across the season — start each recruit at
+# their younger self (~this many development-years back) and develop them, in
+# staggered waves, back UP to current. A super-bloomer was far weaker early and
+# surges up the rankings; an early bloomer was always near here and gets passed as
+# peers keep climbing (the "looked great at 14, ordinary by 16" arc). The recruit
+# object is never mutated — only throwaway copies develop — so the recruiting board
+# stays calibrated. See docs/DEV-MODEL-tennis-adaptation.md.
+JUNIOR_DEV_YEARS = 1.0
 
 # A draw is capped at this size; bigger fields split into parallel sections (real
 # junior tennis runs many L4/L5 draws at once), so every recruit gets matches.
@@ -261,25 +273,44 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     recruits = klass.recruits
     rng = random.Random(f"{seed}|junior-circuit|{klass.gender}|{klass.grad_year}")
 
-    # Ability STR is the PRIOR the results-based rating regresses toward; it also
-    # seeds the tier schedule (who plays whom). Results do the rest.
-    priors = {p.pid: p.str_value() for p in recruits}
-    assign_tiers(recruits)
+    # Throwaway "junior selves": start each recruit at their younger self and develop
+    # back up to current across the season. The recruit object itself is untouched,
+    # so the recruiting board keeps the calibrated recruiting-time ability while the
+    # junior matches/STR reflect the climb.
+    selves = {p.pid: copy.deepcopy(p) for p in recruits}
+    for p in recruits:
+        selves[p.pid].regress_to_younger(JUNIOR_DEV_YEARS)
+    # The younger ability is the PRIOR the results-based rating regresses toward, so
+    # thin early-season records sit low and rise with results — the arc shows.
+    priors = {p.pid: selves[p.pid].str_value() for p in recruits}
+    assign_tiers(recruits)        # schedule by recruiting-time (current) ability
 
     c = _Circuit(grad_year=klass.grad_year,
-                 engine_players={p.pid: p.engine_player() for p in recruits},
+                 engine_players={pid: s.engine_player() for pid, s in selves.items()},
                  finishes={}, matches={}, corpus={})
 
-    # ---- play the calendar chronologically with the full match engine ----
-    for name, level, month in sorted(CALENDAR, key=lambda e: e[2]):
-        if name == "State Championships":
-            by_state: dict[str, list] = {}
-            for p in _eligible_field(recruits, name, rng):
-                by_state.setdefault(p.region, []).append(p)
-            for state in sorted(by_state):
-                _run_event(c, name, level, month, by_state[state], rng)
-        else:
-            _run_event(c, name, level, month, _eligible_field(recruits, name, rng), rng)
+    # ---- play the calendar chronologically with the full match engine, pulsing a
+    # staggered slice of development before each month so players climb in waves ----
+    months = sorted({m for _, _, m in CALENDAR})
+    events_by_month: dict[int, list] = {}
+    for nm, lv, m in CALENDAR:
+        events_by_month.setdefault(m, []).append((nm, lv))
+
+    for mi, month in enumerate(months):
+        for p in recruits:
+            sc = stagger_scale(p.pid, mi, len(months), total=JUNIOR_DEV_YEARS)
+            if sc:
+                selves[p.pid].develop(sc)
+                c.engine_players[p.pid] = selves[p.pid].engine_player()
+        for (name, level) in events_by_month[month]:
+            if name == "State Championships":
+                by_state: dict[str, list] = {}
+                for p in _eligible_field(recruits, name, rng):
+                    by_state.setdefault(p.region, []).append(p)
+                for state in sorted(by_state):
+                    _run_event(c, name, level, month, by_state[state], rng)
+            else:
+                _run_event(c, name, level, month, _eligible_field(recruits, name, rng), rng)
 
     # ---- coverage: a recruit with no matches enters one fallback home event so
     # every profile reads lived-in (the spec's whole point) ----

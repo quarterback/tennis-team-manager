@@ -182,6 +182,34 @@ def test_domestic_and_international_use_different_ladders():
             assert badges <= intl_labels
 
 
+def test_super_bloomers_climb_while_early_bloomers_plateau():
+    """Staggered junior development surfaces the bloom/plateau arc: across the season
+    high-interest recruits (super-bloomers) climb the national board on average,
+    while low-interest early bloomers hold flat or slide as peers pass them."""
+    k = _class(n=300)
+    def climb(p):  # +ve = rank improved (number got smaller) from first to last snapshot
+        return p.ranking_history[0]["primary"] - p.ranking_history[-1]["primary"]
+    dom = [p for p in k.recruits if p.domestic and len(p.ranking_history) >= 2]
+    bloomers = [climb(p) for p in dom if p.tier == 3]          # super-bloomers
+    ordinary = [climb(p) for p in dom if p.tier == 1]          # ordinary/early
+    assert bloomers and ordinary
+    assert sum(bloomers) / len(bloomers) > sum(ordinary) / len(ordinary)
+
+
+def test_recruiting_ability_is_not_mutated_by_the_circuit():
+    """The junior climb runs on throwaway copies — the recruit's recruiting-time
+    ability (str_value/stars) is identical before and after the circuit."""
+    import random as _r
+    from app.juniors import generate_class as _gc, national_rankings as _nr
+    from app.junior_circuit import run_junior_circuit as _run
+    k = _gc(_r.Random(5), n=120, grad_year=2026, gender="male", intl_share=0.35)
+    _nr(k)
+    before = {p.pid: (round(p.str_value(), 4), p.recruit_stars) for p in k.recruits}
+    _run(k, seed=5)
+    after = {p.pid: (round(p.str_value(), 4), p.recruit_stars) for p in k.recruits}
+    assert before == after
+
+
 def test_circuit_is_deterministic():
     a = _class(seed=8)
     b = _class(seed=8)
