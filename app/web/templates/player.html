@@ -80,7 +80,6 @@
           <tr><td>Class</td><td>{{ info.class }}</td></tr>
           <tr><td>Nationality</td><td><span class="player-flag">{{ info.country|flags(info.secondary_country) }}</span> {{ info.country|country_name }}{% if info.secondary_country %} / {{ info.secondary_country|country_name }}{% endif %}</td></tr>
           <tr><td>Hometown</td><td>{{ info.hometown }}</td></tr>
-          {% if info.high_school %}<tr><td>High School</td><td>{{ info.high_school }}</td></tr>{% endif %}
           <tr><td>Major</td><td>{{ info.major }}</td></tr>
           {% if info.school_city %}<tr><td>Program</td><td>{{ info.school }} · {{ info.school_city }}</td></tr>{% endif %}
           <tr><td>Scholarship</td><td>{% if info.walk_on %}Walk-on{% elif info.scholarship and info.scholarship > 0 %}{{ info.scholarship_label }} ride ({{ "%.2f"|format(info.scholarship) }} equiv.){% else %}Recruited (no athletic aid){% endif %}</td></tr>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch — {{ school }}{% endblock %}
 {% block content %}
-{% set grid = '36px minmax(130px,1fr) 30px 140px 150px 150px 56px 52px 72px' %}
+{% set grid = '36px minmax(130px,1fr) 30px 150px 160px 56px 52px 72px' %}
 
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -35,7 +35,7 @@
       <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
         <div class="bl-thead">
           <span class="bl-th">LN</span><span class="bl-th">PLAYER</span><span class="bl-th">CL</span>
-          <span class="bl-th">HOMETOWN</span><span class="bl-th">HIGH SCHOOL</span><span class="bl-th">MAJOR</span>
+          <span class="bl-th">HOMETOWN</span><span class="bl-th">MAJOR</span>
           <span class="bl-th num">STR</span><span class="bl-th num">W-L</span><span class="bl-th">STATUS</span>
         </div>
         {% for r in rows %}
@@ -45,7 +45,6 @@
           <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
           <span class="bl-conf">{{ p.class_year }}</span>
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
-          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.high_school }}</span>
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>
           <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
           <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>

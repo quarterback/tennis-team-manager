@@ -226,7 +226,8 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     a deterministic one is derived.
     """
     from generators import (nation_talent, roll_hometown, roll_birthday,
-                            roll_secondary_country, roll_high_school)
+                            roll_secondary_country, roll_high_school,
+                            country_abbrev, random_town)
     from generators.majors import pick_major
 
     if talent is None:
@@ -268,12 +269,17 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
         secondary_country=roll_secondary_country(country, rng),
         elite_origin=elite,
     )
-    # Believable birthplace from the nation's city pool. Stored "City, CC" so
-    # every roster/recruit player carries a wired hometown; juniors overrides
-    # domestic recruits with a US state for the state-by-state board.
-    city = roll_hometown(country, rng)
-    if city:
-        p.hometown = f"{city}, {country}" if country else city
+    # Believable birthplace: Americans read "City, ST" from the real US
+    # college-town (city, state) pool; everyone else "City, NATION" from the
+    # nation's city pool. (juniors overrides domestic recruits with the
+    # state-board dimension.)
+    if domestic:
+        city, st = random_town(rng)
+        p.hometown = f"{city}, {st}"
+    else:
+        city = roll_hometown(country, rng)
+        if city:
+            p.hometown = f"{city}, {country_abbrev(country)}" if country else city
     p.high_school = roll_high_school(country, rng)
     # Homecooking: a recruit-side desire to stay near home (some kids strongly,
     # most a little, some not at all). International recruits have none — there
