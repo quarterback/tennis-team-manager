@@ -423,6 +423,45 @@ def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SE
     return {"results": out, "wins": wins, "losses": losses}
 
 
+def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
+    """A player's singles results grouped by season-year, newest first — built
+    from the SAME cached season every other page shows (team pages, box scores),
+    so clicking a player from a result always lands on matching data. Returns
+    (groups, (career_w, career_l)); each group is {year, season_no, log, w, l}.
+
+    Today there is one live season-year (the world's current year); the by-year
+    structure is ready for persisted multi-season history."""
+    import app.world as world
+    sr = get_season(division, gender, seed)
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+
+    names: dict[str, str] = {}
+    for roster in sr.rosters.values():
+        for pr in roster:
+            names[pr.pid] = pr.name
+
+    log = []
+    for d in sr.duals:
+        for ln in d["lines"]:
+            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
+                continue                                  # singles only
+            if ln.get("home_pid") == pid:
+                gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
+                                                ln["home_won"], ln.get("away_pid"), d["away"])
+            elif ln.get("away_pid") == pid:
+                gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
+                                                not ln["home_won"], ln.get("home_pid"), d["home"])
+            else:
+                continue
+            log.append({"phase": "Regular", "slot": ln["slot"], "opp": names.get(opp, "—"),
+                        "opp_pid": opp, "opp_school": opp_school, "gf": gf, "ga": ga, "won": won})
+
+    w = sum(1 for m in log if m["won"])
+    l = len(log) - w
+    groups = [{"year": 2026 + yr, "season_no": yr + 1, "log": log, "w": w, "l": l}] if log else []
+    return groups, (w, l)
+
+
 def season_match_view(division: str, gender: str, idx: int, seed: int = DEFAULT_SEED):
     """Box-score view of the idx-th dual in the cached season — shaped exactly
     like seasonmode.dual_detail so the shared box-score template renders both."""

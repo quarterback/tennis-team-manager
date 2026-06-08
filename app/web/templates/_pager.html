@@ -1,0 +1,41 @@
+{# Reusable pagination control. Usage:
+     {% from "_pager.html" import pager %}
+     {{ pager(p, 'programs') }}
+   `p` is an app.web.pagination.Page. Links preserve every current query arg
+   (filters, sort, universe) and just swap ?page=. #}
+
+{# Build a URL for page n: current path + current args with page overridden. #}
+{% macro _purl(n) %}{% set a = request.args.to_dict() %}{% set _ = a.update({'page': n}) %}{{ request.path }}?{{ a | urlencode }}{% endmacro %}
+
+{% macro pager(p, label='items') %}
+{% if p.total > p.per_page %}
+<nav class="bl-pager" aria-label="Pagination">
+  <div class="bl-pager-meta">
+    Showing <strong>{{ p.start }}–{{ p.end }}</strong> of {{ p.total }} {{ label }}
+  </div>
+  <div class="bl-pager-controls">
+    {% if p.has_prev %}
+      <a class="bl-pager-btn" href="{{ _purl(p.prev) | trim }}" rel="prev">‹ Prev</a>
+    {% else %}
+      <span class="bl-pager-btn disabled" aria-disabled="true">‹ Prev</span>
+    {% endif %}
+
+    {% for n in p.window() %}
+      {% if n is none %}
+        <span class="bl-pager-gap">…</span>
+      {% elif n == p.page %}
+        <span class="bl-pager-num active" aria-current="page">{{ n }}</span>
+      {% else %}
+        <a class="bl-pager-num" href="{{ _purl(n) | trim }}">{{ n }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if p.has_next %}
+      <a class="bl-pager-btn" href="{{ _purl(p.next) | trim }}" rel="next">Next ›</a>
+    {% else %}
+      <span class="bl-pager-btn disabled" aria-disabled="true">Next ›</span>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}
+{% endmacro %}

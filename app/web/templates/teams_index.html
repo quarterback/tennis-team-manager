@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Baseline — Teams{% endblock %}
+{% from "_pager.html" import pager %}
+{% block title %}Play to Clinch — Teams{% endblock %}
 {% block content %}
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -40,6 +41,7 @@
     </div>
   </div>
   {% endfor %}
+  <div style="padding:0 12px 12px">{{ pager(p, 'conferences') }}</div>
 </div>
 
 <style>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Baseline — Dual Simulator{% endblock %}
+{% block title %}Play to Clinch — Dual Simulator{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <form method="get" style="display:contents">
@@ -14,7 +14,7 @@
 <form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
   <input type="hidden" name="u" value="{{ u }}">
   <h1>Simulate a Dual</h1>
-  <p class="intro">Pick any two programs in {{ uni_label }}. Baseline plays the doubles point and all
+  <p class="intro">Pick any two programs in {{ uni_label }}. Play to Clinch plays the doubles point and all
     six singles from each team's real roster, then sweeps the fast model to estimate who wins.</p>
 
   <div class="bl-slots">
@@ -66,6 +66,6 @@
   </div>
 
   <button class="bl-run-big" type="submit">Run Simulation →</button>
-  <div class="bl-engine-note">Engine: <code>Baseline dual engine (NCAA, clinch-at-4)</code> · seed-deterministic</div>
+  <div class="bl-engine-note">Engine: <code>Play to Clinch dual engine (NCAA, clinch-at-4)</code> · seed-deterministic</div>
 </form>
 {% endblock %}

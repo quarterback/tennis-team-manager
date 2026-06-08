@@ -3,7 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Baseline{% endblock %}</title>
+<title>{% block title %}Play to Clinch{% endblock %}</title>
+
+{# Description drives SEO + social cards. Pages can override the block. #}
+<meta name="description" content="{% block meta_description %}Play to Clinch is a college tennis season simulator and team manager — simulate dual matches, advance a living world week by week, and track Power Index rankings, recruiting, conferences, and the NCAA bracket across D1, D2, and D3.{% endblock %}">
+<meta name="theme-color" content="#1f7a4d">
+<link rel="icon" href="{{ url_for('static', filename='assets/logo-mark.svg') }}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Play to Clinch">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.meta_description() }}">
+<meta property="og:image" content="{{ url_for('static', filename='assets/og-image.png', _external=True) }}">
+<meta property="og:url" content="{{ request.url }}">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ self.title() }}">
+<meta name="twitter:description" content="{{ self.meta_description() }}">
+<meta name="twitter:image" content="{{ url_for('static', filename='assets/og-image.png', _external=True) }}">
+<meta name="twitter:image:alt" content="Play to Clinch — college tennis season simulator">
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
@@ -19,7 +40,7 @@
       <a class="fm-brand" href="{{ url_for('world_view', u=u) }}">
         <img src="{{ url_for('static', filename='assets/logo-mark.svg') }}" width="28" height="28" alt="">
         <span class="fm-brand-text">
-          <span class="fm-brand-title">Baseline</span>
+          <span class="fm-brand-title">Play to Clinch</span>
           <span class="fm-brand-sub">Tennis Manager</span>
         </span>
       </a>

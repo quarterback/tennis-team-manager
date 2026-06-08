@@ -395,6 +395,45 @@ html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, table { max-width: 100%; }
 .bl-select, .bl-input { max-width: 100%; }
 
+/* Season divider inside a match-by-match table (player career view). */
+.bl-yeardiv {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; margin-top: 2px;
+  background: var(--surface-subtle); border-top: 1px solid var(--border-subtle);
+  font-size: 12px; font-weight: 800; letter-spacing: .02em; color: var(--text-primary);
+}
+.bl-yeardiv:first-child { border-top: none; }
+.bl-yeardiv-rec { font-weight: 700; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------- Pagination */
+.bl-pager {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin: 16px 0 4px;
+}
+.bl-pager-meta { font-size: 13px; color: var(--text-muted); }
+.bl-pager-meta strong { color: var(--text-primary); }
+.bl-pager-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.bl-pager-btn, .bl-pager-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 38px; height: 38px; padding: 0 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  color: var(--text-secondary); border: 1px solid var(--border-default);
+  background: var(--surface-card); transition: border-color .12s, color .12s, background .12s;
+}
+.bl-pager-num { padding: 0; }
+.bl-pager-btn:hover, .bl-pager-num:hover { border-color: var(--brand); color: var(--brand-strong); }
+.bl-pager-num.active {
+  background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); cursor: default;
+}
+.bl-pager-btn.disabled {
+  opacity: .45; pointer-events: none; background: var(--surface-subtle);
+}
+.bl-pager-gap { padding: 0 4px; color: var(--text-faint); user-select: none; }
+@media (max-width: 560px) {
+  .bl-pager { justify-content: center; }
+  .bl-pager-meta { width: 100%; text-align: center; }
+}
+
 /* Tablet / small laptop — collapse the two-column boards. */
 @media (max-width: 880px) {
   .bl-board-grid { grid-template-columns: 1fr !important; }
