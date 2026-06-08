@@ -63,6 +63,9 @@ _COUNTRY_DISPLAY: dict[str, tuple[str, str]] = {
     "BE": ("Belgium", "BEL"),        "FR": ("France", "FRA"),
     "PT": ("Portugal", "POR"),       "RO": ("Romania", "ROU"),
     "BG": ("Bulgaria", "BUL"),       "RS": ("Serbia", "SRB"),
+    "AL": ("Albania", "ALB"),        "EE": ("Estonia", "EST"),
+    "LV": ("Latvia", "LAT"),         "IS": ("Iceland", "ISL"),
+    "GE": ("Georgia", "GEO"),
     # Africa
     "ZA": ("South Africa", "RSA"),   "ZW": ("Zimbabwe", "ZIM"),
     "NA": ("Namibia", "NAM"),        "CV": ("Cape Verde", "CPV"),
