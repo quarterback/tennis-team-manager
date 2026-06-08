@@ -130,10 +130,26 @@ def create_app() -> Flask:
 
     @app.before_request
     def _prime_world():
-        # If a season-to-season world has been started, make every page reflect
-        # its current year. No world yet → pages show the deterministic baseline.
+        # A league exists → prime every page to its current week and carry on.
         if wd.exists():
             wd.prime()
+            return
+        # No league yet → the entry point (dashboard) is the "ongoing sim" the
+        # user lands in, so send first-login there to onboarding instead. Other
+        # pages stay browsable against the deterministic baseline.
+        if request.endpoint == "dashboard":
+            return redirect(url_for("onboarding"))
+
+    @app.route("/start")
+    def onboarding():
+        return render_template("onboarding.html", active="World")
+
+    @app.route("/world/new", methods=["POST"])
+    def world_new():
+        # Reset any existing world and begin a fresh league at preseason (week 0,
+        # nothing played), then drop into the week-by-week World hub.
+        wd.start_new()
+        return redirect(url_for("world_view"))
 
     @app.route("/world")
     def world_view():

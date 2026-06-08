@@ -201,6 +201,40 @@ def exists(seed: int = DEFAULT_SEED) -> bool:
     return load_world(seed) is not None
 
 
+def reset(seed: int = DEFAULT_SEED) -> None:
+    """Wipe all season-to-season state so the next get_or_create() starts a fresh
+    league at preseason (year 0, week 0, nothing played). Single-player sandbox,
+    so this clears the dynamic tables wholesale; the deterministic base rosters
+    are regenerated from seed. Career/legend archives (added later) are NOT
+    touched by this."""
+    conn = _db()
+    conn.executescript(
+        "DELETE FROM world_crossmatch; DELETE FROM world_signing; "
+        "DELETE FROM world_roster; DELETE FROM world;"
+    )
+    conn.commit()
+    conn.close()
+    # Season-mode schedule/results live in their own tables — clear them too.
+    sconn = sm._db()
+    sconn.executescript("DELETE FROM duals; DELETE FROM seasons;")
+    sconn.commit()
+    sconn.close()
+    # Drop every in-memory cache so nothing stale survives the reset.
+    _base_cache.clear()
+    _dev_cache.clear()
+    _primed.clear()
+    reset_caches()
+    sm._pid_idx_cache.clear()
+    sm._str_cache.clear()
+
+
+def start_new(seed: int = DEFAULT_SEED) -> dict:
+    """Reset and create a brand-new league at preseason (week 0, nothing
+    played). The onboarding 'Start new league' action."""
+    reset(seed)
+    return get_or_create(seed)
+
+
 def current_year_seed(seed: int = DEFAULT_SEED) -> int:
     w = load_world(seed)
     return year_seed(seed, w["year"]) if w else seed
