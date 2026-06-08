@@ -27,9 +27,13 @@ them.
 - `app/web/formatters.py` exposes the Jinja filters `team_logo` (ready-made
   inline `<img>`), `team_logo_src` (bare URL for crest boxes), and
   `has_team_logo`.
-- Schools with no known logo (some D2/D3 programs ESPN doesn't track) are
-  simply absent from the map and render with no mark — exactly like an
-  unknown flag. No broken images.
+- Schools ESPN doesn't track (mostly small D2/D3 programs) get a **generated
+  monogram placeholder** instead of a real logo: a team-colored rounded badge
+  with the school's initials, matching the crest style in
+  `app/web/rankings_data.py`. These entries carry `"placeholder": true` (and
+  no `espn_id`) in `logos.json`, so a future re-run can swap in a real logo if
+  one becomes available. Every school therefore shows *some* mark — no broken
+  images, no blank cells.
 
 ## Conventions
 

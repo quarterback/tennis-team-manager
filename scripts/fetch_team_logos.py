@@ -19,6 +19,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import colorsys
 import difflib
 import json
 import re
@@ -148,9 +149,63 @@ def slugify(school: str) -> str:
     return re.sub(r"-+", "-", s).strip("-")
 
 
+# --- placeholder monograms (mirror app/web/rankings_data.py crest()) --------
+# Hex colors the app already hand-picks for a few crests; reused so generated
+# placeholders match the real-logo styling.
+_CREST_HEX = {
+    "TCU": "#4d1979", "Ohio State": "#bb0000", "Texas": "#bf5700",
+    "Wake Forest": "#9e7e38", "Virginia": "#232d4b", "Kentucky": "#0033a0",
+    "Stanford": "#8c1515", "Tennessee": "#ff8200", "Oregon": "#154733",
+    "Florida": "#0021a5", "USC": "#990000", "Baylor": "#154734",
+    "Texas A&M": "#500000", "Michigan": "#00274c", "NC State": "#cc0000",
+    "Columbia": "#9bcbeb", "San Diego": "#182b49", "Old Dominion": "#003057",
+    "Cornell": "#b31b1b", "UC Santa Barbara": "#003660", "Pepperdine": "#00205b",
+    "Harvard": "#a51c30", "South Florida": "#006747", "Princeton": "#ff6600",
+}
+
+
+def crest_abbr(school: str) -> str:
+    return "".join(w[0] for w in school.split()[:4]).upper() or school[:3].upper()
+
+
+def crest_rgb(school: str) -> tuple[int, int, int]:
+    """RGB for a school's crest: the app's hand-picked hex, else the same
+    deterministic hue it uses (oklch(0.5 0.12 hue)) approximated in sRGB."""
+    if school in _CREST_HEX:
+        h = _CREST_HEX[school].lstrip("#")
+        return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+    hue = ((sum(ord(c) for c in school) * 47) % 360) / 360.0
+    r, g, b = colorsys.hls_to_rgb(hue, 0.42, 0.5)
+    return int(r * 255), int(g * 255), int(b * 255)
+
+
+def make_placeholder(school: str, dest: Path, size: int = 128) -> None:
+    """Rounded-square monogram badge: team color + white initials."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    pad, rad = 4, 24
+    d.rounded_rectangle([pad, pad, size - pad, size - pad], radius=rad,
+                        fill=crest_rgb(school) + (255,))
+    text = crest_abbr(school)
+    fpx = 58 if len(text) <= 2 else (44 if len(text) == 3 else 34)
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", fpx)
+    except OSError:
+        font = ImageFont.load_default()
+    box = d.textbbox((0, 0), text, font=font)
+    d.text(((size - (box[2] - box[0])) / 2 - box[0],
+            (size - (box[3] - box[1])) / 2 - box[1]),
+           text, font=font, fill=(255, 255, 255, 255))
+    img.save(dest, "PNG", optimize=True)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-placeholders", action="store_true",
+                    help="skip generated monograms for schools with no ESPN logo")
     args = ap.parse_args()
 
     print("Building ESPN team index…", file=sys.stderr)
@@ -179,6 +234,7 @@ def main() -> int:
 
     LOGO_DIR.mkdir(parents=True, exist_ok=True)
     out: dict[str, dict] = {}
+    no_logo: list[str] = list(unmatched)  # gets placeholder monograms
     ok = fail = 0
     for s, info in sorted(matched.items()):
         dest = LOGO_DIR / f"{info['slug']}.png"
@@ -204,12 +260,30 @@ def main() -> int:
                     print(f"  ! {s}: {e}", file=sys.stderr)
                     fail += 1
                     out.pop(s, None)
+                    no_logo.append(s)
                 else:
                     time.sleep(2 ** attempt)
         time.sleep(0.05)
 
+    # Generated monogram placeholders so every school shows a mark — schools
+    # ESPN doesn't track (mostly small D2/D3) plus any failed download. These
+    # carry no espn_id and are flagged so a future re-run can replace them.
+    ph = 0
+    if not args.no_placeholders:
+        for s in no_logo:
+            slug = slugify(s)
+            dest = LOGO_DIR / f"{slug}.png"
+            try:
+                if not dest.exists():
+                    make_placeholder(s, dest)
+                out[s] = {"slug": slug, "placeholder": True}
+                ph += 1
+            except Exception as e:  # noqa: BLE001
+                print(f"  ! placeholder {s}: {e}", file=sys.stderr)
+
     MAP_OUT.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
-    print(f"\nDownloaded {ok} logos ({fail} failed). Map -> {MAP_OUT.relative_to(ROOT)}")
+    print(f"\nDownloaded {ok} logos ({fail} failed), {ph} placeholders. "
+          f"Map ({len(out)}) -> {MAP_OUT.relative_to(ROOT)}")
     return 0
 
 
