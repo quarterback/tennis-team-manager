@@ -437,7 +437,10 @@ def active_overrides():
         moves.append({"pid": pid, "name": pr.name if pr else pid,
                       "str": round(pr.str_value(), 1) if pr else "—", "dest": dest})
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
-    return {"moves": moves, "lineups": lineups, "any": bool(moves or lineups)}
+    prestige = [{"school": s, "value": round(v * 100)}
+                for s, v in sorted(ov.get_prestige().items())]
+    return {"moves": moves, "lineups": lineups, "prestige": prestige,
+            "any": bool(moves or lineups or prestige)}
 
 
 def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SEED):

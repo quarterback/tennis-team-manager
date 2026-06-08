@@ -273,6 +273,17 @@ def load_division(division: str, gender: str) -> Division:
             ))
         div.conferences[c["name"]] = members
         div.programs.extend(members)
+    # Editor prestige overrides — let specific programs stand out (and recruit)
+    # regardless of their default conference-derived prestige.
+    try:
+        from . import overrides
+        pres = overrides.get_prestige()
+        if pres:
+            for p in div.programs:
+                if p.school in pres:
+                    p.prestige = pres[p.school]
+    except Exception:
+        pass
     return div
 
 
