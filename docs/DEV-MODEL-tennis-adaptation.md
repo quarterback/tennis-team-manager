@@ -205,14 +205,27 @@ tours rank on a points ledger while WTN/UTR sits beside it. The sim mirrors that
 split instead of collapsing everything into one number.
 
 **Junior ranking points (`app/junior_circuit.py` → `JUNIOR_POINTS`, `_freeze_points`).**
-An accomplishment ledger modelled on the USTA Junior Tournaments points table. Each
-event awards points by **round reached × level** (our calendar tiers Major / Premier
-/ National / Development / State map onto USTA Levels 1–5 — a Major title is 3000, a
-State quarterfinal 105). Only a player's **best six** results count, plus their best
-six **ranked-win bonuses** (beating a Top-10 junior is +225, USTA-style, resolved
-off a provisional points order). It is deliberately *not* a rating: it rewards deep
-runs at strong events and rewards activity, with no ability prior and no recency
-weighting — start-from-scratch, like the real tours.
+An accomplishment ledger on **ITF World Tennis Tour Junior** scaling. Each event
+awards points by **round reached × grade** (our calendar tiers Major / Premier /
+National / Development / State map onto ITF Grand Slam / Grade A / 1 / 3 / 5 — a
+Major title is 1000, a State quarterfinal 5). Only a player's **best six** results
+count, plus their best six **ranked-win bonuses** (beating a Top-10 junior, resolved
+off a provisional order). It is deliberately *not* a rating: it rewards deep runs at
+strong events and rewards activity, with no ability prior and no recency weighting —
+start-from-scratch, like the real tours.
+
+**Doubles fold into the same ledger (the ITF Combined Junior Ranking).** There is no
+separate doubles *ranking* — a junior just gets credit for doubles on top of singles:
+`combined = best-6 singles + ¼ × best-6 doubles`. Who plays doubles is **grit-driven**
+(stamina + resilience + competitiveness — grinders play more); partners are drawn
+**on the fly** each event; pairs play the full match engine (best-of-3, no-ad,
+10-point match tiebreak in lieu of the third — ITF junior doubles rules), with the
+synthetic team tilted toward the skills that win doubles (serve, court coverage, net
+instincts) and away from long-rally baseline play. That tilt is what makes a
+**doubles STR** that diverges from singles STR — a mid singles player who's strong
+at the net rates *above* their singles level in doubles, which surfaces the
+"doubles specialist" as a recruitable identity who'd otherwise be invisible. Doubles
+results live on their own tab on the recruit card.
 
 **The three numbers, and why they differ:**
 

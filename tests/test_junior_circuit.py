@@ -183,21 +183,43 @@ def test_domestic_and_international_use_different_ladders():
 
 
 def test_points_ledger_is_frozen_and_bounded():
-    """Every recruit gets junior_points + tournaments_played; points are a best-6
-    ledger so they stay bounded, and the field champion sits at/near the top."""
-    from app.junior_circuit import event_points, JUNIOR_POINTS, BEST_N
+    """Every recruit gets junior_points + tournaments_played on an ITF-scaled best-6
+    ledger, and the combined total = singles + ¼·doubles stays bounded."""
+    from app.junior_circuit import (event_points, doubles_event_points, JUNIOR_POINTS,
+                                     JUNIOR_DOUBLES_POINTS, BEST_N, DOUBLES_WEIGHT)
     k = _class(n=300)
-    assert event_points("Major", "Champion") == 3000        # USTA L1 title
-    assert event_points("State", "Quarterfinalist") == 105  # USTA L5 QF
+    assert event_points("Major", "Champion") == 1000        # ITF Grand Slam title
+    assert event_points("State", "Quarterfinalist") == 5    # ITF Grade 5 QF
+    assert doubles_event_points("Major", "Champion") == 750  # ITF GS doubles title
     assert event_points("Major", "did-not-play") == 0
     for p in k.recruits:
         assert isinstance(p.junior_points, int) and p.junior_points >= 0
         assert p.tournaments_played == len(p.junior_results)   # count matches the résumé
-    # The fallback gets nearly everyone at least one event.
+        # Combined ledger = singles + ¼ × doubles (ITF CJR).
+        assert p.junior_points == int(p.singles_points + DOUBLES_WEIGHT * p.doubles_points)
     assert sum(1 for p in k.recruits if p.tournaments_played >= 1) >= 0.9 * len(k.recruits)
-    # Best-6 cap: even a busy player can't exceed 6 Major titles + 6 top bonuses.
-    ceiling = BEST_N * max(JUNIOR_POINTS["Champion"].values()) + BEST_N * 225
-    assert all(p.junior_points <= ceiling for p in k.recruits)
+    # Best-6 cap: 6 Major titles + 6 top bonuses, plus ¼ of 6 Major doubles titles.
+    smax = BEST_N * max(JUNIOR_POINTS["Champion"].values()) + BEST_N * 75
+    dmax = BEST_N * max(JUNIOR_DOUBLES_POINTS["Champion"].values())
+    assert all(p.junior_points <= smax + DOUBLES_WEIGHT * dmax for p in k.recruits)
+
+
+def test_doubles_participation_and_specialist_str():
+    """Doubles is grit-driven (not everyone plays), folds into the one ledger, and
+    yields a doubles STR that can diverge from singles STR — the specialist signal."""
+    k = _class(n=400)
+    played = [p for p in k.recruits if p.doubles_played > 0]
+    assert 0.3 < len(played) / len(k.recruits) < 0.95          # some, not all, play
+    # Grittier players (stamina/resilience/competitiveness) play doubles more often.
+    grit = lambda p: sum(p.current_grade(a) for a in ("stamina", "resilience", "competitiveness")) / 3
+    hi = [p for p in k.recruits if grit(p) >= 55]
+    lo = [p for p in k.recruits if grit(p) <= 45]
+    rate = lambda g: sum(1 for p in g if p.doubles_played) / max(1, len(g))
+    assert rate(hi) > rate(lo)
+    # Doubles players get a doubles STR; across the pool it diverges from singles STR.
+    assert all(p.junior_doubles_str is not None for p in played)
+    assert any(p.junior_doubles_str - p.junior_str > 1 for p in played)   # specialists
+    assert any(p.junior_doubles_str - p.junior_str < -1 for p in played)  # singles types
 
 
 def test_points_rank_diverges_from_recruiting_board():
