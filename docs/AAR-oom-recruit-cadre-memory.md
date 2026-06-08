@@ -51,15 +51,26 @@ Realistic warm worker now: `start_new` 85 MB → `prime` (all universes cached)
 271 MB resident → dashboard + world hub 281 MB. Comfortably under 1 GB, and the
 concurrency multiplier is gone. **137 tests green.**
 
-## Follow-ups (not done here)
+## Follow-ups
 
-- **Preseason UI/flow** (user request): make the cadre recruiting + walk-on
-  backfill an explicit preseason step, alongside **schedule selection**.
-- **Unsigned-recruit → walk-on reuse**: currently unsigned cadre recruits are
-  dropped and walk-ons are freshly generated; reuse the unsigned first.
-- **Rollover/advance** (`developed_rosters`, world.py:954) still materialises the
-  full world for year rollover — a later spike worth the same per-universe
-  treatment if it shows up under load.
-- **Onboarding nationality bands** (user request): let the player pick the
-  nationality mix (a region-preset "band") at onboarding instead of the fixed
-  `tennis_global` geography.
+Done in a second pass on this branch:
+
+- **Year-rollover memory** — `_finalize_year` held the primed cache (~170 MB)
+  *and* a second full-world copy through the heavy rollover. Now frees the primed
+  cache right after `developed_rosters` + `season_player_str` (the rollover works
+  on the independent copy), roughly halving the rollover peak.
+- **Onboarding nationality bands** — new `app/worldconfig.py` (leaf settings
+  store) persists a chosen band; onboarding offers Realistic / Worldwide /
+  USA-heavy / European / Americas / Asia-Pacific, threaded through rosters,
+  coaches, walk-ons and the recruit international pool. Verified: us_majority →
+  US-dominant, european → FR/GB/DE, asian_pro → JP/KR/TW.
+- **Unsigned-recruit → walk-on**: moot at the current sizing — the 1000-cadre is
+  smaller than total openings, so every recruit signs and walk-ons backfill the
+  rest (the intended behaviour already).
+
+Still open:
+
+- **Preseason UI/flow + schedule selection** (user request): make the preseason
+  an explicit flow (recruiting/cadre → walk-on backfill → **schedule
+  selection** → season). Larger feature; needs a scope decision on what the
+  player selects (non-conference opponents? slate size? home/away?).

@@ -257,12 +257,14 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
     pools or per-division star ratings. `gender` is "male"/"female" (juniors
     vocab); `division` is accepted for caller compatibility but ignored."""
     import app.ncaa as ncaa
+    from app import worldconfig
     key = (gender, grad_year, seed)
     if key not in _recruit_cache:
         rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
         tmean = ncaa._talent_mean(0.5, "D2", _GENDER_VOCAB.get(gender, "men"))
         klass = generate_class(rng, n=RECRUIT_BOARD_N, grad_year=grad_year, gender=gender,
-                               talent_mean=tmean, talent_sd=_RECRUIT_SD)
+                               talent_mean=tmean, talent_sd=_RECRUIT_SD,
+                               intl_preset=worldconfig.name_preset())
         national_rankings(klass)        # one national rank/star ladder for the whole class
         _recruit_cache[key] = klass
     return _recruit_cache[key]

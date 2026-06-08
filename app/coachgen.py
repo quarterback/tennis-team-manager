@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import random
 
-from app import coachreg, ncaa
+from app import coachreg, ncaa, worldconfig
 from app.coaches import generate_coach
 from generators import make_name_picker, region_preset
 
@@ -28,7 +28,7 @@ def _generate(school: str, gender: str, role: str, base: float):
     # — crucially — keep the picker's nation so the name and home country stay
     # culturally coherent (a "Đặng Oanh" is from VN, not a random ARG).
     name_fn = make_name_picker(random.Random(f"coachname|{role}|{school}|{gender}"),
-                               gender="mixed", region_weights=region_preset("tennis_global"))
+                               gender="mixed", region_weights=region_preset(worldconfig.name_preset()))
     nm, country = name_fn()
     return generate_coach(random.Random(f"coach|{role}|{school}|{gender}"), nm,
                           school=school, base=base, home_country=country or None)

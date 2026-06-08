@@ -35,7 +35,7 @@ from dataclasses import asdict, fields
 
 import app.seasonmode as sm
 from .season import dual_between
-from . import dbpath
+from . import dbpath, worldconfig
 from .dbpath import resolve_db_path
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
@@ -378,7 +378,8 @@ def national_class(seed: int, year: int, gender: str) -> list:
         rng = random.Random(f"{seed}|worldrecruits|{gender}|{year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
-                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE)
+                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE,
+                               intl_preset=worldconfig.name_preset())
         _class_cache[key] = rank_class(klass)
     return _class_cache[key]
 
@@ -691,7 +692,7 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
-                                       region_weights=region_preset("tennis_global"))
+                                       region_weights=region_preset(worldconfig.name_preset()))
             tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()
@@ -960,6 +961,10 @@ def _finalize_year(seed: int, w: dict) -> dict:
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
 
     rosters = developed_rosters(w)        # full-year developed copy
+    # season_player_str above needed the primed cache; the rollover works on
+    # `rosters` (an independent copy), so free the ~170MB primed roster cache now
+    # rather than holding it alongside `rosters` through the heavy rollover.
+    reset_caches(); _primed.pop(seed, None)
     conn = _db()
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives.

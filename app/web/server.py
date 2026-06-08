@@ -149,12 +149,16 @@ def create_app() -> Flask:
 
     @app.route("/start")
     def onboarding():
-        return render_template("onboarding.html", active="World")
+        from app import worldconfig
+        return render_template("onboarding.html", active="World",
+                               bands=worldconfig.BANDS, band=worldconfig.name_preset())
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
-        # Reset any existing world and begin a fresh league at preseason (week 0,
-        # nothing played), then drop into the week-by-week World hub.
+        # Persist the chosen nationality band BEFORE seeding (generation reads it),
+        # then reset any existing world and begin a fresh league at preseason.
+        from app import worldconfig
+        worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
         wd.start_new()
         return redirect(url_for("world_view"))
 
