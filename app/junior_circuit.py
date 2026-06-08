@@ -45,16 +45,23 @@ from .development import stagger_scale
 # --------------------------------------------------------------------------
 # Tournament calendar — the schedule IS the tier system. A player reveals their
 # level by the events they enter, so no separate classification engine is needed.
-# (name, level, month). Levels rank by prestige: Major > Premier > National >
-# Development > State.
+# (name, level, month). Levels rank by prestige: Grand Slam > Major > Premier >
+# National > Development > State.
 # --------------------------------------------------------------------------
 CALENDAR: list[tuple[str, str, int]] = [
-    # Junior Major Series — the junior equivalent of the four Grand Slams.
+    # The four Junior Grand Slams — the pinnacle, worth far more than anything else
+    # (and a Grand Slam doubles title is an enormous points boost). Only the
+    # international elite (Tier 1) get into these draws.
+    ("Australian Open Junior Championships", "Grand Slam", 1),
+    ("Roland-Garros Junior Championships", "Grand Slam", 6),
+    ("Wimbledon Junior Championships", "Grand Slam", 7),
+    ("US Open Junior Championships", "Grand Slam", 9),
+    # Junior Major Series — ITF Grade A city Opens; prestigious, but NOT slams.
     ("Junior Chinese Open", "Major", 1),
     ("Junior Casablanca Open", "Major", 4),
     ("Junior São Paulo Open", "Major", 7),
     ("Junior Mexican Open", "Major", 9),
-    # Premier International — ITF J500-class; not majors but nearly as prestigious.
+    # Premier International — ITF Grade 1-class; not majors but nearly as prestigious.
     ("Easter Bowl", "Premier", 4),
     ("Bonfiglio Cup", "Premier", 5),
     ("Osaka Cup", "Premier", 7),
@@ -77,10 +84,13 @@ CALENDAR: list[tuple[str, str, int]] = [
 _EVENT_LEVEL = {name: level for name, level, _ in CALENDAR}
 _EVENT_MONTH = {name: month for name, level, month in CALENDAR}
 
-# Which events each STR-driven tier typically enters. Tier 1 rarely touches state
-# championships; most college recruits live in Tier 3.
+# Which events each STR-driven tier typically enters. Only Tier 1 plays the Grand
+# Slams; Tier 1 rarely touches state championships; most college recruits live in
+# Tier 3.
 TIER_EVENTS: dict[int, list[str]] = {
-    1: ["Junior Chinese Open", "Junior Casablanca Open", "Junior São Paulo Open",
+    1: ["Australian Open Junior Championships", "Roland-Garros Junior Championships",
+        "Wimbledon Junior Championships", "US Open Junior Championships",
+        "Junior Chinese Open", "Junior Casablanca Open", "Junior São Paulo Open",
         "Junior Mexican Open", "Easter Bowl", "Bonfiglio Cup", "Osaka Cup",
         "Kalamazoo Championships", "Orange Bowl"],
     2: ["Winter Nationals", "Spring Nationals", "National Championships",
@@ -126,26 +136,28 @@ SECTION_CAP = 32
 # the ITF doubles table at a 1/4 weight and fold into the SAME ledger (the ITF
 # Combined Junior Ranking — no separate doubles ranking). See
 # docs/DEV-MODEL-tennis-adaptation.md.
-_LEVEL_TO_GRADE = {"Major": "GS", "Premier": "A", "National": "G1",
-                   "Development": "G3", "State": "G5"}
+_LEVEL_TO_GRADE = {"Grand Slam": "GS", "Major": "A", "Premier": "G1",
+                   "National": "G2", "Development": "G3", "State": "G5"}
 # finish_label -> {grade: points}. Single-elim has no 3rd-place playoff, so both
-# semifinal losers take the Semifinalist row.
+# semifinal losers take the Semifinalist row. Grand Slams (GS) sit well above the
+# Major/Grade-A city Opens — a slam title is double a major's.
 JUNIOR_POINTS = {
-    "Champion":        {"GS": 1000, "A": 500, "G1": 300, "G3": 100, "G5": 30},
-    "Finalist":        {"GS": 700,  "A": 350, "G1": 210, "G3": 60,  "G5": 18},
-    "Semifinalist":    {"GS": 490,  "A": 250, "G1": 140, "G3": 36,  "G5": 9},
-    "Quarterfinalist": {"GS": 300,  "A": 150, "G1": 100, "G3": 20,  "G5": 5},
-    "R16":             {"GS": 180,  "A": 90,  "G1": 60,  "G3": 10,  "G5": 2},
-    "R32":             {"GS": 90,   "A": 45,  "G1": 30,  "G3": 5,   "G5": 0},
+    "Champion":        {"GS": 1000, "A": 500, "G1": 300, "G2": 200, "G3": 100, "G5": 30},
+    "Finalist":        {"GS": 700,  "A": 350, "G1": 210, "G2": 140, "G3": 60,  "G5": 18},
+    "Semifinalist":    {"GS": 490,  "A": 250, "G1": 140, "G2": 100, "G3": 36,  "G5": 9},
+    "Quarterfinalist": {"GS": 300,  "A": 150, "G1": 100, "G2": 60,  "G3": 20,  "G5": 5},
+    "R16":             {"GS": 180,  "A": 90,  "G1": 60,  "G2": 26,  "G3": 10,  "G5": 2},
+    "R32":             {"GS": 90,   "A": 45,  "G1": 30,  "G2": 18,  "G3": 5,   "G5": 0},
 }
-# ITF junior DOUBLES table (≈75% of singles); folded in at DOUBLES_WEIGHT.
+# ITF junior DOUBLES table (≈75% of singles); folded in at DOUBLES_WEIGHT. A Grand
+# Slam doubles title (750) dwarfs everything else — the boost the user called for.
 JUNIOR_DOUBLES_POINTS = {
-    "Champion":        {"GS": 750, "A": 375, "G1": 225, "G3": 75, "G5": 25},
-    "Finalist":        {"GS": 525, "A": 262, "G1": 157, "G3": 45, "G5": 13},
-    "Semifinalist":    {"GS": 367, "A": 187, "G1": 105, "G3": 27, "G5": 6},
-    "Quarterfinalist": {"GS": 225, "A": 112, "G1": 75,  "G3": 15, "G5": 3},
-    "R16":             {"GS": 135, "A": 67,  "G1": 45,  "G3": 7,  "G5": 0},
-    "R32":             {"GS": 0,   "A": 0,   "G1": 0,   "G3": 0,  "G5": 0},
+    "Champion":        {"GS": 750, "A": 375, "G1": 225, "G2": 150, "G3": 75, "G5": 25},
+    "Finalist":        {"GS": 525, "A": 262, "G1": 157, "G2": 105, "G3": 45, "G5": 13},
+    "Semifinalist":    {"GS": 367, "A": 187, "G1": 105, "G2": 75,  "G3": 27, "G5": 6},
+    "Quarterfinalist": {"GS": 225, "A": 112, "G1": 75,  "G2": 45,  "G3": 15, "G5": 3},
+    "R16":             {"GS": 135, "A": 67,  "G1": 45,  "G2": 27,  "G3": 7,  "G5": 0},
+    "R32":             {"GS": 0,   "A": 0,   "G1": 0,   "G2": 0,   "G3": 0,  "G5": 0},
 }
 DOUBLES_WEIGHT = 0.25      # ITF CJR: combined = best-6 singles + ¼ × best-6 doubles
 # USTA-style bonus for beating a ranked opponent (singles), by the opponent's

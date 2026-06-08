@@ -188,10 +188,12 @@ def test_points_ledger_is_frozen_and_bounded():
     from app.junior_circuit import (event_points, doubles_event_points, JUNIOR_POINTS,
                                      JUNIOR_DOUBLES_POINTS, BEST_N, DOUBLES_WEIGHT)
     k = _class(n=300)
-    assert event_points("Major", "Champion") == 1000        # ITF Grand Slam title
-    assert event_points("State", "Quarterfinalist") == 5    # ITF Grade 5 QF
-    assert doubles_event_points("Major", "Champion") == 750  # ITF GS doubles title
-    assert event_points("Major", "did-not-play") == 0
+    assert event_points("Grand Slam", "Champion") == 1000    # a junior slam title
+    assert event_points("Major", "Champion") == 500          # a Major (Grade A) is half a slam
+    assert event_points("State", "Quarterfinalist") == 5     # ITF Grade 5 QF
+    assert doubles_event_points("Grand Slam", "Champion") == 750  # the huge GS doubles boost
+    assert doubles_event_points("Major", "Champion") == 375      # a Major doubles title is half
+    assert event_points("Grand Slam", "did-not-play") == 0
     for p in k.recruits:
         assert isinstance(p.junior_points, int) and p.junior_points >= 0
         assert p.tournaments_played == len(p.junior_results)   # count matches the résumé

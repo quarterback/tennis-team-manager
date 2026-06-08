@@ -207,8 +207,10 @@ split instead of collapsing everything into one number.
 **Junior ranking points (`app/junior_circuit.py` → `JUNIOR_POINTS`, `_freeze_points`).**
 An accomplishment ledger on **ITF World Tennis Tour Junior** scaling. Each event
 awards points by **round reached × grade** (our calendar tiers Major / Premier /
-National / Development / State map onto ITF Grand Slam / Grade A / 1 / 3 / 5 — a
-Major title is 1000, a State quarterfinal 5). Only a player's **best six** results
+National / Development / State map onto ITF Grand Slam / Grade A / 1 / 2 / 3 / 5 —
+a slam title is 1000, a Major (Grade A) 500, a State quarterfinal 5). The four
+junior slams sit above the Grade-A Majors and only the elite enter them. Only a
+player's **best six** results
 count, plus their best six **ranked-win bonuses** (beating a Top-10 junior, resolved
 off a provisional order). It is deliberately *not* a rating: it rewards deep runs at
 strong events and rewards activity, with no ability prior and no recency weighting —

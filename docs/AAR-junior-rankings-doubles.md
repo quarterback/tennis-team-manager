@@ -137,3 +137,32 @@ Full suite: **165 passed**.
   the board compressed or specialists louder.
 - A **true doubles model** (serve-volley/net/poaching) would replace the driver tilt
   if doubles ever deserves first-class fidelity.
+
+## Addendum — Grand Slams separated from Majors (correction)
+
+The first cut **conflated "Major" with "Grand Slam"** — the calendar's top tier was
+literally commented "the junior equivalent of the four Grand Slams" and was paying
+Grand-Slam points (a title = 1000). That was wrong: in real junior tennis the four
+slams sit *above* the Grade-A "major" city Opens, and a slam — especially a slam
+*doubles* title — should be a far bigger points boost than anything else. I built it
+the wrong way and the user caught it.
+
+Fix: added a real **Grand Slam** tier as the pinnacle and demoted everything one ITF
+grade:
+
+| Tier | Was (grade) | Now (grade) | Champion (S / D) |
+| --- | --- | --- | --- |
+| **Grand Slam** *(new)* | — | GS | 1000 / 750 |
+| Major | GS | A | 500 / 375 |
+| Premier | A | G1 | 300 / 225 |
+| National | G1 | G2 | 200 / 150 |
+| Development | G3 | G3 | 100 / 75 |
+| State | G5 | G5 | 30 / 25 |
+
+The four junior slams (Australian / Roland-Garros / Wimbledon / US Open Junior
+Championships) are new calendar events that **only the international elite (Tier 1)
+enter**, so they genuinely separate the very top of the board. A Grade-2 column was
+added to both point tables for National. Net effect: a slam title is now worth double
+a major's, and a Grand Slam doubles title (750, ×¼ into the combined ledger) is the
+single biggest doubles prize — exactly the separation the user wanted. Board top moved
+to ~5.5k (slams stack on the elite résumés). Tests updated; 22 junior tests green.
