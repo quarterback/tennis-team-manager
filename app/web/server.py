@@ -287,10 +287,10 @@ def create_app() -> Flask:
         info = sm.player_info(sid, pid)
         if not info:
             abort(404)
-        # STR + career come from the same baseline season the team/box-score
-        # pages render, so a player's card matches the result you clicked from.
-        sr = get_season(division, gender)
-        strv, rel = sr.player_str.get(pid, (None, 0.0))
+        # STR + career both come from the persisted week-by-week season, so the
+        # card reflects matches actually played as the world advances (not a
+        # pre-simulated baseline).
+        strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, strv=strv, rel=rel, wins=wins, losses=losses,

@@ -606,17 +606,20 @@ def player_log(season_id: int, pid: str) -> list[dict]:
         for ln in json.loads(r["lines_json"] or "[]"):
             if not ln.get("completed"):
                 continue
+            raw_sets = ln.get("sets") or []
             if ln.get("home_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
                                                 ln["home_won"], ln.get("away_pid"), r["away"])
+                sets = [[h, a] for (h, a) in raw_sets]
             elif ln.get("away_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
                                                 not ln["home_won"], ln.get("home_pid"), r["home"])
+                sets = [[a, h] for (h, a) in raw_sets]   # flip to the player's POV
             else:
                 continue
             phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
             log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
                         "opp": idx.get(opp, {}).get("name", "—"), "opp_pid": opp,
                         "opp_school": opp_school, "week": r["week"],
-                        "gf": gf, "ga": ga, "won": won})
+                        "sets": sets, "gf": gf, "ga": ga, "won": won})
     return log

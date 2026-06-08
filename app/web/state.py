@@ -399,63 +399,49 @@ def active_overrides():
 
 
 def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SEED):
-    """A school's full-season dual results (from the cached season) shaped for a
-    real team page: opponent, home/away, W/L, team score, and a stable index so
-    each result links to its box score. Newest-feel order = schedule order."""
+    """A school's dual results **as actually played** in the week-by-week season
+    (season mode): opponent, home/away, W/L, team score, and the season-mode dual
+    id so each result links to its box score. Only completed duals appear, so the
+    team page fills in as the world advances rather than showing a finished
+    season at week 1."""
     from .rankings_data import crest
-    sr = get_season(division, gender, seed)
+    import app.world as world
+    import app.seasonmode as sm
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     out = []
     wins = losses = 0
-    for idx, d in enumerate(sr.duals):
-        if school not in (d["home"], d["away"]):
+    for d in sm.team_schedule(sid, school):
+        if d["status"] != "final":
             continue
         is_home = d["home"] == school
         opp = d["away"] if is_home else d["home"]
-        won = d["home_won"] if is_home else not d["home_won"]
+        won = (d["winner"] == 0) if is_home else (d["winner"] == 1)
         mine = d["home_points"] if is_home else d["away_points"]
         theirs = d["away_points"] if is_home else d["home_points"]
         wins += won
         losses += not won
         abbr, color = crest(opp)
-        out.append({"idx": idx, "opp": opp, "abbr": abbr, "color": color,
+        out.append({"id": d["id"], "opp": opp, "abbr": abbr, "color": color,
                     "home": is_home, "won": won, "mine": mine, "theirs": theirs,
-                    "conf": d["conf"]})
+                    "conf": bool(d["is_conf"])})
     return {"results": out, "wins": wins, "losses": losses}
 
 
 def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
     """A player's singles results grouped by season-year, newest first — built
-    from the SAME cached season every other page shows (team pages, box scores),
-    so clicking a player from a result always lands on matching data. Returns
-    (groups, (career_w, career_l)); each group is {year, season_no, log, w, l}.
+    from the **persisted week-by-week season** (season mode), so the card only
+    shows matches actually played as the world advances (not a pre-simulated
+    baseline). Returns (groups, (career_w, career_l)); each group is
+    {year, season_no, log, w, l}.
 
     Today there is one live season-year (the world's current year); the by-year
     structure is ready for persisted multi-season history."""
     import app.world as world
-    sr = get_season(division, gender, seed)
+    import app.seasonmode as sm
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
 
-    names: dict[str, str] = {}
-    for roster in sr.rosters.values():
-        for pr in roster:
-            names[pr.pid] = pr.name
-
-    log = []
-    for d in sr.duals:
-        for ln in d["lines"]:
-            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
-                continue                                  # singles only
-            if ln.get("home_pid") == pid:
-                gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
-                                                ln["home_won"], ln.get("away_pid"), d["away"])
-            elif ln.get("away_pid") == pid:
-                gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
-                                                not ln["home_won"], ln.get("home_pid"), d["home"])
-            else:
-                continue
-            log.append({"phase": "Regular", "slot": ln["slot"], "opp": names.get(opp, "—"),
-                        "opp_pid": opp, "opp_school": opp_school, "gf": gf, "ga": ga, "won": won})
-
+    log = sm.player_log(sid, pid)
     w = sum(1 for m in log if m["won"])
     l = len(log) - w
     groups = [{"year": 2026 + yr, "season_no": yr + 1, "log": log, "w": w, "l": l}] if log else []

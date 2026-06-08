@@ -78,7 +78,7 @@
       <span class="bl-panel-meta">{{ results.wins }}-{{ results.losses }} · 2026</span></div>
     <div class="bl-results">
       {% for m in results.results %}
-      <a class="bl-result" href="{{ url_for('team_match', i=m.idx, school=school, u=u) }}">
+      <a class="bl-result" href="{{ url_for('season_dual', dual_id=m.id, u=u) }}">
         <span class="ha">{{ 'vs' if m.home else 'at' }}</span>
         <span class="bl-crest xs" style="background:{{ m.color }}">{{ m.abbr }}</span>
         <span class="opp">{{ m.opp }}</span>
