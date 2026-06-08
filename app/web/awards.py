@@ -224,7 +224,7 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         if not hc:
             return
         recs.append({"subject_type": "coach", "subject_id": hc["coach_id"],
-                     "name": hc["coach"].name, "year": year, "season_no": season_no,
+                     "name": hc["name"], "year": year, "season_no": season_no,
                      "division": division, "gender": gender, "school": school,
                      "award": award, "label": label, "sort": sort})
 

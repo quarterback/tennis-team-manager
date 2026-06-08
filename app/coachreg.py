@@ -49,18 +49,22 @@ def _conn() -> sqlite3.Connection:
     return connect()
 
 
-def seat_coach_id(division: str, gender: str, school: str, role: str,
-                  *, name: str, home_country: str, archetype: str,
-                  dev: float, rec: float, tac: float, tenure: int) -> str:
-    """Return the stable coach_id holding this seat, creating the coach entity
-    on first sight. Idempotent — later calls just read the existing id."""
+def ensure_seat(division: str, gender: str, school: str, role: str,
+                *, name: str, home_country: str, archetype: str,
+                dev: float, rec: float, tac: float, tenure: int) -> dict:
+    """Return the coach record holding this seat — the PERSISTED entity, which is
+    authoritative (so a coach who has moved here shows correctly rather than a
+    freshly-generated one). Creates the entity on first sight."""
     conn = _conn()
-    row = conn.execute(
-        "SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
+    seat = conn.execute(
+        "SELECT coach_id, tenure FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
         (division, gender, school, role)).fetchone()
-    if row:
+    if seat:
+        c = conn.execute("SELECT * FROM coach WHERE coach_id=?", (seat["coach_id"],)).fetchone()
         conn.close()
-        return row["coach_id"]
+        rec_ = dict(c)
+        rec_["tenure"] = seat["tenure"]
+        return rec_
     cid = uuid.uuid4().hex[:12]
     conn.execute("INSERT OR IGNORE INTO coach (coach_id, name, home_country, archetype, dev, rec, tac)"
                  " VALUES (?,?,?,?,?,?,?)", (cid, name, home_country, archetype, dev, rec, tac))
@@ -68,7 +72,41 @@ def seat_coach_id(division: str, gender: str, school: str, role: str,
                  " VALUES (?,?,?,?,?,?)", (division, gender, school, role, cid, tenure))
     conn.commit()
     conn.close()
-    return cid
+    return {"coach_id": cid, "name": name, "home_country": home_country,
+            "archetype": archetype, "dev": dev, "rec": rec, "tac": tac, "tenure": tenure}
+
+
+def seat_coach_id(division: str, gender: str, school: str, role: str, **kw) -> str:
+    return ensure_seat(division, gender, school, role, **kw)["coach_id"]
+
+
+def head_seats(division: str, gender: str) -> dict:
+    """{school: coach_id} for every registered head seat in a universe."""
+    conn = _conn()
+    rows = conn.execute(
+        "SELECT school, coach_id FROM coach_seat WHERE division=? AND gender=? AND role='head'",
+        (division, gender)).fetchall()
+    conn.close()
+    return {r["school"]: r["coach_id"] for r in rows}
+
+
+def swap_head_coaches(g: str, d1: str, s1: str, d2: str, s2: str) -> None:
+    """Swap the head coaches of two programs (possibly across divisions) and
+    reset both tenures to 1. Both head seats must already exist."""
+    conn = _conn()
+    a = conn.execute("SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role='head'",
+                     (d1, g, s1)).fetchone()
+    b = conn.execute("SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role='head'",
+                     (d2, g, s2)).fetchone()
+    if not a or not b:
+        conn.close()
+        return
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=1 WHERE division=? AND gender=? AND school=? AND role='head'",
+                 (b["coach_id"], d1, g, s1))
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=1 WHERE division=? AND gender=? AND school=? AND role='head'",
+                 (a["coach_id"], d2, g, s2))
+    conn.commit()
+    conn.close()
 
 
 def get(coach_id: str) -> dict | None:

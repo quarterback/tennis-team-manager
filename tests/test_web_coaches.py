@@ -13,7 +13,7 @@ def test_coaches_have_stable_ids_and_pages():
     assert [s["coach_id"] for s in staff] == [s["coach_id"] for s in again]
     head = next(s for s in staff if s["role"] == "head")
     c = get_coach(head["coach_id"])
-    assert c["name"] == head["coach"].name and c["school"] == "Stanford"
+    assert c["name"] == head["name"] and c["school"] == "Stanford"
     assert c["role_label"] == "Head Coach"
 
 
@@ -25,6 +25,25 @@ def test_coach_of_the_year_national_and_per_conference():
     assert awards.count("conf_coty") >= 1
     # title credit reaches head coaches too
     assert "national_champion" in awards
+
+
+def test_coach_carousel_moves_coaches_and_followers():
+    import copy
+    import random
+    import app.world as wd
+    import app.coachreg as coachreg
+    create_app()
+    wd.start_new()
+    w = wd.load_world()
+    rosters = copy.deepcopy(wd.developed_rosters(w))   # don't mutate the cache
+    res = wd.coach_carousel(rosters, {}, random.Random(7), "men")
+    assert res["moves"] > 0
+    # a moved coach now resolves to a different school in the registry
+    src, dest, _k = res["sample"][0]
+    # dest's head coach is whoever moved up (came from src); their id resolves to dest
+    dest_div = next(d for (d, g) in rosters if g == "men" and dest in rosters[(d, g)])
+    head_id = coachreg.head_seats(dest_div, "men")[dest]
+    assert coachreg.get(head_id)["school"] == dest
 
 
 def test_coach_honors_persist_and_follow_id():

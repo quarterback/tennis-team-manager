@@ -298,62 +298,27 @@ def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     return sorted(groups.items())
 
 
-ARCHETYPE_LABELS = {
-    "coaching_lifer": "Coaching Lifer",
-    "former_pro": "Former Pro",
-    "recruiting_closer": "Recruiting Closer",
-    "development_guru": "Development Guru",
-    "tactician": "Tactician",
-}
-
-
-def _coach(school: str, gender: str, role: str, base: float):
-    """A deterministic coach (real name) for a program, seeded by role."""
-    import random
-    from generators import make_name_picker, region_preset
-    from app.coaches import generate_coach
-    name_fn = make_name_picker(random.Random(f"coachname|{role}|{school}|{gender}"),
-                               gender="mixed", region_weights=region_preset("global"))
-    nm, _ = name_fn()
-    return generate_coach(random.Random(f"coach|{role}|{school}|{gender}"), nm,
-                          school=school, base=base)
-
-
-def head_coach(school: str, division: str = "D1", gender: str = "men"):
-    """A deterministic head coach (real name) for a program."""
-    return _coach(school, gender, "head", base=54.0)
-
-
 _staff_cache: dict = {}
 
 
 def coaching_staff(division: str, gender: str, school: str):
     """Head coach + associate + assistant, each a persisted entity with a stable
-    coach_id (so they get their own page and honors that follow them). Stronger
-    programs skew to higher-rated staff. Cached per (division, gender, school)."""
-    import random
-    from app import ncaa, coachreg
-    key = (division, gender, school)
+    coach_id (so they get their own page and honors that follow them). The
+    persisted entity is authoritative, so a coach who moved in via the rollover
+    carousel shows here. Cached per (division, gender, school, world-year)."""
+    from app import coachgen
+    import app.world as world
+    yr = world.load_world()["year"] if world.exists() else 0
+    key = (division, gender, school, yr)            # re-resolve after a rollover
     if key in _staff_cache:
         return _staff_cache[key]
-    div = ncaa.load_division(division, gender)
-    prog = div.by_school(school)
-    base = 50.0 + (12.0 * prog.strength if prog else 0.0)
-    rng = random.Random(f"tenure|{school}|{gender}")
     staff = []
-    for role, title, bump in (("head", "Head Coach", 4.0),
-                              ("assoc", "Associate Head Coach", -2.0),
-                              ("asst", "Assistant Coach", -6.0)):
-        c = _coach(school, gender, role, base=max(28.0, base + bump))
-        dev, rec, tac = round(c.development_score), round(c.recruiting_score), round(c.tactical_score)
-        tenure = rng.randint(1, 14) if role == "head" else rng.randint(1, 8)
-        archetype = ARCHETYPE_LABELS.get(c.archetype, c.archetype.replace("_", " ").title())
-        cid = coachreg.seat_coach_id(division, gender, school, role, name=c.name,
-                                     home_country=c.home_country, archetype=archetype,
-                                     dev=dev, rec=rec, tac=tac, tenure=tenure)
-        staff.append({"coach": c, "coach_id": cid, "title": title, "role": role,
-                      "archetype": archetype, "tenure": tenure,
-                      "dev": dev, "rec": rec, "tac": tac})
+    for role in ("head", "assoc", "asst"):
+        r = coachgen.ensure(division, gender, school, role)
+        staff.append({"coach_id": r["coach_id"], "name": r["name"],
+                      "title": coachgen.ROLE_TITLES[role], "role": role,
+                      "archetype": r["archetype"], "tenure": r["tenure"],
+                      "dev": r["dev"], "rec": r["rec"], "tac": r["tac"]})
     _staff_cache[key] = staff
     return staff
 
