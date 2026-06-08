@@ -48,3 +48,47 @@ def test_full_season_reaches_a_champion(db):
         sm.advance(sid); guard += 1
     s = sm.load_season(sid)
     assert s["phase"] == "complete" and s["champion"]    # ran regular → conf → NCAA
+
+
+def test_every_roster_player_gets_a_match(db):
+    """The playing-time guarantee: by the end of the regular season every player
+    on every roster — including walk-ons — has a completed singles match."""
+    import json
+    from app.ncaa import build_roster, load_division
+    sid = sm.create_season("D2", "women", seed=5)
+    guard = 0
+    while sm.load_season(sid)["phase"] == "regular" and guard < 40:
+        sm.advance(sid); guard += 1
+    conn = sm._db()
+    rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'"
+                        " AND round='REG'", (sid,)).fetchall()
+    conn.close()
+    played = set()
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if ln.get("completed"):
+                played.add(ln.get("home_pid"))
+                played.add(ln.get("away_pid"))
+    never = [pr.pid for p in load_division("D2", "women").programs
+             for pr in build_roster(p) if pr.pid not in played]
+    assert not never, f"{len(never)} roster players never played a match"
+
+
+def test_lineups_are_deterministic(db, tmp_path):
+    """Re-running the same season (fresh DB, same seed) yields identical duals —
+    the playing-time guarantee is a pure function of seed/division/roster."""
+    import hashlib
+
+    def run(path):
+        sm.DB_PATH = path
+        sm._forced_cache.clear()
+        sid = sm.create_season("D1", "men", seed=2026)
+        for _ in range(4):
+            sm.advance(sid)
+        conn = sm._db()
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'"
+                            " ORDER BY id", (sid,)).fetchall()
+        conn.close()
+        return hashlib.md5("".join(r["lines_json"] or "" for r in rows).encode()).hexdigest()
+
+    assert run(str(tmp_path / "a.db")) == run(str(tmp_path / "b.db"))

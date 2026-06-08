@@ -25,7 +25,7 @@ import sqlite3
 from . import dbpath
 
 from .ncaa import load_division
-from .season import dual_between, build_corpus
+from .season import dual_between, build_corpus, forced_appearances
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import select_field, run_bracket, _seed_positions, ROUND_NAMES, clamp_field
@@ -228,10 +228,40 @@ def list_seasons() -> list[dict]:
 def _programs(division: str, gender: str) -> dict:
     return {p.school: p for p in load_division(division, gender).programs}
 
+
+_forced_cache: dict = {}
+
+
+def _forced_for(conn, s, progs, school) -> dict:
+    """Cached per-team ``dual_id -> {pid}`` playing-time guarantee. Every roster
+    player is assigned one regular-season dual; weakest players get the most
+    favorable (weakest-opponent) duals, so the bench plays up in non-conference.
+    Spread across all of a team's duals so each carries at most ~one guaranteed
+    player. Keyed by dual id (a team can play two duals in a week)."""
+    from .ncaa import build_roster
+    key = (s["seed"], s["division"], s["gender"], school)
+    if key not in _forced_cache:
+        rows = conn.execute(
+            "SELECT id, home, away FROM duals WHERE season_id=? AND round='REG'"
+            " AND (home=? OR away=?) ORDER BY week, id",
+            (s["id"], school, school)).fetchall()
+        duals = []
+        for r in rows:
+            opp = r["away"] if r["home"] == school else r["home"]
+            duals.append((r["id"], getattr(progs.get(opp), "prestige", 0.5)))
+        _forced_cache[key] = forced_appearances(progs[school], build_roster(progs[school]), duals)
+    return _forced_cache[key]
+
+
 def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
+    # Playing-time guarantee: each team has one dual per roster player where that
+    # player is seated into a completing slot (weakest players land in the most
+    # favorable duals, so the bench plays up in non-conference).
+    fh = _forced_for(conn, s, progs, home).get(dual_id)
+    fa = _forced_for(conn, s, progs, away).get(dual_id)
     rec = dual_between(progs[home], progs[away],
                        seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
-                       form=form, lineup_seed=s["seed"])
+                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa)
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
