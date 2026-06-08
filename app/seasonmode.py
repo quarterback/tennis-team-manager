@@ -25,7 +25,7 @@ import sqlite3
 from . import dbpath
 
 from .ncaa import load_division
-from .season import dual_between, build_corpus
+from .season import dual_between, build_corpus, forced_appearances
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import select_field, run_bracket, _seed_positions, ROUND_NAMES, clamp_field
@@ -228,10 +228,40 @@ def list_seasons() -> list[dict]:
 def _programs(division: str, gender: str) -> dict:
     return {p.school: p for p in load_division(division, gender).programs}
 
+
+_forced_cache: dict = {}
+
+
+def _forced_for(conn, s, progs, school) -> dict:
+    """Cached per-team ``dual_id -> {pid}`` playing-time guarantee. Every roster
+    player is assigned one regular-season dual; weakest players get the most
+    favorable (weakest-opponent) duals, so the bench plays up in non-conference.
+    Spread across all of a team's duals so each carries at most ~one guaranteed
+    player. Keyed by dual id (a team can play two duals in a week)."""
+    from .ncaa import build_roster
+    key = (s["seed"], s["division"], s["gender"], school)
+    if key not in _forced_cache:
+        rows = conn.execute(
+            "SELECT id, home, away FROM duals WHERE season_id=? AND round='REG'"
+            " AND (home=? OR away=?) ORDER BY week, id",
+            (s["id"], school, school)).fetchall()
+        duals = []
+        for r in rows:
+            opp = r["away"] if r["home"] == school else r["home"]
+            duals.append((r["id"], getattr(progs.get(opp), "prestige", 0.5)))
+        _forced_cache[key] = forced_appearances(progs[school], build_roster(progs[school]), duals)
+    return _forced_cache[key]
+
+
 def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
+    # Playing-time guarantee: each team has one dual per roster player where that
+    # player is seated into a completing slot (weakest players land in the most
+    # favorable duals, so the bench plays up in non-conference).
+    fh = _forced_for(conn, s, progs, home).get(dual_id)
+    fa = _forced_for(conn, s, progs, away).get(dual_id)
     rec = dual_between(progs[home], progs[away],
                        seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
-                       form=form, lineup_seed=s["seed"])
+                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa)
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
@@ -517,6 +547,81 @@ def national_top(season_id: int, n: int = 15) -> list[dict]:
             for i, p in enumerate(ranked[:n], 1)]
 
 
+_pi_cache: dict = {}
+
+
+def power_index(season_id: int) -> dict:
+    """Full Power Index ratings (school -> RatingLine with pi/apr/fqi/record) from
+    the season's completed regular-season duals. Empty in preseason. Cached by how
+    many duals are final, so it refreshes as the season advances."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _pi_cache:
+        duals = _completed_reg_duals(conn, season_id)
+        _pi_cache.clear()
+        _pi_cache[key] = compute_ratings(duals) if duals else {}
+    conn.close()
+    return _pi_cache[key]
+
+
+def conf_rank(season_id: int) -> dict:
+    """school -> (conference_rank, conf_wins, conf_losses) from live standings."""
+    out: dict = {}
+    for table in standings(season_id).values():
+        for i, row in enumerate(table, 1):
+            out[row["school"]] = (i, row["cw"], row["cl"])
+    return out
+
+
+def conf_champions(season_id: int) -> list[str]:
+    """Conference-tournament winners (school names) so far — the last CT round's
+    winner per conference. Empty until the conference tournaments have run.
+    Survives NCAA completion (which overwrites the season's `champion` field)."""
+    s = load_season(season_id)
+    div = load_division(s["division"], s["gender"])
+    conn = _db()
+    out = []
+    for conf in div.conferences:
+        last = conn.execute(
+            "SELECT home, away, winner FROM duals WHERE season_id=? AND round='CT'"
+            " AND conf=? AND status='final' ORDER BY round_no DESC, bpos ASC LIMIT 1",
+            (season_id, conf)).fetchone()
+        if last and last["winner"] is not None:
+            out.append(last["home"] if last["winner"] == 0 else last["away"])
+    conn.close()
+    return out
+
+
+def national_champion(season_id: int) -> str | None:
+    """The NCAA champion school once the season is complete, else None."""
+    s = load_season(season_id)
+    return s["champion"] if s and s["phase"] == "complete" else None
+
+
+def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
+    """The NCAA field as it stands: seed the Power-Index-rated programs (conference
+    champions get autobids once the conference tournaments have run), run the
+    bracket. Returns a BracketResult, or None in preseason (no results yet)."""
+    s = load_season(season_id)
+    ratings = power_index(season_id)
+    rated = [p for p in load_division(s["division"], s["gender"]).programs
+             if p.school in ratings]
+    if len(rated) < 2:
+        return None
+    champions = []
+    if s["phase"] == "ncaa" and s["champion"]:
+        try:
+            progs = _programs(s["division"], s["gender"])
+            champions = [progs[v] for v in json.loads(s["champion"]).values()
+                         if v in progs and v in ratings]
+        except (ValueError, TypeError):
+            champions = []
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    return run_bracket(seeded, autobids, seed=s["seed"])
+
+
 def dual_detail(dual_id: int) -> dict | None:
     conn = _db()
     r = conn.execute("SELECT * FROM duals WHERE id=?", (dual_id,)).fetchone()
@@ -591,6 +696,33 @@ def season_player_str(season_id: int) -> dict:
     return res
 
 
+_prec_cache: dict = {}
+
+
+def player_records(season_id: int) -> dict:
+    """One-pass ``pid -> (wins, losses)`` over all completed singles lines —
+    cheaper than calling player_log per player. Cached by completed-dual count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _prec_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        rec: dict = {}
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed") or ln.get("home_pid") is None:
+                    continue
+                hw = ln["home_won"]
+                rec.setdefault(ln["home_pid"], [0, 0])[0 if hw else 1] += 1
+                rec.setdefault(ln["away_pid"], [0, 0])[1 if hw else 0] += 1
+        _prec_cache.clear()
+        _prec_cache[key] = {k: (v[0], v[1]) for k, v in rec.items()}
+    conn.close()
+    return _prec_cache[key]
+
+
 def player_log(season_id: int, pid: str) -> list[dict]:
     """A player's match-by-match singles results across the whole season
     (regular + conference tournament + NCAA), newest phase last."""
@@ -606,17 +738,20 @@ def player_log(season_id: int, pid: str) -> list[dict]:
         for ln in json.loads(r["lines_json"] or "[]"):
             if not ln.get("completed"):
                 continue
+            raw_sets = ln.get("sets") or []
             if ln.get("home_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
                                                 ln["home_won"], ln.get("away_pid"), r["away"])
+                sets = [[h, a] for (h, a) in raw_sets]
             elif ln.get("away_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
                                                 not ln["home_won"], ln.get("home_pid"), r["home"])
+                sets = [[a, h] for (h, a) in raw_sets]   # flip to the player's POV
             else:
                 continue
             phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
             log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
                         "opp": idx.get(opp, {}).get("name", "—"), "opp_pid": opp,
                         "opp_school": opp_school, "week": r["week"],
-                        "gf": gf, "ga": ga, "won": won})
+                        "sets": sets, "gf": gf, "ga": ga, "won": won})
     return log

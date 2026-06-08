@@ -75,7 +75,8 @@ BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs 
 
 
 def coach_lineup(prog: Program, roster: list, form: dict | None,
-                 opp_prestige: float, lineup_seed: int, dual_seed: int = 0):
+                 opp_prestige: float, lineup_seed: int, dual_seed: int = 0,
+                 forced: set | None = None):
     """Return (engine Team, chosen Prospects) for `prog` this dual.
 
     The ladder is set by live results STR (ability before results exist) plus a
@@ -84,7 +85,13 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
     the coach rests starters against weaker opponents, and there's a baseline
     chance of a look even against a peer — and *which* bench players come in
     rotates per dual, so over a season everyone on the roster gets evaluated.
-    `chosen[i]` is exactly Team.singles[i] so line identity stays unambiguous."""
+    `chosen[i]` is exactly Team.singles[i] so line identity stays unambiguous.
+
+    `forced` is a set of pids that MUST appear this dual (the season's
+    playing-time guarantee — see `forced_appearances`). A forced player is slotted
+    around S3, which always completes before a 4-point clinch, so the appearance
+    actually counts; it also reflects bench players playing *up* against weaker
+    opponents."""
     srng = random.Random(f"{prog.key}|lineup|{lineup_seed}")    # season-stable ladder
 
     def score(p):
@@ -93,7 +100,8 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
             base = p.str_value()
         return base + srng.gauss(0, LINEUP_NOISE)
 
-    order = sorted(roster, key=score, reverse=True)
+    scores = {p.pid: score(p) for p in roster}                  # one draw per player, in order
+    order = sorted(roster, key=lambda p: scores[p.pid], reverse=True)
     starters, bench = order[:6], order[6:]
     drng = random.Random(f"{prog.key}|rot|{dual_seed}")         # per-dual rotation
     gap = getattr(prog, "prestige", 0.5) - opp_prestige
@@ -105,11 +113,62 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         picks = drng.sample(bench, rotate)                      # varied bench each time
         chosen = starters[:6 - rotate] + picks
     else:
-        chosen = starters
+        chosen = list(starters)
+
+    if forced:                                                  # guarantee these pids play
+        by_pid = {p.pid: p for p in roster}
+        # S1-S3 always complete before a 4-point clinch, so a guaranteed player
+        # only needs a top-3 slot — and only if they aren't already there (an ace
+        # forced into "their" dual stays at S1; a benched player is seated ~S3,
+        # i.e. playing up). Each dual carries at most a couple of forced pids.
+        for fp_pid in sorted(forced):
+            if fp_pid not in by_pid:
+                continue
+            cur = next((i for i, p in enumerate(chosen) if p.pid == fp_pid), None)
+            if cur is not None and cur < 3:
+                continue                                        # already a completing slot
+            comp = [i for i in (2, 1, 0) if i < len(chosen) and chosen[i].pid not in forced]
+            if cur is not None:                                 # in lineup but too low — swap up
+                tgt = comp[0] if comp else cur
+                chosen[cur], chosen[tgt] = chosen[tgt], chosen[cur]
+            else:                                               # off the lineup — bring in
+                droppable = [p for p in chosen if p.pid not in forced]
+                if not droppable:
+                    continue
+                drop = min(droppable, key=lambda p: scores[p.pid])
+                di = chosen.index(drop)
+                chosen[di] = by_pid[fp_pid]
+                tgt = comp[0] if comp else di
+                chosen[di], chosen[tgt] = chosen[tgt], chosen[di]
+
     doubles = srng.choice(DOUBLES_PERMS)
     team = Team(name=prog.school, singles=[p.engine_player() for p in chosen],
                 doubles=[tuple(x) for x in doubles])
     return team, chosen
+
+
+def forced_appearances(prog: Program, roster: list,
+                       nonconf_duals: list[tuple]) -> dict:
+    """Deterministic map ``dual_key -> {pid}`` giving EVERY roster player one
+    non-conference dual where they're guaranteed to appear. The weakest players
+    get the most favorable duals (weakest opponent), so the bench plays *up*
+    against lower-prestige competition. Players who'd start anyway are no-ops at
+    lineup time; only the genuinely-benched get seated into a completing slot —
+    keeping ~most teams on a standard six most weeks. (We can't pick the "bench"
+    by ability up front because the live-form ladder drifts during the season, so
+    we cover everyone, spread evenly across the team's non-conf duals.)
+
+    `nonconf_duals` is ``[(dual_key, opp_prestige), ...]``. Pure function of roster
+    ability + schedule, so it's stable across re-sims."""
+    if not nonconf_duals:
+        return {}
+    players = sorted(roster, key=lambda p: p.str_value())      # weakest first
+    favorable = sorted(nonconf_duals, key=lambda t: t[1])      # weakest opponent first
+    out: dict = {}
+    for i, p in enumerate(players):
+        key = favorable[i % len(favorable)][0]                 # weakest -> most favorable
+        out.setdefault(key, set()).add(p.pid)
+    return out
 
 
 def _line_identity(slot: str, la: list, lb: list,
@@ -163,13 +222,17 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
 
 
 def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
-                 form: dict | None = None, lineup_seed: int = 0) -> dict:
+                 form: dict | None = None, lineup_seed: int = 0,
+                 forced_home: set | None = None, forced_away: set | None = None) -> dict:
     """Simulate one dual between two programs and return the record dict. Each
     coach sets a lineup from their full roster (results-driven ladder + coach
     noise, rotating bench/walk-ons in against weaker opponents), so the bottom of
-    the roster actually gets evaluated. Used by season mode (the world)."""
-    sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5), lineup_seed, seed)
-    sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5), lineup_seed, seed)
+    the roster actually gets evaluated. `forced_home`/`forced_away` are pids the
+    season's playing-time guarantee requires in this dual. Used by season mode."""
+    sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
+                          lineup_seed, seed, forced=forced_home)
+    sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
+                          lineup_seed, seed, forced=forced_away)
     return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf)
 
 

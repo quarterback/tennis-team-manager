@@ -15,11 +15,11 @@ from flask import Flask, render_template, request, abort, redirect, url_for
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
-from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS, get_season,
+from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    dashboard_view, team_budget, team_results, season_match_view,
+                    dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from app import world as wd
 from app.juniors import US_STATES
@@ -164,19 +164,22 @@ def create_app() -> Flask:
 
     @app.route("/world/advance", methods=["POST"])
     def world_advance():
-        # Awards phase: when the season has finished, stamp this year's honors
-        # into the permanent record BEFORE the roster rolls over (graduation /
-        # transfers), so they're captured against the right teams.
-        if wd.season_complete():
-            stamp_world_honors()
+        # Staged pipeline: during play this advances a week / postseason round.
+        # Once every bracket is done, the awards phase must run BEFORE the roster
+        # rolls over (so honors are captured against the right teams) — so block
+        # rollover until honors are stamped (the hub shows "Run awards" instead).
+        import app.honors as honors
+        if wd.season_complete() and not honors.has_season(wd.BASE_YEAR + wd.load_world()["year"], "D1", "men"):
+            return redirect(url_for("world_view"))
         wd.advance_week()
         return redirect(url_for("world_view"))
 
     @app.route("/world/awards", methods=["POST"])
     def world_awards():
-        """Run the awards phase on demand (idempotent) without advancing."""
+        """Awards phase: stamp this year's honors (idempotent), then return to the
+        hub so the next stage (begin next season) is offered."""
         stamp_world_honors()
-        return redirect(request.referrer or url_for("awards"))
+        return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/")
     def dashboard():
@@ -265,7 +268,7 @@ def create_app() -> Flask:
         br = get_bracket(division, gender, size=size)
         return render_template("bracket.html", active="Bracket", br=br, u=u,
                                uni_label=label, division=division,
-                               field=len(br.seeds), field_presets=FIELD_PRESETS)
+                               field=len(br.seeds) if br else 0, field_presets=FIELD_PRESETS)
 
     @app.route("/api/health")
     def health():
@@ -332,20 +335,6 @@ def create_app() -> Flask:
                                city=(prog.location if prog else ""),
                                budget=team_budget(division, gender, school))
 
-    @app.route("/teams/match")
-    def team_match():
-        division, gender, label, u = _universe(request)
-        try:
-            idx = int(request.args.get("i", "0"))
-        except ValueError:
-            idx = 0
-        d = season_match_view(division, gender, idx)
-        if not d:
-            abort(404)
-        back = request.args.get("school") or d["home"]
-        return render_template("season_dual.html", active="Teams", u=u, uni_label=label,
-                               d=d, crest=crest, back_school=back)
-
     @app.route("/player/<pid>")
     def player(pid):
         division, gender, label, u = _universe(request)
@@ -353,10 +342,10 @@ def create_app() -> Flask:
         info = sm.player_info(sid, pid)
         if not info:
             abort(404)
-        # STR + career come from the same baseline season the team/box-score
-        # pages render, so a player's card matches the result you clicked from.
-        sr = get_season(division, gender)
-        strv, rel = sr.player_str.get(pid, (None, 0.0))
+        # STR + career both come from the persisted week-by-week season, so the
+        # card reflects matches actually played as the world advances (not a
+        # pre-simulated baseline).
+        strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
         honor_years = player_career_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,

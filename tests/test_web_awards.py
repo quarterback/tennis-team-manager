@@ -9,7 +9,7 @@ def test_awards_page_renders():
     assert b"All-American" in r.data and b"All-Conference" in r.data
 
 
-def test_season_awards_structure():
+def test_season_awards_structure(played_season):
     aw = season_awards("D1", "men")
     # National All-American tiers exist and are STR-ordered (First >= Second).
     assert aw["all_american"], "expected at least one All-American tier"

@@ -8,7 +8,7 @@ These are *computed* honors (a transparent proxy for the real NCAA selection),
 so they stay consistent with the rankings, box scores, and player cards."""
 from __future__ import annotations
 
-from .state import get_season, ranking_rows, get_bracket, DEFAULT_SEED
+from .state import ranking_rows, DEFAULT_SEED
 
 # Selection sizes (singles). Tunable; deliberately conservative.
 AA_FIRST = 10           # First Team All-American (national)
@@ -29,23 +29,38 @@ def _eff_seed(seed: int) -> int:
     return seed
 
 
+def _sid(division: str, gender: str, seed: int) -> int:
+    import app.world as world
+    import app.seasonmode as sm
+    return sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+
+
+def _roster(division: str, gender: str, school: str):
+    from app.ncaa import build_roster, load_division
+    prog = load_division(division, gender).by_school(school)
+    return build_roster(prog) if prog else []
+
+
 def _eligible(division: str, gender: str, seed: int) -> list[dict]:
     """STR-rated players with enough matches, tagged with school + conference,
-    sorted strongest first."""
-    sr = get_season(division, gender, seed)
+    sorted strongest first — from the live week-by-week season."""
+    import app.seasonmode as sm
+    sid = _sid(division, gender, seed)
     conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
+    pidx = sm._pid_index(division, gender)
+    strmap = sm.season_player_str(sid)
+    recs = sm.player_records(sid)
     out = []
-    for school, roster in sr.rosters.items():
-        c, ca = conf.get(school, ("Independent", "IND"))
-        for pr in roster:
-            s, rel = sr.player_str.get(pr.pid, (None, 0.0))
-            if s is None:
-                continue
-            w, l = sr.player_record.get(pr.pid, (0, 0))
-            if w + l < MIN_MATCHES:
-                continue
-            out.append({"pid": pr.pid, "name": pr.name, "school": school,
-                        "conf": c, "conf_abbr": ca, "str": s, "w": w, "l": l})
+    for pid, (s, rel) in strmap.items():
+        info = pidx.get(pid)
+        if info is None or s is None:
+            continue
+        w, l = recs.get(pid, (0, 0))
+        if w + l < MIN_MATCHES:
+            continue
+        c, ca = conf.get(info["school"], ("Independent", "IND"))
+        out.append({"pid": pid, "name": info["name"], "school": info["school"],
+                    "conf": c, "conf_abbr": ca, "str": s, "w": w, "l": l})
     out.sort(key=lambda p: (p["str"], p["w"]), reverse=True)
     return out
 
@@ -108,12 +123,12 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
     national_poty = players[0] if players else None
     conf_poty = sorted(({"conf": c, **ps[0]} for c, ps in by_conf.items() if ps),
                        key=lambda p: p["conf"])
-    sr = get_season(division, gender, seed)
+    import app.seasonmode as sm
+    sid = _sid(division, gender, seed)
     confmap = {r.school: r.conf for r in ranking_rows(division, gender, seed)}
-    conf_champions = sorted(((confmap.get(p.school, ""), p.school)
-                             for p in getattr(sr, "champions", []) or []))
-    br = get_bracket(division, gender, seed)
-    national_champion = br.champion.school if getattr(br, "champion", None) else None
+    conf_champions = sorted(((confmap.get(school, ""), school)
+                             for school in sm.conf_champions(sid)))
+    national_champion = sm.national_champion(sid)
 
     result = {"all_american": all_american, "all_conference": all_conference,
               "by_pid": by_pid, "player_count": len(players),
@@ -142,7 +157,8 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
         return _rec_cache[key]
 
     import app.world as world
-    sr = get_season(division, gender, seed)
+    import app.seasonmode as sm
+    sid = _sid(division, gender, seed)
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
     year, season_no = 2026 + yr, yr + 1
     conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
@@ -193,15 +209,15 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
 
     # Team titles — credit every player on the roster.
     def credit_roster(school, award, label, sort):
-        for pr in sr.rosters.get(school, []):
+        for pr in _roster(division, gender, school):
             add(pr.pid, pr.name, school, award, label, sort)
 
-    for prog in getattr(sr, "champions", []) or []:
-        cname = conf.get(prog.school, ("Conference", ""))[0]
-        credit_roster(prog.school, "conf_champion", f"{cname} Champion", 55)
-    br = get_bracket(division, gender, seed)
-    if getattr(br, "champion", None):
-        credit_roster(br.champion.school, "national_champion", "National Champion", 110)
+    for school in sm.conf_champions(sid):
+        cname = conf.get(school, ("Conference", ""))[0]
+        credit_roster(school, "conf_champion", f"{cname} Champion", 55)
+    champ = sm.national_champion(sid)
+    if champ:
+        credit_roster(champ, "national_champion", "National Champion", 110)
 
     _rec_cache[key] = recs
     return recs
@@ -212,8 +228,10 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     head coach of each champion. Keyed to the coach's stable id so they follow
     the coach between schools."""
     import app.world as world
-    from .state import head_coach, get_season, get_bracket
+    import app.seasonmode as sm
+    from .state import head_coach
 
+    sid = _sid(division, gender, seed)
     rows = ranking_rows(division, gender, seed)
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
     year, season_no = 2026 + yr, yr + 1
@@ -240,13 +258,12 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         add_head(best.school, "conf_coty", f"{conf} Coach of the Year", 58)
 
     # Team titles for the head coach of each champion.
-    sr = get_season(division, gender, seed)
     confmap = {r.school: r.conf for r in rows}
-    for prog in getattr(sr, "champions", []) or []:
-        add_head(prog.school, "conf_champion", f"{confmap.get(prog.school, 'Conference')} Champion", 55)
-    br = get_bracket(division, gender, seed)
-    if getattr(br, "champion", None):
-        add_head(br.champion.school, "national_champion", "National Champion", 110)
+    for school in sm.conf_champions(sid):
+        add_head(school, "conf_champion", f"{confmap.get(school, 'Conference')} Champion", 55)
+    champ = sm.national_champion(sid)
+    if champ:
+        add_head(champ, "national_champion", "National Champion", 110)
     return recs
 
 

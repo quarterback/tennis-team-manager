@@ -29,7 +29,7 @@
           <div class="bl-table" style="--bl-grid-cols: 70px 50px minmax(120px,1fr) 130px 70px 60px">
             <div class="bl-thead">
               <span class="bl-th">PHASE</span><span class="bl-th">LINE</span><span class="bl-th">OPPONENT</span>
-              <span class="bl-th">SCHOOL</span><span class="bl-th">GAMES</span><span class="bl-th">RESULT</span>
+              <span class="bl-th">SCHOOL</span><span class="bl-th">SCORE</span><span class="bl-th">RESULT</span>
             </div>
             {% set played = namespace(any=false) %}
             {% for yrg in career %}
@@ -45,7 +45,7 @@
                 <span class="bl-conf">{{ m.slot }}</span>
                 <span class="bl-rec">{% if m.opp_pid %}<a class="bl-school" href="{{ url_for('player', pid=m.opp_pid, school=m.opp_school, u=u) }}">{{ m.opp }}</a>{% else %}{{ m.opp }}{% endif %}</span>
                 <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a class="bl-school" href="{{ url_for('teams', school=m.opp_school, u=u) }}">{{ m.opp_school }}</a></span>
-                <span class="bl-rec">{{ m.gf }}-{{ m.ga }}</span>
+                <span class="bl-rec" style="white-space:nowrap">{% if m.sets %}{% for s in m.sets %}{{ s[0] }}-{{ s[1] }}{{ ' ' if not loop.last }}{% endfor %}{% else %}{{ m.gf }}-{{ m.ga }}{% endif %}</span>
                 <span><span class="bl-badge {{ 'tier-IVY' if m.won else 'tier-D3' }}">{{ 'W' if m.won else 'L' }}</span></span>
               </div>
               {% endfor %}
