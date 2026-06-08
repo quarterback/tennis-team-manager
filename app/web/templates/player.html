@@ -15,7 +15,7 @@
         {{ info.name }}
         <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div>
-      {% if honors %}<div class="pl-honors">{% for h in honors %}<span class="pl-honor{% if 'All-American' in h %} aa{% endif %}">🏅 {{ h }}</span>{% endfor %}</div>{% endif %}</div>
+      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
       <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
       <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
@@ -57,6 +57,24 @@
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>
+        <span class="bl-panel-meta">follows the player</span></div>
+        <div class="bl-panel-body">
+          {% if honor_years %}
+          {% for yg in honor_years %}
+          <div class="pl-honyear">
+            <div class="pl-honyear-head">{{ yg.year }} · Season {{ yg.season_no }}
+              <span class="pl-honyear-school">{{ yg.school }}</span>{% if yg.live %} <span class="pl-live">live</span>{% endif %}</div>
+            {% for h in yg.awards %}
+            <div class="pl-honitem"><span class="pl-hondot {{ h.award }}"></span>{{ h.label }}</div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="aw-empty" style="padding:4px 2px">No honors yet — earned at season's end.</p>
+          {% endif %}
+        </div>
+      </div>
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Bio</span></div>
         <div class="bl-panel-body"><table class="bl-protable"><tbody>
           <tr><td>Class</td><td>{{ info.class }}</td></tr>

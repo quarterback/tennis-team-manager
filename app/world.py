@@ -219,6 +219,11 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     sconn.executescript("DELETE FROM duals; DELETE FROM seasons;")
     sconn.commit()
     sconn.close()
+    # Career honors + coach identities are season-to-season state too.
+    import app.honors as honors
+    import app.coachreg as coachreg
+    honors.reset()
+    coachreg.reset()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
     _dev_cache.clear()
@@ -300,6 +305,14 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     sm._pid_idx_cache.clear(); sm._str_cache.clear()
     _primed[seed] = stamp
     return w
+
+
+def season_complete(seed: int = DEFAULT_SEED) -> bool:
+    """True when every universe has finished its postseason — i.e. the season is
+    ready for the awards phase and year rollover."""
+    if not exists(seed):
+        return False
+    return _all_complete(seed, get_or_create(seed))
 
 
 def year_seed(seed: int, year: int) -> int:
@@ -661,12 +674,82 @@ def _normalize(rosters: dict) -> None:
             del roster[ROSTER_SIZE:]
 
 
+def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
+    """Free-agent coach movement, run BEFORE the player portal. A slice of head
+    coaches move up to higher-prestige programs (a swap with the program they
+    join). When a coach moves, up to half of their old roster MAY follow — but
+    only players good enough for the new program's level, so a D3 coach reaching
+    D1 brings at most their very best. Mutates `rosters` + the coach registry."""
+    import app.coachgen as coachgen
+    import app.coachreg as coachreg
+
+    progs: dict[str, tuple] = {}
+    for (d, g), schools in rosters.items():
+        if g != gender:
+            continue
+        div = load_division(d, g)
+        for school in schools:
+            p = div.by_school(school)
+            if p:
+                progs[school] = (d, p.prestige)
+    if len(progs) < 4:
+        return {"moves": 0, "followers": 0, "sample": []}
+
+    by_pres = sorted(progs, key=lambda s: progs[s][1])          # ascending prestige
+    n_move = max(1, int(len(by_pres) * 0.10))
+    movers_pool = by_pres[:int(len(by_pres) * 0.85)]            # leave the very top put
+    rng.shuffle(movers_pool)
+
+    used: set[str] = set()
+    moves = followers = 0
+    sample = []
+    for src in movers_pool:
+        if moves >= n_move:
+            break
+        if src in used:
+            continue
+        sdiv, spres = progs[src]
+        dests = [s for s in by_pres if s not in used and s != src and progs[s][1] > spres + 0.05]
+        if not dests:
+            continue
+        dest = rng.choice(dests[:max(1, len(dests) // 2)])     # an ambitious-but-real jump
+        ddiv, _ = progs[dest]
+        coachgen.ensure(sdiv, gender, src, "head")             # register both seats so we can swap
+        coachgen.ensure(ddiv, gender, dest, "head")
+        coachreg.swap_head_coaches(gender, sdiv, src, ddiv, dest)
+        used.add(src); used.add(dest); moves += 1
+
+        # Followers: src's coach is now at dest. Up to half of src's roster may
+        # follow, gated to players who'd make dest's lineup (its 6th-best STR).
+        sr = rosters[(sdiv, gender)][src]
+        dr = rosters[(ddiv, gender)][dest]
+        dstr = sorted((_str_of(player_str, p) for p in dr), reverse=True)
+        floor = (dstr[5] if len(dstr) >= 6 else (dstr[-1] if dstr else 0.0)) - 1.0
+        eligible = [p for p in sr if _str_of(player_str, p) >= floor]
+        cap = min(len(sr) // 2, len(eligible))
+        k = rng.randint(0, cap) if cap > 0 else 0
+        for p in (rng.sample(eligible, k) if k else []):
+            sr.remove(p); dr.append(p)
+            followers += 1
+        if k:
+            sample.append((src, dest, k))
+    return {"moves": moves, "followers": followers, "sample": sample[:6]}
+
+
 def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
                       seed: int, year: int) -> dict:
-    """The post-season: graduate → transfer portal (per gender) → bring in the
-    signed class → refill with walk-ons. Mutates `rosters`; returns a summary."""
+    """The post-season: graduate → coach carousel → transfer portal (per gender)
+    → bring in the signed class → refill with walk-ons. Mutates `rosters`."""
     rng = random.Random(f"{seed}|finalize|{year}")
     grads = graduate(rosters)
+    carousel = {"moves": 0, "followers": 0, "sample": []}
+    for gender in GENDERS:
+        if not any(g == gender for (_, g) in rosters):
+            continue
+        cr = coach_carousel(rosters, player_str, rng, gender)
+        carousel["moves"] += cr["moves"]
+        carousel["followers"] += cr["followers"]
+        carousel["sample"].extend(cr["sample"][:3])
     portal = {"movers": 0, "up": 0, "down": 0, "schol": 0, "depart": 0, "sample": []}
     for gender in GENDERS:
         if not any(g == gender for (_, g) in rosters):
@@ -679,6 +762,8 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
     intake = refill_walkons(rosters, year + 1, seed)
     _normalize(rosters)
     return {"graduated": grads, "committed": committed, "walkons": intake,
+            "coach_moves": carousel["moves"], "coach_followers": carousel["followers"],
+            "coach_sample": carousel["sample"],
             **{f"portal_{k}": v for k, v in portal.items()}}
 
 

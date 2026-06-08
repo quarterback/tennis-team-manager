@@ -8,7 +8,7 @@ These are *computed* honors (a transparent proxy for the real NCAA selection),
 so they stay consistent with the rankings, box scores, and player cards."""
 from __future__ import annotations
 
-from .state import get_season, ranking_rows, DEFAULT_SEED
+from .state import get_season, ranking_rows, get_bracket, DEFAULT_SEED
 
 # Selection sizes (singles). Tunable; deliberately conservative.
 AA_FIRST = 10           # First Team All-American (national)
@@ -104,8 +104,21 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
         if teams:
             all_conference.append((conf, teams))
 
+    # Player of the Year (national + per conference) and team champions.
+    national_poty = players[0] if players else None
+    conf_poty = sorted(({"conf": c, **ps[0]} for c, ps in by_conf.items() if ps),
+                       key=lambda p: p["conf"])
+    sr = get_season(division, gender, seed)
+    confmap = {r.school: r.conf for r in ranking_rows(division, gender, seed)}
+    conf_champions = sorted(((confmap.get(p.school, ""), p.school)
+                             for p in getattr(sr, "champions", []) or []))
+    br = get_bracket(division, gender, seed)
+    national_champion = br.champion.school if getattr(br, "champion", None) else None
+
     result = {"all_american": all_american, "all_conference": all_conference,
-              "by_pid": by_pid, "player_count": len(players)}
+              "by_pid": by_pid, "player_count": len(players),
+              "national_poty": national_poty, "conf_poty": conf_poty,
+              "conf_champions": conf_champions, "national_champion": national_champion}
     _cache[key] = result
     return result
 
@@ -114,5 +127,177 @@ def player_honors(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     return season_awards(division, gender, seed)["by_pid"].get(pid, [])
 
 
+# ---------------------------------------------------------------------------
+# Stampable honor records — the single computation the persistence + the player
+# cards both consume. Includes the individual honors plus Player of the Year and
+# team titles (conference + national champions credited to the whole roster).
+# ---------------------------------------------------------------------------
+_rec_cache: dict = {}
+
+
+def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    eff = _eff_seed(seed)
+    key = (division, gender, eff)
+    if key in _rec_cache:
+        return _rec_cache[key]
+
+    import app.world as world
+    sr = get_season(division, gender, seed)
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+    year, season_no = 2026 + yr, yr + 1
+    conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
+    players = _eligible(division, gender, seed)        # STR-sorted, conf-tagged
+
+    recs: list[dict] = []
+
+    def add(pid, name, school, award, label, sort):
+        recs.append({"subject_type": "player", "subject_id": pid, "name": name,
+                     "year": year, "season_no": season_no, "division": division,
+                     "gender": gender, "school": school, "award": award,
+                     "label": label, "sort": sort})
+
+    def add_p(p, award, label, sort):
+        add(p["pid"], p["name"], p["school"], award, label, sort)
+
+    by_conf: dict[str, list[dict]] = {}
+    for p in players:
+        by_conf.setdefault(p["conf"], []).append(p)
+
+    # Player of the Year — national + per conference.
+    if players:
+        add_p(players[0], "national_poty", "National Player of the Year", 100)
+    for c, ps in by_conf.items():
+        if ps:
+            add_p(ps[0], "conf_poty", f"{c} Player of the Year", 60)
+
+    # All-American (national).
+    for i, p in enumerate(players):
+        if i < AA_FIRST:
+            add_p(p, "all_american", "First Team All-American", 90)
+        elif i < AA_SECOND:
+            add_p(p, "all_american", "Second Team All-American", 85)
+        elif i < AA_HM:
+            add_p(p, "all_american", "All-American Honorable Mention", 80)
+        else:
+            break
+
+    # All-Conference (per conference).
+    for c, ps in by_conf.items():
+        for i, p in enumerate(ps):
+            if i < CONF_FIRST:
+                add_p(p, "all_conference", f"First Team All-{p['conf_abbr']}", 50)
+            elif i < CONF_SECOND:
+                add_p(p, "all_conference", f"Second Team All-{p['conf_abbr']}", 45)
+            else:
+                break
+
+    # Team titles — credit every player on the roster.
+    def credit_roster(school, award, label, sort):
+        for pr in sr.rosters.get(school, []):
+            add(pr.pid, pr.name, school, award, label, sort)
+
+    for prog in getattr(sr, "champions", []) or []:
+        cname = conf.get(prog.school, ("Conference", ""))[0]
+        credit_roster(prog.school, "conf_champion", f"{cname} Champion", 55)
+    br = get_bracket(division, gender, seed)
+    if getattr(br, "champion", None):
+        credit_roster(br.champion.school, "national_champion", "National Champion", 110)
+
+    _rec_cache[key] = recs
+    return recs
+
+
+def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Coach of the Year (national + per conference) and team titles for the
+    head coach of each champion. Keyed to the coach's stable id so they follow
+    the coach between schools."""
+    import app.world as world
+    from .state import head_coach, get_season, get_bracket
+
+    rows = ranking_rows(division, gender, seed)
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+    year, season_no = 2026 + yr, yr + 1
+    recs: list[dict] = []
+
+    def add_head(school, award, label, sort):
+        hc = head_coach(division, gender, school)
+        if not hc:
+            return
+        recs.append({"subject_type": "coach", "subject_id": hc["coach_id"],
+                     "name": hc["name"], "year": year, "season_no": season_no,
+                     "division": division, "gender": gender, "school": school,
+                     "award": award, "label": label, "sort": sort})
+
+    # Coach of the Year — head coach of the top-PI team, national + per conference.
+    if rows:
+        top = max(rows, key=lambda r: r.pi)
+        add_head(top.school, "national_coty", "National Coach of the Year", 95)
+    by_conf: dict[str, list] = {}
+    for r in rows:
+        by_conf.setdefault(r.conf, []).append(r)
+    for conf, rs in by_conf.items():
+        best = max(rs, key=lambda r: r.pi)
+        add_head(best.school, "conf_coty", f"{conf} Coach of the Year", 58)
+
+    # Team titles for the head coach of each champion.
+    sr = get_season(division, gender, seed)
+    confmap = {r.school: r.conf for r in rows}
+    for prog in getattr(sr, "champions", []) or []:
+        add_head(prog.school, "conf_champion", f"{confmap.get(prog.school, 'Conference')} Champion", 55)
+    br = get_bracket(division, gender, seed)
+    if getattr(br, "champion", None):
+        add_head(br.champion.school, "national_champion", "National Champion", 110)
+    return recs
+
+
+def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
+    """Compute and persist this season-year's honors (players + coaches) for
+    every universe. The 'awards phase' action — idempotent, re-runnable."""
+    import app.world as world
+    import app.honors as honors
+    from .state import UNIVERSES
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+    year = 2026 + yr
+    total = 0
+    for _u, division, gender, _label in UNIVERSES:
+        honors.clear_season(year, division, gender)
+        total += honors.stamp(honor_records(division, gender, seed))
+        total += honors.stamp(coach_honor_records(division, gender, seed))
+    return total
+
+
+def coach_career_honors(division: str, gender: str, coach_id: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """A coach's honors grouped by season-year (persisted + live current year)."""
+    import app.world as world
+    import app.honors as honors
+    groups = honors.career_by_year(coach_id, "coach")
+    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    if not any(g["year"] == cur_year for g in groups):
+        live = [r for r in coach_honor_records(division, gender, seed) if r["subject_id"] == coach_id]
+        if live:
+            live.sort(key=lambda r: r["sort"], reverse=True)
+            groups.insert(0, {"year": cur_year, "season_no": live[0]["season_no"],
+                              "school": live[0]["school"], "awards": live, "live": True})
+    return groups
+
+
+def player_career_honors(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """A player's honors grouped by season-year (newest first), keyed to pid so
+    they follow transfers. Persisted years come from the store; the current year
+    is shown live until the awards phase stamps it."""
+    import app.world as world
+    import app.honors as honors
+    groups = honors.career_by_year(pid, "player")
+    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    if not any(g["year"] == cur_year for g in groups):
+        live = [r for r in honor_records(division, gender, seed) if r["subject_id"] == pid]
+        if live:
+            live.sort(key=lambda r: r["sort"], reverse=True)
+            groups.insert(0, {"year": cur_year, "season_no": live[0]["season_no"],
+                              "school": live[0]["school"], "awards": live, "live": True})
+    return groups
+
+
 def reset_cache() -> None:
     _cache.clear()
+    _rec_cache.clear()

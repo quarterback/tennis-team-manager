@@ -20,11 +20,12 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     dashboard_view, team_budget, team_results, season_match_view,
-                    conference_schools, team_conference, world_hub, player_career)
+                    conference_schools, team_conference, world_hub, player_career, get_coach)
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
-from .awards import season_awards, player_honors
+from .awards import (season_awards, player_career_honors, stamp_world_honors,
+                     coach_career_honors, coach_honor_records)
 
 from app import seasonmode as sm
 from app import overrides as ov
@@ -47,6 +48,7 @@ NAV_GROUPS = [
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
+        {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
@@ -70,6 +72,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/awards"):           return "awards"
+    if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
     if p.startswith("/season/schedule"):  return "schedule"
     if p.startswith("/season"):           return "season"
@@ -161,8 +164,19 @@ def create_app() -> Flask:
 
     @app.route("/world/advance", methods=["POST"])
     def world_advance():
+        # Awards phase: when the season has finished, stamp this year's honors
+        # into the permanent record BEFORE the roster rolls over (graduation /
+        # transfers), so they're captured against the right teams.
+        if wd.season_complete():
+            stamp_world_honors()
         wd.advance_week()
         return redirect(url_for("world_view"))
+
+    @app.route("/world/awards", methods=["POST"])
+    def world_awards():
+        """Run the awards phase on demand (idempotent) without advancing."""
+        stamp_world_honors()
+        return redirect(request.referrer or url_for("awards"))
 
     @app.route("/")
     def dashboard():
@@ -192,13 +206,54 @@ def create_app() -> Flask:
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
+    @app.route("/coach/<coach_id>")
+    def coach(coach_id):
+        division, gender, label, u = _universe(request)
+        c = get_coach(coach_id)
+        if not c:
+            abort(404)
+        div = c.get("division", division)
+        gen = c.get("gender", gender)
+        honor_years = coach_career_honors(div, gen, coach_id)
+        return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
+                               crest=crest, u=u, uni_label=label)
+
     @app.route("/awards")
     def awards():
         division, gender, label, u = _universe(request)
         aw = season_awards(division, gender)
+        coty = coach_honor_records(division, gender)
+        coach_awards = {
+            "national": next((r for r in coty if r["award"] == "national_coty"), None),
+            "conference": sorted((r for r in coty if r["award"] == "conf_coty"),
+                                 key=lambda r: r["label"]),
+        }
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
-                               u=u, uni_label=label, crest=crest)
+                               coach_awards=coach_awards, u=u, uni_label=label, crest=crest)
+
+    @app.route("/hall-of-fame")
+    def hall_of_fame():
+        division, gender, label, u = _universe(request)
+        import app.honors as honors
+        uni_label = {(d, g): lbl for _v, d, g, lbl in UNIVERSES}
+        archive = []
+        for y in honors.years():
+            rows = honors.winners(y, ["national_champion", "national_poty", "national_coty"])
+            unis: dict = {}
+            for r in rows:
+                slot = unis.setdefault((r["division"], r["gender"]), {})
+                if r["award"] == "national_champion":
+                    slot.setdefault("champion", r["school"])      # one per team
+                else:
+                    slot[r["award"]] = r
+            archive.append({
+                "year": y,
+                "universes": [(uni_label.get(k, f"{k[0]} {k[1]}"), v)
+                              for k, v in sorted(unis.items())],
+            })
+        return render_template("hall_of_fame.html", active="Hall of Fame",
+                               archive=archive, u=u, uni_label=label, crest=crest)
 
     @app.route("/bracket")
     def bracket():
@@ -303,10 +358,10 @@ def create_app() -> Flask:
         sr = get_season(division, gender)
         strv, rel = sr.player_str.get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
-        honors = player_honors(division, gender, pid)
+        honor_years = player_career_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, strv=strv, rel=rel, wins=wins, losses=losses,
-                               honors=honors, crest=crest, u=u, uni_label=label)
+                               honor_years=honor_years, crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")
     def recruiting():

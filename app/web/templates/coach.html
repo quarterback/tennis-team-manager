@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ c.name }}{% endblock %}
+{% block meta_description %}{{ c.name }} — {{ c.role|default('coach') }}{% if c.school %} at {{ c.school }}{% endif %}. Career coaching honors and record in Play to Clinch.{% endblock %}
+{% block content %}
+{% set abbr, color = crest(c.school) if c.school else ('—', '#888') %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Coaches › {{ c.school or 'Free agent' }} › {{ c.name }}</span>
+  {% if c.school %}<a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=c.school, u=u) }}">← {{ c.school }}</a>{% endif %}
+</div></div>
+
+<div class="bl-board">
+  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
+    <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
+    <div><div class="tname">{{ c.name }}</div>
+      <div class="tsub">{{ c.role_label|default('Head Coach') }}{% if c.school %} · {{ c.school }}{% endif %}
+        {% if c.tenure %} · {{ c.tenure }}-yr tenure{% endif %}{% if c.archetype %} · {{ c.archetype }}{% endif %}</div>
+      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
+    {% if c.team_w is defined %}<div style="text-align:right"><div class="bl-th" style="font-size:10px">TEAM</div>
+      <span class="bl-stat power" style="font-size:22px">{{ c.team_w }}-{{ c.team_l }}</span>
+      <div class="tsub">this season</div></div>{% endif %}
+  </div>
+
+  <div class="bl-board-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>
+        <span class="bl-panel-meta">follows the coach</span></div>
+        <div class="bl-panel-body">
+          {% if honor_years %}
+          {% for yg in honor_years %}
+          <div class="pl-honyear">
+            <div class="pl-honyear-head">{{ yg.year }} · Season {{ yg.season_no }}
+              <span class="pl-honyear-school">{{ yg.school }}</span>{% if yg.live %} <span class="pl-live">live</span>{% endif %}</div>
+            {% for h in yg.awards %}
+            <div class="pl-honitem"><span class="pl-hondot {{ h.award }}"></span>{{ h.label }}</div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="aw-empty" style="padding:4px 2px">No honors yet — earned at season's end.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Profile</span></div>
+        <div class="bl-panel-body"><table class="bl-protable"><tbody>
+          <tr><td>Role</td><td>{{ c.role_label|default('Head Coach') }}</td></tr>
+          {% if c.school %}<tr><td>Program</td><td>{{ c.school }} · {{ c.division }} {{ c.gender }}</td></tr>{% endif %}
+          {% if c.tenure %}<tr><td>Tenure</td><td>{{ c.tenure }} years</td></tr>{% endif %}
+          {% if c.archetype %}<tr><td>Archetype</td><td>{{ c.archetype }}</td></tr>{% endif %}
+          <tr><td>Development</td><td>{{ c.dev|round|int }}</td></tr>
+          <tr><td>Recruiting</td><td>{{ c.rec|round|int }}</td></tr>
+          <tr><td>Tactics</td><td>{{ c.tac|round|int }}</td></tr>
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
