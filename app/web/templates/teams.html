@@ -20,7 +20,7 @@
 <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:16px">
   <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
   <div><div class="tname">{{ school }}</div>
-    <div class="tsub">{% if row %}{{ row.conf }} · {{ row.rec }} · {{ uni_label }}{% else %}{{ uni_label }}{% endif %}{% if city %} · {{ city }}{% endif %}</div></div>
+    <div class="tsub">{% if conf %}{{ conf }} · {% endif %}{% if row %}{{ row.rec }} · {% endif %}{{ uni_label }}{% if city %} · {{ city }}{% endif %}</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     {% if row %}<div style="text-align:right;margin-right:6px"><div class="bl-th" style="font-size:10px">POWER INDEX</div>
       <span class="bl-stat power" style="font-size:18px">{{ row.fmt(row.pi) }}</span></div>{% endif %}
