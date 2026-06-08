@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Power Index{% endblock %}
 {% block content %}
 {% set grid = '38px minmax(120px,1fr) 50px 58px 110px 62px 70px 96px 62px 62px' %}
@@ -44,7 +45,7 @@
 
 <div class="bl-container">
   <div class="bl-entries">
-    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ shown }}</strong> of {{ total }} programs</div>
+    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} programs</div>
     <span class="bl-entries-right">{{ uni_label }} · {{ conferences|length - 1 }} conferences · simulated season</span>
   </div>
 </div>
@@ -80,6 +81,7 @@
       {% endfor %}
     </div>
   </div>
+  {{ pager(p, 'programs') }}
 </div>
 
 <div class="bl-notes">

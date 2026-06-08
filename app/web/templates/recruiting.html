@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Recruiting{% endblock %}
 {% block content %}
 {% set grid = '44px minmax(140px,1fr) 210px 64px 150px 100px' %}
@@ -29,7 +30,7 @@
 </form>
 
 <div class="bl-container"><div class="bl-entries">
-  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ rows|length }}</strong> of {{ total }}</div>
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}</div>
   <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
     {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board</span>
 </div></div>
@@ -74,7 +75,9 @@
     </div>
     {% endfor %}
   </div>
-</div></div>
+</div>
+{{ pager(p, 'recruits') }}
+</div>
 
 <div class="bl-notes"><div class="bl-note">
   Star tiers are count-based (Blue Chip = top 25 · 5★ 26–75 · 4★ 76–200 · 3★ 201–400). The board

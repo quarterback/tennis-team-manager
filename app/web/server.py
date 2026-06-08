@@ -23,6 +23,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     conference_schools, team_conference, world_hub)
 from app import world as wd
 from app.juniors import US_STATES
+from .pagination import paginate
 
 from app import seasonmode as sm
 from app import overrides as ov
@@ -181,12 +182,11 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.pi, reverse=True)
         elif sort == "APR":
             filtered = sorted(filtered, key=lambda r: r.apr, reverse=True)
-        # Unfiltered view shows the top of the table; filtered shows all matches.
-        shown = filtered if (conf != "All" or tier != "All") else filtered[:75]
+        p = paginate(filtered, request.args.get("page", 1))
         return render_template(
-            "rankings.html", active="Rankings", rows=shown, total=total, shown=len(shown),
-            conferences=conferences_for(division, gender), tiers=tiers,
-            conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
+            "rankings.html", active="Rankings", p=p, rows=p.items, total=total,
+            matches=len(filtered), conferences=conferences_for(division, gender),
+            tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
     @app.route("/bracket")
@@ -246,8 +246,10 @@ def create_app() -> Flask:
         # No school selected → conference index (browse by conference/gender).
         if not school:
             conf = request.args.get("conf", "All")
+            groups = teams_by_conference(division, gender, conf)
+            p = paginate(groups, request.args.get("page", 1), per_page=8)
             return render_template("teams_index.html", active="Teams", u=u, uni_label=label,
-                                   groups=teams_by_conference(division, gender, conf),
+                                   groups=p.items, p=p,
                                    conferences=conferences_for(division, gender), conf=conf)
         rows = team_roster(division, gender, school)
         if not rows:                                  # fall back to a real school
@@ -303,7 +305,8 @@ def create_app() -> Flask:
         scope = request.args.get("scope", "national")
         state = request.args.get("state", "California")
         rows = recruit_rows(rg, grad_year, scope=scope, state=state, division=division)
-        return render_template("recruiting.html", active="Recruiting", rows=rows[:100],
+        p = paginate(rows, request.args.get("page", 1))
+        return render_template("recruiting.html", active="Recruiting", rows=p.items, p=p,
                                total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, state=state, u=u, uni_label=label,
                                states=[s for s, _ in US_STATES],
