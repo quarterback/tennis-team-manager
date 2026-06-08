@@ -138,31 +138,61 @@ Full suite: **165 passed**.
 - A **true doubles model** (serve-volley/net/poaching) would replace the driver tilt
   if doubles ever deserves first-class fidelity.
 
-## Addendum — Grand Slams separated from Majors (correction)
+## Addendum — Grand Slams / Masters / Majors separated (correction)
 
 The first cut **conflated "Major" with "Grand Slam"** — the calendar's top tier was
 literally commented "the junior equivalent of the four Grand Slams" and was paying
-Grand-Slam points (a title = 1000). That was wrong: in real junior tennis the four
-slams sit *above* the Grade-A "major" city Opens, and a slam — especially a slam
-*doubles* title — should be a far bigger points boost than anything else. I built it
-the wrong way and the user caught it.
+Grand-Slam points. That was wrong: in real tennis the four slams sit *above* the
+marquee events, and a slam — especially a slam *doubles* title — should dwarf
+everything else. I built it the wrong way and the user caught it; it took two passes
+to land the hierarchy the user actually wanted.
 
-Fix: added a real **Grand Slam** tier as the pinnacle and demoted everything one ITF
-grade:
+Final structure — a pro-tour ladder, with three distinct elite tiers so the genuine
+top players have many high-value venues to separate themselves on the board:
 
-| Tier | Was (grade) | Now (grade) | Champion (S / D) |
-| --- | --- | --- | --- |
-| **Grand Slam** *(new)* | — | GS | 1000 / 750 |
-| Major | GS | A | 500 / 375 |
-| Premier | A | G1 | 300 / 225 |
-| National | G1 | G2 | 200 / 150 |
-| Development | G3 | G3 | 100 / 75 |
-| State | G5 | G5 | 30 / 25 |
+| Tier | Events | Champion (singles / doubles) |
+| --- | --- | --- |
+| **Grand Slam** | 4 junior slams (Australian / Roland-Garros / Wimbledon / US Open) | 2000 / 1500 |
+| **Masters** | 4 marquee city Opens | 1000 / 750 |
+| **Major** | 5 classic international juniors (Easter/Orange Bowl, Bonfiglio, …) | 500 / 375 |
+| National | 5 | 250 / 188 |
+| Development | 4 | 125 / 94 |
+| State | 1 | 50 / 38 |
 
-The four junior slams (Australian / Roland-Garros / Wimbledon / US Open Junior
-Championships) are new calendar events that **only the international elite (Tier 1)
-enter**, so they genuinely separate the very top of the board. A Grade-2 column was
-added to both point tables for National. Net effect: a slam title is now worth double
-a major's, and a Grand Slam doubles title (750, ×¼ into the combined ledger) is the
-single biggest doubles prize — exactly the separation the user wanted. Board top moved
-to ~5.5k (slams stack on the elite résumés). Tests updated; 22 junior tests green.
+Rounds decay in ATP-style ratios (F .6, SF .36, QF .18, R16 .09, R32 .045 of the
+champion value). Only the international elite (Tier 1) enter Grand Slam / Masters /
+Major draws. Points are now keyed directly by tier name (the intermediate ITF-grade
+lookup was removed). Net: a slam title (2000) is double a Masters and quadruple a
+Major; a Grand Slam doubles title (1500, ¼ → 375 into the combined ledger) is the
+single biggest doubles prize. Board top ~10k on the elite résumés. Tests updated;
+junior suite green.
+
+## Addendum 2 — fixed calendar → rank-gated weekly pyramid
+
+The original circuit was a **fixed calendar** of ~23 hand-named events at fixed
+months, with tier-eligibility deciding who entered. That doesn't scale or convince:
+with 1000 players you need *many* events at every level each week, and hand-coding
+them is brittle. The user redirected (and a quick read of the real ITF tour — >1,000
+graded tournaments a year, small draws, **ranking-gated acceptance lists**, hundreds
+running in parallel weekly — confirmed it). Rebuilt the scheduler:
+
+- **Abstract weeks, not a calendar.** `SEASON_WEEKS` (14) speedy weeks; after the
+  last, recruits graduate to college. "Weeks" are just enough tournaments to give
+  everyone matches and data.
+- **Rank-gated parallel draws.** Each week the whole field is ranked by *running*
+  points (ability seeds week 1), then sliced into tier **bands** and split into
+  32-player draws (`_schedule_week`). The elite get the Grand Slam (top 32 on slam
+  weeks) / Masters; everyone else plays down their level — so all ~1000 play every
+  week, and **only winners climb into the big events** (the filter the user wanted).
+- **Generated tournament names.** `_gen_tournament_name` rolls a real city from the
+  hometowns DB + a tier-appropriate suffix ("Užice Masters Cup", "Florence Open"),
+  deduped per season. Only the four slams are fixed.
+- **Seven tiers** (Premier restored): Grand Slam 2000 > Masters 1000 > Major 500 >
+  Premier 250 > National 125 > Developmental 60 > State 30, ATP-ratio rounds.
+- **Development pulses + STR snapshots** moved from months to weeks; the old
+  fixed-calendar constants, fallback-coverage hack, and tier-eligibility table were
+  deleted (everyone now plays by construction).
+
+Result: every recruit plays exactly `SEASON_WEEKS` events with generated names at
+their level; a 1000-player class builds in ~10s (cached once). Tests that asserted
+the old closed calendar were updated; full suite green (165).

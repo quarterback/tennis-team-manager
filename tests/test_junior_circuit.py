@@ -2,7 +2,7 @@ import random
 
 from engine import run_tournament, finish_label
 from app.juniors import generate_class, national_rankings
-from app.junior_circuit import (run_junior_circuit, assign_tiers, CALENDAR,
+from app.junior_circuit import (run_junior_circuit, assign_tiers, SEASON_WEEKS,
                                  TIER_LABELS, US_NATIONAL_BADGES, US_STATE_BADGES,
                                  INTL_GLOBAL_BADGES, INTL_NATION_BADGES)
 
@@ -74,7 +74,6 @@ def _class(n=240, seed=5, gender="male"):
     return k
 
 
-_CALENDAR_NAMES = {name for name, _level, _month in CALENDAR}
 _ALL_BADGES = {label for _t, label in
                US_NATIONAL_BADGES + US_STATE_BADGES + INTL_GLOBAL_BADGES + INTL_NATION_BADGES}
 
@@ -102,7 +101,7 @@ def test_matches_carry_scores_and_opponents():
         assert p.junior_matches                               # everyone played
         for m in p.junior_matches:
             assert set(m.keys()) == {"date", "tournament", "round", "opponent", "score", "won"}
-            assert m["tournament"] in _CALENDAR_NAMES         # closed, real events
+            assert m["tournament"] and isinstance(m["tournament"], str)   # a generated event name
             assert m["opponent"] and m["opponent"] != p.name  # a real, different rival
             assert "-" in m["score"]                          # a real scoreline
 
@@ -188,11 +187,12 @@ def test_points_ledger_is_frozen_and_bounded():
     from app.junior_circuit import (event_points, doubles_event_points, JUNIOR_POINTS,
                                      JUNIOR_DOUBLES_POINTS, BEST_N, DOUBLES_WEIGHT)
     k = _class(n=300)
-    assert event_points("Grand Slam", "Champion") == 1000    # a junior slam title
-    assert event_points("Major", "Champion") == 500          # a Major (Grade A) is half a slam
-    assert event_points("State", "Quarterfinalist") == 5     # ITF Grade 5 QF
-    assert doubles_event_points("Grand Slam", "Champion") == 750  # the huge GS doubles boost
-    assert doubles_event_points("Major", "Champion") == 375      # a Major doubles title is half
+    assert event_points("Grand Slam", "Champion") == 2000    # pro-tour scale: slam = 2000
+    assert event_points("Masters", "Champion") == 1000       # Masters = 1000
+    assert event_points("Major", "Champion") == 500          # Major = 500 (half a Masters)
+    assert event_points("State", "Quarterfinalist") == 5
+    assert doubles_event_points("Grand Slam", "Champion") == 1500  # the huge GS doubles boost
+    assert doubles_event_points("Masters", "Champion") == 750
     assert event_points("Grand Slam", "did-not-play") == 0
     for p in k.recruits:
         assert isinstance(p.junior_points, int) and p.junior_points >= 0
@@ -209,15 +209,17 @@ def test_points_ledger_is_frozen_and_bounded():
 def test_doubles_participation_and_specialist_str():
     """Doubles is grit-driven (not everyone plays), folds into the one ledger, and
     yields a doubles STR that can diverge from singles STR — the specialist signal."""
+    import statistics
     k = _class(n=400)
-    played = [p for p in k.recruits if p.doubles_played > 0]
-    assert 0.3 < len(played) / len(k.recruits) < 0.95          # some, not all, play
-    # Grittier players (stamina/resilience/competitiveness) play doubles more often.
+    # Over a season everyone plays SOME doubles, but the participation RATE (share of
+    # their events with a doubles draw) is grit-driven, not universal.
+    rate = lambda p: p.doubles_played / max(1, p.tournaments_played)
+    assert 0.25 < statistics.mean([rate(p) for p in k.recruits]) < 0.9
     grit = lambda p: sum(p.current_grade(a) for a in ("stamina", "resilience", "competitiveness")) / 3
     hi = [p for p in k.recruits if grit(p) >= 55]
     lo = [p for p in k.recruits if grit(p) <= 45]
-    rate = lambda g: sum(1 for p in g if p.doubles_played) / max(1, len(g))
-    assert rate(hi) > rate(lo)
+    assert statistics.mean([rate(p) for p in hi]) > statistics.mean([rate(p) for p in lo])
+    played = [p for p in k.recruits if p.doubles_played > 0]
     # Doubles players get a doubles STR; across the pool it diverges from singles STR.
     assert all(p.junior_doubles_str is not None for p in played)
     assert any(p.junior_doubles_str - p.junior_str > 1 for p in played)   # specialists

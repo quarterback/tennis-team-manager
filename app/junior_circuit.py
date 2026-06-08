@@ -1,16 +1,21 @@
 """
 Junior circuit — the recruit-history generator.
 
-This is NOT a second game and NOT the sprawling junior ecosystem the design doc
-imagined. It is a one-shot pipeline that runs ONCE per recruiting class, *before*
-recruiting opens, and freezes a believable pre-college résumé onto every recruit:
+It is a one-shot pipeline that runs ONCE per recruiting class, *before* recruiting
+opens, and freezes a believable pre-college résumé onto every recruit:
 
-    seed STR from ability → assign tiers → play the junior calendar with the FULL
-    match engine → solve results-based STR → rank → badge → freeze
+    seed STR from ability → run ~14 abstract WEEKS, each rank-gating the whole field
+    into parallel graded draws (Grand Slam / Masters / … / State) → accumulate
+    ranking points + a results-based STR → rank → badge → freeze
 
 so a recruit arrives in recruiting already feeling lived-in — real matches against
-real rivals (scores and opponents on record), a tier, an STR that climbed or slid
-with form across the year, a ranking progression, and permanent badges.
+real rivals (scores and opponents on record), a points ranking and STR that climbed
+or slid with form across the year, a ranking progression, and permanent badges.
+
+The schedule is a points pyramid, like the real junior tours: every "week" the
+elite contest the top events while everyone else plays level-appropriate draws, so
+all ~1000 juniors keep playing. Tournament names auto-roll from the city database;
+only the four Grand Slams are fixed.
 
 Why the full engine, why before college
 ----------------------------------------
@@ -39,80 +44,61 @@ import random
 from dataclasses import dataclass
 
 from engine import run_tournament, simulate_match, MatchFormat, Player, ATTRS
+from generators import roll_hometown
 from .str_rating import converge_ids
 from .development import stagger_scale
 
 # --------------------------------------------------------------------------
-# Tournament calendar — the schedule IS the tier system. A player reveals their
-# level by the events they enter, so no separate classification engine is needed.
-# (name, level, month). Levels rank by prestige: Grand Slam > Major > Premier >
-# National > Development > State.
+# The junior season runs as abstract "weeks" — not a real calendar, just enough
+# graded tournaments to give every recruit matches and data, then they graduate to
+# college. Each week the WHOLE field is rank-gated into parallel draws: the elite
+# get the Grand Slam / Masters, the next bands get Majors / Premiers, on down to
+# State — so all ~1000 juniors play every week at their own level in small draws
+# (real junior tours run hundreds of graded events in parallel weekly). Only the
+# four slams are fixed; every other event's name auto-rolls from the city database.
+# Tiers, highest first (also the points-table keys):
+#   Grand Slam > Masters > Major > Premier > National > Developmental > State
 # --------------------------------------------------------------------------
-CALENDAR: list[tuple[str, str, int]] = [
-    # The four Junior Grand Slams — the pinnacle, worth far more than anything else
-    # (and a Grand Slam doubles title is an enormous points boost). Only the
-    # international elite (Tier 1) get into these draws.
-    ("Australian Open Junior Championships", "Grand Slam", 1),
-    ("Roland-Garros Junior Championships", "Grand Slam", 6),
-    ("Wimbledon Junior Championships", "Grand Slam", 7),
-    ("US Open Junior Championships", "Grand Slam", 9),
-    # Junior Major Series — ITF Grade A city Opens; prestigious, but NOT slams.
-    ("Junior Chinese Open", "Major", 1),
-    ("Junior Casablanca Open", "Major", 4),
-    ("Junior São Paulo Open", "Major", 7),
-    ("Junior Mexican Open", "Major", 9),
-    # Premier International — ITF Grade 1-class; not majors but nearly as prestigious.
-    ("Easter Bowl", "Premier", 4),
-    ("Bonfiglio Cup", "Premier", 5),
-    ("Osaka Cup", "Premier", 7),
-    ("Kalamazoo Championships", "Premier", 8),
-    ("Orange Bowl", "Premier", 12),
-    # National Circuit — the strongest domestic events.
-    ("Winter Nationals", "National", 2),
-    ("Spring Nationals", "National", 4),
-    ("National Championships", "National", 6),
-    ("Summer Nationals", "National", 8),
-    ("L1 Circuit", "National", 10),
-    # Development Circuit — where the bulk of recruits spend their careers.
-    ("L2", "Development", 3),
-    ("L3", "Development", 5),
-    ("L4", "Development", 9),
-    ("L5", "Development", 11),
-    # State Circuit — important, but the bottom of the competitive ladder.
-    ("State Championships", "State", 7),
-]
-_EVENT_LEVEL = {name: level for name, level, _ in CALENDAR}
-_EVENT_MONTH = {name: month for name, level, month in CALENDAR}
+SEASON_WEEKS = 14
+DRAW_SIZE = 32                 # one single-elim draw per 32 players in a band (ITF-ish)
 
-# Which events each STR-driven tier typically enters. Only Tier 1 plays the Grand
-# Slams; Tier 1 rarely touches state championships; most college recruits live in
-# Tier 3.
-TIER_EVENTS: dict[int, list[str]] = {
-    1: ["Australian Open Junior Championships", "Roland-Garros Junior Championships",
-        "Wimbledon Junior Championships", "US Open Junior Championships",
-        "Junior Chinese Open", "Junior Casablanca Open", "Junior São Paulo Open",
-        "Junior Mexican Open", "Easter Bowl", "Bonfiglio Cup", "Osaka Cup",
-        "Kalamazoo Championships", "Orange Bowl"],
-    2: ["Winter Nationals", "Spring Nationals", "National Championships",
-        "Summer Nationals", "L1 Circuit", "L2"],
-    3: ["L2", "L3", "L4", "State Championships"],
-    4: ["State Championships", "L4", "L5"],
+# The four Junior Grand Slams land on these weeks; only the top DRAW_SIZE by ranking
+# get in. They are the only fixed-name events.
+GS_SCHEDULE = {2: "Australian Open Junior Championships",
+               6: "Roland-Garros Junior Championships",
+               9: "Wimbledon Junior Championships",
+               12: "US Open Junior Championships"}
+
+# Each week the ranked field is sliced into these tiers by cumulative fraction, and
+# each slice split into DRAW_SIZE draws. (On a slam week the top DRAW_SIZE are pulled
+# into the slam first and these bands fill the remainder.)
+BANDS = [("Masters", 0.08), ("Major", 0.22), ("Premier", 0.42),
+         ("National", 0.62), ("Developmental", 0.82), ("State", 1.00)]
+
+# Snapshot weeks the ranking history reports at (four points across the season).
+SNAP_WEEKS = [("Early", max(1, SEASON_WEEKS // 4)), ("Mid", SEASON_WEEKS // 2),
+              ("Late", (3 * SEASON_WEEKS) // 4), ("Final", SEASON_WEEKS)]
+
+# Tournament-name flavor by tier; the city rolls from the hometowns database, so
+# names read like "Nice Open", "Sendai Classic", "Madrid Masters".
+_TOURNEY_SUFFIX = {
+    "Masters": ["Masters", "International Masters", "Masters Cup"],
+    "Major": ["Open", "International", "Championships"],
+    "Premier": ["Open", "International", "Classic"],
+    "National": ["Open", "Classic", "Championships"],
+    "Developmental": ["Challenger", "Open", "Cup"],
+    "State": ["Open", "Cup", "Classic", "Invitational"],
 }
+# Tennis nations the city pool draws from (US weighted by duplication).
+_CITY_COUNTRIES = ["US", "US", "FR", "ES", "IT", "DE", "GB", "AU", "JP", "AR",
+                   "BR", "CZ", "CN", "CA", "NL", "BE", "RS", "HR", "MX", "IN"]
+_GENERIC_CITIES = ["Riverside", "Fairview", "Lakeside", "Highland", "Westport"]
 
 # Tier cutoffs as a cumulative fraction of the STR-sorted class. A thin international
 # elite on top, a national-elite band, a thick regional body, then a local tail.
 TIER_CUTOFFS = [(0.05, 1), (0.25, 2), (0.65, 3), (1.01, 4)]
 TIER_LABELS = {1: "International Elite", 2: "National Elite",
                3: "Regional / State Elite", 4: "Local Competitive"}
-
-# Snapshot dates the ranking history reports at — domestic on the US junior rhythm,
-# international on the ITF rhythm (the build spec's two example tables). STR is
-# re-solved from the season so far at each, so it grows/regresses across the year.
-US_SNAPSHOTS = [("Jan", 1), ("Apr", 4), ("Aug", 8), ("Dec", 12)]
-INTL_SNAPSHOTS = [("Jan", 1), ("May", 5), ("Oct", 10), ("Dec", 12)]
-
-_MONTH_ABBR = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
-               7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
 
 # Junior development: a recruit's CURRENT (recruiting-time) ability is the END of
 # the junior climb. We replay that climb across the season — start each recruit at
@@ -128,36 +114,34 @@ JUNIOR_DEV_YEARS = 1.0
 # junior tennis runs many L4/L5 draws at once), so every recruit gets matches.
 SECTION_CAP = 32
 
-# ---- Junior ranking POINTS (ITF World Tennis Tour Junior scaling) ----
+# ---- Junior ranking POINTS (pro-tour scaling: Slam 2000 > Masters 1000 > …) ----
 # Distinct from STR (a rating) and the recruiting board (consensus ability): this is
-# an accomplishment LEDGER — points earned by round reached, scaled by event grade,
-# best six results counted, plus a bonus for beating ranked players. Our calendar
-# tiers map onto ITF grades (Major=Grand Slam … State=Grade 5). Doubles points use
-# the ITF doubles table at a 1/4 weight and fold into the SAME ledger (the ITF
-# Combined Junior Ranking — no separate doubles ranking). See
-# docs/DEV-MODEL-tennis-adaptation.md.
-_LEVEL_TO_GRADE = {"Grand Slam": "GS", "Major": "A", "Premier": "G1",
-                   "National": "G2", "Development": "G3", "State": "G5"}
-# finish_label -> {grade: points}. Single-elim has no 3rd-place playoff, so both
-# semifinal losers take the Semifinalist row. Grand Slams (GS) sit well above the
-# Major/Grade-A city Opens — a slam title is double a major's.
+# an accomplishment LEDGER — points earned by round reached, scaled by event tier
+# (Grand Slam > Masters > Major > Premier > National > Developmental > State), best
+# six results counted, plus a bonus for beating ranked players. Doubles fold into the
+# SAME ledger at a 1/4 weight (the ITF Combined Junior Ranking — no separate doubles
+# ranking). See docs/DEV-MODEL-tennis-adaptation.md.
+# finish_label -> {tier: points}, pro-tour scaled: Grand Slam 2000 > Masters 1000 >
+# Major 500 > Premier 250 > National 125 > Developmental 60 > State 30, with rounds
+# decaying in ATP-style ratios. Single-elim has no 3rd-place playoff, so both
+# semifinal losers take the Semifinalist row.
 JUNIOR_POINTS = {
-    "Champion":        {"GS": 1000, "A": 500, "G1": 300, "G2": 200, "G3": 100, "G5": 30},
-    "Finalist":        {"GS": 700,  "A": 350, "G1": 210, "G2": 140, "G3": 60,  "G5": 18},
-    "Semifinalist":    {"GS": 490,  "A": 250, "G1": 140, "G2": 100, "G3": 36,  "G5": 9},
-    "Quarterfinalist": {"GS": 300,  "A": 150, "G1": 100, "G2": 60,  "G3": 20,  "G5": 5},
-    "R16":             {"GS": 180,  "A": 90,  "G1": 60,  "G2": 26,  "G3": 10,  "G5": 2},
-    "R32":             {"GS": 90,   "A": 45,  "G1": 30,  "G2": 18,  "G3": 5,   "G5": 0},
+    "Champion":        {"Grand Slam": 2000, "Masters": 1000, "Major": 500, "Premier": 250, "National": 125, "Developmental": 60, "State": 30},
+    "Finalist":        {"Grand Slam": 1200, "Masters": 600,  "Major": 300, "Premier": 150, "National": 75,  "Developmental": 36, "State": 18},
+    "Semifinalist":    {"Grand Slam": 720,  "Masters": 360,  "Major": 180, "Premier": 90,  "National": 45,  "Developmental": 22, "State": 11},
+    "Quarterfinalist": {"Grand Slam": 360,  "Masters": 180,  "Major": 90,  "Premier": 45,  "National": 23,  "Developmental": 11, "State": 5},
+    "R16":             {"Grand Slam": 180,  "Masters": 90,   "Major": 45,  "Premier": 23,  "National": 11,  "Developmental": 5,  "State": 3},
+    "R32":             {"Grand Slam": 90,   "Masters": 45,   "Major": 23,  "Premier": 11,  "National": 6,   "Developmental": 3,  "State": 1},
 }
-# ITF junior DOUBLES table (≈75% of singles); folded in at DOUBLES_WEIGHT. A Grand
-# Slam doubles title (750) dwarfs everything else — the boost the user called for.
+# DOUBLES table (≈75% of singles); folded in at DOUBLES_WEIGHT. A Grand Slam doubles
+# title (1500, ¼ → 375 combined) dwarfs everything else — the boost the user wanted.
 JUNIOR_DOUBLES_POINTS = {
-    "Champion":        {"GS": 750, "A": 375, "G1": 225, "G2": 150, "G3": 75, "G5": 25},
-    "Finalist":        {"GS": 525, "A": 262, "G1": 157, "G2": 105, "G3": 45, "G5": 13},
-    "Semifinalist":    {"GS": 367, "A": 187, "G1": 105, "G2": 75,  "G3": 27, "G5": 6},
-    "Quarterfinalist": {"GS": 225, "A": 112, "G1": 75,  "G2": 45,  "G3": 15, "G5": 3},
-    "R16":             {"GS": 135, "A": 67,  "G1": 45,  "G2": 27,  "G3": 7,  "G5": 0},
-    "R32":             {"GS": 0,   "A": 0,   "G1": 0,   "G2": 0,   "G3": 0,  "G5": 0},
+    "Champion":        {"Grand Slam": 1500, "Masters": 750, "Major": 375, "Premier": 188, "National": 94, "Developmental": 45, "State": 23},
+    "Finalist":        {"Grand Slam": 900,  "Masters": 450, "Major": 225, "Premier": 113, "National": 56, "Developmental": 27, "State": 14},
+    "Semifinalist":    {"Grand Slam": 540,  "Masters": 270, "Major": 135, "Premier": 68,  "National": 34, "Developmental": 16, "State": 8},
+    "Quarterfinalist": {"Grand Slam": 270,  "Masters": 135, "Major": 68,  "Premier": 34,  "National": 17, "Developmental": 8,  "State": 4},
+    "R16":             {"Grand Slam": 135,  "Masters": 68,  "Major": 34,  "Premier": 17,  "National": 8,  "Developmental": 4,  "State": 2},
+    "R32":             {"Grand Slam": 0,    "Masters": 0,   "Major": 0,   "Premier": 0,   "National": 0,  "Developmental": 0,  "State": 0},
 }
 DOUBLES_WEIGHT = 0.25      # ITF CJR: combined = best-6 singles + ¼ × best-6 doubles
 # USTA-style bonus for beating a ranked opponent (singles), by the opponent's
@@ -177,7 +161,7 @@ _GRIT_ATTRS = ("stamina", "resilience", "competitiveness")
 
 
 def event_points(level: str, finish: str, *, table=JUNIOR_POINTS) -> int:
-    return table.get(finish, {}).get(_LEVEL_TO_GRADE.get(level, ""), 0)
+    return table.get(finish, {}).get(level, 0)
 
 
 def doubles_event_points(level: str, finish: str) -> int:
@@ -220,8 +204,8 @@ def _freeze_points(recruits: list, c: "_Circuit") -> None:
         p.junior_points = int(p.singles_points + DOUBLES_WEIGHT * p.doubles_points)
         p.tournaments_played = played[p.pid]
         p.doubles_played = dbl_played[p.pid]
-# Probability a tier-eligible player actually enters a given event (varies résumés).
-ENTER_P = 0.72
+
+
 # Iterations for the results-based STR fixed point (cheaper per snapshot, full final).
 _SNAP_ITERS = 6
 _FINAL_ITERS = 10
@@ -296,7 +280,7 @@ def _run_event(c: _Circuit, name: str, level: str, month: int, field: list,
                rng: random.Random) -> None:
     """Play one event (possibly several parallel sections) with the FULL engine and
     record finishes, per-match lore (opponent + score), and the STR corpus."""
-    date = f"{_MONTH_ABBR[month]} {c.grad_year}"
+    date = f"Wk {month}"
     for section in _sections(field, lambda p: p.str_value()):
         if len(section) < 2:
             continue
@@ -364,7 +348,7 @@ def _run_doubles(c: _Circuit, name: str, level: str, month: int, field: list,
     """Run the event's doubles draw: stamina/grit decides who enters, partners are
     drawn on the fly (whoever's there), and pairs play the full junior-doubles format.
     Both partners share the team's finish, points and per-opponent STR corpus."""
-    date = f"{_MONTH_ABBR[month]} {c.grad_year}"
+    date = f"Wk {month}"
     entrants = [p for p in field if _plays_doubles(p, rng)]
     for section in _sections(entrants, lambda p: p.str_value()):
         order = section[:]
@@ -410,18 +394,52 @@ def _run_doubles(c: _Circuit, name: str, level: str, month: int, field: list,
                             c.dbl_corpus.setdefault(me.pid, []).append((foe.pid, mg, og))
 
 
-def _eligible_field(recruits: list, event: str, rng: random.Random) -> list:
-    """Recruits who enter `event`: tier-eligible, rolled in, and — for the US-only
-    State Championships — domestic (it groups by state below)."""
-    out = []
-    for p in recruits:
-        if event not in TIER_EVENTS.get(p.junior_tier, []):
-            continue
-        if event == "State Championships" and not p.domestic:
-            continue
-        if rng.random() < ENTER_P:
-            out.append(p)
-    return out
+def _random_city(rng: random.Random) -> str:
+    """A real city for a tournament name, rolled from the world's hometowns DB."""
+    for _ in range(6):
+        city = roll_hometown(rng.choice(_CITY_COUNTRIES), rng)
+        if city:
+            return city
+    return rng.choice(_GENERIC_CITIES)
+
+
+def _gen_tournament_name(tier: str, rng: random.Random, used: set) -> str:
+    """Roll a fresh, plausible event name for `tier` (e.g. 'Nice Open'), avoiding
+    duplicates within the season so résumés don't repeat a city."""
+    name = ""
+    for _ in range(8):
+        name = f"{_random_city(rng)} {rng.choice(_TOURNEY_SUFFIX[tier])}"
+        if name not in used:
+            break
+    used.add(name)
+    return name
+
+
+def _chunks(seq: list, n: int):
+    for i in range(0, len(seq), n):
+        yield seq[i:i + n]
+
+
+def _schedule_week(ranked: list, week: int, used: set, rng: random.Random) -> list:
+    """Rank-gate the whole field into this week's parallel draws. The top DRAW_SIZE
+    play the Grand Slam on slam weeks; the rest are sliced into tier bands and each
+    band split into DRAW_SIZE draws, so everyone plays at their level. Returns a list
+    of (name, tier, field)."""
+    events: list[tuple[str, str, list]] = []
+    i = 0
+    if week in GS_SCHEDULE:
+        events.append((GS_SCHEDULE[week], "Grand Slam", ranked[:DRAW_SIZE]))
+        i = min(DRAW_SIZE, len(ranked))
+    rest = ranked[i:]
+    n = len(rest)
+    start = 0
+    for k, (tier, frac) in enumerate(BANDS):
+        end = n if k == len(BANDS) - 1 else round(frac * n)
+        band = rest[start:end]
+        start = end
+        for chunk in _chunks(band, DRAW_SIZE):
+            events.append((_gen_tournament_name(tier, rng, used), tier, chunk))
+    return events
 
 
 def _solve_str(recruits: list, corpus: dict, priors: dict, month: int,
@@ -475,43 +493,24 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
                  finishes={}, matches={}, corpus={},
                  dbl_finishes={}, dbl_matches={}, dbl_corpus={})
 
-    # ---- play the calendar chronologically with the full match engine, pulsing a
-    # staggered slice of development before each month so players climb in waves ----
-    months = sorted({m for _, _, m in CALENDAR})
-    events_by_month: dict[int, list] = {}
-    for nm, lv, m in CALENDAR:
-        events_by_month.setdefault(m, []).append((nm, lv))
-
-    for mi, month in enumerate(months):
+    # ---- play the season week by week. Each week: pulse a staggered slice of
+    # development, rank the field by running points (ability seeds week 1), then
+    # rank-gate everyone into parallel graded draws so all play at their level. ----
+    standing = {p.pid: 0.0 for p in recruits}     # running points → next week's gate
+    used_names: set = set()
+    for week in range(1, SEASON_WEEKS + 1):
         for p in recruits:
-            sc = stagger_scale(p.pid, mi, len(months), total=JUNIOR_DEV_YEARS)
+            sc = stagger_scale(p.pid, week - 1, SEASON_WEEKS, total=JUNIOR_DEV_YEARS)
             if sc:
                 selves[p.pid].develop(sc)
                 c.engine_players[p.pid] = selves[p.pid].engine_player()
-        for (name, level) in events_by_month[month]:
-            if name == "State Championships":
-                by_state: dict[str, list] = {}
-                for p in _eligible_field(recruits, name, rng):
-                    by_state.setdefault(p.region, []).append(p)
-                for state in sorted(by_state):
-                    _run_event(c, name, level, month, by_state[state], rng)
-            else:
-                _run_event(c, name, level, month, _eligible_field(recruits, name, rng), rng)
-
-    # ---- coverage: a recruit with no matches enters one fallback home event so
-    # every profile reads lived-in (the spec's whole point) ----
-    fallback = {1: "Easter Bowl", 2: "L1 Circuit", 3: "State Championships",
-                4: "State Championships"}
-    extra: dict[str, list] = {}
-    for p in recruits:
-        if p.pid in c.matches:
-            continue
-        ev = fallback.get(p.junior_tier, "L5")
-        if ev == "State Championships" and not p.domestic:
-            ev = "L4"
-        extra.setdefault(ev, []).append(p)
-    for ev, players in extra.items():
-        _run_event(c, ev, _EVENT_LEVEL[ev], _EVENT_MONTH[ev], players, rng)
+        ranked = sorted(recruits, key=lambda p: (-standing[p.pid], -priors[p.pid], p.pid))
+        for (name, tier, field) in _schedule_week(ranked, week, used_names, rng):
+            if len(field) >= 2:
+                _run_event(c, name, tier, week, field, rng)
+        for p in recruits:                         # refresh the running ranking
+            standing[p.pid] = sum(event_points(lv, f)
+                                  for (_w, _t, lv, f) in c.finishes.get(p.pid, []))
 
     # ---- rankings + badges from the EVOLVING results-based STR, split US
     # (national/state) vs intl (global/nation) ----
@@ -524,9 +523,9 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     for p in intl:
         nation_pools.setdefault(p.region, []).append(p)
 
-    _rank_and_freeze(recruits, domestic, c, priors, US_SNAPSHOTS, state_pools,
+    _rank_and_freeze(recruits, domestic, c, priors, SNAP_WEEKS, state_pools,
                      "National", "State", US_NATIONAL_BADGES, US_STATE_BADGES)
-    _rank_and_freeze(recruits, intl, c, priors, INTL_SNAPSHOTS, nation_pools,
+    _rank_and_freeze(recruits, intl, c, priors, SNAP_WEEKS, nation_pools,
                      "Global", "Nation", INTL_GLOBAL_BADGES, INTL_NATION_BADGES)
 
     # ---- freeze the evolved STR + the résumé (finishes + per-match lore) ----
@@ -548,12 +547,12 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
         ds, drel = dbl_final.get(p.pid, (priors[p.pid], 0.0))
         p.junior_doubles_str = round(ds, 2) if c.dbl_corpus.get(p.pid) else None
         p.junior_results = [
-            {"date": f"{_MONTH_ABBR[m]} {klass.grad_year}", "tournament": t,
+            {"date": f"Wk {m}", "tournament": t,
              "level": level, "result": finish}
             for (m, t, level, finish) in sorted(c.finishes.get(p.pid, []), key=lambda r: r[0])]
         p.junior_matches = list(c.matches.get(p.pid, []))
         p.junior_doubles_results = [
-            {"date": f"{_MONTH_ABBR[m]} {klass.grad_year}", "tournament": t,
+            {"date": f"Wk {m}", "tournament": t,
              "level": level, "result": finish, "partner": partner}
             for (m, t, level, finish, partner) in
             sorted(c.dbl_finishes.get(p.pid, []), key=lambda r: r[0])]

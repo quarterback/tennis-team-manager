@@ -204,17 +204,25 @@ good you are) — the ITA college table shows Points **and** WTN; the ITF/USTA j
 tours rank on a points ledger while WTN/UTR sits beside it. The sim mirrors that
 split instead of collapsing everything into one number.
 
+**The schedule — a rank-gated weekly pyramid.** The junior season runs as ~14
+abstract "weeks" (not a real calendar — just enough graded events to generate data,
+then college). Each week the **whole field is ranked by running points** (seeded by
+ability in week 1) and **rank-gated into parallel draws**: the top 32 contest the
+week's Grand Slam / Masters, the next bands get Majors / Premiers, on down to State —
+so all ~1000 juniors play every week at their own level in small single-elim draws,
+exactly like the real junior tours run hundreds of graded events in parallel weekly.
+Tournament names **auto-roll from the city database** (`{City} Open/Masters/Classic`);
+only the four Grand Slams are fixed. This is also a *filter*: only players who keep
+winning climb into the high-value events, so the genuine elite separate themselves.
+
 **Junior ranking points (`app/junior_circuit.py` → `JUNIOR_POINTS`, `_freeze_points`).**
-An accomplishment ledger on **ITF World Tennis Tour Junior** scaling. Each event
-awards points by **round reached × grade** (our calendar tiers Major / Premier /
-National / Development / State map onto ITF Grand Slam / Grade A / 1 / 2 / 3 / 5 —
-a slam title is 1000, a Major (Grade A) 500, a State quarterfinal 5). The four
-junior slams sit above the Grade-A Majors and only the elite enter them. Only a
-player's **best six** results
-count, plus their best six **ranked-win bonuses** (beating a Top-10 junior, resolved
-off a provisional order). It is deliberately *not* a rating: it rewards deep runs at
-strong events and rewards activity, with no ability prior and no recency weighting —
-start-from-scratch, like the real tours.
+An accomplishment ledger on a **pro-tour scale** across seven tiers — Grand Slam 2000
+> Masters 1000 > Major 500 > Premier 250 > National 125 > Developmental 60 > State 30
+— points by **round reached × tier**, rounds decaying in ATP-style ratios. Only a
+player's **best six** results count, plus their best six **ranked-win bonuses**
+(beating a higher-ranked junior, resolved off a provisional order). It is deliberately
+*not* a rating: it rewards deep runs at strong events and rewards activity, with no
+ability prior and no recency weighting — start-from-scratch, like the real tours.
 
 **Doubles fold into the same ledger (the ITF Combined Junior Ranking).** There is no
 separate doubles *ranking* — a junior just gets credit for doubles on top of singles:
