@@ -247,7 +247,7 @@ _RECRUIT_SD = 6.5
 _GENDER_VOCAB = {"male": "men", "female": "women"}
 
 
-RECRUIT_BOARD_N = 2000      # one national class in the thousands, all divisions share it
+RECRUIT_BOARD_N = 1000      # bounded recruiting cadre, all divisions share it
 
 
 def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division=None):

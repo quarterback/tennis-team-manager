@@ -30,6 +30,7 @@ import copy
 import json
 import random
 import sqlite3
+import threading
 from dataclasses import asdict, fields
 
 import app.seasonmode as sm
@@ -67,7 +68,9 @@ RELIABILITY_GATE = 0.4
 
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
-RECRUIT_POOL = 2600
+RECRUIT_POOL = 1000     # a bounded recruiting cadre, not a full-blast class; teams
+                        # sign from it, unsigned become walk-ons, and remaining
+                        # roster seats are backfilled with generated walk-ons.
 # The national recruit pool is drawn from the ONE talent scale (ncaa._talent_mean),
 # centred on a mid-tier (D2, median-strength) program for that gender — a dense,
 # bulb-shaped class: a high floor (only college-caliber juniors), a thick middle,
@@ -190,9 +193,19 @@ def get_or_create(seed: int = DEFAULT_SEED) -> dict:
         return dict(row)
     cur = conn.execute("INSERT INTO world (seed, year, week) VALUES (?,0,0)", (seed,))
     wid = cur.lastrowid
-    reset_caches()                                   # year-0 rosters = deterministic seed rosters
-    rosters = {(d, g): _seed_year0(d, g) for (d, g) in UNIVERSES}
-    _save_rosters(conn, wid, 0, rosters)
+    # Seed year-0 rosters ONE universe at a time, persisting and freeing each
+    # before building the next. Building all six universes' rich rosters at once
+    # (~17k prospects) was the memory spike behind the OOM; this caps the peak at
+    # roughly a single universe.
+    reset_caches()
+    conn.execute("DELETE FROM world_roster WHERE world_id=? AND year=?", (wid, 0))
+    for (d, g) in UNIVERSES:
+        uni = _seed_year0(d, g)
+        rows = [(wid, 0, d, g, school, p.pid, json.dumps(prospect_to_dict(p)))
+                for school, roster in uni.items() for p in roster]
+        conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
+        del uni, rows
+        reset_caches()                               # free this universe before the next
     conn.commit()
     row = conn.execute("SELECT * FROM world WHERE id=?", (wid,)).fetchone()
     conn.close()
@@ -271,6 +284,7 @@ def signed_counts(seed: int = DEFAULT_SEED) -> dict:
 _base_cache: dict = {}      # (world_id, year) -> year-start rosters
 _dev_cache: dict = {}       # (world_id, year, week) -> developed rosters
 _primed: dict = {}          # seed -> (world_id, year, week) currently in ncaa cache
+_prime_lock = threading.Lock()   # serialize the ~170MB cache build across gthreads
 
 
 def _base_rosters(world: dict) -> dict:
@@ -306,13 +320,19 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     stamp = (w["id"], w["year"], w["week"])
     if _primed.get(seed) == stamp and _roster_cache:
         return w
-    rosters = developed_rosters(w)
-    reset_caches()
-    for (division, gender), schools in rosters.items():
-        for school, roster in schools.items():
-            _roster_cache[f"{school}|{division}|{gender}"] = roster
-    sm._pid_idx_cache.clear(); sm._str_cache.clear()
-    _primed[seed] = stamp
+    # Only one thread builds the full-world cache at a time; the rest wait and
+    # reuse it. Without this, concurrent gthreads each materialise ~170MB of
+    # rosters on a cold cache and the worker OOMs.
+    with _prime_lock:
+        if _primed.get(seed) == stamp and _roster_cache:     # built while we waited
+            return w
+        rosters = developed_rosters(w)
+        reset_caches()
+        for (division, gender), schools in rosters.items():
+            for school, roster in schools.items():
+                _roster_cache[f"{school}|{division}|{gender}"] = roster
+        sm._pid_idx_cache.clear(); sm._str_cache.clear()
+        _primed[seed] = stamp
     return w
 
 
