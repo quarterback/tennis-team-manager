@@ -24,7 +24,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
-from .awards import season_awards, player_honors
+from .awards import season_awards, player_career_honors, stamp_world_honors
 
 from app import seasonmode as sm
 from app import overrides as ov
@@ -161,8 +161,19 @@ def create_app() -> Flask:
 
     @app.route("/world/advance", methods=["POST"])
     def world_advance():
+        # Awards phase: when the season has finished, stamp this year's honors
+        # into the permanent record BEFORE the roster rolls over (graduation /
+        # transfers), so they're captured against the right teams.
+        if wd.season_complete():
+            stamp_world_honors()
         wd.advance_week()
         return redirect(url_for("world_view"))
+
+    @app.route("/world/awards", methods=["POST"])
+    def world_awards():
+        """Run the awards phase on demand (idempotent) without advancing."""
+        stamp_world_honors()
+        return redirect(request.referrer or url_for("awards"))
 
     @app.route("/")
     def dashboard():
@@ -303,10 +314,10 @@ def create_app() -> Flask:
         sr = get_season(division, gender)
         strv, rel = sr.player_str.get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
-        honors = player_honors(division, gender, pid)
+        honor_years = player_career_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, strv=strv, rel=rel, wins=wins, losses=losses,
-                               honors=honors, crest=crest, u=u, uni_label=label)
+                               honor_years=honor_years, crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")
     def recruiting():

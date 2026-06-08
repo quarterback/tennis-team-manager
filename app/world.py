@@ -219,6 +219,9 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     sconn.executescript("DELETE FROM duals; DELETE FROM seasons;")
     sconn.commit()
     sconn.close()
+    # Career honors are season-to-season state too.
+    import app.honors as honors
+    honors.reset()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
     _dev_cache.clear()
@@ -300,6 +303,14 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     sm._pid_idx_cache.clear(); sm._str_cache.clear()
     _primed[seed] = stamp
     return w
+
+
+def season_complete(seed: int = DEFAULT_SEED) -> bool:
+    """True when every universe has finished its postseason — i.e. the season is
+    ready for the awards phase and year rollover."""
+    if not exists(seed):
+        return False
+    return _all_complete(seed, get_or_create(seed))
 
 
 def year_seed(seed: int, year: int) -> int:
