@@ -19,6 +19,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
+                    junior_ranking_rows, junior_nation_boards,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
@@ -55,6 +56,7 @@ NAV_GROUPS = [
     ]),
     ("Management", [
         {"id": "recruiting","label": "Recruiting",   "icon": "🎓", "endpoint": "recruiting",       "args": {}},
+        {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
     ]),
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -81,6 +83,7 @@ def _active_nav(req) -> str:
     if p.startswith("/season"):           return "season"
     if p.startswith("/dual"):             return "dual"
     if p.startswith("/bracket"):          return "bracket"
+    if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
         return "roster" if req.args.get("school") == MY_TEAM else "teams"
@@ -411,6 +414,24 @@ def create_app() -> Flask:
         view = recruit_profile(p, division, gender, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/juniors/rankings")
+    def junior_rankings():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        scope = request.args.get("scope", "world")
+        nation = request.args.get("nation", "")
+        boards = junior_nation_boards(rg, grad_year) if scope == "nation" and not nation else []
+        rows = junior_ranking_rows(rg, grad_year, scope=scope, nation=nation)
+        pg = paginate(rows, request.args.get("page", 1))
+        return render_template("junior_rankings.html", active="Recruiting", rows=pg.items,
+                               p=pg, total=len(rows), gender=gender, grad_year=grad_year,
+                               scope=scope, nation=nation, boards=boards, u=u, uni_label=label,
+                               grad_years=[2026, 2027, 2028, 2029])
 
     # ------------------------------------------------------------------ Editor
     @app.route("/editor")

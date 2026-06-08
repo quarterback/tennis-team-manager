@@ -38,7 +38,7 @@ import copy
 import random
 from dataclasses import dataclass
 
-from engine import run_tournament, simulate_match
+from engine import run_tournament, simulate_match, MatchFormat, Player, ATTRS
 from .str_rating import converge_ids
 from .development import stagger_scale
 
@@ -117,6 +117,97 @@ JUNIOR_DEV_YEARS = 1.0
 # A draw is capped at this size; bigger fields split into parallel sections (real
 # junior tennis runs many L4/L5 draws at once), so every recruit gets matches.
 SECTION_CAP = 32
+
+# ---- Junior ranking POINTS (ITF World Tennis Tour Junior scaling) ----
+# Distinct from STR (a rating) and the recruiting board (consensus ability): this is
+# an accomplishment LEDGER — points earned by round reached, scaled by event grade,
+# best six results counted, plus a bonus for beating ranked players. Our calendar
+# tiers map onto ITF grades (Major=Grand Slam … State=Grade 5). Doubles points use
+# the ITF doubles table at a 1/4 weight and fold into the SAME ledger (the ITF
+# Combined Junior Ranking — no separate doubles ranking). See
+# docs/DEV-MODEL-tennis-adaptation.md.
+_LEVEL_TO_GRADE = {"Major": "GS", "Premier": "A", "National": "G1",
+                   "Development": "G3", "State": "G5"}
+# finish_label -> {grade: points}. Single-elim has no 3rd-place playoff, so both
+# semifinal losers take the Semifinalist row.
+JUNIOR_POINTS = {
+    "Champion":        {"GS": 1000, "A": 500, "G1": 300, "G3": 100, "G5": 30},
+    "Finalist":        {"GS": 700,  "A": 350, "G1": 210, "G3": 60,  "G5": 18},
+    "Semifinalist":    {"GS": 490,  "A": 250, "G1": 140, "G3": 36,  "G5": 9},
+    "Quarterfinalist": {"GS": 300,  "A": 150, "G1": 100, "G3": 20,  "G5": 5},
+    "R16":             {"GS": 180,  "A": 90,  "G1": 60,  "G3": 10,  "G5": 2},
+    "R32":             {"GS": 90,   "A": 45,  "G1": 30,  "G3": 5,   "G5": 0},
+}
+# ITF junior DOUBLES table (≈75% of singles); folded in at DOUBLES_WEIGHT.
+JUNIOR_DOUBLES_POINTS = {
+    "Champion":        {"GS": 750, "A": 375, "G1": 225, "G3": 75, "G5": 25},
+    "Finalist":        {"GS": 525, "A": 262, "G1": 157, "G3": 45, "G5": 13},
+    "Semifinalist":    {"GS": 367, "A": 187, "G1": 105, "G3": 27, "G5": 6},
+    "Quarterfinalist": {"GS": 225, "A": 112, "G1": 75,  "G3": 15, "G5": 3},
+    "R16":             {"GS": 135, "A": 67,  "G1": 45,  "G3": 7,  "G5": 0},
+    "R32":             {"GS": 0,   "A": 0,   "G1": 0,   "G3": 0,  "G5": 0},
+}
+DOUBLES_WEIGHT = 0.25      # ITF CJR: combined = best-6 singles + ¼ × best-6 doubles
+# USTA-style bonus for beating a ranked opponent (singles), by the opponent's
+# standing in the provisional combined order.
+_RANKED_WIN_BONUS = [(10, 75), (25, 68), (50, 56), (75, 45), (100, 34),
+                     (150, 23), (250, 15), (350, 8), (500, 4)]
+BEST_N = 6        # only a player's best six results (and best six ranked wins) count
+
+# Junior doubles is the FULL match engine (not the 8-game pro set) — best-of-3,
+# no-ad, with a 10-point match tiebreak in lieu of the third set (ITF junior rules).
+JUNIOR_DOUBLES_FMT = MatchFormat(best_of=3, no_ad=True, set_tiebreak=True,
+                                 final_set_tiebreak=True, final_set_tiebreak_target=10)
+# Likelihood a recruit also enters the doubles draw, driven by stamina + grit
+# (resilience/competitiveness): grinders play doubles more. Winning is talent.
+DOUBLES_BASE_P, DOUBLES_SPAN = 0.20, 0.65
+_GRIT_ATTRS = ("stamina", "resilience", "competitiveness")
+
+
+def event_points(level: str, finish: str, *, table=JUNIOR_POINTS) -> int:
+    return table.get(finish, {}).get(_LEVEL_TO_GRADE.get(level, ""), 0)
+
+
+def doubles_event_points(level: str, finish: str) -> int:
+    return event_points(level, finish, table=JUNIOR_DOUBLES_POINTS)
+
+
+def _ranked_win_bonus(rank: int | None) -> int:
+    if rank is None:
+        return 0
+    for ceil, pts in _RANKED_WIN_BONUS:
+        if rank <= ceil:
+            return pts
+    return 0
+
+
+def _freeze_points(recruits: list, c: "_Circuit") -> None:
+    """Freeze each recruit's junior ranking POINTS onto them. ITF Combined Junior
+    Ranking: best-6 singles results (+ best-6 ranked-win bonuses) plus ¼ of best-6
+    doubles results — one ledger, no separate doubles ranking. Two-pass: provisional
+    combined order decides which singles wins earn a ranked-win bonus."""
+    singles, doubles, played, dbl_played = {}, {}, {}, {}
+    for p in recruits:
+        s = sorted((event_points(lv, f) for (_m, _t, lv, f) in c.finishes.get(p.pid, [])),
+                   reverse=True)
+        d = sorted((doubles_event_points(lv, f)
+                    for (_m, _t, lv, f, _pn) in c.dbl_finishes.get(p.pid, [])), reverse=True)
+        singles[p.pid] = sum(s[:BEST_N])
+        doubles[p.pid] = sum(d[:BEST_N])
+        played[p.pid] = len(c.finishes.get(p.pid, []))
+        dbl_played[p.pid] = len(c.dbl_finishes.get(p.pid, []))
+    prov_base = {pid: singles[pid] + DOUBLES_WEIGHT * doubles[pid] for pid in singles}
+    prov = sorted(recruits, key=lambda q: (-prov_base[q.pid], q.pid))
+    prov_rank = {q.pid: i for i, q in enumerate(prov, 1)}
+    for p in recruits:
+        bonuses = sorted((_ranked_win_bonus(prov_rank.get(opp))
+                          for (_m, opp, _mg, _og, won) in c.corpus.get(p.pid, []) if won),
+                         reverse=True)
+        p.singles_points = int(singles[p.pid] + sum(bonuses[:BEST_N]))
+        p.doubles_points = int(doubles[p.pid])
+        p.junior_points = int(p.singles_points + DOUBLES_WEIGHT * p.doubles_points)
+        p.tournaments_played = played[p.pid]
+        p.doubles_played = dbl_played[p.pid]
 # Probability a tier-eligible player actually enters a given event (varies résumés).
 ENTER_P = 0.72
 # Iterations for the results-based STR fixed point (cheaper per snapshot, full final).
@@ -184,6 +275,9 @@ class _Circuit:
     finishes: dict                # pid -> [(month, name, level, finish_label)]
     matches: dict                 # pid -> [{date, tournament, round, opponent, score, won}]
     corpus: dict                  # pid -> [(month, opp_pid, my_games, opp_games)] chronological
+    dbl_finishes: dict            # pid -> [(month, name, level, finish_label, partner_name)]
+    dbl_matches: dict             # pid -> [{date, tournament, round, partner, opponents, score, won}]
+    dbl_corpus: dict              # pid -> [(opp_pid, my_games, opp_games)] (each partner faced)
 
 
 def _run_event(c: _Circuit, name: str, level: str, month: int, field: list,
@@ -218,11 +312,90 @@ def _run_event(c: _Circuit, name: str, level: str, month: int, field: list,
                 hg, lg = res.games_won            # (side0=hi, side1=lo)
                 for player, opp, pi, mg, og in (
                         (hp, lp, 0, hg, lg), (lp, hp, 1, lg, hg)):
+                    won = (res.winner == pi)
                     c.matches.setdefault(player.pid, []).append({
                         "date": date, "tournament": name, "round": m.rnd,
                         "opponent": opp.name, "score": _score_str(res.set_scores, pi),
-                        "won": (res.winner == pi)})
-                    c.corpus.setdefault(player.pid, []).append((month, opp.pid, mg, og))
+                        "won": won})
+                    c.corpus.setdefault(player.pid, []).append((month, opp.pid, mg, og, won))
+
+    _run_doubles(c, name, level, month, field, rng)
+
+
+# Doubles tilts the engine drivers toward the skills that win doubles — serve,
+# court coverage, net instincts (mental) — and eases off long-rally baseline play.
+# A serve+movement player therefore rates ABOVE their singles level in doubles and a
+# baseline grinder below, so a doubles STR ≠ singles STR and specialists surface.
+_DOUBLES_TILT = {"serve_power": 1.25, "serve_placement": 1.25, "movement": 1.20,
+                 "mental": 1.10, "stamina": 0.90,
+                 "forehand": 0.85, "backhand": 0.85, "consistency": 0.85}
+
+
+def _pair_engine(a: Player, b: Player) -> Player:
+    """Collapse a doubles pair into one synthetic, doubles-tilted engine Player so the
+    full match engine resolves the team match — the college-dual trick, plus the tilt
+    that makes doubles a distinct skill."""
+    attrs = {at: max(0.0, min(1.0, (getattr(a, at) + getattr(b, at)) / 2.0 * _DOUBLES_TILT.get(at, 1.0)))
+             for at in ATTRS}
+    return Player(name=f"{a.name} / {b.name}", country=getattr(a, "country", "US"), **attrs)
+
+
+def _plays_doubles(p, rng: random.Random) -> bool:
+    """Whether a recruit also enters the doubles draw — driven by stamina + grit, so
+    grinders play doubles more. Not everyone plays; winning is talent (the engine)."""
+    g = sum(p.current_grade(a) for a in _GRIT_ATTRS) / len(_GRIT_ATTRS)   # ~20..80
+    return rng.random() < DOUBLES_BASE_P + DOUBLES_SPAN * max(0.0, min(1.0, (g - 30) / 45))
+
+
+def _run_doubles(c: _Circuit, name: str, level: str, month: int, field: list,
+                 rng: random.Random) -> None:
+    """Run the event's doubles draw: stamina/grit decides who enters, partners are
+    drawn on the fly (whoever's there), and pairs play the full junior-doubles format.
+    Both partners share the team's finish, points and per-opponent STR corpus."""
+    date = f"{_MONTH_ABBR[month]} {c.grad_year}"
+    entrants = [p for p in field if _plays_doubles(p, rng)]
+    for section in _sections(entrants, lambda p: p.str_value()):
+        order = section[:]
+        rng.shuffle(order)                                   # on-the-fly pairing
+        pairs = [(order[i], order[i + 1]) for i in range(0, len(order) - 1, 2)]
+        if len(pairs) < 2:
+            continue
+        def pkey(pr):                      # pairs hold unhashable Prospects → key by pids
+            return (pr[0].pid, pr[1].pid)
+        teams = {pkey(pr): _pair_engine(c.engine_players[pr[0].pid], c.engine_players[pr[1].pid])
+                 for pr in pairs}
+        played: dict = {}
+
+        def play(ta, tb, *, seed):
+            res = simulate_match(teams[pkey(ta)], teams[pkey(tb)], seed=seed, fmt=JUNIOR_DOUBLES_FMT)
+            played[frozenset((pkey(ta), pkey(tb)))] = res
+            return ta if res.winner == 0 else tb
+
+        result = run_tournament(pairs, seed=rng.randint(1, 10 ** 9), play=play,
+                                key=lambda pr: pr[0].str_value() + pr[1].str_value())
+
+        for idx, pr in enumerate(result.entrants):
+            finish = result.finish_of(idx)
+            if finish is not None:
+                for me, partner in ((pr[0], pr[1]), (pr[1], pr[0])):
+                    c.dbl_finishes.setdefault(me.pid, []).append(
+                        (month, name, level, finish, partner.name))
+
+        for rnd in result.rounds:
+            for m in rnd:
+                hp, lp = result.entrants[m.hi], result.entrants[m.lo]
+                res = played[frozenset((pkey(hp), pkey(lp)))]
+                hg, lg = res.games_won
+                for team, opp, pi, mg, og in ((hp, lp, 0, hg, lg), (lp, hp, 1, lg, hg)):
+                    won = (res.winner == pi)
+                    for me, mate in ((team[0], team[1]), (team[1], team[0])):
+                        c.dbl_matches.setdefault(me.pid, []).append({
+                            "date": date, "tournament": name, "round": m.rnd,
+                            "partner": mate.name,
+                            "opponents": f"{opp[0].name} / {opp[1].name}",
+                            "score": _score_str(res.set_scores, pi), "won": won})
+                        for foe in opp:        # each partner is credited vs both foes
+                            c.dbl_corpus.setdefault(me.pid, []).append((foe.pid, mg, og))
 
 
 def _eligible_field(recruits: list, event: str, rng: random.Random) -> list:
@@ -246,7 +419,7 @@ def _solve_str(recruits: list, corpus: dict, priors: dict, month: int,
     so everyone is rankable from the first snapshot."""
     by_player = {p.pid: [] for p in recruits}
     for pid, entries in corpus.items():
-        by_player[pid] = [(opp, mg, og) for (m, opp, mg, og) in entries if m <= month]
+        by_player[pid] = [(opp, mg, og) for (m, opp, mg, og, _won) in entries if m <= month]
     solved = converge_ids(by_player, priors=priors, iterations=iterations)
     return {pid: priors.get(pid, 44.0) for pid in by_player} | {
         pid: v[0] for pid, v in solved.items()}
@@ -287,7 +460,8 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
 
     c = _Circuit(grad_year=klass.grad_year,
                  engine_players={pid: s.engine_player() for pid, s in selves.items()},
-                 finishes={}, matches={}, corpus={})
+                 finishes={}, matches={}, corpus={},
+                 dbl_finishes={}, dbl_matches={}, dbl_corpus={})
 
     # ---- play the calendar chronologically with the full match engine, pulsing a
     # staggered slice of development before each month so players climb in waves ----
@@ -345,19 +519,33 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
 
     # ---- freeze the evolved STR + the résumé (finishes + per-match lore) ----
     final = converge_ids(
-        {p.pid: [(o, mg, og) for (_m, o, mg, og) in c.corpus.get(p.pid, [])]
+        {p.pid: [(o, mg, og) for (_m, o, mg, og, _w) in c.corpus.get(p.pid, [])]
          for p in recruits},
         priors=priors, iterations=_FINAL_ITERS)
+    # Doubles STR: solved over the doubles corpus, seeded from singles ability — so a
+    # mid singles player who wins in doubles rates ABOVE their singles STR (the
+    # recruiting lever that surfaces doubles specialists).
+    dbl_final = converge_ids(
+        {p.pid: list(c.dbl_corpus.get(p.pid, [])) for p in recruits},
+        priors=priors, iterations=_FINAL_ITERS)
+    _freeze_points(recruits, c)
     for p in recruits:
         s, rel = final.get(p.pid, (priors[p.pid], 0.0))
         p.junior_str = round(s, 2)
         p.junior_str_reliability = round(rel, 3)
-        rows = sorted(c.finishes.get(p.pid, []), key=lambda r: r[0])
+        ds, drel = dbl_final.get(p.pid, (priors[p.pid], 0.0))
+        p.junior_doubles_str = round(ds, 2) if c.dbl_corpus.get(p.pid) else None
         p.junior_results = [
             {"date": f"{_MONTH_ABBR[m]} {klass.grad_year}", "tournament": t,
              "level": level, "result": finish}
-            for (m, t, level, finish) in rows]
+            for (m, t, level, finish) in sorted(c.finishes.get(p.pid, []), key=lambda r: r[0])]
         p.junior_matches = list(c.matches.get(p.pid, []))
+        p.junior_doubles_results = [
+            {"date": f"{_MONTH_ABBR[m]} {klass.grad_year}", "tournament": t,
+             "level": level, "result": finish, "partner": partner}
+            for (m, t, level, finish, partner) in
+            sorted(c.dbl_finishes.get(p.pid, []), key=lambda r: r[0])]
+        p.junior_doubles_matches = list(c.dbl_matches.get(p.pid, []))
 
     klass.circuit_done = True
 

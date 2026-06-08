@@ -229,7 +229,8 @@ def conferences_for(division: str, gender: str) -> list[str]:
 # Recruiting (juniors) — board + profile
 # --------------------------------------------------------------------------
 from app.juniors import (generate_class, national_rankings, state_rankings,
-                         international_rankings, US_STATES)
+                         international_rankings, US_STATES,
+                         points_rankings, us_points_rankings, nation_points_top)
 from app.development import overall_to_str
 
 _recruit_cache: dict = {}
@@ -271,8 +272,30 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
         # badges. Cached with the class, so the cost is paid once.
         from app.junior_circuit import run_junior_circuit
         run_junior_circuit(klass, seed=seed)
+        points_rankings(klass)          # freeze the points-ledger rank on every recruit
         _recruit_cache[key] = klass
     return _recruit_cache[key]
+
+
+def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
+                        nation: str = "", seed: int = DEFAULT_SEED):
+    """Points-ledger junior rankings as (rank, Prospect) rows. Scopes: 'world' (the
+    whole pool), 'us' (domestic), 'nation' (one international nation)."""
+    klass = get_recruits(gender, grad_year, seed)
+    if scope == "us":
+        src = us_points_rankings(klass)[:100]      # US Top 100
+    elif scope == "nation" and nation:
+        src = [p for p in points_rankings(klass) if not p.domestic and p.region == nation]
+    else:
+        src = points_rankings(klass)
+    return list(enumerate(src, 1))
+
+
+def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """[(nation, [(rank, Prospect)...])] Top-10 boards for each talent-dense nation."""
+    klass = get_recruits(gender, grad_year, seed)
+    return [(nat, list(enumerate(players, 1)))
+            for nat, players in nation_points_top(klass)]
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
@@ -338,6 +361,11 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "national_rank": p.recruit_rank,
         "region_rank": region_rank,
         "region_label": region_label,
+        # Points ledger vs. the scouting board: the divergence is the gem signal.
+        "points_rank": getattr(p, "points_rank", None),
+        "junior_points": getattr(p, "junior_points", 0),
+        "tournaments_played": getattr(p, "tournaments_played", 0),
+        "junior_str": getattr(p, "junior_str", None),
         "junior_tier_label": TIER_LABELS.get(p.junior_tier, ""),
         "service": overall_to_str(p.scouting_report("service")),   # two independent ceiling reads
         "dept": overall_to_str(p.scouting_report("dept")),

@@ -29,6 +29,11 @@ from dataclasses import dataclass
 K_SOS = 0.45
 SOS_ITERS = 12
 
+# ITA borrow: a road (away) win is worth 10% more than a home win, since winning
+# away from home is harder. Applied to the win count that feeds APR — gentle, so it
+# breaks near-ties toward the team that won on the road without reordering the table.
+ROAD_WIN_BONUS = 0.10
+
 # College flight weights: #1 lines carry the most competitive weight.
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.85, "S3": 0.60, "S4": 0.45, "S5": 0.30, "S6": 0.20,
@@ -41,6 +46,7 @@ class RatingLine:
     school: str
     wins: int = 0
     losses: int = 0
+    road_wins: int = 0       # away wins (carry the ITA +10% bonus into APR)
     apr: float = 0.0
     fqi: float = 0.0
     ogs: float = 0.0
@@ -96,7 +102,7 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
         if d["home_won"]:
             h.wins += 1; a.losses += 1
         else:
-            a.wins += 1; h.losses += 1
+            a.wins += 1; a.road_wins += 1; h.losses += 1   # away team won on the road
 
     # --- APR: iterated, strength-of-schedule-aware ---
     # Classic RPI compresses (built for a single overlapping league). Here the
@@ -104,7 +110,12 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
     # own win% adjusted by how strong its opponents proved to be. Quality
     # propagates through the results graph, so beating power-conference teams
     # rates far above running up an undefeated mid-major record.
-    wp = {t: r.win_pct for t, r in teams.items()}
+    # Road-win-bonused win rate: away wins count 1.10×, denominator unchanged, so a
+    # team that won on the road rates a hair above one with the same record at home.
+    wp = {}
+    for t, r in teams.items():
+        g = r.wins + r.losses
+        wp[t] = min(1.0, (r.wins + ROAD_WIN_BONUS * r.road_wins) / g) if g else 0.0
     S = dict(wp)
     for _ in range(SOS_ITERS):
         nS = {}
