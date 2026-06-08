@@ -239,24 +239,37 @@ RECRUIT_GENDERS = {"men": "male", "women": "female"}
 # from the SAME talent/attribute model as that division's rostered players
 # (app.development.generate_prospect), just centred lower because these are
 # pre-college prospects who develop once on a roster. D1 boards run hotter than
-# D2/D3, exactly as the rostered-player talent does (app.ncaa._talent_from_strength).
-_DIVISION_TALENT = {"D1": 48.0, "D2": 43.0, "D3": 39.0}
+# Recruit-pool caliber is drawn from the SAME calibrated talent scale as that
+# division×gender's rostered players (app.ncaa._talent_mean), centred at a median
+# program so blue-chips reach the top of the band and the bulk sit a notch below
+# — incoming freshmen who develop up. Thin spread (dense bands, thin star margins).
+_RECRUIT_SD = 6.5
+_GENDER_VOCAB = {"male": "men", "female": "women"}
 
 
-def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division: str = "D1"):
-    """Cached recruiting class. `gender` is "male"/"female" (juniors vocab)."""
-    key = (gender, grad_year, seed, division)
+RECRUIT_BOARD_N = 2000      # one national class in the thousands, all divisions share it
+
+
+def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division=None):
+    """The ONE national recruiting class for a gender (thousands of juniors),
+    viewed nationally / by state / internationally. Every program D1-D3 recruits
+    from this same pool and ranks/stars are national — there are no per-division
+    pools or per-division star ratings. `gender` is "male"/"female" (juniors
+    vocab); `division` is accepted for caller compatibility but ignored."""
+    import app.ncaa as ncaa
+    key = (gender, grad_year, seed)
     if key not in _recruit_cache:
-        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}|{division}")
-        klass = generate_class(rng, n=400, grad_year=grad_year, gender=gender,
-                               talent_mean=_DIVISION_TALENT.get(division, 48.0))
-        national_rankings(klass)        # assigns recruit_rank / tier / stars
+        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
+        tmean = ncaa._talent_mean(0.5, "D2", _GENDER_VOCAB.get(gender, "men"))
+        klass = generate_class(rng, n=RECRUIT_BOARD_N, grad_year=grad_year, gender=gender,
+                               talent_mean=tmean, talent_sd=_RECRUIT_SD)
+        national_rankings(klass)        # one national rank/star ladder for the whole class
         _recruit_cache[key] = klass
     return _recruit_cache[key]
 
 
-def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division: str = "D1"):
-    return next((p for p in get_recruits(gender, grad_year, seed, division).recruits
+def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
+    return next((p for p in get_recruits(gender, grad_year, seed).recruits
                  if p.pid == pid), None)
 
 
