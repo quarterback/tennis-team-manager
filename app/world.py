@@ -409,6 +409,12 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]
     academic_top = sorted(progs, key=lambda s: -traits[s][1])[:40]
+    # Home-region programs of EVERY division — so a strong "homecooking" recruit
+    # can choose a near-home smaller school over a higher-prestige one out of
+    # range (the realistic path by which real talent falls to a lower classification).
+    by_region: dict[str, list] = {}
+    for s in progs:
+        by_region.setdefault(traits[s][2], []).append(s)
 
     klass = national_class(world["seed"], world["year"], gender)
     new = []
@@ -425,6 +431,8 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
         lo = bisect.bisect_left(pres_arr, cal - 0.30)
         hi = bisect.bisect_left(pres_arr, cal + 0.30)
         cands = set(by_pres[lo:hi]) | set(academic_top)
+        if hc > 0.0 and not intl:                       # homebodies also weigh home
+            cands |= set(by_region.get(hr, ()))
         best, best_score = None, -1.0
         jit = random.Random(f"{p.pid}|sign").uniform(-0.04, 0.04)
         for s in cands:

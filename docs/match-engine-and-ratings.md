@@ -179,6 +179,21 @@ feeds everything — rosters, recruits, stars (STR is the separate results ratin
 - **STR** stays results-based (§3): assumed from the ability prior at first, then
   earned by match play.
 
+**Recruiting allocation** (`world._sign_batch`): every program recruits from the
+one national pool; each recruit (best first, on the *visible* scouted signal)
+commits to the best-appeal open program — athletic fit (caliber vs prestige,
+within a window) × academics × home proximity × facilities, plus near-home
+programs of any division for strong "homecooking" recruits. Measured outcomes:
+
+- Tiers tightly on the scouted signal: corr(recruit rank, program prestige) **−0.89**;
+  the top-100 ranked recruits all sign D1.
+- But **talent disperses** because scouting can't see ceilings:
+  corr(*true potential*, prestige) is only **0.37**, and of the top-100 by true
+  potential, **~38% sign at D2/D3** — the diamonds-in-the-rough who develop into
+  stars at smaller programs. Talent "falls" via scouting imperfection +
+  development, not by forcing a consensus blue-chip down (which, realistically,
+  almost always goes D1).
+
 ---
 
 ## 6. How to evaluate (reproduce the numbers)
@@ -195,9 +210,6 @@ feeds everything — rosters, recruits, stars (STR is the separate results ratin
 
 ## 7. Growth areas
 
-- **Recruiting allocation** — model which programs sign which recruits (talent
-  can fall to a smaller school); today's roster/recruit talent is calibrated but
-  the matching is simple.
 - **Multi-year stability** — sim several years and confirm the distribution holds
   as recruits develop and replace graduates (the scales are aligned for this, but
   it wants a dedicated eval).
