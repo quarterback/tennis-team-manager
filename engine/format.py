@@ -19,7 +19,7 @@ class MatchFormat:
     best_of: int = 3                     # 3 or 5 sets (ignored when pro_set)
 
     # Per-set scoring
-    no_ad: bool = False                  # sudden-death deciding point at deuce
+    no_ad: bool = True                   # sudden-death deciding point at deuce (IRL college default)
     set_games: int = 6                   # games to win a normal set (win by 2)
     set_tiebreak: bool = True            # tiebreak at games-all (False ⇒ advantage set)
     set_tiebreak_target: int = 7         # points to win a set tiebreak (win by 2)
