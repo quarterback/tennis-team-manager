@@ -395,6 +395,16 @@ html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, table { max-width: 100%; }
 .bl-select, .bl-input { max-width: 100%; }
 
+/* Season divider inside a match-by-match table (player career view). */
+.bl-yeardiv {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; margin-top: 2px;
+  background: var(--surface-subtle); border-top: 1px solid var(--border-subtle);
+  font-size: 12px; font-weight: 800; letter-spacing: .02em; color: var(--text-primary);
+}
+.bl-yeardiv:first-child { border-top: none; }
+.bl-yeardiv-rec { font-weight: 700; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+
 /* ---------------------------------------------------------- Pagination */
 .bl-pager {
   display: flex; align-items: center; justify-content: space-between;

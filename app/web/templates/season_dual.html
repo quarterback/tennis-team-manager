@@ -17,12 +17,13 @@
         {% for who in ['home', 'away'] %}
         {% set won = ln.home_won if who == 'home' else not ln.home_won %}
         {% set player = ln.get(who ~ '_player') %}
+        {% set ppid = ln.get(who ~ '_pid') %}
         {% set country = ln.get(who ~ '_country') %}
         {% set school = d.home if who == 'home' else d.away %}
         <div class="bl-side {{ 'won' if won else '' }}">
           <span class="nm">{% if won %}<span class="chk">✓</span>{% endif %}
             {% if country %}<span class="player-flag">{{ country|flag }}</span> {% endif %}
-            {% if player %}{{ player }} <span class="bl-court-team">{{ school }}</span>
+            {% if player %}{% if ppid and not is_d %}<a class="bl-school" href="{{ url_for('player', pid=ppid, school=school, u=u) }}">{{ player }}</a>{% else %}{{ player }}{% endif %} <span class="bl-court-team">{{ school }}</span>
             {% else %}{{ school }}{% endif %}</span>
           <span class="bl-setnums">
             {% if ln.sets %}{% for s in ln.sets %}{% set sw = (s[0] > s[1]) if who == 'home' else (s[1] > s[0]) %}<span class="g {{ 'w' if sw }}">{{ s[0] if who == 'home' else s[1] }}</span>{% endfor %}

@@ -15,12 +15,12 @@ from flask import Flask, render_template, request, abort, redirect, url_for
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
-from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
+from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS, get_season,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     dashboard_view, team_budget, team_results, season_match_view,
-                    conference_schools, team_conference, world_hub)
+                    conference_schools, team_conference, world_hub, player_career)
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -287,11 +287,13 @@ def create_app() -> Flask:
         info = sm.player_info(sid, pid)
         if not info:
             abort(404)
-        log = sm.player_log(sid, pid)
-        strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
-        wins = sum(1 for m in log if m["won"])
-        return render_template("player.html", active="Teams", pid=pid, info=info, log=log,
-                               strv=strv, rel=rel, wins=wins, losses=len(log) - wins,
+        # STR + career come from the same baseline season the team/box-score
+        # pages render, so a player's card matches the result you clicked from.
+        sr = get_season(division, gender)
+        strv, rel = sr.player_str.get(pid, (None, 0.0))
+        career, (wins, losses) = player_career(division, gender, pid)
+        return render_template("player.html", active="Teams", pid=pid, info=info,
+                               career=career, strv=strv, rel=rel, wins=wins, losses=losses,
                                crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")

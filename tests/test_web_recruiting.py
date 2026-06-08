@@ -47,4 +47,4 @@ def test_team_and_player_pages(client, tmp_path):
     pid = team_roster("D1", "men", "Oregon")[0]["p"].pid
     r = client.get(f"/player/{pid}?u=D1-men&school=Oregon")
     assert r.status_code == 200
-    assert b"match by match" in r.data and b"Bio" in r.data
+    assert b"by season" in r.data and b"Bio" in r.data

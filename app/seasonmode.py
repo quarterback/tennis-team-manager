@@ -616,6 +616,7 @@ def player_log(season_id: int, pid: str) -> list[dict]:
                 continue
             phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
             log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
-                        "opp": idx.get(opp, {}).get("name", "—"), "opp_school": opp_school,
+                        "opp": idx.get(opp, {}).get("name", "—"), "opp_pid": opp,
+                        "opp_school": opp_school, "week": r["week"],
                         "gf": gf, "ga": ga, "won": won})
     return log
