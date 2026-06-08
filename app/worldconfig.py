@@ -7,6 +7,8 @@ is read at generation time, so it must be set BEFORE a new world is seeded.
 """
 from __future__ import annotations
 
+import json
+
 from . import dbpath
 
 # Friendly nationality bands offered at onboarding -> name-region preset id.
@@ -58,3 +60,36 @@ def name_preset() -> str:
 
 def set_name_preset(preset: str) -> None:
     set("name_preset", preset if preset in _VALID else _DEFAULTS["name_preset"])
+
+
+# --- Active universes (memory): only the chosen divisions × genders are seeded,
+# primed and simulated in detail; the rest are left dormant. ------------------
+_ALL_DIV = ["D1", "D2", "D3"]
+_ALL_GEN = ["men", "women"]
+
+
+def _list(key: str, allv: list[str]) -> list[str]:
+    raw = get(key)
+    try:
+        v = list(json.loads(raw)) if raw else []
+    except (ValueError, TypeError):
+        v = []
+    v = [x for x in allv if x in v]      # keep canonical order, drop junk
+    return v or allv                     # empty/none → all (default)
+
+
+def active_divisions() -> list[str]:
+    return _list("active_divisions", _ALL_DIV)
+
+
+def active_genders() -> list[str]:
+    return _list("active_genders", _ALL_GEN)
+
+
+def is_active(division: str, gender: str) -> bool:
+    return division in active_divisions() and gender in active_genders()
+
+
+def set_active(divisions: list[str], genders: list[str]) -> None:
+    set("active_divisions", json.dumps([d for d in _ALL_DIV if d in (divisions or [])] or _ALL_DIV))
+    set("active_genders", json.dumps([g for g in _ALL_GEN if g in (genders or [])] or _ALL_GEN))

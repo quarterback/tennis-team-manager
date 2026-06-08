@@ -170,11 +170,20 @@ def _save_rosters(conn, world_id, year, rosters) -> None:
     conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
 
 
-def _load_rosters(conn, world_id, year) -> dict:
+def _active_unis() -> list[tuple[str, str]]:
+    """The division×gender universes the player chose to run in detail. The rest
+    are seeded (players exist) but left dormant — the memory/CPU saving."""
+    return [(d, g) for (d, g) in UNIVERSES if worldconfig.is_active(d, g)]
+
+
+def _load_rosters(conn, world_id, year, unis=None) -> dict:
     rows = conn.execute("SELECT division, gender, school, data FROM world_roster"
                         " WHERE world_id=? AND year=?", (world_id, year)).fetchall()
+    active = set(unis) if unis is not None else None
     out: dict = {}
     for r in rows:
+        if active is not None and (r["division"], r["gender"]) not in active:
+            continue                      # dormant universe — don't materialise it
         out.setdefault((r["division"], r["gender"]), {}).setdefault(r["school"], []).append(
             prospect_from_dict(json.loads(r["data"])))
     return out
@@ -291,7 +300,7 @@ def _base_rosters(world: dict) -> dict:
     key = (world["id"], world["year"])
     if key not in _base_cache:
         conn = _db()
-        _base_cache[key] = _load_rosters(conn, world["id"], world["year"])
+        _base_cache[key] = _load_rosters(conn, world["id"], world["year"], _active_unis())
         conn.close()
     return _base_cache[key]
 
@@ -355,7 +364,7 @@ def universe_sid(seed: int, world: dict, division: str, gender: str) -> int:
 def universe_states(seed: int = DEFAULT_SEED) -> list[dict]:
     w = get_or_create(seed)
     out = []
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         s = sm.load_season(universe_sid(seed, w, d, g))
         out.append({"division": d, "gender": g, **s})
     return out
@@ -363,7 +372,7 @@ def universe_states(seed: int = DEFAULT_SEED) -> list[dict]:
 
 def _all_complete(seed: int, world: dict) -> bool:
     return all(sm.load_season(universe_sid(seed, world, d, g))["phase"] == "complete"
-               for (d, g) in UNIVERSES)
+               for (d, g) in _active_unis())
 
 
 # ==========================================================================
@@ -878,8 +887,11 @@ def simulate_cross(seed: int = DEFAULT_SEED) -> int:
         return 0
     prime(seed)
     progs = {g: _flat_programs(g) for g in GENDERS}
+    active = set(_active_unis())
     rows = []
     for m in cross_schedule(seed, w["year"]):
+        if (m["home_div"], m["gender"]) not in active or (m["away_div"], m["gender"]) not in active:
+            continue                      # skip matchups touching a dormant universe
         a, b = progs[m["gender"]][m["home"]], progs[m["gender"]][m["away"]]
         sd = int.from_bytes(__import__("hashlib").blake2s(
             f"{seed}|{w['year']}|{m['home']}|{m['away']}".encode(), digest_size=4).digest(), "big")
@@ -931,16 +943,16 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     if w["week"] == 0:                      # start of year: play the cross-division slate
         cross = simulate_cross(seed)
     played = 0
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         sid = universe_sid(seed, w, d, g)
         if sm.load_season(sid)["phase"] != "complete":
             res = sm.advance(sid)
             played += res.get("played", 0)
 
-    # Recruiting drip: sign a slice of each gender's class this week.
+    # Recruiting drip: sign a slice of each active gender's class this week.
     conn = _db()
     signed = 0
-    for gender in GENDERS:
+    for gender in worldconfig.active_genders():
         quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // SIGNING_WEEKS)
         signed += _sign_batch(conn, w, gender, quota)
     conn.execute("UPDATE world SET week=? WHERE id=?", (w["week"] + 1, w["id"]))
@@ -957,7 +969,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     prime(seed)
     # Results-based STR from the just-finished seasons drives the portal.
     player_str: dict = {}
-    for (d, g) in UNIVERSES:
+    for (d, g) in _active_unis():
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
 
     rosters = developed_rosters(w)        # full-year developed copy
@@ -968,7 +980,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     conn = _db()
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives.
-    for gender in GENDERS:
+    for gender in worldconfig.active_genders():
         _sign_batch(conn, w, gender, RECRUIT_POOL)
     conn.commit()
     signings = _load_signings(conn, w)
@@ -977,6 +989,18 @@ def _finalize_year(seed: int, w: dict) -> dict:
 
     new_year = w["year"] + 1
     _save_rosters(conn, w["id"], new_year, rosters)
+    # Dormant universes don't develop or roll over — carry their rosters forward
+    # unchanged with a cheap SQL copy (no Python materialisation), so their
+    # players still exist next year.
+    active = set(_active_unis())
+    for (d, g) in UNIVERSES:
+        if (d, g) in active:
+            continue
+        conn.execute(
+            "INSERT INTO world_roster (world_id, year, division, gender, school, pid, data) "
+            "SELECT world_id, ?, division, gender, school, pid, data FROM world_roster "
+            "WHERE world_id=? AND year=? AND division=? AND gender=?",
+            (new_year, w["id"], w["year"], d, g))
     conn.execute("UPDATE world SET year=?, week=0 WHERE id=?", (new_year, w["id"]))
     conn.commit()
     conn.close()

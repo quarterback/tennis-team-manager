@@ -159,6 +159,7 @@ def create_app() -> Flask:
         # then reset any existing world and begin a fresh league at preseason.
         from app import worldconfig
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
+        worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
         wd.start_new()
         return redirect(url_for("world_view"))
 

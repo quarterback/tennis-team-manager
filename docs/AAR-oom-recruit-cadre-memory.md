@@ -68,9 +68,19 @@ Done in a second pass on this branch:
   smaller than total openings, so every recruit signs and walk-ons backfill the
   rest (the intended behaviour already).
 
+- **Universe selection (memory)** — onboarding now lets you pick which divisions
+  (D1/D2/D3) and genders (men/women) to **run in detail**. All six are still
+  seeded so every player exists, but only the chosen universes are loaded,
+  primed and simulated; the rest stay dormant (and are carried forward unchanged
+  at year rollover via a cheap SQL copy). Picking D1-men only drops the primed
+  resident cache from ~271 MB (all six) to ~30 MB of rosters — the biggest
+  remaining lever, exactly as suggested. Defaults to all six, so nothing changes
+  unless you narrow it. Threaded through `world.py` (`_active_unis`, gated
+  prime/advance/finalize/cross/recruiting) + `worldconfig` + onboarding.
+
 Still open:
 
-- **Preseason UI/flow + schedule selection** (user request): make the preseason
-  an explicit flow (recruiting/cadre → walk-on backfill → **schedule
-  selection** → season). Larger feature; needs a scope decision on what the
-  player selects (non-conference opponents? slate size? home/away?).
+- **Preseason gate** — a thin page that lists the actions about to happen
+  (recruiting drip, schedule, auto-shuffle lineups) and gates "advance" so you
+  can optionally edit first; skip anything and the AI does it, as it already does
+  for every other program. Schedule/lineup edits ride the existing editor.
