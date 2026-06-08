@@ -105,8 +105,12 @@
 .bl-rank.gold { font-weight: 800; color: var(--rank-gold); }
 .bl-rank.bronze { font-weight: 800; color: var(--rank-bronze); }
 
-.bl-school { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.bl-school { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; min-width: 0; }
 .bl-row.me .bl-school { font-weight: 700; }
+
+/* Team logos: small school marks rendered inline beside team names
+   (rankings, standings, schedules). Scales with the surrounding text. */
+.team-logo-img { flex: 0 0 auto; height: 1.4em; width: auto; object-fit: contain; vertical-align: -0.35em; }
 
 .bl-badge {
   display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 9px;
