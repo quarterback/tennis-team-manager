@@ -17,8 +17,7 @@ def test_coaches_have_stable_ids_and_pages():
     assert c["role_label"] == "Head Coach"
 
 
-def test_coach_of_the_year_national_and_per_conference():
-    create_app()
+def test_coach_of_the_year_national_and_per_conference(played_season):
     recs = coach_honor_records("D1", "men")
     awards = [r["award"] for r in recs]
     assert awards.count("national_coty") == 1

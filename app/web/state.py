@@ -47,12 +47,17 @@ def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
 
 
 def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = FIELD_DEFAULT):
+    """The NCAA field from the live season (conference champions get autobids once
+    the conference tournaments have run). None in preseason. Cached by how far the
+    season has progressed so it refreshes as results come in."""
+    import app.world as world
+    import app.seasonmode as sm
     size = clamp_field(size)
-    key = (division, gender, seed, size)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    s = sm.load_season(sid)
+    key = (division, gender, sid, size, s["current_week"], s["phase"])
     if key not in _bracket_cache:
-        sr = get_season(division, gender, seed)
-        seeded, autobids = select_field(sr.programs, sr.ratings, sr.champions, size=size)
-        _bracket_cache[key] = run_bracket(seeded, autobids, seed=seed)
+        _bracket_cache[key] = sm.bracket_field(sid, size=size)
     return _bracket_cache[key]
 
 
@@ -62,10 +67,13 @@ def reset_all() -> None:
     edited rosters on the next request."""
     from app import ncaa
     from . import awards
+    import app.seasonmode as sm
     _season_cache.clear()
     _bracket_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
+    for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):
+        c.clear()
     ncaa.reset_caches()
 
 
@@ -112,55 +120,90 @@ class LiveRow:
         return f"{v:.4f}"
 
 
+def _ability(prog) -> float:
+    """A program's preseason strength = mean of its top-6 players' overall, used
+    to order surfaces before any results exist (a fresh league has no ratings)."""
+    from app.ncaa import build_roster
+    ovr = sorted((p.current_overall() for p in build_roster(prog)), reverse=True)[:6]
+    return sum(ovr) / len(ovr) if ovr else 0.0
+
+
 def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[LiveRow]:
-    sr = get_season(division, gender, seed)
-    # conference rank + record lookup
-    conf_pos: dict[str, tuple[int, int, int]] = {}
-    for conf, table in sr.standings.items():
-        for i, (p, w, l) in enumerate(table, 1):
-            conf_pos[p.school] = (i, w, l)
+    """Power Index table from the live week-by-week season. Before any results
+    exist (preseason), programs are ordered by preseason ability so the page still
+    renders for a freshly-started league."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    div = load_division(division, gender)
+    ratings = sm.power_index(sid)
+    cr = sm.conf_rank(sid)
+
+    if ratings:
+        rated = sorted((p for p in div.programs if p.school in ratings),
+                       key=lambda p: ratings[p.school].pi, reverse=True)
+        unrated = sorted((p for p in div.programs if p.school not in ratings),
+                         key=_ability, reverse=True)            # not yet played
+        ordered = rated + unrated
+    else:
+        ordered = sorted(div.programs, key=_ability, reverse=True)
+
     rows: list[LiveRow] = []
-    for rk, p in enumerate(sr.ranked(), 1):
-        r = sr.ratings[p.school]
-        cr, cw, cl = conf_pos.get(p.school, (0, 0, 0))
+    for rk, p in enumerate(ordered, 1):
+        r = ratings.get(p.school)
+        crk, cw, cl = cr.get(p.school, (0, 0, 0))
         rows.append(LiveRow(
             rk=rk, school=p.school, conf=p.conf, conf_abbr=p.conf_abbr,
-            tier=_tier(division, p.conf_abbr, p.conf), cr=cr, rec=r.record, crec=f"{cw}-{cl}",
-            pi=r.pi, apr=r.apr, fqi=r.fqi, me=(p.school == MY_TEAM),
+            tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
+            rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
+            pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
+            me=(p.school == MY_TEAM),
         ))
     return rows
 
 
 def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
-    """Everything the landing dashboard shows for one universe, built from the
-    cached ratings season + NCAA bracket (no heavy season-mode creation)."""
+    """Everything the landing dashboard shows for one universe, built from the live
+    week-by-week season. Fills in as the world advances (a freshly-started league
+    shows preseason ability order, empty leaders/seeds, no champion yet)."""
     from .rankings_data import crest
-    sr = get_season(division, gender, seed)
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    div = load_division(division, gender)
     rows = ranking_rows(division, gender, seed)
 
-    # Player STR leaders — map each rated pid back to its player + school.
-    pid_to = {}
-    for school, roster in sr.rosters.items():
-        for pr in roster:
-            pid_to[pr.pid] = (pr, school)
+    # Player STR leaders — top of the live STR board, with names from the roster
+    # index and W-L from each player's match log (computed only for the top few).
+    strmap = sm.season_player_str(sid)
+    pidx = sm._pid_index(division, gender)
+    board = sorted(((round(s, 1), rel, pid) for pid, (s, rel) in strmap.items()
+                    if pid in pidx), reverse=True)[:10]
+    recs = sm.player_records(sid)
     leaders = []
-    for pid, (s, rel) in sr.player_str.items():
-        if pid in pid_to:
-            pr, school = pid_to[pid]
-            w, l = sr.player_record.get(pid, (0, 0))
-            abbr, color = crest(school)
-            leaders.append({"name": pr.name, "school": school, "abbr": abbr,
-                            "color": color, "str": round(s, 1), "rel": rel,
-                            "w": w, "l": l, "pid": pid})
-    leaders.sort(key=lambda d: d["str"], reverse=True)
+    for s, rel, pid in board:
+        info = pidx[pid]
+        w, l = recs.get(pid, (0, 0))
+        abbr, color = crest(info["school"])
+        leaders.append({"name": info["name"], "school": info["school"], "abbr": abbr,
+                        "color": color, "str": s, "rel": rel, "w": w, "l": l,
+                        "pid": pid})
 
     br = get_bracket(division, gender, seed)
+    ratings = sm.power_index(sid)
     top_seeds = []
-    for p in br.seeds[:8]:
-        r = sr.ratings[p.school]
-        abbr, color = crest(p.school)
-        top_seeds.append({"school": p.school, "abbr": abbr, "color": color,
-                          "pi": r.pi, "rec": r.record, "autobid": p.key in br.autobids})
+    if br:
+        for p in br.seeds[:8]:
+            r = ratings.get(p.school)
+            abbr, color = crest(p.school)
+            top_seeds.append({"school": p.school, "abbr": abbr, "color": color,
+                              "pi": r.pi if r else 0.0, "rec": r.record if r else "0-0",
+                              "autobid": p.key in br.autobids})
+
+    s = sm.load_season(sid)
+    champion = s["champion"] if s["phase"] == "complete" else None
 
     top = []
     for r in rows[:10]:
@@ -169,17 +212,17 @@ def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict
 
     return {
         "top_programs": top,
-        "leaders": leaders[:10],
+        "leaders": leaders,
         "top_seeds": top_seeds,
-        "champion": br.champion.school if br.champion else None,
+        "champion": champion,
         "n_programs": len(rows),
-        "n_conferences": len(sr.standings),
+        "n_conferences": len(div.conferences),
     }
 
 
 def conferences_for(division: str, gender: str) -> list[str]:
-    sr = get_season(division, gender)
-    return ["All"] + sorted(sr.standings.keys())
+    from app.ncaa import load_division
+    return ["All"] + sorted(load_division(division, gender).conferences.keys())
 
 
 # --------------------------------------------------------------------------
@@ -447,19 +490,6 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     return groups, (w, l)
 
 
-def season_match_view(division: str, gender: str, idx: int, seed: int = DEFAULT_SEED):
-    """Box-score view of the idx-th dual in the cached season — shaped exactly
-    like seasonmode.dual_detail so the shared box-score template renders both."""
-    sr = get_season(division, gender, seed)
-    if idx < 0 or idx >= len(sr.duals):
-        return None
-    d = sr.duals[idx]
-    return {"home": d["home"], "away": d["away"], "round": "REG",
-            "conf": d["conf"], "home_points": d["home_points"],
-            "away_points": d["away_points"], "winner": 0 if d["home_won"] else 1,
-            "lines": d["lines"]}
-
-
 def world_hub(seed: int = DEFAULT_SEED):
     """Overview for the unified-world hub: the shared clock, plus each division's
     season phase, live top teams, champion, and the signing class so far."""
@@ -478,11 +508,39 @@ def world_hub(seed: int = DEFAULT_SEED):
             "top": sm.national_top(sid, 4), "champion": champ,
         })
     signed = world.signed_counts(seed)
+    year = world.BASE_YEAR + w["year"]
+    complete = all(d["phase"] == "complete" for d in divisions)
+
+    # Staged-season pipeline: regular → conf tournaments → NCAA → awards →
+    # offseason. Stages 1-3 are the seasonmode phases; once every bracket is done
+    # the awards phase must be *run* (honors stamped) before the year rolls over.
+    import app.honors as honors
+    awards_done = complete and honors.has_season(year, "D1", "men")
+    _ORDER = ["regular", "conf_tournaments", "ncaa", "awards", "offseason"]
+    _PH = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
+    if not complete:
+        stage = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
+    else:
+        stage = "offseason" if awards_done else "awards"
+    if stage in ("regular", "conf_tournaments", "ncaa"):
+        primary = {"endpoint": "world_advance",
+                   "label": "Advance week →" if stage == "regular" else "Advance postseason →"}
+    elif stage == "awards":
+        primary = {"endpoint": "world_awards", "label": "🏅 Run awards →"}
+    else:
+        primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
+    _LABELS = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
+               "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
+    ci = _ORDER.index(stage)
+    stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
+              for i, k in enumerate(_ORDER)]
+
     return {
-        "year": world.BASE_YEAR + w["year"], "season_no": w["year"] + 1,
+        "year": year, "season_no": w["year"] + 1,
         "week": w["week"], "divisions": divisions, "signed": signed,
         "signed_total": sum(signed.values()),
-        "complete": all(d["phase"] == "complete" for d in divisions),
+        "complete": complete, "awards_done": awards_done,
+        "stage": stage, "primary": primary, "stages": stages,
     }
 
 
@@ -515,14 +573,21 @@ def team_conference(division: str, gender: str, school: str) -> str:
 
 
 def team_roster(division: str, gender: str, school: str):
-    """Roster rows for a Team page: (player, line, live STR, reliability, W-L)."""
+    """Roster rows for a Team page: (player, line, live STR, reliability, W-L),
+    from the live week-by-week season — STR/record fill in as the world advances."""
     from app import economy
-    sr = get_season(division, gender)
-    roster = sr.rosters.get(school, [])
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import build_roster, load_division
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed())
+    prog = load_division(division, gender).by_school(school)
+    roster = build_roster(prog) if prog else []
+    strmap = sm.season_player_str(sid)
+    recs = sm.player_records(sid)
     rows = []
     for p in sorted(roster, key=lambda q: q.current_overall(), reverse=True):
-        s, rel = sr.player_str.get(p.pid, (p.str_value(), 0.0))
-        w, l = sr.player_record.get(p.pid, (0, 0))
+        s, rel = strmap.get(p.pid, (p.str_value(), 0.0))
+        w, l = recs.get(p.pid, (0, 0))
         rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l,
                      "schol": economy.fraction_label(getattr(p, "scholarship", 0.0))})
     for i, r in enumerate(rows, 1):
@@ -533,6 +598,7 @@ def team_roster(division: str, gender: str, school: str):
 def team_budget(division: str, gender: str, school: str) -> dict:
     """Scholarship-equivalency ledger for a program's team page."""
     from app import economy
-    sr = get_season(division, gender)
-    roster = sr.rosters.get(school, [])
+    from app.ncaa import build_roster, load_division
+    prog = load_division(division, gender).by_school(school)
+    roster = build_roster(prog) if prog else []
     return economy.budget_summary(roster, division, gender)

@@ -547,6 +547,81 @@ def national_top(season_id: int, n: int = 15) -> list[dict]:
             for i, p in enumerate(ranked[:n], 1)]
 
 
+_pi_cache: dict = {}
+
+
+def power_index(season_id: int) -> dict:
+    """Full Power Index ratings (school -> RatingLine with pi/apr/fqi/record) from
+    the season's completed regular-season duals. Empty in preseason. Cached by how
+    many duals are final, so it refreshes as the season advances."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _pi_cache:
+        duals = _completed_reg_duals(conn, season_id)
+        _pi_cache.clear()
+        _pi_cache[key] = compute_ratings(duals) if duals else {}
+    conn.close()
+    return _pi_cache[key]
+
+
+def conf_rank(season_id: int) -> dict:
+    """school -> (conference_rank, conf_wins, conf_losses) from live standings."""
+    out: dict = {}
+    for table in standings(season_id).values():
+        for i, row in enumerate(table, 1):
+            out[row["school"]] = (i, row["cw"], row["cl"])
+    return out
+
+
+def conf_champions(season_id: int) -> list[str]:
+    """Conference-tournament winners (school names) so far — the last CT round's
+    winner per conference. Empty until the conference tournaments have run.
+    Survives NCAA completion (which overwrites the season's `champion` field)."""
+    s = load_season(season_id)
+    div = load_division(s["division"], s["gender"])
+    conn = _db()
+    out = []
+    for conf in div.conferences:
+        last = conn.execute(
+            "SELECT home, away, winner FROM duals WHERE season_id=? AND round='CT'"
+            " AND conf=? AND status='final' ORDER BY round_no DESC, bpos ASC LIMIT 1",
+            (season_id, conf)).fetchone()
+        if last and last["winner"] is not None:
+            out.append(last["home"] if last["winner"] == 0 else last["away"])
+    conn.close()
+    return out
+
+
+def national_champion(season_id: int) -> str | None:
+    """The NCAA champion school once the season is complete, else None."""
+    s = load_season(season_id)
+    return s["champion"] if s and s["phase"] == "complete" else None
+
+
+def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
+    """The NCAA field as it stands: seed the Power-Index-rated programs (conference
+    champions get autobids once the conference tournaments have run), run the
+    bracket. Returns a BracketResult, or None in preseason (no results yet)."""
+    s = load_season(season_id)
+    ratings = power_index(season_id)
+    rated = [p for p in load_division(s["division"], s["gender"]).programs
+             if p.school in ratings]
+    if len(rated) < 2:
+        return None
+    champions = []
+    if s["phase"] == "ncaa" and s["champion"]:
+        try:
+            progs = _programs(s["division"], s["gender"])
+            champions = [progs[v] for v in json.loads(s["champion"]).values()
+                         if v in progs and v in ratings]
+        except (ValueError, TypeError):
+            champions = []
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    return run_bracket(seeded, autobids, seed=s["seed"])
+
+
 def dual_detail(dual_id: int) -> dict | None:
     conn = _db()
     r = conn.execute("SELECT * FROM duals WHERE id=?", (dual_id,)).fetchone()
@@ -619,6 +694,33 @@ def season_player_str(season_id: int) -> dict:
     _str_cache.clear()
     _str_cache[key] = res
     return res
+
+
+_prec_cache: dict = {}
+
+
+def player_records(season_id: int) -> dict:
+    """One-pass ``pid -> (wins, losses)`` over all completed singles lines —
+    cheaper than calling player_log per player. Cached by completed-dual count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _prec_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        rec: dict = {}
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed") or ln.get("home_pid") is None:
+                    continue
+                hw = ln["home_won"]
+                rec.setdefault(ln["home_pid"], [0, 0])[0 if hw else 1] += 1
+                rec.setdefault(ln["away_pid"], [0, 0])[1 if hw else 0] += 1
+        _prec_cache.clear()
+        _prec_cache[key] = {k: (v[0], v[1]) for k, v in rec.items()}
+    conn.close()
+    return _prec_cache[key]
 
 
 def player_log(season_id: int, pid: str) -> list[dict]:

@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch - NCAA Bracket{% endblock %}
 {% block content %}
+{% if not br %}
+<div class="bl-board" style="max-width:760px">
+  <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
+    <h2 style="margin:0 0 8px">No bracket yet</h2>
+    <p class="bl-conf">The NCAA field is seeded from results as the season plays out.
+    Advance the season from the <a href="{{ url_for('season_hub', u=u) }}">Season</a> hub.</p>
+  </div></div>
+</div>
+{% else %}
 {% set total_upsets = namespace(count=0) %}
 {% for rnd in br.rounds %}{% for m in rnd %}{% if m.upset %}{% set total_upsets.count = total_upsets.count + 1 %}{% endif %}{% endfor %}{% endfor %}
 {% set first_round = br.rounds[0] if br.rounds else [] %}
@@ -138,4 +147,5 @@
     </main>
   </section>
 </div>
+{% endif %}
 {% endblock %}

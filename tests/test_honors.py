@@ -3,8 +3,7 @@ from app.web.server import create_app
 from app.web.awards import honor_records, stamp_world_honors, player_career_honors
 
 
-def test_honor_records_cover_all_award_types():
-    create_app()                       # bootstrap schemas
+def test_honor_records_cover_all_award_types(played_season):
     recs = honor_records("D1", "men")
     awards = {r["award"] for r in recs}
     for key in ("national_poty", "conf_poty", "all_american", "all_conference",
@@ -14,10 +13,8 @@ def test_honor_records_cover_all_award_types():
     assert sum(1 for r in recs if r["award"] == "national_poty") == 1
 
 
-def test_hall_of_fame_archives_stamped_years():
-    import app.world as wd
+def test_hall_of_fame_archives_stamped_years(played_season):
     app = create_app()
-    wd.start_new()
     c = app.test_client()
     assert c.get("/hall-of-fame?u=D1-men").status_code == 200      # empty is fine
     stamp_world_honors()
@@ -28,8 +25,7 @@ def test_hall_of_fame_archives_stamped_years():
     assert "2026" in body and "Player of the Year" in body
 
 
-def test_stamp_persists_and_follows_pid():
-    create_app()
+def test_stamp_persists_and_follows_pid(played_season):
     poty = next(r for r in honor_records("D1", "men") if r["award"] == "national_poty")
     stamp_world_honors()
     car = honors.career(poty["subject_id"], "player")
