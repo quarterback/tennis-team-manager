@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
 {% block title %}Play to Clinch — Dual Simulator{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -24,7 +25,7 @@
     <div class="bl-slot">
       <div class="bl-th" style="margin-bottom:8px">{{ 'HOME' if slot == 'home' else 'AWAY' }}</div>
       <div class="bl-slot-card">
-        <span class="bl-crest lg" style="background:{{ color }}">{{ abbr }}</span>
+        {{ crest_box(sel, abbr, color, 'lg') }}
         <div style="flex:1;min-width:0">
           <select class="bl-select" name="{{ slot }}" onchange="this.form.action='{{ url_for('dual') }}';this.form.submit()">
             {% for s in schools %}<option{% if s == sel %} selected{% endif %}>{{ s }}</option>{% endfor %}

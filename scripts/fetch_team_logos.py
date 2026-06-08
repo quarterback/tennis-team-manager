@@ -51,6 +51,11 @@ _STOP = {"university", "the", "of", "at", "college"}
 # Hand mappings only for our short strings that don't normalize onto any ESPN
 # name variant and are too far for the fuzzy fallback to catch safely. Values
 # are matched through norm(), so write them as a real ESPN name variant.
+#
+# A value of ``None`` means "ESPN has no logo for this school — do not let the
+# fuzzy fallback guess." Without it the difflib fallback mis-maps these onto a
+# similarly-named but different school (e.g. West Texas A&M -> East Texas A&M);
+# pinning them to None forces a generated monogram placeholder instead.
 ALIASES = {
     "albany": "ualbany",
     "appalachian state": "app state",
@@ -65,6 +70,14 @@ ALIASES = {
     "miami (oh)": "miami (oh)",
     "miami (fl)": "miami",
     "loyola (md)": "loyola maryland",
+    # ESPN doesn't track these — block the mis-mapping fuzzy fallback.
+    "connecticut college": None,          # else -> Central Connecticut
+    "eastern connecticut state": None,    # else -> Western Connecticut State
+    "northwestern oklahoma state": None,  # else -> Southwestern Oklahoma State
+    "regent": None,                       # else -> Rockford Regents
+    "thomas (me)": None,                  # else -> Thomas More
+    "west texas a&m": None,               # else -> East Texas A&M
+    "western washington": None,           # else -> Eastern Washington
 }
 
 
@@ -131,7 +144,10 @@ def load_schools() -> list[str]:
 def match(school: str, index: dict[str, tuple[str, str]], keys: list[str]):
     n = norm(school)
     if school.lower() in ALIASES:
-        n = norm(ALIASES[school.lower()])
+        alias = ALIASES[school.lower()]
+        if alias is None:        # ESPN has no logo — skip fuzzy, use placeholder
+            return None
+        n = norm(alias)
     if n in index:
         return index[n]
     # Fuzzy fallback: only accept a high-confidence single best key so we
