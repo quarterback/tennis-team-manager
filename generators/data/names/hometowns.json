@@ -98,7 +98,14 @@
       "Veracruz",
       "Puebla",
       "León",
-      "Obregón"
+      "Obregón",
+      "Querétaro",
+      "Mérida",
+      "San Luis Potosí",
+      "Aguascalientes",
+      "Cancún",
+      "Toluca",
+      "Morelia"
     ],
     "DO": [
       "Santo Domingo",
@@ -154,7 +161,9 @@
       "Cumaná",
       "Barcelona",
       "La Guaira",
-      "Maturín"
+      "Maturín",
+      "San Cristóbal",
+      "Mérida"
     ],
     "CO": [
       "Barranquilla",
@@ -166,7 +175,12 @@
       "Montería",
       "Sincelejo",
       "Bucaramanga",
-      "Cúcuta"
+      "Cúcuta",
+      "Pereira",
+      "Ibagué",
+      "Manizales",
+      "Villavicencio",
+      "Armenia"
     ],
     "BR": [
       "São Paulo",
@@ -180,7 +194,32 @@
       "Salvador",
       "Recife",
       "Campinas",
-      "Ibiúna"
+      "Ibiúna",
+      "Fortaleza",
+      "Manaus",
+      "Belém",
+      "Goiânia",
+      "Guarulhos",
+      "Natal",
+      "Santos",
+      "Florianópolis",
+      "Vitória",
+      "João Pessoa",
+      "Maceió",
+      "São Luís",
+      "Teresina",
+      "Cuiabá",
+      "Campo Grande",
+      "Joinville",
+      "Uberlândia",
+      "Ribeirão Preto",
+      "Sorocaba",
+      "Niterói",
+      "Caxias do Sul",
+      "Juiz de Fora",
+      "Bauru",
+      "Blumenau",
+      "Pelotas"
     ],
     "AR": [
       "Buenos Aires",
@@ -192,7 +231,29 @@
       "Tucumán",
       "Santa Fe",
       "Salta",
-      "Neuquén"
+      "Neuquén",
+      "San Miguel de Tucumán",
+      "Bahía Blanca",
+      "Resistencia",
+      "Posadas",
+      "San Juan",
+      "San Luis",
+      "Corrientes",
+      "Paraná",
+      "Formosa",
+      "Santiago del Estero",
+      "Río Cuarto",
+      "Concordia",
+      "San Rafael",
+      "Tandil",
+      "Bariloche",
+      "Comodoro Rivadavia",
+      "Catamarca",
+      "La Rioja",
+      "Jujuy",
+      "Pergamino",
+      "Olavarría",
+      "Villa María"
     ],
     "HT": [
       "Port-au-Prince",
@@ -271,7 +332,41 @@
       "Nottingham",
       "Hull",
       "Croydon",
-      "Southampton"
+      "Southampton",
+      "Sheffield",
+      "Newcastle",
+      "Leicester",
+      "Coventry",
+      "Bradford",
+      "Cardiff",
+      "Belfast",
+      "Stoke-on-Trent",
+      "Wolverhampton",
+      "Plymouth",
+      "Derby",
+      "Swansea",
+      "Portsmouth",
+      "Reading",
+      "Brighton",
+      "Bournemouth",
+      "Norwich",
+      "Luton",
+      "Middlesbrough",
+      "Sunderland",
+      "Oxford",
+      "Cambridge",
+      "York",
+      "Ipswich",
+      "Exeter",
+      "Bath",
+      "Eastbourne",
+      "Wimbledon",
+      "Edinburgh",
+      "Glasgow",
+      "Aberdeen",
+      "Dundee",
+      "Milton Keynes",
+      "Preston"
     ],
     "IE": [
       "Dublin",
@@ -281,7 +376,10 @@
       "Waterford",
       "Belfast",
       "Kilkenny",
-      "Drogheda"
+      "Drogheda",
+      "Dundalk",
+      "Sligo",
+      "Bray"
     ],
     "NL": [
       "Amsterdam",
@@ -293,7 +391,17 @@
       "Hoofddorp",
       "Almere",
       "Den Bosch",
-      "Groningen"
+      "Groningen",
+      "Tilburg",
+      "Breda",
+      "Nijmegen",
+      "Arnhem",
+      "Enschede",
+      "Apeldoorn",
+      "Amersfoort",
+      "Maastricht",
+      "Leiden",
+      "Dordrecht"
     ],
     "IT": [
       "Rome",
@@ -305,7 +413,41 @@
       "Rimini",
       "Florence",
       "Turin",
-      "Grosseto"
+      "Grosseto",
+      "Naples",
+      "Genoa",
+      "Palermo",
+      "Venice",
+      "Verona",
+      "Bari",
+      "Catania",
+      "Padua",
+      "Trieste",
+      "Brescia",
+      "Modena",
+      "Reggio Calabria",
+      "Reggio Emilia",
+      "Perugia",
+      "Ravenna",
+      "Cagliari",
+      "Livorno",
+      "Foggia",
+      "Salerno",
+      "Ferrara",
+      "Latina",
+      "Monza",
+      "Bergamo",
+      "Vicenza",
+      "Bolzano",
+      "Pescara",
+      "Sassari",
+      "Siena",
+      "Pisa",
+      "Como",
+      "Trento",
+      "Lecce",
+      "Ancona",
+      "Udine"
     ],
     "CZ": [
       "Prague",
@@ -315,7 +457,16 @@
       "Olomouc",
       "Třebíč",
       "Hluboká",
-      "Liberec"
+      "Liberec",
+      "Hradec Králové",
+      "Pardubice",
+      "Zlín",
+      "České Budějovice",
+      "Ústí nad Labem",
+      "Karlovy Vary",
+      "Jihlava",
+      "Kladno",
+      "Opava"
     ],
     "FI": [
       "Helsinki",
@@ -325,7 +476,10 @@
       "Oulu",
       "Lahti",
       "Vantaa",
-      "Pori"
+      "Pori",
+      "Jyväskylä",
+      "Kuopio",
+      "Joensuu"
     ],
     "SE": [
       "Stockholm",
@@ -335,7 +489,17 @@
       "Karlskrona",
       "Leksand",
       "Sundbyberg",
-      "Västerås"
+      "Västerås",
+      "Örebro",
+      "Linköping",
+      "Helsingborg",
+      "Norrköping",
+      "Jönköping",
+      "Umeå",
+      "Lund",
+      "Borås",
+      "Gävle",
+      "Växjö"
     ],
     "NO": [
       "Oslo",
@@ -344,7 +508,10 @@
       "Stavanger",
       "Drammen",
       "Kristiansand",
-      "Fredrikstad"
+      "Fredrikstad",
+      "Tromsø",
+      "Sandnes",
+      "Bodø"
     ],
     "DK": [
       "Copenhagen",
@@ -354,7 +521,9 @@
       "Esbjerg",
       "Randers",
       "Vejle",
-      "Horsens"
+      "Horsens",
+      "Kolding",
+      "Roskilde"
     ],
     "ZA": [
       "Cape Town",
@@ -364,7 +533,11 @@
       "Port Elizabeth",
       "Bloemfontein",
       "East London",
-      "Kimberley"
+      "Kimberley",
+      "Pietermaritzburg",
+      "Polokwane",
+      "Stellenbosch",
+      "George"
     ],
     "ZW": [
       "Harare",
@@ -386,7 +559,16 @@
       "Pune",
       "Ahmedabad",
       "Ludhiana",
-      "Bhubaneswar"
+      "Bhubaneswar",
+      "Jaipur",
+      "Lucknow",
+      "Chandigarh",
+      "Nagpur",
+      "Indore",
+      "Bhopal",
+      "Coimbatore",
+      "Kochi",
+      "Visakhapatnam"
     ],
     "PK": [
       "Karachi",
@@ -448,7 +630,13 @@
       "Netanya",
       "Ra'anana",
       "Bet Shemesh",
-      "Modi'in"
+      "Modi'in",
+      "Rishon LeZion",
+      "Petah Tikva",
+      "Ashdod",
+      "Beersheba",
+      "Holon",
+      "Ramat Gan"
     ],
     "MY": [
       "Kuala Lumpur",
@@ -506,7 +694,30 @@
       "Chiba",
       "Kobe",
       "Saitama",
-      "Kawasaki"
+      "Kawasaki",
+      "Kyoto",
+      "Kawaguchi",
+      "Hamamatsu",
+      "Niigata",
+      "Kumamoto",
+      "Sagamihara",
+      "Shizuoka",
+      "Okayama",
+      "Kagoshima",
+      "Funabashi",
+      "Hachioji",
+      "Matsuyama",
+      "Higashiosaka",
+      "Nara",
+      "Toyota",
+      "Nagasaki",
+      "Machida",
+      "Gifu",
+      "Oita",
+      "Toyama",
+      "Kanazawa",
+      "Naha",
+      "Wakayama"
     ],
     "KR": [
       "Seoul",
@@ -518,7 +729,11 @@
       "Suwon",
       "Ulsan",
       "Changwon",
-      "Goyang"
+      "Goyang",
+      "Seongnam",
+      "Cheongju",
+      "Jeonju",
+      "Ansan"
     ],
     "TW": [
       "Taipei",
@@ -540,7 +755,29 @@
       "Gold Coast",
       "Newcastle",
       "Geelong",
-      "Wollongong"
+      "Wollongong",
+      "Hobart",
+      "Darwin",
+      "Cairns",
+      "Townsville",
+      "Toowoomba",
+      "Ballarat",
+      "Bendigo",
+      "Launceston",
+      "Mackay",
+      "Rockhampton",
+      "Bunbury",
+      "Bundaberg",
+      "Wagga Wagga",
+      "Albury",
+      "Mandurah",
+      "Sunshine Coast",
+      "Maitland",
+      "Gosford",
+      "Tamworth",
+      "Orange",
+      "Dubbo",
+      "Shepparton"
     ],
     "NZ": [
       "Auckland",
@@ -550,7 +787,10 @@
       "Tauranga",
       "Dunedin",
       "Palmerston North",
-      "Napier"
+      "Napier",
+      "Nelson",
+      "Rotorua",
+      "New Plymouth"
     ],
     "FJ": [
       "Suva",
@@ -589,7 +829,16 @@
       "Larissa",
       "Volos",
       "Marousi",
-      "Glyfada"
+      "Glyfada",
+      "Ioannina",
+      "Chania",
+      "Kavala",
+      "Kalamata",
+      "Rhodes",
+      "Serres",
+      "Katerini",
+      "Trikala",
+      "Chalcis"
     ],
     "DE": [
       "Berlin",
@@ -601,7 +850,41 @@
       "Mannheim",
       "Regensburg",
       "Bonn",
-      "Dortmund"
+      "Dortmund",
+      "Düsseldorf",
+      "Leipzig",
+      "Essen",
+      "Bremen",
+      "Dresden",
+      "Hannover",
+      "Nuremberg",
+      "Duisburg",
+      "Bochum",
+      "Wuppertal",
+      "Bielefeld",
+      "Münster",
+      "Karlsruhe",
+      "Augsburg",
+      "Wiesbaden",
+      "Mönchengladbach",
+      "Gelsenkirchen",
+      "Braunschweig",
+      "Kiel",
+      "Aachen",
+      "Halle",
+      "Magdeburg",
+      "Freiburg",
+      "Krefeld",
+      "Lübeck",
+      "Mainz",
+      "Erfurt",
+      "Rostock",
+      "Kassel",
+      "Heidelberg",
+      "Potsdam",
+      "Würzburg",
+      "Ulm",
+      "Ingolstadt"
     ],
     "AT": [
       "Vienna",
@@ -611,7 +894,13 @@
       "Innsbruck",
       "Klagenfurt",
       "Wels",
-      "Dornbirn"
+      "Dornbirn",
+      "Villach",
+      "Sankt Pölten",
+      "Wiener Neustadt",
+      "Steyr",
+      "Bregenz",
+      "Kufstein"
     ],
     "CH": [
       "Zürich",
@@ -621,7 +910,14 @@
       "Lausanne",
       "Winterthur",
       "Lucerne",
-      "Lugano"
+      "Lugano",
+      "Zurich",
+      "Biel",
+      "Thun",
+      "Fribourg",
+      "Neuchâtel",
+      "Sion",
+      "St. Gallen"
     ],
     "HR": [
       "Zagreb",
@@ -631,7 +927,12 @@
       "Zadar",
       "Karlovac",
       "Varaždin",
-      "Sisak"
+      "Sisak",
+      "Pula",
+      "Slavonski Brod",
+      "Šibenik",
+      "Dubrovnik",
+      "Vinkovci"
     ],
     "SI": [
       "Ljubljana",
@@ -651,7 +952,11 @@
       "Pécs",
       "Győr",
       "Nyíregyháza",
-      "Szombathely"
+      "Szombathely",
+      "Kecskemét",
+      "Székesfehérvár",
+      "Szolnok",
+      "Tatabánya"
     ],
     "SK": [
       "Bratislava",
@@ -661,7 +966,9 @@
       "Nitra",
       "Trnava",
       "Trenčín",
-      "Banská Bystrica"
+      "Banská Bystrica",
+      "Martin",
+      "Poprad"
     ],
     "NA": [
       "Windhoek",
@@ -681,7 +988,31 @@
       "Kazan",
       "Samara",
       "Rostov-on-Don",
-      "Krasnodar"
+      "Krasnodar",
+      "Nizhny Novgorod",
+      "Chelyabinsk",
+      "Omsk",
+      "Ufa",
+      "Krasnoyarsk",
+      "Perm",
+      "Voronezh",
+      "Volgograd",
+      "Saratov",
+      "Tolyatti",
+      "Izhevsk",
+      "Barnaul",
+      "Ulyanovsk",
+      "Irkutsk",
+      "Tyumen",
+      "Tomsk",
+      "Sochi",
+      "Kemerovo",
+      "Ryazan",
+      "Tula",
+      "Lipetsk",
+      "Kursk",
+      "Tver",
+      "Stavropol"
     ],
     "UA": [
       "Kyiv",
@@ -691,7 +1022,13 @@
       "Lviv",
       "Zaporizhzhia",
       "Kryvyi Rih",
-      "Mykolaiv"
+      "Mykolaiv",
+      "Donetsk",
+      "Mariupol",
+      "Vinnytsia",
+      "Poltava",
+      "Chernihiv",
+      "Cherkasy"
     ],
     "LT": [
       "Vilnius",
@@ -711,7 +1048,8 @@
       "Aktobe",
       "Taraz",
       "Pavlodar",
-      "Oskemen"
+      "Oskemen",
+      "Semey"
     ],
     "TR": [
       "Istanbul",
@@ -721,7 +1059,14 @@
       "Antalya",
       "Adana",
       "Konya",
-      "Gaziantep"
+      "Gaziantep",
+      "İzmir",
+      "Kayseri",
+      "Mersin",
+      "Eskişehir",
+      "Samsun",
+      "Denizli",
+      "Trabzon"
     ],
     "HK": [
       "Hong Kong",
@@ -821,7 +1166,43 @@
       "Zaragoza",
       "Bilbao",
       "Málaga",
-      "Vitoria"
+      "Vitoria",
+      "Murcia",
+      "Palma",
+      "Las Palmas",
+      "Alicante",
+      "Córdoba",
+      "Valladolid",
+      "Vigo",
+      "Gijón",
+      "Granada",
+      "A Coruña",
+      "Santander",
+      "Pamplona",
+      "Almería",
+      "San Sebastián",
+      "Burgos",
+      "Salamanca",
+      "Logroño",
+      "Badajoz",
+      "Huelva",
+      "Tarragona",
+      "León",
+      "Cádiz",
+      "Castellón",
+      "Marbella",
+      "Manacor",
+      "Reus",
+      "Girona",
+      "Oviedo",
+      "Albacete",
+      "Jerez",
+      "Toledo",
+      "Mataró",
+      "Sabadell",
+      "Terrassa",
+      "Cartagena",
+      "Elche"
     ],
     "PL": [
       "Warsaw",
@@ -831,7 +1212,18 @@
       "Poznań",
       "Łódź",
       "Kutno",
-      "Szczecin"
+      "Szczecin",
+      "Bydgoszcz",
+      "Lublin",
+      "Katowice",
+      "Białystok",
+      "Gdynia",
+      "Częstochowa",
+      "Radom",
+      "Sosnowiec",
+      "Toruń",
+      "Kielce",
+      "Rzeszów"
     ],
     "BE": [
       "Brussels",
@@ -841,7 +1233,15 @@
       "Leuven",
       "Mechelen",
       "Hoboken",
-      "Borgerhout"
+      "Borgerhout",
+      "Charleroi",
+      "Liège",
+      "Namur",
+      "Mons",
+      "Aalst",
+      "Kortrijk",
+      "Hasselt",
+      "Ostend"
     ],
     "FR": [
       "Paris",
@@ -851,7 +1251,43 @@
       "Nice",
       "Nantes",
       "Montpellier",
-      "Bordeaux"
+      "Bordeaux",
+      "Strasbourg",
+      "Lille",
+      "Rennes",
+      "Reims",
+      "Le Havre",
+      "Saint-Étienne",
+      "Toulon",
+      "Grenoble",
+      "Dijon",
+      "Angers",
+      "Nîmes",
+      "Villeurbanne",
+      "Clermont-Ferrand",
+      "Le Mans",
+      "Aix-en-Provence",
+      "Brest",
+      "Tours",
+      "Amiens",
+      "Limoges",
+      "Annecy",
+      "Perpignan",
+      "Metz",
+      "Besançon",
+      "Orléans",
+      "Mulhouse",
+      "Rouen",
+      "Caen",
+      "Nancy",
+      "Avignon",
+      "Cannes",
+      "Antibes",
+      "Pau",
+      "La Rochelle",
+      "Versailles",
+      "Biarritz",
+      "Bourg-en-Bresse"
     ],
     "PA": [
       "Panama City",
@@ -881,7 +1317,8 @@
       "Port Harcourt",
       "Benin City",
       "Kaduna",
-      "Enugu"
+      "Enugu",
+      "Abeokuta"
     ],
     "GH": [
       "Accra",
@@ -911,7 +1348,13 @@
       "Funchal",
       "Faro",
       "Aveiro",
-      "Setúbal"
+      "Setúbal",
+      "Guimarães",
+      "Viseu",
+      "Leiria",
+      "Cascais",
+      "Évora",
+      "Portimão"
     ],
     "CN": [
       "Beijing",
@@ -921,7 +1364,17 @@
       "Wuxi",
       "Shenzhen",
       "Chengdu",
-      "Nanjing"
+      "Nanjing",
+      "Wuhan",
+      "Hangzhou",
+      "Xi'an",
+      "Chongqing",
+      "Qingdao",
+      "Shenyang",
+      "Dalian",
+      "Suzhou",
+      "Xiamen",
+      "Kunming"
     ],
     "TZ": [
       "Dar es Salaam",
@@ -951,7 +1404,9 @@
       "Suez",
       "Luxor",
       "Mansoura",
-      "Tanta"
+      "Tanta",
+      "Aswan",
+      "Ismailia"
     ],
     "AO": [
       "Luanda",
@@ -1079,7 +1534,9 @@
       "Temuco",
       "Rancagua",
       "Talca",
-      "Iquique"
+      "Iquique",
+      "Puerto Montt",
+      "Arica"
     ],
     "PE": [
       "Lima",
@@ -1103,7 +1560,12 @@
       "Brașov",
       "Galați",
       "Ploiești",
-      "Oradea"
+      "Oradea",
+      "Brăila",
+      "Arad",
+      "Pitești",
+      "Sibiu",
+      "Târgu Mureș"
     ],
     "BG": [
       "Sofia",
@@ -1115,7 +1577,8 @@
       "Pleven",
       "Sliven",
       "Dobrich",
-      "Haskovo"
+      "Haskovo",
+      "Veliko Tarnovo"
     ],
     "RS": [
       "Belgrade",
@@ -1131,7 +1594,8 @@
       "Leskovac",
       "Smederevo",
       "Valjevo",
-      "Užice"
+      "Užice",
+      "Kruševac"
     ]
   },
   "us_states": {

@@ -303,6 +303,15 @@ SURNAME_CITY_KEEP = {
     # Canadian-city collisions surfaced by the expanded Canada pool — all are
     # legitimate (often English/Welsh) family names in their own right.
     "Barrie", "Langley", "Markham", "Richmond", "Vaughan",
+    # International-city collisions surfaced by the broadened world city pools.
+    # Each is a curated surname already living in an ethnic pool that happens to
+    # double as a city we added — preserved rather than stripped.
+    "Bradford", "Bray", "Burgos", "Cairns", "Castellón", "Charleroi",
+    "Corrientes", "Cádiz", "Ferrara", "Glasgow", "Guimarães", "Hobart",
+    "Kawaguchi", "Kielce", "Logroño", "Lund", "Machida", "Mackay", "Martin",
+    "Metz", "Mönchengladbach", "Nara", "Nelson", "Niigata", "Orange", "Oviedo",
+    "Palermo", "Palma", "Pereira", "Preston", "Reus", "Rhodes", "Saint-Étienne",
+    "Santander", "Santos", "Valladolid", "Vitória", "York",
 }
 
 
