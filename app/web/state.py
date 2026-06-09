@@ -217,6 +217,8 @@ def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict
         "champion": champion,
         "n_programs": len(rows),
         "n_conferences": len(div.conferences),
+        "n_players": len(pidx),
+        "phase": s["phase"],
     }
 
 

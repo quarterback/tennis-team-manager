@@ -1,0 +1,67 @@
+/* Almanac / data-portal styles — shared across the dashboard, Recruiting HQ and
+   the dense reference tables (junior rankings). O27/viperball idiom. */
+
+/* KPI stat-cards */
+.al-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.al-kpi {
+  border: 1px solid var(--border-subtle, #dde); border-radius: 10px; padding: 11px 13px;
+  background: var(--surface-card, #fff); text-decoration: none; display: block;
+}
+.al-kpi-link:hover { border-color: var(--brand, #36c); }
+.al-kpi-k {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted, #789); font-weight: 700;
+}
+.al-kpi-v {
+  font-size: 24px; font-weight: 800; color: var(--text-primary, #111); line-height: 1.15;
+  margin-top: 3px; font-variant-numeric: tabular-nums;
+}
+.al-kpi-v.sm { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-kpi-sub { font-size: 11px; color: var(--text-muted, #789); margin-top: 2px; }
+
+/* Dense reference table */
+.al-dense .bl-th, .al-dense .bl-cell-num, .al-dense .bl-rank { font-size: 12px; }
+.al-dense .bl-row, .al-dense .bl-thead { padding-top: 3px; padding-bottom: 3px; }
+
+/* Sortable column headers */
+a.al-th {
+  color: var(--text-muted, #789); font-weight: 600; text-decoration: none; font-size: 11px;
+  white-space: nowrap; cursor: pointer;
+}
+a.al-th.num { text-align: right; }
+a.al-th:hover { color: var(--text-link, #36c); }
+a.al-th-active { color: var(--text-primary, #111); }
+.al-arr { font-size: 9px; margin-left: 1px; }
+
+/* JSON feed pill */
+.al-feed {
+  margin-left: auto; align-self: center; font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+  color: var(--text-link, #36c); text-decoration: none; border: 1px solid var(--border-subtle, #ccd);
+  border-radius: 6px; padding: 5px 9px;
+}
+
+/* Honor badges */
+.al-honors { display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.al-medal { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; white-space: nowrap; line-height: 1.5; }
+.al-gold { background: #f7e3a1; color: #7a5c00; }
+.al-silver { background: #e2e6ec; color: #4a5562; }
+.al-bronze { background: #ecd9c6; color: #7a4f2a; }
+.al-muted { background: var(--surface-subtle, #eef1f5); color: var(--text-muted, #789); }
+.al-more { font-size: 10px; color: var(--text-muted, #789); }
+
+/* League-leader mini-boards */
+.al-leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 4px 0 6px; }
+.al-leadwrap { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.al-leadcard { border: 1px solid var(--border-subtle, #dde); border-radius: 9px; overflow: hidden; background: var(--surface-card, #fff); }
+.al-leadhead {
+  background: var(--surface-subtle, #f3f5f8); padding: 6px 10px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary, #456);
+}
+.al-leadrow {
+  display: flex; justify-content: space-between; gap: 8px; padding: 4px 10px; font-size: 12.5px;
+  text-decoration: none; color: var(--text-primary, #111); border-top: 1px solid var(--border-subtle, #eef);
+}
+.al-leadrow:hover { background: var(--surface-subtle, #f7f9fc); }
+.al-leadname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-leadval { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-link, #36c); }
+.al-section { margin: 2px 0 6px; font-size: 14px; }

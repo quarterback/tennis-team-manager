@@ -88,29 +88,4 @@
   </div>
 </div></div>
 
-<style>
-  .al-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:10px; }
-  .al-kpi { border:1px solid var(--border,#dde); border-radius:10px; padding:11px 13px; background:var(--surface,#fff);
-            text-decoration:none; display:block; }
-  .al-kpi-link:hover { border-color:var(--text-link,#36c); }
-  .al-kpi-k { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted,#789); font-weight:600; }
-  .al-kpi-v { font-size:24px; font-weight:800; color:var(--text-primary,#111); line-height:1.15; margin-top:3px;
-              font-variant-numeric:tabular-nums; }
-  .al-kpi-v.sm { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .al-kpi-sub { font-size:11px; color:var(--text-muted,#789); margin-top:2px; }
-  .al-dense .bl-th, .al-dense .bl-cell-num, .al-dense .bl-rank { font-size:12px; }
-  .al-honors { display:flex; align-items:center; gap:4px; overflow:hidden; }
-  .al-medal { font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; white-space:nowrap; line-height:1.5; }
-  .al-gold { background:#f7e3a1; color:#7a5c00; } .al-silver { background:#e2e6ec; color:#4a5562; }
-  .al-bronze { background:#ecd9c6; color:#7a4f2a; } .al-muted { background:var(--surface-2,#eef1f5); color:var(--text-muted,#789); }
-  .al-leadwrap { display:grid; grid-template-columns:1fr; gap:10px; }
-  .al-leadcard { border:1px solid var(--border,#dde); border-radius:9px; overflow:hidden; }
-  .al-leadhead { background:var(--surface-2,#f3f5f8); padding:5px 10px; font-size:11px; font-weight:700;
-                 text-transform:uppercase; letter-spacing:.04em; color:var(--text-secondary,#456); }
-  .al-leadrow { display:flex; justify-content:space-between; gap:8px; padding:3px 10px; font-size:12.5px;
-                text-decoration:none; color:var(--text-primary,#111); border-top:1px solid var(--border,#eef); }
-  .al-leadrow:hover { background:var(--surface-2,#f7f9fc); }
-  .al-leadname { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .al-leadval { font-variant-numeric:tabular-nums; font-weight:700; color:var(--text-link,#36c); }
-</style>
 {% endblock %}

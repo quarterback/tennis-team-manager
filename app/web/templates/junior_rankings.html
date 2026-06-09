@@ -109,36 +109,4 @@
   singles / doubles ratings · Brd = consensus recruiting-board rank. The points ledger and the board diverging
   is the gem signal. <a href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">JSON feed →</a>
 </div></div>
-
-<style>
-  .al-dense .bl-th, .al-dense .bl-cell-num, .al-dense .bl-rank { font-size:12px; }
-  .al-dense .bl-row, .al-dense .bl-thead { padding-top:3px; padding-bottom:3px; }
-  a.al-th { color:var(--text-muted); font-weight:600; text-decoration:none; font-size:11px;
-            white-space:nowrap; cursor:pointer; }
-  a.al-th.num { text-align:right; }
-  a.al-th:hover { color:var(--text-link); }
-  a.al-th-active { color:var(--text-primary); }
-  .al-arr { font-size:9px; margin-left:1px; }
-  .al-feed { margin-left:auto; align-self:center; font-family:ui-monospace,Menlo,monospace; font-size:12px;
-             color:var(--text-link); text-decoration:none; border:1px solid var(--border,#ccd);
-             border-radius:6px; padding:5px 9px; }
-  .al-leaders { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:4px 0 6px; }
-  .al-leadcard { border:1px solid var(--border,#dde); border-radius:9px; overflow:hidden; background:var(--surface,#fff); }
-  .al-leadhead { background:var(--surface-2,#f3f5f8); padding:6px 10px; font-size:11px; font-weight:700;
-                 text-transform:uppercase; letter-spacing:.04em; color:var(--text-secondary,#456); }
-  .al-leadrow { display:flex; justify-content:space-between; gap:8px; padding:4px 10px; font-size:12.5px;
-                text-decoration:none; color:var(--text-primary,#111); border-top:1px solid var(--border,#eef); }
-  .al-leadrow:hover { background:var(--surface-2,#f7f9fc); }
-  .al-leadname { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .al-leadval { font-variant-numeric:tabular-nums; font-weight:700; color:var(--text-link,#36c); }
-  .al-section { margin:2px 0 6px; font-size:14px; }
-  .al-honors { display:flex; align-items:center; gap:4px; overflow:hidden; }
-  .al-medal { font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; white-space:nowrap;
-              line-height:1.5; }
-  .al-gold   { background:#f7e3a1; color:#7a5c00; }
-  .al-silver { background:#e2e6ec; color:#4a5562; }
-  .al-bronze { background:#ecd9c6; color:#7a4f2a; }
-  .al-muted  { background:var(--surface-2,#eef1f5); color:var(--text-muted,#789); }
-  .al-more   { font-size:10px; color:var(--text-muted,#789); }
-</style>
 {% endblock %}

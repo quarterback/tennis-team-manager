@@ -13,8 +13,28 @@
 </form>
 
 <div class="bl-dash">
+  <!-- Almanac KPI stat-cards -->
+  <div class="al-kpis">
+    {% if game %}
+    <div class="al-kpi"><div class="al-kpi-k">Season</div><div class="al-kpi-v">{{ game.year }}</div><div class="al-kpi-sub">№ {{ game.season_no }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">World Week</div><div class="al-kpi-v">{{ game.week }}</div><div class="al-kpi-sub">{{ d.phase|replace('_',' ') }}</div></div>
+    {% endif %}
+    <div class="al-kpi"><div class="al-kpi-k">Programs</div><div class="al-kpi-v">{{ d.n_programs }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Conferences</div><div class="al-kpi-v">{{ d.n_conferences }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Players</div><div class="al-kpi-v">{{ "{:,}".format(d.n_players) }}</div></div>
+    {% if game and game.signed %}
+    <div class="al-kpi"><div class="al-kpi-k">Class Signed</div><div class="al-kpi-v">{{ game.signed }}</div></div>
+    {% endif %}
+    {% if d.top_programs %}
+    <a class="al-kpi al-kpi-link" href="{{ url_for('rankings', u=u) }}">
+      <div class="al-kpi-k">{{ 'Champion' if d.champion else 'No. 1' }}</div>
+      <div class="al-kpi-v sm">{{ d.champion or d.top_programs[0].row.school }}</div>
+      <div class="al-kpi-sub">{{ d.top_programs[0].row.record }}</div></a>
+    {% endif %}
+  </div>
+
   <!-- quick links -->
-  <div class="bl-quick">
+  <div class="bl-quick" style="margin-top:14px">
     <a class="bl-quickcard" href="{{ url_for('rankings', u=u) }}">
       <span class="bl-quick-k">Power Index</span><span class="bl-quick-v">Full Rankings →</span></a>
     <a class="bl-quickcard" href="{{ url_for('season_hub', u=u) }}">
