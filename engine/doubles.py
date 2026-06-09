@@ -144,6 +144,13 @@ class DoublesResult:
     fidelity: str = "full"
 
     @property
+    def players(self):
+        """Alias for `teams` so a DoublesResult duck-types as a singles
+        MatchResult (both expose `.players[i].name`) wherever a dual line is
+        rendered or persisted uniformly across singles and doubles."""
+        return self.teams
+
+    @property
     def winner_name(self) -> str:
         return self.teams[self.winner].name
 
