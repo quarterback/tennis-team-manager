@@ -217,6 +217,8 @@ def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict
         "champion": champion,
         "n_programs": len(rows),
         "n_conferences": len(div.conferences),
+        "n_players": len(pidx),
+        "phase": s["phase"],
     }
 
 
@@ -278,23 +280,132 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
 
 
 def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
-                        nation: str = "", seed: int = DEFAULT_SEED):
-    """Points-ledger junior rankings as (rank, Prospect) rows. Scopes: 'world' (the
-    whole pool), 'us' (domestic), 'nation' (one international nation)."""
+                        nation: str = "", sort: str = "rank", desc: bool = True,
+                        seed: int = DEFAULT_SEED):
+    """Points-ledger junior rankings as (rank, Prospect, stat_line) rows, sortable by
+    any almanac column. Scopes: 'world' (whole pool), 'us' (domestic), 'nation'."""
+    from app import almanac
     klass = get_recruits(gender, grad_year, seed)
     if scope == "us":
-        src = us_points_rankings(klass)[:100]      # US Top 100
+        src = us_points_rankings(klass)[:100]
     elif scope == "nation" and nation:
         src = [p for p in points_rankings(klass) if not p.domestic and p.region == nation]
     else:
         src = points_rankings(klass)
-    return list(enumerate(src, 1))
+    stats = {p.pid: almanac.stat_line(p) for p in src}
+    src = almanac.sort_recruits(src, stats, sort, desc)
+    return [(i, p, stats[p.pid], almanac.honor_chip(p)) for i, p in enumerate(src, 1)]
+
+
+def junior_leaders(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """League-leader mini-boards for the rankings hub (over the whole pool)."""
+    from app import almanac
+    recruits = get_recruits(gender, grad_year, seed).recruits
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    return almanac.leaders(recruits, stats)
+
+
+def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The export/wiring contract: a round-trippable JSON bundle of the junior board
+    (top 300 by points) — the same compute the live pages use."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    rows = []
+    for p in recruits[:300]:
+        s = stats[p.pid]
+        rows.append({
+            "rank": p.points_rank, "pid": p.pid, "name": p.name, "nation": p.country,
+            "domestic": p.domestic, "region": p.region, "grad_year": p.grad_year,
+            "stars": getattr(p, "recruit_stars", 0), "board_rank": getattr(p, "recruit_rank", None),
+            "points": p.junior_points, "singles_points": p.singles_points,
+            "doubles_points": p.doubles_points, "str": p.junior_str,
+            "doubles_str": p.junior_doubles_str, "events": p.tournaments_played,
+            "doubles_events": p.doubles_played, "w": s["w"], "l": s["l"],
+            "win_pct": round(s["pct"], 3), "titles": s["titles"], "finals": s["finals"],
+            "honors": getattr(p, "junior_badges", None) or [],
+        })
+    return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
+
+
+def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
+    """Live signings for `gender` ("men"/"women"): team class rankings (programs
+    ranked by the class they've signed) + recent commitments. Fills as the season
+    advances; empty before any signings."""
+    import app.world as world
+    from .rankings_data import crest
+    by_school = world.signings(seed).get(gender, {})
+    classes = []
+    commitments = []
+    for school, recruits in by_school.items():
+        stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+        abbr, color = crest(school)
+        commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                                  getattr(p, "recruit_rank", 1e9)))
+        classes.append({
+            "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+            "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+            "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+            "commits": commits[:5],
+        })
+        for p in recruits:
+            commitments.append({"p": p, "school": school, "abbr": abbr, "color": color,
+                                "stars": getattr(p, "recruit_stars", 0)})
+    classes.sort(key=lambda c: (-c["total_stars"], -c["n"], c["school"]))
+    for i, c in enumerate(classes, 1):
+        c["rank"] = i
+    commitments.sort(key=lambda r: (-r["stars"], getattr(r["p"], "recruit_rank", 1e9)))
+    return {"classes": classes, "commitments": commitments,
+            "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes)}
+
+
+def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
+    """One program's signed recruiting class (commits + class summary) for the
+    per-team recruiting page."""
+    import app.world as world
+    from .rankings_data import crest
+    recruits = world.signings(seed).get(gender, {}).get(school, [])
+    stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+    abbr, color = crest(school)
+    commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                              getattr(p, "recruit_rank", 1e9)))
+    return {
+        "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+        "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+        "three": sum(1 for x in stars if x == 3),
+        "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+        "commits": commits,
+    }
+
+
+def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
+    data-portal overview that ties the dense sub-pages together."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    intl = [p for p in recruits if not p.domestic]
+    kpis = {
+        "class_size": len(recruits),
+        "intl_pct": round(100 * len(intl) / max(1, len(recruits))),
+        "bluechips": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) >= 5),
+        "fourstar": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) == 4),
+        "nations": len({p.country for p in intl}),
+        "states": len({p.region for p in recruits if p.domestic}),
+        "top": recruits[0] if recruits else None,
+    }
+    top_rows = [(p.points_rank, p, stats[p.pid], almanac.honor_chip(p)) for p in recruits[:12]]
+    return {"kpis": kpis, "top_rows": top_rows, "leaders": almanac.leaders(recruits, stats)}
 
 
 def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
-    """[(nation, [(rank, Prospect)...])] Top-10 boards for each talent-dense nation."""
+    """[(nation, [(rank, Prospect, stat_line)...])] Top-10 per talent-dense nation."""
+    from app import almanac
     klass = get_recruits(gender, grad_year, seed)
-    return [(nat, list(enumerate(players, 1)))
+    return [(nat, [(i, p, almanac.stat_line(p), almanac.honor_chip(p))
+                   for i, p in enumerate(players, 1)])
             for nat, players in nation_points_top(klass)]
 
 

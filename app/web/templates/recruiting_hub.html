@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Recruiting HQ{% endblock %}
+{% block content %}
+{% set k = hub.kpis %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
+      {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · Class of {{ grad_year }} recruiting &amp; juniors</span>
+</div></div>
+</form>
+
+<div class="bl-container">
+  <!-- KPI cards -->
+  <div class="al-kpis">
+    <div class="al-kpi"><div class="al-kpi-k">Prospects</div><div class="al-kpi-v">{{ "{:,}".format(k.class_size) }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">International</div><div class="al-kpi-v">{{ k.intl_pct }}%</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Blue Chips (5★)</div><div class="al-kpi-v">{{ k.bluechips }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">4-Star</div><div class="al-kpi-v">{{ k.fourstar }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Nations</div><div class="al-kpi-v">{{ k.nations }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">US States</div><div class="al-kpi-v">{{ k.states }}</div></div>
+    {% if k.top %}
+    <a class="al-kpi al-kpi-link" href="{{ url_for('recruit', pid=k.top.pid, u=u, grad_year=grad_year) }}">
+      <div class="al-kpi-k">No. 1 Prospect</div>
+      <div class="al-kpi-v sm">{{ k.top.name }}</div>
+      <div class="al-kpi-sub">{{ "{:,}".format(k.top.junior_points) }} pts · {{ '★'*k.top.recruit_stars }}</div></a>
+    {% endif %}
+  </div>
+
+  <!-- quick links to the dense sub-pages -->
+  <div class="bl-quick" style="margin-top:14px">
+    <a class="bl-quickcard" href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">
+      <span class="bl-quick-k">Junior Rankings</span><span class="bl-quick-v">Full board · sortable →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('recruiting', u=u, grad_year=grad_year) }}">
+      <span class="bl-quick-k">Recruiting Board</span><span class="bl-quick-v">Consensus · by state →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('signing_tracker_page', u=u) }}">
+      <span class="bl-quick-k">Signing Tracker</span><span class="bl-quick-v">Class rankings · commits →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('junior_rankings', u=u, grad_year=grad_year, scope='nation') }}">
+      <span class="bl-quick-k">By Nation</span><span class="bl-quick-v">Talent-dense Top 10s →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}">
+      <span class="bl-quick-k">{ } JSON Feed</span><span class="bl-quick-v">Raw export →</span></a>
+  </div>
+</div>
+
+<div class="bl-container"><div class="bl-board-grid" style="align-items:start">
+  <!-- Top prospects -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Top Prospects</span>
+      <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">Combined points · full board →</a></div>
+    <div class="bl-tablescroll">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(120px,1fr) 110px 44px 58px 50px">
+      <div class="bl-thead">
+        <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">HONORS</span>
+        <span class="bl-th num">★</span><span class="bl-th num">PTS</span><span class="bl-th num">STR</span></div>
+      {% for rk, p, s, h in hub.top_rows %}
+      <div class="bl-row">
+        <span class="bl-rank {{ 'gold' if rk==1 else 'bronze' if rk<=3 else '' }}">{{ rk }}</span>
+        <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
+        <span class="al-honors">{% if h %}<span class="al-medal al-{{ h.tier }}" title="{{ h.all|join(' · ') }}">{{ h.label }}</span>{% endif %}</span>
+        <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ "{:,}".format(p.junior_points) }}</span></span>
+        <span class="bl-cell-num">{{ "%.1f"|format(p.junior_str) if p.junior_str is not none else '–' }}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+
+  <!-- League leaders -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">League Leaders</span>
+      <span class="bl-panel-meta">junior circuit</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for label, board in hub.leaders %}
+      <div class="al-leadcard">
+        <div class="al-leadhead">{{ label }}</div>
+        {% for p, val in board %}
+        <a class="al-leadrow" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}">
+          <span class="al-leadname">{{ loop.index }}. {{ p.name }}</span><span class="al-leadval">{{ val }}</span></a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div></div>
+
+{% endblock %}

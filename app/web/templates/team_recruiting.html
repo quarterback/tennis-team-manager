@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — {{ school }} Recruiting Class{% endblock %}
+{% block content %}
+{% set c = cls %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="display:flex;align-items:center;gap:9px;font-weight:700">
+    {{ crest_box(c.school, c.abbr, c.color, 'md') }} {{ c.school }} — Recruiting Class</span>
+  <span style="margin-left:auto;display:flex;gap:8px">
+    <a class="al-feed" href="{{ url_for('teams', school=c.school, u=u) }}">Team page →</a>
+    <a class="al-feed" href="{{ url_for('signing_tracker_page', u=u) }}">All signings →</a>
+  </span>
+</div></div>
+
+<div class="bl-container">
+  <div class="al-kpis">
+    <div class="al-kpi"><div class="al-kpi-k">Commits</div><div class="al-kpi-v">{{ c.n }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">5-Star</div><div class="al-kpi-v">{{ c.five }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">4-Star</div><div class="al-kpi-v">{{ c.four }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">3-Star</div><div class="al-kpi-v">{{ c.three }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Avg ★</div><div class="al-kpi-v">{{ '%.2f'|format(c.avg_stars) }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Star Pts</div><div class="al-kpi-v">{{ c.total_stars }}</div></div>
+  </div>
+</div>
+
+{% if not c.commits %}
+<div class="bl-container"><div class="bl-note">
+  {{ c.school }} hasn't signed anyone yet this cycle. Commitments fill in as the season advances —
+  see the <a href="{{ url_for('signing_tracker_page', u=u) }}" style="color:var(--text-link)">Signing Tracker</a>.
+</div></div>
+{% else %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Commits</span>
+    <span class="bl-panel-meta">{{ c.n }} signed</span></div>
+  <div class="bl-tablescroll">
+  <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(140px,1fr) 60px minmax(120px,1fr) 70px 56px 52px">
+    <div class="bl-thead">
+      <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">★</span>
+      <span class="bl-th">HOMETOWN</span><span class="bl-th">TIER</span><span class="bl-th num">STR</span><span class="bl-th num">NAT'L</span></div>
+    {% for p in c.commits %}
+    <div class="bl-row">
+      <span class="bl-rank">{{ loop.index }}</span>
+      <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=p.grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
+      <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
+      <span><span class="bl-pill" style="font-size:10px">{{ p.recruit_tier or '—' }}</span></span>
+      <span class="bl-cell-num">{{ '%.1f'|format(p.str_value()) }}</span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.recruit_rank or '–' }}</span>
+    </div>
+    {% endfor %}
+  </div></div>
+</div></div>
+{% endif %}
+{% endblock %}

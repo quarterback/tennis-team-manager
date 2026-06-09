@@ -2,25 +2,45 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Junior Rankings{% endblock %}
 {% block content %}
-{% set grid = '52px minmax(150px,1fr) 150px 70px 90px 90px 70px' %}
+{% set grid = '40px minmax(150px,1fr) 122px 52px 46px 40px 38px 38px 38px 48px 62px 52px 52px 50px 50px 44px' %}
+
+{# a sortable column header: clicking sorts by `key`, clicking again flips direction #}
+{% macro th(key, label, numeric=true) %}
+  {% set active = (sort == key) %}
+  {% set newdir = 'asc' if (active and dir == 'desc') else 'desc' %}
+  <a class="al-th{{ ' al-th-active' if active }}{{ ' num' if numeric }}"
+     href="{{ url_for('junior_rankings', u=u, grad_year=grad_year, scope=scope, nation=nation, sort=key, dir=newdir) }}">{{ label }}{% if active %}<span class="al-arr">{{ '▾' if dir=='desc' else '▴' }}</span>{% endif %}</a>
+{% endmacro %}
 
 {% macro rk_table(rows) %}
 <div class="bl-tablescroll">
-  <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
+  <div class="bl-table al-dense" style="--bl-grid-cols: {{ grid }}">
     <div class="bl-thead">
-      <span class="bl-th">RK</span><span class="bl-th">PLAYER</span><span class="bl-th">NATION</span>
-      <span class="bl-th num">CLASS</span><span class="bl-th num">PLAYED</span>
-      <span class="bl-th num">POINTS</span><span class="bl-th num">STR</span>
+      {{ th('rank','#') }}<span class="bl-th">PLAYER</span><span class="bl-th">HONORS</span><span class="bl-th">NAT</span>
+      {{ th('stars','★') }}{{ th('events','Ev') }}{{ th('titles','Ti') }}{{ th('finals','F') }}
+      {{ th('won','W') }}<span class="bl-th num">L</span>{{ th('pct','Win%') }}
+      {{ th('pts','Pts') }}{{ th('spts','Sgl') }}{{ th('dpts','Dbl') }}
+      {{ th('str','STR') }}{{ th('dstr','dSTR') }}{{ th('board','Brd') }}
     </div>
-    {% for rk, p in rows %}
+    {% for rk, p, s, h in rows %}
     <div class="bl-row">
       <span class="bl-rank {{ 'gold' if rk==1 else 'bronze' if rk<=3 else '' }}">{{ rk }}</span>
       <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ 'USA · ' + p.region if p.domestic else (p.country|country_name) }}</span>
-      <span class="bl-cell-num">{{ grad_year }}</span>
+      <span class="al-honors">{% if h %}<span class="al-medal al-{{ h.tier }}" title="{{ h.all|join(' · ') }}">{{ h.label }}</span>{% if h.more %}<span class="al-more" title="{{ h.all|join(' · ') }}">+{{ h.more }}</span>{% endif %}{% endif %}</span>
+      <span class="bl-conf">{{ 'USA' if p.domestic else p.country }}</span>
+      <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
       <span class="bl-cell-num">{{ p.tournaments_played }}</span>
+      <span class="bl-cell-num">{{ s.titles or '' }}</span>
+      <span class="bl-cell-num">{{ s.finals or '' }}</span>
+      <span class="bl-cell-num">{{ s.w }}</span>
+      <span class="bl-cell-num">{{ s.l }}</span>
+      <span class="bl-cell-num">{{ '%.0f'|format(s.pct*100) }}</span>
       <span class="bl-cell-num"><span class="bl-stat power">{{ p.junior_points }}</span></span>
-      <span class="bl-cell-num">{{ "%.1f"|format(p.junior_str) if p.junior_str is not none else '—' }}</span>
+      <span class="bl-cell-num">{{ p.singles_points }}</span>
+      <span class="bl-cell-num">{{ p.doubles_points }}</span>
+      <span class="bl-cell-num">{{ '%.1f'|format(p.junior_str) if p.junior_str is not none else '–' }}</span>
+      <span class="bl-cell-num">{{ '%.1f'|format(p.junior_doubles_str) if p.junior_doubles_str else '–' }}</span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.recruit_rank }}</span>
     </div>
     {% endfor %}
   </div>
@@ -43,49 +63,40 @@
       <option value="us"{% if scope=='us' %} selected{% endif %}>US Top 100</option>
       <option value="nation"{% if scope=='nation' %} selected{% endif %}>By Nation (Top 10)</option>
     </select></span></label>
+  <a class="al-feed" href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}" title="Raw JSON export (the wiring contract)">{ } JSON</a>
 </div></div>
 </form>
+
+{% if leaders and not (scope == 'nation' and not nation) %}
+<div class="bl-container"><div class="al-leaders">
+  {% for label, board in leaders %}
+  <div class="al-leadcard">
+    <div class="al-leadhead">{{ label }}</div>
+    {% for p, val in board %}
+    <a class="al-leadrow" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}">
+      <span class="al-leadname">{{ loop.index }}. {{ p.name }}</span><span class="al-leadval">{{ val }}</span></a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div></div>
+{% endif %}
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">
     {% if scope == 'nation' and not nation %}Talent-dense nations · Top 10 each{% else %}Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}{% endif %}
   </div>
   <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
-    {{ 'International' if scope=='world' else ('US Top 100' if scope=='us' else (nation|country_name if nation else 'By Nation')) }} · by ranking points</span>
+    {{ 'International' if scope=='world' else ('US Top 100' if scope=='us' else (nation|country_name if nation else 'By Nation')) }} · ranked on combined points · click a header to sort</span>
 </div></div>
-
-<div class="bl-container">
-  <details class="bl-explainer">
-    <summary>How junior ranking points work</summary>
-    <div class="bl-explainer-body">
-      <p>This is the junior <strong>accomplishment ledger</strong> — modelled on the USTA / ITF junior points
-        system — and it is deliberately <em>separate</em> from the recruiting board. Where the board ranks on a
-        consensus of visible ability + scouts' ceiling read, this ranks purely on what a recruit <strong>earned
-        on the junior circuit</strong>.</p>
-      <ol>
-        <li><strong>Points by round &amp; level.</strong> Each event awards points for the round reached, scaled by
-          its level (Major → Premier → National → Development → State, i.e. USTA Levels 1–5). A Major title is
-          worth 3000; a State quarterfinal, 105.</li>
-        <li><strong>Best six count.</strong> Only a player's best six results (plus their best six ranked-win
-          bonuses) are summed — so grinding weak events has limits, but deep runs at strong events pay.</li>
-        <li><strong>Ranked-win bonus.</strong> Beating a higher-ranked junior adds points (a Top-10 win is worth
-          +225), USTA-style.</li>
-        <li><strong>STR is the rating, not the ranking.</strong> The STR column is the results-based strength
-          rating (the WTN analogue). A player ranked low on points but high on STR is a gem who skipped events;
-          the reverse is a grinder. The two diverging is the signal.</li>
-      </ol>
-    </div>
-  </details>
-</div>
 
 {% if scope == 'nation' and not nation %}
   {% for nat, nrows in boards %}
   <div class="bl-container">
-    <h3 class="bl-section-title">{{ nat|country_name }} <span style="color:var(--text-muted);font-weight:400">· Top {{ nrows|length }}</span></h3>
+    <h3 class="al-section">{{ nat|country_name }} <span style="color:var(--text-muted);font-weight:400">· Top {{ nrows|length }}</span></h3>
     {{ rk_table(nrows) }}
   </div>
   {% endfor %}
-  {% if not boards %}<div class="bl-container"><div class="bl-note">No nation has enough pool depth for a Top-10 board in this class.</div></div>{% endif %}
+  {% if not boards %}<div class="bl-container"><div class="bl-note">No nation has enough pool depth for a Top-10 board.</div></div>{% endif %}
 {% else %}
   <div class="bl-container">
     {{ rk_table(rows) }}
@@ -94,8 +105,8 @@
 {% endif %}
 
 <div class="bl-notes"><div class="bl-note">
-  Ranking points are an accomplishment ledger (best-6 results + ranked-win bonuses), distinct from the
-  recruiting board's consensus ability rank. Click a player to compare their points rank, board rank and STR
-  on the full profile.
+  Ti = titles · F = finals reached · Pts = combined ranking points (Sgl + ¼·Dbl) · STR / dSTR = results-based
+  singles / doubles ratings · Brd = consensus recruiting-board rank. The points ledger and the board diverging
+  is the gem signal. <a href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">JSON feed →</a>
 </div></div>
 {% endblock %}

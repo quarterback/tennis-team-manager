@@ -11,7 +11,7 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request, abort, redirect, url_for
+from flask import Flask, render_template, request, abort, redirect, url_for, jsonify
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -19,7 +19,8 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    junior_ranking_rows, junior_nation_boards,
+                    junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
+                    recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
@@ -56,8 +57,10 @@ NAV_GROUPS = [
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
-        {"id": "recruiting","label": "Recruiting",   "icon": "🎓", "endpoint": "recruiting",       "args": {}},
+        {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
+        {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
     ]),
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -88,6 +91,9 @@ def _active_nav(req) -> str:
     if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    if p.startswith("/recruiting/team"):  return "signings"
+    if p.startswith("/recruiting/signings"): return "signings"
+    if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
@@ -433,6 +439,33 @@ def create_app() -> Flask:
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
+    @app.route("/recruiting/team/<school>")
+    def team_recruiting(school):
+        division, gender, label, u = _universe(request)
+        return render_template("team_recruiting.html", active="Recruiting",
+                               cls=team_recruiting_class(gender, school), school=school,
+                               u=u, uni_label=label)
+
+    @app.route("/recruiting/signings")
+    def signing_tracker_page():
+        division, gender, label, u = _universe(request)
+        return render_template("signing_tracker.html", active="Recruiting",
+                               trk=signing_tracker(gender), gender=gender,
+                               u=u, uni_label=label)
+
+    @app.route("/recruiting/hub")
+    def recruiting_hub_page():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        return render_template("recruiting_hub.html", active="Recruiting",
+                               hub=recruiting_hub(rg, grad_year), gender=gender,
+                               grad_year=grad_year, u=u, uni_label=label,
+                               grad_years=[2026, 2027, 2028, 2029])
+
     @app.route("/juniors/rankings")
     def junior_rankings():
         division, gender, label, u = _universe(request)
@@ -443,13 +476,28 @@ def create_app() -> Flask:
             grad_year = 2026
         scope = request.args.get("scope", "world")
         nation = request.args.get("nation", "")
+        sort = request.args.get("sort", "rank")
+        desc = request.args.get("dir", "desc") != "asc"
         boards = junior_nation_boards(rg, grad_year) if scope == "nation" and not nation else []
-        rows = junior_ranking_rows(rg, grad_year, scope=scope, nation=nation)
+        rows = junior_ranking_rows(rg, grad_year, scope=scope, nation=nation, sort=sort, desc=desc)
         pg = paginate(rows, request.args.get("page", 1))
+        from app.almanac import SORT_COLUMNS
         return render_template("junior_rankings.html", active="Recruiting", rows=pg.items,
                                p=pg, total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, nation=nation, boards=boards, u=u, uni_label=label,
+                               sort=sort, dir=("asc" if not desc else "desc"),
+                               columns=SORT_COLUMNS, leaders=junior_leaders(rg, grad_year),
                                grad_years=[2026, 2027, 2028, 2029])
+
+    @app.route("/juniors/feed.json")
+    def junior_feed_json():
+        _division, gender, _label, _u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        return jsonify(junior_feed(rg, grad_year))
 
     @app.route("/tools/junior-setup", methods=["GET", "POST"])
     def junior_setup():
