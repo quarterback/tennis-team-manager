@@ -329,6 +329,37 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
 
 
+def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
+    """Live signings for `gender` ("men"/"women"): team class rankings (programs
+    ranked by the class they've signed) + recent commitments. Fills as the season
+    advances; empty before any signings."""
+    import app.world as world
+    from .rankings_data import crest
+    by_school = world.signings(seed).get(gender, {})
+    classes = []
+    commitments = []
+    for school, recruits in by_school.items():
+        stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+        abbr, color = crest(school)
+        commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                                  getattr(p, "recruit_rank", 1e9)))
+        classes.append({
+            "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+            "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+            "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+            "commits": commits[:5],
+        })
+        for p in recruits:
+            commitments.append({"p": p, "school": school, "abbr": abbr, "color": color,
+                                "stars": getattr(p, "recruit_stars", 0)})
+    classes.sort(key=lambda c: (-c["total_stars"], -c["n"], c["school"]))
+    for i, c in enumerate(classes, 1):
+        c["rank"] = i
+    commitments.sort(key=lambda r: (-r["stars"], getattr(r["p"], "recruit_rank", 1e9)))
+    return {"classes": classes, "commitments": commitments,
+            "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes)}
+
+
 def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
     data-portal overview that ties the dense sub-pages together."""

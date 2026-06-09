@@ -20,7 +20,8 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
-                    recruiting_hub, junior_setup_view, save_junior_setup, reset_junior_setup,
+                    recruiting_hub, signing_tracker,
+                    junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
@@ -59,6 +60,7 @@ NAV_GROUPS = [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
     ]),
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -89,6 +91,7 @@ def _active_nav(req) -> str:
     if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
@@ -434,6 +437,13 @@ def create_app() -> Flask:
         view = recruit_profile(p, division, gender, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/recruiting/signings")
+    def signing_tracker_page():
+        division, gender, label, u = _universe(request)
+        return render_template("signing_tracker.html", active="Recruiting",
+                               trk=signing_tracker(gender), gender=gender,
+                               u=u, uni_label=label)
 
     @app.route("/recruiting/hub")
     def recruiting_hub_page():

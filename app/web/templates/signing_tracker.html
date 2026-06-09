@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Signing Tracker{% endblock %}
+{% block content %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · live commitments this recruiting year</span>
+  <a class="al-feed" style="margin-left:auto" href="{{ url_for('recruiting_hub_page', u=u) }}">← Recruiting HQ</a>
+</div></div>
+
+<div class="bl-container">
+  <div class="al-kpis">
+    <div class="al-kpi"><div class="al-kpi-k">Signed</div><div class="al-kpi-v">{{ trk.total_signed }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Programs w/ Class</div><div class="al-kpi-v">{{ trk.n_programs }}</div></div>
+    {% if trk.classes %}
+    <a class="al-kpi al-kpi-link" href="{{ url_for('teams', school=trk.classes[0].school, u=u) }}">
+      <div class="al-kpi-k">No. 1 Class</div><div class="al-kpi-v sm">{{ trk.classes[0].school }}</div>
+      <div class="al-kpi-sub">{{ trk.classes[0].n }} commits · {{ trk.classes[0].five }}× 5★</div></a>
+    {% endif %}
+  </div>
+</div>
+
+{% if not trk.classes %}
+<div class="bl-container"><div class="bl-note">
+  No commitments yet. Signings fill in week by week as the season advances — hit
+  <strong>Advance week</strong> (top right) and check back, or open the
+  <a href="{{ url_for('recruiting', u=u) }}" style="color:var(--text-link)">Recruiting Board</a> to see who's available.
+</div></div>
+{% else %}
+<div class="bl-container"><div class="bl-board-grid" style="align-items:start">
+  <!-- Team class rankings -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Team Class Rankings</span>
+      <span class="bl-panel-meta">by signed-class strength</span></div>
+    <div class="bl-tablescroll">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(140px,1fr) 40px 40px 40px 56px minmax(120px,1.2fr)">
+      <div class="bl-thead">
+        <span class="bl-th">#</span><span class="bl-th">PROGRAM</span><span class="bl-th num">N</span>
+        <span class="bl-th num">5★</span><span class="bl-th num">4★</span><span class="bl-th num">AVG★</span>
+        <span class="bl-th">TOP COMMITS</span></div>
+      {% for c in trk.classes %}
+      <div class="bl-row">
+        <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
+        <a class="bl-school" href="{{ url_for('teams', school=c.school, u=u) }}"><span class="bl-crest" style="background:{{ c.color }}">{{ c.abbr }}</span> {{ c.school }}</a>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ c.n }}</span></span>
+        <span class="bl-cell-num">{{ c.five or '' }}</span>
+        <span class="bl-cell-num">{{ c.four or '' }}</span>
+        <span class="bl-cell-num">{{ '%.1f'|format(c.avg_stars) }}</span>
+        <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          {% for p in c.commits %}{{ p.name }}{% if p.recruit_stars %} {{ '★'*p.recruit_stars }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+
+  <!-- Top commitments -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Top Commitments</span>
+      <span class="bl-panel-meta">{{ trk.total_signed }} signed</span></div>
+    <div class="bl-tablescroll">
+    <div class="bl-table al-dense" style="--bl-grid-cols: minmax(120px,1fr) 56px minmax(90px,1fr)">
+      <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">★</span><span class="bl-th">SIGNED WITH</span></div>
+      {% for r in trk.commitments[:40] %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('recruit', pid=r.p.pid, u=u) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}</a>
+        <span class="bl-cell-num">{{ '★'*r.stars if r.stars else '–' }}</span>
+        <a class="bl-conf" href="{{ url_for('teams', school=r.school, u=u) }}" style="text-decoration:none">{{ r.abbr }} {{ r.school }}</a>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+</div></div>
+{% endif %}
+{% endblock %}
