@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ fr.name }}{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
+
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_hub', lg=league.id) }}">← {{ league.name }}</a>
+
+  <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">{{ fr.name }} {% if is_champion %}🏆{% endif %}</span>
+      <span class="bl-panel-meta">{{ fr.city }} · [{{ fr.abbrev }}]{% if row %} · {{ row.w }}-{{ row.l }} ({{ "%+d"|format(row.diff) }}){% endif %}</span>
+    </div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-ros">
+      <div class="bl-thead gtt-ros-row">
+        <span class="bl-th">Slot</span><span class="bl-th">Player</span>
+        <span class="bl-th num">OVR</span><span class="bl-th num">W-L</span><span class="bl-th">Honors</span>
+      </div>
+      {% for p in roster %}
+      <a class="bl-row gtt-ros-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
+        <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ p.slot }}</span>
+        <span class="gtt-nm">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></span>
+        <span class="bl-cell-num">{{ p.overall }}</span>
+        <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span></span>
+        <span class="bl-cell" style="color:var(--accent);font-size:12px">{{ p.honors | join(', ') }}</span>
+      </a>
+      {% endfor %}
+    </div></div>
+  </div>
+
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">🛠️ Edit franchise</span>
+      <span class="bl-panel-meta">cosmetic only — never changes results</span></div>
+    <form method="post" action="{{ url_for('gtt_franchise_edit', fid=fr.id) }}"
+          style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px">
+      <input type="hidden" name="lg" value="{{ league.id }}">
+      <label class="bl-field"><span class="bl-field-label">Name</span>
+        <input class="bl-input" name="name" value="{{ fr.name }}" style="min-width:220px"></label>
+      <label class="bl-field"><span class="bl-field-label">City</span>
+        <input class="bl-input" name="city" value="{{ fr.city }}" style="min-width:180px"></label>
+      <label class="bl-field"><span class="bl-field-label">Abbrev</span>
+        <input class="bl-input" name="abbrev" value="{{ fr.abbrev }}" maxlength="3" style="width:72px"></label>
+      <button class="bl-pill" type="submit">Save</button>
+    </form>
+    <div class="bl-notes" style="padding:0 16px 14px"><div class="bl-note">
+      A team's name is independent of its city — name it whatever you want. Rosters
+      and results are tied to the franchise id, so renaming or relocating is purely cosmetic.
+    </div></div>
+  </div>
+</div>
+
+<style>
+.gtt-ros { --bl-grid-cols: 48px minmax(150px,1fr) 52px 64px minmax(90px,1.2fr); }
+.gtt-nm { display:flex; align-items:center; gap:6px; min-width:0; }
+.gtt-nm .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
+</style>
+{% endblock %}

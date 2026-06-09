@@ -530,3 +530,164 @@ def champion(league_id: int) -> dict | None:
     if not s or s["phase"] != "complete" or s["champion"] is None:
         return None
     return {f["id"]: f for f in franchises(league_id)}.get(s["champion"])
+
+
+# --------------------------------------------------------------------------
+# Honors (P3) — player records, MVP, and titles, derived by replaying the
+# stored line results against the deterministic rosters (no schema change).
+#
+# Player identity is league-internal for now: a stable id of
+# ``{league}-{fid}-{m|w}-{idx}`` over the franchise lineup. The graduate
+# pipeline (P5) will replace this with the player's real, cross-context pid so
+# GTT honors land on the same career page as college honors.
+# --------------------------------------------------------------------------
+
+def gtt_pid(league_id: int, fid: int, gender: str, idx: int) -> str:
+    return f"{league_id}-{fid}-{gender}-{idx}"
+
+
+def _slot_player(team: GTTTeam, gender: str, idx: int):
+    return (team.men if gender == "m" else team.women)[idx]
+
+
+def player_records(league_id: int) -> dict:
+    """``gtt_pid -> {name, country, fid, franchise, gender, idx, w, l}`` over all
+    completed singles + mixed lines. Mixed doubles credits both partners."""
+    s = load_league(league_id)
+    if not s:
+        return {}
+    names = _franchise_names(league_id)
+    teams = {fid: build_gtt_team(s["seed"], fid, nm) for fid, nm in names.items()}
+    rec: dict = {}
+
+    def ensure(fid: int, gender: str, idx: int) -> dict:
+        pid = gtt_pid(league_id, fid, gender, idx)
+        if pid not in rec:
+            p = _slot_player(teams[fid], gender, idx)
+            rec[pid] = {"pid": pid, "name": p.name, "country": p.country, "fid": fid,
+                        "franchise": names[fid], "gender": gender, "idx": idx, "w": 0, "l": 0}
+        return rec[pid]
+
+    conn = _db()
+    rows = conn.execute("SELECT home, away, lines_json FROM gtt_duals WHERE league_id=?"
+                        " AND status='final'", (league_id,)).fetchall()
+    conn.close()
+    for r in rows:
+        h, a = r["home"], r["away"]
+        if h not in teams or a not in teams:
+            continue
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            slot, hw = ln["slot"], ln["home_won"]
+            kind, num = slot[:2], int(slot[2:]) - 1
+            genders = ("m",) if kind == "MS" else ("w",) if kind == "WS" else ("m", "w")
+            for g in genders:
+                hp, ap = ensure(h, g, num), ensure(a, g, num)
+                (hp if hw else ap)["w"] += 1
+                (ap if hw else hp)["l"] += 1
+    return rec
+
+
+def _winpct(r: dict) -> float:
+    g = r["w"] + r["l"]
+    return r["w"] / g if g else 0.0
+
+
+def mvp(league_id: int) -> dict | None:
+    """League MVP: most line wins, win% as the tiebreak. Computed once enough
+    duals are final to be meaningful."""
+    recs = [r for r in player_records(league_id).values() if (r["w"] + r["l"]) >= 3]
+    if not recs:
+        return None
+    return max(recs, key=lambda r: (r["w"], _winpct(r)))
+
+
+def player_honors(league_id: int, pid: str) -> list[str]:
+    """GTT honors for a player id — MVP and/or Champion (credited to the whole
+    winning roster), the same 'credit_roster' pattern the college side uses."""
+    out = []
+    m = mvp(league_id)
+    if m and m["pid"] == pid:
+        out.append("GTT MVP")
+    ch = champion(league_id)
+    if ch:
+        try:
+            fid = int(pid.split("-")[1])
+        except (IndexError, ValueError):
+            fid = None
+        if fid == ch["id"]:
+            out.append("GTT Champion")
+    return out
+
+
+def franchise_roster(league_id: int, fid: int) -> list[dict]:
+    """The franchise lineup (men then women, strength order) with season records
+    and honors — drives the franchise page."""
+    recs = player_records(league_id)
+    s = load_league(league_id)
+    names = _franchise_names(league_id)
+    if not s or fid not in names:
+        return []
+    team = build_gtt_team(s["seed"], fid, names[fid])
+    out = []
+    for gender, players, label in (("m", team.men, "M"), ("w", team.women, "W")):
+        for idx, p in enumerate(players):
+            pid = gtt_pid(league_id, fid, gender, idx)
+            r = recs.get(pid, {"w": 0, "l": 0})
+            out.append({"pid": pid, "name": p.name, "country": p.country,
+                        "slot": f"{label}S{idx + 1}", "gender": gender,
+                        "overall": round(p.overall * 100), "w": r["w"], "l": r["l"],
+                        "honors": player_honors(league_id, pid)})
+    return out
+
+
+def player_detail(league_id: int, pid: str) -> dict | None:
+    """A GTT player's page: identity, record, honors, and match-by-match log."""
+    recs = player_records(league_id)
+    base = recs.get(pid)
+    if not base:
+        # a 0-result player (e.g. preseason) — synthesize from the id
+        try:
+            _lid, fid, gender, idx = pid.split("-")
+            fid, idx = int(fid), int(idx)
+        except ValueError:
+            return None
+        s = load_league(league_id)
+        names = _franchise_names(league_id)
+        if not s or fid not in names:
+            return None
+        p = _slot_player(build_gtt_team(s["seed"], fid, names[fid]), gender, idx)
+        base = {"pid": pid, "name": p.name, "country": p.country, "fid": fid,
+                "franchise": names[fid], "gender": gender, "idx": idx, "w": 0, "l": 0}
+
+    fid, gender, idx = base["fid"], base["gender"], base["idx"]
+    names = _franchise_names(league_id)
+    conn = _db()
+    rows = conn.execute("SELECT week, round, home, away, lines_json FROM gtt_duals"
+                        " WHERE league_id=? AND status='final' AND (home=? OR away=?)"
+                        " ORDER BY week", (league_id, fid, fid)).fetchall()
+    conn.close()
+    log = []
+    for r in rows:
+        is_home = r["home"] == fid
+        opp_fid = r["away"] if is_home else r["home"]
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            slot = ln["slot"]
+            kind, num = slot[:2], int(slot[2:]) - 1
+            mine = (kind == "MS" and gender == "m") or (kind == "WS" and gender == "w") \
+                or (kind == "XD")
+            if not mine or num != idx:
+                continue
+            won = ln["home_won"] == is_home
+            log.append({"week": r["week"], "round": r["round"], "slot": slot,
+                        "opp": names.get(opp_fid, str(opp_fid)),
+                        "scoreline": ln.get("scoreline"), "won": won})
+    return {**base, "honors": player_honors(league_id, pid), "log": log}
+
+
+def honors_board(league_id: int) -> dict:
+    """League honors at a glance: champion + MVP."""
+    return {"champion": champion(league_id), "mvp": mvp(league_id)}

@@ -19,7 +19,19 @@ as the build plan for the feature.*
     renaming or relocating a team is purely cosmetic and changes no result. This is
     what makes the editor safe.
 - **P2 — playoffs** ✅ folded into the P1 fork (top-N single elimination).
-- Next: **P3 honors**, **P4 STR continuity**, **P5 lifecycle/persistence**,
+- **P3 — honors** ✅ GTT **MVP** (most line wins, win% tiebreak) + **Champion**
+  credited to the whole winning roster, derived by replaying the stored line
+  results against the deterministic rosters (no schema change). Honors surface on
+  the franchise and player pages. *Caveat:* player identity is still
+  league-internal (`{league}-{fid}-{m|w}-{idx}`); the real cross-context pid
+  linkage (so a GTT title lands on the same career page as the player's college
+  honors) waits on the **P5** graduate pipeline.
+- **Web UI** ✅ fully wired: a "Global Team Tennis" nav group → **League Hub**
+  (create league, advance week / simulate-to-champion, standings, honors, recent
+  results), **franchise pages** with the **inline name/city/abbrev editor**, and
+  **player pages** with match logs + honors. (`app/web/server.py` routes under
+  `/gtt`, templates `gtt_hub` / `gtt_franchise` / `gtt_player`.)
+- Next: **P4 STR continuity**, **P5 lifecycle/persistence**,
   **P6 acquisition (Vickrey)** — see roadmap below.
 
 ## Context
