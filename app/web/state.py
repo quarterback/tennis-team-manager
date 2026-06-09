@@ -30,6 +30,7 @@ _P5 = {"ACC", "SEC", "Big Ten", "Big 12", "Pac-12"}
 
 _season_cache: dict = {}
 _bracket_cache: dict = {}
+_doubles_champ_cache: dict = {}
 
 
 def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
@@ -61,6 +62,26 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     return _bracket_cache[key]
 
 
+def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
+    """The NCAA individual doubles championship — a seed-deterministic 64-pair
+    draw derived from the program rosters. It runs AFTER the team tournament, so
+    it stays None until the team bracket is complete, then is cached for the
+    year. Mirrors get_bracket's lazy, phase-aware shape."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.individuals import run_doubles_championship, clamp_field
+    size = clamp_field(size)
+    eff = world.current_year_seed(seed)
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
+    if not s or s["phase"] != "complete":
+        return None                          # unlocks once the team bracket is done
+    key = (division, gender, eff, size)
+    if key not in _doubles_champ_cache:
+        _doubles_champ_cache[key] = run_doubles_championship(division, gender, seed=eff, size=size)
+    return _doubles_champ_cache[key]
+
+
 def reset_all() -> None:
     """Drop every web-layer cache and the engine roster caches. Called after an
     editor override changes, so rankings / teams / season all re-derive from the
@@ -70,6 +91,7 @@ def reset_all() -> None:
     import app.seasonmode as sm
     _season_cache.clear()
     _bracket_cache.clear()
+    _doubles_champ_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
     for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):

@@ -15,7 +15,8 @@ from flask import Flask, render_template, request, abort, redirect, url_for, jso
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
-from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD_PRESETS,
+from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
+                    UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
@@ -66,6 +67,7 @@ NAV_GROUPS = [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
         {"id": "bracket",   "label": "NCAA Bracket", "icon": "🥇", "endpoint": "bracket",          "args": {}},
+        {"id": "doubles",   "label": "Doubles Championship","icon": "👥", "endpoint": "doubles_championship", "args": {}},
         {"id": "projection","label": "Bracket Projection","icon": "🔮", "endpoint": "projection",   "args": {}},
     ]),
     ("Tools", [
@@ -89,6 +91,7 @@ def _active_nav(req) -> str:
     if p.startswith("/season"):           return "season"
     if p.startswith("/dual"):             return "dual"
     if p.startswith("/projection"):       return "projection"
+    if p.startswith("/doubles-championship"): return "doubles"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/recruiting/team"):  return "signings"
@@ -319,6 +322,18 @@ def create_app() -> Flask:
         return render_template("bracket.html", active="Bracket", br=br, u=u,
                                uni_label=label, division=division,
                                field=len(br.seeds) if br else 0, field_presets=FIELD_PRESETS)
+
+    @app.route("/doubles-championship")
+    def doubles_championship():
+        division, gender, label, u = _universe(request)
+        try:
+            size = int(request.args.get("size", 64))
+        except ValueError:
+            size = 64
+        ch = get_doubles_championship(division, gender, size=size)
+        return render_template("doubles.html", active="Doubles", u=u, uni_label=label,
+                               division=division, ch=ch,
+                               field=len(ch.entries) if ch else 0, field_presets=FIELD_PRESETS)
 
     @app.route("/projection")
     def projection():
