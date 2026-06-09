@@ -20,6 +20,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
+                    junior_tournaments, junior_tournament_detail,
                     recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
@@ -60,6 +61,7 @@ NAV_GROUPS = [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "jrtour",    "label": "Junior Tour",   "icon": "📅", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
     ]),
     ("Simulate", [
@@ -91,6 +93,7 @@ def _active_nav(req) -> str:
     if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
@@ -501,6 +504,37 @@ def create_app() -> Flask:
         except ValueError:
             grad_year = 2026
         return jsonify(junior_feed(rg, grad_year))
+
+    @app.route("/juniors/tour")
+    def junior_tour():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        tier = request.args.get("tier", "")
+        rows = junior_tournaments(rg, grad_year, tier=tier)
+        pg = paginate(rows, request.args.get("page", 1))
+        tiers = ["Grand Slam", "Masters", "Major", "Premier", "National", "Developmental", "State"]
+        return render_template("junior_tournaments.html", active="Recruiting", rows=pg.items,
+                               p=pg, total=len(rows), gender=gender, grad_year=grad_year,
+                               tier=tier, tiers=tiers, u=u, uni_label=label,
+                               grad_years=[2026, 2027, 2028, 2029])
+
+    @app.route("/juniors/tournament")
+    def junior_tournament():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        t = junior_tournament_detail(rg, grad_year, request.args.get("t", ""))
+        if t is None:
+            abort(404)
+        return render_template("junior_tournament.html", active="Recruiting", t=t,
+                               gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
     @app.route("/tools/junior-setup", methods=["GET", "POST"])
     def junior_setup():

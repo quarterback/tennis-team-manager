@@ -400,6 +400,41 @@ def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dic
     return {"kpis": kpis, "top_rows": top_rows, "leaders": almanac.leaders(recruits, stats)}
 
 
+_tour_cache: dict = {}
+
+
+def _tournament_index(gender, grad_year, seed):
+    key = (gender, grad_year, seed)
+    if key not in _tour_cache:
+        from app import almanac
+        _tour_cache[key] = almanac.tournament_index(get_recruits(gender, grad_year, seed).recruits)
+    return _tour_cache[key]
+
+
+def junior_tournaments(gender: str, grad_year: int, tier: str = "", seed: int = DEFAULT_SEED):
+    """Junior Tour schedule: every event sorted week → tier, optionally filtered to one
+    tier. Each: {name, week, level, champion, finalist, n_entrants}."""
+    from app import almanac
+    tours = list(_tournament_index(gender, grad_year, seed).values())
+    if tier and tier != "All":
+        tours = [t for t in tours if t["level"] == tier]
+    return [{"name": t["name"], "week": t["week"], "level": t["level"],
+             "champion": t["champion"], "finalist": t["finalist"],
+             "n_entrants": len(t["entrants"])}
+            for t in almanac.sort_tournaments(tours)]
+
+
+def junior_tournament_detail(gender: str, grad_year: int, name: str, seed: int = DEFAULT_SEED):
+    """One tournament's full round-by-round results, or None."""
+    from app import almanac
+    t = _tournament_index(gender, grad_year, seed).get(name)
+    if not t:
+        return None
+    return {"name": t["name"], "week": t["week"], "level": t["level"],
+            "champion": t["champion"], "finalist": t["finalist"],
+            "n_entrants": len(t["entrants"]), "rounds": almanac.tournament_rounds(t["matches"])}
+
+
 def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
     """[(nation, [(rank, Prospect, stat_line)...])] Top-10 per talent-dense nation."""
     from app import almanac
@@ -451,6 +486,7 @@ def save_junior_setup(form) -> None:
              for tier, _ in BANDS]
     worldconfig.set("jr_bands", json.dumps(bands))
     _recruit_cache.clear()
+    _tour_cache.clear()
 
 
 def reset_junior_setup() -> None:
@@ -459,6 +495,7 @@ def reset_junior_setup() -> None:
     for k in _JR_KEYS:
         worldconfig.set(k, "")
     _recruit_cache.clear()
+    _tour_cache.clear()
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):

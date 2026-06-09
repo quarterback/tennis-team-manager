@@ -305,8 +305,10 @@ SURNAME_CITY_KEEP = {
 
 def _surname_cities() -> set[str]:
     """Single-token city names from hometowns.json (distinctive place names;
-    single-token avoids splitting 'Santa Cruz' -> 'Cruz')."""
-    ht = _load("hometowns.json")
+    single-token avoids splitting 'Santa Cruz' -> 'Cruz'). Only the international
+    birthplace `cities` pool — NOT the US `us_states` tier, whose city names (Austin,
+    Jackson, Washington, …) are also legitimate surnames and must not be stripped."""
+    ht = _load("hometowns.json").get("cities", {})
     blob: list[str] = []
 
     def walk(node):
