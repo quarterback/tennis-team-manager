@@ -2,7 +2,7 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Junior Rankings{% endblock %}
 {% block content %}
-{% set grid = '40px minmax(150px,1fr) 122px 52px 46px 40px 38px 38px 38px 48px 62px 52px 52px 50px 50px 44px' %}
+{% set grid = '40px minmax(150px,1fr) 52px 52px 46px 40px 38px 38px 38px 48px 62px 52px 52px 50px 50px 44px' %}
 
 {# a sortable column header: clicking sorts by `key`, clicking again flips direction #}
 {% macro th(key, label, numeric=true) %}
@@ -16,7 +16,7 @@
 <div class="bl-tablescroll">
   <div class="bl-table al-dense" style="--bl-grid-cols: {{ grid }}">
     <div class="bl-thead">
-      {{ th('rank','#') }}<span class="bl-th">PLAYER</span><span class="bl-th">HONORS</span><span class="bl-th">NAT</span>
+      {{ th('rank','#') }}<span class="bl-th">PLAYER</span><span class="bl-th num">CLASS</span><span class="bl-th">NAT</span>
       {{ th('stars','★') }}{{ th('events','Ev') }}{{ th('titles','Ti') }}{{ th('finals','F') }}
       {{ th('won','W') }}<span class="bl-th num">L</span>{{ th('pct','Win%') }}
       {{ th('pts','Pts') }}{{ th('spts','Sgl') }}{{ th('dpts','Dbl') }}
@@ -26,7 +26,7 @@
     <div class="bl-row">
       <span class="bl-rank {{ 'gold' if rk==1 else 'bronze' if rk<=3 else '' }}">{{ rk }}</span>
       <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-      <span class="al-honors">{% if h %}<span class="al-shield" title="{{ h.all|join(' · ') }}"><span class="al-shield-l">{{ h.left }}</span><span class="al-shield-r al-r-{{ h.tier }}">{{ h.right }}</span></span>{% if h.more %}<span class="al-more">+{{ h.more }}</span>{% endif %}{% endif %}</span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.grad_year }}</span>
       <span class="bl-conf">{{ 'USA' if p.domestic else p.country }}</span>
       <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
       <span class="bl-cell-num">{{ p.tournaments_played }}</span>

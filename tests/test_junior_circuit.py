@@ -66,11 +66,19 @@ def test_finish_label_mapping():
 # --------------------------------------------------------------------------
 # Junior circuit: the recruit-history generator
 # --------------------------------------------------------------------------
-def _class(n=240, seed=5, gender="male"):
-    k = generate_class(random.Random(seed), n=n, grad_year=2026, gender=gender,
-                       intl_share=0.35)
-    national_rankings(k)
-    run_junior_circuit(k, seed=seed)
+def _class(n=240, seed=5, gender="male", weeks=12):
+    # Pin a short season so the circuit tests stay fast — production default is 36.
+    # Save/restore so the persisted world config isn't polluted past the build.
+    from app import worldconfig as wc
+    prev = wc.get("jr_season_weeks")
+    wc.set("jr_season_weeks", str(weeks))
+    try:
+        k = generate_class(random.Random(seed), n=n, grad_year=2026, gender=gender,
+                           intl_share=0.35)
+        national_rankings(k)
+        run_junior_circuit(k, seed=seed)
+    finally:
+        wc.set("jr_season_weeks", prev)
     return k
 
 
@@ -244,16 +252,16 @@ def test_points_rank_diverges_from_recruiting_board():
 
 
 def test_junior_setup_config_overrides_the_circuit():
-    """The Junior Setup knobs (app.worldconfig) override season length at build time —
-    so the menu tweaks take effect without a code change."""
-    from app import worldconfig as wc
-    try:
-        wc.set("jr_season_weeks", "6")
-        k = _class(n=160)
-        assert max(p.tournaments_played for p in k.recruits) == 6   # one event per week
-    finally:
-        wc.set("jr_season_weeks", "")                               # restore default
-    assert max(p.tournaments_played for p in _class(n=160).recruits) == SEASON_WEEKS
+    """Junior Setup knobs override season length at build time, and nobody plays the
+    whole season — participation is capped at ~PLAY_FRACTION of the weeks (so kids
+    rest some weeks and different players get their moment)."""
+    from app.junior_circuit import PLAY_FRACTION
+    k = _class(n=200, weeks=10)
+    cap = round(PLAY_FRACTION * 10)
+    played = [p.tournaments_played for p in k.recruits]
+    assert min(played) >= 1 and max(played) <= cap     # everyone plays some, none all
+    assert max(played) >= cap - 2                       # the cap is actually reached
+    assert all(p.tournaments_played == len(p.junior_results) for p in k.recruits)
 
 
 def test_super_bloomers_climb_while_early_bloomers_plateau():
