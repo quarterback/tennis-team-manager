@@ -587,6 +587,18 @@ def create_app() -> Flask:
                         pass
                 if kwargs:
                     sch.set_limit(d, g, **kwargs)
+        # Academically-elite D3 is its own editable tier (applies to both genders).
+        elite = {}
+        for field, key, cast in (("count_elite", "count", int),
+                                 ("cap_elite", "cap", float), ("rate_elite", "rate", float)):
+            raw = request.form.get(field)
+            if raw not in (None, ""):
+                try:
+                    elite[key] = cast(raw)
+                except ValueError:
+                    pass
+        if elite:
+            sch.set_elite_limit(**elite)
         reset_all()
         return redirect(url_for("editor", u=u))
 
