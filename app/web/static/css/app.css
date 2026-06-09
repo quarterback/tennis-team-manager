@@ -77,7 +77,13 @@
 .bl-entries-right { font-size: 13px; color: var(--text-muted); }
 
 /* ---- Table ---- */
-.bl-tablescroll { overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: 8px; }
+/* `overscroll-behavior-x: contain` keeps a horizontal table-scroll from chaining to
+   the browser's back-swipe (the "can't scroll over the table" bug on touch); the
+   -webkit rule gives iOS momentum scrolling. */
+.bl-tablescroll {
+  overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  border: 1px solid var(--border-subtle); border-radius: 8px;
+}
 .bl-table { min-width: 920px; }
 .bl-thead, .bl-row {
   display: grid; grid-template-columns: var(--bl-grid-cols); gap: 12px; align-items: center;
