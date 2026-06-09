@@ -621,7 +621,7 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
-                               standings=sm.standings(sid))
+                               standings=sm.standings(sid), bubble=sm.bubble_watch(sid))
 
     @app.route("/season/schedule")
     def season_schedule():

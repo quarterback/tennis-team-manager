@@ -529,3 +529,53 @@ img, svg, table { max-width: 100%; }
   .bl-side .nm { white-space: normal; }
   .bl-court-team { display: block; margin-left: 0; }
 }
+
+/* ---- Standings: league table headers + projected auto-bid leader -------- */
+.bl-stand-hdr {
+  display: grid; gap: 8px; align-items: center; padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle); background: var(--surface-th);
+  font-size: 10px; text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
+  color: var(--text-muted); font-weight: 600;
+}
+.bl-stand-hdr span:nth-child(n+3) { text-align: right; }
+.bl-stand-lead { background: var(--green-50); box-shadow: inset 3px 0 0 var(--brand); }
+.bl-aq-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--brand); vertical-align: middle;
+}
+.bl-aq-tag {
+  flex: none; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--green-800); background: var(--green-50);
+  border: 1px solid var(--green-200); border-radius: 4px; padding: 1px 5px;
+}
+
+/* ---- Bubble Watch: Last Four In / First Four Out split view ------------- */
+.bl-bubble { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.bl-bubble-col:first-child { border-right: 1px solid var(--border-subtle); }
+.bl-bubble-head {
+  padding: 8px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow); border-bottom: 1px solid var(--border-subtle);
+}
+.bl-bubble-head--in  { color: var(--green-800); background: var(--green-50); }
+.bl-bubble-head--out { color: var(--tint-loss-fg); background: var(--tint-loss-bg); }
+.bl-bubble-row {
+  display: grid; grid-template-columns: 34px 1fr 44px 56px 50px; gap: 8px;
+  align-items: center; padding: 8px 16px; font-size: 13px; text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.bl-bubble-row:last-child { border-bottom: none; }
+.bl-bubble-row--in  { box-shadow: inset 3px 0 0 var(--brand); }
+.bl-bubble-row--out { box-shadow: inset 3px 0 0 var(--tint-loss-fg); }
+.bl-bubble-seed { font-size: 11px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.bl-bubble-team { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--text-primary); }
+.bl-bubble-team .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-bubble-conf { font-size: 11px; color: var(--text-muted); text-align: right; }
+.bl-bubble-rec  { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
+.bl-bubble-pi   { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); text-align: right; }
+
+@media (max-width: 640px) {
+  .bl-bubble { grid-template-columns: 1fr; }
+  .bl-bubble-col:first-child { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  .bl-bubble-row { grid-template-columns: 30px 1fr 50px 48px; }
+  .bl-bubble-conf { display: none; }
+}
