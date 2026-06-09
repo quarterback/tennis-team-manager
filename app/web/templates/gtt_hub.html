@@ -101,6 +101,25 @@
     </div>
   </div>
   {% endif %}
+
+  {% if history %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Season history</span>
+      <span class="bl-panel-meta"><a href="{{ url_for('gtt_hall', lg=league.id) }}" style="text-decoration:none">Hall of Fame →</a></span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-hist">
+      <div class="bl-thead gtt-hist-row">
+        <span class="bl-th num">Year</span><span class="bl-th">Champion</span><span class="bl-th">MVP</span>
+      </div>
+      {% for h in history %}
+      <div class="bl-row gtt-hist-row">
+        <span class="bl-cell-num">{{ h.cal_year }}</span>
+        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">🏆 {{ h.champion }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none">🏅 {{ h.mvp }}</a>{% else %}—{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endif %}
   {% endif %}
 
   <div class="bl-panel">
@@ -119,6 +138,7 @@
 
 <style>
 .gtt-std { --bl-grid-cols: 28px minmax(160px,1fr) 72px 64px; }
+.gtt-hist { --bl-grid-cols: 64px minmax(150px,1fr) minmax(130px,1fr); }
 .gtt-team { display:flex; align-items:center; gap:8px; min-width:0; }
 .gtt-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
 .bl-crest.xs { display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:20px; padding:0 5px; border-radius:5px; background:var(--surface-subtle); font-size:10px; font-weight:700; letter-spacing:.02em; }

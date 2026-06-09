@@ -76,6 +76,7 @@ NAV_GROUPS = [
     ]),
     ("Global Team Tennis", [
         {"id": "gtt",       "label": "League Hub",   "icon": "🌐", "endpoint": "gtt_hub",          "args": {}},
+        {"id": "gtt_hall",  "label": "Hall of Fame", "icon": "🏛️", "endpoint": "gtt_hall",         "args": {}},
     ]),
     ("Tools", [
         {"id": "editor",    "label": "Editor",       "icon": "🛠️", "endpoint": "editor",          "args": {}},
@@ -111,6 +112,7 @@ def _active_nav(req) -> str:
     if p.startswith("/teams") or p.startswith("/player"):
         return "roster" if req.args.get("school") == MY_TEAM else "teams"
     if p.startswith("/editor"):           return "editor"
+    if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
     if p.startswith("/gtt"):              return "gtt"
     if p.startswith("/methodology"):      return "methodology"
     return ""
@@ -391,6 +393,7 @@ def create_app() -> Flask:
         return render_template(
             "gtt_hub.html", active="GTT", league=league, leagues=leagues,
             standings=gs.standings(lid), honors=gs.honors_board(lid),
+            history=gs.season_history(lid),
             recent=gs.week_duals(lid, max(1, league["current_week"] - 1)),
             recent_week=max(1, league["current_week"] - 1))
 
@@ -445,6 +448,23 @@ def create_app() -> Flask:
         if not detail:
             abort(404)
         return render_template("gtt_player.html", active="GTT", league=league, p=detail)
+
+    @app.route("/gtt/player/<pid>/enshrine", methods=["POST"])
+    def gtt_enshrine(pid):
+        lid = request.form.get("lg", type=int)
+        if lid:
+            gs.enshrine(lid, pid)
+        return redirect(url_for("gtt_player", pid=pid, lg=lid))
+
+    @app.route("/gtt/hall-of-fame")
+    def gtt_hall():
+        league, leagues = _current_league()
+        if not league:
+            return render_template("gtt_hall.html", active="GTT", league=None, leagues=[],
+                                   hof=[], history=[])
+        lid = league["id"]
+        return render_template("gtt_hall.html", active="GTT", league=league, leagues=leagues,
+                               hof=gs.hall_of_fame(lid), history=gs.season_history(lid))
 
     @app.route("/api/health")
     def health():

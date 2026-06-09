@@ -50,6 +50,7 @@ TARGET_MEN = 4              # roster targets per gender (lineup fields the top 3
 TARGET_WOMEN = 4
 LINES_TO_CLINCH = 5
 ENTRY_AGE = 22              # a graduate's age on turning pro
+PEAK_AGE = 28              # decline (development in reverse) kicks in past here
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 BASE_YEAR = 2027           # GTT calendar starts the year after the college baseline
@@ -69,6 +70,10 @@ CREATE TABLE IF NOT EXISTS gtt_players (
 );
 CREATE TABLE IF NOT EXISTS gtt_seasons (
   league_id INTEGER, year INTEGER, phase TEXT, champion INTEGER, mvp_pid TEXT
+);
+CREATE TABLE IF NOT EXISTS gtt_hof (
+  id INTEGER PRIMARY KEY, league_id INTEGER, pid TEXT, name TEXT, gender TEXT,
+  year_enshrined INTEGER, data TEXT, honors_json TEXT, record TEXT, peak_str REAL
 );
 CREATE TABLE IF NOT EXISTS gtt_duals (
   id INTEGER PRIMARY KEY, league_id INTEGER, year INTEGER, week INTEGER, round TEXT,
@@ -618,15 +623,22 @@ def _offseason(conn, s, fidelity):
     lid, prev_year = s["id"], s["current_year"]
     year = prev_year + 1
 
-    # Age everyone a year; retire the veterans (off active rosters).
-    for r in conn.execute("SELECT id, pid, age FROM gtt_players WHERE league_id=? AND status='active'",
-                          (lid,)).fetchall():
+    # Age everyone a year; retire the veterans; decline those past their peak
+    # (development run in reverse — the slide steepens with each year past peak).
+    for r in conn.execute("SELECT id, pid, age, data FROM gtt_players WHERE league_id=?"
+                          " AND status='active'", (lid,)).fetchall():
         age = (r["age"] or ENTRY_AGE) + 1
         if _should_retire(r["pid"], age, year):
             conn.execute("UPDATE gtt_players SET age=?, status='retired', fid=NULL WHERE id=?",
                          (age, r["id"]))
-        else:
-            conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1 WHERE id=?", (age, r["id"]))
+            continue
+        data = r["data"]
+        if age > PEAK_AGE:
+            p = _prospect(data)
+            p.decline(scale=age - PEAK_AGE)
+            data = json.dumps(_prospect_dict(p))
+        conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
+                     (age, data, r["id"]))
 
     # Open slots per franchise drive how many graduates we need.
     fids = [f["id"] for f in _fr_rows(conn, lid)]
@@ -930,6 +942,12 @@ def player_detail(league_id, pid):
                         "opp": names.get(opp_fid, str(opp_fid)), "scoreline": ln.get("scoreline"),
                         "won": won})
 
+    enshrined = conn2 = None
+    conn2 = _db()
+    enshrined = conn2.execute("SELECT 1 FROM gtt_hof WHERE league_id=? AND pid=?",
+                              (league_id, pid)).fetchone() is not None
+    conn2.close()
+
     import app.honors as honors
     career = honors.career_by_year(pid, "player")
     return {"pid": pid, "name": p.name, "country": p.country, "gender": row["gender"],
@@ -937,4 +955,95 @@ def player_detail(league_id, pid):
             "fid": row["fid"], "franchise": names.get(row["fid"], "Free agent"),
             "str": round(p.str_value(), 1), "overall": round(p.current_overall()),
             "w": w, "l": l, "honors": player_honors(league_id, pid),
-            "career_honors": career, "log": log}
+            "career_honors": career, "log": log, "enshrined": enshrined}
+
+
+# --------------------------------------------------------------------------
+# Hall of Fame (freeze a profile + archive) and the awards archive
+# --------------------------------------------------------------------------
+
+def _career_record(conn, league_id, pid):
+    w = l = 0
+    for r in conn.execute("SELECT lines_json FROM gtt_duals WHERE league_id=? AND status='final'",
+                          (league_id,)).fetchall():
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            if pid in ln.get("home_pids", []):
+                w, l = (w + 1, l) if ln["home_won"] else (w, l + 1)
+            elif pid in ln.get("away_pids", []):
+                w, l = (w + 1, l) if not ln["home_won"] else (w, l + 1)
+    return w, l
+
+
+def is_enshrined(league_id, pid):
+    conn = _db()
+    row = conn.execute("SELECT 1 FROM gtt_hof WHERE league_id=? AND pid=?",
+                       (league_id, pid)).fetchone()
+    conn.close()
+    return row is not None
+
+
+def enshrine(league_id, pid):
+    """Freeze a player's profile as it stands and file it in the Hall of Fame
+    archive. The snapshot (attributes, career record, honors) never changes after
+    — even as the live player keeps declining or retires."""
+    s = load_league(league_id)
+    if not s:
+        return False
+    conn = _db()
+    row = conn.execute("SELECT * FROM gtt_players WHERE league_id=? AND pid=?",
+                       (league_id, pid)).fetchone()
+    if not row or conn.execute("SELECT 1 FROM gtt_hof WHERE league_id=? AND pid=?",
+                               (league_id, pid)).fetchone():
+        conn.close()
+        return False
+    w, l = _career_record(conn, league_id, pid)
+    conn.close()
+    p = _prospect(row["data"])
+    import app.honors as honors
+    snapshot = honors.career_by_year(pid, "player")     # frozen honors snapshot
+    conn = _db()
+    conn.execute("INSERT INTO gtt_hof (league_id, pid, name, gender, year_enshrined, data,"
+                 " honors_json, record, peak_str) VALUES (?,?,?,?,?,?,?,?,?)",
+                 (league_id, pid, p.name, row["gender"], BASE_YEAR + s["current_year"],
+                  row["data"], json.dumps(snapshot), f"{w}-{l}", round(p.str_value(), 1)))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def hall_of_fame(league_id):
+    """The frozen archive — every enshrined profile, newest first."""
+    conn = _db()
+    rows = conn.execute("SELECT * FROM gtt_hof WHERE league_id=? ORDER BY year_enshrined DESC, id DESC",
+                        (league_id,)).fetchall()
+    conn.close()
+    out = []
+    for r in rows:
+        p = _prospect(r["data"])
+        out.append({"pid": r["pid"], "name": r["name"], "gender": r["gender"], "country": p.country,
+                    "year": r["year_enshrined"], "record": r["record"], "str": r["peak_str"],
+                    "overall": round(p.current_overall()),
+                    "honors": json.loads(r["honors_json"] or "[]")})
+    return out
+
+
+def season_history(league_id):
+    """The awards archive: champion + MVP for every completed season, newest first."""
+    conn = _db()
+    names = _fr_names(conn, league_id)
+    rows = conn.execute("SELECT * FROM gtt_seasons WHERE league_id=? ORDER BY year DESC",
+                        (league_id,)).fetchall()
+    out = []
+    for r in rows:
+        mvp_name = None
+        if r["mvp_pid"]:
+            pr = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+                              (league_id, r["mvp_pid"])).fetchone()
+            mvp_name = _prospect(pr["data"]).name if pr else None
+        out.append({"year": r["year"], "cal_year": BASE_YEAR + r["year"],
+                    "champion": names.get(r["champion"]), "champion_fid": r["champion"],
+                    "mvp": mvp_name, "mvp_pid": r["mvp_pid"]})
+    conn.close()
+    return out

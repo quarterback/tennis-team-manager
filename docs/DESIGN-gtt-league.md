@@ -52,9 +52,21 @@ as the build plan for the feature.*
   (draft + intake)**; franchise pages show each player's **age + origin**
   (College / Founder / Rookie); player pages show the **unified career honors**.
 
-All three requested priorities (honors college→pro, multi-season, draft/keepers)
-are implemented and tested. Possible next polish: a Vickrey auction in place of the
-snake draft, attribute decline with age, and a Hall-of-Fame "enshrine" action.
+- **Decline (aging)** ✅ `Prospect.decline()` is `develop()` run in reverse —
+  it erodes *current* ability toward the floor instead of closing the gap up to
+  the ceiling. It's dormant in college and only activated for pros once they age
+  past their peak (`PEAK_AGE`), with the slide steepening each year. A veteran's
+  STR visibly slips season over season until retirement freezes it.
+- **Hall of Fame** ✅ an **Enshrine** action on a player page **freezes the
+  profile** (attributes, career record, honors snapshot) into `gtt_hof` and lists
+  it on the GTT **Hall of Fame** page — the frozen entry never changes even as the
+  live player declines or retires.
+- **Awards archive** ✅ every completed season's **champion + MVP** is kept and
+  shown both on the hub ("Season history") and the Hall of Fame page
+  ("Champions & MVPs").
+
+All requested priorities are implemented and tested. Possible next polish: a
+Vickrey auction in place of the snake draft.
 
 ## Context
 

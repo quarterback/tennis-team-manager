@@ -13,11 +13,16 @@
     {% if p.origin == 'college' %}
     <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">🎓 College graduate — career honors below span college and pro.</div>
     {% endif %}
-    {% if p.honors %}
-    <div style="padding:12px 16px">
-      {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff;margin-right:6px">{{ h }}</span>{% endfor %}
+    <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff">{{ h }}</span>{% endfor %}
+      {% if p.enshrined %}
+      <span class="bl-pill" style="background:var(--surface-header);color:#fff">🏛️ Hall of Fame</span>
+      {% else %}
+      <form method="post" action="{{ url_for('gtt_enshrine', pid=p.pid) }}" style="margin-left:auto">
+        <input type="hidden" name="lg" value="{{ league.id }}">
+        <button class="bl-pill" type="submit">🏛️ Enshrine in Hall of Fame</button></form>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 
   {% if p.career_honors %}

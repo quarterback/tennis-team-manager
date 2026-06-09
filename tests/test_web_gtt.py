@@ -64,4 +64,46 @@ def test_gtt_player_page(tmp_path):
 def test_gtt_in_nav(tmp_path):
     c = _client(tmp_path)
     r = c.get("/gtt")
-    assert b"Global Team Tennis" in r.data and b"League Hub" in r.data
+    assert b"Global Team Tennis" in r.data and b"League Hub" in r.data and b"Hall of Fame" in r.data
+
+
+def test_gtt_enshrine_and_hall_of_fame(tmp_path):
+    c = _client(tmp_path)
+    lid = gs.create_league("L", seed=9, n_teams=4)
+    gs.advance_all(lid, fidelity="fast")
+    pid = gs.mvp(lid)["pid"]
+    # enshrine via the web, then it shows on the HoF page and as a badge
+    r = c.post(f"/gtt/player/{pid}/enshrine", data={"lg": lid})
+    assert r.status_code in (302, 303)
+    hall = c.get(f"/gtt/hall-of-fame?lg={lid}")
+    assert hall.status_code == 200 and b"Hall of Fame" in hall.data
+    assert gs.is_enshrined(lid, pid)
+    player = c.get(f"/gtt/player/{pid}?lg={lid}")
+    assert b"Hall of Fame" in player.data            # frozen badge
+
+
+def test_gtt_season_history_archive(tmp_path):
+    c = _client(tmp_path)
+    lid = gs.create_league("L", seed=3, n_teams=4)
+    gs.advance_all(lid, fidelity="fast")             # one complete season
+    hub = c.get(f"/gtt?lg={lid}")
+    assert b"Season history" in hub.data
+    hall = c.get(f"/gtt/hall-of-fame?lg={lid}")
+    assert b"Champions" in hall.data
+
+
+def test_decline_reduces_str_over_seasons(tmp_path):
+    _client(tmp_path)
+    lid = gs.create_league("L", seed=2026, n_teams=4)
+    conn = gs._db()
+    # an oldest founder will be past peak soonest
+    pid = conn.execute("SELECT pid FROM gtt_players WHERE league_id=? ORDER BY age DESC LIMIT 1",
+                       (lid,)).fetchone()["pid"]
+    conn.close()
+    start = gs.player_detail(lid, pid)["str"]
+    for _ in range(3):
+        gs.advance_all(lid, fidelity="fast")
+        gs.advance(lid, fidelity="fast")
+    d = gs.player_detail(lid, pid)
+    # whether still active or retired, a past-peak player's frozen STR has dropped
+    assert d["str"] < start
