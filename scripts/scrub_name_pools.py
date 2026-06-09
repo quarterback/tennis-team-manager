@@ -300,13 +300,27 @@ SURNAME_CITY_KEEP = {
     "Khan", "Shah", "Dar", "Alam", "David", "Antonio", "Fernando", "Paulo",
     "Pedro", "Louis", "Long", "Kong", "Mai", "San", "Tin", "Pak", "Mun",
     "Hong", "Tong", "Ba", "Bani", "Nicolaas", "Samara",
+    # Canadian-city collisions surfaced by the expanded Canada pool — all are
+    # legitimate (often English/Welsh) family names in their own right.
+    "Barrie", "Langley", "Markham", "Richmond", "Vaughan",
+    # International-city collisions surfaced by the broadened world city pools.
+    # Each is a curated surname already living in an ethnic pool that happens to
+    # double as a city we added — preserved rather than stripped.
+    "Bradford", "Bray", "Burgos", "Cairns", "Castellón", "Charleroi",
+    "Corrientes", "Cádiz", "Ferrara", "Glasgow", "Guimarães", "Hobart",
+    "Kawaguchi", "Kielce", "Logroño", "Lund", "Machida", "Mackay", "Martin",
+    "Metz", "Mönchengladbach", "Nara", "Nelson", "Niigata", "Orange", "Oviedo",
+    "Palermo", "Palma", "Pereira", "Preston", "Reus", "Rhodes", "Saint-Étienne",
+    "Santander", "Santos", "Valladolid", "Vitória", "York",
 }
 
 
 def _surname_cities() -> set[str]:
     """Single-token city names from hometowns.json (distinctive place names;
-    single-token avoids splitting 'Santa Cruz' -> 'Cruz')."""
-    ht = _load("hometowns.json")
+    single-token avoids splitting 'Santa Cruz' -> 'Cruz'). Only the international
+    birthplace `cities` pool — NOT the US `us_states` tier, whose city names (Austin,
+    Jackson, Washington, …) are also legitimate surnames and must not be stripped."""
+    ht = _load("hometowns.json").get("cities", {})
     blob: list[str] = []
 
     def walk(node):

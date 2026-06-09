@@ -126,6 +126,68 @@ def profile_badges(p) -> list[dict]:
     return [badge_shield(b) for b in acc + (getattr(p, "junior_badges", None) or [])]
 
 
+# ---- Junior Tour: tournaments reconstructed from the per-player match logs ----
+# Each match is recorded on both players, won=True for the winner — so filtering to
+# the winner's records yields every match exactly once, no dedup needed.
+_ROUND_ORDER = {"Round of 256": 0, "Round of 128": 1, "Round of 64": 2,
+                "Round of 32": 3, "Round of 16": 4, "Quarterfinals": 5,
+                "Semifinals": 6, "Final": 7}
+_TIER_ORDER = {"Grand Slam": 0, "Masters": 1, "Major": 2, "Premier": 3,
+               "National": 4, "Developmental": 5, "State": 6}
+
+
+def _week_num(date: str) -> int:
+    try:
+        return int(str(date).split()[-1])
+    except (ValueError, IndexError):
+        return 0
+
+
+def tournament_index(recruits: list) -> dict:
+    """name -> {name, week, level, champion (name,pid), finalist, entrants(set pids),
+    matches[{round, winner, winner_pid, loser, loser_pid, score}]} for every junior
+    event, reconstructed from the frozen result/match logs."""
+    name_to_pid: dict = {}
+    for p in recruits:
+        name_to_pid.setdefault(p.name, p.pid)
+
+    tours: dict = {}
+
+    def _t(name):
+        return tours.setdefault(name, {"name": name, "week": 0, "level": "",
+                                       "champion": None, "finalist": None,
+                                       "entrants": set(), "matches": []})
+    for p in recruits:
+        for r in getattr(p, "junior_results", None) or []:
+            t = _t(r["tournament"])
+            t["week"], t["level"] = _week_num(r["date"]), r["level"]
+            t["entrants"].add(p.pid)
+            if r["result"] == "Champion":
+                t["champion"] = (p.name, p.pid)
+            elif r["result"] == "Finalist":
+                t["finalist"] = (p.name, p.pid)
+        for m in getattr(p, "junior_matches", None) or []:
+            if m["won"]:
+                _t(m["tournament"])["matches"].append({
+                    "round": m["round"], "winner": p.name, "winner_pid": p.pid,
+                    "loser": m["opponent"], "loser_pid": name_to_pid.get(m["opponent"]),
+                    "score": m["score"]})
+    return tours
+
+
+def sort_tournaments(tours: list) -> list:
+    """Chronological by week, then by tier prestige (Grand Slam first), then name."""
+    return sorted(tours, key=lambda t: (t["week"], _TIER_ORDER.get(t["level"], 9), t["name"]))
+
+
+def tournament_rounds(matches: list) -> list:
+    """[(round-label, [matches])] ordered earliest round → Final, like a draw sheet."""
+    by: dict = {}
+    for m in matches:
+        by.setdefault(m["round"], []).append(m)
+    return [(rnd, by[rnd]) for rnd in sorted(by, key=lambda r: _ROUND_ORDER.get(r, 99))]
+
+
 def honor_chip(p) -> dict | None:
     """The recruit's marquee badge as a shield plus `more` (extra count) and `all`
     (tooltip list) — accomplishments outrank ranking milestones. None if unranked."""

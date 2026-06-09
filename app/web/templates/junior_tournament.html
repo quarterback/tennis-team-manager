@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ t.name }}{% endblock %}
+{% block content %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('junior_tour', u=u, grad_year=grad_year, tier=t.level) }}">← Junior Tour</a>
+  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">Week {{ t.week }} · {{ t.n_entrants }}-player draw · class of {{ grad_year }}</span>
+</div></div>
+
+<div class="bl-container">
+  <div class="jt-head">
+    <div>
+      <div class="jt-name">{{ t.name }}</div>
+      <span class="al-tier al-t-{{ t.level|replace(' ','') }}">{{ t.level }}</span>
+    </div>
+    {% if t.champion %}
+    <a class="jt-champ" href="{{ url_for('recruit', pid=t.champion[1], u=u, grad_year=grad_year) }}">
+      <span class="jt-champ-k">🏆 Champion</span>
+      <span class="jt-champ-v">{{ t.champion[0] }}</span></a>
+    {% endif %}
+  </div>
+</div>
+
+{% for round_label, matches in t.rounds %}
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ round_label }}</span>
+      <span class="bl-panel-meta">{{ matches|length }} match{{ 'es' if matches|length != 1 else '' }}</span></div>
+    <div class="bl-panel-body" style="padding:0">
+      {% for m in matches %}
+      <div class="jt-match">
+        <div class="jt-side jt-win">
+          {% if m.winner_pid %}<a href="{{ url_for('recruit', pid=m.winner_pid, u=u, grad_year=grad_year) }}">{{ m.winner }}</a>{% else %}{{ m.winner }}{% endif %}
+          <span class="jt-def">def.</span>
+        </div>
+        <div class="jt-side jt-lose">
+          {% if m.loser_pid %}<a href="{{ url_for('recruit', pid=m.loser_pid, u=u, grad_year=grad_year) }}">{{ m.loser }}</a>{% else %}{{ m.loser }}{% endif %}
+        </div>
+        <div class="jt-score">{{ m.score }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<style>
+  .jt-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    border:1px solid var(--border-subtle); border-radius:12px; padding:16px 18px; background:var(--surface-card); }
+  .jt-name { font-size:20px; font-weight:800; margin-bottom:6px; }
+  .jt-champ { display:flex; flex-direction:column; align-items:flex-end; text-decoration:none; }
+  .jt-champ-k { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); font-weight:700; }
+  .jt-champ-v { font-size:18px; font-weight:800; color:var(--text-primary); }
+  .al-tier { font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; color:#fff; }
+  .al-t-GrandSlam { background:#b8860b; } .al-t-Masters { background:#c0392b; } .al-t-Major { background:#d2691e; }
+  .al-t-Premier { background:#3071b9; } .al-t-National { background:#2faa55; }
+  .al-t-Developmental { background:#647082; } .al-t-State { background:#8a939c; }
+  .jt-match { display:grid; grid-template-columns: 1fr auto; align-items:center; gap:4px 12px;
+    padding:9px 16px; border-top:1px solid var(--border-subtle); }
+  .jt-match:first-child { border-top:none; }
+  .jt-side { font-size:14px; min-width:0; }
+  .jt-side a { color:var(--text-primary); text-decoration:none; font-weight:600; }
+  .jt-side a:hover { color:var(--text-link); }
+  .jt-win { font-weight:700; }
+  .jt-win a { font-weight:700; }
+  .jt-lose { color:var(--text-secondary); }
+  .jt-lose a { color:var(--text-secondary); font-weight:500; }
+  .jt-def { font-size:11px; color:var(--text-muted); margin-left:6px; font-weight:500; }
+  .jt-score { grid-row:1 / span 2; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px;
+    color:var(--text-primary); white-space:nowrap; }
+</style>
+{% endblock %}

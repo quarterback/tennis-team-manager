@@ -17,17 +17,37 @@ import random
 _NAMES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "names")
 
 _hometowns: dict | None = None
+_us_states: dict | None = None
+
+
+def _load_full_hometowns() -> dict:
+    try:
+        with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
 
 
 def _load_hometowns() -> dict:
     global _hometowns
     if _hometowns is None:
-        try:
-            with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
-                _hometowns = json.load(fh).get("cities", {}) or {}
-        except (OSError, ValueError):
-            _hometowns = {}
+        _hometowns = _load_full_hometowns().get("cities", {}) or {}
     return _hometowns
+
+
+def _load_us_states() -> dict:
+    """{USPS-state: [city, ...]} — the city → state → nation middle tier added for
+    tennis (US birthplaces with the city actually in its state)."""
+    global _us_states
+    if _us_states is None:
+        _us_states = _load_full_hometowns().get("us_states", {}) or {}
+    return _us_states
+
+
+def roll_us_hometown(state_abbr: str, rng: random.Random) -> str:
+    """A real US city located IN `state_abbr` (USPS), or "" if the state is unknown."""
+    cities = _load_us_states().get((state_abbr or "").upper())
+    return rng.choice(cities) if cities else ""
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +178,29 @@ def roll_hometown(country_code: str, rng: random.Random) -> str:
     """A believable birthplace city for a player from `country_code`.
     Empty string when we have no city pool for that country."""
     cities = _load_hometowns().get((country_code or "").upper())
+    return rng.choice(cities) if cities else ""
+
+
+_us_states: dict | None = None
+
+
+def _load_us_states() -> dict:
+    """The US `state-abbr -> [real cities]` tier (the city -> state -> nation
+    middle layer tennis needs; baseball only had country -> city)."""
+    global _us_states
+    if _us_states is None:
+        try:
+            with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
+                _us_states = json.load(fh).get("us_states", {}) or {}
+        except (OSError, ValueError):
+            _us_states = {}
+    return _us_states
+
+
+def roll_us_hometown(state_abbr: str, rng: random.Random) -> str:
+    """A real city that actually belongs to US state/territory `state_abbr`
+    (e.g. 'TX' -> 'Plano'). Empty string when we have no pool for that state."""
+    cities = _load_us_states().get((state_abbr or "").upper())
     return rng.choice(cities) if cities else ""
 
 
