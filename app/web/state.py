@@ -278,23 +278,61 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
 
 
 def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
-                        nation: str = "", seed: int = DEFAULT_SEED):
-    """Points-ledger junior rankings as (rank, Prospect) rows. Scopes: 'world' (the
-    whole pool), 'us' (domestic), 'nation' (one international nation)."""
+                        nation: str = "", sort: str = "rank", desc: bool = True,
+                        seed: int = DEFAULT_SEED):
+    """Points-ledger junior rankings as (rank, Prospect, stat_line) rows, sortable by
+    any almanac column. Scopes: 'world' (whole pool), 'us' (domestic), 'nation'."""
+    from app import almanac
     klass = get_recruits(gender, grad_year, seed)
     if scope == "us":
-        src = us_points_rankings(klass)[:100]      # US Top 100
+        src = us_points_rankings(klass)[:100]
     elif scope == "nation" and nation:
         src = [p for p in points_rankings(klass) if not p.domestic and p.region == nation]
     else:
         src = points_rankings(klass)
-    return list(enumerate(src, 1))
+    stats = {p.pid: almanac.stat_line(p) for p in src}
+    src = almanac.sort_recruits(src, stats, sort, desc)
+    return [(i, p, stats[p.pid], almanac.honor_chip(p)) for i, p in enumerate(src, 1)]
+
+
+def junior_leaders(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """League-leader mini-boards for the rankings hub (over the whole pool)."""
+    from app import almanac
+    recruits = get_recruits(gender, grad_year, seed).recruits
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    return almanac.leaders(recruits, stats)
+
+
+def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The export/wiring contract: a round-trippable JSON bundle of the junior board
+    (top 300 by points) — the same compute the live pages use."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    rows = []
+    for p in recruits[:300]:
+        s = stats[p.pid]
+        rows.append({
+            "rank": p.points_rank, "pid": p.pid, "name": p.name, "nation": p.country,
+            "domestic": p.domestic, "region": p.region, "grad_year": p.grad_year,
+            "stars": getattr(p, "recruit_stars", 0), "board_rank": getattr(p, "recruit_rank", None),
+            "points": p.junior_points, "singles_points": p.singles_points,
+            "doubles_points": p.doubles_points, "str": p.junior_str,
+            "doubles_str": p.junior_doubles_str, "events": p.tournaments_played,
+            "doubles_events": p.doubles_played, "w": s["w"], "l": s["l"],
+            "win_pct": round(s["pct"], 3), "titles": s["titles"], "finals": s["finals"],
+            "honors": getattr(p, "junior_badges", None) or [],
+        })
+    return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
 
 
 def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
-    """[(nation, [(rank, Prospect)...])] Top-10 boards for each talent-dense nation."""
+    """[(nation, [(rank, Prospect, stat_line)...])] Top-10 per talent-dense nation."""
+    from app import almanac
     klass = get_recruits(gender, grad_year, seed)
-    return [(nat, list(enumerate(players, 1)))
+    return [(nat, [(i, p, almanac.stat_line(p), almanac.honor_chip(p))
+                   for i, p in enumerate(players, 1)])
             for nat, players in nation_points_top(klass)]
 
 

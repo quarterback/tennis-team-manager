@@ -11,7 +11,7 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request, abort, redirect, url_for
+from flask import Flask, render_template, request, abort, redirect, url_for, jsonify
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -19,7 +19,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
-                    junior_ranking_rows, junior_nation_boards,
+                    junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
@@ -443,13 +443,28 @@ def create_app() -> Flask:
             grad_year = 2026
         scope = request.args.get("scope", "world")
         nation = request.args.get("nation", "")
+        sort = request.args.get("sort", "rank")
+        desc = request.args.get("dir", "desc") != "asc"
         boards = junior_nation_boards(rg, grad_year) if scope == "nation" and not nation else []
-        rows = junior_ranking_rows(rg, grad_year, scope=scope, nation=nation)
+        rows = junior_ranking_rows(rg, grad_year, scope=scope, nation=nation, sort=sort, desc=desc)
         pg = paginate(rows, request.args.get("page", 1))
+        from app.almanac import SORT_COLUMNS
         return render_template("junior_rankings.html", active="Recruiting", rows=pg.items,
                                p=pg, total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, nation=nation, boards=boards, u=u, uni_label=label,
+                               sort=sort, dir=("asc" if not desc else "desc"),
+                               columns=SORT_COLUMNS, leaders=junior_leaders(rg, grad_year),
                                grad_years=[2026, 2027, 2028, 2029])
+
+    @app.route("/juniors/feed.json")
+    def junior_feed_json():
+        _division, gender, _label, _u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        return jsonify(junior_feed(rg, grad_year))
 
     @app.route("/tools/junior-setup", methods=["GET", "POST"])
     def junior_setup():
