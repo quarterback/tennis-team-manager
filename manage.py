@@ -19,6 +19,7 @@ import random
 
 from engine import (
     PRESETS, random_player, simulate_match, simulate_dual, Team, box_score, pbp_text,
+    simulate_gtt_dual, GTTTeam,
 )
 from engine.format import MatchFormat
 from generators import make_name_picker, region_preset, list_presets
@@ -61,6 +62,30 @@ def cmd_simulate_dual(args):
     wname = (home if res.winner == 0 else away).name
     print(f"{home.name} {res.home_points} - {res.away_points} {away.name}   →  {wname}")
     print(f"(doubles point: {[home.name, away.name][res.doubles_point]})\n")
+    for ln in res.lines:
+        if not ln.completed:
+            print(f"  {ln.slot}: (unfinished — clinched)")
+            continue
+        winside = home if ln.home_won else away
+        print(f"  {ln.slot}: {winside.name:<12} def.  {ln.result.scoreline}")
+
+
+def cmd_simulate_gtt(args):
+    """Co-ed Global Team Tennis dual: 3 MS + 3 WS + 3 XD, first to 5 of 9."""
+    men_fn = _picker(args.seed, "male", args.region)
+    women_fn = _picker(args.seed ^ 0xC0FFEE, "female", args.region)
+    rng = random.Random(args.seed)
+
+    def franchise(label, base):
+        men = [_gen_player(rng, men_fn, base=base) for _ in range(3)]
+        women = [_gen_player(rng, women_fn, base=base) for _ in range(3)]
+        return GTTTeam(name=label, men=men, women=women)
+
+    home = franchise("Home Club", 0.60)
+    away = franchise("Away Club", 0.57)
+    res = simulate_gtt_dual(home, away, seed=args.seed, fidelity=args.fidelity)
+    wname = (home if res.winner == 0 else away).name
+    print(f"{home.name} {res.home_points} - {res.away_points} {away.name}   →  {wname}\n")
     for ln in res.lines:
         if not ln.completed:
             print(f"  {ln.slot}: (unfinished — clinched)")
@@ -337,6 +362,10 @@ def main():
     d = sub.add_parser("simulate-dual")
     add_common(d)
     d.set_defaults(func=cmd_simulate_dual)
+
+    gtt = sub.add_parser("simulate-gtt", help="co-ed GTT dual: 3 MS + 3 WS + 3 XD, first to 5 of 9")
+    add_common(gtt)
+    gtt.set_defaults(func=cmd_simulate_gtt)
 
     g = sub.add_parser("gen-players")
     add_common(g)
