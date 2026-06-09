@@ -40,6 +40,7 @@ the same class + seed reproduce identical résumés.
 from __future__ import annotations
 
 import copy
+import hashlib
 import random
 from dataclasses import dataclass
 
@@ -62,8 +63,37 @@ from .development import stagger_scale
 # These module constants are the DEFAULTS; the in-game Junior Setup menu can
 # override SEASON_WEEKS / DRAW_SIZE / BANDS / JUNIOR_DEV_YEARS / DOUBLES_WEIGHT via
 # `app.worldconfig` (read at build time — see `_jr_config`). Edit there, not here.
-SEASON_WEEKS = 14
+SEASON_WEEKS = 36
 DRAW_SIZE = 32                 # one single-elim draw per 32 players in a band (ITF-ish)
+# Nobody plays the whole season — each junior contests ~this fraction of the weeks
+# (so ~28 of 36), resting the rest. Phase-shifted per player, so different kids peak
+# in different weeks and get their chance to shine.
+PLAY_FRACTION = 0.78
+_PLAY_SPREAD = 9               # per-player participation varies over this many weeks
+
+def _phase(key: str, slots: int) -> int:
+    """Deterministic [0, slots) from a stable key (never Python hash())."""
+    if slots <= 1:
+        return 0
+    return int(hashlib.blake2s(str(key).encode("utf-8"), digest_size=4).hexdigest(), 16) % slots
+
+
+def _play_target(pid: str, weeks: int) -> int:
+    """How many of the season's weeks this junior contests — ~PLAY_FRACTION of them,
+    varied per player so some grind and some pick their spots. Capped, never the
+    whole season; always at least one."""
+    cap = max(1, round(PLAY_FRACTION * weeks))
+    return max(1, cap - _phase(f"{pid}|playtarget", min(_PLAY_SPREAD, cap)))
+
+
+def _plays_week(pid: str, week: int, weeks: int, target: int) -> bool:
+    """Spread `target` plays evenly across `weeks` (phase-shifted per player), so a
+    junior rests the other weeks — deterministic, exactly `target` weeks played."""
+    if target >= weeks:
+        return True
+    ph = _phase(f"{pid}|playphase", weeks)
+    return ((week - 1 + ph) * target) // weeks != ((week - 2 + ph) * target) // weeks
+
 
 # The four Junior Grand Slams (only the top DRAW_SIZE by ranking get in). They are
 # spread across the season and are the only fixed-name events.
@@ -546,14 +576,16 @@ def run_junior_circuit(klass, *, seed: int = 0) -> None:
     # development, rank the field by running points (ability seeds week 1), then
     # rank-gate everyone into parallel graded draws so all play at their level. ----
     standing = {p.pid: 0.0 for p in recruits}     # running points → next week's gate
+    target = {p.pid: _play_target(p.pid, weeks) for p in recruits}   # weeks each plays
     used_names: set = set()
     for week in range(1, weeks + 1):
-        for p in recruits:
+        for p in recruits:                         # everyone develops, playing or not
             sc = stagger_scale(p.pid, week - 1, weeks, total=dev_years)
             if sc:
                 selves[p.pid].develop(sc)
                 c.engine_players[p.pid] = selves[p.pid].engine_player()
-        ranked = sorted(recruits, key=lambda p: (-standing[p.pid], -priors[p.pid], p.pid))
+        present = [p for p in recruits if _plays_week(p.pid, week, weeks, target[p.pid])]
+        ranked = sorted(present, key=lambda p: (-standing[p.pid], -priors[p.pid], p.pid))
         for (name, tier, field) in _schedule_week(ranked, week, used_names, rng, draw, bands, gs_weeks):
             if len(field) >= 2:
                 _run_event(c, name, tier, week, field, rng)

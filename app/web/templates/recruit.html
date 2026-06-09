@@ -17,8 +17,8 @@
         {{ p.name }}
         <span style="font-size:13px;color:var(--text-muted)">{{ p.country|country_abbrev }}{% if p.secondary_country %} / {{ p.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">Class of {{ grad_year }} · Born {{ p.hometown }}{% if p.birthday %} · {{ p.birthday }}{% endif %} ·
-        <span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">
-          {{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} {{ p.recruit_tier }}</span></div></div>
+        {% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
+        <span class="al-shield"><span class="al-shield-l">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }}</span><span class="al-shield-r al-r-{{ scls }}">{{ p.recruit_tier }}</span></span></div></div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
       <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(p.str_value()) }}</span>
       <div class="tsub">current (projection)</div></div>

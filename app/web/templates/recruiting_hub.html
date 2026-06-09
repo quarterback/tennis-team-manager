@@ -55,15 +55,15 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Top Prospects</span>
       <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">Combined points · full board →</a></div>
     <div class="bl-tablescroll">
-    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(120px,1fr) 110px 44px 58px 50px">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(120px,1fr) 56px 44px 58px 50px">
       <div class="bl-thead">
-        <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">HONORS</span>
+        <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th num">CLASS</span>
         <span class="bl-th num">★</span><span class="bl-th num">PTS</span><span class="bl-th num">STR</span></div>
       {% for rk, p, s, h in hub.top_rows %}
       <div class="bl-row">
         <span class="bl-rank {{ 'gold' if rk==1 else 'bronze' if rk<=3 else '' }}">{{ rk }}</span>
         <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-        <span class="al-honors">{% if h %}<span class="al-shield" title="{{ h.all|join(' · ') }}"><span class="al-shield-l">{{ h.left }}</span><span class="al-shield-r al-r-{{ h.tier }}">{{ h.right }}</span></span>{% endif %}</span>
+        <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.grad_year }}</span>
         <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ "{:,}".format(p.junior_points) }}</span></span>
         <span class="bl-cell-num">{{ "%.1f"|format(p.junior_str) if p.junior_str is not none else '–' }}</span>
