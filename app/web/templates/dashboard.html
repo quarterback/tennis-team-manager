@@ -65,8 +65,7 @@
         <div class="bl-row">
           <span class="bl-rank {{ t.row.rank_class }}">{{ t.row.rk }}</span>
           <span class="bl-crest sm" style="background:{{ t.color }}">{{ t.abbr }}</span>
-          <a class="bl-school" href="{{ url_for('teams', school=t.row.school, u=u) }}">{{ t.row.school }}
-            <span class="bl-badge tier-{{ t.row.tier }}" style="font-size:9px">{{ t.row.tier }}</span></a>
+          <a class="bl-school" href="{{ url_for('teams', school=t.row.school, u=u) }}">{{ t.row.school }}</a>
           <span class="bl-cell-num"><span class="bl-rec">{{ t.row.rec }}</span></span>
           <span class="bl-cell-num"><span class="bl-stat power">{{ t.row.fmt(t.row.pi) }}</span></span>
         </div>

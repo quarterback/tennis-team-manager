@@ -65,6 +65,13 @@ a.al-th-active { color: var(--text-primary, #111); }
 .al-r-r100 { background: #4a5dc4; }       /* Top 100 — indigo */
 .al-r-r250 { background: #6b6f9a; }       /* Top 250 — muted indigo */
 .al-r-r300 { background: #8a939c; }       /* Top 300 — grey */
+/* Recruiting star tiers (stars | tier label) */
+.al-r-s5  { background: #c0392b; }         /* Blue Chip / 5★ — red */
+.al-r-s4  { background: #3071b9; }         /* 4★ — blue */
+.al-r-s3  { background: #2faa55; }         /* 3★ — green */
+.al-r-s2  { background: #7a8590; }         /* 2★ — slate */
+.al-r-s1  { background: #9098a1; }         /* 1★ — grey */
+.al-r-snr { background: #aab0b8; }         /* unrated */
 .al-more { font-size: 10px; color: var(--text-muted, #789); }
 
 /* League-leader mini-boards */

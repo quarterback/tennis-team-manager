@@ -31,8 +31,7 @@
             {% for s in schools %}<option{% if s == sel %} selected{% endif %}>{{ s }}</option>{% endfor %}
           </select>
           <div class="bl-slot-meta">
-            {% if row %}<span class="bl-badge tier-{{ row.tier }}">{{ row.tier }}</span>
-            <span>{{ row.conf_abbr }} · {{ row.rec }}</span>{% endif %}
+            {% if row %}<span>{{ row.conf_abbr }} · {{ row.rec }}</span>{% endif %}
           </div>
         </div>
         {% if row %}<div style="text-align:right">
