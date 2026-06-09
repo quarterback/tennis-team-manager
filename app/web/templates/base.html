@@ -64,6 +64,22 @@
     <div class="fm-main">
       <header class="fm-topbar">
         <label for="fm-navtoggle" class="fm-hamburger" aria-label="Toggle navigation">☰</label>
+        <a class="fm-topbrand" href="{{ url_for('world_view', u=u) }}">Play to Clinch</a>
+
+        <!-- Primary navigation: grouped dropdown menus (Super-Innings style) -->
+        <nav class="fm-topnav" aria-label="Primary">
+          {% for glabel, items in nav_groups %}
+          {% set group_active = items | selectattr('id', 'equalto', active_nav) | list | length > 0 %}
+          <div class="fm-tn-group">
+            <button class="fm-tn-btn{% if group_active %} active{% endif %}" type="button">{{ glabel }}<span class="fm-tn-caret">▾</span></button>
+            <div class="fm-tn-menu">
+              {% for it in items %}
+              <a class="fm-tn-item{% if it.id == active_nav %} active{% endif %}" href="{{ it.href }}"><span class="fm-tn-ic">{{ it.icon }}</span>{{ it.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </nav>
 
         {% if game %}
         <div class="fm-gc fm-gc-team">
