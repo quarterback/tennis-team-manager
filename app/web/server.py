@@ -144,6 +144,9 @@ def create_app() -> Flask:
     app.jinja_env.filters["team_logo"] = team_logo
     app.jinja_env.filters["has_team_logo"] = has_team_logo
     app.jinja_env.filters["team_logo_src"] = team_logo_src
+    from app.almanac import badge_shield, profile_badges
+    app.jinja_env.filters["shield"] = badge_shield
+    app.jinja_env.filters["profile_badges"] = profile_badges
 
     @app.context_processor
     def _inject_chrome():

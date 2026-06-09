@@ -26,7 +26,7 @@
     <div class="bl-row">
       <span class="bl-rank {{ 'gold' if rk==1 else 'bronze' if rk<=3 else '' }}">{{ rk }}</span>
       <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-      <span class="al-honors">{% if h %}<span class="al-medal al-{{ h.tier }}" title="{{ h.all|join(' · ') }}">{{ h.label }}</span>{% if h.more %}<span class="al-more" title="{{ h.all|join(' · ') }}">+{{ h.more }}</span>{% endif %}{% endif %}</span>
+      <span class="al-honors">{% if h %}<span class="al-shield" title="{{ h.all|join(' · ') }}"><span class="al-shield-l">{{ h.left }}</span><span class="al-shield-r al-r-{{ h.tier }}">{{ h.right }}</span></span>{% if h.more %}<span class="al-more">+{{ h.more }}</span>{% endif %}{% endif %}</span>
       <span class="bl-conf">{{ 'USA' if p.domestic else p.country }}</span>
       <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
       <span class="bl-cell-num">{{ p.tournaments_played }}</span>
