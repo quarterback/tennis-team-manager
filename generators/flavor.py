@@ -17,17 +17,37 @@ import random
 _NAMES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "names")
 
 _hometowns: dict | None = None
+_us_states: dict | None = None
+
+
+def _load_full_hometowns() -> dict:
+    try:
+        with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
 
 
 def _load_hometowns() -> dict:
     global _hometowns
     if _hometowns is None:
-        try:
-            with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
-                _hometowns = json.load(fh).get("cities", {}) or {}
-        except (OSError, ValueError):
-            _hometowns = {}
+        _hometowns = _load_full_hometowns().get("cities", {}) or {}
     return _hometowns
+
+
+def _load_us_states() -> dict:
+    """{USPS-state: [city, ...]} — the city → state → nation middle tier added for
+    tennis (US birthplaces with the city actually in its state)."""
+    global _us_states
+    if _us_states is None:
+        _us_states = _load_full_hometowns().get("us_states", {}) or {}
+    return _us_states
+
+
+def roll_us_hometown(state_abbr: str, rng: random.Random) -> str:
+    """A real US city located IN `state_abbr` (USPS), or "" if the state is unknown."""
+    cities = _load_us_states().get((state_abbr or "").upper())
+    return rng.choice(cities) if cities else ""
 
 
 # ---------------------------------------------------------------------------

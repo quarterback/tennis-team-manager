@@ -4,7 +4,8 @@
     "hometown is rolled from the pool matching their `country` at roster",
     "generation (see o27v2.team_naming.roll_hometown). Richer than the",
     "team-name `city_to_locale` exemplar lists on purpose — these exist to give",
-    "individual players varied, believable birthplaces. Unknown codes -> ''."
+    "individual players varied, believable birthplaces. Unknown codes -> ''.",
+    "us_states: real US cities keyed by USPS state — the city->state->nation middle tier for the tennis port."
   ],
   "cities": {
     "US": [
@@ -1082,6 +1083,363 @@
       "Smederevo",
       "Valjevo",
       "Užice"
+    ]
+  },
+  "us_states": {
+    "AL": [
+      "Birmingham",
+      "Montgomery",
+      "Huntsville",
+      "Mobile",
+      "Tuscaloosa",
+      "Auburn"
+    ],
+    "AK": [
+      "Anchorage",
+      "Fairbanks",
+      "Juneau"
+    ],
+    "AZ": [
+      "Phoenix",
+      "Scottsdale",
+      "Tucson",
+      "Mesa",
+      "Tempe",
+      "Chandler",
+      "Gilbert"
+    ],
+    "AR": [
+      "Little Rock",
+      "Fayetteville",
+      "Bentonville",
+      "Conway"
+    ],
+    "CA": [
+      "Los Angeles",
+      "San Diego",
+      "San Francisco",
+      "San Jose",
+      "Sacramento",
+      "Oakland",
+      "Long Beach",
+      "Fresno",
+      "Irvine",
+      "Pasadena",
+      "Santa Monica",
+      "Riverside",
+      "Anaheim",
+      "Palo Alto",
+      "Newport Beach"
+    ],
+    "CO": [
+      "Denver",
+      "Boulder",
+      "Colorado Springs",
+      "Fort Collins",
+      "Aurora"
+    ],
+    "CT": [
+      "Hartford",
+      "New Haven",
+      "Stamford",
+      "Greenwich",
+      "Fairfield"
+    ],
+    "DE": [
+      "Wilmington",
+      "Newark",
+      "Dover"
+    ],
+    "DC": [
+      "Washington"
+    ],
+    "FL": [
+      "Miami",
+      "Tampa",
+      "Orlando",
+      "Jacksonville",
+      "Fort Lauderdale",
+      "Boca Raton",
+      "Naples",
+      "Sarasota",
+      "St. Petersburg",
+      "Coral Gables",
+      "Fort Myers",
+      "Tallahassee"
+    ],
+    "GA": [
+      "Atlanta",
+      "Savannah",
+      "Augusta",
+      "Athens",
+      "Marietta",
+      "Alpharetta",
+      "Columbus"
+    ],
+    "HI": [
+      "Honolulu",
+      "Kailua",
+      "Hilo"
+    ],
+    "ID": [
+      "Boise",
+      "Meridian",
+      "Idaho Falls"
+    ],
+    "IL": [
+      "Chicago",
+      "Naperville",
+      "Springfield",
+      "Evanston",
+      "Rockford",
+      "Peoria"
+    ],
+    "IN": [
+      "Indianapolis",
+      "Fort Wayne",
+      "Bloomington",
+      "Carmel",
+      "South Bend"
+    ],
+    "IA": [
+      "Des Moines",
+      "Cedar Rapids",
+      "Iowa City",
+      "Davenport"
+    ],
+    "KS": [
+      "Wichita",
+      "Overland Park",
+      "Lawrence",
+      "Topeka"
+    ],
+    "KY": [
+      "Louisville",
+      "Lexington",
+      "Bowling Green"
+    ],
+    "LA": [
+      "New Orleans",
+      "Baton Rouge",
+      "Shreveport",
+      "Lafayette"
+    ],
+    "ME": [
+      "Portland",
+      "Bangor",
+      "Augusta"
+    ],
+    "MD": [
+      "Baltimore",
+      "Annapolis",
+      "Rockville",
+      "Bethesda",
+      "Columbia"
+    ],
+    "MA": [
+      "Boston",
+      "Cambridge",
+      "Worcester",
+      "Springfield",
+      "Newton",
+      "Brookline"
+    ],
+    "MI": [
+      "Detroit",
+      "Ann Arbor",
+      "Grand Rapids",
+      "Lansing",
+      "Bloomfield Hills"
+    ],
+    "MN": [
+      "Minneapolis",
+      "St. Paul",
+      "Rochester",
+      "Edina",
+      "Bloomington"
+    ],
+    "MS": [
+      "Jackson",
+      "Gulfport",
+      "Oxford",
+      "Hattiesburg"
+    ],
+    "MO": [
+      "Kansas City",
+      "St. Louis",
+      "Springfield",
+      "Columbia"
+    ],
+    "MT": [
+      "Billings",
+      "Missoula",
+      "Bozeman",
+      "Helena"
+    ],
+    "NE": [
+      "Omaha",
+      "Lincoln",
+      "Bellevue"
+    ],
+    "NV": [
+      "Las Vegas",
+      "Henderson",
+      "Reno",
+      "Summerlin"
+    ],
+    "NH": [
+      "Manchester",
+      "Nashua",
+      "Concord",
+      "Hanover"
+    ],
+    "NJ": [
+      "Newark",
+      "Jersey City",
+      "Princeton",
+      "Edison",
+      "Cherry Hill",
+      "Montclair"
+    ],
+    "NM": [
+      "Albuquerque",
+      "Santa Fe",
+      "Las Cruces"
+    ],
+    "NY": [
+      "New York",
+      "Brooklyn",
+      "Buffalo",
+      "Rochester",
+      "Albany",
+      "Syracuse",
+      "Scarsdale",
+      "White Plains"
+    ],
+    "NC": [
+      "Charlotte",
+      "Raleigh",
+      "Durham",
+      "Greensboro",
+      "Cary",
+      "Chapel Hill",
+      "Wilmington",
+      "Asheville"
+    ],
+    "ND": [
+      "Fargo",
+      "Bismarck",
+      "Grand Forks"
+    ],
+    "OH": [
+      "Columbus",
+      "Cleveland",
+      "Cincinnati",
+      "Dublin",
+      "Akron",
+      "Dayton"
+    ],
+    "OK": [
+      "Oklahoma City",
+      "Tulsa",
+      "Norman",
+      "Edmond"
+    ],
+    "OR": [
+      "Portland",
+      "Eugene",
+      "Salem",
+      "Bend",
+      "Lake Oswego"
+    ],
+    "PA": [
+      "Philadelphia",
+      "Pittsburgh",
+      "Allentown",
+      "Bryn Mawr",
+      "State College",
+      "Villanova"
+    ],
+    "RI": [
+      "Providence",
+      "Newport",
+      "Cranston"
+    ],
+    "SC": [
+      "Charleston",
+      "Columbia",
+      "Greenville",
+      "Hilton Head",
+      "Mount Pleasant"
+    ],
+    "SD": [
+      "Sioux Falls",
+      "Rapid City",
+      "Brookings"
+    ],
+    "TN": [
+      "Nashville",
+      "Memphis",
+      "Knoxville",
+      "Chattanooga",
+      "Franklin"
+    ],
+    "TX": [
+      "Houston",
+      "Dallas",
+      "Austin",
+      "San Antonio",
+      "Fort Worth",
+      "El Paso",
+      "Plano",
+      "Frisco",
+      "Arlington",
+      "Sugar Land",
+      "The Woodlands",
+      "McKinney"
+    ],
+    "UT": [
+      "Salt Lake City",
+      "Provo",
+      "Park City",
+      "St. George"
+    ],
+    "VT": [
+      "Burlington",
+      "Montpelier"
+    ],
+    "VA": [
+      "Virginia Beach",
+      "Richmond",
+      "Arlington",
+      "Alexandria",
+      "McLean",
+      "Fairfax",
+      "Charlottesville"
+    ],
+    "WA": [
+      "Seattle",
+      "Bellevue",
+      "Spokane",
+      "Tacoma",
+      "Redmond",
+      "Mercer Island"
+    ],
+    "WV": [
+      "Charleston",
+      "Morgantown",
+      "Huntington"
+    ],
+    "WI": [
+      "Milwaukee",
+      "Madison",
+      "Green Bay",
+      "Brookfield"
+    ],
+    "WY": [
+      "Cheyenne",
+      "Casper",
+      "Jackson"
     ]
   }
 }
