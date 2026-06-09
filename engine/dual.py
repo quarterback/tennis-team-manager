@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .state import MatchContext, Player, ATTRS, CONDITION_ATTRS
+from .state import MatchContext, Player
 from .format import PRESETS
 from .match import simulate_match, MatchResult
+from .doubles import simulate_doubles, DoublesTeam, DoublesResult
 
 
 @dataclass
@@ -35,7 +36,7 @@ class Team:
 class DualLine:
     slot: str                 # "D1".."D3", "S1".."S6"
     home_won: bool
-    result: MatchResult | None
+    result: MatchResult | DoublesResult | None  # DoublesResult on the D lines
     completed: bool = True     # False when abandoned after clinch
 
 
@@ -50,14 +51,9 @@ class DualResult:
     doubles_point: int | None  # which side took the doubles point (0/1) or None if split unreached
 
 
-def _pair_player(team: Team, pair: tuple[int, int]) -> Player:
-    """Collapse a doubles pair into one synthetic Player (attribute means) so
-    the existing singles engine can resolve the doubles pro set. A real
-    doubles model (serve+volley, net play) is a later build.
-    """
-    a, b = team.singles[pair[0]], team.singles[pair[1]]
-    attrs = {at: (getattr(a, at) + getattr(b, at)) / 2.0 for at in ATTRS + CONDITION_ATTRS}
-    return Player(name=f"{a.name} / {b.name}", country=a.country, **attrs)
+def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
+    """Build the two-player doubles side for a lineup pairing."""
+    return DoublesTeam(players=(team.singles[pair[0]], team.singles[pair[1]]))
 
 
 def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
@@ -67,13 +63,13 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     points = [0, 0]  # [home, away]
 
     # --- Doubles: 3 pro-set matches, 2 of 3 -> 1 team point ---
+    # Each line is a real two-on-two match (engine.doubles), not an averaged pair.
     doubles_pro = PRESETS["pro_set_8"]
     d_wins = [0, 0]
     for i in range(3):
-        hp = _pair_player(home, home.doubles[i])
-        ap = _pair_player(away, away.doubles[i])
-        res = simulate_match(hp, ap, seed=seed + 10 + i, fmt=doubles_pro,
-                             fidelity=fidelity, context=context)
+        res = simulate_doubles(_pair(home, home.doubles[i]), _pair(away, away.doubles[i]),
+                               seed=seed + 10 + i, fmt=doubles_pro,
+                               fidelity=fidelity, context=context)
         home_won = res.winner == 0
         d_wins[0 if home_won else 1] += 1
         lines.append(DualLine(slot=f"D{i+1}", home_won=home_won, result=res))

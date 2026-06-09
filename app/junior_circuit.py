@@ -44,7 +44,8 @@ import hashlib
 import random
 from dataclasses import dataclass
 
-from engine import run_tournament, simulate_match, MatchFormat, Player, ATTRS
+from engine import (run_tournament, simulate_match, simulate_doubles,
+                    DoublesTeam, MatchFormat)
 from generators import roll_hometown
 from .str_rating import converge_ids
 from .development import stagger_scale
@@ -357,24 +358,6 @@ def _run_event(c: _Circuit, name: str, level: str, month: int, field: list,
     _run_doubles(c, name, level, month, field, rng)
 
 
-# Doubles tilts the engine drivers toward the skills that win doubles — serve,
-# court coverage, net instincts (mental) — and eases off long-rally baseline play.
-# A serve+movement player therefore rates ABOVE their singles level in doubles and a
-# baseline grinder below, so a doubles STR ≠ singles STR and specialists surface.
-_DOUBLES_TILT = {"serve_power": 1.25, "serve_placement": 1.25, "movement": 1.20,
-                 "mental": 1.10, "stamina": 0.90,
-                 "forehand": 0.85, "backhand": 0.85, "consistency": 0.85}
-
-
-def _pair_engine(a: Player, b: Player) -> Player:
-    """Collapse a doubles pair into one synthetic, doubles-tilted engine Player so the
-    full match engine resolves the team match — the college-dual trick, plus the tilt
-    that makes doubles a distinct skill."""
-    attrs = {at: max(0.0, min(1.0, (getattr(a, at) + getattr(b, at)) / 2.0 * _DOUBLES_TILT.get(at, 1.0)))
-             for at in ATTRS}
-    return Player(name=f"{a.name} / {b.name}", country=getattr(a, "country", "US"), **attrs)
-
-
 def _plays_doubles(p, rng: random.Random) -> bool:
     """Whether a recruit also enters the doubles draw — driven by stamina + grit, so
     grinders play doubles more. Not everyone plays; winning is talent (the engine)."""
@@ -397,12 +380,15 @@ def _run_doubles(c: _Circuit, name: str, level: str, month: int, field: list,
             continue
         def pkey(pr):                      # pairs hold unhashable Prospects → key by pids
             return (pr[0].pid, pr[1].pid)
-        teams = {pkey(pr): _pair_engine(c.engine_players[pr[0].pid], c.engine_players[pr[1].pid])
+        # Each pair is a real two-on-two side; the engine.doubles model makes
+        # serve/net specialists rate above their singles level on its own.
+        teams = {pkey(pr): DoublesTeam(players=(c.engine_players[pr[0].pid],
+                                                c.engine_players[pr[1].pid]))
                  for pr in pairs}
         played: dict = {}
 
         def play(ta, tb, *, seed):
-            res = simulate_match(teams[pkey(ta)], teams[pkey(tb)], seed=seed, fmt=JUNIOR_DOUBLES_FMT)
+            res = simulate_doubles(teams[pkey(ta)], teams[pkey(tb)], seed=seed, fmt=JUNIOR_DOUBLES_FMT)
             played[frozenset((pkey(ta), pkey(tb)))] = res
             return ta if res.winner == 0 else tb
 

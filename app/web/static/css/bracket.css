@@ -305,6 +305,21 @@
   color: var(--text-primary);
   font-weight: 800;
 }
+/* Optional trailing score (doubles championship match lines). Only rows that
+   carry a score widen to a 4th column, so the team bracket is unaffected. */
+.bl-team-score {
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.bl-bracket-team:has(.bl-team-score) {
+  grid-template-columns: 24px 20px minmax(0, 1fr) auto;
+}
+.bl-bracket-team.is-winner .bl-team-score {
+  color: var(--text-primary);
+}
 .bl-bid {
   display: inline-flex;
   align-items: center;
