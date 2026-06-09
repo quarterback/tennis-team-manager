@@ -289,9 +289,17 @@ def create_app() -> Flask:
             "conference": sorted((r for r in coty if r["award"] == "conf_coty"),
                                  key=lambda r: r["label"]),
         }
+        # Honors are a season-end outcome. While the season is still being played
+        # the page shows the current leaders as *projections* (they shift week to
+        # week); they're only finalized once the postseason is reached.
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        s = sm.load_season(sid)
+        final = s["phase"] in ("ncaa", "complete")
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
-                               coach_awards=coach_awards, u=u, uni_label=label, crest=crest)
+                               coach_awards=coach_awards, u=u, uni_label=label, crest=crest,
+                               final=final, phase=s["phase"],
+                               week=s["current_week"], total_weeks=s["total_weeks"])
 
     @app.route("/hall-of-fame")
     def hall_of_fame():
@@ -417,8 +425,11 @@ def create_app() -> Flask:
         abbr, color = crest(school)
         row = get_row(school)
         prog = load_division(division, gender).by_school(school)
+        # Conference comes from the division data so it shows for every school —
+        # not just the curated set in the rankings table (e.g. East Texas A&M).
+        conf = team_conference(division, gender, school) or (row.conf if row else "")
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, conf=conf, schools=schools, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
@@ -756,8 +767,14 @@ def create_app() -> Flask:
     def season_standings():
         division, gender, label, u = _universe(request)
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        standings = sm.standings(sid)
+        conferences = sorted(standings)
+        conf = request.args.get("conf")
+        if conf not in standings:
+            conf = conferences[0] if conferences else ""
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
-                               standings=sm.standings(sid), bubble=sm.bubble_watch(sid))
+                               conferences=conferences, conf=conf, crest=crest,
+                               table=standings.get(conf, []))
 
     @app.route("/season/schedule")
     def season_schedule():

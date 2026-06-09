@@ -2,53 +2,60 @@
 {% from "_bubble.html" import bubble_split %}
 {% block title %}Play to Clinch — Standings{% endblock %}
 {% block content %}
+{% macro pct(w, l) %}{% if w + l %}{{ ("%.3f"|format(w / (w + l)))[1:] }}{% else %}.000{% endif %}{% endmacro %}
+
+<form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Season › Standings · {{ uni_label }}</span>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, dd, gg, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:200px">
+      {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('season_hub', u=u) }}">← Season</a>
 </div></div>
-<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+</form>
 
-  {# ---- Bubble Watch: projected NCAA field "if it were held today" -------- #}
-  {% if bubble %}
-  <div class="bl-panel" style="margin-bottom:18px">
-    <div class="bl-panel-head">
-      <span class="bl-panel-title">Bubble Watch</span>
-      <span class="bl-panel-meta">{{ uni_label }} · if the {{ bubble.field }}-team tournament were held today</span>
-    </div>
-    <p style="margin:0;padding:11px 16px 0;font-size:12.5px;color:var(--text-muted);line-height:1.5">
-      Projected conference leaders take the {{ bubble.aq_count }} automatic bids; the remaining
-      {{ bubble.at_large_spots }} at-large spots are filled strictly by Power Index. These eight teams
-      straddle the last at-large spot — sorted by their national at-large rank.
-      <a href="{{ url_for('projection', u=u) }}">See the full bracket projection →</a>
-    </p>
-    {{ bubble_split(bubble, u) }}
-  </div>
-  {% endif %}
-
-  {# ---- League (conference) standings ------------------------------------ #}
-  <p style="margin:2px 2px 12px;font-size:12.5px;color:var(--text-muted);line-height:1.5">
-    Each conference is its own league. The leader (<span class="bl-aq-dot"></span> auto bid) earns the
-    automatic NCAA tournament bid; every other team competes for an at-large spot by Power Index.
-  </p>
-  {% for conf, table in standings.items() %}
-  <div class="bl-panel" style="margin-bottom:14px">
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
+  <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }}</span>
-      <span class="bl-panel-meta">league standings · conf · overall</span></div>
-    <div class="bl-stand-hdr" style="grid-template-columns:24px 1fr 80px 80px">
-      <span>#</span><span>Team</span><span>Conf</span><span>Overall</span>
-    </div>
-    <div>
-      {% for r in table %}
-      {% set lead = loop.first and r.autobid %}
-      <div class="bl-brk-match{% if lead %} bl-stand-lead{% endif %}" style="grid-template-columns:24px 1fr 80px 80px">
-        <span class="bl-rank">{{ loop.index }}</span>
-        <a class="bl-brk-team" style="text-decoration:none;display:flex;align-items:center;gap:7px" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}<span class="nm">{{ r.school }}</span>{% if lead %}<span class="bl-aq-tag">auto bid</span>{% endif %}</a>
-        <span class="bl-rec">{{ r.cw }}-{{ r.cl }}</span>
-        <span class="bl-conf">{{ r.ow }}-{{ r.ol }}</span>
+      <span class="bl-panel-meta">{{ uni_label }} · 2026</span></div>
+    <div class="bl-tablescroll">
+      <div class="bl-table std-table">
+        <div class="bl-thead std-row">
+          <span class="bl-th">#</span>
+          <span class="bl-th">Team</span>
+          <span class="bl-th num">Conf</span>
+          <span class="bl-th num">Pct</span>
+          <span class="bl-th num">Overall</span>
+          <span class="bl-th num">Pct</span>
+        </div>
+        {% for r in table %}
+        {% set abbr, color = crest(r.school) %}
+        <a class="bl-row std-row" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">
+          <span class="bl-rank">{{ loop.index }}</span>
+          <span class="std-team"><span class="bl-crest xs" style="background:{{ color }}">{{ abbr }}</span><span class="nm">{{ r.school }}</span></span>
+          <span class="bl-cell-num"><span class="bl-rec">{{ r.cw }}-{{ r.cl }}</span></span>
+          <span class="bl-cell-num std-pct">{{ pct(r.cw, r.cl) }}</span>
+          <span class="bl-cell-num"><span class="bl-rec">{{ r.ow }}-{{ r.ol }}</span></span>
+          <span class="bl-cell-num std-pct">{{ pct(r.ow, r.ol) }}</span>
+        </a>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
   </div>
-  {% endfor %}
+  <div class="bl-notes"><div class="bl-note">
+    Teams are ordered by conference winning percentage; overall record breaks ties.
+    Conference records count regular-season league duals only.
+  </div></div>
 </div>
+
+<style>
+.std-table { --bl-grid-cols: 28px minmax(140px,1fr) 64px 56px 72px 56px; }
+.std-team { display:flex; align-items:center; gap:8px; min-width:0; }
+.std-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
+.std-pct { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+</style>
 {% endblock %}

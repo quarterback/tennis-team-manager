@@ -497,10 +497,20 @@ def standings(season_id: int) -> dict:
         if d["round"] == "REG" and d["conf"]:   # conference record is regular-season only
             cf[d["home"]][0 if hw else 1] += 1
             cf[d["away"]][1 if hw else 0] += 1
+    def _pct(rec):
+        w, l = rec
+        return w / (w + l) if (w + l) else 0.0
+
     out = {}
     for conf, members in div.conferences.items():
-        table = sorted(members, key=lambda p: (cf.get(p.school, [0, 0])[0]
-                       - cf.get(p.school, [0, 0])[1]), reverse=True)
+        # Order like a real NCAA conference table: by conference win %, then
+        # conference margin, then overall win % as the tiebreaker.
+        table = sorted(members, key=lambda p: (
+            _pct(cf.get(p.school, [0, 0])),
+            cf.get(p.school, [0, 0])[0] - cf.get(p.school, [0, 0])[1],
+            _pct(ov.get(p.school, [0, 0])),
+            ov.get(p.school, [0, 0])[0] - ov.get(p.school, [0, 0])[1],
+        ), reverse=True)
         out[conf] = [{"school": p.school, "ow": ov.get(p.school, [0, 0])[0],
                       "ol": ov.get(p.school, [0, 0])[1], "cw": cf.get(p.school, [0, 0])[0],
                       "cl": cf.get(p.school, [0, 0])[1], "autobid": p.autobid} for p in table]

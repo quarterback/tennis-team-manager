@@ -3,6 +3,7 @@
 {% block title %}Play to Clinch — Awards{% endblock %}
 {% block meta_description %}All-American and All-Conference honors for {{ uni_label }} — postseason singles awards selected from the season's Power Index ratings in Play to Clinch.{% endblock %}
 {% block content %}
+{% set pfx = '' if final else 'Projected ' %}
 
 {% macro honor_row(p, u) %}
 <div class="aw-row">
@@ -25,6 +26,20 @@
 </div></div></form>
 
 <div class="bl-container">
+  <div class="aw-banner {{ 'is-final' if final else 'is-projected' }}">
+    {% if final %}
+    <span class="aw-banner-tag">Final</span>
+    <span>Season honors are decided. These are the {{ uni_label }} winners for 2026.</span>
+    {% else %}
+    <span class="aw-banner-tag">Projected</span>
+    <span>Honors are awarded at season's end. With the season still in progress
+      (week {{ week }} of {{ total_weeks }}), these are the current Power Index leaders —
+      a live projection that will shift week to week until it's finalized.</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-container">
   <div class="aw-top">
     <div class="bl-panel aw-poty">
       <div class="bl-panel-head"><span class="bl-panel-title">👑 Player of the Year</span>
@@ -34,7 +49,7 @@
         {% set p = aw.national_poty %}{% set abbr, color = crest(p.school) %}
         <div class="aw-poty-nat">
           <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
-          <div><div class="aw-poty-label">National Player of the Year</div>
+          <div><div class="aw-poty-label">{{ pfx }}National Player of the Year</div>
             <a class="bl-school aw-poty-name" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}">{{ p.name }}</a>
             <div class="bl-conf">{{ p.school }} · {{ p.w }}-{{ p.l }} · STR {{ "%.1f"|format(p.str) }}</div></div>
         </div>
@@ -85,7 +100,7 @@
       {% if coach_awards.national %}{% set cn = coach_awards.national %}{% set abbr, color = crest(cn.school) %}
       <div class="aw-poty-nat">
         <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
-        <div><div class="aw-poty-label">National Coach of the Year</div>
+        <div><div class="aw-poty-label">{{ pfx }}National Coach of the Year</div>
           <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=cn.subject_id, u=u) }}">{{ cn.name }}</a>
           <div class="bl-conf">{{ cn.school }}</div></div>
       </div>{% else %}<p class="aw-empty">Awarded at season's end.</p>{% endif %}
@@ -156,6 +171,12 @@
 </div></div>
 
 <style>
+.aw-banner { display: flex; align-items: baseline; gap: 10px; font-size: 13px; line-height: 1.5;
+  padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-subtle); color: var(--text-muted); }
+.aw-banner.is-projected { background: color-mix(in srgb, var(--brand-strong) 7%, transparent); }
+.aw-banner-tag { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; color: #fff; background: var(--brand-strong); }
+.aw-banner.is-projected .aw-banner-tag { background: #b4690e; }
 .aw-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 760px) { .aw-top { grid-template-columns: 1fr; } }
 .aw-poty-nat, .aw-natchamp { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
