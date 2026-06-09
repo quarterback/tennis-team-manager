@@ -31,8 +31,30 @@ as the build plan for the feature.*
   results), **franchise pages** with the **inline name/city/abbrev editor**, and
   **player pages** with match logs + honors. (`app/web/server.py` routes under
   `/gtt`, templates `gtt_hub` / `gtt_franchise` / `gtt_player`.)
-- Next: **P4 STR continuity**, **P5 lifecycle/persistence**,
-  **P6 acquisition (Vickrey)** — see roadmap below.
+- **P5 — lifecycle + persistence** ✅ `gtt_seasonmode` is now a **multi-season
+  career engine**: players are real, persisted entities (`gtt_players`) that age,
+  retire, and refresh each off-season. The inaugural league is generated (founding
+  pros, no college history); from then on each off-season pulls that year's
+  **college graduates out of the world** (`world_roster` seniors — read through the
+  same connection, so no change to the college finalize path) into a free-agent
+  pool, tops up with generated rookies if short, then plays on.
+- **#1 — honors follow college → pro** ✅ A graduate keeps their **real college
+  pid**, so GTT MVP/championship is stamped (via `app.honors`) to the same id as
+  their college Player-of-the-Year. The player page shows **one unified career
+  timeline** (college + pro). Verified end-to-end: a college National POTY,
+  imported as a graduate, went on to win GTT MVP + Champion, all on one page.
+- **#3 — draft + keepers** ✅ Each off-season every franchise keeps its holdovers
+  and a **reverse-standings snake draft** fills the open slots from the pool
+  (graduates first by STR, then rookies). A Vickrey auction on the
+  scholarship-economy substrate remains a possible later swap-in for the snake
+  draft (see below) — the allocation step is isolated behind `_draft`.
+- **Web** ✅ the hub tracks the season number and offers **Start next season
+  (draft + intake)**; franchise pages show each player's **age + origin**
+  (College / Founder / Rookie); player pages show the **unified career honors**.
+
+All three requested priorities (honors college→pro, multi-season, draft/keepers)
+are implemented and tested. Possible next polish: a Vickrey auction in place of the
+snake draft, attribute decline with age, and a Hall-of-Fame "enshrine" action.
 
 ## Context
 

@@ -1,3 +1,4 @@
+import os
 import re
 
 import app.gtt_seasonmode as gs
@@ -5,9 +6,10 @@ from app.web.server import create_app
 
 
 def _client(tmp_path):
-    gs.DB_PATH = str(tmp_path / "gtt.db")
+    p = str(tmp_path / "gtt.db")
+    os.environ["TENNIS_DB_PATH"] = p
+    gs.DB_PATH = p
     gs._schema_ready_for = None
-    gs._roster_cache.clear()
     return create_app().test_client()
 
 

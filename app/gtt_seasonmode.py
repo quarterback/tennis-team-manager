@@ -1,28 +1,30 @@
 """
-GTT season mode — a persistent, week-by-week pro-league season.
+GTT career mode — a persistent, multi-season co-ed pro league with a college
+pipeline.
 
-Forked from ``app.seasonmode`` (the NCAA college season) and stripped of the
-college-only machinery: no divisions, no conferences, no conference tournaments,
-no Power-Index NCAA bracket. A GTT league is a **flat set of co-ed franchises**
-that play a double round-robin of GTT duals, then a single-elimination playoff.
+Forked in spirit from ``app.seasonmode`` but rebuilt as a **career engine**:
+franchises carry rosters of **real, persisted players** season over season; the
+inaugural league is generated (those founding pros never went to college), and
+from then on each off-season pulls that year's **college graduates** out of the
+world (``world_roster`` seniors) into a free-agent pool, ages and retires the
+veterans, runs a **keeper + snake draft**, then plays the season.
 
-Phases: ``regular`` → ``playoffs`` → ``complete``.
+Why this shape (per the design):
 
-Two things differ deliberately from the college fork:
+  * **Honors follow a player college → pro.** A graduate keeps their real college
+    ``pid``, so a GTT MVP/championship is stamped to the same id as their college
+    Player-of-the-Year — the player's page shows one continuous career. Founding
+    pros get a generated pid (no college history, which is correct).
+  * **Multi-season.** Players persist in ``gtt_players``; rosters age, retire, and
+    refresh from the graduate pool each off-season.
+  * **Draft + keepers.** Each off-season every franchise keeps its holdovers and
+    a reverse-standings snake draft fills the open slots from the pool.
 
-  * **Franchises are a stored, editable registry.** College programs are
-    regenerated from the seed and never persisted; GTT franchises carry a
-    name + home city the user can rename/relocate at will (purely cosmetic — see
-    below). They live in their own table.
-  * **Everything is keyed off the franchise *id*, not its name.** Match seeds and
-    roster generation use the immutable franchise id, so renaming or relocating a
-    team never changes a single result — identity is cosmetic, the id is real.
+Identity is keyed off the franchise *id* and the player *pid*, never display
+names — so renaming/relocating a franchise is purely cosmetic.
 
-Rosters are generated deterministically from ``(league seed, franchise id)`` for
-now; the graduate-fed talent pool + draft (design doc P5/P6) will replace that.
-Standings are derived from the completed duals, never stored authoritatively, so
-they grow as the season is advanced. Scoring is team W/L — GTT is scored like any
-other team sport, not with WTT cumulative-game scoring.
+Phases of a season: ``regular`` → ``playoffs`` → ``complete``. Advancing from
+``complete`` runs the off-season and opens the next season at ``regular`` week 1.
 """
 from __future__ import annotations
 
@@ -35,33 +37,47 @@ import sqlite3
 from . import dbpath
 from .dbpath import resolve_db_path
 
-from engine import random_player, simulate_gtt_dual, GTTTeam
+from engine import simulate_gtt_dual, GTTTeam
 from generators import make_name_picker, random_town
+from .development import generate_prospect
 
 DB_PATH = resolve_db_path()
 
-# League shape — small, snappy seasons. A double round-robin of N franchises runs
-# 2*(N-1) weeks; 8 teams ⇒ 14 weeks, in line with the college cadence.
 DEFAULT_TEAMS = 8
-ROUND_ROBINS = 2            # double round-robin (home/away swapped on the return)
-PLAYOFF_FIELD = 4           # top-N franchises make the single-elimination playoff
-ROSTER_SINGLES = 3          # 3 men + 3 women fielded per dual (MS/WS/XD x3)
+ROUND_ROBINS = 2            # double round-robin
+PLAYOFF_FIELD = 4           # top-N make the single-elimination playoff
+TARGET_MEN = 4              # roster targets per gender (lineup fields the top 3)
+TARGET_WOMEN = 4
+LINES_TO_CLINCH = 5
+ENTRY_AGE = 22              # a graduate's age on turning pro
+RETIRE_AGE = 34            # hard retirement age
+RETIRE_FROM = 30           # probabilistic retirement begins here
+BASE_YEAR = 2027           # GTT calendar starts the year after the college baseline
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS gtt_leagues (
-  id INTEGER PRIMARY KEY, name TEXT, seed INTEGER,
+  id INTEGER PRIMARY KEY, name TEXT, world_seed INTEGER, current_year INTEGER,
   current_week INTEGER, total_weeks INTEGER, phase TEXT, champion INTEGER
 );
 CREATE TABLE IF NOT EXISTS gtt_franchises (
   id INTEGER PRIMARY KEY, league_id INTEGER, name TEXT, city TEXT, abbrev TEXT
 );
+CREATE TABLE IF NOT EXISTS gtt_players (
+  id INTEGER PRIMARY KEY, league_id INTEGER, pid TEXT, gender TEXT,
+  fid INTEGER, status TEXT, age INTEGER, seasons INTEGER, joined_year INTEGER,
+  origin TEXT, data TEXT
+);
+CREATE TABLE IF NOT EXISTS gtt_seasons (
+  league_id INTEGER, year INTEGER, phase TEXT, champion INTEGER, mvp_pid TEXT
+);
 CREATE TABLE IF NOT EXISTS gtt_duals (
-  id INTEGER PRIMARY KEY, league_id INTEGER, week INTEGER, round TEXT,
+  id INTEGER PRIMARY KEY, league_id INTEGER, year INTEGER, week INTEGER, round TEXT,
   home INTEGER, away INTEGER, status TEXT,
   home_points INTEGER, away_points INTEGER, winner INTEGER, lines_json TEXT,
   round_no INTEGER DEFAULT 0, bpos INTEGER DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS idx_gtt_duals ON gtt_duals(league_id, round, week);
+CREATE INDEX IF NOT EXISTS idx_gtt_duals ON gtt_duals(league_id, year, round, week);
+CREATE INDEX IF NOT EXISTS idx_gtt_pl ON gtt_players(league_id, fid, status);
 CREATE INDEX IF NOT EXISTS idx_gtt_fr ON gtt_franchises(league_id);
 """
 
@@ -83,101 +99,192 @@ def _db() -> sqlite3.Connection:
     return dbpath.connect(DB_PATH)
 
 
-def _dual_seed(seed: int, home_fid: int, away_fid: int, tag: str) -> int:
-    raw = f"{seed}|{home_fid}|{away_fid}|{tag}".encode()
+def _h(*parts) -> int:
+    raw = "|".join(str(p) for p in parts).encode()
     return int.from_bytes(hashlib.blake2s(raw, digest_size=4).digest(), "big")
 
 
+def _dual_seed(seed, home_fid, away_fid, tag) -> int:
+    return _h(seed, home_fid, away_fid, tag)
+
+
 # --------------------------------------------------------------------------
-# Default franchise identities (cosmetic — the user edits these freely)
+# Player (de)hydration — players are stored as Prospect dicts
 # --------------------------------------------------------------------------
 
-_MASCOTS: list[str] | None = None
+def _prospect(data):
+    from app.world import prospect_from_dict
+    return prospect_from_dict(json.loads(data) if isinstance(data, str) else data)
 
 
-def _mascots() -> list[str]:
-    """Flat pool of mascots from the shared team-naming data, for default
-    ``<City> <Mascot>`` franchise names. Cosmetic only."""
+def _prospect_dict(p):
+    from app.world import prospect_to_dict
+    return prospect_to_dict(p)
+
+
+# --------------------------------------------------------------------------
+# Default franchise identities (cosmetic — fully user-editable)
+# --------------------------------------------------------------------------
+
+_MASCOTS = None
+
+
+def _mascots():
     global _MASCOTS
     if _MASCOTS is None:
         path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                             "generators", "data", "names", "team_naming.json")
-        pool: list[str] = []
+        pool = []
         try:
             with open(path) as f:
-                data = json.load(f)
-            mp = data.get("category_3_traditional_mascots", {}).get("mascot_pool", {})
-            for group in mp.values():
-                if isinstance(group, list):
-                    pool.extend(group)
+                mp = json.load(f).get("category_3_traditional_mascots", {}).get("mascot_pool", {})
+            for grp in mp.values():
+                if isinstance(grp, list):
+                    pool.extend(grp)
         except (OSError, ValueError):
             pass
         _MASCOTS = pool or ["Aces", "Smash", "Strings", "Breakers", "Lobsters"]
     return _MASCOTS
 
 
-def _abbrev(city: str, mascot: str) -> str:
+def _abbrev(city, mascot):
     base = "".join(ch for ch in city.upper() if ch.isalpha())
     return (base[:3] or mascot.upper()[:3]).ljust(3, "X")[:3]
 
 
-def _default_franchise(rng: random.Random) -> tuple[str, str, str]:
-    """A plausible default (name, city, abbrev) — `<City> <Mascot>`."""
+def _default_franchise(rng):
     city, state = random_town(rng)
     mascot = rng.choice(_mascots())
-    loc = f"{city}, {state}" if state else city
-    return f"{city} {mascot}", loc, _abbrev(city, mascot)
+    return f"{city} {mascot}", (f"{city}, {state}" if state else city), _abbrev(city, mascot)
 
 
 # --------------------------------------------------------------------------
-# Rosters — deterministic from (league seed, franchise id) for now
+# Player generation (founding pros) + the college pipeline (graduates)
 # --------------------------------------------------------------------------
 
-_roster_cache: dict = {}
-
-
-def _franchise_base(seed: int, fid: int) -> float:
-    """A franchise's talent band in [0.50, 0.66], deterministic from id — so the
-    league has genuine haves and have-nots and standings mean something."""
-    h = hashlib.blake2s(f"{seed}|{fid}|base".encode(), digest_size=2).digest()
-    return 0.50 + 0.16 * (int.from_bytes(h, "big") / 65535.0)
-
-
-def _gen_player(rng: random.Random, name_fn, base: float):
+def _gen_player(rng, name_fn, gender, talent, joined_year, origin="founder", age=None):
     name, country = name_fn()
-    return random_player(rng, name, country, base=base)
+    p = generate_prospect(rng, name, country, gender=gender, talent=talent)
+    return {"pid": p.pid, "gender": gender, "data": json.dumps(_prospect_dict(p)),
+            "age": age if age is not None else rng.randint(23, 28),
+            "joined_year": joined_year, "origin": origin}
 
 
-def build_gtt_team(seed: int, fid: int, name: str) -> GTTTeam:
-    """The fielded GTTTeam for a franchise: 3 men + 3 women, strength-ordered.
-    Cached by (seed, fid) so every dual in a season reuses identical players."""
-    key = (seed, fid)
-    cached = _roster_cache.get(key)
-    if cached is not None:
-        return GTTTeam(name=name, men=cached[0], women=cached[1])
-    base = _franchise_base(seed, fid)
-    men_fn = make_name_picker(random.Random(seed ^ (fid << 8) ^ 0x4D), gender="male")
-    women_fn = make_name_picker(random.Random(seed ^ (fid << 8) ^ 0x57), gender="female")
-    rng = random.Random(f"{seed}|{fid}|roster")
-    men = [_gen_player(rng, men_fn, base) for _ in range(ROSTER_SINGLES)]
-    women = [_gen_player(rng, women_fn, base) for _ in range(ROSTER_SINGLES)]
-    men.sort(key=lambda p: p.overall, reverse=True)
-    women.sort(key=lambda p: p.overall, reverse=True)
-    _roster_cache[key] = (men, women)
-    return GTTTeam(name=name, men=men, women=women)
+def _world_graduates(conn, world_seed, exclude_pids, limit):
+    """This year's college graduates (seniors in the world) as (gender, pid, data),
+    best STR first, excluding pids already in the league. Empty if no world.
+
+    Queried through the caller's connection because the world tables live in the
+    same DB file — opening a second connection mid-transaction would deadlock."""
+    try:
+        wid = conn.execute("SELECT id FROM world WHERE seed=?", (world_seed,)).fetchone()
+    except sqlite3.OperationalError:
+        return []                                       # world tables not created yet
+    if not wid:
+        return []
+    wid = wid["id"]
+    year = conn.execute("SELECT MAX(year) y FROM world_roster WHERE world_id=?",
+                        (wid,)).fetchone()["y"]
+    if year is None:
+        return []
+    rows = conn.execute("SELECT gender, pid, data FROM world_roster WHERE world_id=? AND year=?",
+                        (wid, year)).fetchall()
+    grads = []
+    for r in rows:
+        if r["pid"] in exclude_pids:
+            continue
+        d = json.loads(r["data"])
+        if d.get("class_year") != "Sr":
+            continue
+        g = "m" if r["gender"] in ("men", "male", "m") else "w"
+        grads.append((g, r["pid"], r["data"], _prospect(r["data"]).str_value()))
+    grads.sort(key=lambda x: x[3], reverse=True)
+    return grads[:limit]
+
+
+def _intake(conn, league, needed_by_gender):
+    """Fill the free-agent pool for the off-season: real college graduates first,
+    topped up with generated rookies so the league is always playable."""
+    lid, seed, year = league["id"], league["world_seed"], league["current_year"]
+    have = {r["pid"] for r in conn.execute("SELECT pid FROM gtt_players WHERE league_id=?",
+                                           (lid,)).fetchall()}
+    total = needed_by_gender["m"] + needed_by_gender["w"]
+    grads = _world_graduates(conn, seed, have, total + 4)
+    pool_rows, used = {"m": [], "w": []}, set(have)
+    for g, pid, data, _str in grads:
+        if pid in used or len(pool_rows[g]) >= needed_by_gender[g] + 1:
+            continue
+        pool_rows[g].append({"pid": pid, "gender": g, "data": data, "age": ENTRY_AGE,
+                             "joined_year": year, "origin": "college"})
+        used.add(pid)
+    # top up with generated rookies if the pipeline came up short
+    rng = random.Random(_h(seed, lid, "rookies", year))
+    for g, full in (("m", "male"), ("w", "female")):
+        name_fn = make_name_picker(random.Random(_h(seed, lid, g, year)), gender=full)
+        while len(pool_rows[g]) < needed_by_gender[g]:
+            row = _gen_player(rng, name_fn, g, rng.uniform(46, 60), year,
+                              origin="rookie", age=ENTRY_AGE)
+            if row["pid"] in used:
+                continue
+            pool_rows[g].append(row)
+            used.add(row["pid"])
+    for g in ("m", "w"):
+        for r in pool_rows[g]:
+            conn.execute(
+                "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
+                " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (lid, r["pid"], g, None, "active", r["age"], 0, r["joined_year"],
+                 r["origin"], r["data"]))
 
 
 # --------------------------------------------------------------------------
-# Schedule generation — flat (double) round-robin via the circle method
+# Roster / lineup helpers
 # --------------------------------------------------------------------------
 
-def _round_robin(fids: list[int]) -> list[list[tuple[int, int]]]:
-    """One single round-robin as a list of rounds; each round is a list of
-    (home, away) franchise-id pairs. Standard circle method; an odd field gets a
-    bye (the None slot is dropped)."""
+def _active(conn, lid, fid, gender=None):
+    q = "SELECT pid, gender, age, data FROM gtt_players WHERE league_id=? AND fid=? AND status='active'"
+    args = [lid, fid]
+    if gender:
+        q += " AND gender=?"
+        args.append(gender)
+    return [dict(r) for r in conn.execute(q, args).fetchall()]
+
+
+def _lineup(conn, lid, fid, name):
+    """Top 3 men + top 3 women by STR → a GTTTeam, plus the ordered pid lists."""
+    def top(gender):
+        ps = _active(conn, lid, fid, gender)
+        ps.sort(key=lambda r: _prospect(r["data"]).str_value(), reverse=True)
+        return ps[:3]
+    men, women = top("m"), top("w")
+    team = GTTTeam(name=name,
+                   men=[_prospect(r["data"]).engine_player() for r in men],
+                   women=[_prospect(r["data"]).engine_player() for r in women])
+    return team, [r["pid"] for r in men], [r["pid"] for r in women]
+
+
+def _line_pids(slot, men_pids, women_pids):
+    kind, num = slot[:2], int(slot[2:]) - 1
+    if kind == "MS":
+        return [men_pids[num]] if num < len(men_pids) else []
+    if kind == "WS":
+        return [women_pids[num]] if num < len(women_pids) else []
+    out = []
+    if num < len(men_pids):
+        out.append(men_pids[num])
+    if num < len(women_pids):
+        out.append(women_pids[num])
+    return out
+
+
+# --------------------------------------------------------------------------
+# League creation (the founding season)
+# --------------------------------------------------------------------------
+
+def _round_robin(fids):
     teams = list(fids)
     if len(teams) % 2:
-        teams.append(None)              # bye marker
+        teams.append(None)
     n = len(teams)
     rounds = []
     for r in range(n - 1):
@@ -186,83 +293,86 @@ def _round_robin(fids: list[int]) -> list[list[tuple[int, int]]]:
             a, b = teams[i], teams[n - 1 - i]
             if a is None or b is None:
                 continue
-            # alternate home/away by round so hosting is balanced
             pairs.append((a, b) if (r + i) % 2 == 0 else (b, a))
         rounds.append(pairs)
-        teams = [teams[0]] + [teams[-1]] + teams[1:-1]   # rotate, fixing teams[0]
+        teams = [teams[0]] + [teams[-1]] + teams[1:-1]
     return rounds
 
 
-def _build_schedule(fids: list[int], seed: int) -> list[tuple[int, int, int]]:
-    """(week, home_fid, away_fid) rows for a double round-robin. The franchise
-    order is shuffled by the seed so the fixture pattern varies league to league.
-    The second round-robin swaps home/away (the 'return leg')."""
+def _build_schedule(conn, lid, year, seed):
+    fids = [f["id"] for f in _fr_rows(conn, lid)]
     order = list(fids)
-    random.Random(f"{seed}|order").shuffle(order)
-    rows: list[tuple[int, int, int]] = []
+    random.Random(_h(seed, "order", year)).shuffle(order)
     week = 0
+    rows = []
     for rr in range(ROUND_ROBINS):
         for rnd in _round_robin(order):
             week += 1
             for (h, a) in rnd:
                 if rr % 2 == 1:
-                    h, a = a, h                      # return leg: flip hosting
-                rows.append((week, h, a))
-    return rows
+                    h, a = a, h
+                rows.append((lid, year, week, "REG", h, a, "scheduled"))
+    conn.executemany(
+        "INSERT INTO gtt_duals (league_id, year, week, round, home, away, status)"
+        " VALUES (?,?,?,?,?,?,?)", rows)
+    total = max((w for (_, _, w, *_rest) in rows), default=0)
+    conn.execute("UPDATE gtt_leagues SET total_weeks=?, current_week=1 WHERE id=?", (total, lid))
 
 
-# --------------------------------------------------------------------------
-# League creation
-# --------------------------------------------------------------------------
-
-def create_league(name: str = "Global Team Tennis", *, seed: int = 2026,
-                  n_teams: int = DEFAULT_TEAMS) -> int:
+def create_league(name="Global Team Tennis", *, seed=2026, n_teams=DEFAULT_TEAMS):
     conn = _db()
     cur = conn.execute(
-        "INSERT INTO gtt_leagues (name, seed, current_week, total_weeks, phase, champion)"
-        " VALUES (?,?,?,?,?,?)", (name, seed, 1, 0, "regular", None))
+        "INSERT INTO gtt_leagues (name, world_seed, current_year, current_week,"
+        " total_weeks, phase, champion) VALUES (?,?,?,?,?,?,?)",
+        (name, seed, 0, 1, 0, "regular", None))
     lid = cur.lastrowid
 
-    rng = random.Random(f"{seed}|franchises")
-    fids = []
-    seen = set()
+    rng = random.Random(_h(seed, "franchises"))
+    fids, seen = [], set()
     for _ in range(n_teams):
         fname, city, abbrev = _default_franchise(rng)
-        while fname in seen:                            # avoid accidental dupes
+        while fname in seen:
             fname, city, abbrev = _default_franchise(rng)
         seen.add(fname)
-        c = conn.execute(
-            "INSERT INTO gtt_franchises (league_id, name, city, abbrev) VALUES (?,?,?,?)",
-            (lid, fname, city, abbrev))
+        c = conn.execute("INSERT INTO gtt_franchises (league_id, name, city, abbrev)"
+                         " VALUES (?,?,?,?)", (lid, fname, city, abbrev))
         fids.append(c.lastrowid)
 
-    rows = _build_schedule(fids, seed)
-    total_weeks = max((w for (w, _, _) in rows), default=0)
-    conn.executemany(
-        "INSERT INTO gtt_duals (league_id, week, round, home, away, status,"
-        " home_points, away_points, winner, lines_json) VALUES (?,?,?,?,?,?,?,?,?,?)",
-        [(lid, w, "REG", h, a, "scheduled", None, None, None, None) for (w, h, a) in rows])
-    conn.execute("UPDATE gtt_leagues SET total_weeks=? WHERE id=?", (total_weeks, lid))
+    # Founding rosters: generated pros (no college history), strength banded per club.
+    for fid in fids:
+        base = 48 + 16 * (_h(seed, fid, "base") / 0xFFFFFFFF)
+        prng = random.Random(_h(seed, fid, "founders"))
+        men_fn = make_name_picker(random.Random(_h(seed, fid, "m")), gender="male")
+        women_fn = make_name_picker(random.Random(_h(seed, fid, "w")), gender="female")
+        for gender, name_fn, tgt in (("m", men_fn, TARGET_MEN), ("w", women_fn, TARGET_WOMEN)):
+            for _ in range(tgt):
+                r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), 0)
+                conn.execute(
+                    "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
+                    " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    (lid, r["pid"], gender, fid, "active", r["age"], 0, 0, "founder", r["data"]))
+
+    _build_schedule(conn, lid, 0, seed)
     conn.commit()
     conn.close()
     return lid
 
 
-def load_league(league_id: int) -> dict | None:
+def load_league(league_id):
     conn = _db()
     row = conn.execute("SELECT * FROM gtt_leagues WHERE id=?", (league_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
 
 
-def list_leagues() -> list[dict]:
+def list_leagues():
     conn = _db()
     rows = conn.execute("SELECT * FROM gtt_leagues ORDER BY id").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def franchises(league_id: int) -> list[dict]:
+def franchises(league_id):
     conn = _db()
     rows = conn.execute("SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id",
                         (league_id,)).fetchall()
@@ -270,40 +380,26 @@ def franchises(league_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def _franchise_names(league_id: int) -> dict[int, str]:
+def _franchise_names(league_id):
     return {f["id"]: f["name"] for f in franchises(league_id)}
 
 
+def _fr_rows(conn, league_id):
+    """Franchises read through an OPEN connection — sees rows written in the same
+    (uncommitted) transaction, which the public helper's fresh connection cannot."""
+    return [dict(r) for r in conn.execute(
+        "SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id", (league_id,)).fetchall()]
+
+
+def _fr_names(conn, league_id):
+    return {f["id"]: f["name"] for f in _fr_rows(conn, league_id)}
+
+
 # --------------------------------------------------------------------------
-# Editor — rename / relocate (cosmetic; never affects results)
+# Editor — rename / relocate (cosmetic; keyed off the id, never the name)
 # --------------------------------------------------------------------------
 
-def rename_franchise(franchise_id: int, name: str) -> None:
-    """Rename a franchise. The name is independent of the city — a team needn't
-    carry its city in its name. Results are keyed off the id, so this is purely
-    cosmetic."""
-    conn = _db()
-    conn.execute("UPDATE gtt_franchises SET name=? WHERE id=?", (name.strip(), franchise_id))
-    conn.commit()
-    conn.close()
-
-
-def relocate_franchise(franchise_id: int, city: str, abbrev: str | None = None) -> None:
-    """Set a franchise's home city (and optionally its abbreviation). Cosmetic —
-    the roster and every result are tied to the id, not the city."""
-    conn = _db()
-    if abbrev is not None:
-        conn.execute("UPDATE gtt_franchises SET city=?, abbrev=? WHERE id=?",
-                     (city.strip(), abbrev.strip().upper()[:3], franchise_id))
-    else:
-        conn.execute("UPDATE gtt_franchises SET city=? WHERE id=?", (city.strip(), franchise_id))
-    conn.commit()
-    conn.close()
-
-
-def edit_franchise(franchise_id: int, *, name: str | None = None,
-                   city: str | None = None, abbrev: str | None = None) -> None:
-    """Combined editor write — set any of name / city / abbrev in one call."""
+def edit_franchise(franchise_id, *, name=None, city=None, abbrev=None):
     sets, vals = [], []
     if name is not None:
         sets.append("name=?"); vals.append(name.strip())
@@ -320,52 +416,69 @@ def edit_franchise(franchise_id: int, *, name: str | None = None,
     conn.close()
 
 
+def rename_franchise(franchise_id, name):
+    edit_franchise(franchise_id, name=name)
+
+
+def relocate_franchise(franchise_id, city, abbrev=None):
+    edit_franchise(franchise_id, city=city, abbrev=abbrev)
+
+
 # --------------------------------------------------------------------------
-# Advancing the season
+# Playing a dual
 # --------------------------------------------------------------------------
 
-def _play_and_store(conn, s, dual_id, home_fid, away_fid, tag, fidelity):
-    names = {f["id"]: f["name"] for f in
-             [dict(r) for r in conn.execute(
-                 "SELECT id, name FROM gtt_franchises WHERE id IN (?,?)",
-                 (home_fid, away_fid)).fetchall()]}
-    home = build_gtt_team(s["seed"], home_fid, names.get(home_fid, str(home_fid)))
-    away = build_gtt_team(s["seed"], away_fid, names.get(away_fid, str(away_fid)))
-    res = simulate_gtt_dual(home, away, seed=_dual_seed(s["seed"], home_fid, away_fid, tag),
+def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
+    lid, seed = league["id"], league["world_seed"]
+    names = _fr_names(conn, lid)
+    home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)))
+    away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)))
+    res = simulate_gtt_dual(home, away, seed=_dual_seed(seed, home_fid, away_fid, tag),
                             fidelity=fidelity)
-    winner = res.winner
-    lines = [{"slot": ln.slot, "home_won": ln.home_won, "completed": ln.completed,
-              "scoreline": (ln.result.scoreline if ln.completed and ln.result else None)}
-             for ln in res.lines]
+    lines = []
+    for ln in res.lines:
+        lines.append({"slot": ln.slot, "home_won": ln.home_won, "completed": ln.completed,
+                      "scoreline": (ln.result.scoreline if ln.completed and ln.result else None),
+                      "home_pids": _line_pids(ln.slot, hm, hw) if ln.completed else [],
+                      "away_pids": _line_pids(ln.slot, am, aw) if ln.completed else []})
     conn.execute("UPDATE gtt_duals SET status='final', home_points=?, away_points=?,"
                  " winner=?, lines_json=? WHERE id=?",
-                 (res.home_points, res.away_points, winner, json.dumps(lines), dual_id))
+                 (res.home_points, res.away_points, res.winner, json.dumps(lines), dual_id))
     return res
 
 
-def advance(league_id: int, *, fidelity: str = "full") -> dict:
-    """Play the next due slate. In ``regular`` that's the current week; in
-    ``playoffs`` it's the current bracket round. Returns a small summary dict."""
+# --------------------------------------------------------------------------
+# Advancing — the season + off-season state machine
+# --------------------------------------------------------------------------
+
+def advance(league_id, *, fidelity="full"):
     s = load_league(league_id)
-    if not s or s["phase"] == "complete":
-        return {"phase": "complete"}
+    if not s:
+        return {"phase": "none"}
     conn = _db()
+    year = s["current_year"]
 
     if s["phase"] == "regular":
         wk = s["current_week"]
-        due = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND round='REG' AND week=?"
-                           " AND status='scheduled'", (league_id, wk)).fetchall()
+        due = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND year=? AND round='REG'"
+                           " AND week=? AND status='scheduled'", (league_id, year, wk)).fetchall()
         for d in due:
-            _play_and_store(conn, s, d["id"], d["home"], d["away"], f"reg{wk}", fidelity)
+            _play_and_store(conn, s, d["id"], d["home"], d["away"], f"y{year}w{wk}", fidelity)
         nxt = wk + 1
         phase = "regular" if nxt <= s["total_weeks"] else "playoffs"
         conn.execute("UPDATE gtt_leagues SET current_week=?, phase=? WHERE id=?",
                      (nxt, phase, league_id))
         conn.commit(); conn.close()
-        return {"phase": "regular", "week": wk, "played": len(due), "next_phase": phase}
+        return {"phase": "regular", "year": year, "week": wk, "played": len(due), "next_phase": phase}
 
     if s["phase"] == "playoffs":
         out = _advance_playoff_round(conn, s, fidelity)
+        conn.commit(); conn.close()
+        _flush_honors(out)
+        return out
+
+    if s["phase"] == "complete":
+        out = _offseason(conn, s, fidelity)
         conn.commit(); conn.close()
         return out
 
@@ -373,32 +486,39 @@ def advance(league_id: int, *, fidelity: str = "full") -> dict:
     return {"phase": s["phase"]}
 
 
-def advance_all(league_id: int, *, fidelity: str = "full") -> dict:
-    """Advance until the league is complete; returns the final summary."""
+def advance_all(league_id, *, fidelity="fast"):
+    """Advance to the end of the CURRENT season (stops at 'complete')."""
     out = {}
-    for _ in range(10_000):                          # generous guard against loops
-        out = advance(league_id, fidelity=fidelity)
-        if out.get("phase") == "complete" or out.get("champion") is not None:
+    for _ in range(10_000):
+        s = load_league(league_id)
+        if not s or s["phase"] == "complete":
             break
+        out = advance(league_id, fidelity=fidelity)
+    return out or {"phase": "complete"}
+
+
+def advance_seasons(league_id, n, *, fidelity="fast"):
+    """Play `n` whole seasons (finishing the current one, then rolling onward)."""
+    for _ in range(n):
+        advance_all(league_id, fidelity=fidelity)
         s = load_league(league_id)
         if s and s["phase"] == "complete":
-            break
-    return out
+            advance(league_id, fidelity=fidelity)      # roll the off-season into next season
+    return load_league(league_id)
 
 
 # --------------------------------------------------------------------------
-# Playoffs — single elimination, top-N by standings
+# Playoffs
 # --------------------------------------------------------------------------
 
-def _pow2_le(n: int) -> int:
+def _pow2_le(n):
     p = 1
     while p * 2 <= n:
         p *= 2
     return p
 
 
-def _seed_positions(n: int) -> list[int]:
-    """Standard bracket order for power-of-two n (1 vs n, 2 vs n-1, ...)."""
+def _seed_positions(n):
     pos = [1, 2]
     while len(pos) < n:
         m = len(pos) * 2
@@ -406,82 +526,244 @@ def _seed_positions(n: int) -> list[int]:
     return pos
 
 
-def _next_post_week(conn, lid):
-    return (conn.execute("SELECT MAX(week) w FROM gtt_duals WHERE league_id=?",
-                         (lid,)).fetchone()["w"] or 0) + 1
+def _next_post_week(conn, lid, year):
+    return (conn.execute("SELECT MAX(week) w FROM gtt_duals WHERE league_id=? AND year=?",
+                         (lid, year)).fetchone()["w"] or 0) + 1
 
 
-def _insert_playoff(conn, lid, week, round_no, bpos, home_fid, away_fid):
-    conn.execute("INSERT INTO gtt_duals (league_id, week, round, home, away, status,"
-                 " round_no, bpos) VALUES (?,?,?,?,?,?,?,?)",
-                 (lid, week, "PO", home_fid, away_fid, "scheduled", round_no, bpos))
+def _insert_po(conn, lid, year, week, round_no, bpos, home, away):
+    conn.execute("INSERT INTO gtt_duals (league_id, year, week, round, home, away, status,"
+                 " round_no, bpos) VALUES (?,?,?,?,?,?,?,?,?)",
+                 (lid, year, week, "PO", home, away, "scheduled", round_no, bpos))
 
 
-def _advance_playoff_round(conn, s, fidelity) -> dict:
-    lid = s["id"]
-    existing = conn.execute("SELECT COUNT(*) c FROM gtt_duals WHERE league_id=? AND round='PO'",
-                            (lid,)).fetchone()["c"]
+def _advance_playoff_round(conn, s, fidelity):
+    lid, year = s["id"], s["current_year"]
+    existing = conn.execute("SELECT COUNT(*) c FROM gtt_duals WHERE league_id=? AND year=?"
+                            " AND round='PO'", (lid, year)).fetchone()["c"]
     if existing == 0:
-        order = [row["fid"] for row in _standings_rows(conn, lid)]
+        order = [r["fid"] for r in _standings_rows(conn, lid, year)]
         field = _pow2_le(min(PLAYOFF_FIELD, len(order)))
         if field < 2:
-            conn.execute("UPDATE gtt_leagues SET phase='complete', champion=? WHERE id=?",
-                         (order[0] if order else None, lid))
-            return {"phase": "playoffs", "champion": order[0] if order else None}
+            return _crown(conn, s, order[0] if order else None)
         seeded = order[:field]
         slots = [seeded[i - 1] for i in _seed_positions(field)]
-        week = _next_post_week(conn, lid)
+        week = _next_post_week(conn, lid, year)
         for k in range(field // 2):
-            # higher seed (earlier in `seeded`) hosts
             a, b = slots[2 * k], slots[2 * k + 1]
             hi = a if seeded.index(a) < seeded.index(b) else b
             lo = b if hi == a else a
-            _insert_playoff(conn, lid, week, 1, k, hi, lo)
+            _insert_po(conn, lid, year, week, 1, k, hi, lo)
         round_no = 1
     else:
-        round_no = conn.execute("SELECT MIN(round_no) r FROM gtt_duals WHERE league_id=?"
-                                " AND round='PO' AND status='scheduled'", (lid,)).fetchone()["r"]
+        round_no = conn.execute("SELECT MIN(round_no) r FROM gtt_duals WHERE league_id=? AND year=?"
+                                " AND round='PO' AND status='scheduled'", (lid, year)).fetchone()["r"]
     if round_no is None:
-        return {"phase": "playoffs", "done": True}
+        return _crown(conn, s, s["champion"])
 
-    due = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND round='PO' AND round_no=?"
-                       " AND status='scheduled' ORDER BY bpos", (lid, round_no)).fetchall()
+    due = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND year=? AND round='PO'"
+                       " AND round_no=? AND status='scheduled' ORDER BY bpos",
+                       (lid, year, round_no)).fetchall()
     for d in due:
-        _play_and_store(conn, s, d["id"], d["home"], d["away"], f"po{round_no}b{d['bpos']}", fidelity)
+        _play_and_store(conn, s, d["id"], d["home"], d["away"], f"y{year}po{round_no}b{d['bpos']}", fidelity)
 
-    wins = conn.execute("SELECT home, away, winner FROM gtt_duals WHERE league_id=? AND round='PO'"
-                        " AND round_no=? ORDER BY bpos", (lid, round_no)).fetchall()
+    wins = conn.execute("SELECT home, away, winner FROM gtt_duals WHERE league_id=? AND year=?"
+                        " AND round='PO' AND round_no=? ORDER BY bpos", (lid, year, round_no)).fetchall()
     winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
     if len(winners) > 1:
-        week = _next_post_week(conn, lid)
+        week = _next_post_week(conn, lid, year)
         for k in range(len(winners) // 2):
-            _insert_playoff(conn, lid, week, round_no + 1, k, winners[2 * k], winners[2 * k + 1])
-        return {"phase": "playoffs", "round": round_no, "played": len(due)}
+            _insert_po(conn, lid, year, week, round_no + 1, k, winners[2 * k], winners[2 * k + 1])
+        return {"phase": "playoffs", "year": year, "round": round_no, "played": len(due)}
+    return _crown(conn, s, winners[0])
 
-    champ = winners[0]
-    conn.execute("UPDATE gtt_leagues SET phase='complete', champion=? WHERE id=?", (champ, lid))
-    return {"phase": "playoffs", "round": round_no, "played": len(due), "champion": champ}
+
+def _crown(conn, s, champ_fid):
+    lid, year = s["id"], s["current_year"]
+    mvp_row = _compute_mvp(conn, lid, year)
+    mvp_pid = mvp_row["pid"] if mvp_row else None
+    conn.execute("UPDATE gtt_leagues SET phase='complete', champion=? WHERE id=?", (champ_fid, lid))
+    conn.execute("DELETE FROM gtt_seasons WHERE league_id=? AND year=?", (lid, year))
+    conn.execute("INSERT INTO gtt_seasons (league_id, year, phase, champion, mvp_pid)"
+                 " VALUES (?,?,?,?,?)", (lid, year, "complete", champ_fid, mvp_pid))
+    # Honor rows are computed here but stamped after this connection commits/closes
+    # (app.honors opens its own connection — stamping mid-transaction would deadlock).
+    recs = _honor_records(conn, s, champ_fid, mvp_row)
+    return {"phase": "playoffs", "year": year, "champion": champ_fid, "mvp": mvp_pid, "_honors": recs}
+
+
+def _flush_honors(out):
+    """Stamp any honor rows a just-finished crown produced, after the season DB
+    write has been committed and its connection closed."""
+    recs = (out or {}).pop("_honors", None)
+    if recs:
+        import app.honors as honors
+        honors.stamp(recs)
+
+
+# --------------------------------------------------------------------------
+# Off-season: age → retire → intake → keeper/snake draft → schedule
+# --------------------------------------------------------------------------
+
+def _should_retire(pid, age, year):
+    if age >= RETIRE_AGE:
+        return True
+    if age < RETIRE_FROM:
+        return False
+    prob = (age - RETIRE_FROM + 1) * 0.18
+    return (_h(pid, "retire", year) / 0xFFFFFFFF) < prob
+
+
+def _offseason(conn, s, fidelity):
+    lid, prev_year = s["id"], s["current_year"]
+    year = prev_year + 1
+
+    # Age everyone a year; retire the veterans (off active rosters).
+    for r in conn.execute("SELECT id, pid, age FROM gtt_players WHERE league_id=? AND status='active'",
+                          (lid,)).fetchall():
+        age = (r["age"] or ENTRY_AGE) + 1
+        if _should_retire(r["pid"], age, year):
+            conn.execute("UPDATE gtt_players SET age=?, status='retired', fid=NULL WHERE id=?",
+                         (age, r["id"]))
+        else:
+            conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1 WHERE id=?", (age, r["id"]))
+
+    # Open slots per franchise drive how many graduates we need.
+    fids = [f["id"] for f in _fr_rows(conn, lid)]
+    need = {"m": 0, "w": 0}
+    for fid in fids:
+        for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
+            have = len(_active(conn, lid, fid, g))
+            need[g] += max(0, tgt - have)
+    league_row = {**s, "current_year": year}
+    _intake(conn, league_row, need)
+
+    # Keepers stay on roster; a reverse-standings snake draft fills the gaps.
+    _draft(conn, lid, year, prev_year)
+
+    conn.execute("UPDATE gtt_leagues SET current_year=?, phase='regular', current_week=1,"
+                 " champion=NULL WHERE id=?", (year, lid))
+    _build_schedule(conn, lid, year, s["world_seed"])
+    return {"phase": "offseason", "year": year,
+            "intake": need["m"] + need["w"]}
+
+
+def _draft(conn, lid, year, prev_year):
+    """Reverse-standings snake draft of the free-agent pool into open slots."""
+    order = [r["fid"] for r in _standings_rows(conn, lid, prev_year)]
+    if not order:
+        order = [f["id"] for f in _fr_rows(conn, lid)]
+    order = order[::-1]                                   # worst record drafts first
+
+    pool = {"m": [], "w": []}
+    for r in conn.execute("SELECT id, pid, gender, data FROM gtt_players WHERE league_id=?"
+                          " AND fid IS NULL AND status='active'", (lid,)).fetchall():
+        pool[r["gender"]].append((r["id"], _prospect(r["data"]).str_value()))
+    for g in pool:
+        pool[g].sort(key=lambda x: x[1], reverse=True)    # best available first
+
+    counts = {fid: {"m": len(_active(conn, lid, fid, "m")),
+                    "w": len(_active(conn, lid, fid, "w"))} for fid in order}
+    for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
+        rnd = 0
+        while pool[g]:
+            seq = order if rnd % 2 == 0 else order[::-1]
+            picked = False
+            for fid in seq:
+                if counts[fid][g] >= tgt or not pool[g]:
+                    continue
+                pid_id, _str = pool[g].pop(0)
+                conn.execute("UPDATE gtt_players SET fid=? WHERE id=?", (fid, pid_id))
+                counts[fid][g] += 1
+                picked = True
+            rnd += 1
+            if not picked:
+                break
+
+
+# --------------------------------------------------------------------------
+# Honors (P3) — stamped to the player's real pid so they follow college → pro
+# --------------------------------------------------------------------------
+
+def _player_meta(conn, lid):
+    rows = conn.execute("SELECT pid, gender, fid, data FROM gtt_players WHERE league_id=?",
+                        (lid,)).fetchall()
+    out = {}
+    for r in rows:
+        p = _prospect(r["data"])
+        out[r["pid"]] = {"name": p.name, "country": p.country, "gender": r["gender"], "fid": r["fid"]}
+    return out
+
+
+def _records_for_year(conn, lid, year):
+    rows = conn.execute("SELECT lines_json FROM gtt_duals WHERE league_id=? AND year=?"
+                        " AND status='final'", (lid, year)).fetchall()
+    rec = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            hw = ln["home_won"]
+            for pid in ln.get("home_pids", []):
+                d = rec.setdefault(pid, [0, 0]); d[0 if hw else 1] += 1
+            for pid in ln.get("away_pids", []):
+                d = rec.setdefault(pid, [0, 0]); d[1 if hw else 0] += 1
+    return rec
+
+
+def _compute_mvp(conn, lid, year):
+    rec = _records_for_year(conn, lid, year)
+    meta = _player_meta(conn, lid)
+    best = None
+    for pid, (w, l) in rec.items():
+        if w + l < 3:
+            continue
+        key = (w, w / (w + l))
+        if best is None or key > best[0]:
+            best = (key, pid, w, l)
+    if not best:
+        return None
+    _key, pid, w, l = best
+    m = meta.get(pid, {})
+    return {"pid": pid, "name": m.get("name", pid), "w": w, "l": l, "fid": m.get("fid"),
+            "franchise": _fr_names(conn, lid).get(m.get("fid"), "")}
+
+
+def _honor_records(conn, s, champ_fid, mvp_row):
+    """Build GTT honor rows under each player's real pid, so a graduate's college
+    + pro honors live on one career page. Stamped by the caller post-commit."""
+    lid, year = s["id"], s["current_year"]
+    cal_year = BASE_YEAR + year
+    names = _fr_names(conn, lid)
+    recs = []
+    if champ_fid:
+        cname = names.get(champ_fid, "")
+        for r in conn.execute("SELECT pid, gender, data FROM gtt_players WHERE league_id=?"
+                              " AND fid=? AND status='active'", (lid, champ_fid)).fetchall():
+            recs.append({"subject_type": "player", "subject_id": r["pid"],
+                         "name": _prospect(r["data"]).name, "year": cal_year, "season_no": year + 1,
+                         "division": "GTT", "gender": r["gender"], "school": cname,
+                         "award": "gtt_champion", "label": f"{s['name']} Champion", "sort": 90})
+    if mvp_row:
+        recs.append({"subject_type": "player", "subject_id": mvp_row["pid"],
+                     "name": mvp_row["name"], "year": cal_year, "season_no": year + 1,
+                     "division": "GTT", "gender": None, "school": mvp_row["franchise"],
+                     "award": "gtt_mvp", "label": f"{s['name']} MVP", "sort": 120})
+    return recs
 
 
 # --------------------------------------------------------------------------
 # Standings & views
 # --------------------------------------------------------------------------
 
-def _completed(conn, league_id, rounds=("REG",)) -> list[dict]:
-    qs = ",".join("?" for _ in rounds)
-    rows = conn.execute(
-        f"SELECT home, away, round, home_points, away_points, winner FROM gtt_duals"
-        f" WHERE league_id=? AND status='final' AND round IN ({qs})",
-        (league_id, *rounds)).fetchall()
-    return [dict(r) for r in rows]
-
-
-def _standings_rows(conn, league_id) -> list[dict]:
-    """Flat regular-season table: wins, then line differential, then name."""
+def _standings_rows(conn, lid, year):
     fr = {f["id"]: f for f in [dict(r) for r in conn.execute(
-        "SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id", (league_id,)).fetchall()]}
+        "SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id", (lid,)).fetchall()]}
     rec = {fid: {"w": 0, "l": 0, "lf": 0, "la": 0} for fid in fr}
-    for d in _completed(conn, league_id, ("REG",)):
+    rows = conn.execute("SELECT home, away, home_points, away_points, winner FROM gtt_duals"
+                        " WHERE league_id=? AND year=? AND round='REG' AND status='final'",
+                        (lid, year)).fetchall()
+    for d in rows:
         h, a = d["home"], d["away"]
         if h not in rec or a not in rec:
             continue
@@ -495,24 +777,27 @@ def _standings_rows(conn, league_id) -> list[dict]:
     for fid, f in fr.items():
         r = rec[fid]
         out.append({"fid": fid, "name": f["name"], "city": f["city"], "abbrev": f["abbrev"],
-                    "w": r["w"], "l": r["l"], "lf": r["lf"], "la": r["la"],
-                    "diff": r["lf"] - r["la"]})
+                    "w": r["w"], "l": r["l"], "lf": r["lf"], "la": r["la"], "diff": r["lf"] - r["la"]})
     out.sort(key=lambda x: (x["w"], x["diff"], -x["fid"]), reverse=True)
     return out
 
 
-def standings(league_id: int) -> list[dict]:
+def standings(league_id, year=None):
     conn = _db()
-    rows = _standings_rows(conn, league_id)
+    if year is None:
+        year = (load_league(league_id) or {}).get("current_year", 0)
+    rows = _standings_rows(conn, league_id, year)
     conn.close()
     return rows
 
 
-def week_duals(league_id: int, week: int) -> list[dict]:
+def week_duals(league_id, week, year=None):
     conn = _db()
+    s = load_league(league_id)
+    year = year if year is not None else (s["current_year"] if s else 0)
     names = _franchise_names(league_id)
-    rows = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND week=? ORDER BY round, bpos, id",
-                        (league_id, week)).fetchall()
+    rows = conn.execute("SELECT * FROM gtt_duals WHERE league_id=? AND year=? AND week=?"
+                        " ORDER BY round, bpos, id", (league_id, year, week)).fetchall()
     conn.close()
     out = []
     for r in rows:
@@ -524,170 +809,132 @@ def week_duals(league_id: int, week: int) -> list[dict]:
     return out
 
 
-def champion(league_id: int) -> dict | None:
-    """The champion franchise once the league is complete, else None."""
+def champion(league_id):
     s = load_league(league_id)
     if not s or s["phase"] != "complete" or s["champion"] is None:
         return None
     return {f["id"]: f for f in franchises(league_id)}.get(s["champion"])
 
 
-# --------------------------------------------------------------------------
-# Honors (P3) — player records, MVP, and titles, derived by replaying the
-# stored line results against the deterministic rosters (no schema change).
-#
-# Player identity is league-internal for now: a stable id of
-# ``{league}-{fid}-{m|w}-{idx}`` over the franchise lineup. The graduate
-# pipeline (P5) will replace this with the player's real, cross-context pid so
-# GTT honors land on the same career page as college honors.
-# --------------------------------------------------------------------------
-
-def gtt_pid(league_id: int, fid: int, gender: str, idx: int) -> str:
-    return f"{league_id}-{fid}-{gender}-{idx}"
+def mvp(league_id, year=None):
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    row = _compute_mvp(conn, league_id, year)
+    conn.close()
+    return row
 
 
-def _slot_player(team: GTTTeam, gender: str, idx: int):
-    return (team.men if gender == "m" else team.women)[idx]
+def honors_board(league_id):
+    return {"champion": champion(league_id), "mvp": mvp(league_id)}
 
 
-def player_records(league_id: int) -> dict:
-    """``gtt_pid -> {name, country, fid, franchise, gender, idx, w, l}`` over all
-    completed singles + mixed lines. Mixed doubles credits both partners."""
+def player_records(league_id, year=None):
+    """gtt_pid (==real pid) -> record dict, for the current (or given) season."""
     s = load_league(league_id)
     if not s:
         return {}
-    names = _franchise_names(league_id)
-    teams = {fid: build_gtt_team(s["seed"], fid, nm) for fid, nm in names.items()}
-    rec: dict = {}
-
-    def ensure(fid: int, gender: str, idx: int) -> dict:
-        pid = gtt_pid(league_id, fid, gender, idx)
-        if pid not in rec:
-            p = _slot_player(teams[fid], gender, idx)
-            rec[pid] = {"pid": pid, "name": p.name, "country": p.country, "fid": fid,
-                        "franchise": names[fid], "gender": gender, "idx": idx, "w": 0, "l": 0}
-        return rec[pid]
-
+    year = year if year is not None else s["current_year"]
     conn = _db()
-    rows = conn.execute("SELECT home, away, lines_json FROM gtt_duals WHERE league_id=?"
-                        " AND status='final'", (league_id,)).fetchall()
+    rec = _records_for_year(conn, league_id, year)
+    meta = _player_meta(conn, league_id)
     conn.close()
-    for r in rows:
-        h, a = r["home"], r["away"]
-        if h not in teams or a not in teams:
-            continue
-        for ln in json.loads(r["lines_json"] or "[]"):
-            if not ln.get("completed"):
-                continue
-            slot, hw = ln["slot"], ln["home_won"]
-            kind, num = slot[:2], int(slot[2:]) - 1
-            genders = ("m",) if kind == "MS" else ("w",) if kind == "WS" else ("m", "w")
-            for g in genders:
-                hp, ap = ensure(h, g, num), ensure(a, g, num)
-                (hp if hw else ap)["w"] += 1
-                (ap if hw else hp)["l"] += 1
-    return rec
+    out = {}
+    for pid, (w, l) in rec.items():
+        m = meta.get(pid, {})
+        out[pid] = {"pid": pid, "name": m.get("name", pid), "country": m.get("country", ""),
+                    "fid": m.get("fid"), "franchise": _franchise_names(league_id).get(m.get("fid"), ""),
+                    "gender": m.get("gender", ""), "w": w, "l": l}
+    return out
 
 
-def _winpct(r: dict) -> float:
-    g = r["w"] + r["l"]
-    return r["w"] / g if g else 0.0
-
-
-def mvp(league_id: int) -> dict | None:
-    """League MVP: most line wins, win% as the tiebreak. Computed once enough
-    duals are final to be meaningful."""
-    recs = [r for r in player_records(league_id).values() if (r["w"] + r["l"]) >= 3]
-    if not recs:
-        return None
-    return max(recs, key=lambda r: (r["w"], _winpct(r)))
-
-
-def player_honors(league_id: int, pid: str) -> list[str]:
-    """GTT honors for a player id — MVP and/or Champion (credited to the whole
-    winning roster), the same 'credit_roster' pattern the college side uses."""
+def player_honors(league_id, pid):
     out = []
     m = mvp(league_id)
     if m and m["pid"] == pid:
         out.append("GTT MVP")
     ch = champion(league_id)
     if ch:
-        try:
-            fid = int(pid.split("-")[1])
-        except (IndexError, ValueError):
-            fid = None
-        if fid == ch["id"]:
+        conn = _db()
+        row = conn.execute("SELECT fid FROM gtt_players WHERE league_id=? AND pid=?",
+                           (league_id, pid)).fetchone()
+        conn.close()
+        if row and row["fid"] == ch["id"]:
             out.append("GTT Champion")
     return out
 
 
-def franchise_roster(league_id: int, fid: int) -> list[dict]:
-    """The franchise lineup (men then women, strength order) with season records
-    and honors — drives the franchise page."""
-    recs = player_records(league_id)
+def franchise_roster(league_id, fid, year=None):
+    """The franchise's current active roster with season records + honors."""
     s = load_league(league_id)
-    names = _franchise_names(league_id)
-    if not s or fid not in names:
+    if not s:
         return []
-    team = build_gtt_team(s["seed"], fid, names[fid])
-    out = []
-    for gender, players, label in (("m", team.men, "M"), ("w", team.women, "W")):
-        for idx, p in enumerate(players):
-            pid = gtt_pid(league_id, fid, gender, idx)
-            r = recs.get(pid, {"w": 0, "l": 0})
-            out.append({"pid": pid, "name": p.name, "country": p.country,
-                        "slot": f"{label}S{idx + 1}", "gender": gender,
-                        "overall": round(p.overall * 100), "w": r["w"], "l": r["l"],
-                        "honors": player_honors(league_id, pid)})
-    return out
-
-
-def player_detail(league_id: int, pid: str) -> dict | None:
-    """A GTT player's page: identity, record, honors, and match-by-match log."""
-    recs = player_records(league_id)
-    base = recs.get(pid)
-    if not base:
-        # a 0-result player (e.g. preseason) — synthesize from the id
-        try:
-            _lid, fid, gender, idx = pid.split("-")
-            fid, idx = int(fid), int(idx)
-        except ValueError:
-            return None
-        s = load_league(league_id)
-        names = _franchise_names(league_id)
-        if not s or fid not in names:
-            return None
-        p = _slot_player(build_gtt_team(s["seed"], fid, names[fid]), gender, idx)
-        base = {"pid": pid, "name": p.name, "country": p.country, "fid": fid,
-                "franchise": names[fid], "gender": gender, "idx": idx, "w": 0, "l": 0}
-
-    fid, gender, idx = base["fid"], base["gender"], base["idx"]
-    names = _franchise_names(league_id)
+    year = year if year is not None else s["current_year"]
     conn = _db()
-    rows = conn.execute("SELECT week, round, home, away, lines_json FROM gtt_duals"
-                        " WHERE league_id=? AND status='final' AND (home=? OR away=?)"
-                        " ORDER BY week", (league_id, fid, fid)).fetchall()
+    rec = _records_for_year(conn, league_id, year)
+    rows = conn.execute("SELECT pid, gender, age, origin, data FROM gtt_players WHERE league_id=?"
+                        " AND fid=? AND status='active'", (league_id, fid)).fetchall()
+    conn.close()
+    players = []
+    for r in rows:
+        p = _prospect(r["data"])
+        w, l = rec.get(r["pid"], [0, 0])
+        players.append({"pid": r["pid"], "name": p.name, "country": p.country, "gender": r["gender"],
+                        "age": r["age"], "origin": r["origin"], "str": round(p.str_value(), 1),
+                        "overall": round(p.current_overall()), "w": w, "l": l,
+                        "honors": player_honors(league_id, r["pid"])})
+    # men by STR then women by STR
+    players.sort(key=lambda x: (x["gender"] != "m", -x["str"]))
+    for i, p in enumerate(players):
+        block = [q for q in players if q["gender"] == p["gender"]]
+        p["slot"] = f"{'M' if p['gender'] == 'm' else 'W'}S{block.index(p) + 1}"
+    return players
+
+
+def player_detail(league_id, pid):
+    """A GTT player's page: identity, season record, GTT honors, full career
+    honors (college + pro via the shared honors table), and a match log."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    conn = _db()
+    row = conn.execute("SELECT * FROM gtt_players WHERE league_id=? AND pid=?",
+                       (league_id, pid)).fetchone()
+    if not row:
+        conn.close()
+        return None
+    row = dict(row)
+    p = _prospect(row["data"])
+    year = s["current_year"]
+    rec = _records_for_year(conn, league_id, year)
+    w, l = rec.get(pid, [0, 0])
+    names = _franchise_names(league_id)
+    rows = conn.execute("SELECT week, round, year, home, away, lines_json FROM gtt_duals"
+                        " WHERE league_id=? AND year=? AND status='final' AND lines_json LIKE ?"
+                        " ORDER BY week", (league_id, year, f"%{pid}%")).fetchall()
     conn.close()
     log = []
     for r in rows:
-        is_home = r["home"] == fid
-        opp_fid = r["away"] if is_home else r["home"]
         for ln in json.loads(r["lines_json"] or "[]"):
             if not ln.get("completed"):
                 continue
-            slot = ln["slot"]
-            kind, num = slot[:2], int(slot[2:]) - 1
-            mine = (kind == "MS" and gender == "m") or (kind == "WS" and gender == "w") \
-                or (kind == "XD")
-            if not mine or num != idx:
+            if pid in ln.get("home_pids", []):
+                opp_fid, won = r["away"], ln["home_won"]
+            elif pid in ln.get("away_pids", []):
+                opp_fid, won = r["home"], not ln["home_won"]
+            else:
                 continue
-            won = ln["home_won"] == is_home
-            log.append({"week": r["week"], "round": r["round"], "slot": slot,
-                        "opp": names.get(opp_fid, str(opp_fid)),
-                        "scoreline": ln.get("scoreline"), "won": won})
-    return {**base, "honors": player_honors(league_id, pid), "log": log}
+            log.append({"week": r["week"], "round": r["round"], "slot": ln["slot"],
+                        "opp": names.get(opp_fid, str(opp_fid)), "scoreline": ln.get("scoreline"),
+                        "won": won})
 
-
-def honors_board(league_id: int) -> dict:
-    """League honors at a glance: champion + MVP."""
-    return {"champion": champion(league_id), "mvp": mvp(league_id)}
+    import app.honors as honors
+    career = honors.career_by_year(pid, "player")
+    return {"pid": pid, "name": p.name, "country": p.country, "gender": row["gender"],
+            "age": row["age"], "origin": row["origin"], "status": row["status"],
+            "fid": row["fid"], "franchise": names.get(row["fid"], "Free agent"),
+            "str": round(p.str_value(), 1), "overall": round(p.current_overall()),
+            "w": w, "l": l, "honors": player_honors(league_id, pid),
+            "career_honors": career, "log": log}

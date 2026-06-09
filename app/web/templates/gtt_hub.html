@@ -23,13 +23,18 @@
         <div>
           <div style="font-size:17px;font-weight:700;color:var(--text-primary)">{{ league.name }}</div>
           <div style="color:var(--text-muted);font-size:13px">
-            {% if league.phase == 'complete' %}Season complete
+            Season {{ league.current_year + 1 }} ·
+            {% if league.phase == 'complete' %}complete
             {% elif league.phase == 'playoffs' %}Playoffs
-            {% else %}Regular season — week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
+            {% else %}regular season — week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
           </div>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px">
-          {% if league.phase != 'complete' %}
+          {% if league.phase == 'complete' %}
+          <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
+            <input type="hidden" name="mode" value="step">
+            <button class="bl-pill" type="submit">↻ Start next season (draft + intake)</button></form>
+          {% else %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">
             <button class="bl-pill" type="submit">▶ Advance {{ 'round' if league.phase == 'playoffs' else 'week' }}</button></form>

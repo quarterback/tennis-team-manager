@@ -8,14 +8,36 @@
   <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
     <div class="bl-panel-head">
       <span class="bl-panel-title">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span>
-      <span class="bl-panel-meta">{{ p.franchise }} · {{ p.w }}-{{ p.l }}</span>
+      <span class="bl-panel-meta">{{ p.franchise }} · age {{ p.age }} · STR {{ p.str }} · {{ p.w }}-{{ p.l }} this season{% if p.status == 'retired' %} · retired{% endif %}</span>
     </div>
+    {% if p.origin == 'college' %}
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">🎓 College graduate — career honors below span college and pro.</div>
+    {% endif %}
     {% if p.honors %}
     <div style="padding:12px 16px">
       {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff;margin-right:6px">{{ h }}</span>{% endfor %}
     </div>
     {% endif %}
   </div>
+
+  {% if p.career_honors %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">🏅 Career honors</span>
+      <span class="bl-panel-meta">college → pro, one timeline</span></div>
+    <div style="padding:8px 16px">
+      {% for grp in p.career_honors %}
+      {% for a in grp.awards %}
+      <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
+        <span style="font-variant-numeric:tabular-nums;color:var(--text-muted);width:48px">{{ grp.year }}</span>
+        <span class="bl-pill" style="font-size:10px;{{ 'background:var(--accent);color:#fff' if a.division == 'GTT' else '' }}">{{ a.division or '—' }}</span>
+        <span style="font-weight:600">{{ a.label }}</span>
+        {% if a.school %}<span style="color:var(--text-muted);font-size:12px;margin-left:auto">{{ a.school }}</span>{% endif %}
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Match log</span>

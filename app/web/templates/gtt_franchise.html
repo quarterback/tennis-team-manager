@@ -13,13 +13,16 @@
     <div class="bl-tablescroll"><div class="bl-table gtt-ros">
       <div class="bl-thead gtt-ros-row">
         <span class="bl-th">Slot</span><span class="bl-th">Player</span>
-        <span class="bl-th num">OVR</span><span class="bl-th num">W-L</span><span class="bl-th">Honors</span>
+        <span class="bl-th">From</span><span class="bl-th num">Age</span>
+        <span class="bl-th num">STR</span><span class="bl-th num">W-L</span><span class="bl-th">Honors</span>
       </div>
       {% for p in roster %}
       <a class="bl-row gtt-ros-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
         <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ p.slot }}</span>
         <span class="gtt-nm">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></span>
-        <span class="bl-cell-num">{{ p.overall }}</span>
+        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
+        <span class="bl-cell-num">{{ p.age }}</span>
+        <span class="bl-cell-num">{{ p.str }}</span>
         <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span></span>
         <span class="bl-cell" style="color:var(--accent);font-size:12px">{{ p.honors | join(', ') }}</span>
       </a>
@@ -49,7 +52,7 @@
 </div>
 
 <style>
-.gtt-ros { --bl-grid-cols: 48px minmax(150px,1fr) 52px 64px minmax(90px,1.2fr); }
+.gtt-ros { --bl-grid-cols: 44px minmax(140px,1fr) 64px 40px 50px 56px minmax(80px,1fr); }
 .gtt-nm { display:flex; align-items:center; gap:6px; min-width:0; }
 .gtt-nm .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
 </style>
