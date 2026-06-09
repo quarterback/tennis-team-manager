@@ -327,6 +327,27 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
 
 
+def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
+    data-portal overview that ties the dense sub-pages together."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    intl = [p for p in recruits if not p.domestic]
+    kpis = {
+        "class_size": len(recruits),
+        "intl_pct": round(100 * len(intl) / max(1, len(recruits))),
+        "bluechips": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) >= 5),
+        "fourstar": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) == 4),
+        "nations": len({p.country for p in intl}),
+        "states": len({p.region for p in recruits if p.domestic}),
+        "top": recruits[0] if recruits else None,
+    }
+    top_rows = [(p.points_rank, p, stats[p.pid], almanac.honor_chip(p)) for p in recruits[:12]]
+    return {"kpis": kpis, "top_rows": top_rows, "leaders": almanac.leaders(recruits, stats)}
+
+
 def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
     """[(nation, [(rank, Prospect, stat_line)...])] Top-10 per talent-dense nation."""
     from app import almanac

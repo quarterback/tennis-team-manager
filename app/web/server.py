@@ -20,7 +20,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
-                    junior_setup_view, save_junior_setup, reset_junior_setup,
+                    recruiting_hub, junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
@@ -56,7 +56,8 @@ NAV_GROUPS = [
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
-        {"id": "recruiting","label": "Recruiting",   "icon": "🎓", "endpoint": "recruiting",       "args": {}},
+        {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
+        {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
     ]),
     ("Simulate", [
@@ -88,6 +89,7 @@ def _active_nav(req) -> str:
     if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
@@ -432,6 +434,19 @@ def create_app() -> Flask:
         view = recruit_profile(p, division, gender, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/recruiting/hub")
+    def recruiting_hub_page():
+        division, gender, label, u = _universe(request)
+        rg = RECRUIT_GENDERS.get(gender, "male")
+        try:
+            grad_year = int(request.args.get("grad_year", "2026"))
+        except ValueError:
+            grad_year = 2026
+        return render_template("recruiting_hub.html", active="Recruiting",
+                               hub=recruiting_hub(rg, grad_year), gender=gender,
+                               grad_year=grad_year, u=u, uni_label=label,
+                               grad_years=[2026, 2027, 2028, 2029])
 
     @app.route("/juniors/rankings")
     def junior_rankings():
