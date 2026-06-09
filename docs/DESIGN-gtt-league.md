@@ -3,6 +3,25 @@
 *Architecture + roadmap. Captures the design worked out in conversation; written
 as the build plan for the feature.*
 
+## Build status
+
+- **P0 — the dual** ✅ `engine/gtt.py` (`simulate_gtt_dual`): 3 MS + 3 WS + 3 XD,
+  first to 5 of 9, abandon-after-clinch. Mixed doubles run through the real 2-on-2
+  `engine.doubles` engine (gender-blind), not the old averaged-pair trick.
+- **P1 — the season** ✅ `app/gtt_seasonmode.py`, **forked from `app.seasonmode`**
+  and stripped of divisions/conferences/NCAA: a flat league of co-ed franchises
+  plays a double round-robin → single-elimination playoff → champion, persisted in
+  SQLite. Two deliberate divergences from the college fork:
+  - **Franchises are a stored, editable registry** (`gtt_franchises`: name + city +
+    abbrev). College programs regenerate from the seed and are never stored; GTT
+    teams have user-owned identities that can be renamed/relocated at will.
+  - **All seeds and rosters key off the franchise *id*, never its name** — so
+    renaming or relocating a team is purely cosmetic and changes no result. This is
+    what makes the editor safe.
+- **P2 — playoffs** ✅ folded into the P1 fork (top-N single elimination).
+- Next: **P3 honors**, **P4 STR continuity**, **P5 lifecycle/persistence**,
+  **P6 acquisition (Vickrey)** — see roadmap below.
+
 ## Context
 
 A co-ed professional team-tennis league bolted onto the existing world clock,
