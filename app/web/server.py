@@ -63,6 +63,7 @@ NAV_GROUPS = [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
         {"id": "bracket",   "label": "NCAA Bracket", "icon": "🥇", "endpoint": "bracket",          "args": {}},
+        {"id": "projection","label": "Bracket Projection","icon": "🔮", "endpoint": "projection",   "args": {}},
     ]),
     ("Tools", [
         {"id": "editor",    "label": "Editor",       "icon": "🛠️", "endpoint": "editor",          "args": {}},
@@ -84,6 +85,7 @@ def _active_nav(req) -> str:
     if p.startswith("/season/schedule"):  return "schedule"
     if p.startswith("/season"):           return "season"
     if p.startswith("/dual"):             return "dual"
+    if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/juniors"):          return "juniors"
@@ -308,6 +310,13 @@ def create_app() -> Flask:
         return render_template("bracket.html", active="Bracket", br=br, u=u,
                                uni_label=label, division=division,
                                field=len(br.seeds) if br else 0, field_presets=FIELD_PRESETS)
+
+    @app.route("/projection")
+    def projection():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        return render_template("projection.html", active="Bracket", u=u, uni_label=label,
+                               division=division, proj=sm.field_projection(sid))
 
     @app.route("/api/health")
     def health():
@@ -607,7 +616,8 @@ def create_app() -> Flask:
             except Exception:
                 champions = {}
         return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
-                               upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest)
+                               upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest,
+                               bubble=sm.bubble_watch(sid))
 
     @app.route("/season/advance", methods=["POST"])
     def season_advance():
@@ -621,7 +631,7 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
-                               standings=sm.standings(sid))
+                               standings=sm.standings(sid), bubble=sm.bubble_watch(sid))
 
     @app.route("/season/schedule")
     def season_schedule():
