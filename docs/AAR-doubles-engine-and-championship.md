@@ -1,12 +1,14 @@
-# AAR — Full Two-on-Two Doubles Engine & NCAA Doubles Championship
+# AAR — Doubles Engine, NCAA Individual Championships & Tennis Seeding
 
 ## Segment summary
 
-This segment replaced the sim's **doubles placeholder** with a real game. Doubles
-had always been a shortcut: a pair was averaged into one synthetic singles player
-and run through the singles point engine (`engine.dual._pair_player`, and a
-tilted variant `junior_circuit._pair_engine`). That was explicitly flagged in the
-code as "a later build." This is that build — plus the event it unlocks.
+This segment replaced the sim's **doubles placeholder** with a real game, built the
+**individual championships** (singles 128 + doubles 64) for every division×gender,
+and gave **every bracket** proper tennis seeding. Doubles had always been a
+shortcut: a pair was averaged into one synthetic singles player and run through the
+singles point engine (`engine.dual._pair_player`, and a tilted variant
+`junior_circuit._pair_engine`), flagged in the code as "a later build." This is
+that build — plus the events it unlocks and the seeding they all needed.
 
 - **A genuine four-player doubles engine** (`engine/doubles.py`) — serve rotation,
   court-based returners, a return played under the net man's poach pressure, and a
@@ -19,11 +21,19 @@ code as "a later build." This is that build — plus the event it unlocks.
 - **Wired everywhere doubles is played** — the three dual-match doubles lines and
   the junior-circuit doubles draws now play real two-on-two matches; the
   averaged-pair hacks are gone.
-- **NCAA Individual Doubles Championship** (`app/individuals.py`) — the 64-pair
-  (128-player) draw that runs **after** the team tournament: each program's #1
-  pair, seeded by doubles rating, every round a simulated two-on-two match. A
-  derived, seed-deterministic view (like the team bracket projection), plus a web
-  bracket page.
+- **NCAA Individual Championships** (`app/individuals.py`) — the **128-player
+  singles** and **64-pair doubles** draws that run **after** the team tournament:
+  the best players/pairs in the field, seeded by rating, every round a simulated
+  match (`simulate_match` for singles, the four-player `simulate_doubles` for
+  doubles). Derived, seed-deterministic views (like the team bracket projection),
+  with web bracket pages. Every division×gender has its own — **D1/D2/D3 × men and
+  women**.
+- **Tennis-style seeding for every bracket** — only the top **quarter** of a draw
+  are seeded and protected (128→32, 64→16, 32→8); seeds 1 and 2 anchor the ends,
+  each deeper tier is shuffled among its mirror anchors, byes go to the top seeds,
+  and **everyone else is drawn in at random**. One implementation
+  (`engine.tournament.seeded_draw`) powers the individual draws, the junior
+  circuit, and the team bracket.
 
 Shipped on `claude/ncaa-singles-doubles-brackets-mt4yey`.
 
@@ -77,54 +87,84 @@ rather than push toward the ~84% ATP doubles hold figure, since this is the NCAA
 game (no-ad, lots of breaks, deep parity). Aces ~9–10/match, net-ending winners
 dominant — consistent with the doubles-analytics references.
 
-## The championship: derived, not a new phase
+## Seeding: a quarter of the draw, the rest random
+
+The brackets used to seed the *entire* field deterministically — everyone had a
+seed number and the draw was fixed by rating. Real tennis seeds only the top
+**¼** of a draw (128→32, 64→16, 32→8); those seeds get protected, isolated
+placement, and **all remaining players are drawn in at random**. That randomness
+is the point: an unseeded player can land anywhere, a brutal section is bad luck,
+and a deep run off a tough draw is earned — none of which a fully-seeded bracket
+can express.
+
+It's one shared implementation, `engine.tournament.seeded_draw(n_real, n,
+n_seeds, rng)`: it places seeds tier by tier (1 and 2 anchored at opposite ends,
+[3,4] shuffled between the two open quarters, [5–8] among the eighths, [9–16]
+among the sixteenths, …), gives the byes to the top seeds' opponents, then draws
+the unseeded field into the open slots — all off one seeded `rng`, so the draw is
+reproducible. `run_tournament` uses it for the individual events and juniors; the
+team bracket (`app.bracket.run_bracket`) calls the same helper. `seed_count`
+encodes the ¼ rule. Seed numbers now display only for actual seeds; unseeded
+entrants (and unseeded champions — they happen) carry none.
+
+## The championships: derived, not a new phase
 
 The season machine is `regular → conf_tournaments → ncaa → complete`. Rather than
 splice a new persisted phase in (broad blast radius, new tables, migrations), the
-doubles championship mirrors the team bracket's **projection** path: a pure,
-seed-deterministic computation off the program rosters
-(`run_doubles_championship`), unlocked once the team bracket is `complete`. This
+championships mirror the team bracket's **projection** path: pure,
+seed-deterministic computations off the program rosters (`run_singles_championship`
+/ `run_doubles_championship`), unlocked once the team bracket is `complete`. This
 is faithful to the sim's core contract — *rosters/results regenerate from the
 seed; only schedules/results are persisted* — so the same seed reproduces the
-same champion exactly, with no schema change.
+same champions exactly, with no schema change.
 
-Field: each program's #1 pair (its two strongest players, exactly how the dual
-builds its top doubles team), the strongest 64 by doubles rating, seeded the same
-way. The draw runs on the existing `engine.run_tournament` framework — the same
-one the junior circuit uses — with `simulate_doubles` as the play callback.
+Field: **singles** pools every program's top 2 players and takes the best 128 by
+ability; **doubles** takes each program's #1 pair (its two strongest, exactly how
+the dual builds its top doubles team) and the best 64 by doubles rating. Both run
+on the existing `engine.run_tournament` framework — the same one the junior
+circuit uses — with `simulate_match` / `simulate_doubles` as the play callback, and
+the new seeding applied (top 32 / top 16 protected).
 
-The field is **deep**: across a 64-draw the top ratings run ~0.92 down to ~0.87, a
-thin spread, so the title takes six straight wins and is genuinely open. Over many
-seeds the champion's mean seed is ~21 (random would be ~32.5) — favorites are
-favored, but upsets and Cinderellas are common, which is what college doubles
-looks like.
+The field is **deep**: across a doubles 64-draw the top ratings run ~0.92 down to
+~0.87, a thin spread, so a title takes six straight wins and is genuinely open.
+Over many seeds the champion's mean rating-rank is ~21 (random would be ~32.5) —
+favorites are favored, but upsets and Cinderellas (including unseeded champions)
+are common, which is what deep college fields look like.
 
 ## Web
 
-A `/doubles-championship` page (nav: Simulate → Doubles Championship) renders the
-bracket — champion card, top seeds, semifinal path, round-by-round results with
-scorelines — reusing the team bracket's visual language adapted for pairs. It
-stays locked ("played after the team tournament") until the team bracket
-completes. The match-line score column is scoped CSS (`:has(.bl-team-score)`) so
-the team bracket layout is untouched.
+Two pages — `/singles-championship` and `/doubles-championship` (nav: Simulate →
+Singles / Doubles Championship) — render each draw: champion card, top seeds,
+semifinal path, round-by-round results with scorelines, reusing the team bracket's
+visual language adapted for players/pairs. Each stays locked ("played after the
+team tournament") until that universe's team bracket completes, and the universe
+pills switch freely between **men and women** (and D1/D2/D3). The match-line score
+column is scoped CSS (`:has(.bl-team-score)`) so the team bracket layout is
+untouched; seed numbers render only for seeded entrants.
 
 ## Files
 
 - `engine/doubles.py` — the four-player engine, ratings, full + fast fidelity,
   `DoublesTeam` / `DoublesResult` (with a `.players` alias so a doubles result
   duck-types as a singles `MatchResult` wherever dual lines render/persist).
-- `engine/dual.py`, `app/junior_circuit.py` — rewired onto the engine; the
+- `engine/tournament.py` — `seed_count` + `seeded_draw` (the ¼ seeding + random
+  draw), `TournamentResult.n_seeds` / `seed_no`.
+- `engine/dual.py`, `app/junior_circuit.py` — rewired onto the doubles engine; the
   averaged-pair shims (`_pair_player`, `_pair_engine`, `_DOUBLES_TILT`) removed.
-- `app/individuals.py` — field selection, seeding, the championship runner.
-- `app/web/state.py`, `app/web/server.py`, `templates/doubles.html`,
-  `static/css/bracket.css` — the web view.
-- `tests/test_doubles.py`, `tests/test_individuals.py`, `tests/test_web_doubles.py`.
+- `app/individuals.py` — singles + doubles field selection, the championship runners.
+- `app/bracket.py` — the team bracket now uses the shared seeded draw.
+- `app/web/{state,server}.py`, `templates/{singles,doubles}.html`, `bracket.html`,
+  `static/css/bracket.css` — the web views.
+- `tests/test_doubles.py`, `tests/test_individuals.py`,
+  `tests/test_web_{singles,doubles}.py`.
 
 ## What's deliberately left for later
 
-- **Singles 128-draw individual championship** — the same `run_tournament` spine
-  with `simulate_match` as the play callback; this segment scoped to doubles.
-- **Persisting** the championship into season history / honors (it is currently a
-  live derived view).
+- **Persisting** the championships into season history / honors (they are currently
+  live derived views).
+- **Seeding the persisted season-mode bracket & conference tournaments** — the
+  played-out NCAA/conference draws still schedule by full deterministic seeding
+  (`seasonmode._round1_pairs`); only the *displayed* team bracket got the ¼-seed
+  random draw this pass.
 - **Lineup doubles tactics** (which two players pair, formations as a chosen
   strategy) — the engine models the geometry; choosing it is a future lever.

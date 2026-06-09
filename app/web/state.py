@@ -31,6 +31,7 @@ _P5 = {"ACC", "SEC", "Big Ten", "Big 12", "Pac-12"}
 _season_cache: dict = {}
 _bracket_cache: dict = {}
 _doubles_champ_cache: dict = {}
+_singles_champ_cache: dict = {}
 
 
 def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
@@ -60,6 +61,25 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     if key not in _bracket_cache:
         _bracket_cache[key] = sm.bracket_field(sid, size=size)
     return _bracket_cache[key]
+
+
+def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
+    """The NCAA individual singles championship — a seed-deterministic 128-player
+    draw derived from the program rosters, played AFTER the team tournament (None
+    until the team bracket is complete). Cached for the year."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.individuals import run_singles_championship, clamp_field
+    size = clamp_field(size)
+    eff = world.current_year_seed(seed)
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
+    if not s or s["phase"] != "complete":
+        return None
+    key = (division, gender, eff, size)
+    if key not in _singles_champ_cache:
+        _singles_champ_cache[key] = run_singles_championship(division, gender, seed=eff, size=size)
+    return _singles_champ_cache[key]
 
 
 def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
@@ -92,6 +112,7 @@ def reset_all() -> None:
     _season_cache.clear()
     _bracket_cache.clear()
     _doubles_champ_cache.clear()
+    _singles_champ_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
     for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):

@@ -23,7 +23,7 @@
 
 {% macro team_line(p, seed, win=False, compact=False) %}
   <div class="bl-bracket-team{% if win %} is-winner{% endif %}{% if compact %} compact{% endif %}">
-    <span class="bl-team-seed">{{ seed }}</span>
+    <span class="bl-team-seed">{{ seed if seed else '' }}</span>
     {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
     <span class="bl-team-copy">
       <span class="nm">{{ p.school }}</span>
@@ -66,12 +66,14 @@
 
 <div class="bl-bracket-shell">
   <section class="bl-bracket-summary">
+    {% set cseed = br.seed_of(br.champion) %}
+    {% set rseed = br.seed_of(br.runner_up) %}
     <div class="bl-title-card champion">
       {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
       <div>
         <div class="bl-card-label">National Champion</div>
-        <div class="bl-card-title">#{{ br.seed_of(br.champion) }} {{ br.champion.school }}</div>
-        <div class="bl-card-sub">{{ br.champion.conf }} champion run{% if final %} over #{{ br.seed_of(br.runner_up) }} {{ br.runner_up.school }}{% endif %}</div>
+        <div class="bl-card-title">{% if cseed %}#{{ cseed }} {% endif %}{{ br.champion.school }}</div>
+        <div class="bl-card-sub">{{ br.champion.conf }} champion run{% if final %} over {% if rseed %}#{{ rseed }} {% endif %}{{ br.runner_up.school }}{% endif %}</div>
       </div>
     </div>
 
@@ -79,7 +81,7 @@
       <div class="bl-metric"><span class="lbl">Field</span><strong>{{ br.seeds|length }}</strong><span>{{ br.autobids|length }} AQ / {{ br.seeds|length - br.autobids|length }} at-large</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ br.rounds|length }}</strong><span>{{ first_round|length }} opening matchups</span></div>
       <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower seed advanced</span></div>
-      <div class="bl-metric"><span class="lbl">Runner-up</span><strong>#{{ br.seed_of(br.runner_up) }}</strong><span>{{ br.runner_up.school }}</span></div>
+      <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ br.runner_up.school }}</span></div>
     </div>
   </section>
 
@@ -104,8 +106,8 @@
         <div class="bl-path-list">
           {% for m in semifinal_round %}
             <div class="bl-path-row">
-              {{ team_line(m.hi, m.hi_seed, m.winner_seed == m.hi_seed, True) }}
-              {{ team_line(m.lo, m.lo_seed, m.winner_seed == m.lo_seed, True) }}
+              {{ team_line(m.hi, m.hi_seed, m.winner_is_hi, True) }}
+              {{ team_line(m.lo, m.lo_seed, not m.winner_is_hi, True) }}
             </div>
           {% endfor %}
         </div>
@@ -137,8 +139,8 @@
                 <span>{{ m.rnd }}</span>
                 {% if m.upset %}<span class="bl-upset">upset</span>{% endif %}
               </div>
-              {{ team_line(m.hi, m.hi_seed, m.winner_seed == m.hi_seed) }}
-              {{ team_line(m.lo, m.lo_seed, m.winner_seed == m.lo_seed) }}
+              {{ team_line(m.hi, m.hi_seed, m.winner_is_hi) }}
+              {{ team_line(m.lo, m.lo_seed, not m.winner_is_hi) }}
             </article>
             {% endfor %}
           </div>

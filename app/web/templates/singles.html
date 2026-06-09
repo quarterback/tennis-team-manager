@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
-{% block title %}Play to Clinch - NCAA Doubles Championship{% endblock %}
+{% block title %}Play to Clinch - NCAA Singles Championship{% endblock %}
 {% block content %}
 {% if not ch %}
 <div class="bl-board" style="max-width:760px">
   <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
-    <h2 style="margin:0 0 8px">No doubles championship yet</h2>
-    <p class="bl-conf">The individual doubles championship is played <strong>after</strong> the
+    <h2 style="margin:0 0 8px">No singles championship yet</h2>
+    <p class="bl-conf">The individual singles championship is played <strong>after</strong> the
     NCAA team tournament. Finish the team bracket from the
     <a href="{{ url_for('season_hub', u=u) }}">Season</a> hub, then come back.</p>
   </div></div>
@@ -17,7 +17,7 @@
 {% set first_round = ch.rounds[0] if ch.rounds else [] %}
 {% set semifinal_round = ch.rounds[-2] if ch.rounds|length > 1 else [] %}
 
-{% macro pair_line(e, seed, win=False, score='', compact=False) %}
+{% macro player_line(e, seed, win=False, score='', compact=False) %}
   <div class="bl-bracket-team{% if win %} is-winner{% endif %}{% if compact %} compact{% endif %}">
     <span class="bl-team-seed">{{ seed if seed else '' }}</span>
     {{ crest_box(e.program.school, e.program.abbr, e.program.color, 'xs') }}
@@ -34,13 +34,13 @@
     <div class="bl-kicker">NCAA {{ division }} Individual Championship</div>
     <div class="bl-bracket-title-row">
       <div>
-        <h1>{{ uni_label }} Doubles Championship</h1>
-        <p>Each program's #1 pair, seeded by doubles rating, then every round is a real
-        two-on-two match — serve, return, net play and the poach decide it, not a coin flip.</p>
+        <h1>{{ uni_label }} Singles Championship</h1>
+        <p>The 128 best singles players in the field, with the top {{ ch.n_seeds }} seeded and
+        the rest drawn in — then every round is a full point-by-point match.</p>
       </div>
       <div class="bl-bracket-actions">
+        <a class="bl-pill" href="{{ url_for('doubles_championship', u=u) }}">Doubles</a>
         <a class="bl-pill" href="{{ url_for('bracket', u=u) }}">Team Bracket</a>
-        <a class="bl-pill" href="{{ url_for('rankings', u=u) }}">Rankings</a>
       </div>
     </div>
   </div>
@@ -50,35 +50,35 @@
   <span class="bl-field-label">Universe</span>
   <span class="bl-bracket-pills">
     {% for val, d, g, lbl in universes %}
-      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('doubles_championship', u=val, size=field) }}">{{ lbl }}</a>
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('singles_championship', u=val, size=field) }}">{{ lbl }}</a>
     {% endfor %}
   </span>
   <span class="bl-field-label">Draw</span>
   <span class="bl-bracket-pills">
     {% for sz in field_presets %}
-      <a class="bl-pill{% if sz == field %} active{% endif %}" href="{{ url_for('doubles_championship', u=u, size=sz) }}">{{ sz }}</a>
+      <a class="bl-pill{% if sz == field %} active{% endif %}" href="{{ url_for('singles_championship', u=u, size=sz) }}">{{ sz }}</a>
     {% endfor %}
   </span>
-  <span class="bl-bracket-control-note">64 pairs (128 players) mirrors the NCAA doubles draw.</span>
+  <span class="bl-bracket-control-note">128 players mirrors the NCAA singles draw; {{ ch.n_seeds }} are seeded.</span>
 </div></div>
 
 <div class="bl-bracket-shell">
+  {% set cseed = ch.seed_of(ch.champion) %}
+  {% set rseed = ch.seed_of(ch.runner_up) %}
   <section class="bl-bracket-summary">
-    {% set cseed = ch.seed_of(ch.champion) %}
-    {% set rseed = ch.seed_of(ch.runner_up) %}
     <div class="bl-title-card champion">
       {{ crest_box(ch.champion.program.school, ch.champion.program.abbr, ch.champion.program.color, 'lg') }}
       <div>
-        <div class="bl-card-label">Doubles National Champions</div>
+        <div class="bl-card-label">Singles National Champion</div>
         <div class="bl-card-title">{% if cseed %}#{{ cseed }} {% endif %}{{ ch.champion.label }}</div>
         <div class="bl-card-sub">{{ ch.champion.program.school }}{% if ch.runner_up %} — def. {% if rseed %}#{{ rseed }} {% endif %}{{ ch.runner_up.label }} ({{ ch.runner_up.program.school }}){% endif %}</div>
       </div>
     </div>
 
     <div class="bl-metric-grid">
-      <div class="bl-metric"><span class="lbl">Draw</span><strong>{{ ch.entries|length }}</strong><span>pairs ({{ ch.entries|length * 2 }} players)</span></div>
+      <div class="bl-metric"><span class="lbl">Draw</span><strong>{{ ch.entries|length }}</strong><span>{{ ch.n_seeds }} seeded</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ ch.rounds|length }}</strong><span>{{ first_round|length }} opening matches</span></div>
-      <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower seed advanced</span></div>
+      <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower-rated advanced</span></div>
       <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ ch.runner_up.label }}</span></div>
     </div>
   </section>
@@ -86,7 +86,7 @@
   <section class="bl-bracket-layout">
     <aside class="bl-sim-sidebar">
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Top Seeds</span><span class="bl-panel-meta">by doubles rating</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Top Seeds</span><span class="bl-panel-meta">by rating</span></div>
         <div class="bl-seed-list">
           {% for e in ch.entries[:8] %}
             <div class="bl-seed-row">
@@ -104,18 +104,17 @@
         <div class="bl-path-list">
           {% for m in semifinal_round %}
             <div class="bl-path-row">
-              {{ pair_line(m.hi, m.hi_seed, m.winner_is_hi, '', True) }}
-              {{ pair_line(m.lo, m.lo_seed, not m.winner_is_hi, '', True) }}
+              {{ player_line(m.hi, m.hi_seed, m.winner_is_hi, '', True) }}
+              {{ player_line(m.lo, m.lo_seed, not m.winner_is_hi, '', True) }}
             </div>
           {% endfor %}
         </div>
       </div>
 
       <div class="bl-note bl-bracket-note">
-        <strong>Model:</strong> each program enters its strongest pair, seeded by a
-        doubles-specific rating that rewards serve and net play — so a pair can seed
-        above its singles level. Every match is simulated point-by-point in the
-        two-on-two engine.
+        <strong>Seeding:</strong> only the top {{ ch.n_seeds }} are seeded and protected in
+        the draw (a quarter of the bracket); everyone else is drawn in at random — so an
+        unseeded player can land anywhere, and a deep run off a tough draw is earned.
       </div>
     </aside>
 
@@ -140,8 +139,8 @@
                 <span>{{ m.rnd }}</span>
                 {% if m.upset %}<span class="bl-upset">upset</span>{% endif %}
               </div>
-              {{ pair_line(m.hi, m.hi_seed, m.winner_is_hi, m.scoreline if m.winner_is_hi else '') }}
-              {{ pair_line(m.lo, m.lo_seed, not m.winner_is_hi, m.scoreline if not m.winner_is_hi else '') }}
+              {{ player_line(m.hi, m.hi_seed, m.winner_is_hi, m.scoreline if m.winner_is_hi else '') }}
+              {{ player_line(m.lo, m.lo_seed, not m.winner_is_hi, m.scoreline if not m.winner_is_hi else '') }}
             </article>
             {% endfor %}
           </div>

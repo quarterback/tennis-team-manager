@@ -8,7 +8,7 @@ from .doubles import (simulate_doubles, DoublesTeam, DoublesResult,
                       doubles_rating, serve_rating, return_rating,
                       net_rating, poach_rating)
 from .tournament import (run_tournament, TournamentResult, TourMatch,
-                         round_name, finish_label)
+                         round_name, finish_label, seed_count)
 from .render import box_score, pbp_text
 
 __all__ = [
@@ -19,5 +19,6 @@ __all__ = [
     "simulate_doubles", "DoublesTeam", "DoublesResult", "doubles_rating",
     "serve_rating", "return_rating", "net_rating", "poach_rating",
     "run_tournament", "TournamentResult", "TourMatch", "round_name", "finish_label",
+    "seed_count",
     "box_score", "pbp_text",
 ]
