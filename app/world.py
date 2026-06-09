@@ -288,6 +288,19 @@ def signed_counts(seed: int = DEFAULT_SEED) -> dict:
     return {r["gender"]: r["c"] for r in rows}
 
 
+def signings(seed: int = DEFAULT_SEED) -> dict:
+    """{gender: {school: [Prospect, ...]}} for the class signed so far this world-year
+    — the live commitments the Signing Tracker reads (fills as the season advances)."""
+    w = load_world(seed)
+    if not w:
+        return {}
+    conn = _db()
+    try:
+        return _load_signings(conn, w)
+    finally:
+        conn.close()
+
+
 # ==========================================================================
 # Rosters as-of the current week: year-start rosters + a development replay.
 # ==========================================================================

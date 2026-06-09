@@ -30,6 +30,8 @@ _P5 = {"ACC", "SEC", "Big Ten", "Big 12", "Pac-12"}
 
 _season_cache: dict = {}
 _bracket_cache: dict = {}
+_doubles_champ_cache: dict = {}
+_singles_champ_cache: dict = {}
 
 
 def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
@@ -61,6 +63,45 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     return _bracket_cache[key]
 
 
+def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
+    """The NCAA individual singles championship — a seed-deterministic 128-player
+    draw derived from the program rosters, played AFTER the team tournament (None
+    until the team bracket is complete). Cached for the year."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.individuals import run_singles_championship, clamp_field
+    size = clamp_field(size)
+    eff = world.current_year_seed(seed)
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
+    if not s or s["phase"] != "complete":
+        return None
+    key = (division, gender, eff, size)
+    if key not in _singles_champ_cache:
+        _singles_champ_cache[key] = run_singles_championship(division, gender, seed=eff, size=size)
+    return _singles_champ_cache[key]
+
+
+def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
+    """The NCAA individual doubles championship — a seed-deterministic 64-pair
+    draw derived from the program rosters. It runs AFTER the team tournament, so
+    it stays None until the team bracket is complete, then is cached for the
+    year. Mirrors get_bracket's lazy, phase-aware shape."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.individuals import run_doubles_championship, clamp_field
+    size = clamp_field(size)
+    eff = world.current_year_seed(seed)
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
+    if not s or s["phase"] != "complete":
+        return None                          # unlocks once the team bracket is done
+    key = (division, gender, eff, size)
+    if key not in _doubles_champ_cache:
+        _doubles_champ_cache[key] = run_doubles_championship(division, gender, seed=eff, size=size)
+    return _doubles_champ_cache[key]
+
+
 def reset_all() -> None:
     """Drop every web-layer cache and the engine roster caches. Called after an
     editor override changes, so rankings / teams / season all re-derive from the
@@ -70,6 +111,8 @@ def reset_all() -> None:
     import app.seasonmode as sm
     _season_cache.clear()
     _bracket_cache.clear()
+    _doubles_champ_cache.clear()
+    _singles_champ_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
     for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):
@@ -217,6 +260,8 @@ def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict
         "champion": champion,
         "n_programs": len(rows),
         "n_conferences": len(div.conferences),
+        "n_players": len(pidx),
+        "phase": s["phase"],
     }
 
 
@@ -229,7 +274,8 @@ def conferences_for(division: str, gender: str) -> list[str]:
 # Recruiting (juniors) — board + profile
 # --------------------------------------------------------------------------
 from app.juniors import (generate_class, national_rankings, state_rankings,
-                         international_rankings, US_STATES)
+                         international_rankings, US_STATES,
+                         points_rankings, us_points_rankings, nation_points_top)
 from app.development import overall_to_str
 
 _recruit_cache: dict = {}
@@ -271,8 +317,228 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
         # badges. Cached with the class, so the cost is paid once.
         from app.junior_circuit import run_junior_circuit
         run_junior_circuit(klass, seed=seed)
+        points_rankings(klass)          # freeze the points-ledger rank on every recruit
         _recruit_cache[key] = klass
     return _recruit_cache[key]
+
+
+def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
+                        nation: str = "", sort: str = "rank", desc: bool = True,
+                        seed: int = DEFAULT_SEED):
+    """Points-ledger junior rankings as (rank, Prospect, stat_line) rows, sortable by
+    any almanac column. Scopes: 'world' (whole pool), 'us' (domestic), 'nation'."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    if scope == "us":
+        src = us_points_rankings(klass)[:100]
+    elif scope == "nation" and nation:
+        src = [p for p in points_rankings(klass) if not p.domestic and p.region == nation]
+    else:
+        src = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in src}
+    src = almanac.sort_recruits(src, stats, sort, desc)
+    return [(i, p, stats[p.pid], almanac.honor_chip(p)) for i, p in enumerate(src, 1)]
+
+
+def junior_leaders(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """League-leader mini-boards for the rankings hub (over the whole pool)."""
+    from app import almanac
+    recruits = get_recruits(gender, grad_year, seed).recruits
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    return almanac.leaders(recruits, stats)
+
+
+def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The export/wiring contract: a round-trippable JSON bundle of the junior board
+    (top 300 by points) — the same compute the live pages use."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    rows = []
+    for p in recruits[:300]:
+        s = stats[p.pid]
+        rows.append({
+            "rank": p.points_rank, "pid": p.pid, "name": p.name, "nation": p.country,
+            "domestic": p.domestic, "region": p.region, "grad_year": p.grad_year,
+            "stars": getattr(p, "recruit_stars", 0), "board_rank": getattr(p, "recruit_rank", None),
+            "points": p.junior_points, "singles_points": p.singles_points,
+            "doubles_points": p.doubles_points, "str": p.junior_str,
+            "doubles_str": p.junior_doubles_str, "events": p.tournaments_played,
+            "doubles_events": p.doubles_played, "w": s["w"], "l": s["l"],
+            "win_pct": round(s["pct"], 3), "titles": s["titles"], "finals": s["finals"],
+            "honors": getattr(p, "junior_badges", None) or [],
+        })
+    return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
+
+
+def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
+    """Live signings for `gender` ("men"/"women"): team class rankings (programs
+    ranked by the class they've signed) + recent commitments. Fills as the season
+    advances; empty before any signings."""
+    import app.world as world
+    from .rankings_data import crest
+    by_school = world.signings(seed).get(gender, {})
+    classes = []
+    commitments = []
+    for school, recruits in by_school.items():
+        stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+        abbr, color = crest(school)
+        commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                                  getattr(p, "recruit_rank", 1e9)))
+        classes.append({
+            "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+            "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+            "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+            "commits": commits[:5],
+        })
+        for p in recruits:
+            commitments.append({"p": p, "school": school, "abbr": abbr, "color": color,
+                                "stars": getattr(p, "recruit_stars", 0)})
+    classes.sort(key=lambda c: (-c["total_stars"], -c["n"], c["school"]))
+    for i, c in enumerate(classes, 1):
+        c["rank"] = i
+    commitments.sort(key=lambda r: (-r["stars"], getattr(r["p"], "recruit_rank", 1e9)))
+    return {"classes": classes, "commitments": commitments,
+            "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes)}
+
+
+def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
+    """One program's signed recruiting class (commits + class summary) for the
+    per-team recruiting page."""
+    import app.world as world
+    from .rankings_data import crest
+    recruits = world.signings(seed).get(gender, {}).get(school, [])
+    stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+    abbr, color = crest(school)
+    commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                              getattr(p, "recruit_rank", 1e9)))
+    return {
+        "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+        "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+        "three": sum(1 for x in stars if x == 3),
+        "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+        "commits": commits,
+    }
+
+
+def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
+    data-portal overview that ties the dense sub-pages together."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    recruits = points_rankings(klass)
+    stats = {p.pid: almanac.stat_line(p) for p in recruits}
+    intl = [p for p in recruits if not p.domestic]
+    kpis = {
+        "class_size": len(recruits),
+        "intl_pct": round(100 * len(intl) / max(1, len(recruits))),
+        "bluechips": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) >= 5),
+        "fourstar": sum(1 for p in recruits if getattr(p, "recruit_stars", 0) == 4),
+        "nations": len({p.country for p in intl}),
+        "states": len({p.region for p in recruits if p.domestic}),
+        "top": recruits[0] if recruits else None,
+    }
+    top_rows = [(p.points_rank, p, stats[p.pid], almanac.honor_chip(p)) for p in recruits[:12]]
+    return {"kpis": kpis, "top_rows": top_rows, "leaders": almanac.leaders(recruits, stats)}
+
+
+_tour_cache: dict = {}
+
+
+def _tournament_index(gender, grad_year, seed):
+    key = (gender, grad_year, seed)
+    if key not in _tour_cache:
+        from app import almanac
+        _tour_cache[key] = almanac.tournament_index(get_recruits(gender, grad_year, seed).recruits)
+    return _tour_cache[key]
+
+
+def junior_tournaments(gender: str, grad_year: int, tier: str = "", seed: int = DEFAULT_SEED):
+    """Junior Tour schedule: every event sorted week → tier, optionally filtered to one
+    tier. Each: {name, week, level, champion, finalist, n_entrants}."""
+    from app import almanac
+    tours = list(_tournament_index(gender, grad_year, seed).values())
+    if tier and tier != "All":
+        tours = [t for t in tours if t["level"] == tier]
+    return [{"name": t["name"], "week": t["week"], "level": t["level"],
+             "champion": t["champion"], "finalist": t["finalist"],
+             "n_entrants": len(t["entrants"])}
+            for t in almanac.sort_tournaments(tours)]
+
+
+def junior_tournament_detail(gender: str, grad_year: int, name: str, seed: int = DEFAULT_SEED):
+    """One tournament's full round-by-round results, or None."""
+    from app import almanac
+    t = _tournament_index(gender, grad_year, seed).get(name)
+    if not t:
+        return None
+    return {"name": t["name"], "week": t["week"], "level": t["level"],
+            "champion": t["champion"], "finalist": t["finalist"],
+            "n_entrants": len(t["entrants"]), "rounds": almanac.tournament_rounds(t["matches"])}
+
+
+def junior_nation_boards(gender: str, grad_year: int, seed: int = DEFAULT_SEED):
+    """[(nation, [(rank, Prospect, stat_line)...])] Top-10 per talent-dense nation."""
+    from app import almanac
+    klass = get_recruits(gender, grad_year, seed)
+    return [(nat, [(i, p, almanac.stat_line(p), almanac.honor_chip(p))
+                   for i, p in enumerate(players, 1)])
+            for nat, players in nation_points_top(klass)]
+
+
+# ---- Junior Setup: in-game tuning of the junior-circuit knobs (no code editor) ----
+_JR_KEYS = {"jr_season_weeks", "jr_draw_size", "jr_dev_years", "jr_doubles_weight", "jr_bands"}
+
+
+def junior_setup_view() -> dict:
+    """Current junior-circuit knobs (live values + code defaults) for the setup form."""
+    from app.junior_circuit import (_jr_config, BANDS, SEASON_WEEKS, DRAW_SIZE,
+                                    JUNIOR_DEV_YEARS, DOUBLES_WEIGHT)
+    cur = _jr_config()
+    return {
+        "weeks": cur["weeks"], "draw": cur["draw"], "dev": cur["dev"],
+        "doubles_weight": cur["doubles_weight"],
+        # bands as (tier, cumulative %) rows; State is pinned to 100%.
+        "bands": [(t, round(f * 100)) for t, f in cur["bands"]],
+        "defaults": {"weeks": SEASON_WEEKS, "draw": DRAW_SIZE, "dev": JUNIOR_DEV_YEARS,
+                     "doubles_weight": DOUBLES_WEIGHT,
+                     "bands": [(t, round(f * 100)) for t, f in BANDS]},
+    }
+
+
+def save_junior_setup(form) -> None:
+    """Persist the junior-circuit knobs and bust the recruit cache so the next class
+    regenerates with them."""
+    import json
+    from app import worldconfig
+    from app.junior_circuit import BANDS
+
+    def _num(key, default):
+        try:
+            return float(form.get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    worldconfig.set("jr_season_weeks", str(int(_num("season_weeks", 14))))
+    worldconfig.set("jr_draw_size", str(int(_num("draw_size", 32))))
+    worldconfig.set("jr_dev_years", str(_num("dev_years", 1.0)))
+    worldconfig.set("jr_doubles_weight", str(_num("doubles_weight", 0.25)))
+    base = dict(BANDS)
+    bands = [[tier, max(0.0, min(1.0, _num(f"band_{tier}", base[tier] * 100) / 100.0))]
+             for tier, _ in BANDS]
+    worldconfig.set("jr_bands", json.dumps(bands))
+    _recruit_cache.clear()
+    _tour_cache.clear()
+
+
+def reset_junior_setup() -> None:
+    """Clear every junior knob back to the code defaults + bust the recruit cache."""
+    from app import worldconfig
+    for k in _JR_KEYS:
+        worldconfig.set(k, "")
+    _recruit_cache.clear()
+    _tour_cache.clear()
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
@@ -338,6 +604,11 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "national_rank": p.recruit_rank,
         "region_rank": region_rank,
         "region_label": region_label,
+        # Points ledger vs. the scouting board: the divergence is the gem signal.
+        "points_rank": getattr(p, "points_rank", None),
+        "junior_points": getattr(p, "junior_points", 0),
+        "tournaments_played": getattr(p, "tournaments_played", 0),
+        "junior_str": getattr(p, "junior_str", None),
         "junior_tier_label": TIER_LABELS.get(p.junior_tier, ""),
         "service": overall_to_str(p.scouting_report("service")),   # two independent ceiling reads
         "dept": overall_to_str(p.scouting_report("dept")),

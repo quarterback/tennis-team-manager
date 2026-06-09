@@ -2,10 +2,12 @@
 Seeded single-elimination INDIVIDUAL tournament — the reusable draw framework.
 
 `app.bracket` brackets whole *teams* (duals, seeded by Power Index); this brackets
-individual *players*. Entrants are seeded by a rating key, byes go to the top seeds,
-and every match is decided by actually **playing it** — the caller supplies a `play`
-callback (default: `engine.simulate_fast` between two `Player`s), so higher seeds are
-favored but upsets happen for free off the engine's own variance.
+individual *players*. Entrants are rating-ordered by a key, the draw is seeded the
+tennis way — only the top quarter (128→32, 64→16, …) are protected, everyone else
+is drawn in at random — byes go to the top seeds, and every match is decided by
+actually **playing it** (the caller supplies a `play` callback, default
+`engine.simulate_fast`), so higher seeds are favored but upsets happen for free off
+the engine's own variance.
 
 What it returns is the raw material a résumé needs: the champion, the runner-up, and
 **every entrant's finishing round** (Champion / Finalist / Semifinalist /
@@ -50,6 +52,66 @@ def _seed_order(n: int) -> list[int]:
     return order
 
 
+def seed_count(field: int) -> int:
+    """How many entrants are SEEDED in a draw of `field`, per the tennis
+    convention: a quarter of the (power-of-two) draw. 128→32, 64→16, 32→8,
+    16→4, 8→2. The rest of the field is drawn in unseeded."""
+    n = 1
+    while n < field:
+        n *= 2
+    return max(2, n // 4)
+
+
+def seeded_draw(n_real: int, n: int, n_seeds: int, rng: random.Random) -> list[int | None]:
+    """Make the draw: return slots[i] = entrant rank (0-based, 0 = top seed) or
+    None (a bye). Only the top `n_seeds` are placed at protected anchors — seeds
+    1 and 2 fixed at the ends, every deeper seed tier shuffled among its mirror
+    anchors — byes go to the top seeds, and all unseeded entrants are drawn at
+    random into the open slots. Same rng + inputs ⇒ same draw."""
+    positions = _seed_order(n)                 # positions[slot] = canonical seed no.
+    slot_of = {positions[i]: i for i in range(n)}
+    slots: list[int | None] = [None] * n
+
+    # Place the seeds tier by tier. Tiers: [1], [2], [3,4], [5..8], [9..16], …;
+    # 1 and 2 are anchored, deeper tiers are randomized among their mirror slots.
+    n_seeds = min(n_seeds, n_real)
+    tier_lo = 1
+    while tier_lo <= n_seeds:
+        # Tiers: [1], [2], [3,4], [5..8], [9..16], … — seeds 1 and 2 are anchored,
+        # each deeper tier doubles and is shuffled among its mirror anchors.
+        tier_hi = tier_lo if tier_lo <= 2 else min(2 * tier_lo - 2, n_seeds)
+        nums = list(range(tier_lo, tier_hi + 1))
+        anchors = [slot_of[s] for s in nums]
+        rng.shuffle(anchors)
+        for num, pos in zip(nums, anchors):
+            slots[pos] = num - 1               # entrant rank
+        tier_lo = 2 if tier_lo == 1 else tier_hi + 1
+
+    # Byes go to the top seeds' first-round opponents, in seed order.
+    need_byes = n - n_real
+    bye_slots: set[int] = set()
+    for rank in range(min(n_seeds, n_real)):
+        if len(bye_slots) >= need_byes:
+            break
+        opp = slot_of[rank + 1] ^ 1             # the seed's pair partner slot
+        if slots[opp] is None:
+            bye_slots.add(opp)
+
+    open_slots = [i for i in range(n) if slots[i] is None and i not in bye_slots]
+    rng.shuffle(open_slots)
+    # any byes beyond the seed opponents land on random open slots
+    extra = need_byes - len(bye_slots)
+    for _ in range(max(0, extra)):
+        bye_slots.add(open_slots.pop())
+
+    # draw the unseeded entrants (ranks n_seeds..n_real-1) at random
+    unseeded = list(range(n_seeds, n_real))
+    rng.shuffle(unseeded)
+    for slot, rank in zip(open_slots, unseeded):
+        slots[slot] = rank
+    return slots
+
+
 @dataclass
 class TourMatch:
     rnd: str            # round label, e.g. "Quarterfinals"
@@ -62,13 +124,19 @@ class TourMatch:
 
 @dataclass
 class TournamentResult:
-    entrants: list                                   # seeded order; index 0 = top seed
+    entrants: list                                   # rating order; index 0 = #1 seed
     rounds: list[list[TourMatch]] = field(default_factory=list)
     champion_idx: int | None = None
     runner_up_idx: int | None = None
     # seeded index -> size of the round in which they were eliminated. The champion
     # is absent (never eliminated); look them up via `champion_idx`.
     elim_size: dict[int, int] = field(default_factory=dict)
+    n_seeds: int = 0                                 # how many entrants were seeded
+
+    def seed_no(self, idx: int) -> int | None:
+        """The displayed seed number for entrant `idx` (1-based), or None if the
+        entrant was unseeded (drawn in)."""
+        return idx + 1 if idx < self.n_seeds else None
 
     @property
     def champion(self):
@@ -95,12 +163,15 @@ def _default_play(a, b, *, seed: int):
 
 def run_tournament(entrants: list, *, seed: int,
                    play: Callable | None = None,
-                   key: Callable | None = None) -> TournamentResult:
-    """Run a seeded single-elimination draw over `entrants`.
+                   key: Callable | None = None,
+                   seeds: int | None = None) -> TournamentResult:
+    """Run a single-elimination draw over `entrants` with tennis-style seeding.
 
-    `key(entrant) -> float` is the seeding rating (higher seeds first); ties break on
-    entry index for determinism. If omitted, `entrants` are taken as already seeded.
-    `play(a, b, seed=...) -> winner` decides each match (default: `simulate_fast`).
+    `key(entrant) -> float` is the seeding rating (higher first); ties break on entry
+    index for determinism. If omitted, `entrants` are taken as already rating-ordered.
+    Only the top `seeds` entrants are protected in the draw (default: a quarter of the
+    bracket — 128→32, 64→16, …); everyone else is drawn in at random. `play(a, b,
+    seed=...) -> winner` decides each match (default: `simulate_fast`).
     """
     play = play or _default_play
     n_real = len(entrants)
@@ -111,7 +182,8 @@ def run_tournament(entrants: list, *, seed: int,
         seeded = [entrants[i] for i in order]
     else:
         seeded = list(entrants)
-    res = TournamentResult(entrants=seeded)
+    n_seeds = min(seed_count(n_real) if seeds is None else seeds, n_real)
+    res = TournamentResult(entrants=seeded, n_seeds=n_seeds)
     if n_real == 1:
         res.champion_idx = 0
         return res
@@ -119,11 +191,10 @@ def run_tournament(entrants: list, *, seed: int,
     n = 1
     while n < n_real:
         n *= 2
-    positions = _seed_order(n)
-    # Slots hold the seeded index (0-based) or None for a bye.
-    slots: list[int | None] = [(s - 1) if s <= n_real else None for s in positions]
-
     rng = random.Random(seed)
+    # The draw (seed placement + random unseeded fill) consumes the rng first, so
+    # it is part of the same deterministic stream as the match seeds below.
+    slots: list[int | None] = seeded_draw(n_real, n, n_seeds, rng)
     size = n
     while size > 1:
         nxt: list[int | None] = []

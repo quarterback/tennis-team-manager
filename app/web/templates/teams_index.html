@@ -26,11 +26,12 @@
     <div class="bl-confgrid">
       {% for t in teams %}
       <a class="bl-teamcard" href="{{ url_for('teams', school=t.school, u=u) }}">
-        <span class="bl-crest md" style="background:{{ t.color }}">{{ t.abbr }}</span>
+        {% set _logo = t.school | team_logo_src %}
+        {% if _logo %}<span class="bl-crest md" style="background:#fff;padding:4px"><img src="{{ _logo }}" alt="{{ t.school }}" style="width:100%;height:100%;object-fit:contain"></span>
+        {% else %}<span class="bl-crest md" style="background:{{ t.color }}">{{ t.abbr }}</span>{% endif %}
         <span class="bl-teamcard-body">
           <span class="bl-teamcard-name">{{ t.school }}</span>
           <span class="bl-teamcard-meta">
-            <span class="bl-badge tier-{{ t.tier }}">{{ t.tier }}</span>
             <span>{{ t.rec }}</span>
           </span>
         </span>

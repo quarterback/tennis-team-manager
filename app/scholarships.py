@@ -50,6 +50,8 @@ ELITE_D3_LIMITS = {"count": 4, "rate": 1.00, "cap": 0.0, "fractional": False}
 
 # Live overrides set from the editor: (division, gender) -> {count?, rate?, cap?}.
 _overrides: dict[tuple[str, str], dict] = {}
+# The academically-elite D3 tier is its own editable cell (applies to both genders).
+_elite_override: dict = {}
 
 
 def _norm_division(division: str) -> str:
@@ -86,12 +88,24 @@ def set_limit(division: str, gender: str | None = None, *,
             o["cap"] = max(0.0, float(cap))
 
 
+def set_elite_limit(*, count=None, rate=None, cap=None) -> None:
+    """Override the academically-elite D3 scholarship tier (applies to both genders).
+    Editable from the editor like every other classification."""
+    if count is not None:
+        _elite_override["count"] = max(0, int(count))
+    if rate is not None:
+        _elite_override["rate"] = max(0.0, min(1.0, float(rate)))
+    if cap is not None:
+        _elite_override["cap"] = max(0.0, float(cap))
+
+
 def clear_overrides() -> None:
     _overrides.clear()
+    _elite_override.clear()
 
 
 def any_overrides() -> bool:
-    return bool(_overrides)
+    return bool(_overrides) or bool(_elite_override)
 
 
 def get_overrides() -> dict:
@@ -110,10 +124,11 @@ def limits(division: str, gender: str | None = None, academics: float = 0.0) -> 
     if _is_elite_d3(div, academics):
         base = dict(ELITE_D3_LIMITS)
         base["elite_d3"] = True
+        base.update(_elite_override)
     else:
         base = dict(DEFAULT_LIMITS.get((div, g), DEFAULT_LIMITS[("D3", "men")]))
         base["elite_d3"] = False
-    base.update(_overrides.get((div, g), {}))
+        base.update(_overrides.get((div, g), {}))
     base["effective_value"] = round(base["count"] * base["rate"], 2)
     return base
 

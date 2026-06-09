@@ -2,7 +2,7 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Power Index{% endblock %}
 {% block content %}
-{% set grid = '38px minmax(120px,1fr) 50px 58px 110px 62px 70px 96px 62px 62px' %}
+{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 70px 96px 62px 62px' %}
 
 <form method="get">
 <div class="bl-toolbar">
@@ -56,7 +56,6 @@
       <div class="bl-thead">
         <span class="bl-th">RK <span class="caret">▴▾</span></span>
         <span class="bl-th">SCHOOL <span class="caret">▴▾</span></span>
-        <span class="bl-th">TIER</span>
         <span class="bl-th">CONF RK</span>
         <span class="bl-th">CONFERENCE</span>
         <span class="bl-th">RECORD</span>
@@ -68,8 +67,7 @@
       {% for r in rows %}
       <div class="bl-row{% if r.me %} me{% endif %}">
         <span class="bl-rank {{ r.rank_class }}">{{ r.rk }}</span>
-        <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school }}</a>
-        <span><span class="bl-badge tier-{{ r.tier }}">{{ r.tier }}</span></span>
+        <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
         <span class="bl-confrk {{ r.confrk_class }}">{{ r.cr }}</span>
         <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.rec }}</span>

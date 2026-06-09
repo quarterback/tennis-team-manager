@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
 {% block title %}Play to Clinch — {{ v.home.school }} vs {{ v.away.school }}{% endblock %}
 {% block content %}
 {% macro matchrow(m) %}
@@ -25,7 +26,7 @@
 <div class="bl-board">
   <div class="bl-scorehdr">
     <div class="team">
-      <span class="bl-crest lg" style="background:{{ v.home.color }}">{{ v.home.abbr }}</span>
+      {{ crest_box(v.home.school, v.home.abbr, v.home.color, 'lg') }}
       <div><div class="tname">{{ v.home.school }}</div><div class="tsub">#{{ v.home.rk }} · {{ v.home.rec }}</div></div>
     </div>
     <div class="status">
@@ -38,7 +39,7 @@
     </div>
     <div class="team away">
       <div style="text-align:right"><div class="tname">{{ v.away.school }}</div><div class="tsub">#{{ v.away.rk }} · {{ v.away.rec }}</div></div>
-      <span class="bl-crest lg" style="background:{{ v.away.color }}">{{ v.away.abbr }}</span>
+      {{ crest_box(v.away.school, v.away.abbr, v.away.color, 'lg') }}
     </div>
   </div>
 
@@ -85,7 +86,7 @@
         <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:12px">
           {% for t, pts in [(v.home, v.home_points), (v.away, v.away_points)] %}
           <div class="bl-clinchrow">
-            <span class="bl-clinch-name"><span class="bl-crest sm" style="background:{{ t.color }}">{{ t.abbr }}</span>{{ t.school }}</span>
+            <span class="bl-clinch-name">{{ crest_box(t.school, t.abbr, t.color, 'sm') }}{{ t.school }}</span>
             <span class="bl-pips">
               {% for i in range(4) %}<span class="bl-pip" style="{% if i < pts %}background:{{ t.color }};border-color:{{ t.color }}{% endif %}"></span>{% endfor %}
             </span>

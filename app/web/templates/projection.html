@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_bubble.html" import bubble_split %}
+{% block title %}Play to Clinch — Bracket Projection{% endblock %}
+{% block content %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Season › Bracket Projection · {{ uni_label }}</span>
+  <span style="margin-left:auto;display:inline-flex;gap:8px">
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Simulate Bracket →</a>
+  </span>
+</div></div>
+
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+{% if not proj %}
+  <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
+    <h2 style="margin:0 0 8px">No projection yet</h2>
+    <p class="bl-conf">The {{ uni_label }} field projects from Power Index once a few weeks of duals are final.
+    Advance the season from the <a href="{{ url_for('season_hub', u=u) }}">Season</a> hub.</p>
+  </div></div>
+{% else %}
+  {% set cut = proj.at_large_spots %}
+  {% set edge = proj.edge %}
+
+  <div style="margin-bottom:14px">
+    <h1 style="margin:0 0 4px;font-size:22px">NCAA {{ division }} Bracket Projection</h1>
+    <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:680px">
+      The {{ proj.field }}-team field if the tournament were seeded today. Projected conference leaders
+      take the {{ proj.aq|length }} automatic bids; the remaining {{ cut }} at-large spots go strictly by
+      Power Index — nothing else. Each men's / women's D1, D2, and D3 season is its own separate tournament.
+    </p>
+  </div>
+
+  <div class="bl-metric-grid" style="margin-bottom:18px">
+    <div class="bl-metric"><span class="lbl">Field</span><strong>{{ proj.field }}</strong><span>{{ proj.aq|length }} AQ / {{ cut }} at-large</span></div>
+    <div class="bl-metric"><span class="lbl">Auto bids</span><strong>{{ proj.aq|length }}</strong><span>projected conf leaders</span></div>
+    <div class="bl-metric"><span class="lbl">At-large</span><strong>{{ cut }}</strong><span>by Power Index</span></div>
+    <div class="bl-metric"><span class="lbl">On the bubble</span><strong>{{ proj.out_board|length }}</strong><span>teams chasing in</span></div>
+  </div>
+
+  {# Quick read: the cut line. #}
+  <div class="bl-panel" style="margin-bottom:18px">
+    <div class="bl-panel-head"><span class="bl-panel-title">The Cut Line</span>
+      <span class="bl-panel-meta">last at-large spot is #{{ cut }}</span></div>
+    {{ bubble_split({'last_in': proj.in_board[-edge:], 'first_out': proj.out_board[:edge]}, u) }}
+  </div>
+
+  <div class="bl-board-grid" style="grid-template-columns:1fr 320px;align-items:start">
+    {# At-large board: full IN list, the cut line, then the teams chasing it. #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">At-Large Board</span>
+        <span class="bl-panel-meta">non-auto-bid teams · ranked by Power Index</span></div>
+      <div class="bl-stand-hdr" style="grid-template-columns:42px 1fr 56px 70px 56px">
+        <span>AL</span><span>Team</span><span>Conf</span><span>Overall</span><span>PI</span>
+      </div>
+      {% for t in proj.in_board %}
+      <a class="bl-brk-match bl-proj-row{% if t.al_rank > cut - edge %} bl-proj-lastin{% endif %}"
+         style="grid-template-columns:42px 1fr 56px 70px 56px;text-decoration:none"
+         href="{{ url_for('teams', school=t.school, u=u) }}">
+        <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
+        <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
+        <span class="bl-bubble-conf">{{ t.conf }}</span>
+        <span class="bl-bubble-rec">{{ t.rec }}</span>
+        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+      </a>
+      {% endfor %}
+      <div class="bl-proj-cut">▲ in · cut line at #{{ cut }} · out ▼</div>
+      {% for t in proj.out_board %}
+      <a class="bl-brk-match bl-proj-row bl-proj-out{% if t.al_rank <= cut + edge %} bl-proj-firstout{% endif %}"
+         style="grid-template-columns:42px 1fr 56px 70px 56px;text-decoration:none"
+         href="{{ url_for('teams', school=t.school, u=u) }}">
+        <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
+        <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
+        <span class="bl-bubble-conf">{{ t.conf }}</span>
+        <span class="bl-bubble-rec">{{ t.rec }}</span>
+        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    {# Projected automatic qualifiers (conference leaders). #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Automatic Bids</span>
+        <span class="bl-panel-meta">{{ proj.aq|length }} · projected conf leaders</span></div>
+      {% for t in proj.aq %}
+      <a class="bl-brk-match" style="grid-template-columns:1fr 50px 56px;text-decoration:none"
+         href="{{ url_for('teams', school=t.school, u=u) }}">
+        <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
+        <span class="bl-bubble-conf">{{ t.conf }}</span>
+        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+</div>
+{% endblock %}

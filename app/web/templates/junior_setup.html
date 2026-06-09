@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Junior Setup{% endblock %}
+{% block content %}
+<div class="bl-prose" style="max-width:760px">
+  <h1>Junior Setup</h1>
+  <p class="lede">Tune the junior circuit without touching code. Changes are saved to this world and the
+    recruiting class <strong>regenerates on the next view</strong> (the build is cached, so the first load
+    after a change does the work). Determinism holds: the same settings + seed always reproduce the same
+    résumés.</p>
+
+  <form method="post" action="{{ url_for('junior_setup') }}">
+    <input type="hidden" name="u" value="{{ u }}">
+
+    <h2>Season</h2>
+    <table class="bl-protable"><tbody>
+      <tr><td><strong>Season weeks</strong><div class="bl-help">How many abstract weeks the season runs — every recruit plays one event per week. More weeks = more matches &amp; data, slower build. Default {{ view.defaults.weeks }}.</div></td>
+        <td class="w"><input class="bl-num" type="number" name="season_weeks" min="4" max="40" step="1" value="{{ view.weeks }}"></td></tr>
+      <tr><td><strong>Draw size</strong><div class="bl-help">Players per single-elim draw at every level. Default {{ view.defaults.draw }}.</div></td>
+        <td class="w"><input class="bl-num" type="number" name="draw_size" min="8" max="64" step="1" value="{{ view.draw }}"></td></tr>
+      <tr><td><strong>Development years</strong><div class="bl-help">How much of a recruit's climb is replayed across the junior season (the bloom/plateau arc). Default {{ view.defaults.dev }}.</div></td>
+        <td class="w"><input class="bl-num" type="number" name="dev_years" min="0" max="3" step="0.1" value="{{ view.dev }}"></td></tr>
+      <tr><td><strong>Doubles weight</strong><div class="bl-help">Share of best-6 doubles points folded into the combined ranking (ITF CJR uses ¼). Default {{ view.defaults.doubles_weight }}.</div></td>
+        <td class="w"><input class="bl-num" type="number" name="doubles_weight" min="0" max="1" step="0.05" value="{{ view.doubles_weight }}"></td></tr>
+    </tbody></table>
+
+    <h2>Tier bands</h2>
+    <p>Each week the field is ranked by running points and sliced into tiers by these <strong>cumulative</strong>
+      cutoffs — e.g. the top % play Masters, the top % up to the next line play Majors, and so on down. State
+      catches everyone remaining (pinned to 100%).</p>
+    <table class="bl-protable"><thead><tr><th>Tier</th><th class="w">Top % of field (cumulative)</th></tr></thead><tbody>
+      {% for tier, pct in view.bands %}
+      <tr><td><strong>{{ tier }}</strong></td>
+        <td class="w">
+          {% if tier == 'State' %}
+            <input class="bl-num" type="number" value="100" disabled> <span class="bl-help">(everyone else)</span>
+          {% else %}
+            <input class="bl-num" type="number" name="band_{{ tier }}" min="1" max="100" step="1" value="{{ pct }}">
+          {% endif %}
+        </td></tr>
+      {% endfor %}
+    </tbody></table>
+
+    <div style="display:flex;gap:12px;margin-top:18px">
+      <button type="submit" class="ob-btn-primary">Save settings</button>
+      <button type="submit" name="reset" value="1" class="bl-btn-secondary"
+              onclick="return confirm('Reset all junior settings to defaults?')">Reset to defaults</button>
+    </div>
+  </form>
+
+  <div class="bl-notes" style="margin-top:20px"><div class="bl-note">
+    These are world settings stored alongside the nationality band and active universes. The recruiting board
+    (consensus ability) is unaffected — only the junior circuit (schedule, points, development, doubles) reads
+    them. Cumulative band cutoffs are clamped ascending; State is always 100%.
+  </div></div>
+</div>
+
+<style>
+  .bl-num { width:96px; padding:5px 8px; text-align:right; font-variant-numeric:tabular-nums;
+            border:1px solid var(--border, #ccd); border-radius:6px; background:var(--surface, #fff);
+            color:var(--text-primary, #111); }
+  .bl-help { color:var(--text-muted, #789); font-size:12px; margin-top:2px; }
+  .bl-btn-secondary { background:transparent; color:var(--text-link, #36c); border:1px solid var(--border, #ccd);
+            border-radius:8px; padding:9px 16px; font-weight:600; cursor:pointer; }
+</style>
+{% endblock %}

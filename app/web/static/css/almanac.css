@@ -1,0 +1,104 @@
+/* Almanac / data-portal styles — shared across the dashboard, Recruiting HQ and
+   the dense reference tables (junior rankings). O27/viperball idiom. */
+
+/* KPI stat-cards */
+.al-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.al-kpi {
+  border: 1px solid var(--border-subtle, #dde); border-radius: 10px; padding: 11px 13px;
+  background: var(--surface-card, #fff); text-decoration: none; display: block;
+}
+.al-kpi-link:hover { border-color: var(--brand, #36c); }
+.al-kpi-k {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted, #789); font-weight: 700;
+}
+.al-kpi-v {
+  font-size: 24px; font-weight: 800; color: var(--text-primary, #111); line-height: 1.15;
+  margin-top: 3px; font-variant-numeric: tabular-nums;
+}
+.al-kpi-v.sm { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-kpi-sub { font-size: 11px; color: var(--text-muted, #789); margin-top: 2px; }
+
+/* Dense reference table */
+.al-dense .bl-th, .al-dense .bl-cell-num, .al-dense .bl-rank { font-size: 12px; }
+.al-dense .bl-row, .al-dense .bl-thead { padding-top: 3px; padding-bottom: 3px; }
+
+/* Sortable column headers */
+a.al-th {
+  color: var(--text-muted, #789); font-weight: 600; text-decoration: none; font-size: 11px;
+  white-space: nowrap; cursor: pointer;
+}
+a.al-th.num { text-align: right; }
+a.al-th:hover { color: var(--text-link, #36c); }
+a.al-th-active { color: var(--text-primary, #111); }
+.al-arr { font-size: 9px; margin-left: 1px; }
+
+/* JSON feed pill */
+.al-feed {
+  margin-left: auto; align-self: center; font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+  color: var(--text-link, #36c); text-decoration: none; border: 1px solid var(--border-subtle, #ccd);
+  border-radius: 6px; padding: 5px 9px;
+}
+
+/* Honor badges — shields.io-style two-segment chips (scope | accomplishment),
+   the accomplishment segment coloured by prestige: a distinct shade per ranking
+   level (No. 1 → Top 300) plus tournament-win colours. */
+.al-honors { display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.al-shield {
+  display: inline-flex; align-items: stretch; height: 18px; line-height: 18px;
+  border-radius: 4px; overflow: hidden; font-size: 10.5px; font-weight: 700;
+  white-space: nowrap; vertical-align: middle;
+}
+.al-shield-l { background: #555d66; color: #fff; padding: 0 6px; }
+.al-shield-r { color: #fff; padding: 0 6px; }
+/* Tournament accomplishments */
+.al-r-gschamp { background: #b8860b; }   /* Grand Slam champion — gold */
+.al-r-gsfinal { background: #a23bb0; }   /* Grand Slam finalist — purple */
+.al-r-masters { background: #d2691e; }   /* Masters champion — orange */
+.al-r-major   { background: #c79100; }   /* Major champion — amber */
+/* Ranking milestones, brightest (best) → coolest/greyest (deepest) */
+.al-r-r1   { background: #b8860b; }       /* No. 1 — gold */
+.al-r-r5   { background: #1f9e3d; }       /* Top 5 */
+.al-r-r10  { background: #2faa55; }       /* Top 10 */
+.al-r-r25  { background: #159e8c; }       /* Top 25 — teal */
+.al-r-r50  { background: #2f7fc0; }       /* Top 50 — blue */
+.al-r-r100 { background: #4a5dc4; }       /* Top 100 — indigo */
+.al-r-r250 { background: #6b6f9a; }       /* Top 250 — muted indigo */
+.al-r-r300 { background: #8a939c; }       /* Top 300 — grey */
+/* Recruiting star tiers (stars | tier label) */
+.al-r-s5  { background: #c0392b; }         /* Blue Chip / 5★ — red */
+.al-r-s4  { background: #3071b9; }         /* 4★ — blue */
+.al-r-s3  { background: #2faa55; }         /* 3★ — green */
+.al-r-s2  { background: #7a8590; }         /* 2★ — slate */
+.al-r-s1  { background: #9098a1; }         /* 1★ — grey */
+.al-r-snr { background: #aab0b8; }         /* unrated */
+.al-more { font-size: 10px; color: var(--text-muted, #789); }
+
+/* League-leader mini-boards */
+.al-leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 4px 0 6px; }
+.al-leadwrap { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.al-leadcard { border: 1px solid var(--border-subtle, #dde); border-radius: 9px; overflow: hidden; background: var(--surface-card, #fff); }
+.al-leadhead {
+  background: var(--surface-subtle, #f3f5f8); padding: 6px 10px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary, #456);
+}
+.al-leadrow {
+  display: flex; justify-content: space-between; gap: 8px; padding: 4px 10px; font-size: 12.5px;
+  text-decoration: none; color: var(--text-primary, #111); border-top: 1px solid var(--border-subtle, #eef);
+}
+.al-leadrow:hover { background: var(--surface-subtle, #f7f9fc); }
+.al-leadname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-leadval { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-link, #36c); }
+.al-section { margin: 2px 0 6px; font-size: 14px; }
+
+/* Quick-link cards (dashboard + Recruiting HQ) — previously page-scoped in
+   dashboard.html, now shared so every portal page renders them as cards. */
+.bl-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.bl-quickcard {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px;
+  border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-card);
+  text-decoration: none; color: inherit; transition: border-color 0.12s;
+}
+.bl-quickcard:hover { border-color: var(--brand); }
+.bl-quick-k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.bl-quick-v { font-weight: 600; color: var(--brand-strong); }

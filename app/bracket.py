@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 from engine import simulate_dual
 from engine.format import PRESETS
+from engine.tournament import seed_count, seeded_draw
 from .ncaa import Program, build_squad
 
 ROUND_NAMES = {64: "Round of 64", 32: "Round of 32", 16: "Round of 16",
@@ -62,25 +63,28 @@ def play_dual(a: Program, b: Program, *, seed: int, fidelity: str = "fast") -> P
 @dataclass
 class Matchup:
     rnd: str
-    hi_seed: int
-    lo_seed: int
-    hi: Program
+    hi: Program                               # better-rated side
     lo: Program
-    winner_seed: int
+    hi_seed: int | None                       # seed number, or None if unseeded
+    lo_seed: int | None
     winner: Program
+    winner_is_hi: bool
     upset: bool
 
 
 @dataclass
 class BracketResult:
-    seeds: list[Program]                      # index 0 = #1 seed
+    seeds: list[Program]                      # rating order; index 0 = #1 seed
     autobids: set[str]                        # program keys
+    n_seeds: int = 0                          # only the top n_seeds carry a seed no.
     rounds: list[list[Matchup]] = field(default_factory=list)
     champion: Program | None = None
     runner_up: Program | None = None
 
-    def seed_of(self, p: Program) -> int:
-        return self.seeds.index(p) + 1
+    def seed_of(self, p: Program) -> int | None:
+        """Seed number (1-based), or None if the program was unseeded in the draw."""
+        rank = self.seeds.index(p)
+        return rank + 1 if rank < self.n_seeds else None
 
 
 def select_field(programs: list[Program], ratings: dict, champions: list[Program],
@@ -114,13 +118,18 @@ def run_bracket(seeded: list[Program], autobids: set[str], *, seed: int,
     n = 1
     while n < len(seeded):
         n *= 2
-    positions = _seed_positions(n)
-    # slot -> Program or None (bye). seed s (1-based) → seeded[s-1].
-    slots = [seeded[s - 1] if s <= len(seeded) else None for s in positions]
-    seed_of = {p.key: i + 1 for i, p in enumerate(seeded)}
-
-    res = BracketResult(seeds=seeded, autobids=autobids)
+    n_seeds = seed_count(len(seeded))
+    rank_of = {p.key: i for i, p in enumerate(seeded)}      # 0-based rating rank
     rng = random.Random(seed)
+    # Tennis-style draw: top n_seeds protected, everyone else drawn in at random
+    # (consumes the rng first, ahead of the match seeds).
+    ranks = seeded_draw(len(seeded), n, n_seeds, rng)
+    slots = [seeded[r] if r is not None else None for r in ranks]
+
+    def seed_no(rank: int) -> int | None:
+        return rank + 1 if rank < n_seeds else None
+
+    res = BracketResult(seeds=seeded, autobids=autobids, n_seeds=n_seeds)
     while True:
         alive = sum(1 for s in slots if s is not None)
         if alive <= 1:
@@ -136,13 +145,13 @@ def run_bracket(seeded: list[Program], autobids: set[str], *, seed: int,
                 nxt.append(a); continue
             if a is None:
                 nxt.append(b); continue
-            sa, sb = seed_of[a.key], seed_of[b.key]
-            hi, lo = (a, b) if sa < sb else (b, a)
-            hs, ls = (sa, sb) if sa < sb else (sb, sa)
+            ra, rb = rank_of[a.key], rank_of[b.key]
+            hi, lo = (a, b) if ra < rb else (b, a)
+            hr, lr = (ra, rb) if ra < rb else (rb, ra)
             fid = final_fidelity if alive <= 4 else fidelity
             w = play_dual(hi, lo, seed=rng.randint(1, 10**9), fidelity=fid)
-            ws = seed_of[w.key]
-            m = Matchup(name, hs, ls, hi, lo, ws, w, upset=(ws == ls))
+            m = Matchup(name, hi, lo, seed_no(hr), seed_no(lr), w,
+                        winner_is_hi=(w is hi), upset=(w is lo))
             matchups.append(m)
             nxt.append(w)
         if matchups:

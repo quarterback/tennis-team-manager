@@ -194,3 +194,72 @@ sport:
 | Junior-circuit climb replay + bloom/plateau | `app/junior_circuit.py` |
 | Scouting fog (consensus + your department) | `app/development.py` → `scouting_report` |
 | Tests | `tests/test_development.py`, `tests/test_junior_circuit.py` |
+
+---
+
+## Rankings vs. ratings vs. evaluation (three honest numbers)
+
+Real tennis keeps the *ranking* (what you earned) separate from the *rating* (how
+good you are) — the ITA college table shows Points **and** WTN; the ITF/USTA junior
+tours rank on a points ledger while WTN/UTR sits beside it. The sim mirrors that
+split instead of collapsing everything into one number.
+
+**The schedule — a rank-gated weekly pyramid.** The junior season runs as ~14
+abstract "weeks" (not a real calendar — just enough graded events to generate data,
+then college). Each week the **whole field is ranked by running points** (seeded by
+ability in week 1) and **rank-gated into parallel draws**: the top 32 contest the
+week's Grand Slam / Masters, the next bands get Majors / Premiers, on down to State —
+so all ~1000 juniors play every week at their own level in small single-elim draws,
+exactly like the real junior tours run hundreds of graded events in parallel weekly.
+Tournament names **auto-roll from the city database** (`{City} Open/Masters/Classic`);
+only the four Grand Slams are fixed. This is also a *filter*: only players who keep
+winning climb into the high-value events, so the genuine elite separate themselves.
+
+**Junior ranking points (`app/junior_circuit.py` → `JUNIOR_POINTS`, `_freeze_points`).**
+An accomplishment ledger on a **pro-tour scale** across seven tiers — Grand Slam 2000
+> Masters 1000 > Major 500 > Premier 250 > National 125 > Developmental 60 > State 30
+— points by **round reached × tier**, rounds decaying in ATP-style ratios. Only a
+player's **best six** results count, plus their best six **ranked-win bonuses**
+(beating a higher-ranked junior, resolved off a provisional order). It is deliberately
+*not* a rating: it rewards deep runs at strong events and rewards activity, with no
+ability prior and no recency weighting — start-from-scratch, like the real tours.
+
+**Doubles fold into the same ledger (the ITF Combined Junior Ranking).** There is no
+separate doubles *ranking* — a junior just gets credit for doubles on top of singles:
+`combined = best-6 singles + ¼ × best-6 doubles`. Who plays doubles is **grit-driven**
+(stamina + resilience + competitiveness — grinders play more); partners are drawn
+**on the fly** each event; pairs play the full match engine (best-of-3, no-ad,
+10-point match tiebreak in lieu of the third — ITF junior doubles rules), with the
+synthetic team tilted toward the skills that win doubles (serve, court coverage, net
+instincts) and away from long-rally baseline play. That tilt is what makes a
+**doubles STR** that diverges from singles STR — a mid singles player who's strong
+at the net rates *above* their singles level in doubles, which surfaces the
+"doubles specialist" as a recruitable identity who'd otherwise be invisible. Doubles
+results live on their own tab on the recruit card.
+
+**The three numbers, and why they differ:**
+
+| Number | Question it answers | Source |
+| --- | --- | --- |
+| Ranking points | What did you *earn* on the junior circuit? | best-6 results + ranked wins |
+| STR | How *good* are you (strength/form)? | results-based rating (WTN analogue) |
+| Recruiting board | What's your *ceiling* worth to a coach? | consensus ability + scouting |
+
+Their **divergence is the gameplay**. A recruit ranked high on points but buried on
+the board is a riser who earned it on court; a board darling with thin points is an
+over-scouted name; a high-STR kid ranked low on points skipped events. The junior
+rankings pages (International / US Top 100 / per-nation Top 10) rank on points and
+show STR as the WTN-style column, and the recruit profile lays all three side by
+side so the gaps pop.
+
+**Teams (`app/rating.py`).** The college Power Index is already a season-only,
+no-prior, iterated-strength-of-schedule rating — the same family as the ITA Points
+algorithm, but richer (it sees flight and game data the ITA team algorithm can't).
+The one ITA borrow is the **+10% road-win bonus**: an away win counts 1.10× toward
+APR, so a team that won on the road rates a hair above an identical home record.
+
+| Piece | Where |
+| --- | --- |
+| Junior points ledger + ranked-win bonus | `app/junior_circuit.py` |
+| Points ranking surfaces (intl / US / by-nation) | `app/juniors.py` |
+| ITA road-win bonus | `app/rating.py` |

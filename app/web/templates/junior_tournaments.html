@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% block title %}Play to Clinch — Junior Tour{% endblock %}
+{% block content %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
+      {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Tier</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="tier" onchange="this.form.submit()" style="min-width:140px">
+      <option value="">All tiers</option>
+      {% for tr in tiers %}<option value="{{ tr }}"{% if tr == tier %} selected{% endif %}>{{ tr }}</option>{% endfor %}
+    </select></span></label>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} events</div>
+  <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} · junior tour{% if tier %} · {{ tier }}{% endif %} · click an event for full results</span>
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table al-dense" style="--bl-grid-cols: 50px minmax(160px,1fr) 110px 60px minmax(140px,1fr)">
+    <div class="bl-thead">
+      <span class="bl-th">WK</span><span class="bl-th">TOURNAMENT</span><span class="bl-th">TIER</span>
+      <span class="bl-th num">DRAW</span><span class="bl-th">CHAMPION</span>
+    </div>
+    {% for t in rows %}
+    <div class="bl-row">
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ t.week }}</span>
+      <a class="bl-school" href="{{ url_for('junior_tournament', t=t.name, u=u, grad_year=grad_year) }}">{{ t.name }}</a>
+      <span><span class="al-tier al-t-{{ t.level|replace(' ','') }}">{{ t.level }}</span></span>
+      <span class="bl-cell-num">{{ t.n_entrants }}</span>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        {% if t.champion %}<a href="{{ url_for('recruit', pid=t.champion[1], u=u, grad_year=grad_year) }}" style="color:var(--text-link);text-decoration:none">🏆 {{ t.champion[0] }}</a>{% else %}—{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{{ pager(p, 'events') }}
+</div>
+
+<div class="bl-notes"><div class="bl-note">
+  The whole junior tour — every event the class contested, week by week. Grand Slams and Masters sit at the top
+  of each week. Click any event for its round-by-round draw and results.
+</div></div>
+
+<style>
+  .al-tier { font-size:10px; font-weight:700; padding:1px 7px; border-radius:4px; color:#fff; white-space:nowrap; }
+  .al-t-GrandSlam { background:#b8860b; } .al-t-Masters { background:#c0392b; } .al-t-Major { background:#d2691e; }
+  .al-t-Premier { background:#3071b9; } .al-t-National { background:#2faa55; }
+  .al-t-Developmental { background:#647082; } .al-t-State { background:#8a939c; }
+</style>
+{% endblock %}

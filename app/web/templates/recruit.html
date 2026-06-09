@@ -17,8 +17,8 @@
         {{ p.name }}
         <span style="font-size:13px;color:var(--text-muted)">{{ p.country|country_abbrev }}{% if p.secondary_country %} / {{ p.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">Class of {{ grad_year }} · Born {{ p.hometown }}{% if p.birthday %} · {{ p.birthday }}{% endif %} ·
-        <span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">
-          {{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} {{ p.recruit_tier }}</span></div></div>
+        {% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
+        <span class="al-shield"><span class="al-shield-l">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }}</span><span class="al-shield-r al-r-{{ scls }}">{{ p.recruit_tier }}</span></span></div></div>
     <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
       <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(p.str_value()) }}</span>
       <div class="tsub">current (projection)</div></div>
@@ -38,21 +38,26 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Rankings</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
-            <tr><td>National (class of {{ grad_year }})</td><td class="w">#{{ view.national_rank }}</td></tr>
+            <tr><td>Recruiting board <span style="color:var(--text-muted);font-size:11px">(consensus)</span></td><td class="w">#{{ view.national_rank }}</td></tr>
             <tr><td>{{ view.region_label }}</td><td class="w">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</td></tr>
+            {% if view.points_rank %}<tr><td><a href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">Ranking points</a> <span style="color:var(--text-muted);font-size:11px">({{ view.junior_points }} pts · {{ view.tournaments_played }} events)</span></td>
+              <td class="w">#{{ view.points_rank }}</td></tr>{% endif %}
             <tr><td>STR</td><td class="w">{{ "%.1f"|format(p.str_value()) }}</td></tr>
-            {% if p.junior_str %}<tr><td>Junior STR <span style="color:var(--text-muted);font-size:11px">(results-based)</span></td>
+            {% if p.junior_str %}<tr><td>Junior STR <span style="color:var(--text-muted);font-size:11px">(singles)</span></td>
               <td class="w">{{ "%.1f"|format(p.junior_str) }}</td></tr>{% endif %}
+            {% if p.junior_doubles_str %}<tr><td>Doubles STR <span style="color:var(--text-muted);font-size:11px">(results-based)</span></td>
+              <td class="w" style="color:{{ '#3a7' if p.junior_doubles_str > p.junior_str else 'var(--text-primary)' }}">{{ "%.1f"|format(p.junior_doubles_str) }}</td></tr>{% endif %}
           </tbody></table>
         </div>
       </div>
 
-      {% if p.junior_badges %}
+      {% set badges = p|profile_badges %}
+      {% if badges %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span>
-        <span class="bl-panel-meta">permanent milestones</span></div>
-        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
-          {% for b in p.junior_badges %}
-          <span class="bl-pill" style="border-color:var(--brand)">{{ b }}</span>
+        <span class="bl-panel-meta">titles &amp; ranking milestones</span></div>
+        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:7px">
+          {% for sh in badges %}
+          <span class="al-shield"><span class="al-shield-l">{{ sh.left }}</span><span class="al-shield-r al-r-{{ sh.tier }}">{{ sh.right }}</span></span>
           {% endfor %}
         </div>
       </div>
@@ -72,6 +77,29 @@
               <span style="color:var(--text-muted)">{{ r.date }}</span>
               <span class="bl-school" style="font-weight:600">{{ r.tournament }}</span>
               <span><span class="bl-pill" style="font-size:10px">{{ r.level }}</span></span>
+              <span style="font-weight:600;color:{{ '#3a7' if r.result=='Champion' else 'var(--text-primary)' }}">{{ r.result }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if p.junior_doubles_results %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Doubles</span>
+        <span class="bl-panel-meta">¼ weight into the combined ranking</span></div>
+        <div class="bl-tablescroll">
+          <div class="bl-table" style="--bl-grid-cols: 84px minmax(140px,1fr) 96px minmax(120px,1fr) 110px">
+            <div class="bl-thead">
+              <span class="bl-th">DATE</span><span class="bl-th">TOURNAMENT</span>
+              <span class="bl-th">LEVEL</span><span class="bl-th">PARTNER</span><span class="bl-th">RESULT</span>
+            </div>
+            {% for r in p.junior_doubles_results %}
+            <div class="bl-row">
+              <span style="color:var(--text-muted)">{{ r.date }}</span>
+              <span class="bl-school" style="font-weight:600">{{ r.tournament }}</span>
+              <span><span class="bl-pill" style="font-size:10px">{{ r.level }}</span></span>
+              <span style="color:var(--text-secondary)">{{ r.partner }}</span>
               <span style="font-weight:600;color:{{ '#3a7' if r.result=='Champion' else 'var(--text-primary)' }}">{{ r.result }}</span>
             </div>
             {% endfor %}

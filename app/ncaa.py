@@ -183,6 +183,30 @@ def location(school: str) -> tuple[str, str, str]:
     return loc.get("city", ""), state, STATE_REGION.get(state, "")
 
 
+_CITIES_BY_STATE: dict | None = None
+
+
+def cities_by_state() -> dict[str, list[str]]:
+    """{state-abbr: [real city, ...]} from the researched campus-location database —
+    the real (city, state) pairs, so a hometown's city actually belongs to its state."""
+    global _CITIES_BY_STATE
+    if _CITIES_BY_STATE is None:
+        out: dict[str, list[str]] = {}
+        for loc in _locations().values():
+            city, state = loc.get("city"), loc.get("state")
+            if city and state:
+                lst = out.setdefault(state, [])
+                if city not in lst:
+                    lst.append(city)
+        _CITIES_BY_STATE = out
+    return _CITIES_BY_STATE
+
+
+def cities_in_state(state_abbr: str) -> list[str]:
+    """Real cities located in `state_abbr` (USPS), empty if none on file."""
+    return cities_by_state().get(state_abbr, [])
+
+
 def region_proximity(region_a: str, region_b: str) -> float:
     """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
     if not region_a or not region_b:

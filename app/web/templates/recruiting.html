@@ -69,8 +69,8 @@
       <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
       <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
       <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str_value()) }}</span></span>
-      <span><span class="bl-badge tier-{{ 'P5' if p.recruit_stars>=5 else 'MID' if p.recruit_stars==4 else 'IVY' if p.recruit_stars==3 else 'D3' }}">
-        {{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} {{ p.recruit_tier }}</span></span>
+      {% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
+      <span><span class="al-shield"><span class="al-shield-l">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }}</span><span class="al-shield-r al-r-{{ scls }}">{{ p.recruit_tier }}</span></span></span>
       <span class="bl-conf">{{ '—' if not p.committed else 'Committed' }}</span>
     </div>
     {% endfor %}

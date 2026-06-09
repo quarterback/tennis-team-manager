@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_bubble.html" import bubble_split %}
 {% block title %}Play to Clinch — Standings{% endblock %}
 {% block content %}
 {% macro pct(w, l) %}{% if w + l %}{{ ("%.3f"|format(w / (w + l)))[1:] }}{% else %}.000{% endif %}{% endmacro %}

@@ -2,7 +2,7 @@ import random
 
 from engine import run_tournament, finish_label
 from app.juniors import generate_class, national_rankings
-from app.junior_circuit import (run_junior_circuit, assign_tiers, CALENDAR,
+from app.junior_circuit import (run_junior_circuit, assign_tiers, SEASON_WEEKS,
                                  TIER_LABELS, US_NATIONAL_BADGES, US_STATE_BADGES,
                                  INTL_GLOBAL_BADGES, INTL_NATION_BADGES)
 
@@ -66,15 +66,22 @@ def test_finish_label_mapping():
 # --------------------------------------------------------------------------
 # Junior circuit: the recruit-history generator
 # --------------------------------------------------------------------------
-def _class(n=240, seed=5, gender="male"):
-    k = generate_class(random.Random(seed), n=n, grad_year=2026, gender=gender,
-                       intl_share=0.35)
-    national_rankings(k)
-    run_junior_circuit(k, seed=seed)
+def _class(n=240, seed=5, gender="male", weeks=12):
+    # Pin a short season so the circuit tests stay fast — production default is 36.
+    # Save/restore so the persisted world config isn't polluted past the build.
+    from app import worldconfig as wc
+    prev = wc.get("jr_season_weeks")
+    wc.set("jr_season_weeks", str(weeks))
+    try:
+        k = generate_class(random.Random(seed), n=n, grad_year=2026, gender=gender,
+                           intl_share=0.35)
+        national_rankings(k)
+        run_junior_circuit(k, seed=seed)
+    finally:
+        wc.set("jr_season_weeks", prev)
     return k
 
 
-_CALENDAR_NAMES = {name for name, _level, _month in CALENDAR}
 _ALL_BADGES = {label for _t, label in
                US_NATIONAL_BADGES + US_STATE_BADGES + INTL_GLOBAL_BADGES + INTL_NATION_BADGES}
 
@@ -102,7 +109,7 @@ def test_matches_carry_scores_and_opponents():
         assert p.junior_matches                               # everyone played
         for m in p.junior_matches:
             assert set(m.keys()) == {"date", "tournament", "round", "opponent", "score", "won"}
-            assert m["tournament"] in _CALENDAR_NAMES         # closed, real events
+            assert m["tournament"] and isinstance(m["tournament"], str)   # a generated event name
             assert m["opponent"] and m["opponent"] != p.name  # a real, different rival
             assert "-" in m["score"]                          # a real scoreline
 
@@ -180,6 +187,81 @@ def test_domestic_and_international_use_different_ladders():
             assert badges <= us_labels
         else:
             assert badges <= intl_labels
+
+
+def test_points_ledger_is_frozen_and_bounded():
+    """Every recruit gets junior_points + tournaments_played on an ITF-scaled best-6
+    ledger, and the combined total = singles + ¼·doubles stays bounded."""
+    from app.junior_circuit import (event_points, doubles_event_points, JUNIOR_POINTS,
+                                     JUNIOR_DOUBLES_POINTS, BEST_N, DOUBLES_WEIGHT)
+    k = _class(n=300)
+    assert event_points("Grand Slam", "Champion") == 2000    # pro-tour scale: slam = 2000
+    assert event_points("Masters", "Champion") == 1000       # Masters = 1000
+    assert event_points("Major", "Champion") == 500          # Major = 500 (half a Masters)
+    assert event_points("State", "Quarterfinalist") == 5
+    assert doubles_event_points("Grand Slam", "Champion") == 1500  # the huge GS doubles boost
+    assert doubles_event_points("Masters", "Champion") == 750
+    assert event_points("Grand Slam", "did-not-play") == 0
+    for p in k.recruits:
+        assert isinstance(p.junior_points, int) and p.junior_points >= 0
+        assert p.tournaments_played == len(p.junior_results)   # count matches the résumé
+        # Combined ledger = singles + ¼ × doubles (ITF CJR).
+        assert p.junior_points == int(p.singles_points + DOUBLES_WEIGHT * p.doubles_points)
+    assert sum(1 for p in k.recruits if p.tournaments_played >= 1) >= 0.9 * len(k.recruits)
+    # Best-6 cap: 6 Major titles + 6 top bonuses, plus ¼ of 6 Major doubles titles.
+    smax = BEST_N * max(JUNIOR_POINTS["Champion"].values()) + BEST_N * 75
+    dmax = BEST_N * max(JUNIOR_DOUBLES_POINTS["Champion"].values())
+    assert all(p.junior_points <= smax + DOUBLES_WEIGHT * dmax for p in k.recruits)
+
+
+def test_doubles_participation_and_specialist_str():
+    """Doubles is grit-driven (not everyone plays), folds into the one ledger, and
+    yields a doubles STR that can diverge from singles STR — the specialist signal."""
+    import statistics
+    k = _class(n=400)
+    # Over a season everyone plays SOME doubles, but the participation RATE (share of
+    # their events with a doubles draw) is grit-driven, not universal.
+    rate = lambda p: p.doubles_played / max(1, p.tournaments_played)
+    assert 0.25 < statistics.mean([rate(p) for p in k.recruits]) < 0.9
+    grit = lambda p: sum(p.current_grade(a) for a in ("stamina", "resilience", "competitiveness")) / 3
+    hi = [p for p in k.recruits if grit(p) >= 55]
+    lo = [p for p in k.recruits if grit(p) <= 45]
+    assert statistics.mean([rate(p) for p in hi]) > statistics.mean([rate(p) for p in lo])
+    played = [p for p in k.recruits if p.doubles_played > 0]
+    # Doubles players get a doubles STR; across the pool it diverges from singles STR.
+    assert all(p.junior_doubles_str is not None for p in played)
+    assert any(p.junior_doubles_str - p.junior_str > 1 for p in played)   # specialists
+    assert any(p.junior_doubles_str - p.junior_str < -1 for p in played)  # singles types
+
+
+def test_points_rank_diverges_from_recruiting_board():
+    """The points ledger and the consensus recruiting board are different rankings —
+    that divergence is the gem signal — yet broadly agree at the very top."""
+    from app.juniors import points_rankings, us_points_rankings, nation_points_top
+    k = _class(n=400)
+    ranked = points_rankings(k)
+    assert [p.points_rank for p in ranked[:5]] == [1, 2, 3, 4, 5]
+    assert ranked[0].junior_points >= ranked[-1].junior_points
+    # Distinct orderings (not a relabel of the board).
+    assert any(p.points_rank != p.recruit_rank for p in ranked)
+    # US board is domestic-only; nation boards are international, densest first.
+    assert all(p.domestic for p in us_points_rankings(k))
+    boards = nation_points_top(k, per=10, min_players=5)
+    assert boards and all(len(players) <= 10 for _n, players in boards)
+    assert all(not p.domestic for _n, players in boards for p in players)
+
+
+def test_junior_setup_config_overrides_the_circuit():
+    """Junior Setup knobs override season length at build time, and nobody plays the
+    whole season — participation is capped at ~PLAY_FRACTION of the weeks (so kids
+    rest some weeks and different players get their moment)."""
+    from app.junior_circuit import PLAY_FRACTION
+    k = _class(n=200, weeks=10)
+    cap = round(PLAY_FRACTION * 10)
+    played = [p.tournaments_played for p in k.recruits]
+    assert min(played) >= 1 and max(played) <= cap     # everyone plays some, none all
+    assert max(played) >= cap - 2                       # the cap is actually reached
+    assert all(p.tournaments_played == len(p.junior_results) for p in k.recruits)
 
 
 def test_super_bloomers_climb_while_early_bloomers_plateau():

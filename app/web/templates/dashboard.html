@@ -13,8 +13,28 @@
 </form>
 
 <div class="bl-dash">
+  <!-- Almanac KPI stat-cards -->
+  <div class="al-kpis">
+    {% if game %}
+    <div class="al-kpi"><div class="al-kpi-k">Season</div><div class="al-kpi-v">{{ game.year }}</div><div class="al-kpi-sub">№ {{ game.season_no }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">World Week</div><div class="al-kpi-v">{{ game.week }}</div><div class="al-kpi-sub">{{ d.phase|replace('_',' ') }}</div></div>
+    {% endif %}
+    <div class="al-kpi"><div class="al-kpi-k">Programs</div><div class="al-kpi-v">{{ d.n_programs }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Conferences</div><div class="al-kpi-v">{{ d.n_conferences }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Players</div><div class="al-kpi-v">{{ "{:,}".format(d.n_players) }}</div></div>
+    {% if game and game.signed %}
+    <div class="al-kpi"><div class="al-kpi-k">Class Signed</div><div class="al-kpi-v">{{ game.signed }}</div></div>
+    {% endif %}
+    {% if d.top_programs %}
+    <a class="al-kpi al-kpi-link" href="{{ url_for('rankings', u=u) }}">
+      <div class="al-kpi-k">{{ 'Champion' if d.champion else 'No. 1' }}</div>
+      <div class="al-kpi-v sm">{{ d.champion or d.top_programs[0].row.school }}</div>
+      <div class="al-kpi-sub">{{ d.top_programs[0].row.record }}</div></a>
+    {% endif %}
+  </div>
+
   <!-- quick links -->
-  <div class="bl-quick">
+  <div class="bl-quick" style="margin-top:14px">
     <a class="bl-quickcard" href="{{ url_for('rankings', u=u) }}">
       <span class="bl-quick-k">Power Index</span><span class="bl-quick-v">Full Rankings →</span></a>
     <a class="bl-quickcard" href="{{ url_for('season_hub', u=u) }}">
@@ -23,6 +43,12 @@
       <span class="bl-quick-k">NCAA Bracket</span><span class="bl-quick-v">64-team field →</span></a>
     <a class="bl-quickcard" href="{{ url_for('dual', u=u) }}">
       <span class="bl-quick-k">Dual Simulator</span><span class="bl-quick-v">Run any matchup →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('recruiting_hub_page', u=u) }}">
+      <span class="bl-quick-k">Recruiting HQ</span><span class="bl-quick-v">Juniors &amp; recruiting →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('recruiting', u=u) }}">
+      <span class="bl-quick-k">Recruiting Board</span><span class="bl-quick-v">Prospect rankings →</span></a>
+    <a class="bl-quickcard" href="{{ url_for('junior_rankings', u=u) }}">
+      <span class="bl-quick-k">Junior Rankings</span><span class="bl-quick-v">Sortable junior tour →</span></a>
   </div>
 
   <div class="bl-board-grid" style="align-items:start">
@@ -39,8 +65,7 @@
         <div class="bl-row">
           <span class="bl-rank {{ t.row.rank_class }}">{{ t.row.rk }}</span>
           <span class="bl-crest sm" style="background:{{ t.color }}">{{ t.abbr }}</span>
-          <a class="bl-school" href="{{ url_for('teams', school=t.row.school, u=u) }}">{{ t.row.school }}
-            <span class="bl-badge tier-{{ t.row.tier }}" style="font-size:9px">{{ t.row.tier }}</span></a>
+          <a class="bl-school" href="{{ url_for('teams', school=t.row.school, u=u) }}">{{ t.row.school }}</a>
           <span class="bl-cell-num"><span class="bl-rec">{{ t.row.rec }}</span></span>
           <span class="bl-cell-num"><span class="bl-stat power">{{ t.row.fmt(t.row.pi) }}</span></span>
         </div>
@@ -96,13 +121,7 @@
 
 <style>
 .bl-dash{max-width:1180px;margin:0 auto;padding:16px}
-.bl-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.bl-quickcard{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--border-subtle);
-  border-radius:12px;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .12s}
-.bl-quickcard:hover{border-color:var(--brand)}
-.bl-quick-k{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
-.bl-quick-v{font-weight:600;color:var(--brand-strong)}
-@media (max-width:780px){.bl-quick{grid-template-columns:repeat(2,1fr)}}
+/* .bl-quick* card styles now live in the shared almanac.css */
 /* Dashboard tables are compact (≤5 narrow columns) — opt out of the global
    640px wide-table floor so they fit a phone instead of overflowing. The
    .bl-tablescroll wrappers remain as a safety net. */

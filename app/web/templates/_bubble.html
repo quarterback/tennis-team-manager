@@ -1,0 +1,39 @@
+{# Shared Bubble Watch rendering — the cut line between the Last Four In and the
+   First Four Out of the projected NCAA field. #}
+
+{% macro _row(t, u, kind) %}
+<a class="bl-bubble-row bl-bubble-row--{{ kind }}" href="{{ url_for('teams', school=t.school, u=u) }}">
+  <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
+  <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
+  <span class="bl-bubble-conf">{{ t.conf }}</span>
+  <span class="bl-bubble-rec">{{ t.rec }}</span>
+  <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+</a>
+{% endmacro %}
+
+{# Full two-column split view (standings + projection pages). #}
+{% macro bubble_split(bubble, u) %}
+<div class="bl-bubble">
+  <div class="bl-bubble-col">
+    <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
+    {% for t in bubble.last_in %}{{ _row(t, u, 'in') }}{% endfor %}
+  </div>
+  <div class="bl-bubble-col">
+    <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>
+    {% for t in bubble.first_out %}{{ _row(t, u, 'out') }}{% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{# Compact single-column card (narrow sidebars, e.g. the season hub). #}
+{% macro bubble_compact(bubble, u) %}
+<div class="bl-panel" style="align-self:start">
+  <div class="bl-panel-head"><span class="bl-panel-title">Bubble Watch</span>
+    <span class="bl-panel-meta">if held today</span></div>
+  <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
+  {% for t in bubble.last_in %}{{ _row(t, u, 'in') }}{% endfor %}
+  <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>
+  {% for t in bubble.first_out %}{{ _row(t, u, 'out') }}{% endfor %}
+  <a class="bl-bubble-more" href="{{ url_for('projection', u=u) }}">Full bracket projection →</a>
+</div>
+{% endmacro %}

@@ -38,9 +38,13 @@
         {% endfor %}
         <div class="bl-schol-cell" style="background:var(--green-50)">
           <div class="t-eyebrow">Elite D3 (acad ≥ 0.85)</div>
-          <div class="bl-schol-val" style="margin-top:8px">{{ schol_elite.count }} × {{ schol_elite.rate }}
-            = <b>{{ schol_elite.effective_value }}</b></div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">D1-worth aid, fewer of it</div>
+          <label class="bl-schol-f">Cap (equiv.)
+            <input class="bl-input" type="number" name="cap_elite" value="{{ schol_elite.cap }}" min="0" max="16" step="0.5"></label>
+          <label class="bl-schol-f">Count
+            <input class="bl-input" type="number" name="count_elite" value="{{ schol_elite.count }}" min="0" max="12" step="1"></label>
+          <label class="bl-schol-f">Rate
+            <input class="bl-input" type="number" name="rate_elite" value="{{ schol_elite.rate }}" min="0" max="1" step="0.05"></label>
+          <div class="bl-schol-val">value <b>{{ schol_elite.effective_value }}</b> · D1-worth aid, fewer of it</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;padding:0 16px 14px">
