@@ -4,6 +4,9 @@ from .format import MatchFormat, PRESETS, DEFAULT
 from .match import simulate_match, MatchResult
 from .fast import simulate_fast
 from .dual import simulate_dual, Team, DualResult
+from .doubles import (simulate_doubles, DoublesTeam, DoublesResult,
+                      doubles_rating, serve_rating, return_rating,
+                      net_rating, poach_rating)
 from .tournament import (run_tournament, TournamentResult, TourMatch,
                          round_name, finish_label)
 from .render import box_score, pbp_text
@@ -13,6 +16,8 @@ __all__ = [
     "MatchFormat", "PRESETS", "DEFAULT",
     "simulate_match", "MatchResult", "simulate_fast",
     "simulate_dual", "Team", "DualResult",
+    "simulate_doubles", "DoublesTeam", "DoublesResult", "doubles_rating",
+    "serve_rating", "return_rating", "net_rating", "poach_rating",
     "run_tournament", "TournamentResult", "TourMatch", "round_name", "finish_label",
     "box_score", "pbp_text",
 ]
