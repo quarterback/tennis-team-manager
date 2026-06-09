@@ -360,6 +360,25 @@ def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
             "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes)}
 
 
+def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
+    """One program's signed recruiting class (commits + class summary) for the
+    per-team recruiting page."""
+    import app.world as world
+    from .rankings_data import crest
+    recruits = world.signings(seed).get(gender, {}).get(school, [])
+    stars = [getattr(p, "recruit_stars", 0) for p in recruits]
+    abbr, color = crest(school)
+    commits = sorted(recruits, key=lambda p: (-getattr(p, "recruit_stars", 0),
+                                              getattr(p, "recruit_rank", 1e9)))
+    return {
+        "school": school, "abbr": abbr, "color": color, "n": len(recruits),
+        "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+        "three": sum(1 for x in stars if x == 3),
+        "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
+        "commits": commits,
+    }
+
+
 def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
     data-portal overview that ties the dense sub-pages together."""

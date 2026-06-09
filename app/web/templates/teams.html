@@ -28,6 +28,7 @@
       <span class="bl-stat power" style="font-size:18px">{{ row.fmt(row.pi) }}</span></div>{% endif %}
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', school=school, u=u) }}">Schedule</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('dual', home=school, u=u) }}">Simulate dual</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('team_recruiting', school=school, u=u) }}">Recruiting Class</a>
   </div>
 </div>
 

@@ -20,7 +20,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, UNIVERSES, FIELD
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
-                    recruiting_hub, signing_tracker,
+                    recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
@@ -91,6 +91,7 @@ def _active_nav(req) -> str:
     if p.startswith("/projection"):       return "projection"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -437,6 +438,13 @@ def create_app() -> Flask:
         view = recruit_profile(p, division, gender, grad_year)
         return render_template("recruit.html", active="Recruiting", p=p, view=view,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/recruiting/team/<school>")
+    def team_recruiting(school):
+        division, gender, label, u = _universe(request)
+        return render_template("team_recruiting.html", active="Recruiting",
+                               cls=team_recruiting_class(gender, school), school=school,
+                               u=u, uni_label=label)
 
     @app.route("/recruiting/signings")
     def signing_tracker_page():
