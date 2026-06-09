@@ -25,6 +25,7 @@ from dataclasses import dataclass
 
 from generators import (make_name_picker, region_preset, roll_hometown,
                         country_abbrev)
+from . import ncaa
 from .development import Prospect, generate_prospect, make_pid
 
 # US states + DC (name, abbr).
@@ -117,10 +118,13 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
             name, _ = us_name()
             state = rng.choices(state_names, weights=state_weights, k=1)[0]
             region, country = state, "US"
-            # Real US city from the hometowns pool; suffix the drawn state
-            # (cosmetic — the state is the recruiting-board dimension).
-            city = roll_hometown("US", rng) or rng.choice(_CITIES)
-            hometown = f"{city}, {_STATE_ABBR.get(state, state)}"
+            # Real city that ACTUALLY belongs to the drawn state, from the researched
+            # campus-location database (data/ncaa/locations.json) — so the hometown
+            # reads "Tuscaloosa, AL", never "Dallas, GA".
+            abbr = _STATE_ABBR.get(state, state)
+            in_state = ncaa.cities_in_state(abbr)
+            city = rng.choice(in_state) if in_state else rng.choice(_CITIES)
+            hometown = f"{city}, {abbr}"
         else:
             name, country = intl_name()
             region = country or "INT"
