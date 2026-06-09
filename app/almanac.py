@@ -74,26 +74,63 @@ def leaders(recruits: list, stats: dict, n: int = 5) -> list[tuple[str, list]]:
     ]
 
 
-# Honor badges: rank a recruit's marquee milestone for a colored medal chip. The
-# badge list is highest-first (set by the circuit), so badges[0] is the top honor.
-_HONOR_TIER = [("No. 1", "gold"), ("Top 5", "silver"), ("Top 10", "silver"),
-               ("Top 25", "bronze"), ("Top 50", "bronze")]
-_SHORTEN = [("National", "Nat"), ("Global", "Wld"), ("World", "Wld"), (" Junior", "")]
+# Honor badges as shields.io-style two-segment chips: a scope label (left) + the
+# accomplishment (right), the right coloured BY accomplishment — a distinct shade
+# per level all the way down (No. 1 → Top 300) plus tournament wins (Grand Slam /
+# Masters / Major champion). First keyword match wins, so list most prestigious
+# first. The colour key maps to an `.al-r-<key>` class in almanac.css.
+_BADGE_TIER = [
+    ("Grand Slam Champion", "gschamp"), ("Grand Slam Finalist", "gsfinal"),
+    ("Masters Champion", "masters"), ("Major Champion", "major"),
+    ("No. 1", "r1"), ("Top 5", "r5"), ("Top 10", "r10"), ("Top 25", "r25"),
+    ("Top 50", "r50"), ("Top 100", "r100"), ("Top 250", "r250"), ("Top 300", "r300"),
+]
+_SCOPE_SHORT = {"National": "NAT", "Global": "GLOBAL", "World": "WORLD",
+                "Nation": "NATION", "State": "STATE"}
+# Tournament-tier labels that head an accomplishment badge ("Grand Slam Champion").
+_ACCOMP_LEVELS = ["Grand Slam", "Masters", "Major"]
 
 
-def _short_badge(label: str) -> str:
-    for a, b in _SHORTEN:
-        label = label.replace(a, b)
-    return label.strip()
+def badge_shield(label: str) -> dict:
+    """A badge string → shields.io-style {left, right, tier}. Handles tournament
+    accomplishments ('Grand Slam Champion ×2' → GRAND SLAM | Champion ×2) and ranking
+    milestones ('Global Top 10 Junior' → GLOBAL | Top 10), coloured by accomplishment."""
+    lvl = next((L for L in _ACCOMP_LEVELS if label.startswith(L)), None)
+    if lvl:
+        left, right = lvl.upper(), label[len(lvl):].strip() or "Champion"
+    else:
+        words = label.replace(" Junior", "").split()
+        left = _SCOPE_SHORT.get(words[0], words[0].upper()) if words else label
+        right = " ".join(words[1:]) or (words[0] if words else label)
+    return {"left": left, "right": right,
+            "tier": next((c for kw, c in _BADGE_TIER if kw in label), "r300")}
+
+
+def profile_badges(p) -> list[dict]:
+    """All of a recruit's badges as shields — tournament accomplishments (from the
+    result log) first, then the ranking milestones."""
+    res = getattr(p, "junior_results", None) or []
+    def titles(level, result):
+        return sum(1 for r in res if r["level"] == level and r["result"] == result)
+    acc: list[str] = []
+    gs_t, gs_f = titles("Grand Slam", "Champion"), titles("Grand Slam", "Finalist")
+    ms_t, mj_t = titles("Masters", "Champion"), titles("Major", "Champion")
+    if gs_t:
+        acc.append("Grand Slam Champion" + (f" ×{gs_t}" if gs_t > 1 else ""))
+    elif gs_f:
+        acc.append("Grand Slam Finalist")
+    if ms_t:
+        acc.append("Masters Champion" + (f" ×{ms_t}" if ms_t > 1 else ""))
+    if mj_t:
+        acc.append("Major Champion" + (f" ×{mj_t}" if mj_t > 1 else ""))
+    return [badge_shield(b) for b in acc + (getattr(p, "junior_badges", None) or [])]
 
 
 def honor_chip(p) -> dict | None:
-    """The marquee honor for a recruit: {label, tier (gold/silver/bronze/muted),
-    more (extra-badge count), all (full list)} — or None if unranked."""
-    badges = getattr(p, "junior_badges", None) or []
+    """The recruit's marquee badge as a shield plus `more` (extra count) and `all`
+    (tooltip list) — accomplishments outrank ranking milestones. None if unranked."""
+    badges = profile_badges(p)
     if not badges:
         return None
-    top = badges[0]
-    tier = next((c for kw, c in _HONOR_TIER if kw in top), "muted")
-    return {"label": _short_badge(top), "tier": tier,
-            "more": len(badges) - 1, "all": badges}
+    return {**badges[0], "more": len(badges) - 1,
+            "all": [f"{b['left']} {b['right']}" for b in badges]}

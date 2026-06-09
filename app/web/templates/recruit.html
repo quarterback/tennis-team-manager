@@ -51,12 +51,13 @@
         </div>
       </div>
 
-      {% if p.junior_badges %}
+      {% set badges = p|profile_badges %}
+      {% if badges %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span>
-        <span class="bl-panel-meta">permanent milestones</span></div>
-        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
-          {% for b in p.junior_badges %}
-          <span class="bl-pill" style="border-color:var(--brand)">{{ b }}</span>
+        <span class="bl-panel-meta">titles &amp; ranking milestones</span></div>
+        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:7px">
+          {% for sh in badges %}
+          <span class="al-shield"><span class="al-shield-l">{{ sh.left }}</span><span class="al-shield-r al-r-{{ sh.tier }}">{{ sh.right }}</span></span>
           {% endfor %}
         </div>
       </div>
