@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_bubble.html" import bubble_split %}
 {% block title %}Play to Clinch — Standings{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -18,33 +19,9 @@
       Projected conference leaders take the {{ bubble.aq_count }} automatic bids; the remaining
       {{ bubble.at_large_spots }} at-large spots are filled strictly by Power Index. These eight teams
       straddle the last at-large spot — sorted by their national at-large rank.
+      <a href="{{ url_for('projection', u=u) }}">See the full bracket projection →</a>
     </p>
-    <div class="bl-bubble">
-      <div class="bl-bubble-col">
-        <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
-        {% for t in bubble.last_in %}
-        <a class="bl-bubble-row bl-bubble-row--in" href="{{ url_for('teams', school=t.school, u=u) }}">
-          <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
-          <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
-          <span class="bl-bubble-conf">{{ t.conf }}</span>
-          <span class="bl-bubble-rec">{{ t.rec }}</span>
-          <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
-        </a>
-        {% endfor %}
-      </div>
-      <div class="bl-bubble-col">
-        <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>
-        {% for t in bubble.first_out %}
-        <a class="bl-bubble-row bl-bubble-row--out" href="{{ url_for('teams', school=t.school, u=u) }}">
-          <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
-          <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
-          <span class="bl-bubble-conf">{{ t.conf }}</span>
-          <span class="bl-bubble-rec">{{ t.rec }}</span>
-          <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
-        </a>
-        {% endfor %}
-      </div>
-    </div>
+    {{ bubble_split(bubble, u) }}
   </div>
   {% endif %}
 

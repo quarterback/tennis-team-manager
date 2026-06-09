@@ -536,15 +536,16 @@ def _conf_leaders(div, cf: dict, ratings: dict) -> set[str]:
     return aq
 
 
-def bubble_watch(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict | None:
-    """Project this tournament's NCAA field "if it were held today" and surface the
-    cut line. Each (division, gender) season is its own separate tournament, so the
-    projection is naturally scoped to it. Selection mirrors the real format and the
-    engine's own bracket logic (`select_field`): projected conference leaders take
-    the automatic bids, then the remaining at-large spots in the {field}-team bracket
-    are filled strictly by Power Index — nothing else. The teams straddling the last
-    at-large spot are returned as the Last Four In / First Four Out. Returns None
-    until enough duals are final for the projection to mean anything."""
+def _project(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict | None:
+    """Core field projection shared by `bubble_watch` and `field_projection`.
+
+    Projects this tournament's NCAA field "if it were held today". Each (division,
+    gender) season is its own separate tournament, so the projection is naturally
+    scoped to it. Selection mirrors the real format and the engine's own bracket
+    logic (`select_field`): projected conference leaders take the automatic bids,
+    then the remaining at-large spots in the bracket are filled strictly by Power
+    Index — nothing else. Returns None until enough duals are final for the
+    projection to mean anything (or when the field would swallow everyone)."""
     s = load_season(season_id)
     if not s:
         return None
@@ -572,25 +573,48 @@ def bubble_watch(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> d
         cf[d["away"]][1 if hw else 0] += 1
     conn.close()
 
-    aq = _conf_leaders(div, cf, ratings)
-    at_large_spots = max(0, field - len(aq))
-    non_aq = sorted((p for p in rated if p.school not in aq),
+    aq_keys = _conf_leaders(div, cf, ratings)
+    at_large_spots = max(0, field - len(aq_keys))
+    non_aq = sorted((p for p in rated if p.school not in aq_keys),
                     key=lambda p: ratings[p.school].pi, reverse=True)
     if at_large_spots < edge or len(non_aq) <= at_large_spots:
         return None
-    in_pool, out_pool = non_aq[:at_large_spots], non_aq[at_large_spots:]
 
-    def row(p, al_rank):
+    def row(p, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
-                "rec": r.record, "al_rank": al_rank}
+                "rec": r.record, **extra}
 
-    tail = in_pool[-edge:]
-    base = at_large_spots - len(tail)
-    last_in = [row(p, base + i + 1) for i, p in enumerate(tail)]
-    first_out = [row(p, at_large_spots + i + 1) for i, p in enumerate(out_pool[:edge])]
-    return {"field": field, "aq_count": len(aq), "at_large_spots": at_large_spots,
-            "last_in": last_in, "first_out": first_out}
+    aq = sorted((row(p) for p in rated if p.school in aq_keys),
+                key=lambda d: d["pi"], reverse=True)
+    in_board = [row(p, al_rank=i + 1) for i, p in enumerate(non_aq[:at_large_spots])]
+    out_board = [row(p, al_rank=at_large_spots + i + 1)
+                 for i, p in enumerate(non_aq[at_large_spots:])]
+    return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
+            "aq": aq, "at_large_spots": at_large_spots, "in_board": in_board, "out_board": out_board}
+
+
+def bubble_watch(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict | None:
+    """The cut line only: the Last Four In (lowest at-large teams currently
+    projected into the field) and the First Four Out (highest-rated teams left out).
+    A thin slice of `_project` for the standings page and season-hub card."""
+    proj = _project(season_id, size, edge)
+    if not proj:
+        return None
+    return {"field": proj["field"], "aq_count": len(proj["aq"]),
+            "at_large_spots": proj["at_large_spots"],
+            "last_in": proj["in_board"][-edge:], "first_out": proj["out_board"][:edge]}
+
+
+def field_projection(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 12) -> dict | None:
+    """The full projected bracket field for the dedicated projection page: every
+    projected automatic qualifier plus the complete at-large board (teams in, then
+    the next `out_n` teams chasing the cut), all ranked by Power Index."""
+    proj = _project(season_id, size)
+    if not proj:
+        return None
+    proj["out_board"] = proj["out_board"][:out_n]
+    return proj
 
 
 def recent_duals(season_id: int) -> list[dict]:
