@@ -181,6 +181,29 @@ def roll_hometown(country_code: str, rng: random.Random) -> str:
     return rng.choice(cities) if cities else ""
 
 
+_us_states: dict | None = None
+
+
+def _load_us_states() -> dict:
+    """The US `state-abbr -> [real cities]` tier (the city -> state -> nation
+    middle layer tennis needs; baseball only had country -> city)."""
+    global _us_states
+    if _us_states is None:
+        try:
+            with open(os.path.join(_NAMES_DIR, "hometowns.json"), encoding="utf-8") as fh:
+                _us_states = json.load(fh).get("us_states", {}) or {}
+        except (OSError, ValueError):
+            _us_states = {}
+    return _us_states
+
+
+def roll_us_hometown(state_abbr: str, rng: random.Random) -> str:
+    """A real city that actually belongs to US state/territory `state_abbr`
+    (e.g. 'TX' -> 'Plano'). Empty string when we have no pool for that state."""
+    cities = _load_us_states().get((state_abbr or "").upper())
+    return rng.choice(cities) if cities else ""
+
+
 def roll_birthday(rng: random.Random) -> str:
     """A cosmetic month/day birthday like 'Mar 14'. No year — age is the
     sim's clock; this is pure player-card flavor."""

@@ -42,12 +42,18 @@ US_STATES = [
     ("South Carolina", "SC"), ("South Dakota", "SD"), ("Tennessee", "TN"), ("Texas", "TX"),
     ("Utah", "UT"), ("Vermont", "VT"), ("Virginia", "VA"), ("Washington", "WA"),
     ("West Virginia", "WV"), ("Wisconsin", "WI"), ("Wyoming", "WY"),
+    # US territories — treated as US states here (their players are US dual-citizens,
+    # rendered with two flags), so they generate readily. Puerto Rico in particular
+    # has a robust tennis pipeline.
+    ("Puerto Rico", "PR"), ("U.S. Virgin Islands", "VI"),
 ]
-# Population-ish weighting so tennis hotbeds (CA/FL/TX) supply more recruits.
-_STATE_WEIGHT = {"CA": 8, "FL": 7, "TX": 7, "NY": 5, "GA": 4, "NC": 3, "IL": 3,
-                 "PA": 3, "OH": 3, "VA": 3, "NJ": 3, "AZ": 2, "WA": 2, "MA": 2}
+# Population-ish weighting so tennis hotbeds (CA/FL/TX, + PR) supply more recruits.
+_STATE_WEIGHT = {"CA": 8, "FL": 7, "TX": 7, "NY": 5, "PR": 5, "GA": 4, "NC": 3,
+                 "IL": 3, "PA": 3, "OH": 3, "VA": 3, "NJ": 3, "AZ": 2, "WA": 2, "MA": 2}
+_US_TERRITORIES = {"PR", "VI"}      # country = US, secondary = the territory (dual flag)
 
 _STATE_ABBR = dict(US_STATES)   # full state name -> postal abbr
+_ABBR_STATE = {a: s for s, a in US_STATES}   # postal abbr -> full state name
 
 # Fallback city pool for nations with no entry in hometowns.json — generic but
 # broadly plausible, so an international recruit always has a believable city.
@@ -107,34 +113,47 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     intl_weights = {k: v for k, v in intl_weights.items() if k != "us"}
     intl_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                  region_weights=intl_weights)
+    # Puerto Rico players are US dual-citizens but read authentically (Hispanic names).
+    latin_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
+                                  region_weights={"latin_america": 1.0})
     state_names = [s[0] for s in US_STATES]
     state_weights = [_STATE_WEIGHT.get(s[1], 1) for s in US_STATES]
 
     recruits: list[Prospect] = []
     for i in range(n):
         domestic = rng.random() >= intl_share
+        secondary = None
         if domestic:
-            name, _ = us_name()
             state = rng.choices(state_names, weights=state_weights, k=1)[0]
+            abbr = _STATE_ABBR.get(state, state)
+            name, _ = (latin_name() if abbr == "PR" else us_name())
             region, country = state, "US"
+            if abbr in _US_TERRITORIES:           # US territory → dual flag (US + terr.)
+                secondary = abbr
             # Real city that ACTUALLY belongs to the drawn state — the city → state →
             # nation middle tier (generators hometowns.json `us_states`), so a hometown
             # reads "Boca Raton, FL", never "Dallas, GA".
-            abbr = _STATE_ABBR.get(state, state)
-            city = (roll_us_hometown(abbr, rng) or roll_hometown("US", rng)
-                    or rng.choice(_CITIES))
+            city = roll_us_hometown(abbr, rng) or roll_hometown("US", rng) or rng.choice(_CITIES)
             hometown = f"{city}, {abbr}"
         else:
-            name, country = intl_name()
-            region = country or "INT"
-            city = roll_hometown(country, rng) or rng.choice(_CITIES)
-            hometown = f"{city}, {country_abbrev(country)}" if country else city
+            name, ccode = intl_name()
+            if ccode in _US_TERRITORIES:          # treat PR/VI as US dual-citizens, not foreign
+                domestic, country, secondary = True, "US", ccode
+                region = _ABBR_STATE.get(ccode, ccode)
+                city = roll_us_hometown(ccode, rng) or rng.choice(_CITIES)
+                hometown = f"{city}, {ccode}"
+            else:
+                country, region = ccode, (ccode or "INT")
+                city = roll_hometown(ccode, rng) or rng.choice(_CITIES)
+                hometown = f"{city}, {country_abbrev(ccode)}" if ccode else city
         talent = max(24.0, min(80.0, rng.gauss(talent_mean, talent_sd)))
         p = generate_prospect(rng, name, country, gender=gender, talent=talent,
                               pid=make_pid("recruit", grad_year, gender, i))
         p.hometown = hometown
         p.region = region
         p.domestic = domestic
+        if secondary:
+            p.secondary_country = secondary
         p.grad_year = grad_year
         recruits.append(p)
     return RecruitClass(grad_year=grad_year, gender=gender, recruits=recruits)

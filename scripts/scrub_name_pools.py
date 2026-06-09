@@ -300,6 +300,9 @@ SURNAME_CITY_KEEP = {
     "Khan", "Shah", "Dar", "Alam", "David", "Antonio", "Fernando", "Paulo",
     "Pedro", "Louis", "Long", "Kong", "Mai", "San", "Tin", "Pak", "Mun",
     "Hong", "Tong", "Ba", "Bani", "Nicolaas", "Samara",
+    # Canadian-city collisions surfaced by the expanded Canada pool — all are
+    # legitimate (often English/Welsh) family names in their own right.
+    "Barrie", "Langley", "Markham", "Richmond", "Vaughan",
 }
 
 
