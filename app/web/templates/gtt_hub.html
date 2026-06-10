@@ -37,10 +37,10 @@
           {% else %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">
-            <button class="bl-pill" type="submit">▶ Advance {{ 'round' if league.phase == 'playoffs' else 'week' }}</button></form>
+            <button class="bl-pill" type="submit">▶ Advance {{ 'round' if league.phase == 'playoffs' else 'week' }} (full engine)</button></form>
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="finish">
-            <button class="bl-pill" type="submit">⏭ Simulate to champion</button></form>
+            <button class="bl-pill" type="submit">⏭ Simulate to champion (fast)</button></form>
           {% endif %}
         </div>
       </div>
@@ -87,15 +87,16 @@
 
   {% if recent %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span>
+      <span class="bl-panel-meta">click a match for the full box score</span></div>
     <div style="padding:8px 16px">
       {% for d in recent %}
       {% if d.status == 'final' %}
-      <div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+      <a href="{{ url_for('gtt_dual', dual_id=d.id, lg=league.id) }}" style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle);text-decoration:none;color:inherit">
         <span style="flex:1;{{ 'font-weight:700' if d.winner == 0 else 'color:var(--text-muted)' }}">{{ d.home_name }}</span>
-        <span style="font-variant-numeric:tabular-nums">{{ d.home_points }}–{{ d.away_points }}</span>
+        <span style="font-variant-numeric:tabular-nums;font-weight:700">{{ d.home_points }}–{{ d.away_points }}</span>
         <span style="flex:1;text-align:right;{{ 'font-weight:700' if d.winner == 1 else 'color:var(--text-muted)' }}">{{ d.away_name }}</span>
-      </div>
+      </a>
       {% endif %}
       {% endfor %}
     </div>
