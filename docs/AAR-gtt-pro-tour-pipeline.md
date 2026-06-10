@@ -139,12 +139,74 @@ page. Both follow the repo's honors philosophy: stamped once, never recomputed.
 - Pre-existing flake (`test_season.py::test_higher_seeds_usually_advance`) is
   statistical and unrelated; full suite otherwise green (208 passed).
 
+## P4 — STR continuity feed (built)
+
+Pros now carry a live, results-based STR, not a frozen profile number.
+`league_player_str` builds the corpus from the stored singles box scores
+(`pid → [(opp, games_won, games_lost)]`, oldest→newest, games parsed back out
+of the winner-perspective scorelines) and converges it with the **same**
+`str_rating.converge_ids` the college game uses. Each player's prior is their
+profile STR — and a graduate's profile *is* their college-exit snapshot, so the
+rating crosses college→pro with no seam and drifts as pro matches accumulate.
+Mixed doubles is display-only; there is deliberately **no pro ranking page** (the
+number computes and shows on profiles, never a leaderboard).
+
+One real engine finding fell out of the first run: a 14–0 MVP came back at
+reliability 0.00. UTR's 2.00 blowout-gap rule (`MAX_DIFF`) assumes a large
+population where close-rated opponents always exist; in a small drafted pool the
+best player out-rates the entire field by more than the gap, so **every** one of
+his matches was excluded. Fix: `converge_ids` gained a `max_diff` parameter
+(college default unchanged at 2.00); GTT passes 6.0. Worth remembering that
+UTR-style margin math is calibrated to a deep ladder and needs a wider window in
+a closed league.
+
+## Chaos: the pro game is built to be volatile
+
+The user's brief: "team tennis should be hella chaotic and variable.
+Unpredictable" — but not a coin toss. Getting there was an instructive tuning
+loop, and the dead ends matter as much as the result:
+
+1. **Additive per-attribute jitter did nothing.** A gaussian nudge on each of
+   the nine drivers is symmetric and cancels; over a match it washed out.
+   ("The jitter doesn't work" — correct.)
+2. **Multiplicative per-player form barely moved the dual.** Scaling a player's
+   whole level by a wide factor swings individual *lines* hard — but a dual is
+   first-to-5-of-9, and **independent** per-player noise averages out over nine
+   lines, so the favourite still took ~70%. The law of large numbers is the
+   real adversary here, not the noise magnitude.
+3. **Team-correlated form is the lever that moves the dual.** One factor for the
+   whole squad's night drops favourite-win much further — but the user
+   explicitly preferred **player-based** form and was fine with ~70% at the dual
+   level, because the chaos that matters is the one you *watch*: the box scores.
+
+Two levers shipped:
+
+- **Fast4 lines.** Every GTT line (singles and mixed) is a single Fast4 set —
+  first to 4 games, no-ad, tiebreak at 3-3. Short sets are inherently
+  high-variance where a best-of-3 lets class grind it out. This needed a real
+  engine extension: `MatchFormat.set_tiebreak_at` (the games count the tiebreak
+  is played at; `None` ⇒ games-all, so college/juniors are untouched), wired
+  through both the singles and doubles set loops.
+- **Per-play-date player form.** Each play date every fielded player's whole
+  level is multiplied by a fresh **−30% .. +45%** factor, drawn per player. A
+  star can show up flat, a journeyman can catch fire.
+
+Outcome, measured over 40 leagues: favourites take **~70% of duals** (vs ~80% in
+college), the better player drops **~35% of individual singles lines**, and class
+still sorts the season. Deterministic (form seeded off the dual seed), and tuned
+from one place (`CHAOS_FORM_LO/HI`).
+
+The throughline of this whole tuning episode: **where variance is injected
+matters more than how much.** Match length (Fast4) and correlation structure
+(player vs team) determined the feel; raw noise magnitude barely did.
+
 ## What's deliberately not built
 
 - **Vickrey auction** — designed (deterministic private values on the
   scholarship-economy substrate; balance emerges from need-aware valuation)
   but the snake draft ships first; the allocation step is isolated behind
   `_draft` for a clean swap.
-- **STR continuity feed (P4)** — GTT results into `converge_ids` with
-  college-exit STR as prior; near-free when wanted.
+- **Team-correlated form** — prototyped and measured (it drives dual-level
+  chaos harder), but player-based form was the chosen design; the swap is a
+  one-function change if the season race ever wants more upset.
 - **Pro rankings** — by design, never: STR computes, no pro leaderboard.
