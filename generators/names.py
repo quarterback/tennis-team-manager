@@ -138,7 +138,11 @@ def make_name_picker(
     regions_meta = get_name_regions()
     weights = _normalise_weights(region_weights)
     used: set[str] = set()
+    # Accept the team-sport spellings too: callers pass "men"/"women" (the
+    # division-gender values) as well as "male"/"female". Without this they fall
+    # through to the mixed (50/50) branch and a women's pool draws male names.
     g_lower = (gender or "male").lower()
+    g_lower = {"men": "male", "women": "female"}.get(g_lower, g_lower)
 
     def _first_pool_kind() -> str:
         if g_lower == "male":
