@@ -138,7 +138,11 @@ def make_name_picker(
     regions_meta = get_name_regions()
     weights = _normalise_weights(region_weights)
     used: set[str] = set()
+    # Accept the team-sport spellings too: callers pass "men"/"women" (the
+    # division-gender values) as well as "male"/"female". Without this they fall
+    # through to the mixed (50/50) branch and a women's pool draws male names.
     g_lower = (gender or "male").lower()
+    g_lower = {"men": "male", "women": "female"}.get(g_lower, g_lower)
 
     def _first_pool_kind() -> str:
         if g_lower == "male":
@@ -219,3 +223,38 @@ def make_name_picker(
         return f"Player {rng.randint(100, 999)}", ""
 
     return _name
+
+
+def make_country_pinned_picker(
+    rng: random.Random,
+    region_id: str,
+    country_code: str,
+    *,
+    gender: str = "male",
+) -> Callable[[], tuple[str, str]]:
+    """O27-parity helper for single-nation draws: names come only from the given
+    region's subregions whose country matches `country_code` (falling back to the
+    whole region when none match), and every draw is tagged with that country."""
+    regions_meta = get_name_regions()
+    region = dict(regions_meta.get(region_id) or {})
+    subs = region.get("subregions")
+    if isinstance(subs, list) and subs:
+        matched = [sr for sr in subs if sr.get("country") == country_code]
+        if matched:
+            region = {**region, "subregions": matched}
+    # make_name_picker reads the regions dict at construction time, so build the
+    # picker under a temporarily pinned view; the closure keeps that view.
+    global _regions_meta
+    saved = _regions_meta
+    presets = (saved or {}).get("presets", {}) if isinstance(saved, dict) else {}
+    try:
+        _regions_meta = {"regions": {region_id: region}, "presets": presets}
+        base = make_name_picker(rng, gender=gender, region_weights={region_id: 1.0})
+    finally:
+        _regions_meta = saved
+
+    def _pinned() -> tuple[str, str]:
+        full, _c = base()
+        return full, country_code
+
+    return _pinned

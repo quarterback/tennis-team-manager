@@ -93,14 +93,20 @@ def player_str(matches: list[Match], prior: float | None = None) -> tuple[float,
 
 def converge_ids(matches_by_player: dict[str, list[tuple[str, int, int]]],
                  priors: dict[str, float] | None = None,
-                 iterations: int = 8) -> dict[str, tuple[float, float]]:
+                 iterations: int = 8,
+                 max_diff: float = MAX_DIFF) -> dict[str, tuple[float, float]]:
     """Solve a whole population's STR to a fixed point (UTR-style).
 
     matches_by_player: player id → list of (opponent_id, games_won, games_lost),
     oldest → newest. Each pass resolves opponents' STR + reliability from the
-    previous pass; matches with a current STR gap > MAX_DIFF (2.00) are excluded,
+    previous pass; matches with a current STR gap > `max_diff` are excluded,
     and each result is weighted by the opponent's reliability. Returns
-    id → (STR, reliability)."""
+    id → (STR, reliability).
+
+    `max_diff` defaults to UTR's 2.00 blowout-gap rule, which assumes a large
+    population where close-rated opponents exist (college). A small closed pool
+    — e.g. a pro league whose best player out-rates everyone by more than the
+    gap — passes a wider window so outliers' results still count."""
     priors = priors or {}
     cur = {pid: (_clamp(priors.get(pid, DEFAULT_STR), STR_MIN, STR_MAX), 0.0) for pid in matches_by_player}
     for _ in range(iterations):
@@ -110,7 +116,7 @@ def converge_ids(matches_by_player: dict[str, list[tuple[str, int, int]]],
             resolved = []
             for (opp, gw, gl) in ms:
                 opp_str, opp_rel = cur.get(opp, (DEFAULT_STR, 0.0))
-                if abs(my - opp_str) > MAX_DIFF:      # blowout-gap matches don't count
+                if abs(my - opp_str) > max_diff:      # blowout-gap matches don't count
                     continue
                 resolved.append(Match(opp_str, gw, gl, opp_reliability=opp_rel))
             nxt[pid] = player_str(resolved, prior=priors.get(pid))

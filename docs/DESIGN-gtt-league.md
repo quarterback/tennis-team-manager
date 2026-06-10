@@ -65,6 +65,37 @@ as the build plan for the feature.*
   shown both on the hub ("Season history") and the Hall of Fame page
   ("Champions & MVPs").
 
+- **P4 — STR continuity feed** ✅ completed GTT singles (MS/WS) feed
+  `converge_ids` as `pid → [(opp, gw, gl)]`, oldest→newest, with each player's
+  profile STR as the prior — for a graduate that profile is their college-exit
+  snapshot, so the rating carries across with no seam and drifts with pro
+  results. Mixed doubles is display-only (the planned default). Pros get **no
+  ranking page** by design — the number computes and shows on profiles only.
+  One engine change: `converge_ids` gained a `max_diff` parameter (default
+  unchanged at UTR's 2.00) because a small closed pro pool's best player
+  legitimately out-rates the whole field by more than the blowout-gap window,
+  which would discard every one of an outlier's matches; GTT passes 6.0.
+  Note the rating is margin-based (UTR-style game share), so spreads compress
+  toward what actual margins support — ordering tracks records, absolute
+  values drift from the ability prior. Calibration knob if ever needed:
+  `expected_games_share`'s slope.
+
+- **Chaos / variance** ✅ the pro game is deliberately far more volatile than
+  college or juniors, via two levers:
+  - **Fast4 lines.** Every GTT line (singles and mixed) is a single Fast4 set —
+    first to 4 games, no-ad, tiebreak at 3-3 — added to the engine as a
+    backward-compatible `MatchFormat.set_tiebreak_at` (tiebreak at games-1).
+    Short sets are inherently high-variance where a best-of-3 lets class grind
+    it out.
+  - **Per-play-date form.** Each play date every fielded player's whole level is
+    multiplied by a fresh, wide, upside-skewed factor (−30% .. +45%,
+    `CHAOS_FORM_*`) — a star can show up flat, a journeyman can catch fire.
+    Player-based (not team-correlated) by design choice. Net effect: the
+    favourite takes ~70% of duals (vs ~80% in college), and the better player
+    loses ~35% of individual singles lines — chaotic where you watch it (the box
+    scores) while class still sorts the season. Tunable via the `CHAOS_FORM_*`
+    range; deterministic (form seeded off the dual seed).
+
 All requested priorities are implemented and tested. Possible next polish: a
 Vickrey auction in place of the snake draft.
 

@@ -112,3 +112,27 @@ def test_honors_stamped_to_pid_and_visible_on_player_page(db):
     detail = g.player_detail(lid, m["pid"])
     labels = [a["label"] for grp in detail["career_honors"] for a in grp["awards"]]
     assert any("MVP" in lbl for lbl in labels)
+
+
+def test_p4_str_feed_rates_pros_with_prior_continuity(db):
+    lid = g.create_league("GTT", seed=21, n_teams=4)
+    # Preseason: no results -> empty corpus, views fall back to the profile prior.
+    assert g.league_player_str(lid) == {}
+    fid = g.franchises(lid)[0]["id"]
+    pre = {p["pid"]: p["str"] for p in g.franchise_roster(lid, fid)}
+    assert all(v > 0 for v in pre.values())
+
+    g.advance_all(lid, fidelity="fast")
+    live = g.league_player_str(lid)
+    assert live, "season results must produce a rated population"
+    # Reliability builds with a full season of matches.
+    assert any(rel > 0.5 for (_s, rel) in live.values())
+    # Rank sanity: a clearly better record rates above a clearly worse one.
+    recs = g.player_records(lid)
+    played = [r for r in recs.values() if r["w"] + r["l"] >= 6 and r["pid"] in live]
+    best = max(played, key=lambda r: r["w"] / (r["w"] + r["l"]))
+    worst = min(played, key=lambda r: r["w"] / (r["w"] + r["l"]))
+    assert live[best["pid"]][0] > live[worst["pid"]][0]
+    # The live value is what the views surface.
+    d = g.player_detail(lid, best["pid"])
+    assert d["str"] == round(live[best["pid"]][0], 1)
