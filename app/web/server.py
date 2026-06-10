@@ -34,6 +34,7 @@ from .awards import (season_awards, player_career_honors, stamp_world_honors,
                      coach_career_honors, coach_honor_records)
 
 from app import seasonmode as sm
+from app import gtt_seasonmode as gs
 from app import overrides as ov
 from app.ncaa import load_division
 from .state import DEFAULT_SEED
@@ -73,6 +74,10 @@ NAV_GROUPS = [
         {"id": "doubles",   "label": "Doubles Championship","icon": "👥", "endpoint": "doubles_championship", "args": {}},
         {"id": "projection","label": "Bracket Projection","icon": "🔮", "endpoint": "projection",   "args": {}},
     ]),
+    ("Global Team Tennis", [
+        {"id": "gtt",       "label": "League Hub",   "icon": "🌐", "endpoint": "gtt_hub",          "args": {}},
+        {"id": "gtt_hall",  "label": "Hall of Fame", "icon": "🏛️", "endpoint": "gtt_hall",         "args": {}},
+    ]),
     ("Tools", [
         {"id": "editor",    "label": "Editor",       "icon": "🛠️", "endpoint": "editor",          "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "🎛️", "endpoint": "junior_setup",    "args": {}},
@@ -107,6 +112,8 @@ def _active_nav(req) -> str:
     if p.startswith("/teams") or p.startswith("/player"):
         return "roster" if req.args.get("school") == MY_TEAM else "teams"
     if p.startswith("/editor"):           return "editor"
+    if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
+    if p.startswith("/gtt"):              return "gtt"
     if p.startswith("/methodology"):      return "methodology"
     return ""
 
@@ -366,6 +373,98 @@ def create_app() -> Flask:
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         return render_template("projection.html", active="Bracket", u=u, uni_label=label,
                                division=division, proj=sm.field_projection(sid))
+
+    # ----- Global Team Tennis (GTT) ---------------------------------------
+    def _current_league():
+        """The league in focus: ?lg=<id> if valid, else the most recent one."""
+        leagues = gs.list_leagues()
+        if not leagues:
+            return None, []
+        lid = request.args.get("lg", type=int)
+        chosen = next((l for l in leagues if l["id"] == lid), leagues[-1])
+        return chosen, leagues
+
+    @app.route("/gtt")
+    def gtt_hub():
+        league, leagues = _current_league()
+        if not league:
+            return render_template("gtt_hub.html", active="GTT", league=None, leagues=[])
+        lid = league["id"]
+        return render_template(
+            "gtt_hub.html", active="GTT", league=league, leagues=leagues,
+            standings=gs.standings(lid), honors=gs.honors_board(lid),
+            history=gs.season_history(lid),
+            recent=gs.week_duals(lid, max(1, league["current_week"] - 1)),
+            recent_week=max(1, league["current_week"] - 1))
+
+    @app.route("/gtt/new", methods=["POST"])
+    def gtt_new():
+        name = (request.form.get("name") or "Global Team Tennis").strip()
+        seed = request.form.get("seed", type=int) or 2026
+        teams = min(16, max(4, request.form.get("teams", type=int) or gs.DEFAULT_TEAMS))
+        lid = gs.create_league(name, seed=seed, n_teams=teams)
+        return redirect(url_for("gtt_hub", lg=lid))
+
+    @app.route("/gtt/advance", methods=["POST"])
+    def gtt_advance():
+        lid = request.form.get("lg", type=int)
+        mode = request.form.get("mode", "step")
+        if lid:
+            if mode == "finish":
+                gs.advance_all(lid, fidelity="fast")
+            else:
+                gs.advance(lid, fidelity="full")
+        return redirect(url_for("gtt_hub", lg=lid))
+
+    @app.route("/gtt/franchise/<int:fid>")
+    def gtt_franchise(fid):
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        lid = league["id"]
+        fr = next((f for f in gs.franchises(lid) if f["id"] == fid), None)
+        if not fr:
+            abort(404)
+        row = next((r for r in gs.standings(lid) if r["fid"] == fid), None)
+        return render_template("gtt_franchise.html", active="GTT", league=league,
+                               fr=fr, row=row, roster=gs.franchise_roster(lid, fid),
+                               is_champion=(league.get("champion") == fid))
+
+    @app.route("/gtt/franchise/<int:fid>/edit", methods=["POST"])
+    def gtt_franchise_edit(fid):
+        lid = request.form.get("lg", type=int)
+        gs.edit_franchise(fid,
+                          name=(request.form.get("name") or None),
+                          city=(request.form.get("city") or None),
+                          abbrev=(request.form.get("abbrev") or None))
+        return redirect(url_for("gtt_franchise", fid=fid, lg=lid))
+
+    @app.route("/gtt/player/<pid>")
+    def gtt_player(pid):
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        detail = gs.player_detail(league["id"], pid)
+        if not detail:
+            abort(404)
+        return render_template("gtt_player.html", active="GTT", league=league, p=detail)
+
+    @app.route("/gtt/player/<pid>/enshrine", methods=["POST"])
+    def gtt_enshrine(pid):
+        lid = request.form.get("lg", type=int)
+        if lid:
+            gs.enshrine(lid, pid)
+        return redirect(url_for("gtt_player", pid=pid, lg=lid))
+
+    @app.route("/gtt/hall-of-fame")
+    def gtt_hall():
+        league, leagues = _current_league()
+        if not league:
+            return render_template("gtt_hall.html", active="GTT", league=None, leagues=[],
+                                   hof=[], history=[])
+        lid = league["id"]
+        return render_template("gtt_hall.html", active="GTT", league=league, leagues=leagues,
+                               hof=gs.hall_of_fame(lid), history=gs.season_history(lid))
 
     @app.route("/api/health")
     def health():

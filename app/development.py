@@ -25,6 +25,7 @@ from app.player_attributes import (
 )
 
 GROWTH_K = 0.12
+DECLINE_K = 0.05            # per-year erosion (the reverse of GROWTH_K), scaled by age past peak
 FOG_MIN, FOG_MAX = 7, 31
 MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
 STR_MIN, STR_MAX = 31.0, 57.0
@@ -240,6 +241,21 @@ class Prospect:
     def develop_year(self) -> None:
         self.develop(1.0)
         self.year += 1
+
+    # ---- decline: the inverse of develop, for aging pros ----
+    def decline(self, scale: float = 1.0) -> None:
+        """Erode CURRENT ability — develop() run in reverse. Where develop closes
+        the gap UP toward the ceiling, decline opens a gap DOWN from where the
+        player is now, each year shaving a fraction of their remaining ability
+        toward the floor. Activated only once a player turns pro and ages past
+        their peak (the college game never calls this); `scale` grows with age so
+        the slide accelerates into a veteran's thirties."""
+        frac = min(0.9, DECLINE_K * scale)
+        if frac <= 0:
+            return
+        for a in RICH_ATTRS:
+            cur = self.current[a]
+            self.current[a] = clamp_grade(cur - frac * (cur - GRADE_MIN))
 
     def regress_to_younger(self, years: float = 1.0) -> None:
         """Roll CURRENT *back* toward where this player was ~`years` ago, given their

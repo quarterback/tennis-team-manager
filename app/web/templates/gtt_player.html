@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ p.name }}{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:680px">
+
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_franchise', fid=p.fid, lg=league.id) }}">← {{ p.franchise }}</a>
+
+  <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span>
+      <span class="bl-panel-meta">{{ p.franchise }} · age {{ p.age }} · STR {{ p.str }} · {{ p.w }}-{{ p.l }} this season{% if p.status == 'retired' %} · retired{% endif %}</span>
+    </div>
+    {% if p.origin == 'college' %}
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">🎓 College graduate — career honors below span college and pro.</div>
+    {% endif %}
+    <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff">{{ h }}</span>{% endfor %}
+      {% if p.enshrined %}
+      <span class="bl-pill" style="background:var(--surface-header);color:#fff">🏛️ Hall of Fame</span>
+      {% else %}
+      <form method="post" action="{{ url_for('gtt_enshrine', pid=p.pid) }}" style="margin-left:auto">
+        <input type="hidden" name="lg" value="{{ league.id }}">
+        <button class="bl-pill" type="submit">🏛️ Enshrine in Hall of Fame</button></form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if p.career_honors %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">🏅 Career honors</span>
+      <span class="bl-panel-meta">college → pro, one timeline</span></div>
+    <div style="padding:8px 16px">
+      {% for grp in p.career_honors %}
+      {% for a in grp.awards %}
+      <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
+        <span style="font-variant-numeric:tabular-nums;color:var(--text-muted);width:48px">{{ grp.year }}</span>
+        <span class="bl-pill" style="font-size:10px;{{ 'background:var(--accent);color:#fff' if a.division == 'GTT' else '' }}">{{ a.division or '—' }}</span>
+        <span style="font-weight:600">{{ a.label }}</span>
+        {% if a.school %}<span style="color:var(--text-muted);font-size:12px;margin-left:auto">{{ a.school }}</span>{% endif %}
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Match log</span>
+      <span class="bl-panel-meta">{{ p.log|length }} lines played</span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-log">
+      <div class="bl-thead gtt-log-row">
+        <span class="bl-th num">Wk</span><span class="bl-th">Slot</span>
+        <span class="bl-th">Opponent</span><span class="bl-th">Res</span><span class="bl-th num">Score</span>
+      </div>
+      {% for m in p.log %}
+      <div class="bl-row gtt-log-row">
+        <span class="bl-cell-num">{{ m.week }}</span>
+        <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ m.slot }}{% if m.round == 'PO' %} ·PO{% endif %}</span>
+        <span class="bl-cell"><span class="nm">{{ m.opp }}</span></span>
+        <span class="bl-cell" style="font-weight:700;color:{{ 'var(--stat-good-strong)' if m.won else 'var(--text-muted)' }}">{{ 'W' if m.won else 'L' }}</span>
+        <span class="bl-cell-num" style="font-variant-numeric:tabular-nums">{{ m.scoreline or '—' }}</span>
+      </div>
+      {% endfor %}
+      {% if not p.log %}<div style="padding:14px 16px;color:var(--text-muted)">No completed matches yet.</div>{% endif %}
+    </div></div>
+  </div>
+</div>
+
+<style>
+.gtt-log { --bl-grid-cols: 36px 64px minmax(140px,1fr) 40px 120px; }
+.gtt-log .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style>
+{% endblock %}

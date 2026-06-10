@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Global Team Tennis{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:860px">
+
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">Global Team Tennis</span>
+      <span class="bl-panel-meta">co-ed pro league · 3 MS + 3 WS + 3 XD, first to 5 of 9</span>
+    </div>
+    <div style="padding:14px 16px">
+      {% if leagues %}
+      <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+        <label class="bl-field"><span class="bl-field-label">League</span>
+          <span class="bl-select-wrap"><select class="bl-select" name="lg" onchange="this.form.submit()" style="min-width:240px">
+            {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }} (seed {{ l.seed }})</option>{% endfor %}
+          </select></span></label>
+      </form>
+      {% endif %}
+
+      {% if league %}
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:17px;font-weight:700;color:var(--text-primary)">{{ league.name }}</div>
+          <div style="color:var(--text-muted);font-size:13px">
+            Season {{ league.current_year + 1 }} ·
+            {% if league.phase == 'complete' %}complete
+            {% elif league.phase == 'playoffs' %}Playoffs
+            {% else %}regular season — week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
+          </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          {% if league.phase == 'complete' %}
+          <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
+            <input type="hidden" name="mode" value="step">
+            <button class="bl-pill" type="submit">↻ Start next season (draft + intake)</button></form>
+          {% else %}
+          <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
+            <input type="hidden" name="mode" value="step">
+            <button class="bl-pill" type="submit">▶ Advance {{ 'round' if league.phase == 'playoffs' else 'week' }}</button></form>
+          <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
+            <input type="hidden" name="mode" value="finish">
+            <button class="bl-pill" type="submit">⏭ Simulate to champion</button></form>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if league and honors and (honors.champion or honors.mvp) %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Honors</span></div>
+    <div style="display:flex;gap:24px;padding:14px 16px;flex-wrap:wrap">
+      {% if honors.champion %}
+      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🏆 Champion</div>
+        <a href="{{ url_for('gtt_franchise', fid=honors.champion.id, lg=league.id) }}" style="font-weight:700;font-size:16px;text-decoration:none;color:var(--text-primary)">{{ honors.champion.name }}</a></div>
+      {% endif %}
+      {% if honors.mvp %}
+      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🏅 MVP</div>
+        <a href="{{ url_for('gtt_player', pid=honors.mvp.pid, lg=league.id) }}" style="font-weight:700;font-size:16px;text-decoration:none;color:var(--text-primary)">{{ honors.mvp.name }}</a>
+        <span style="color:var(--text-muted)">· {{ honors.mvp.w }}-{{ honors.mvp.l }} · {{ honors.mvp.franchise }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if league %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Standings</span>
+      <span class="bl-panel-meta">W-L · line differential</span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-std">
+      <div class="bl-thead gtt-std-row">
+        <span class="bl-th">#</span><span class="bl-th">Franchise</span>
+        <span class="bl-th num">W-L</span><span class="bl-th num">Diff</span>
+      </div>
+      {% for r in standings %}
+      <a class="bl-row gtt-std-row" style="text-decoration:none" href="{{ url_for('gtt_franchise', fid=r.fid, lg=league.id) }}">
+        <span class="bl-rank">{{ loop.index }}</span>
+        <span class="gtt-team"><span class="bl-crest xs">{{ r.abbrev }}</span><span class="nm">{{ r.name }}</span></span>
+        <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
+        <span class="bl-cell-num" style="font-variant-numeric:tabular-nums">{{ "%+d"|format(r.diff) }}</span>
+      </a>
+      {% endfor %}
+    </div></div>
+  </div>
+
+  {% if recent %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span></div>
+    <div style="padding:8px 16px">
+      {% for d in recent %}
+      {% if d.status == 'final' %}
+      <div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="flex:1;{{ 'font-weight:700' if d.winner == 0 else 'color:var(--text-muted)' }}">{{ d.home_name }}</span>
+        <span style="font-variant-numeric:tabular-nums">{{ d.home_points }}–{{ d.away_points }}</span>
+        <span style="flex:1;text-align:right;{{ 'font-weight:700' if d.winner == 1 else 'color:var(--text-muted)' }}">{{ d.away_name }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if history %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Season history</span>
+      <span class="bl-panel-meta"><a href="{{ url_for('gtt_hall', lg=league.id) }}" style="text-decoration:none">Hall of Fame →</a></span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-hist">
+      <div class="bl-thead gtt-hist-row">
+        <span class="bl-th num">Year</span><span class="bl-th">Champion</span><span class="bl-th">MVP</span>
+      </div>
+      {% for h in history %}
+      <div class="bl-row gtt-hist-row">
+        <span class="bl-cell-num">{{ h.cal_year }}</span>
+        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">🏆 {{ h.champion }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none">🏅 {{ h.mvp }}</a>{% else %}—{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">New league</span></div>
+    <form method="post" action="{{ url_for('gtt_new') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px">
+      <label class="bl-field"><span class="bl-field-label">Name</span>
+        <input class="bl-input" name="name" value="Global Team Tennis" style="min-width:220px"></label>
+      <label class="bl-field"><span class="bl-field-label">Seed</span>
+        <input class="bl-input" name="seed" type="number" value="2026" style="width:96px"></label>
+      <label class="bl-field"><span class="bl-field-label">Teams</span>
+        <input class="bl-input" name="teams" type="number" value="8" min="4" max="16" style="width:80px"></label>
+      <button class="bl-pill" type="submit">Create</button>
+    </form>
+  </div>
+</div>
+
+<style>
+.gtt-std { --bl-grid-cols: 28px minmax(160px,1fr) 72px 64px; }
+.gtt-hist { --bl-grid-cols: 64px minmax(150px,1fr) minmax(130px,1fr); }
+.gtt-team { display:flex; align-items:center; gap:8px; min-width:0; }
+.gtt-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
+.bl-crest.xs { display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:20px; padding:0 5px; border-radius:5px; background:var(--surface-subtle); font-size:10px; font-weight:700; letter-spacing:.02em; }
+</style>
+{% endblock %}

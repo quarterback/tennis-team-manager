@@ -19,6 +19,7 @@ import random
 
 from engine import (
     PRESETS, random_player, simulate_match, simulate_dual, Team, box_score, pbp_text,
+    simulate_gtt_dual, GTTTeam,
 )
 from engine.format import MatchFormat
 from generators import make_name_picker, region_preset, list_presets
@@ -67,6 +68,67 @@ def cmd_simulate_dual(args):
             continue
         winside = home if ln.home_won else away
         print(f"  {ln.slot}: {winside.name:<12} def.  {ln.result.scoreline}")
+
+
+def cmd_simulate_gtt(args):
+    """Co-ed Global Team Tennis dual: 3 MS + 3 WS + 3 XD, first to 5 of 9."""
+    men_fn = _picker(args.seed, "male", args.region)
+    women_fn = _picker(args.seed ^ 0xC0FFEE, "female", args.region)
+    rng = random.Random(args.seed)
+
+    def franchise(label, base):
+        men = [_gen_player(rng, men_fn, base=base) for _ in range(3)]
+        women = [_gen_player(rng, women_fn, base=base) for _ in range(3)]
+        return GTTTeam(name=label, men=men, women=women)
+
+    home = franchise("Home Club", 0.60)
+    away = franchise("Away Club", 0.57)
+    res = simulate_gtt_dual(home, away, seed=args.seed, fidelity=args.fidelity)
+    wname = (home if res.winner == 0 else away).name
+    print(f"{home.name} {res.home_points} - {res.away_points} {away.name}   →  {wname}\n")
+    for ln in res.lines:
+        if not ln.completed:
+            print(f"  {ln.slot}: (unfinished — clinched)")
+            continue
+        winside = home if ln.home_won else away
+        print(f"  {ln.slot}: {winside.name:<12} def.  {ln.result.scoreline}")
+
+
+def cmd_gtt_season(args):
+    """Create (or load) a GTT league, advance it, and print the standings."""
+    from app import gtt_seasonmode as g
+    lid = args.league
+    if lid is None:
+        lid = g.create_league(args.name, seed=args.seed, n_teams=args.teams)
+        print(f"Created league #{lid}: {args.name} ({args.teams} franchises, seed {args.seed})\n")
+        for f in g.franchises(lid):
+            print(f"  #{f['id']:>2}  {f['name']:<28} {f['city']}  [{f['abbrev']}]")
+        print()
+
+    for _ in range(args.advance):
+        s = g.load_league(lid)
+        if s["phase"] == "complete":
+            break
+        out = g.advance(lid, fidelity=args.fidelity)
+        tag = out.get("week") or out.get("round") or out["phase"]
+        print(f"  advanced {out['phase']} {tag} — {out.get('played', 0)} duals")
+
+    print("\nStandings:")
+    print(f"  {'TEAM':<28} {'W-L':>6}  {'DIFF':>5}")
+    for r in g.standings(lid):
+        print(f"  {r['name']:<28} {r['w']:>2}-{r['l']:<2}  {r['diff']:>+5d}")
+    ch = g.champion(lid)
+    if ch:
+        print(f"\nChampion: {ch['name']}  ({ch['city']})")
+
+
+def cmd_gtt_rename(args):
+    """Editor: rename and/or relocate a franchise (purely cosmetic)."""
+    from app import gtt_seasonmode as g
+    g.edit_franchise(args.franchise, name=args.name, city=args.city, abbrev=args.abbrev)
+    f = next((x for x in g.franchises(args.league) if x["id"] == args.franchise), None)
+    if f:
+        print(f"#{f['id']}: {f['name']} — {f['city']} [{f['abbrev']}]")
 
 
 def cmd_gen_players(args):
@@ -337,6 +399,27 @@ def main():
     d = sub.add_parser("simulate-dual")
     add_common(d)
     d.set_defaults(func=cmd_simulate_dual)
+
+    gtt = sub.add_parser("simulate-gtt", help="co-ed GTT dual: 3 MS + 3 WS + 3 XD, first to 5 of 9")
+    add_common(gtt)
+    gtt.set_defaults(func=cmd_simulate_gtt)
+
+    gs = sub.add_parser("gtt-season", help="create/advance a GTT league season")
+    gs.add_argument("--league", type=int, default=None, help="existing league id; omit to create")
+    gs.add_argument("--name", default="Global Team Tennis")
+    gs.add_argument("--seed", type=int, default=2026)
+    gs.add_argument("--teams", type=int, default=8)
+    gs.add_argument("--advance", type=int, default=99, help="advance up to this many steps")
+    gs.add_argument("--fidelity", default="fast", choices=["full", "fast"])
+    gs.set_defaults(func=cmd_gtt_season)
+
+    gr = sub.add_parser("gtt-rename", help="editor: rename/relocate a franchise")
+    gr.add_argument("--league", type=int, required=True)
+    gr.add_argument("--franchise", type=int, required=True)
+    gr.add_argument("--name", default=None)
+    gr.add_argument("--city", default=None)
+    gr.add_argument("--abbrev", default=None)
+    gr.set_defaults(func=cmd_gtt_rename)
 
     g = sub.add_parser("gen-players")
     add_common(g)

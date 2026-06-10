@@ -3,6 +3,71 @@
 *Architecture + roadmap. Captures the design worked out in conversation; written
 as the build plan for the feature.*
 
+## Build status
+
+- **P0 — the dual** ✅ `engine/gtt.py` (`simulate_gtt_dual`): 3 MS + 3 WS + 3 XD,
+  first to 5 of 9, abandon-after-clinch. Mixed doubles run through the real 2-on-2
+  `engine.doubles` engine (gender-blind), not the old averaged-pair trick.
+- **P1 — the season** ✅ `app/gtt_seasonmode.py`, **forked from `app.seasonmode`**
+  and stripped of divisions/conferences/NCAA: a flat league of co-ed franchises
+  plays a double round-robin → single-elimination playoff → champion, persisted in
+  SQLite. Two deliberate divergences from the college fork:
+  - **Franchises are a stored, editable registry** (`gtt_franchises`: name + city +
+    abbrev). College programs regenerate from the seed and are never stored; GTT
+    teams have user-owned identities that can be renamed/relocated at will.
+  - **All seeds and rosters key off the franchise *id*, never its name** — so
+    renaming or relocating a team is purely cosmetic and changes no result. This is
+    what makes the editor safe.
+- **P2 — playoffs** ✅ folded into the P1 fork (top-N single elimination).
+- **P3 — honors** ✅ GTT **MVP** (most line wins, win% tiebreak) + **Champion**
+  credited to the whole winning roster, derived by replaying the stored line
+  results against the deterministic rosters (no schema change). Honors surface on
+  the franchise and player pages. *Caveat:* player identity is still
+  league-internal (`{league}-{fid}-{m|w}-{idx}`); the real cross-context pid
+  linkage (so a GTT title lands on the same career page as the player's college
+  honors) waits on the **P5** graduate pipeline.
+- **Web UI** ✅ fully wired: a "Global Team Tennis" nav group → **League Hub**
+  (create league, advance week / simulate-to-champion, standings, honors, recent
+  results), **franchise pages** with the **inline name/city/abbrev editor**, and
+  **player pages** with match logs + honors. (`app/web/server.py` routes under
+  `/gtt`, templates `gtt_hub` / `gtt_franchise` / `gtt_player`.)
+- **P5 — lifecycle + persistence** ✅ `gtt_seasonmode` is now a **multi-season
+  career engine**: players are real, persisted entities (`gtt_players`) that age,
+  retire, and refresh each off-season. The inaugural league is generated (founding
+  pros, no college history); from then on each off-season pulls that year's
+  **college graduates out of the world** (`world_roster` seniors — read through the
+  same connection, so no change to the college finalize path) into a free-agent
+  pool, tops up with generated rookies if short, then plays on.
+- **#1 — honors follow college → pro** ✅ A graduate keeps their **real college
+  pid**, so GTT MVP/championship is stamped (via `app.honors`) to the same id as
+  their college Player-of-the-Year. The player page shows **one unified career
+  timeline** (college + pro). Verified end-to-end: a college National POTY,
+  imported as a graduate, went on to win GTT MVP + Champion, all on one page.
+- **#3 — draft + keepers** ✅ Each off-season every franchise keeps its holdovers
+  and a **reverse-standings snake draft** fills the open slots from the pool
+  (graduates first by STR, then rookies). A Vickrey auction on the
+  scholarship-economy substrate remains a possible later swap-in for the snake
+  draft (see below) — the allocation step is isolated behind `_draft`.
+- **Web** ✅ the hub tracks the season number and offers **Start next season
+  (draft + intake)**; franchise pages show each player's **age + origin**
+  (College / Founder / Rookie); player pages show the **unified career honors**.
+
+- **Decline (aging)** ✅ `Prospect.decline()` is `develop()` run in reverse —
+  it erodes *current* ability toward the floor instead of closing the gap up to
+  the ceiling. It's dormant in college and only activated for pros once they age
+  past their peak (`PEAK_AGE`), with the slide steepening each year. A veteran's
+  STR visibly slips season over season until retirement freezes it.
+- **Hall of Fame** ✅ an **Enshrine** action on a player page **freezes the
+  profile** (attributes, career record, honors snapshot) into `gtt_hof` and lists
+  it on the GTT **Hall of Fame** page — the frozen entry never changes even as the
+  live player declines or retires.
+- **Awards archive** ✅ every completed season's **champion + MVP** is kept and
+  shown both on the hub ("Season history") and the Hall of Fame page
+  ("Champions & MVPs").
+
+All requested priorities are implemented and tested. Possible next polish: a
+Vickrey auction in place of the snake draft.
+
 ## Context
 
 A co-ed professional team-tennis league bolted onto the existing world clock,
