@@ -22,32 +22,83 @@
   ],
   "regions": {
     "us": {
-      "label": "USA",
-      "country": "US",
-      "first_keys": [
-        "american_northeast",
-        "american_south",
-        "american_midwest",
-        "american_west",
-        "american_texas_southwest",
-        "black_american",
-        "asian_american"
-      ],
-      "surname_keys": [
-        "american_general",
-        "black_american"
+      "subregions": [
+        {
+          "weight": 0.55,
+          "country": "US",
+          "first_keys": [
+            "american_northeast",
+            "american_south",
+            "american_midwest",
+            "american_west",
+            "american_texas_southwest"
+          ],
+          "surname_keys": [
+            "american_general"
+          ]
+        },
+        {
+          "weight": 0.22,
+          "country": "US",
+          "first_keys": [
+            "black_american"
+          ],
+          "surname_keys": [
+            "black_american",
+            "american_general"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "US",
+          "first_keys": [
+            "asian_american"
+          ],
+          "surname_keys": [
+            "chinese",
+            "korean",
+            "vietnamese",
+            "filipino",
+            "japanese",
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.11,
+          "country": "US",
+          "first_keys": [
+            "latino_hispanic"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "spanish"
+          ]
+        }
       ]
     },
     "canada": {
-      "label": "Canada",
-      "country": "CA",
-      "first_keys": [
-        "canadian_english",
-        "canadian_french"
-      ],
-      "surname_keys": [
-        "canadian_french",
-        "american_general"
+      "subregions": [
+        {
+          "weight": 0.72,
+          "country": "CA",
+          "first_keys": [
+            "canadian_english"
+          ],
+          "surname_keys": [
+            "american_general",
+            "uk_european"
+          ]
+        },
+        {
+          "weight": 0.28,
+          "country": "CA",
+          "first_keys": [
+            "canadian_french"
+          ],
+          "surname_keys": [
+            "canadian_french"
+          ]
+        }
       ]
     },
     "latin_america": {
@@ -1038,34 +1089,67 @@
       ]
     },
     "europe_western": {
-      "label": "Western Europe",
-      "country_weights": {
-        "DE": 0.25,
-        "FR": 0.2,
-        "NL": 0.18,
-        "IT": 0.15,
-        "ES": 0.12,
-        "PT": 0.1
-      },
-      "first_keys": [
-        "uk_european",
-        "irish_european",
-        "french",
-        "german",
-        "italian",
-        "spanish",
-        "dutch",
-        "portuguese"
-      ],
-      "surname_keys": [
-        "uk_european",
-        "irish",
-        "french",
-        "german",
-        "italian",
-        "spanish",
-        "dutch",
-        "portuguese"
+      "subregions": [
+        {
+          "weight": 0.25,
+          "country": "DE",
+          "first_keys": [
+            "german"
+          ],
+          "surname_keys": [
+            "german"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "FR",
+          "first_keys": [
+            "french"
+          ],
+          "surname_keys": [
+            "french"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "NL",
+          "first_keys": [
+            "dutch"
+          ],
+          "surname_keys": [
+            "dutch"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "IT",
+          "first_keys": [
+            "italian"
+          ],
+          "surname_keys": [
+            "italian"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "ES",
+          "first_keys": [
+            "spanish"
+          ],
+          "surname_keys": [
+            "spanish"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "PT",
+          "first_keys": [
+            "portuguese"
+          ],
+          "surname_keys": [
+            "portuguese"
+          ]
+        }
       ]
     },
     "europe_eastern": {
@@ -1401,23 +1485,57 @@
       ]
     },
     "central_west_asia": {
-      "label": "Central / West Asia / Middle East",
-      "country_weights": {
-        "TR": 0.45,
-        "SA": 0.2,
-        "IR": 0.15,
-        "EG": 0.1,
-        "KZ": 0.1
-      },
-      "first_keys": [
-        "central_asian",
-        "turkish",
-        "arabic"
-      ],
-      "surname_keys": [
-        "central_asian",
-        "turkish",
-        "arabic"
+      "subregions": [
+        {
+          "weight": 0.45,
+          "country": "TR",
+          "first_keys": [
+            "turkish"
+          ],
+          "surname_keys": [
+            "turkish"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "SA",
+          "first_keys": [
+            "arabic"
+          ],
+          "surname_keys": [
+            "arabic"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "IR",
+          "first_keys": [
+            "iranian"
+          ],
+          "surname_keys": [
+            "iranian"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "EG",
+          "first_keys": [
+            "egyptian"
+          ],
+          "surname_keys": [
+            "egyptian"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "KZ",
+          "first_keys": [
+            "central_asian"
+          ],
+          "surname_keys": [
+            "central_asian"
+          ]
+        }
       ]
     },
     "gulf_cricket": {
@@ -2627,20 +2745,27 @@
       ]
     },
     "belgium": {
-      "_doc": [
-        "Frontier baseball nation — the scene is Flemish-led (Antwerp /",
-        "Borgerhout), so naming blends Dutch (Flemish) and French (Walloon).",
-        "Tagged BE."
-      ],
-      "label": "Belgium",
-      "country": "BE",
-      "first_keys": [
-        "dutch",
-        "french"
-      ],
-      "surname_keys": [
-        "dutch",
-        "french"
+      "subregions": [
+        {
+          "weight": 0.6,
+          "country": "BE",
+          "first_keys": [
+            "dutch"
+          ],
+          "surname_keys": [
+            "dutch"
+          ]
+        },
+        {
+          "weight": 0.4,
+          "country": "BE",
+          "first_keys": [
+            "french"
+          ],
+          "surname_keys": [
+            "french"
+          ]
+        }
       ]
     },
     "palestine": {
@@ -2660,22 +2785,12 @@
       ]
     },
     "lebanon": {
-      "_doc": [
-        "Frontier baseball nation fueled by one of the world's largest",
-        "diasporas — Brazil and Trinidad hold huge Lebanese-descended",
-        "communities, so the family-name pool blends domestic Arabic with the",
-        "brazilian_lebanese / lebanese_trinidadian diaspora surnames. Tagged LB."
-      ],
-      "label": "Lebanon",
       "country": "LB",
       "first_keys": [
-        "arabic",
-        "brazilian"
+        "arabic"
       ],
       "surname_keys": [
-        "arabic",
-        "brazilian_lebanese",
-        "lebanese_trinidadian"
+        "arabic"
       ]
     },
     "zaryanovia": {

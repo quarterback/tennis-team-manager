@@ -29,3 +29,51 @@ def test_us_only_skews_us():
     fn = make_name_picker(random.Random(3), gender="male", region_weights=region_preset("us_only"))
     countries = [c for _, c in (fn() for _ in range(40))]
     assert countries.count("US") >= 30
+
+
+def test_draws_are_subregion_coherent():
+    """O27 rule: ONE subregion per draw — first name, surname, AND country must
+    all be satisfiable by a single subregion (no 'Babar Iyer', no 'Pérez (IT)')."""
+    import json
+    import os
+    import random
+
+    from generators import make_name_picker, region_preset
+    from generators.names import _NAMES_DIR
+
+    pools = {k: json.load(open(os.path.join(_NAMES_DIR, f"{k}.json")))
+             for k in ("male_first", "female_first", "surnames")}
+    regions = json.load(open(os.path.join(_NAMES_DIR, "regions.json")))["regions"]
+
+    def units(region):
+        subs = region.get("subregions")
+        return subs if subs else [region]
+
+    def in_buckets(kind, keys, token):
+        return any(token in (pools[kind].get(k) or []) for k in keys)
+
+    def coherent(first, last, country, gender_kind):
+        for region in regions.values():
+            for sr in units(region):
+                c = sr.get("country") or region.get("country")
+                cw = sr.get("country_weights") or region.get("country_weights") or {}
+                if (c and c != country) or (not c and country not in cw):
+                    continue
+                if in_buckets(gender_kind, sr.get("first_keys", []), first) and \
+                   in_buckets("surnames", sr.get("surname_keys", []), last):
+                    return True
+        return False
+
+    for preset in ("global", "americas_pro", "european", "us_only"):
+        for gender, kind in (("male", "male_first"), ("female", "female_first")):
+            fn = make_name_picker(random.Random(99), gender=gender,
+                                  region_weights=region_preset(preset))
+            for _ in range(300):
+                full, country = fn()
+                if country == "ZR" or " " not in full:     # zaryanovia is procedural
+                    continue
+                first, last = full.rsplit(" ", 1)
+                # multi-word firsts: recheck with the leading token split too
+                ok = coherent(first, last, country, kind) or \
+                     coherent(full.split(" ", 1)[0], full.split(" ", 1)[1], country, kind)
+                assert ok, f"incoherent draw: {full!r} ({country}) [{preset}/{gender}]"
