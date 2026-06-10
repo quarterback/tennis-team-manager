@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ d.home_name }} vs {{ d.away_name }}{% endblock %}
+{% block content %}
+
+{% macro pct(n, tot) %}{% if tot %}{{ (100 * n // tot) }}%{% else %}—{% endif %}{% endmacro %}
+
+{% macro statrow(label, h, a, hsub='', asub='') %}
+<div class="ms-row">
+  <span class="ms-h">{{ h }}{% if hsub %} <span class="ms-sub">({{ hsub }})</span>{% endif %}</span>
+  <span class="ms-label">{{ label }}</span>
+  <span class="ms-a">{{ a }}{% if asub %} <span class="ms-sub">({{ asub }})</span>{% endif %}</span>
+</div>
+{% endmacro %}
+
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:720px">
+
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_hub', lg=league.id) }}">← {{ league.name }}</a>
+
+  <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">
+        <a href="{{ url_for('gtt_franchise', fid=d.home_fid, lg=league.id) }}" style="text-decoration:none;{{ 'font-weight:800' if d.winner == 0 else 'color:var(--text-muted)' }}">{{ d.home_name }}</a>
+        <span style="margin:0 6px">{{ d.home_points }}–{{ d.away_points }}</span>
+        <a href="{{ url_for('gtt_franchise', fid=d.away_fid, lg=league.id) }}" style="text-decoration:none;{{ 'font-weight:800' if d.winner == 1 else 'color:var(--text-muted)' }}">{{ d.away_name }}</a>
+      </span>
+      <span class="bl-panel-meta">{% if d.round == 'PO' %}Playoffs{% else %}Week {{ d.week }}{% endif %} · {{ d.year + 2027 }}</span>
+    </div>
+    <div style="padding:6px 16px 14px;color:var(--text-muted);font-size:13px">
+      Click any line for the full match stats. First to 5 of 9 lines clinches.
+    </div>
+  </div>
+
+  {% for ln in d.lines %}
+  {% if ln.completed %}
+  <details class="bl-panel ms-line"{% if loop.first %} open{% endif %}>
+    <summary class="ms-summary">
+      <span class="ms-slot">{{ ln.slot }}</span>
+      <span class="ms-side {{ 'win' if ln.home_won else '' }}">
+        {% for p in ln.home_players %}<a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">{{ p.name }}</a>{% if not loop.last %} / {% endif %}{% endfor %}
+      </span>
+      <span class="ms-score">{{ ln.scoreline }}</span>
+      <span class="ms-side ms-right {{ 'win' if not ln.home_won else '' }}">
+        {% for p in ln.away_players %}<a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">{{ p.name }}</a>{% if not loop.last %} / {% endif %}{% endfor %}
+      </span>
+    </summary>
+    {% set hs = ln.home_stats %}{% set as = ln.away_stats %}
+    {% if hs and as and (hs.sp_total or as.sp_total) %}
+    <div class="ms-stats">
+      {{ statrow('Aces', hs.aces, as.aces) }}
+      {{ statrow('Double Faults', hs.df, as.df) }}
+      {{ statrow('1st Serve', pct(hs.fs_in, hs.sp_total), pct(as.fs_in, as.sp_total), '%s/%s'|format(hs.fs_in, hs.sp_total), '%s/%s'|format(as.fs_in, as.sp_total)) }}
+      {{ statrow('Service Points Won', pct(hs.sp_won, hs.sp_total), pct(as.sp_won, as.sp_total), '%s/%s'|format(hs.sp_won, hs.sp_total), '%s/%s'|format(as.sp_won, as.sp_total)) }}
+      {{ statrow('Return Points Won', pct(hs.rp_won, hs.rp_total), pct(as.rp_won, as.rp_total), '%s/%s'|format(hs.rp_won, hs.rp_total), '%s/%s'|format(as.rp_won, as.rp_total)) }}
+      {{ statrow('Break Points Saved', pct(hs.bp_saved, hs.bp_faced), pct(as.bp_saved, as.bp_faced), '%s/%s'|format(hs.bp_saved, hs.bp_faced), '%s/%s'|format(as.bp_saved, as.bp_faced)) }}
+      {{ statrow('Break Points Won', pct(hs.bp_conv, as.bp_faced), pct(as.bp_conv, hs.bp_faced), '%s/%s'|format(hs.bp_conv, as.bp_faced), '%s/%s'|format(as.bp_conv, hs.bp_faced)) }}
+      {{ statrow('Winners', hs.winners, as.winners) }}
+      {{ statrow('Unforced Errors', hs.ue, as.ue) }}
+      {{ statrow('Total Points Won', hs.points, as.points, pct(hs.points, hs.points + as.points), pct(as.points, hs.points + as.points)) }}
+    </div>
+    {% else %}
+    <div class="ms-stats" style="color:var(--text-muted);padding:12px 16px">Detailed stats unavailable (fast-sim game).</div>
+    {% endif %}
+  </details>
+  {% else %}
+  <div class="bl-panel ms-line" style="opacity:.55">
+    <div class="ms-summary"><span class="ms-slot">{{ ln.slot }}</span>
+      <span class="ms-side" style="flex:1;color:var(--text-muted)">not played — match clinched</span></div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<style>
+.ms-line { margin-bottom:8px; }
+.ms-summary { display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer; list-style:none; }
+.ms-summary::-webkit-details-marker { display:none; }
+.ms-slot { color:var(--text-muted); font-weight:700; width:38px; }
+.ms-side { flex:1; min-width:0; }
+.ms-side.ms-right { text-align:right; }
+.ms-side a { text-decoration:none; color:var(--text-muted); }
+.ms-side.win a { color:var(--text-primary); font-weight:700; }
+.ms-score { font-variant-numeric:tabular-nums; color:var(--text-muted); white-space:nowrap; }
+.ms-stats { padding:6px 16px 14px; border-top:1px solid var(--border-subtle); }
+.ms-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:5px 0; }
+.ms-row .ms-h { text-align:left; font-weight:700; font-variant-numeric:tabular-nums; }
+.ms-row .ms-a { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+.ms-row .ms-label { color:var(--text-muted); font-size:12px; padding:0 14px; white-space:nowrap; }
+.ms-sub { color:var(--text-muted); font-weight:400; font-size:11px; }
+</style>
+{% endblock %}

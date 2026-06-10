@@ -433,6 +433,24 @@ def relocate_franchise(franchise_id, city, abbrev=None):
 # Playing a dual
 # --------------------------------------------------------------------------
 
+def _stat_summary(stats_list):
+    """Raw ATP-style stat counts for one side (a singles player, or both partners
+    summed in doubles) — the box score formats these into `% (made/total)`."""
+    agg = {"aces": 0, "df": 0, "fs_in": 0, "sp_won": 0, "sp_total": 0,
+           "rp_won": 0, "rp_total": 0, "bp_saved": 0, "bp_faced": 0, "bp_conv": 0,
+           "winners": 0, "ue": 0, "points": 0}
+    for s in stats_list:
+        agg["aces"] += s.aces; agg["df"] += s.double_faults
+        agg["fs_in"] += s.first_serves_in
+        agg["sp_won"] += s.serve_points_won; agg["sp_total"] += s.serve_points_total
+        agg["rp_won"] += s.return_points_won; agg["rp_total"] += s.return_points_total
+        agg["bp_saved"] += s.break_points_saved; agg["bp_faced"] += s.break_points_faced
+        agg["bp_conv"] += s.break_points_converted
+        agg["winners"] += s.winners; agg["ue"] += s.unforced_errors
+        agg["points"] += s.points_won
+    return agg
+
+
 def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     lid, seed = league["id"], league["world_seed"]
     names = _fr_names(conn, lid)
@@ -442,10 +460,19 @@ def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
                             fidelity=fidelity)
     lines = []
     for ln in res.lines:
-        lines.append({"slot": ln.slot, "home_won": ln.home_won, "completed": ln.completed,
-                      "scoreline": (ln.result.scoreline if ln.completed and ln.result else None),
-                      "home_pids": _line_pids(ln.slot, hm, hw) if ln.completed else [],
-                      "away_pids": _line_pids(ln.slot, am, aw) if ln.completed else []})
+        entry = {"slot": ln.slot, "home_won": ln.home_won, "completed": ln.completed,
+                 "scoreline": (ln.result.scoreline if ln.completed and ln.result else None),
+                 "home_pids": _line_pids(ln.slot, hm, hw) if ln.completed else [],
+                 "away_pids": _line_pids(ln.slot, am, aw) if ln.completed else []}
+        if ln.completed and ln.result is not None:
+            st = ln.result.stats
+            if ln.slot.startswith("XD"):
+                entry["home_stats"] = _stat_summary([st[0], st[1]])
+                entry["away_stats"] = _stat_summary([st[2], st[3]])
+            else:
+                entry["home_stats"] = _stat_summary([st[0]])
+                entry["away_stats"] = _stat_summary([st[1]])
+        lines.append(entry)
     conn.execute("UPDATE gtt_duals SET status='final', home_points=?, away_points=?,"
                  " winner=?, lines_json=? WHERE id=?",
                  (res.home_points, res.away_points, res.winner, json.dumps(lines), dual_id))
@@ -819,6 +846,35 @@ def week_duals(league_id, week, year=None):
         d["lines"] = json.loads(d["lines_json"] or "[]")
         out.append(d)
     return out
+
+
+def dual_detail(league_id, dual_id):
+    """One dual's full line-by-line result (the 9 games), with player names — so
+    every game in the season can be inspected individually on the full engine."""
+    conn = _db()
+    r = conn.execute("SELECT * FROM gtt_duals WHERE id=? AND league_id=?",
+                     (dual_id, league_id)).fetchone()
+    if not r:
+        conn.close()
+        return None
+    names = _fr_names(conn, league_id)
+    meta = _player_meta(conn, league_id)
+    conn.close()
+    d = dict(r)
+    lines = []
+    for ln in json.loads(d["lines_json"] or "[]"):
+        lines.append({"slot": ln["slot"], "completed": ln.get("completed"),
+                      "home_won": ln.get("home_won"), "scoreline": ln.get("scoreline"),
+                      "home_stats": ln.get("home_stats"), "away_stats": ln.get("away_stats"),
+                      "home_players": [{"pid": p, "name": meta.get(p, {}).get("name", p)}
+                                       for p in ln.get("home_pids", [])],
+                      "away_players": [{"pid": p, "name": meta.get(p, {}).get("name", p)}
+                                       for p in ln.get("away_pids", [])]})
+    return {"id": d["id"], "week": d["week"], "year": d["year"], "round": d["round"],
+            "home_name": names.get(d["home"], str(d["home"])), "home_fid": d["home"],
+            "away_name": names.get(d["away"], str(d["away"])), "away_fid": d["away"],
+            "home_points": d["home_points"], "away_points": d["away_points"],
+            "winner": d["winner"], "status": d["status"], "lines": lines}
 
 
 def champion(league_id):

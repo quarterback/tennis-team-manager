@@ -26,15 +26,30 @@ def test_gtt_hub_empty_then_create(tmp_path):
     assert hub.status_code == 200 and b"Test GTT" in hub.data and b"Standings" in hub.data
 
 
-def test_gtt_advance_and_champion(tmp_path):
+def test_gtt_advance_both_modes(tmp_path):
     c = _client(tmp_path)
     lid = gs.create_league("L", seed=11, n_teams=4)
-    # one step
+    # "step" plays one full-engine week
     assert c.post("/gtt/advance", data={"lg": lid, "mode": "step"}).status_code in (302, 303)
-    # finish to a champion
+    assert gs.load_league(lid)["current_week"] == 2
+    # "finish" fast-sims the rest to a champion
     assert c.post("/gtt/advance", data={"lg": lid, "mode": "finish"}).status_code in (302, 303)
     hub = c.get(f"/gtt?lg={lid}")
     assert b"Champion" in hub.data and b"MVP" in hub.data
+
+
+def test_gtt_dual_box_score(tmp_path):
+    c = _client(tmp_path)
+    lid = gs.create_league("L", seed=5, n_teams=4)
+    c.post("/gtt/advance", data={"lg": lid})         # play week 1 on the full engine
+    conn = gs._db()
+    did = conn.execute("SELECT id FROM gtt_duals WHERE league_id=? AND status='final' LIMIT 1",
+                       (lid,)).fetchone()["id"]
+    conn.close()
+    page = c.get(f"/gtt/dual/{did}?lg={lid}")
+    assert page.status_code == 200
+    assert b"Aces" in page.data and b"Service Points Won" in page.data   # ATP-style stats
+    assert b"/gtt/player/" in page.data and b"/gtt/franchise/" in page.data  # player + team links
 
 
 def test_gtt_franchise_page_and_editor(tmp_path):

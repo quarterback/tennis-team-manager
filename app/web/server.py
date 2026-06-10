@@ -69,12 +69,12 @@ NAV_GROUPS = [
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
-        {"id": "bracket",   "label": "NCAA Bracket", "icon": "🥇", "endpoint": "bracket",          "args": {}},
+        {"id": "bracket",   "label": "College Bracket", "icon": "🥇", "endpoint": "bracket",        "args": {}},
         {"id": "singles",   "label": "Singles Championship","icon": "🎾", "endpoint": "singles_championship", "args": {}},
         {"id": "doubles",   "label": "Doubles Championship","icon": "👥", "endpoint": "doubles_championship", "args": {}},
         {"id": "projection","label": "Bracket Projection","icon": "🔮", "endpoint": "projection",   "args": {}},
     ]),
-    ("Global Team Tennis", [
+    ("Pro Tour", [
         {"id": "gtt",       "label": "League Hub",   "icon": "🌐", "endpoint": "gtt_hub",          "args": {}},
         {"id": "gtt_hall",  "label": "Hall of Fame", "icon": "🏛️", "endpoint": "gtt_hall",         "args": {}},
     ]),
@@ -407,6 +407,9 @@ def create_app() -> Flask:
 
     @app.route("/gtt/advance", methods=["POST"])
     def gtt_advance():
+        # Two ways to play: "step" advances one slate (or playoff round, or the
+        # off-season roll) on the FULL engine, so every game is inspectable;
+        # "finish" is the fast bulk shortcut to the season's champion.
         lid = request.form.get("lg", type=int)
         mode = request.form.get("mode", "step")
         if lid:
@@ -415,6 +418,16 @@ def create_app() -> Flask:
             else:
                 gs.advance(lid, fidelity="full")
         return redirect(url_for("gtt_hub", lg=lid))
+
+    @app.route("/gtt/dual/<int:dual_id>")
+    def gtt_dual(dual_id):
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        detail = gs.dual_detail(league["id"], dual_id)
+        if not detail:
+            abort(404)
+        return render_template("gtt_dual.html", active="GTT", league=league, d=detail)
 
     @app.route("/gtt/franchise/<int:fid>")
     def gtt_franchise(fid):
