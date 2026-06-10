@@ -80,6 +80,22 @@ as the build plan for the feature.*
   values drift from the ability prior. Calibration knob if ever needed:
   `expected_games_share`'s slope.
 
+- **Chaos / variance** ✅ the pro game is deliberately far more volatile than
+  college or juniors, via two levers:
+  - **Fast4 lines.** Every GTT line (singles and mixed) is a single Fast4 set —
+    first to 4 games, no-ad, tiebreak at 3-3 — added to the engine as a
+    backward-compatible `MatchFormat.set_tiebreak_at` (tiebreak at games-1).
+    Short sets are inherently high-variance where a best-of-3 lets class grind
+    it out.
+  - **Per-play-date form.** Each play date every fielded player's whole level is
+    multiplied by a fresh, wide, upside-skewed factor (−30% .. +45%,
+    `CHAOS_FORM_*`) — a star can show up flat, a journeyman can catch fire.
+    Player-based (not team-correlated) by design choice. Net effect: the
+    favourite takes ~70% of duals (vs ~80% in college), and the better player
+    loses ~35% of individual singles lines — chaotic where you watch it (the box
+    scores) while class still sorts the season. Tunable via the `CHAOS_FORM_*`
+    range; deterministic (form seeded off the dual seed).
+
 All requested priorities are implemented and tested. Possible next polish: a
 Vickrey auction in place of the snake draft.
 

@@ -23,6 +23,9 @@ class MatchFormat:
     set_games: int = 6                   # games to win a normal set (win by 2)
     set_tiebreak: bool = True            # tiebreak at games-all (False ⇒ advantage set)
     set_tiebreak_target: int = 7         # points to win a set tiebreak (win by 2)
+    set_tiebreak_at: int | None = None   # games count the tiebreak is played at;
+                                         # None ⇒ games-all (set_games). Fast4 sets this
+                                         # to set_games-1 (tiebreak at 3-3 in a to-4 set).
 
     # Deciding-set scoring (independent of the rules above)
     final_set_tiebreak: bool = True      # deciding set is a match tiebreak…

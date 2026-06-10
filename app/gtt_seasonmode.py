@@ -268,6 +268,42 @@ def _lineup(conn, lid, fid, name):
     return team, [r["pid"] for r in men], [r["pid"] for r in women]
 
 
+# Per-play-date FORM — the pro game's chaos engine. Each play date every player's
+# whole level is multiplied by a fresh form factor in [-17%, +20%]: a coherent
+# day-to-day swing (a star can show up flat, a journeyman can catch fire), unlike
+# per-attribute noise which just cancels out. Fires in GTT only — college/juniors
+# never call this. Tuned so upsets are common night to night yet class still sorts
+# the standings over a season.
+CHAOS_FORM_LO = 0.83    # -17% off day
+CHAOS_FORM_HI = 1.20    # +20% on day
+
+
+# Per-play-date FORM, player-based: every player's whole level is multiplied by a
+# fresh, wide, slightly upside-skewed form factor each play date. A star can show
+# up flat; a journeyman can catch fire. It's drawn per player (not per team), so
+# individual lines swing hard night to night; over a 9-line dual the noise partly
+# averages out, so class still tells in the standings (favourites ~70% of duals).
+CHAOS_FORM_LO, CHAOS_FORM_HI = 0.70, 1.45        # -30% .. +45%
+
+
+def _scale_player(player, f):
+    from engine import Player, ATTRS
+    fields = {k: getattr(player, k) for k in player.__dataclass_fields__}
+    for a in ATTRS:
+        fields[a] = min(1.0, max(0.0, fields[a] * f))
+    return Player(**fields)
+
+
+def _apply_form(team, rng):
+    """Stamp a per-play-date, per-player form on the lineup in place. Lineup order
+    and the mixed-pair index map are preserved."""
+    def formed(p):
+        return _scale_player(p, rng.uniform(CHAOS_FORM_LO, CHAOS_FORM_HI))
+
+    team.men = [formed(p) for p in team.men]
+    team.women = [formed(p) for p in team.women]
+
+
 def _line_pids(slot, men_pids, women_pids):
     kind, num = slot[:2], int(slot[2:]) - 1
     if kind == "MS":
@@ -456,8 +492,13 @@ def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     names = _fr_names(conn, lid)
     home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)))
     away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)))
-    res = simulate_gtt_dual(home, away, seed=_dual_seed(seed, home_fid, away_fid, tag),
-                            fidelity=fidelity)
+    ds = _dual_seed(seed, home_fid, away_fid, tag)
+    # The pro game is volatile: each player carries a fresh per-dual "form" that
+    # swings their level well beyond college/junior noise, so a lesser team can
+    # take down the best on the night — yet class still tells over a season.
+    _apply_form(home, random.Random(ds ^ 0xF0F0))
+    _apply_form(away, random.Random(ds ^ 0x0A0A))
+    res = simulate_gtt_dual(home, away, seed=ds, fidelity=fidelity)
     lines = []
     for ln in res.lines:
         entry = {"slot": ln.slot, "home_won": ln.home_won, "completed": ln.completed,

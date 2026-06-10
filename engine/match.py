@@ -168,13 +168,14 @@ def play_set(
         return win, pts, gw
 
     tg = target_games if target_games is not None else fmt.set_games
+    tb_at = fmt.set_tiebreak_at if fmt.set_tiebreak_at is not None else tg
     while True:
         g_winner = play_game(state)
         state.games[g_winner] += 1
         state.server = 1 - state.server
 
         g0, g1 = state.games
-        if fmt.set_tiebreak and g0 == tg and g1 == tg:
+        if fmt.set_tiebreak and g0 == tb_at and g1 == tb_at:
             tb_winner = play_tiebreak(state, target=fmt.set_tiebreak_target)
             state.games[tb_winner] += 1
             state.server = 1 - state.server

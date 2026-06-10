@@ -24,11 +24,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .state import MatchContext, Player
-from .format import PRESETS
+from .format import PRESETS, MatchFormat
 from .match import simulate_match, MatchResult
 from .doubles import simulate_doubles, DoublesTeam, DoublesResult
 
 LINES_TO_CLINCH = 5    # first to 5 of the 9 available lines
+
+# Every GTT line is a single Fast4 set: first to 4 games, sudden-death deuce
+# (no-ad), tiebreak at 3-3 (to 5 points). Fast4 is deliberately high-variance —
+# the pro team game is chaotic night to night, where a best-of-3 lets class
+# grind out the result. Used for singles AND mixed doubles.
+GTT_SET = MatchFormat(best_of=1, no_ad=True, set_games=4,
+                      set_tiebreak=True, set_tiebreak_at=3, set_tiebreak_target=5,
+                      final_set_tiebreak=False)
 
 
 @dataclass
@@ -73,8 +81,8 @@ def simulate_gtt_dual(home: GTTTeam, away: GTTTeam, *, seed: int,
     lines: list[GTTLine] = []
     points = [0, 0]  # [home, away]
 
-    singles_fmt = PRESETS["ncaa_dual"]    # best-of-3, no-ad
-    mixed_fmt = PRESETS["pro_set_8"]      # 8-game pro set, like dual doubles
+    singles_fmt = GTT_SET                 # single short set (WTT-style)
+    mixed_fmt = GTT_SET
 
     def clinched() -> bool:
         return max(points) >= LINES_TO_CLINCH
