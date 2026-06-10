@@ -65,6 +65,21 @@ as the build plan for the feature.*
   shown both on the hub ("Season history") and the Hall of Fame page
   ("Champions & MVPs").
 
+- **P4 — STR continuity feed** ✅ completed GTT singles (MS/WS) feed
+  `converge_ids` as `pid → [(opp, gw, gl)]`, oldest→newest, with each player's
+  profile STR as the prior — for a graduate that profile is their college-exit
+  snapshot, so the rating carries across with no seam and drifts with pro
+  results. Mixed doubles is display-only (the planned default). Pros get **no
+  ranking page** by design — the number computes and shows on profiles only.
+  One engine change: `converge_ids` gained a `max_diff` parameter (default
+  unchanged at UTR's 2.00) because a small closed pro pool's best player
+  legitimately out-rates the whole field by more than the blowout-gap window,
+  which would discard every one of an outlier's matches; GTT passes 6.0.
+  Note the rating is margin-based (UTR-style game share), so spreads compress
+  toward what actual margins support — ordering tracks records, absolute
+  values drift from the ability prior. Calibration knob if ever needed:
+  `expected_games_share`'s slope.
+
 All requested priorities are implemented and tested. Possible next polish: a
 Vickrey auction in place of the snake draft.
 

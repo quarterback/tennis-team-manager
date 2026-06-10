@@ -848,6 +848,73 @@ def week_duals(league_id, week, year=None):
     return out
 
 
+# --------------------------------------------------------------------------
+# STR continuity (P4) — pro results feed the same rating engine as college.
+#
+# Singles lines (MS/WS) feed `converge_ids` as pid -> [(opp, gw, gl)], oldest
+# to newest so the rating's recency window works. Each player's PRIOR is the
+# STR implied by their stored profile — for a graduate that profile is their
+# college-exit snapshot, so the rating carries over with no seam and drifts as
+# pro matches accumulate. Mixed doubles is display-only (two players a side).
+# There is deliberately NO pro ranking page: the number computes and shows on
+# profiles, but is never sorted into a leaderboard.
+# --------------------------------------------------------------------------
+
+_str_cache: dict = {}
+
+
+def _parse_games(scoreline, home_won):
+    """(home_games, away_games) from a winner-perspective scoreline ('6-4 3-6 6-2').
+    GTT singles use the ncaa_dual format (no match-tiebreak), so every pair is a
+    real set score."""
+    wg = lg = 0
+    for s in (scoreline or "").split():
+        try:
+            a, b = s.split("-")
+            wg += int(a)
+            lg += int(b)
+        except ValueError:
+            continue
+    return (wg, lg) if home_won else (lg, wg)
+
+
+def league_player_str(league_id):
+    """Live results-based STR/reliability for every pro, from all completed GTT
+    singles across the league's history (cached by completed-dual count)."""
+    from .str_rating import converge_ids
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM gtt_duals WHERE league_id=? AND status='final'",
+                       (league_id,)).fetchone()["c"]
+    key = (league_id, cnt)
+    if key in _str_cache:
+        conn.close()
+        return _str_cache[key]
+    rows = conn.execute("SELECT lines_json FROM gtt_duals WHERE league_id=? AND status='final'"
+                        " ORDER BY year, week, id", (league_id,)).fetchall()
+    priors = {r["pid"]: _prospect(r["data"]).str_value()
+              for r in conn.execute("SELECT pid, data FROM gtt_players WHERE league_id=?",
+                                    (league_id,)).fetchall()}
+    conn.close()
+    corpus: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or not ln["slot"][:2] in ("MS", "WS"):
+                continue
+            hp, ap = ln.get("home_pids") or [], ln.get("away_pids") or []
+            if len(hp) != 1 or len(ap) != 1:
+                continue
+            hg, ag = _parse_games(ln.get("scoreline"), ln["home_won"])
+            corpus.setdefault(hp[0], []).append((ap[0], hg, ag))
+            corpus.setdefault(ap[0], []).append((hp[0], ag, hg))
+    # Wider gap window than college: a drafted pro league is a small closed
+    # pool, so the best player legitimately out-rates the field by > 2.0 and
+    # UTR's blowout exclusion would discard ALL of an outlier's matches.
+    res = converge_ids(corpus, priors=priors, max_diff=6.0) if corpus else {}
+    _str_cache.clear()
+    _str_cache[key] = res
+    return res
+
+
 def dual_detail(league_id, dual_id):
     """One dual's full line-by-line result (the 9 games), with player names — so
     every game in the season can be inspected individually on the full engine."""
@@ -945,12 +1012,14 @@ def franchise_roster(league_id, fid, year=None):
     rows = conn.execute("SELECT pid, gender, age, origin, data FROM gtt_players WHERE league_id=?"
                         " AND fid=? AND status='active'", (league_id, fid)).fetchall()
     conn.close()
+    live = league_player_str(league_id)
     players = []
     for r in rows:
         p = _prospect(r["data"])
         w, l = rec.get(r["pid"], [0, 0])
+        strv = live.get(r["pid"], (p.str_value(), 0.0))[0]
         players.append({"pid": r["pid"], "name": p.name, "country": p.country, "gender": r["gender"],
-                        "age": r["age"], "origin": r["origin"], "str": round(p.str_value(), 1),
+                        "age": r["age"], "origin": r["origin"], "str": round(strv, 1),
                         "overall": round(p.current_overall()), "w": w, "l": l,
                         "honors": player_honors(league_id, r["pid"])})
     # men by STR then women by STR
@@ -1006,10 +1075,12 @@ def player_detail(league_id, pid):
 
     import app.honors as honors
     career = honors.career_by_year(pid, "player")
+    strv, str_rel = league_player_str(league_id).get(pid, (p.str_value(), 0.0))
     return {"pid": pid, "name": p.name, "country": p.country, "gender": row["gender"],
             "age": row["age"], "origin": row["origin"], "status": row["status"],
             "fid": row["fid"], "franchise": names.get(row["fid"], "Free agent"),
-            "str": round(p.str_value(), 1), "overall": round(p.current_overall()),
+            "str": round(strv, 1), "str_reliability": round(str_rel, 2),
+            "overall": round(p.current_overall()),
             "w": w, "l": l, "honors": player_honors(league_id, pid),
             "career_honors": career, "log": log, "enshrined": enshrined}
 
