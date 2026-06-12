@@ -24,7 +24,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     junior_tournaments, junior_tournament_detail,
                     recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
-                    dashboard_view, team_budget, team_results,
+                    dashboard_view, data_portal_view, team_budget, team_results,
                     conference_schools, team_conference, world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
@@ -53,6 +53,7 @@ NAV_GROUPS = [
     ("World", [
         {"id": "world",     "label": "World Hub",    "icon": "🌎", "endpoint": "world_view",       "args": {}},
         {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
+        {"id": "data",      "label": "Data Portal",  "icon": "📈", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
@@ -91,6 +92,7 @@ def _active_nav(req) -> str:
     if p == "/":                          return "dashboard"
     if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
+    if p.startswith("/data"):             return "data"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/awards"):           return "awards"
     if p.startswith("/hall-of-fame"):     return "hof"
@@ -211,6 +213,18 @@ def create_app() -> Flask:
         src_path = resolve_db_path()
         if not os.path.exists(src_path):
             abort(404)
+        # Cheap change detection so the hub can skip unchanged downloads
+        # (DB + WAL sidecar; writes land in the WAL first).
+        parts = []
+        for p in (src_path, src_path + "-wal"):
+            try:
+                st = os.stat(p)
+                parts.append(f"{st.st_mtime_ns}-{st.st_size}")
+            except OSError:
+                parts.append("0")
+        etag = '"' + ".".join(parts) + '"'
+        if request.headers.get("If-None-Match") == etag:
+            return "", 304
         fd, snap_path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
         src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
@@ -227,8 +241,10 @@ def create_app() -> Flask:
                 pass
             return resp
 
-        return send_file(snap_path, mimetype="application/x-sqlite3",
+        resp = send_file(snap_path, mimetype="application/x-sqlite3",
                          as_attachment=True, download_name="tennis.db")
+        resp.headers["ETag"] = etag
+        return resp
 
     @app.route("/start")
     def onboarding():
@@ -293,6 +309,12 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         return render_template("dashboard.html", active="Dashboard", u=u, uni_label=label,
                                d=dashboard_view(division, gender))
+
+    @app.route("/data")
+    def data_portal():
+        division, gender, label, u = _universe(request)
+        return render_template("data_portal.html", active="Data", u=u, uni_label=label,
+                               portal=data_portal_view(division, gender))
 
     @app.route("/rankings")
     def rankings():

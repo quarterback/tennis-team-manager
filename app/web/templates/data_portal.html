@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Data Portal{% endblock %}
+{% block meta_description %}A tennis data portal for Play to Clinch: live college rankings, scores, STR player leaders, conference races, recruiting boards, and junior tour feeds wired from the sim.{% endblock %}
+{% block content %}
+{% set s = portal.season %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Tour</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:118px">
+      {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <span class="al-feed">SIM DATA PORTAL</span>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ portal.completed_duals }} of {{ portal.total_duals }} duals final</span>
+</div></div>
+</form>
+
+<div class="bl-container">
+  <section class="al-hero">
+    <div>
+      <div class="al-eyebrow">Rankings · Scores · Stats · Race · Juniors</div>
+      <h1>Tour-style data center for the college tennis world.</h1>
+      <p>Built like a separate ATP/WTA-style portal: live rankings, player stat cards, scoreboards, conference race cuts, and junior/recruiting data are pulled from the sim and surfaced in one place.</p>
+      <div class="al-tabs" aria-label="Data portal sections">
+        <a href="{{ url_for('rankings', u=u) }}">Rankings</a>
+        <a href="{{ url_for('season_hub', u=u) }}">Scores</a>
+        <a href="{{ url_for('season_standings', u=u) }}">Race</a>
+        <a href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Juniors</a>
+        <a href="{{ url_for('junior_feed_json', u=u, grad_year=portal.grad_year) }}">JSON</a>
+      </div>
+    </div>
+    <div class="al-hero-card">
+      <span class="al-live-dot"></span>
+      <div class="al-hero-k">{{ 'Live season' if portal.has_live_results else 'Preseason model' }}</div>
+      <div class="al-hero-v">
+        {% if portal.phase == 'regular' %}Week {{ [portal.current_week, portal.total_weeks]|min }}{% elif portal.phase == 'conf_tournaments' %}Conference tournaments{% elif portal.phase == 'ncaa' %}NCAA championship{% else %}Season complete{% endif %}
+      </div>
+      <div class="al-hero-sub">{{ portal.programs }} programs · {{ portal.players }} players · {{ portal.conferences }} conferences</div>
+    </div>
+  </section>
+
+  <div class="al-kpis al-kpis--portal">
+    <a class="al-kpi al-kpi-link" href="{{ url_for('rankings', u=u) }}"><div class="al-kpi-k">No. 1 Program</div><div class="al-kpi-v sm">{{ portal.live_rankings[0].school if portal.live_rankings else '—' }}</div><div class="al-kpi-sub">Power Index {{ '%.3f'|format(portal.live_rankings[0].pi) if portal.live_rankings else '—' }}</div></a>
+    <a class="al-kpi al-kpi-link" href="{{ url_for('season_hub', u=u) }}"><div class="al-kpi-k">Completed Duals</div><div class="al-kpi-v">{{ portal.completed_duals }}</div><div class="al-kpi-sub">scoreboards and box scores</div></a>
+    <a class="al-kpi al-kpi-link" href="{{ url_for('season_standings', u=u) }}"><div class="al-kpi-k">Conference Races</div><div class="al-kpi-v">{{ portal.conferences }}</div><div class="al-kpi-sub">leaders and automatic-bid paths</div></a>
+    <a class="al-kpi al-kpi-link" href="{{ url_for('recruiting_hub_page', u=u, grad_year=portal.grad_year) }}"><div class="al-kpi-k">Junior Pool</div><div class="al-kpi-v">{{ "{:,}".format(portal.junior_kpis.class_size) }}</div><div class="al-kpi-sub">{{ portal.junior_kpis.bluechips }} blue chips · {{ portal.junior_kpis.nations }} nations</div></a>
+  </div>
+</div>
+
+<div class="bl-container">
+  <div class="al-score-strip">
+    <div class="al-score-head">
+      <span>Latest Results</span>
+      <a href="{{ url_for('season_hub', u=u) }}">All scores →</a>
+    </div>
+    {% if portal.recent %}
+      {% for d in portal.recent[:6] %}
+      <a class="al-score-card" href="{{ url_for('season_dual', dual_id=d.id, u=u) }}">
+        <div class="al-score-meta">{{ 'Week ' ~ d.week if d.round == 'REG' else d.round }} · {{ 'Conf' if d.is_conf else 'Non-conf' }}</div>
+        <div class="al-score-team {{ 'win' if d.winner == 0 else '' }}"><span>{{ d.home }}</span><strong>{{ d.home_points }}</strong></div>
+        <div class="al-score-team {{ 'win' if d.winner == 1 else '' }}"><span>{{ d.away }}</span><strong>{{ d.away_points }}</strong></div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="al-empty">Advance week one to populate a live score strip.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-container"><div class="al-portal-grid">
+  <section class="bl-panel al-card-main">
+    <div class="bl-panel-head"><span class="bl-panel-title">Live Rankings</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Full table →</a></div>
+    <div class="bl-tablescroll">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 38px 46px minmax(160px,1fr) 58px 58px 74px 62px 62px">
+      <div class="bl-thead"><span class="bl-th">RK</span><span class="bl-th num">MOVE</span><span class="bl-th">PROGRAM</span><span class="bl-th">CONF</span><span class="bl-th">REC</span><span class="bl-th num">PWR</span><span class="bl-th num">APR</span><span class="bl-th num">FQI</span></div>
+      {% for r in portal.live_rankings %}
+      <div class="bl-row">
+        <span class="bl-rank {{ 'gold' if r.rk==1 else 'bronze' if r.rk<=3 else '' }}">{{ r.rk }}</span>
+        <span class="al-move {{ 'up' if r.move > 0 else 'down' if r.move < 0 else '' }}">{{ '+' ~ r.move if r.move > 0 else r.move if r.move < 0 else '—' }}</span>
+        <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="bl-crest sm" style="background:{{ r.color }}">{{ r.abbr }}</span>{{ r.school }}</a>
+        <span class="bl-conf">{{ r.conf }}</span><span class="bl-rec">{{ r.rec }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.3f'|format(r.pi) }}</span></span>
+        <span class="bl-cell-num">{{ '%.3f'|format(r.apr) }}</span><span class="bl-cell-num">{{ '%.3f'|format(r.fqi) }}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </section>
+
+  <aside class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">STR Player Leaders</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Stats →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% if portal.player_leaders %}
+      {% for p in portal.player_leaders[:8] %}
+      <a class="al-player-row" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}">
+        <span class="al-player-rk">{{ loop.index }}</span>
+        <span class="al-player-main"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}<small>{{ p.school }} · {{ p.w }}-{{ p.l }}</small></span>
+        <strong>{{ '%.1f'|format(p.str) }}</strong>
+      </a>
+      {% endfor %}
+      {% else %}<p class="al-muted">No match logs yet. Player leaders appear after completed duals.</p>{% endif %}
+    </div>
+  </aside>
+</div></div>
+
+<div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Race Leaders</span><a class="bl-panel-meta" href="{{ url_for('season_standings', u=u) }}">Standings →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for r in portal.standings_leaders %}
+      <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=r.conf) }}"><span class="al-leadname"><span class="bl-crest xs" style="background:{{ r.color }}">{{ r.abbr }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ r.w }}-{{ r.l }}</span></a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">This Week</span><a class="bl-panel-meta" href="{{ url_for('season_schedule', u=u) }}">Schedule →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% if portal.upcoming %}
+      {% for d in portal.upcoming[:8] %}
+      <div class="al-fixture"><span>{{ d.home }}</span><b>vs</b><span>{{ d.away }}</span><small>{{ 'Conf' if d.is_conf else 'Non-conf' }}</small></div>
+      {% endfor %}
+      {% else %}<p class="al-muted">No regular-season fixtures queued for the current phase.</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Junior Watchlist</span><a class="bl-panel-meta" href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Full board →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for p in portal.top_prospects %}
+      <a class="al-player-row compact" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=portal.grad_year) }}">
+        <span class="al-player-rk">{{ p.rk }}</span>
+        <span class="al-player-main"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}<small>{{ '★'*p.stars }} · {{ "{:,}".format(p.points) }} pts</small></span>
+        <strong>{{ '%.1f'|format(p.str) if p.str is not none else '—' }}</strong>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div></div>
+{% endblock %}
