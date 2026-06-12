@@ -328,24 +328,28 @@ def create_app() -> Flask:
             or request.args.get("token", "")
         if token and supplied != token:
             abort(404)
+        # Resolve each universe by its canonical identifier (the uppercase "D1"
+        # the world/season-mode tables are keyed by). Passing a lowercase "d1"
+        # here forks a *fresh* preseason season — get_or_create matches division
+        # literally — so the feed would show week-0/no-results while the live sim
+        # is mid-season. The page (/data) already uses these canonical ids.
         universes = []
-        for div in ("d1", "d2", "d3"):
-            for gnd in ("men", "women"):
-                try:
-                    portal = data_portal_view(div, gnd)
-                except Exception:
-                    continue
-                universes.append({
-                    "division": div, "gender": gnd,
-                    "label": f"{div.upper()} {gnd.title()}",
-                    **{k: portal[k] for k in (
-                        "phase", "current_week", "total_weeks",
-                        "programs", "conferences", "players",
-                        "completed_duals", "total_duals",
-                        "live_rankings", "player_leaders",
-                        "standings_leaders", "recent", "upcoming",
-                        "top_prospects", "has_live_results")},
-                })
+        for _u, division, gender, label in UNIVERSES:
+            try:
+                portal = data_portal_view(division, gender)
+            except Exception:
+                continue
+            universes.append({
+                "division": division.lower(), "gender": gender,
+                "label": label,
+                **{k: portal[k] for k in (
+                    "phase", "current_week", "total_weeks",
+                    "programs", "conferences", "players",
+                    "completed_duals", "total_duals",
+                    "live_rankings", "player_leaders",
+                    "standings_leaders", "recent", "upcoming",
+                    "top_prospects", "has_live_results")},
+            })
         return jsonify({"universes": universes})
 
     @app.route("/rankings")
