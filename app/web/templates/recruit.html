@@ -221,7 +221,7 @@
             <tr><td>Intended major</td><td>{{ p.major }}</td></tr>
             {% if p.junior_tier %}<tr><td>Junior tier</td><td>{{ view.junior_tier_label }}</td></tr>{% endif %}
             <tr><td>Origin</td><td>{{ 'Domestic' if p.domestic else 'International' }}{% if p.secondary_country %} · dual citizen{% endif %}</td></tr>
-            <tr><td>Commitment</td><td>{{ 'Committed' if p.committed else 'Uncommitted' }}</td></tr>
+            <tr><td>Commitment</td><td>{% if p.committed %}Committed — <a href="{{ url_for('team_recruiting', school=p.commit_school) }}">{{ p.commit_school }}</a>{% else %}Uncommitted{% endif %}</td></tr>
           </tbody></table>
         </div>
       </div>

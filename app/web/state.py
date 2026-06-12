@@ -542,13 +542,37 @@ def reset_junior_setup() -> None:
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
-    return next((p for p in get_recruits(gender, grad_year, seed).recruits
-                 if p.pid == pid), None)
+    klass = get_recruits(gender, grad_year, seed)
+    _apply_committed_flag(klass, gender, grad_year)
+    return next((p for p in klass.recruits if p.pid == pid), None)
+
+
+_REV_RECRUIT_GENDERS = {v: k for k, v in RECRUIT_GENDERS.items()}
+
+
+def _apply_committed_flag(klass, gender: str, grad_year: int) -> None:
+    """Sync each prospect's `.committed` flag with the live world signings table
+    so the recruiting board's COMMIT column fills in as the season's drip runs."""
+    import app.world as world
+    w = world.load_world()
+    if not w or w["year"] != grad_year:
+        for p in klass.recruits:
+            p.committed = False
+            p.commit_school = None
+        return
+    wgender = _REV_RECRUIT_GENDERS.get(gender, gender)
+    pid_to_school = {p.pid: school
+                     for school, pl in world.signings().get(wgender, {}).items()
+                     for p in pl}
+    for p in klass.recruits:
+        p.commit_school = pid_to_school.get(p.pid)
+        p.committed = p.commit_school is not None
 
 
 def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: str = "",
                  division: str = "D1"):
     klass = get_recruits(gender, grad_year, division=division)
+    _apply_committed_flag(klass, gender, grad_year)
     if scope == "state":
         src = state_rankings(klass, state)
     elif scope == "intl":
