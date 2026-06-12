@@ -399,8 +399,11 @@ def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
     for i, c in enumerate(classes, 1):
         c["rank"] = i
     commitments.sort(key=lambda r: (-r["stars"], getattr(r["p"], "recruit_rank", 1e9)))
+    flipped_total = sum(1 for school_pl in by_school.values()
+                        for p in school_pl if getattr(p, "flips", 0) > 0)
     return {"classes": classes, "commitments": commitments,
-            "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes)}
+            "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes),
+            "n_flipped": flipped_total}
 
 
 def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
