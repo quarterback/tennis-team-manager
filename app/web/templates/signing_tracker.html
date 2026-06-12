@@ -12,6 +12,7 @@
   <div class="al-kpis">
     <div class="al-kpi"><div class="al-kpi-k">Signed</div><div class="al-kpi-v">{{ trk.total_signed }}</div></div>
     <div class="al-kpi"><div class="al-kpi-k">Programs w/ Class</div><div class="al-kpi-v">{{ trk.n_programs }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Flipped</div><div class="al-kpi-v">{{ trk.n_flipped }}</div></div>
     {% if trk.classes %}
     <a class="al-kpi al-kpi-link" href="{{ url_for('team_recruiting', school=trk.classes[0].school, u=u) }}">
       <div class="al-kpi-k">No. 1 Class</div><div class="al-kpi-v sm">{{ trk.classes[0].school }}</div>
@@ -62,7 +63,7 @@
       <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">★</span><span class="bl-th">SIGNED WITH</span></div>
       {% for r in trk.commitments[:40] %}
       <div class="bl-row">
-        <a class="bl-school" href="{{ url_for('recruit', pid=r.p.pid, u=u, grad_year=r.p.grad_year) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}</a>
+        <a class="bl-school" href="{{ url_for('recruit', pid=r.p.pid, u=u, grad_year=r.p.grad_year) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}{% if r.p.flips %} <span title="Decommitted {{ r.p.flips }}×" style="font-size:10px;color:#c0392b;font-weight:600">FLIP</span>{% endif %}</a>
         <span class="bl-cell-num">{{ '★'*r.stars if r.stars else '–' }}</span>
         <a class="bl-conf" href="{{ url_for('team_recruiting', school=r.school, u=u) }}" style="text-decoration:none;display:flex;align-items:center;gap:5px">{{ crest_box(r.school, r.abbr, r.color, 'xs') }} {{ r.school }}</a>
       </div>

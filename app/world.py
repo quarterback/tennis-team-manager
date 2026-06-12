@@ -125,7 +125,8 @@ CREATE TABLE IF NOT EXISTS world_roster (
   pid TEXT, data TEXT
 );
 CREATE TABLE IF NOT EXISTS world_signing (
-  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, data TEXT
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, data TEXT,
+  week_signed INTEGER DEFAULT 0, flips INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS world_crossmatch (
   world_id INTEGER, year INTEGER, gender TEXT, home TEXT, away TEXT,
@@ -151,6 +152,11 @@ def init_schema() -> None:
     global _schema_ready_for
     conn = dbpath.connect(WORLD_DB)
     conn.executescript(_SCHEMA)
+    for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0")):
+        try:
+            conn.execute(f"ALTER TABLE world_signing ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
     _schema_ready_for = WORLD_DB
@@ -438,11 +444,66 @@ def _openings(base_rosters: dict, gender: str) -> dict[str, int]:
     return out
 
 
+def _recruit_market(world: dict, gender: str) -> dict:
+    """Precomputed program tables a recruit consults to pick a school —
+    prestige-sorted window, top-academic set, region buckets, and per-school
+    seat capacity. Shared by the weekly drip and the decommit pass."""
+    progs = _flat_programs(gender)
+    traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
+              for s, p in progs.items()}
+    cap = _openings(_base_rosters(world), gender)
+    by_pres = sorted(progs, key=lambda s: traits[s][0])
+    pres_arr = [traits[s][0] for s in by_pres]
+    academic_top = sorted(progs, key=lambda s: -traits[s][1])[:40]
+    by_region: dict[str, list] = {}
+    for s in progs:
+        by_region.setdefault(traits[s][2], []).append(s)
+    return {"progs": progs, "traits": traits, "cap": cap, "by_pres": by_pres,
+            "pres_arr": pres_arr, "academic_top": academic_top, "by_region": by_region}
+
+
+def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
+                 exclude: set | None = None) -> str | None:
+    """Score every plausible program for prospect `p` and return the best one
+    with an open seat. `exclude` blocks specific schools (used for decommits)."""
+    traits = market["traits"]
+    by_pres, pres_arr = market["by_pres"], market["pres_arr"]
+    cal, ac = recruit_caliber(p), recruit_academic01(p)
+    hr = home_region(p)
+    hc = float(getattr(p, "homecooking", 0.0))
+    intl = not getattr(p, "domestic", False)
+    lo = bisect.bisect_left(pres_arr, cal - 0.30)
+    hi = bisect.bisect_left(pres_arr, cal + 0.30)
+    cands = set(by_pres[lo:hi]) | set(market["academic_top"])
+    if hc > 0.0 and not intl:
+        cands |= set(market["by_region"].get(hr, ()))
+    if exclude:
+        cands -= exclude
+    best, best_score = None, -1.0
+    jit = random.Random(f"{p.pid}|{jitter_salt}").uniform(-0.04, 0.04)
+    for s in cands:
+        if avail.get(s, 0) <= 0:
+            continue
+        pres, acad, reg, div, fac = traits[s]
+        athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
+        geo = hc * region_proximity(hr, reg)
+        score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
+                 * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+        if intl:
+            score *= INTL_TIER_PULL[_intl_tier(div, acad)]
+        if score > best_score:
+            best, best_score = s, score
+    if best is None:                              # no seats in range — widen once
+        best = next((s for s in by_pres
+                     if avail.get(s, 0) > 0 and (not exclude or s not in exclude)), None)
+    return best
+
+
 def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
     """Sign up to `quota` more recruits this tick. Each unsigned recruit (best
     first) commits to the open program with the highest prestige+academics
     appeal that still has a projected seat."""
-    wid = world["id"]
+    wid, week = world["id"], world["week"]
     rows = conn.execute("SELECT pid, school FROM world_signing WHERE world_id=? AND year=? AND gender=?",
                         (wid, world["year"], gender)).fetchall()
     signed = {r["pid"] for r in rows}
@@ -450,23 +511,8 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
     for r in rows:
         taken[r["school"]] = taken.get(r["school"], 0) + 1
 
-    progs = _flat_programs(gender)
-    traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
-              for s, p in progs.items()}
-    cap = _openings(_base_rosters(world), gender)
-    avail = {s: cap.get(s, 0) - taken.get(s, 0) for s in progs}
-    # Candidate indexing: each recruit only weighs programs near their athletic
-    # level (a prestige window) plus the always-tempting top-academic set — so a
-    # commit is O(window) not O(all ~1,000 programs).
-    by_pres = sorted(progs, key=lambda s: traits[s][0])
-    pres_arr = [traits[s][0] for s in by_pres]
-    academic_top = sorted(progs, key=lambda s: -traits[s][1])[:40]
-    # Home-region programs of EVERY division — so a strong "homecooking" recruit
-    # can choose a near-home smaller school over a higher-prestige one out of
-    # range (the realistic path by which real talent falls to a lower classification).
-    by_region: dict[str, list] = {}
-    for s in progs:
-        by_region.setdefault(traits[s][2], []).append(s)
+    market = _recruit_market(world, gender)
+    avail = {s: market["cap"].get(s, 0) - taken.get(s, 0) for s in market["progs"]}
 
     klass = national_class(world["seed"], world["year"], gender)
     new = []
@@ -476,50 +522,81 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
             break
         if p.pid in signed:
             continue
-        cal, ac = recruit_caliber(p), recruit_academic01(p)
-        hr = home_region(p)
-        hc = float(getattr(p, "homecooking", 0.0))
-        intl = not getattr(p, "domestic", False)
-        lo = bisect.bisect_left(pres_arr, cal - 0.30)
-        hi = bisect.bisect_left(pres_arr, cal + 0.30)
-        cands = set(by_pres[lo:hi]) | set(academic_top)
-        if hc > 0.0 and not intl:                       # homebodies also weigh home
-            cands |= set(by_region.get(hr, ()))
-        best, best_score = None, -1.0
-        jit = random.Random(f"{p.pid}|sign").uniform(-0.04, 0.04)
-        for s in cands:
-            if avail.get(s, 0) <= 0:
-                continue
-            pres, acad, reg, div, fac = traits[s]
-            athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
-            geo = hc * region_proximity(hr, reg)        # one-way; intl hc=0 → no geo
-            score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
-                     * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
-            if intl:                                     # internationals route by tier
-                score *= INTL_TIER_PULL[_intl_tier(div, acad)]
-            if score > best_score:
-                best, best_score = s, score
-        if best is None:                              # no seats in range — widen once
-            best = next((s for s in by_pres if avail.get(s, 0) > 0), None)
-            if best is None:
-                break
+        best = _pick_school(p, market, avail, jitter_salt="sign")
+        if best is None:
+            break
         avail[best] -= 1
         signed.add(p.pid)
-        new.append((wid, world["year"], gender, best, p.pid, json.dumps(prospect_to_dict(p))))
+        new.append((wid, world["year"], gender, best, p.pid,
+                    json.dumps(prospect_to_dict(p)), week, 0))
         signed_n += 1
     if new:
-        conn.executemany("INSERT INTO world_signing VALUES (?,?,?,?,?,?)", new)
+        conn.executemany("INSERT INTO world_signing VALUES (?,?,?,?,?,?,?,?)", new)
     return signed_n
 
 
+DECOMMIT_WINDOW_WEEKS = 3       # only signings this fresh can flip
+DECOMMIT_RATE = 0.067           # per eligible recruit per tick. Over a 3-week
+                                # window this is 1 - 0.933**3 ≈ 18.8% lifetime
+                                # flip rate — the Power Four CFB benchmark.
+DECOMMIT_CUTOFF_WEEK = 10       # no flips after this point in the signing window
+
+
+def _decommit_pass(conn, world: dict, gender: str) -> int:
+    """Recent signings (within DECOMMIT_WINDOW_WEEKS) each roll a flip; flippers
+    move to the next-best open school on their list — they do NOT re-enter the
+    pool. Capped after DECOMMIT_CUTOFF_WEEK so late commits stick."""
+    wid, week = world["id"], world["week"]
+    if week >= DECOMMIT_CUTOFF_WEEK:
+        return 0
+    cutoff = week - DECOMMIT_WINDOW_WEEKS
+    rows = conn.execute(
+        "SELECT rowid, pid, school, data, flips FROM world_signing"
+        " WHERE world_id=? AND year=? AND gender=? AND week_signed>=?",
+        (wid, world["year"], gender, cutoff)).fetchall()
+    if not rows:
+        return 0
+
+    all_rows = conn.execute(
+        "SELECT school FROM world_signing WHERE world_id=? AND year=? AND gender=?",
+        (wid, world["year"], gender)).fetchall()
+    taken: dict[str, int] = {}
+    for r in all_rows:
+        taken[r["school"]] = taken.get(r["school"], 0) + 1
+    market = _recruit_market(world, gender)
+    avail = {s: market["cap"].get(s, 0) - taken.get(s, 0) for s in market["progs"]}
+
+    flips = 0
+    for r in rows:
+        if random.random() >= DECOMMIT_RATE:
+            continue
+        original = r["school"]
+        p = prospect_from_dict(json.loads(r["data"]))
+        avail[original] = avail.get(original, 0) + 1            # free the old seat first
+        new_school = _pick_school(p, market, avail,
+                                  jitter_salt=f"flip|{week}", exclude={original})
+        if new_school is None or new_school == original:        # nowhere to go — stay put
+            avail[original] -= 1
+            continue
+        avail[new_school] -= 1
+        conn.execute("UPDATE world_signing SET school=?, week_signed=?, flips=flips+1"
+                     " WHERE rowid=?", (new_school, week, r["rowid"]))
+        flips += 1
+    return flips
+
+
 def _load_signings(conn, world: dict) -> dict[str, dict[str, list]]:
-    """{gender: {school: [Prospect, ...]}} for the class that's signed so far."""
-    rows = conn.execute("SELECT gender, school, data FROM world_signing"
+    """{gender: {school: [Prospect, ...]}} for the class that's signed so far.
+    Each prospect carries the live `flips` count (how many times they've
+    decommitted) and `week_signed` of their current commit."""
+    rows = conn.execute("SELECT gender, school, data, flips, week_signed FROM world_signing"
                         " WHERE world_id=? AND year=?", (world["id"], world["year"])).fetchall()
     out: dict = {}
     for r in rows:
-        out.setdefault(r["gender"], {}).setdefault(r["school"], []).append(
-            prospect_from_dict(json.loads(r["data"])))
+        p = prospect_from_dict(json.loads(r["data"]))
+        p.flips = r["flips"] or 0
+        p.week_signed = r["week_signed"] or 0
+        out.setdefault(r["gender"], {}).setdefault(r["school"], []).append(p)
     return out
 
 
@@ -971,10 +1048,13 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
             res = sm.advance(sid)
             played += res.get("played", 0)
 
-    # Recruiting drip: sign a slice of each active gender's class this week.
+    # Recruiting drip: flip a few recent commits, then sign a slice of each
+    # active gender's class this week.
     conn = _db()
     signed = 0
+    flips = 0
     for gender in worldconfig.active_genders():
+        flips += _decommit_pass(conn, w, gender)
         quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // SIGNING_WEEKS)
         signed += _sign_batch(conn, w, gender, quota)
     conn.execute("UPDATE world SET week=? WHERE id=?", (w["week"] + 1, w["id"]))
@@ -982,7 +1062,7 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     conn.close()
     _primed.pop(seed, None)               # week advanced → re-prime (more dev) next access
     return {"event": "week", "year": w["year"], "week": w["week"] + 1,
-            "played": played, "signed": signed, "cross": cross,
+            "played": played, "signed": signed, "flips": flips, "cross": cross,
             "complete": _all_complete(seed, get_or_create(seed))}
 
 
