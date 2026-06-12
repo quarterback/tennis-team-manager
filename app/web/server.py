@@ -227,11 +227,28 @@ def create_app() -> Flask:
             return "", 304
         fd, snap_path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
-        src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
-        dst = sqlite3.connect(snap_path)
-        src.backup(dst)  # consistent even mid-write (WAL-safe)
-        dst.close()
-        src.close()
+        if request.args.get("full"):
+            # Complete backup (everything, including world state).
+            src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
+            dst = sqlite3.connect(snap_path)
+            src.backup(dst)  # consistent even mid-write (WAL-safe)
+            dst.close()
+            src.close()
+        else:
+            # Slim snapshot: only the tables the hub reads. world_roster
+            # alone is ~80% of the file and is sim-internal.
+            hub_tables = ("seasons", "duals", "gtt_leagues", "gtt_franchises",
+                          "gtt_players", "gtt_seasons", "gtt_duals", "gtt_hof")
+            dst = sqlite3.connect(snap_path)
+            dst.execute("ATTACH DATABASE ? AS src", (src_path,))
+            for t in hub_tables:
+                try:
+                    dst.execute(f"CREATE TABLE {t} AS SELECT * FROM src.{t}")
+                except sqlite3.Error:
+                    continue  # table not created yet in this world
+            dst.commit()
+            dst.execute("DETACH DATABASE src")
+            dst.close()
 
         @after_this_request
         def _cleanup(resp):
