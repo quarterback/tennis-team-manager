@@ -188,6 +188,46 @@ def create_app() -> Flask:
         if request.endpoint == "dashboard":
             return redirect(url_for("onboarding"))
 
+    @app.route("/export/db")
+    def export_db():
+        """Stream a consistent snapshot of the season DB.
+
+        Token-protected feed for the cross-sport hub (quarterback/vroomtv).
+        Responds 404 unless EXPORT_TOKEN is configured and matched, so the
+        route is invisible on instances that haven't opted in.
+        """
+        import sqlite3
+        import tempfile
+        from flask import after_this_request, send_file
+        from app.dbpath import resolve_db_path
+
+        token = os.environ.get("EXPORT_TOKEN")
+        supplied = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() \
+            or request.args.get("token", "")
+        if not token or supplied != token:
+            abort(404)
+        src_path = resolve_db_path()
+        if not os.path.exists(src_path):
+            abort(404)
+        fd, snap_path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
+        dst = sqlite3.connect(snap_path)
+        src.backup(dst)  # consistent even mid-write (WAL-safe)
+        dst.close()
+        src.close()
+
+        @after_this_request
+        def _cleanup(resp):
+            try:
+                os.unlink(snap_path)
+            except OSError:
+                pass
+            return resp
+
+        return send_file(snap_path, mimetype="application/x-sqlite3",
+                         as_attachment=True, download_name="tennis.db")
+
     @app.route("/start")
     def onboarding():
         from app import worldconfig
