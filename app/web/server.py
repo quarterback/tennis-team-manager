@@ -201,10 +201,12 @@ def create_app() -> Flask:
         from flask import after_this_request, send_file
         from app.dbpath import resolve_db_path
 
+        # Open by default — this data is already public on the site itself.
+        # Setting EXPORT_TOKEN locks the route to requests carrying it.
         token = os.environ.get("EXPORT_TOKEN")
         supplied = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() \
             or request.args.get("token", "")
-        if not token or supplied != token:
+        if token and supplied != token:
             abort(404)
         src_path = resolve_db_path()
         if not os.path.exists(src_path):
