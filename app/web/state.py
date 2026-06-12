@@ -265,6 +265,124 @@ def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict
     }
 
 
+def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
+    """ATP/WTA-inspired data portal: one independent surface that wires into the
+    live sim and lifts rankings, scores, stat leaders, standings, juniors, and
+    recruiting from the deeper pages into a single newsroom/data hub."""
+    from .rankings_data import crest
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    s = sm.load_season(sid)
+    div = load_division(division, gender)
+    baseline_rows = ranking_rows(division, gender, seed)
+    baseline_rank = {r.school: r.rk for r in baseline_rows}
+    ratings = sm.power_index(sid)
+
+    if ratings:
+        ranked_programs = sorted(
+            (p for p in div.programs if p.school in ratings),
+            key=lambda p: ratings[p.school].pi,
+            reverse=True,
+        )
+        live_rankings = []
+        for rk, prog in enumerate(ranked_programs[:12], 1):
+            r = ratings[prog.school]
+            abbr, color = crest(prog.school)
+            previous = baseline_rank.get(prog.school, rk)
+            move = previous - rk
+            live_rankings.append({
+                "rk": rk, "school": prog.school, "conf": prog.conf_abbr,
+                "rec": r.record, "pi": r.pi, "apr": r.apr, "fqi": r.fqi,
+                "move": move, "abbr": abbr, "color": color,
+            })
+    else:
+        live_rankings = []
+        for r in baseline_rows[:12]:
+            abbr, color = crest(r.school)
+            live_rankings.append({
+                "rk": r.rk, "school": r.school, "conf": r.conf_abbr,
+                "rec": r.rec, "pi": r.pi, "apr": r.apr, "fqi": r.fqi,
+                "move": 0, "abbr": abbr, "color": color,
+            })
+
+    strmap = sm.season_player_str(sid)
+    pidx = sm._pid_index(division, gender)
+    recs = sm.player_records(sid)
+    player_board = sorted(((round(score, 1), rel, pid) for pid, (score, rel) in strmap.items()
+                           if pid in pidx), reverse=True)[:10]
+    player_leaders = []
+    for score, rel, pid in player_board:
+        info = pidx[pid]
+        w, l = recs.get(pid, (0, 0))
+        abbr, color = crest(info["school"])
+        player_leaders.append({
+            "pid": pid, "name": info["name"], "school": info["school"],
+            "class": info.get("class", ""), "country": info.get("country", ""),
+            "secondary_country": info.get("secondary_country"), "w": w, "l": l,
+            "str": score, "rel": rel, "abbr": abbr, "color": color,
+        })
+
+    standings_leaders = []
+    for conf, table in sm.standings(sid).items():
+        if not table:
+            continue
+        leader = table[0]
+        abbr, color = crest(leader["school"])
+        standings_leaders.append({"conf": conf, "abbr": abbr, "color": color, **leader})
+    standings_leaders.sort(key=lambda r: (-r.get("w", 0), r.get("l", 0), r["conf"]))
+
+    recent = []
+    for d in sm.recent_duals(sid)[:10]:
+        recent.append({
+            "id": d["id"], "round": d["round"], "week": d["week"],
+            "home": d["home"], "away": d["away"], "winner": d["winner"],
+            "home_points": d["home_points"], "away_points": d["away_points"],
+            "is_conf": bool(d["is_conf"]),
+        })
+
+    upcoming = []
+    if s["phase"] == "regular" and s["current_week"] <= s["total_weeks"]:
+        for d in sm.week_duals(sid, s["current_week"])[:10]:
+            upcoming.append({
+                "id": d["id"], "week": d["week"], "home": d["home"], "away": d["away"],
+                "is_conf": bool(d["is_conf"]), "conf": d["conf"],
+            })
+
+    rg = RECRUIT_GENDERS.get(gender, "male")
+    junior_year = 2027
+    juniors = recruiting_hub(rg, junior_year, seed=seed)
+    top_prospects = []
+    for rk, p, stat, honor in juniors["top_rows"][:6]:
+        top_prospects.append({
+            "rk": rk, "pid": p.pid, "name": p.name, "country": p.country,
+            "secondary_country": p.secondary_country, "grad_year": p.grad_year,
+            "stars": p.recruit_stars, "points": p.junior_points, "str": p.junior_str,
+        })
+
+    conn = sm._db()
+    counts = conn.execute(
+        "SELECT COUNT(*) total, SUM(CASE WHEN status='final' THEN 1 ELSE 0 END) final "
+        "FROM duals WHERE season_id=?", (sid,)
+    ).fetchone()
+    conn.close()
+    completed = counts["final"] or 0
+    total_duals = counts["total"] or 0
+
+    return {
+        "season": s, "phase": s["phase"], "current_week": s["current_week"],
+        "total_weeks": s["total_weeks"], "programs": len(div.programs),
+        "conferences": len(div.conferences), "players": len(pidx),
+        "completed_duals": completed, "total_duals": total_duals,
+        "live_rankings": live_rankings, "player_leaders": player_leaders,
+        "standings_leaders": standings_leaders[:8], "recent": recent, "upcoming": upcoming,
+        "top_prospects": top_prospects, "junior_kpis": juniors["kpis"],
+        "grad_year": junior_year, "has_live_results": bool(ratings),
+    }
+
+
 def conferences_for(division: str, gender: str) -> list[str]:
     from app.ncaa import load_division
     return ["All"] + sorted(load_division(division, gender).conferences.keys())
