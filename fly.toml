@@ -24,9 +24,11 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'suspend'
+  # Stay awake like the other sims (viperball / hybrid-baseball) — the
+  # hub's sync was waking this machine every cycle anyway.
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   [[http_service.checks]]
