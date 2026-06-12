@@ -211,6 +211,18 @@ def create_app() -> Flask:
         src_path = resolve_db_path()
         if not os.path.exists(src_path):
             abort(404)
+        # Cheap change detection so the hub can skip unchanged downloads
+        # (DB + WAL sidecar; writes land in the WAL first).
+        parts = []
+        for p in (src_path, src_path + "-wal"):
+            try:
+                st = os.stat(p)
+                parts.append(f"{st.st_mtime_ns}-{st.st_size}")
+            except OSError:
+                parts.append("0")
+        etag = '"' + ".".join(parts) + '"'
+        if request.headers.get("If-None-Match") == etag:
+            return "", 304
         fd, snap_path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
         src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
@@ -227,8 +239,10 @@ def create_app() -> Flask:
                 pass
             return resp
 
-        return send_file(snap_path, mimetype="application/x-sqlite3",
+        resp = send_file(snap_path, mimetype="application/x-sqlite3",
                          as_attachment=True, download_name="tennis.db")
+        resp.headers["ETag"] = etag
+        return resp
 
     @app.route("/start")
     def onboarding():
