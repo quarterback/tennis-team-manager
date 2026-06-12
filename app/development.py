@@ -143,6 +143,7 @@ class Prospect:
     fog: float = 15.0
     consensus_seed: int = 0
     committed: bool = False
+    commit_school: str | None = None
     pro: bool = False
 
     # Compatibility fields used by newer recruiting/league/web layers. They are

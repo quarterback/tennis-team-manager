@@ -316,6 +316,38 @@ def create_app() -> Flask:
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
 
+    @app.route("/export/data_portal.json")
+    def export_data_portal():
+        """JSON view of every (division × gender) data portal for the
+        vroomtv hub: live rankings (power index), player STR leaders,
+        standings leaders, recent/upcoming duals, top junior prospects.
+        Open by default; setting EXPORT_TOKEN locks it the same way
+        /export/db is locked."""
+        token = os.environ.get("EXPORT_TOKEN")
+        supplied = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() \
+            or request.args.get("token", "")
+        if token and supplied != token:
+            abort(404)
+        universes = []
+        for div in ("d1", "d2", "d3"):
+            for gnd in ("men", "women"):
+                try:
+                    portal = data_portal_view(div, gnd)
+                except Exception:
+                    continue
+                universes.append({
+                    "division": div, "gender": gnd,
+                    "label": f"{div.upper()} {gnd.title()}",
+                    **{k: portal[k] for k in (
+                        "phase", "current_week", "total_weeks",
+                        "programs", "conferences", "players",
+                        "completed_duals", "total_duals",
+                        "live_rankings", "player_leaders",
+                        "standings_leaders", "recent", "upcoming",
+                        "top_prospects", "has_live_results")},
+                })
+        return jsonify({"universes": universes})
+
     @app.route("/rankings")
     def rankings():
         division, gender, label, u = _universe(request)
