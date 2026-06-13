@@ -774,8 +774,16 @@ def create_app() -> Flask:
     @app.route("/editor")
     def editor():
         division, gender, label, u = _universe(request)
-        schools = [r.school for r in ranking_rows(division, gender)]
-        school = request.args.get("school") or (schools[0] if schools else "")
+        all_rows = ranking_rows(division, gender)
+        conferences = conferences_for(division, gender)
+        conf = request.args.get("conf", "All")
+        if conf not in conferences:
+            conf = "All"
+        schools = [r.school for r in all_rows
+                   if conf == "All" or r.conf == conf]
+        school = request.args.get("school")
+        if school not in schools:
+            school = schools[0] if schools else ""
         rows, head = editor_roster(division, gender, school)
         if rows is None:
             school = schools[0]
@@ -788,6 +796,7 @@ def create_app() -> Flask:
                     "overridden": school in ov.get_prestige()}
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
+                               conferences=conferences, conf=conf,
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige,
                                schol_elite=sch.limits("D3", "men", academics=0.95))
