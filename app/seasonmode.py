@@ -802,9 +802,10 @@ def season_player_str(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key in _str_cache:
+    cached = _str_cache.get(key)
+    if cached is not None:
         conn.close()
-        return _str_cache[key]
+        return cached
     duals = _completed(conn, season_id)
     conn.close()
     s = load_season(season_id)
