@@ -37,6 +37,6 @@ primary_region = 'iad'
     path = '/api/health'
 
 [[vm]]
-  cpu_kind = 'performance'
+  cpu_kind = 'shared'
   cpus = 2
   memory = '2gb'
