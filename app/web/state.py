@@ -989,7 +989,7 @@ def conference_ratings(division: str, gender: str, conf: str):
     cp, ca = ov.get_conf_prestige(), ov.get_conf_academics()
     return {
         "conf": conf,
-        "prestige": round(cp.get(conf, ncaa.CONF_PRESTIGE.get(abbr, 0.50)) * 100),
+        "prestige": round(cp.get(conf, ncaa.conf_prestige(abbr, division)) * 100),
         "academics": round(ca.get(conf, ncaa._academic_prior(abbr, division)) * 100),
         "prestige_overridden": conf in cp,
         "academics_overridden": conf in ca,

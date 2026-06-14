@@ -97,11 +97,27 @@ class they originally came from.
   `find_persisted_player` and `get_recruit` step 1; a live recruiting-pool link
   (`/recruit/<pid>`) returns 200.
 
+## Strength varies per league too
+Per follow-up, `_latent_strength` is now salted as well: a program's on-court
+strength is drawn fresh each New League from the gaussian centered on its
+(fixed) conference prestige prior. So standings vary between saves while the
+prestige baselines stay constant.
+
+## Conference prestige priors (`CONF_PRESTIGE`)
+- D1/D2/D3 priors were retuned to user-supplied values. Latent bug fixed: the old
+  dict keyed the American conf as `"AAC"` (data abbr is `"American"`) and carried a
+  dead `"Mountain West"` duplicate alongside the real `"MW"` — both silently
+  defaulted to 0.50.
+- D2/D3 abbrs collided across divisions (`MIAA`, `GNAC`). Rather than a
+  division-aware lookup, the colliding instances were **renamed in the data** to
+  `MIAA-D3` / `GNAC-D2` / `GNAC-D3`, so a single flat abbr-keyed table works.
+- Three D3 conferences have no supplied value and default to 0.50:
+  **NJAC** (New Jersey Athletic), **MWC** (Midwest), **CCS** (Collegiate
+  Conference of the South).
+
 ## Boundaries / follow-ups
-- **Program prestige & latent strength priors are intentionally NOT salted.**
-  They are the league's deliberate identity (and the just-tuned `CONF_PRESTIGE` /
-  `PRESTIGE_SCHOOLS` / `DIVISION_PRESTIGE` baselines). The *humans* are fresh each
-  league; the *programs'* relative standing is stable. If per-league variation in
-  program strength is wanted later, salt `_latent_strength` the same way.
+- Prestige *baselines* (`CONF_PRESTIGE`, `PRESTIGE_SCHOOLS`, `DIVISION_PRESTIGE`)
+  stay fixed across leagues — they are the league's identity. Only the per-program
+  draws (strength, roster, recruits) are salted.
 - Existing pre-migration saves have `salt = NULL → ""` (legacy seeds preserved);
   the first New League after this change gives them a real random salt.
