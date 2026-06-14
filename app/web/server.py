@@ -162,13 +162,14 @@ def create_app() -> Flask:
             pass
 
     from .formatters import (
-        flag, flags, country_name, country_abbrev,
+        flag, flags, country_name, country_abbrev, state_abbrev,
         team_logo, has_team_logo, team_logo_src,
     )
     app.jinja_env.filters["flag"] = flag
     app.jinja_env.filters["flags"] = flags
     app.jinja_env.filters["country_name"] = country_name
     app.jinja_env.filters["country_abbrev"] = country_abbrev
+    app.jinja_env.filters["state_abbrev"] = state_abbrev
     app.jinja_env.filters["team_logo"] = team_logo
     app.jinja_env.filters["has_team_logo"] = has_team_logo
     app.jinja_env.filters["team_logo_src"] = team_logo_src
@@ -653,11 +654,13 @@ def create_app() -> Flask:
         grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         scope = request.args.get("scope", "national")
         state = request.args.get("state", "California")
-        rows = recruit_rows(rg, grad_year, scope=scope, state=state, division=division)
+        status = request.args.get("status", "all")
+        rows = recruit_rows(rg, grad_year, scope=scope, state=state, division=division,
+                            unsigned_only=(status == "unsigned"))
         p = paginate(rows, request.args.get("page", 1))
         return render_template("recruiting.html", active="Recruiting", rows=p.items, p=p,
                                total=len(rows), gender=gender, grad_year=grad_year,
-                               scope=scope, state=state, u=u, uni_label=label,
+                               scope=scope, state=state, status=status, u=u, uni_label=label,
                                states=[s for s, _ in US_STATES],
                                grad_years=[grad_year])
 

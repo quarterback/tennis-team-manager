@@ -98,6 +98,15 @@ def team_logo_src(school) -> str:
     return f"/static/logos/{info['slug']}.png" if info else ""
 
 
+def state_abbrev(state_name) -> str:
+    """Full US state name -> postal abbreviation (e.g. 'California' -> 'CA').
+    Falls back to the input when it's already an abbr or unknown."""
+    from app.juniors import _STATE_ABBR
+    if not state_name:
+        return ""
+    return _STATE_ABBR.get(str(state_name), str(state_name))
+
+
 def country_name(country_code) -> str:
     return _country_name(country_code)
 

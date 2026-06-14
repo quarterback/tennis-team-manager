@@ -1,69 +1,133 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% from "_stars.html" import stars %}
 {% block title %}Play to Clinch — {{ p.name }}{% endblock %}
 {% block content %}
 {% set parts = p.name.split() %}
 {% set initials = (parts[0][0] ~ parts[-1][0])|upper %}
 {% set rec = view.recruiting %}
+{% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
+{% set reg_key = "INT'L" if not p.domestic else (p.region|state_abbrev if p.region|state_abbrev else 'STATE') %}
+
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Recruiting › class of {{ grad_year }} › Profile</span>
+  <span style="font-size:13px;color:var(--text-muted)">Recruiting › Class of {{ grad_year }} › Profile</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('recruiting', u=u, grad_year=grad_year) }}">← Recruiting board</a>
 </div></div>
 
-<div class="bl-board">
-  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
-    <span class="bl-crest lg" style="background:var(--brand);width:56px;height:56px;font-size:16px">{{ initials }}</span>
-    <div><div class="tname">
+{# ============ Prospect hero ============ #}
+<div class="rc-hero">
+  <div class="rc-hero-top">
+    <span class="rc-avatar">{% if p.committed %}{{ crest_box(p.commit_school, '', '', 'lg', 'width:76px;height:76px') }}{% else %}{{ initials }}{% endif %}</span>
+    <div class="rc-hero-id">
+      <div class="rc-eyebrow">Class of {{ grad_year }} · {{ p.recruit_tier or 'Unrated' }}</div>
+      <h1 class="rc-hero-name">
         <span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span>
-        {{ p.name }}
-        <span style="font-size:13px;color:var(--text-muted)">{{ p.country|country_abbrev }}{% if p.secondary_country %} / {{ p.secondary_country|country_abbrev }}{% endif %}</span></div>
-      <div class="tsub">Class of {{ grad_year }} · Born {{ p.hometown }}{% if p.birthday %} · {{ p.birthday }}{% endif %} ·
-        {% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
-        <span class="al-shield"><span class="al-shield-l">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }}</span><span class="al-shield-r al-r-{{ scls }}">{{ p.recruit_tier }}</span></span></div></div>
-    <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
-      <span class="bl-stat power" style="font-size:22px">{{ "%.1f"|format(p.str_value()) }}</span>
-      <div class="tsub">current (projection)</div></div>
-  </div>
-
-  {% if p.committed %}
-  <div class="bl-container" style="padding:0 0 4px">
-    <div class="bl-note new" style="display:flex;align-items:center;gap:10px;margin:0">
-      <span class="bl-stat good" style="font-size:16px">✓</span>
-      <span>Signed with <a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}"><strong>{{ p.commit_school }}</strong></a>
-        — off the board for the class of {{ grad_year }}.</span>
+        {{ p.name }}</h1>
+      <div class="rc-hero-meta">
+        <span><b>{{ p.hometown }}</b></span>
+        {% if p.high_school %}<span>{{ p.high_school }}</span>{% endif %}
+        <span>{{ 'Domestic' if p.domestic else 'International' }}{% if p.secondary_country %} · dual citizen{% endif %}</span>
+        {% if p.major %}<span>{{ p.major }}</span>{% endif %}
+        {% if p.birthday %}<span>Born {{ p.birthday }}</span>{% endif %}
+      </div>
+      <div class="rc-hero-stars">
+        {{ stars(p.recruit_stars, 'lg on-dark') }}
+        <span class="rc-hero-tier">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} · {{ p.recruit_tier or 'Unrated' }}</span>
+      </div>
+    </div>
+    <div class="rc-hero-side">
+      <div class="rc-hero-str-k">STR</div>
+      <div class="rc-hero-str">{{ "%.1f"|format(p.str_value()) }}</div>
+      <div class="rc-hero-str-sub">4-yr proj {{ "%.1f"|format(view.projection) }}</div>
     </div>
   </div>
-  {% elif rec.predicted_school %}
-  <div class="bl-container" style="padding:0 0 4px"><div class="bl-entries">
-    <span class="bl-entries-left">StrikePrediction · favourite to commit:
-      <strong style="color:var(--text-primary)">{{ rec.predicted_school }}</strong>
-      <span class="bl-stat power">{{ rec.predicted_pct }}%</span></span>
-    <span class="bl-entries-right">{{ rec.n_offers }} offer{{ '' if rec.n_offers==1 else 's' }}</span>
-  </div></div>
+  {% if p.committed %}
+  <div class="rc-hero-banner signed">
+    <span class="rc-check">✓</span>
+    <span>Signed with <a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a> — off the board for the Class of {{ grad_year }}.</span>
+  </div>
+  {% else %}
+  <div class="rc-hero-banner">
+    <span>Uncommitted · {{ rec.n_offers }} offer{{ '' if rec.n_offers==1 else 's' }} on the table{% if rec.predicted_school %} · favourite <b style="color:#fff">{{ rec.predicted_school }}</b>{% endif %}</span>
+  </div>
   {% endif %}
+</div>
 
+{# ============ Rating cards (dual: proprietary + composite) ============ #}
+<div class="rc-ratings">
+  <div class="rc-ratecard primary">
+    <div class="rc-rate-head">
+      <span class="rc-rate-svc"><span class="dot">●</span> PLAY TO CLINCH RATING</span>
+      <span class="rc-rate-info">national board</span>
+    </div>
+    <div class="rc-rate-body">
+      <span class="rc-rate-grade">{{ view.rating }}</span>
+      <span class="rc-rate-stars">{{ stars(p.recruit_stars) }}
+        <span class="rc-rate-tier">{{ p.recruit_tier or 'Unrated' }}</span></span>
+    </div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">NATL</div><div class="v">#{{ view.national_rank }}</div></div>
+      <div class="rc-rankcell" title="{{ view.region_label }}"><div class="k">{{ reg_key }}</div>
+        <div class="v{{ '' if view.region_rank else ' muted' }}">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</div></div>
+      <div class="rc-rankcell"><div class="k">POINTS</div>
+        <div class="v{{ '' if view.points_rank else ' muted' }}">{% if view.points_rank %}<a href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">#{{ view.points_rank }}</a>{% else %}—{% endif %}</div></div>
+    </div>
+  </div>
+
+  <div class="rc-ratecard">
+    <div class="rc-rate-head">
+      <span class="rc-rate-svc">COMPOSITE</span>
+      <span class="rc-rate-info">of {{ view.class_size }} in class</span>
+    </div>
+    <div class="rc-rate-body">
+      <span class="rc-rate-grade composite">{{ "%.4f"|format(view.composite) }}</span>
+      <span class="rc-rate-stars">{{ stars(p.recruit_stars) }}
+        <span class="rc-rate-tier">consensus of two scouting reads</span></span>
+    </div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">CURRENT</div><div class="v">{{ "%.1f"|format(view.service) }}</div></div>
+      <div class="rc-rankcell"><div class="k">DEPT</div><div class="v">{{ "%.1f"|format(view.dept) }}</div></div>
+      <div class="rc-rankcell"><div class="k">4-YR</div><div class="v">{{ "%.1f"|format(view.projection) }}</div></div>
+    </div>
+  </div>
+</div>
+
+{# ============ Crystal-ball prediction ============ #}
+{% if p.committed %}
+<div class="rc-cball">
+  <span class="rc-cball-crest">{{ crest_box(p.commit_school, '', '', 'md') }}</span>
+  <div class="rc-cball-main">
+    <div class="rc-cball-eyebrow">Signed · Class of {{ grad_year }}</div>
+    <div class="rc-cball-school"><a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a></div>
+    <div class="rc-cball-meta">Recruitment closed — {{ rec.n_offers }} program{{ '' if rec.n_offers==1 else 's' }} were in on this prospect.</div>
+  </div>
+  <div class="rc-cball-side"><span class="rc-conf HIGH">COMMITTED</span></div>
+</div>
+{% elif rec.predicted_school %}
+{% set fav = rec.offers[0] %}
+<div class="rc-cball">
+  <span class="rc-cball-crest">{{ crest_box(fav.school, fav.abbr, fav.color, 'md') }}</span>
+  <div class="rc-cball-main">
+    <div class="rc-cball-eyebrow">StrikePrediction · projected commit</div>
+    <div class="rc-cball-school"><a href="{{ url_for('team_recruiting', school=fav.school, u=u) }}">{{ rec.predicted_school }}</a></div>
+    <div class="rc-cball-bar"><span style="width:{{ rec.predicted_pct }}%"></span></div>
+    <div class="rc-cball-meta">Modelled from program fit, prestige &amp; academic draw across {{ rec.n_offers }} offer{{ '' if rec.n_offers==1 else 's' }}.</div>
+  </div>
+  <div class="rc-cball-side">
+    <div class="rc-cball-pct">{{ rec.predicted_pct }}%</div>
+    <span class="rc-conf {{ view.confidence }}">{{ view.confidence }} confidence</span>
+  </div>
+</div>
+{% endif %}
+
+<div class="bl-board">
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Rankings</span></div>
-        <div class="bl-panel-body">
-          <table class="bl-protable"><tbody>
-            <tr><td>Recruiting board <span style="color:var(--text-muted);font-size:11px">(consensus)</span></td><td class="w">#{{ view.national_rank }}</td></tr>
-            <tr><td>{{ view.region_label }}</td><td class="w">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</td></tr>
-            {% if view.points_rank %}<tr><td><a href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">Ranking points</a> <span style="color:var(--text-muted);font-size:11px">({{ view.junior_points }} pts · {{ view.tournaments_played }} events)</span></td>
-              <td class="w">#{{ view.points_rank }}</td></tr>{% endif %}
-            <tr><td>STR</td><td class="w">{{ "%.1f"|format(p.str_value()) }}</td></tr>
-            {% if p.junior_str %}<tr><td>Junior STR <span style="color:var(--text-muted);font-size:11px">(singles)</span></td>
-              <td class="w">{{ "%.1f"|format(p.junior_str) }}</td></tr>{% endif %}
-            {% if p.junior_doubles_str %}<tr><td>Doubles STR <span style="color:var(--text-muted);font-size:11px">(results-based)</span></td>
-              <td class="w" style="color:{{ '#3a7' if p.junior_doubles_str > p.junior_str else 'var(--text-primary)' }}">{{ "%.1f"|format(p.junior_doubles_str) }}</td></tr>{% endif %}
-          </tbody></table>
-        </div>
-      </div>
-
       {% if rec.offers %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
         <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>
         <div class="bl-tablescroll">
-          <div class="bl-table" style="--bl-grid-cols: minmax(120px,1fr) 64px 72px 84px 104px 92px">
+          <div class="bl-table" style="--bl-grid-cols: minmax(130px,1fr) 56px 72px 84px 96px 84px">
             <div class="bl-thead">
               <span class="bl-th">SCHOOL</span><span class="bl-th">OFFER</span><span class="bl-th">INTEREST</span>
               <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span><span class="bl-th">STATUS</span>
@@ -71,9 +135,9 @@
             {% for o in rec.offers %}
             {% set is_signed = p.committed and o.school == p.commit_school %}
             <div class="bl-row"{% if is_signed %} style="background:var(--green-50)"{% endif %}>
-              <span class="bl-school" style="font-weight:600">{{ o.school }}</span>
-              <span style="color:#3a7">{{ '✓' if o.offered else '' }}</span>
-              <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }}">{{ o.interest }}</span>
+              <a class="bl-school" href="{{ url_for('team_recruiting', school=o.school, u=u) }}">{{ crest_box(o.school, o.abbr, o.color, 'xs') }}{{ o.school }}</a>
+              <span style="color:#3a7;font-weight:700">{{ '✓' if o.offered else '' }}</span>
+              <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }};font-weight:600">{{ o.interest }}</span>
               <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
               <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
               <span>{% if is_signed %}<span class="bl-badge" style="background:var(--brand)">Signed</span>{% elif o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
@@ -89,8 +153,8 @@
         <span class="bl-panel-meta">schools this recruit dreams of</span></div>
         <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
           {% for d in rec.dreamsheet %}
-          <span class="bl-pill" style="border-color:{{ '#3a7' if d.offered else 'var(--border)' }}">
-            {{ d.school }} {% if d.offered %}<strong style="color:#3a7">OFFERED</strong>{% endif %}</span>
+          <span class="bl-pill" style="display:inline-flex;align-items:center;gap:6px;border-color:{{ '#3a7' if d.offered else 'var(--border)' }}">
+            {{ crest_box(d.school, d.abbr, d.color, 'xs') }}{{ d.school }} {% if d.offered %}<strong style="color:#3a7">OFFERED</strong>{% endif %}</span>
           {% endfor %}
         </div>
       </div>
@@ -221,17 +285,6 @@
               <td class="w" style="width:34px">{{ g }}</td>
               <td><span style="display:inline-block;height:7px;border-radius:4px;background:var(--brand);width:{{ ((g-20)/60*100)|round|int }}%;min-width:3px"></span></td></tr>
             {% endfor %}
-          </tbody></table>
-        </div>
-      </div>
-
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Recruiting</span></div>
-        <div class="bl-panel-body">
-          <table class="bl-protable"><tbody>
-            <tr><td>Intended major</td><td>{{ p.major }}</td></tr>
-            {% if p.junior_tier %}<tr><td>Junior tier</td><td>{{ view.junior_tier_label }}</td></tr>{% endif %}
-            <tr><td>Origin</td><td>{{ 'Domestic' if p.domestic else 'International' }}{% if p.secondary_country %} · dual citizen{% endif %}</td></tr>
-            <tr><td>Commitment</td><td>{% if p.committed %}Committed — <a href="{{ url_for('team_recruiting', school=p.commit_school) }}">{{ p.commit_school }}</a>{% else %}Uncommitted{% endif %}</td></tr>
           </tbody></table>
         </div>
       </div>

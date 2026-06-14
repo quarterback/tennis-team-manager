@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% from "_stars.html" import stars %}
 {% block title %}Play to Clinch — Recruiting{% endblock %}
 {% block content %}
-{% set grid = '44px minmax(140px,1fr) 210px 64px 150px 100px' %}
 
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -20,6 +21,11 @@
       <option value="state"{% if scope=='state' %} selected{% endif %}>By State</option>
       <option value="intl"{% if scope=='intl' %} selected{% endif %}>International</option>
     </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Status</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
+      <option value="all"{% if status=='all' %} selected{% endif %}>All prospects</option>
+      <option value="unsigned"{% if status=='unsigned' %} selected{% endif %}>Available only</option>
+    </select></span></label>
   {% if scope == 'state' %}
   <label class="bl-field"><span class="bl-field-label">State</span>
     <span class="bl-select-wrap"><select class="bl-select" name="state" onchange="this.form.submit()" style="min-width:150px">
@@ -30,9 +36,9 @@
 </form>
 
 <div class="bl-container"><div class="bl-entries">
-  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}</div>
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}{% if status=='unsigned' %} available{% endif %}</div>
   <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
-    {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board</span>
+    {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board{% if status=='unsigned' %} · uncommitted only{% endif %}</span>
 </div></div>
 
 <div class="bl-container">
@@ -57,25 +63,36 @@
   </details>
 </div>
 
-<div class="bl-container"><div class="bl-tablescroll">
-  <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
-    <div class="bl-thead">
-      <span class="bl-th">RK</span><span class="bl-th">PLAYER</span><span class="bl-th">HOMETOWN</span>
-      <span class="bl-th num">STR</span><span class="bl-th">TIER</span><span class="bl-th">COMMIT</span>
+<div class="bl-container">
+  <div class="rc-board">
+    <div class="rc-board-head">
+      <span class="num">RK</span><span>PROSPECT</span><span>HOMETOWN</span>
+      <span>RATING</span><span class="num">STR</span><span class="num">COMMIT</span>
     </div>
-    {% for rk, p in rows %}
-    <div class="bl-row">
-      <span class="bl-rank {{ 'gold' if p.recruit_rank==1 else 'bronze' if p.recruit_rank<=3 else '' }}">{{ rk }}</span>
-      <a class="bl-school" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
-      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
-      <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(p.str_value()) }}</span></span>
-      {% set scls = 's5' if p.recruit_stars>=5 else 's4' if p.recruit_stars==4 else 's3' if p.recruit_stars==3 else 's2' if p.recruit_stars==2 else 's1' if p.recruit_stars==1 else 'snr' %}
-      <span><span class="al-shield"><span class="al-shield-l">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }}</span><span class="al-shield-r al-r-{{ scls }}">{{ p.recruit_tier }}</span></span></span>
-      <span class="bl-conf">{% if p.committed %}<a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a>{% else %}—{% endif %}</span>
+    {% for rk, q, rating, composite in rows %}
+    {% set parts = q.name.split() %}
+    {% set initials = (parts[0][0] ~ parts[-1][0])|upper %}
+    <div class="rc-prow">
+      <span class="rc-prk {{ 't1' if q.recruit_rank==1 else 't2' if q.recruit_rank<=3 else '' }}">{{ rk }}</span>
+      <span class="rc-pident">
+        <span class="rc-pavatar">{{ initials }}</span>
+        <span class="rc-pname">
+          <a href="{{ url_for('recruit', pid=q.pid, u=u, grad_year=grad_year) }}"><span class="player-flag" title="{{ q.country|country_name }}">{{ q.country|flags(q.secondary_country) }}</span> {{ q.name }}</a>
+          <span class="sub">{{ q.recruit_tier or 'Unrated' }} · No. {{ q.recruit_rank }} natl</span>
+        </span>
+      </span>
+      <span class="rc-phome">{{ q.hometown }}</span>
+      <span class="rc-prating">
+        {{ stars(q.recruit_stars, 'sm') }}
+        <span class="g">{{ "%.4f"|format(composite) }}</span>
+      </span>
+      <span class="rc-pstr">{{ "%.1f"|format(q.str_value()) }}</span>
+      <span class="rc-pcommit">
+        {% if q.committed %}<a href="{{ url_for('team_recruiting', school=q.commit_school, u=u) }}" title="{{ q.commit_school }}">{{ crest_box(q.commit_school, '', '', 'xs') }}</a>{% else %}<span class="none">—</span>{% endif %}
+      </span>
     </div>
     {% endfor %}
   </div>
-</div>
 {{ pager(p, 'recruits') }}
 </div>
 

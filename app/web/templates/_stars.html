@@ -1,0 +1,16 @@
+{# Five-star recruiting line: `n` gold stars out of five. `cls` adds size
+   (lg/sm) or theme (on-dark) modifiers. #}
+{% macro stars(n, cls='') -%}
+<span class="rc-stars {{ cls }}">{% for i in range(5) %}<span class="rc-star{{ ' on' if i < n else '' }}">★</span>{% endfor %}</span>
+{%- endmacro %}
+
+{# Per-tier signed-class spread (5★ → 1★). `breakdown` is the list of
+   {stars, n} dicts from state.star_breakdown. Empty tiers render greyed so the
+   shape of a class is legible. #}
+{% macro spread(breakdown, cls='') -%}
+<span class="rc-spread {{ cls }}" title="Signed class by star tier">
+  {%- for t in breakdown -%}
+  <span class="tier t{{ t.stars }}{{ ' zero' if not t.n }}"><span class="s">{{ t.stars }}★</span>{{ t.n }}</span>
+  {%- endfor -%}
+</span>
+{%- endmacro %}
