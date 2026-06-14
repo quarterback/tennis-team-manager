@@ -79,6 +79,23 @@ def tier_for_rank(rank: int, class_size: int = 400) -> tuple[str, int]:
     return "Unrated", 0
 
 
+def recruit_grade(rank: int, class_size: int = 400) -> tuple[int, float]:
+    """Industry-style numeric grade for a board-ranked recruit, returned as
+    ``(rating, composite)``. The composite (0.7400–0.9999) decays from the very
+    top on a power curve so the elite tail clusters near 1.0 — exactly the shape
+    a real recruiting composite has (blue chip ~0.99, 5★ ~0.98, 4★ ~0.89–0.97,
+    3★ ~0.80–0.89). The 0–100 rating is that same scale rounded. A pure function
+    of board rank, so the number is identical everywhere the recruit appears."""
+    if class_size <= 1:
+        q = 0.0
+    else:
+        q = (rank - 1) / (class_size - 1)
+    q = max(0.0, min(1.0, q))
+    composite = 0.74 + 0.26 * (1.0 - q) ** 1.8
+    composite = max(0.60, min(0.9999, composite))
+    return int(round(composite * 100)), round(composite, 4)
+
+
 @dataclass
 class RecruitClass:
     grad_year: int

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_stars.html" import spread %}
 {% block title %}Play to Clinch — Signing Tracker{% endblock %}
 {% block content %}
 
@@ -34,18 +35,17 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Team Class Rankings</span>
       <span class="bl-panel-meta">by signed-class strength</span></div>
     <div class="bl-tablescroll">
-    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(140px,1fr) 40px 40px 40px 56px minmax(120px,1.2fr)">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(130px,1fr) 36px minmax(170px,auto) 48px minmax(110px,1.1fr)">
       <div class="bl-thead">
         <span class="bl-th">#</span><span class="bl-th">PROGRAM</span><span class="bl-th num">N</span>
-        <span class="bl-th num">5★</span><span class="bl-th num">4★</span><span class="bl-th num">AVG★</span>
+        <span class="bl-th">BY STAR TIER</span><span class="bl-th num">AVG★</span>
         <span class="bl-th">TOP COMMITS</span></div>
       {% for c in trk.classes %}
       <div class="bl-row">
         <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
         <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}</a>
         <span class="bl-cell-num"><span class="bl-stat power">{{ c.n }}</span></span>
-        <span class="bl-cell-num">{{ c.five or '' }}</span>
-        <span class="bl-cell-num">{{ c.four or '' }}</span>
+        <span>{{ spread(c.breakdown, 'sm') }}</span>
         <span class="bl-cell-num">{{ '%.1f'|format(c.avg_stars) }}</span>
         <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           {% for p in c.commits %}<a href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=p.grad_year) }}" style="color:inherit;text-decoration:none">{{ p.name }}</a>{% if p.recruit_stars %} {{ '★'*p.recruit_stars }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</span>

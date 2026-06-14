@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_stars.html" import spread %}
 {% block title %}Play to Clinch — {{ school }} Recruiting Class{% endblock %}
 {% block content %}
 {% set c = cls %}
@@ -16,11 +17,12 @@
 <div class="bl-container">
   <div class="al-kpis">
     <div class="al-kpi"><div class="al-kpi-k">Commits</div><div class="al-kpi-v">{{ c.n }}</div></div>
-    <div class="al-kpi"><div class="al-kpi-k">5-Star</div><div class="al-kpi-v">{{ c.five }}</div></div>
-    <div class="al-kpi"><div class="al-kpi-k">4-Star</div><div class="al-kpi-v">{{ c.four }}</div></div>
-    <div class="al-kpi"><div class="al-kpi-k">3-Star</div><div class="al-kpi-v">{{ c.three }}</div></div>
     <div class="al-kpi"><div class="al-kpi-k">Avg ★</div><div class="al-kpi-v">{{ '%.2f'|format(c.avg_stars) }}</div></div>
     <div class="al-kpi"><div class="al-kpi-k">Star Pts</div><div class="al-kpi-v">{{ c.total_stars }}</div></div>
+    <div class="al-kpi" style="flex:1.6 1 220px">
+      <div class="al-kpi-k">Class by Star Tier</div>
+      <div class="al-kpi-v" style="margin-top:5px">{{ spread(c.breakdown) }}</div>
+    </div>
   </div>
 </div>
 

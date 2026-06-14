@@ -489,6 +489,9 @@ def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
             "school": school, "abbr": abbr, "color": color, "n": len(recruits),
             "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
             "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
+            "three": sum(1 for x in stars if x == 3), "two": sum(1 for x in stars if x == 2),
+            "one": sum(1 for x in stars if x == 1),
+            "breakdown": star_breakdown(stars),
             "commits": commits[:5],
         })
         for p in recruits:
@@ -505,6 +508,12 @@ def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
             "n_flipped": flipped_total}
 
 
+def star_breakdown(stars: list[int]) -> list[dict]:
+    """Per-tier signed counts, 5★ down to 1★ — the spread a class actually
+    pulled in (a powerhouse skews high, a developmental program skews low)."""
+    return [{"stars": s, "n": sum(1 for x in stars if x == s)} for s in (5, 4, 3, 2, 1)]
+
+
 def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
     import app.world as world
     from .rankings_data import crest
@@ -516,7 +525,9 @@ def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) ->
     return {
         "school": school, "abbr": abbr, "color": color, "n": len(recruits),
         "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
-        "three": sum(1 for x in stars if x == 3),
+        "three": sum(1 for x in stars if x == 3), "two": sum(1 for x in stars if x == 2),
+        "one": sum(1 for x in stars if x == 1),
+        "breakdown": star_breakdown(stars),
         "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
         "commits": commits,
     }
@@ -678,7 +689,7 @@ def _apply_committed_flag(klass, gender: str, grad_year: int) -> None:
 
 
 def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: str = "",
-                 division: str = "D1"):
+                 division: str = "D1", unsigned_only: bool = False):
     klass = get_recruits(gender, grad_year, division=division)
     _apply_committed_flag(klass, gender, grad_year)
     if scope == "state":
@@ -687,7 +698,17 @@ def recruit_rows(gender: str, grad_year: int, scope: str = "national", state: st
         src = international_rankings(klass)
     else:
         src = national_rankings(klass)
-    return list(enumerate(src, 1))      # (board_rank, Prospect)
+    if unsigned_only:
+        src = [q for q in src if not getattr(q, "committed", False)]
+    from app.juniors import recruit_grade
+    n = len(klass.recruits)
+    # (board_rank, Prospect, rating100, composite) — grade reflects the *national*
+    # board position even on state/intl boards, exactly like a real composite.
+    out = []
+    for i, p in enumerate(src, 1):
+        rating, comp = recruit_grade(getattr(p, "recruit_rank", i) or i, n)
+        out.append((i, p, rating, comp))
+    return out
 
 
 SCOUT_ATTRS = [
@@ -720,6 +741,22 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
     rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
 
     from app.junior_circuit import TIER_LABELS
+    from app.juniors import recruit_grade
+    class_size = len(klass.recruits)
+    rating, composite = recruit_grade(p.recruit_rank or 1, class_size)
+
+    # Confidence in the commit favourite: a function of how far the StrikePred.
+    # leader is clear of the field (HIGH / MED / LOW), mirroring a crystal ball.
+    pct = rec.predicted_pct
+    runner_up = rec.offers[1].strikeprediction if len(rec.offers) > 1 else 0
+    lead = pct - runner_up
+    if pct >= 65 or lead >= 30:
+        confidence = "HIGH"
+    elif pct >= 40 or lead >= 12:
+        confidence = "MED"
+    else:
+        confidence = "LOW"
+
     return {
         "national_rank": p.recruit_rank,
         "region_rank": region_rank,
@@ -734,6 +771,10 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "projection": overall_to_str(p.project(4)),
         "recruiting": rec,
         "scout_bars": scout_bars(p),
+        "rating": rating,
+        "composite": composite,
+        "class_size": class_size,
+        "confidence": confidence,
     }
 
 
