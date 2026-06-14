@@ -8,7 +8,7 @@
     <div class="bl-match-sides">
       {% for side in m.sides %}
       <div class="bl-side{% if side.won %} won{% endif %}">
-        <span class="nm">{% if side.won %}<span class="chk">✓</span>{% endif %}{{ side.name }}</span>
+        <span class="nm">{% if side.won %}<span class="chk">✓</span>{% endif %}{{ side.name }} <span class="bl-court-team">{{ side.school }}</span></span>
         <span class="bl-setnums">
           {% for s in side.sets %}<span class="g{% if s.w %} w{% endif %}">{{ s.g }}</span>{% endfor %}
         </span>
