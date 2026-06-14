@@ -650,10 +650,7 @@ def create_app() -> Flask:
     def recruiting():
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         scope = request.args.get("scope", "national")
         state = request.args.get("state", "California")
         rows = recruit_rows(rg, grad_year, scope=scope, state=state, division=division)
@@ -662,16 +659,13 @@ def create_app() -> Flask:
                                total=len(rows), gender=gender, grad_year=grad_year,
                                scope=scope, state=state, u=u, uni_label=label,
                                states=[s for s, _ in US_STATES],
-                               grad_years=[2026, 2027, 2028, 2029])
+                               grad_years=[grad_year])
 
     @app.route("/recruit/<pid>")
     def recruit(pid):
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         p = get_recruit(rg, grad_year, pid, division=division)
         if p is None:
             abort(404)
@@ -697,23 +691,17 @@ def create_app() -> Flask:
     def recruiting_hub_page():
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         return render_template("recruiting_hub.html", active="Recruiting",
                                hub=recruiting_hub(rg, grad_year), gender=gender,
                                grad_year=grad_year, u=u, uni_label=label,
-                               grad_years=[2026, 2027, 2028, 2029])
+                               grad_years=[grad_year])
 
     @app.route("/juniors/rankings")
     def junior_rankings():
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         scope = request.args.get("scope", "world")
         nation = request.args.get("nation", "")
         sort = request.args.get("sort", "rank")
@@ -727,26 +715,20 @@ def create_app() -> Flask:
                                scope=scope, nation=nation, boards=boards, u=u, uni_label=label,
                                sort=sort, dir=("asc" if not desc else "desc"),
                                columns=SORT_COLUMNS, leaders=junior_leaders(rg, grad_year),
-                               grad_years=[2026, 2027, 2028, 2029])
+                               grad_years=[grad_year])
 
     @app.route("/juniors/feed.json")
     def junior_feed_json():
         _division, gender, _label, _u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         return jsonify(junior_feed(rg, grad_year))
 
     @app.route("/juniors/tour")
     def junior_tour():
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         tier = request.args.get("tier", "")
         rows = junior_tournaments(rg, grad_year, tier=tier)
         pg = paginate(rows, request.args.get("page", 1))
@@ -754,16 +736,13 @@ def create_app() -> Flask:
         return render_template("junior_tournaments.html", active="Recruiting", rows=pg.items,
                                p=pg, total=len(rows), gender=gender, grad_year=grad_year,
                                tier=tier, tiers=tiers, u=u, uni_label=label,
-                               grad_years=[2026, 2027, 2028, 2029])
+                               grad_years=[grad_year])
 
     @app.route("/juniors/tournament")
     def junior_tournament():
         division, gender, label, u = _universe(request)
         rg = RECRUIT_GENDERS.get(gender, "male")
-        try:
-            grad_year = int(request.args.get("grad_year", "2026"))
-        except ValueError:
-            grad_year = 2026
+        grad_year = wd.recruiting_grad_year()   # the single active class — this year only
         t = junior_tournament_detail(rg, grad_year, request.args.get("t", ""))
         if t is None:
             abort(404)
