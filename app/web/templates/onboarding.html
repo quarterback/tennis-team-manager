@@ -24,6 +24,16 @@
         <span class="ob-field-hint">Where players, coaches &amp; recruits come from — fixed for this world.</span>
       </label>
 
+      <label class="ob-field">
+        <span class="ob-field-k">International recruits</span>
+        <select name="intl_share" class="ob-select">
+          {% for c in intl_share_choices %}
+          <option value="{{ c }}" {% if (c - intl_share)|abs < 0.001 %}selected{% endif %}>{{ (c * 100)|round|int }}% international</option>
+          {% endfor %}
+        </select>
+        <span class="ob-field-hint">Share of each incoming recruiting class born outside the US — college tennis runs high. The rest are domestic; the nationality mix above decides which countries the internationals come from.</span>
+      </label>
+
       <details class="ob-regions">
         <summary>Fine-tune by nation/region <span class="ob-opt">optional</span></summary>
         <p class="ob-regions-hint">

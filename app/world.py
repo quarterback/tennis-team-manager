@@ -84,9 +84,10 @@ RECRUIT_TALENT_SD = 7.0
 
 def _recruit_talent_mean(gender: str) -> float:
     return _talent_mean(0.5, "D2", gender)
-# Share of the national class that is international. The single knob for HOW MANY
-# internationals exist — lower it for a more domestic world.
-RECRUIT_INTL_SHARE = 0.32
+# Share of the national class that is international — the default for HOW MANY
+# internationals exist. It is now player-tunable per league via worldconfig
+# (set at onboarding); this constant is just the fallback default.
+RECRUIT_INTL_SHARE = worldconfig.DEFAULT_INTL_SHARE
 # Where internationals land: a per-tier pull (D1 most, then D2, then academically
 # elite D3; ordinary D3 stays local). Tunable — internationals concentrate at the
 # top because they have no homecooking and chase prestige/academics. Real men's
@@ -490,7 +491,7 @@ def recruit_class(gender: str, grad_year: int, salt: str):
         rng = random.Random(f"{salt}|recruits|{gender}|{grad_year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=grad_year,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
-                               talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE,
+                               talent_sd=RECRUIT_TALENT_SD, intl_share=worldconfig.intl_share(),
                                intl_weights=worldconfig.region_weights())
         rank_class(klass)                          # national rank + star ladder
         from app.junior_circuit import run_junior_circuit
