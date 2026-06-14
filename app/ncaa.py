@@ -25,6 +25,12 @@ from engine import random_player, Team
 from . import scholarships
 
 SEASON_SEED = 2026
+# Per-league generation salt. Mixed into the roster RNG and roster pids so the
+# SAME school|division|gender produces a DIFFERENT roster (players, attributes,
+# pids) in each New League save. Set by app.world for the active world; ""
+# means no active world (legacy). Determinism holds only WITHIN a league because
+# the salt is stable for that league's lifetime.
+WORLD_SALT = ""
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "ncaa")
 
 # Real crest abbr + color for marquee programs; everything else is derived.
@@ -444,7 +450,7 @@ def _base_roster(p: Program):
     from generators import make_name_picker
     from .development import generate_prospect, make_pid
     from . import worldconfig
-    seed = _stable_seed(p.key) & 0xFFFFFFFF
+    seed = _stable_seed(f"{WORLD_SALT}|{p.key}") & 0xFFFFFFFF
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=worldconfig.region_weights())
@@ -455,7 +461,7 @@ def _base_roster(p: Program):
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
         talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
-                               talent=talent, pid=make_pid(p.key, i),
+                               talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))
         pr.class_year = cls
         # hometown / high_school / domestic are wired by generate_prospect from

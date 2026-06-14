@@ -29,13 +29,14 @@ import bisect
 import copy
 import json
 import random
+import secrets
 import sqlite3
 import threading
 from dataclasses import asdict, fields
 
 import app.seasonmode as sm
 from .season import dual_between
-from . import dbpath, worldconfig
+from . import dbpath, worldconfig, ncaa
 from .dbpath import resolve_db_path
 from .development import (Prospect, generate_prospect, make_pid, overall_to_str,
                           stagger_scale)
@@ -157,6 +158,10 @@ def init_schema() -> None:
             conn.execute(f"ALTER TABLE world_signing ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
             pass
+    try:
+        conn.execute("ALTER TABLE world ADD COLUMN salt TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
     _schema_ready_for = WORLD_DB
@@ -201,13 +206,20 @@ def _seed_year0(division, gender) -> dict:
     return {p.school: [copy.deepcopy(q) for q in build_roster(p)] for p in div.programs}
 
 
-def get_or_create(seed: int = DEFAULT_SEED) -> dict:
+def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
     conn = _db()
     row = conn.execute("SELECT * FROM world WHERE seed=?", (seed,)).fetchone()
     if row:
         conn.close()
-        return dict(row)
-    cur = conn.execute("INSERT INTO world (seed, year, week) VALUES (?,0,0)", (seed,))
+        d = dict(row)
+        ncaa.WORLD_SALT = d.get("salt") or ""    # publish the active league's salt
+        return d
+    # Fresh league: a random salt makes every New League produce different
+    # rosters/recruits/pids for the same schools. Publish it BEFORE building so
+    # the year-0 rosters are generated against it.
+    salt = salt or secrets.token_hex(8)
+    ncaa.WORLD_SALT = salt
+    cur = conn.execute("INSERT INTO world (seed, year, week, salt) VALUES (?,0,0,?)", (seed, salt))
     wid = cur.lastrowid
     # Seed year-0 rosters ONE universe at a time, persisting and freeing each
     # before building the next. Building all six universes' rich rosters at once
@@ -266,21 +278,35 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     _base_cache.clear()
     _dev_cache.clear()
     _primed.clear()
+    _class_cache.clear()
+    ncaa.WORLD_SALT = ""
     reset_caches()
     sm._pid_idx_cache.clear()
     sm._str_cache.clear()
 
 
-def start_new(seed: int = DEFAULT_SEED) -> dict:
+def start_new(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
     """Reset and create a brand-new league at preseason (week 0, nothing
-    played). The onboarding 'Start new league' action."""
+    played). The onboarding 'Start new league' action. A fresh random salt
+    (unless one is supplied, e.g. for tests) means the new league's rosters and
+    recruits differ from every previous save."""
     reset(seed)
-    return get_or_create(seed)
+    return get_or_create(seed, salt=salt)
 
 
 def current_year_seed(seed: int = DEFAULT_SEED) -> int:
     w = load_world(seed)
     return year_seed(seed, w["year"]) if w else seed
+
+
+def active_salt(seed: int = DEFAULT_SEED) -> str:
+    """The active league's generation salt (or '' if no world exists yet). All
+    roster + recruit generation is keyed by this, so each New League is fresh
+    while staying deterministic within the league."""
+    w = load_world(seed)
+    salt = (w.get("salt") or "") if w else ""
+    ncaa.WORLD_SALT = salt        # keep the ncaa generator in sync with the active world
+    return salt
 
 
 def signed_counts(seed: int = DEFAULT_SEED) -> dict:
@@ -303,6 +329,29 @@ def signings(seed: int = DEFAULT_SEED) -> dict:
     conn = _db()
     try:
         return _load_signings(conn, w)
+    finally:
+        conn.close()
+
+
+def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
+    """Look up a player by pid in the active league's PERSISTED data — committed
+    signees first (world_signing), then rostered players (world_roster, newest
+    year first). Returns a Prospect or None. This is step 1 of the /recruit/<pid>
+    lookup order: anyone already tied to a team is found here regardless of which
+    recruiting class they originally came from."""
+    w = load_world(seed)
+    if not w:
+        return None
+    conn = _db()
+    try:
+        for sql in (
+            "SELECT data FROM world_signing WHERE world_id=? AND pid=? LIMIT 1",
+            "SELECT data FROM world_roster  WHERE world_id=? AND pid=? ORDER BY year DESC LIMIT 1",
+        ):
+            r = conn.execute(sql, (w["id"], pid)).fetchone()
+            if r:
+                return prospect_from_dict(json.loads(r["data"]))
+        return None
     finally:
         conn.close()
 
@@ -409,16 +458,33 @@ def _all_complete(seed: int, world: dict) -> bool:
 _class_cache: dict = {}
 
 
-def national_class(seed: int, year: int, gender: str) -> list:
-    key = (seed, year, gender)
+def recruit_class(gender: str, grad_year: int, salt: str):
+    """THE canonical recruiting class for an active league — the single source of
+    truth shared by the web board, the recruit detail pages, committed-player
+    lookup, and the sim's signing logic. Keyed by (salt, gender, grad_year) so
+    it is fresh per New League but stable within a league. Enriched with the
+    junior circuit so the web board's results/rankings are present; pids and
+    identities are identical to what the sim signs from."""
+    key = (salt, gender, grad_year)
     if key not in _class_cache:
-        rng = random.Random(f"{seed}|worldrecruits|{gender}|{year}")
-        klass = generate_class(rng, n=RECRUIT_POOL, grad_year=BASE_YEAR + year + 1,
+        rng = random.Random(f"{salt}|recruits|{gender}|{grad_year}")
+        klass = generate_class(rng, n=RECRUIT_POOL, grad_year=grad_year,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
                                talent_sd=RECRUIT_TALENT_SD, intl_share=RECRUIT_INTL_SHARE,
                                intl_weights=worldconfig.region_weights())
-        _class_cache[key] = rank_class(klass)
+        rank_class(klass)                          # national rank + star ladder
+        from app.junior_circuit import run_junior_circuit
+        run_junior_circuit(klass, seed=salt)       # junior results/points for the board
+        from app.juniors import points_rankings
+        points_rankings(klass)                     # freeze points-ledger rank
+        _class_cache[key] = klass
     return _class_cache[key]
+
+
+def national_class(seed: int, year: int, gender: str) -> list:
+    """The sim's signing pool for a world-year: the canonical class ranked by
+    recruiting score. grad_year = BASE_YEAR + year + 1."""
+    return rank_class(recruit_class(gender, BASE_YEAR + year + 1, active_salt(seed)))
 
 
 def _flat_programs(gender: str) -> dict[str, Program]:

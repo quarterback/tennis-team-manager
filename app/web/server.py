@@ -151,6 +151,16 @@ def create_app() -> Flask:
     from app import db as _db
     _db.bootstrap()
 
+    @app.before_request
+    def _publish_world_salt():
+        # Keep the ncaa generator pinned to the active league's salt so every
+        # roster/recruit built during this request matches the saved world.
+        try:
+            from app import world as _world
+            _world.active_salt()
+        except Exception:
+            pass
+
     from .formatters import (
         flag, flags, country_name, country_abbrev,
         team_logo, has_team_logo, team_logo_src,

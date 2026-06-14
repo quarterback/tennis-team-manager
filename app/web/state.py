@@ -415,26 +415,13 @@ RECRUIT_BOARD_N = 1000      # bounded recruiting cadre, all divisions share it
 
 
 def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division=None):
-    """The ONE national recruiting class for a gender (thousands of juniors),
-    viewed nationally / by state / internationally. Every program D1-D3 recruits
-    from this same pool and ranks/stars are national — there are no per-division
-    pools or per-division star ratings. `gender` is "male"/"female" (juniors
-    vocab); `division` is accepted for caller compatibility but ignored."""
-    import app.ncaa as ncaa
-    from app import worldconfig
-    key = (gender, grad_year, seed)
-    if key not in _recruit_cache:
-        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
-        tmean = ncaa._talent_mean(0.5, "D2", _GENDER_VOCAB.get(gender, "men"))
-        klass = generate_class(rng, n=RECRUIT_BOARD_N, grad_year=grad_year, gender=gender,
-                               talent_mean=tmean, talent_sd=_RECRUIT_SD,
-                               intl_weights=worldconfig.region_weights())
-        national_rankings(klass)        # one national rank/star ladder for the whole class
-        from app.junior_circuit import run_junior_circuit
-        run_junior_circuit(klass, seed=seed)
-        points_rankings(klass)          # freeze the points-ledger rank on every recruit
-        _recruit_cache[key] = klass
-    return _recruit_cache[key]
+    """The ONE national recruiting class for the active league — the SAME class the
+    simulation signs from and the recruit detail pages resolve against. Generation
+    is owned by app.world.recruit_class, keyed by the world's salt, so there is no
+    separate web-board universe and pids always match the sim. `division` is
+    accepted for caller compatibility but ignored."""
+    from app import world
+    return world.recruit_class(gender, grad_year, world.active_salt(seed))
 
 
 def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
@@ -646,9 +633,17 @@ def reset_junior_setup() -> None:
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
+    """Resolve a player for /recruit/<pid> in a strict order:
+      1. persisted signed/committed/rostered data (anyone tied to a team),
+      2. the canonical active-world recruit class,
+    and NEVER the old DEFAULT_SEED web-board class."""
+    from app import world
+    p = world.find_persisted_player(pid, seed)
+    if p is not None:
+        return p
     klass = get_recruits(gender, grad_year, seed)
     _apply_committed_flag(klass, gender, grad_year)
-    return next((p for p in klass.recruits if p.pid == pid), None)
+    return next((q for q in klass.recruits if q.pid == pid), None)
 
 
 _REV_RECRUIT_GENDERS = {v: k for k, v in RECRUIT_GENDERS.items()}
