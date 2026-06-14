@@ -71,7 +71,18 @@ def run_dual_view(division: str, gender: str, home_school: str, away_school: str
     for ln in res.lines:
         is_d = ln.slot.startswith("D")
         if not ln.completed:
-            singles.append({"slot": ln.slot, "completed": False})
+            # Abandoned at clinch: still played, so show who was on court and the
+            # score it had reached (partial), flagged unfinished — never "not played".
+            hp, ap = ln.result.players[0], ln.result.players[1]
+            partial = ln.partial or []
+            sides = [
+                {"name": _singles_label(hp.name), "won": False, "unfinished": True,
+                 "school": home_school, "sets": [{"g": a, "w": False} for a, _ in partial]},
+                {"name": _singles_label(ap.name), "won": False, "unfinished": True,
+                 "school": away_school, "sets": [{"g": b, "w": False} for _, b in partial]},
+            ]
+            singles.append({"slot": ln.slot, "court": ln.slot[1:], "kind": "Sgl",
+                            "completed": False, "sides": sides})
             continue
         label_fn = _doubles_label if is_d else _singles_label
         row = {"slot": ln.slot, "court": ln.slot[1:], "kind": "Dbl" if is_d else "Sgl",

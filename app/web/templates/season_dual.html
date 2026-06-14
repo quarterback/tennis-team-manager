@@ -14,9 +14,9 @@
       <span class="num">{{ ln.slot[1:] }}</span>
     </div>
     <div class="bl-match-sides">
-      {% if ln.completed %}
+      {% if ln.completed or ln.sets %}
         {% for who in ['home', 'away'] %}
-        {% set won = ln.home_won if who == 'home' else not ln.home_won %}
+        {% set won = ln.completed and (ln.home_won if who == 'home' else not ln.home_won) %}
         {% set player = ln.get(who ~ '_player') %}
         {% set ppid = ln.get(who ~ '_pid') %}
         {% set country = ln.get(who ~ '_country') %}
@@ -36,7 +36,7 @@
         <span class="nm" style="color:var(--text-faint)">Not played — dual clinched</span>
       {% endif %}
     </div>
-    <div class="bl-final {{ '' if ln.completed else 'unfinished' }}">{{ 'Final' if ln.completed else 'DNF' }}</div>
+    <div class="bl-final {{ '' if ln.completed else 'unfinished' }}">{{ 'Final' if ln.completed else 'Unfinished' }}</div>
   </div>
 {% endmacro %}
 
