@@ -83,8 +83,8 @@
       "teams": [
         "Arizona",
         "Arizona State",
-        "Baylor",
         "BYU",
+        "Baylor",
         "Cincinnati",
         "Colorado",
         "Houston",
@@ -104,7 +104,14 @@
       "abbr": "Pac-12",
       "autobid": true,
       "teams": [
+        "Boise State",
+        "Colorado State",
+        "Fresno State",
+        "Gonzaga",
         "Oregon State",
+        "San Diego State",
+        "Texas State",
+        "Utah State",
         "Washington State"
       ]
     },
@@ -141,12 +148,12 @@
         "George Washington",
         "La Salle",
         "Loyola Chicago",
-        "UMass",
+        "Massachusetts",
         "Rhode Island",
         "Richmond",
-        "St. Bonaventure",
         "Saint Joseph's",
         "Saint Louis",
+        "St. Bonaventure",
         "VCU"
       ]
     },
@@ -160,9 +167,9 @@
         "Bryant",
         "Maine",
         "NJIT",
-        "UMass Lowell",
         "New Hampshire",
         "UMBC",
+        "UMass Lowell",
         "Vermont"
       ]
     },
@@ -171,18 +178,14 @@
       "abbr": "ASUN",
       "autobid": true,
       "teams": [
-        "Austin Peay",
         "Bellarmine",
-        "Central Arkansas",
-        "Eastern Kentucky",
         "Florida Gulf Coast",
         "Jacksonville",
         "Lipscomb",
-        "North Alabama",
         "North Florida",
         "Queens",
         "Stetson",
-        "West Georgia"
+        "West Florida"
       ]
     },
     {
@@ -191,14 +194,14 @@
       "autobid": true,
       "teams": [
         "Butler",
-        "UConn",
         "Creighton",
         "DePaul",
         "Georgetown",
         "Marquette",
         "Providence",
-        "St. John's",
         "Seton Hall",
+        "St. John's",
+        "UConn",
         "Villanova",
         "Xavier"
       ]
@@ -216,7 +219,8 @@
         "Northern Arizona",
         "Northern Colorado",
         "Portland State",
-        "Sacramento State",
+        "Southern Utah",
+        "Utah Tech",
         "Weber State"
       ]
     },
@@ -245,13 +249,16 @@
         "Cal State Bakersfield",
         "Cal State Fullerton",
         "Cal State Northridge",
+        "California Baptist",
         "Hawaii",
         "Long Beach State",
+        "Sacramento State",
         "UC Davis",
         "UC Irvine",
         "UC Riverside",
         "UC San Diego",
-        "UC Santa Barbara"
+        "UC Santa Barbara",
+        "Utah Valley"
       ]
     },
     {
@@ -284,12 +291,10 @@
         "Jacksonville State",
         "Kennesaw State",
         "Liberty",
-        "Louisiana Tech",
         "Middle Tennessee",
         "Missouri State",
         "New Mexico State",
         "Sam Houston",
-        "UTEP",
         "Western Kentucky"
       ]
     },
@@ -358,11 +363,11 @@
         "Central Michigan",
         "Eastern Michigan",
         "Kent State",
-        "Massachusetts",
         "Miami (OH)",
         "Northern Illinois",
         "Ohio",
         "Toledo",
+        "UMass",
         "Western Michigan"
       ]
     },
@@ -405,16 +410,12 @@
       "autobid": true,
       "teams": [
         "Air Force",
-        "Boise State",
-        "Colorado State",
-        "Fresno State",
         "Grand Canyon",
         "Nevada",
         "New Mexico",
-        "San Diego State",
         "San Jose State",
         "UNLV",
-        "Utah State",
+        "UTEP",
         "Wyoming"
       ]
     },
@@ -430,7 +431,6 @@
         "Long Island",
         "Mercyhurst",
         "New Haven",
-        "Saint Francis (PA)",
         "Stonehill",
         "Wagner"
       ]
@@ -442,10 +442,9 @@
       "teams": [
         "Eastern Illinois",
         "Lindenwood",
-        "Little Rock",
         "Morehead State",
-        "Southeast Missouri",
         "SIUE",
+        "Southeast Missouri",
         "Southern Indiana",
         "Tennessee State",
         "Tennessee Tech",
@@ -475,16 +474,16 @@
       "abbr": "SoCon",
       "autobid": true,
       "teams": [
-        "The Citadel",
+        "Chattanooga",
         "East Tennessee State",
         "Furman",
         "Mercer",
-        "UNC Greensboro",
         "Samford",
+        "The Citadel",
+        "UNC Greensboro",
         "VMI",
         "Western Carolina",
-        "Wofford",
-        "Chattanooga"
+        "Wofford"
       ]
     },
     {
@@ -536,9 +535,9 @@
         "North Dakota State",
         "Omaha",
         "Oral Roberts",
-        "St. Thomas",
         "South Dakota",
-        "South Dakota State"
+        "South Dakota State",
+        "St. Thomas"
       ]
     },
     {
@@ -553,13 +552,13 @@
         "Georgia State",
         "James Madison",
         "Louisiana",
-        "UL Monroe",
+        "Louisiana Tech",
         "Marshall",
         "Old Dominion",
         "South Alabama",
         "Southern Miss",
-        "Texas State",
-        "Troy"
+        "Troy",
+        "UL Monroe"
       ]
     },
     {
@@ -568,12 +567,14 @@
       "autobid": true,
       "teams": [
         "Abilene Christian",
-        "California Baptist",
-        "Southern Utah",
+        "Austin Peay",
+        "Central Arkansas",
+        "Eastern Kentucky",
+        "Little Rock",
+        "North Alabama",
         "Tarleton State",
         "UT Arlington",
-        "Utah Tech",
-        "Utah Valley"
+        "West Georgia"
       ]
     },
     {
@@ -581,7 +582,6 @@
       "abbr": "WCC",
       "autobid": true,
       "teams": [
-        "Gonzaga",
         "Loyola Marymount",
         "Pacific",
         "Pepperdine",
