@@ -196,16 +196,27 @@ def _line_identity(slot: str, la: list, lb: list,
 
 
 def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
-                 la: list, lb: list, *, seed: int, conf: bool) -> dict:
+                 la: list, lb: list, *, seed: int, conf: bool,
+                 forced_home: set | None = None, forced_away: set | None = None) -> dict:
     """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the
     Prospects who played (la[i] ↔ sa.singles[i]) so every line carries the
     identity of who played that position (singles pids + names; doubles names
     from the actual pairing)."""
-    res = simulate_dual(sa, sb, seed=seed, fidelity="fast")
+    # A court with a guaranteed-appearance player on either side finishes early so
+    # that line completes (and lands in the corpus) regardless of how long it ran.
+    forced = (forced_home or set()) | (forced_away or set())
+    priority = {i for i in range(len(la))
+                if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
+    res = simulate_dual(sa, sb, seed=seed, fidelity="fast", priority_finish=priority)
     lines = []
     for ln in res.lines:
         if not ln.completed:
-            lines.append({"slot": ln.slot, "completed": False})
+            # Abandoned mid-match: keep the score it had reached so the box score
+            # shows where it stood, not a blank "did not play".
+            rec = {"slot": ln.slot, "completed": False,
+                   "sets": [[h, a] for (h, a) in (ln.partial or [])]}
+            rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles))
+            lines.append(rec)
             continue
         gw = ln.result.games_won
         rec = {"slot": ln.slot, "completed": True, "home_won": ln.home_won,
@@ -233,7 +244,8 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                           lineup_seed, seed, forced=forced_home)
     sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
                           lineup_seed, seed, forced=forced_away)
-    return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf)
+    return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
+                        forced_home=forced_home, forced_away=forced_away)
 
 
 def build_corpus(duals: list[dict]) -> dict[str, list[tuple]]:

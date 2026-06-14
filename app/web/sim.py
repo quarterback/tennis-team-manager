@@ -33,12 +33,12 @@ def _doubles_label(full: str) -> str:
     return " / ".join(_last(p.strip()) for p in full.split(" / "))
 
 
-def _sides(result, home_won, label_fn):
+def _sides(result, home_won, label_fn, home_school, away_school):
     hp, ap = result.players[0], result.players[1]
     return [
-        {"name": label_fn(hp.name), "won": home_won,
+        {"name": label_fn(hp.name), "won": home_won, "school": home_school,
          "sets": [{"g": a, "w": a > b} for a, b in result.set_scores]},
-        {"name": label_fn(ap.name), "won": not home_won,
+        {"name": label_fn(ap.name), "won": not home_won, "school": away_school,
          "sets": [{"g": b, "w": b > a} for a, b in result.set_scores]},
     ]
 
@@ -71,11 +71,23 @@ def run_dual_view(division: str, gender: str, home_school: str, away_school: str
     for ln in res.lines:
         is_d = ln.slot.startswith("D")
         if not ln.completed:
-            singles.append({"slot": ln.slot, "completed": False})
+            # Abandoned at clinch: still played, so show who was on court and the
+            # score it had reached (partial), flagged unfinished — never "not played".
+            hp, ap = ln.result.players[0], ln.result.players[1]
+            partial = ln.partial or []
+            sides = [
+                {"name": _singles_label(hp.name), "won": False, "unfinished": True,
+                 "school": home_school, "sets": [{"g": a, "w": False} for a, _ in partial]},
+                {"name": _singles_label(ap.name), "won": False, "unfinished": True,
+                 "school": away_school, "sets": [{"g": b, "w": False} for _, b in partial]},
+            ]
+            singles.append({"slot": ln.slot, "court": ln.slot[1:], "kind": "Sgl",
+                            "completed": False, "sides": sides})
             continue
         label_fn = _doubles_label if is_d else _singles_label
         row = {"slot": ln.slot, "court": ln.slot[1:], "kind": "Dbl" if is_d else "Sgl",
-               "completed": True, "sides": _sides(ln.result, ln.home_won, label_fn)}
+               "completed": True,
+               "sides": _sides(ln.result, ln.home_won, label_fn, home_school, away_school)}
         (doubles if is_d else singles).append(row)
 
     home_wins = sum(1 for k in range(sims)

@@ -8,14 +8,14 @@
     <div class="bl-match-sides">
       {% for side in m.sides %}
       <div class="bl-side{% if side.won %} won{% endif %}">
-        <span class="nm">{% if side.won %}<span class="chk">✓</span>{% endif %}{{ side.name }}</span>
+        <span class="nm">{% if side.won %}<span class="chk">✓</span>{% endif %}{{ side.name }} <span class="bl-court-team">{{ side.school }}</span></span>
         <span class="bl-setnums">
           {% for s in side.sets %}<span class="g{% if s.w %} w{% endif %}">{{ s.g }}</span>{% endfor %}
         </span>
       </div>
       {% endfor %}
     </div>
-    <div class="bl-final">Final</div>
+    <div class="bl-final{% if not m.completed %} unfinished{% endif %}">{{ 'Final' if m.completed else 'Unfinished' }}</div>
   </div>
 {% endmacro %}
 
@@ -54,14 +54,7 @@
         <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
           <span class="bl-panel-meta">6 courts · 1 point each</span></div>
         <div>
-          {% for m in v.singles %}
-            {% if m.completed %}{{ matchrow(m) }}{% else %}
-            <div class="bl-matchrow">
-              <div class="bl-court"><span class="kind">Sgl</span><span class="num">{{ m.slot[1:] }}</span></div>
-              <div class="bl-match-sides" style="color:var(--text-faint);font-size:13px">Not played — dual already clinched</div>
-              <div class="bl-final unfinished">DNF</div>
-            </div>{% endif %}
-          {% endfor %}
+          {% for m in v.singles %}{{ matchrow(m) }}{% endfor %}
         </div>
       </div>
     </div>
