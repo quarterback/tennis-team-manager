@@ -109,10 +109,14 @@ _COUNTRY_DISPLAY: dict[str, tuple[str, str]] = {
     "IR": ("Iran", "IRI"),           "PS": ("Palestine", "PLE"),
     "LB": ("Lebanon", "LBN"),        "SA": ("Saudi Arabia", "KSA"),
     "CN": ("China", "CHN"),          "ZR": ("Zaryanovia", "ZAR"),
+    "VN": ("Vietnam", "VIE"),        "KH": ("Cambodia", "CAM"),
+    "LA": ("Laos", "LAO"),           "MM": ("Myanmar", "MYA"),
+    "SG": ("Singapore", "SGP"),
     # Oceania
     "AU": ("Australia", "AUS"),      "NZ": ("New Zealand", "NZL"),
     "FJ": ("Fiji", "FIJ"),           "GU": ("Guam", "GUM"),
-    "WS": ("Samoa", "SAM"),
+    "WS": ("Samoa", "SAM"),          "TO": ("Tonga", "TGA"),
+    "AS": ("American Samoa", "ASA"), "AG": ("Antigua & Barbuda", "ATG"),
 }
 
 

@@ -25,7 +25,8 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, data_portal_view, team_budget, team_results,
-                    conference_schools, team_conference, world_hub, player_career, get_coach)
+                    conference_schools, team_conference, conference_ratings,
+                    world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
@@ -149,6 +150,16 @@ def create_app() -> Flask:
     # connections never deadlock on first-time table creation.
     from app import db as _db
     _db.bootstrap()
+
+    @app.before_request
+    def _publish_world_salt():
+        # Keep the ncaa generator pinned to the active league's salt so every
+        # roster/recruit built during this request matches the saved world.
+        try:
+            from app import world as _world
+            _world.active_salt()
+        except Exception:
+            pass
 
     from .formatters import (
         flag, flags, country_name, country_abbrev,
@@ -794,34 +805,91 @@ def create_app() -> Flask:
         prog = load_division(division, gender).by_school(school)
         prestige = {"value": round((prog.prestige if prog else 0.5) * 100),
                     "overridden": school in ov.get_prestige()}
+        academics = {"value": round((prog.academics if prog else 0.5) * 100),
+                     "overridden": school in ov.get_academics()}
+        conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
-                               conferences=conferences, conf=conf,
+                               conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(), ov=active_overrides(),
-                               scholarships=schol, prestige=prestige,
+                               scholarships=schol, prestige=prestige, academics=academics,
                                schol_elite=sch.limits("D3", "men", academics=0.95))
+
+    def _pct01(field: str, default: float = 0.5) -> float:
+        """Read a 0–100 form field as a 0..1 rating."""
+        try:
+            return float(request.form.get(field, str(default * 100))) / 100.0
+        except (TypeError, ValueError):
+            return default
+
+    def _editor_redirect():
+        return redirect(url_for("editor", u=request.form.get("u", "D1-men"),
+                                school=request.form.get("school", ""),
+                                conf=request.form.get("conf", "All")))
 
     @app.route("/editor/prestige", methods=["POST"])
     def editor_prestige():
         school = request.form.get("school", "")
-        u = request.form.get("u", "D1-men")
-        try:
-            val = float(request.form.get("prestige", "50")) / 100.0
-        except ValueError:
-            val = 0.5
         if school:
-            ov.set_prestige(school, val)
+            ov.set_prestige(school, _pct01("prestige"))
             reset_all()
-        return redirect(url_for("editor", u=u, school=school))
+        return _editor_redirect()
 
     @app.route("/editor/prestige/clear", methods=["POST"])
     def editor_prestige_clear():
         school = request.form.get("school", "")
-        u = request.form.get("u", "D1-men")
         if school:
             ov.clear_prestige(school)
             reset_all()
-        return redirect(url_for("editor", u=u, school=school))
+        return _editor_redirect()
+
+    @app.route("/editor/academics", methods=["POST"])
+    def editor_academics():
+        school = request.form.get("school", "")
+        if school:
+            ov.set_academics(school, _pct01("academics"))
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/academics/clear", methods=["POST"])
+    def editor_academics_clear():
+        school = request.form.get("school", "")
+        if school:
+            ov.clear_academics(school)
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/conf_prestige", methods=["POST"])
+    def editor_conf_prestige():
+        conf = request.form.get("conf", "")
+        if conf and conf != "All":
+            ov.set_conf_prestige(conf, _pct01("conf_prestige"))
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/conf_prestige/clear", methods=["POST"])
+    def editor_conf_prestige_clear():
+        conf = request.form.get("conf", "")
+        if conf:
+            ov.clear_conf_prestige(conf)
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/conf_academics", methods=["POST"])
+    def editor_conf_academics():
+        conf = request.form.get("conf", "")
+        if conf and conf != "All":
+            ov.set_conf_academics(conf, _pct01("conf_academics"))
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/conf_academics/clear", methods=["POST"])
+    def editor_conf_academics_clear():
+        conf = request.form.get("conf", "")
+        if conf:
+            ov.clear_conf_academics(conf)
+            reset_all()
+        return _editor_redirect()
 
     @app.route("/editor/scholarship", methods=["POST"])
     def editor_scholarship():

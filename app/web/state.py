@@ -415,26 +415,13 @@ RECRUIT_BOARD_N = 1000      # bounded recruiting cadre, all divisions share it
 
 
 def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division=None):
-    """The ONE national recruiting class for a gender (thousands of juniors),
-    viewed nationally / by state / internationally. Every program D1-D3 recruits
-    from this same pool and ranks/stars are national — there are no per-division
-    pools or per-division star ratings. `gender` is "male"/"female" (juniors
-    vocab); `division` is accepted for caller compatibility but ignored."""
-    import app.ncaa as ncaa
-    from app import worldconfig
-    key = (gender, grad_year, seed)
-    if key not in _recruit_cache:
-        rng = random.Random(f"{seed}|recruits|{gender}|{grad_year}")
-        tmean = ncaa._talent_mean(0.5, "D2", _GENDER_VOCAB.get(gender, "men"))
-        klass = generate_class(rng, n=RECRUIT_BOARD_N, grad_year=grad_year, gender=gender,
-                               talent_mean=tmean, talent_sd=_RECRUIT_SD,
-                               intl_weights=worldconfig.region_weights())
-        national_rankings(klass)        # one national rank/star ladder for the whole class
-        from app.junior_circuit import run_junior_circuit
-        run_junior_circuit(klass, seed=seed)
-        points_rankings(klass)          # freeze the points-ledger rank on every recruit
-        _recruit_cache[key] = klass
-    return _recruit_cache[key]
+    """The ONE national recruiting class for the active league — the SAME class the
+    simulation signs from and the recruit detail pages resolve against. Generation
+    is owned by app.world.recruit_class, keyed by the world's salt, so there is no
+    separate web-board universe and pids always match the sim. `division` is
+    accepted for caller compatibility but ignored."""
+    from app import world
+    return world.recruit_class(gender, grad_year, world.active_salt(seed))
 
 
 def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
@@ -646,9 +633,17 @@ def reset_junior_setup() -> None:
 
 
 def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED, division=None):
+    """Resolve a player for /recruit/<pid> in a strict order:
+      1. persisted signed/committed/rostered data (anyone tied to a team),
+      2. the canonical active-world recruit class,
+    and NEVER the old DEFAULT_SEED web-board class."""
+    from app import world
+    p = world.find_persisted_player(pid, seed)
+    if p is not None:
+        return p
     klass = get_recruits(gender, grad_year, seed)
     _apply_committed_flag(klass, gender, grad_year)
-    return next((p for p in klass.recruits if p.pid == pid), None)
+    return next((q for q in klass.recruits if q.pid == pid), None)
 
 
 _REV_RECRUIT_GENDERS = {v: k for k, v in RECRUIT_GENDERS.items()}
@@ -832,8 +827,17 @@ def active_overrides():
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
     prestige = [{"school": s, "value": round(v * 100)}
                 for s, v in sorted(ov.get_prestige().items())]
+    academics = [{"school": s, "value": round(v * 100)}
+                 for s, v in sorted(ov.get_academics().items())]
+    conf_prestige = [{"conf": c, "value": round(v * 100)}
+                     for c, v in sorted(ov.get_conf_prestige().items())]
+    conf_academics = [{"conf": c, "value": round(v * 100)}
+                      for c, v in sorted(ov.get_conf_academics().items())]
     return {"moves": moves, "lineups": lineups, "prestige": prestige,
-            "any": bool(moves or lineups or prestige)}
+            "academics": academics, "conf_prestige": conf_prestige,
+            "conf_academics": conf_academics,
+            "any": bool(moves or lineups or prestige or academics
+                        or conf_prestige or conf_academics)}
 
 
 def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SEED):
@@ -972,6 +976,25 @@ def team_conference(division: str, gender: str, school: str) -> str:
     from app import ncaa
     prog = ncaa.load_division(division, gender).by_school(school)
     return prog.conf if prog else ""
+
+
+def conference_ratings(division: str, gender: str, conf: str):
+    """Current prestige + academic priors (0–100) for a conference, flagged when
+    overridden. Returns None for 'All' or an unknown conference."""
+    from app import ncaa, overrides as ov
+    members = ncaa.load_division(division, gender).conferences.get(conf, [])
+    if not members:
+        return None
+    abbr = members[0].conf_abbr
+    cp, ca = ov.get_conf_prestige(), ov.get_conf_academics()
+    return {
+        "conf": conf,
+        "prestige": round(cp.get(conf, ncaa.conf_prestige(abbr, division)) * 100),
+        "academics": round(ca.get(conf, ncaa._academic_prior(abbr, division)) * 100),
+        "prestige_overridden": conf in cp,
+        "academics_overridden": conf in ca,
+        "n": len(members),
+    }
 
 
 def team_roster(division: str, gender: str, school: str):

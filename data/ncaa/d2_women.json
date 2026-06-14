@@ -215,8 +215,7 @@
         "Trevecca Nazarene",
         "Union (TN)",
         "Valdosta State",
-        "West Alabama",
-        "West Florida"
+        "West Alabama"
       ]
     },
     {
@@ -404,7 +403,7 @@
     },
     {
       "name": "Great Northwest Athletic Conference",
-      "abbr": "GNAC",
+      "abbr": "GNAC-D2",
       "autobid": true,
       "teams": [
         "Alaska Anchorage",

@@ -25,6 +25,12 @@ from engine import random_player, Team
 from . import scholarships
 
 SEASON_SEED = 2026
+# Per-league generation salt. Mixed into the roster RNG and roster pids so the
+# SAME school|division|gender produces a DIFFERENT roster (players, attributes,
+# pids) in each New League save. Set by app.world for the active world; ""
+# means no active world (legacy). Determinism holds only WITHIN a league because
+# the salt is stable for that league's lifetime.
+WORLD_SALT = ""
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "ncaa")
 
 # Real crest abbr + color for marquee programs; everything else is derived.
@@ -43,14 +49,96 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    "ACC": 0.74, "SEC": 0.74, "Big 12": 0.70, "Pac-12": 0.70, "Big Ten": 0.64,
-    "WCC": 0.60, "AAC": 0.58, "Big West": 0.58, "Ivy": 0.60, "CUSA": 0.54,
-    "Sun Belt": 0.52, "MVC": 0.50, "Mountain West": 0.54, "MW": 0.54, "A-10": 0.52,
-    "Big East": 0.56, "ASUN": 0.50, "CAA": 0.50, "Horizon": 0.46, "MAC": 0.48,
-    "Patriot": 0.48, "SoCon": 0.48, "Summit": 0.44, "Southland": 0.44, "Big Sky": 0.42,
-    "Big South": 0.44, "NEC": 0.42, "OVC": 0.44, "MAAC": 0.46, "WAC": 0.50,
-    "SWAC": 0.38, "MEAC": 0.38, "America East": 0.44,
+    # Power conferences
+    "ACC": 0.78, "SEC": 0.78, "Big 12": 0.76, "Big Ten": 0.73, "Pac-12": 0.59,
+    # High / strong mid-majors
+    "Ivy": 0.68, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    "CUSA": 0.56, "Sun Belt": 0.55,
+    # Mid-majors
+    "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
+    "CAA": 0.49, "WAC": 0.49, "Patriot": 0.48,
+    # Low-majors
+    "Southland": 0.45, "Big Sky": 0.44, "Summit": 0.44, "Horizon": 0.43,
+    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38, "MEAC": 0.34,
+    "SWAC": 0.33,
+    # Not in the supplied list — placeholders pending values
+    "MVC": 0.44, "America East": 0.42,
 }
+
+# D2 / D3 priors are keyed by conference NAME (abbrs collide across divisions —
+# e.g. MIAA is D2 Mid-America AND D3 Michigan, GNAC is D2 Great Northwest AND D3
+# Great Northeast). The ALIASES map the data-file abbr (optionally suffixed -D2 /
+# -D3 to disambiguate collisions) to the name. Resolved via conf_prestige().
+CONF_PRESTIGE_D2 = {
+    "Sunshine State": 0.62, "Peach Belt": 0.61, "Gulf South": 0.59, "Lone Star": 0.57,
+    "Mid-America Intercollegiate": 0.56, "Pacific West": 0.55, "Great Lakes Intercollegiate": 0.54,
+    "Great Lakes Valley": 0.53, "South Atlantic": 0.52, "Conference Carolinas": 0.51,
+    "California Collegiate": 0.50, "Great Midwest": 0.49, "Pennsylvania State Athletic": 0.48,
+    "Rocky Mountain Athletic": 0.47, "Northeast-10": 0.46, "East Coast": 0.45, "Great American": 0.45,
+    "Great Northwest Athletic": 0.44, "Mountain East": 0.44, "Northern Sun": 0.43,
+    "Central Atlantic": 0.42, "D2 Independent": 0.40, "Southern Intercollegiate Athletic": 0.36,
+    "Central Intercollegiate Athletic": 0.35,
+}
+CONF_PRESTIGE_D2_ALIASES = {
+    "SSC": "Sunshine State", "PBC": "Peach Belt", "GSC": "Gulf South", "LSC": "Lone Star",
+    "MIAA": "Mid-America Intercollegiate", "PacWest": "Pacific West",
+    "GLIAC": "Great Lakes Intercollegiate", "GLVC": "Great Lakes Valley", "SAC": "South Atlantic",
+    "CC": "Conference Carolinas", "CCAA": "California Collegiate", "G-MAC": "Great Midwest",
+    "PSAC": "Pennsylvania State Athletic", "RMAC": "Rocky Mountain Athletic", "NE10": "Northeast-10",
+    "ECC": "East Coast", "GAC": "Great American", "GNAC-D2": "Great Northwest Athletic",
+    "MEC": "Mountain East", "NSIC": "Northern Sun", "CACC": "Central Atlantic",
+    "SIAC": "Southern Intercollegiate Athletic", "CIAA": "Central Intercollegiate Athletic",
+}
+CONF_PRESTIGE_D3 = {
+    "University Athletic Association": 0.65, "NESCAC": 0.63, "SCIAC": 0.61, "Centennial": 0.58,
+    "North Coast Athletic": 0.56, "NEWMAC": 0.55, "Liberty League": 0.54,
+    "Southern Collegiate Athletic": 0.53, "Old Dominion Athletic": 0.52, "Coast-To-Coast": 0.52,
+    "Southern Athletic Association": 0.51, "MIAC": 0.50, "Northwest Conference": 0.50,
+    "SUNYAC": 0.49, "Landmark": 0.48, "CCIW": 0.48, "Middle Atlantic": 0.48,
+    "MAC Commonwealth": 0.48, "MAC Freedom": 0.48, "American Rivers": 0.47, "Ohio Athletic": 0.46,
+    "Empire 8": 0.46, "Michigan Intercollegiate": 0.45, "WIAC": 0.45, "American Southwest": 0.44,
+    "United East": 0.44, "Conference of New England": 0.44, "Atlantic East": 0.43, "USA South": 0.43,
+    "Heartland Collegiate": 0.43, "Presidents' Athletic": 0.42, "St. Louis Intercollegiate": 0.42,
+    "Little East": 0.41, "Northern Athletics Collegiate": 0.41, "Allegheny Mountain Collegiate": 0.40,
+    "Skyline": 0.40, "Great Northeast Athletic": 0.40, "North Atlantic": 0.39,
+    "Upper Midwest Athletic": 0.38, "MASCAC": 0.37, "CUNYAC": 0.35, "D3 Independent": 0.40,
+    "Collegiate Conference of the South": 0.58, "Midwest Conference": 0.46,
+    "New Jersey Athletic": 0.60,
+}
+CONF_PRESTIGE_D3_ALIASES = {
+    "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
+    "NJAC": "New Jersey Athletic",
+    "UAA": "University Athletic Association", "NCAC": "North Coast Athletic",
+    "SCAC": "Southern Collegiate Athletic", "ODAC": "Old Dominion Athletic", "C2C": "Coast-To-Coast",
+    "SAA": "Southern Athletic Association", "NWC": "Northwest Conference", "ARC": "American Rivers",
+    "OAC": "Ohio Athletic", "MIAA-D3": "Michigan Intercollegiate", "ASC": "American Southwest",
+    "CNE": "Conference of New England", "HCAC": "Heartland Collegiate", "PAC": "Presidents' Athletic",
+    "SLIAC": "St. Louis Intercollegiate", "LEC": "Little East", "NACC": "Northern Athletics Collegiate",
+    "AMCC": "Allegheny Mountain Collegiate", "GNAC-D3": "Great Northeast Athletic", "NAC": "North Atlantic",
+    "UMAC": "Upper Midwest Athletic",
+    # MAC Commonwealth / MAC Freedom data abbrs carry spaces and match by name.
+}
+
+
+def _merge_div_priors(names: dict, aliases: dict) -> dict:
+    """Flatten a name-keyed division prior dict to data-file abbrs."""
+    out = {abbr: names[nm] for abbr, nm in aliases.items() if nm in names}
+    for nm, val in names.items():        # conferences whose data abbr IS the name
+        out.setdefault(nm, val)
+    return out
+
+
+# Fold D2/D3 priors into the one abbr-keyed table. Abbrs are unique across
+# divisions — the only collisions (MIAA, GNAC) were renamed in the data to
+# MIAA-D3 / GNAC-D2 / GNAC-D3, matching the alias suffixes.
+CONF_PRESTIGE.update(_merge_div_priors(CONF_PRESTIGE_D2, CONF_PRESTIGE_D2_ALIASES))
+CONF_PRESTIGE.update(_merge_div_priors(CONF_PRESTIGE_D3, CONF_PRESTIGE_D3_ALIASES))
+
+
+def conf_prestige(conf_abbr: str, division: str | None = None) -> float:
+    """Conference prestige prior for a data-file abbr (now unique across all
+    divisions). `division` is accepted for caller compatibility but unused."""
+    return CONF_PRESTIGE.get(conf_abbr, 0.50)
 
 # --------------------------------------------------------------------------
 # Prestige + academics — the two recruiting levers.
@@ -62,14 +150,47 @@ CONF_PRESTIGE = {
 # Both are stable program traits in [0,1], separate from the hidden per-season
 # `strength` (current on-court quality).
 # --------------------------------------------------------------------------
-DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.40, "D3": 0.30}
+DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.47, "D3": 0.33}
 
-# Athletic blue-bloods get a brand bump on top of their conference prior.
+# Athletic brand bump on top of the conference prior, per program. Keys are the
+# canonical school names used in the data files (e.g. UNC → "North Carolina").
 PRESTIGE_SCHOOLS = {
-    "TCU": 0.12, "Texas": 0.12, "USC": 0.10, "UCLA": 0.10, "Georgia": 0.10,
-    "Florida": 0.10, "Ohio State": 0.10, "Virginia": 0.10, "Wake Forest": 0.10,
-    "Baylor": 0.08, "Kentucky": 0.08, "Tennessee": 0.08, "Stanford": 0.10,
-    "Texas A&M": 0.08, "North Carolina": 0.08, "Michigan": 0.06, "Pepperdine": 0.06,
+    # --- D1 ---
+    "Texas": 0.14, "Virginia": 0.14, "Ohio State": 0.14, "TCU": 0.13,
+    "Georgia": 0.12, "Stanford": 0.12, "Wake Forest": 0.12,
+    "Florida": 0.10, "Texas A&M": 0.10, "North Carolina": 0.10, "USC": 0.10,
+    "UCLA": 0.10, "Baylor": 0.09, "Duke": 0.09, "Oklahoma": 0.09, "Auburn": 0.09,
+    "Tennessee": 0.07, "Michigan": 0.07, "Illinois": 0.07, "South Carolina": 0.07,
+    "Kentucky": 0.08, "Mississippi State": 0.06, "NC State": 0.06,
+    "Arizona": 0.06, "Arizona State": 0.06, "Pepperdine": 0.08, "San Diego": 0.07,
+    "Columbia": 0.07, "Harvard": 0.07, "Princeton": 0.06, "Cornell": 0.06,
+    "Penn": 0.05, "Yale": 0.05, "Dartmouth": 0.03, "Brown": 0.03,
+    "Cal": 0.06, "Oklahoma State": 0.06, "UCF": 0.05, "LSU": 0.05, "Clemson": 0.05,
+    "Florida State": 0.05, "Miami": 0.04, "Texas Tech": 0.04, "Rice": 0.04,
+    "Tulsa": 0.04, "Middle Tennessee": 0.04, "Old Dominion": 0.03,
+    "UC Santa Barbara": 0.03, "Santa Clara": 0.03, "Memphis": 0.03, "South Florida": 0.03,
+    "Liberty": 0.02, "Boise State": 0.02, "Grand Canyon": 0.02, "East Tennessee State": 0.02,
+    # --- D2 ---
+    "Barry": 0.20, "West Florida": 0.17, "Flagler": 0.16, "Valdosta State": 0.16,
+    "Nova Southeastern": 0.14, "Columbus State": 0.13, "Washburn": 0.12, "UT Tyler": 0.11,
+    "North Georgia": 0.11, "Embry-Riddle": 0.10, "Saint Leo": 0.10, "Lynn": 0.10,
+    "Azusa Pacific": 0.09, "Lubbock Christian": 0.08, "Catawba": 0.08,
+    "Florida Southern": 0.07, "Rollins": 0.07, "Midwestern State": 0.07,
+    "Grand Valley State": 0.06, "Wayne State (MI)": 0.06, "West Alabama": 0.06,
+    "Indianapolis": 0.05, "Wingate": 0.05, "Lee": 0.04, "Mississippi College": 0.04,
+    "Lander": 0.04, "Harding": 0.03, "Tiffin": 0.03, "Charleston (WV)": 0.03,
+    "Findlay": 0.02, "Point Loma Nazarene": 0.02, "St. Mary's (TX)": 0.02,
+    # --- D3 ---
+    "Chicago": 0.15, "Emory": 0.18, "Claremont-Mudd-Scripps": 0.17,
+    "Grinnell": 0.08, "TCNJ": 0.05,
+    "Case Western Reserve": 0.16, "Washington University in St. Louis": 0.15,
+    "Middlebury": 0.15, "Williams": 0.14, "Tufts": 0.14, "Bowdoin": 0.13,
+    "Johns Hopkins": 0.12, "MIT": 0.11, "Carnegie Mellon": 0.11, "Amherst": 0.11,
+    "Pomona-Pitzer": 0.11, "Swarthmore": 0.10, "Wesleyan": 0.10, "Denison": 0.10,
+    "Trinity (TX)": 0.08, "Washington and Lee": 0.08, "Gustavus Adolphus": 0.08,
+    "Kenyon": 0.07, "NYU": 0.06, "Brandeis": 0.06, "Babson": 0.06, "Rochester": 0.05,
+    "Vassar": 0.05, "Skidmore": 0.05, "Redlands": 0.05, "Whitman": 0.04,
+    "Mary Washington": 0.04, "Christopher Newport": 0.04,
 }
 
 # Per-conference academic prior (default by division below). Academic leagues
@@ -102,23 +223,37 @@ ACADEMIC_SCHOOLS = {
 }
 
 
-def _prestige(school: str, conf_abbr: str, division: str) -> float:
+def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float:
+    """Per-school prestige from a conference prestige prior, preserving each
+    school's blue-blood bump. Used both for the base value and when a conference
+    prestige override shifts the whole league."""
     base = DIVISION_PRESTIGE.get(division, 0.40)
-    conf = CONF_PRESTIGE.get(conf_abbr, 0.50)
-    p = base + (conf - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
+    p = base + (conf_prior - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
     return max(0.12, min(0.97, p))
 
 
-def _academics(school: str, conf_abbr: str, division: str) -> float:
-    if school in ACADEMIC_SCHOOLS:
-        a = ACADEMIC_SCHOOLS[school]
-    elif conf_abbr in ACADEMIC_CONF:
-        a = ACADEMIC_CONF[conf_abbr]
-    else:
-        a = {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
-    # Small deterministic per-school spread so unlisted peers aren't identical.
+def _prestige(school: str, conf_abbr: str, division: str) -> float:
+    return _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
+
+
+def _academic_prior(conf_abbr: str, division: str) -> float:
+    """The default academic prior for a conference (before per-school flagships)."""
+    if conf_abbr in ACADEMIC_CONF:
+        return ACADEMIC_CONF[conf_abbr]
+    return {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
+
+
+def _academics_with_prior(school: str, conf_prior: float, division: str) -> float:
+    """Per-school academics from a conference academic prior. Academic flagships
+    (ACADEMIC_SCHOOLS) keep their listed profile; everyone else tracks the prior,
+    with a small deterministic spread so peers aren't identical."""
+    a = ACADEMIC_SCHOOLS.get(school, conf_prior)
     jitter = (_stable_seed(f"acad|{school}") % 1000) / 1000.0 - 0.5
     return max(0.20, min(0.99, a + jitter * 0.06))
+
+
+def _academics(school: str, conf_abbr: str, division: str) -> float:
+    return _academics_with_prior(school, _academic_prior(conf_abbr, division), division)
 
 
 def _facilities(school: str, conf_abbr: str, division: str) -> float:
@@ -268,8 +403,11 @@ def _stable_seed(value: str) -> int:
 
 
 def _latent_strength(school: str, conf_abbr: str, gender: str, division: str) -> float:
-    prior = CONF_PRESTIGE.get(conf_abbr, 0.50)
-    rng = random.Random(f"{school}|{conf_abbr}|{gender}|{division}|{SEASON_SEED}")
+    # Mean tracks the (fixed) conference prestige prior; the draw is salted by the
+    # active league so a program's on-court strength varies per New League within
+    # its prestige-derived range, while the prestige baselines stay constant.
+    prior = conf_prestige(conf_abbr, division)
+    rng = random.Random(f"{WORLD_SALT}|{school}|{conf_abbr}|{gender}|{division}|{SEASON_SEED}")
     return max(0.12, min(0.95, rng.gauss(prior, 0.11)))
 
 
@@ -297,15 +435,27 @@ def load_division(division: str, gender: str) -> Division:
             ))
         div.conferences[c["name"]] = members
         div.programs.extend(members)
-    # Editor prestige overrides — let specific programs stand out (and recruit)
-    # regardless of their default conference-derived prestige.
+    # Editor ratings overrides (recruiting levers only — on-court strength is
+    # left untouched). Conference-level priors shift a whole league first
+    # (preserving each school's relative bump); per-team overrides then win.
     try:
         from . import overrides
+        conf_pres = overrides.get_conf_prestige()
+        conf_acad = overrides.get_conf_academics()
+        if conf_pres or conf_acad:
+            for p in div.programs:
+                if p.conf in conf_pres:
+                    p.prestige = _prestige_with_prior(p.school, conf_pres[p.conf], p.division)
+                if p.conf in conf_acad:
+                    p.academics = _academics_with_prior(p.school, conf_acad[p.conf], p.division)
         pres = overrides.get_prestige()
-        if pres:
+        acad = overrides.get_academics()
+        if pres or acad:
             for p in div.programs:
                 if p.school in pres:
                     p.prestige = pres[p.school]
+                if p.school in acad:
+                    p.academics = acad[p.school]
     except Exception:
         pass
     return div
@@ -386,7 +536,7 @@ def _base_roster(p: Program):
     from generators import make_name_picker
     from .development import generate_prospect, make_pid
     from . import worldconfig
-    seed = _stable_seed(p.key) & 0xFFFFFFFF
+    seed = _stable_seed(f"{WORLD_SALT}|{p.key}") & 0xFFFFFFFF
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=worldconfig.region_weights())
@@ -397,7 +547,7 @@ def _base_roster(p: Program):
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
         talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
-                               talent=talent, pid=make_pid(p.key, i),
+                               talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))
         pr.class_year = cls
         # hometown / high_school / domestic are wired by generate_prospect from

@@ -438,7 +438,7 @@
     },
     {
       "name": "Great Northeast Athletic Conference",
-      "abbr": "GNAC",
+      "abbr": "GNAC-D3",
       "autobid": true,
       "teams": [
         "Albertus Magnus",
@@ -542,7 +542,7 @@
     },
     {
       "name": "Michigan Intercollegiate Athletic Association",
-      "abbr": "MIAA",
+      "abbr": "MIAA-D3",
       "autobid": true,
       "teams": [
         "Adrian",
