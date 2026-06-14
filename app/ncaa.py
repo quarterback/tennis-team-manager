@@ -62,14 +62,46 @@ CONF_PRESTIGE = {
 # Both are stable program traits in [0,1], separate from the hidden per-season
 # `strength` (current on-court quality).
 # --------------------------------------------------------------------------
-DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.40, "D3": 0.30}
+DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.47, "D3": 0.33}
 
-# Athletic blue-bloods get a brand bump on top of their conference prior.
+# Athletic brand bump on top of the conference prior, per program. Keys are the
+# canonical school names used in the data files (e.g. UNC → "North Carolina").
 PRESTIGE_SCHOOLS = {
-    "TCU": 0.12, "Texas": 0.12, "USC": 0.10, "UCLA": 0.10, "Georgia": 0.10,
-    "Florida": 0.10, "Ohio State": 0.10, "Virginia": 0.10, "Wake Forest": 0.10,
-    "Baylor": 0.08, "Kentucky": 0.08, "Tennessee": 0.08, "Stanford": 0.10,
-    "Texas A&M": 0.08, "North Carolina": 0.08, "Michigan": 0.06, "Pepperdine": 0.06,
+    # --- D1 ---
+    "Texas": 0.14, "Virginia": 0.14, "Ohio State": 0.14, "TCU": 0.13,
+    "Georgia": 0.12, "Stanford": 0.12, "Wake Forest": 0.12,
+    "Florida": 0.10, "Texas A&M": 0.10, "North Carolina": 0.10, "USC": 0.10,
+    "UCLA": 0.10, "Baylor": 0.09, "Duke": 0.09, "Oklahoma": 0.09, "Auburn": 0.09,
+    "Tennessee": 0.07, "Michigan": 0.07, "Illinois": 0.07, "South Carolina": 0.07,
+    "Kentucky": 0.08, "Mississippi State": 0.06, "NC State": 0.06,
+    "Arizona": 0.06, "Arizona State": 0.06, "Pepperdine": 0.08, "San Diego": 0.07,
+    "Columbia": 0.07, "Harvard": 0.07, "Princeton": 0.06, "Cornell": 0.06,
+    "Penn": 0.05, "Yale": 0.05, "Dartmouth": 0.03, "Brown": 0.03,
+    "Cal": 0.06, "Oklahoma State": 0.06, "UCF": 0.05, "LSU": 0.05, "Clemson": 0.05,
+    "Florida State": 0.05, "Miami": 0.04, "Texas Tech": 0.04, "Rice": 0.04,
+    "Tulsa": 0.04, "Middle Tennessee": 0.04, "Old Dominion": 0.03,
+    "UC Santa Barbara": 0.03, "Santa Clara": 0.03, "Memphis": 0.03, "South Florida": 0.03,
+    "Liberty": 0.02, "Boise State": 0.02, "Grand Canyon": 0.02, "East Tennessee State": 0.02,
+    # --- D2 ---
+    "Barry": 0.20, "West Florida": 0.17, "Flagler": 0.16, "Valdosta State": 0.16,
+    "Nova Southeastern": 0.14, "Columbus State": 0.13, "Washburn": 0.12, "UT Tyler": 0.11,
+    "North Georgia": 0.11, "Embry-Riddle": 0.10, "Saint Leo": 0.10, "Lynn": 0.10,
+    "Azusa Pacific": 0.09, "Lubbock Christian": 0.08, "Catawba": 0.08,
+    "Florida Southern": 0.07, "Rollins": 0.07, "Midwestern State": 0.07,
+    "Grand Valley State": 0.06, "Wayne State (MI)": 0.06, "West Alabama": 0.06,
+    "Indianapolis": 0.05, "Wingate": 0.05, "Lee": 0.04, "Mississippi College": 0.04,
+    "Lander": 0.04, "Harding": 0.03, "Tiffin": 0.03, "Charleston (WV)": 0.03,
+    "Findlay": 0.02, "Point Loma Nazarene": 0.02, "St. Mary's (TX)": 0.02,
+    # --- D3 ---
+    "Chicago": 0.18, "Emory": 0.18, "Claremont-Mudd-Scripps": 0.17,
+    "Case Western Reserve": 0.16, "Washington University in St. Louis": 0.15,
+    "Middlebury": 0.15, "Williams": 0.14, "Tufts": 0.14, "Bowdoin": 0.13,
+    "Johns Hopkins": 0.12, "MIT": 0.11, "Carnegie Mellon": 0.11, "Amherst": 0.11,
+    "Pomona-Pitzer": 0.11, "Swarthmore": 0.10, "Wesleyan": 0.10, "Denison": 0.10,
+    "Trinity (TX)": 0.08, "Washington and Lee": 0.08, "Gustavus Adolphus": 0.08,
+    "Kenyon": 0.07, "NYU": 0.06, "Brandeis": 0.06, "Babson": 0.06, "Rochester": 0.05,
+    "Vassar": 0.05, "Skidmore": 0.05, "Redlands": 0.05, "Whitman": 0.04,
+    "Mary Washington": 0.04, "Christopher Newport": 0.04,
 }
 
 # Per-conference academic prior (default by division below). Academic leagues
@@ -102,23 +134,37 @@ ACADEMIC_SCHOOLS = {
 }
 
 
-def _prestige(school: str, conf_abbr: str, division: str) -> float:
+def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float:
+    """Per-school prestige from a conference prestige prior, preserving each
+    school's blue-blood bump. Used both for the base value and when a conference
+    prestige override shifts the whole league."""
     base = DIVISION_PRESTIGE.get(division, 0.40)
-    conf = CONF_PRESTIGE.get(conf_abbr, 0.50)
-    p = base + (conf - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
+    p = base + (conf_prior - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
     return max(0.12, min(0.97, p))
 
 
-def _academics(school: str, conf_abbr: str, division: str) -> float:
-    if school in ACADEMIC_SCHOOLS:
-        a = ACADEMIC_SCHOOLS[school]
-    elif conf_abbr in ACADEMIC_CONF:
-        a = ACADEMIC_CONF[conf_abbr]
-    else:
-        a = {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
-    # Small deterministic per-school spread so unlisted peers aren't identical.
+def _prestige(school: str, conf_abbr: str, division: str) -> float:
+    return _prestige_with_prior(school, CONF_PRESTIGE.get(conf_abbr, 0.50), division)
+
+
+def _academic_prior(conf_abbr: str, division: str) -> float:
+    """The default academic prior for a conference (before per-school flagships)."""
+    if conf_abbr in ACADEMIC_CONF:
+        return ACADEMIC_CONF[conf_abbr]
+    return {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
+
+
+def _academics_with_prior(school: str, conf_prior: float, division: str) -> float:
+    """Per-school academics from a conference academic prior. Academic flagships
+    (ACADEMIC_SCHOOLS) keep their listed profile; everyone else tracks the prior,
+    with a small deterministic spread so peers aren't identical."""
+    a = ACADEMIC_SCHOOLS.get(school, conf_prior)
     jitter = (_stable_seed(f"acad|{school}") % 1000) / 1000.0 - 0.5
     return max(0.20, min(0.99, a + jitter * 0.06))
+
+
+def _academics(school: str, conf_abbr: str, division: str) -> float:
+    return _academics_with_prior(school, _academic_prior(conf_abbr, division), division)
 
 
 def _facilities(school: str, conf_abbr: str, division: str) -> float:
@@ -297,15 +343,27 @@ def load_division(division: str, gender: str) -> Division:
             ))
         div.conferences[c["name"]] = members
         div.programs.extend(members)
-    # Editor prestige overrides — let specific programs stand out (and recruit)
-    # regardless of their default conference-derived prestige.
+    # Editor ratings overrides (recruiting levers only — on-court strength is
+    # left untouched). Conference-level priors shift a whole league first
+    # (preserving each school's relative bump); per-team overrides then win.
     try:
         from . import overrides
+        conf_pres = overrides.get_conf_prestige()
+        conf_acad = overrides.get_conf_academics()
+        if conf_pres or conf_acad:
+            for p in div.programs:
+                if p.conf in conf_pres:
+                    p.prestige = _prestige_with_prior(p.school, conf_pres[p.conf], p.division)
+                if p.conf in conf_acad:
+                    p.academics = _academics_with_prior(p.school, conf_acad[p.conf], p.division)
         pres = overrides.get_prestige()
-        if pres:
+        acad = overrides.get_academics()
+        if pres or acad:
             for p in div.programs:
                 if p.school in pres:
                     p.prestige = pres[p.school]
+                if p.school in acad:
+                    p.academics = acad[p.school]
     except Exception:
         pass
     return div

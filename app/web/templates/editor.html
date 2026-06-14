@@ -61,23 +61,73 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Program prestige — {{ school }}</span>
-      <span class="bl-panel-meta">athletic brand pull (0–100); drives recruiting appeal independent of current roster strength{% if prestige.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}</span></div>
-    <form method="post" action="{{ url_for('editor_prestige') }}">
-      <input type="hidden" name="u" value="{{ u }}">
-      <input type="hidden" name="school" value="{{ school }}">
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;flex-wrap:wrap">
-        <label class="bl-schol-f" style="max-width:160px">Prestige (0–100)
+    <div class="bl-panel-head"><span class="bl-panel-title">Program ratings — {{ school }}</span>
+      <span class="bl-panel-meta">recruiting levers (0–100), independent of on-court strength · prestige = athletic brand pull · academics = academic profile</span></div>
+    <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
+      <form method="post" action="{{ url_for('editor_prestige') }}"
+            style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="school" value="{{ school }}">
+        <input type="hidden" name="conf" value="{{ conf }}">
+        <label class="bl-schol-f" style="max-width:150px">Prestige (0–100){% if prestige.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
           <input class="bl-input" type="number" name="prestige" value="{{ prestige.value }}" min="0" max="100" step="1"></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save prestige</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save</button>
         {% if prestige.overridden %}
-        <button class="bl-pill" formaction="{{ url_for('editor_prestige_clear') }}" style="cursor:pointer">Reset to default</button>
+        <button class="bl-pill" formaction="{{ url_for('editor_prestige_clear') }}" style="cursor:pointer">Reset</button>
         {% endif %}
-        <span style="font-size:12px;color:var(--text-muted)">Bump a program above its conference default so it stands out and recruits accordingly.</span>
-      </div>
-    </form>
+      </form>
+      <form method="post" action="{{ url_for('editor_academics') }}"
+            style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="school" value="{{ school }}">
+        <input type="hidden" name="conf" value="{{ conf }}">
+        <label class="bl-schol-f" style="max-width:150px">Academics (0–100){% if academics.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
+          <input class="bl-input" type="number" name="academics" value="{{ academics.value }}" min="0" max="100" step="1"></label>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save</button>
+        {% if academics.overridden %}
+        <button class="bl-pill" formaction="{{ url_for('editor_academics_clear') }}" style="cursor:pointer">Reset</button>
+        {% endif %}
+      </form>
+    </div>
+    <div style="padding:0 16px 12px;font-size:12px;color:var(--text-muted)">
+      Bump a program above its conference default so it stands out and recruits accordingly. Edits feed recruiting appeal, not match results.</div>
   </div>
 </div>
+
+{% if conf_ratings %}
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Conference ratings — {{ conf_ratings.conf }}</span>
+      <span class="bl-panel-meta">shifts the prior for all {{ conf_ratings.n }} programs in the league (each school keeps its relative bump); per-team edits above still win</span></div>
+    <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
+      <form method="post" action="{{ url_for('editor_conf_prestige') }}"
+            style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="school" value="{{ school }}">
+        <input type="hidden" name="conf" value="{{ conf }}">
+        <label class="bl-schol-f" style="max-width:150px">Prestige (0–100){% if conf_ratings.prestige_overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
+          <input class="bl-input" type="number" name="conf_prestige" value="{{ conf_ratings.prestige }}" min="0" max="100" step="1"></label>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save</button>
+        {% if conf_ratings.prestige_overridden %}
+        <button class="bl-pill" formaction="{{ url_for('editor_conf_prestige_clear') }}" style="cursor:pointer">Reset</button>
+        {% endif %}
+      </form>
+      <form method="post" action="{{ url_for('editor_conf_academics') }}"
+            style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="school" value="{{ school }}">
+        <input type="hidden" name="conf" value="{{ conf }}">
+        <label class="bl-schol-f" style="max-width:150px">Academics (0–100){% if conf_ratings.academics_overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
+          <input class="bl-input" type="number" name="conf_academics" value="{{ conf_ratings.academics }}" min="0" max="100" step="1"></label>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">Save</button>
+        {% if conf_ratings.academics_overridden %}
+        <button class="bl-pill" formaction="{{ url_for('editor_conf_academics_clear') }}" style="cursor:pointer">Reset</button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <style>
 .bl-schol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 14px 16px; }

@@ -832,8 +832,17 @@ def active_overrides():
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
     prestige = [{"school": s, "value": round(v * 100)}
                 for s, v in sorted(ov.get_prestige().items())]
+    academics = [{"school": s, "value": round(v * 100)}
+                 for s, v in sorted(ov.get_academics().items())]
+    conf_prestige = [{"conf": c, "value": round(v * 100)}
+                     for c, v in sorted(ov.get_conf_prestige().items())]
+    conf_academics = [{"conf": c, "value": round(v * 100)}
+                      for c, v in sorted(ov.get_conf_academics().items())]
     return {"moves": moves, "lineups": lineups, "prestige": prestige,
-            "any": bool(moves or lineups or prestige)}
+            "academics": academics, "conf_prestige": conf_prestige,
+            "conf_academics": conf_academics,
+            "any": bool(moves or lineups or prestige or academics
+                        or conf_prestige or conf_academics)}
 
 
 def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SEED):
@@ -972,6 +981,25 @@ def team_conference(division: str, gender: str, school: str) -> str:
     from app import ncaa
     prog = ncaa.load_division(division, gender).by_school(school)
     return prog.conf if prog else ""
+
+
+def conference_ratings(division: str, gender: str, conf: str):
+    """Current prestige + academic priors (0–100) for a conference, flagged when
+    overridden. Returns None for 'All' or an unknown conference."""
+    from app import ncaa, overrides as ov
+    members = ncaa.load_division(division, gender).conferences.get(conf, [])
+    if not members:
+        return None
+    abbr = members[0].conf_abbr
+    cp, ca = ov.get_conf_prestige(), ov.get_conf_academics()
+    return {
+        "conf": conf,
+        "prestige": round(cp.get(conf, ncaa.CONF_PRESTIGE.get(abbr, 0.50)) * 100),
+        "academics": round(ca.get(conf, ncaa._academic_prior(abbr, division)) * 100),
+        "prestige_overridden": conf in cp,
+        "academics_overridden": conf in ca,
+        "n": len(members),
+    }
 
 
 def team_roster(division: str, gender: str, school: str):

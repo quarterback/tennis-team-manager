@@ -116,6 +116,79 @@ def clear_prestige(school: str) -> None:
     conn.commit(); conn.close()
 
 
+# --------------------------------------------------------------------------
+# Academics + conference-level ratings — the rest of the recruiting levers.
+#   kind='academics'      key=school  → overridden academic profile (0..1)
+#   kind='conf_prestige'  key=conf    → overridden conference prestige prior
+#   kind='conf_academics' key=conf    → overridden conference academic prior
+# All are stored on the same [0,1] scale as the base priors in ncaa.py.
+# --------------------------------------------------------------------------
+def _get_floats(kind: str) -> dict:
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind=?", (kind,)).fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        try:
+            out[k] = float(v)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def _set_float(kind: str, key: str, value: float) -> None:
+    value = max(0.0, min(1.0, float(value)))
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value) VALUES (?,?,?)",
+                 (kind, key, f"{value:.4f}"))
+    conn.commit(); conn.close()
+
+
+def _clear(kind: str, key: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind=? AND key=?", (kind, key))
+    conn.commit(); conn.close()
+
+
+def get_academics() -> dict:
+    """school -> overridden academic profile (0..1)."""
+    return _get_floats("academics")
+
+
+def set_academics(school: str, academics: float) -> None:
+    _set_float("academics", school, academics)
+
+
+def clear_academics(school: str) -> None:
+    _clear("academics", school)
+
+
+def get_conf_prestige() -> dict:
+    """conference name -> overridden prestige prior (0..1)."""
+    return _get_floats("conf_prestige")
+
+
+def set_conf_prestige(conf: str, prior: float) -> None:
+    _set_float("conf_prestige", conf, prior)
+
+
+def clear_conf_prestige(conf: str) -> None:
+    _clear("conf_prestige", conf)
+
+
+def get_conf_academics() -> dict:
+    """conference name -> overridden academic prior (0..1)."""
+    return _get_floats("conf_academics")
+
+
+def set_conf_academics(conf: str, prior: float) -> None:
+    _set_float("conf_academics", conf, prior)
+
+
+def clear_conf_academics(conf: str) -> None:
+    _clear("conf_academics", conf)
+
+
 def clear_all() -> None:
     conn = _db()
     conn.execute("DELETE FROM roster_overrides")
