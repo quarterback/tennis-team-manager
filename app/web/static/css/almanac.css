@@ -84,10 +84,10 @@ a.al-th-active { color: var(--text-primary, #111); }
 }
 .al-leadrow {
   display: flex; justify-content: space-between; gap: 8px; padding: 4px 10px; font-size: 12.5px;
-  text-decoration: none; color: var(--text-primary, #111); border-top: 1px solid var(--border-subtle, #eef);
+  min-width: 0; text-decoration: none; color: var(--text-primary, #111); border-top: 1px solid var(--border-subtle, #eef);
 }
 .al-leadrow:hover { background: var(--surface-subtle, #f7f9fc); }
-.al-leadname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-leadname { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .al-leadval { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-link, #36c); }
 .al-section { margin: 2px 0 6px; font-size: 14px; }
 
