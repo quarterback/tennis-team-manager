@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Analytics Bureau{% endblock %}
+{% block content %}
+
+<div class="ib-hero">
+  <div class="rc-eyebrow">Analytics Bureau · {{ uni_label }}</div>
+  <h1>Player Intelligence Platform</h1>
+  <p>The Bureau reads the engine's hidden truth — every player's <strong>true talent ceiling</strong>,
+     with zero scouting fog — and cross-references it against where they actually sit: program level,
+     lineup slot, scholarship status. It surfaces what the public board can't: studs buried at the
+     wrong level, walk-ons who out-talent funded teammates, and the programs where any player would
+     truly be deployed.</p>
+  <span class="ib-godmode"><span class="dot"></span> God mode · all-seeing · no noise</span>
+</div>
+
+<div class="ib-kpis">
+  <div class="ib-kpi"><div class="k">Players Scanned</div><div class="v">{{ ov.n_players }}</div></div>
+  <div class="ib-kpi"><div class="k">Programs</div><div class="v">{{ ov.n_teams }}</div></div>
+  <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">
+    <div class="k">Underplaced Talent</div><div class="v">{{ ov.n_underplaced }}</div></a>
+  <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">
+    <div class="k">Aid Misallocations</div><div class="v">{{ ov.n_aid_flags }}</div></a>
+</div>
+
+<div class="bl-board-grid" style="align-items:start">
+  <!-- Underplaced preview -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">📡 Buried Talent</span>
+      <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">Full board →</a></div>
+    <div class="bl-tablescroll">
+      <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 70px minmax(110px,1fr)">
+        <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th num">TRUE</span>
+          <span class="bl-th">GAP</span><span class="bl-th">DESERVES</span></div>
+        {% for r in ov.top_underplaced %}
+        {% set ab = crest(r.school) %}
+        <div class="bl-row">
+          <a class="bl-school" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}">{{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.name }} <span class="ib-divchip">{{ r.division }}</span></a>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>
+          <span class="ib-gapval">+{{ '%.0f'|format(r.placement_gap*100) }}</span>
+          <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.deserved_school }} <span class="ib-divchip">{{ r.deserved_division }} #{{ r.deserved_pi_rank }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Scholarship preview -->
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">💸 Scholarship Watch</span>
+      <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">Full list →</a></div>
+    <div class="bl-tablescroll">
+      <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 64px minmax(110px,1fr)">
+        <div class="bl-thead"><span class="bl-th">WALK-ON</span><span class="bl-th num">TRUE</span>
+          <span class="bl-th num">BEATS</span><span class="bl-th">MERITS</span></div>
+        {% for f in ov.top_aid %}
+        {% set ab = crest(f.player.school) %}
+        <div class="bl-row">
+          <a class="bl-school" href="{{ url_for('intel_fit', pid=f.player.pid, u=u) }}">{{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.name }} <span class="ib-divchip">{{ f.player.division }}</span></a>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.true_str) }}</span></span>
+          <span class="bl-cell-num">{{ f.outranks }} funded</span>
+          <span class="bl-conf">{{ f.recommended }} ride</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bl-notes"><div class="bl-note">
+  <strong>How it reads talent:</strong> every figure here is the player's true 20–80 ceiling
+  (<code>ceiling_overall</code>), expressed in STR — the absolute scale, so it's comparable across
+  D1/D2/D3. That's what makes "stuck at the wrong level" measurable. <strong>Gap</strong> = talent
+  percentile − program-level percentile. Click any player for their Fit Finder.
+</div></div>
+{% endblock %}

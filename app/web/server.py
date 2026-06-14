@@ -68,6 +68,11 @@ NAV_GROUPS = [
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "📅", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
     ]),
+    ("Analytics Bureau", [
+        {"id": "intel",        "label": "Bureau HQ",        "icon": "🛰️", "endpoint": "intel_hub",         "args": {}},
+        {"id": "intel_under",  "label": "Underplaced Talent","icon": "📡", "endpoint": "intel_underplaced", "args": {}},
+        {"id": "intel_aid",    "label": "Scholarship Watch","icon": "💸", "endpoint": "intel_scholarships", "args": {}},
+    ]),
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
@@ -107,6 +112,9 @@ def _active_nav(req) -> str:
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
+    if p.startswith("/intel/underplaced"): return "intel_under"
+    if p.startswith("/intel/scholarships"): return "intel_aid"
+    if p.startswith("/intel"):            return "intel"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
@@ -176,6 +184,8 @@ def create_app() -> Flask:
     from app.almanac import badge_shield, profile_badges
     app.jinja_env.filters["shield"] = badge_shield
     app.jinja_env.filters["profile_badges"] = profile_badges
+    from .rankings_data import crest as _crest
+    app.jinja_env.globals["crest"] = _crest
 
     @app.context_processor
     def _inject_chrome():
@@ -702,6 +712,50 @@ def create_app() -> Flask:
                                hub=recruiting_hub(rg, grad_year), gender=gender,
                                grad_year=grad_year, u=u, uni_label=label,
                                grad_years=[grad_year])
+
+    # ---- Analytics Bureau: god-mode player intelligence (additive mod) ----
+    @app.route("/intel")
+    def intel_hub():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        return render_template("intel_hub.html", active="Analytics Bureau",
+                               ov=si.overview(gender), gender=gender, u=u, uni_label=label)
+
+    @app.route("/intel/underplaced")
+    def intel_underplaced():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_f = request.args.get("div", "All")
+        cls_f = request.args.get("class", "All")
+        rows = si.underplaced_board(gender, division=div_f, class_year=cls_f)
+        pg = paginate(rows, request.args.get("page", 1))
+        return render_template("intel_underplaced.html", active="Analytics Bureau",
+                               rows=pg.items, p=pg, total=len(rows), gender=gender,
+                               div_f=div_f, cls_f=cls_f, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2", "D3"],
+                               classes=["All", "Fr", "So", "Jr", "Sr"])
+
+    @app.route("/intel/scholarships")
+    def intel_scholarships():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_f = request.args.get("div", "All")
+        rows = si.scholarship_watch(gender, division=div_f)
+        pg = paginate(rows, request.args.get("page", 1))
+        return render_template("intel_scholarships.html", active="Analytics Bureau",
+                               rows=pg.items, p=pg, total=len(rows), gender=gender,
+                               div_f=div_f, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2"])
+
+    @app.route("/intel/fit/<pid>")
+    def intel_fit(pid):
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        p, targets = si.fit_targets(gender, pid)
+        if p is None:
+            abort(404)
+        return render_template("intel_fit.html", active="Analytics Bureau",
+                               p=p, targets=targets, gender=gender, u=u, uni_label=label)
 
     @app.route("/juniors/rankings")
     def junior_rankings():

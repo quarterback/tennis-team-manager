@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Fit Finder · {{ p.name }}{% endblock %}
+{% block content %}
+{% set ab = crest(p.school) %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Fit Finder</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('intel_underplaced', u=u) }}">← Underplaced board</a>
+</div></div>
+
+<div class="ib-hero">
+  <div class="rc-eyebrow">Fit Finder · god-mode deployment</div>
+  <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags }}</span> {{ p.name }}</h1>
+  <p>Currently {% if p.line %}No. {{ p.line }} at{% else %}buried on the depth chart at{% endif %}
+     <strong>{{ p.school }}</strong> ({{ p.division }} #{{ p.team_pi_rank }}). True ceiling
+     <strong>{{ '%.1f'|format(p.true_str) }} STR</strong> — top {{ '%.0f'|format((1-p.talent_pct)*100) }}%
+     of all {{ gender }} players. Below: every program where this talent would crack the lineup now.</p>
+  <span class="ib-godmode"><span class="dot"></span> true ceiling · zero fog</span>
+</div>
+
+<div class="rc-ratings">
+  <div class="rc-ratecard primary">
+    <div class="rc-rate-head"><span class="rc-rate-svc"><span class="dot">●</span> TRUE TALENT</span>
+      <span class="rc-rate-info">god-mode ceiling</span></div>
+    <div class="rc-rate-body"><span class="rc-rate-grade">{{ '%.1f'|format(p.true_str) }}</span>
+      <span class="rc-rate-stars"><span class="rc-rate-tier">STR ceiling · grade {{ p.true_overall }}/80</span></span></div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">NOW</div><div class="v">{{ '%.1f'|format(p.cur_str) }}</div></div>
+      <div class="rc-rankcell"><div class="k">UPSIDE</div><div class="v" style="color:#1f9e3d">+{{ '%.1f'|format(p.upside) }}</div></div>
+      <div class="rc-rankcell"><div class="k">TALENT %ile</div><div class="v">{{ '%.0f'|format(p.talent_pct*100) }}</div></div>
+    </div>
+  </div>
+  <div class="rc-ratecard">
+    <div class="rc-rate-head"><span class="rc-rate-svc">CURRENT PLACEMENT</span>
+      <span class="rc-rate-info">{{ p.division }} #{{ p.team_pi_rank }}</span></div>
+    <div class="rc-rate-body">
+      <span class="rc-rate-grade composite">+{{ '%.0f'|format(p.placement_gap*100) }}</span>
+      <span class="rc-rate-stars"><span class="rc-rate-tier">talent − program level gap</span></span></div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">SCHOOL</div><div class="v" style="font-size:13px">{{ p.school }}</div></div>
+      <div class="rc-rankcell"><div class="k">LINEUP</div><div class="v">{% if p.line %}No. {{ p.line }}{% else %}—{% endif %}</div></div>
+      <div class="rc-rankcell"><div class="k">AID</div><div class="v" style="font-size:14px">{{ p.schol_label if not p.walk_on else 'Walk-on' }}</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Best Landing Spots</span>
+    <span class="bl-panel-meta">programs where they'd start now</span></div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.4fr) 120px 80px 150px 80px">
+      <div class="bl-thead">
+        <span class="bl-th">PROGRAM</span><span class="bl-th">LEVEL</span><span class="bl-th num">TEAM STR</span>
+        <span class="bl-th">PROJECTED ROLE</span><span class="bl-th num">AID</span>
+      </div>
+      {% for t in targets %}
+      {% set tb = crest(t.school) %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('teams', school=t.school, u=u) }}">{{ crest_box(t.school, tb[0], tb[1], 'xs') }} {{ t.school }}</a>
+        <span class="bl-conf"><span class="ib-divchip">{{ t.division }} #{{ t.pi_rank }}</span> {% if t.move_up %}<span class="ib-up">▲ step up</span>{% endif %}</span>
+        <span class="bl-cell-num">{{ '%.1f'|format(t.team_level_str) }}</span>
+        <span><span class="ib-tag{% if t.slot == 1 %} up{% endif %}">{{ t.slot_label }}</span></span>
+        <span class="bl-cell-num">{{ t.aid_label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div></div>
+
+<div class="bl-notes"><div class="bl-note">
+  Role is the lineup slot this player would claim on each roster <strong>by current ability</strong>
+  (the top 6 are the singles ladder), so it's an immediate-impact read. <strong>Team STR</strong> is
+  the program's top-6 true-talent average. <strong>▲ step up</strong> marks programs at a higher
+  level than where they are now.
+</div></div>
+{% endblock %}

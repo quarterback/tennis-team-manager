@@ -151,6 +151,43 @@
 .rc-pcommit .bl-crest { width: 26px; height: 26px; font-size: 10px; }
 .rc-pcommit .none { color: var(--text-faint); }
 
+/* ============================================================ Analytics Bureau */
+.ib-hero {
+  position: relative; overflow: hidden; border-radius: 18px; margin: 4px 0 16px; padding: 22px 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 90% -20%, rgba(91,140,255,.30), transparent 46%),
+    linear-gradient(135deg, #0a1726 0%, #0f2236 55%, #102a22 100%);
+  box-shadow: 0 18px 42px rgba(5,16,25,.22);
+}
+.ib-hero .rc-eyebrow { color: #8fd0ff; }
+.ib-hero h1 { margin: 6px 0 6px; font-size: clamp(24px,4vw,34px); font-weight: 800; letter-spacing: -.025em; line-height: 1.03; }
+.ib-hero p { margin: 0; max-width: 720px; color: rgba(255,255,255,.78); font-size: 13.5px; line-height: 1.55; }
+.ib-godmode { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 11px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: #aef0c4; padding: 4px 10px; border-radius: 999px;
+  background: rgba(86,242,138,.14); border: 1px solid rgba(86,242,138,.3); }
+.ib-godmode .dot { width: 8px; height: 8px; border-radius: 50%; background: #56f28a; box-shadow: 0 0 0 4px rgba(86,242,138,.18); }
+
+.ib-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 16px; }
+.ib-kpi { border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-card); padding: 14px 16px; }
+.ib-kpi .k { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); }
+.ib-kpi .v { font-size: 30px; font-weight: 900; letter-spacing: -.03em; color: var(--text-primary); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ib-kpi.flag .v { color: #c0392b; }
+
+/* gap meter: talent vs placement */
+.ib-gap { display: inline-flex; align-items: center; gap: 6px; }
+.ib-gapbar { position: relative; width: 96px; height: 7px; border-radius: 999px; background: var(--gray-200); overflow: hidden; }
+.ib-gapbar > .talent { position: absolute; left: 0; top: 0; height: 100%; background: var(--stat-power); border-radius: 999px; }
+.ib-gapbar > .level { position: absolute; top: -2px; width: 2px; height: 11px; background: var(--text-primary); }
+.ib-gapval { font-weight: 800; font-variant-numeric: tabular-nums; color: #c0392b; font-size: 12.5px; }
+
+.ib-up { font-size: 10px; font-weight: 800; letter-spacing: .04em; color: #1f9e3d; }
+.ib-tag { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+  background: var(--green-50); color: var(--brand-strong); }
+.ib-tag.up { background: var(--stat-power-bg); color: var(--stat-power); }
+.ib-divchip { font-size: 10px; font-weight: 800; letter-spacing: .03em; padding: 1px 6px; border-radius: 5px;
+  background: var(--gray-150); color: var(--text-secondary); }
+
 /* ============================================================ Star spread */
 /* The 5★→1★ tier breakdown a class actually signed. Each chip is a star count
    in that tier's colour; empty tiers fade so the shape of the class reads at a
