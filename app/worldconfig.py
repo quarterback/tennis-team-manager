@@ -119,6 +119,29 @@ def set_active(divisions: list[str], genders: list[str]) -> None:
     set("active_genders", json.dumps([g for g in _ALL_GEN if g in (genders or [])] or _ALL_GEN))
 
 
+# --- International share --------------------------------------------------------
+# Fraction of the incoming RECRUIT class that is international. Real college tennis
+# skews far more international than the US-junior pool alone, so this is tunable.
+# (College rosters already draw nationality straight from the band mix, so this
+# knob targets the recruit pipeline — the "players coming in".) Stored as a plain
+# float; the default mirrors the engine constant world.RECRUIT_INTL_SHARE.
+DEFAULT_INTL_SHARE = 0.30
+INTL_SHARE_CHOICES = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+
+
+def intl_share() -> float:
+    """Effective international fraction of the recruit class (0..0.95)."""
+    return get_float("intl_share", DEFAULT_INTL_SHARE, lo=0.0, hi=0.95)
+
+
+def set_intl_share(value) -> None:
+    try:
+        f = max(0.0, min(0.95, float(value)))
+    except (ValueError, TypeError):
+        return
+    set("intl_share", repr(f))
+
+
 # --- Per-region fidelity --------------------------------------------------------
 # A chosen band is just the starting weight map; on top of it the player can dial
 # any individual region/nation up or down with a multiplier. This lets you, say,

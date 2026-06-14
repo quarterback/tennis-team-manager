@@ -267,12 +267,15 @@ def create_app() -> Flask:
         return render_template("onboarding.html", active="World",
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
                                region_groups=worldconfig.region_groups(),
-                               mult_choices=worldconfig.MULT_CHOICES)
+                               mult_choices=worldconfig.MULT_CHOICES,
+                               intl_share=worldconfig.intl_share(),
+                               intl_share_choices=worldconfig.INTL_SHARE_CHOICES)
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
         from app import worldconfig
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
+        worldconfig.set_intl_share(request.form.get("intl_share"))
         worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
         mult = {}
         for grp in worldconfig.region_groups():
