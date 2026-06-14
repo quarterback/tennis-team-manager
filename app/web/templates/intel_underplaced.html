@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Underplaced Talent{% endblock %}
+{% block content %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Underplaced Talent</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:84px">
+      {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="class" onchange="this.form.submit()" style="min-width:84px">
+      {% for c in classes %}<option{% if c == cls_f %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} flagged</div>
+  <span class="bl-entries-right">{{ uni_label }} · true talent well above program level</span>
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.5fr) minmax(120px,1fr) 60px 60px 130px minmax(140px,1.2fr)">
+    <div class="bl-thead">
+      <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">CURRENT TEAM</span>
+      <span class="bl-th num">TRUE</span><span class="bl-th num">NOW</span><span class="bl-th">TALENT vs LEVEL</span>
+      <span class="bl-th">DESERVES A PROGRAM LIKE</span>
+    </div>
+    {% for r in rows %}
+    {% set ab = crest(r.school) %}
+    <div class="bl-row">
+      <span class="bl-rank">{{ p.start + loop.index0 }}</span>
+      <a class="bl-school" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}">
+        <span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}
+        <span class="ib-divchip">{{ r.class_year or '—' }}</span></a>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.school }} <span class="ib-divchip">{{ r.division }} #{{ r.team_pi_rank }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ '%.1f'|format(r.cur_str) }}</span>
+      <span class="ib-gap">
+        <span class="ib-gapbar"><span class="talent" style="width:{{ (r.talent_pct*100)|round|int }}%"></span><span class="level" style="left:{{ (r.team_level_pct*100)|round|int }}%"></span></span>
+        <span class="ib-gapval">+{{ '%.0f'|format(r.placement_gap*100) }}</span>
+      </span>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        {{ r.deserved_school }} <span class="ib-divchip">{{ r.deserved_division }} #{{ r.deserved_pi_rank }}</span></span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{{ pager(p, 'players') }}
+</div>
+
+<div class="bl-notes"><div class="bl-note">
+  The <strong>blue bar</strong> is the player's true-talent percentile (god-mode ceiling); the
+  <strong>black tick</strong> is their program's level percentile. The wider the gap, the more
+  badly they're playing below their ability. Click a player for their Fit Finder — the programs
+  where that talent would actually be deployed.
+</div></div>
+{% endblock %}
