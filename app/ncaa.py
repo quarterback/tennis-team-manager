@@ -102,8 +102,12 @@ CONF_PRESTIGE_D3 = {
     "Little East": 0.41, "Northern Athletics Collegiate": 0.41, "Allegheny Mountain Collegiate": 0.40,
     "Skyline": 0.40, "Great Northeast Athletic": 0.40, "North Atlantic": 0.39,
     "Upper Midwest Athletic": 0.38, "MASCAC": 0.37, "CUNYAC": 0.35, "D3 Independent": 0.40,
+    "Collegiate Conference of the South": 0.58, "Midwest Conference": 0.46,
+    "New Jersey Athletic": 0.60,
 }
 CONF_PRESTIGE_D3_ALIASES = {
+    "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
+    "NJAC": "New Jersey Athletic",
     "UAA": "University Athletic Association", "NCAC": "North Coast Athletic",
     "SCAC": "Southern Collegiate Athletic", "ODAC": "Old Dominion Athletic", "C2C": "Coast-To-Coast",
     "SAA": "Southern Athletic Association", "NWC": "Northwest Conference", "ARC": "American Rivers",
@@ -177,7 +181,8 @@ PRESTIGE_SCHOOLS = {
     "Lander": 0.04, "Harding": 0.03, "Tiffin": 0.03, "Charleston (WV)": 0.03,
     "Findlay": 0.02, "Point Loma Nazarene": 0.02, "St. Mary's (TX)": 0.02,
     # --- D3 ---
-    "Chicago": 0.18, "Emory": 0.18, "Claremont-Mudd-Scripps": 0.17,
+    "Chicago": 0.15, "Emory": 0.18, "Claremont-Mudd-Scripps": 0.17,
+    "Grinnell": 0.08, "TCNJ": 0.05,
     "Case Western Reserve": 0.16, "Washington University in St. Louis": 0.15,
     "Middlebury": 0.15, "Williams": 0.14, "Tufts": 0.14, "Bowdoin": 0.13,
     "Johns Hopkins": 0.12, "MIT": 0.11, "Carnegie Mellon": 0.11, "Amherst": 0.11,
