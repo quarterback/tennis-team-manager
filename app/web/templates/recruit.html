@@ -24,7 +24,15 @@
       <div class="tsub">current (projection)</div></div>
   </div>
 
-  {% if rec.predicted_school %}
+  {% if p.committed %}
+  <div class="bl-container" style="padding:0 0 4px">
+    <div class="bl-note new" style="display:flex;align-items:center;gap:10px;margin:0">
+      <span class="bl-stat good" style="font-size:16px">✓</span>
+      <span>Signed with <a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}"><strong>{{ p.commit_school }}</strong></a>
+        — off the board for the class of {{ grad_year }}.</span>
+    </div>
+  </div>
+  {% elif rec.predicted_school %}
   <div class="bl-container" style="padding:0 0 4px"><div class="bl-entries">
     <span class="bl-entries-left">StrikePrediction · favourite to commit:
       <strong style="color:var(--text-primary)">{{ rec.predicted_school }}</strong>
@@ -61,13 +69,14 @@
               <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span><span class="bl-th">STATUS</span>
             </div>
             {% for o in rec.offers %}
-            <div class="bl-row">
+            {% set is_signed = p.committed and o.school == p.commit_school %}
+            <div class="bl-row"{% if is_signed %} style="background:var(--green-50)"{% endif %}>
               <span class="bl-school" style="font-weight:600">{{ o.school }}</span>
               <span style="color:#3a7">{{ '✓' if o.offered else '' }}</span>
               <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }}">{{ o.interest }}</span>
               <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
               <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
-              <span>{% if o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
+              <span>{% if is_signed %}<span class="bl-badge" style="background:var(--brand)">Signed</span>{% elif o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
             </div>
             {% endfor %}
           </div>

@@ -358,7 +358,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
             })
 
     rg = RECRUIT_GENDERS.get(gender, "male")
-    junior_year = 2027
+    junior_year = world.recruiting_grad_year(seed)
     juniors = recruiting_hub(rg, junior_year, seed=seed)
     top_prospects = []
     for rk, p, stat, honor in juniors["top_rows"][:6]:
@@ -640,6 +640,11 @@ def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED,
     from app import world
     p = world.find_persisted_player(pid, seed)
     if p is not None:
+        # A signed player resolves out of world_signing here; stamp where they
+        # signed so the profile shows "Signed with X" instead of the open board.
+        smap = _signed_school_map(gender, grad_year, seed)
+        p.commit_school = smap.get(pid)
+        p.committed = p.commit_school is not None
         return p
     klass = get_recruits(gender, grad_year, seed)
     _apply_committed_flag(klass, gender, grad_year)
@@ -649,20 +654,26 @@ def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED,
 _REV_RECRUIT_GENDERS = {v: k for k, v in RECRUIT_GENDERS.items()}
 
 
-def _apply_committed_flag(klass, gender: str, grad_year: int) -> None:
+def _signed_school_map(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
+    """{pid: school} for recruits who have signed in the active class, or {} when
+    `grad_year` isn't the class currently being signed. The active signing class
+    is `BASE_YEAR + world.year + 1` (see world.recruiting_grad_year), NOT the bare
+    world year — the previous `w["year"] != grad_year` guard compared an integer
+    season index (0,1,2…) to a calendar year and so always cleared the flag."""
     import app.world as world
-    w = world.load_world()
-    if not w or w["year"] != grad_year:
-        for p in klass.recruits:
-            p.committed = False
-            p.commit_school = None
-        return
+    w = world.load_world(seed)
+    if not w or world.BASE_YEAR + w["year"] + 1 != grad_year:
+        return {}
     wgender = _REV_RECRUIT_GENDERS.get(gender, gender)
-    pid_to_school = {p.pid: school
-                     for school, pl in world.signings().get(wgender, {}).items()
-                     for p in pl}
+    return {p.pid: school
+            for school, pl in world.signings(seed).get(wgender, {}).items()
+            for p in pl}
+
+
+def _apply_committed_flag(klass, gender: str, grad_year: int) -> None:
+    smap = _signed_school_map(gender, grad_year)
     for p in klass.recruits:
-        p.commit_school = pid_to_school.get(p.pid)
+        p.commit_school = smap.get(p.pid)
         p.committed = p.commit_school is not None
 
 

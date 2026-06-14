@@ -408,6 +408,21 @@ html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, table { max-width: 100%; }
 .bl-select, .bl-input { max-width: 100%; }
 
+/* Grid/flex items must be allowed to shrink below their intrinsic content
+   width. A grid item defaults to `min-width: auto`, so a wide child — a
+   min-width stat table inside `.bl-tablescroll`, or a long unbroken string —
+   stretches its track and pushes the WHOLE page into horizontal scroll. That
+   leak is the root cause of the left↔right scrolling on mobile (two-column
+   boards on /data, /editor, /teams, /recruiting/hub, …). Letting the item
+   reach a 0 floor hands the overflow to the inner `.bl-tablescroll`, which
+   scrolls on its own, instead of to the viewport. */
+.bl-board, .bl-panel,
+.bl-board-grid > *, .al-portal-grid > *, .al-hero > * { min-width: 0; }
+
+/* Toolbar action clusters (status text + Advance + page links) must wrap on
+   narrow screens instead of running off the right edge (e.g. /season). */
+.bl-toolbar-inner > span { flex-wrap: wrap; }
+
 /* Player honors badges (All-American / All-Conference). */
 .pl-honors { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .pl-honor {
@@ -472,11 +487,20 @@ img, svg, table { max-width: 100%; }
   .bl-pager-meta { width: 100%; text-align: center; }
 }
 
-/* Tablet / small laptop — collapse the two-column boards. */
+/* Tablet / small laptop — collapse the two-column boards.
+   Use plain block flow rather than a single grid track: a `1fr` track keeps a
+   content-based minimum, so a wide `.bl-table` inside `.bl-board` would still
+   stretch the track and overflow the page. Block flow lets each child take the
+   container width and hands horizontal overflow to the inner `.bl-tablescroll`. */
 @media (max-width: 880px) {
-  .bl-board-grid { grid-template-columns: 1fr !important; }
+  .bl-board-grid { display: block; }
+  .bl-board-grid > * { width: 100%; }
+  .bl-board-grid > * + * { margin-top: 16px; }
   .bl-scorehdr { grid-template-columns: 1fr !important; gap: 12px !important; text-align: center; }
   .bl-scorehdr .team, .bl-scorehdr .team.away { justify-content: center; }
+  /* Header action clusters (Schedule / Simulate / Recruiting pills) wrap and
+     centre rather than forcing the column wider than the screen. */
+  .bl-scorehdr > div { min-width: 0; flex-wrap: wrap; justify-content: center; }
   .bl-rounds { grid-template-columns: 1fr; }
 }
 

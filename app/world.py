@@ -320,6 +320,16 @@ def signed_counts(seed: int = DEFAULT_SEED) -> dict:
     return {r["gender"]: r["c"] for r in rows}
 
 
+def recruiting_grad_year(seed: int = DEFAULT_SEED) -> int:
+    """The ONE active recruiting class — the HS grad-year the sim is currently
+    signing (next year's incoming freshmen). There is only ever a single class
+    in the pool: this year's. It is the only class eligible to be recruited and
+    to play the junior circuit, and matches `national_class` (BASE_YEAR + year + 1)
+    so the board, the recruit pages, and the signing drip all read the same pool."""
+    w = load_world(seed)
+    return BASE_YEAR + (w["year"] if w else 0) + 1
+
+
 def signings(seed: int = DEFAULT_SEED) -> dict:
     """{gender: {school: [Prospect, ...]}} for the class signed so far this world-year
     — the live commitments the Signing Tracker reads (fills as the season advances)."""
@@ -458,13 +468,23 @@ def _all_complete(seed: int, world: dict) -> bool:
 _class_cache: dict = {}
 
 
+# The class generator (pids included via make_pid) is keyed by the gender string,
+# so the sim's world-vocab ("men"/"women") and the recruit board's juniors-vocab
+# ("male"/"female") MUST collapse to one canonical token — otherwise they build
+# two disjoint classes with different pids and a signed recruit never appears in
+# the board's pool.
+_GENDER_CANON = {"men": "male", "women": "female", "male": "male", "female": "female"}
+
+
 def recruit_class(gender: str, grad_year: int, salt: str):
     """THE canonical recruiting class for an active league — the single source of
     truth shared by the web board, the recruit detail pages, committed-player
-    lookup, and the sim's signing logic. Keyed by (salt, gender, grad_year) so
-    it is fresh per New League but stable within a league. Enriched with the
-    junior circuit so the web board's results/rankings are present; pids and
+    lookup, and the sim's signing logic. Keyed by (salt, canonical-gender,
+    grad_year) so it is fresh per New League but stable within a league, and so
+    "women"/"female" (and "men"/"male") resolve to the SAME class. Enriched with
+    the junior circuit so the web board's results/rankings are present; pids and
     identities are identical to what the sim signs from."""
+    gender = _GENDER_CANON.get(gender, gender)
     key = (salt, gender, grad_year)
     if key not in _class_cache:
         rng = random.Random(f"{salt}|recruits|{gender}|{grad_year}")

@@ -1,5 +1,6 @@
 import pytest
 
+import app.world as world
 from app.web.server import create_app
 from app.web.state import get_recruits, national_rankings, team_roster
 
@@ -9,6 +10,12 @@ def client():
     return create_app().test_client()
 
 
+# Recruiting surfaces now always render the ONE active class — this year's pool,
+# the same class the sim signs — regardless of any ?grad_year= in the URL. With
+# no world yet, the active class is BASE_YEAR + 1 (world year 0 -> incoming class).
+ACTIVE_GY = world.BASE_YEAR + 1
+
+
 def test_nav_has_recruiting(client):
     # / renders the dashboard, or redirects to onboarding before a league exists;
     # both carry the shell nav.
@@ -16,9 +23,11 @@ def test_nav_has_recruiting(client):
 
 
 def test_recruiting_board(client):
+    # The ?grad_year= is ignored in favour of the active class.
     r = client.get("/recruiting?u=D1-men&grad_year=2026")
     assert r.status_code == 200
-    assert b"Blue Chip" in r.data and b"class of 2026" in r.data
+    assert b"Blue Chip" in r.data
+    assert f"class of {ACTIVE_GY}".encode() in r.data
 
 
 def test_recruiting_scopes(client):
@@ -27,8 +36,9 @@ def test_recruiting_scopes(client):
 
 
 def test_recruit_profile_and_404(client):
-    pid = national_rankings(get_recruits("male", 2026))[0].pid
-    r = client.get(f"/recruit/{pid}?u=D1-men&grad_year=2026")
+    # Profile resolves against the active class (same pool the board shows).
+    pid = national_rankings(get_recruits("male", ACTIVE_GY))[0].pid
+    r = client.get(f"/recruit/{pid}?u=D1-men")
     assert r.status_code == 200
     assert b"Scouting" in r.data and b"projection" in r.data
     assert client.get("/recruit/NOPE?u=D1-men").status_code == 404
