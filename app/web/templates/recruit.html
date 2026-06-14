@@ -51,6 +51,42 @@
         </div>
       </div>
 
+      {% if rec.offers %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
+        <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>
+        <div class="bl-tablescroll">
+          <div class="bl-table" style="--bl-grid-cols: minmax(120px,1fr) 64px 72px 84px 104px 92px">
+            <div class="bl-thead">
+              <span class="bl-th">SCHOOL</span><span class="bl-th">OFFER</span><span class="bl-th">INTEREST</span>
+              <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span><span class="bl-th">STATUS</span>
+            </div>
+            {% for o in rec.offers %}
+            <div class="bl-row">
+              <span class="bl-school" style="font-weight:600">{{ o.school }}</span>
+              <span style="color:#3a7">{{ '✓' if o.offered else '' }}</span>
+              <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }}">{{ o.interest }}</span>
+              <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
+              <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
+              <span>{% if o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if rec.dreamsheet %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Dreamsheet</span>
+        <span class="bl-panel-meta">schools this recruit dreams of</span></div>
+        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for d in rec.dreamsheet %}
+          <span class="bl-pill" style="border-color:{{ '#3a7' if d.offered else 'var(--border)' }}">
+            {{ d.school }} {% if d.offered %}<strong style="color:#3a7">OFFERED</strong>{% endif %}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% set badges = p|profile_badges %}
       {% if badges %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span>
@@ -131,41 +167,6 @@
       </div>
       {% endif %}
 
-      {% if rec.offers %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
-        <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>
-        <div class="bl-tablescroll">
-          <div class="bl-table" style="--bl-grid-cols: minmax(120px,1fr) 64px 72px 84px 104px 92px">
-            <div class="bl-thead">
-              <span class="bl-th">SCHOOL</span><span class="bl-th">OFFER</span><span class="bl-th">INTEREST</span>
-              <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span><span class="bl-th">STATUS</span>
-            </div>
-            {% for o in rec.offers %}
-            <div class="bl-row">
-              <span class="bl-school" style="font-weight:600">{{ o.school }}</span>
-              <span style="color:#3a7">{{ '✓' if o.offered else '' }}</span>
-              <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }}">{{ o.interest }}</span>
-              <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
-              <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
-              <span>{% if o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if rec.dreamsheet %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Dreamsheet</span>
-        <span class="bl-panel-meta">schools this recruit dreams of</span></div>
-        <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
-          {% for d in rec.dreamsheet %}
-          <span class="bl-pill" style="border-color:{{ '#3a7' if d.offered else 'var(--border)' }}">
-            {{ d.school }} {% if d.offered %}<strong style="color:#3a7">OFFERED</strong>{% endif %}</span>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
     </div>
 
     <div style="display:flex;flex-direction:column;gap:16px">

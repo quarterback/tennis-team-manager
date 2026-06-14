@@ -1596,6 +1596,151 @@
       "Valjevo",
       "Užice",
       "Kruševac"
+    ],
+    "DZ": [
+      "Algiers",
+      "Oran",
+      "Constantine",
+      "Annaba",
+      "Blida",
+      "Batna",
+      "Sétif",
+      "Tlemcen"
+    ],
+    "GE": [
+      "Tbilisi",
+      "Batumi",
+      "Kutaisi",
+      "Rustavi",
+      "Zugdidi",
+      "Gori",
+      "Poti"
+    ],
+    "AL": [
+      "Tirana",
+      "Durrës",
+      "Vlorë",
+      "Shkodër",
+      "Elbasan",
+      "Fier",
+      "Korçë"
+    ],
+    "VN": [
+      "Hanoi",
+      "Ho Chi Minh City",
+      "Da Nang",
+      "Hai Phong",
+      "Can Tho",
+      "Hue",
+      "Nha Trang"
+    ],
+    "IS": [
+      "Reykjavík",
+      "Kópavogur",
+      "Hafnarfjörður",
+      "Akureyri",
+      "Reykjanesbær",
+      "Garðabær"
+    ],
+    "LV": [
+      "Riga",
+      "Daugavpils",
+      "Liepāja",
+      "Jelgava",
+      "Jūrmala",
+      "Ventspils"
+    ],
+    "EE": [
+      "Tallinn",
+      "Tartu",
+      "Narva",
+      "Pärnu",
+      "Kohtla-Järve",
+      "Viljandi"
+    ],
+    "MA": [
+      "Casablanca",
+      "Rabat",
+      "Marrakesh",
+      "Fès",
+      "Tangier",
+      "Agadir",
+      "Meknès"
+    ],
+    "TN": [
+      "Tunis",
+      "Sfax",
+      "Sousse",
+      "Kairouan",
+      "Bizerte",
+      "Gabès"
+    ],
+    "MG": [
+      "Antananarivo",
+      "Toamasina",
+      "Antsirabe",
+      "Fianarantsoa",
+      "Mahajanga",
+      "Toliara"
+    ],
+    "LY": [
+      "Tripoli",
+      "Benghazi",
+      "Misrata",
+      "Bayda",
+      "Zawiya",
+      "Tobruk"
+    ],
+    "MM": [
+      "Yangon",
+      "Mandalay",
+      "Naypyidaw",
+      "Bago",
+      "Mawlamyine",
+      "Taunggyi"
+    ],
+    "LA": [
+      "Vientiane",
+      "Pakse",
+      "Savannakhet",
+      "Luang Prabang",
+      "Thakhek"
+    ],
+    "KH": [
+      "Phnom Penh",
+      "Siem Reap",
+      "Battambang",
+      "Sihanoukville",
+      "Kampong Cham"
+    ],
+    "SG": [
+      "Singapore",
+      "Jurong",
+      "Tampines",
+      "Woodlands",
+      "Bedok",
+      "Sengkang"
+    ],
+    "TO": [
+      "Nukuʻalofa",
+      "Neiafu",
+      "Haveluloto",
+      "Vaini",
+      "Pangai"
+    ],
+    "AG": [
+      "St. John's",
+      "All Saints",
+      "Liberta",
+      "Potter's Village",
+      "Bolans"
+    ],
+    "AS": [
+      "Pago Pago",
+      "Tafuna",
+      "Nuʻuuli",
+      "Leone",
+      "Faleniu"
     ]
   },
   "us_states": {
