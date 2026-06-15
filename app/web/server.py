@@ -18,6 +18,7 @@ from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
+                    player_career_table,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -661,9 +662,11 @@ def create_app() -> Flask:
             abort(404)
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
+        career_table = player_career_table(division, gender, pid)
         honor_years = player_career_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
-                               career=career, strv=strv, rel=rel, wins=wins, losses=losses,
+                               career=career, career_table=career_table, strv=strv, rel=rel,
+                               wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, crest=crest, u=u, uni_label=label)
 
     @app.route("/recruiting")

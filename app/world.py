@@ -1175,6 +1175,31 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
             "complete": _all_complete(seed, get_or_create(seed))}
 
 
+def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
+    """Append each rostered player's just-finished season line to their career
+    history — {year, school, division, class, line, record, str}. Called before
+    graduation/portal, so `class`/`school` reflect the season actually played; a
+    school change between a player's entries is a transfer. Idempotent per year."""
+    year, season_no = world["year"], world["year"] + 1
+    for (division, gender) in _active_unis():
+        sid = universe_sid(seed, world, division, gender)
+        recs = sm.player_records(sid)
+        lines = sm.player_primary_lines(sid)
+        strmap = sm.season_player_str(sid)
+        for school, roster in rosters.get((division, gender), {}).items():
+            for p in roster:
+                if any(h.get("year") == year for h in p.history):
+                    continue                      # already recorded this year
+                w_, l_ = recs.get(p.pid, (0, 0))
+                s, _rel = strmap.get(p.pid, (p.str_value(), 0.0))
+                p.history.append({
+                    "year": year, "season_no": season_no,
+                    "division": division, "gender": gender, "school": school,
+                    "class": p.class_year, "line": lines.get(p.pid),
+                    "w": w_, "l": l_, "str": round(s, 1),
+                })
+
+
 def _finalize_year(seed: int, w: dict) -> dict:
     """End-of-year: develop to a full year, then graduate / portal / intake."""
     prime(seed)
@@ -1184,6 +1209,10 @@ def _finalize_year(seed: int, w: dict) -> dict:
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
 
     rosters = developed_rosters(w)        # full-year developed copy
+    # Stamp each player's just-finished season onto their career history BEFORE
+    # graduation/portal moves them — so the player card (and, later, the pro
+    # league) can show where they played year over year.
+    _record_world_history(seed, w, rosters)
     # season_player_str above needed the primed cache; the rollover works on
     # `rosters` (an independent copy), so free the ~170MB primed roster cache now
     # rather than holding it alongside `rosters` through the heavy rollover.

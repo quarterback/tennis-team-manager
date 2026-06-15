@@ -23,6 +23,33 @@
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
+        <span class="bl-panel-meta">team · class · position · record (a school change is a transfer)</span></div>
+        <div class="bl-tablescroll" style="border:none">
+          <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px">
+            <div class="bl-thead">
+              <span class="bl-th">SEASON</span><span class="bl-th">TEAM</span><span class="bl-th">CLASS</span>
+              <span class="bl-th">POS</span><span class="bl-th num">RECORD</span><span class="bl-th num">STR</span>
+            </div>
+            {% if career_table %}
+            {% for s in career_table %}
+            <div class="bl-row">
+              <span class="bl-conf" style="white-space:nowrap">{{ s.cal_year }}{% if s.live %} <span class="pl-live">live</span>{% endif %}</span>
+              <a class="bl-school" href="{{ url_for('teams', school=s.school, u=s.division ~ '-' ~ gender) }}">
+                <span class="bl-crest xs" style="background:{{ s.color }}">{{ s.abbr }}</span>{{ s.school }}
+                <span class="bl-conf" style="font-size:11px">{{ s.division }}</span></a>
+              <span class="bl-conf">{{ s.class }}</span>
+              <span class="bl-conf">{{ s.pos }}</span>
+              <span class="bl-rec" style="text-align:right">{{ s.w }}-{{ s.l }}</span>
+              <span class="bl-cell-num"><span class="bl-stat power">{% if s.str %}{{ "%.1f"|format(s.str) }}{% else %}—{% endif %}</span></span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No college seasons yet — advance the season.</span></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Singles — by season</span>
         <span class="bl-panel-meta">{{ wins }}-{{ losses }} career (incl. postseason)</span></div>
         <div class="bl-tablescroll" style="border:none">

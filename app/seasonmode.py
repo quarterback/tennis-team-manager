@@ -844,6 +844,33 @@ def player_records(season_id: int) -> dict:
     return _prec_cache[key]
 
 
+_pline_cache: dict = {}
+
+
+def player_primary_lines(season_id: int) -> dict:
+    """``pid -> primary singles line`` (the lineup slot played most this season),
+    one pass over completed lines. Cached by completed-dual count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _pline_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        tally: dict = {}
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed") or ln.get("home_pid") is None:
+                    continue            # doubles / unplayed lines carry no singles slot
+                slot = ln.get("slot")
+                for pid in (ln["home_pid"], ln["away_pid"]):
+                    tally.setdefault(pid, {})[slot] = tally.setdefault(pid, {}).get(slot, 0) + 1
+        _pline_cache.clear()
+        _pline_cache[key] = {pid: max(d, key=d.get) for pid, d in tally.items() if d}
+    conn.close()
+    return _pline_cache[key]
+
+
 def player_log(season_id: int, pid: str) -> list[dict]:
     """A player's match-by-match singles results across the whole season
     (regular + conference tournament + NCAA), newest phase last."""

@@ -929,6 +929,66 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     return groups, (w, l)
 
 
+def _pos_label(line) -> str:
+    """Lineup slot (e.g. 'S2' or 2) -> 'No. 2'; blank -> em dash."""
+    if not line:
+        return "—"
+    digits = "".join(ch for ch in str(line) if ch.isdigit())
+    return f"No. {digits}" if digits else str(line)
+
+
+def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
+    """Season-by-season college career, newest first: the team played for that
+    year (transfers visible), class, primary singles line, record, STR, and that
+    season's accomplishments. Past seasons come from the player's recorded
+    history (stamped at each year's end); the in-progress current season is added
+    live so the card is current before the year closes."""
+    import app.world as world
+    import app.seasonmode as sm
+    import app.honors as honors
+    from .rankings_data import crest
+
+    p = world.find_persisted_player(pid, seed)
+    hist = list(getattr(p, "history", []) or []) if p else []
+    hbyyear = {g["year"]: [a["label"] for a in g["awards"]]
+               for g in honors.career_by_year(pid, "player")}
+
+    rows = []
+    for h in hist:
+        cal = world.BASE_YEAR + h["year"]
+        rows.append({
+            "cal_year": cal, "season_no": h.get("season_no", h["year"] + 1),
+            "school": h["school"], "division": h.get("division", division),
+            "class": h.get("class", ""), "line": h.get("line"),
+            "w": h.get("w", 0), "l": h.get("l", 0), "str": h.get("str"),
+            "accolades": hbyyear.get(cal, []), "live": False,
+        })
+
+    # In-progress current season (only if not already recorded into history).
+    wld = world.load_world(seed)
+    cur = wld["year"] if wld else 0
+    if not any(h.get("year") == cur for h in hist):
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+        info = sm.player_info(sid, pid)
+        if info:
+            w_, l_ = sm.player_records(sid).get(pid, (0, 0))
+            strv = sm.season_player_str(sid).get(pid, (None, 0.0))[0]
+            cal = world.BASE_YEAR + cur
+            rows.append({
+                "cal_year": cal, "season_no": cur + 1, "school": info["school"],
+                "division": division, "class": info.get("class_year", ""),
+                "line": sm.player_primary_lines(sid).get(pid),
+                "w": w_, "l": l_, "str": round(strv, 1) if strv else None,
+                "accolades": hbyyear.get(cal, []), "live": True,
+            })
+
+    rows.sort(key=lambda r: r["cal_year"], reverse=True)
+    for r in rows:
+        r["abbr"], r["color"] = crest(r["school"])
+        r["pos"] = _pos_label(r["line"])
+    return rows
+
+
 def world_hub(seed: int = DEFAULT_SEED):
     import app.world as world
     import app.seasonmode as sm
