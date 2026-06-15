@@ -44,7 +44,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
-                         home_region, GEO_WEIGHT, FAC_WEIGHT)
+                         home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker
 
@@ -574,7 +574,8 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         pres, acad, reg, div, fac = traits[s]
         athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
         geo = hc * region_proximity(hr, reg)
-        score = (max(0.0, athletic) * (1.0 + 0.9 * acad * ac)
+        # academics only pull sub-elite talent below their station (see academic_gate)
+        score = (max(0.0, athletic) * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
         if intl:
             score *= INTL_TIER_PULL[_intl_tier(div, acad)]
