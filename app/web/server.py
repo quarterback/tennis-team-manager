@@ -311,8 +311,14 @@ def create_app() -> Flask:
     @app.route("/world/advance", methods=["POST"])
     def world_advance():
         import app.honors as honors
-        if wd.season_complete() and not honors.has_season(wd.BASE_YEAR + wd.load_world()["year"], "D1", "men"):
-            return redirect(url_for("world_view"))
+        # Once the active seasons are complete, hold at the awards step until honors
+        # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
+        # honors never stamp — that would jam a single-gender save here forever).
+        if wd.season_complete():
+            year = wd.BASE_YEAR + wd.load_world()["year"]
+            awards_pending = not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis())
+            if awards_pending:
+                return redirect(url_for("world_view"))
         wd.advance_week()
         return redirect(url_for("world_view"))
 
