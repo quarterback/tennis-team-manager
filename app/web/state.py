@@ -932,10 +932,18 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
 def world_hub(seed: int = DEFAULT_SEED):
     import app.world as world
     import app.seasonmode as sm
+    from app import worldconfig
     w = world.get_or_create(seed)
     world.prime(seed)
+    # Only the universes the player actually runs count toward the world's phase
+    # and completion. Dormant universes (e.g. the men's side of a women-only save)
+    # are frozen at week 1 in 'regular' — counting them would peg the stage stepper
+    # to "Regular season" forever and never let the world read complete.
+    active_unis = [(val, division, gender, label)
+                   for (val, division, gender, label) in UNIVERSES
+                   if worldconfig.is_active(division, gender)]
     divisions = []
-    for val, division, gender, label in UNIVERSES:
+    for val, division, gender, label in active_unis:
         sid = world.universe_sid(seed, w, division, gender)
         s = sm.load_season(sid)
         champ = s["champion"] if s["phase"] == "complete" else None
@@ -946,10 +954,13 @@ def world_hub(seed: int = DEFAULT_SEED):
         })
     signed = world.signed_counts(seed)
     year = world.BASE_YEAR + w["year"]
-    complete = all(d["phase"] == "complete" for d in divisions)
+    complete = bool(divisions) and all(d["phase"] == "complete" for d in divisions)
 
     import app.honors as honors
-    awards_done = complete and honors.has_season(year, "D1", "men")
+    # Awards are "done" once every ACTIVE universe's honors are stamped (never wait
+    # on a dormant universe, whose honors are never stamped).
+    awards_done = complete and all(honors.has_season(year, d, g)
+                                   for (_v, d, g, _l) in active_unis)
     _ORDER = ["regular", "conf_tournaments", "ncaa", "awards", "offseason"]
     _PH = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
     if not complete:

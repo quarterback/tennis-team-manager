@@ -587,11 +587,30 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     return best
 
 
-def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
-    """Sign up to `quota` more recruits this tick. Each unsigned recruit (best
-    first) commits to the open program with the highest prestige+academics
-    appeal that still has a projected seat."""
+SIGNING_PEAK = 0.45         # mode of the per-recruit decision-week distribution (× window)
+
+
+def _decision_week(p, salt: str) -> int:
+    """The 0-based week WITHIN the signing window at which this recruit is willing
+    to commit — deterministic per recruit and DECOUPLED from recruiting rank.
+
+    Rank decides WHERE a recruit signs (best-first, best fit); this decides WHEN.
+    Spreading commitments across the window with a mild mid-cycle peak lets the
+    tiers genuinely interleave — a blue-chip can hold out to week 9 while a
+    mid-3★ commits in week 2 — instead of one fat weekly quota clearing the whole
+    elite tier in week 1."""
+    rng = random.Random(f"{getattr(p, 'pid', '')}|decision|{salt}")
+    wk = int(rng.triangular(0, SIGNING_WEEKS, SIGNING_WEEKS * SIGNING_PEAK))
+    return max(0, min(SIGNING_WEEKS - 1, wk))
+
+
+def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = False) -> int:
+    """Sign up to `quota` more recruits this tick. Each unsigned recruit that has
+    REACHED ITS DECISION WEEK (best first) commits to the open program with the
+    highest fit that still has a projected seat. At `final` (year rollover) the
+    decision-week gate is lifted so anyone still uncommitted signs."""
     wid, week = world["id"], world["week"]
+    salt = world.get("salt") or ""
     rows = conn.execute("SELECT pid, school FROM world_signing WHERE world_id=? AND year=? AND gender=?",
                         (wid, world["year"], gender)).fetchall()
     signed = {r["pid"] for r in rows}
@@ -610,9 +629,11 @@ def _sign_batch(conn, world: dict, gender: str, quota: int) -> int:
             break
         if p.pid in signed:
             continue
+        if not final and _decision_week(p, salt) > week:   # hasn't decided to commit yet
+            continue
         best = _pick_school(p, market, avail, jitter_salt="sign")
         if best is None:
-            break
+            continue
         avail[best] -= 1
         signed.add(p.pid)
         new.append((wid, world["year"], gender, best, p.pid,
@@ -1169,9 +1190,9 @@ def _finalize_year(seed: int, w: dict) -> dict:
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
     signings = _load_signings(conn, w)
-    # Sign anyone still unsigned before the class arrives.
+    # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():
-        _sign_batch(conn, w, gender, RECRUIT_POOL)
+        _sign_batch(conn, w, gender, RECRUIT_POOL, final=True)
     conn.commit()
     signings = _load_signings(conn, w)
 
