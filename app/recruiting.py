@@ -231,11 +231,17 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
             scholarship=frac, scholarship_label=frac_label,
         ))
 
-    # Dreamsheet: the recruit's aspirational picks — top programs by combined
-    # athletic prestige + academic draw, tagged when they've actually offered.
+    # Dreamsheet: the recruit's aspirational picks. Aspirations chase BRAND —
+    # weighted by prestige, with academics gated by talent (an elite recruit
+    # dreams of powerhouses, not academies) and a per-recruit jitter so two
+    # blue-chips don't surface the identical four schools.
     offered_names = {o.school for o in offers}
-    dream_src = sorted(schools, key=lambda s: s.prestige + 0.6 * s.academics,
-                       reverse=True)[: max(3, 2 + stars // 2)]
+    gate = academic_gate(caliber)
+    dream_src = sorted(
+        schools,
+        key=lambda s: s.prestige + 0.6 * s.academics * gate + rng.uniform(-0.09, 0.09),
+        reverse=True,
+    )[: max(3, 2 + stars // 2)]
     dreamsheet = [
         Offer(school=s.name, abbr=s.abbr, color=s.color,
               offered=s.name in offered_names, interest="", strikeprediction=0, status="")

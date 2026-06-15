@@ -408,7 +408,7 @@ def create_app() -> Flask:
         }
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         s = sm.load_season(sid)
-        final = s["phase"] in ("ncaa", "complete")
+        final = aw.get("concluded", False)      # honors are only named once the season concludes
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
                                coach_awards=coach_awards, u=u, uni_label=label, crest=crest,

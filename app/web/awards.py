@@ -35,6 +35,21 @@ def _sid(division: str, gender: str, seed: int) -> int:
     return sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
 
 
+def _concluded(division: str, gender: str, seed: int) -> bool:
+    """True once this universe's season has fully concluded (postseason done).
+    Honors are end-of-season, NOT weekly — nothing is awarded before this, so
+    every honors surface (All-American, All-Conference, POTY, COTY) stays empty
+    until the season's phase reaches 'complete'."""
+    import app.seasonmode as sm
+    return sm.load_season(_sid(division, gender, seed)).get("phase") == "complete"
+
+
+def _empty_awards() -> dict:
+    return {"all_american": [], "all_conference": [], "by_pid": {}, "player_count": 0,
+            "national_poty": None, "conf_poty": [], "conf_champions": [],
+            "national_champion": None, "concluded": False}
+
+
 def _roster(division: str, gender: str, school: str):
     from app.ncaa import build_roster, load_division
     prog = load_division(division, gender).by_school(school)
@@ -75,6 +90,10 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
     key = (division, gender, eff)
     if key in _cache:
         return _cache[key]
+    # Honors are end-of-season: nothing is named until the season concludes.
+    # Don't cache the in-progress empty (so it fills once the season completes).
+    if not _concluded(division, gender, seed):
+        return _empty_awards()
 
     players = _eligible(division, gender, seed)
     by_pid: dict[str, list[str]] = {}
@@ -133,7 +152,8 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
     result = {"all_american": all_american, "all_conference": all_conference,
               "by_pid": by_pid, "player_count": len(players),
               "national_poty": national_poty, "conf_poty": conf_poty,
-              "conf_champions": conf_champions, "national_champion": national_champion}
+              "conf_champions": conf_champions, "national_champion": national_champion,
+              "concluded": True}
     _cache[key] = result
     return result
 
@@ -155,6 +175,9 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     key = (division, gender, eff)
     if key in _rec_cache:
         return _rec_cache[key]
+    # End-of-season honors only — empty (and uncached) until the season concludes.
+    if not _concluded(division, gender, seed):
+        return []
 
     import app.world as world
     import app.seasonmode as sm
@@ -231,6 +254,8 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     import app.seasonmode as sm
     from .state import head_coach
 
+    if not _concluded(division, gender, seed):     # COTY/titles only at season's end
+        return []
     sid = _sid(division, gender, seed)
     rows = ranking_rows(division, gender, seed)
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0

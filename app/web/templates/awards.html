@@ -31,10 +31,12 @@
     <span class="aw-banner-tag">Final</span>
     <span>Season honors are decided. These are the {{ uni_label }} winners for 2026.</span>
     {% else %}
-    <span class="aw-banner-tag">Projected</span>
-    <span>Honors are awarded at season's end. With the season still in progress
-      (week {{ week }} of {{ total_weeks }}), these are the current Power Index leaders —
-      a live projection that will shift week to week until it's finalized.</span>
+    <span class="aw-banner-tag">In progress</span>
+    <span>Honors aren't weekly — they're named once the season concludes. The season is
+      still underway (week {{ week }} of {{ total_weeks }}, {{ phase|replace('_',' ') }}),
+      so All-American, All-Conference, Player &amp; Coach of the Year are announced after the
+      NCAA Championship. Track the live ratings race on the
+      <a href="{{ url_for('rankings', u=u) }}">Power Index</a> meanwhile.</span>
     {% endif %}
   </div>
 </div>
