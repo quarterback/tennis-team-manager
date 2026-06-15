@@ -1180,21 +1180,28 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
     history — {year, school, division, class, line, record, str}. Called before
     graduation/portal, so `class`/`school` reflect the season actually played; a
     school change between a player's entries is a transfer. Idempotent per year."""
+    from app import overrides as ov
+    moves = ov.get_moves()                # pid -> destination school (editor moves)
     year, season_no = world["year"], world["year"] + 1
     for (division, gender) in _active_unis():
         sid = universe_sid(seed, world, division, gender)
         recs = sm.player_records(sid)
         lines = sm.player_primary_lines(sid)
         strmap = sm.season_player_str(sid)
+        # destination school -> its division, so an editor move (even across
+        # divisions) is recorded under the team the player actually played for.
+        sch_div = {s: pr.division for s, pr in _flat_programs(gender).items()}
         for school, roster in rosters.get((division, gender), {}).items():
             for p in roster:
                 if any(h.get("year") == year for h in p.history):
                     continue                      # already recorded this year
+                played_school = moves.get(p.pid, school)   # honor editor moves
                 w_, l_ = recs.get(p.pid, (0, 0))
                 s, _rel = strmap.get(p.pid, (p.str_value(), 0.0))
                 p.history.append({
                     "year": year, "season_no": season_no,
-                    "division": division, "gender": gender, "school": school,
+                    "division": sch_div.get(played_school, division), "gender": gender,
+                    "school": played_school,
                     "class": p.class_year, "line": lines.get(p.pid),
                     "w": w_, "l": l_, "str": round(s, 1),
                 })
