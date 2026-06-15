@@ -830,13 +830,17 @@ def create_app() -> Flask:
     @app.route("/editor")
     def editor():
         division, gender, label, u = _universe(request)
-        all_rows = ranking_rows(division, gender)
+        # The pickers only need each school's name + conference — NOT the Power
+        # Index, whose preseason path builds all ~366 rosters to rank them (~6s
+        # cold). load_division is a cheap cached file read, so the editor opens
+        # instantly and the conference filter is applied on that list directly.
+        div = load_division(division, gender)
         conferences = conferences_for(division, gender)
         conf = request.args.get("conf", "All")
         if conf not in conferences:
             conf = "All"
-        schools = [r.school for r in all_rows
-                   if conf == "All" or r.conf == conf]
+        schools = sorted(p.school for p in div.programs
+                         if conf == "All" or p.conf == conf)
         school = request.args.get("school")
         if school not in schools:
             school = schools[0] if schools else ""
@@ -847,7 +851,7 @@ def create_app() -> Flask:
         from app import scholarships as sch
         schol = [{"division": d, "gender": g, **sch.limits(d, g)}
                  for d in ("D1", "D2", "D3") for g in ("men", "women")]
-        prog = load_division(division, gender).by_school(school)
+        prog = div.by_school(school)
         prestige = {"value": round((prog.prestige if prog else 0.5) * 100),
                     "overridden": school in ov.get_prestige()}
         academics = {"value": round((prog.academics if prog else 0.5) * 100),
