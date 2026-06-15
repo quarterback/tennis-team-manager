@@ -31,6 +31,20 @@ _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 GEO_WEIGHT = 0.55           # max home-proximity pull, at homecooking=1, same region
 FAC_WEIGHT = 0.25           # how much a program's facilities grade lifts appeal
 
+# Academics only pull a recruit BELOW their athletic station, and only for
+# sub-elite talent. A blue-chip's ceiling commands a marquee program, so for
+# them prestige trumps academics outright (gate → 0 at/above the elite line);
+# the further a recruit sits below it, the more a strong GPA can tug them toward
+# an academic program a level beneath their athletic station.
+ELITE_CALIBER = 0.70        # ~5★ line (overall 62 → caliber .70): at/above, academics don't move them
+ACA_PULL = 2.5              # academic weight once gated (calibrated so a strong-GPA 3★ still leans academic)
+
+
+def academic_gate(caliber: float) -> float:
+    """0 for top-tier talent (prestige rules), rising toward 1 the further below
+    the elite line a recruit sits — how much academics get to pull them."""
+    return max(0.0, (ELITE_CALIBER - caliber) / ELITE_CALIBER)
+
 
 @dataclass
 class School:
@@ -56,9 +70,10 @@ def program_appeal(caliber: float, academic01: float, s: School,
     Three pulls combine:
       • athletic — programs near the recruit's level fit, and prestige programs
         actively court higher-caliber talent (brand pull).
-      • academic — meaningful only when BOTH recruit and school are strong
-        academically, so a smart, strong kid is genuinely drawn to an Ivy /
-        NESCAC / academy even though its athletic tier is lower.
+      • academic — gated by talent (see `academic_gate`): top-tier recruits are
+        ruled by prestige and ignore it, so a strong-GPA but SUB-elite kid is the
+        one genuinely drawn to an Ivy / NESCAC / academy a level beneath their
+        athletic station.
       • geography — ONE-WAY: a recruit who values home (high homecooking) leans
         toward nearby programs that fit; programs don't seek locals. Internationals
         have homecooking 0, so geography never moves them.
@@ -66,9 +81,9 @@ def program_appeal(caliber: float, academic01: float, s: School,
     from app.ncaa import region_proximity
     prox = 1.0 - abs(s.prestige - caliber)
     athletic = 0.6 * prox + 0.4 * (s.prestige * caliber)
-    academic = s.academics * academic01
+    academic = s.academics * academic01 * academic_gate(caliber)
     geo = homecooking * region_proximity(home_region, s.region)
-    return (max(0.0, athletic) * (1.0 + 0.9 * academic)
+    return (max(0.0, athletic) * (1.0 + ACA_PULL * academic)
             * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * s.facilities))
 
 
