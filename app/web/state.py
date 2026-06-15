@@ -778,6 +778,61 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
     }
 
 
+def _acad_year(cal_year: int) -> str:
+    return f"{cal_year - 1}-{cal_year % 100:02d}"
+
+
+def player_career_records(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
+    """The college-tennis 'career record' boxes: per-line W-L by season for
+    singles (lines 1–6) and doubles (1–3), each with Overall, Dual, and a TOTALS
+    row. Built from the player's recorded per-line history plus the in-progress
+    current season. (Dual == Overall here — every match in the sim is a team
+    dual; the columns diverge only once individual events are tracked.)"""
+    import app.world as world
+    import app.seasonmode as sm
+
+    p = world.find_persisted_player(pid, seed)
+    hist = list(getattr(p, "history", []) or []) if p else []
+    seasons = []
+    for h in hist:
+        seasons.append({
+            "cal_year": world.BASE_YEAR + h["year"],
+            "singles": {int(k): v for k, v in (h.get("singles_lines") or {}).items()},
+            "doubles": {int(k): v for k, v in (h.get("doubles_lines") or {}).items()},
+        })
+    wld = world.load_world(seed)
+    cur = wld["year"] if wld else 0
+    if not any(h.get("year") == cur for h in hist):
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+        lr = sm.player_line_records(sid).get(pid)
+        if lr:
+            seasons.append({"cal_year": world.BASE_YEAR + cur,
+                            "singles": lr["singles"], "doubles": lr["doubles"]})
+    seasons.sort(key=lambda s: s["cal_year"])
+
+    def _box(kind: str, n_lines: int):
+        rows, totals, tov = [], {i: [0, 0] for i in range(1, n_lines + 1)}, [0, 0]
+        for s in seasons:
+            lines, ov = s[kind], [0, 0]
+            cells = {}
+            for i in range(1, n_lines + 1):
+                wl = lines.get(i)
+                cells[i] = (f"{wl[0]}-{wl[1]}" if wl else "–")
+                if wl:
+                    ov[0] += wl[0]; ov[1] += wl[1]
+                    totals[i][0] += wl[0]; totals[i][1] += wl[1]
+            tov[0] += ov[0]; tov[1] += ov[1]
+            rows.append({"year": _acad_year(s["cal_year"]), "cells": cells,
+                         "overall": f"{ov[0]}-{ov[1]}", "dual": f"{ov[0]}-{ov[1]}"})
+        tcells = {i: (f"{totals[i][0]}-{totals[i][1]}" if (totals[i][0] or totals[i][1]) else "–")
+                  for i in range(1, n_lines + 1)}
+        return {"n_lines": n_lines, "rows": rows, "lines": list(range(1, n_lines + 1)),
+                "tcells": tcells, "toverall": f"{tov[0]}-{tov[1]}", "tdual": f"{tov[0]}-{tov[1]}",
+                "any": bool(rows)}
+
+    return {"singles": _box("singles", 6), "doubles": _box("doubles", 3)}
+
+
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     from .rankings_data import crest
     rows = ranking_rows(division, gender)

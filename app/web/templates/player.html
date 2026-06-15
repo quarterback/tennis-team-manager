@@ -50,38 +50,30 @@
           </div>
         </div>
       </div>
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Singles — by season</span>
-        <span class="bl-panel-meta">{{ wins }}-{{ losses }} career (incl. postseason)</span></div>
+      {% for title, sub, box in [('Career Singles Record', 'W–L by line', records.singles),
+                                  ('Career Doubles Record', 'W–L by line', records.doubles)] %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">{{ title }}</span>
+        <span class="bl-panel-meta">{{ sub }} · Overall &amp; Dual</span></div>
         <div class="bl-tablescroll" style="border:none">
-          <div class="bl-table" style="--bl-grid-cols: 70px 50px minmax(120px,1fr) 130px 70px 60px">
-            <div class="bl-thead">
-              <span class="bl-th">PHASE</span><span class="bl-th">LINE</span><span class="bl-th">OPPONENT</span>
-              <span class="bl-th">SCHOOL</span><span class="bl-th">SCORE</span><span class="bl-th">RESULT</span>
-            </div>
-            {% set played = namespace(any=false) %}
-            {% for yrg in career %}
-              {% if yrg.log %}
-              {% set played.any = true %}
-              <div class="bl-yeardiv">
-                <span>{{ yrg.year }} · Season {{ yrg.season_no }}</span>
-                <span class="bl-yeardiv-rec">{{ yrg.w }}-{{ yrg.l }}</span>
-              </div>
-              {% for m in yrg.log %}
-              <div class="bl-row">
-                <span class="bl-conf" style="font-size:12px">{{ m.phase }}</span>
-                <span class="bl-conf">{{ m.slot }}</span>
-                <span class="bl-rec">{% if m.opp_pid %}<a class="bl-school" href="{{ url_for('player', pid=m.opp_pid, school=m.opp_school, u=u) }}">{{ m.opp }}</a>{% else %}{{ m.opp }}{% endif %}</span>
-                <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a class="bl-school" href="{{ url_for('teams', school=m.opp_school, u=u) }}">{{ m.opp_school }}</a></span>
-                <span class="bl-rec" style="white-space:nowrap">{% if m.sets %}{% for s in m.sets %}{{ s[0] }}-{{ s[1] }}{{ ' ' if not loop.last }}{% endfor %}{% else %}{{ m.gf }}-{{ m.ga }}{% endif %}</span>
-                <span><span class="bl-badge {{ 'tier-IVY' if m.won else 'tier-D3' }}">{{ 'W' if m.won else 'L' }}</span></span>
-              </div>
-              {% endfor %}
-              {% endif %}
+          {% if box.any %}
+          <table class="rc-recbox"><thead><tr>
+            <th class="yr">Year</th>{% for n in box.lines %}<th>{{ n }}</th>{% endfor %}<th>Overall</th><th>Dual</th>
+          </tr></thead><tbody>
+            {% for r in box.rows %}
+            <tr><td class="yr">{{ r.year }}</td>
+              {% for n in box.lines %}<td>{{ r.cells[n] }}</td>{% endfor %}
+              <td class="tot">{{ r.overall }}</td><td>{{ r.dual }}</td></tr>
             {% endfor %}
-            {% if not played.any %}<div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No matches yet — advance the season.</span></div>{% endif %}
-          </div>
+            <tr class="totrow"><td class="yr">TOTALS</td>
+              {% for n in box.lines %}<td>{{ box.tcells[n] }}</td>{% endfor %}
+              <td>{{ box.toverall }}</td><td>{{ box.tdual }}</td></tr>
+          </tbody></table>
+          {% else %}
+          <p class="aw-empty" style="padding:8px 2px">No matches yet — advance the season.</p>
+          {% endif %}
         </div>
       </div>
+      {% endfor %}
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>

@@ -871,6 +871,48 @@ def player_primary_lines(season_id: int) -> dict:
     return _pline_cache[key]
 
 
+_plrec_cache: dict = {}
+
+
+def player_line_records(season_id: int) -> dict:
+    """Per-player W-L by lineup line —
+    ``{pid: {'singles': {n: [w, l]}, 'doubles': {n: [w, l]}}}`` (n = 1..6 singles,
+    1..3 doubles). One pass over completed dual lines; cached by completed count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _plrec_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        rec: dict = {}
+
+        def bump(pid, kind, n, won):
+            cell = rec.setdefault(pid, {"singles": {}, "doubles": {}})[kind].setdefault(n, [0, 0])
+            cell[0 if won else 1] += 1
+
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed"):
+                    continue
+                slot = ln.get("slot") or ""
+                hw = ln.get("home_won")
+                if slot.startswith("S") and ln.get("home_pid") is not None:
+                    n = int(slot[1:])
+                    bump(ln["home_pid"], "singles", n, hw)
+                    bump(ln["away_pid"], "singles", n, not hw)
+                elif slot.startswith("D") and ln.get("home_pids"):
+                    n = int(slot[1:])
+                    for pid in ln["home_pids"]:
+                        bump(pid, "doubles", n, hw)
+                    for pid in ln.get("away_pids", []):
+                        bump(pid, "doubles", n, not hw)
+        _plrec_cache.clear()
+        _plrec_cache[key] = rec
+    conn.close()
+    return _plrec_cache[key]
+
+
 def player_log(season_id: int, pid: str) -> list[dict]:
     """A player's match-by-match singles results across the whole season
     (regular + conference tournament + NCAA), newest phase last."""

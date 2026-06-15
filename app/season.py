@@ -184,14 +184,15 @@ def _line_identity(slot: str, la: list, lb: list,
             out.update(home_pid=hp.pid, away_pid=ap.pid,
                        home_player=hp.name, away_player=ap.name,
                        home_country=hp.country, away_country=ap.country)
-    else:                                        # doubles — a pair per side, no pid
+    else:                                        # doubles — a pair per side
         i = int(slot[1:]) - 1
         if 0 <= i < len(ha_dbl) and i < len(aw_dbl):
             hp = [la[x] for x in ha_dbl[i] if x < len(la)]
             ap = [lb[x] for x in aw_dbl[i] if x < len(lb)]
             if hp and ap:
                 out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
-                           away_player=" / ".join(p.name.split()[-1] for p in ap))
+                           away_player=" / ".join(p.name.split()[-1] for p in ap),
+                           home_pids=[p.pid for p in hp], away_pids=[p.pid for p in ap])
     return out
 
 

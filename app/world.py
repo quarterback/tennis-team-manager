@@ -1187,6 +1187,7 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
         sid = universe_sid(seed, world, division, gender)
         recs = sm.player_records(sid)
         lines = sm.player_primary_lines(sid)
+        line_recs = sm.player_line_records(sid)
         strmap = sm.season_player_str(sid)
         # destination school -> its division, so an editor move (even across
         # divisions) is recorded under the team the player actually played for.
@@ -1198,12 +1199,15 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
                 played_school = moves.get(p.pid, school)   # honor editor moves
                 w_, l_ = recs.get(p.pid, (0, 0))
                 s, _rel = strmap.get(p.pid, (p.str_value(), 0.0))
+                lr = line_recs.get(p.pid, {"singles": {}, "doubles": {}})
                 p.history.append({
                     "year": year, "season_no": season_no,
                     "division": sch_div.get(played_school, division), "gender": gender,
                     "school": played_school,
                     "class": p.class_year, "line": lines.get(p.pid),
                     "w": w_, "l": l_, "str": round(s, 1),
+                    "singles_lines": {str(k): v for k, v in lr["singles"].items()},
+                    "doubles_lines": {str(k): v for k, v in lr["doubles"].items()},
                 })
 
 

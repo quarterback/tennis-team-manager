@@ -191,6 +191,16 @@
   border: 1px solid var(--border-subtle); border-radius: 5px; padding: 0 5px; white-space: nowrap; }
 .ib-fit:hover { border-color: var(--brand); color: var(--brand-strong); }
 
+/* ============================================================ Career record box */
+/* The college-tennis "career record" grid: per-line W-L by year + Overall/Dual. */
+.rc-recbox { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rc-recbox th, .rc-recbox td { padding: 7px 10px; text-align: center; border: 1px solid var(--border-subtle); white-space: nowrap; }
+.rc-recbox thead th { background: var(--brand); color: #fff; font-weight: 800; font-size: 12px; border-color: var(--brand); }
+.rc-recbox th.yr, .rc-recbox td.yr { text-align: left; font-weight: 700; }
+.rc-recbox tbody tr:nth-child(odd) td { background: var(--surface-subtle); }
+.rc-recbox td.tot { font-weight: 700; color: var(--text-primary); }
+.rc-recbox .totrow td { font-weight: 800; background: var(--green-50); border-top: 2px solid var(--brand); }
+
 /* ============================================================ Star spread */
 /* The 5★→1★ tier breakdown a class actually signed. Each chip is a star count
    in that tier's colour; empty tiers fade so the shape of the class reads at a
