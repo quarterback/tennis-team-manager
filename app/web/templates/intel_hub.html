@@ -35,7 +35,7 @@
         {% for r in ov.top_underplaced %}
         {% set ab = crest(r.school) %}
         <div class="bl-row">
-          <a class="bl-school" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}">{{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.name }} <span class="ib-divchip">{{ r.division }}</span></a>
+          <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=r.division ~ '-' ~ r.gender) }}">{{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.name }} <span class="ib-divchip">{{ r.division }}</span></a>
           <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>
           <span class="ib-gapval">+{{ '%.0f'|format(r.placement_gap*100) }}</span>
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.deserved_school }} <span class="ib-divchip">{{ r.deserved_division }} #{{ r.deserved_pi_rank }}</span></span>
@@ -56,7 +56,7 @@
         {% for f in ov.top_aid %}
         {% set ab = crest(f.player.school) %}
         <div class="bl-row">
-          <a class="bl-school" href="{{ url_for('intel_fit', pid=f.player.pid, u=u) }}">{{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.name }} <span class="ib-divchip">{{ f.player.division }}</span></a>
+          <a class="bl-school" href="{{ url_for('player', pid=f.player.pid, school=f.player.school, u=f.player.division ~ '-' ~ f.player.gender) }}">{{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.name }} <span class="ib-divchip">{{ f.player.division }}</span></a>
           <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.true_str) }}</span></span>
           <span class="bl-cell-num">{{ f.outranks }} funded</span>
           <span class="bl-conf">{{ f.recommended }} ride</span>

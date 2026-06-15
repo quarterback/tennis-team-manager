@@ -187,6 +187,9 @@
 .ib-tag.up { background: var(--stat-power-bg); color: var(--stat-power); }
 .ib-divchip { font-size: 10px; font-weight: 800; letter-spacing: .03em; padding: 1px 6px; border-radius: 5px;
   background: var(--gray-150); color: var(--text-secondary); }
+.ib-fit { font-size: 10.5px; font-weight: 700; color: var(--text-link); text-decoration: none;
+  border: 1px solid var(--border-subtle); border-radius: 5px; padding: 0 5px; white-space: nowrap; }
+.ib-fit:hover { border-color: var(--brand); color: var(--brand-strong); }
 
 /* ============================================================ Star spread */
 /* The 5★→1★ tier breakdown a class actually signed. Each chip is a star count

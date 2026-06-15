@@ -18,7 +18,7 @@ from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
-                    player_career_table,
+                    player_career_table, search_players,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -668,6 +668,13 @@ def create_app() -> Flask:
                                career=career, career_table=career_table, strv=strv, rel=rel,
                                wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, crest=crest, u=u, uni_label=label)
+
+    @app.route("/search")
+    def search():
+        division, gender, label, u = _universe(request)
+        q = request.args.get("q", "")
+        res = search_players(q)
+        return render_template("search.html", active="", u=u, uni_label=label, res=res, q=q)
 
     @app.route("/recruiting")
     def recruiting():

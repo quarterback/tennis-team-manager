@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% from "_stars.html" import stars %}
+{% block title %}Play to Clinch — Search{% endblock %}
+{% block content %}
+
+<form method="get" action="{{ url_for('search') }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field" style="flex:1"><span class="bl-field-label">Search players</span>
+    <input class="bl-input" type="search" name="q" value="{{ q }}" placeholder="Player or recruit name…" autofocus
+           style="width:100%;max-width:420px"></label>
+  <button class="bl-pill active" type="submit" style="cursor:pointer">Search</button>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">{% if res.short %}Type at least 2 characters{% else %}<strong style="color:var(--text-primary)">{{ res.n }}</strong> match{{ '' if res.n == 1 else 'es' }} for “{{ q }}”{% endif %}</div>
+  <span class="bl-entries-right">rostered players &amp; current recruits</span>
+</div></div>
+
+{% if res.players %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Players</span>
+    <span class="bl-panel-meta">{{ res.players|length }} on rosters</span></div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.4fr) minmax(130px,1fr) 70px 60px">
+      <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">TEAM</span>
+        <span class="bl-th">DIV</span><span class="bl-th">CLASS</span></div>
+      {% for r in res.players %}
+      {% set ab = crest(r.school) %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=r.u) }}">
+          <span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}</a>
+        <a class="bl-conf" href="{{ url_for('teams', school=r.school, u=r.u) }}" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+          {{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.school }}</a>
+        <span class="bl-conf">{{ r.label }}</span>
+        <span class="bl-conf">{{ r.class }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div></div>
+{% endif %}
+
+{% if res.recruits %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Recruits</span>
+    <span class="bl-panel-meta">class of {{ res.recruits[0].grad_year }}</span></div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.4fr) minmax(130px,1fr) 90px">
+      <div class="bl-thead"><span class="bl-th">RECRUIT</span><span class="bl-th">HOMETOWN</span>
+        <span class="bl-th">TIER</span></div>
+      {% for r in res.recruits %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('recruit', pid=r.pid, u=r.u, grad_year=r.grad_year) }}">
+          <span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}</a>
+        <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.hometown }}</span>
+        <span>{{ stars(r.stars, 'sm') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div></div>
+{% endif %}
+
+{% if not res.short and res.n == 0 %}
+<div class="bl-container"><div class="bl-note">No players or recruits match “{{ q }}”. Try a different spelling — search is across the active universes.</div></div>
+{% endif %}
+{% endblock %}

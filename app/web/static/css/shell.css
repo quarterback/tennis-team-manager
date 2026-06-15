@@ -162,6 +162,16 @@ body { background: var(--fm-app-bg); }
   padding-left: 16px;
 }
 .fm-uniform { display: flex; }
+.fm-search { display: flex; }
+.fm-search input {
+  height: 34px; width: 170px; padding: 0 12px; border-radius: 7px;
+  font-size: 13px; color: var(--text-primary);
+  background: var(--surface-card); border: 1px solid var(--border-default);
+  transition: border-color var(--dur-fast), width var(--dur-base);
+}
+.fm-search input:focus { outline: none; border-color: var(--brand); width: 220px; }
+.fm-search input::placeholder { color: var(--text-faint); }
+@media (max-width: 900px) { .fm-search { display: none; } }
 .fm-advance {
   height: 34px; padding: 0 15px; cursor: pointer; white-space: nowrap;
   display: inline-flex; align-items: center; gap: 7px;

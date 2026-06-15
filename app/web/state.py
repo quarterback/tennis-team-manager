@@ -930,11 +930,8 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
 
 
 def _pos_label(line) -> str:
-    """Lineup slot (e.g. 'S2' or 2) -> 'No. 2'; blank -> em dash."""
-    if not line:
-        return "—"
-    digits = "".join(ch for ch in str(line) if ch.isdigit())
-    return f"No. {digits}" if digits else str(line)
+    """Lineup slot shown as stored (e.g. 'S2' / 'D1'); blank -> em dash."""
+    return str(line) if line else "—"
 
 
 def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
@@ -987,6 +984,51 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
     return rows
+
+
+def search_players(query: str, seed: int = DEFAULT_SEED, limit: int = 80) -> dict:
+    """Name search across the active universes: rostered college players (link to
+    their profile) and the current recruiting class (link to the recruit page).
+    Matches a case-insensitive substring; reuses the cached pid index, so it's
+    cheap once rosters are primed."""
+    import app.seasonmode as sm
+    import app.world as world
+    from app import worldconfig
+    q = (query or "").strip().lower()
+    if len(q) < 2:
+        return {"query": query, "players": [], "recruits": [], "n": 0, "short": True}
+
+    players, seen = [], set()
+    for val, division, gender, label in UNIVERSES:
+        if not worldconfig.is_active(division, gender):
+            continue
+        for pid, info in sm._pid_index(division, gender).items():
+            if pid in seen or q not in info["name"].lower():
+                continue
+            seen.add(pid)
+            players.append({"pid": pid, "name": info["name"], "school": info["school"],
+                            "division": division, "u": val, "label": label,
+                            "class": info.get("class", ""), "country": info.get("country", "")})
+    players.sort(key=lambda r: r["name"])
+
+    recruits = []
+    grad_year = world.recruiting_grad_year(seed) if world.exists(seed) else None
+    if grad_year:
+        for gender in worldconfig.active_genders():
+            rg = RECRUIT_GENDERS.get(gender, gender)
+            for p in get_recruits(rg, grad_year, seed).recruits:
+                if q in p.name.lower():
+                    recruits.append({"pid": p.pid, "name": p.name, "country": p.country,
+                                     "hometown": getattr(p, "hometown", ""),
+                                     "stars": getattr(p, "recruit_stars", 0),
+                                     "tier": getattr(p, "recruit_tier", ""),
+                                     "grad_year": grad_year, "u": "D1-" + gender})
+        recruits.sort(key=lambda r: (-r["stars"], r["name"]))
+
+    players = players[:limit]
+    recruits = recruits[:limit]
+    return {"query": query, "players": players, "recruits": recruits,
+            "n": len(players) + len(recruits), "short": False}
 
 
 def world_hub(seed: int = DEFAULT_SEED):

@@ -108,6 +108,9 @@
         {% endif %}
 
         <div class="fm-topbar-right">
+          <form method="get" action="{{ url_for('search') }}" class="fm-search" role="search">
+            <input type="search" name="q" placeholder="Search players…" aria-label="Search players">
+          </form>
           <a class="fm-newleague" href="{{ url_for('onboarding') }}" title="Start a new league">↺ New league</a>
           <form method="get" class="fm-uniform">
             <span class="bl-select-wrap">
