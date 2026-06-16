@@ -570,30 +570,39 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     hr = home_region(p)
     hc = float(getattr(p, "homecooking", 0.0))
     intl = not getattr(p, "domestic", False)
+    # Window: from a bit below their level up to well above it, so a recruit will
+    # reach UP to a strong program that has an opening (a chance to play for a
+    # major beats being a star at a much smaller school) — the upside isn't capped.
     lo = bisect.bisect_left(pres_arr, cal - 0.30)
-    hi = bisect.bisect_left(pres_arr, cal + 0.30)
+    hi = bisect.bisect_left(pres_arr, cal + 0.55)
     cands = set(by_pres[lo:hi]) | set(market["academic_top"])
     if hc > 0.0 and not intl:
         cands |= set(market["by_region"].get(hr, ()))
     if exclude:
         cands -= exclude
     best, best_score = None, -1.0
-    jit = random.Random(f"{p.pid}|{jitter_salt}").uniform(-0.04, 0.04)
+    jit = random.Random(f"{p.pid}|{jitter_salt}").uniform(-0.05, 0.05)
     for s in cands:
         if avail.get(s, 0) <= 0:
             continue
         pres, acad, reg, div, fac = traits[s]
-        athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
         geo = hc * region_proximity(hr, reg)
-        # academics only pull sub-elite talent below their station (see academic_gate)
-        score = (max(0.0, athletic) * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
+        # Recruits aspire UP to the most prestigious program that still has a seat
+        # for them. With best-recruits-first + seat caps, the class tiers itself —
+        # a program fills with whoever's left near its own level once it signs,
+        # so it never starves chasing names above its band. A mild pull toward
+        # their own level keeps elite talent from slumming far below it; academics
+        # pull sub-elite recruits down to academic programs (gated by talent).
+        level = 1.0 - 0.30 * max(0.0, cal - pres)      # only penalize signing BELOW your level
+        score = ((0.15 + pres) * level
+                 * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
         if intl:
             score *= INTL_TIER_PULL[_intl_tier(div, acad)]
         if score > best_score:
             best, best_score = s, score
-    if best is None:                              # no seats in range — widen once
-        best = next((s for s in by_pres
+    if best is None:                              # nothing in range with a seat — widen once
+        best = next((s for s in reversed(by_pres)
                      if avail.get(s, 0) > 0 and (not exclude or s not in exclude)), None)
     return best
 
