@@ -529,7 +529,7 @@ def create_app() -> Flask:
         return render_template(
             "gtt_hub.html", active="GTT", league=league, leagues=leagues,
             standings=gs.standings(lid), honors=gs.honors_board(lid),
-            history=gs.season_history(lid),
+            history=gs.season_history(lid), transactions=gs.transactions(lid, limit=40),
             recent=gs.week_duals(lid, max(1, league["current_week"] - 1)),
             recent_week=max(1, league["current_week"] - 1))
 
@@ -574,6 +574,8 @@ def create_app() -> Flask:
         row = next((r for r in gs.standings(lid) if r["fid"] == fid), None)
         return render_template("gtt_franchise.html", active="GTT", league=league,
                                fr=fr, row=row, roster=gs.franchise_roster(lid, fid),
+                               free_agents=gs.free_agents(lid),
+                               moves=[t for t in gs.transactions(lid) if t["fid"] == fid],
                                is_champion=(league.get("champion") == fid))
 
     @app.route("/gtt/franchise/<int:fid>/edit", methods=["POST"])

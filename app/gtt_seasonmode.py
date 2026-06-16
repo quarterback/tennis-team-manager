@@ -46,8 +46,17 @@ DB_PATH = resolve_db_path()
 DEFAULT_TEAMS = 8
 ROUND_ROBINS = 2            # double round-robin
 PLAYOFF_FIELD = 4           # top-N make the single-elimination playoff
-TARGET_MEN = 4              # roster targets per gender (lineup fields the top 3)
-TARGET_WOMEN = 4
+LINEUP_MEN = 3              # the lineup core that actually plays (3 MS + 3 WS)
+LINEUP_WOMEN = 3
+RESERVE_MEN = 2             # bench depth beyond the lineup — carries the add/drop
+RESERVE_WOMEN = 2           # churn so franchise starters are never the cut bait
+TARGET_MEN = LINEUP_MEN + RESERVE_MEN      # roster target per gender (5)
+TARGET_WOMEN = LINEUP_WOMEN + RESERVE_WOMEN
+WAIVER_POOL_MEN = 6         # surplus free agents kept on the wire for in-season
+WAIVER_POOL_WOMEN = 6       # add/drop (a fantasy-style waiver pool per gender)
+WAIVER_MARGIN = 0.40        # a free agent must clear a club's WEAKEST roster player
+                            # by this STR margin to be signed — a clear upgrade only,
+                            # so churn stays low and the lineup core is never at risk
 LINES_TO_CLINCH = 5
 ENTRY_AGE = 22              # a graduate's age on turning pro
 PEAK_AGE = 28              # decline (development in reverse) kicks in past here
@@ -55,7 +64,6 @@ RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 BASE_YEAR = 2027           # GTT calendar starts the year after the college baseline
 GRAD_D1_SHARE = 0.95       # target share of each off-season intake from D1
-GRAD_FREE_AGENT_SLACK = 4  # signed beyond open roster spots to create a FA pool
 NON_D1_MIN_STR = 58.0      # small-school pro competitiveness bar
 NON_D1_MIN_OVR = 58.0
 
@@ -85,9 +93,14 @@ CREATE TABLE IF NOT EXISTS gtt_duals (
   home_points INTEGER, away_points INTEGER, winner INTEGER, lines_json TEXT,
   round_no INTEGER DEFAULT 0, bpos INTEGER DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS gtt_transactions (
+  id INTEGER PRIMARY KEY, league_id INTEGER, year INTEGER, week INTEGER,
+  fid INTEGER, gender TEXT, add_pid TEXT, drop_pid TEXT, add_str REAL, drop_str REAL
+);
 CREATE INDEX IF NOT EXISTS idx_gtt_duals ON gtt_duals(league_id, year, round, week);
 CREATE INDEX IF NOT EXISTS idx_gtt_pl ON gtt_players(league_id, fid, status);
 CREATE INDEX IF NOT EXISTS idx_gtt_fr ON gtt_franchises(league_id);
+CREATE INDEX IF NOT EXISTS idx_gtt_tx ON gtt_transactions(league_id, year, week);
 """
 
 _schema_ready_for = None
@@ -227,17 +240,19 @@ def _world_graduates(conn, world_seed, exclude_pids, limit):
 
 def _intake(conn, league, needed_by_gender):
     """Fill the free-agent pool for the off-season: real college graduates first,
-    topped up with generated rookies so the league is always playable."""
+    topped up with generated rookies so the league is always playable. Beyond the
+    open roster spots we draw a surplus per gender (WAIVER_POOL_*) so a standing
+    free-agent wire survives the draft for in-season add/drop."""
     lid, seed, year = league["id"], league["world_seed"], league["current_year"]
     have = {r["pid"] for r in conn.execute("SELECT pid FROM gtt_players WHERE league_id=?",
                                            (lid,)).fetchall()}
-    total = needed_by_gender["m"] + needed_by_gender["w"]
-    target = total + GRAD_FREE_AGENT_SLACK
+    pool_target = {"m": needed_by_gender["m"] + WAIVER_POOL_MEN,
+                   "w": needed_by_gender["w"] + WAIVER_POOL_WOMEN}
+    target = pool_target["m"] + pool_target["w"]
     grads = _world_graduates(conn, seed, have, target)
     pool_rows, used = {"m": [], "w": []}, set(have)
     for g, pid, data, _str in grads:
-        gender_slack = GRAD_FREE_AGENT_SLACK // 2
-        if pid in used or len(pool_rows[g]) >= needed_by_gender[g] + gender_slack:
+        if pid in used or len(pool_rows[g]) >= pool_target[g]:
             continue
         pool_rows[g].append({"pid": pid, "gender": g, "data": data, "age": ENTRY_AGE,
                              "joined_year": year, "origin": "college"})
@@ -276,12 +291,15 @@ def _active(conn, lid, fid, gender=None):
 
 
 def _lineup(conn, lid, fid, name):
-    """Top 3 men + top 3 women by STR → a GTTTeam, plus the ordered pid lists."""
-    def top(gender):
+    """Top men + top women by STR → a GTTTeam, plus the ordered pid lists. The
+    lineup is the top LINEUP_* of each gender; deeper roster players are reserves
+    who only crack the lineup if they out-rate a starter (the engine of the
+    add/drop wire — a hot reserve plays, a cold one is cut bait)."""
+    def top(gender, n):
         ps = _active(conn, lid, fid, gender)
         ps.sort(key=lambda r: _prospect(r["data"]).str_value(), reverse=True)
-        return ps[:3]
-    men, women = top("m"), top("w")
+        return ps[:n]
+    men, women = top("m", LINEUP_MEN), top("w", LINEUP_WOMEN)
     team = GTTTeam(name=name,
                    men=[_prospect(r["data"]).engine_player() for r in men],
                    women=[_prospect(r["data"]).engine_player() for r in women])
@@ -426,6 +444,21 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
                     "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
                     " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
                     (lid, r["pid"], gender, fid, "active", r["age"], 0, 0, "founder", r["data"]))
+
+    # A founding free-agent pool (fid = NULL) so the in-season add/drop wire is
+    # live from the inaugural season, before the college pipeline starts feeding
+    # graduates in. Banded a touch below the club founders — genuine wire fodder
+    # that occasionally beats a club's weakest reserve.
+    fa_rng = random.Random(_h(seed, "founding_fa"))
+    fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
+    fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
+    for gender, name_fn, n in (("m", fa_men, WAIVER_POOL_MEN), ("w", fa_women, WAIVER_POOL_WOMEN)):
+        for _ in range(n):
+            r = _gen_player(fa_rng, name_fn, gender, fa_rng.uniform(48, 60), 0, origin="founder")
+            conn.execute(
+                "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
+                " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (lid, r["pid"], gender, None, "active", r["age"], 0, 0, "founder", r["data"]))
 
     _build_schedule(conn, lid, 0, seed)
     conn.commit()
@@ -576,7 +609,12 @@ def advance(league_id, *, fidelity="full"):
         conn.execute("UPDATE gtt_leagues SET current_week=?, phase=? WHERE id=?",
                      (nxt, phase, league_id))
         conn.commit(); conn.close()
-        return {"phase": "regular", "year": year, "week": wk, "played": len(due), "next_phase": phase}
+        # The add/drop wire runs after the week's duals are committed, so it reads
+        # this week's fresh results (STR absorbs them). Skip after the final week —
+        # there's no next lineup to shape going into the playoffs.
+        moves = _process_waivers(league_id, year, wk) if phase == "regular" else []
+        return {"phase": "regular", "year": year, "week": wk, "played": len(due),
+                "next_phase": phase, "moves": len(moves)}
 
     if s["phase"] == "playoffs":
         out = _advance_playoff_round(conn, s, fidelity)
@@ -793,6 +831,123 @@ def _draft(conn, lid, year, prev_year):
             rnd += 1
             if not picked:
                 break
+
+
+# --------------------------------------------------------------------------
+# In-season add/drop wire — release a slumping fringe player, sign a free agent
+#
+# No trades, gender-locked (a man can only be replaced by a man, a woman by a
+# woman — enforced by construction, since each move swaps within one gender
+# group and never changes the per-gender count). Ability + performance, never
+# random: the signal is the results-based STR (`league_player_str`), which folds
+# a player's pro results into their rating, so a genuine slump shows up as a
+# falling number. Each club, each gender, each week considers ONLY its weakest
+# rostered player against the best available free agent and acts only on a clear
+# upgrade (WAIVER_MARGIN) — so franchise starters (who are never the weakest) are
+# never cut, and churn stays low.
+# --------------------------------------------------------------------------
+
+def _process_waivers(league_id, year, week):
+    """Run the weekly add/drop across every franchise. Reads committed results
+    (called after the week's duals commit), writes the roster moves, and logs each
+    to `gtt_transactions`. Deterministic — purely a function of the data."""
+    s = load_league(league_id)
+    if not s:
+        return []
+    live = league_player_str(league_id)
+    conn = _db()
+
+    def strv(pid, data):
+        v = live.get(pid)
+        return v[0] if v else _prospect(data).str_value()
+
+    fas = {"m": [], "w": []}
+    for r in conn.execute("SELECT pid, gender, data FROM gtt_players WHERE league_id=?"
+                          " AND fid IS NULL AND status='active'", (league_id,)).fetchall():
+        fas[r["gender"]].append([strv(r["pid"], r["data"]), r["pid"]])
+    for g in fas:
+        fas[g].sort(key=lambda x: x[0], reverse=True)
+
+    moves = []
+    for fid in [f["id"] for f in _fr_rows(conn, league_id)]:
+        for g, lineup_n in (("m", LINEUP_MEN), ("w", LINEUP_WOMEN)):
+            if not fas[g]:
+                continue
+            roster = _active(conn, league_id, fid, g)
+            if len(roster) <= lineup_n:
+                continue                              # never cut into the lineup core
+            roster.sort(key=lambda x: strv(x["pid"], x["data"]))
+            weak = roster[0]
+            weak_str = strv(weak["pid"], weak["data"])
+            best_str, best_pid = fas[g][0]
+            if best_str < weak_str + WAIVER_MARGIN:
+                continue                              # no clear upgrade — stand pat
+            conn.execute("UPDATE gtt_players SET fid=NULL WHERE league_id=? AND pid=?",
+                         (league_id, weak["pid"]))
+            conn.execute("UPDATE gtt_players SET fid=? WHERE league_id=? AND pid=?",
+                         (fid, league_id, best_pid))
+            conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid, gender,"
+                         " add_pid, drop_pid, add_str, drop_str) VALUES (?,?,?,?,?,?,?,?,?)",
+                         (league_id, year, week, fid, g, best_pid, weak["pid"],
+                          round(best_str, 1), round(weak_str, 1)))
+            fas[g].pop(0)                             # the signed FA leaves the wire,
+            fas[g].append([weak_str, weak["pid"]])    # the cut player joins it
+            fas[g].sort(key=lambda x: x[0], reverse=True)
+            moves.append({"fid": fid, "gender": g, "add": best_pid, "drop": weak["pid"]})
+
+    conn.commit()
+    conn.close()
+    return moves
+
+
+def free_agents(league_id):
+    """The current waiver wire — unsigned active players, best STR first within
+    gender (men then women)."""
+    conn = _db()
+    rows = conn.execute("SELECT pid, gender, age, origin, data FROM gtt_players WHERE"
+                        " league_id=? AND fid IS NULL AND status='active'",
+                        (league_id,)).fetchall()
+    conn.close()
+    live = league_player_str(league_id)
+    out = []
+    for r in rows:
+        p = _prospect(r["data"])
+        strv = live.get(r["pid"], (p.str_value(), 0.0))[0]
+        out.append({"pid": r["pid"], "name": p.name, "country": p.country,
+                    "gender": r["gender"], "age": r["age"], "origin": r["origin"],
+                    "str": round(strv, 1), "overall": round(p.current_overall())})
+    out.sort(key=lambda x: (x["gender"] != "m", -x["str"]))
+    return out
+
+
+def transactions(league_id, year=None, limit=200):
+    """The season's add/drop log, newest week first, with player + franchise names."""
+    s = load_league(league_id)
+    if not s:
+        return []
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    rows = conn.execute("SELECT * FROM gtt_transactions WHERE league_id=? AND year=?"
+                        " ORDER BY week DESC, id DESC LIMIT ?",
+                        (league_id, year, limit)).fetchall()
+    names = _fr_names(conn, league_id)
+    name_cache: dict = {}
+
+    def nm(pid):
+        if pid not in name_cache:
+            r = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+                             (league_id, pid)).fetchone()
+            name_cache[pid] = _prospect(r["data"]).name if r else pid
+        return name_cache[pid]
+
+    out = []
+    for r in rows:
+        out.append({"week": r["week"], "fid": r["fid"], "franchise": names.get(r["fid"], ""),
+                    "gender": r["gender"], "add_pid": r["add_pid"], "add_name": nm(r["add_pid"]),
+                    "drop_pid": r["drop_pid"], "drop_name": nm(r["drop_pid"]),
+                    "add_str": r["add_str"], "drop_str": r["drop_str"]})
+    conn.close()
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -1101,7 +1256,11 @@ def franchise_roster(league_id, fid, year=None):
     players.sort(key=lambda x: (x["gender"] != "m", -x["str"]))
     for i, p in enumerate(players):
         block = [q for q in players if q["gender"] == p["gender"]]
-        p["slot"] = f"{'M' if p['gender'] == 'm' else 'W'}S{block.index(p) + 1}"
+        rank = block.index(p)
+        lineup_n = LINEUP_MEN if p["gender"] == "m" else LINEUP_WOMEN
+        p["reserve"] = rank >= lineup_n
+        p["slot"] = ("RES" if p["reserve"]
+                     else f"{'M' if p['gender'] == 'm' else 'W'}S{rank + 1}")
     return players
 
 

@@ -138,6 +138,78 @@ def test_p4_str_feed_rates_pros_with_prior_continuity(db):
     assert d["str"] == round(live[best["pid"]][0], 1)
 
 
+def test_roster_carries_a_reserve_beyond_the_lineup(db):
+    lid = g.create_league("GTT", seed=4, n_teams=4)
+    assert g.TARGET_MEN == g.LINEUP_MEN + g.RESERVE_MEN
+    assert g.TARGET_WOMEN == g.LINEUP_WOMEN + g.RESERVE_WOMEN
+    roster = g.franchise_roster(lid, g.franchises(lid)[0]["id"])
+    men = [p for p in roster if p["gender"] == "m"]
+    women = [p for p in roster if p["gender"] == "w"]
+    assert len(men) == g.TARGET_MEN and len(women) == g.TARGET_WOMEN
+    # the top LINEUP_* are starters, the rest are flagged reserves
+    assert sum(p["reserve"] for p in men) == g.RESERVE_MEN
+    assert sum(p["reserve"] for p in women) == g.RESERVE_WOMEN
+
+
+def test_founding_free_agent_pool_seeds_the_wire(db):
+    lid = g.create_league("GTT", seed=4, n_teams=4)
+    fas = g.free_agents(lid)
+    assert sum(p["gender"] == "m" for p in fas) == g.WAIVER_POOL_MEN
+    assert sum(p["gender"] == "w" for p in fas) == g.WAIVER_POOL_WOMEN
+
+
+def test_add_drop_is_gender_locked_and_keeps_rosters_whole(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=8)
+    g.advance_all(lid, fidelity="fast")
+    # every franchise still fields exactly its per-gender roster target — a drop is
+    # always matched by an add of the SAME gender (no trades, gender-locked).
+    for f in g.franchises(lid):
+        assert _active(lid, f["id"], "m") == g.TARGET_MEN
+        assert _active(lid, f["id"], "w") == g.TARGET_WOMEN
+    tx = g.transactions(lid)
+    assert tx, "a full season should produce some add/drop activity"
+    for t in tx:
+        # ability-driven: a free agent is only signed when it clears the cut player
+        # by the margin (never a lateral or downgrade move).
+        assert t["add_str"] >= t["drop_str"] + g.WAIVER_MARGIN
+
+
+def test_add_drop_never_cuts_a_franchise_starter(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=8)
+    g.advance_all(lid, fidelity="fast")
+    live = g.league_player_str(lid)
+    # No dropped player was, at the time, a top-LINEUP starter for its club: only
+    # the fringe is ever at risk, so franchise players stay put.
+    for t in g.transactions(lid):
+        roster = g.franchise_roster(lid, t["fid"])
+        # the dropped player has already left this roster, so reconstruct the
+        # gender group it belonged to and confirm the cut player wasn't a starter.
+        same = sorted([p for p in roster if p["gender"] == t["gender"]],
+                      key=lambda x: -x["str"])
+        lineup_n = g.LINEUP_MEN if t["gender"] == "m" else g.LINEUP_WOMEN
+        # the signed replacement sits somewhere; the cut player's STR was below the
+        # weakest retained starter (margin enforced), so it was reserve-tier.
+        starters = same[:lineup_n]
+        assert all(s["str"] >= t["drop_str"] for s in starters)
+
+
+def test_add_drop_is_deterministic(db, tmp_path):
+    lid1 = g.create_league("A", seed=77, n_teams=6)
+    g.advance_all(lid1, fidelity="fast")
+    tx1 = [(t["week"], t["fid"], t["gender"], t["add_pid"], t["drop_pid"])
+           for t in g.transactions(lid1)]
+    p2 = str(tmp_path / "gtt2.db")
+    os.environ["TENNIS_DB_PATH"] = p2
+    g.DB_PATH = p2
+    g._schema_ready_for = None
+    g._str_cache.clear()
+    lid2 = g.create_league("B", seed=77, n_teams=6)
+    g.advance_all(lid2, fidelity="fast")
+    tx2 = [(t["week"], t["fid"], t["gender"], t["add_pid"], t["drop_pid"])
+           for t in g.transactions(lid2)]
+    assert tx1 == tx2
+
+
 def test_gtt_intake_uses_persisted_world_graduates_with_d1_mix_and_slack(db):
     from app import world
     from app.development import generate_prospect

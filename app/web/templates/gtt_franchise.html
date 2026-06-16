@@ -17,8 +17,8 @@
         <span class="bl-th num">STR</span><span class="bl-th num">W-L</span><span class="bl-th">Honors</span>
       </div>
       {% for p in roster %}
-      <a class="bl-row gtt-ros-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
-        <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ p.slot }}</span>
+      <a class="bl-row gtt-ros-row{% if p.reserve %} gtt-res{% endif %}" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
+        <span class="bl-cell" style="color:{{ 'var(--text-faint)' if p.reserve else 'var(--text-muted)' }};font-weight:600">{{ p.slot }}</span>
         <span class="gtt-nm">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></span>
         <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
         <span class="bl-cell-num">{{ p.age }}</span>
@@ -28,7 +28,49 @@
       </a>
       {% endfor %}
     </div></div>
+    <div class="bl-notes" style="padding:0 16px 14px"><div class="bl-note">
+      The top {{ roster | selectattr('gender','equalto','m') | rejectattr('reserve') | list | length }} of each gender are the lineup; the rest are reserves (RES) — bench depth that
+      only plays when it out-rates a starter, and the cut bait for the add/drop wire.
+    </div></div>
   </div>
+
+  {% if moves %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
+      <span class="bl-panel-meta">this season's add/drop moves</span></div>
+    <div style="padding:8px 16px">
+      {% for t in moves %}
+      <div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle);font-size:13px">
+        <span style="color:var(--text-muted);min-width:38px">Wk {{ t.week }}</span>
+        <span style="flex:1;color:var(--stat-good-strong)">▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}</span></span>
+        <span style="flex:1;text-align:right;color:var(--text-muted)">▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}</span></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if free_agents %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Free agents</span>
+      <span class="bl-panel-meta">the wire — unsigned, best STR first</span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-fa">
+      <div class="bl-thead gtt-fa-row">
+        <span class="bl-th"></span><span class="bl-th">Player</span>
+        <span class="bl-th">From</span><span class="bl-th num">Age</span><span class="bl-th num">STR</span>
+      </div>
+      {% for p in free_agents %}
+      <a class="bl-row gtt-fa-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
+        <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ 'M' if p.gender == 'm' else 'W' }}</span>
+        <span class="gtt-nm">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></span>
+        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
+        <span class="bl-cell-num">{{ p.age }}</span>
+        <span class="bl-cell-num">{{ p.str }}</span>
+      </a>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endif %}
 
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">🛠️ Edit franchise</span>
@@ -53,6 +95,8 @@
 
 <style>
 .gtt-ros { --bl-grid-cols: 44px minmax(140px,1fr) 64px 40px 50px 56px minmax(80px,1fr); }
+.gtt-fa { --bl-grid-cols: 24px minmax(140px,1fr) 64px 40px 50px; }
+.gtt-res .nm { color:var(--text-muted) !important; font-weight:500 !important; }
 .gtt-nm { display:flex; align-items:center; gap:6px; min-width:0; }
 .gtt-nm .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
 </style>
