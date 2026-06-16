@@ -35,6 +35,9 @@ the NCAA Bracket page; advancing once starts the NCAAs (plays round 1).
   primary action becomes "Reveal complete — start NCAAs →".
 - `ncaa_bracket_view` shows the locked field (seed · conf · AQ/AL) during the
   reveal, then the played rounds once they begin.
+- **Who's in AND who's out:** `ncaa_field` also returns a snub board — the
+  highest-Power-Index teams just outside the locked field — rendered as a
+  "First Out" section (conf + record) beneath the field.
 
 ### 4. Bracket-page clarity + topbar
 - Winner of each matchup now reads at a glance (loser dimmed, winner bold).
@@ -79,5 +82,3 @@ active seasons `complete`, and `selection` sits cleanly before `ncaa`.
 - The projection `/bracket` page still shows no dual score per matchup (the
   Results browser and real `/ncaa` bracket do); thread the score through the sim
   `Matchup` if wanted.
-- "Who's out" (notable bubble misses) isn't surfaced on the reveal — only the
-  in-field. `bubble_watch`/`field_projection` already exist and could feed it.
