@@ -136,3 +136,54 @@ def test_p4_str_feed_rates_pros_with_prior_continuity(db):
     # The live value is what the views surface.
     d = g.player_detail(lid, best["pid"])
     assert d["str"] == round(live[best["pid"]][0], 1)
+
+
+def test_gtt_intake_uses_persisted_world_graduates_with_d1_mix_and_slack(db):
+    from app import world
+    from app.development import generate_prospect
+    import json, random
+
+    world.WORLD_DB = g.DB_PATH
+    world._schema_ready_for = None
+    world.init_schema()
+    conn = g._db()
+    wid = conn.execute("INSERT INTO world (seed, year, week) VALUES (?,?,?)", (2026, 1, 0)).lastrowid
+
+    def pdata(pid_seed, gender, talent):
+        p = generate_prospect(random.Random(pid_seed), f"Grad {pid_seed}", "USA",
+                              gender=gender, talent=talent)
+        p.class_year = "Sr"
+        return p.pid, json.dumps(world.prospect_to_dict(p))
+
+    rows = []
+    for i in range(24):
+        gender = "men" if i % 2 == 0 else "women"
+        pid, data = pdata(i, gender, 70 - i * 0.2)
+        rows.append((wid, 0, "D1", gender, pid, 80.0 - i, 78.0 - i, data))
+    # One genuinely pro-caliber small-school graduate and one who fails the bar.
+    good_pid, good_data = pdata(100, "men", 66)
+    rows.append((wid, 0, "D2", "men", good_pid, g.NON_D1_MIN_STR + 3,
+                 g.NON_D1_MIN_OVR + 3, good_data))
+    bad_pid, bad_data = pdata(101, "women", 40)
+    rows.append((wid, 0, "D3", "women", bad_pid, g.NON_D1_MIN_STR - 1,
+                 g.NON_D1_MIN_OVR + 8, bad_data))
+    conn.executemany("INSERT INTO world_graduates VALUES (?,?,?,?,?,?,?,?)", rows)
+    conn.commit()
+    conn.close()
+
+    lid = g.create_league("Pipeline", seed=2026, n_teams=4)
+    league = g.load_league(lid)
+    conn = g._db()
+    before = conn.execute("SELECT COUNT(*) c FROM gtt_players WHERE league_id=?", (lid,)).fetchone()["c"]
+    g._intake(conn, league, {"m": 11, "w": 10})
+    after = conn.execute("SELECT COUNT(*) c FROM gtt_players WHERE league_id=?", (lid,)).fetchone()["c"]
+    college = conn.execute("SELECT pid, fid, origin, data FROM gtt_players WHERE league_id=? "
+                           "AND origin='college'", (lid,)).fetchall()
+    conn.commit()
+    conn.close()
+
+    assert after - before == 25  # 21 open spots + four free-agent slack signings.
+    assert any(r["pid"] == good_pid and r["fid"] is None for r in college)
+    assert all(r["pid"] != bad_pid for r in college)
+    assert sum(1 for r in college if r["pid"] == good_pid) == 1
+    assert len(college) == 25

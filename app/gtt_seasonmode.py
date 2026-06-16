@@ -54,6 +54,10 @@ PEAK_AGE = 28              # decline (development in reverse) kicks in past here
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 BASE_YEAR = 2027           # GTT calendar starts the year after the college baseline
+GRAD_D1_SHARE = 0.95       # target share of each off-season intake from D1
+GRAD_FREE_AGENT_SLACK = 4  # signed beyond open roster spots to create a FA pool
+NON_D1_MIN_STR = 58.0      # small-school pro competitiveness bar
+NON_D1_MIN_OVR = 58.0
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS gtt_leagues (
@@ -176,35 +180,49 @@ def _gen_player(rng, name_fn, gender, talent, joined_year, origin="founder", age
 
 
 def _world_graduates(conn, world_seed, exclude_pids, limit):
-    """This year's college graduates (seniors in the world) as (gender, pid, data),
-    best STR first, excluding pids already in the league. Empty if no world.
+    """Latest persisted college graduates, selected 95% D1 / 5% non-D1.
 
-    Queried through the caller's connection because the world tables live in the
-    same DB file — opening a second connection mid-transaction would deadlock."""
+    Reads ``world_graduates`` through the caller's transaction because world and
+    GTT tables share one SQLite file; opening a second connection here can
+    deadlock. Returns (gender, pid, data, str) rows, best-first within bands.
+    """
     try:
         wid = conn.execute("SELECT id FROM world WHERE seed=?", (world_seed,)).fetchone()
     except sqlite3.OperationalError:
-        return []                                       # world tables not created yet
-    if not wid:
+        return []
+    if not wid or limit <= 0:
         return []
     wid = wid["id"]
-    year = conn.execute("SELECT MAX(year) y FROM world_roster WHERE world_id=?",
-                        (wid,)).fetchone()["y"]
+    try:
+        from app import world as world_mod
+        active = set(world_mod._active_unis())
+        year = conn.execute("SELECT MAX(year) y FROM world_graduates WHERE world_id=?",
+                            (wid,)).fetchone()["y"]
+    except sqlite3.OperationalError:
+        return []
     if year is None:
         return []
-    rows = conn.execute("SELECT gender, pid, data FROM world_roster WHERE world_id=? AND year=?",
-                        (wid, year)).fetchall()
-    grads = []
+    rows = conn.execute("SELECT division, gender, pid, str, ovr, data FROM world_graduates "
+                        "WHERE world_id=? AND year=?", (wid, year)).fetchall()
+    d1, non = [], []
     for r in rows:
-        if r["pid"] in exclude_pids:
-            continue
-        d = json.loads(r["data"])
-        if d.get("class_year") != "Sr":
+        if r["pid"] in exclude_pids or (r["division"], r["gender"]) not in active:
             continue
         g = "m" if r["gender"] in ("men", "male", "m") else "w"
-        grads.append((g, r["pid"], r["data"], _prospect(r["data"]).str_value()))
-    grads.sort(key=lambda x: x[3], reverse=True)
-    return grads[:limit]
+        item = (g, r["pid"], r["data"], float(r["str"] or 0.0),
+                float(r["ovr"] or 0.0), r["division"])
+        if r["division"] == "D1":
+            d1.append(item)
+        elif item[3] >= NON_D1_MIN_STR and item[4] >= NON_D1_MIN_OVR:
+            non.append(item)
+    d1.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
+    non.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
+    non_target = max(1, round(limit * (1.0 - GRAD_D1_SHARE))) if limit >= 10 else 0
+    picked = non[:non_target] + d1[:max(0, limit - min(non_target, len(non)))]
+    if len(picked) < limit:
+        picked.extend(non[non_target:limit - len(picked) + non_target])
+    picked.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
+    return [(g, pid, data, st) for g, pid, data, st, _ovr, _div in picked[:limit]]
 
 
 def _intake(conn, league, needed_by_gender):
@@ -214,10 +232,12 @@ def _intake(conn, league, needed_by_gender):
     have = {r["pid"] for r in conn.execute("SELECT pid FROM gtt_players WHERE league_id=?",
                                            (lid,)).fetchall()}
     total = needed_by_gender["m"] + needed_by_gender["w"]
-    grads = _world_graduates(conn, seed, have, total + 4)
+    target = total + GRAD_FREE_AGENT_SLACK
+    grads = _world_graduates(conn, seed, have, target)
     pool_rows, used = {"m": [], "w": []}, set(have)
     for g, pid, data, _str in grads:
-        if pid in used or len(pool_rows[g]) >= needed_by_gender[g] + 1:
+        gender_slack = GRAD_FREE_AGENT_SLACK // 2
+        if pid in used or len(pool_rows[g]) >= needed_by_gender[g] + gender_slack:
             continue
         pool_rows[g].append({"pid": pid, "gender": g, "data": data, "age": ENTRY_AGE,
                              "joined_year": year, "origin": "college"})
@@ -360,8 +380,22 @@ def _build_schedule(conn, lid, year, seed):
     conn.execute("UPDATE gtt_leagues SET total_weeks=?, current_week=1 WHERE id=?", (total, lid))
 
 
-def create_league(name="Global Team Tennis", *, seed=2026, n_teams=DEFAULT_TEAMS):
+def _active_world_seed(conn, preferred=None):
+    try:
+        if preferred is not None and conn.execute("SELECT 1 FROM world WHERE seed=?",
+                                                  (preferred,)).fetchone():
+            return preferred
+        row = conn.execute("SELECT seed FROM world ORDER BY id DESC LIMIT 1").fetchone()
+        if row:
+            return row["seed"]
+    except sqlite3.OperationalError:
+        pass
+    return preferred if preferred is not None else 2026
+
+
+def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS):
     conn = _db()
+    seed = _active_world_seed(conn, seed)
     cur = conn.execute(
         "INSERT INTO gtt_leagues (name, world_seed, current_year, current_week,"
         " total_weeks, phase, champion) VALUES (?,?,?,?,?,?,?)",
