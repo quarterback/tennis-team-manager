@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS world_roster (
 );
 CREATE TABLE IF NOT EXISTS world_signing (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, data TEXT,
-  week_signed INTEGER DEFAULT 0, flips INTEGER DEFAULT 0
+  week_signed INTEGER DEFAULT 0, flips INTEGER DEFAULT 0, commit_history TEXT DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS world_crossmatch (
   world_id INTEGER, year INTEGER, gender TEXT, home TEXT, away TEXT,
@@ -154,7 +154,8 @@ def init_schema() -> None:
     global _schema_ready_for
     conn = dbpath.connect(WORLD_DB)
     conn.executescript(_SCHEMA)
-    for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0")):
+    for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
+                     ("commit_history", "TEXT DEFAULT '[]'")):
         try:
             conn.execute(f"ALTER TABLE world_signing ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
@@ -357,13 +358,21 @@ def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
         return None
     conn = _db()
     try:
-        for sql in (
-            "SELECT data FROM world_signing WHERE world_id=? AND pid=? LIMIT 1",
-            "SELECT data FROM world_roster  WHERE world_id=? AND pid=? ORDER BY year DESC LIMIT 1",
-        ):
-            r = conn.execute(sql, (w["id"], pid)).fetchone()
-            if r:
-                return prospect_from_dict(json.loads(r["data"]))
+        r = conn.execute("SELECT data, flips, week_signed, commit_history FROM world_signing"
+                         " WHERE world_id=? AND pid=? LIMIT 1", (w["id"], pid)).fetchone()
+        if r:
+            p = prospect_from_dict(json.loads(r["data"]))
+            p.flips = r["flips"] or 0
+            p.week_signed = r["week_signed"] or 0
+            try:
+                p.commit_history = json.loads(r["commit_history"] or "[]")
+            except (ValueError, TypeError):
+                p.commit_history = []
+            return p
+        r = conn.execute("SELECT data FROM world_roster WHERE world_id=? AND pid=?"
+                         " ORDER BY year DESC LIMIT 1", (w["id"], pid)).fetchone()
+        if r:
+            return prospect_from_dict(json.loads(r["data"]))
         return None
     finally:
         conn.close()
@@ -639,10 +648,13 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
         avail[best] -= 1
         signed.add(p.pid)
         new.append((wid, world["year"], gender, best, p.pid,
-                    json.dumps(prospect_to_dict(p)), week, 0))
+                    json.dumps(prospect_to_dict(p)), week, 0,
+                    json.dumps([{"school": best, "week": week}])))
         signed_n += 1
     if new:
-        conn.executemany("INSERT INTO world_signing VALUES (?,?,?,?,?,?,?,?)", new)
+        conn.executemany(
+            "INSERT INTO world_signing (world_id, year, gender, school, pid, data,"
+            " week_signed, flips, commit_history) VALUES (?,?,?,?,?,?,?,?,?)", new)
     return signed_n
 
 
@@ -662,7 +674,7 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
         return 0
     cutoff = week - DECOMMIT_WINDOW_WEEKS
     rows = conn.execute(
-        "SELECT rowid, pid, school, data, flips FROM world_signing"
+        "SELECT rowid, pid, school, data, flips, commit_history FROM world_signing"
         " WHERE world_id=? AND year=? AND gender=? AND week_signed>=?",
         (wid, world["year"], gender, cutoff)).fetchall()
     if not rows:
@@ -690,8 +702,14 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
             avail[original] -= 1
             continue
         avail[new_school] -= 1
-        conn.execute("UPDATE world_signing SET school=?, week_signed=?, flips=flips+1"
-                     " WHERE rowid=?", (new_school, week, r["rowid"]))
+        try:
+            trail = json.loads(r["commit_history"] or "[]")
+        except (ValueError, TypeError):
+            trail = []
+        trail.append({"school": new_school, "week": week})
+        conn.execute("UPDATE world_signing SET school=?, week_signed=?, flips=flips+1,"
+                     " commit_history=? WHERE rowid=?",
+                     (new_school, week, json.dumps(trail), r["rowid"]))
         flips += 1
     return flips
 
