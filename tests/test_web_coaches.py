@@ -48,22 +48,24 @@ def test_coach_carousel_moves_coaches_and_followers():
 def test_national_assistant_coach_of_the_year(played_season):
     import app.seasonmode as sm
     from app.web.awards import ranking_rows
+    from app.web.state import coaching_staff
     recs = coach_honor_records("D1", "men")
-    awards = [r["award"] for r in recs]
-    assert awards.count("national_asst_coty") == 1
-    asst = next(r for r in recs if r["award"] == "national_asst_coty")
-    assert asst["subject_type"] == "coach" and asst["label"].startswith("National Assistant")
-    # it goes to the top-25 program with the most bottom-of-lineup wins (4/5/6
-    # singles + 3rd doubles) — player development, not the head-coach W-L.
+    winners = [r for r in recs if r["award"] == "national_asst_coty"]
+    assert winners and all(w["subject_type"] == "coach"
+                           and w["label"].startswith("National Assistant") for w in winners)
+    # every winner is a top-25 program tied at the most bottom-of-lineup wins (4/5/6
+    # singles + 3rd doubles) — player development, not the head-coach W-L — and the
+    # honoree is a non-head (assistant) coach on that staff. Usually one; ties repeat.
     sid = sm.get_or_create("D1", "men", seed=2026)
     rows = ranking_rows("D1", "men")
     top25 = [r.school for r in sorted(rows, key=lambda r: r.pi, reverse=True)[:25]]
-    dev, pi_by = sm.developmental_wins(sid), {r.school: r.pi for r in rows}
-    assert asst["school"] == max(top25, key=lambda s: (dev.get(s, 0), pi_by.get(s, 0.0), s))
-    # the honoree is a non-head (assistant) coach on that staff
-    from app.web.state import coaching_staff
-    staff = {c["coach_id"]: c["role"] for c in coaching_staff("D1", "men", asst["school"])}
-    assert staff.get(asst["subject_id"]) in ("assoc", "asst")
+    dev = sm.developmental_wins(sid)
+    best = max(dev.get(s, 0) for s in top25)
+    for w in winners:
+        assert w["school"] in top25 and dev.get(w["school"], 0) == best
+        staff = {c["coach_id"]: c["role"] for c in coaching_staff("D1", "men", w["school"])}
+        assert staff.get(w["subject_id"]) in ("assoc", "asst")
+    assert len({w["school"] for w in winners}) == sum(1 for s in top25 if dev.get(s, 0) == best)
 
 
 def test_coach_career_record_counts_head_seasons_only():

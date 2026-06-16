@@ -286,21 +286,25 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     # head-coach W-L: the program with the most wins at the BOTTOM of the lineup
     # (4/5/6 singles + 3rd doubles), among the division's top-25 programs, where an
     # assistant's developmental work shows. Credited to that staff's lead developer
-    # (best development-rated non-head coach). Per division × gender, deterministic.
+    # (best development-rated non-head coach). If multiple programs tie at the top,
+    # every tied staff's developer is honored (the award simply repeats that year).
     from .state import coaching_staff
     top25 = [r.school for r in sorted(rows, key=lambda r: r.pi, reverse=True)[:25]]
     if top25:
         devwins = sm.developmental_wins(sid)
-        pi_by = {r.school: r.pi for r in rows}
-        school = max(top25, key=lambda s: (devwins.get(s, 0), pi_by.get(s, 0.0), s))
-        asst_staff = [c for c in coaching_staff(division, gender, school) if c["role"] != "head"]
-        if asst_staff:
-            dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
-            recs.append({"subject_type": "coach", "subject_id": dev_coach["coach_id"],
-                         "name": dev_coach["name"], "year": year, "season_no": season_no,
-                         "division": division, "gender": gender, "school": school,
-                         "award": "national_asst_coty",
-                         "label": "National Assistant Coach of the Year", "sort": 92})
+        best = max((devwins.get(s, 0) for s in top25), default=0)
+        if best > 0:
+            for school in sorted(s for s in top25 if devwins.get(s, 0) == best):
+                asst_staff = [c for c in coaching_staff(division, gender, school)
+                              if c["role"] != "head"]
+                if not asst_staff:
+                    continue
+                dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
+                recs.append({"subject_type": "coach", "subject_id": dev_coach["coach_id"],
+                             "name": dev_coach["name"], "year": year, "season_no": season_no,
+                             "division": division, "gender": gender, "school": school,
+                             "award": "national_asst_coty",
+                             "label": "National Assistant Coach of the Year", "sort": 92})
 
     # Team titles for the head coach of each champion.
     confmap = {r.school: r.conf for r in rows}

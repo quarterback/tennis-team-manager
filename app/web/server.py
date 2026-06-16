@@ -467,7 +467,7 @@ def create_app() -> Flask:
         coty = coach_honor_records(division, gender)
         coach_awards = {
             "national": next((r for r in coty if r["award"] == "national_coty"), None),
-            "national_asst": next((r for r in coty if r["award"] == "national_asst_coty"), None),
+            "national_asst": [r for r in coty if r["award"] == "national_asst_coty"],
             "conference": sorted((r for r in coty if r["award"] == "conf_coty"),
                                  key=lambda r: r["label"]),
         }
