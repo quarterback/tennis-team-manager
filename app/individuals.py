@@ -118,6 +118,28 @@ class Championship:
 DoublesChampionship = Championship
 
 
+def championship_to_dict(ch: Championship) -> dict:
+    """Flatten a Championship to a JSON-safe dict for persistence — school / conf /
+    label / seed per entry plus the round results. Rehydrated for display so the
+    completed championship survives the year rollover (the live objects carry
+    engine players that can't and needn't be stored)."""
+    def ed(e):
+        if e is None:
+            return None
+        return {"label": e.label, "school": e.program.school,
+                "conf_abbr": getattr(e.program, "conf_abbr", ""),
+                "pid": getattr(e, "pid", None), "seed": ch.seed_of(e)}
+    return {
+        "event": ch.event, "n_seeds": ch.n_seeds,
+        "entries": [ed(e) for e in ch.entries],
+        "champion": ed(ch.champion), "runner_up": ed(ch.runner_up),
+        "rounds": [[{"rnd": m.rnd, "hi_seed": m.hi_seed, "lo_seed": m.lo_seed,
+                     "winner_is_hi": m.winner_is_hi, "scoreline": m.scoreline,
+                     "upset": m.upset, "hi": ed(m.hi), "lo": ed(m.lo)} for m in rnd]
+                   for rnd in ch.rounds],
+    }
+
+
 def _assemble(event: str, result, played: dict) -> Championship:
     """Walk a run_tournament result into a Championship, looking each match's
     scoreline up in `played` (keyed by the frozenset of the two entry keys)."""

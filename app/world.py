@@ -135,6 +135,9 @@ CREATE TABLE IF NOT EXISTS world_crossmatch (
   home_div TEXT, away_div TEXT, home_pts INTEGER, away_pts INTEGER,
   winner INTEGER, lines TEXT
 );
+CREATE TABLE IF NOT EXISTS world_championship (
+  world_id INTEGER, year INTEGER, division TEXT, gender TEXT, event TEXT, data TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_wr ON world_roster(world_id, year);
 CREATE INDEX IF NOT EXISTS idx_ws ON world_signing(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
@@ -1246,6 +1249,44 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
                 })
 
 
+def _store_championships(conn, world: dict) -> None:
+    """Run + persist the individual singles/doubles championships for each active
+    universe at season's end (rosters are still this year's), so the completed
+    championship is viewable after the year rolls over."""
+    from app.individuals import (run_singles_championship, run_doubles_championship,
+                                 championship_to_dict)
+    yr = world["year"]
+    eff = year_seed(world["seed"], yr)
+    for (division, gender) in _active_unis():
+        conn.execute("DELETE FROM world_championship WHERE world_id=? AND year=?"
+                     " AND division=? AND gender=?", (world["id"], yr, division, gender))
+        for event, run in (("Singles", run_singles_championship),
+                           ("Doubles", run_doubles_championship)):
+            try:
+                ch = run(division, gender, seed=eff)
+                conn.execute("INSERT INTO world_championship VALUES (?,?,?,?,?,?)",
+                             (world["id"], yr, division, gender, event,
+                              json.dumps(championship_to_dict(ch))))
+            except Exception:
+                pass
+
+
+def latest_championship(seed: int, division: str, gender: str, event: str) -> dict | None:
+    """The most recently completed individual championship for a universe (None
+    until one has been played + stored at a year rollover)."""
+    w = load_world(seed)
+    if not w:
+        return None
+    conn = _db()
+    try:
+        r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                         " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
+                         (w["id"], division, gender, event)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r["data"]) if r else None
+
+
 def _finalize_year(seed: int, w: dict) -> dict:
     """End-of-year: develop to a full year, then graduate / portal / intake."""
     prime(seed)
@@ -1253,6 +1294,12 @@ def _finalize_year(seed: int, w: dict) -> dict:
     player_str: dict = {}
     for (d, g) in _active_unis():
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
+
+    # Snapshot the individual championships before graduation/portal change rosters.
+    _cconn = _db()
+    _store_championships(_cconn, w)
+    _cconn.commit()
+    _cconn.close()
 
     rosters = developed_rosters(w)        # full-year developed copy
     # Stamp each player's just-finished season onto their career history BEFORE

@@ -64,43 +64,58 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     return _bracket_cache[key]
 
 
+def _hydrate_championship(data):
+    """Rebuild a display-ready championship (objects matching the template's
+    attribute contract) from a stored/serialized dict — crests resolved by school."""
+    if not data:
+        return None
+    from types import SimpleNamespace
+    from .rankings_data import crest
+
+    def ent(d):
+        if not d:
+            return None
+        ab, col = crest(d["school"])
+        return SimpleNamespace(label=d["label"], pid=d.get("pid"), seed=d.get("seed"),
+                               program=SimpleNamespace(school=d["school"], abbr=ab, color=col,
+                                                       conf_abbr=d.get("conf_abbr", "")))
+    rounds = [[SimpleNamespace(rnd=m["rnd"], hi_seed=m["hi_seed"], lo_seed=m["lo_seed"],
+                               winner_is_hi=m["winner_is_hi"], scoreline=m["scoreline"],
+                               upset=m["upset"], hi=ent(m["hi"]), lo=ent(m["lo"]))
+               for m in rnd] for rnd in data["rounds"]]
+    return SimpleNamespace(event=data["event"], n_seeds=data["n_seeds"],
+                           entries=[ent(e) for e in data["entries"]], rounds=rounds,
+                           champion=ent(data["champion"]), runner_up=ent(data["runner_up"]),
+                           seed_of=(lambda e: e.seed if e else None))
+
+
 def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
-    """The NCAA individual singles championship — a seed-deterministic 128-player
-    draw derived from the program rosters, played AFTER the team tournament (None
-    until the team bracket is complete). Cached for the year."""
+    """The NCAA individual singles championship, played AFTER the team tournament.
+    Computed live while the team season is complete; once the year rolls over it
+    is served from the snapshot persisted at finalize, so it stays viewable."""
     import app.world as world
     import app.seasonmode as sm
-    from app.individuals import run_singles_championship, clamp_field
-    size = clamp_field(size)
+    from app.individuals import run_singles_championship, clamp_field, championship_to_dict
     eff = world.current_year_seed(seed)
-    sid = sm.get_or_create(division, gender, seed=eff)
-    s = sm.load_season(sid)
-    if not s or s["phase"] != "complete":
-        return None
-    key = (division, gender, eff, size)
-    if key not in _singles_champ_cache:
-        _singles_champ_cache[key] = run_singles_championship(division, gender, seed=eff, size=size)
-    return _singles_champ_cache[key]
+    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    if s and s["phase"] == "complete":
+        ch = run_singles_championship(division, gender, seed=eff, size=clamp_field(size))
+        return _hydrate_championship(championship_to_dict(ch))
+    return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
 
 def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
-    """The NCAA individual doubles championship — a seed-deterministic 64-pair
-    draw derived from the program rosters. It runs AFTER the team tournament, so
-    it stays None until the team bracket is complete, then is cached for the
-    year. Mirrors get_bracket's lazy, phase-aware shape."""
+    """The NCAA individual doubles championship — live while the team season is
+    complete, then served from the finalize snapshot after the rollover."""
     import app.world as world
     import app.seasonmode as sm
-    from app.individuals import run_doubles_championship, clamp_field
-    size = clamp_field(size)
+    from app.individuals import run_doubles_championship, clamp_field, championship_to_dict
     eff = world.current_year_seed(seed)
-    sid = sm.get_or_create(division, gender, seed=eff)
-    s = sm.load_season(sid)
-    if not s or s["phase"] != "complete":
-        return None                          # unlocks once the team bracket is done
-    key = (division, gender, eff, size)
-    if key not in _doubles_champ_cache:
-        _doubles_champ_cache[key] = run_doubles_championship(division, gender, seed=eff, size=size)
-    return _doubles_champ_cache[key]
+    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    if s and s["phase"] == "complete":
+        ch = run_doubles_championship(division, gender, seed=eff, size=clamp_field(size))
+        return _hydrate_championship(championship_to_dict(ch))
+    return _hydrate_championship(world.latest_championship(seed, division, gender, "Doubles"))
 
 
 def reset_all() -> None:
