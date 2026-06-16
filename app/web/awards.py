@@ -282,6 +282,30 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         best = max(rs, key=lambda r: r.pi)
         add_head(best.school, "conf_coty", f"{conf} Coach of the Year", 58)
 
+    # National Assistant Coach of the Year — rewards player development, not the
+    # head-coach W-L: the program with the most wins at the BOTTOM of the lineup
+    # (4/5/6 singles + 3rd doubles), among the division's top-25 programs, where an
+    # assistant's developmental work shows. Credited to that staff's lead developer
+    # (best development-rated non-head coach). If multiple programs tie at the top,
+    # every tied staff's developer is honored (the award simply repeats that year).
+    from .state import coaching_staff
+    top25 = [r.school for r in sorted(rows, key=lambda r: r.pi, reverse=True)[:25]]
+    if top25:
+        devwins = sm.developmental_wins(sid)
+        best = max((devwins.get(s, 0) for s in top25), default=0)
+        if best > 0:
+            for school in sorted(s for s in top25 if devwins.get(s, 0) == best):
+                asst_staff = [c for c in coaching_staff(division, gender, school)
+                              if c["role"] != "head"]
+                if not asst_staff:
+                    continue
+                dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
+                recs.append({"subject_type": "coach", "subject_id": dev_coach["coach_id"],
+                             "name": dev_coach["name"], "year": year, "season_no": season_no,
+                             "division": division, "gender": gender, "school": school,
+                             "award": "national_asst_coty",
+                             "label": "National Assistant Coach of the Year", "sort": 92})
+
     # Team titles for the head coach of each champion.
     confmap = {r.school: r.conf for r in rows}
     for school in sm.conf_champions(sid):
@@ -290,6 +314,29 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     if champ:
         add_head(champ, "national_champion", "National Champion", 110)
     return recs
+
+
+def record_coach_seasons(division: str, gender: str, seed: int = DEFAULT_SEED) -> int:
+    """Stamp the concluded season onto every coach's history: the seat they held
+    and their team's final record. Captured at the awards phase (alongside honors,
+    before the rollover) so a coach's career record persists by team, year over
+    year — even after they move. Career wins later count head seasons only."""
+    import app.world as world
+    import app.coachreg as coachreg
+    from .state import coaching_staff, team_results
+    if not _concluded(division, gender, seed):
+        return 0
+    yr = world.load_world(seed)["year"] if world.exists(seed) else 0
+    year, season_no = 2026 + yr, yr + 1
+    from app import ncaa
+    n = 0
+    for prog in ncaa.load_division(division, gender).programs:
+        rec = team_results(division, gender, prog.school, seed)
+        for s in coaching_staff(division, gender, prog.school):
+            coachreg.record_season(s["coach_id"], year, season_no, division, gender,
+                                   prog.school, s["role"], rec["wins"], rec["losses"])
+            n += 1
+    return n
 
 
 def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
@@ -305,7 +352,60 @@ def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
         honors.clear_season(year, division, gender)
         total += honors.stamp(honor_records(division, gender, seed))
         total += honors.stamp(coach_honor_records(division, gender, seed))
+        record_coach_seasons(division, gender, seed)
     return total
+
+
+def coach_career_table(coach_id: str, seed: int = DEFAULT_SEED) -> dict:
+    """A coach's record by team, year over year (the player record table, applied
+    to coaches). Each row is a season seat (year, school, role, team W-L); the
+    current season is shown live until it concludes. Career wins count HEAD-coach
+    seasons ONLY — assistants bank no wins until they run a program."""
+    import app.world as world
+    import app.coachreg as coachreg
+    from .state import team_results
+    ROLE = {"head": "Head Coach", "assoc": "Associate Head Coach", "asst": "Assistant Coach"}
+    rows = coachreg.history(coach_id)
+    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    # Prepend the live current season for the coach's present seat (not yet stamped).
+    if not any(r["year"] == cur_year for r in rows):
+        c = coachreg.get(coach_id)
+        if c and c.get("school"):
+            rec = team_results(c["division"], c["gender"], c["school"], seed)
+            rows.insert(0, {"coach_id": coach_id, "year": cur_year,
+                            "season_no": (cur_year - 2026) + 1, "division": c["division"],
+                            "gender": c["gender"], "school": c["school"], "role": c["role"],
+                            "wins": rec["wins"], "losses": rec["losses"], "live": True})
+    out, cw, cl = [], 0, 0
+    for r in rows:
+        is_head = r["role"] == "head"
+        if is_head:
+            cw += r["wins"] or 0
+            cl += r["losses"] or 0
+        out.append({"year": r["year"], "season_no": r["season_no"], "school": r["school"],
+                    "division": r["division"], "gender": r["gender"], "role": r["role"],
+                    "role_label": ROLE.get(r["role"], "Coach"), "wins": r["wins"],
+                    "losses": r["losses"], "counts": is_head, "live": r.get("live", False)})
+    return {"rows": out, "career_w": cw, "career_l": cl,
+            "head_seasons": sum(1 for r in out if r["counts"])}
+
+
+def coach_player_awards(coach_id: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Players a coach helped develop who won awards — every player honor at a
+    program during a season the coach was on its staff, grouped by year."""
+    import app.honors as honors
+    import app.coachreg as coachreg
+    seen, groups = set(), {}
+    for r in coachreg.history(coach_id):
+        k = (r["year"], r["division"], r["gender"], r["school"])
+        if k in seen:
+            continue
+        seen.add(k)
+        for h in honors.at_school(r["year"], r["division"], r["gender"], r["school"], "player"):
+            g = groups.setdefault(r["year"], {"year": r["year"], "school": r["school"], "players": []})
+            g["players"].append({"pid": h["subject_id"], "name": h["name"],
+                                 "label": h["label"], "award": h["award"]})
+    return [groups[y] for y in sorted(groups, reverse=True)]
 
 
 def coach_career_honors(division: str, gender: str, coach_id: str, seed: int = DEFAULT_SEED) -> list[dict]:

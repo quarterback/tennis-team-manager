@@ -131,6 +131,19 @@ def winners(year: int, awards: list[str]) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def at_school(year: int, division: str, gender: str, school: str,
+              subject_type: str = "player") -> list[dict]:
+    """Honor rows for one program in one year (e.g. the players a coach's team had
+    win awards that season), most prestigious first."""
+    conn = _conn()
+    rows = conn.execute(
+        "SELECT * FROM honors WHERE year=? AND division=? AND gender=? AND school=?"
+        " AND subject_type=? ORDER BY sort DESC",
+        (year, division, gender, school, subject_type)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 def reset() -> None:
     conn = _conn()
     conn.execute("DELETE FROM honors")
