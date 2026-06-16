@@ -18,9 +18,20 @@ Two tables on the player card:
 - **Career Singles Record**: `Year · 1 · 2 · 3 · 4 · 5 · 6 · Overall · Dual` + TOTALS.
 - **Career Doubles Record**: `Year · 1 · 2 · 3 · Overall · Dual` + TOTALS.
 
-Each cell is the W-L at that line for that season; the opponent-level "Singles —
-by season" match log was removed. The "Career — by season" team/transfer table
-(team per year, class, STR) stays above it.
+Each cell is the W-L at that line for that season. The "Career — by season"
+team/transfer table (team per year, class, STR) sits above the boxes, and the
+detailed match-by-match log sits below them in a **collapsed, expandable panel**
+(see correction note). All three coexist.
+
+## Correction: the match log was kept, not removed
+The first pass *replaced* the opponent-level "Singles — by season" match log with
+the record boxes, on the read that "I don't need match-by-match" meant "remove
+it." The user actually meant "deprioritize it," and intercepted before deploying.
+Resolved by showing it **both ways**: the record boxes (summary) plus the full
+match-by-match log restored inside a collapsed `<details>` panel (`.pl-matchlog`,
+max-height + scroll) so it expands on demand and doesn't dominate the page.
+Lesson recorded: treat "I don't need X" as deprioritize/tuck-away, not delete,
+unless stated explicitly.
 
 ## The blocker, and the fix
 Singles lines already serialized the player's **pid + slot**, so the singles box
@@ -65,8 +76,9 @@ automatically if individual events are ever tracked per player.
 - `app/world.py` — `_record_world_history` stores `singles_lines`/`doubles_lines`.
 - `app/web/state.py` — `player_career_records`, `_acad_year`.
 - `app/web/server.py` — player route passes `records`; import.
-- `app/web/templates/player.html` — two record boxes; removed match log.
-- `app/web/static/css/recruit.css` — `.rc-recbox`.
+- `app/web/templates/player.html` — two record boxes + the match-by-match log
+  kept below them in a collapsed `<details>` panel.
+- `app/web/static/css/recruit.css` — `.rc-recbox`, `.pl-matchlog`.
 
 ## Tests
 `test_world.py`, `test_world_single_gender.py`, `test_web_recruiting.py` pass
