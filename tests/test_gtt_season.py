@@ -210,6 +210,23 @@ def test_add_drop_is_deterministic(db, tmp_path):
     assert tx1 == tx2
 
 
+def test_mvp_is_a_season_ending_award_not_weekly(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=6)
+    # preseason: no MVP and no player of the week yet
+    assert g.mvp(lid) is None and g.player_of_week(lid) is None
+    # mid-season: still NO MVP, but a player of the week appears
+    for _ in range(4):
+        g.advance(lid, fidelity="fast")
+    board = g.honors_board(lid)
+    assert board["mvp"] is None
+    assert board.get("potw") and board["potw"]["w"] >= 1
+    assert g.mvp(lid) is None                     # not awarded until the season ends
+    # season end: the MVP is awarded, and the player-of-the-week slot drops away
+    g.advance_all(lid, fidelity="fast")
+    board = g.honors_board(lid)
+    assert board["mvp"] is not None and "potw" not in board
+
+
 def test_move_player_reassigns_franchise_and_waives(db):
     lid = g.create_league("GTT", seed=2026, n_teams=6)
     a, b = g.franchises(lid)[0]["id"], g.franchises(lid)[1]["id"]

@@ -1228,18 +1228,68 @@ def champion(league_id):
 
 
 def mvp(league_id, year=None):
+    """The season MVP — a SEASON-ENDING award, like the champion. Mid-season there
+    is no MVP (returns None); see `player_of_week` for in-season flavor."""
     s = load_league(league_id)
     if not s:
         return None
     year = year if year is not None else s["current_year"]
+    if year == s["current_year"] and s["phase"] != "complete":
+        return None
     conn = _db()
     row = _compute_mvp(conn, league_id, year)
     conn.close()
     return row
 
 
+def player_of_week(league_id):
+    """The standout of the most recently completed play week — in-season flavor,
+    explicitly NOT the MVP (which is only awarded once the season ends). Best
+    single-week record, win% then wins, minimum one win."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    conn = _db()
+    year = s["current_year"]
+    week = conn.execute("SELECT MAX(week) w FROM gtt_duals WHERE league_id=? AND year=?"
+                        " AND status='final'", (league_id, year)).fetchone()["w"]
+    if week is None:
+        conn.close()
+        return None
+    rec: dict = {}
+    for r in conn.execute("SELECT lines_json FROM gtt_duals WHERE league_id=? AND year=?"
+                          " AND week=? AND status='final'", (league_id, year, week)).fetchall():
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            hw = ln["home_won"]
+            for pid in ln.get("home_pids", []):
+                d = rec.setdefault(pid, [0, 0]); d[0 if hw else 1] += 1
+            for pid in ln.get("away_pids", []):
+                d = rec.setdefault(pid, [0, 0]); d[1 if hw else 0] += 1
+    meta = _player_meta(conn, league_id)
+    names = _fr_names(conn, league_id)
+    conn.close()
+    best = None
+    for pid, (w, l) in rec.items():
+        if w == 0:
+            continue
+        key = (w / (w + l), w)
+        if best is None or key > best[0]:
+            best = (key, pid, w, l)
+    if not best:
+        return None
+    _k, pid, w, l = best
+    m = meta.get(pid, {})
+    return {"pid": pid, "name": m.get("name", pid), "w": w, "l": l, "week": week,
+            "fid": m.get("fid"), "franchise": names.get(m.get("fid"), "")}
+
+
 def honors_board(league_id):
-    return {"champion": champion(league_id), "mvp": mvp(league_id)}
+    board = {"champion": champion(league_id), "mvp": mvp(league_id)}
+    if not board["mvp"]:                 # in-season: a player of the week, not an MVP
+        board["potw"] = player_of_week(league_id)
+    return board
 
 
 def player_records(league_id, year=None):
