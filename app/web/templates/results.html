@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Results{% endblock %}
+{% block content %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  {% if res.weeks %}
+  <label class="bl-field"><span class="bl-field-label">Week</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="week" onchange="this.form.submit()" style="min-width:200px">
+      {% for w in res.weeks %}<option value="{{ w.week }}"{% if w.week == res.week %} selected{% endif %}>Week {{ w.week }} · {{ w.phase }}</option>{% endfor %}
+    </select></span></label>
+  {% endif %}
+  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">{{ uni_label }}{% if res.phase_label %} · {{ res.phase_label }}{% endif %}</span>
+</div></div>
+</form>
+
+{% if not res.weeks %}
+<div class="bl-container"><div class="bl-note">No results yet — advance the season to play this division's slate.</div></div>
+{% else %}
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Week <strong style="color:var(--text-primary)">{{ res.week }}</strong> · {{ res.phase_label }}</div>
+  <span class="bl-entries-right">winner in <strong style="color:var(--text-primary)">bold</strong> · score is the dual line tally</span>
+</div></div>
+
+{% for g in res.groups %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ g.title }}</span>
+    <span class="bl-panel-meta">{{ g.phase }} · {{ g.duals|length }} {{ 'dual' if g.duals|length == 1 else 'duals' }}</span></div>
+  <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:0">
+    {% for d in g.duals %}
+    <div class="rs-dual">
+      <a class="rs-team{% if d.home_won %} win{% endif %}" href="{{ url_for('teams', school=d.home, u=u) }}">
+        {{ crest_box(d.home, d.home_abbr, d.home_color, 'xs') }}<span class="rs-nm">{{ d.home }}</span>
+        <span class="rs-pts">{{ d.hp }}</span></a>
+      <span class="rs-vs">{{ d.score }}</span>
+      <a class="rs-team away{% if not d.home_won %} win{% endif %}" href="{{ url_for('teams', school=d.away, u=u) }}">
+        <span class="rs-pts">{{ d.ap }}</span><span class="rs-nm">{{ d.away }}</span>
+        {{ crest_box(d.away, d.away_abbr, d.away_color, 'xs') }}</a>
+    </div>
+    {% endfor %}
+  </div>
+</div></div>
+{% endfor %}
+{% endif %}
+
+<style>
+.rs-dual { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: center; gap: 8px;
+  padding: 9px 4px; border-top: 1px solid var(--border-subtle); }
+.rs-dual:first-child { border-top: 0; }
+.rs-team { display: flex; align-items: center; gap: 8px; min-width: 0; text-decoration: none;
+  color: var(--text-secondary); font-size: 14px; }
+.rs-team.away { justify-content: flex-end; }
+.rs-team .rs-nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-team.win { color: var(--text-primary); font-weight: 800; }
+.rs-team.win .rs-pts { color: var(--brand-strong); }
+.rs-pts { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-muted); }
+.rs-team:hover .rs-nm { color: var(--brand-strong); }
+.rs-vs { text-align: center; font-size: 12px; font-weight: 700; color: var(--text-faint);
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+{% endblock %}

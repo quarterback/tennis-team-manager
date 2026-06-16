@@ -136,3 +136,169 @@ def test_p4_str_feed_rates_pros_with_prior_continuity(db):
     # The live value is what the views surface.
     d = g.player_detail(lid, best["pid"])
     assert d["str"] == round(live[best["pid"]][0], 1)
+
+
+def test_roster_carries_a_reserve_beyond_the_lineup(db):
+    lid = g.create_league("GTT", seed=4, n_teams=4)
+    assert g.TARGET_MEN == g.LINEUP_MEN + g.RESERVE_MEN
+    assert g.TARGET_WOMEN == g.LINEUP_WOMEN + g.RESERVE_WOMEN
+    roster = g.franchise_roster(lid, g.franchises(lid)[0]["id"])
+    men = [p for p in roster if p["gender"] == "m"]
+    women = [p for p in roster if p["gender"] == "w"]
+    assert len(men) == g.TARGET_MEN and len(women) == g.TARGET_WOMEN
+    # the top LINEUP_* are starters, the rest are flagged reserves
+    assert sum(p["reserve"] for p in men) == g.RESERVE_MEN
+    assert sum(p["reserve"] for p in women) == g.RESERVE_WOMEN
+
+
+def test_founding_free_agent_pool_seeds_the_wire(db):
+    lid = g.create_league("GTT", seed=4, n_teams=4)
+    fas = g.free_agents(lid)
+    assert sum(p["gender"] == "m" for p in fas) == g.WAIVER_POOL_MEN
+    assert sum(p["gender"] == "w" for p in fas) == g.WAIVER_POOL_WOMEN
+
+
+def test_add_drop_is_gender_locked_and_keeps_rosters_whole(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=8)
+    g.advance_all(lid, fidelity="fast")
+    # every franchise still fields exactly its per-gender roster target — a drop is
+    # always matched by an add of the SAME gender (no trades, gender-locked).
+    for f in g.franchises(lid):
+        assert _active(lid, f["id"], "m") == g.TARGET_MEN
+        assert _active(lid, f["id"], "w") == g.TARGET_WOMEN
+    tx = g.transactions(lid)
+    assert tx, "a full season should produce some add/drop activity"
+    for t in tx:
+        # ability-driven: a free agent is only signed when it clears the cut player
+        # by the margin (never a lateral or downgrade move).
+        assert t["add_str"] >= t["drop_str"] + g.WAIVER_MARGIN
+
+
+def test_add_drop_never_cuts_a_franchise_starter(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=8)
+    g.advance_all(lid, fidelity="fast")
+    live = g.league_player_str(lid)
+    # No dropped player was, at the time, a top-LINEUP starter for its club: only
+    # the fringe is ever at risk, so franchise players stay put.
+    for t in g.transactions(lid):
+        roster = g.franchise_roster(lid, t["fid"])
+        # the dropped player has already left this roster, so reconstruct the
+        # gender group it belonged to and confirm the cut player wasn't a starter.
+        same = sorted([p for p in roster if p["gender"] == t["gender"]],
+                      key=lambda x: -x["str"])
+        lineup_n = g.LINEUP_MEN if t["gender"] == "m" else g.LINEUP_WOMEN
+        # the signed replacement sits somewhere; the cut player's STR was below the
+        # weakest retained starter (margin enforced), so it was reserve-tier.
+        starters = same[:lineup_n]
+        assert all(s["str"] >= t["drop_str"] for s in starters)
+
+
+def test_add_drop_is_deterministic(db, tmp_path):
+    lid1 = g.create_league("A", seed=77, n_teams=6)
+    g.advance_all(lid1, fidelity="fast")
+    tx1 = [(t["week"], t["fid"], t["gender"], t["add_pid"], t["drop_pid"])
+           for t in g.transactions(lid1)]
+    p2 = str(tmp_path / "gtt2.db")
+    os.environ["TENNIS_DB_PATH"] = p2
+    g.DB_PATH = p2
+    g._schema_ready_for = None
+    g._str_cache.clear()
+    lid2 = g.create_league("B", seed=77, n_teams=6)
+    g.advance_all(lid2, fidelity="fast")
+    tx2 = [(t["week"], t["fid"], t["gender"], t["add_pid"], t["drop_pid"])
+           for t in g.transactions(lid2)]
+    assert tx1 == tx2
+
+
+def test_move_player_reassigns_franchise_and_waives(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=6)
+    a, b = g.franchises(lid)[0]["id"], g.franchises(lid)[1]["id"]
+    pid = g.franchise_roster(lid, a)[0]["pid"]
+    assert g.move_player(lid, pid, b)
+    assert g.player_detail(lid, pid)["fid"] == b
+    assert _active(lid, a, "m") + _active(lid, a, "w") == g.TARGET_MEN + g.TARGET_WOMEN - 1
+    # waive to free agency
+    assert g.move_player(lid, pid, None)
+    assert g.player_detail(lid, pid)["fid"] is None
+    assert any(fa["pid"] == pid for fa in g.free_agents(lid))
+    # unknown player / wrong league destination is rejected
+    assert not g.move_player(lid, "nope", b)
+    assert not g.move_player(lid, pid, 99999)
+
+
+def test_midseason_move_tracks_record_per_team(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=6)
+    a, b = g.franchises(lid)[0]["id"], g.franchises(lid)[1]["id"]
+    s = g.load_league(lid)
+    for _ in range(s["total_weeks"] // 2):           # play out half the season for A
+        g.advance(lid, fidelity="fast")
+    mover = max(g.franchise_roster(lid, a), key=lambda x: x["w"] + x["l"])
+    a_w, a_l = mover["w"], mover["l"]
+    assert a_w + a_l > 0
+    g.move_player(lid, mover["pid"], b)              # ... then move to B mid-season
+    g.advance_all(lid, fidelity="fast")
+
+    det = g.player_detail(lid, mover["pid"])
+    assert det["multi_team"] and len(det["season_teams"]) == 2
+    # the season total is the sum of the per-club records, not double-counted
+    assert det["w"] == sum(t["w"] for t in det["season_teams"])
+    assert det["l"] == sum(t["l"] for t in det["season_teams"])
+    # the record earned for A is frozen at the move; B's roster shows only B's part
+    a_rec = next(t for t in det["season_teams"] if t["fid"] == a)
+    assert (a_rec["w"], a_rec["l"]) == (a_w, a_l)
+    on_b = next(x for x in g.franchise_roster(lid, b) if x["pid"] == mover["pid"])
+    b_rec = next(t for t in det["season_teams"] if t["fid"] == b)
+    assert (on_b["w"], on_b["l"]) == (b_rec["w"], b_rec["l"]) and on_b["elsewhere"] == a_w + a_l
+    # every match in the log is attributed to the club the player was on at the time
+    assert {m["team_fid"] for m in det["log"]} == {a, b}
+
+
+def test_gtt_intake_uses_persisted_world_graduates_with_d1_mix_and_slack(db):
+    from app import world
+    from app.development import generate_prospect
+    import json, random
+
+    world.WORLD_DB = g.DB_PATH
+    world._schema_ready_for = None
+    world.init_schema()
+    conn = g._db()
+    wid = conn.execute("INSERT INTO world (seed, year, week) VALUES (?,?,?)", (2026, 1, 0)).lastrowid
+
+    def pdata(pid_seed, gender, talent):
+        p = generate_prospect(random.Random(pid_seed), f"Grad {pid_seed}", "USA",
+                              gender=gender, talent=talent)
+        p.class_year = "Sr"
+        return p.pid, json.dumps(world.prospect_to_dict(p))
+
+    rows = []
+    for i in range(24):
+        gender = "men" if i % 2 == 0 else "women"
+        pid, data = pdata(i, gender, 70 - i * 0.2)
+        rows.append((wid, 0, "D1", gender, pid, 80.0 - i, 78.0 - i, data))
+    # One genuinely pro-caliber small-school graduate and one who fails the bar.
+    good_pid, good_data = pdata(100, "men", 66)
+    rows.append((wid, 0, "D2", "men", good_pid, g.NON_D1_MIN_STR + 3,
+                 g.NON_D1_MIN_OVR + 3, good_data))
+    bad_pid, bad_data = pdata(101, "women", 40)
+    rows.append((wid, 0, "D3", "women", bad_pid, g.NON_D1_MIN_STR - 1,
+                 g.NON_D1_MIN_OVR + 8, bad_data))
+    conn.executemany("INSERT INTO world_graduates VALUES (?,?,?,?,?,?,?,?)", rows)
+    conn.commit()
+    conn.close()
+
+    lid = g.create_league("Pipeline", seed=2026, n_teams=4)
+    league = g.load_league(lid)
+    conn = g._db()
+    before = conn.execute("SELECT COUNT(*) c FROM gtt_players WHERE league_id=?", (lid,)).fetchone()["c"]
+    g._intake(conn, league, {"m": 11, "w": 10})
+    after = conn.execute("SELECT COUNT(*) c FROM gtt_players WHERE league_id=?", (lid,)).fetchone()["c"]
+    college = conn.execute("SELECT pid, fid, origin, data FROM gtt_players WHERE league_id=? "
+                           "AND origin='college'", (lid,)).fetchall()
+    conn.commit()
+    conn.close()
+
+    assert after - before == 25  # 21 open spots + four free-agent slack signings.
+    assert any(r["pid"] == good_pid and r["fid"] is None for r in college)
+    assert all(r["pid"] != bad_pid for r in college)
+    assert sum(1 for r in college if r["pid"] == good_pid) == 1
+    assert len(college) == 25

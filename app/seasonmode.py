@@ -356,6 +356,13 @@ def advance(season_id: int) -> dict:
         conn.commit(); conn.close()
         return out
 
+    if s["phase"] == "selection":
+        # The bracket reveal is over — start the NCAAs and play the first round.
+        conn.execute("UPDATE seasons SET phase='ncaa' WHERE id=?", (season_id,))
+        out = _advance_ncaa_round(conn, load_season(season_id), progs)
+        conn.commit(); conn.close()
+        return out
+
     if s["phase"] == "ncaa":
         out = _advance_ncaa_round(conn, s, progs)
         conn.commit(); conn.close()
@@ -433,7 +440,9 @@ def _finish_conf_phase(conn, s, div, wl) -> dict:
             champions[conf] = last["home"] if last["winner"] == 0 else last["away"]
         elif members:
             champions[conf] = max(members, key=lambda p: _winpct(wl, p.school)).school
-    conn.execute("UPDATE seasons SET phase='ncaa', champion=? WHERE id=?",
+    # Lock the autobids and pause at 'selection' — the bracket reveal. The field
+    # is now set (champions + at-large by PI); the NCAAs begin on the next advance.
+    conn.execute("UPDATE seasons SET phase='selection', champion=? WHERE id=?",
                  (json.dumps(champions), s["id"]))
     return {"phase": "conf_tournaments", "done": True, "champions": len(champions)}
 
@@ -731,7 +740,7 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
     if len(rated) < 2:
         return None
     champions = []
-    if s["phase"] == "ncaa" and s["champion"]:
+    if s["phase"] in ("selection", "ncaa", "complete") and s["champion"]:
         try:
             progs = _programs(s["division"], s["gender"])
             champions = [progs[v] for v in json.loads(s["champion"]).values()
@@ -740,6 +749,31 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
             champions = []
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
     return run_bracket(seeded, autobids, seed=s["seed"])
+
+
+def ncaa_field(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 8):
+    """The locked NCAA field for the bracket reveal — (seeded programs, autobid
+    keys, snub board, ratings), selected exactly as the tournament will use it
+    (conference champions auto-in, the rest at-large by Power Index). The snub
+    board is the `out_n` highest-Power-Index teams that JUST missed the field —
+    'who's out'. Available once the conference tournaments crown champions."""
+    s = load_season(season_id)
+    conn = _db()
+    ratings = compute_ratings(_completed(conn, season_id, ("REG", "CT")))
+    conn.close()
+    div = load_division(s["division"], s["gender"])
+    progs = {p.school: p for p in div.programs}
+    champs_map = json.loads(s["champion"] or "{}")
+    champions = [progs[v] for v in champs_map.values() if v in progs and v in ratings]
+    rated = [p for p in div.programs if p.school in ratings]
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    field_keys = {p.key for p in seeded}
+    out = sorted((p for p in rated if p.key not in field_keys),
+                 key=lambda p: ratings[p.school].pi, reverse=True)[:out_n]
+    out_board = [{"school": p.school, "conf": p.conf_abbr,
+                  "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
+                 for p in out]
+    return seeded, autobids, out_board, ratings
 
 
 def dual_detail(dual_id: int) -> dict | None:
@@ -757,6 +791,19 @@ def team_schedule(season_id: int, school: str) -> list[dict]:
     conn = _db()
     rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND (home=? OR away=?)"
                         " ORDER BY week", (season_id, school, school)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def all_results(season_id: int) -> list[dict]:
+    """Every completed dual this season (regular + conference tournament + NCAA),
+    week-ordered — the source for a week-by-week results browser. `conf` holds the
+    conference for REG/CT and the round name (e.g. 'Round of 16') for NCAA."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT week, round, conf, round_no, bpos, home, away, home_points, away_points, winner"
+        " FROM duals WHERE season_id=? AND status='final'"
+        " ORDER BY week, round, round_no, bpos", (season_id,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
@@ -842,6 +889,75 @@ def player_records(season_id: int) -> dict:
         _prec_cache[key] = {k: (v[0], v[1]) for k, v in rec.items()}
     conn.close()
     return _prec_cache[key]
+
+
+_pline_cache: dict = {}
+
+
+def player_primary_lines(season_id: int) -> dict:
+    """``pid -> primary singles line`` (the lineup slot played most this season),
+    one pass over completed lines. Cached by completed-dual count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _pline_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        tally: dict = {}
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed") or ln.get("home_pid") is None:
+                    continue            # doubles / unplayed lines carry no singles slot
+                slot = ln.get("slot")
+                for pid in (ln["home_pid"], ln["away_pid"]):
+                    tally.setdefault(pid, {})[slot] = tally.setdefault(pid, {}).get(slot, 0) + 1
+        _pline_cache.clear()
+        _pline_cache[key] = {pid: max(d, key=d.get) for pid, d in tally.items() if d}
+    conn.close()
+    return _pline_cache[key]
+
+
+_plrec_cache: dict = {}
+
+
+def player_line_records(season_id: int) -> dict:
+    """Per-player W-L by lineup line —
+    ``{pid: {'singles': {n: [w, l]}, 'doubles': {n: [w, l]}}}`` (n = 1..6 singles,
+    1..3 doubles). One pass over completed dual lines; cached by completed count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _plrec_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        rec: dict = {}
+
+        def bump(pid, kind, n, won):
+            cell = rec.setdefault(pid, {"singles": {}, "doubles": {}})[kind].setdefault(n, [0, 0])
+            cell[0 if won else 1] += 1
+
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                if not ln.get("completed"):
+                    continue
+                slot = ln.get("slot") or ""
+                hw = ln.get("home_won")
+                if slot.startswith("S") and ln.get("home_pid") is not None:
+                    n = int(slot[1:])
+                    bump(ln["home_pid"], "singles", n, hw)
+                    bump(ln["away_pid"], "singles", n, not hw)
+                elif slot.startswith("D") and ln.get("home_pids"):
+                    n = int(slot[1:])
+                    for pid in ln["home_pids"]:
+                        bump(pid, "doubles", n, hw)
+                    for pid in ln.get("away_pids", []):
+                        bump(pid, "doubles", n, not hw)
+        _plrec_cache.clear()
+        _plrec_cache[key] = rec
+    conn.close()
+    return _plrec_cache[key]
 
 
 def player_log(season_id: int, pid: str) -> list[dict]:

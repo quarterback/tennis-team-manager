@@ -18,6 +18,8 @@ from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
+                    player_career_table, player_career_records, search_players,
+                    results_by_week, ncaa_bracket_view, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -56,6 +58,8 @@ NAV_GROUPS = [
         {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
         {"id": "data",      "label": "Data Portal",  "icon": "📈", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
+        {"id": "results",   "label": "Results",      "icon": "📋", "endpoint": "results",          "args": {}},
+        {"id": "ncaa",      "label": "NCAA Bracket", "icon": "🥇", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
         {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
@@ -64,6 +68,7 @@ NAV_GROUPS = [
     ("Management", [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
+        {"id": "transfers", "label": "Transfer Portal","icon": "🔁", "endpoint": "transfers",        "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "📅", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
@@ -100,6 +105,8 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
     if p.startswith("/rankings"):         return "rankings"
+    if p.startswith("/results"):          return "results"
+    if p.startswith("/ncaa"):             return "ncaa"
     if p.startswith("/awards"):           return "awards"
     if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
@@ -117,6 +124,7 @@ def _active_nav(req) -> str:
     if p.startswith("/intel"):            return "intel"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
+    if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
@@ -136,8 +144,25 @@ def _game_context():
         if not wd.exists():
             return None
         w = wd.load_world()
+        # Reflect the live stage across ACTIVE universes (cheap single-row reads),
+        # so the bar reads "Conf tournaments" / "NCAA championship" instead of
+        # always "Regular season".
+        import app.seasonmode as sm
+        from app import worldconfig
+        _ORD = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
+        _LBL = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
+                "selection": "Bracket reveal", "ncaa": "NCAA championship",
+                "complete": "Postseason complete"}
+        phases = []
+        for _v, d, g, _lbl in UNIVERSES:
+            if not worldconfig.is_active(d, g):
+                continue
+            s = sm.load_season(sm.get_or_create(d, g, seed=wd.current_year_seed()))
+            phases.append(s.get("phase", "regular"))
+        stage = min(phases, key=lambda p: _ORD.get(p, 0)) if phases else "regular"
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
-                "week": w["week"], "phase": "Regular season", "complete": False,
+                "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
+                "complete": stage == "complete",
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
         return None
@@ -504,14 +529,14 @@ def create_app() -> Flask:
         return render_template(
             "gtt_hub.html", active="GTT", league=league, leagues=leagues,
             standings=gs.standings(lid), honors=gs.honors_board(lid),
-            history=gs.season_history(lid),
+            history=gs.season_history(lid), transactions=gs.transactions(lid, limit=40),
             recent=gs.week_duals(lid, max(1, league["current_week"] - 1)),
             recent_week=max(1, league["current_week"] - 1))
 
     @app.route("/gtt/new", methods=["POST"])
     def gtt_new():
         name = (request.form.get("name") or "Global Team Tennis").strip()
-        seed = request.form.get("seed", type=int) or 2026
+        seed = request.form.get("seed", type=int)
         teams = min(16, max(4, request.form.get("teams", type=int) or gs.DEFAULT_TEAMS))
         lid = gs.create_league(name, seed=seed, n_teams=teams)
         return redirect(url_for("gtt_hub", lg=lid))
@@ -549,6 +574,8 @@ def create_app() -> Flask:
         row = next((r for r in gs.standings(lid) if r["fid"] == fid), None)
         return render_template("gtt_franchise.html", active="GTT", league=league,
                                fr=fr, row=row, roster=gs.franchise_roster(lid, fid),
+                               free_agents=gs.free_agents(lid), franchises=gs.franchises(lid),
+                               moves=[t for t in gs.transactions(lid) if t["fid"] == fid],
                                is_champion=(league.get("champion") == fid))
 
     @app.route("/gtt/franchise/<int:fid>/edit", methods=["POST"])
@@ -559,6 +586,18 @@ def create_app() -> Flask:
                           city=(request.form.get("city") or None),
                           abbrev=(request.form.get("abbrev") or None))
         return redirect(url_for("gtt_franchise", fid=fid, lg=lid))
+
+    @app.route("/gtt/franchise/<int:fid>/move", methods=["POST"])
+    def gtt_move(fid):
+        lid = request.form.get("lg", type=int)
+        pid = request.form.get("pid", "")
+        dest = request.form.get("dest", "")
+        if lid and pid:
+            dest_fid = None if dest in ("", "FA") else int(dest)
+            gs.move_player(lid, pid, dest_fid)
+        # land on whichever roster the player ended up on (or stay put for a waive)
+        return redirect(url_for("gtt_franchise",
+                                fid=(int(dest) if dest not in ("", "FA") else fid), lg=lid))
 
     @app.route("/gtt/player/<pid>")
     def gtt_player(pid):
@@ -661,10 +700,39 @@ def create_app() -> Flask:
             abort(404)
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         career, (wins, losses) = player_career(division, gender, pid)
+        career_table = player_career_table(division, gender, pid)
+        records = player_career_records(division, gender, pid)
         honor_years = player_career_honors(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
-                               career=career, strv=strv, rel=rel, wins=wins, losses=losses,
+                               career=career, career_table=career_table, records=records,
+                               strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, crest=crest, u=u, uni_label=label)
+
+    @app.route("/ncaa")
+    def ncaa_bracket():
+        division, gender, label, u = _universe(request)
+        return render_template("ncaa_bracket.html", active="NCAA Bracket", u=u, uni_label=label,
+                               br=ncaa_bracket_view(division, gender), division=division)
+
+    @app.route("/results")
+    def results():
+        division, gender, label, u = _universe(request)
+        wk = request.args.get("week")
+        res = results_by_week(division, gender, week=wk)
+        return render_template("results.html", active="Results", u=u, uni_label=label, res=res)
+
+    @app.route("/search")
+    def search():
+        division, gender, label, u = _universe(request)
+        q = request.args.get("q", "")
+        res = search_players(q)
+        return render_template("search.html", active="", u=u, uni_label=label, res=res, q=q)
+
+    @app.route("/transfers")
+    def transfers():
+        division, gender, label, u = _universe(request)
+        return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
+                               tp=transfer_portal_view(division, gender))
 
     @app.route("/recruiting")
     def recruiting():

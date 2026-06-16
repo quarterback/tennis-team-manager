@@ -34,9 +34,10 @@
     {% set ab = crest(r.school) %}
     <div class="bl-row">
       <span class="bl-rank">{{ p.start + loop.index0 }}</span>
-      <a class="bl-school" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}">
-        <span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}
-        <span class="ib-divchip">{{ r.class_year or '—' }}</span></a>
+      <span class="bl-school" style="gap:6px">
+        <a href="{{ url_for('player', pid=r.pid, school=r.school, u=r.division ~ '-' ~ r.gender) }}"><span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}</a>
+        <span class="ib-divchip">{{ r.class_year or '—' }}</span>
+        <a class="ib-fit" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}" title="Fit Finder">fit ↗</a></span>
       <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.school }} <span class="ib-divchip">{{ r.division }} #{{ r.team_pi_rank }}</span></span>
       <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>

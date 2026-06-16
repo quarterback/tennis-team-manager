@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — NCAA Bracket{% endblock %}
+{% block content %}
+
+{% macro team(school, abbr, color, won, score, show_score) %}
+<div class="bl-bracket-team{% if won %} is-winner{% endif %}">
+  <span class="bl-team-seed"></span>
+  {{ crest_box(school, abbr, color, 'xs') }}
+  <span class="bl-team-copy"><span class="nm">{{ school }}</span></span>
+  {% if show_score and score %}<span class="bl-team-score">{{ score.split('-')[0] if won else score.split('-')[1] }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
+  <span class="bl-bracket-pills" style="margin-left:auto">
+    {% for val, d, g, lbl in universes %}
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val) }}">{{ lbl }}</a>
+    {% endfor %}
+  </span>
+</div></div>
+
+{% if not br %}
+<div class="bl-container"><div class="bl-note">
+  The NCAA bracket fills in once the tournament begins — advance through the conference tournaments and into the
+  national championship, then check back here to see the real, played bracket. (The
+  <a href="{{ url_for('bracket', u=u) }}" style="color:var(--text-link)">Bracket Simulator</a> shows a projection meanwhile.)
+</div></div>
+{% elif br.reveal %}
+<div class="bl-container"><div class="bl-note new">
+  <strong>🎉 Bracket reveal — the field is set.</strong> Conference champions are in (AQ); the rest of the
+  {{ br.size }}-team field is at-large by Power Index (AL). Advance the world to start the NCAAs.
+</div></div>
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">The Field</span>
+    <span class="bl-panel-meta">{{ br.size }} teams · {{ br.n_aq }} automatic qualifiers</span></div>
+  <div class="rs-field">
+    {% for p in br.field %}
+    <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
+      <span class="seed">{{ p.seed }}</span>
+      {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+      <span class="nm">{{ p.school }}</span>
+      <span class="conf">{{ p.conf }}</span>
+      <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div></div>
+
+{% if br.out_board %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">First Out</span>
+    <span class="bl-panel-meta">highest Power Index left out of the field</span></div>
+  <div class="rs-field">
+    {% for o in br.out_board %}
+    <a class="rs-seedrow out" href="{{ url_for('teams', school=o.school, u=u) }}">
+      <span class="seed">—</span>
+      {{ crest_box(o.school, o.abbr, o.color, 'xs') }}
+      <span class="nm">{{ o.school }}</span>
+      <span class="conf">{{ o.conf }} · {{ o.rec }}</span>
+      <span class="bl-bid" style="background:var(--gray-200);color:var(--text-muted)">OUT</span>
+    </a>
+    {% endfor %}
+  </div>
+</div></div>
+{% endif %}
+<style>
+.rs-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px 14px; padding: 6px 4px; }
+.rs-seedrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; text-decoration: none;
+  color: var(--text-primary); font-size: 13.5px; border-bottom: 1px solid var(--border-subtle); }
+.rs-seedrow:hover { background: var(--green-50); }
+.rs-seedrow .seed { width: 26px; text-align: right; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rs-seedrow .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-seedrow .conf { font-size: 11px; color: var(--text-muted); }
+</style>
+
+{% else %}
+
+{% if br.champion %}
+<div class="bl-container"><div class="bl-champ">
+  {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
+  <div><div class="label">National Champion</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ br.champion.school }}</div></div>
+</div></div>
+{% endif %}
+
+<div class="bl-container">
+  <div class="bl-rounds bl-rounds-sim">
+    {% for rnd in br.rounds %}
+    <section class="bl-panel bl-round-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span>
+        <span class="bl-panel-meta">{{ rnd.matchups|length }} {{ 'dual' if rnd.matchups|length == 1 else 'duals' }}</span></div>
+      <div class="bl-round-body">
+        {% for m in rnd.matchups %}
+        <article class="bl-brk-match">
+          <div class="bl-match-topline"><span>{{ rnd.name }}</span>{% if m.score %}<span>{{ m.score }}</span>{% endif %}</div>
+          {{ team(m.home, m.home_abbr, m.home_color, m.home_won, m.score, True) }}
+          {{ team(m.away, m.away_abbr, m.away_color, not m.home_won, m.score, True) }}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

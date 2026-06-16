@@ -103,6 +103,27 @@
   </div>
   {% endif %}
 
+  {% if transactions %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Add/drop wire</span>
+      <span class="bl-panel-meta">clubs cut a slumping reserve for a clearly better free agent — same gender, no trades</span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-tx">
+      <div class="bl-thead gtt-tx-row">
+        <span class="bl-th num">Wk</span><span class="bl-th">Franchise</span>
+        <span class="bl-th">Added</span><span class="bl-th">Dropped</span>
+      </div>
+      {% for t in transactions %}
+      <div class="bl-row gtt-tx-row">
+        <span class="bl-cell-num">{{ t.week }}</span>
+        <span class="bl-cell"><a href="{{ url_for('gtt_franchise', fid=t.fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">{{ t.franchise }}</a></span>
+        <span class="bl-cell" style="color:var(--stat-good-strong)">▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}</span></span>
+        <span class="bl-cell" style="color:var(--text-muted)">▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}</span></span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endif %}
+
   {% if history %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title">Season history</span>
@@ -140,6 +161,7 @@
 <style>
 .gtt-std { --bl-grid-cols: 28px minmax(160px,1fr) 72px 64px; }
 .gtt-hist { --bl-grid-cols: 64px minmax(150px,1fr) minmax(130px,1fr); }
+.gtt-tx { --bl-grid-cols: 36px minmax(120px,1fr) minmax(150px,1.2fr) minmax(150px,1.2fr); }
 .gtt-team { display:flex; align-items:center; gap:8px; min-width:0; }
 .gtt-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
 .bl-crest.xs { display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:20px; padding:0 5px; border-radius:5px; background:var(--surface-subtle); font-size:10px; font-weight:700; letter-spacing:.02em; }

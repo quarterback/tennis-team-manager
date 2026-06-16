@@ -187,6 +187,27 @@
 .ib-tag.up { background: var(--stat-power-bg); color: var(--stat-power); }
 .ib-divchip { font-size: 10px; font-weight: 800; letter-spacing: .03em; padding: 1px 6px; border-radius: 5px;
   background: var(--gray-150); color: var(--text-secondary); }
+.ib-fit { font-size: 10.5px; font-weight: 700; color: var(--text-link); text-decoration: none;
+  border: 1px solid var(--border-subtle); border-radius: 5px; padding: 0 5px; white-space: nowrap; }
+.ib-fit:hover { border-color: var(--brand); color: var(--brand-strong); }
+
+/* collapsible match-by-match log on the player card */
+.pl-matchlog { padding: 0; overflow: hidden; }
+.pl-matchlog > summary { cursor: pointer; list-style: none; user-select: none; }
+.pl-matchlog > summary::-webkit-details-marker { display: none; }
+.pl-matchlog > summary::after { content: "▾"; margin-left: 10px; color: var(--text-muted); font-size: 12px; transition: transform .15s; }
+.pl-matchlog[open] > summary::after { transform: rotate(180deg); }
+.pl-matchlog > summary:hover .bl-panel-title { color: var(--brand-strong); }
+
+/* ============================================================ Career record box */
+/* The college-tennis "career record" grid: per-line W-L by year + Overall/Dual. */
+.rc-recbox { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rc-recbox th, .rc-recbox td { padding: 7px 10px; text-align: center; border: 1px solid var(--border-subtle); white-space: nowrap; }
+.rc-recbox thead th { background: var(--brand); color: #fff; font-weight: 800; font-size: 12px; border-color: var(--brand); }
+.rc-recbox th.yr, .rc-recbox td.yr { text-align: left; font-weight: 700; }
+.rc-recbox tbody tr:nth-child(odd) td { background: var(--surface-subtle); }
+.rc-recbox td.tot { font-weight: 700; color: var(--text-primary); }
+.rc-recbox .totrow td { font-weight: 800; background: var(--green-50); border-top: 2px solid var(--brand); }
 
 /* ============================================================ Star spread */
 /* The 5★→1★ tier breakdown a class actually signed. Each chip is a star count

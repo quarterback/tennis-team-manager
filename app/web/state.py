@@ -64,43 +64,58 @@ def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int 
     return _bracket_cache[key]
 
 
+def _hydrate_championship(data):
+    """Rebuild a display-ready championship (objects matching the template's
+    attribute contract) from a stored/serialized dict — crests resolved by school."""
+    if not data:
+        return None
+    from types import SimpleNamespace
+    from .rankings_data import crest
+
+    def ent(d):
+        if not d:
+            return None
+        ab, col = crest(d["school"])
+        return SimpleNamespace(label=d["label"], pid=d.get("pid"), seed=d.get("seed"),
+                               program=SimpleNamespace(school=d["school"], abbr=ab, color=col,
+                                                       conf_abbr=d.get("conf_abbr", "")))
+    rounds = [[SimpleNamespace(rnd=m["rnd"], hi_seed=m["hi_seed"], lo_seed=m["lo_seed"],
+                               winner_is_hi=m["winner_is_hi"], scoreline=m["scoreline"],
+                               upset=m["upset"], hi=ent(m["hi"]), lo=ent(m["lo"]))
+               for m in rnd] for rnd in data["rounds"]]
+    return SimpleNamespace(event=data["event"], n_seeds=data["n_seeds"],
+                           entries=[ent(e) for e in data["entries"]], rounds=rounds,
+                           champion=ent(data["champion"]), runner_up=ent(data["runner_up"]),
+                           seed_of=(lambda e: e.seed if e else None))
+
+
 def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
-    """The NCAA individual singles championship — a seed-deterministic 128-player
-    draw derived from the program rosters, played AFTER the team tournament (None
-    until the team bracket is complete). Cached for the year."""
+    """The NCAA individual singles championship, played AFTER the team tournament.
+    Computed live while the team season is complete; once the year rolls over it
+    is served from the snapshot persisted at finalize, so it stays viewable."""
     import app.world as world
     import app.seasonmode as sm
-    from app.individuals import run_singles_championship, clamp_field
-    size = clamp_field(size)
+    from app.individuals import run_singles_championship, clamp_field, championship_to_dict
     eff = world.current_year_seed(seed)
-    sid = sm.get_or_create(division, gender, seed=eff)
-    s = sm.load_season(sid)
-    if not s or s["phase"] != "complete":
-        return None
-    key = (division, gender, eff, size)
-    if key not in _singles_champ_cache:
-        _singles_champ_cache[key] = run_singles_championship(division, gender, seed=eff, size=size)
-    return _singles_champ_cache[key]
+    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    if s and s["phase"] == "complete":
+        ch = run_singles_championship(division, gender, seed=eff, size=clamp_field(size))
+        return _hydrate_championship(championship_to_dict(ch))
+    return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
 
 def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
-    """The NCAA individual doubles championship — a seed-deterministic 64-pair
-    draw derived from the program rosters. It runs AFTER the team tournament, so
-    it stays None until the team bracket is complete, then is cached for the
-    year. Mirrors get_bracket's lazy, phase-aware shape."""
+    """The NCAA individual doubles championship — live while the team season is
+    complete, then served from the finalize snapshot after the rollover."""
     import app.world as world
     import app.seasonmode as sm
-    from app.individuals import run_doubles_championship, clamp_field
-    size = clamp_field(size)
+    from app.individuals import run_doubles_championship, clamp_field, championship_to_dict
     eff = world.current_year_seed(seed)
-    sid = sm.get_or_create(division, gender, seed=eff)
-    s = sm.load_season(sid)
-    if not s or s["phase"] != "complete":
-        return None                          # unlocks once the team bracket is done
-    key = (division, gender, eff, size)
-    if key not in _doubles_champ_cache:
-        _doubles_champ_cache[key] = run_doubles_championship(division, gender, seed=eff, size=size)
-    return _doubles_champ_cache[key]
+    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    if s and s["phase"] == "complete":
+        ch = run_doubles_championship(division, gender, seed=eff, size=clamp_field(size))
+        return _hydrate_championship(championship_to_dict(ch))
+    return _hydrate_championship(world.latest_championship(seed, division, gender, "Doubles"))
 
 
 def reset_all() -> None:
@@ -117,7 +132,8 @@ def reset_all() -> None:
     _portal_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
-    for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):
+    for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache,
+              sm._pline_cache, sm._plrec_cache):
         c.clear()
     ncaa.reset_caches()
 
@@ -778,6 +794,203 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
     }
 
 
+def _acad_year(cal_year: int) -> str:
+    return f"{cal_year - 1}-{cal_year % 100:02d}"
+
+
+def player_career_records(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
+    """The college-tennis 'career record' boxes: per-line W-L by season for
+    singles (lines 1–6) and doubles (1–3), each with Overall, Dual, and a TOTALS
+    row. Built from the player's recorded per-line history plus the in-progress
+    current season. (Dual == Overall here — every match in the sim is a team
+    dual; the columns diverge only once individual events are tracked.)"""
+    import app.world as world
+    import app.seasonmode as sm
+
+    p = world.find_persisted_player(pid, seed)
+    hist = list(getattr(p, "history", []) or []) if p else []
+    seasons = []
+    for h in hist:
+        seasons.append({
+            "cal_year": world.BASE_YEAR + h["year"],
+            "singles": {int(k): v for k, v in (h.get("singles_lines") or {}).items()},
+            "doubles": {int(k): v for k, v in (h.get("doubles_lines") or {}).items()},
+        })
+    wld = world.load_world(seed)
+    cur = wld["year"] if wld else 0
+    if not any(h.get("year") == cur for h in hist):
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+        lr = sm.player_line_records(sid).get(pid)
+        if lr:
+            seasons.append({"cal_year": world.BASE_YEAR + cur,
+                            "singles": lr["singles"], "doubles": lr["doubles"]})
+    seasons.sort(key=lambda s: s["cal_year"])
+
+    def _box(kind: str, n_lines: int):
+        rows, totals, tov = [], {i: [0, 0] for i in range(1, n_lines + 1)}, [0, 0]
+        for s in seasons:
+            lines, ov = s[kind], [0, 0]
+            cells = {}
+            for i in range(1, n_lines + 1):
+                wl = lines.get(i)
+                cells[i] = (f"{wl[0]}-{wl[1]}" if wl else "–")
+                if wl:
+                    ov[0] += wl[0]; ov[1] += wl[1]
+                    totals[i][0] += wl[0]; totals[i][1] += wl[1]
+            tov[0] += ov[0]; tov[1] += ov[1]
+            rows.append({"year": _acad_year(s["cal_year"]), "cells": cells,
+                         "overall": f"{ov[0]}-{ov[1]}", "dual": f"{ov[0]}-{ov[1]}"})
+        tcells = {i: (f"{totals[i][0]}-{totals[i][1]}" if (totals[i][0] or totals[i][1]) else "–")
+                  for i in range(1, n_lines + 1)}
+        return {"n_lines": n_lines, "rows": rows, "lines": list(range(1, n_lines + 1)),
+                "tcells": tcells, "toverall": f"{tov[0]}-{tov[1]}", "tdual": f"{tov[0]}-{tov[1]}",
+                "any": bool(rows)}
+
+    return {"singles": _box("singles", 6), "doubles": _box("doubles", 3)}
+
+
+def _round_phase(round_: str, conf: str):
+    """(group_title, phase_label) for a dual round."""
+    if round_ == "CT":
+        return (f"{conf} Tournament", "Conference Tournament")
+    if round_ == "NCAA":
+        return (conf or "NCAA", "NCAA Championship")     # conf holds the round name
+    return ("Regular Season", "Regular Season")
+
+
+def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_SEED):
+    """Week-by-week results browser: for the selected week, the duals played
+    (regular slate + conference-tournament rounds + NCAA rounds), grouped and
+    labelled, each with its score and winner. Also returns the weeks that have
+    results so the page can offer a selector."""
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    rows = sm.all_results(sid)
+    if not rows:
+        return {"weeks": [], "week": None, "groups": [], "phase_label": None}
+
+    order = {"REG": 0, "CT": 1, "NCAA": 2}
+    by_week: dict = {}
+    for r in rows:
+        by_week.setdefault(r["week"], []).append(r)
+    weeks = []
+    for wk in sorted(by_week):
+        top = max(by_week[wk], key=lambda r: order.get(r["round"], 0))
+        weeks.append({"week": wk, "phase": _round_phase(top["round"], top["conf"])[1]})
+
+    sel = int(week) if week is not None else weeks[-1]["week"]
+    if sel not in by_week:
+        sel = weeks[-1]["week"]
+
+    groups_map: dict = {}
+    for r in by_week[sel]:
+        title, phase = _round_phase(r["round"], r["conf"])
+        g = groups_map.setdefault((order.get(r["round"], 0), title),
+                                  {"title": title, "phase": phase, "duals": []})
+        hp, ap = r["home_points"], r["away_points"]
+        ha, hc = crest(r["home"])
+        aa, ac = crest(r["away"])
+        g["duals"].append({
+            "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
+            "away_abbr": aa, "away_color": ac, "hp": hp, "ap": ap,
+            "home_won": r["winner"] == 0,
+            "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
+        })
+    groups = [groups_map[k] for k in sorted(groups_map)]
+    sel_phase = next((w["phase"] for w in weeks if w["week"] == sel), None)
+    return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
+
+
+def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Every transfer in this universe — where each player started and where they
+    went — reconstructed from career history (a school change between seasons is a
+    transfer). Newest off-season first. The sim resolves the portal at year
+    rollover, so there's no separate 'in the portal' limbo to show — these are the
+    completed moves."""
+    import app.world as world
+    from .rankings_data import crest
+    w = world.load_world(seed)
+    if not w:
+        return {"transfers": [], "n": 0, "current_year": None}
+    rosters = world._base_rosters(w).get((division, gender), {})
+    cur_cal = world.BASE_YEAR + w["year"]
+    events = []
+    for school, roster in rosters.items():
+        for p in roster:
+            hist = sorted((getattr(p, "history", []) or []), key=lambda h: h.get("year", 0))
+            seq = [(world.BASE_YEAR + h["year"], h.get("school")) for h in hist]
+            seq.append((cur_cal, school))               # current spot closes the timeline
+            for i in range(1, len(seq)):
+                (_py, ps), (cy, cs) = seq[i - 1], seq[i]
+                if ps and cs and ps != cs:
+                    fa, fc = crest(ps)
+                    ta, tc = crest(cs)
+                    events.append({
+                        "pid": p.pid, "name": p.name, "country": getattr(p, "country", ""),
+                        "year": cy, "from": ps, "to": cs, "from_abbr": fa, "from_color": fc,
+                        "to_abbr": ta, "to_color": tc, "str": round(p.str_value(), 1),
+                        "class": getattr(p, "class_year", ""),
+                    })
+    events.sort(key=lambda e: (e["year"], -e["str"], e["name"]), reverse=True)
+    return {"transfers": events, "n": len(events), "current_year": cur_cal}
+
+
+def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """The ACTUAL played NCAA team bracket reconstructed from results — rounds of
+    real matchups with the winner and dual score. None until the tournament has
+    begun. (The /bracket page is a projection; this is what the league played.)"""
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
+    if not rows:
+        # Bracket reveal: the field is locked but no NCAA match has been played.
+        phase = sm.load_season(sid).get("phase")
+        if phase in ("selection", "ncaa"):
+            seeded, autobids, out_board, _r = sm.ncaa_field(sid)
+            field = []
+            for i, p in enumerate(seeded, 1):
+                ab, col = crest(p.school)
+                field.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                              "conf": getattr(p, "conf_abbr", ""),
+                              "aq": p.key in autobids})
+            snubs = []
+            for o in out_board:
+                ab, col = crest(o["school"])
+                snubs.append({**o, "abbr": ab, "color": col})
+            return {"reveal": True, "field": field, "size": len(field),
+                    "n_aq": len(autobids), "out_board": snubs,
+                    "rounds": [], "champion": None, "complete": False}
+        return None
+    by_round: dict = {}
+    for r in rows:
+        by_round.setdefault(r["round_no"], []).append(r)
+    rounds = []
+    for rno in sorted(by_round):
+        matchups = []
+        for r in sorted(by_round[rno], key=lambda x: x["bpos"]):
+            hp, ap = r["home_points"], r["away_points"]
+            home_won = r["winner"] == 0
+            ha, hc = crest(r["home"]); aa, ac = crest(r["away"])
+            matchups.append({
+                "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
+                "away_abbr": aa, "away_color": ac, "home_won": home_won,
+                "winner": r["home"] if home_won else r["away"],
+                "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
+            })
+        rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups})
+    champion = None
+    if rounds and len(rounds[-1]["matchups"]) == 1:
+        m = rounds[-1]["matchups"][0]
+        champion = {"school": m["winner"],
+                    "abbr": m["home_abbr"] if m["home_won"] else m["away_abbr"],
+                    "color": m["home_color"] if m["home_won"] else m["away_color"]}
+    return {"rounds": rounds, "champion": champion, "complete": champion is not None}
+
+
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     from .rankings_data import crest
     rows = ranking_rows(division, gender)
@@ -929,6 +1142,108 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     return groups, (w, l)
 
 
+def _pos_label(line) -> str:
+    """Lineup slot shown as stored (e.g. 'S2' / 'D1'); blank -> em dash."""
+    return str(line) if line else "—"
+
+
+def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
+    """Season-by-season college career, newest first: the team played for that
+    year (transfers visible), class, primary singles line, record, STR, and that
+    season's accomplishments. Past seasons come from the player's recorded
+    history (stamped at each year's end); the in-progress current season is added
+    live so the card is current before the year closes."""
+    import app.world as world
+    import app.seasonmode as sm
+    import app.honors as honors
+    from .rankings_data import crest
+
+    p = world.find_persisted_player(pid, seed)
+    hist = list(getattr(p, "history", []) or []) if p else []
+    hbyyear = {g["year"]: [a["label"] for a in g["awards"]]
+               for g in honors.career_by_year(pid, "player")}
+
+    rows = []
+    for h in hist:
+        cal = world.BASE_YEAR + h["year"]
+        rows.append({
+            "cal_year": cal, "season_no": h.get("season_no", h["year"] + 1),
+            "school": h["school"], "division": h.get("division", division),
+            "class": h.get("class", ""), "line": h.get("line"),
+            "w": h.get("w", 0), "l": h.get("l", 0), "str": h.get("str"),
+            "accolades": hbyyear.get(cal, []), "live": False,
+        })
+
+    # In-progress current season (only if not already recorded into history).
+    wld = world.load_world(seed)
+    cur = wld["year"] if wld else 0
+    if not any(h.get("year") == cur for h in hist):
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+        info = sm.player_info(sid, pid)
+        if info:
+            w_, l_ = sm.player_records(sid).get(pid, (0, 0))
+            strv = sm.season_player_str(sid).get(pid, (None, 0.0))[0]
+            cal = world.BASE_YEAR + cur
+            rows.append({
+                "cal_year": cal, "season_no": cur + 1, "school": info["school"],
+                "division": division, "class": info.get("class_year", ""),
+                "line": sm.player_primary_lines(sid).get(pid),
+                "w": w_, "l": l_, "str": round(strv, 1) if strv else None,
+                "accolades": hbyyear.get(cal, []), "live": True,
+            })
+
+    rows.sort(key=lambda r: r["cal_year"], reverse=True)
+    for r in rows:
+        r["abbr"], r["color"] = crest(r["school"])
+        r["pos"] = _pos_label(r["line"])
+    return rows
+
+
+def search_players(query: str, seed: int = DEFAULT_SEED, limit: int = 80) -> dict:
+    """Name search across the active universes: rostered college players (link to
+    their profile) and the current recruiting class (link to the recruit page).
+    Matches a case-insensitive substring; reuses the cached pid index, so it's
+    cheap once rosters are primed."""
+    import app.seasonmode as sm
+    import app.world as world
+    from app import worldconfig
+    q = (query or "").strip().lower()
+    if len(q) < 2:
+        return {"query": query, "players": [], "recruits": [], "n": 0, "short": True}
+
+    players, seen = [], set()
+    for val, division, gender, label in UNIVERSES:
+        if not worldconfig.is_active(division, gender):
+            continue
+        for pid, info in sm._pid_index(division, gender).items():
+            if pid in seen or q not in info["name"].lower():
+                continue
+            seen.add(pid)
+            players.append({"pid": pid, "name": info["name"], "school": info["school"],
+                            "division": division, "u": val, "label": label,
+                            "class": info.get("class", ""), "country": info.get("country", "")})
+    players.sort(key=lambda r: r["name"])
+
+    recruits = []
+    grad_year = world.recruiting_grad_year(seed) if world.exists(seed) else None
+    if grad_year:
+        for gender in worldconfig.active_genders():
+            rg = RECRUIT_GENDERS.get(gender, gender)
+            for p in get_recruits(rg, grad_year, seed).recruits:
+                if q in p.name.lower():
+                    recruits.append({"pid": p.pid, "name": p.name, "country": p.country,
+                                     "hometown": getattr(p, "hometown", ""),
+                                     "stars": getattr(p, "recruit_stars", 0),
+                                     "tier": getattr(p, "recruit_tier", ""),
+                                     "grad_year": grad_year, "u": "D1-" + gender})
+        recruits.sort(key=lambda r: (-r["stars"], r["name"]))
+
+    players = players[:limit]
+    recruits = recruits[:limit]
+    return {"query": query, "players": players, "recruits": recruits,
+            "n": len(players) + len(recruits), "short": False}
+
+
 def world_hub(seed: int = DEFAULT_SEED):
     import app.world as world
     import app.seasonmode as sm
@@ -961,13 +1276,15 @@ def world_hub(seed: int = DEFAULT_SEED):
     # on a dormant universe, whose honors are never stamped).
     awards_done = complete and all(honors.has_season(year, d, g)
                                    for (_v, d, g, _l) in active_unis)
-    _ORDER = ["regular", "conf_tournaments", "ncaa", "awards", "offseason"]
-    _PH = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
+    _ORDER = ["regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"]
+    _PH = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
     if not complete:
         stage = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
     else:
         stage = "offseason" if awards_done else "awards"
-    if stage in ("regular", "conf_tournaments", "ncaa"):
+    if stage == "selection":
+        primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
+    elif stage in ("regular", "conf_tournaments", "ncaa"):
         if w["week"] == 0 and stage == "regular":
             primary = {"endpoint": "preseason_view", "label": "⚙ Preseason setup →", "link": True}
         else:
@@ -978,7 +1295,8 @@ def world_hub(seed: int = DEFAULT_SEED):
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
     _LABELS = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
-               "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
+               "selection": "Bracket Reveal", "ncaa": "NCAA championship",
+               "awards": "Awards", "offseason": "Offseason"}
     ci = _ORDER.index(stage)
     stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
               for i, k in enumerate(_ORDER)]

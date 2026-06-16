@@ -128,16 +128,24 @@ CREATE TABLE IF NOT EXISTS world_roster (
 );
 CREATE TABLE IF NOT EXISTS world_signing (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, data TEXT,
-  week_signed INTEGER DEFAULT 0, flips INTEGER DEFAULT 0
+  week_signed INTEGER DEFAULT 0, flips INTEGER DEFAULT 0, commit_history TEXT DEFAULT '[]'
 );
 CREATE TABLE IF NOT EXISTS world_crossmatch (
   world_id INTEGER, year INTEGER, gender TEXT, home TEXT, away TEXT,
   home_div TEXT, away_div TEXT, home_pts INTEGER, away_pts INTEGER,
   winner INTEGER, lines TEXT
 );
+CREATE TABLE IF NOT EXISTS world_championship (
+  world_id INTEGER, year INTEGER, division TEXT, gender TEXT, event TEXT, data TEXT
+);
+CREATE TABLE IF NOT EXISTS world_graduates (
+  world_id INTEGER, year INTEGER, division TEXT, gender TEXT, pid TEXT,
+  str REAL, ovr REAL, data TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_wr ON world_roster(world_id, year);
 CREATE INDEX IF NOT EXISTS idx_ws ON world_signing(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
+CREATE INDEX IF NOT EXISTS idx_wg ON world_graduates(world_id, year, division, gender);
 """
 
 DIV_RANK = {"D1": 1, "D2": 2, "D3": 3}      # 1 = highest classification
@@ -154,7 +162,8 @@ def init_schema() -> None:
     global _schema_ready_for
     conn = dbpath.connect(WORLD_DB)
     conn.executescript(_SCHEMA)
-    for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0")):
+    for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
+                     ("commit_history", "TEXT DEFAULT '[]'")):
         try:
             conn.execute(f"ALTER TABLE world_signing ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
@@ -181,6 +190,24 @@ def _save_rosters(conn, world_id, year, rosters) -> None:
             for (d, g), schools in rosters.items()
             for school, roster in schools.items() for p in roster]
     conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
+
+
+def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = None) -> int:
+    """Persist the authoritative graduating cohort before ``graduate`` drops it."""
+    conn.execute("DELETE FROM world_graduates WHERE world_id=? AND year=?", (world_id, year))
+    rows = []
+    player_str = player_str or {}
+    for (d, g), schools in rosters.items():
+        if not worldconfig.is_active(d, g):
+            continue
+        for roster in schools.values():
+            for p in roster:
+                if p.class_year != "Sr":
+                    continue
+                rows.append((world_id, year, d, g, p.pid, float(_str_of(player_str, p)),
+                             float(p.current_overall()), json.dumps(prospect_to_dict(p))))
+    conn.executemany("INSERT INTO world_graduates VALUES (?,?,?,?,?,?,?,?)", rows)
+    return len(rows)
 
 
 def _active_unis() -> list[tuple[str, str]]:
@@ -261,7 +288,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript(
         "DELETE FROM world_crossmatch; DELETE FROM world_signing; "
-        "DELETE FROM world_roster; DELETE FROM world;"
+        "DELETE FROM world_graduates; DELETE FROM world_roster; DELETE FROM world;"
     )
     conn.commit()
     conn.close()
@@ -284,6 +311,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     reset_caches()
     sm._pid_idx_cache.clear()
     sm._str_cache.clear()
+    for _c in (sm._prec_cache, sm._pline_cache, sm._plrec_cache, sm._pi_cache, sm._forced_cache):
+        _c.clear()
 
 
 def start_new(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
@@ -355,13 +384,21 @@ def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
         return None
     conn = _db()
     try:
-        for sql in (
-            "SELECT data FROM world_signing WHERE world_id=? AND pid=? LIMIT 1",
-            "SELECT data FROM world_roster  WHERE world_id=? AND pid=? ORDER BY year DESC LIMIT 1",
-        ):
-            r = conn.execute(sql, (w["id"], pid)).fetchone()
-            if r:
-                return prospect_from_dict(json.loads(r["data"]))
+        r = conn.execute("SELECT data, flips, week_signed, commit_history FROM world_signing"
+                         " WHERE world_id=? AND pid=? LIMIT 1", (w["id"], pid)).fetchone()
+        if r:
+            p = prospect_from_dict(json.loads(r["data"]))
+            p.flips = r["flips"] or 0
+            p.week_signed = r["week_signed"] or 0
+            try:
+                p.commit_history = json.loads(r["commit_history"] or "[]")
+            except (ValueError, TypeError):
+                p.commit_history = []
+            return p
+        r = conn.execute("SELECT data FROM world_roster WHERE world_id=? AND pid=?"
+                         " ORDER BY year DESC LIMIT 1", (w["id"], pid)).fetchone()
+        if r:
+            return prospect_from_dict(json.loads(r["data"]))
         return None
     finally:
         conn.close()
@@ -559,30 +596,39 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     hr = home_region(p)
     hc = float(getattr(p, "homecooking", 0.0))
     intl = not getattr(p, "domestic", False)
+    # Window: from a bit below their level up to well above it, so a recruit will
+    # reach UP to a strong program that has an opening (a chance to play for a
+    # major beats being a star at a much smaller school) — the upside isn't capped.
     lo = bisect.bisect_left(pres_arr, cal - 0.30)
-    hi = bisect.bisect_left(pres_arr, cal + 0.30)
+    hi = bisect.bisect_left(pres_arr, cal + 0.55)
     cands = set(by_pres[lo:hi]) | set(market["academic_top"])
     if hc > 0.0 and not intl:
         cands |= set(market["by_region"].get(hr, ()))
     if exclude:
         cands -= exclude
     best, best_score = None, -1.0
-    jit = random.Random(f"{p.pid}|{jitter_salt}").uniform(-0.04, 0.04)
+    jit = random.Random(f"{p.pid}|{jitter_salt}").uniform(-0.05, 0.05)
     for s in cands:
         if avail.get(s, 0) <= 0:
             continue
         pres, acad, reg, div, fac = traits[s]
-        athletic = 0.6 * (1.0 - abs(pres - cal)) + 0.4 * pres * cal
         geo = hc * region_proximity(hr, reg)
-        # academics only pull sub-elite talent below their station (see academic_gate)
-        score = (max(0.0, athletic) * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
+        # Recruits aspire UP to the most prestigious program that still has a seat
+        # for them. With best-recruits-first + seat caps, the class tiers itself —
+        # a program fills with whoever's left near its own level once it signs,
+        # so it never starves chasing names above its band. A mild pull toward
+        # their own level keeps elite talent from slumming far below it; academics
+        # pull sub-elite recruits down to academic programs (gated by talent).
+        level = 1.0 - 0.30 * max(0.0, cal - pres)      # only penalize signing BELOW your level
+        score = ((0.15 + pres) * level
+                 * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
         if intl:
             score *= INTL_TIER_PULL[_intl_tier(div, acad)]
         if score > best_score:
             best, best_score = s, score
-    if best is None:                              # no seats in range — widen once
-        best = next((s for s in by_pres
+    if best is None:                              # nothing in range with a seat — widen once
+        best = next((s for s in reversed(by_pres)
                      if avail.get(s, 0) > 0 and (not exclude or s not in exclude)), None)
     return best
 
@@ -637,10 +683,13 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
         avail[best] -= 1
         signed.add(p.pid)
         new.append((wid, world["year"], gender, best, p.pid,
-                    json.dumps(prospect_to_dict(p)), week, 0))
+                    json.dumps(prospect_to_dict(p)), week, 0,
+                    json.dumps([{"school": best, "week": week}])))
         signed_n += 1
     if new:
-        conn.executemany("INSERT INTO world_signing VALUES (?,?,?,?,?,?,?,?)", new)
+        conn.executemany(
+            "INSERT INTO world_signing (world_id, year, gender, school, pid, data,"
+            " week_signed, flips, commit_history) VALUES (?,?,?,?,?,?,?,?,?)", new)
     return signed_n
 
 
@@ -660,7 +709,7 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
         return 0
     cutoff = week - DECOMMIT_WINDOW_WEEKS
     rows = conn.execute(
-        "SELECT rowid, pid, school, data, flips FROM world_signing"
+        "SELECT rowid, pid, school, data, flips, commit_history FROM world_signing"
         " WHERE world_id=? AND year=? AND gender=? AND week_signed>=?",
         (wid, world["year"], gender, cutoff)).fetchall()
     if not rows:
@@ -688,8 +737,14 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
             avail[original] -= 1
             continue
         avail[new_school] -= 1
-        conn.execute("UPDATE world_signing SET school=?, week_signed=?, flips=flips+1"
-                     " WHERE rowid=?", (new_school, week, r["rowid"]))
+        try:
+            trail = json.loads(r["commit_history"] or "[]")
+        except (ValueError, TypeError):
+            trail = []
+        trail.append({"school": new_school, "week": week})
+        conn.execute("UPDATE world_signing SET school=?, week_signed=?, flips=flips+1,"
+                     " commit_history=? WHERE rowid=?",
+                     (new_school, week, json.dumps(trail), r["rowid"]))
         flips += 1
     return flips
 
@@ -1175,6 +1230,86 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
             "complete": _all_complete(seed, get_or_create(seed))}
 
 
+def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
+    """Append each rostered player's just-finished season line to their career
+    history — {year, school, division, class, line, record, str}. Called before
+    graduation/portal, so `class`/`school` reflect the season actually played; a
+    school change between a player's entries is a transfer. Idempotent per year."""
+    from app import overrides as ov
+    moves = ov.get_moves()                # pid -> destination school (editor moves)
+    year, season_no = world["year"], world["year"] + 1
+    # Per active universe: that season's stats + a school->division map. A moved
+    # player actually PLAYS in their destination universe's duals, so we read
+    # their record/line/STR from THAT season, not the source one being iterated.
+    udata = {}
+    sch_div: dict = {}
+    for (d, g) in _active_unis():
+        sid = universe_sid(seed, world, d, g)
+        udata[(d, g)] = {
+            "recs": sm.player_records(sid), "lines": sm.player_primary_lines(sid),
+            "line_recs": sm.player_line_records(sid), "strmap": sm.season_player_str(sid),
+        }
+        if g not in sch_div:
+            sch_div[g] = {s: pr.division for s, pr in _flat_programs(g).items()}
+    for (division, gender) in _active_unis():
+        for school, roster in rosters.get((division, gender), {}).items():
+            for p in roster:
+                if any(h.get("year") == year for h in p.history):
+                    continue                      # already recorded this year
+                played_school = moves.get(p.pid, school)   # honor editor moves
+                dest_div = sch_div.get(gender, {}).get(played_school, division)
+                src = udata.get((dest_div, gender), udata[(division, gender)])
+                w_, l_ = src["recs"].get(p.pid, (0, 0))
+                s, _rel = src["strmap"].get(p.pid, (p.str_value(), 0.0))
+                lr = src["line_recs"].get(p.pid, {"singles": {}, "doubles": {}})
+                p.history.append({
+                    "year": year, "season_no": season_no,
+                    "division": dest_div, "gender": gender, "school": played_school,
+                    "class": p.class_year, "line": src["lines"].get(p.pid),
+                    "w": w_, "l": l_, "str": round(s, 1),
+                    "singles_lines": {str(k): v for k, v in lr["singles"].items()},
+                    "doubles_lines": {str(k): v for k, v in lr["doubles"].items()},
+                })
+
+
+def _store_championships(conn, world: dict) -> None:
+    """Run + persist the individual singles/doubles championships for each active
+    universe at season's end (rosters are still this year's), so the completed
+    championship is viewable after the year rolls over."""
+    from app.individuals import (run_singles_championship, run_doubles_championship,
+                                 championship_to_dict)
+    yr = world["year"]
+    eff = year_seed(world["seed"], yr)
+    for (division, gender) in _active_unis():
+        conn.execute("DELETE FROM world_championship WHERE world_id=? AND year=?"
+                     " AND division=? AND gender=?", (world["id"], yr, division, gender))
+        for event, run in (("Singles", run_singles_championship),
+                           ("Doubles", run_doubles_championship)):
+            try:
+                ch = run(division, gender, seed=eff)
+                conn.execute("INSERT INTO world_championship VALUES (?,?,?,?,?,?)",
+                             (world["id"], yr, division, gender, event,
+                              json.dumps(championship_to_dict(ch))))
+            except Exception:
+                pass
+
+
+def latest_championship(seed: int, division: str, gender: str, event: str) -> dict | None:
+    """The most recently completed individual championship for a universe (None
+    until one has been played + stored at a year rollover)."""
+    w = load_world(seed)
+    if not w:
+        return None
+    conn = _db()
+    try:
+        r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                         " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
+                         (w["id"], division, gender, event)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r["data"]) if r else None
+
+
 def _finalize_year(seed: int, w: dict) -> dict:
     """End-of-year: develop to a full year, then graduate / portal / intake."""
     prime(seed)
@@ -1183,12 +1318,23 @@ def _finalize_year(seed: int, w: dict) -> dict:
     for (d, g) in _active_unis():
         player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
 
+    # Snapshot the individual championships before graduation/portal change rosters.
+    _cconn = _db()
+    _store_championships(_cconn, w)
+    _cconn.commit()
+    _cconn.close()
+
     rosters = developed_rosters(w)        # full-year developed copy
+    # Stamp each player's just-finished season onto their career history BEFORE
+    # graduation/portal moves them — so the player card (and, later, the pro
+    # league) can show where they played year over year.
+    _record_world_history(seed, w, rosters)
     # season_player_str above needed the primed cache; the rollover works on
     # `rosters` (an independent copy), so free the ~170MB primed roster cache now
     # rather than holding it alongside `rosters` through the heavy rollover.
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
+    _save_graduates(conn, w["id"], w["year"], rosters, player_str)
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():

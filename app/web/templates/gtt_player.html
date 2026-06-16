@@ -25,6 +25,21 @@
     </div>
   </div>
 
+  {% if p.multi_team %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">This season by club</span>
+      <span class="bl-panel-meta">changed clubs mid-season — record tracks each team</span></div>
+    <div style="padding:8px 16px">
+      {% for t in p.season_teams %}
+      <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <a href="{{ url_for('gtt_franchise', fid=t.fid, lg=league.id) }}" style="flex:1;text-decoration:none;font-weight:600">{{ t.team }}</a>
+        <span class="bl-rec" style="font-variant-numeric:tabular-nums">{{ t.w }}-{{ t.l }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if p.career_honors %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title">🏅 Career honors</span>
@@ -47,15 +62,17 @@
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Match log</span>
       <span class="bl-panel-meta">{{ p.log|length }} lines played</span></div>
-    <div class="bl-tablescroll"><div class="bl-table gtt-log">
+    <div class="bl-tablescroll"><div class="bl-table {{ 'gtt-log-mt' if p.multi_team else 'gtt-log' }}">
       <div class="bl-thead gtt-log-row">
         <span class="bl-th num">Wk</span><span class="bl-th">Slot</span>
+        {% if p.multi_team %}<span class="bl-th">Club</span>{% endif %}
         <span class="bl-th">Opponent</span><span class="bl-th">Res</span><span class="bl-th num">Score</span>
       </div>
       {% for m in p.log %}
       <div class="bl-row gtt-log-row">
         <span class="bl-cell-num">{{ m.week }}</span>
         <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ m.slot }}{% if m.round == 'PO' %} ·PO{% endif %}</span>
+        {% if p.multi_team %}<span class="bl-cell" style="font-size:12px"><span class="nm">{{ m.team }}</span></span>{% endif %}
         <span class="bl-cell"><span class="nm">{{ m.opp }}</span></span>
         <span class="bl-cell" style="font-weight:700;color:{{ 'var(--stat-good-strong)' if m.won else 'var(--text-muted)' }}">{{ 'W' if m.won else 'L' }}</span>
         <span class="bl-cell-num" style="font-variant-numeric:tabular-nums">{{ m.scoreline or '—' }}</span>
@@ -68,6 +85,7 @@
 
 <style>
 .gtt-log { --bl-grid-cols: 36px 64px minmax(140px,1fr) 40px 120px; }
-.gtt-log .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gtt-log-mt { --bl-grid-cols: 36px 56px minmax(110px,1fr) minmax(110px,1fr) 36px 104px; }
+.gtt-log .nm, .gtt-log-mt .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 </style>
 {% endblock %}

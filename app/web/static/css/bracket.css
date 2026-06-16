@@ -305,6 +305,10 @@
   color: var(--text-primary);
   font-weight: 800;
 }
+/* Loser dimmed so the winner of each round reads at a glance. */
+.bl-bracket-team:not(.is-winner) .nm,
+.bl-bracket-team:not(.is-winner) .bl-team-seed { color: var(--text-faint); }
+.bl-bracket-team:not(.is-winner) .bl-crest { opacity: .5; }
 /* Optional trailing score (doubles championship match lines). Only rows that
    carry a score widen to a 4th column, so the team bracket is unaffected. */
 .bl-team-score {
