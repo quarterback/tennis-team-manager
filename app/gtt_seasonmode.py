@@ -524,6 +524,31 @@ def edit_franchise(franchise_id, *, name=None, city=None, abbrev=None):
     conn.close()
 
 
+def move_player(league_id, pid, dest_fid):
+    """God-mode roster edit — reassign a player to another franchise, or to free
+    agency (``dest_fid=None``). The college-side editor's player move, for the
+    pros: direct and unconstrained (you're editing), and keyed off the pid so the
+    player keeps their identity, gender, record, STR, and honors — only the
+    franchise changes. Returns True on success."""
+    conn = _db()
+    row = conn.execute("SELECT id FROM gtt_players WHERE league_id=? AND pid=?",
+                       (league_id, pid)).fetchone()
+    if not row:
+        conn.close()
+        return False
+    if dest_fid is not None and not conn.execute(
+            "SELECT 1 FROM gtt_franchises WHERE id=? AND league_id=?",
+            (dest_fid, league_id)).fetchone():
+        conn.close()
+        return False
+    # Assigning to a club reactivates a retired player; a NULL dest waives them.
+    conn.execute("UPDATE gtt_players SET fid=?, status='active' WHERE id=?",
+                 (dest_fid, row["id"]))
+    conn.commit()
+    conn.close()
+    return True
+
+
 def rename_franchise(franchise_id, name):
     edit_franchise(franchise_id, name=name)
 
@@ -980,6 +1005,27 @@ def _records_for_year(conn, lid, year):
     return rec
 
 
+def _team_records_for_year(conn, lid, year):
+    """Per (pid, franchise) W-L for the season. A GTT player can change clubs ANY
+    week (the editor or the add/drop wire), unlike college's annual cycle — so a
+    match is credited to the club the player actually suited up for that night
+    (which the dual's home/away + the line's stored pids pin down exactly), not to
+    whatever club they happen to be on now. Returns {pid: {fid: [w, l]}}."""
+    rows = conn.execute("SELECT home, away, lines_json FROM gtt_duals WHERE league_id=?"
+                        " AND year=? AND status='final'", (lid, year)).fetchall()
+    rec: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed"):
+                continue
+            hw = ln["home_won"]
+            for pid in ln.get("home_pids", []):
+                d = rec.setdefault(pid, {}).setdefault(r["home"], [0, 0]); d[0 if hw else 1] += 1
+            for pid in ln.get("away_pids", []):
+                d = rec.setdefault(pid, {}).setdefault(r["away"], [0, 0]); d[1 if hw else 0] += 1
+    return rec
+
+
 def _compute_mvp(conn, lid, year):
     rec = _records_for_year(conn, lid, year)
     meta = _player_meta(conn, lid)
@@ -1238,7 +1284,7 @@ def franchise_roster(league_id, fid, year=None):
         return []
     year = year if year is not None else s["current_year"]
     conn = _db()
-    rec = _records_for_year(conn, league_id, year)
+    trec = _team_records_for_year(conn, league_id, year)
     rows = conn.execute("SELECT pid, gender, age, origin, data FROM gtt_players WHERE league_id=?"
                         " AND fid=? AND status='active'", (league_id, fid)).fetchall()
     conn.close()
@@ -1246,11 +1292,14 @@ def franchise_roster(league_id, fid, year=None):
     players = []
     for r in rows:
         p = _prospect(r["data"])
-        w, l = rec.get(r["pid"], [0, 0])
+        by_team = trec.get(r["pid"], {})
+        w, l = by_team.get(fid, [0, 0])        # record WITH this club (not lumped
+        elsewhere = sum(v[0] + v[1] for f, v in by_team.items() if f != fid)
         strv = live.get(r["pid"], (p.str_value(), 0.0))[0]
         players.append({"pid": r["pid"], "name": p.name, "country": p.country, "gender": r["gender"],
                         "age": r["age"], "origin": r["origin"], "str": round(strv, 1),
                         "overall": round(p.current_overall()), "w": w, "l": l,
+                        "elsewhere": elsewhere,        # matches this season for other clubs
                         "honors": player_honors(league_id, r["pid"])})
     # men by STR then women by STR
     players.sort(key=lambda x: (x["gender"] != "m", -x["str"]))
@@ -1281,6 +1330,7 @@ def player_detail(league_id, pid):
     year = s["current_year"]
     rec = _records_for_year(conn, league_id, year)
     w, l = rec.get(pid, [0, 0])
+    trec = _team_records_for_year(conn, league_id, year)
     names = _franchise_names(league_id)
     rows = conn.execute("SELECT week, round, year, home, away, lines_json FROM gtt_duals"
                         " WHERE league_id=? AND year=? AND status='final' AND lines_json LIKE ?"
@@ -1292,14 +1342,24 @@ def player_detail(league_id, pid):
             if not ln.get("completed"):
                 continue
             if pid in ln.get("home_pids", []):
-                opp_fid, won = r["away"], ln["home_won"]
+                team_fid, opp_fid, won = r["home"], r["away"], ln["home_won"]
             elif pid in ln.get("away_pids", []):
-                opp_fid, won = r["home"], not ln["home_won"]
+                team_fid, opp_fid, won = r["away"], r["home"], not ln["home_won"]
             else:
                 continue
             log.append({"week": r["week"], "round": r["round"], "slot": ln["slot"],
+                        "team": names.get(team_fid, str(team_fid)), "team_fid": team_fid,
                         "opp": names.get(opp_fid, str(opp_fid)), "scoreline": ln.get("scoreline"),
                         "won": won})
+
+    # Per-club split for the season — populated only when the player suited up for
+    # more than one club this year (a mid-season move), so the stats track the 2nd
+    # or 3rd team rather than crediting everything to the current club.
+    by_team = trec.get(pid, {})
+    teams = [{"fid": f, "team": names.get(f, str(f)), "w": v[0], "l": v[1]}
+             for f, v in by_team.items()]
+    teams.sort(key=lambda t: t["w"] + t["l"], reverse=True)
+    multi_team = len(teams) > 1
 
     enshrined = conn2 = None
     conn2 = _db()
@@ -1316,6 +1376,7 @@ def player_detail(league_id, pid):
             "str": round(strv, 1), "str_reliability": round(str_rel, 2),
             "overall": round(p.current_overall()),
             "w": w, "l": l, "honors": player_honors(league_id, pid),
+            "season_teams": teams, "multi_team": multi_team,
             "career_honors": career, "log": log, "enshrined": enshrined}
 
 

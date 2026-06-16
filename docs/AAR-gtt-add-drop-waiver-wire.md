@@ -87,7 +87,33 @@ and was removed.)
   exactly 5 men / 5 women, and the hub + franchise pages render the wire.
 - World and single-gender determinism suites stay green.
 
+## Roster editor (god-mode moves)
+
+Beyond the auto wire, the franchise page now has an **Edit roster** panel that
+mirrors the college editor's player move: pick any player and move them to
+another franchise or waive them to free agency, and **Sign** any free agent to
+the club. `move_player(league_id, pid, dest_fid)` is a direct `fid` reassignment
+(GTT state is mutable persisted rows, so no override layer is needed) — the
+player keeps their pid, gender, record, STR, and honors; only the club changes.
+Assigning reactivates a retired player; a `None` destination waives them.
+
+## Per-club stat tracking (mid-season moves)
+
+College players only change teams at the annual off-season, so a season maps to
+one team. GTT moves can happen **any week** (editor or wire), so a player can
+suit up for two or three clubs in one season. Records are now **team-aware**:
+
+- Each match is already self-describing — the dual stores its home/away
+  franchise ids and each line stores the pids that actually played — so a match
+  is credited to **the club the player was on that night**, never lumped onto
+  their current club.
+- `_team_records_for_year` returns `{pid: {fid: [w, l]}}`. A franchise roster
+  shows the player's record **with that club** (plus a "+N prev" flag when they
+  arrived mid-season); the player page shows the season total, a **per-club
+  split** when they moved, and a **Club** column in the match log.
+
 ## Out of scope (by request)
 
-No trades. The wire is an auto-GM process across all clubs (GTT has no single
-managed franchise); a user-driven manual add/drop UI was not built.
+No trades in the auto wire. The wire is an auto-GM process across all clubs; the
+manual editor is the user-driven path for moving players (the "edit the GTT like
+college" request).

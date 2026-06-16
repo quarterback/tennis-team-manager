@@ -574,7 +574,7 @@ def create_app() -> Flask:
         row = next((r for r in gs.standings(lid) if r["fid"] == fid), None)
         return render_template("gtt_franchise.html", active="GTT", league=league,
                                fr=fr, row=row, roster=gs.franchise_roster(lid, fid),
-                               free_agents=gs.free_agents(lid),
+                               free_agents=gs.free_agents(lid), franchises=gs.franchises(lid),
                                moves=[t for t in gs.transactions(lid) if t["fid"] == fid],
                                is_champion=(league.get("champion") == fid))
 
@@ -586,6 +586,18 @@ def create_app() -> Flask:
                           city=(request.form.get("city") or None),
                           abbrev=(request.form.get("abbrev") or None))
         return redirect(url_for("gtt_franchise", fid=fid, lg=lid))
+
+    @app.route("/gtt/franchise/<int:fid>/move", methods=["POST"])
+    def gtt_move(fid):
+        lid = request.form.get("lg", type=int)
+        pid = request.form.get("pid", "")
+        dest = request.form.get("dest", "")
+        if lid and pid:
+            dest_fid = None if dest in ("", "FA") else int(dest)
+            gs.move_player(lid, pid, dest_fid)
+        # land on whichever roster the player ended up on (or stay put for a waive)
+        return redirect(url_for("gtt_franchise",
+                                fid=(int(dest) if dest not in ("", "FA") else fid), lg=lid))
 
     @app.route("/gtt/player/<pid>")
     def gtt_player(pid):

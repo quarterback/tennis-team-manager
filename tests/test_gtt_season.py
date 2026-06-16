@@ -210,6 +210,49 @@ def test_add_drop_is_deterministic(db, tmp_path):
     assert tx1 == tx2
 
 
+def test_move_player_reassigns_franchise_and_waives(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=6)
+    a, b = g.franchises(lid)[0]["id"], g.franchises(lid)[1]["id"]
+    pid = g.franchise_roster(lid, a)[0]["pid"]
+    assert g.move_player(lid, pid, b)
+    assert g.player_detail(lid, pid)["fid"] == b
+    assert _active(lid, a, "m") + _active(lid, a, "w") == g.TARGET_MEN + g.TARGET_WOMEN - 1
+    # waive to free agency
+    assert g.move_player(lid, pid, None)
+    assert g.player_detail(lid, pid)["fid"] is None
+    assert any(fa["pid"] == pid for fa in g.free_agents(lid))
+    # unknown player / wrong league destination is rejected
+    assert not g.move_player(lid, "nope", b)
+    assert not g.move_player(lid, pid, 99999)
+
+
+def test_midseason_move_tracks_record_per_team(db):
+    lid = g.create_league("GTT", seed=2026, n_teams=6)
+    a, b = g.franchises(lid)[0]["id"], g.franchises(lid)[1]["id"]
+    s = g.load_league(lid)
+    for _ in range(s["total_weeks"] // 2):           # play out half the season for A
+        g.advance(lid, fidelity="fast")
+    mover = max(g.franchise_roster(lid, a), key=lambda x: x["w"] + x["l"])
+    a_w, a_l = mover["w"], mover["l"]
+    assert a_w + a_l > 0
+    g.move_player(lid, mover["pid"], b)              # ... then move to B mid-season
+    g.advance_all(lid, fidelity="fast")
+
+    det = g.player_detail(lid, mover["pid"])
+    assert det["multi_team"] and len(det["season_teams"]) == 2
+    # the season total is the sum of the per-club records, not double-counted
+    assert det["w"] == sum(t["w"] for t in det["season_teams"])
+    assert det["l"] == sum(t["l"] for t in det["season_teams"])
+    # the record earned for A is frozen at the move; B's roster shows only B's part
+    a_rec = next(t for t in det["season_teams"] if t["fid"] == a)
+    assert (a_rec["w"], a_rec["l"]) == (a_w, a_l)
+    on_b = next(x for x in g.franchise_roster(lid, b) if x["pid"] == mover["pid"])
+    b_rec = next(t for t in det["season_teams"] if t["fid"] == b)
+    assert (on_b["w"], on_b["l"]) == (b_rec["w"], b_rec["l"]) and on_b["elsewhere"] == a_w + a_l
+    # every match in the log is attributed to the club the player was on at the time
+    assert {m["team_fid"] for m in det["log"]} == {a, b}
+
+
 def test_gtt_intake_uses_persisted_world_graduates_with_d1_mix_and_slack(db):
     from app import world
     from app.development import generate_prospect
