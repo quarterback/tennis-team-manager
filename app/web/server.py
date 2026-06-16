@@ -19,7 +19,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
-                    results_by_week,
+                    results_by_week, ncaa_bracket_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -59,6 +59,7 @@ NAV_GROUPS = [
         {"id": "data",      "label": "Data Portal",  "icon": "📈", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "results",   "label": "Results",      "icon": "📋", "endpoint": "results",          "args": {}},
+        {"id": "ncaa",      "label": "NCAA Bracket", "icon": "🥇", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
         {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
@@ -104,6 +105,7 @@ def _active_nav(req) -> str:
     if p.startswith("/data"):             return "data"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
+    if p.startswith("/ncaa"):             return "ncaa"
     if p.startswith("/awards"):           return "awards"
     if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
@@ -688,6 +690,12 @@ def create_app() -> Flask:
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, crest=crest, u=u, uni_label=label)
+
+    @app.route("/ncaa")
+    def ncaa_bracket():
+        division, gender, label, u = _universe(request)
+        return render_template("ncaa_bracket.html", active="NCAA Bracket", u=u, uni_label=label,
+                               br=ncaa_bracket_view(division, gender), division=division)
 
     @app.route("/results")
     def results():

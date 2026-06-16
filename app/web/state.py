@@ -117,7 +117,8 @@ def reset_all() -> None:
     _portal_cache.clear()
     _staff_cache.clear()
     awards.reset_cache()
-    for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache):
+    for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache,
+              sm._pline_cache, sm._plrec_cache):
         c.clear()
     ncaa.reset_caches()
 
@@ -885,6 +886,43 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     groups = [groups_map[k] for k in sorted(groups_map)]
     sel_phase = next((w["phase"] for w in weeks if w["week"] == sel), None)
     return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
+
+
+def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """The ACTUAL played NCAA team bracket reconstructed from results — rounds of
+    real matchups with the winner and dual score. None until the tournament has
+    begun. (The /bracket page is a projection; this is what the league played.)"""
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
+    if not rows:
+        return None
+    by_round: dict = {}
+    for r in rows:
+        by_round.setdefault(r["round_no"], []).append(r)
+    rounds = []
+    for rno in sorted(by_round):
+        matchups = []
+        for r in sorted(by_round[rno], key=lambda x: x["bpos"]):
+            hp, ap = r["home_points"], r["away_points"]
+            home_won = r["winner"] == 0
+            ha, hc = crest(r["home"]); aa, ac = crest(r["away"])
+            matchups.append({
+                "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
+                "away_abbr": aa, "away_color": ac, "home_won": home_won,
+                "winner": r["home"] if home_won else r["away"],
+                "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
+            })
+        rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups})
+    champion = None
+    if rounds and len(rounds[-1]["matchups"]) == 1:
+        m = rounds[-1]["matchups"][0]
+        champion = {"school": m["winner"],
+                    "abbr": m["home_abbr"] if m["home_won"] else m["away_abbr"],
+                    "color": m["home_color"] if m["home_won"] else m["away_color"]}
+    return {"rounds": rounds, "champion": champion, "complete": champion is not None}
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):

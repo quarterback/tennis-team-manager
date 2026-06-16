@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — NCAA Bracket{% endblock %}
+{% block content %}
+
+{% macro team(school, abbr, color, won, score, show_score) %}
+<div class="bl-bracket-team{% if won %} is-winner{% endif %}">
+  <span class="bl-team-seed"></span>
+  {{ crest_box(school, abbr, color, 'xs') }}
+  <span class="bl-team-copy"><span class="nm">{{ school }}</span></span>
+  {% if show_score and score %}<span class="bl-team-score">{{ score.split('-')[0] if won else score.split('-')[1] }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
+  <span class="bl-bracket-pills" style="margin-left:auto">
+    {% for val, d, g, lbl in universes %}
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val) }}">{{ lbl }}</a>
+    {% endfor %}
+  </span>
+</div></div>
+
+{% if not br %}
+<div class="bl-container"><div class="bl-note">
+  The NCAA bracket fills in once the tournament begins — advance through the conference tournaments and into the
+  national championship, then check back here to see the real, played bracket. (The
+  <a href="{{ url_for('bracket', u=u) }}" style="color:var(--text-link)">Bracket Simulator</a> shows a projection meanwhile.)
+</div></div>
+{% else %}
+
+{% if br.champion %}
+<div class="bl-container"><div class="bl-champ">
+  {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
+  <div><div class="label">National Champion</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ br.champion.school }}</div></div>
+</div></div>
+{% endif %}
+
+<div class="bl-container">
+  <div class="bl-rounds bl-rounds-sim">
+    {% for rnd in br.rounds %}
+    <section class="bl-panel bl-round-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span>
+        <span class="bl-panel-meta">{{ rnd.matchups|length }} {{ 'dual' if rnd.matchups|length == 1 else 'duals' }}</span></div>
+      <div class="bl-round-body">
+        {% for m in rnd.matchups %}
+        <article class="bl-brk-match">
+          <div class="bl-match-topline"><span>{{ rnd.name }}</span>{% if m.score %}<span>{{ m.score }}</span>{% endif %}</div>
+          {{ team(m.home, m.home_abbr, m.home_color, m.home_won, m.score, True) }}
+          {{ team(m.away, m.away_abbr, m.away_color, not m.home_won, m.score, True) }}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

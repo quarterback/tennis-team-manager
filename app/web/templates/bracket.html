@@ -36,10 +36,10 @@
     <div class="bl-bracket-title-row">
       <div>
         <h1>{{ uni_label }} Bracket Simulator</h1>
-        <p>A <strong>projection</strong> — Power Index selection, automatic qualifiers, at-large bids, and dual sims through the final. For the bracket your league actually played, see <a href="{{ url_for('results', u=u) }}" style="color:inherit;text-decoration:underline">Results</a>.</p>
+        <p>A <strong>projection</strong> — Power Index selection, automatic qualifiers, at-large bids, and dual sims through the final. The bracket your league actually plays lives under <strong>World → NCAA Bracket</strong>.</p>
       </div>
       <div class="bl-bracket-actions">
-        <a class="bl-pill" href="{{ url_for('results', u=u) }}">Results</a>
+        <a class="bl-pill" href="{{ url_for('ncaa_bracket', u=u) }}">NCAA Bracket</a>
         <a class="bl-pill" href="{{ url_for('rankings', u=u) }}">Rankings</a>
         <a class="bl-pill active" href="{{ url_for('dual') }}">Run Dual</a>
       </div>
@@ -79,7 +79,6 @@
     <div class="bl-metric-grid">
       <div class="bl-metric"><span class="lbl">Field</span><strong>{{ br.seeds|length }}</strong><span>{{ br.autobids|length }} AQ / {{ br.seeds|length - br.autobids|length }} at-large</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ br.rounds|length }}</strong><span>{{ first_round|length }} opening matchups</span></div>
-      <div class="bl-metric"><span class="lbl">Top Seed</span><strong>#1</strong><span>{{ br.seeds[0].school }}</span></div>
       <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ br.runner_up.school }}</span></div>
     </div>
   </section>
