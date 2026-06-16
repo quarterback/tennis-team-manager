@@ -11,8 +11,6 @@
   </div></div>
 </div>
 {% else %}
-{% set total_upsets = namespace(count=0) %}
-{% for rnd in br.rounds %}{% for m in rnd %}{% if m.upset %}{% set total_upsets.count = total_upsets.count + 1 %}{% endif %}{% endfor %}{% endfor %}
 {% set first_round = br.rounds[0] if br.rounds else [] %}
 {% set final = br.rounds[-1][0] if br.rounds else none %}
 {% set semifinal_round = br.rounds[-2] if br.rounds|length > 1 else [] %}
@@ -38,9 +36,10 @@
     <div class="bl-bracket-title-row">
       <div>
         <h1>{{ uni_label }} Bracket Simulator</h1>
-        <p>Power Index selection, automatic qualifiers, at-large bids, and dual-match simulations through the national final.</p>
+        <p>A <strong>projection</strong> — Power Index selection, automatic qualifiers, at-large bids, and dual sims through the final. For the bracket your league actually played, see <a href="{{ url_for('results', u=u) }}" style="color:inherit;text-decoration:underline">Results</a>.</p>
       </div>
       <div class="bl-bracket-actions">
+        <a class="bl-pill" href="{{ url_for('results', u=u) }}">Results</a>
         <a class="bl-pill" href="{{ url_for('rankings', u=u) }}">Rankings</a>
         <a class="bl-pill active" href="{{ url_for('dual') }}">Run Dual</a>
       </div>
@@ -80,7 +79,7 @@
     <div class="bl-metric-grid">
       <div class="bl-metric"><span class="lbl">Field</span><strong>{{ br.seeds|length }}</strong><span>{{ br.autobids|length }} AQ / {{ br.seeds|length - br.autobids|length }} at-large</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ br.rounds|length }}</strong><span>{{ first_round|length }} opening matchups</span></div>
-      <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower seed advanced</span></div>
+      <div class="bl-metric"><span class="lbl">Top Seed</span><strong>#1</strong><span>{{ br.seeds[0].school }}</span></div>
       <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ br.runner_up.school }}</span></div>
     </div>
   </section>
@@ -124,7 +123,7 @@
           <div class="bl-card-label">Tournament Board</div>
           <h2>Round-by-round results</h2>
         </div>
-        <div class="bl-legend"><span><i class="auto"></i>AQ</span><span><i></i>At-large</span><span><i class="upset"></i>Upset</span></div>
+        <div class="bl-legend"><span><i class="auto"></i>AQ</span><span><i></i>At-large</span></div>
       </div>
 
       <div class="bl-rounds bl-rounds-sim">
@@ -134,10 +133,9 @@
             <span class="bl-panel-meta">{{ rnd|length }} {{ 'dual' if rnd|length == 1 else 'duals' }}</span></div>
           <div class="bl-round-body">
             {% for m in rnd %}
-            <article class="bl-brk-match{% if m.upset %} has-upset{% endif %}">
+            <article class="bl-brk-match">
               <div class="bl-match-topline">
                 <span>{{ m.rnd }}</span>
-                {% if m.upset %}<span class="bl-upset">upset</span>{% endif %}
               </div>
               {{ team_line(m.hi, m.hi_seed, m.winner_is_hi) }}
               {{ team_line(m.lo, m.lo_seed, not m.winner_is_hi) }}

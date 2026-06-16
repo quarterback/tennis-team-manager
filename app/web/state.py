@@ -833,6 +833,60 @@ def player_career_records(division: str, gender: str, pid: str, seed: int = DEFA
     return {"singles": _box("singles", 6), "doubles": _box("doubles", 3)}
 
 
+def _round_phase(round_: str, conf: str):
+    """(group_title, phase_label) for a dual round."""
+    if round_ == "CT":
+        return (f"{conf} Tournament", "Conference Tournament")
+    if round_ == "NCAA":
+        return (conf or "NCAA", "NCAA Championship")     # conf holds the round name
+    return ("Regular Season", "Regular Season")
+
+
+def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_SEED):
+    """Week-by-week results browser: for the selected week, the duals played
+    (regular slate + conference-tournament rounds + NCAA rounds), grouped and
+    labelled, each with its score and winner. Also returns the weeks that have
+    results so the page can offer a selector."""
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    rows = sm.all_results(sid)
+    if not rows:
+        return {"weeks": [], "week": None, "groups": [], "phase_label": None}
+
+    order = {"REG": 0, "CT": 1, "NCAA": 2}
+    by_week: dict = {}
+    for r in rows:
+        by_week.setdefault(r["week"], []).append(r)
+    weeks = []
+    for wk in sorted(by_week):
+        top = max(by_week[wk], key=lambda r: order.get(r["round"], 0))
+        weeks.append({"week": wk, "phase": _round_phase(top["round"], top["conf"])[1]})
+
+    sel = int(week) if week is not None else weeks[-1]["week"]
+    if sel not in by_week:
+        sel = weeks[-1]["week"]
+
+    groups_map: dict = {}
+    for r in by_week[sel]:
+        title, phase = _round_phase(r["round"], r["conf"])
+        g = groups_map.setdefault((order.get(r["round"], 0), title),
+                                  {"title": title, "phase": phase, "duals": []})
+        hp, ap = r["home_points"], r["away_points"]
+        ha, hc = crest(r["home"])
+        aa, ac = crest(r["away"])
+        g["duals"].append({
+            "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
+            "away_abbr": aa, "away_color": ac, "hp": hp, "ap": ap,
+            "home_won": r["winner"] == 0,
+            "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
+        })
+    groups = [groups_map[k] for k in sorted(groups_map)]
+    sel_phase = next((w["phase"] for w in weeks if w["week"] == sel), None)
+    return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
+
+
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
     from .rankings_data import crest
     rows = ranking_rows(division, gender)

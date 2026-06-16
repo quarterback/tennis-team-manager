@@ -761,6 +761,19 @@ def team_schedule(season_id: int, school: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def all_results(season_id: int) -> list[dict]:
+    """Every completed dual this season (regular + conference tournament + NCAA),
+    week-ordered — the source for a week-by-week results browser. `conf` holds the
+    conference for REG/CT and the round name (e.g. 'Round of 16') for NCAA."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT week, round, conf, round_no, bpos, home, away, home_points, away_points, winner"
+        " FROM duals WHERE season_id=? AND status='final'"
+        " ORDER BY week, round, round_no, bpos", (season_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 # --------------------------------------------------------------------------
 # Player cards — match-by-match log + season STR
 # --------------------------------------------------------------------------

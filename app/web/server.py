@@ -19,6 +19,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
+                    results_by_week,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -57,6 +58,7 @@ NAV_GROUPS = [
         {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
         {"id": "data",      "label": "Data Portal",  "icon": "📈", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
+        {"id": "results",   "label": "Results",      "icon": "📋", "endpoint": "results",          "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
         {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
@@ -101,6 +103,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
     if p.startswith("/rankings"):         return "rankings"
+    if p.startswith("/results"):          return "results"
     if p.startswith("/awards"):           return "awards"
     if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
@@ -137,8 +140,24 @@ def _game_context():
         if not wd.exists():
             return None
         w = wd.load_world()
+        # Reflect the live stage across ACTIVE universes (cheap single-row reads),
+        # so the bar reads "Conf tournaments" / "NCAA championship" instead of
+        # always "Regular season".
+        import app.seasonmode as sm
+        from app import worldconfig
+        _ORD = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
+        _LBL = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
+                "ncaa": "NCAA championship", "complete": "Postseason complete"}
+        phases = []
+        for _v, d, g, _lbl in UNIVERSES:
+            if not worldconfig.is_active(d, g):
+                continue
+            s = sm.load_season(sm.get_or_create(d, g, seed=wd.current_year_seed()))
+            phases.append(s.get("phase", "regular"))
+        stage = min(phases, key=lambda p: _ORD.get(p, 0)) if phases else "regular"
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
-                "week": w["week"], "phase": "Regular season", "complete": False,
+                "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
+                "complete": stage == "complete",
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
         return None
@@ -669,6 +688,13 @@ def create_app() -> Flask:
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, crest=crest, u=u, uni_label=label)
+
+    @app.route("/results")
+    def results():
+        division, gender, label, u = _universe(request)
+        wk = request.args.get("week")
+        res = results_by_week(division, gender, week=wk)
+        return render_template("results.html", active="Results", u=u, uni_label=label, res=res)
 
     @app.route("/search")
     def search():
