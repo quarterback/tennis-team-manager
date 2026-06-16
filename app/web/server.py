@@ -536,7 +536,7 @@ def create_app() -> Flask:
     @app.route("/gtt/new", methods=["POST"])
     def gtt_new():
         name = (request.form.get("name") or "Global Team Tennis").strip()
-        seed = request.form.get("seed", type=int) or 2026
+        seed = request.form.get("seed", type=int)
         teams = min(16, max(4, request.form.get("teams", type=int) or gs.DEFAULT_TEAMS))
         lid = gs.create_league(name, seed=seed, n_teams=teams)
         return redirect(url_for("gtt_hub", lg=lid))

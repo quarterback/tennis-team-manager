@@ -138,9 +138,14 @@ CREATE TABLE IF NOT EXISTS world_crossmatch (
 CREATE TABLE IF NOT EXISTS world_championship (
   world_id INTEGER, year INTEGER, division TEXT, gender TEXT, event TEXT, data TEXT
 );
+CREATE TABLE IF NOT EXISTS world_graduates (
+  world_id INTEGER, year INTEGER, division TEXT, gender TEXT, pid TEXT,
+  str REAL, ovr REAL, data TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_wr ON world_roster(world_id, year);
 CREATE INDEX IF NOT EXISTS idx_ws ON world_signing(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
+CREATE INDEX IF NOT EXISTS idx_wg ON world_graduates(world_id, year, division, gender);
 """
 
 DIV_RANK = {"D1": 1, "D2": 2, "D3": 3}      # 1 = highest classification
@@ -185,6 +190,24 @@ def _save_rosters(conn, world_id, year, rosters) -> None:
             for (d, g), schools in rosters.items()
             for school, roster in schools.items() for p in roster]
     conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
+
+
+def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = None) -> int:
+    """Persist the authoritative graduating cohort before ``graduate`` drops it."""
+    conn.execute("DELETE FROM world_graduates WHERE world_id=? AND year=?", (world_id, year))
+    rows = []
+    player_str = player_str or {}
+    for (d, g), schools in rosters.items():
+        if not worldconfig.is_active(d, g):
+            continue
+        for roster in schools.values():
+            for p in roster:
+                if p.class_year != "Sr":
+                    continue
+                rows.append((world_id, year, d, g, p.pid, float(_str_of(player_str, p)),
+                             float(p.current_overall()), json.dumps(prospect_to_dict(p))))
+    conn.executemany("INSERT INTO world_graduates VALUES (?,?,?,?,?,?,?,?)", rows)
+    return len(rows)
 
 
 def _active_unis() -> list[tuple[str, str]]:
@@ -265,7 +288,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript(
         "DELETE FROM world_crossmatch; DELETE FROM world_signing; "
-        "DELETE FROM world_roster; DELETE FROM world;"
+        "DELETE FROM world_graduates; DELETE FROM world_roster; DELETE FROM world;"
     )
     conn.commit()
     conn.close()
@@ -1311,6 +1334,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     # rather than holding it alongside `rosters` through the heavy rollover.
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
+    _save_graduates(conn, w["id"], w["year"], rosters, player_str)
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():
