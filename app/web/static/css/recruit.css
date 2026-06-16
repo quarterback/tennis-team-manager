@@ -191,6 +191,14 @@
   border: 1px solid var(--border-subtle); border-radius: 5px; padding: 0 5px; white-space: nowrap; }
 .ib-fit:hover { border-color: var(--brand); color: var(--brand-strong); }
 
+/* collapsible match-by-match log on the player card */
+.pl-matchlog { padding: 0; overflow: hidden; }
+.pl-matchlog > summary { cursor: pointer; list-style: none; user-select: none; }
+.pl-matchlog > summary::-webkit-details-marker { display: none; }
+.pl-matchlog > summary::after { content: "▾"; margin-left: 10px; color: var(--text-muted); font-size: 12px; transition: transform .15s; }
+.pl-matchlog[open] > summary::after { transform: rotate(180deg); }
+.pl-matchlog > summary:hover .bl-panel-title { color: var(--brand-strong); }
+
 /* ============================================================ Career record box */
 /* The college-tennis "career record" grid: per-line W-L by year + Overall/Dual. */
 .rc-recbox { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
