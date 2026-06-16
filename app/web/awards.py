@@ -282,25 +282,25 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         best = max(rs, key=lambda r: r.pi)
         add_head(best.school, "conf_coty", f"{conf} Coach of the Year", 58)
 
-    # National Assistant Coach of the Year — the top development-rated lead
-    # assistant in the division (an assistant's value shows in player development,
-    # not the head-coach W-L). Scoped to the strongest programs, where the most
-    # accomplished assistants sit. Per division × gender, like the head awards.
+    # National Assistant Coach of the Year — rewards player development, not the
+    # head-coach W-L: the program with the most wins at the BOTTOM of the lineup
+    # (4/5/6 singles + 3rd doubles), among the division's top-25 programs, where an
+    # assistant's developmental work shows. Credited to that staff's lead developer
+    # (best development-rated non-head coach). Per division × gender, deterministic.
     from .state import coaching_staff
-    best_asst = None
-    for r in sorted(rows, key=lambda r: r.pi, reverse=True)[:40]:
-        for s in coaching_staff(division, gender, r.school):
-            if s["role"] == "head":
-                continue
-            key = (s["dev"], r.pi)
-            if best_asst is None or key > best_asst[0]:
-                best_asst = (key, s, r.school)
-    if best_asst:
-        _k, s, school = best_asst
-        recs.append({"subject_type": "coach", "subject_id": s["coach_id"], "name": s["name"],
-                     "year": year, "season_no": season_no, "division": division, "gender": gender,
-                     "school": school, "award": "national_asst_coty",
-                     "label": "National Assistant Coach of the Year", "sort": 92})
+    top25 = [r.school for r in sorted(rows, key=lambda r: r.pi, reverse=True)[:25]]
+    if top25:
+        devwins = sm.developmental_wins(sid)
+        pi_by = {r.school: r.pi for r in rows}
+        school = max(top25, key=lambda s: (devwins.get(s, 0), pi_by.get(s, 0.0), s))
+        asst_staff = [c for c in coaching_staff(division, gender, school) if c["role"] != "head"]
+        if asst_staff:
+            dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
+            recs.append({"subject_type": "coach", "subject_id": dev_coach["coach_id"],
+                         "name": dev_coach["name"], "year": year, "season_no": season_no,
+                         "division": division, "gender": gender, "school": school,
+                         "award": "national_asst_coty",
+                         "label": "National Assistant Coach of the Year", "sort": 92})
 
     # Team titles for the head coach of each champion.
     confmap = {r.school: r.conf for r in rows}

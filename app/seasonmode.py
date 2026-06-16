@@ -795,6 +795,28 @@ def team_schedule(season_id: int, school: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+DEV_LINE_SLOTS = {"S4", "S5", "S6", "D3"}   # the developmental bottom of the lineup
+
+
+def developmental_wins(season_id: int) -> dict:
+    """Per-team regular-season wins at the BOTTOM of the lineup — 4/5/6 singles
+    and 3rd doubles. A proxy for player development / depth (those courts are
+    where an assistant's work shows), used to pick the Assistant Coach of the
+    Year. Returns {school: wins}."""
+    conn = _db()
+    rows = conn.execute("SELECT home, away, lines_json FROM duals WHERE season_id=?"
+                        " AND round='REG' AND status='final'", (season_id,)).fetchall()
+    conn.close()
+    out: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or ln.get("slot") not in DEV_LINE_SLOTS:
+                continue
+            winner = r["home"] if ln["home_won"] else r["away"]
+            out[winner] = out.get(winner, 0) + 1
+    return out
+
+
 def all_results(season_id: int) -> list[dict]:
     """Every completed dual this season (regular + conference tournament + NCAA),
     week-ordered — the source for a week-by-week results browser. `conf` holds the
