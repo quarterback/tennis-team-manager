@@ -356,6 +356,13 @@ def advance(season_id: int) -> dict:
         conn.commit(); conn.close()
         return out
 
+    if s["phase"] == "selection":
+        # The bracket reveal is over — start the NCAAs and play the first round.
+        conn.execute("UPDATE seasons SET phase='ncaa' WHERE id=?", (season_id,))
+        out = _advance_ncaa_round(conn, load_season(season_id), progs)
+        conn.commit(); conn.close()
+        return out
+
     if s["phase"] == "ncaa":
         out = _advance_ncaa_round(conn, s, progs)
         conn.commit(); conn.close()
@@ -433,7 +440,9 @@ def _finish_conf_phase(conn, s, div, wl) -> dict:
             champions[conf] = last["home"] if last["winner"] == 0 else last["away"]
         elif members:
             champions[conf] = max(members, key=lambda p: _winpct(wl, p.school)).school
-    conn.execute("UPDATE seasons SET phase='ncaa', champion=? WHERE id=?",
+    # Lock the autobids and pause at 'selection' — the bracket reveal. The field
+    # is now set (champions + at-large by PI); the NCAAs begin on the next advance.
+    conn.execute("UPDATE seasons SET phase='selection', champion=? WHERE id=?",
                  (json.dumps(champions), s["id"]))
     return {"phase": "conf_tournaments", "done": True, "champions": len(champions)}
 
@@ -731,7 +740,7 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
     if len(rated) < 2:
         return None
     champions = []
-    if s["phase"] == "ncaa" and s["champion"]:
+    if s["phase"] in ("selection", "ncaa", "complete") and s["champion"]:
         try:
             progs = _programs(s["division"], s["gender"])
             champions = [progs[v] for v in json.loads(s["champion"]).values()
@@ -740,6 +749,24 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
             champions = []
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
     return run_bracket(seeded, autobids, seed=s["seed"])
+
+
+def ncaa_field(season_id: int, size: int = NATIONAL_FIELD):
+    """The locked NCAA field for the bracket reveal — (seeded programs, autobid
+    keys, ratings), selected exactly as the tournament will use it (conference
+    champions auto-in, the rest at-large by Power Index). Available once the
+    conference tournaments have crowned champions (selection phase onward)."""
+    s = load_season(season_id)
+    conn = _db()
+    ratings = compute_ratings(_completed(conn, season_id, ("REG", "CT")))
+    conn.close()
+    div = load_division(s["division"], s["gender"])
+    progs = {p.school: p for p in div.programs}
+    champs_map = json.loads(s["champion"] or "{}")
+    champions = [progs[v] for v in champs_map.values() if v in progs and v in ratings]
+    rated = [p for p in div.programs if p.school in ratings]
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    return seeded, autobids, ratings
 
 
 def dual_detail(dual_id: int) -> dict | None:

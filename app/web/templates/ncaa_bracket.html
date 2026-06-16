@@ -27,6 +27,36 @@
   national championship, then check back here to see the real, played bracket. (The
   <a href="{{ url_for('bracket', u=u) }}" style="color:var(--text-link)">Bracket Simulator</a> shows a projection meanwhile.)
 </div></div>
+{% elif br.reveal %}
+<div class="bl-container"><div class="bl-note new">
+  <strong>🎉 Bracket reveal — the field is set.</strong> Conference champions are in (AQ); the rest of the
+  {{ br.size }}-team field is at-large by Power Index (AL). Advance the world to start the NCAAs.
+</div></div>
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">The Field</span>
+    <span class="bl-panel-meta">{{ br.size }} teams · {{ br.n_aq }} automatic qualifiers</span></div>
+  <div class="rs-field">
+    {% for p in br.field %}
+    <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
+      <span class="seed">{{ p.seed }}</span>
+      {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+      <span class="nm">{{ p.school }}</span>
+      <span class="conf">{{ p.conf }}</span>
+      <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div></div>
+<style>
+.rs-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px 14px; padding: 6px 4px; }
+.rs-seedrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; text-decoration: none;
+  color: var(--text-primary); font-size: 13.5px; border-bottom: 1px solid var(--border-subtle); }
+.rs-seedrow:hover { background: var(--green-50); }
+.rs-seedrow .seed { width: 26px; text-align: right; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rs-seedrow .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-seedrow .conf { font-size: 11px; color: var(--text-muted); }
+</style>
+
 {% else %}
 
 {% if br.champion %}

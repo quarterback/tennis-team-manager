@@ -147,9 +147,10 @@ def _game_context():
         # always "Regular season".
         import app.seasonmode as sm
         from app import worldconfig
-        _ORD = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
+        _ORD = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
         _LBL = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
-                "ncaa": "NCAA championship", "complete": "Postseason complete"}
+                "selection": "Bracket reveal", "ncaa": "NCAA championship",
+                "complete": "Postseason complete"}
         phases = []
         for _v, d, g, _lbl in UNIVERSES:
             if not worldconfig.is_active(d, g):

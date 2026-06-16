@@ -898,6 +898,18 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
     if not rows:
+        # Bracket reveal: the field is locked but no NCAA match has been played.
+        phase = sm.load_season(sid).get("phase")
+        if phase in ("selection", "ncaa"):
+            seeded, autobids, _r = sm.ncaa_field(sid)
+            field = []
+            for i, p in enumerate(seeded, 1):
+                ab, col = crest(p.school)
+                field.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                              "conf": getattr(p, "conf_abbr", ""),
+                              "aq": p.key in autobids})
+            return {"reveal": True, "field": field, "size": len(field),
+                    "n_aq": len(autobids), "rounds": [], "champion": None, "complete": False}
         return None
     by_round: dict = {}
     for r in rows:
@@ -1210,13 +1222,15 @@ def world_hub(seed: int = DEFAULT_SEED):
     # on a dormant universe, whose honors are never stamped).
     awards_done = complete and all(honors.has_season(year, d, g)
                                    for (_v, d, g, _l) in active_unis)
-    _ORDER = ["regular", "conf_tournaments", "ncaa", "awards", "offseason"]
-    _PH = {"regular": 0, "conf_tournaments": 1, "ncaa": 2, "complete": 3}
+    _ORDER = ["regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"]
+    _PH = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
     if not complete:
         stage = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
     else:
         stage = "offseason" if awards_done else "awards"
-    if stage in ("regular", "conf_tournaments", "ncaa"):
+    if stage == "selection":
+        primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
+    elif stage in ("regular", "conf_tournaments", "ncaa"):
         if w["week"] == 0 and stage == "regular":
             primary = {"endpoint": "preseason_view", "label": "⚙ Preseason setup →", "link": True}
         else:
@@ -1227,7 +1241,8 @@ def world_hub(seed: int = DEFAULT_SEED):
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
     _LABELS = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
-               "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
+               "selection": "Bracket Reveal", "ncaa": "NCAA championship",
+               "awards": "Awards", "offseason": "Offseason"}
     ci = _ORDER.index(stage)
     stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
               for i, k in enumerate(_ORDER)]

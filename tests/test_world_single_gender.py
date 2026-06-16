@@ -33,5 +33,5 @@ def test_world_hub_only_counts_active_universes(women_only_world):
     assert genders == {"women"}, f"dormant men leaked into the world hub: {genders}"
     # With only week-1 women active, the stage is a real season phase — never pinned
     # by a dormant universe — and completion is driven by the active side only.
-    assert hub["stage"] in {"regular", "conf_tournaments", "ncaa", "awards", "offseason"}
+    assert hub["stage"] in {"regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"}
     assert hub["complete"] is False
