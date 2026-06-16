@@ -888,6 +888,40 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
 
 
+def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Every transfer in this universe — where each player started and where they
+    went — reconstructed from career history (a school change between seasons is a
+    transfer). Newest off-season first. The sim resolves the portal at year
+    rollover, so there's no separate 'in the portal' limbo to show — these are the
+    completed moves."""
+    import app.world as world
+    from .rankings_data import crest
+    w = world.load_world(seed)
+    if not w:
+        return {"transfers": [], "n": 0, "current_year": None}
+    rosters = world._base_rosters(w).get((division, gender), {})
+    cur_cal = world.BASE_YEAR + w["year"]
+    events = []
+    for school, roster in rosters.items():
+        for p in roster:
+            hist = sorted((getattr(p, "history", []) or []), key=lambda h: h.get("year", 0))
+            seq = [(world.BASE_YEAR + h["year"], h.get("school")) for h in hist]
+            seq.append((cur_cal, school))               # current spot closes the timeline
+            for i in range(1, len(seq)):
+                (_py, ps), (cy, cs) = seq[i - 1], seq[i]
+                if ps and cs and ps != cs:
+                    fa, fc = crest(ps)
+                    ta, tc = crest(cs)
+                    events.append({
+                        "pid": p.pid, "name": p.name, "country": getattr(p, "country", ""),
+                        "year": cy, "from": ps, "to": cs, "from_abbr": fa, "from_color": fc,
+                        "to_abbr": ta, "to_color": tc, "str": round(p.str_value(), 1),
+                        "class": getattr(p, "class_year", ""),
+                    })
+    events.sort(key=lambda e: (e["year"], -e["str"], e["name"]), reverse=True)
+    return {"transfers": events, "n": len(events), "current_year": cur_cal}
+
+
 def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
     """The ACTUAL played NCAA team bracket reconstructed from results — rounds of
     real matchups with the winner and dual score. None until the tournament has

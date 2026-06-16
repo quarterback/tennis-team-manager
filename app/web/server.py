@@ -19,7 +19,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     get_singles_championship, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
-                    results_by_week, ncaa_bracket_view,
+                    results_by_week, ncaa_bracket_view, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -68,6 +68,7 @@ NAV_GROUPS = [
     ("Management", [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "🏛️", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "🎓","endpoint": "recruiting",       "args": {}},
+        {"id": "transfers", "label": "Transfer Portal","icon": "🔁", "endpoint": "transfers",        "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "🌐", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "📅", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "✍️", "endpoint": "signing_tracker_page","args": {}},
@@ -123,6 +124,7 @@ def _active_nav(req) -> str:
     if p.startswith("/intel"):            return "intel"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
+    if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
@@ -711,6 +713,12 @@ def create_app() -> Flask:
         q = request.args.get("q", "")
         res = search_players(q)
         return render_template("search.html", active="", u=u, uni_label=label, res=res, q=q)
+
+    @app.route("/transfers")
+    def transfers():
+        division, gender, label, u = _universe(request)
+        return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
+                               tp=transfer_portal_view(division, gender))
 
     @app.route("/recruiting")
     def recruiting():
