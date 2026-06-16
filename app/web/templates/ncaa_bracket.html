@@ -47,6 +47,24 @@
     {% endfor %}
   </div>
 </div></div>
+
+{% if br.out_board %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">First Out</span>
+    <span class="bl-panel-meta">highest Power Index left out of the field</span></div>
+  <div class="rs-field">
+    {% for o in br.out_board %}
+    <a class="rs-seedrow out" href="{{ url_for('teams', school=o.school, u=u) }}">
+      <span class="seed">—</span>
+      {{ crest_box(o.school, o.abbr, o.color, 'xs') }}
+      <span class="nm">{{ o.school }}</span>
+      <span class="conf">{{ o.conf }} · {{ o.rec }}</span>
+      <span class="bl-bid" style="background:var(--gray-200);color:var(--text-muted)">OUT</span>
+    </a>
+    {% endfor %}
+  </div>
+</div></div>
+{% endif %}
 <style>
 .rs-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px 14px; padding: 6px 4px; }
 .rs-seedrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; text-decoration: none;

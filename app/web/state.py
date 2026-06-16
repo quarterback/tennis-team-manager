@@ -901,15 +901,20 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
         # Bracket reveal: the field is locked but no NCAA match has been played.
         phase = sm.load_season(sid).get("phase")
         if phase in ("selection", "ncaa"):
-            seeded, autobids, _r = sm.ncaa_field(sid)
+            seeded, autobids, out_board, _r = sm.ncaa_field(sid)
             field = []
             for i, p in enumerate(seeded, 1):
                 ab, col = crest(p.school)
                 field.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
                               "conf": getattr(p, "conf_abbr", ""),
                               "aq": p.key in autobids})
+            snubs = []
+            for o in out_board:
+                ab, col = crest(o["school"])
+                snubs.append({**o, "abbr": ab, "color": col})
             return {"reveal": True, "field": field, "size": len(field),
-                    "n_aq": len(autobids), "rounds": [], "champion": None, "complete": False}
+                    "n_aq": len(autobids), "out_board": snubs,
+                    "rounds": [], "champion": None, "complete": False}
         return None
     by_round: dict = {}
     for r in rows:

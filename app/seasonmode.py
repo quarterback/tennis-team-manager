@@ -751,11 +751,12 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
-def ncaa_field(season_id: int, size: int = NATIONAL_FIELD):
+def ncaa_field(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 8):
     """The locked NCAA field for the bracket reveal — (seeded programs, autobid
-    keys, ratings), selected exactly as the tournament will use it (conference
-    champions auto-in, the rest at-large by Power Index). Available once the
-    conference tournaments have crowned champions (selection phase onward)."""
+    keys, snub board, ratings), selected exactly as the tournament will use it
+    (conference champions auto-in, the rest at-large by Power Index). The snub
+    board is the `out_n` highest-Power-Index teams that JUST missed the field —
+    'who's out'. Available once the conference tournaments crown champions."""
     s = load_season(season_id)
     conn = _db()
     ratings = compute_ratings(_completed(conn, season_id, ("REG", "CT")))
@@ -766,7 +767,13 @@ def ncaa_field(season_id: int, size: int = NATIONAL_FIELD):
     champions = [progs[v] for v in champs_map.values() if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
-    return seeded, autobids, ratings
+    field_keys = {p.key for p in seeded}
+    out = sorted((p for p in rated if p.key not in field_keys),
+                 key=lambda p: ratings[p.school].pi, reverse=True)[:out_n]
+    out_board = [{"school": p.school, "conf": p.conf_abbr,
+                  "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
+                 for p in out]
+    return seeded, autobids, out_board, ratings
 
 
 def dual_detail(dual_id: int) -> dict | None:
