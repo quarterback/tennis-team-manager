@@ -113,6 +113,11 @@
           </form>
           <a class="fm-newleague" href="{{ url_for('onboarding') }}" title="Start a new league">↺ New league</a>
           <form method="get" class="fm-uniform">
+            {# Carry the current page's filters across a universe switch so the
+               active league change doesn't reset what you're looking at (e.g. the
+               Analytics Bureau's Division/Class). #}
+            {% if request.args.get('div') %}<input type="hidden" name="div" value="{{ request.args.get('div') }}">{% endif %}
+            {% if request.args.get('class') %}<input type="hidden" name="class" value="{{ request.args.get('class') }}">{% endif %}
             <span class="bl-select-wrap">
               <select class="bl-select" name="u" onchange="this.form.submit()" aria-label="Universe">
                 {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
