@@ -106,6 +106,13 @@
           <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=cn.subject_id, u=u) }}">{{ cn.name }}</a>
           <div class="bl-conf">{{ cn.school }}</div></div>
       </div>{% else %}<p class="aw-empty">Awarded at season's end.</p>{% endif %}
+      {% if coach_awards.national_asst %}{% set ca = coach_awards.national_asst %}{% set abbr, color = crest(ca.school) %}
+      <div class="aw-poty-nat" style="margin-top:10px">
+        <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:13px">{{ abbr }}</span>
+        <div><div class="aw-poty-label">{{ pfx }}National Assistant Coach of the Year</div>
+          <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=ca.subject_id, u=u) }}">{{ ca.name }}</a>
+          <div class="bl-conf">{{ ca.school }}</div></div>
+      </div>{% endif %}
       {% if coach_awards.conference %}<div class="aw-cpoty-grid">
         {% for cc in coach_awards.conference %}
         <div class="aw-row">

@@ -15,9 +15,13 @@
       <div class="tsub">{{ c.role_label|default('Head Coach') }}{% if c.school %} · {{ c.school }}{% endif %}
         {% if c.tenure %} · {{ c.tenure }}-yr tenure{% endif %}{% if c.archetype %} · {{ c.archetype }}{% endif %}</div>
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
-    {% if c.team_w is defined %}<div style="text-align:right"><div class="bl-th" style="font-size:10px">TEAM</div>
+    <div style="text-align:right">
+      {% if career and career.head_seasons %}<div class="bl-th" style="font-size:10px">CAREER (HEAD)</div>
+      <span class="bl-stat power" style="font-size:22px">{{ career.career_w }}-{{ career.career_l }}</span>
+      <div class="tsub">{{ career.head_seasons }} season{{ '' if career.head_seasons == 1 else 's' }} as head coach</div>
+      {% elif c.team_w is defined %}<div class="bl-th" style="font-size:10px">TEAM</div>
       <span class="bl-stat power" style="font-size:22px">{{ c.team_w }}-{{ c.team_l }}</span>
-      <div class="tsub">this season</div></div>{% endif %}
+      <div class="tsub">this season</div>{% endif %}</div>
   </div>
 
   <div class="bl-board-grid">
@@ -40,6 +44,53 @@
           {% endif %}
         </div>
       </div>
+
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Coaching record</span>
+        <span class="bl-panel-meta">by team · year over year</span></div>
+        <div class="bl-panel-body">
+          {% if career and career.rows %}
+          <table class="bl-protable cr-table"><thead>
+            <tr><th>Year</th><th>Team</th><th>Role</th><th style="text-align:right">Record</th></tr></thead>
+            <tbody>
+            {% for r in career.rows %}
+            <tr>
+              <td style="white-space:nowrap">{{ r.year }}{% if r.live %} <span class="pl-live">live</span>{% endif %}</td>
+              <td><a href="{{ url_for('teams', school=r.school, u=r.division ~ '-' ~ r.gender) }}" style="text-decoration:none">{{ r.school }}</a></td>
+              <td><span class="cr-role{{ ' head' if r.counts else '' }}">{{ r.role_label }}</span></td>
+              <td style="text-align:right">
+                {% if r.counts %}<strong>{{ r.wins }}-{{ r.losses }}</strong>
+                {% else %}<span style="color:var(--text-muted)" title="assistants don't bank career wins">{{ r.wins }}-{{ r.losses }} team</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            {% if career.head_seasons %}<tfoot><tr>
+              <td colspan="3" style="font-weight:600">Career (head coach)</td>
+              <td style="text-align:right;font-weight:700">{{ career.career_w }}-{{ career.career_l }}</td>
+            </tr></tfoot>{% endif %}
+          </table>
+          <p class="bl-note" style="margin-top:8px">Career wins count head-coach seasons only — an assistant's team record is shown for context but doesn't bank wins until they run a program.</p>
+          {% else %}
+          <p class="aw-empty" style="padding:4px 2px">No seasons recorded yet — stamped when a season concludes.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if player_awards %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Players coached to awards</span>
+        <span class="bl-panel-meta">honors won on their watch</span></div>
+        <div class="bl-panel-body">
+          {% for yg in player_awards %}
+          <div class="pl-honyear">
+            <div class="pl-honyear-head">{{ yg.year }} <span class="pl-honyear-school">{{ yg.school }}</span></div>
+            {% for pa in yg.players %}
+            <div class="pl-honitem"><span class="pl-hondot {{ pa.award }}"></span>
+              <a href="{{ url_for('player', pid=pa.pid, school=yg.school, u=u) }}" style="text-decoration:none">{{ pa.name }}</a> — {{ pa.label }}</div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Profile</span></div>
@@ -54,6 +105,45 @@
           <tr><td>Tactics</td><td>{{ c.tac|round|int }}</td></tr>
         </tbody></table></div>
       </div>
+
+      {% if c.school %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🛠️ Move coach</span>
+        <span class="bl-panel-meta">god-mode editor · swaps seats</span></div>
+        <div class="bl-panel-body">
+          {% set others = staff | rejectattr('coach_id', 'equalto', c.coach_id) | list %}
+          {% if others %}
+          <div class="bl-th" style="font-size:10px;margin-bottom:6px">PROMOTE / DEMOTE AT {{ c.school|upper }}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            {% for o in others %}
+            <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
+              <input type="hidden" name="u" value="{{ u }}">
+              <input type="hidden" name="target" value="{{ c.division }}|{{ c.gender }}|{{ c.school }}|{{ o.role }}">
+              <button class="bl-pill" type="submit" title="swap seats with {{ o.name }}">⇄ {{ o.title }}</button>
+            </form>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
+            <input type="hidden" name="u" value="{{ u }}">
+            <div class="bl-th" style="font-size:10px;margin-bottom:6px">MOVE TO ANOTHER PROGRAM ({{ c.division }} {{ c.gender }})</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+              <label class="bl-field"><span class="bl-field-label">Program</span>
+                <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:180px">
+                  {% for s in schools if s != c.school %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select></span></label>
+              <label class="bl-field"><span class="bl-field-label">Seat</span>
+                <span class="bl-select-wrap"><select class="bl-select" name="dest_role">
+                  <option value="head">Head Coach</option>
+                  <option value="assoc">Associate Head Coach</option>
+                  <option value="asst">Assistant Coach</option>
+                </select></span></label>
+              <button class="bl-pill" type="submit">Move</button>
+            </div>
+          </form>
+          <p class="bl-note" style="margin-top:8px">A move swaps the two seats, so no coach is left without a job. Tenure resets for both.</p>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

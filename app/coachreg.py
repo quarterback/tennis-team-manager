@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS coach_seat (
   PRIMARY KEY (division, gender, school, role)
 );
 CREATE INDEX IF NOT EXISTS idx_coachseat_cid ON coach_seat(coach_id);
+CREATE TABLE IF NOT EXISTS coach_history (
+  coach_id TEXT, year INTEGER, season_no INTEGER,
+  division TEXT, gender TEXT, school TEXT, role TEXT,
+  wins INTEGER, losses INTEGER,
+  PRIMARY KEY (coach_id, year, division, gender, school, role)
+);
+CREATE INDEX IF NOT EXISTS idx_coachhist_cid ON coach_history(coach_id);
 """
 
 _ready = False
@@ -90,6 +97,52 @@ def head_seats(division: str, gender: str) -> dict:
     return {r["school"]: r["coach_id"] for r in rows}
 
 
+def record_season(coach_id: str, year: int, season_no: int, division: str, gender: str,
+                  school: str, role: str, wins: int, losses: int) -> None:
+    """Stamp one concluded season onto a coach's history — the seat they held and
+    that team's final record. Idempotent (re-finalizing a year overwrites). A
+    coach's *career* wins count only their HEAD-coach seasons (assistants don't
+    bank wins until they run a program); the row is stored for every role so the
+    table can still show where an assistant served."""
+    conn = _conn()
+    conn.execute("INSERT OR REPLACE INTO coach_history (coach_id, year, season_no,"
+                 " division, gender, school, role, wins, losses) VALUES (?,?,?,?,?,?,?,?,?)",
+                 (coach_id, year, season_no, division, gender, school, role, wins, losses))
+    conn.commit()
+    conn.close()
+
+
+def history(coach_id: str) -> list[dict]:
+    """A coach's recorded seasons, newest year first."""
+    conn = _conn()
+    rows = conn.execute("SELECT * FROM coach_history WHERE coach_id=? ORDER BY year DESC, role",
+                        (coach_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def swap_seats(g1: str, d1: str, s1: str, r1: str,
+               g2: str, d2: str, s2: str, r2: str) -> bool:
+    """Swap the coaches holding two seats (any role, possibly across divisions),
+    resetting both tenures to 1. Both seats must already exist. The god-mode
+    editor primitive — every seat stays filled, so no coach is orphaned."""
+    conn = _conn()
+    a = conn.execute("SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
+                     (d1, g1, s1, r1)).fetchone()
+    b = conn.execute("SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
+                     (d2, g2, s2, r2)).fetchone()
+    if not a or not b:
+        conn.close()
+        return False
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=1 WHERE division=? AND gender=? AND school=? AND role=?",
+                 (b["coach_id"], d1, g1, s1, r1))
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=1 WHERE division=? AND gender=? AND school=? AND role=?",
+                 (a["coach_id"], d2, g2, s2, r2))
+    conn.commit()
+    conn.close()
+    return True
+
+
 def swap_head_coaches(g: str, d1: str, s1: str, d2: str, s2: str) -> None:
     """Swap the head coaches of two programs (possibly across divisions) and
     reset both tenures to 1. Both head seats must already exist."""
@@ -127,6 +180,6 @@ def get(coach_id: str) -> dict | None:
 
 def reset() -> None:
     conn = _conn()
-    conn.executescript("DELETE FROM coach_seat; DELETE FROM coach;")
+    conn.executescript("DELETE FROM coach_seat; DELETE FROM coach; DELETE FROM coach_history;")
     conn.commit()
     conn.close()

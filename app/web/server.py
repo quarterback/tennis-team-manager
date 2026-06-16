@@ -34,7 +34,8 @@ from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
 from .awards import (season_awards, player_career_honors, stamp_world_honors,
-                     coach_career_honors, coach_honor_records)
+                     coach_career_honors, coach_honor_records,
+                     coach_career_table, coach_player_awards)
 
 from app import seasonmode as sm
 from app import gtt_seasonmode as gs
@@ -424,8 +425,40 @@ def create_app() -> Flask:
         div = c.get("division", division)
         gen = c.get("gender", gender)
         honor_years = coach_career_honors(div, gen, coach_id)
+        career = coach_career_table(coach_id)
+        player_awards = coach_player_awards(coach_id)
+        # Staff at the coach's current school — the swap targets for the editor.
+        staff = coaching_staff(div, gen, c["school"]) if c.get("school") else []
+        schools = sorted(p.school for p in load_division(div, gen).programs) if c.get("school") else []
         return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
-                               crest=crest, u=u, uni_label=label)
+                               career=career, player_awards=player_awards, staff=staff,
+                               schools=schools, crest=crest, u=u, uni_label=label)
+
+    @app.route("/coach/<coach_id>/move", methods=["POST"])
+    def coach_move(coach_id):
+        import app.coachreg as coachreg
+        c = coachreg.get(coach_id)
+        if not c or not c.get("school"):
+            abort(404)
+        u = request.form.get("u", "D1-men")
+        tgt = request.form.get("target", "")     # staff swap: "division|gender|school|role"
+        if tgt:
+            try:
+                d2, g2, s2, r2 = tgt.split("|")
+            except ValueError:
+                return redirect(url_for("coach", coach_id=coach_id, u=u))
+        else:                                    # cross-program move (same universe)
+            s2 = request.form.get("dest_school", "")
+            r2 = request.form.get("dest_role", "head")
+            d2, g2 = c["division"], c["gender"]
+        if not s2:
+            return redirect(url_for("coach", coach_id=coach_id, u=u))
+        # Ensure the destination seat exists (generate it if never viewed), then swap.
+        from app import coachgen
+        coachgen.ensure(d2, g2, s2, r2)
+        coachreg.swap_seats(c["gender"], c["division"], c["school"], c["role"], g2, d2, s2, r2)
+        reset_all()
+        return redirect(url_for("coach", coach_id=coach_id, u=u))
 
     @app.route("/awards")
     def awards():
@@ -434,6 +467,7 @@ def create_app() -> Flask:
         coty = coach_honor_records(division, gender)
         coach_awards = {
             "national": next((r for r in coty if r["award"] == "national_coty"), None),
+            "national_asst": next((r for r in coty if r["award"] == "national_asst_coty"), None),
             "conference": sorted((r for r in coty if r["award"] == "conf_coty"),
                                  key=lambda r: r["label"]),
         }

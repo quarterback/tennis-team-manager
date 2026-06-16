@@ -45,8 +45,41 @@ def test_coach_carousel_moves_coaches_and_followers():
     assert coachreg.get(head_id)["school"] == dest
 
 
-def test_coach_honors_persist_and_follow_id():
+def test_national_assistant_coach_of_the_year(played_season):
+    recs = coach_honor_records("D1", "men")
+    awards = [r["award"] for r in recs]
+    assert awards.count("national_asst_coty") == 1
+    asst = next(r for r in recs if r["award"] == "national_asst_coty")
+    assert asst["subject_type"] == "coach" and asst["label"].startswith("National Assistant")
+
+
+def test_coach_career_record_counts_head_seasons_only():
+    import app.coachreg as coachreg
+    from app.web.awards import coach_career_table
     create_app()
+    coachreg.reset()
+    coachreg.record_season("c1", 2026, 1, "D1", "men", "Stanford", "head", 20, 4)
+    coachreg.record_season("c1", 2025, 0, "D1", "men", "UCLA", "asst", 10, 8)
+    ct = coach_career_table("c1")
+    # only the head-coach season banks career wins; the assistant year is shown but flagged
+    assert ct["career_w"] == 20 and ct["career_l"] == 4 and ct["head_seasons"] == 1
+    assert next(r for r in ct["rows"] if r["role"] == "asst")["counts"] is False
+    assert next(r for r in ct["rows"] if r["role"] == "head")["counts"] is True
+
+
+def test_swap_seats_moves_a_coach_between_seats():
+    import app.coachreg as coachreg
+    create_app()
+    coachreg.reset()
+    coachreg.ensure_seat("D1", "men", "Stanford", "head", name="A", home_country="USA",
+                         archetype="x", dev=1, rec=1, tac=1, tenure=5)
+    b = coachreg.ensure_seat("D1", "men", "Stanford", "asst", name="B", home_country="USA",
+                             archetype="x", dev=1, rec=1, tac=1, tenure=2)
+    assert coachreg.swap_seats("men", "D1", "Stanford", "head", "men", "D1", "Stanford", "asst")
+    assert coachreg.head_seats("D1", "men")["Stanford"] == b["coach_id"]
+
+
+def test_coach_honors_persist_and_follow_id(played_season):
     nat = next(r for r in coach_honor_records("D1", "men") if r["award"] == "national_coty")
     stamp_world_honors()
     car = honors.career(nat["subject_id"], "coach")
