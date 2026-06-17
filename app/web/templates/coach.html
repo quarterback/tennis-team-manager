@@ -140,7 +140,12 @@
               <button class="bl-pill" type="submit">Move</button>
             </div>
           </form>
-          <p class="bl-note" style="margin-top:8px">A move swaps the two seats, so no coach is left without a job. Tenure resets for both.</p>
+          <form method="post" action="{{ url_for('coach_retire', coach_id=c.coach_id) }}" style="margin-top:10px"
+                onsubmit="return confirm('Retire {{ c.name }}? Their seat opens up; their record and honors are kept.');">
+            <input type="hidden" name="u" value="{{ u }}">
+            <button class="bl-pill" type="submit">Retire coach</button>
+          </form>
+          <p class="bl-note" style="margin-top:8px">Moving into an <em>occupied</em> seat swaps the two; into a <em>vacant</em> one (after a retirement) just fills it, with no demotion. Retiring opens a seat and keeps the coach's record + honors.</p>
         </div>
       </div>
       {% endif %}

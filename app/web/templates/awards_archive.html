@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Past Award Winners{% endblock %}
+{% block content %}
+
+{# Archived player names are plain text: this is a frozen record, and a graduated
+   or transferred-out winner no longer resolves on the live /player route. Schools
+   and coaches still link (those routes resolve historically). #}
+{% macro prow(p) %}
+<div class="aw-row">
+  <span class="bl-crest sm" style="background:{{ p.color }}">{{ p.abbr }}</span>
+  <span class="aw-name">{{ p.name }}</span>
+  <a class="bl-conf aw-school" href="{{ url_for('teams', school=p.school, u=u) }}">{{ p.school }}</a>
+</div>
+{% endmacro %}
+
+{% macro crow(c) %}
+<div class="aw-row">
+  <span class="bl-crest sm" style="background:{{ c.color }}">{{ c.abbr }}</span>
+  <a class="bl-school aw-name" href="{{ url_for('coach', coach_id=c.subject_id, u=u) }}">{{ c.name }}</a>
+  <span class="bl-conf aw-school">{{ c.school }}</span>
+</div>
+{% endmacro %}
+
+<form method="get"><div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Awards › Past winners</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Season</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:96px">
+      {% for y in years %}<option value="{{ y }}"{% if y == year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span></label>
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('awards', u=u) }}">This season →</a>
+</div></div></form>
+
+{% if not aw %}
+<div class="bl-container"><div class="bl-note">
+  No archived award winners yet for {{ uni_label }} — they're saved here once a season concludes and honors are stamped.
+</div></div>
+{% else %}
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left"><strong style="color:var(--text-primary)">{{ year }}</strong> · {{ uni_label }} award winners</div>
+  <span class="bl-entries-right">archived — as stamped at season's end</span>
+</div></div>
+
+<div class="bl-container"><div class="aw-top">
+  <div class="bl-panel aw-poty">
+    <div class="bl-panel-head"><span class="bl-panel-title">👑 Player of the Year</span></div>
+    <div class="bl-panel-body">
+      {% if aw.national_poty %}{% set p = aw.national_poty %}
+      <div class="aw-poty-nat">
+        <span class="bl-crest lg" style="background:{{ p.color }};width:44px;height:44px;font-size:13px">{{ p.abbr }}</span>
+        <div><div class="aw-poty-label">National Player of the Year</div>
+          <span class="aw-poty-name">{{ p.name }}</span>
+          <a class="bl-conf" href="{{ url_for('teams', school=p.school, u=u) }}" style="text-decoration:none">{{ p.school }}</a></div>
+      </div>{% else %}<p class="aw-empty">—</p>{% endif %}
+      {% if aw.conf_poty %}<div class="aw-cpoty-grid">
+        {% for p in aw.conf_poty %}{{ prow(p) }}{% endfor %}
+      </div>{% endif %}
+    </div>
+  </div>
+  <div class="bl-panel aw-champs">
+    <div class="bl-panel-head"><span class="bl-panel-title">🏆 Champions</span></div>
+    <div class="bl-panel-body">
+      {% if aw.national_champion %}{% set c = aw.national_champion %}
+      <div class="aw-natchamp">
+        <span class="bl-crest lg" style="background:{{ c.color }};width:44px;height:44px;font-size:13px">{{ c.abbr }}</span>
+        <div><div class="aw-poty-label">National Champion</div>
+          <a class="bl-school aw-poty-name" href="{{ url_for('teams', school=c.school, u=u) }}">{{ c.school }}</a></div>
+      </div>{% else %}<p class="aw-empty">—</p>{% endif %}
+      {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference Champions</div>
+      <div class="aw-cpoty-grid">
+        {% for c in aw.conf_champions %}
+        <div class="aw-row">
+          <span class="bl-crest sm" style="background:{{ c.color }}">{{ c.abbr }}</span>
+          <a class="bl-school aw-name" href="{{ url_for('teams', school=c.school, u=u) }}">{{ c.school }}</a>
+          <span class="bl-conf aw-school">{{ c.label }}</span>
+        </div>
+        {% endfor %}
+      </div>{% endif %}
+    </div>
+  </div>
+</div></div>
+
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">🧑‍🏫 Coach of the Year</span></div>
+  <div class="bl-panel-body">
+    {% if aw.national_coty %}{% set cn = aw.national_coty %}
+    <div class="aw-poty-nat">
+      <span class="bl-crest lg" style="background:{{ cn.color }};width:44px;height:44px;font-size:13px">{{ cn.abbr }}</span>
+      <div><div class="aw-poty-label">National Coach of the Year</div>
+        <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=cn.subject_id, u=u) }}">{{ cn.name }}</a>
+        <div class="bl-conf">{{ cn.school }}</div></div>
+    </div>{% endif %}
+    {% for ca in aw.national_asst_coty %}
+    <div class="aw-poty-nat" style="margin-top:10px">
+      <span class="bl-crest lg" style="background:{{ ca.color }};width:44px;height:44px;font-size:13px">{{ ca.abbr }}</span>
+      <div><div class="aw-poty-label">National Assistant Coach of the Year</div>
+        <a class="bl-school aw-poty-name" href="{{ url_for('coach', coach_id=ca.subject_id, u=u) }}">{{ ca.name }}</a>
+        <div class="bl-conf">{{ ca.school }}</div></div>
+    </div>{% endfor %}
+    {% if aw.conf_coty %}<div class="aw-cpoty-grid">{% for cc in aw.conf_coty %}{{ crow(cc) }}{% endfor %}</div>{% endif %}
+    {% if not aw.national_coty and not aw.conf_coty %}<p class="aw-empty">—</p>{% endif %}
+  </div>
+</div></div>
+
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">🏅 All-Americans</span></div>
+  <div class="bl-panel-body">
+    {% if aw.all_american %}<div class="aw-aa-grid">
+      {% for team in aw.all_american %}
+      <div class="aw-team"><div class="aw-team-head">{{ team.tier }}</div>
+        {% for p in team.players %}{{ prow(p) }}{% endfor %}</div>
+      {% endfor %}
+    </div>{% else %}<p class="aw-empty">—</p>{% endif %}
+  </div>
+</div></div>
+
+{% if aw.all_conference %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">All-Conference</span></div>
+  <div class="bl-panel-body"><div class="aw-conf-grid">
+    {% for team in aw.all_conference %}
+    <div class="aw-team"><div class="aw-team-head">{{ team.tier }}</div>
+      {% for p in team.players %}{{ prow(p) }}{% endfor %}</div>
+    {% endfor %}
+  </div></div>
+</div></div>
+{% endif %}
+{% endif %}
+
+<style>
+.aw-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .aw-top { grid-template-columns: 1fr; } }
+.aw-poty-nat, .aw-natchamp { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
+.aw-poty-label { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
+.aw-poty-name { font-size: 18px; font-weight: 800; display: block; }
+.aw-cpoty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 14px; border-top: 1px solid var(--border-subtle); padding-top: 8px; }
+.aw-confchamp-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
+.aw-aa-grid, .aw-conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.aw-team-head { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--brand-strong); padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
+.aw-row { display: grid; grid-template-columns: 22px minmax(80px,1fr) auto; align-items: center; gap: 10px; padding: 6px 2px; }
+.aw-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aw-school { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.aw-empty { color: var(--text-muted); font-size: 14px; padding: 6px 2px; }
+</style>
+{% endblock %}

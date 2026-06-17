@@ -16,10 +16,10 @@ from flask import Flask, render_template, request, abort, redirect, url_for, jso
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
-                    get_singles_championship, UNIVERSES, FIELD_PRESETS,
+                    get_singles_championship, championship_years, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
-                    results_by_week, ncaa_bracket_view, transfer_portal_view,
+                    results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
@@ -35,7 +35,8 @@ from app.juniors import US_STATES
 from .pagination import paginate
 from .awards import (season_awards, player_career_honors, stamp_world_honors,
                      coach_career_honors, coach_honor_records,
-                     coach_career_table, coach_player_awards)
+                     coach_career_table, coach_player_awards,
+                     awards_archive, archive_years)
 
 from app import seasonmode as sm
 from app import gtt_seasonmode as gs
@@ -409,6 +410,8 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.pi, reverse=True)
         elif sort == "APR":
             filtered = sorted(filtered, key=lambda r: r.apr, reverse=True)
+        elif sort == "Power 6":
+            filtered = sorted(filtered, key=lambda r: r.p6, reverse=True)
         p = paginate(filtered, request.args.get("page", 1))
         return render_template(
             "rankings.html", active="Rankings", p=p, rows=p.items, total=total,
@@ -453,11 +456,28 @@ def create_app() -> Flask:
             d2, g2 = c["division"], c["gender"]
         if not s2:
             return redirect(url_for("coach", coach_id=coach_id, u=u))
-        # Ensure the destination seat exists (generate it if never viewed), then swap.
+        # Ensure the destination seat row exists (generate it if never viewed — a
+        # vacant/retired seat row already exists and is left alone), then move:
+        # swap if the target is occupied, just fill it if it's vacant (no demotion).
         from app import coachgen
         coachgen.ensure(d2, g2, s2, r2)
-        coachreg.swap_seats(c["gender"], c["division"], c["school"], c["role"], g2, d2, s2, r2)
+        coachreg.move_to(coach_id, g2, d2, s2, r2)
         reset_all()
+        if request.form.get("back") == "editor":     # invoked from the Editor — stay there
+            return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
+                                    school=request.form.get("ed_school", c["school"])))
+        return redirect(url_for("coach", coach_id=coach_id, u=u))
+
+    @app.route("/coach/<coach_id>/retire", methods=["POST"])
+    def coach_retire(coach_id):
+        import app.coachreg as coachreg
+        c = coachreg.get(coach_id)
+        u = request.form.get("u", "D1-men")
+        coachreg.retire(coach_id)
+        reset_all()
+        if request.form.get("back") == "editor":
+            return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
+                                    school=request.form.get("ed_school", c["school"] if c else "")))
         return redirect(url_for("coach", coach_id=coach_id, u=u))
 
     @app.route("/awards")
@@ -475,10 +495,21 @@ def create_app() -> Flask:
         s = sm.load_season(sid)
         final = aw.get("concluded", False)      # honors are only named once the season concludes
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
+        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        past_years = [y for y in archive_years(division, gender) if y < cur_year]
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
                                coach_awards=coach_awards, u=u, uni_label=label, crest=crest,
-                               final=final, phase=s["phase"],
+                               final=final, phase=s["phase"], past_years=past_years,
                                week=s["current_week"], total_weeks=s["total_weeks"])
+
+    @app.route("/awards/archive")
+    def awards_archive_page():
+        division, gender, label, u = _universe(request)
+        years = archive_years(division, gender)
+        year = request.args.get("year", type=int) or (years[0] if years else None)
+        aw = awards_archive(division, gender, year) if year else None
+        return render_template("awards_archive.html", active="Awards", u=u, uni_label=label,
+                               crest=crest, years=years, year=year, aw=aw)
 
     @app.route("/hall-of-fame")
     def hall_of_fame():
@@ -522,9 +553,12 @@ def create_app() -> Flask:
             size = int(request.args.get("size", 128))
         except ValueError:
             size = 128
-        ch = get_singles_championship(division, gender, size=size)
+        years = championship_years(division, gender)
+        sel = request.args.get("year", type=int)
+        ch = get_singles_championship(division, gender, size=size, year=sel)
         return render_template("singles.html", active="Singles", u=u, uni_label=label,
-                               division=division, ch=ch,
+                               division=division, ch=ch, champ_years=years,
+                               sel_year=sel or (years[0] if years else None),
                                field=len(ch.entries) if ch else 0, field_presets=[32, 64, 128])
 
     @app.route("/doubles-championship")
@@ -534,9 +568,12 @@ def create_app() -> Flask:
             size = int(request.args.get("size", 64))
         except ValueError:
             size = 64
-        ch = get_doubles_championship(division, gender, size=size)
+        years = championship_years(division, gender)
+        sel = request.args.get("year", type=int)
+        ch = get_doubles_championship(division, gender, size=size, year=sel)
         return render_template("doubles.html", active="Doubles", u=u, uni_label=label,
-                               division=division, ch=ch,
+                               division=division, ch=ch, champ_years=years,
+                               sel_year=sel or (years[0] if years else None),
                                field=len(ch.entries) if ch else 0, field_presets=FIELD_PRESETS)
 
     @app.route("/projection")
@@ -710,16 +747,18 @@ def create_app() -> Flask:
                                    groups=p.items, p=p,
                                    conferences=conferences_for(division, gender), conf=conf)
         rows = team_roster(division, gender, school)
+        live = ranking_rows(division, gender)
         if not rows:
-            school = ranking_rows(division, gender)[0].school
+            school = live[0].school
             rows = team_roster(division, gender, school)
-        schools = [r.school for r in ranking_rows(division, gender)]
+        schools = [r.school for r in live]
+        power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
         row = get_row(school)
         prog = load_division(division, gender).by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, conf=conf, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, schools=schools, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
@@ -745,8 +784,14 @@ def create_app() -> Flask:
     @app.route("/ncaa")
     def ncaa_bracket():
         division, gender, label, u = _universe(request)
+        years = ncaa_bracket_years(division, gender)
+        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        sel = request.args.get("year", type=int)
+        view_year = sel if (sel and sel != cur_year) else None
         return render_template("ncaa_bracket.html", active="NCAA Bracket", u=u, uni_label=label,
-                               br=ncaa_bracket_view(division, gender), division=division)
+                               br=ncaa_bracket_view(division, gender, year=view_year),
+                               division=division, bracket_years=years,
+                               cur_year=cur_year, sel_year=sel or cur_year)
 
     @app.route("/results")
     def results():
@@ -765,8 +810,11 @@ def create_app() -> Flask:
     @app.route("/transfers")
     def transfers():
         division, gender, label, u = _universe(request)
+        year = request.args.get("year", type=int)
+        tp = transfer_portal_view(division, gender, year=year)
+        pg = paginate(tp["transfers"], request.args.get("page", 1), per_page=40)
         return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
-                               tp=transfer_portal_view(division, gender))
+                               tp=tp, p=pg, sel_year=year)
 
     @app.route("/recruiting")
     def recruiting():
@@ -964,6 +1012,8 @@ def create_app() -> Flask:
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
+                               staff=coaching_staff(division, gender, school),
+                               all_schools=sorted(p.school for p in div.programs),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
     def _pct01(field: str, default: float = 0.5) -> float:

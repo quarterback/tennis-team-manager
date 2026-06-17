@@ -207,6 +207,17 @@ def get_or_create(division: str = "D1", gender: str = "men", *, seed: int = 2026
     return create_season(division, gender, seed=seed)
 
 
+def find_season(division: str, gender: str, *, seed: int) -> int | None:
+    """The season id for (division, gender, seed) if it already exists — WITHOUT
+    creating one. Used to read a past world-year's stored season (its duals/bracket
+    survive the rollover under that year's seed)."""
+    conn = _db()
+    row = conn.execute("SELECT id FROM seasons WHERE division=? AND gender=? AND seed=?",
+                       (division, gender, seed)).fetchone()
+    conn.close()
+    return row["id"] if row else None
+
+
 def load_season(season_id: int) -> dict | None:
     conn = _db()
     row = conn.execute("SELECT * FROM seasons WHERE id=?", (season_id,)).fetchone()

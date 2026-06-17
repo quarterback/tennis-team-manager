@@ -24,6 +24,9 @@
   <div><div class="tname">{{ school }}</div>
     <div class="tsub">{% if conf %}{{ conf }} · {% endif %}{% if row %}{{ row.rec }} · {% endif %}{{ uni_label }}{% if city %} · {{ city }}{% endif %}</div></div>
   <div style="display:flex;gap:8px;align-items:center">
+    {% if power6 %}<div style="text-align:right;margin-right:6px" title="Power 6 — top-6 roster strength">
+      <div class="bl-th" style="font-size:10px">POWER 6</div>
+      <span class="bl-stat power" style="font-size:18px">{{ '%.1f'|format(power6) }}</span></div>{% endif %}
     {% if row %}<div style="text-align:right;margin-right:6px"><div class="bl-th" style="font-size:10px">POWER INDEX</div>
       <span class="bl-stat power" style="font-size:18px">{{ row.fmt(row.pi) }}</span></div>{% endif %}
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', school=school, u=u) }}">Schedule</a>

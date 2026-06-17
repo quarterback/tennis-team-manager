@@ -151,3 +151,37 @@ def test_decision_week_skews_late_for_top_recruits():
     # everything lands inside the regular-season window
     assert all(0 <= world._decision_week(type("P", (), {"pid": f"x{k}"})(), "s", k / 50, window) < window
                for k in range(51))
+
+
+def test_transfers_respect_division_and_one_per_career():
+    """Engine transfers stay in-division or move at most one level (no D1->D3
+    skips), and a player who has already transferred isn't moved again."""
+    import random
+    from app import world
+    from app.ncaa import load_division, build_roster
+
+    rank = {"D1": 0, "D2": 1, "D3": 2}
+    rosters, div_of = {}, {}
+    for d in ("D1", "D2", "D3"):
+        prog = {p.school: p for p in load_division(d, "women").programs}
+        picks = list(prog)[:12]
+        rosters[(d, "women")] = {s: [copy.deepcopy(q) for q in build_roster(prog[s])] for s in picks}
+        for s in picks:
+            div_of[s] = d
+    # a player who already transferred once — clear prior school-change history
+    orig_school = list(rosters[("D1", "women")])[0]
+    flagged = rosters[("D1", "women")][orig_school][0]
+    flagged.class_year = "So"                      # survives graduation
+    flagged.history = [{"year": 0, "school": "Somewhere Else"}, {"year": 1, "school": orig_school}]
+    flagged_pid = flagged.pid
+    assert world._career_transfers(flagged) == 1
+
+    world.graduate(rosters)                       # open seats, as at a real rollover
+    out = world.transfer_portal(rosters, {}, random.Random(3), "women")
+
+    for _tag, _name, src, dest, _s in out["sample"]:
+        if div_of.get(src) and div_of.get(dest):
+            assert abs(rank[div_of[src]] - rank[div_of[dest]]) <= 1   # never skip a division
+    # the already-transferred player was not moved again — still on their old roster
+    assert any(getattr(q, "pid", None) == flagged_pid
+               for q in rosters[("D1", "women")][orig_school])

@@ -302,6 +302,19 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     import app.coachreg as coachreg
     honors.reset()
     coachreg.reset()
+    # Stored individual championships are keyed to the (now-deleted) world; clear
+    # them so a new save can't surface a prior league's champions.
+    conn = _db()
+    conn.execute("DELETE FROM world_championship")
+    conn.commit()
+    conn.close()
+    # God-mode editor overrides (player moves, lineups, prestige/academics priors,
+    # scholarship limits) are per-save tweaks — wipe them so each new league is
+    # distinct and no prior save's artifacts leak into the Active Overrides list.
+    import app.overrides as overrides
+    import app.scholarships as scholarships
+    overrides.clear_all()
+    scholarships.clear_overrides()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
     _dev_cache.clear()
@@ -845,6 +858,19 @@ def _churn_mult(s: float, level: float) -> float:
     return 0.6
 
 
+_UP_DIV = {"D2": "D1", "D3": "D2"}      # a transfer climbs at most one level
+_DOWN_DIV = {"D1": "D2", "D2": "D3"}    # ...and drops at most one — never skipping
+
+
+def _career_transfers(p) -> int:
+    """How many times this player has already changed schools (school changes in
+    their season history). The engine moves a player at most ONCE per career — a
+    repeat transfer only happens if you do it manually in the editor."""
+    hist = sorted((getattr(p, "history", []) or []), key=lambda h: h.get("year", 0))
+    seq = [h.get("school") for h in hist if h.get("school")]
+    return sum(1 for a, b in zip(seq, seq[1:]) if a != b)
+
+
 def _relocate(pool, p, src, dest, *, walk_on):
     pool[src].remove(p)
     p.walk_on = walk_on
@@ -865,18 +891,22 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
     for every mover."""
     progs = _flat_programs(gender)
     pool: dict[str, list] = {}
-    for (division, g), schools in rosters.items():
+    div_of: dict[str, str] = {}
+    for (division, g), schools_ in rosters.items():
         if g != gender:
             continue
-        pool.update(schools)
+        pool.update(schools_)
+        for s in schools_:
+            div_of[s] = division
     schools = [s for s in pool if s in progs]
     prestige = {s: progs[s].prestige for s in schools}
     facilities = {s: progs[s].facilities for s in schools}
     level = {s: _prog_level(progs[s]) for s in schools}
     strs = {s: sorted(_str_of(player_str, p) for p in pool[s]) for s in schools}
     schol = {s: _scholarship_count(pool[s]) for s in schools}
-    by_pres = sorted(schools, key=lambda s: prestige[s])
-    pres_arr = [prestige[s] for s in by_pres]
+    by_div: dict[str, list] = {}
+    for s in schools:
+        by_div.setdefault(div_of.get(s, ""), []).append(s)
 
     def open_slot(s):
         return len(pool[s]) < ROSTER_SIZE and schol[s] < SCHOLARSHIP_SLOTS
@@ -885,8 +915,17 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         a = strs[s]
         return 1 + (len(a) - bisect.bisect_right(a, val))
 
-    def band(lo, hi):                       # schools with prestige in [lo, hi)
-        return by_pres[bisect.bisect_left(pres_arr, lo):bisect.bisect_left(pres_arr, hi)]
+    def best_in(div, val, want_line):
+        """Best-prestige program IN ONE DIVISION with an open slot where the player
+        would slot at `want_line` or better (so they'd actually be in the lineup)."""
+        best, draw = None, -1.0
+        for d in by_div.get(div, ()):
+            if d == "" or not open_slot(d) or line_of(d, val) > want_line:
+                continue
+            w = prestige[d] + 0.3 * facilities[d]
+            if w > draw:
+                best, draw = d, w
+        return best
 
     def relocate(p, src, dest, sval, *, walk_on):
         pool[src].remove(p)
@@ -905,6 +944,8 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
     for school in schools:
         lvl = level[school]
         for p in list(pool[school]):
+            if _career_transfers(p) >= 1:        # engine moves a player only once
+                continue
             s = _str_of(player_str, p)
             if p.walk_on:
                 movers.append((p, school, s, "schol"))
@@ -912,60 +953,58 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
                 movers.append((p, school, s, "churn"))
     movers.sort(key=lambda m: -m[2])
 
-    out = {"movers": len(movers), "up": 0, "down": 0, "schol": 0, "depart": 0, "sample": []}
+    out = {"movers": len(movers), "up": 0, "down": 0, "lateral": 0, "schol": 0,
+           "depart": 0, "sample": []}
     for p, src, s, reason in movers:
-        src_pres = prestige[src]
+        d_src = div_of.get(src, "")
         cl = line_of(src, s)
+        up_d, down_d = _UP_DIV.get(d_src), _DOWN_DIV.get(d_src)
+        rel = _rel_of(player_str, p)
 
-        if reason == "schol":              # walk-on wants a scholarship (top-6 spot)
-            dest = None
-            for d in reversed(band(src_pres - PRESTIGE_BAND, src_pres + 0.06)):
-                if d != src and open_slot(d) and line_of(d, s) <= SCHOLARSHIP_SLOTS:
-                    dest = d; break
+        if reason == "schol":              # walk-on chasing a scholarship / lineup spot
+            # Their own division first; only drop ONE level if nothing at home wants
+            # them in the lineup. They never leave the universe — worst case they
+            # stay a walk-on.
+            dest = best_in(d_src, s, SCHOLARSHIP_SLOTS)
+            if not dest and down_d:
+                dest = best_in(down_d, s, SCHOLARSHIP_SLOTS)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["schol"] += 1
                 out["sample"].append(("schol", p.name, src, dest, round(s, 1)))
-            else:
-                pool[src].remove(p)
-                a = strs[src]; i = bisect.bisect_left(a, s)
-                a.pop(i if i < len(a) and a[i] == s else a.index(s))
-                out["depart"] += 1
             continue
 
-        up_dest, up_draw = None, -1.0      # best reach where they'd contribute
-        for d in band(src_pres + 1e-9, src_pres + PRESTIGE_BAND):
-            if open_slot(d) and line_of(d, s) <= 6:
-                draw = prestige[d] + 0.3 * facilities[d]   # facilities sweeten the move
-                if draw > up_draw:
-                    up_dest, up_draw = d, draw
-        down_dest, down_line = None, cl    # weaker program where they'd play higher
-        for d in band(src_pres - PRESTIGE_BAND, src_pres):
-            if open_slot(d):
-                ln = line_of(d, s)
-                if ln < down_line:
-                    down_dest, down_line = d, ln
-        rel = _rel_of(player_str, p)
-        order = (["up", "down"] if cl <= 2 else ["down", "up"] if cl >= 4
-                 else (["up", "down"] if rng.random() < 0.5 else ["down", "up"]))
+        # Rostered player. Stay in-division by default; the elite climb one level,
+        # the buried drop one — never skipping a division, never to a far-off level.
         moved = False
-        for d in order:
-            if d == "up" and up_dest and rel >= RELIABILITY_GATE \
-                    and (s - level[src]) >= UP_THRESHOLD and rng.random() < UP_SUCCESS:
-                relocate(p, src, up_dest, s, walk_on=False)
+        # UP — only a genuine #1/#2 talent, reliable and clearly above their level
+        if (cl <= 2 and up_d and rel >= RELIABILITY_GATE
+                and (s - level[src]) >= UP_THRESHOLD and rng.random() < UP_SUCCESS):
+            dest = best_in(up_d, s, 6)
+            if dest:
+                relocate(p, src, dest, s, walk_on=False)
                 out["up"] += 1
-                out["sample"].append(("up", p.name, src, up_dest, round(s, 1)))
-                moved = True; break
-            if d == "down" and down_dest:
-                relocate(p, src, down_dest, s, walk_on=False)
-                out["down"] += 1
-                out["sample"].append(("down", p.name, src, down_dest, round(s, 1)))
-                moved = True; break
+                out["sample"].append(("up", p.name, src, dest, round(s, 1)))
+                moved = True
+        # LATERAL — a better program in the SAME division that wants them in the
+        # lineup (the common, realistic transfer)
         if not moved:
-            pool[src].remove(p)
-            a = strs[src]; i = bisect.bisect_left(a, s)
-            a.pop(i if i < len(a) and a[i] == s else a.index(s))
-            out["depart"] += 1
+            same = best_in(d_src, s, 6)
+            if same and same != src and prestige[same] > prestige[src] + 0.03 \
+                    and rng.random() < UP_SUCCESS:
+                relocate(p, src, same, s, walk_on=False)
+                out["lateral"] += 1
+                out["sample"].append(("lateral", p.name, src, same, round(s, 1)))
+                moved = True
+        # DOWN — only the buried (no lineup spot in their own division), one level
+        if not moved and cl >= 5 and down_d:
+            dest = best_in(down_d, s, 4)
+            if dest:
+                relocate(p, src, dest, s, walk_on=False)
+                out["down"] += 1
+                out["sample"].append(("down", p.name, src, dest, round(s, 1)))
+                moved = True
+        # otherwise they stay put — no forced departure out of the universe
     return out
 
 
@@ -1326,20 +1365,43 @@ def _store_championships(conn, world: dict) -> None:
                 pass
 
 
-def latest_championship(seed: int, division: str, gender: str, event: str) -> dict | None:
-    """The most recently completed individual championship for a universe (None
-    until one has been played + stored at a year rollover)."""
+def latest_championship(seed: int, division: str, gender: str, event: str,
+                        year: int | None = None) -> dict | None:
+    """A completed individual championship for a universe (None until one has been
+    played + stored at a year rollover). `year` is the world-year INDEX for a
+    specific past season; default is the most recent stored."""
     w = load_world(seed)
     if not w:
         return None
     conn = _db()
     try:
-        r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
-                         " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
-                         (w["id"], division, gender, event)).fetchone()
+        if year is None:
+            r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                             " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
+                             (w["id"], division, gender, event)).fetchone()
+        else:
+            r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                             " AND gender=? AND event=? AND year=? LIMIT 1",
+                             (w["id"], division, gender, event, year)).fetchone()
     finally:
         conn.close()
     return json.loads(r["data"]) if r else None
+
+
+def championship_years(seed: int, division: str, gender: str) -> list[int]:
+    """Calendar years with a stored individual championship for this universe
+    (newest first) — the season picker for the championship archive."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT DISTINCT year FROM world_championship WHERE world_id=?"
+                            " AND division=? AND gender=? ORDER BY year DESC",
+                            (w["id"], division, gender)).fetchall()
+    finally:
+        conn.close()
+    return [BASE_YEAR + r["year"] for r in rows]
 
 
 def _finalize_year(seed: int, w: dict) -> dict:

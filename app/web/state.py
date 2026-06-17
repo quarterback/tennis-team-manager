@@ -89,13 +89,35 @@ def _hydrate_championship(data):
                            seed_of=(lambda e: e.seed if e else None))
 
 
-def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
+def _cur_cal_year(world, seed):
+    return world.BASE_YEAR + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+
+
+def championship_years(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Calendar years with a viewable individual championship (stored past years,
+    plus the current season if it has concluded), newest first."""
+    import app.world as world
+    import app.seasonmode as sm
+    years = set(world.championship_years(seed, division, gender))
+    if world.exists(seed):
+        s = sm.load_season(sm.get_or_create(division, gender, seed=world.current_year_seed(seed)))
+        if s and s["phase"] == "complete":
+            years.add(_cur_cal_year(world, seed))
+    return sorted(years, reverse=True)
+
+
+def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
+                             size: int = 128, year: int | None = None):
     """The NCAA individual singles championship, played AFTER the team tournament.
-    Computed live while the team season is complete; once the year rolls over it
-    is served from the snapshot persisted at finalize, so it stays viewable."""
+    Computed live while the current team season is complete; past seasons (and the
+    current one after rollover) are served from the snapshot persisted at finalize.
+    `year` (calendar) selects a specific past season."""
     import app.world as world
     import app.seasonmode as sm
     from app.individuals import run_singles_championship, clamp_field, championship_to_dict
+    if year is not None and year != _cur_cal_year(world, seed):
+        return _hydrate_championship(world.latest_championship(
+            seed, division, gender, "Singles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
     s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
     if s and s["phase"] == "complete":
@@ -104,12 +126,16 @@ def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
 
-def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
-    """The NCAA individual doubles championship — live while the team season is
-    complete, then served from the finalize snapshot after the rollover."""
+def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
+                             size: int = 64, year: int | None = None):
+    """The NCAA individual doubles championship — live while the current team season
+    is complete, then served from the finalize snapshot; `year` selects a past one."""
     import app.world as world
     import app.seasonmode as sm
     from app.individuals import run_doubles_championship, clamp_field, championship_to_dict
+    if year is not None and year != _cur_cal_year(world, seed):
+        return _hydrate_championship(world.latest_championship(
+            seed, division, gender, "Doubles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
     s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
     if s and s["phase"] == "complete":
@@ -159,6 +185,7 @@ class LiveRow:
     pi: float
     apr: float
     fqi: float
+    p6: float = 0.0
     me: bool = False
 
     @property
@@ -187,6 +214,16 @@ def _ability(prog) -> float:
     from app.ncaa import build_roster
     ovr = sorted((p.current_overall() for p in build_roster(prog)), reverse=True)[:6]
     return sum(ovr) / len(ovr) if ovr else 0.0
+
+
+def _power6(prog) -> float:
+    """Power 6 — roster strength from the top-6 singles players' STR: their mean,
+    doubled, so it reads on an easy, spread-out scale where the strongest rosters
+    clear 100. Available even preseason (STR falls back to ability before any
+    results)."""
+    from app.ncaa import build_roster
+    s = sorted((p.str_value() for p in build_roster(prog)), reverse=True)[:6]
+    return round(sum(s) / len(s) * 2, 1) if s else 0.0
 
 
 def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[LiveRow]:
@@ -219,7 +256,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            me=(p.school == MY_TEAM),
+            p6=_power6(p), me=(p.school == MY_TEAM),
         ))
     return rows
 
@@ -923,17 +960,16 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
 
 
-def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, year=None):
     """Every transfer in this universe — where each player started and where they
     went — reconstructed from career history (a school change between seasons is a
-    transfer). Newest off-season first. The sim resolves the portal at year
-    rollover, so there's no separate 'in the portal' limbo to show — these are the
-    completed moves."""
+    transfer). Newest off-season first. `year` (calendar) filters to one off-season;
+    the full set of years is returned for the picker."""
     import app.world as world
     from .rankings_data import crest
     w = world.load_world(seed)
     if not w:
-        return {"transfers": [], "n": 0, "current_year": None}
+        return {"transfers": [], "n": 0, "current_year": None, "years": [], "year": year}
     rosters = world._base_rosters(w).get((division, gender), {})
     cur_cal = world.BASE_YEAR + w["year"]
     events = []
@@ -954,17 +990,52 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
                         "class": getattr(p, "class_year", ""),
                     })
     events.sort(key=lambda e: (e["year"], -e["str"], e["name"]), reverse=True)
-    return {"transfers": events, "n": len(events), "current_year": cur_cal}
+    years = sorted({e["year"] for e in events}, reverse=True)
+    if year is not None:
+        events = [e for e in events if e["year"] == year]
+    return {"transfers": events, "n": len(events), "current_year": cur_cal,
+            "years": years, "year": year}
 
 
-def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Calendar years (newest first) that have a stored NCAA bracket for this
+    universe — every past world-year whose season reached the bracket. Drives the
+    season picker on the bracket page; the brackets survive the rollover under
+    each year's seed."""
+    import app.world as world
+    import app.seasonmode as sm
+    if not world.exists(seed):
+        return []
+    cur = world.load_world(seed)["year"]
+    years = []
+    for idx in range(cur + 1):
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
+        if sid is None:
+            continue
+        ph = (sm.load_season(sid) or {}).get("phase")
+        if ph in ("selection", "ncaa", "complete"):
+            years.append(world.BASE_YEAR + idx)
+    return sorted(years, reverse=True)
+
+
+def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year: int | None = None):
     """The ACTUAL played NCAA team bracket reconstructed from results — rounds of
     real matchups with the winner and dual score. None until the tournament has
-    begun. (The /bracket page is a projection; this is what the league played.)"""
+    begun. (The /bracket page is a projection; this is what the league played.)
+
+    `year` (calendar) selects a PAST world-year's stored bracket; default is the
+    current season. Past brackets reconstruct exactly from that season's saved
+    duals (seeds included, since the field is seeded from those same results)."""
     import app.world as world
     import app.seasonmode as sm
     from .rankings_data import crest
-    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    if year is not None:
+        idx = year - world.BASE_YEAR
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
+        if sid is None:
+            return None
+    else:
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
     if not rows:
         # Bracket reveal: the field is locked but no NCAA match has been played.
@@ -1063,7 +1134,12 @@ def coaching_staff(division: str, gender: str, school: str):
     staff = []
     for role in ("head", "assoc", "asst"):
         r = coachgen.ensure(division, gender, school, role)
-        staff.append({"coach_id": r["coach_id"], "name": r["name"],
+        if r is None:                       # retired/empty seat — show it as vacant
+            staff.append({"coach_id": None, "name": "Vacant", "vacant": True,
+                          "title": coachgen.ROLE_TITLES[role], "role": role,
+                          "archetype": "", "tenure": 0, "dev": 0, "rec": 0, "tac": 0})
+            continue
+        staff.append({"coach_id": r["coach_id"], "name": r["name"], "vacant": False,
                       "title": coachgen.ROLE_TITLES[role], "role": role,
                       "archetype": r["archetype"], "tenure": r["tenure"],
                       "dev": r["dev"], "rec": r["rec"], "tac": r["tac"]})
@@ -1074,7 +1150,7 @@ def coaching_staff(division: str, gender: str, school: str):
 def head_coach(division: str, gender: str, school: str) -> dict | None:
     for s in coaching_staff(division, gender, school):
         if s["role"] == "head":
-            return s
+            return s if s.get("coach_id") else None    # None when the seat is vacant
     return None
 
 

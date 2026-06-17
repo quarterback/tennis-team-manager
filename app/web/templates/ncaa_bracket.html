@@ -17,9 +17,18 @@
   <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
   <span class="bl-bracket-pills" style="margin-left:auto">
     {% for val, d, g, lbl in universes %}
-      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val) }}">{{ lbl }}</a>
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val, year=sel_year) }}">{{ lbl }}</a>
     {% endfor %}
   </span>
+  {% if bracket_years and (bracket_years|length > 1 or bracket_years[0] != cur_year) %}
+  <form method="get" style="margin-left:8px">
+    <input type="hidden" name="u" value="{{ u }}">
+    <label class="bl-field"><span class="bl-field-label">Season</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:96px">
+        {% for y in bracket_years %}<option value="{{ y }}"{% if y == sel_year %} selected{% endif %}>{{ y }}{% if y == cur_year %} (current){% endif %}</option>{% endfor %}
+      </select></span></label>
+  </form>
+  {% endif %}
 </div></div>
 
 {% if not br %}

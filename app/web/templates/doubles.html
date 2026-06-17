@@ -50,15 +50,24 @@
   <span class="bl-field-label">Universe</span>
   <span class="bl-bracket-pills">
     {% for val, d, g, lbl in universes %}
-      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('doubles_championship', u=val, size=field) }}">{{ lbl }}</a>
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('doubles_championship', u=val, size=field, year=sel_year) }}">{{ lbl }}</a>
     {% endfor %}
   </span>
   <span class="bl-field-label">Draw</span>
   <span class="bl-bracket-pills">
     {% for sz in field_presets %}
-      <a class="bl-pill{% if sz == field %} active{% endif %}" href="{{ url_for('doubles_championship', u=u, size=sz) }}">{{ sz }}</a>
+      <a class="bl-pill{% if sz == field %} active{% endif %}" href="{{ url_for('doubles_championship', u=u, size=sz, year=sel_year) }}">{{ sz }}</a>
     {% endfor %}
   </span>
+  {% if champ_years and (champ_years|length > 1) %}
+  <form method="get" style="display:contents">
+    <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="size" value="{{ field }}">
+    <span class="bl-field-label">Season</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:96px">
+      {% for y in champ_years %}<option value="{{ y }}"{% if y == sel_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span>
+  </form>
+  {% endif %}
   <span class="bl-bracket-control-note">64 pairs (128 players) mirrors the NCAA doubles draw.</span>
 </div></div>
 

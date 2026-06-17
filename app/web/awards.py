@@ -162,6 +162,67 @@ def player_honors(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     return season_awards(division, gender, seed)["by_pid"].get(pid, [])
 
 
+def archive_years(division: str, gender: str):
+    """Season-years that have stamped honors for this universe (newest first) —
+    the year picker for the past-winners archive."""
+    import app.honors as honors
+    return [y for y in honors.years() if honors.has_season(y, division, gender)]
+
+
+def awards_archive(division: str, gender: str, year: int) -> dict:
+    """A past season's award winners, read from the stamped honors store (so the
+    list is saved, not regenerated). Grouped for display; links resolve by the
+    same pid/coach_id the honors were stamped under."""
+    import app.honors as honors
+    from .rankings_data import crest
+
+    def deco(r):
+        ab, col = crest(r["school"]) if r.get("school") else ("—", "#888")
+        return {**r, "abbr": ab, "color": col}
+
+    rows = honors.for_season(year, division, gender)
+    poty = None
+    conf_poty, asst_coty, conf_coty = [], [], []
+    coty = None
+    aa_tiers: dict = {}
+    all_conf: dict = {}
+    nat_champ = None
+    conf_champs: dict = {}
+    for r in rows:
+        a = r["award"]
+        if a == "national_poty":
+            poty = deco(r)
+        elif a == "conf_poty":
+            conf_poty.append(deco(r))
+        elif a == "all_american":
+            aa_tiers.setdefault(r["label"], []).append(deco(r))
+        elif a == "all_conference":
+            all_conf.setdefault(r["label"], []).append(deco(r))
+        elif a == "national_champion":
+            nat_champ = nat_champ or deco(r)
+        elif a == "conf_champion":
+            conf_champs.setdefault(r["school"], deco(r))   # credited to whole roster → dedupe
+        elif a == "national_coty":
+            coty = deco(r)
+        elif a == "national_asst_coty":
+            asst_coty.append(deco(r))
+        elif a == "conf_coty":
+            conf_coty.append(deco(r))
+    # All-American tiers in prestige order (First, Second, Honorable Mention).
+    aa = [{"tier": lbl, "players": ps}
+          for lbl, ps in sorted(aa_tiers.items(), key=lambda kv: -kv[1][0]["sort"])]
+    all_conference = [{"tier": lbl, "players": ps} for lbl, ps in sorted(all_conf.items())]
+    return {
+        "year": year, "empty": not rows,
+        "national_poty": poty, "conf_poty": sorted(conf_poty, key=lambda r: r["label"]),
+        "national_coty": coty, "national_asst_coty": asst_coty,
+        "conf_coty": sorted(conf_coty, key=lambda r: r["label"]),
+        "national_champion": nat_champ,
+        "conf_champions": sorted(conf_champs.values(), key=lambda r: r["label"]),
+        "all_american": aa, "all_conference": all_conference,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Stampable honor records — the single computation the persistence + the player
 # cards both consume. Includes the individual honors plus Player of the Year and
@@ -296,7 +357,7 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         if best > 0:
             for school in sorted(s for s in top25 if devwins.get(s, 0) == best):
                 asst_staff = [c for c in coaching_staff(division, gender, school)
-                              if c["role"] != "head"]
+                              if c["role"] != "head" and c.get("coach_id")]
                 if not asst_staff:
                     continue
                 dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
@@ -333,6 +394,8 @@ def record_coach_seasons(division: str, gender: str, seed: int = DEFAULT_SEED) -
     for prog in ncaa.load_division(division, gender).programs:
         rec = team_results(division, gender, prog.school, seed)
         for s in coaching_staff(division, gender, prog.school):
+            if not s.get("coach_id"):       # skip a vacant (retired) seat
+                continue
             coachreg.record_season(s["coach_id"], year, season_no, division, gender,
                                    prog.school, s["role"], rec["wins"], rec["losses"])
             n += 1

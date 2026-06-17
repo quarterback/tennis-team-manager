@@ -20,16 +20,18 @@
 </form>
 
 <div class="bl-container"><div class="bl-entries">
-  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} flagged</div>
-  <span class="bl-entries-right">{{ uni_label }} · true talent well above program level</span>
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} players</div>
+  <span class="bl-entries-right">{{ uni_label }} · better than the team they're on</span>
 </div></div>
 
 <div class="bl-container"><div class="bl-tablescroll">
   <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.5fr) minmax(120px,1fr) 60px 60px 130px minmax(140px,1.2fr)">
     <div class="bl-thead">
-      <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">CURRENT TEAM</span>
-      <span class="bl-th num">TRUE</span><span class="bl-th num">NOW</span><span class="bl-th">TALENT vs LEVEL</span>
-      <span class="bl-th">DESERVES A PROGRAM LIKE</span>
+      <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">TEAM</span>
+      <span class="bl-th num" title="Real ability — the Bureau's true talent rating">TALENT</span>
+      <span class="bl-th num" title="How they're rated on this season's results">NOW</span>
+      <span class="bl-th" title="How far their talent sits above their current team's level">vs TEAM</span>
+      <span class="bl-th" title="The level of program their talent would actually fit">FITS</span>
     </div>
     {% for r in rows %}
     {% set ab = crest(r.school) %}
@@ -55,11 +57,4 @@
 </div>
 {{ pager(p, 'players') }}
 </div>
-
-<div class="bl-notes"><div class="bl-note">
-  The <strong>blue bar</strong> is the player's true-talent percentile (god-mode ceiling); the
-  <strong>black tick</strong> is their program's level percentile. The wider the gap, the more
-  badly they're playing below their ability. Click a player for their Fit Finder — the programs
-  where that talent would actually be deployed.
-</div></div>
 {% endblock %}
