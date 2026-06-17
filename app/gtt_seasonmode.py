@@ -192,12 +192,27 @@ def _gen_player(rng, name_fn, gender, talent, joined_year, origin="founder", age
             "joined_year": joined_year, "origin": origin}
 
 
-def _world_graduates(conn, world_seed, exclude_pids, limit):
-    """Latest persisted college graduates, selected 95% D1 / 5% non-D1.
+def _active_unis_via(conn) -> set:
+    """Active division×gender universes, read THROUGH the caller's connection
+    (worldconfig's own accessors open a fresh connection, which deadlocks against
+    an in-transaction off-season on the shared SQLite file). Defaults to all."""
+    def lst(key, allv):
+        try:
+            r = conn.execute("SELECT value FROM world_setting WHERE key=?", (key,)).fetchone()
+            v = list(json.loads(r["value"])) if r and r["value"] else []
+        except (sqlite3.OperationalError, ValueError, TypeError):
+            v = []
+        return [x for x in allv if x in v] or allv
+    return {(d, g) for d in lst("active_divisions", ["D1", "D2", "D3"])
+            for g in lst("active_genders", ["men", "women"])}
 
-    Reads ``world_graduates`` through the caller's transaction because world and
-    GTT tables share one SQLite file; opening a second connection here can
-    deadlock. Returns (gender, pid, data, str) rows, best-first within bands.
+
+def _world_graduates(conn, world_seed, exclude_pids, limit):
+    """Latest persisted college graduates for the pro intake, 95% D1 / 5% non-D1.
+
+    Reads ``world_graduates`` (and active config) through the caller's transaction
+    because world and GTT tables share one SQLite file — opening a second
+    connection mid-off-season deadlocks. Returns (gender, pid, data, str) rows.
     """
     try:
         wid = conn.execute("SELECT id FROM world WHERE seed=?", (world_seed,)).fetchone()
@@ -207,8 +222,7 @@ def _world_graduates(conn, world_seed, exclude_pids, limit):
         return []
     wid = wid["id"]
     try:
-        from app import world as world_mod
-        active = set(world_mod._active_unis())
+        active = _active_unis_via(conn)
         year = conn.execute("SELECT MAX(year) y FROM world_graduates WHERE world_id=?",
                             (wid,)).fetchone()["y"]
     except sqlite3.OperationalError:
@@ -219,12 +233,12 @@ def _world_graduates(conn, world_seed, exclude_pids, limit):
                         "WHERE world_id=? AND year=?", (wid, year)).fetchall()
     d1, non = [], []
     for r in rows:
-        if r["pid"] in exclude_pids or (r["division"], r["gender"]) not in active:
+        division, gender = r["division"], r["gender"]
+        if r["pid"] in exclude_pids or (division, gender) not in active:
             continue
-        g = "m" if r["gender"] in ("men", "male", "m") else "w"
-        item = (g, r["pid"], r["data"], float(r["str"] or 0.0),
-                float(r["ovr"] or 0.0), r["division"])
-        if r["division"] == "D1":
+        g = "m" if gender in ("men", "male", "m") else "w"
+        item = (g, r["pid"], r["data"], float(r["str"] or 0.0), float(r["ovr"] or 0.0), division)
+        if division == "D1":
             d1.append(item)
         elif item[3] >= NON_D1_MIN_STR and item[4] >= NON_D1_MIN_OVR:
             non.append(item)
