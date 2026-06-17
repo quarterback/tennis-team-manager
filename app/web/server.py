@@ -730,16 +730,18 @@ def create_app() -> Flask:
                                    groups=p.items, p=p,
                                    conferences=conferences_for(division, gender), conf=conf)
         rows = team_roster(division, gender, school)
+        live = ranking_rows(division, gender)
         if not rows:
-            school = ranking_rows(division, gender)[0].school
+            school = live[0].school
             rows = team_roster(division, gender, school)
-        schools = [r.school for r in ranking_rows(division, gender)]
+        schools = [r.school for r in live]
+        power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
         row = get_row(school)
         prog = load_division(division, gender).by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, conf=conf, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, schools=schools, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),

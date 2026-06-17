@@ -2,10 +2,13 @@
 {% block title %}Play to Clinch — Past Award Winners{% endblock %}
 {% block content %}
 
+{# Archived player names are plain text: this is a frozen record, and a graduated
+   or transferred-out winner no longer resolves on the live /player route. Schools
+   and coaches still link (those routes resolve historically). #}
 {% macro prow(p) %}
 <div class="aw-row">
   <span class="bl-crest sm" style="background:{{ p.color }}">{{ p.abbr }}</span>
-  <a class="bl-school aw-name" href="{{ url_for('player', pid=p.subject_id, school=p.school, u=u) }}">{{ p.name }}</a>
+  <span class="aw-name">{{ p.name }}</span>
   <a class="bl-conf aw-school" href="{{ url_for('teams', school=p.school, u=u) }}">{{ p.school }}</a>
 </div>
 {% endmacro %}
@@ -50,8 +53,8 @@
       <div class="aw-poty-nat">
         <span class="bl-crest lg" style="background:{{ p.color }};width:44px;height:44px;font-size:13px">{{ p.abbr }}</span>
         <div><div class="aw-poty-label">National Player of the Year</div>
-          <a class="bl-school aw-poty-name" href="{{ url_for('player', pid=p.subject_id, school=p.school, u=u) }}">{{ p.name }}</a>
-          <div class="bl-conf">{{ p.school }}</div></div>
+          <span class="aw-poty-name">{{ p.name }}</span>
+          <a class="bl-conf" href="{{ url_for('teams', school=p.school, u=u) }}" style="text-decoration:none">{{ p.school }}</a></div>
       </div>{% else %}<p class="aw-empty">—</p>{% endif %}
       {% if aw.conf_poty %}<div class="aw-cpoty-grid">
         {% for p in aw.conf_poty %}{{ prow(p) }}{% endfor %}

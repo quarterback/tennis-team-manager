@@ -217,12 +217,13 @@ def _ability(prog) -> float:
 
 
 def _power6(prog) -> float:
-    """Roster strength à la UTR's Power 6: the summed STR of a program's top-6
-    singles players. A clear at-a-glance read of lineup depth, available even
-    preseason (STR falls back to ability before any results)."""
+    """Roster strength: the average STR of a program's top-6 singles players — the
+    six who'd play the lineup. On the same scale as an individual player's STR, so
+    it reads at a glance and compares directly. Available even preseason (STR falls
+    back to ability before any results)."""
     from app.ncaa import build_roster
     s = sorted((p.str_value() for p in build_roster(prog)), reverse=True)[:6]
-    return round(sum(s), 1)
+    return round(sum(s) / len(s), 1) if s else 0.0
 
 
 def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[LiveRow]:
