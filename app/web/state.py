@@ -1246,7 +1246,8 @@ def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SE
         abbr, color = crest(opp)
         out.append({"id": d["id"], "opp": opp, "abbr": abbr, "color": color,
                     "home": is_home, "won": won, "mine": mine, "theirs": theirs,
-                    "conf": bool(d["is_conf"])})
+                    "conf": bool(d["is_conf"]), "round": d["round"],
+                    "postseason": d["round"] in ("CT", "NCAA")})
     return {"results": out, "wins": wins, "losses": losses}
 
 

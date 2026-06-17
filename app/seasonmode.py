@@ -837,8 +837,11 @@ def ncaa_field(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 8):
     conn.close()
     div = load_division(s["division"], s["gender"])
     progs = {p.school: p for p in div.programs}
-    champs_map = json.loads(s["champion"] or "{}")
-    champions = [progs[v] for v in champs_map.values() if v in progs and v in ratings]
+    # Conference champions are derived from the CT results (the reliable source) —
+    # NOT from season.champion, which holds the conf-champ map only during the
+    # selection window and is overwritten with the NATIONAL champion's name once the
+    # tournament completes (parsing it as JSON then would fail and drop the seeds).
+    champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
     field_keys = {p.key for p in seeded}
@@ -862,9 +865,13 @@ def dual_detail(dual_id: int) -> dict | None:
 
 
 def team_schedule(season_id: int, school: str) -> list[dict]:
+    """A team's full season slate — regular season AND postseason (conference
+    tournament + NCAAs), week-ordered. All of it counts toward the season record,
+    as in real college tennis. `round` ('REG'/'CT'/'NCAA') lets callers label the
+    postseason rows."""
     conn = _db()
-    rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND (home=? OR away=?)"
-                        " ORDER BY week", (season_id, school, school)).fetchall()
+    rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND (home=? OR away=?)"
+                        " ORDER BY week, round_no, id", (season_id, school, school)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
