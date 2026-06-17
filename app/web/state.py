@@ -89,13 +89,35 @@ def _hydrate_championship(data):
                            seed_of=(lambda e: e.seed if e else None))
 
 
-def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 128):
+def _cur_cal_year(world, seed):
+    return world.BASE_YEAR + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+
+
+def championship_years(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Calendar years with a viewable individual championship (stored past years,
+    plus the current season if it has concluded), newest first."""
+    import app.world as world
+    import app.seasonmode as sm
+    years = set(world.championship_years(seed, division, gender))
+    if world.exists(seed):
+        s = sm.load_season(sm.get_or_create(division, gender, seed=world.current_year_seed(seed)))
+        if s and s["phase"] == "complete":
+            years.add(_cur_cal_year(world, seed))
+    return sorted(years, reverse=True)
+
+
+def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
+                             size: int = 128, year: int | None = None):
     """The NCAA individual singles championship, played AFTER the team tournament.
-    Computed live while the team season is complete; once the year rolls over it
-    is served from the snapshot persisted at finalize, so it stays viewable."""
+    Computed live while the current team season is complete; past seasons (and the
+    current one after rollover) are served from the snapshot persisted at finalize.
+    `year` (calendar) selects a specific past season."""
     import app.world as world
     import app.seasonmode as sm
     from app.individuals import run_singles_championship, clamp_field, championship_to_dict
+    if year is not None and year != _cur_cal_year(world, seed):
+        return _hydrate_championship(world.latest_championship(
+            seed, division, gender, "Singles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
     s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
     if s and s["phase"] == "complete":
@@ -104,12 +126,16 @@ def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
 
-def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = 64):
-    """The NCAA individual doubles championship — live while the team season is
-    complete, then served from the finalize snapshot after the rollover."""
+def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
+                             size: int = 64, year: int | None = None):
+    """The NCAA individual doubles championship — live while the current team season
+    is complete, then served from the finalize snapshot; `year` selects a past one."""
     import app.world as world
     import app.seasonmode as sm
     from app.individuals import run_doubles_championship, clamp_field, championship_to_dict
+    if year is not None and year != _cur_cal_year(world, seed):
+        return _hydrate_championship(world.latest_championship(
+            seed, division, gender, "Doubles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
     s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
     if s and s["phase"] == "complete":
@@ -957,14 +983,45 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
     return {"transfers": events, "n": len(events), "current_year": cur_cal}
 
 
-def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
+    """Calendar years (newest first) that have a stored NCAA bracket for this
+    universe — every past world-year whose season reached the bracket. Drives the
+    season picker on the bracket page; the brackets survive the rollover under
+    each year's seed."""
+    import app.world as world
+    import app.seasonmode as sm
+    if not world.exists(seed):
+        return []
+    cur = world.load_world(seed)["year"]
+    years = []
+    for idx in range(cur + 1):
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
+        if sid is None:
+            continue
+        ph = (sm.load_season(sid) or {}).get("phase")
+        if ph in ("selection", "ncaa", "complete"):
+            years.append(world.BASE_YEAR + idx)
+    return sorted(years, reverse=True)
+
+
+def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year: int | None = None):
     """The ACTUAL played NCAA team bracket reconstructed from results — rounds of
     real matchups with the winner and dual score. None until the tournament has
-    begun. (The /bracket page is a projection; this is what the league played.)"""
+    begun. (The /bracket page is a projection; this is what the league played.)
+
+    `year` (calendar) selects a PAST world-year's stored bracket; default is the
+    current season. Past brackets reconstruct exactly from that season's saved
+    duals (seeds included, since the field is seeded from those same results)."""
     import app.world as world
     import app.seasonmode as sm
     from .rankings_data import crest
-    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    if year is not None:
+        idx = year - world.BASE_YEAR
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
+        if sid is None:
+            return None
+    else:
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
     if not rows:
         # Bracket reveal: the field is locked but no NCAA match has been played.

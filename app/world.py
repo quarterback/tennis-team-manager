@@ -1326,20 +1326,43 @@ def _store_championships(conn, world: dict) -> None:
                 pass
 
 
-def latest_championship(seed: int, division: str, gender: str, event: str) -> dict | None:
-    """The most recently completed individual championship for a universe (None
-    until one has been played + stored at a year rollover)."""
+def latest_championship(seed: int, division: str, gender: str, event: str,
+                        year: int | None = None) -> dict | None:
+    """A completed individual championship for a universe (None until one has been
+    played + stored at a year rollover). `year` is the world-year INDEX for a
+    specific past season; default is the most recent stored."""
     w = load_world(seed)
     if not w:
         return None
     conn = _db()
     try:
-        r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
-                         " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
-                         (w["id"], division, gender, event)).fetchone()
+        if year is None:
+            r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                             " AND gender=? AND event=? ORDER BY year DESC LIMIT 1",
+                             (w["id"], division, gender, event)).fetchone()
+        else:
+            r = conn.execute("SELECT data FROM world_championship WHERE world_id=? AND division=?"
+                             " AND gender=? AND event=? AND year=? LIMIT 1",
+                             (w["id"], division, gender, event, year)).fetchone()
     finally:
         conn.close()
     return json.loads(r["data"]) if r else None
+
+
+def championship_years(seed: int, division: str, gender: str) -> list[int]:
+    """Calendar years with a stored individual championship for this universe
+    (newest first) — the season picker for the championship archive."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT DISTINCT year FROM world_championship WHERE world_id=?"
+                            " AND division=? AND gender=? ORDER BY year DESC",
+                            (w["id"], division, gender)).fetchall()
+    finally:
+        conn.close()
+    return [BASE_YEAR + r["year"] for r in rows]
 
 
 def _finalize_year(seed: int, w: dict) -> dict:
