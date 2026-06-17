@@ -35,7 +35,8 @@ from app.juniors import US_STATES
 from .pagination import paginate
 from .awards import (season_awards, player_career_honors, stamp_world_honors,
                      coach_career_honors, coach_honor_records,
-                     coach_career_table, coach_player_awards)
+                     coach_career_table, coach_player_awards,
+                     awards_archive, archive_years)
 
 from app import seasonmode as sm
 from app import gtt_seasonmode as gs
@@ -475,10 +476,21 @@ def create_app() -> Flask:
         s = sm.load_season(sid)
         final = aw.get("concluded", False)      # honors are only named once the season concludes
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
+        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        past_years = [y for y in archive_years(division, gender) if y < cur_year]
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
                                coach_awards=coach_awards, u=u, uni_label=label, crest=crest,
-                               final=final, phase=s["phase"],
+                               final=final, phase=s["phase"], past_years=past_years,
                                week=s["current_week"], total_weeks=s["total_weeks"])
+
+    @app.route("/awards/archive")
+    def awards_archive_page():
+        division, gender, label, u = _universe(request)
+        years = archive_years(division, gender)
+        year = request.args.get("year", type=int) or (years[0] if years else None)
+        aw = awards_archive(division, gender, year) if year else None
+        return render_template("awards_archive.html", active="Awards", u=u, uni_label=label,
+                               crest=crest, years=years, year=year, aw=aw)
 
     @app.route("/hall-of-fame")
     def hall_of_fame():

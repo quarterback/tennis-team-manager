@@ -131,6 +131,18 @@ def winners(year: int, awards: list[str]) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def for_season(year: int, division: str, gender: str) -> list[dict]:
+    """Every stamped honor for one universe-year (most prestigious first) — the
+    archive of that season's award winners, read straight from the store rather
+    than recomputed."""
+    conn = _conn()
+    rows = conn.execute(
+        "SELECT * FROM honors WHERE year=? AND division=? AND gender=? "
+        "ORDER BY sort DESC, school", (year, division, gender)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 def at_school(year: int, division: str, gender: str, school: str,
               subject_type: str = "player") -> list[dict]:
     """Honor rows for one program in one year (e.g. the players a coach's team had
