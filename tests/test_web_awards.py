@@ -11,12 +11,13 @@ def test_awards_page_renders():
 
 def test_season_awards_structure(played_season):
     aw = season_awards("D1", "men")
-    # National All-American tiers exist and are STR-ordered (First >= Second).
+    # National All-American tiers exist and are PERFORMANCE-ordered (honors are
+    # earned on court — wins x win% x position x a mild team factor — not by rating).
     assert aw["all_american"], "expected at least one All-American tier"
     first = aw["all_american"][0]["players"]
     assert first, "First Team should not be empty"
-    strs = [p["str"] for p in first]
-    assert strs == sorted(strs, reverse=True)
+    perfs = [p["perf"] for p in first]
+    assert perfs == sorted(perfs, reverse=True)
     # Every honored player is reverse-indexed for player cards.
     for p in first:
         assert any("All-American" in h for h in aw["by_pid"][p["pid"]])
