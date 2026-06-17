@@ -302,6 +302,19 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     import app.coachreg as coachreg
     honors.reset()
     coachreg.reset()
+    # Stored individual championships are keyed to the (now-deleted) world; clear
+    # them so a new save can't surface a prior league's champions.
+    conn = _db()
+    conn.execute("DELETE FROM world_championship")
+    conn.commit()
+    conn.close()
+    # God-mode editor overrides (player moves, lineups, prestige/academics priors,
+    # scholarship limits) are per-save tweaks — wipe them so each new league is
+    # distinct and no prior save's artifacts leak into the Active Overrides list.
+    import app.overrides as overrides
+    import app.scholarships as scholarships
+    overrides.clear_all()
+    scholarships.clear_overrides()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
     _dev_cache.clear()
