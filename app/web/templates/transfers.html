@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Transfer Portal{% endblock %}
 {% block content %}
 
@@ -9,13 +10,20 @@
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
-  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">{{ uni_label }} · every completed move, where they started → where they went</span>
+  {% if tp.years %}
+  <label class="bl-field"><span class="bl-field-label">Off-season</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:120px">
+      <option value="">All years</option>
+      {% for y in tp.years %}<option value="{{ y }}"{% if y == sel_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select></span></label>
+  {% endif %}
+  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">{{ uni_label }} · where they started → where they went</span>
 </div></div>
 </form>
 
 <div class="bl-container"><div class="bl-entries">
-  <div class="bl-entries-left"><strong style="color:var(--text-primary)">{{ tp.n }}</strong> transfer{{ '' if tp.n == 1 else 's' }} on record</div>
-  <span class="bl-entries-right">newest off-season first</span>
+  <div class="bl-entries-left"><strong style="color:var(--text-primary)">{{ tp.n }}</strong> transfer{{ '' if tp.n == 1 else 's' }}{% if sel_year %} in {{ sel_year }}{% endif %}</div>
+  <span class="bl-entries-right">{% if sel_year %}off-season {{ sel_year }}{% else %}newest off-season first{% endif %}</span>
 </div></div>
 
 {% if not tp.transfers %}
@@ -30,7 +38,7 @@
       <span class="bl-th">YEAR</span><span class="bl-th">PLAYER</span><span class="bl-th num">STR</span>
       <span class="bl-th">CLASS</span><span class="bl-th">FROM</span><span class="bl-th"></span><span class="bl-th">TO</span>
     </div>
-    {% for t in tp.transfers %}
+    {% for t in p.items %}
     <div class="bl-row">
       <span class="bl-conf" style="font-variant-numeric:tabular-nums">{{ t.year }}</span>
       <a class="bl-school" href="{{ url_for('player', pid=t.pid, school=t.to, u=u) }}">
@@ -46,5 +54,6 @@
     {% endfor %}
   </div>
 </div></div>
+<div class="bl-container">{{ pager(p, 'transfers') }}</div>
 {% endif %}
 {% endblock %}

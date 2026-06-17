@@ -789,8 +789,11 @@ def create_app() -> Flask:
     @app.route("/transfers")
     def transfers():
         division, gender, label, u = _universe(request)
+        year = request.args.get("year", type=int)
+        tp = transfer_portal_view(division, gender, year=year)
+        pg = paginate(tp["transfers"], request.args.get("page", 1), per_page=40)
         return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
-                               tp=transfer_portal_view(division, gender))
+                               tp=tp, p=pg, sel_year=year)
 
     @app.route("/recruiting")
     def recruiting():

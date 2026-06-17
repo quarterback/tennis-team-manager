@@ -949,17 +949,16 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     return {"weeks": weeks, "week": sel, "groups": groups, "phase_label": sel_phase}
 
 
-def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
+def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, year=None):
     """Every transfer in this universe — where each player started and where they
     went — reconstructed from career history (a school change between seasons is a
-    transfer). Newest off-season first. The sim resolves the portal at year
-    rollover, so there's no separate 'in the portal' limbo to show — these are the
-    completed moves."""
+    transfer). Newest off-season first. `year` (calendar) filters to one off-season;
+    the full set of years is returned for the picker."""
     import app.world as world
     from .rankings_data import crest
     w = world.load_world(seed)
     if not w:
-        return {"transfers": [], "n": 0, "current_year": None}
+        return {"transfers": [], "n": 0, "current_year": None, "years": [], "year": year}
     rosters = world._base_rosters(w).get((division, gender), {})
     cur_cal = world.BASE_YEAR + w["year"]
     events = []
@@ -980,7 +979,11 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED):
                         "class": getattr(p, "class_year", ""),
                     })
     events.sort(key=lambda e: (e["year"], -e["str"], e["name"]), reverse=True)
-    return {"transfers": events, "n": len(events), "current_year": cur_cal}
+    years = sorted({e["year"] for e in events}, reverse=True)
+    if year is not None:
+        events = [e for e in events if e["year"] == year]
+    return {"transfers": events, "n": len(events), "current_year": cur_cal,
+            "years": years, "year": year}
 
 
 def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
