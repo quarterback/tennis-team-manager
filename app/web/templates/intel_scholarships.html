@@ -16,16 +16,18 @@
 </form>
 
 <div class="bl-container"><div class="bl-entries">
-  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} flagged</div>
-  <span class="bl-entries-right">{{ uni_label }} · walk-ons out-talenting funded teammates</span>
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} walk-ons</div>
+  <span class="bl-entries-right">{{ uni_label }} · walk-ons better than a scholarship teammate</span>
 </div></div>
 
 <div class="bl-container"><div class="bl-tablescroll">
   <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.4fr) minmax(120px,1fr) 60px 86px minmax(150px,1.3fr) 76px">
     <div class="bl-thead">
       <span class="bl-th">#</span><span class="bl-th">WALK-ON</span><span class="bl-th">PROGRAM</span>
-      <span class="bl-th num">TRUE</span><span class="bl-th num">BEATS</span>
-      <span class="bl-th">WEAKEST FUNDED PLAYER</span><span class="bl-th num">MERITS</span>
+      <span class="bl-th num" title="Real ability — the Bureau's true talent rating">TALENT</span>
+      <span class="bl-th num" title="How many scholarship teammates they outclass">BEATS</span>
+      <span class="bl-th" title="Weakest teammate who is on scholarship">WEAKEST FUNDED</span>
+      <span class="bl-th num" title="Scholarship a program at their level would offer">DESERVES</span>
     </div>
     {% for f in rows %}
     {% set ab = crest(f.player.school) %}
