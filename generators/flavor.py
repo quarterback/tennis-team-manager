@@ -166,16 +166,40 @@ _GENERIC_TOWNS = ("Riverside", "Fairview", "Oakdale", "Lakewood", "Highland",
                   "Brookfield", "Clearwater", "Maplewood", "Glenwood", "Franklin")
 
 
-def roll_high_school(country_code: str, rng: random.Random) -> str:
-    """A believable high school / academy for a player's bio. International
-    players skew toward the marquee academies; everyone else gets a
-    '{City} {Suffix}' school named off the nation's real city pool."""
-    domestic = (country_code or "").upper() in {"US", ""}
-    academy_p = 0.18 if domestic else 0.35
-    if rng.random() < academy_p:
-        return rng.choice(_ACADEMIES)
-    cities = _load_hometowns().get((country_code or "").upper()) or _GENERIC_TOWNS
-    return f"{rng.choice(cities)} {rng.choice(_HS_SUFFIX)}"
+_high_schools: dict | None = None
+
+
+def _load_high_schools() -> dict:
+    """`state-abbr -> [real high school names]`, curated from public + prep programs
+    that appear on MaxPreps / recruiting boards, so a domestic player attends a REAL
+    school in their actual state."""
+    global _high_schools
+    if _high_schools is None:
+        try:
+            with open(os.path.join(_NAMES_DIR, "high_schools.json"), encoding="utf-8") as fh:
+                _high_schools = {k: v for k, v in json.load(fh).items()
+                                 if not k.startswith("_") and isinstance(v, list)}
+        except (OSError, ValueError):
+            _high_schools = {}
+    return _high_schools
+
+
+def roll_high_school(country_code: str, rng: random.Random,
+                     state: str | None = None, home_city: str | None = None) -> str:
+    """A US player's high school: a REAL school in their actual state (drawn from the
+    curated per-state list), so a Texan attends a Texas school. Falls back to a
+    '{in-state city} {suffix}' name only where a state has no list, then to the
+    player's own hometown city. International players get no high school — return ''."""
+    domestic = (country_code or "").upper() in {"US", "USA", ""}
+    if not domestic:
+        return ""
+    st = (state or "").upper()
+    real = _load_high_schools().get(st)
+    if real:
+        return rng.choice(real)
+    cities = _load_us_states().get(st) if st else None
+    base = rng.choice(cities) if cities else (home_city or None)
+    return f"{base} {rng.choice(_HS_SUFFIX)}" if base else ""
 
 
 def roll_hometown(country_code: str, rng: random.Random) -> str:

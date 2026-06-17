@@ -47,7 +47,11 @@
       <span class="c-date">{{ d.date }}<span class="wk">Wk {{ d.week }}</span></span>
       <span class="c-site">{{ 'vs' if home else 'at' }}</span>
       <span class="c-opp">{{ crest_box(opp, oa, oc, 'sm') }}<span class="nm">{{ opp }}</span></span>
-      <span class="c-type"><span class="bl-tag {{ 'conf' if d.is_conf else 'nc' }}">{{ 'Conf' if d.is_conf else 'Non-conf' }}</span></span>
+      <span class="c-type">
+        {% if d.round == 'CT' %}<span class="bl-tag conf" style="background:var(--accent);color:#fff">Conf Tourney</span>
+        {% elif d.round == 'NCAA' %}<span class="bl-tag conf" style="background:var(--surface-header);color:#fff">{{ d.conf or 'NCAA' }}</span>
+        {% else %}<span class="bl-tag {{ 'conf' if d.is_conf else 'nc' }}">{{ 'Conf' if d.is_conf else 'Non-conf' }}</span>{% endif %}
+      </span>
       <span class="c-res">
         {% if final %}
           {% set me = d.home_points if home else d.away_points %}

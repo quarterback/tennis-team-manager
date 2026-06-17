@@ -334,6 +334,62 @@ def _round1_pairs(seeded: list[str]) -> list[tuple[int, str, str]]:
     return [(k, slots[2 * k], slots[2 * k + 1]) for k in range(n // 2)]
 
 
+# Bracketing penalties (lower total = more credible national draw). Seeding and
+# bracketing are separate: teams are placed into the standard bracket by seed,
+# then swapped WITHIN their seed band to avoid bad first-round matchups.
+_PEN_SAME_CONF = 5000      # two teams from the same conference
+_PEN_REMATCH = 2500        # a regular-season rematch
+_PEN_AQ_VS_AQ = 1000       # two conference champions against each other
+
+
+def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
+                  played_pairs: set) -> list[tuple[int, str, str]]:
+    """National-championship first round. Place the seeded field into the standard
+    bracket (1-seed band vs 16-seed band, etc.), then minimise bracketing penalties
+    by swapping teams WITHIN a seed band — preserving seed integrity — to avoid
+    same-conference and regular-season-rematch first-rounders and to keep two
+    conference champions (AQs) from meeting in round one."""
+    n = _pow2_le(len(seeded))
+    seeded = seeded[:n]
+    pos = _seed_positions(n)                       # seed number (1..n) at each slot
+    slots = [seeded[p - 1] for p in pos]           # baseline placement = pure seed
+    lines = max(1, min(16, n // 2))                # seed lines (16 for a 64 field)
+    band_size = max(1, n // lines)
+    band = [(p - 1) // band_size for p in pos]     # seed band per bracket slot
+
+    def pair_pen(a, b):
+        if not a or not b:
+            return 0
+        s = 0
+        if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
+            s += _PEN_SAME_CONF
+        if frozenset((a, b)) in played_pairs:
+            s += _PEN_REMATCH
+        if a in autobid_set and b in autobid_set:
+            s += _PEN_AQ_VS_AQ
+        return s
+
+    def total():
+        return sum(pair_pen(slots[2 * k], slots[2 * k + 1]) for k in range(n // 2))
+
+    cur = total()
+    for _ in range(60):                            # hill-climb on same-band swaps
+        improved = False
+        for i in range(n):
+            for j in range(i + 1, n):
+                if band[i] != band[j]:
+                    continue
+                slots[i], slots[j] = slots[j], slots[i]
+                t = total()
+                if t < cur:
+                    cur, improved = t, True
+                else:
+                    slots[i], slots[j] = slots[j], slots[i]
+        if not improved or cur == 0:
+            break
+    return [(k, slots[2 * k], slots[2 * k + 1]) for k in range(n // 2)]
+
+
 def _insert_dual(conn, sid, week, rnd, conf, is_conf, round_no, bpos, home, away):
     conn.execute(
         "INSERT INTO duals (season_id, week, round, conf, is_conf, round_no, bpos, home, away,"
@@ -467,9 +523,16 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
         ratings = compute_ratings(_completed(conn, sid, ("REG", "CT")))
         champs_map = json.loads(load_season(sid)["champion"] or "{}")
         champions = [progs[v] for v in champs_map.values() if v in progs]
-        seeded, _ = select_field(div.programs, ratings, champions, size=NATIONAL_FIELD)
+        seeded, autobids = select_field(div.programs, ratings, champions, size=NATIONAL_FIELD)
+        # Bracketing context: conference champions (AQ), each team's conference, and
+        # who already played whom in the regular season (rematch avoidance).
+        autobid_set = {p.school for p in seeded if p.key in autobids}
+        conf_of = {p.school: p.conf for p in seeded}
+        played = {frozenset((d["home"], d["away"]))
+                  for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
+                                        " AND round='REG' AND status='final'", (sid,)).fetchall()}
         week = _next_post_week(conn, sid)
-        for bpos, h, a in _round1_pairs([p.school for p in seeded]):
+        for bpos, h, a in _seed_bracket([p.school for p in seeded], autobid_set, conf_of, played):
             _insert_dual(conn, sid, week, "NCAA", _round_name(NATIONAL_FIELD), 0, 1, bpos, h, a)
         round_no = 1
     else:
@@ -774,8 +837,11 @@ def ncaa_field(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 8):
     conn.close()
     div = load_division(s["division"], s["gender"])
     progs = {p.school: p for p in div.programs}
-    champs_map = json.loads(s["champion"] or "{}")
-    champions = [progs[v] for v in champs_map.values() if v in progs and v in ratings]
+    # Conference champions are derived from the CT results (the reliable source) —
+    # NOT from season.champion, which holds the conf-champ map only during the
+    # selection window and is overwritten with the NATIONAL champion's name once the
+    # tournament completes (parsing it as JSON then would fail and drop the seeds).
+    champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
     field_keys = {p.key for p in seeded}
@@ -799,9 +865,13 @@ def dual_detail(dual_id: int) -> dict | None:
 
 
 def team_schedule(season_id: int, school: str) -> list[dict]:
+    """A team's full season slate — regular season AND postseason (conference
+    tournament + NCAAs), week-ordered. All of it counts toward the season record,
+    as in real college tennis. `round` ('REG'/'CT'/'NCAA') lets callers label the
+    postseason rows."""
     conn = _db()
-    rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND (home=? OR away=?)"
-                        " ORDER BY week", (season_id, school, school)).fetchall()
+    rows = conn.execute("SELECT * FROM duals WHERE season_id=? AND (home=? OR away=?)"
+                        " ORDER BY week, round_no, id", (season_id, school, school)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 

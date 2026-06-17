@@ -56,12 +56,29 @@ def _roster(division: str, gender: str, school: str):
     return build_roster(prog) if prog else []
 
 
+# Lineup-position weight for the award performance score: a win at the top of the
+# lineup (tougher opponents) is worth more than one at the bottom.
+_POS_W = {1: 1.00, 2: 0.95, 3: 0.90, 4: 0.85, 5: 0.80, 6: 0.75}
+
+
 def _eligible(division: str, gender: str, seed: int) -> list[dict]:
-    """STR-rated players with enough matches, tagged with school + conference,
-    sorted strongest first — from the live week-by-week season."""
+    """Players with enough matches, tagged with school + conference, ranked by
+    SEASON PERFORMANCE — not raw rating. Honors are earned on court: the score is
+    singles wins × win% × a lineup-position weight (a top-of-lineup win counts for
+    more than a sixth-singles one). STR is only a deep tiebreaker."""
     import app.seasonmode as sm
     sid = _sid(division, gender, seed)
-    conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
+    rrows = ranking_rows(division, gender, seed)
+    conf = {r.school: (r.conf, r.conf_abbr) for r in rrows}
+
+    def _wpct(rec):
+        try:
+            w, l = rec.split("-")
+            g = int(w) + int(l)
+            return int(w) / g if g else 0.5
+        except (ValueError, AttributeError):
+            return 0.5
+    team_wpct = {r.school: _wpct(r.rec) for r in rrows}
     pidx = sm._pid_index(division, gender)
     strmap = sm.season_player_str(sid)
     recs = sm.player_records(sid)
@@ -76,7 +93,21 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
         c, ca = conf.get(info["school"], ("Independent", "IND"))
         out.append({"pid": pid, "name": info["name"], "school": info["school"],
                     "conf": c, "conf_abbr": ca, "str": s, "w": w, "l": l})
-    out.sort(key=lambda p: (p["str"], p["w"]), reverse=True)
+    # Lineup position ≈ each player's STR rank on their own team (how lineups set);
+    # used only to weight wins by the difficulty of the spot they played.
+    out.sort(key=lambda p: (p["school"], -p["str"]))
+    cur, line = None, 0
+    for p in out:
+        line = line + 1 if p["school"] == cur else 1
+        cur = p["school"]
+        g = p["w"] + p["l"]
+        wpct = p["w"] / g if g else 0.0
+        p["line"] = line
+        # Team success is a mild factor (±15%), not a gate — a standout on a weak
+        # team still earns recognition; a winning team's player gets a small bump.
+        team_factor = 0.85 + 0.30 * team_wpct.get(p["school"], 0.5)
+        p["perf"] = round(p["w"] * wpct * _POS_W.get(line, 0.70) * team_factor, 3)
+    out.sort(key=lambda p: (p["perf"], p["w"], p["str"]), reverse=True)
     return out
 
 

@@ -125,11 +125,13 @@
           {% endif %}
           <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
             <input type="hidden" name="u" value="{{ u }}">
-            <div class="bl-th" style="font-size:10px;margin-bottom:6px">MOVE TO ANOTHER PROGRAM ({{ c.division }} {{ c.gender }})</div>
+            <div class="bl-th" style="font-size:10px;margin-bottom:6px">MOVE TO ANY PROGRAM (any division / gender)</div>
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
               <label class="bl-field"><span class="bl-field-label">Program</span>
-                <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:180px">
-                  {% for s in schools if s != c.school %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:200px">
+                  {% for d2, g2, lbl, slist in move_universes %}<optgroup label="{{ lbl }}">
+                    {% for s in slist %}{% if not (s == c.school and d2 == c.division and g2 == c.gender) %}<option value="{{ d2 }}|{{ g2 }}|{{ s }}">{{ s }}</option>{% endif %}{% endfor %}
+                  </optgroup>{% endfor %}
                 </select></span></label>
               <label class="bl-field"><span class="bl-field-label">Seat</span>
                 <span class="bl-select-wrap"><select class="bl-select" name="dest_role">

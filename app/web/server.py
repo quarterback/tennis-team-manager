@@ -21,6 +21,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     player_career_table, player_career_records, search_players,
                     results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
+                    all_programs_by_universe,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
                     junior_tournaments, junior_tournament_detail,
@@ -430,12 +431,13 @@ def create_app() -> Flask:
         honor_years = coach_career_honors(div, gen, coach_id)
         career = coach_career_table(coach_id)
         player_awards = coach_player_awards(coach_id)
-        # Staff at the coach's current school — the swap targets for the editor.
+        # Staff at the coach's current school — the in-staff swap targets.
         staff = coaching_staff(div, gen, c["school"]) if c.get("school") else []
-        schools = sorted(p.school for p in load_division(div, gen).programs) if c.get("school") else []
+        # Move target: any program in ANY division/gender.
+        move_universes = all_programs_by_universe() if c.get("school") else []
         return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
                                career=career, player_awards=player_awards, staff=staff,
-                               schools=schools, crest=crest, u=u, uni_label=label)
+                               move_universes=move_universes, crest=crest, u=u, uni_label=label)
 
     @app.route("/coach/<coach_id>/move", methods=["POST"])
     def coach_move(coach_id):
@@ -450,10 +452,13 @@ def create_app() -> Flask:
                 d2, g2, s2, r2 = tgt.split("|")
             except ValueError:
                 return redirect(url_for("coach", coach_id=coach_id, u=u))
-        else:                                    # cross-program move (same universe)
-            s2 = request.form.get("dest_school", "")
+        else:                                    # cross-program move (ANY universe)
+            dest = request.form.get("dest_school", "")
             r2 = request.form.get("dest_role", "head")
-            d2, g2 = c["division"], c["gender"]
+            if "|" in dest:                      # "division|gender|school" — move anywhere
+                d2, g2, s2 = dest.split("|", 2)
+            else:                                # plain school name — same universe
+                s2, d2, g2 = dest, c["division"], c["gender"]
         if not s2:
             return redirect(url_for("coach", coach_id=coach_id, u=u))
         # Ensure the destination seat row exists (generate it if never viewed — a
@@ -1013,6 +1018,7 @@ def create_app() -> Flask:
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
                                staff=coaching_staff(division, gender, school),
+                               move_universes=all_programs_by_universe(),
                                all_schools=sorted(p.school for p in div.programs),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
