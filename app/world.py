@@ -633,24 +633,40 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     return best
 
 
-SIGNING_PEAK = 0.45         # mode of the per-recruit decision-week distribution (× window)
+# Rank-dependent decision timing: where in the signing window a recruit's
+# commitment peaks, as a fraction of the window. Blue-chips hold out and decide
+# LATE (they take every visit, weigh every offer); lower-rated recruits commit
+# EARLY — locking in a program (often one above what their ranking warrants)
+# before the seat is gone. The per-recruit week is drawn around this peak so the
+# tiers interleave (a 5★ can still pop early, a 3★ can drag late) but the bulk
+# of the elite tier lands deep in the season.
+SIGNING_MODE_TOP = 0.82     # #1 recruit's decision-week peak (× window) — latest
+SIGNING_MODE_BOTTOM = 0.12  # lowest recruit's peak — earliest
+SIGNING_FLOOR_TOP = 0.40    # #1 recruit can't commit before this much of the season
+                            # has elapsed (the back of the class can commit week 0)
 
 
-def _decision_week(p, salt: str) -> int:
-    """The 0-based week WITHIN the signing window at which this recruit is willing
-    to commit — deterministic per recruit and DECOUPLED from recruiting rank.
+def _decision_week(p, salt: str, rank_frac: float = 0.5, window: int = SIGNING_WEEKS) -> int:
+    """The 0-based week WITHIN the signing window at which this recruit commits —
+    deterministic per recruit, and SKEWED BY RANK so signings drip across the whole
+    regular season: top recruits decide late, lower recruits decide early.
 
-    Rank decides WHERE a recruit signs (best-first, best fit); this decides WHEN.
-    Spreading commitments across the window with a mild mid-cycle peak lets the
-    tiers genuinely interleave — a blue-chip can hold out to week 9 while a
-    mid-3★ commits in week 2 — instead of one fat weekly quota clearing the whole
-    elite tier in week 1."""
+    `rank_frac` is the recruit's position in the national class (0.0 = the #1
+    recruit, 1.0 = the last). It sets both the EARLIEST week a recruit will commit
+    (blue-chips hold out — they can't sign in the opening weeks) and the mode of a
+    triangular draw, so the elite tier clusters late while the back of the class
+    signs quickly — instead of one fat weekly quota clearing the board by mid-season."""
+    window = max(1, window)
     rng = random.Random(f"{getattr(p, 'pid', '')}|decision|{salt}")
-    wk = int(rng.triangular(0, SIGNING_WEEKS, SIGNING_WEEKS * SIGNING_PEAK))
-    return max(0, min(SIGNING_WEEKS - 1, wk))
+    lo = window * SIGNING_FLOOR_TOP * (1.0 - rank_frac)          # top recruits can't go early
+    mode_frac = SIGNING_MODE_TOP - (SIGNING_MODE_TOP - SIGNING_MODE_BOTTOM) * rank_frac
+    mode = max(lo, window * mode_frac)
+    wk = int(rng.triangular(lo, window, mode))
+    return max(0, min(window - 1, wk))
 
 
-def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = False) -> int:
+def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = False,
+                window: int = SIGNING_WEEKS) -> int:
     """Sign up to `quota` more recruits this tick. Each unsigned recruit that has
     REACHED ITS DECISION WEEK (best first) commits to the open program with the
     highest fit that still has a projected seat. At `final` (year rollover) the
@@ -668,15 +684,17 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
     avail = {s: market["cap"].get(s, 0) - taken.get(s, 0) for s in market["progs"]}
 
     klass = national_class(world["seed"], world["year"], gender)
+    denom = max(1, len(klass) - 1)
     new = []
     signed_n = 0
-    for p in klass:
+    for i, p in enumerate(klass):
         if signed_n >= quota:
             break
         if p.pid in signed:
             continue
-        if not final and _decision_week(p, salt) > week:   # hasn't decided to commit yet
-            continue
+        # rank_frac: 0.0 = the #1 recruit (decides latest), 1.0 = back of the class
+        if not final and _decision_week(p, salt, i / denom, window) > week:
+            continue                                        # hasn't decided to commit yet
         best = _pick_school(p, market, avail, jitter_salt="sign")
         if best is None:
             continue
@@ -1194,6 +1212,19 @@ def cross_results_for(seed: int, school: str) -> list[dict]:
 # The weekly driver.
 # ==========================================================================
 
+def _signing_window(seed: int, w: dict) -> int:
+    """The recruiting drip spans the full REGULAR season, so commitments stretch
+    across the whole year instead of clearing out by mid-season. Uses the longest
+    active-universe regular season (its `total_weeks`); falls back to the constant
+    before any season exists."""
+    weeks = []
+    for (d, g) in _active_unis():
+        s = sm.load_season(universe_sid(seed, w, d, g))
+        if s and s.get("total_weeks"):
+            weeks.append(s["total_weeks"])
+    return max(weeks) if weeks else SIGNING_WEEKS
+
+
 def advance_week(seed: int = DEFAULT_SEED) -> dict:
     """Advance the whole world one week — or finalize the year if every universe
     has finished its postseason."""
@@ -1217,10 +1248,11 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     conn = _db()
     signed = 0
     flips = 0
+    window = _signing_window(seed, w)        # drip across the whole regular season
     for gender in worldconfig.active_genders():
         flips += _decommit_pass(conn, w, gender)
-        quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // SIGNING_WEEKS)
-        signed += _sign_batch(conn, w, gender, quota)
+        quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // window)
+        signed += _sign_batch(conn, w, gender, quota, window=window)
     conn.execute("UPDATE world SET week=? WHERE id=?", (w["week"] + 1, w["id"]))
     conn.commit()
     conn.close()

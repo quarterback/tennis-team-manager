@@ -126,3 +126,28 @@ def test_cross_division_portal_moves_by_prestige():
             assert pres[to] > pres[frm]
         if kind == "down":
             assert pres[to] < pres[frm]
+
+
+def test_decision_week_skews_late_for_top_recruits():
+    """Signing timing drips across the whole regular season and is rank-skewed:
+    top recruits hold out (commit late, never in the opening weeks); the back of
+    the class commits early. Locks the recruiting-pace fix in place."""
+    import statistics as st
+    window = 18
+
+    def mean_week(rank_frac):
+        return st.mean(world._decision_week(type("P", (), {"pid": f"p{rank_frac}_{k}"})(),
+                                            "salt", rank_frac, window) for k in range(3000))
+
+    top, mid, low = mean_week(0.0), mean_week(0.5), mean_week(1.0)
+    # monotonic: better recruits commit later
+    assert top > mid > low
+    # blue-chips can't commit in the opening stretch; the back of the class can go week 0
+    top_min = min(world._decision_week(type("P", (), {"pid": f"t{k}"})(), "s", 0.0, window)
+                  for k in range(3000))
+    low_min = min(world._decision_week(type("P", (), {"pid": f"b{k}"})(), "s", 1.0, window)
+                  for k in range(3000))
+    assert top_min >= window * world.SIGNING_FLOOR_TOP - 1 and low_min == 0
+    # everything lands inside the regular-season window
+    assert all(0 <= world._decision_week(type("P", (), {"pid": f"x{k}"})(), "s", k / 50, window) < window
+               for k in range(51))
