@@ -3,13 +3,14 @@
 {% block title %}Play to Clinch — NCAA Bracket{% endblock %}
 {% block content %}
 
-{% macro team(school, abbr, color, won, score, show_score) %}
-<div class="bl-bracket-team{% if won %} is-winner{% endif %}">
-  <span class="bl-team-seed"></span>
-  {{ crest_box(school, abbr, color, 'xs') }}
-  <span class="bl-team-copy"><span class="nm">{{ school }}</span></span>
-  {% if show_score and score %}<span class="bl-team-score">{{ score.split('-')[0] if won else score.split('-')[1] }}</span>{% endif %}
-</div>
+{% macro team(t, score, show_score) %}
+<a class="bl-bracket-team{% if t.won %} is-winner{% endif %}" href="{{ url_for('teams', school=t.school, u=u) }}">
+  <span class="bl-team-seed">{{ t.seed if t.seed else '' }}</span>
+  {{ crest_box(t.school, t.abbr, t.color, 'xs') }}
+  <span class="bl-team-copy"><span class="nm">{{ t.school }}</span>
+    <span class="meta">{{ t.conf }}{% if t.conf %} <span class="bl-bid{{ ' auto' if t.aq }}">{{ 'AQ' if t.aq else 'AL' }}</span>{% endif %}</span></span>
+  {% if show_score and score %}<span class="bl-team-score">{{ score.split('-')[0] if t.won else score.split('-')[1] }}</span>{% endif %}
+</a>
 {% endmacro %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -81,28 +82,54 @@
 <div class="bl-container"><div class="bl-champ">
   {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
   <div><div class="label">National Champion</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ br.champion.school }}</div></div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div></div>
 </div></div>
 {% endif %}
 
-<div class="bl-container">
+<div class="bl-container"><div class="bl-bracket-layout2">
+  {% if br.top_seeds %}
+  <aside class="bl-panel bl-panel-tight bl-seedsheet">
+    <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span>
+      <span class="bl-panel-meta">how the field was seeded</span></div>
+    <div class="bl-seed-list">
+      {% for p in br.top_seeds %}
+      <a class="bl-seed-row" href="{{ url_for('teams', school=p.school, u=u) }}">
+        <span class="seed">{{ p.seed }}</span>
+        {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+        <span class="school">{{ p.school }}</span>
+        <span class="conf">{{ p.conf }}</span>
+        <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+  {% endif %}
   <div class="bl-rounds bl-rounds-sim">
     {% for rnd in br.rounds %}
     <section class="bl-panel bl-round-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span>
-        <span class="bl-panel-meta">{{ rnd.matchups|length }} {{ 'dual' if rnd.matchups|length == 1 else 'duals' }}</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span></div>
       <div class="bl-round-body">
         {% for m in rnd.matchups %}
         <article class="bl-brk-match">
           <div class="bl-match-topline"><span>{{ rnd.name }}</span>{% if m.score %}<span>{{ m.score }}</span>{% endif %}</div>
-          {{ team(m.home, m.home_abbr, m.home_color, m.home_won, m.score, True) }}
-          {{ team(m.away, m.away_abbr, m.away_color, not m.home_won, m.score, True) }}
+          {{ team(m.home, m.score, True) }}
+          {{ team(m.away, m.score, True) }}
         </article>
         {% endfor %}
       </div>
     </section>
     {% endfor %}
   </div>
-</div>
+</div></div>
+<div class="bl-container"><div class="bl-note">
+  Seeds and conference bids (<span class="bl-bid auto">AQ</span> automatic qualifier ·
+  <span class="bl-bid">AL</span> at-large) are how the field was drawn; the winner of each dual
+  (in <strong>bold</strong>) advances to the next round to the right.
+</div></div>
+<style>
+.bl-bracket-layout2 { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 16px; align-items: start; }
+.bl-seedsheet { position: sticky; top: 12px; }
+@media (max-width: 860px) { .bl-bracket-layout2 { grid-template-columns: 1fr; } .bl-seedsheet { position: static; } }
+</style>
 {% endif %}
 {% endblock %}

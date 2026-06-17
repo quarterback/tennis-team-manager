@@ -128,8 +128,7 @@
       <div class="bl-rounds bl-rounds-sim">
         {% for rnd in br.rounds %}
         <section class="bl-panel bl-round-panel">
-          <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
-            <span class="bl-panel-meta">{{ rnd|length }} {{ 'dual' if rnd|length == 1 else 'duals' }}</span></div>
+          <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span></div>
           <div class="bl-round-body">
             {% for m in rnd %}
             <article class="bl-brk-match">

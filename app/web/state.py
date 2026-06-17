@@ -858,6 +858,18 @@ def _round_phase(round_: str, conf: str):
     return ("Regular Season", "Regular Season")
 
 
+_CT_ROUND_NAMES = {0: "Final", 1: "Semifinals", 2: "Quarterfinals",
+                   3: "Round of 16", 4: "Round of 32", 5: "Round of 64"}
+
+
+def _ct_round_name(round_no: int, total_rounds: int) -> str:
+    """Name a conference-tournament round from the END — the last round is the
+    Final — so it reads correctly for any bracket size (Final, Semifinals,
+    Quarterfinals, …) regardless of how many teams the conference seeded."""
+    back = max(0, (total_rounds or round_no) - round_no)
+    return _CT_ROUND_NAMES.get(back, f"Round {round_no}")
+
+
 def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_SEED):
     """Week-by-week results browser: for the selected week, the duals played
     (regular slate + conference-tournament rounds + NCAA rounds), grouped and
@@ -873,8 +885,11 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
 
     order = {"REG": 0, "CT": 1, "NCAA": 2}
     by_week: dict = {}
+    ct_rounds: dict = {}                 # conf -> its CT's final round_no (rounds total)
     for r in rows:
         by_week.setdefault(r["week"], []).append(r)
+        if r["round"] == "CT":
+            ct_rounds[r["conf"]] = max(ct_rounds.get(r["conf"], 0), r["round_no"] or 0)
     weeks = []
     for wk in sorted(by_week):
         top = max(by_week[wk], key=lambda r: order.get(r["round"], 0))
@@ -888,7 +903,12 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     for r in by_week[sel]:
         title, phase = _round_phase(r["round"], r["conf"])
         g = groups_map.setdefault((order.get(r["round"], 0), title),
-                                  {"title": title, "phase": phase, "duals": []})
+                                  {"title": title, "phase": phase, "round_label": None,
+                                   "duals": []})
+        # Conference tournaments label by ROUND (Semifinals, Final, …) instead of a
+        # bare dual count — one bracket round is played per week.
+        if r["round"] == "CT":
+            g["round_label"] = _ct_round_name(r["round_no"] or 0, ct_rounds.get(r["conf"], 0))
         hp, ap = r["home_points"], r["away_points"]
         ha, hc = crest(r["home"])
         aa, ac = crest(r["away"])
@@ -965,6 +985,30 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
                     "n_aq": len(autobids), "out_board": snubs,
                     "rounds": [], "champion": None, "complete": False}
         return None
+    # Seed / conference / bid context — the field is locked for the whole
+    # postseason, so the same seeding the bracket was drawn from labels every team
+    # (so you can see who the seeds were and trace a seed's path round to round).
+    seed_map, conf_map, aq_set = {}, {}, set()
+    top_seeds = []
+    try:
+        seeded, autobids, _out, _r = sm.ncaa_field(sid)
+        for i, p in enumerate(seeded, 1):
+            seed_map[p.school] = i
+            conf_map[p.school] = getattr(p, "conf_abbr", "")
+            if p.key in autobids:
+                aq_set.add(p.school)
+            if i <= 16:
+                ab, col = crest(p.school)
+                top_seeds.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                                  "conf": getattr(p, "conf_abbr", ""), "aq": p.key in autobids})
+    except Exception:
+        pass
+
+    def _team(school, abbr, color, won):
+        return {"school": school, "abbr": abbr, "color": color, "won": won,
+                "seed": seed_map.get(school), "conf": conf_map.get(school, ""),
+                "aq": school in aq_set}
+
     by_round: dict = {}
     for r in rows:
         by_round.setdefault(r["round_no"], []).append(r)
@@ -976,19 +1020,20 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
             home_won = r["winner"] == 0
             ha, hc = crest(r["home"]); aa, ac = crest(r["away"])
             matchups.append({
-                "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
-                "away_abbr": aa, "away_color": ac, "home_won": home_won,
-                "winner": r["home"] if home_won else r["away"],
+                "home": _team(r["home"], ha, hc, home_won),
+                "away": _team(r["away"], aa, ac, not home_won),
+                "home_won": home_won, "winner": r["home"] if home_won else r["away"],
                 "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
             })
         rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups})
     champion = None
     if rounds and len(rounds[-1]["matchups"]) == 1:
         m = rounds[-1]["matchups"][0]
-        champion = {"school": m["winner"],
-                    "abbr": m["home_abbr"] if m["home_won"] else m["away_abbr"],
-                    "color": m["home_color"] if m["home_won"] else m["away_color"]}
-    return {"rounds": rounds, "champion": champion, "complete": champion is not None}
+        win = m["home"] if m["home_won"] else m["away"]
+        champion = {"school": win["school"], "abbr": win["abbr"], "color": win["color"],
+                    "seed": win["seed"]}
+    return {"rounds": rounds, "champion": champion, "top_seeds": top_seeds,
+            "complete": champion is not None}
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):

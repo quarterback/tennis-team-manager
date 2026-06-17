@@ -31,7 +31,7 @@
 {% for g in res.groups %}
 <div class="bl-container"><div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">{{ g.title }}</span>
-    <span class="bl-panel-meta">{{ g.phase }} · {{ g.duals|length }} {{ 'dual' if g.duals|length == 1 else 'duals' }}</span></div>
+    <span class="bl-panel-meta">{{ g.phase }}{% if g.round_label %} · {{ g.round_label }}{% endif %}</span></div>
   <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:0">
     {% for d in g.duals %}
     <div class="rs-dual">
