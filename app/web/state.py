@@ -985,6 +985,30 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
                     "n_aq": len(autobids), "out_board": snubs,
                     "rounds": [], "champion": None, "complete": False}
         return None
+    # Seed / conference / bid context — the field is locked for the whole
+    # postseason, so the same seeding the bracket was drawn from labels every team
+    # (so you can see who the seeds were and trace a seed's path round to round).
+    seed_map, conf_map, aq_set = {}, {}, set()
+    top_seeds = []
+    try:
+        seeded, autobids, _out, _r = sm.ncaa_field(sid)
+        for i, p in enumerate(seeded, 1):
+            seed_map[p.school] = i
+            conf_map[p.school] = getattr(p, "conf_abbr", "")
+            if p.key in autobids:
+                aq_set.add(p.school)
+            if i <= 16:
+                ab, col = crest(p.school)
+                top_seeds.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                                  "conf": getattr(p, "conf_abbr", ""), "aq": p.key in autobids})
+    except Exception:
+        pass
+
+    def _team(school, abbr, color, won):
+        return {"school": school, "abbr": abbr, "color": color, "won": won,
+                "seed": seed_map.get(school), "conf": conf_map.get(school, ""),
+                "aq": school in aq_set}
+
     by_round: dict = {}
     for r in rows:
         by_round.setdefault(r["round_no"], []).append(r)
@@ -996,19 +1020,20 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED):
             home_won = r["winner"] == 0
             ha, hc = crest(r["home"]); aa, ac = crest(r["away"])
             matchups.append({
-                "home": r["home"], "away": r["away"], "home_abbr": ha, "home_color": hc,
-                "away_abbr": aa, "away_color": ac, "home_won": home_won,
-                "winner": r["home"] if home_won else r["away"],
+                "home": _team(r["home"], ha, hc, home_won),
+                "away": _team(r["away"], aa, ac, not home_won),
+                "home_won": home_won, "winner": r["home"] if home_won else r["away"],
                 "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
             })
         rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups})
     champion = None
     if rounds and len(rounds[-1]["matchups"]) == 1:
         m = rounds[-1]["matchups"][0]
-        champion = {"school": m["winner"],
-                    "abbr": m["home_abbr"] if m["home_won"] else m["away_abbr"],
-                    "color": m["home_color"] if m["home_won"] else m["away_color"]}
-    return {"rounds": rounds, "champion": champion, "complete": champion is not None}
+        win = m["home"] if m["home_won"] else m["away"]
+        champion = {"school": win["school"], "abbr": win["abbr"], "color": win["color"],
+                    "seed": win["seed"]}
+    return {"rounds": rounds, "champion": champion, "top_seeds": top_seeds,
+            "complete": champion is not None}
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
