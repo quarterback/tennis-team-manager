@@ -166,16 +166,18 @@ _GENERIC_TOWNS = ("Riverside", "Fairview", "Oakdale", "Lakewood", "Highland",
                   "Brookfield", "Clearwater", "Maplewood", "Glenwood", "Franklin")
 
 
-def roll_high_school(country_code: str, rng: random.Random) -> str:
-    """A believable high school / academy for a player's bio. International
-    players skew toward the marquee academies; everyone else gets a
-    '{City} {Suffix}' school named off the nation's real city pool."""
-    domestic = (country_code or "").upper() in {"US", ""}
-    academy_p = 0.18 if domestic else 0.35
-    if rng.random() < academy_p:
-        return rng.choice(_ACADEMIES)
-    cities = _load_hometowns().get((country_code or "").upper()) or _GENERIC_TOWNS
-    return f"{rng.choice(cities)} {rng.choice(_HS_SUFFIX)}"
+def roll_high_school(country_code: str, rng: random.Random,
+                     state: str | None = None, home_city: str | None = None) -> str:
+    """A US player's high school, named for a real city IN THEIR STATE so it matches
+    their hometown (e.g. a Texan attends a Texas school, not a random one). Falls
+    back to the player's own hometown city when we have no city pool for the state.
+    International players don't get a high school listed — return ''."""
+    domestic = (country_code or "").upper() in {"US", "USA", ""}
+    if not domestic:
+        return ""
+    cities = _load_us_states().get((state or "").upper()) if state else None
+    base = rng.choice(cities) if cities else (home_city or None)
+    return f"{base} {rng.choice(_HS_SUFFIX)}" if base else ""
 
 
 def roll_hometown(country_code: str, rng: random.Random) -> str:

@@ -24,7 +24,7 @@ import random
 from dataclasses import dataclass
 
 from generators import (make_name_picker, region_preset, roll_hometown,
-                        roll_us_hometown, country_abbrev)
+                        roll_us_hometown, roll_high_school, country_abbrev)
 from .development import Prospect, generate_prospect, make_pid
 
 # US states + DC (name, abbr).
@@ -140,6 +140,7 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     for i in range(n):
         domestic = rng.random() >= intl_share
         secondary = None
+        hs_state = None
         if domestic:
             state = rng.choices(state_names, weights=state_weights, k=1)[0]
             abbr = _STATE_ABBR.get(state, state)
@@ -152,6 +153,7 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
             # reads "Boca Raton, FL", never "Dallas, GA".
             city = roll_us_hometown(abbr, rng) or roll_hometown("US", rng) or rng.choice(_CITIES)
             hometown = f"{city}, {abbr}"
+            hs_state = abbr
         else:
             name, ccode = intl_name()
             if ccode in _US_TERRITORIES:          # treat PR/VI as US dual-citizens, not foreign
@@ -159,6 +161,7 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
                 region = _ABBR_STATE.get(ccode, ccode)
                 city = roll_us_hometown(ccode, rng) or rng.choice(_CITIES)
                 hometown = f"{city}, {ccode}"
+                hs_state = ccode
             else:
                 country, region = ccode, (ccode or "INT")
                 city = roll_hometown(ccode, rng) or rng.choice(_CITIES)
@@ -169,6 +172,10 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
         p.hometown = hometown
         p.region = region
         p.domestic = domestic
+        # High school must match the state-board hometown set above (generate_prospect
+        # rolled it off a different random state); internationals get none.
+        p.high_school = (roll_high_school("US", rng, state=hs_state, home_city=city)
+                         if domestic else "")
         if secondary:
             p.secondary_country = secondary
         p.grad_year = grad_year

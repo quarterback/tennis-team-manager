@@ -358,12 +358,13 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     if domestic:
         city, st = random_town(rng)
         p.hometown = f"{city}, {st}"
+        p.high_school = roll_high_school(country, rng, state=st, home_city=city)
     else:
         # Never leave an international player without a birthplace: fall back to a
         # generic town when the nation has no city pool on file.
         city = roll_hometown(country, rng) or random_town(rng)[0]
         p.hometown = f"{city}, {country_abbrev(country)}" if country else city
-    p.high_school = roll_high_school(country, rng)
+        p.high_school = ""          # international players: no US high school listed
     # Homecooking: a recruit-side desire to stay near home (some kids strongly,
     # most a little, some not at all). International recruits have none — there
     # are no schools near home — so their geographic pull is always zero.
