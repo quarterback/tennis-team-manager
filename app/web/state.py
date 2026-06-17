@@ -858,6 +858,18 @@ def _round_phase(round_: str, conf: str):
     return ("Regular Season", "Regular Season")
 
 
+_CT_ROUND_NAMES = {0: "Final", 1: "Semifinals", 2: "Quarterfinals",
+                   3: "Round of 16", 4: "Round of 32", 5: "Round of 64"}
+
+
+def _ct_round_name(round_no: int, total_rounds: int) -> str:
+    """Name a conference-tournament round from the END — the last round is the
+    Final — so it reads correctly for any bracket size (Final, Semifinals,
+    Quarterfinals, …) regardless of how many teams the conference seeded."""
+    back = max(0, (total_rounds or round_no) - round_no)
+    return _CT_ROUND_NAMES.get(back, f"Round {round_no}")
+
+
 def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_SEED):
     """Week-by-week results browser: for the selected week, the duals played
     (regular slate + conference-tournament rounds + NCAA rounds), grouped and
@@ -873,8 +885,11 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
 
     order = {"REG": 0, "CT": 1, "NCAA": 2}
     by_week: dict = {}
+    ct_rounds: dict = {}                 # conf -> its CT's final round_no (rounds total)
     for r in rows:
         by_week.setdefault(r["week"], []).append(r)
+        if r["round"] == "CT":
+            ct_rounds[r["conf"]] = max(ct_rounds.get(r["conf"], 0), r["round_no"] or 0)
     weeks = []
     for wk in sorted(by_week):
         top = max(by_week[wk], key=lambda r: order.get(r["round"], 0))
@@ -888,7 +903,12 @@ def results_by_week(division: str, gender: str, week=None, seed: int = DEFAULT_S
     for r in by_week[sel]:
         title, phase = _round_phase(r["round"], r["conf"])
         g = groups_map.setdefault((order.get(r["round"], 0), title),
-                                  {"title": title, "phase": phase, "duals": []})
+                                  {"title": title, "phase": phase, "round_label": None,
+                                   "duals": []})
+        # Conference tournaments label by ROUND (Semifinals, Final, …) instead of a
+        # bare dual count — one bracket round is played per week.
+        if r["round"] == "CT":
+            g["round_label"] = _ct_round_name(r["round_no"] or 0, ct_rounds.get(r["conf"], 0))
         hp, ap = r["home_points"], r["away_points"]
         ha, hc = crest(r["home"])
         aa, ac = crest(r["away"])
