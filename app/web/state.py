@@ -217,10 +217,10 @@ def _ability(prog) -> float:
 
 
 def _power6(prog) -> float:
-    """Roster strength à la UTR's Power 6: the top-6 singles players' STR, scaled
-    (mean × 2) to land in the familiar ~80–90 band of the real UTR Power 6 rather
-    than a raw sum on our STR scale. Available even preseason (STR falls back to
-    ability before any results)."""
+    """Power 6 — roster strength from the top-6 singles players' STR: their mean,
+    doubled, so it reads on an easy, spread-out scale where the strongest rosters
+    clear 100. Available even preseason (STR falls back to ability before any
+    results)."""
     from app.ncaa import build_roster
     s = sorted((p.str_value() for p in build_roster(prog)), reverse=True)[:6]
     return round(sum(s) / len(s) * 2, 1) if s else 0.0
