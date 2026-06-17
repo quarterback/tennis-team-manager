@@ -94,6 +94,42 @@
   </div>
 </div>
 
+{% if staff %}
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff — {{ school }}</span>
+      <span class="bl-panel-meta">move a coach to another seat (swaps occupants · keyed to the coach, honors follow)</span></div>
+    <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:8px">
+      {% for s in staff %}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="min-width:150px;font-size:13px"><span style="color:var(--text-muted)">{{ s.title }}</span><br>
+          <a href="{{ url_for('coach', coach_id=s.coach_id, u=u) }}" style="font-weight:600;text-decoration:none">{{ s.name }}</a></span>
+        {% for o in staff if o.coach_id != s.coach_id %}
+        <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:inline">
+          <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="conf" value="{{ conf }}">
+          <input type="hidden" name="back" value="editor"><input type="hidden" name="ed_school" value="{{ school }}">
+          <input type="hidden" name="target" value="{{ u.split('-')[0] }}|{{ u.split('-')[1] }}|{{ school }}|{{ o.role }}">
+          <button class="bl-pill" type="submit" title="swap seats with {{ o.name }}">⇄ {{ o.title }}</button>
+        </form>
+        {% endfor %}
+        <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:flex;gap:6px;align-items:center;margin-left:auto">
+          <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="conf" value="{{ conf }}">
+          <input type="hidden" name="back" value="editor"><input type="hidden" name="ed_school" value="{{ school }}">
+          <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:160px">
+            {% for sc in all_schools if sc != school %}<option value="{{ sc }}">{{ sc }}</option>{% endfor %}
+          </select></span>
+          <span class="bl-select-wrap"><select class="bl-select" name="dest_role">
+            <option value="head">Head Coach</option><option value="assoc">Associate Head Coach</option><option value="asst">Assistant Coach</option>
+          </select></span>
+          <button class="bl-pill" type="submit">Move →</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if conf_ratings %}
 <div class="bl-container">
   <div class="bl-panel">

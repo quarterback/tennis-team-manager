@@ -461,6 +461,9 @@ def create_app() -> Flask:
         coachgen.ensure(d2, g2, s2, r2)
         coachreg.swap_seats(c["gender"], c["division"], c["school"], c["role"], g2, d2, s2, r2)
         reset_all()
+        if request.form.get("back") == "editor":     # invoked from the Editor — stay there
+            return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
+                                    school=request.form.get("ed_school", c["school"])))
         return redirect(url_for("coach", coach_id=coach_id, u=u))
 
     @app.route("/awards")
@@ -995,6 +998,8 @@ def create_app() -> Flask:
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
+                               staff=coaching_staff(division, gender, school),
+                               all_schools=sorted(p.school for p in div.programs),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
     def _pct01(field: str, default: float = 0.5) -> float:
