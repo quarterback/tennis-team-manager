@@ -1203,6 +1203,21 @@ def all_programs_grouped():
     return out
 
 
+def all_programs_by_universe():
+    """Every program grouped by universe, keeping division + gender — so a coach
+    can be moved to ANY program in ANY division/gender. Each entry:
+    (division, gender, label, [schools])."""
+    from app import ncaa
+    out = []
+    for _val, division, gender, label in UNIVERSES:
+        try:
+            div = ncaa.load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        out.append((division, gender, label, sorted(p.school for p in div.programs)))
+    return out
+
+
 def active_overrides():
     from app import ncaa, overrides as ov
     moves = []
