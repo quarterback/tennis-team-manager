@@ -410,6 +410,8 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.pi, reverse=True)
         elif sort == "APR":
             filtered = sorted(filtered, key=lambda r: r.apr, reverse=True)
+        elif sort == "Power 6":
+            filtered = sorted(filtered, key=lambda r: r.p6, reverse=True)
         p = paginate(filtered, request.args.get("page", 1))
         return render_template(
             "rankings.html", active="Rankings", p=p, rows=p.items, total=total,

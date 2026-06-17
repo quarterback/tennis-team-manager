@@ -2,7 +2,7 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Power Index{% endblock %}
 {% block content %}
-{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 70px 96px 62px 62px' %}
+{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 70px 72px 96px 62px 62px' %}
 
 <form method="get">
 <div class="bl-toolbar">
@@ -29,7 +29,7 @@
     <div class="bl-sortpills">
       <span class="bl-sortpills-label">Sort By</span>
       <div class="bl-pills">
-        {% for s in ['Rank','Power Index','APR'] %}
+        {% for s in ['Rank','Power Index','APR','Power 6'] %}
           <button class="bl-pill{% if s == sort %} active{% endif %}" name="sort" value="{{ s }}">{{ s }}</button>
         {% endfor %}
       </div>
@@ -60,6 +60,7 @@
         <span class="bl-th">CONFERENCE</span>
         <span class="bl-th">RECORD</span>
         <span class="bl-th">CONF REC</span>
+        <span class="bl-th num" title="Top 6 singles STR summed — roster strength (UTR-style Power 6)">POWER 6</span>
         <span class="bl-th num">POWER INDEX <span class="caret">▴▾</span></span>
         <span class="bl-th num">APR <span class="caret">▴▾</span></span>
         <span class="bl-th num">FQI</span>
@@ -72,6 +73,7 @@
         <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.rec }}</span>
         <span class="bl-crec">{{ r.crec }}</span>
+        <span class="bl-cell-num"><span class="bl-stat">{{ '%.1f'|format(r.p6) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ r.fmt(r.pi) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat {{ r.apr_kind }}">{{ r.fmt(r.apr) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat {{ r.fqi_kind }}">{{ r.fmt(r.fqi) }}</span></span>

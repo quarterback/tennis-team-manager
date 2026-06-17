@@ -185,6 +185,7 @@ class LiveRow:
     pi: float
     apr: float
     fqi: float
+    p6: float = 0.0
     me: bool = False
 
     @property
@@ -213,6 +214,15 @@ def _ability(prog) -> float:
     from app.ncaa import build_roster
     ovr = sorted((p.current_overall() for p in build_roster(prog)), reverse=True)[:6]
     return sum(ovr) / len(ovr) if ovr else 0.0
+
+
+def _power6(prog) -> float:
+    """Roster strength à la UTR's Power 6: the summed STR of a program's top-6
+    singles players. A clear at-a-glance read of lineup depth, available even
+    preseason (STR falls back to ability before any results)."""
+    from app.ncaa import build_roster
+    s = sorted((p.str_value() for p in build_roster(prog)), reverse=True)[:6]
+    return round(sum(s), 1)
 
 
 def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[LiveRow]:
@@ -245,7 +255,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            me=(p.school == MY_TEAM),
+            p6=_power6(p), me=(p.school == MY_TEAM),
         ))
     return rows
 
