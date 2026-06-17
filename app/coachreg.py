@@ -66,7 +66,10 @@ def ensure_seat(division: str, gender: str, school: str, role: str,
     seat = conn.execute(
         "SELECT coach_id, tenure FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
         (division, gender, school, role)).fetchone()
-    if seat:
+    if seat is not None:
+        if not seat["coach_id"]:        # the seat exists but is VACANT (coach retired
+            conn.close()                # or moved on) — respect the vacancy, don't backfill
+            return None
         c = conn.execute("SELECT * FROM coach WHERE coach_id=?", (seat["coach_id"],)).fetchone()
         conn.close()
         rec_ = dict(c)
@@ -119,6 +122,43 @@ def history(coach_id: str) -> list[dict]:
                         (coach_id,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def retire(coach_id: str) -> bool:
+    """Retire a coach: vacate their seat (leave it empty rather than backfilling),
+    so you can promote someone into it without anyone being pushed down. The coach
+    entity, career record and honors persist (keyed to the id) — they're just no
+    longer on a staff."""
+    conn = _conn()
+    cur = conn.execute("UPDATE coach_seat SET coach_id='', tenure=0 WHERE coach_id=?",
+                       (coach_id,))
+    conn.commit()
+    n = cur.rowcount
+    conn.close()
+    return n > 0
+
+
+def move_to(coach_id: str, g2: str, d2: str, s2: str, r2: str) -> bool:
+    """Move a coach into a seat. If the target seat is occupied the two swap; if
+    it's VACANT the coach simply takes it and their old seat is left vacant (no
+    forced demotion). Both tenures reset. The target seat row must already exist."""
+    conn = _conn()
+    src = conn.execute("SELECT division, gender, school, role FROM coach_seat WHERE coach_id=? LIMIT 1",
+                       (coach_id,)).fetchone()
+    tgt = conn.execute("SELECT coach_id FROM coach_seat WHERE division=? AND gender=? AND school=? AND role=?",
+                       (d2, g2, s2, r2)).fetchone()
+    if not src or tgt is None:
+        conn.close()
+        return False
+    displaced = tgt["coach_id"] or ""          # whoever was in the target (or vacant)
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=1 WHERE division=? AND gender=? AND school=? AND role=?",
+                 (coach_id, d2, g2, s2, r2))
+    conn.execute("UPDATE coach_seat SET coach_id=?, tenure=? WHERE division=? AND gender=? AND school=? AND role=?",
+                 (displaced, 1 if displaced else 0,
+                  src["division"], src["gender"], src["school"], src["role"]))
+    conn.commit()
+    conn.close()
+    return True
 
 
 def swap_seats(g1: str, d1: str, s1: str, r1: str,

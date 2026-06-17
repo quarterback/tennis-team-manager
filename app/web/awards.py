@@ -357,7 +357,7 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
         if best > 0:
             for school in sorted(s for s in top25 if devwins.get(s, 0) == best):
                 asst_staff = [c for c in coaching_staff(division, gender, school)
-                              if c["role"] != "head"]
+                              if c["role"] != "head" and c.get("coach_id")]
                 if not asst_staff:
                     continue
                 dev_coach = max(asst_staff, key=lambda c: (c["dev"], c["role"]))
@@ -394,6 +394,8 @@ def record_coach_seasons(division: str, gender: str, seed: int = DEFAULT_SEED) -
     for prog in ncaa.load_division(division, gender).programs:
         rec = team_results(division, gender, prog.school, seed)
         for s in coaching_staff(division, gender, prog.school):
+            if not s.get("coach_id"):       # skip a vacant (retired) seat
+                continue
             coachreg.record_season(s["coach_id"], year, season_no, division, gender,
                                    prog.school, s["role"], rec["wins"], rec["losses"])
             n += 1

@@ -456,14 +456,28 @@ def create_app() -> Flask:
             d2, g2 = c["division"], c["gender"]
         if not s2:
             return redirect(url_for("coach", coach_id=coach_id, u=u))
-        # Ensure the destination seat exists (generate it if never viewed), then swap.
+        # Ensure the destination seat row exists (generate it if never viewed — a
+        # vacant/retired seat row already exists and is left alone), then move:
+        # swap if the target is occupied, just fill it if it's vacant (no demotion).
         from app import coachgen
         coachgen.ensure(d2, g2, s2, r2)
-        coachreg.swap_seats(c["gender"], c["division"], c["school"], c["role"], g2, d2, s2, r2)
+        coachreg.move_to(coach_id, g2, d2, s2, r2)
         reset_all()
         if request.form.get("back") == "editor":     # invoked from the Editor — stay there
             return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
                                     school=request.form.get("ed_school", c["school"])))
+        return redirect(url_for("coach", coach_id=coach_id, u=u))
+
+    @app.route("/coach/<coach_id>/retire", methods=["POST"])
+    def coach_retire(coach_id):
+        import app.coachreg as coachreg
+        c = coachreg.get(coach_id)
+        u = request.form.get("u", "D1-men")
+        coachreg.retire(coach_id)
+        reset_all()
+        if request.form.get("back") == "editor":
+            return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
+                                    school=request.form.get("ed_school", c["school"] if c else "")))
         return redirect(url_for("coach", coach_id=coach_id, u=u))
 
     @app.route("/awards")

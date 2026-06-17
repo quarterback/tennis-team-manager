@@ -1134,7 +1134,12 @@ def coaching_staff(division: str, gender: str, school: str):
     staff = []
     for role in ("head", "assoc", "asst"):
         r = coachgen.ensure(division, gender, school, role)
-        staff.append({"coach_id": r["coach_id"], "name": r["name"],
+        if r is None:                       # retired/empty seat — show it as vacant
+            staff.append({"coach_id": None, "name": "Vacant", "vacant": True,
+                          "title": coachgen.ROLE_TITLES[role], "role": role,
+                          "archetype": "", "tenure": 0, "dev": 0, "rec": 0, "tac": 0})
+            continue
+        staff.append({"coach_id": r["coach_id"], "name": r["name"], "vacant": False,
                       "title": coachgen.ROLE_TITLES[role], "role": role,
                       "archetype": r["archetype"], "tenure": r["tenure"],
                       "dev": r["dev"], "rec": r["rec"], "tac": r["tac"]})
@@ -1145,7 +1150,7 @@ def coaching_staff(division: str, gender: str, school: str):
 def head_coach(division: str, gender: str, school: str) -> dict | None:
     for s in coaching_staff(division, gender, school):
         if s["role"] == "head":
-            return s
+            return s if s.get("coach_id") else None    # None when the seat is vacant
     return None
 
 

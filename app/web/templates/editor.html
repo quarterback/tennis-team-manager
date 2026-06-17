@@ -98,18 +98,20 @@
 <div class="bl-container">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff — {{ school }}</span>
-      <span class="bl-panel-meta">move a coach to another seat (swaps occupants · keyed to the coach, honors follow)</span></div>
+      <span class="bl-panel-meta">retire a coach to leave a seat open, then promote into it (no demotion) · keyed to the coach, honors follow</span></div>
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:8px">
       {% for s in staff %}
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
         <span style="min-width:150px;font-size:13px"><span style="color:var(--text-muted)">{{ s.title }}</span><br>
-          <a href="{{ url_for('coach', coach_id=s.coach_id, u=u) }}" style="font-weight:600;text-decoration:none">{{ s.name }}</a></span>
-        {% for o in staff if o.coach_id != s.coach_id %}
+          {% if s.vacant %}<span style="color:var(--text-faint);font-style:italic">Vacant</span>
+          {% else %}<a href="{{ url_for('coach', coach_id=s.coach_id, u=u) }}" style="font-weight:600;text-decoration:none">{{ s.name }}</a>{% endif %}</span>
+        {% if not s.vacant %}
+        {% for o in staff if o.role != s.role %}
         <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:inline">
           <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="conf" value="{{ conf }}">
           <input type="hidden" name="back" value="editor"><input type="hidden" name="ed_school" value="{{ school }}">
           <input type="hidden" name="target" value="{{ u.split('-')[0] }}|{{ u.split('-')[1] }}|{{ school }}|{{ o.role }}">
-          <button class="bl-pill" type="submit" title="swap seats with {{ o.name }}">⇄ {{ o.title }}</button>
+          <button class="bl-pill" type="submit" title="move into the {{ o.title }} seat{{ ' (vacant)' if o.vacant else ' — swap' }}">→ {{ o.title }}</button>
         </form>
         {% endfor %}
         <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:flex;gap:6px;align-items:center;margin-left:auto">
@@ -123,6 +125,13 @@
           </select></span>
           <button class="bl-pill" type="submit">Move →</button>
         </form>
+        <form method="post" action="{{ url_for('coach_retire', coach_id=s.coach_id) }}" style="display:inline"
+              onsubmit="return confirm('Retire {{ s.name }}? Their seat opens up; their record and honors are kept.');">
+          <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="conf" value="{{ conf }}">
+          <input type="hidden" name="back" value="editor"><input type="hidden" name="ed_school" value="{{ school }}">
+          <button class="bl-pill" type="submit" style="color:var(--text-muted)">Retire</button>
+        </form>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
