@@ -8,6 +8,7 @@
       "abbr": "ACC",
       "autobid": true,
       "teams": [
+        "Cincinnati",
         "Clemson",
         "Duke",
         "Florida State",
@@ -15,9 +16,8 @@
         "Maryland",
         "Miami",
         "NC State",
-        "North Carolina",
-        "SMU",
-        "Virginia",
+        "North Carolina A&T",
+        "Tulane",
         "Wake Forest"
       ]
     },
@@ -56,9 +56,11 @@
         "Michigan State",
         "Minnesota",
         "Nebraska",
+        "North Carolina",
         "Northwestern",
         "Ohio State",
         "Purdue",
+        "Virginia",
         "Wisconsin"
       ]
     },
@@ -67,13 +69,17 @@
       "abbr": "Big 12",
       "autobid": true,
       "teams": [
+        "Alabama State",
         "BYU",
         "Baylor",
+        "Florida A&M",
         "Houston",
         "Iowa State",
         "Kansas",
         "Kansas State",
+        "Memphis",
         "Oklahoma State",
+        "SMU",
         "TCU",
         "Texas Tech",
         "UCF"
@@ -108,7 +114,6 @@
       "autobid": true,
       "teams": [
         "Boston College",
-        "Cincinnati",
         "Louisville",
         "Notre Dame",
         "Penn State",
@@ -129,11 +134,9 @@
         "Charlotte",
         "East Carolina",
         "Florida Atlantic",
-        "Memphis",
         "North Texas",
         "Rice",
         "South Florida",
-        "Tulane",
         "Tulsa",
         "UAB",
         "UTSA",
@@ -277,7 +280,6 @@
         "Hampton",
         "Hofstra",
         "Monmouth",
-        "North Carolina A&T",
         "Northeastern",
         "Stony Brook",
         "Towson",
@@ -373,21 +375,6 @@
         "Toledo",
         "UMass",
         "Western Michigan"
-      ]
-    },
-    {
-      "name": "Mid-Eastern Athletic Conference",
-      "abbr": "MEAC",
-      "autobid": true,
-      "teams": [
-        "Coppin State",
-        "Delaware State",
-        "Howard",
-        "Maryland Eastern Shore",
-        "Morgan State",
-        "Norfolk State",
-        "North Carolina Central",
-        "South Carolina State"
       ]
     },
     {
@@ -513,20 +500,26 @@
       ]
     },
     {
-      "name": "Southwestern Athletic Conference",
-      "abbr": "SWAC",
+      "name": "Heritage League",
+      "abbr": "Heritage",
       "autobid": true,
       "teams": [
         "Alabama A&M",
-        "Alabama State",
         "Alcorn State",
         "Arkansas-Pine Bluff",
         "Bethune-Cookman",
-        "Florida A&M",
+        "Coppin State",
+        "Delaware State",
         "Grambling",
+        "Howard",
         "Jackson State",
+        "Maryland Eastern Shore",
         "Mississippi Valley State",
+        "Morgan State",
+        "Norfolk State",
+        "North Carolina Central",
         "Prairie View A&M",
+        "South Carolina State",
         "Southern",
         "Texas Southern"
       ]

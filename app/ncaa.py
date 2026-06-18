@@ -60,8 +60,9 @@ CONF_PRESTIGE = {
     "CAA": 0.49, "WAC": 0.49, "Patriot": 0.48,
     # Low-majors
     "Southland": 0.45, "Big Sky": 0.44, "Summit": 0.44, "Horizon": 0.43,
-    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38, "MEAC": 0.34,
-    "SWAC": 0.33,
+    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38,
+    # Heritage League — the merged SWAC + MEAC (HBCU) conference.
+    "Heritage": 0.34,
     # Not in the supplied list — placeholders pending values
     "MVC": 0.44, "America East": 0.42,
 }
