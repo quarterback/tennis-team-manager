@@ -34,7 +34,6 @@
         "Kentucky",
         "LSU",
         "Mississippi State",
-        "Missouri",
         "Oklahoma",
         "Ole Miss",
         "South Carolina",
@@ -49,12 +48,15 @@
       "abbr": "Big Ten",
       "autobid": true,
       "teams": [
+        "Chicago",
         "Illinois",
         "Indiana",
         "Iowa",
+        "Kansas",
         "Michigan",
         "Michigan State",
         "Minnesota",
+        "Missouri",
         "Nebraska",
         "North Carolina",
         "Northwestern",
@@ -75,7 +77,6 @@
         "Florida A&M",
         "Houston",
         "Iowa State",
-        "Kansas",
         "Kansas State",
         "Memphis",
         "Oklahoma State",
@@ -139,8 +140,7 @@
         "South Florida",
         "Tulsa",
         "UAB",
-        "UTSA",
-        "Wichita State"
+        "UTSA"
       ]
     },
     {
@@ -148,19 +148,12 @@
       "abbr": "A-10",
       "autobid": true,
       "teams": [
-        "Davidson",
         "Dayton",
         "Duquesne",
-        "Fordham",
-        "George Mason",
         "George Washington",
         "La Salle",
-        "Loyola Chicago",
         "Massachusetts",
-        "Rhode Island",
-        "Richmond",
         "Saint Joseph's",
-        "Saint Louis",
         "St. Bonaventure",
         "VCU"
       ]
@@ -176,6 +169,7 @@
         "Maine",
         "NJIT",
         "New Hampshire",
+        "Rhode Island",
         "UMBC",
         "UMass Lowell",
         "Vermont"
@@ -203,10 +197,12 @@
       "teams": [
         "Butler",
         "Creighton",
+        "Davidson",
         "DePaul",
         "Georgetown",
         "Marquette",
         "Providence",
+        "Saint Louis",
         "Seton Hall",
         "St. John's",
         "Villanova",
@@ -294,12 +290,14 @@
       "teams": [
         "Delaware",
         "FIU",
+        "George Mason",
         "Jacksonville State",
         "Kennesaw State",
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
         "New Mexico State",
+        "Richmond",
         "Sam Houston",
         "Western Kentucky"
       ]
@@ -332,6 +330,7 @@
         "Cornell",
         "Dartmouth",
         "Harvard",
+        "Howard",
         "Penn",
         "Princeton",
         "Yale"
@@ -388,11 +387,13 @@
         "Evansville",
         "Illinois State",
         "Indiana State",
+        "Loyola Chicago",
         "Murray State",
         "Northern Iowa",
         "Southern Illinois",
         "UIC",
-        "Valparaiso"
+        "Valparaiso",
+        "Wichita State"
       ]
     },
     {
@@ -456,6 +457,7 @@
         "Boston University",
         "Bucknell",
         "Colgate",
+        "Fordham",
         "Holy Cross",
         "Lafayette",
         "Lehigh",
@@ -511,7 +513,6 @@
         "Coppin State",
         "Delaware State",
         "Grambling",
-        "Howard",
         "Jackson State",
         "Maryland Eastern Shore",
         "Mississippi Valley State",
