@@ -39,7 +39,9 @@ DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
 # up in non-conference so each team lands near the target slate (~1-2 duals/wk).
 TARGET_DUALS = 25            # realistic Division I dual slate per team
 NONCONF_MIN = 6              # floor on non-conference even for big conferences
+CONF_SHARE = 0.60            # aim for ~60% of the slate in conference (standings that mean something)
 CONF_DOUBLE_MAX = 10         # conferences with < this many teams play a double round-robin
+MAX_CONF_MEETINGS = 3        # cap on how many times two conference mates can meet when padding
 CONF_TOURNEY_FIELD = 8       # top-N per conference make the conference tournament
 MAX_PER_WEEK = 3            # up to a 3-dual weekend; keeps the ~25-slate to ~12-14 weeks
 NATIONAL_FIELD = 64
@@ -104,25 +106,56 @@ def _gen_regular_schedule(div, seed: int):
 
     conf_games = []
     conf_count = {p.school: 0 for p in div.programs}
+    conf_meet: dict = {}      # unordered pair -> times scheduled (cap repeats)
+
+    # Aim each team's conference slate at CONF_SHARE of the target. A round-robin
+    # (double under 10 teams) is the base; for leagues too small to reach the
+    # share that way we pad with extra intra-conference duals beyond the
+    # round-robin (deliberately not a clean round-robin — the point is more
+    # conference results, not symmetry).
+    conf_target = min(round(TARGET_DUALS * CONF_SHARE), TARGET_DUALS - NONCONF_MIN)
     for name, members in div.conferences.items():
         schools = [p.school for p in members]
-        double = len(schools) < CONF_DOUBLE_MAX
-        for i in range(len(schools)):
-            for j in range(i + 1, len(schools)):
-                x, y = schools[i], schools[j]
-                conf_games.append((x, y, name))
-                conf_count[x] += 1
-                conf_count[y] += 1
-                if double:
-                    conf_games.append((y, x, name))
-                    conf_count[x] += 1
-                    conf_count[y] += 1
+        n = len(schools)
+        if n < 2:
+            continue
+        double = n < CONF_DOUBLE_MAX
+
+        def add_meeting(x, y):
+            conf_games.append((x, y, name))
+            conf_count[x] += 1
+            conf_count[y] += 1
+            k = (x, y) if x < y else (y, x)
+            conf_meet[k] = conf_meet.get(k, 0) + 1
+
+        base_pairs = [(schools[i], schools[j])
+                      for i in range(n) for j in range(i + 1, n)]
+        for (x, y) in base_pairs:
+            add_meeting(x, y)
+            if double:
+                add_meeting(y, x)            # home-and-away
+
+        base_per_team = (n - 1) * (2 if double else 1)
+        if conf_target > base_per_team:
+            pool = base_pairs[:]
+            rng.shuffle(pool)
+            changed = True
+            while changed:
+                changed = False
+                for (x, y) in pool:
+                    if conf_count[x] >= conf_target or conf_count[y] >= conf_target:
+                        continue
+                    k = (x, y) if x < y else (y, x)
+                    if conf_meet.get(k, 0) >= MAX_CONF_MEETINGS:
+                        continue
+                    add_meeting(y, x)        # alternate the host on the repeat
+                    changed = True
 
     allschools = [p.school for p in div.programs]
     prestige = {p.school: getattr(p, "prestige", 0.5) for p in div.programs}
-    # Each team's non-conference target makes up the difference to TARGET_DUALS,
-    # so the total slate lands near the target whatever the conference's size.
-    want = {s: max(NONCONF_MIN, TARGET_DUALS - conf_count[s]) for s in allschools}
+    # Non-conference just fills the rest of the slate up to the target, so the
+    # total stays ~TARGET_DUALS while conference carries the larger share.
+    want = {s: max(0, TARGET_DUALS - conf_count[s]) for s in allschools}
     pairs = set()
     nonconf = []
     order = allschools[:]

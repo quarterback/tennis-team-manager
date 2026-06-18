@@ -40,13 +40,18 @@ roster summing correctly with no school double-listed):
 ### The scheduler (app/seasonmode.py)
 Rebuilt to hit a realistic slate **reliably**:
 
-- **Target-driven slates.** Every team now plays toward `TARGET_DUALS = 25`. Its
-  conference games are fixed by structure; its non-conference target is simply
-  `25 − conf_games` (floored at 6), so the total lands on 25 regardless of league
-  size.
+- **Target-driven slates.** Every team now plays toward `TARGET_DUALS = 25`.
+  Conference carries the larger share and non-conference fills the rest
+  (`25 − conf_games`), so the total lands on 25 regardless of league size.
+- **Conference-heavy by design (`CONF_SHARE = 0.60`).** Each league's slate aims
+  for ~60% conference so the standings actually mean something. A round-robin
+  (double under 10 teams) is the base; leagues too small to reach 60% that way are
+  **padded with extra intra-conference duals** beyond the round-robin (capped at
+  `MAX_CONF_MEETINGS = 3` meetings per pair). Result: conference share averages
+  **~61%** (min ~48% for one parity-edge team, max ~64%), up from ~49%.
 - **Double round-robin under 10 teams.** `CONF_DOUBLE_MAX` 8 → 10, so sub-10
-  leagues play home-and-away (they fit), which also makes those leagues
-  conference-heavy. Bigger leagues stay single round-robin.
+  leagues play home-and-away (they fit). Bigger leagues play a single round-robin
+  plus any padding needed to reach the share.
 - **A matcher that actually fills.** The random-dart loop is replaced by a
   deterministic greedy: each round, every still-short team takes its best
   available cross-conference partner, with the old cupcake-scheduling flavor kept
@@ -61,9 +66,10 @@ Rebuilt to hit a realistic slate **reliably**:
 
 ## Why this is better
 - **Every team plays exactly 25 duals** (verified league-wide, both genders),
-  conference share ~49% on average and higher in the small double-RR leagues —
-  a believable Division I season instead of a thin, ragged one.
-- The season fits a realistic **~12-week** window.
+  with conference the clear majority (**~61%** on average) — a believable
+  Division I season whose conference standings carry real signal, instead of a
+  thin, ragged, near-even slate.
+- The season fits a realistic **~11-12 week** window.
 - As a bonus, the previously-flaky `test_higher_seeds_usually_advance` now passes
   consistently: more duals per team means less variance, so higher seeds advance
   as expected.

@@ -26,11 +26,12 @@ for NCAA Division I men's & women's **dual-match (team)** play. Individual-only
     partial/unbalanced single round-robin** (each team plays most but not all
     members once). The ACC historically ran a double round-robin for decades but
     abandoned it after expanding to a 16-team league.
-- **Sim recommendation:** every team plays toward a **25-dual** slate: conference =
-  **double round-robin for leagues under 10 teams** (it fits), **single round-robin**
-  otherwise, and the remainder filled with **non-conference** (floor of 6) so the
-  total lands on target whatever the league size. Conference is the larger share for
-  most leagues; small double-RR leagues are conference-heavy by construction.
+- **Sim recommendation:** every team plays toward a **25-dual** slate aimed at
+  **~60% conference** (so standings carry signal): conference = **double round-robin
+  for leagues under 10 teams** (it fits), **single round-robin** otherwise, **padded
+  with extra intra-conference duals** (not a clean round-robin) where a small league
+  can't reach the share. Non-conference fills the rest. Verified ~61% conference,
+  exactly 25 duals/team, ~11-12 weeks.
 
 ## 3. Conference tournaments
 - **Prevalence:** nearly every D1 conference holds a postseason **dual-match
