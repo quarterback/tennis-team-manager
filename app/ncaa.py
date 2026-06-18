@@ -57,6 +57,9 @@ CONF_PRESTIGE = {
     # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
     # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
     "UAA": 0.45,
+    # Meridian League — a fun mix of D1-hockey schools (upstate NY) plus
+    # promoted D2/D3 programs. Low-major athletically.
+    "Meridian": 0.45,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
