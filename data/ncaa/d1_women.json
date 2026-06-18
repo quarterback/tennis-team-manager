@@ -151,11 +151,14 @@
         "Dayton",
         "Duquesne",
         "George Washington",
+        "Hampton",
         "La Salle",
         "Massachusetts",
+        "Northeastern",
         "Saint Joseph's",
         "St. Bonaventure",
-        "VCU"
+        "VCU",
+        "West Florida"
       ]
     },
     {
@@ -186,8 +189,7 @@
         "Lipscomb",
         "North Florida",
         "Queens",
-        "Stetson",
-        "West Florida"
+        "Stetson"
       ]
     },
     {
@@ -273,14 +275,11 @@
         "Charleston",
         "Drexel",
         "Elon",
-        "Hampton",
         "Hofstra",
         "Monmouth",
-        "Northeastern",
         "Stony Brook",
         "Towson",
-        "UNC Wilmington",
-        "William & Mary"
+        "UNC Wilmington"
       ]
     },
     {
@@ -333,6 +332,7 @@
         "Howard",
         "Penn",
         "Princeton",
+        "William & Mary",
         "Yale"
       ]
     },
