@@ -33,13 +33,15 @@ from .bracket import select_field, run_bracket, _seed_positions, ROUND_NAMES, cl
 from .dbpath import resolve_db_path
 
 DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
-# Tuned to docs/calibration-season-schedule.md: ~13-14 weeks, ~22 duals/team,
-# non-conf front-loaded, conference single round-robin (double only for small
-# leagues), 1-2 duals/week.
-NONCONF_PER_TEAM = 7
-CONF_DOUBLE_MAX = 8          # conferences with < this many teams play a double round-robin
+# Schedule shape: every team plays toward TARGET_DUALS, non-conf front-loaded,
+# then conference play. Conferences under 10 teams play a DOUBLE round-robin
+# (where it fits); larger ones play a single round-robin, with the balance made
+# up in non-conference so each team lands near the target slate (~1-2 duals/wk).
+TARGET_DUALS = 25            # realistic Division I dual slate per team
+NONCONF_MIN = 6              # floor on non-conference even for big conferences
+CONF_DOUBLE_MAX = 10         # conferences with < this many teams play a double round-robin
 CONF_TOURNEY_FIELD = 8       # top-N per conference make the conference tournament
-MAX_PER_WEEK = 2
+MAX_PER_WEEK = 3            # up to a 3-dual weekend; keeps the ~25-slate to ~12-14 weeks
 NATIONAL_FIELD = 64
 
 _SCHEMA = """
@@ -101,6 +103,7 @@ def _gen_regular_schedule(div, seed: int):
     school_conf = {p.school: p.conf for p in div.programs}
 
     conf_games = []
+    conf_count = {p.school: 0 for p in div.programs}
     for name, members in div.conferences.items():
         schools = [p.school for p in members]
         double = len(schools) < CONF_DOUBLE_MAX
@@ -108,21 +111,28 @@ def _gen_regular_schedule(div, seed: int):
             for j in range(i + 1, len(schools)):
                 x, y = schools[i], schools[j]
                 conf_games.append((x, y, name))
+                conf_count[x] += 1
+                conf_count[y] += 1
                 if double:
                     conf_games.append((y, x, name))
+                    conf_count[x] += 1
+                    conf_count[y] += 1
 
     allschools = [p.school for p in div.programs]
     prestige = {p.school: getattr(p, "prestige", 0.5) for p in div.programs}
-    nc_count = {s: 0 for s in allschools}
+    # Each team's non-conference target makes up the difference to TARGET_DUALS,
+    # so the total slate lands near the target whatever the conference's size.
+    want = {s: max(NONCONF_MIN, TARGET_DUALS - conf_count[s]) for s in allschools}
     pairs = set()
     nonconf = []
     order = allschools[:]
     rng.shuffle(order)
 
     def _accept(s, o) -> float:
-        """How likely program s schedules o non-conference. Powerhouses load up
-        on mid/low-majors (and host them); they rarely play each other in the
-        regular season because a loss dents record + seeding."""
+        """Preference weight for s scheduling o non-conference. Powerhouses load
+        up on mid/low-majors (and host them); they rarely play each other in the
+        regular season because a loss dents record + seeding. Used as a weight,
+        never a hard reject, so every team still fills its slate."""
         ps, po = prestige[s], prestige[o]
         if ps > 0.62 and po > 0.62:
             return 0.05                         # two heavyweights — almost never
@@ -133,47 +143,68 @@ def _gen_regular_schedule(div, seed: int):
             return 0.45                         # scheduling up (guarantee game)
         return 0.55                             # non-elite peers
 
-    for s in order:
-        tries = 0
-        while nc_count[s] < NONCONF_PER_TEAM and tries < 140:
-            tries += 1
-            o = rng.choice(allschools)
-            if o == s or school_conf[o] == school_conf[s] or nc_count[o] >= NONCONF_PER_TEAM:
+    # Greedy fill: each round every still-short team takes its best available
+    # partner (different conference, not already paired), preferring the prestige
+    # match-ups above while biasing toward whoever else still needs games. This
+    # reliably converges to the per-team targets instead of falling short.
+    remaining = dict(want)
+    for _round in range(TARGET_DUALS + 4):
+        progressed = False
+        for s in order:
+            if remaining[s] <= 0:
                 continue
-            key = tuple(sorted((s, o)))
-            if key in pairs:
+            best, best_w = None, -1.0
+            for o in order:
+                if o == s or remaining[o] <= 0 or school_conf[o] == school_conf[s]:
+                    continue
+                if (s, o) in pairs or (o, s) in pairs:
+                    continue
+                w = _accept(s, o) * (1.0 + 0.10 * remaining[o]) * (0.85 + 0.30 * rng.random())
+                if w > best_w:
+                    best_w, best = w, o
+            if best is None:
                 continue
-            if rng.random() > _accept(s, o):
-                continue
-            pairs.add(key)
-            nc_count[s] += 1
-            nc_count[o] += 1
+            pairs.add((s, best))
+            remaining[s] -= 1
+            remaining[best] -= 1
             # The stronger program almost always hosts; the cupcake travels.
-            host_strong = prestige[s] >= prestige[o]
+            host_strong = prestige[s] >= prestige[best]
             if rng.random() < 0.8:
-                home, away = (s, o) if host_strong else (o, s)
+                home, away = (s, best) if host_strong else (best, s)
             else:
-                home, away = (o, s) if host_strong else (s, o)
+                home, away = (best, s) if host_strong else (s, best)
             nonconf.append((home, away, None))
+            progressed = True
+        if not progressed:
+            break
 
-    # assign to weeks: non-conf first, then conference
+    # Assign to weeks: non-conf front-loaded from week 1, then each team's
+    # conference play gated behind *its own* last non-conf week (not a global
+    # barrier) so the slate packs to ~2 duals/week and the season stays ~13-14
+    # weeks instead of stretching out.
+    rng.shuffle(conf_games)
     rows = []
-    def assign(games, start):
-        cnt, used = {}, set()
-        last = start - 1
-        for (h, a, cn) in games:
-            w = start
-            while (cnt.get((w, h), 0) >= MAX_PER_WEEK or cnt.get((w, a), 0) >= MAX_PER_WEEK
-                   or (w, h, a) in used or (w, a, h) in used):
-                w += 1
-            cnt[(w, h)] = cnt.get((w, h), 0) + 1
-            cnt[(w, a)] = cnt.get((w, a), 0) + 1
-            used.add((w, h, a))
-            rows.append((w, h, a, cn))
-            last = max(last, w)
-        return last
-    last = assign(nonconf, 1)
-    assign(conf_games, last + 1)
+    cnt: dict = {}        # (week, team) -> duals that week
+    used: set = set()     # (week, home, away) — no repeat pairing in a week
+    nc_last: dict = {}    # team -> last week it plays a non-conference dual
+
+    def place(h, a, cn, floor):
+        w = floor
+        while (cnt.get((w, h), 0) >= MAX_PER_WEEK or cnt.get((w, a), 0) >= MAX_PER_WEEK
+               or (w, h, a) in used or (w, a, h) in used):
+            w += 1
+        cnt[(w, h)] = cnt.get((w, h), 0) + 1
+        cnt[(w, a)] = cnt.get((w, a), 0) + 1
+        used.add((w, h, a))
+        rows.append((w, h, a, cn))
+        return w
+
+    for (h, a, cn) in nonconf:
+        w = place(h, a, cn, 1)
+        nc_last[h] = max(nc_last.get(h, 0), w)
+        nc_last[a] = max(nc_last.get(a, 0), w)
+    for (h, a, cn) in conf_games:
+        place(h, a, cn, max(nc_last.get(h, 0), nc_last.get(a, 0)) + 1)
     return rows
 
 
