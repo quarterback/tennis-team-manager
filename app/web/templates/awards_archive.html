@@ -120,13 +120,21 @@
 
 {% if aw.all_conference %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">All-Conference</span></div>
-  <div class="bl-panel-body"><div class="aw-conf-grid">
-    {% for team in aw.all_conference %}
-    <div class="aw-team"><div class="aw-team-head">{{ team.tier }}</div>
-      {% for p in team.players %}{{ prow(p) }}{% endfor %}</div>
+  <div class="bl-panel-head"><span class="bl-panel-title">All-Conference</span>
+    <span class="bl-conf" style="margin-left:auto">{{ aw.all_conference|length }} conferences · tap to open</span></div>
+  <div class="bl-panel-body">
+    {% for grp in aw.all_conference %}
+    <details class="aw-confgroup">
+      <summary><span class="aw-confname">{{ grp.conf }}</span><span class="bl-conf">{{ grp.count }} honorees</span></summary>
+      <div class="aw-conf-grid">
+        {% for team in grp.teams %}
+        <div class="aw-team"><div class="aw-team-head">{{ team.tier }}</div>
+          {% for p in team.players %}{{ prow(p) }}{% endfor %}</div>
+        {% endfor %}
+      </div>
+    </details>
     {% endfor %}
-  </div></div>
+  </div>
 </div></div>
 {% endif %}
 {% endif %}
@@ -145,5 +153,13 @@
 .aw-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .aw-school { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 .aw-empty { color: var(--text-muted); font-size: 14px; padding: 6px 2px; }
+.aw-confgroup { border-top: 1px solid var(--border-subtle); }
+.aw-confgroup summary { display: flex; align-items: center; gap: 12px; padding: 10px 2px; cursor: pointer; font-weight: 700; list-style: none; }
+.aw-confgroup summary::-webkit-details-marker { display: none; }
+.aw-confgroup summary::before { content: "▸"; color: var(--text-muted); font-size: 11px; }
+.aw-confgroup[open] summary::before { content: "▾"; }
+.aw-confgroup summary .bl-conf { margin-left: auto; }
+.aw-confname { font-size: 14px; }
+.aw-confgroup .aw-conf-grid { padding: 0 0 12px 18px; }
 </style>
 {% endblock %}

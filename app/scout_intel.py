@@ -186,16 +186,26 @@ UNDERPLACED_MIN_TRUE = 46         # ignore genuinely low-ceiling players (3★+ 
 
 
 def underplaced_board(gender: str, seed: int | None = None, division: str = "All",
-                      class_year: str = "All") -> list[Intel]:
-    """Players whose true talent sits far above their program's level — the
-    buried studs. Sorted by the size of the mismatch."""
+                      class_year: str = "All", sort: str = "gap", q: str = "") -> list[Intel]:
+    """Players whose true talent sits above their program's level — the buried
+    studs and arbitrage targets. `sort` picks the lens: 'gap' (most underplaced),
+    'now' (best RIGHT NOW — who you'd want to move today), or 'talent' (highest
+    ceiling). `q` filters by player or school name."""
     rows = [r for r in scan(gender, seed)["players"]
             if r.placement_gap >= UNDERPLACED_MIN_GAP and r.true_overall >= UNDERPLACED_MIN_TRUE]
     if division != "All":
         rows = [r for r in rows if r.division == division]
     if class_year != "All":
         rows = [r for r in rows if r.class_year == class_year]
-    rows.sort(key=lambda r: (r.placement_gap, r.true_overall), reverse=True)
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in r.name.lower() or ql in r.school.lower()]
+    keys = {
+        "gap": lambda r: (r.placement_gap, r.true_overall),
+        "now": lambda r: (r.cur_overall, r.cur_str, r.placement_gap),   # good today
+        "talent": lambda r: (r.true_overall, r.placement_gap),
+    }
+    rows.sort(key=keys.get(sort, keys["gap"]), reverse=True)
     return rows
 
 
@@ -246,6 +256,56 @@ def scholarship_watch(gender: str, seed: int | None = None,
                 recommended=rec))
     flags.sort(key=lambda f: (f.outranks, f.player.true_overall), reverse=True)
     return flags
+
+
+@dataclass
+class PlayWatch:
+    player: Intel
+    best_school: str
+    best_division: str
+    best_slot: int
+    best_slot_label: str
+    move_dir: str                 # 'up' / 'lateral' / 'down' vs their current division
+
+
+_DIVRANK = {"D1": 0, "D2": 1, "D3": 2}
+
+
+def playing_time_watch(gender: str, seed: int | None = None,
+                       division: str = "All") -> list[PlayWatch]:
+    """Walk-ons (no athletic aid) at D1/D2 who AREN'T in their own lineup, and the
+    best program — any division, in or out of their own — where their CURRENT
+    ability would make them a starter. Playing somewhere beats sitting anywhere."""
+    data = scan(gender, seed)
+    ladder = data["team_ladder"]
+    out: list[PlayWatch] = []
+    for p in data["players"]:
+        if not p.walk_on or p.division not in ("D1", "D2"):
+            continue                                   # a kid sitting at D1 or D2
+        if division != "All" and p.division != division:
+            continue
+        if p.line is not None and p.line <= 6:
+            continue                                   # already a starter — not stuck
+        best = None
+        for t in ladder:
+            if t["school"] == p.school:
+                continue
+            slot = 1 + sum(1 for cs in t["top6_cur"] if cs > p.cur_overall)
+            if slot > 6:                               # wouldn't crack that lineup either
+                continue
+            # prefer: starts highest, then closest to (or above) their level
+            score = (7 - slot) + t["level_pct"] - _DIVRANK[t["division"]] * 0.4
+            if best is None or score > best[0]:
+                best = (score, t, slot)
+        if best is None:
+            continue
+        _s, t, slot = best
+        dr = _DIVRANK[t["division"]] - _DIVRANK[p.division]
+        out.append(PlayWatch(player=p, best_school=t["school"], best_division=t["division"],
+                             best_slot=slot, best_slot_label=_slot_label(slot),
+                             move_dir=("up" if dr < 0 else "down" if dr > 0 else "lateral")))
+    out.sort(key=lambda f: (f.player.cur_overall, f.best_slot == 1), reverse=True)
+    return out
 
 
 @dataclass

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% from "_pager.html" import pager %}
 {% from "_crest.html" import crest_box %}
-{% block title %}Play to Clinch — Scholarship Watch{% endblock %}
+{% block title %}Play to Clinch — Playing Time{% endblock %}
 {% block content %}
 
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Scholarship Watch</span>
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Playing Time</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
     <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:84px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
@@ -17,33 +17,34 @@
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} walk-ons</div>
-  <span class="bl-entries-right">{{ uni_label }} · walk-ons better than a scholarship teammate</span>
+  <span class="bl-entries-right">{{ uni_label }} · D1/D2 walk-ons who'd start somewhere else</span>
 </div></div>
 
 <div class="bl-container"><div class="bl-tablescroll">
-  <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.4fr) minmax(120px,1fr) 60px 86px minmax(150px,1.3fr) 76px">
+  <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.4fr) minmax(120px,1fr) 56px minmax(140px,1.2fr) minmax(110px,1fr)">
     <div class="bl-thead">
-      <span class="bl-th">#</span><span class="bl-th">WALK-ON</span><span class="bl-th">PROGRAM</span>
-      <span class="bl-th num" title="Real ability — the Bureau's true talent rating">TALENT</span>
-      <span class="bl-th num" title="How many scholarship teammates they outclass">BEATS</span>
-      <span class="bl-th" title="Weakest teammate who is on scholarship">WEAKEST FUNDED</span>
-      <span class="bl-th num" title="Scholarship a program at their level would offer">DESERVES</span>
+      <span class="bl-th">#</span><span class="bl-th">WALK-ON</span><span class="bl-th">SITTING AT</span>
+      <span class="bl-th num" title="Current results rating">NOW</span>
+      <span class="bl-th" title="Best program where their current ability makes the lineup">COULD START AT</span>
+      <span class="bl-th" title="Lineup spot they'd claim there">AS</span>
     </div>
     {% for f in rows %}
     {% set ab = crest(f.player.school) %}
+    {% set tb = crest(f.best_school) %}
     <div class="bl-row">
       <span class="bl-rank">{{ p.start + loop.index0 }}</span>
       <span class="bl-school" style="gap:6px">
         <a href="{{ url_for('player', pid=f.player.pid, school=f.player.school, u=f.player.division ~ '-' ~ f.player.gender) }}"><span class="player-flag" title="{{ f.player.country|country_name }}">{{ f.player.country|flags }}</span> {{ f.player.name }}</a>
         <span class="ib-divchip">{{ f.player.class_year or '—' }}</span>
-        <a class="ib-fit" href="{{ url_for('intel_fit', pid=f.player.pid, u=u) }}" title="Fit Finder">fit ↗</a></span>
+        <a class="ib-fit" href="{{ url_for('intel_fit', pid=f.player.pid, u=u) }}" title="All landing spots">fit ↗</a></span>
       <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.school }} <span class="ib-divchip">{{ f.player.division }}</span></span>
-      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.true_str) }}</span></span>
-      <span class="bl-cell-num">{{ f.outranks }} funded</span>
-      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-        {{ f.weakest_funded }} <span style="color:var(--text-muted)">({{ '%.1f'|format(f.weakest_funded_true) }} · on {{ f.weakest_funded_schol }})</span></span>
-      <span class="bl-cell-num"><span class="ib-tag up">{{ f.recommended }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.cur_str) }}</span></span>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(f.best_school, tb[0], tb[1], 'xs') }} {{ f.best_school }}
+        <span class="ib-divchip">{{ f.best_division }}</span>
+        <span class="ib-tag {{ 'up' if f.move_dir=='up' else '' }}" style="font-size:10px">{{ {'up':'up a level','down':'down a level','lateral':'same level'}[f.move_dir] }}</span></span>
+      <span class="bl-conf">{{ f.best_slot_label }}</span>
     </div>
     {% endfor %}
   </div>
@@ -52,9 +53,8 @@
 </div>
 
 <div class="bl-notes"><div class="bl-note">
-  Each row is a <strong>walk-on on no athletic aid whose true ceiling out-strips a scholarship
-  teammate</strong> — money the program is misallocating. <strong>Beats</strong> = how many funded
-  players they out-talent; <strong>Merits</strong> = the equivalency a program of their division
-  would put in front of that calibre. D3 carries no athletic aid and is excluded.
+  D1/D2 walk-ons who aren't in their own lineup, and the best program — in or out of their
+  division — where their <strong>current</strong> ability would make them a starter. Playing
+  somewhere beats sitting anywhere. Click <strong>fit ↗</strong> for every landing spot.
 </div></div>
 {% endblock %}

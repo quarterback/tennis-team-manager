@@ -31,7 +31,6 @@
         "Case Western Reserve",
         "Emory",
         "NYU",
-        "Chicago",
         "Rochester",
         "Washington University in St. Louis"
       ]
@@ -63,11 +62,11 @@
         "Clarkson",
         "Hobart and William Smith",
         "Ithaca",
+        "RIT",
         "RPI",
         "Rochester",
-        "RIT",
-        "St. Lawrence",
         "Skidmore",
+        "St. Lawrence",
         "Union (NY)",
         "Vassar"
       ]
@@ -77,8 +76,8 @@
       "abbr": "NCAC",
       "autobid": true,
       "teams": [
-        "Denison",
         "DePauw",
+        "Denison",
         "John Carroll",
         "Kenyon",
         "Oberlin",
@@ -114,8 +113,8 @@
       "abbr": "SCIAC",
       "autobid": true,
       "teams": [
-        "Caltech",
         "Cal Lutheran",
+        "Caltech",
         "Chapman",
         "Claremont-Mudd-Scripps",
         "La Verne",
@@ -138,9 +137,9 @@
         "Hamline",
         "Macalester",
         "Saint Benedict",
-        "St. Catherine",
         "Saint John's (MN)",
         "Saint Mary's (MN)",
+        "St. Catherine",
         "St. Olaf",
         "St. Scholastica"
       ]
@@ -190,9 +189,9 @@
         "Salve Regina",
         "Smith",
         "Springfield",
+        "WPI",
         "Wellesley",
-        "Wheaton (MA)",
-        "WPI"
+        "Wheaton (MA)"
       ]
     },
     {
@@ -207,10 +206,10 @@
         "Keuka",
         "Nazareth",
         "Russell Sage",
-        "St. John Fisher",
         "SUNY Brockport",
         "SUNY Geneseo",
         "SUNY Poly",
+        "St. John Fisher",
         "Utica"
       ]
     },
@@ -252,8 +251,8 @@
       "autobid": true,
       "teams": [
         "Arcadia",
-        "Delaware Valley",
         "DeSales",
+        "Delaware Valley",
         "FDU-Florham",
         "King's (PA)",
         "Lebanon Valley",
@@ -283,14 +282,14 @@
       "abbr": "LEC",
       "autobid": true,
       "teams": [
+        "Castleton",
         "Eastern Connecticut State",
         "Keene State",
         "Plymouth State",
         "Rhode Island College",
+        "Southern Maine",
         "UMass Boston",
         "UMass Dartmouth",
-        "Southern Maine",
-        "Castleton",
         "Western Connecticut State"
       ]
     },
@@ -406,17 +405,17 @@
       "abbr": "Skyline",
       "autobid": true,
       "teams": [
-        "Mount Saint Vincent",
         "Farmingdale State",
         "Manhattanville",
+        "Merchant Marine",
         "Mount Saint Mary (NY)",
+        "Mount Saint Vincent",
         "Purchase",
+        "SUNY Maritime",
+        "SUNY Old Westbury",
         "Sarah Lawrence",
         "St. Joseph's (Brooklyn)",
         "St. Joseph's (Long Island)",
-        "SUNY Maritime",
-        "SUNY Old Westbury",
-        "Merchant Marine",
         "Yeshiva"
       ]
     },
@@ -487,8 +486,8 @@
         "Edgewood",
         "Illinois Tech",
         "Lakeland",
-        "Marian (WI)",
         "MSOE",
+        "Marian (WI)",
         "Rockford",
         "St. Norbert",
         "Wisconsin Lutheran"
@@ -632,14 +631,14 @@
       "teams": [
         "Husson",
         "Lesley",
+        "Maine Maritime",
         "Maine-Farmington",
         "Maine-Presque Isle",
-        "Maine Maritime",
+        "Northern Vermont-Johnson",
+        "Northern Vermont-Lyndon",
         "SUNY Cobleskill",
         "SUNY Delhi",
-        "Thomas (ME)",
-        "Northern Vermont-Johnson",
-        "Northern Vermont-Lyndon"
+        "Thomas (ME)"
       ]
     },
     {
@@ -724,8 +723,8 @@
         "LeTourneau",
         "McMurry",
         "Ozarks",
-        "St. Thomas (TX)",
         "Schreiner",
+        "St. Thomas (TX)",
         "Texas Lutheran"
       ]
     }

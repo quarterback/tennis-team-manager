@@ -603,9 +603,20 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
                  exclude: set | None = None) -> str | None:
     """Score every plausible program for prospect `p` and return the best one
     with an open seat. `exclude` blocks specific schools (used for decommits)."""
+    from .recruiting import ELITE_CALIBER, FOUR_STAR
     traits = market["traits"]
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
+    # Division ceiling by tier: a 5★/blue-chip never drops to D3, a 4★ only rarely,
+    # a 3★ (and below) can go anywhere. Keeps elite talent out of small divisions.
+    def _div_ok(div):
+        if div != "D3":
+            return True
+        if cal >= ELITE_CALIBER:
+            return False
+        if cal >= FOUR_STAR:
+            return random.Random(f"{getattr(p, 'pid', '')}|d3gate").random() < 0.05
+        return True
     hr = home_region(p)
     hc = float(getattr(p, "homecooking", 0.0))
     intl = not getattr(p, "domestic", False)
@@ -625,6 +636,8 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         if avail.get(s, 0) <= 0:
             continue
         pres, acad, reg, div, fac = traits[s]
+        if not _div_ok(div):                          # tier-gated out of this division
+            continue
         geo = hc * region_proximity(hr, reg)
         # Recruits aspire UP to the most prestigious program that still has a seat
         # for them. With best-recruits-first + seat caps, the class tiers itself —
@@ -642,7 +655,8 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             best, best_score = s, score
     if best is None:                              # nothing in range with a seat — widen once
         best = next((s for s in reversed(by_pres)
-                     if avail.get(s, 0) > 0 and (not exclude or s not in exclude)), None)
+                     if avail.get(s, 0) > 0 and _div_ok(traits[s][3])
+                     and (not exclude or s not in exclude)), None)
     return best
 
 

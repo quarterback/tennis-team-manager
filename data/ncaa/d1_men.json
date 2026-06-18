@@ -8,23 +8,16 @@
       "abbr": "ACC",
       "autobid": true,
       "teams": [
-        "Boston College",
-        "Cal",
+        "Cincinnati",
         "Clemson",
         "Duke",
         "Florida State",
         "Georgia Tech",
-        "Louisville",
+        "Maryland",
         "Miami",
         "NC State",
-        "North Carolina",
-        "Notre Dame",
-        "Pitt",
-        "SMU",
-        "Stanford",
-        "Syracuse",
-        "Virginia",
-        "Virginia Tech",
+        "North Carolina A&T",
+        "Tulane",
         "Wake Forest"
       ]
     },
@@ -41,7 +34,6 @@
         "Kentucky",
         "LSU",
         "Mississippi State",
-        "Missouri",
         "Oklahoma",
         "Ole Miss",
         "South Carolina",
@@ -56,23 +48,21 @@
       "abbr": "Big Ten",
       "autobid": true,
       "teams": [
+        "Chicago",
         "Illinois",
         "Indiana",
         "Iowa",
-        "Maryland",
+        "Kansas",
         "Michigan",
         "Michigan State",
         "Minnesota",
+        "Missouri",
         "Nebraska",
+        "North Carolina",
         "Northwestern",
         "Ohio State",
-        "Oregon",
-        "Penn State",
         "Purdue",
-        "Rutgers",
-        "UCLA",
-        "USC",
-        "Washington",
+        "Virginia",
         "Wisconsin"
       ]
     },
@@ -81,38 +71,60 @@
       "abbr": "Big 12",
       "autobid": true,
       "teams": [
-        "Arizona",
-        "Arizona State",
+        "Alabama State",
         "BYU",
         "Baylor",
-        "Cincinnati",
-        "Colorado",
+        "Florida A&M",
         "Houston",
         "Iowa State",
-        "Kansas",
         "Kansas State",
+        "Memphis",
         "Oklahoma State",
+        "SMU",
         "TCU",
         "Texas Tech",
-        "UCF",
-        "Utah",
-        "West Virginia"
+        "UCF"
       ]
     },
     {
-      "name": "Pac-12 Conference",
-      "abbr": "Pac-12",
+      "name": "Pac-16 Conference",
+      "abbr": "Pac-16",
       "autobid": true,
       "teams": [
+        "Arizona",
+        "Arizona State",
         "Boise State",
+        "Cal",
+        "Colorado",
         "Colorado State",
-        "Fresno State",
         "Gonzaga",
+        "Oregon",
         "Oregon State",
         "San Diego State",
-        "Texas State",
-        "Utah State",
+        "Stanford",
+        "UCLA",
+        "USC",
+        "Utah",
+        "Washington",
         "Washington State"
+      ]
+    },
+    {
+      "name": "Yankee Conference",
+      "abbr": "Yankee",
+      "autobid": true,
+      "teams": [
+        "Boston College",
+        "Louisville",
+        "Notre Dame",
+        "Penn State",
+        "Pitt",
+        "Rutgers",
+        "Syracuse",
+        "Temple",
+        "UConn",
+        "Virginia Tech",
+        "West Virginia"
       ]
     },
     {
@@ -123,16 +135,12 @@
         "Charlotte",
         "East Carolina",
         "Florida Atlantic",
-        "Memphis",
         "North Texas",
         "Rice",
         "South Florida",
-        "Temple",
-        "Tulane",
         "Tulsa",
         "UAB",
-        "UTSA",
-        "Wichita State"
+        "UTSA"
       ]
     },
     {
@@ -140,21 +148,17 @@
       "abbr": "A-10",
       "autobid": true,
       "teams": [
-        "Davidson",
         "Dayton",
         "Duquesne",
-        "Fordham",
-        "George Mason",
         "George Washington",
+        "Hampton",
         "La Salle",
-        "Loyola Chicago",
         "Massachusetts",
-        "Rhode Island",
-        "Richmond",
+        "Northeastern",
         "Saint Joseph's",
-        "Saint Louis",
         "St. Bonaventure",
-        "VCU"
+        "VCU",
+        "West Florida"
       ]
     },
     {
@@ -168,6 +172,7 @@
         "Maine",
         "NJIT",
         "New Hampshire",
+        "Rhode Island",
         "UMBC",
         "UMass Lowell",
         "Vermont"
@@ -184,8 +189,10 @@
         "Lipscomb",
         "North Florida",
         "Queens",
+        "Rollins",
         "Stetson",
-        "West Florida"
+        "Tampa",
+        "Valdosta State"
       ]
     },
     {
@@ -195,13 +202,14 @@
       "teams": [
         "Butler",
         "Creighton",
+        "Davidson",
         "DePaul",
         "Georgetown",
         "Marquette",
         "Providence",
+        "Saint Louis",
         "Seton Hall",
         "St. John's",
-        "UConn",
         "Villanova",
         "Xavier"
       ]
@@ -270,15 +278,11 @@
         "Charleston",
         "Drexel",
         "Elon",
-        "Hampton",
         "Hofstra",
         "Monmouth",
-        "North Carolina A&T",
-        "Northeastern",
         "Stony Brook",
         "Towson",
-        "UNC Wilmington",
-        "William & Mary"
+        "UNC Wilmington"
       ]
     },
     {
@@ -288,12 +292,14 @@
       "teams": [
         "Delaware",
         "FIU",
+        "George Mason",
         "Jacksonville State",
         "Kennesaw State",
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
         "New Mexico State",
+        "Richmond",
         "Sam Houston",
         "Western Kentucky"
       ]
@@ -326,8 +332,10 @@
         "Cornell",
         "Dartmouth",
         "Harvard",
+        "Howard",
         "Penn",
         "Princeton",
+        "William & Mary",
         "Yale"
       ]
     },
@@ -372,21 +380,6 @@
       ]
     },
     {
-      "name": "Mid-Eastern Athletic Conference",
-      "abbr": "MEAC",
-      "autobid": true,
-      "teams": [
-        "Coppin State",
-        "Delaware State",
-        "Howard",
-        "Maryland Eastern Shore",
-        "Morgan State",
-        "Norfolk State",
-        "North Carolina Central",
-        "South Carolina State"
-      ]
-    },
-    {
       "name": "Missouri Valley Conference",
       "abbr": "MVC",
       "autobid": true,
@@ -397,11 +390,13 @@
         "Evansville",
         "Illinois State",
         "Indiana State",
+        "Loyola Chicago",
         "Murray State",
         "Northern Iowa",
         "Southern Illinois",
         "UIC",
-        "Valparaiso"
+        "Valparaiso",
+        "Wichita State"
       ]
     },
     {
@@ -410,12 +405,15 @@
       "autobid": true,
       "teams": [
         "Air Force",
+        "Fresno State",
         "Grand Canyon",
         "Nevada",
         "New Mexico",
         "San Jose State",
+        "Texas State",
         "UNLV",
         "UTEP",
+        "Utah State",
         "Wyoming"
       ]
     },
@@ -462,6 +460,7 @@
         "Boston University",
         "Bucknell",
         "Colgate",
+        "Fordham",
         "Holy Cross",
         "Lafayette",
         "Lehigh",
@@ -506,20 +505,25 @@
       ]
     },
     {
-      "name": "Southwestern Athletic Conference",
-      "abbr": "SWAC",
+      "name": "Heritage League",
+      "abbr": "Heritage",
       "autobid": true,
       "teams": [
         "Alabama A&M",
-        "Alabama State",
         "Alcorn State",
         "Arkansas-Pine Bluff",
         "Bethune-Cookman",
-        "Florida A&M",
+        "Coppin State",
+        "Delaware State",
         "Grambling",
         "Jackson State",
+        "Maryland Eastern Shore",
         "Mississippi Valley State",
+        "Morgan State",
+        "Norfolk State",
+        "North Carolina Central",
         "Prairie View A&M",
+        "South Carolina State",
         "Southern",
         "Texas Southern"
       ]

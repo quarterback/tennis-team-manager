@@ -79,7 +79,7 @@ NAV_GROUPS = [
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "🛰️", "endpoint": "intel_hub",         "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "📡", "endpoint": "intel_underplaced", "args": {}},
-        {"id": "intel_aid",    "label": "Scholarship Watch","icon": "💸", "endpoint": "intel_scholarships", "args": {}},
+        {"id": "intel_aid",    "label": "Playing Time",    "icon": "🎾", "endpoint": "intel_scholarships", "args": {}},
     ]),
     ("Simulate", [
         {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -888,11 +888,13 @@ def create_app() -> Flask:
         import app.scout_intel as si
         div_f = request.args.get("div", "All")
         cls_f = request.args.get("class", "All")
-        rows = si.underplaced_board(gender, division=div_f, class_year=cls_f)
+        sort = request.args.get("sort", "gap")
+        q = request.args.get("q", "")
+        rows = si.underplaced_board(gender, division=div_f, class_year=cls_f, sort=sort, q=q)
         pg = paginate(rows, request.args.get("page", 1))
         return render_template("intel_underplaced.html", active="Analytics Bureau",
                                rows=pg.items, p=pg, total=len(rows), gender=gender,
-                               div_f=div_f, cls_f=cls_f, u=u, uni_label=label,
+                               div_f=div_f, cls_f=cls_f, sort=sort, q=q, u=u, uni_label=label,
                                divisions=["All", "D1", "D2", "D3"],
                                classes=["All", "Fr", "So", "Jr", "Sr"])
 
@@ -901,7 +903,7 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         import app.scout_intel as si
         div_f = request.args.get("div", "All")
-        rows = si.scholarship_watch(gender, division=div_f)
+        rows = si.playing_time_watch(gender, division=div_f)
         pg = paginate(rows, request.args.get("page", 1))
         return render_template("intel_scholarships.html", active="Analytics Bureau",
                                rows=pg.items, p=pg, total=len(rows), gender=gender,

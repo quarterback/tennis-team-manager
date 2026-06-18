@@ -10,7 +10,7 @@ for NCAA Division I men's & women's **dual-match (team)** play. Individual-only
   are active dual-match weeks.
 - **Total regular-season duals:** typically **~20-25 dual matches** per team
   (regular season, excluding the conference and NCAA tournaments).
-- **Sim recommendation:** model a **13-14 week** spring window with **~22 regular-season duals** per team.
+- **Sim recommendation:** model a **~12-14 week** spring window with a **25 regular-season dual** target per team (up to a 3-dual weekend).
 
 ## 2. Non-conference vs conference
 - **Pattern confirmed:** **non-conference duals are front-loaded** (Jan-Feb), then
@@ -26,9 +26,12 @@ for NCAA Division I men's & women's **dual-match (team)** play. Individual-only
     partial/unbalanced single round-robin** (each team plays most but not all
     members once). The ACC historically ran a double round-robin for decades but
     abandoned it after expanding to a 16-team league.
-- **Sim recommendation:** **7 non-conference duals**; conference = **single round-robin**
-  for leagues ≤12 teams (optionally **double RR for ≤8**), and **partial single
-  round-robin** (cap conference duals at ~13-15) for leagues ≥14 teams.
+- **Sim recommendation:** every team plays toward a **25-dual** slate aimed at
+  **~60% conference** (so standings carry signal): conference = **double round-robin
+  for leagues under 10 teams** (it fits), **single round-robin** otherwise, **padded
+  with extra intra-conference duals** (not a clean round-robin) where a small league
+  can't reach the share. Non-conference fills the rest. Verified ~61% conference,
+  exactly 25 duals/team, ~11-12 weeks.
 
 ## 3. Conference tournaments
 - **Prevalence:** nearly every D1 conference holds a postseason **dual-match

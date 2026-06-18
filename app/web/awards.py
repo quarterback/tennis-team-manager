@@ -242,7 +242,19 @@ def awards_archive(division: str, gender: str, year: int) -> dict:
     # All-American tiers in prestige order (First, Second, Honorable Mention).
     aa = [{"tier": lbl, "players": ps}
           for lbl, ps in sorted(aa_tiers.items(), key=lambda kv: -kv[1][0]["sort"])]
-    all_conference = [{"tier": lbl, "players": ps} for lbl, ps in sorted(all_conf.items())]
+    # Group All-Conference by conference so the archive collapses per league
+    # instead of listing every team flat (it gets long across ~30 conferences).
+    conf_groups: dict = {}
+    for lbl, ps in all_conf.items():
+        conf = lbl.split("All-", 1)[1] if "All-" in lbl else lbl
+        conf_groups.setdefault(conf, []).append((lbl, ps))
+    all_conference = [
+        {"conf": conf,
+         "count": sum(len(ps) for _, ps in teams),
+         "teams": [{"tier": lbl, "players": ps}
+                   for lbl, ps in sorted(teams, key=lambda kv: kv[0])]}
+        for conf, teams in sorted(conf_groups.items())
+    ]
     return {
         "year": year, "empty": not rows,
         "national_poty": poty, "conf_poty": sorted(conf_poty, key=lambda r: r["label"]),

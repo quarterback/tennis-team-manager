@@ -49,18 +49,20 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    # Power conferences
-    "ACC": 0.78, "SEC": 0.78, "Big 12": 0.76, "Big Ten": 0.73, "Pac-12": 0.59,
+    # Power conferences (Pac-16 revives the classic Pac with its tennis
+    # blue-bloods — Stanford, UCLA, USC, Cal — so it sits with the powers).
+    "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
     # High / strong mid-majors
-    "Ivy": 0.68, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
     "CAA": 0.49, "WAC": 0.49, "Patriot": 0.48,
     # Low-majors
     "Southland": 0.45, "Big Sky": 0.44, "Summit": 0.44, "Horizon": 0.43,
-    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38, "MEAC": 0.34,
-    "SWAC": 0.33,
+    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38,
+    # Heritage League — the merged SWAC + MEAC (HBCU) conference.
+    "Heritage": 0.34,
     # Not in the supplied list — placeholders pending values
     "MVC": 0.44, "America East": 0.42,
 }
@@ -150,7 +152,10 @@ def conf_prestige(conf_abbr: str, division: str | None = None) -> float:
 # Both are stable program traits in [0,1], separate from the hidden per-season
 # `strength` (current on-court quality).
 # --------------------------------------------------------------------------
-DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.47, "D3": 0.33}
+# Division sets the prestige BAND: every D1 outranks every D2, which outranks
+# every D3 (a low-major D1 still has more athletic brand pull than the best D3).
+# Within D1 the conference prior then separates P5 > mid-major > low-major.
+DIVISION_PRESTIGE = {"D1": 0.66, "D2": 0.40, "D3": 0.26}
 
 # Athletic brand bump on top of the conference prior, per program. Keys are the
 # canonical school names used in the data files (e.g. UNC → "North Carolina").
@@ -228,7 +233,9 @@ def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float
     school's blue-blood bump. Used both for the base value and when a conference
     prestige override shifts the whole league."""
     base = DIVISION_PRESTIGE.get(division, 0.40)
-    p = base + (conf_prior - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
+    # Steeper conference weight so within D1 the Power-conference band sits well
+    # clear of the mid-majors, which sit clear of the low-majors.
+    p = base + (conf_prior - 0.50) * 0.9 + PRESTIGE_SCHOOLS.get(school, 0.0)
     return max(0.12, min(0.97, p))
 
 
