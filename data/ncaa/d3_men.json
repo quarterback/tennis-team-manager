@@ -9,14 +9,19 @@
       "autobid": true,
       "teams": [
         "Amherst",
+        "Bard",
         "Bates",
         "Bowdoin",
         "Colby",
         "Connecticut College",
         "Hamilton",
+        "Hobart and William Smith",
+        "Ithaca",
         "Middlebury",
+        "Skidmore",
         "Trinity (CT)",
         "Tufts",
+        "Vassar",
         "Wesleyan",
         "Williams"
       ]
@@ -36,18 +41,6 @@
         "Swarthmore",
         "Ursinus",
         "Washington College"
-      ]
-    },
-    {
-      "name": "Liberty League",
-      "abbr": "Liberty League",
-      "autobid": true,
-      "teams": [
-        "Bard",
-        "Hobart and William Smith",
-        "Ithaca",
-        "Skidmore",
-        "Vassar"
       ]
     },
     {
