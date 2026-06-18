@@ -8,23 +8,16 @@
       "abbr": "ACC",
       "autobid": true,
       "teams": [
-        "Boston College",
-        "Cal",
         "Clemson",
         "Duke",
         "Florida State",
         "Georgia Tech",
-        "Louisville",
+        "Maryland",
         "Miami",
         "NC State",
         "North Carolina",
-        "Notre Dame",
-        "Pitt",
         "SMU",
-        "Stanford",
-        "Syracuse",
         "Virginia",
-        "Virginia Tech",
         "Wake Forest"
       ]
     },
@@ -59,20 +52,13 @@
         "Illinois",
         "Indiana",
         "Iowa",
-        "Maryland",
         "Michigan",
         "Michigan State",
         "Minnesota",
         "Nebraska",
         "Northwestern",
         "Ohio State",
-        "Oregon",
-        "Penn State",
         "Purdue",
-        "Rutgers",
-        "UCLA",
-        "USC",
-        "Washington",
         "Wisconsin"
       ]
     },
@@ -81,12 +67,8 @@
       "abbr": "Big 12",
       "autobid": true,
       "teams": [
-        "Arizona",
-        "Arizona State",
         "BYU",
         "Baylor",
-        "Cincinnati",
-        "Colorado",
         "Houston",
         "Iowa State",
         "Kansas",
@@ -94,25 +76,49 @@
         "Oklahoma State",
         "TCU",
         "Texas Tech",
-        "UCF",
-        "Utah",
-        "West Virginia"
+        "UCF"
       ]
     },
     {
-      "name": "Pac-12 Conference",
-      "abbr": "Pac-12",
+      "name": "Pac-16 Conference",
+      "abbr": "Pac-16",
       "autobid": true,
       "teams": [
+        "Arizona",
+        "Arizona State",
         "Boise State",
+        "Cal",
+        "Colorado",
         "Colorado State",
-        "Fresno State",
         "Gonzaga",
+        "Oregon",
         "Oregon State",
         "San Diego State",
-        "Texas State",
-        "Utah State",
+        "Stanford",
+        "UCLA",
+        "USC",
+        "Utah",
+        "Washington",
         "Washington State"
+      ]
+    },
+    {
+      "name": "Yankee Conference",
+      "abbr": "Yankee",
+      "autobid": true,
+      "teams": [
+        "Boston College",
+        "Cincinnati",
+        "Louisville",
+        "Notre Dame",
+        "Penn State",
+        "Pitt",
+        "Rutgers",
+        "Syracuse",
+        "Temple",
+        "UConn",
+        "Virginia Tech",
+        "West Virginia"
       ]
     },
     {
@@ -127,7 +133,6 @@
         "North Texas",
         "Rice",
         "South Florida",
-        "Temple",
         "Tulane",
         "Tulsa",
         "UAB",
@@ -201,7 +206,6 @@
         "Providence",
         "Seton Hall",
         "St. John's",
-        "UConn",
         "Villanova",
         "Xavier"
       ]
@@ -410,12 +414,15 @@
       "autobid": true,
       "teams": [
         "Air Force",
+        "Fresno State",
         "Grand Canyon",
         "Nevada",
         "New Mexico",
         "San Jose State",
+        "Texas State",
         "UNLV",
         "UTEP",
+        "Utah State",
         "Wyoming"
       ]
     },

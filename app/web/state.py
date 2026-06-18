@@ -26,7 +26,7 @@ UNIVERSES = [
 ]
 
 # Conference → display tier (mirrors the design's P5 / MID / IVY badges).
-_P5 = {"ACC", "SEC", "Big Ten", "Big 12", "Pac-12"}
+_P5 = {"ACC", "SEC", "Big Ten", "Big 12", "Pac-16"}
 
 _season_cache: dict = {}
 _bracket_cache: dict = {}

@@ -49,10 +49,11 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    # Power conferences
-    "ACC": 0.78, "SEC": 0.78, "Big 12": 0.76, "Big Ten": 0.73, "Pac-12": 0.59,
+    # Power conferences (Pac-16 revives the classic Pac with its tennis
+    # blue-bloods — Stanford, UCLA, USC, Cal — so it sits with the powers).
+    "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
     # High / strong mid-majors
-    "Ivy": 0.68, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
