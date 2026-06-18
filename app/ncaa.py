@@ -54,6 +54,9 @@ CONF_PRESTIGE = {
     "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
     # High / strong mid-majors
     "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
+    # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
+    "UAA": 0.45,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
@@ -110,7 +113,7 @@ CONF_PRESTIGE_D3 = {
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
     "NJAC": "New Jersey Athletic",
-    "UAA": "University Athletic Association", "NCAC": "North Coast Athletic",
+    "NCAC": "North Coast Athletic",   # UAA moved up to D1 (see CONF_PRESTIGE["UAA"])
     "SCAC": "Southern Collegiate Athletic", "ODAC": "Old Dominion Athletic", "C2C": "Coast-To-Coast",
     "SAA": "Southern Athletic Association", "NWC": "Northwest Conference", "ARC": "American Rivers",
     "OAC": "Ohio Athletic", "MIAA-D3": "Michigan Intercollegiate", "ASC": "American Southwest",
@@ -185,17 +188,30 @@ PRESTIGE_SCHOOLS = {
     "Indianapolis": 0.05, "Wingate": 0.05, "Lee": 0.04, "Mississippi College": 0.04,
     "Lander": 0.04, "Harding": 0.03, "Tiffin": 0.03, "Charleston (WV)": 0.03,
     "Findlay": 0.02, "Point Loma Nazarene": 0.02, "St. Mary's (TX)": 0.02,
-    # --- D3 ---
-    "Chicago": 0.15, "Emory": 0.18, "Claremont-Mudd-Scripps": 0.17,
-    "Grinnell": 0.08, "TCNJ": 0.05,
-    "Case Western Reserve": 0.16, "Washington University in St. Louis": 0.15,
-    "Middlebury": 0.15, "Williams": 0.14, "Tufts": 0.14, "Bowdoin": 0.13,
-    "Johns Hopkins": 0.12, "MIT": 0.11, "Carnegie Mellon": 0.11, "Amherst": 0.11,
-    "Pomona-Pitzer": 0.11, "Swarthmore": 0.10, "Wesleyan": 0.10, "Denison": 0.10,
-    "Trinity (TX)": 0.08, "Washington and Lee": 0.08, "Gustavus Adolphus": 0.08,
-    "Kenyon": 0.07, "NYU": 0.06, "Brandeis": 0.06, "Babson": 0.06, "Rochester": 0.05,
-    "Vassar": 0.05, "Skidmore": 0.05, "Redlands": 0.05, "Whitman": 0.04,
-    "Mary Washington": 0.04, "Christopher Newport": 0.04,
+    # --- D1: academic schools recently promoted. Athletically they're low-major
+    #         (the conference prior carries them); only a slight brand edge so they
+    #         don't inherit the big D3 bumps that would inflate them in D1. ---
+    "Emory": 0.04, "Washington University in St. Louis": 0.04, "Carnegie Mellon": 0.04,
+    "Johns Hopkins": 0.02, "Chicago": 0.02,
+    # --- D3: the academic "power programs". A clear prestige tier above the rest
+    #         of D3 so the best D3-level recruits flow to them. Benchmarked off
+    #         relative academic standing, then tuned to the game's prestige scale —
+    #         everyone here sits well clear of the unbumped D3 baseline. ---
+    "Williams": 0.18, "Amherst": 0.18, "Tufts": 0.17, "Middlebury": 0.17,
+    "Pomona-Pitzer": 0.17, "Claremont-Mudd-Scripps": 0.17, "Swarthmore": 0.17,
+    "Bowdoin": 0.16, "Caltech": 0.16, "Haverford": 0.16, "Carleton": 0.16,
+    "Hamilton": 0.14, "Wesleyan": 0.14, "Colby": 0.14, "Grinnell": 0.14,
+    "Bates": 0.13, "Macalester": 0.13,
+    "Connecticut College": 0.12, "Trinity (CT)": 0.12, "Franklin & Marshall": 0.12,
+    "Kenyon": 0.12, "Denison": 0.12, "RPI": 0.12, "RIT": 0.12,
+    "Oberlin": 0.11, "MIT": 0.11,
+    "Chapman": 0.10, "Gettysburg": 0.10, "Dickinson": 0.10, "St. Olaf": 0.10,
+    "Union (NY)": 0.10, "Clarkson": 0.10,
+    "Redlands": 0.08, "Wooster": 0.08, "Skidmore": 0.08,
+    # --- D3: athletic powers (not academic-elite) that still out-recruit the field. ---
+    "Trinity (TX)": 0.12, "Gustavus Adolphus": 0.10, "Mary Washington": 0.10,
+    "Christopher Newport": 0.10, "Washington and Lee": 0.08, "TCNJ": 0.07,
+    "Babson": 0.06, "Vassar": 0.05, "Whitman": 0.05,
 }
 
 # Per-conference academic prior (default by division below). Academic leagues
