@@ -435,7 +435,11 @@ def _latent_strength(school: str, conf_abbr: str, gender: str, division: str) ->
     # its prestige-derived range, while the prestige baselines stay constant.
     prior = conf_prestige(conf_abbr, division)
     rng = random.Random(f"{WORLD_SALT}|{school}|{conf_abbr}|{gender}|{division}|{SEASON_SEED}")
-    return max(0.12, min(0.95, rng.gauss(prior, 0.11)))
+    # Tight within-conference draw: programs cluster near their conference prior so
+    # the top of the field stays a tight band (the best college #1s are all ~UTR 14,
+    # not spread to pro level). Variety between similar players comes from the STR
+    # rating's decimals through play, not from big talent gaps.
+    return max(0.12, min(0.95, rng.gauss(prior, 0.06)))
 
 
 def load_division(division: str, gender: str) -> Division:
@@ -519,9 +523,9 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # team mean, so a power program's #1 can poke toward UTR 14 without anyone hitting
 # the pro ceiling.
 _TALENT = {
-    ("D1", "men"):   (48.0, 58.0), ("D1", "women"): (40.0, 52.0),
-    ("D2", "men"):   (40.0, 58.0), ("D2", "women"): (33.0, 52.0),
-    ("D3", "men"):   (36.0, 58.0), ("D3", "women"): (29.0, 52.0),
+    ("D1", "men"):   (48.0, 44.0), ("D1", "women"): (41.0, 38.0),
+    ("D2", "men"):   (38.0, 44.0), ("D2", "women"): (32.0, 38.0),
+    ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
