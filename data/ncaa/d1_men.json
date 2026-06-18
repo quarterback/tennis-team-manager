@@ -178,7 +178,6 @@
         "Binghamton",
         "Bryant",
         "Maine",
-        "NJIT",
         "New Hampshire",
         "Rhode Island",
         "UMBC",
@@ -313,6 +312,7 @@
       "abbr": "Horizon",
       "autobid": true,
       "teams": [
+        "Chicago State",
         "Cleveland State",
         "Detroit Mercy",
         "Green Bay",
@@ -444,11 +444,11 @@
       "autobid": true,
       "teams": [
         "Central Connecticut",
-        "Chicago State",
         "Fairleigh Dickinson",
         "Le Moyne",
         "Long Island",
         "Mercyhurst",
+        "NJIT",
         "New Haven",
         "Stonehill",
         "Wagner"
