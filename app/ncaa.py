@@ -49,9 +49,10 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    # Power conferences (Pac-16 revives the classic Pac with its tennis
-    # blue-bloods — Stanford, UCLA, USC, Cal — so it sits with the powers).
-    "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
+    # Power conferences — pushed clear of the pack so the top tier stands apart
+    # (Pac-16 revives the classic Pac with its tennis blue-bloods: Stanford,
+    # UCLA, USC, Cal).
+    "ACC": 0.82, "SEC": 0.82, "Pac-16": 0.82, "Big 12": 0.81, "Big Ten": 0.79,
     # High / strong mid-majors
     "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "CIC": 0.60, "MW": 0.58, "Big West": 0.57,
     # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
@@ -504,13 +505,14 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # shifted) — mirroring real UTR, where the women's band is both lower and tighter
 # than the men's. D1 > D2 > D3.
 # (base, spread): a program's roster talent mean = base + spread*(strength-0.5).
-# The spread is deliberately wide so real talent gaps decide matches — a stronger
-# program should usually beat a weaker one (upsets still happen, they're just not
-# the coin-flips a compressed spread produced).
+#  • spread is wide so real talent gaps decide matches (no coin-flip parity), which
+#    also gives a clear top-tier-vs-rest gradient WITHIN a division.
+#  • the division bases are spaced ~10 apart so the gradients don't overlap: the
+#    weakest D1 still sits clearly above the strongest D2, and D2 above D3.
 _TALENT = {
-    ("D1", "men"):   (68.5, 22.0), ("D1", "women"): (58.0, 20.0),
-    ("D2", "men"):   (63.5, 22.0), ("D2", "women"): (53.0, 20.0),
-    ("D3", "men"):   (58.5, 22.0), ("D3", "women"): (48.0, 20.0),
+    ("D1", "men"):   (70.0, 22.0), ("D1", "women"): (60.0, 20.0),
+    ("D2", "men"):   (60.0, 22.0), ("D2", "women"): (50.0, 20.0),
+    ("D3", "men"):   (50.0, 22.0), ("D3", "women"): (41.0, 20.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
