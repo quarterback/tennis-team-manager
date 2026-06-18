@@ -504,15 +504,24 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # a flatter spread so their distribution is *compressed* (lower top, not merely
 # shifted) — mirroring real UTR, where the women's band is both lower and tighter
 # than the men's. D1 > D2 > D3.
-# (base, spread): a program's roster talent mean = base + spread*(strength-0.5).
-#  • spread is wide so real talent gaps decide matches (no coin-flip parity), which
-#    also gives a clear top-tier-vs-rest gradient WITHIN a division.
-#  • the division bases are spaced ~10 apart so the gradients don't overlap: the
-#    weakest D1 still sits clearly above the strongest D2, and D2 above D3.
+# (base, spread): a program's roster talent mean = base + spread*(strength-0.5)
+# on the 20-80 scouting scale.
+#  • spread is WIDE so tiers spread across the whole scale instead of bunching at
+#    the top — elite programs push toward 80, weak ones drop into the 30s/40s.
+#  • bases are spaced so the divisions stack: D1 sits up high, D2 in the middle,
+#    D3 down low (using the bottom of the scale the old calibration never touched).
+# (base, spread): roster talent mean = base + spread*(strength-0.5) on the 20-80
+# scouting scale. Calibrated against UTR (grade 20≈UTR 1.0, grade 80≈UTR 16.5;
+# ~0.26 UTR per grade pt). UTR 16.5 is Grand Slam level, so COLLEGE NEVER REACHES
+# THE TOP: elite D1 #1s land ~UTR 13-14, and the bottom (average D3 / a bad D2)
+# sits at ~UTR 3-4. Team means: D1 ~UTR 6-13, D2 ~4-9, D3 ~3-7. Divisions overlap
+# at the edges the way they really do. Individual players are drawn around the
+# team mean, so a power program's #1 can poke toward UTR 14 without anyone hitting
+# the pro ceiling.
 _TALENT = {
-    ("D1", "men"):   (70.0, 22.0), ("D1", "women"): (60.0, 20.0),
-    ("D2", "men"):   (60.0, 22.0), ("D2", "women"): (50.0, 20.0),
-    ("D3", "men"):   (50.0, 22.0), ("D3", "women"): (41.0, 20.0),
+    ("D1", "men"):   (48.0, 58.0), ("D1", "women"): (40.0, 52.0),
+    ("D2", "men"):   (40.0, 58.0), ("D2", "women"): (33.0, 52.0),
+    ("D3", "men"):   (36.0, 58.0), ("D3", "women"): (29.0, 52.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
