@@ -45,6 +45,10 @@ _D1_BANDS = [
     (0.00,  8.0, 10.0),   # low-major
 ]
 _D2_BAND = (2.0, 9.0)   # wide: the best D2 funds ~4-star level, the worst is genuinely thin
+# Standout D2 programs (Barry/Washburn-tier) fully fund — they max their
+# scholarships every year, so the per-world jitter never drops them off the
+# 4-star floor. Keyed to the D2 recruiting-prestige scale.
+_ELITE_D2_PRESTIGE = 0.50
 
 
 def _free_fill_stars(prestige: float, division: str) -> str:
@@ -64,6 +68,8 @@ def program_budget(program, salt: str = "") -> float:
     pres = float(getattr(program, "prestige", 0.5))
     if div == "D2":
         lo, hi = _D2_BAND
+        if pres >= _ELITE_D2_PRESTIGE:      # standout D2: fully funded, every year
+            return hi
         frac = max(0.0, min(1.0, (pres - 0.27) / 0.28))   # D2 prestige spans ~0.27-0.55
     else:  # D1
         lo, hi = next((l, h) for cut, l, h in _D1_BANDS if pres >= cut)
