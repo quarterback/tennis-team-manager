@@ -54,6 +54,7 @@
         "Illinois",
         "Indiana",
         "Iowa",
+        "Johns Hopkins",
         "Kansas",
         "Michigan",
         "Michigan State",
@@ -343,6 +344,21 @@
       ]
     },
     {
+      "name": "University Athletic Association",
+      "abbr": "UAA",
+      "autobid": true,
+      "teams": [
+        "Brandeis",
+        "Carnegie Mellon",
+        "Case Western Reserve",
+        "Colorado College",
+        "Emory",
+        "NYU",
+        "Rochester",
+        "Washington University in St. Louis"
+      ]
+    },
+    {
       "name": "Metro Atlantic Athletic Conference",
       "abbr": "MAAC",
       "autobid": true,
@@ -587,6 +603,7 @@
       "teams": [
         "Denver",
         "Loyola Marymount",
+        "Occidental",
         "Pacific",
         "Pepperdine",
         "Portland",

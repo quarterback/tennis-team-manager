@@ -54,6 +54,9 @@ CONF_PRESTIGE = {
     "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
     # High / strong mid-majors
     "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
+    # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
+    "UAA": 0.45,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
@@ -110,7 +113,7 @@ CONF_PRESTIGE_D3 = {
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
     "NJAC": "New Jersey Athletic",
-    "UAA": "University Athletic Association", "NCAC": "North Coast Athletic",
+    "NCAC": "North Coast Athletic",   # UAA moved up to D1 (see CONF_PRESTIGE["UAA"])
     "SCAC": "Southern Collegiate Athletic", "ODAC": "Old Dominion Athletic", "C2C": "Coast-To-Coast",
     "SAA": "Southern Athletic Association", "NWC": "Northwest Conference", "ARC": "American Rivers",
     "OAC": "Ohio Athletic", "MIAA-D3": "Michigan Intercollegiate", "ASC": "American Southwest",

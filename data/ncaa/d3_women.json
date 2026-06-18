@@ -22,20 +22,6 @@
       ]
     },
     {
-      "name": "University Athletic Association",
-      "abbr": "UAA",
-      "autobid": true,
-      "teams": [
-        "Brandeis",
-        "Carnegie Mellon",
-        "Case Western Reserve",
-        "Emory",
-        "NYU",
-        "Rochester",
-        "Washington University in St. Louis"
-      ]
-    },
-    {
       "name": "Centennial Conference",
       "abbr": "Centennial",
       "autobid": true,
@@ -45,7 +31,6 @@
         "Franklin & Marshall",
         "Gettysburg",
         "Haverford",
-        "Johns Hopkins",
         "McDaniel",
         "Muhlenberg",
         "Swarthmore",
@@ -64,7 +49,6 @@
         "Ithaca",
         "RIT",
         "RPI",
-        "Rochester",
         "Skidmore",
         "St. Lawrence",
         "Union (NY)",
@@ -118,7 +102,6 @@
         "Chapman",
         "Claremont-Mudd-Scripps",
         "La Verne",
-        "Occidental",
         "Pomona-Pitzer",
         "Redlands",
         "Whittier"
@@ -716,7 +699,6 @@
       "teams": [
         "Austin College",
         "Centenary (LA)",
-        "Colorado College",
         "Concordia Texas",
         "Dallas",
         "Hendrix",
