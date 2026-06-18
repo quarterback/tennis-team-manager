@@ -9,7 +9,7 @@ import random
 from dataclasses import dataclass
 
 from app.season import run_season
-from app.bracket import select_field, run_bracket, clamp_field, FIELD_DEFAULT
+from app.bracket import select_field, run_bracket, clamp_field, FIELD_DEFAULT, field_for_division
 
 DEFAULT_SEED = 2026
 MY_TEAM = "Oregon"
@@ -49,13 +49,13 @@ def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
     return _season_cache[key]
 
 
-def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int = FIELD_DEFAULT):
+def get_bracket(division: str, gender: str, seed: int = DEFAULT_SEED, size: int | None = None):
     """The NCAA field from the live season (conference champions get autobids once
     the conference tournaments have run). None in preseason. Cached by how far the
     season has progressed so it refreshes as results come in."""
     import app.world as world
     import app.seasonmode as sm
-    size = clamp_field(size)
+    size = clamp_field(size if size is not None else field_for_division(division))
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     s = sm.load_season(sid)
     key = (division, gender, sid, size, s["current_week"], s["phase"])
