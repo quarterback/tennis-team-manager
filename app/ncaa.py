@@ -503,10 +503,14 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # a flatter spread so their distribution is *compressed* (lower top, not merely
 # shifted) — mirroring real UTR, where the women's band is both lower and tighter
 # than the men's. D1 > D2 > D3.
+# (base, spread): a program's roster talent mean = base + spread*(strength-0.5).
+# The spread is deliberately wide so real talent gaps decide matches — a stronger
+# program should usually beat a weaker one (upsets still happen, they're just not
+# the coin-flips a compressed spread produced).
 _TALENT = {
-    ("D1", "men"):   (68.5, 12.0), ("D1", "women"): (58.0, 8.0),
-    ("D2", "men"):   (63.5, 12.0), ("D2", "women"): (53.0, 8.0),
-    ("D3", "men"):   (58.5, 12.0), ("D3", "women"): (48.0, 8.0),
+    ("D1", "men"):   (68.5, 22.0), ("D1", "women"): (58.0, 20.0),
+    ("D2", "men"):   (63.5, 22.0), ("D2", "women"): (53.0, 20.0),
+    ("D3", "men"):   (58.5, 22.0), ("D3", "women"): (48.0, 20.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
@@ -516,7 +520,7 @@ _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
 
 def _talent_mean(strength: float, division: str, gender: str) -> float:
     """Program strength + division + gender → a roster talent-grade mean."""
-    base, spread = _TALENT.get((division, gender), (60.0, 12.0))
+    base, spread = _TALENT.get((division, gender), (60.0, 22.0))
     return max(24.0, min(80.0, base + spread * (strength - 0.5)))
 
 
