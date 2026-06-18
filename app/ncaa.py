@@ -53,7 +53,7 @@ CONF_PRESTIGE = {
     # blue-bloods — Stanford, UCLA, USC, Cal — so it sits with the powers).
     "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
     # High / strong mid-majors
-    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "CIC": 0.60, "MW": 0.58, "Big West": 0.57,
     # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
     # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
     "UAA": 0.45,

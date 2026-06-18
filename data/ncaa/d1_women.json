@@ -133,8 +133,8 @@
       ]
     },
     {
-      "name": "American Conference",
-      "abbr": "American",
+      "name": "Constellation Intercollegiate Conference",
+      "abbr": "CIC",
       "autobid": true,
       "teams": [
         "Air Force",
@@ -303,7 +303,6 @@
         "Middle Tennessee",
         "Missouri State",
         "Richmond",
-        "Sacramento State",
         "Sam Houston"
       ]
     },
@@ -590,6 +589,7 @@
         "Little Rock",
         "New Mexico State",
         "North Alabama",
+        "Sacramento State",
         "Tarleton State",
         "UT Arlington",
         "West Georgia"
