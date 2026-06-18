@@ -523,7 +523,7 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # team mean, so a power program's #1 can poke toward UTR 14 without anyone hitting
 # the pro ceiling.
 _TALENT = {
-    ("D1", "men"):   (48.0, 44.0), ("D1", "women"): (41.0, 38.0),
+    ("D1", "men"):   (56.0, 23.0), ("D1", "women"): (48.0, 20.0),
     ("D2", "men"):   (50.0, 58.0), ("D2", "women"): (40.0, 46.0),
     ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
 }
