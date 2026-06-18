@@ -309,9 +309,12 @@ SURNAME_CITY_KEEP = {
     "Bradford", "Bray", "Burgos", "Cairns", "Castellón", "Charleroi",
     "Corrientes", "Cádiz", "Ferrara", "Glasgow", "Guimarães", "Hobart",
     "Kawaguchi", "Kielce", "Logroño", "Lund", "Machida", "Mackay", "Martin",
-    "Metz", "Mönchengladbach", "Nara", "Nelson", "Niigata", "Orange", "Oviedo",
+    "Metz", "Nara", "Nelson", "Niigata", "Orange", "Oviedo",
     "Palermo", "Palma", "Pereira", "Preston", "Reus", "Rhodes", "Saint-Étienne",
     "Santander", "Santos", "Valladolid", "Vitória", "York",
+    # Genuine family names that collide with a world city in the birthplace pool
+    # (Leone = common Italian surname, not the place) — kept, not stripped.
+    "Leone",
 }
 
 
