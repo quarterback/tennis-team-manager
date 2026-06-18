@@ -186,16 +186,26 @@ UNDERPLACED_MIN_TRUE = 46         # ignore genuinely low-ceiling players (3★+ 
 
 
 def underplaced_board(gender: str, seed: int | None = None, division: str = "All",
-                      class_year: str = "All") -> list[Intel]:
-    """Players whose true talent sits far above their program's level — the
-    buried studs. Sorted by the size of the mismatch."""
+                      class_year: str = "All", sort: str = "gap", q: str = "") -> list[Intel]:
+    """Players whose true talent sits above their program's level — the buried
+    studs and arbitrage targets. `sort` picks the lens: 'gap' (most underplaced),
+    'now' (best RIGHT NOW — who you'd want to move today), or 'talent' (highest
+    ceiling). `q` filters by player or school name."""
     rows = [r for r in scan(gender, seed)["players"]
             if r.placement_gap >= UNDERPLACED_MIN_GAP and r.true_overall >= UNDERPLACED_MIN_TRUE]
     if division != "All":
         rows = [r for r in rows if r.division == division]
     if class_year != "All":
         rows = [r for r in rows if r.class_year == class_year]
-    rows.sort(key=lambda r: (r.placement_gap, r.true_overall), reverse=True)
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in r.name.lower() or ql in r.school.lower()]
+    keys = {
+        "gap": lambda r: (r.placement_gap, r.true_overall),
+        "now": lambda r: (r.cur_overall, r.cur_str, r.placement_gap),   # good today
+        "talent": lambda r: (r.true_overall, r.placement_gap),
+    }
+    rows.sort(key=keys.get(sort, keys["gap"]), reverse=True)
     return rows
 
 

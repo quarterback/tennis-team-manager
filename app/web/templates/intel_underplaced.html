@@ -8,14 +8,24 @@
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Underplaced Talent</span>
-  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:150px">
+      <option value="gap"{% if sort == 'gap' %} selected{% endif %}>Most underplaced</option>
+      <option value="now"{% if sort == 'now' %} selected{% endif %}>Best right now</option>
+      <option value="talent"{% if sort == 'talent' %} selected{% endif %}>Highest ceiling</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
     <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:84px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Class</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="class" onchange="this.form.submit()" style="min-width:84px">
+    <span class="bl-select-wrap"><select class="bl-select" name="class" onchange="this.form.submit()" style="min-width:72px">
       {% for c in classes %}<option{% if c == cls_f %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Search</span>
+    <input class="bl-input" type="search" name="q" value="{{ q }}" placeholder="player or school"
+           style="min-width:150px" onsearch="this.form.submit()"></label>
+  <button class="bl-pill" type="submit">Go</button>
 </div></div>
 </form>
 
