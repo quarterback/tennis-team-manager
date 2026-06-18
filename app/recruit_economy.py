@@ -44,7 +44,7 @@ _D1_BANDS = [
     (0.50, 10.0, 12.0),   # mid-major
     (0.00,  8.0, 10.0),   # low-major
 ]
-_D2_BAND = (4.0, 8.0)
+_D2_BAND = (2.0, 9.0)   # wide: the best D2 funds ~4-star level, the worst is genuinely thin
 
 
 def _free_fill_stars(prestige: float, division: str) -> str:
@@ -64,7 +64,7 @@ def program_budget(program, salt: str = "") -> float:
     pres = float(getattr(program, "prestige", 0.5))
     if div == "D2":
         lo, hi = _D2_BAND
-        frac = max(0.0, min(1.0, (pres - 0.40) / 0.30))
+        frac = max(0.0, min(1.0, (pres - 0.27) / 0.28))   # D2 prestige spans ~0.27-0.55
     else:  # D1
         lo, hi = next((l, h) for cut, l, h in _D1_BANDS if pres >= cut)
         # position within the band by where the program sits inside its tier
