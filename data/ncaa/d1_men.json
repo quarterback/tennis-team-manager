@@ -17,6 +17,7 @@
         "Miami",
         "NC State",
         "North Carolina A&T",
+        "South Carolina",
         "Tulane",
         "Wake Forest"
       ]
@@ -31,12 +32,13 @@
         "Auburn",
         "Florida",
         "Georgia",
+        "Grambling",
         "Kentucky",
         "LSU",
         "Mississippi State",
         "Oklahoma",
         "Ole Miss",
-        "South Carolina",
+        "Southern",
         "Tennessee",
         "Texas",
         "Texas A&M",
@@ -77,6 +79,7 @@
         "Florida A&M",
         "Houston",
         "Iowa State",
+        "Jackson State",
         "Kansas State",
         "Memphis",
         "Oklahoma State",
@@ -115,6 +118,7 @@
       "autobid": true,
       "teams": [
         "Boston College",
+        "Delaware",
         "Louisville",
         "Notre Dame",
         "Penn State",
@@ -132,9 +136,12 @@
       "abbr": "American",
       "autobid": true,
       "teams": [
+        "Air Force",
+        "Army",
         "Charlotte",
         "East Carolina",
         "Florida Atlantic",
+        "Navy",
         "North Texas",
         "Rice",
         "South Florida",
@@ -205,6 +212,7 @@
         "Davidson",
         "DePaul",
         "Georgetown",
+        "Holy Cross",
         "Marquette",
         "Providence",
         "Saint Louis",
@@ -258,10 +266,7 @@
         "Cal State Fullerton",
         "Cal State Northridge",
         "California Baptist",
-        "Hawaii",
         "Long Beach State",
-        "Sacramento State",
-        "UC Davis",
         "UC Irvine",
         "UC Riverside",
         "UC San Diego",
@@ -290,7 +295,6 @@
       "abbr": "CUSA",
       "autobid": true,
       "teams": [
-        "Delaware",
         "FIU",
         "George Mason",
         "Jacksonville State",
@@ -298,10 +302,9 @@
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
-        "New Mexico State",
         "Richmond",
-        "Sam Houston",
-        "Western Kentucky"
+        "Sacramento State",
+        "Sam Houston"
       ]
     },
     {
@@ -376,6 +379,7 @@
         "Ohio",
         "Toledo",
         "UMass",
+        "Western Kentucky",
         "Western Michigan"
       ]
     },
@@ -404,13 +408,14 @@
       "abbr": "MW",
       "autobid": true,
       "teams": [
-        "Air Force",
         "Fresno State",
         "Grand Canyon",
+        "Hawaii",
         "Nevada",
         "New Mexico",
         "San Jose State",
         "Texas State",
+        "UC Davis",
         "UNLV",
         "UTEP",
         "Utah State",
@@ -444,7 +449,6 @@
         "SIUE",
         "Southeast Missouri",
         "Southern Indiana",
-        "Tennessee State",
         "Tennessee Tech",
         "UT Martin",
         "Western Illinois"
@@ -456,16 +460,13 @@
       "autobid": true,
       "teams": [
         "American",
-        "Army",
         "Boston University",
         "Bucknell",
         "Colgate",
         "Fordham",
-        "Holy Cross",
         "Lafayette",
         "Lehigh",
-        "Loyola Maryland",
-        "Navy"
+        "Loyola Maryland"
       ]
     },
     {
@@ -515,8 +516,6 @@
         "Bethune-Cookman",
         "Coppin State",
         "Delaware State",
-        "Grambling",
-        "Jackson State",
         "Maryland Eastern Shore",
         "Mississippi Valley State",
         "Morgan State",
@@ -524,7 +523,6 @@
         "North Carolina Central",
         "Prairie View A&M",
         "South Carolina State",
-        "Southern",
         "Texas Southern"
       ]
     },
@@ -533,7 +531,6 @@
       "abbr": "Summit",
       "autobid": true,
       "teams": [
-        "Denver",
         "Kansas City",
         "North Dakota",
         "North Dakota State",
@@ -541,7 +538,8 @@
         "Oral Roberts",
         "South Dakota",
         "South Dakota State",
-        "St. Thomas"
+        "St. Thomas",
+        "Tennessee State"
       ]
     },
     {
@@ -575,6 +573,7 @@
         "Central Arkansas",
         "Eastern Kentucky",
         "Little Rock",
+        "New Mexico State",
         "North Alabama",
         "Tarleton State",
         "UT Arlington",
@@ -586,6 +585,7 @@
       "abbr": "WCC",
       "autobid": true,
       "teams": [
+        "Denver",
         "Loyola Marymount",
         "Pacific",
         "Pepperdine",
