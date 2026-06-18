@@ -585,12 +585,24 @@ def _base_roster(p: Program):
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=worldconfig.region_weights())
+    # D1/D2 rosters are built by the recruiting budget economy — a program lands
+    # the star tiers its budget + prestige can attract, so blue-chips cluster at
+    # the programs that can pay. D3 has no athletic money: it stays on the
+    # fit/academics-driven talent prior (conf strength).
+    from . import recruit_economy
+    use_budget = p.division in ("D1", "D2")
+    star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
+                                                 roster_size=ROSTER_SIZE,
+                                                 schol_slots=SCHOLARSHIP_SLOTS) if use_budget else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(ROSTER_SIZE):
         name, country = name_fn()
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
-        talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+        if use_budget:
+            talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
+        else:
+            talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))
