@@ -524,7 +524,7 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # the pro ceiling.
 _TALENT = {
     ("D1", "men"):   (48.0, 44.0), ("D1", "women"): (41.0, 38.0),
-    ("D2", "men"):   (38.0, 44.0), ("D2", "women"): (32.0, 38.0),
+    ("D2", "men"):   (50.0, 58.0), ("D2", "women"): (40.0, 46.0),
     ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
 }
 # College players are largely developed; class year scales how much of the
