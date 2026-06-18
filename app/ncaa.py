@@ -150,7 +150,10 @@ def conf_prestige(conf_abbr: str, division: str | None = None) -> float:
 # Both are stable program traits in [0,1], separate from the hidden per-season
 # `strength` (current on-court quality).
 # --------------------------------------------------------------------------
-DIVISION_PRESTIGE = {"D1": 0.62, "D2": 0.47, "D3": 0.33}
+# Division sets the prestige BAND: every D1 outranks every D2, which outranks
+# every D3 (a low-major D1 still has more athletic brand pull than the best D3).
+# Within D1 the conference prior then separates P5 > mid-major > low-major.
+DIVISION_PRESTIGE = {"D1": 0.66, "D2": 0.40, "D3": 0.26}
 
 # Athletic brand bump on top of the conference prior, per program. Keys are the
 # canonical school names used in the data files (e.g. UNC → "North Carolina").
@@ -228,7 +231,9 @@ def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float
     school's blue-blood bump. Used both for the base value and when a conference
     prestige override shifts the whole league."""
     base = DIVISION_PRESTIGE.get(division, 0.40)
-    p = base + (conf_prior - 0.50) * 0.6 + PRESTIGE_SCHOOLS.get(school, 0.0)
+    # Steeper conference weight so within D1 the Power-conference band sits well
+    # clear of the mid-majors, which sit clear of the low-majors.
+    p = base + (conf_prior - 0.50) * 0.9 + PRESTIGE_SCHOOLS.get(school, 0.0)
     return max(0.12, min(0.97, p))
 
 

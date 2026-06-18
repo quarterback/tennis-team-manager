@@ -36,14 +36,21 @@ FAC_WEIGHT = 0.25           # how much a program's facilities grade lifts appeal
 # them prestige trumps academics outright (gate → 0 at/above the elite line);
 # the further a recruit sits below it, the more a strong GPA can tug them toward
 # an academic program a level beneath their athletic station.
-ELITE_CALIBER = 0.70        # ~5★ line (overall 62 → caliber .70): at/above, academics don't move them
-ACA_PULL = 2.5              # academic weight once gated (calibrated so a strong-GPA 3★ still leans academic)
+ELITE_CALIBER = 0.70        # ~5★/blue-chip line (overall ~62): academics never move them
+FOUR_STAR = 0.55            # ~4★ line (overall ~53)
+ACA_PULL = 2.5              # academic weight once gated (a strong-GPA 3★ still leans academic)
 
 
 def academic_gate(caliber: float) -> float:
-    """0 for top-tier talent (prestige rules), rising toward 1 the further below
-    the elite line a recruit sits — how much academics get to pull them."""
-    return max(0.0, (ELITE_CALIBER - caliber) / ELITE_CALIBER)
+    """How much academics may pull a recruit. Academic programs (Ivy/NESCAC/UAA)
+    land 3-stars and only the RARE 4-star — never a 5-star/blue-chip. The gate is
+    full for 3★ and below, a thin sliver across the 4★ band, and exactly 0 at or
+    above the elite line."""
+    if caliber >= ELITE_CALIBER:                 # 5★/blue-chip: prestige rules, period
+        return 0.0
+    if caliber >= FOUR_STAR:                      # 4★: thin pull, fading to 0 at the elite line
+        return 0.15 * (ELITE_CALIBER - caliber) / (ELITE_CALIBER - FOUR_STAR)
+    return 1.0                                    # 3★ and below: full academic consideration
 
 
 @dataclass
