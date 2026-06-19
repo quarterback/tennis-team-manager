@@ -13,12 +13,16 @@
         "Duke",
         "Florida State",
         "Georgia Tech",
-        "Maryland",
+        "Kentucky",
+        "Louisville",
         "Miami",
         "NC State",
         "North Carolina A&T",
+        "Richmond",
         "South Carolina",
         "Tulane",
+        "Vanderbilt",
+        "Virginia Tech",
         "Wake Forest"
       ]
     },
@@ -33,16 +37,16 @@
         "Florida",
         "Georgia",
         "Grambling",
-        "Kentucky",
         "LSU",
         "Mississippi State",
+        "Notre Dame",
         "Oklahoma",
         "Ole Miss",
         "Southern",
         "Tennessee",
+        "Tennessee State",
         "Texas",
-        "Texas A&M",
-        "Vanderbilt"
+        "Texas A&M"
       ]
     },
     {
@@ -56,6 +60,7 @@
         "Iowa",
         "Johns Hopkins",
         "Kansas",
+        "Maryland",
         "Michigan",
         "Michigan State",
         "Minnesota",
@@ -118,17 +123,17 @@
       "abbr": "Yankee",
       "autobid": true,
       "teams": [
+        "Army",
         "Boston College",
         "Delaware",
-        "Louisville",
-        "Notre Dame",
+        "Navy",
         "Penn State",
         "Pitt",
         "Rutgers",
         "Syracuse",
         "Temple",
         "UConn",
-        "Virginia Tech",
+        "UMass",
         "West Virginia"
       ]
     },
@@ -137,18 +142,13 @@
       "abbr": "CIC",
       "autobid": true,
       "teams": [
-        "Air Force",
-        "Army",
         "Charlotte",
         "East Carolina",
         "Florida Atlantic",
-        "Navy",
         "North Texas",
-        "Rice",
         "South Florida",
         "Tulsa",
         "UAB",
-        "UMass",
         "UTSA"
       ]
     },
@@ -182,7 +182,8 @@
         "Rhode Island",
         "UMBC",
         "UMass Lowell",
-        "Vermont"
+        "Vermont",
+        "West Chester"
       ]
     },
     {
@@ -301,7 +302,6 @@
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
-        "Richmond",
         "Sam Houston"
       ]
     },
@@ -352,7 +352,6 @@
         "Michigan Tech",
         "Minnesota State",
         "RIT",
-        "RPI",
         "Rowan",
         "St. Lawrence",
         "Union (NY)"
@@ -369,6 +368,8 @@
         "Colorado College",
         "Emory",
         "NYU",
+        "RPI",
+        "Rice",
         "Rochester",
         "Washington University in St. Louis"
       ]
@@ -409,6 +410,7 @@
         "Northern Illinois",
         "Ohio",
         "Toledo",
+        "UW-Whitewater",
         "Western Kentucky",
         "Western Michigan"
       ]
@@ -438,8 +440,8 @@
       "abbr": "MW",
       "autobid": true,
       "teams": [
+        "Air Force",
         "Fresno State",
-        "Grand Canyon",
         "Hawaii",
         "Nevada",
         "New Mexico",
@@ -462,6 +464,7 @@
         "Le Moyne",
         "Long Island",
         "Mercyhurst",
+        "Montclair State",
         "NJIT",
         "New Haven",
         "Stonehill",
@@ -573,8 +576,7 @@
         "Oral Roberts",
         "South Dakota",
         "South Dakota State",
-        "St. Thomas",
-        "Tennessee State"
+        "St. Thomas"
       ]
     },
     {
@@ -605,6 +607,7 @@
       "teams": [
         "Abilene Christian",
         "Alaska Anchorage",
+        "Grand Canyon",
         "Linfield",
         "New Mexico State",
         "Sacramento State",
