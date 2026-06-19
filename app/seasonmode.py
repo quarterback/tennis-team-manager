@@ -30,6 +30,7 @@ from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
                       clamp_field, field_for_division)
+from . import ita
 
 from .dbpath import resolve_db_path
 
@@ -245,12 +246,21 @@ def _gen_regular_schedule(div, seed: int):
 def create_season(division: str = "D1", gender: str = "men", *, seed: int = 2026) -> int:
     div = load_division(division, gender)
     rows = _gen_regular_schedule(div, seed)
-    total_weeks = max(r[0] for r in rows) if rows else 0
+    # Divisions that run the ITA opener push their regular slate back so the Kickoff
+    # Weekend + Indoor occupy the first weeks; the season then starts in the ITA
+    # phase rather than the regular season (see `advance`).
+    ita_on = ita.runs_ita(division)
+    lead = ita.ITA_LEAD_WEEKS if ita_on else 0
+    if lead:
+        rows = [(w + lead, h, a, cn) for (w, h, a, cn) in rows]
+    total_weeks = max((r[0] for r in rows), default=0)
+    phase = "ita_kickoff" if ita_on else "regular"
+    first_reg_week = lead + 1
     conn = _db()
     cur = conn.execute(
         "INSERT INTO seasons (division, gender, seed, current_week, total_weeks, phase, champion)"
         " VALUES (?,?,?,?,?,?,?)",
-        (division, gender, seed, 1, total_weeks, "regular", None))
+        (division, gender, seed, first_reg_week, total_weeks, phase, None))
     sid = cur.lastrowid
     conn.executemany(
         "INSERT INTO duals (season_id, week, round, conf, is_conf, home, away, status,"
@@ -345,8 +355,11 @@ def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None
     return rec
 
 
-def _completed(conn, season_id, rounds=("REG", "CT", "NCAA")) -> list[dict]:
-    """All completed duals (any phase by default) as record dicts."""
+def _completed(conn, season_id, rounds=("REG", "CT", "NCAA", "ITAK", "ITAI")) -> list[dict]:
+    """All completed duals (any phase by default) as record dicts. The ITA Kickoff
+    (``ITAK``) and Indoor (``ITAI``) opener counts toward the season record just like
+    the conference tournaments and the NCAAs — but, like them, it is excluded from the
+    regular-season Power Index (see ``_completed_reg_duals``)."""
     qs = ",".join("?" for _ in rounds)
     rows = conn.execute(
         f"SELECT home, away, round, is_conf, home_points, away_points, winner, lines_json"
@@ -468,6 +481,16 @@ def advance(season_id: int) -> dict:
         return {"phase": "complete"}
     conn = _db()
     progs = _programs(s["division"], s["gender"])
+
+    if s["phase"] == "ita_kickoff":
+        out = _advance_kickoff_round(conn, s, progs)
+        conn.commit(); conn.close()
+        return out
+
+    if s["phase"] == "ita_indoor":
+        out = _advance_indoor_round(conn, s, progs)
+        conn.commit(); conn.close()
+        return out
 
     if s["phase"] == "regular":
         wk = s["current_week"]
@@ -656,6 +679,118 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
 
 def _round_name(alive: int) -> str:
     return ROUND_NAMES.get(alive, f"Round of {alive}")
+
+
+# --------------------------------------------------------------------------
+# ITA Kickoff Weekend + National Team Indoor Championship (the season opener)
+# --------------------------------------------------------------------------
+
+def _ita_ranking(s) -> list[str]:
+    """Schools best-first for the ITA seedings. Uses the prior world-year's final
+    ranking — the Power Index over that season's completed duals — when a completed
+    prior season exists (its seed is this year's seed minus the per-year stride);
+    otherwise, in year 0 with no season to rank from, roster **Power 6**."""
+    div = load_division(s["division"], s["gender"])
+    prior_sid = find_season(s["division"], s["gender"], seed=s["seed"] - 1000)
+    if prior_sid is not None:
+        prior = load_season(prior_sid)
+        if prior and prior["phase"] == "complete":
+            conn = _db()
+            ratings = compute_ratings(_completed(conn, prior_sid, ("REG", "CT")))
+            conn.close()
+            rated = [p for p in div.programs if p.school in ratings]
+            if rated:
+                return [p.school for p in
+                        sorted(rated, key=lambda p: ratings[p.school].pi, reverse=True)]
+    return [p.school for p in sorted(div.programs, key=ita.power6, reverse=True)]
+
+
+def _advance_kickoff_round(conn, s, progs) -> dict:
+    """One round of the ITA Kickoff Weekend: 15 cosmetic four-team sites, each a
+    seeded single-elim (host = top seed, 1v4 / 2v3). Round 1 is the site semifinals,
+    round 2 the site finals; the site winners advance to the Indoor."""
+    sid = s["id"]
+    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'",
+                            (sid,)).fetchone()["c"]
+    if existing == 0:                                  # draw the sites + seed round 1
+        sites = ita.kickoff_sites(_ita_ranking(s))
+        for k, site in enumerate(sites):
+            label = f"Site {k + 1}"
+            for m, (h, a) in enumerate(ita.site_pairs(site)):
+                _insert_dual(conn, sid, 1, "ITAK", label, 0, 1, k * 2 + m, h, a)
+        round_no = 1
+    else:
+        row = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAK'"
+                           " AND status='scheduled'", (sid,)).fetchone()
+        round_no = row["r"]
+    if round_no is None:
+        conn.execute("UPDATE seasons SET phase='ita_indoor' WHERE id=?", (sid,))
+        return {"phase": "ita_kickoff", "done": True}
+
+    due = _sim_round(conn, s, progs, "ITAK", round_no, "itak")
+    if round_no == 1:                                  # site semifinals done → site finals
+        n_sites = conn.execute("SELECT COUNT(DISTINCT conf) c FROM duals WHERE season_id=?"
+                               " AND round='ITAK'", (sid,)).fetchone()["c"]
+        for k in range(n_sites):
+            label = f"Site {k + 1}"
+            wins = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='ITAK'"
+                                " AND conf=? AND round_no=1 ORDER BY bpos", (sid, label)).fetchall()
+            winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
+            if len(winners) == 2:
+                _insert_dual(conn, sid, 2, "ITAK", label, 0, 2, k, winners[0], winners[1])
+    remaining = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'"
+                             " AND status='scheduled'", (sid,)).fetchone()["c"]
+    if remaining == 0:
+        conn.execute("UPDATE seasons SET phase='ita_indoor' WHERE id=?", (sid,))
+    return {"phase": "ita_kickoff", "round": round_no, "played": len(due)}
+
+
+def _site_winners(conn, sid) -> list[str]:
+    """The site champions — each site final's (round_no=2) winner, in site order."""
+    rows = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='ITAK'"
+                        " AND round_no=2 AND status='final' ORDER BY bpos", (sid,)).fetchall()
+    return [r["home"] if r["winner"] == 0 else r["away"] for r in rows]
+
+
+def _advance_indoor_round(conn, s, progs) -> dict:
+    """One round of the ITA National Team Indoor Championship: a 16-team seeded
+    single-elim (site winners + a top-ranked auto-bid host), run akin to the NCAAs.
+    On the final, the season rolls into its regular-season opener."""
+    sid = s["id"]
+    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAI'",
+                            (sid,)).fetchone()["c"]
+    if existing == 0:                                  # seed the final-16 draw
+        field = ita.indoor_field(_site_winners(conn, sid), _ita_ranking(s))
+        week = ita.KICKOFF_ROUNDS + 1
+        for bpos, h, a in _round1_pairs(field):
+            _insert_dual(conn, sid, week, "ITAI", _round_name(len(field)), 0, 1, bpos, h, a)
+        round_no = 1
+    else:
+        round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAI'"
+                                " AND status='scheduled'", (sid,)).fetchone()["r"]
+    if round_no is None:
+        return _finish_indoor(conn, s)
+
+    due = _sim_round(conn, s, progs, "ITAI", round_no, "itai")
+    wins = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='ITAI'"
+                        " AND round_no=? ORDER BY bpos", (sid, round_no)).fetchall()
+    winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
+    if len(winners) > 1:
+        week = ita.KICKOFF_ROUNDS + round_no + 1
+        alive = len(winners)
+        for k in range(len(winners) // 2):
+            _insert_dual(conn, sid, week, "ITAI", _round_name(alive), 0, round_no + 1, k,
+                         winners[2 * k], winners[2 * k + 1])
+        return {"phase": "ita_indoor", "round": round_no, "round_name": _round_name(alive * 2),
+                "played": len(due)}
+    return _finish_indoor(conn, s, champion=winners[0] if winners else None)
+
+
+def _finish_indoor(conn, s, champion: str | None = None) -> dict:
+    """Close the ITA opener and start the regular season at its (offset) first week."""
+    conn.execute("UPDATE seasons SET phase='regular', current_week=? WHERE id=?",
+                 (ita.ITA_LEAD_WEEKS + 1, s["id"]))
+    return {"phase": "ita_indoor", "done": True, "indoor_champion": champion}
 
 
 # --------------------------------------------------------------------------
@@ -903,6 +1038,23 @@ def national_champion(season_id: int) -> str | None:
     return s["champion"] if s and s["phase"] == "complete" else None
 
 
+def indoor_champion(season_id: int) -> str | None:
+    """The ITA National Team Indoor champion once the opener has been played, else
+    None (it's crowned the moment the season leaves the ITA phases for the regular
+    season). The Final is the last ITAI dual."""
+    s = load_season(season_id)
+    if not s or s["phase"] in ("ita_kickoff", "ita_indoor"):
+        return None
+    conn = _db()
+    last = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='ITAI'"
+                        " AND status='final' ORDER BY round_no DESC, bpos ASC LIMIT 1",
+                        (season_id,)).fetchone()
+    conn.close()
+    if not last or last["winner"] is None:
+        return None
+    return last["home"] if last["winner"] == 0 else last["away"]
+
+
 def bracket_field(season_id: int, size: int | None = None):
     """The NCAA field as it stands: seed the Power-Index-rated programs (conference
     champions get autobids once the conference tournaments have run), run the
@@ -955,6 +1107,36 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
                   "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
                  for p in out]
     return seeded, autobids, out_board, ratings
+
+
+def ita_view(season_id: int) -> dict | None:
+    """The stored ITA opener for rendering: each cosmetic Kickoff site (its two
+    semifinals + final) and the Indoor bracket (rounds in order), plus the Indoor
+    champion once crowned. None for non-ITA divisions or before the draw is made."""
+    s = load_season(season_id)
+    if not s or not ita.runs_ita(s["division"]):
+        return None
+    conn = _db()
+    krows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='ITAK'"
+                         " ORDER BY conf, round_no, bpos", (season_id,)).fetchall()
+    irows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='ITAI'"
+                         " ORDER BY round_no, bpos", (season_id,)).fetchall()
+    conn.close()
+    if not krows:
+        return None
+    sites: dict = {}
+    for r in krows:
+        site = sites.setdefault(r["conf"], {"label": r["conf"], "semis": [], "final": None})
+        (site["semis"].append(dict(r)) if r["round_no"] == 1
+         else site.__setitem__("final", dict(r)))
+    site_list = sorted(sites.values(), key=lambda x: int(x["label"].split()[-1]))
+    indoor: dict = {}
+    for r in irows:
+        indoor.setdefault((r["round_no"], r["conf"]), []).append(dict(r))
+    indoor_rounds = [{"name": name, "duals": duals}
+                     for (rno, name), duals in sorted(indoor.items())]
+    return {"sites": site_list, "indoor": indoor_rounds,
+            "indoor_champion": indoor_champion(season_id), "phase": s["phase"]}
 
 
 def dual_detail(dual_id: int) -> dict | None:

@@ -152,8 +152,10 @@ def _game_context():
         # always "Regular season".
         import app.seasonmode as sm
         from app import worldconfig
-        _ORD = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
-        _LBL = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
+        _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "regular": 2, "conf_tournaments": 3,
+                "selection": 4, "ncaa": 5, "complete": 6}
+        _LBL = {"ita_kickoff": "ITA Kickoff Weekend", "ita_indoor": "ITA Indoor",
+                "regular": "Regular season", "conf_tournaments": "Conf tournaments",
                 "selection": "Bracket reveal", "ncaa": "NCAA championship",
                 "complete": "Postseason complete"}
         phases = []
@@ -551,6 +553,13 @@ def create_app() -> Flask:
         return render_template("bracket.html", active="Bracket", br=br, u=u,
                                uni_label=label, division=division,
                                field=len(br.seeds) if br else 0, field_presets=FIELD_PRESETS)
+
+    @app.route("/season/ita")
+    def season_ita():
+        division, gender, label, u = _universe(request)
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        return render_template("ita.html", active="Season", u=u, uni_label=label,
+                               view=sm.ita_view(sid), division=division, crest=crest)
 
     @app.route("/singles-championship")
     def singles_championship():
@@ -1220,7 +1229,7 @@ def create_app() -> Flask:
                 champions = {}
         return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
                                upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest,
-                               bubble=sm.bubble_watch(sid))
+                               bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
     @app.route("/season/advance", methods=["POST"])
     def season_advance():

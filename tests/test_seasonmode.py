@@ -14,8 +14,8 @@ def db(tmp_path):
 def test_schedule_structure(db):
     sid = sm.create_season("D1", "men", seed=2026)
     s = sm.load_season(sid)
-    assert s["total_weeks"] > 8 and s["phase"] == "regular"
-    sched = sm.team_schedule(sid, "Oregon")
+    assert s["total_weeks"] > 8 and s["phase"] == "ita_kickoff"   # D1 opens on the ITA
+    sched = [d for d in sm.team_schedule(sid, "Oregon") if d["round"] == "REG"]
     assert 18 <= len(sched) <= 30                       # ~ a real-season slate
     # non-conference is front-loaded, then conference
     flags = [d["is_conf"] for d in sched]
@@ -25,7 +25,7 @@ def test_schedule_structure(db):
 
 
 def test_advance_populates_results_and_standings(db):
-    sid = sm.create_season("D1", "women", seed=7)
+    sid = sm.create_season("D2", "women", seed=7)   # D2 opens on the regular season (no ITA)
     r = sm.advance(sid)
     assert r["phase"] == "regular" and r["played"] > 0
     # week 1 duals are now final with scores

@@ -373,6 +373,35 @@ def cmd_seasonmode(args):
         print(f"  {r['school']:<22} {r['ow']}-{r['ol']}  ({r['cw']}-{r['cl']})")
 
 
+def cmd_ita_kickoff(args):
+    """Run the ITA Kickoff Weekend + National Team Indoor Championship — the D1
+    season opener — and print the site winners and the Indoor bracket result."""
+    from app import seasonmode as sm
+    from app import ita
+    sid = sm.get_or_create(args.division, args.gender, seed=args.seed)
+    s = sm.load_season(sid)
+    if not ita.runs_ita(args.division):
+        print(f"{args.division} does not run the ITA opener (Division I only).")
+        return
+    guard = 0
+    while sm.load_season(sid)["phase"].startswith("ita") and guard < 20:
+        sm.advance(sid); guard += 1
+    view = sm.ita_view(sid)
+    print(f"\nITA Kickoff Weekend — {args.division} {args.gender} (seed {args.seed})\n")
+    for site in view["sites"]:
+        host = site["semis"][0]["home"] if site["semis"] else "?"
+        win = None
+        f = site.get("final")
+        if f and f["winner"] is not None:
+            win = f["home"] if f["winner"] == 0 else f["away"]
+        print(f"  {site['label']:<8} host {host:<22} → winner {win or '(pending)'}")
+    print("\nNational Team Indoor Championship:")
+    for rnd in view["indoor"]:
+        done = sum(1 for d in rnd["duals"] if d["status"] == "final")
+        print(f"  {rnd['name']:<16} {done}/{len(rnd['duals'])} played")
+    print(f"\n  ITA Indoor Champion: {view['indoor_champion'] or '(pending)'}\n")
+
+
 def cmd_runserver(args):
     import os
     os.environ.setdefault("PORT", str(args.port))
@@ -442,6 +471,13 @@ def main():
     sm.add_argument("--seed", type=int, default=2026)
     sm.add_argument("--advance", type=int, default=99, help="advance this many steps/weeks")
     sm.set_defaults(func=cmd_seasonmode)
+
+    ita = sub.add_parser("ita-kickoff",
+                         help="run the D1 ITA Kickoff Weekend + National Team Indoor opener")
+    ita.add_argument("--division", default="D1")
+    ita.add_argument("--gender", default="men", choices=["men", "women"])
+    ita.add_argument("--seed", type=int, default=2026)
+    ita.set_defaults(func=cmd_ita_kickoff)
 
     rs = sub.add_parser("runserver")
     rs.add_argument("--port", type=int, default=5000)
