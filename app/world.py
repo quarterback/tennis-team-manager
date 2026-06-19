@@ -585,9 +585,12 @@ def _recruit_market(world: dict, gender: str) -> dict:
     """Precomputed program tables a recruit consults to pick a school —
     prestige-sorted window, top-academic set, region buckets, and per-school
     seat capacity. Shared by the weekly drip and the decommit pass."""
+    from . import recruit_economy
     progs = _flat_programs(gender)
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
+    salt = world.get("salt") or ""
+    budget = {s: recruit_economy.program_budget(p, salt) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]
@@ -595,8 +598,9 @@ def _recruit_market(world: dict, gender: str) -> dict:
     by_region: dict[str, list] = {}
     for s in progs:
         by_region.setdefault(traits[s][2], []).append(s)
-    return {"progs": progs, "traits": traits, "cap": cap, "by_pres": by_pres,
-            "pres_arr": pres_arr, "academic_top": academic_top, "by_region": by_region}
+    return {"progs": progs, "traits": traits, "cap": cap, "budget": budget,
+            "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
+            "by_region": by_region}
 
 
 def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
@@ -604,9 +608,12 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     """Score every plausible program for prospect `p` and return the best one
     with an open seat. `exclude` blocks specific schools (used for decommits)."""
     from .recruiting import ELITE_CALIBER, FOUR_STAR
+    from . import recruit_economy
     traits = market["traits"]
+    budget = market.get("budget", {})
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
+    budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
     # Division ceiling by tier: a 5★/blue-chip never drops to D3, a 4★ only rarely,
     # a 3★ (and below) can go anywhere. Keeps elite talent out of small divisions.
     def _div_ok(div):
@@ -638,6 +645,8 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         pres, acad, reg, div, fac = traits[s]
         if not _div_ok(div):                          # tier-gated out of this division
             continue
+        if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
+            continue
         geo = hc * region_proximity(hr, reg)
         # Recruits aspire UP to the most prestigious program that still has a seat
         # for them. With best-recruits-first + seat caps, the class tiers itself —
@@ -656,6 +665,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     if best is None:                              # nothing in range with a seat — widen once
         best = next((s for s in reversed(by_pres)
                      if avail.get(s, 0) > 0 and _div_ok(traits[s][3])
+                     and budget.get(s, 0.0) >= budget_floor
                      and (not exclude or s not in exclude)), None)
     return best
 

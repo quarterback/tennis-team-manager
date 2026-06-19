@@ -49,14 +49,18 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    # Power conferences (Pac-16 revives the classic Pac with its tennis
-    # blue-bloods — Stanford, UCLA, USC, Cal — so it sits with the powers).
-    "ACC": 0.78, "SEC": 0.78, "Pac-16": 0.78, "Big 12": 0.76, "Big Ten": 0.73,
+    # Power conferences — pushed clear of the pack so the top tier stands apart
+    # (Pac-16 revives the classic Pac with its tennis blue-bloods: Stanford,
+    # UCLA, USC, Cal).
+    "ACC": 0.82, "SEC": 0.82, "Pac-16": 0.82, "Big 12": 0.81, "Big Ten": 0.79,
     # High / strong mid-majors
-    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "American": 0.60, "MW": 0.58, "Big West": 0.57,
+    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "CIC": 0.60, "MW": 0.58, "Big West": 0.57,
     # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
     # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
     "UAA": 0.45,
+    # Meridian League — a fun mix of D1-hockey schools (upstate NY) plus
+    # promoted D2/D3 programs. Low-major athletically.
+    "Meridian": 0.45,
     "CUSA": 0.56, "Sun Belt": 0.55,
     # Mid-majors
     "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
@@ -431,7 +435,11 @@ def _latent_strength(school: str, conf_abbr: str, gender: str, division: str) ->
     # its prestige-derived range, while the prestige baselines stay constant.
     prior = conf_prestige(conf_abbr, division)
     rng = random.Random(f"{WORLD_SALT}|{school}|{conf_abbr}|{gender}|{division}|{SEASON_SEED}")
-    return max(0.12, min(0.95, rng.gauss(prior, 0.11)))
+    # Tight within-conference draw: programs cluster near their conference prior so
+    # the top of the field stays a tight band (the best college #1s are all ~UTR 14,
+    # not spread to pro level). Variety between similar players comes from the STR
+    # rating's decimals through play, not from big talent gaps.
+    return max(0.12, min(0.95, rng.gauss(prior, 0.06)))
 
 
 def load_division(division: str, gender: str) -> Division:
@@ -500,10 +508,24 @@ CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
 # a flatter spread so their distribution is *compressed* (lower top, not merely
 # shifted) — mirroring real UTR, where the women's band is both lower and tighter
 # than the men's. D1 > D2 > D3.
+# (base, spread): a program's roster talent mean = base + spread*(strength-0.5)
+# on the 20-80 scouting scale.
+#  • spread is WIDE so tiers spread across the whole scale instead of bunching at
+#    the top — elite programs push toward 80, weak ones drop into the 30s/40s.
+#  • bases are spaced so the divisions stack: D1 sits up high, D2 in the middle,
+#    D3 down low (using the bottom of the scale the old calibration never touched).
+# (base, spread): roster talent mean = base + spread*(strength-0.5) on the 20-80
+# scouting scale. Calibrated against UTR (grade 20≈UTR 1.0, grade 80≈UTR 16.5;
+# ~0.26 UTR per grade pt). UTR 16.5 is Grand Slam level, so COLLEGE NEVER REACHES
+# THE TOP: elite D1 #1s land ~UTR 13-14, and the bottom (average D3 / a bad D2)
+# sits at ~UTR 3-4. Team means: D1 ~UTR 6-13, D2 ~4-9, D3 ~3-7. Divisions overlap
+# at the edges the way they really do. Individual players are drawn around the
+# team mean, so a power program's #1 can poke toward UTR 14 without anyone hitting
+# the pro ceiling.
 _TALENT = {
-    ("D1", "men"):   (68.5, 12.0), ("D1", "women"): (58.0, 8.0),
-    ("D2", "men"):   (63.5, 12.0), ("D2", "women"): (53.0, 8.0),
-    ("D3", "men"):   (58.5, 12.0), ("D3", "women"): (48.0, 8.0),
+    ("D1", "men"):   (56.0, 23.0), ("D1", "women"): (48.0, 20.0),
+    ("D2", "men"):   (50.0, 58.0), ("D2", "women"): (40.0, 46.0),
+    ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
@@ -513,7 +535,7 @@ _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
 
 def _talent_mean(strength: float, division: str, gender: str) -> float:
     """Program strength + division + gender → a roster talent-grade mean."""
-    base, spread = _TALENT.get((division, gender), (60.0, 12.0))
+    base, spread = _TALENT.get((division, gender), (60.0, 22.0))
     return max(24.0, min(80.0, base + spread * (strength - 0.5)))
 
 
@@ -563,12 +585,24 @@ def _base_roster(p: Program):
     rng = random.Random(seed)
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=worldconfig.region_weights())
+    # D1/D2 rosters are built by the recruiting budget economy — a program lands
+    # the star tiers its budget + prestige can attract, so blue-chips cluster at
+    # the programs that can pay. D3 has no athletic money: it stays on the
+    # fit/academics-driven talent prior (conf strength).
+    from . import recruit_economy
+    use_budget = p.division in ("D1", "D2")
+    star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
+                                                 roster_size=ROSTER_SIZE,
+                                                 schol_slots=SCHOLARSHIP_SLOTS) if use_budget else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(ROSTER_SIZE):
         name, country = name_fn()
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
-        talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+        if use_budget:
+            talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
+        else:
+            talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))

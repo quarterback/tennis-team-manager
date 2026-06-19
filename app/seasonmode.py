@@ -28,7 +28,8 @@ from .ncaa import load_division
 from .season import dual_between, build_corpus, forced_appearances
 from .rating import compute_ratings
 from .str_rating import converge_ids
-from .bracket import select_field, run_bracket, _seed_positions, ROUND_NAMES, clamp_field
+from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
+                      clamp_field, field_for_division)
 
 from .dbpath import resolve_db_path
 
@@ -578,26 +579,46 @@ def _finish_conf_phase(conn, s, div, wl) -> dict:
     return {"phase": "conf_tournaments", "done": True, "champions": len(champions)}
 
 
+def _ncaa_seeds(conn, s, progs, div):
+    """Deterministically reproduce the seeded national field + bracketing context
+    (autobids, each team's conference, regular-season pairings). Used to lay out
+    the bracket and to rebuild the byes when a play-in feeds the main draw."""
+    sid = s["id"]
+    ratings = compute_ratings(_completed(conn, sid, ("REG", "CT")))
+    champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
+    seeded, autobids = select_field(div.programs, ratings, champions,
+                                    size=field_for_division(s["division"]))
+    schools = [p.school for p in seeded]
+    autobid_set = {p.school for p in seeded if p.key in autobids}
+    conf_of = {p.school: p.conf for p in seeded}
+    played = {frozenset((d["home"], d["away"]))
+              for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
+                                    " AND round='REG' AND status='final'", (sid,)).fetchall()}
+    return schools, autobid_set, conf_of, played
+
+
 def _advance_ncaa_round(conn, s, progs) -> dict:
     sid = s["id"]
     div = load_division(s["division"], s["gender"])
     existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='NCAA'",
                             (sid,)).fetchone()["c"]
-    if existing == 0:                                  # select + seed the 64-team field
-        ratings = compute_ratings(_completed(conn, sid, ("REG", "CT")))
-        champs_map = json.loads(load_season(sid)["champion"] or "{}")
-        champions = [progs[v] for v in champs_map.values() if v in progs]
-        seeded, autobids = select_field(div.programs, ratings, champions, size=NATIONAL_FIELD)
-        # Bracketing context: conference champions (AQ), each team's conference, and
-        # who already played whom in the regular season (rematch avoidance).
-        autobid_set = {p.school for p in seeded if p.key in autobids}
-        conf_of = {p.school: p.conf for p in seeded}
-        played = {frozenset((d["home"], d["away"]))
-                  for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
-                                        " AND round='REG' AND status='final'", (sid,)).fetchall()}
+    if existing == 0:                                  # select + seed the national field
+        schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
+        main = _pow2_le(len(schools))
         week = _next_post_week(conn, sid)
-        for bpos, h, a in _seed_bracket([p.school for p in seeded], autobid_set, conf_of, played):
-            _insert_dual(conn, sid, week, "NCAA", _round_name(NATIONAL_FIELD), 0, 1, bpos, h, a)
+        if len(schools) > main:
+            # Non-power-of-two field (e.g. D1's 96): a play-in round. The top seeds
+            # get byes; the lowest 2*(field-main) seeds play in (seed 33 v 96, …),
+            # and the winners join the byes to form the main draw next round.
+            byes_n = 2 * main - len(schools)
+            playin = schools[byes_n:]
+            g = len(playin) // 2
+            for i in range(g):
+                _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i,
+                             playin[i], playin[2 * g - 1 - i])
+        else:                                          # clean power-of-two field
+            for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played):
+                _insert_dual(conn, sid, week, "NCAA", _round_name(len(schools)), 0, 1, bpos, h, a)
         round_no = 1
     else:
         round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='NCAA'"
@@ -607,6 +628,19 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
     wins = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND round='NCAA'"
                         " AND round_no=? ORDER BY bpos", (sid, round_no)).fetchall()
     winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
+
+    # Play-in just finished → seed the main draw from the byes + play-in winners.
+    if round_no == 1:
+        schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
+        main = _pow2_le(len(schools))
+        if len(schools) > main:
+            byes_n = 2 * main - len(schools)
+            r64 = schools[:byes_n] + winners           # byes (top seeds) + play-in winners
+            week = _next_post_week(conn, sid)
+            for bpos, h, a in _seed_bracket(r64, autobid_set, conf_of, played):
+                _insert_dual(conn, sid, week, "NCAA", _round_name(len(r64)), 0, 2, bpos, h, a)
+            return {"phase": "ncaa", "round": 1, "round_name": "First Round", "played": len(due)}
+
     if len(winners) > 1:
         week = _next_post_week(conn, sid)
         alive = len(winners)
@@ -693,7 +727,7 @@ def _conf_leaders(div, cf: dict, ratings: dict) -> set[str]:
     return aq
 
 
-def _project(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict | None:
+def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | None:
     """Core field projection shared by `bubble_watch` and `field_projection`.
 
     Projects this tournament's NCAA field "if it were held today". Each (division,
@@ -706,6 +740,8 @@ def _project(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict 
     s = load_season(season_id)
     if not s:
         return None
+    if size is None:
+        size = field_for_division(s["division"])
     ratings = power_index(season_id)
     if not ratings:
         return None
@@ -751,7 +787,7 @@ def _project(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict 
             "aq": aq, "at_large_spots": at_large_spots, "in_board": in_board, "out_board": out_board}
 
 
-def bubble_watch(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> dict | None:
+def bubble_watch(season_id: int, size: int | None = None, edge: int = 4) -> dict | None:
     """The cut line only: the Last Four In (lowest at-large teams currently
     projected into the field) and the First Four Out (highest-rated teams left out).
     A thin slice of `_project` for the standings page and season-hub card."""
@@ -763,7 +799,7 @@ def bubble_watch(season_id: int, size: int = NATIONAL_FIELD, edge: int = 4) -> d
             "last_in": proj["in_board"][-edge:], "first_out": proj["out_board"][:edge]}
 
 
-def field_projection(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 12) -> dict | None:
+def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -> dict | None:
     """The full projected bracket field for the dedicated projection page: every
     projected automatic qualifier plus the complete at-large board (teams in, then
     the next `out_n` teams chasing the cut), all ranked by Power Index."""
@@ -867,11 +903,13 @@ def national_champion(season_id: int) -> str | None:
     return s["champion"] if s and s["phase"] == "complete" else None
 
 
-def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
+def bracket_field(season_id: int, size: int | None = None):
     """The NCAA field as it stands: seed the Power-Index-rated programs (conference
     champions get autobids once the conference tournaments have run), run the
     bracket. Returns a BracketResult, or None in preseason (no results yet)."""
     s = load_season(season_id)
+    if size is None:
+        size = field_for_division(s["division"])
     ratings = power_index(season_id)
     rated = [p for p in load_division(s["division"], s["gender"]).programs
              if p.school in ratings]
@@ -889,13 +927,15 @@ def bracket_field(season_id: int, size: int = NATIONAL_FIELD):
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
-def ncaa_field(season_id: int, size: int = NATIONAL_FIELD, out_n: int = 8):
+def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     """The locked NCAA field for the bracket reveal — (seeded programs, autobid
     keys, snub board, ratings), selected exactly as the tournament will use it
     (conference champions auto-in, the rest at-large by Power Index). The snub
     board is the `out_n` highest-Power-Index teams that JUST missed the field —
     'who's out'. Available once the conference tournaments crown champions."""
     s = load_season(season_id)
+    if size is None:
+        size = field_for_division(s["division"])
     conn = _db()
     ratings = compute_ratings(_completed(conn, season_id, ("REG", "CT")))
     conn.close()

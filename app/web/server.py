@@ -542,10 +542,11 @@ def create_app() -> Flask:
     @app.route("/bracket")
     def bracket():
         division, gender, label, u = _universe(request)
+        raw = request.args.get("size")          # no explicit size → division default (D1=96)
         try:
-            size = int(request.args.get("size", 64))
+            size = int(raw) if raw else None
         except ValueError:
-            size = 64
+            size = None
         br = get_bracket(division, gender, size=size)
         return render_template("bracket.html", active="Bracket", br=br, u=u,
                                uni_label=label, division=division,

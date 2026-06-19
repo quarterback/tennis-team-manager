@@ -133,8 +133,8 @@
       ]
     },
     {
-      "name": "American Conference",
-      "abbr": "American",
+      "name": "Constellation Intercollegiate Conference",
+      "abbr": "CIC",
       "autobid": true,
       "teams": [
         "Air Force",
@@ -148,6 +148,7 @@
         "South Florida",
         "Tulsa",
         "UAB",
+        "UMass",
         "UTSA"
       ]
     },
@@ -161,7 +162,6 @@
         "George Washington",
         "Hampton",
         "La Salle",
-        "Massachusetts",
         "Northeastern",
         "Saint Joseph's",
         "St. Bonaventure",
@@ -178,7 +178,6 @@
         "Binghamton",
         "Bryant",
         "Maine",
-        "NJIT",
         "New Hampshire",
         "Rhode Island",
         "UMBC",
@@ -195,12 +194,14 @@
         "Florida Gulf Coast",
         "Jacksonville",
         "Lipscomb",
+        "North Alabama",
         "North Florida",
         "Queens",
         "Rollins",
         "Stetson",
         "Tampa",
-        "Valdosta State"
+        "Valdosta State",
+        "West Georgia"
       ]
     },
     {
@@ -236,8 +237,6 @@
         "Northern Arizona",
         "Northern Colorado",
         "Portland State",
-        "Southern Utah",
-        "Utah Tech",
         "Weber State"
       ]
     },
@@ -271,8 +270,7 @@
         "UC Irvine",
         "UC Riverside",
         "UC San Diego",
-        "UC Santa Barbara",
-        "Utah Valley"
+        "UC Santa Barbara"
       ]
     },
     {
@@ -304,7 +302,6 @@
         "Middle Tennessee",
         "Missouri State",
         "Richmond",
-        "Sacramento State",
         "Sam Houston"
       ]
     },
@@ -313,6 +310,7 @@
       "abbr": "Horizon",
       "autobid": true,
       "teams": [
+        "Chicago State",
         "Cleveland State",
         "Detroit Mercy",
         "Green Bay",
@@ -341,6 +339,23 @@
         "Princeton",
         "William & Mary",
         "Yale"
+      ]
+    },
+    {
+      "name": "Meridian League",
+      "abbr": "Meridian",
+      "autobid": true,
+      "teams": [
+        "Bemidji State",
+        "Clarkson",
+        "Grand Valley State",
+        "Michigan Tech",
+        "Minnesota State",
+        "RIT",
+        "RPI",
+        "Rowan",
+        "St. Lawrence",
+        "Union (NY)"
       ]
     },
     {
@@ -394,7 +409,6 @@
         "Northern Illinois",
         "Ohio",
         "Toledo",
-        "UMass",
         "Western Kentucky",
         "Western Michigan"
       ]
@@ -444,11 +458,11 @@
       "autobid": true,
       "teams": [
         "Central Connecticut",
-        "Chicago State",
         "Fairleigh Dickinson",
         "Le Moyne",
         "Long Island",
         "Mercyhurst",
+        "NJIT",
         "New Haven",
         "Stonehill",
         "Wagner"
@@ -459,7 +473,9 @@
       "abbr": "OVC",
       "autobid": true,
       "teams": [
+        "Austin Peay",
         "Eastern Illinois",
+        "Eastern Kentucky",
         "Lindenwood",
         "Morehead State",
         "SIUE",
@@ -508,10 +524,12 @@
       "autobid": true,
       "teams": [
         "A&M-Corpus Christi",
+        "Central Arkansas",
         "East Texas A&M",
         "Houston Christian",
         "Incarnate Word",
         "Lamar",
+        "Little Rock",
         "McNeese",
         "New Orleans",
         "Nicholls",
@@ -547,6 +565,7 @@
       "abbr": "Summit",
       "autobid": true,
       "teams": [
+        "Augustana (SD)",
         "Kansas City",
         "North Dakota",
         "North Dakota State",
@@ -585,15 +604,15 @@
       "autobid": true,
       "teams": [
         "Abilene Christian",
-        "Austin Peay",
-        "Central Arkansas",
-        "Eastern Kentucky",
-        "Little Rock",
+        "Alaska Anchorage",
+        "Linfield",
         "New Mexico State",
-        "North Alabama",
+        "Sacramento State",
+        "Southern Utah",
         "Tarleton State",
         "UT Arlington",
-        "West Georgia"
+        "Utah Tech",
+        "Utah Valley"
       ]
     },
     {

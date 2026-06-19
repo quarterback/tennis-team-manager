@@ -9,14 +9,19 @@
       "autobid": true,
       "teams": [
         "Amherst",
+        "Bard",
         "Bates",
         "Bowdoin",
         "Colby",
         "Connecticut College",
         "Hamilton",
+        "Hobart and William Smith",
+        "Ithaca",
         "Middlebury",
+        "Skidmore",
         "Trinity (CT)",
         "Tufts",
+        "Vassar",
         "Wesleyan",
         "Williams"
       ]
@@ -36,23 +41,6 @@
         "Swarthmore",
         "Ursinus",
         "Washington College"
-      ]
-    },
-    {
-      "name": "Liberty League",
-      "abbr": "Liberty League",
-      "autobid": true,
-      "teams": [
-        "Bard",
-        "Clarkson",
-        "Hobart and William Smith",
-        "Ithaca",
-        "RIT",
-        "RPI",
-        "Skidmore",
-        "St. Lawrence",
-        "Union (NY)",
-        "Vassar"
       ]
     },
     {
@@ -285,7 +273,6 @@
         "Montclair State",
         "New Jersey City",
         "Ramapo",
-        "Rowan",
         "Rutgers-Camden",
         "Rutgers-Newark",
         "Stockton",
@@ -598,7 +585,6 @@
       "teams": [
         "George Fox",
         "Lewis & Clark",
-        "Linfield",
         "Pacific (OR)",
         "Pacific Lutheran",
         "Puget Sound",
