@@ -374,20 +374,24 @@ def cmd_seasonmode(args):
 
 
 def cmd_ita_kickoff(args):
-    """Run the ITA Kickoff Weekend + National Team Indoor Championship — the D1
-    season opener — and print the site winners and the Indoor bracket result."""
+    """Run the ITA season opener — the Kickoff Weekend + National Team Indoor
+    Championship (D1), or the top-8 National Team Indoor (D2/D3) — and print the
+    site winners (if any) and the Indoor bracket result."""
     from app import seasonmode as sm
     from app import ita
     sid = sm.get_or_create(args.division, args.gender, seed=args.seed)
-    s = sm.load_season(sid)
     if not ita.runs_ita(args.division):
-        print(f"{args.division} does not run the ITA opener (Division I only).")
+        print(f"{args.division} does not run an ITA opener.")
         return
     guard = 0
     while sm.load_season(sid)["phase"].startswith("ita") and guard < 20:
         sm.advance(sid); guard += 1
     view = sm.ita_view(sid)
-    print(f"\nITA Kickoff Weekend — {args.division} {args.gender} (seed {args.seed})\n")
+    header = ("ITA Kickoff Weekend + National Team Indoor" if ita.runs_kickoff(args.division)
+              else "ITA National Team Indoor (top 8)")
+    print(f"\n{header} — {args.division} {args.gender} (seed {args.seed})\n")
+    if view["sites"]:
+        print("Kickoff Weekend sites:")
     for site in view["sites"]:
         host = site["semis"][0]["home"] if site["semis"] else "?"
         win = None

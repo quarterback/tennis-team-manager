@@ -25,11 +25,13 @@ def test_schedule_structure(db):
 
 
 def test_advance_populates_results_and_standings(db):
-    sid = sm.create_season("D2", "women", seed=7)   # D2 opens on the regular season (no ITA)
+    sid = sm.create_season("D2", "women", seed=7)
+    while sm.load_season(sid)["phase"].startswith("ita"):   # clear the top-8 Indoor opener
+        sm.advance(sid)
     r = sm.advance(sid)
     assert r["phase"] == "regular" and r["played"] > 0
-    # week 1 duals are now final with scores
-    finals = [d for d in sm.week_duals(sid, 1) if d["status"] == "final"]
+    # the first regular week's duals are now final with scores
+    finals = [d for d in sm.week_duals(sid, r["week"]) if d["status"] == "final"]
     assert finals and all(d["home_points"] + d["away_points"] >= 4 for d in finals)
     st = sm.standings(sid)
     assert any(row["ow"] + row["ol"] > 0 for table in st.values() for row in table)
@@ -57,7 +59,7 @@ def test_every_roster_player_gets_a_match(db):
     from app.ncaa import build_roster, load_division
     sid = sm.create_season("D2", "women", seed=5)
     guard = 0
-    while sm.load_season(sid)["phase"] == "regular" and guard < 40:
+    while sm.load_season(sid)["phase"] in ("ita_indoor", "regular") and guard < 50:
         sm.advance(sid); guard += 1
     conn = sm._db()
     rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'"

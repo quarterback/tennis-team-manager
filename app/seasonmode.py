@@ -48,6 +48,14 @@ CONF_TOURNEY_FIELD = 8       # top-N per conference make the conference tourname
 MAX_PER_WEEK = 3            # up to a 3-dual weekend; keeps the ~25-slate to ~12-14 weeks
 NATIONAL_FIELD = 64
 
+# Result corpora. The overall *record* (standings, schedules, player logs) counts
+# every phase. The *ranking* corpus that feeds the live Power Index also counts the
+# ITA opener — an early-season test of who's good — but not the conference-tournament
+# or NCAA brackets being seeded by it. The *seeding* corpus that selects the NCAA
+# field adds the conference tournaments, as the selection always has.
+RANKING_ROUNDS = ("REG", "ITAK", "ITAI")
+SEED_ROUNDS = ("REG", "CT", "ITAK", "ITAI")
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS seasons (
   id INTEGER PRIMARY KEY, division TEXT, gender TEXT, seed INTEGER,
@@ -248,13 +256,14 @@ def create_season(division: str = "D1", gender: str = "men", *, seed: int = 2026
     rows = _gen_regular_schedule(div, seed)
     # Divisions that run the ITA opener push their regular slate back so the Kickoff
     # Weekend + Indoor occupy the first weeks; the season then starts in the ITA
-    # phase rather than the regular season (see `advance`).
-    ita_on = ita.runs_ita(division)
-    lead = ita.ITA_LEAD_WEEKS if ita_on else 0
+    # phase rather than the regular season (see `advance`). D1 opens on the Kickoff
+    # Weekend; D2/D3 have no Kickoff, opening straight on their top-8 Indoor.
+    lead = ita.lead_weeks(division)
     if lead:
         rows = [(w + lead, h, a, cn) for (w, h, a, cn) in rows]
     total_weeks = max((r[0] for r in rows), default=0)
-    phase = "ita_kickoff" if ita_on else "regular"
+    phase = ("ita_kickoff" if ita.runs_kickoff(division)
+             else "ita_indoor" if ita.runs_indoor(division) else "regular")
     first_reg_week = lead + 1
     conn = _db()
     cur = conn.execute(
@@ -359,7 +368,7 @@ def _completed(conn, season_id, rounds=("REG", "CT", "NCAA", "ITAK", "ITAI")) ->
     """All completed duals (any phase by default) as record dicts. The ITA Kickoff
     (``ITAK``) and Indoor (``ITAI``) opener counts toward the season record just like
     the conference tournaments and the NCAAs — but, like them, it is excluded from the
-    regular-season Power Index (see ``_completed_reg_duals``)."""
+    regular-season Power Index (see ``_ranking_duals``)."""
     qs = ",".join("?" for _ in rounds)
     rows = conn.execute(
         f"SELECT home, away, round, is_conf, home_points, away_points, winner, lines_json"
@@ -374,8 +383,11 @@ def _completed(conn, season_id, rounds=("REG", "CT", "NCAA", "ITAK", "ITAI")) ->
     return out
 
 
-def _completed_reg_duals(conn, season_id) -> list[dict]:
-    return _completed(conn, season_id, ("REG",))
+def _ranking_duals(conn, season_id) -> list[dict]:
+    """The corpus that feeds the live Power Index: the regular season plus the ITA
+    opener (which counts toward the rankings), but not the CT/NCAA brackets seeded
+    from it."""
+    return _completed(conn, season_id, RANKING_ROUNDS)
 
 
 def _conf_standings(duals, div):
@@ -545,9 +557,8 @@ def _sim_round(conn, s, progs, rnd_tag, round_no, prefix):
 def _advance_conf_round(conn, s, progs) -> dict:
     sid = s["id"]
     div = load_division(s["division"], s["gender"])
-    reg = _completed(conn, sid, ("REG",))
-    wl = _conf_standings(reg, div)
-    ratings = compute_ratings(reg)
+    wl = _conf_standings(_completed(conn, sid, ("REG",)), div)   # conference record: regular only
+    ratings = compute_ratings(_ranking_duals(conn, sid))         # Power Index: regular + ITA
     existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='CT'",
                             (sid,)).fetchone()["c"]
     if existing == 0:                                  # seed round 1 for every conference
@@ -607,7 +618,7 @@ def _ncaa_seeds(conn, s, progs, div):
     (autobids, each team's conference, regular-season pairings). Used to lay out
     the bracket and to rebuild the byes when a play-in feeds the main draw."""
     sid = s["id"]
-    ratings = compute_ratings(_completed(conn, sid, ("REG", "CT")))
+    ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
     seeded, autobids = select_field(div.programs, ratings, champions,
                                     size=field_for_division(s["division"]))
@@ -696,7 +707,7 @@ def _ita_ranking(s) -> list[str]:
         prior = load_season(prior_sid)
         if prior and prior["phase"] == "complete":
             conn = _db()
-            ratings = compute_ratings(_completed(conn, prior_sid, ("REG", "CT")))
+            ratings = compute_ratings(_completed(conn, prior_sid, SEED_ROUNDS))
             conn.close()
             rated = [p for p in div.programs if p.school in ratings]
             if rated:
@@ -753,15 +764,20 @@ def _site_winners(conn, sid) -> list[str]:
 
 
 def _advance_indoor_round(conn, s, progs) -> dict:
-    """One round of the ITA National Team Indoor Championship: a 16-team seeded
-    single-elim (site winners + a top-ranked auto-bid host), run akin to the NCAAs.
-    On the final, the season rolls into its regular-season opener."""
+    """One round of the ITA National Team Indoor Championship — a seeded single-elim
+    run akin to the NCAAs. D1's draw is 16 teams (the Kickoff site winners + a
+    top-ranked auto-bid host); the D2/D3 draws are simply the top 8 by prior-year
+    ranking. On the final, the season rolls into its regular-season opener."""
     sid = s["id"]
+    div = s["division"]
+    kickoff_lead = ita.kickoff_rounds(div)
     existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAI'",
                             (sid,)).fetchone()["c"]
-    if existing == 0:                                  # seed the final-16 draw
-        field = ita.indoor_field(_site_winners(conn, sid), _ita_ranking(s))
-        week = ita.KICKOFF_ROUNDS + 1
+    if existing == 0:                                  # seed the Indoor draw
+        ranked = _ita_ranking(s)
+        winners = _site_winners(conn, sid) if ita.runs_kickoff(div) else []
+        field = ita.indoor_field(winners, ranked, ita.indoor_size(div))
+        week = kickoff_lead + 1
         for bpos, h, a in _round1_pairs(field):
             _insert_dual(conn, sid, week, "ITAI", _round_name(len(field)), 0, 1, bpos, h, a)
         round_no = 1
@@ -776,7 +792,7 @@ def _advance_indoor_round(conn, s, progs) -> dict:
                         " AND round_no=? ORDER BY bpos", (sid, round_no)).fetchall()
     winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
     if len(winners) > 1:
-        week = ita.KICKOFF_ROUNDS + round_no + 1
+        week = kickoff_lead + round_no + 1
         alive = len(winners)
         for k in range(len(winners) // 2):
             _insert_dual(conn, sid, week, "ITAI", _round_name(alive), 0, round_no + 1, k,
@@ -789,7 +805,7 @@ def _advance_indoor_round(conn, s, progs) -> dict:
 def _finish_indoor(conn, s, champion: str | None = None) -> dict:
     """Close the ITA opener and start the regular season at its (offset) first week."""
     conn.execute("UPDATE seasons SET phase='regular', current_week=? WHERE id=?",
-                 (ita.ITA_LEAD_WEEKS + 1, s["id"]))
+                 (ita.lead_weeks(s["division"]) + 1, s["id"]))
     return {"phase": "ita_indoor", "done": True, "indoor_champion": champion}
 
 
@@ -973,7 +989,7 @@ def national_top(season_id: int, n: int = 15) -> list[dict]:
     s = load_season(season_id)
     div = load_division(s["division"], s["gender"])
     conn = _db()
-    duals = _completed_reg_duals(conn, season_id)
+    duals = _ranking_duals(conn, season_id)
     conn.close()
     if not duals:
         return []
@@ -997,7 +1013,7 @@ def power_index(season_id: int) -> dict:
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
     if key not in _pi_cache:
-        duals = _completed_reg_duals(conn, season_id)
+        duals = _ranking_duals(conn, season_id)
         _pi_cache.clear()
         _pi_cache[key] = compute_ratings(duals) if duals else {}
     conn.close()
@@ -1089,7 +1105,7 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     if size is None:
         size = field_for_division(s["division"])
     conn = _db()
-    ratings = compute_ratings(_completed(conn, season_id, ("REG", "CT")))
+    ratings = compute_ratings(_completed(conn, season_id, SEED_ROUNDS))
     conn.close()
     div = load_division(s["division"], s["gender"])
     progs = {p.school: p for p in div.programs}
@@ -1122,7 +1138,7 @@ def ita_view(season_id: int) -> dict | None:
     irows = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='ITAI'"
                          " ORDER BY round_no, bpos", (season_id,)).fetchall()
     conn.close()
-    if not krows:
+    if not krows and not irows:        # nothing drawn yet (D2/D3 have no Kickoff sites)
         return None
     sites: dict = {}
     for r in krows:

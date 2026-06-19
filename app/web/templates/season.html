@@ -31,7 +31,7 @@
     {% endif %}
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', u=u) }}">Schedule</a>
-    {% if u and u.startswith('D1') %}<a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_ita', u=u) }}">ITA</a>{% endif %}
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_ita', u=u) }}">ITA</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Bracket</a>
   </span>
 </div></div>

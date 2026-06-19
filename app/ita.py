@@ -1,44 +1,70 @@
 """ITA Kickoff Weekend + National Team Indoor Championship — the season opener.
 
-A faithful-but-bounded model of the real ITA preseason event:
+A faithful-but-bounded model of the real ITA preseason events, which differ by
+division:
 
-  * **Kickoff Weekend** — the top ``KICKOFF_FIELD`` teams (by *prior-year* final
-    ranking) are grouped into ``KICKOFF_SITES`` cosmetic four-team sites. Each
-    site is a seeded single-elimination mini-bracket (host = top seed, 1v4 / 2v3);
-    the site winners advance.
-  * **National Team Indoor Championship** — the site winners plus a top-ranked
-    auto-bid host form an ``INDOOR_FIELD``-team seeded single-elim → the Indoor
-    champion.
+  * **Division I** runs the full **Kickoff Weekend** — the top ``KICKOFF_FIELD``
+    teams (by *prior-year* final ranking) are grouped into ``KICKOFF_SITES``
+    cosmetic four-team sites, each a seeded single-elim (host = top seed, 1v4 / 2v3);
+    the site winners advance to a 16-team **National Team Indoor Championship**.
+  * **Divisions II and III** have no Kickoff draft — their **National Team Indoor**
+    is simply the **top 8** teams (per gender) by prior-year ranking in a seeded
+    single-elim. (Lower stakes; mostly an early-season test / development reps.)
 
 In our world "sites" are purely cosmetic (no geography / no live draft): ordering
 is entirely by the prior-year ranking, falling back to roster **Power 6** in year 0
-(when there is no prior season to rank from). Everything here is seed-deterministic
-and — once wired into season mode — counts toward the season dual-match record,
-exactly like the conference tournaments and the NCAAs do.
+(no prior season to rank from). Everything is seed-deterministic and — once wired
+into season mode — counts toward the season dual-match record AND the Power Index,
+an early read on who's good.
 
 This module is pure (no DB / no web layer): season mode supplies the ranked list
 of schools and persists the resulting brackets.
 """
 from __future__ import annotations
 
-KICKOFF_SITES = 15                                  # cosmetic four-team host sites
+KICKOFF_SITES = 15                                  # cosmetic four-team host sites (D1)
 TEAMS_PER_SITE = 4
-KICKOFF_FIELD = KICKOFF_SITES * TEAMS_PER_SITE      # 60-team draft field
-INDOOR_FIELD = 16                                   # the final-16 Indoor draw
+KICKOFF_FIELD = KICKOFF_SITES * TEAMS_PER_SITE      # 60-team draft field (D1)
+INDOOR_FIELD = 16                                   # D1 final-16 Indoor draw
+SMALL_INDOOR_FIELD = 8                              # D2 / D3 top-8 Indoor draw
 
-# A four-team site is two rounds (semifinals → final); the 16-team Indoor draw is
-# four (Round of 16 → Quarterfinals → Semifinals → Final). The regular-season
-# slate is pushed back this many weeks so the ITA event opens the year.
-KICKOFF_ROUNDS = 2
-INDOOR_ROUNDS = INDOOR_FIELD.bit_length() - 1       # 4
-ITA_LEAD_WEEKS = KICKOFF_ROUNDS + INDOOR_ROUNDS     # 6
+KICKOFF_DIVISIONS = {"D1"}                          # only D1 runs the Kickoff Weekend draft
+INDOOR_DIVISIONS = {"D1", "D2", "D3"}               # every NCAA division has a Team Indoor
 
-ITA_DIVISIONS = {"D1"}                              # the ITA Kickoff/Indoor is a D1 event
+
+def runs_kickoff(division: str) -> bool:
+    """Whether a division runs the Kickoff Weekend (only D1)."""
+    return division in KICKOFF_DIVISIONS
+
+
+def runs_indoor(division: str) -> bool:
+    """Whether a division runs a National Team Indoor Championship."""
+    return division in INDOOR_DIVISIONS
 
 
 def runs_ita(division: str) -> bool:
-    """Whether a division runs the ITA Kickoff Weekend + Indoor as its opener."""
-    return division in ITA_DIVISIONS
+    """Whether a division runs any ITA opener at all (kickoff and/or indoor)."""
+    return runs_indoor(division)
+
+
+def indoor_size(division: str) -> int:
+    """Indoor draw size: 16 for D1 (fed by the Kickoff), 8 for the D2/D3 top-8 events."""
+    return INDOOR_FIELD if division in KICKOFF_DIVISIONS else SMALL_INDOOR_FIELD
+
+
+def kickoff_rounds(division: str) -> int:
+    """Weeks the Kickoff Weekend occupies (a four-team site is two rounds; 0 if none)."""
+    return 2 if runs_kickoff(division) else 0
+
+
+def indoor_rounds(division: str) -> int:
+    """Rounds in the Indoor single-elim (log2 of the draw size: 16→4, 8→3)."""
+    return indoor_size(division).bit_length() - 1
+
+
+def lead_weeks(division: str) -> int:
+    """How many weeks the ITA opener pushes the regular-season slate back."""
+    return kickoff_rounds(division) + indoor_rounds(division)
 
 
 def power6(prog) -> float:
@@ -80,16 +106,17 @@ def site_pairs(site: list[str]) -> list[tuple[str, str]]:
     return [(site[0], site[3]), (site[1], site[2])]
 
 
-def indoor_field(site_winners: list[str], ranked: list[str]) -> list[str]:
-    """The ``INDOOR_FIELD``-team National Team Indoor draw: every site winner plus
-    the highest prior-ranked team not already through (the auto-bid host), seeded by
-    prior-year ranking (best first)."""
+def indoor_field(site_winners: list[str], ranked: list[str], size: int = INDOOR_FIELD) -> list[str]:
+    """The ``size``-team National Team Indoor draw, seeded by prior-year ranking. For
+    D1 the seed pool is the site winners plus the highest prior-ranked team not already
+    through (the auto-bid host); for the D2/D3 top-8 events there are no site winners,
+    so the field is simply the top ``size`` ranked teams."""
     field = list(site_winners)
-    for s in ranked:                                 # fill the auto-bid seat(s)
-        if len(field) >= INDOOR_FIELD:
+    for s in ranked:                                 # fill to `size` by prior ranking
+        if len(field) >= size:
             break
         if s not in field:
             field.append(s)
     rank_of = {s: i for i, s in enumerate(ranked)}
     field.sort(key=lambda t: rank_of.get(t, 10 ** 9))
-    return field[:INDOOR_FIELD]
+    return field[:size]

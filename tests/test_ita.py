@@ -53,12 +53,24 @@ def test_d1_season_opens_with_the_ita_phase(db):
     # the regular slate is pushed back behind the ITA weeks
     reg_weeks = [d["week"] for d in sm.team_schedule(sid, sm.load_division("D1", "men").programs[0].school)
                  if d["round"] == "REG"]
-    assert not reg_weeks or min(reg_weeks) > ita.ITA_LEAD_WEEKS
+    assert not reg_weeks or min(reg_weeks) > ita.lead_weeks("D1")
 
 
-def test_non_d1_skips_the_ita(db):
-    sid = sm.create_season("D2", "women", seed=5)
-    assert sm.load_season(sid)["phase"] == "regular"
+def test_d2_d3_open_on_a_top8_indoor_with_no_kickoff(db):
+    for div in ("D2", "D3"):
+        sid = sm.create_season(div, "women", seed=5)
+        assert sm.load_season(sid)["phase"] == "ita_indoor"   # no Kickoff — straight to the Indoor
+        while sm.load_season(sid)["phase"].startswith("ita"):
+            sm.advance(sid)
+        conn = sm._db()
+        kick = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'",
+                            (sid,)).fetchone()["c"]
+        indoor = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAI'"
+                             " AND status='final'", (sid,)).fetchone()["c"]
+        conn.close()
+        assert kick == 0                                      # no Kickoff sites for D2/D3
+        assert indoor == ita.SMALL_INDOOR_FIELD - 1           # 8-team single-elim = 7 duals
+        assert sm.indoor_champion(sid)
 
 
 def test_ita_runs_then_hands_off_to_the_regular_season(db):
@@ -68,7 +80,7 @@ def test_ita_runs_then_hands_off_to_the_regular_season(db):
         sm.advance(sid); guard += 1
     s = sm.load_season(sid)
     assert s["phase"] == "regular"
-    assert s["current_week"] == ita.ITA_LEAD_WEEKS + 1
+    assert s["current_week"] == ita.lead_weeks("D1") + 1
     # a single Indoor champion was crowned, and it's a real program
     champ = sm.indoor_champion(sid)
     assert champ in {p.school for p in sm.load_division("D1", "women").programs}
@@ -83,15 +95,19 @@ def test_ita_runs_then_hands_off_to_the_regular_season(db):
     assert indoor == ita.INDOOR_FIELD - 1            # 16-team single-elim = 15 duals
 
 
-def test_ita_counts_toward_the_record_but_not_the_power_index(db):
+def test_ita_feeds_the_record_and_the_power_index(db):
     sid = sm.create_season("D1", "men", seed=3)
     while sm.load_season(sid)["phase"].startswith("ita"):
         sm.advance(sid)
     # overall standings reflect ITA results even before any regular dual is played
     played = sum(row["ow"] + row["ol"] for table in sm.standings(sid).values() for row in table)
     assert played > 0
-    # ...but the regular-season Power Index is still empty (ITA excluded, like CT/NCAA)
-    assert sm.power_index(sid) == {}
+    # the ITA opener also feeds the live Power Index — an early read on who's good —
+    # so teams that played carry a rating before the regular season starts...
+    pi = sm.power_index(sid)
+    assert pi
+    # ...but only the ITA participants, not the whole division, have results yet
+    assert len(pi) < len(sm.load_division("D1", "men").programs)
 
 
 def test_ita_web_pages_render(tmp_path):
