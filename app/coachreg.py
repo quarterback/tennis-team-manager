@@ -14,6 +14,17 @@ import uuid
 
 from app.db import connect
 
+# Bumped on every reset() so callers that cache coach ids (e.g. the web layer's
+# staff cache) can key on it and drop entries pointing at coaches the wipe removed.
+_GENERATION = 0
+
+
+def generation() -> int:
+    """A counter that increments whenever the registry is wiped (`reset`). Fold it
+    into any cache of coach ids so a reset naturally invalidates that cache."""
+    return _GENERATION
+
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS coach (
   coach_id     TEXT PRIMARY KEY,
@@ -219,6 +230,8 @@ def get(coach_id: str) -> dict | None:
 
 
 def reset() -> None:
+    global _GENERATION
+    _GENERATION += 1
     conn = _conn()
     conn.executescript("DELETE FROM coach_seat; DELETE FROM coach; DELETE FROM coach_history;")
     conn.commit()

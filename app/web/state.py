@@ -1126,14 +1126,15 @@ _staff_cache: dict = {}
 
 def coaching_staff(division: str, gender: str, school: str):
     from app import coachgen
+    import app.coachreg as coachreg
     import app.world as world
-    # Key the cache by the active world's salt as well as its year, so a world
-    # reset / New League (which wipes the coach registry) invalidates stale staff
+    # Key the cache by the coach-registry generation (and the world salt/year), so a
+    # world reset / New League — which wipes the registry — invalidates stale staff
     # rather than serving coach ids the registry no longer knows.
     w = world.load_world()
     yr = w["year"] if w else 0
     salt = (w.get("salt") or "") if w else ""
-    key = (salt, division, gender, school, yr)
+    key = (coachreg.generation(), salt, division, gender, school, yr)
     if key in _staff_cache:
         return _staff_cache[key]
     staff = []
