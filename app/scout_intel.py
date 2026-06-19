@@ -98,6 +98,15 @@ def scan(gender: str, seed: int | None = None) -> dict:
     from app.ncaa import load_division, build_roster
     from app.web.state import ranking_rows
 
+    # Load THIS world-year's live rosters into the shared cache before reading any
+    # `build_roster` — the same hinge every live surface uses (state.get_season).
+    # Without it the scan reads whatever rosters happen to be cached (often the
+    # deterministic year-0 base), so once players develop/graduate/transfer at a
+    # rollover the bureau lists stale pids and every "player" link 404s.
+    import app.world as world
+    if world.exists(seed):
+        world.prime(seed)
+
     players: list[Intel] = []
     teams: dict[str, dict] = {}
 
