@@ -126,8 +126,7 @@
         "UW-Platteville",
         "UW-River Falls",
         "UW-Stevens Point",
-        "UW-Stout",
-        "UW-Whitewater"
+        "UW-Stout"
       ]
     },
     {
@@ -270,7 +269,6 @@
       "autobid": true,
       "teams": [
         "Kean",
-        "Montclair State",
         "New Jersey City",
         "Ramapo",
         "Rutgers-Camden",
