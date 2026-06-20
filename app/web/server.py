@@ -58,11 +58,13 @@ NAV_GROUPS = [
         {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
     ]),
     ("World", [
+        {"id": "season",    "label": "Season Hub",   "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "world",     "label": "World Hub",    "icon": "🌎", "endpoint": "world_view",       "args": {}},
         {"id": "dashboard", "label": "Dashboard",    "icon": "🏠", "endpoint": "dashboard",        "args": {}},
         {"id": "data",      "label": "Data Portal",  "icon": "📈", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "🏆", "endpoint": "rankings",         "args": {}},
         {"id": "results",   "label": "Results",      "icon": "📋", "endpoint": "results",          "args": {}},
+        {"id": "ita",       "label": "ITA Opener",   "icon": "❄️", "endpoint": "season_ita",        "args": {}},
         {"id": "ncaa",      "label": "NCAA Bracket", "icon": "🥇", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
@@ -83,7 +85,6 @@ NAV_GROUPS = [
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "🎾", "endpoint": "intel_scholarships", "args": {}},
     ]),
     ("Simulate", [
-        {"id": "season",    "label": "Season Mode",  "icon": "📆", "endpoint": "season_hub",       "args": {}},
         {"id": "dual",      "label": "Dual Match",   "icon": "⚔️", "endpoint": "dual",             "args": {}},
         {"id": "bracket",   "label": "College Bracket", "icon": "🥇", "endpoint": "bracket",        "args": {}},
         {"id": "singles",   "label": "Singles Championship","icon": "🎾", "endpoint": "singles_championship", "args": {}},
@@ -115,6 +116,7 @@ def _active_nav(req) -> str:
     if p.startswith("/hall-of-fame"):     return "hof"
     if p.startswith("/season/standings"): return "standings"
     if p.startswith("/season/schedule"):  return "schedule"
+    if p.startswith("/season/ita"):       return "ita"
     if p.startswith("/season"):           return "season"
     if p.startswith("/dual"):             return "dual"
     if p.startswith("/projection"):       return "projection"
