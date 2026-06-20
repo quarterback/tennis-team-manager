@@ -591,9 +591,10 @@ def _base_roster(p: Program):
     # fit/academics-driven talent prior (conf strength).
     from . import recruit_economy
     use_budget = p.division in ("D1", "D2")
+    funded = scholarships.slots(p)          # full funding = more funded spots to spend budget on
     star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
                                                  roster_size=ROSTER_SIZE,
-                                                 schol_slots=SCHOLARSHIP_SLOTS) if use_budget else None
+                                                 schol_slots=funded) if use_budget else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(ROSTER_SIZE):
@@ -614,8 +615,7 @@ def _base_roster(p: Program):
     # Funded headcount varies by classification (app.scholarships); the
     # equivalency split + display fractions layer on top (app.economy).
     from app import economy
-    economy.allocate_scholarships(roster, p.division, p.gender,
-                                  scholarship_slots=scholarships.slots(p))
+    economy.allocate_scholarships(roster, p.division, p.gender, scholarship_slots=funded)
     _roster_cache[p.key] = roster
     return roster
 
