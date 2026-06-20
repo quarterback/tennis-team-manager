@@ -59,22 +59,6 @@
         {% endfor %}
       </div>
     </div>
-    <div class="bl-notes"><div class="bl-note">
-      Lines 1–6 are the singles lineup (by STR). STR is the live, results-based rating;
-      reliability rises with matches played. The bottom of the roster are walk-ons (no scholarship)
-      until a school promotes them.
-      {% if budget %}
-      <br><br>
-      {% if budget.offers_aid %}
-      <b>Scholarships:</b> {{ "%.2f"|format(budget.allocated) }} of {{ "%g"|format(budget.cap) }}
-      equivalencies committed ({{ "%.2f"|format(budget.remaining) }} open) —
-      {{ budget.full_rides }} full + {{ budget.partials }} partial, {{ budget.walk_ons }} walk-on(s).
-      Equivalency caps follow the real NCAA limits for this division.
-      {% else %}
-      <b>No athletic scholarships:</b> this division (D3) offers no athletic aid — the recruited
-      core are commitment slots; programs compete on academics and prestige instead.
-      {% endif %}
-      {% endif %}</div></div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
@@ -87,7 +71,7 @@
         <span class="ha">{{ 'vs' if m.home else 'at' }}</span>
         <span class="bl-crest xs" style="background:{{ m.color }}">{{ m.abbr }}</span>
         <span class="opp">{{ m.opp }}</span>
-        <span class="tag">{% if m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
+        <span class="tag{% if m.round in ('ITAK','ITAI') %} ita{% endif %}">{% if m.round == 'ITAK' %}ITA KO{% elif m.round == 'ITAI' %}ITA Indoor{% elif m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
         <span class="wl {{ 'win' if m.won else 'loss' }}">{{ 'W' if m.won else 'L' }} {{ m.mine }}–{{ m.theirs }}</span>
       </a>
       {% endfor %}
@@ -117,9 +101,77 @@
   </div>
 </div>
 
+{% set h = history.honors %}
+{% if h.any %}
+<div class="bl-panel" style="margin-top:16px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Program Honors</span></div>
+  <div class="bl-honorgrid">
+    {% macro hline(label, cls, count, detail) %}
+    <div class="bl-honorrow">
+      <span class="bl-honor-dot {{ cls }}"></span>
+      <span class="bl-honor-label">{{ label }}</span>
+      <span class="bl-honor-count">{{ count }}</span>
+      <span class="bl-honor-detail">{{ detail }}</span>
+    </div>
+    {% endmacro %}
+    {% if h.national_titles %}{{ hline('National Championships', 'gold', h.national_titles|length, h.national_titles|join(', ')) }}{% endif %}
+    {% if h.indoor_titles %}{{ hline('ITA Indoor National Champions', 'teal', h.indoor_titles|length, h.indoor_titles|join(', ')) }}{% endif %}
+    {% if h.ncaa_appearances %}
+    <div class="bl-honorrow"><span class="bl-honor-dot"></span><span class="bl-honor-label">NCAA Tournament Appearances</span>
+      <span class="bl-honor-count">{{ h.ncaa_appearances|length }}</span>
+      <span class="bl-honor-detail">{% for a in h.ncaa_appearances %}{{ a.year }} ({{ a.round }}){% if not loop.last %}, {% endif %}{% endfor %}</span></div>
+    {% endif %}
+    {% if h.ita_appearances %}
+    <div class="bl-honorrow"><span class="bl-honor-dot teal"></span><span class="bl-honor-label">ITA Indoor Appearances</span>
+      <span class="bl-honor-count">{{ h.ita_appearances|length }}</span>
+      <span class="bl-honor-detail">{% for a in h.ita_appearances %}{{ a.year }} ({{ a.round }}){% if not loop.last %}, {% endif %}{% endfor %}</span></div>
+    {% endif %}
+    {% if h.reg_conf_titles %}{{ hline('Regular Season Conference Titles', 'brand', h.reg_conf_titles|length, h.reg_conf_titles|join(', ')) }}{% endif %}
+    {% if h.ct_titles %}{{ hline('Conference Tournament Titles', 'brand', h.ct_titles|length, h.ct_titles|join(', ')) }}{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if history.seasons %}
+<div class="bl-panel" style="margin-top:16px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Season Results by Year</span></div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 86px 80px 88px 1fr 150px 130px">
+      <div class="bl-thead">
+        <span class="bl-th">YEAR</span><span class="bl-th">CONF</span><span class="bl-th">RECORD</span>
+        <span class="bl-th">CONFERENCE TITLE</span><span class="bl-th">ITA INDOOR</span><span class="bl-th">NCAA</span>
+      </div>
+      {% for s in history.seasons %}
+      <div class="bl-row">
+        <span class="bl-rank">{{ s.year }}{% if s.live %} <span class="pl-live">live</span>{% endif %}</span>
+        <span class="bl-conf">{{ s.conf }}</span>
+        <span><span class="bl-rec">{{ s.wins }}-{{ s.losses }}</span></span>
+        <span style="display:flex;gap:4px;flex-wrap:wrap">
+          {% if s.reg_conf_champ %}<span class="bl-badge tier-IVY">Reg. Season</span>{% endif %}
+          {% if s.ct_champ %}<span class="bl-badge tier-IVY">Tournament</span>{% endif %}
+          {% if not s.reg_conf_champ and not s.ct_champ %}<span class="bl-conf">—</span>{% endif %}
+        </span>
+        <span class="bl-conf">{{ s.ita or '—' }}</span>
+        <span class="bl-conf">{{ s.ncaa or ('in progress' if s.live else '—') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <style>
 .bl-coachgrades{display:flex;gap:18px}
 .bl-coachgrades span{display:flex;flex-direction:column;gap:1px}
 .bl-coachgrades b{font-size:15px;color:var(--brand-strong)}
+.bl-honorgrid{display:flex;flex-direction:column;padding:4px 0}
+.bl-honorrow{display:grid;grid-template-columns:10px minmax(190px,auto) 40px 1fr;gap:10px;align-items:center;
+  padding:9px 16px;border-bottom:1px solid var(--border-subtle)}
+.bl-honorrow:last-child{border-bottom:none}
+.bl-honor-dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong)}
+.bl-honor-dot.gold{background:#d4a017}.bl-honor-dot.teal{background:#0e7c86}.bl-honor-dot.brand{background:var(--brand)}
+.bl-honor-label{font-size:13px;font-weight:600;color:var(--text-primary)}
+.bl-honor-count{font-size:15px;font-weight:800;color:var(--brand-strong);text-align:right}
+.bl-honor-detail{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 {% endblock %}

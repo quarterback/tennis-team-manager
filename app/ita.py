@@ -22,10 +22,10 @@ of schools and persists the resulting brackets.
 """
 from __future__ import annotations
 
-KICKOFF_SITES = 15                                  # cosmetic four-team host sites (D1)
+KICKOFF_SITES = 16                                  # cosmetic four-team host sites (D1)
 TEAMS_PER_SITE = 4
-KICKOFF_FIELD = KICKOFF_SITES * TEAMS_PER_SITE      # 60-team draft field (D1)
-INDOOR_FIELD = 16                                   # D1 final-16 Indoor draw
+KICKOFF_FIELD = KICKOFF_SITES * TEAMS_PER_SITE      # 64-team draft field (D1)
+INDOOR_FIELD = 16                                   # D1 final-16 Indoor draw — one bid per site
 SMALL_INDOOR_FIELD = 8                              # D2 / D3 top-8 Indoor draw
 
 KICKOFF_DIVISIONS = {"D1"}                          # only D1 runs the Kickoff Weekend draft
@@ -108,11 +108,12 @@ def site_pairs(site: list[str]) -> list[tuple[str, str]]:
 
 def indoor_field(site_winners: list[str], ranked: list[str], size: int = INDOOR_FIELD) -> list[str]:
     """The ``size``-team National Team Indoor draw, seeded by prior-year ranking. For
-    D1 the seed pool is the site winners plus the highest prior-ranked team not already
-    through (the auto-bid host); for the D2/D3 top-8 events there are no site winners,
-    so the field is simply the top ``size`` ranked teams."""
-    field = list(site_winners)
-    for s in ranked:                                 # fill to `size` by prior ranking
+    D1 the seed pool is the site winners (one per site, so ``KICKOFF_SITES`` already
+    equals the draw size); for the D2/D3 top-8 events there are no site winners, so the
+    field is the top ``size`` ranked teams. Any shortfall (a site short, etc.) is back-
+    filled by ranking so the draw is always exactly ``size`` — a clean power-of-two."""
+    field = list(dict.fromkeys(site_winners))        # de-dup, preserve order
+    for s in ranked:                                 # back-fill to `size` by prior ranking
         if len(field) >= size:
             break
         if s not in field:
