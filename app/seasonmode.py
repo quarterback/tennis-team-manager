@@ -284,16 +284,28 @@ def create_season(division: str = "D1", gender: str = "men", *, seed: int = 2026
         " home_points, away_points, winner, lines_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         [(sid, w, "REG", cn, 1 if cn else 0, h, a, "scheduled", None, None, None, None)
          for (w, h, a, cn) in rows])
-    # Draw the ITA opener's first fixtures now (scheduled, unplayed) so the bracket is
-    # visible before it's advanced — the Kickoff sites for D1, the top-8 Indoor for D2/D3.
-    s0 = {"id": sid, "division": division, "gender": gender, "seed": seed}
-    if ita.runs_kickoff(division):
-        _draw_kickoff(conn, s0)
-    elif ita.runs_indoor(division):
-        _draw_indoor(conn, s0)
     conn.commit()
     conn.close()
+    # Draw the ITA opener's first fixtures (scheduled, unplayed) so the bracket is
+    # visible before it's advanced. Done AFTER the season is committed, in its own
+    # transaction: _ita_ranking opens a second connection (and may create config tables
+    # on a fresh DB), which would deadlock against this still-open write transaction.
+    _draw_opening_fixtures(division, gender, seed, sid)
     return sid
+
+
+def _draw_opening_fixtures(division: str, gender: str, seed: int, sid: int) -> None:
+    """Seed the ITA opener's visible round-1 fixtures: the Kickoff sites for D1, the
+    top-8 Indoor for D2/D3. Its own short transaction (see `create_season`)."""
+    if not ita.runs_indoor(division):
+        return
+    s0 = {"id": sid, "division": division, "gender": gender, "seed": seed}
+    conn = _db()
+    try:
+        _draw_kickoff(conn, s0) if ita.runs_kickoff(division) else _draw_indoor(conn, s0)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_or_create(division: str = "D1", gender: str = "men", *, seed: int = 2026) -> int:
