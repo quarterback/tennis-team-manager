@@ -192,10 +192,10 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Top Movers</span><span class="bl-panel-meta">vs preseason</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Top Movers</span><span class="bl-panel-meta">vs last week</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for t in portal.movers.risers %}
-      <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move up">▲{{ t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>
+      <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move up">{{ 'NEW' if t.new else '▲' ~ t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>
       {% endfor %}
       {% for t in portal.movers.fallers %}
       <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move down">▼{{ -t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>

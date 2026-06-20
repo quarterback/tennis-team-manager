@@ -1158,6 +1158,38 @@ def power_index(season_id: int) -> dict:
     return _pi_cache[key]
 
 
+def weekly_movers(season_id: int, poll: int = 25) -> dict:
+    """Poll-style week-to-week movement for teams currently in the top ``poll``: the
+    move caused by the most recent week of ranking-corpus results. {school: positions
+    gained (+) / lost (-) within the poll, or None if NEW to the poll this week}. Only
+    poll positions are compared, so moves stay bounded and meaningful rather than the
+    100-spot swings a 390-team Power Index reshuffle produces. Empty until there are at
+    least two weeks of results."""
+    conn = _db()
+    qs = ",".join("?" for _ in RANKING_ROUNDS)
+    rows = conn.execute(
+        f"SELECT week, home, away, is_conf, winner, lines_json FROM duals WHERE season_id=?"
+        f" AND status='final' AND round IN ({qs})", (season_id, *RANKING_ROUNDS)).fetchall()
+    conn.close()
+    weeks = sorted({r["week"] for r in rows})
+    if len(weeks) < 2:
+        return {}
+    cutoff = weeks[-1]                                  # the most recent week of results
+
+    def _rec(r):
+        return {"home": r["home"], "away": r["away"], "home_won": r["winner"] == 0,
+                "conf": bool(r["is_conf"]), "lines": json.loads(r["lines_json"] or "[]")}
+
+    def _poll(duals):
+        rt = compute_ratings(duals)
+        order = sorted(rt, key=lambda x: rt[x].pi, reverse=True)[:poll]
+        return {s: i + 1 for i, s in enumerate(order)}
+
+    cur = _poll([_rec(r) for r in rows])
+    prior = _poll([_rec(r) for r in rows if r["week"] < cutoff])
+    return {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
+
+
 def conf_rank(season_id: int) -> dict:
     """school -> (conference_rank, conf_wins, conf_losses) from live standings."""
     out: dict = {}

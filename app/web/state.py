@@ -351,6 +351,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
     baseline_rank = {r.school: r.rk for r in baseline_rows}
     ratings = sm.power_index(sid)
 
+    wk_move = sm.weekly_movers(sid)                    # week-to-week rank change
     if ratings:
         ranked_programs = sorted(
             (p for p in div.programs if p.school in ratings),
@@ -361,8 +362,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         for rk, prog in enumerate(ranked_programs[:12], 1):
             r = ratings[prog.school]
             abbr, color = crest(prog.school)
-            previous = baseline_rank.get(prog.school, rk)
-            move = previous - rk
+            move = wk_move.get(prog.school) or 0
             live_rankings.append({
                 "rk": rk, "school": prog.school, "conf": prog.conf_abbr,
                 "rec": r.record, "pi": r.pi, "apr": r.apr, "fqi": r.fqi,
@@ -450,15 +450,20 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
                                   "abbr": ab, "color": co})
         hot_teams.sort(key=lambda x: -x["streak"])
         hot_teams = hot_teams[:8]
-        moved = []
+        risers, fallers = [], []
         for rk, p in enumerate(ranked_programs, 1):
-            d = baseline_rank.get(p.school, rk) - rk
-            if d:
-                ab, co = crest(p.school)
-                moved.append({"school": p.school, "move": d, "rk": rk,
-                              "conf": p.conf_abbr, "abbr": ab, "color": co})
-        movers["risers"] = sorted(moved, key=lambda x: -x["move"])[:6]
-        movers["fallers"] = sorted(moved, key=lambda x: x["move"])[:6]
+            if p.school not in wk_move:                 # only currently-ranked (top-poll) teams
+                continue
+            m = wk_move[p.school]                       # positions gained/lost, or None = NEW
+            ab, co = crest(p.school)
+            entry = {"school": p.school, "rk": rk, "conf": p.conf_abbr,
+                     "abbr": ab, "color": co, "move": m, "new": m is None}
+            if m is None or m > 0:
+                risers.append(entry)
+            elif m < 0:
+                fallers.append(entry)
+        movers["risers"] = sorted(risers, key=lambda x: (0 if x["new"] else 1, -(x["move"] or 0)))[:6]
+        movers["fallers"] = sorted(fallers, key=lambda x: x["move"])[:6]
     for d in recent:                                   # flag upsets in the score strip
         w_s = d["home"] if d["winner"] == 0 else d["away"]
         l_s = d["away"] if d["winner"] == 0 else d["home"]
