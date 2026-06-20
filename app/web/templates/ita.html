@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — ITA Kickoff & Indoor{% endblock %}
+{% block content %}
+
+{% macro mrow(d) %}
+{% if d %}
+<a class="bl-brk-match" style="grid-template-columns:1fr auto 1fr;text-decoration:none"
+   href="{% if d.status == 'final' %}{{ url_for('season_dual', dual_id=d.id, u=u) }}{% else %}#{% endif %}">
+  <span class="bl-brk-team {{ 'bl-brk-win' if d.winner == 0 else ('bl-brk-lose' if d.winner == 1 else '') }}"><span class="nm">{{ d.home }}</span></span>
+  <span class="bl-stat">{% if d.status == 'final' %}{{ d.home_points }}–{{ d.away_points }}{% else %}vs{% endif %}</span>
+  <span class="bl-brk-team {{ 'bl-brk-win' if d.winner == 1 else ('bl-brk-lose' if d.winner == 0 else '') }}" style="justify-content:flex-end"><span class="nm">{{ d.away }}</span></span>
+</a>
+{% endif %}
+{% endmacro %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <form method="get" style="display:contents">
+    <label class="bl-field"><span class="bl-field-label">Division</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select></span></label>
+  </form>
+  <span style="font-size:13px;color:var(--text-muted)">ITA Kickoff Weekend &amp; National Team Indoor · {{ uni_label }}</span>
+  <span style="margin-left:auto"><a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_hub', u=u) }}">← Season</a></span>
+</div></div>
+
+{% if not view %}
+<div class="bl-container"><div class="bl-note">
+  {% if division == 'D1' %}
+  The ITA Kickoff Weekend opens the Division I season. It fills in once the season is advanced into the
+  ITA phase — the top 60 teams (seeded by the prior year's final ranking) are drawn into 15
+  four-team sites; the site winners advance to the 16-team National Team Indoor Championship.
+  {% else %}
+  The ITA National Team Indoor opens the {{ division }} season — the top 8 teams (by the prior year's
+  final ranking) play a seeded single-elimination. It fills in once the season is advanced into the ITA phase.
+  {% endif %}
+</div></div>
+{% else %}
+
+{% if view.indoor_champion %}
+<div class="bl-container"><div class="bl-champ">
+  <span class="bl-crest lg" style="background:{{ crest(view.indoor_champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(view.indoor_champion)[0] }}</span>
+  <div><div class="label">ITA Indoor Champion</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ view.indoor_champion }}</div>
+    <div class="sub">won the National Team Indoor Championship to open the season</div></div>
+</div></div>
+{% endif %}
+
+{% if view.indoor %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">National Team Indoor Championship</span>
+    <span class="bl-panel-meta">{% if division == 'D1' %}final 16 · site winners + auto-bid host{% else %}top 8 · by prior-year ranking{% endif %}</span></div>
+  <div class="bl-rounds bl-rounds-sim" style="padding:8px">
+    {% for rnd in view.indoor %}
+    <section class="bl-panel bl-round-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span></div>
+      <div class="bl-round-body">
+        {% for d in rnd.duals %}{{ mrow(d) }}{% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div></div>
+{% endif %}
+
+{% if view.sites %}
+<div class="bl-container"><div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Kickoff Weekend Sites</span>
+    <span class="bl-panel-meta">15 four-team sites · host is the top seed</span></div>
+  <div class="ita-sites">
+    {% for site in view.sites %}
+    <div class="ita-site">
+      <div class="ita-site-head">{{ site.label }}{% if site.semis %} · host {{ site.semis[0].home }}{% endif %}</div>
+      {% for d in site.semis %}{{ mrow(d) }}{% endfor %}
+      {% if site.final %}<div class="ita-site-final">Final</div>{{ mrow(site.final) }}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div></div>
+{% endif %}
+
+<div class="bl-container"><div class="bl-note">
+  {% if view.sites %}Sites are cosmetic — there is no home-court advantage. {% endif %}Seeding follows the
+  prior year's final ranking (roster Power 6 in year 0). Every ITA result counts toward the season
+  dual-match record <em>and</em> the live Power Index — an early read on who's good.
+</div></div>
+
+<style>
+.ita-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding: 8px; }
+.ita-site { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; }
+.ita-site-head { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 4px; }
+.ita-site-final { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 6px 0 2px; }
+</style>
+{% endif %}
+{% endblock %}

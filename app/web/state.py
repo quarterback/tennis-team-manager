@@ -331,7 +331,18 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
 
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     s = sm.load_season(sid)
-    _pkey = (division, gender, sid, s["current_week"], s["phase"])
+    conn = sm._db()
+    counts = conn.execute(
+        "SELECT COUNT(*) total, SUM(CASE WHEN status='final' THEN 1 ELSE 0 END) final "
+        "FROM duals WHERE season_id=?", (sid,)
+    ).fetchone()
+    conn.close()
+    completed = counts["final"] or 0
+    total_duals = counts["total"] or 0
+    # Include the completed-dual count in the key: during the ITA opener, week and
+    # phase stay fixed across several round advances while new finals are written, so
+    # without this the portal would serve pre-round results until the phase changed.
+    _pkey = (division, gender, sid, s["current_week"], s["phase"], completed)
     _cached = _portal_cache.get(_pkey)
     if _cached is not None:
         return _cached
@@ -421,15 +432,6 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
             "stars": p.recruit_stars, "points": p.junior_points, "str": p.junior_str,
         })
 
-    conn = sm._db()
-    counts = conn.execute(
-        "SELECT COUNT(*) total, SUM(CASE WHEN status='final' THEN 1 ELSE 0 END) final "
-        "FROM duals WHERE season_id=?", (sid,)
-    ).fetchone()
-    conn.close()
-    completed = counts["final"] or 0
-    total_duals = counts["total"] or 0
-
     _portal_result = {
         "season": s, "phase": s["phase"], "current_week": s["current_week"],
         "total_weeks": s["total_weeks"], "programs": len(div.programs),
@@ -438,7 +440,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         "live_rankings": live_rankings, "player_leaders": player_leaders,
         "standings_leaders": standings_leaders[:8], "recent": recent, "upcoming": upcoming,
         "top_prospects": top_prospects, "junior_kpis": juniors["kpis"],
-        "grad_year": junior_year, "has_live_results": bool(ratings),
+        "grad_year": junior_year, "has_live_results": bool(ratings) or completed > 0,
     }
     _portal_cache[_pkey] = _portal_result
     return _portal_result
@@ -1126,9 +1128,15 @@ _staff_cache: dict = {}
 
 def coaching_staff(division: str, gender: str, school: str):
     from app import coachgen
+    import app.coachreg as coachreg
     import app.world as world
-    yr = world.load_world()["year"] if world.exists() else 0
-    key = (division, gender, school, yr)
+    # Key the cache by the coach-registry generation (and the world salt/year), so a
+    # world reset / New League — which wipes the registry — invalidates stale staff
+    # rather than serving coach ids the registry no longer knows.
+    w = world.load_world()
+    yr = w["year"] if w else 0
+    salt = (w.get("salt") or "") if w else ""
+    key = (coachreg.generation(), salt, division, gender, school, yr)
     if key in _staff_cache:
         return _staff_cache[key]
     staff = []
@@ -1413,25 +1421,29 @@ def world_hub(seed: int = DEFAULT_SEED):
     # on a dormant universe, whose honors are never stamped).
     awards_done = complete and all(honors.has_season(year, d, g)
                                    for (_v, d, g, _l) in active_unis)
-    _ORDER = ["regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"]
-    _PH = {"regular": 0, "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
+    _ORDER = ["ita", "regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"]
+    _PH = {"ita_kickoff": -2, "ita_indoor": -1, "regular": 0, "conf_tournaments": 1,
+           "selection": 2, "ncaa": 3, "complete": 4}
     if not complete:
-        stage = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
+        raw = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
+        stage = "ita" if raw in ("ita_kickoff", "ita_indoor") else raw
     else:
         stage = "offseason" if awards_done else "awards"
     if stage == "selection":
         primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
-    elif stage in ("regular", "conf_tournaments", "ncaa"):
-        if w["week"] == 0 and stage == "regular":
+    elif stage in ("ita", "regular", "conf_tournaments", "ncaa"):
+        if w["week"] == 0 and stage in ("ita", "regular"):
             primary = {"endpoint": "preseason_view", "label": "⚙ Preseason setup →", "link": True}
         else:
             primary = {"endpoint": "world_advance",
-                       "label": "Advance week →" if stage == "regular" else "Advance postseason →"}
+                       "label": ("Run ITA opener →" if stage == "ita"
+                                 else "Advance week →" if stage == "regular"
+                                 else "Advance postseason →")}
     elif stage == "awards":
         primary = {"endpoint": "world_awards", "label": "🏅 Run awards →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
-    _LABELS = {"regular": "Regular season", "conf_tournaments": "Conf tournaments",
+    _LABELS = {"ita": "ITA Kickoff", "regular": "Regular season", "conf_tournaments": "Conf tournaments",
                "selection": "Bracket Reveal", "ncaa": "NCAA championship",
                "awards": "Awards", "offseason": "Offseason"}
     ci = _ORDER.index(stage)

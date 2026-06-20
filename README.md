@@ -34,6 +34,7 @@ docs/         design + roadmap
 python3 manage.py simulate-match --seed 7 --pbp
 python3 manage.py simulate-match --seed 7 --format pro_set_8
 python3 manage.py simulate-dual  --seed 7
+python3 manage.py ita-kickoff    --seed 2026 --gender men # D1 season opener: ITA Kickoff + Indoor
 python3 manage.py simulate-gtt   --seed 7                 # co-ed GTT dual: 3 MS + 3 WS + 3 XD
 python3 manage.py gtt-season     --seed 2026 --teams 8    # create + run a GTT league season
 python3 manage.py gen-players    --seed 7 --n 8 --gender female --region european
