@@ -331,7 +331,18 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
 
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     s = sm.load_season(sid)
-    _pkey = (division, gender, sid, s["current_week"], s["phase"])
+    conn = sm._db()
+    counts = conn.execute(
+        "SELECT COUNT(*) total, SUM(CASE WHEN status='final' THEN 1 ELSE 0 END) final "
+        "FROM duals WHERE season_id=?", (sid,)
+    ).fetchone()
+    conn.close()
+    completed = counts["final"] or 0
+    total_duals = counts["total"] or 0
+    # Include the completed-dual count in the key: during the ITA opener, week and
+    # phase stay fixed across several round advances while new finals are written, so
+    # without this the portal would serve pre-round results until the phase changed.
+    _pkey = (division, gender, sid, s["current_week"], s["phase"], completed)
     _cached = _portal_cache.get(_pkey)
     if _cached is not None:
         return _cached
@@ -420,15 +431,6 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
             "secondary_country": p.secondary_country, "grad_year": p.grad_year,
             "stars": p.recruit_stars, "points": p.junior_points, "str": p.junior_str,
         })
-
-    conn = sm._db()
-    counts = conn.execute(
-        "SELECT COUNT(*) total, SUM(CASE WHEN status='final' THEN 1 ELSE 0 END) final "
-        "FROM duals WHERE season_id=?", (sid,)
-    ).fetchone()
-    conn.close()
-    completed = counts["final"] or 0
-    total_duals = counts["total"] or 0
 
     _portal_result = {
         "season": s, "phase": s["phase"], "current_week": s["current_week"],
