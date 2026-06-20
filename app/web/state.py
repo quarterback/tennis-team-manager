@@ -263,6 +263,58 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     return rows
 
 
+def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """ITA-style singles player ranking rows (newest-best first)."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    pts = sm.ita_singles_points(sid)
+    pidx = sm._pid_index(division, gender)
+    recs = sm.player_records(sid)
+    conf_of = {p.school: p.conf_abbr for p in load_division(division, gender).programs}
+    rows = []
+    for rk, pid in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
+        info = pidx.get(pid)
+        if not info:
+            continue
+        w, l = recs.get(pid, (0, 0))
+        abbr, color = crest(info["school"])
+        rows.append({"rk": rk, "pid": pid, "name": info["name"], "school": info["school"],
+                     "conf": conf_of.get(info["school"], ""), "country": info.get("country", ""),
+                     "secondary_country": info.get("secondary_country"), "class": info.get("class", ""),
+                     "w": w, "l": l, "points": pts[pid], "abbr": abbr, "color": color})
+    return rows
+
+
+def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """ITA-style doubles PAIR ranking rows (newest-best first)."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    pts, members, wl = sm.ita_doubles_points(sid)
+    pidx = sm._pid_index(division, gender)
+    conf_of = {p.school: p.conf_abbr for p in load_division(division, gender).programs}
+    rows = []
+    for rk, pr in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
+        m = members.get(pr)
+        i1 = pidx.get(m[0]) if m else None
+        i2 = pidx.get(m[1]) if m else None
+        if not i1 or not i2:
+            continue
+        w, l = wl.get(pr, [0, 0])
+        abbr, color = crest(i1["school"])
+        rows.append({"rk": rk, "p1": m[0], "p2": m[1], "n1": i1["name"], "n2": i2["name"],
+                     "school": i1["school"], "conf": conf_of.get(i1["school"], ""),
+                     "c1": i1.get("country", ""), "c2": i2.get("country", ""),
+                     "sc1": i1.get("secondary_country"), "sc2": i2.get("secondary_country"),
+                     "w": w, "l": l, "points": pts[pr], "abbr": abbr, "color": color})
+    return rows
+
+
 def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
     """Everything the landing dashboard shows for one universe, built from the live
     week-by-week season. Fills in as the world advances (a freshly-started league

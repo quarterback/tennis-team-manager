@@ -3,6 +3,7 @@
 {% block title %}Play to Clinch — National Rankings{% endblock %}
 {% block content %}
 {% set grid = '38px minmax(120px,1fr) 58px 110px 62px 72px 70px 72px 90px 62px 62px' %}
+{% set noun = 'players' if mode == 'singles' else 'pairs' if mode == 'doubles' else 'programs' %}
 
 <form method="get">
 <div class="bl-toolbar">
@@ -27,6 +28,16 @@
 <div class="bl-toolbar bl-toolbar--card">
   <div class="bl-toolbar-inner">
     <div class="bl-sortpills">
+      <span class="bl-sortpills-label">View</span>
+      <div class="bl-pills">
+        {% for v, lbl in [('teams','Teams'),('singles','Singles'),('doubles','Doubles')] %}
+          <a class="bl-pill{% if v == view %} active{% endif %}" style="text-decoration:none"
+             href="{{ url_for('rankings', u=u, view=v) }}">{{ lbl }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% if mode == 'teams' %}
+    <div class="bl-sortpills">
       <span class="bl-sortpills-label">Sort By</span>
       <div class="bl-pills">
         {% for s in ['Rank','Power Index','APR','Power 6'] %}
@@ -34,6 +45,7 @@
         {% endfor %}
       </div>
     </div>
+    {% endif %}
     <label class="bl-field"><span class="bl-field-label">Model A/B</span>
       <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
@@ -45,11 +57,13 @@
 
 <div class="bl-container">
   <div class="bl-entries">
-    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} programs</div>
+    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} {{ noun }}</div>
     <span class="bl-entries-right">{{ uni_label }} · {{ conferences|length - 1 }} conferences · simulated season</span>
   </div>
 </div>
 
+{% macro prank(rk) %}<span class="bl-rank {{ 'gold' if rk == 1 else 'bronze' if rk <= 3 else '' }}">{{ rk }}</span>{% endmacro %}
+{% if mode == 'teams' %}
 <div class="bl-container">
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
@@ -83,8 +97,55 @@
       {% endfor %}
     </div>
   </div>
-  {{ pager(p, 'programs') }}
+  {{ pager(p, noun) }}
 </div>
+{% elif mode == 'singles' %}
+<div class="bl-container">
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 40px minmax(170px,1.5fr) minmax(120px,1fr) 88px 66px 84px">
+      <div class="bl-thead">
+        <span class="bl-th">RK</span><span class="bl-th">PLAYER</span><span class="bl-th">SCHOOL</span>
+        <span class="bl-th">CONF</span><span class="bl-th">RECORD</span>
+        <span class="bl-th num" title="ITA-style singles points: best-10 win quality, dragged by losses, +10% road wins">POINTS</span>
+      </div>
+      {% for r in prows %}
+      <div class="bl-row">
+        {{ prank(r.rk) }}
+        <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}"><span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags(r.secondary_country) }}</span> {{ r.name }}</a>
+        <a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {{ pager(p, noun) }}
+</div>
+{% else %}
+<div class="bl-container">
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 40px minmax(220px,1.7fr) minmax(110px,1fr) 88px 66px 84px">
+      <div class="bl-thead">
+        <span class="bl-th">RK</span><span class="bl-th">PAIR</span><span class="bl-th">SCHOOL</span>
+        <span class="bl-th">CONF</span><span class="bl-th">RECORD</span>
+        <span class="bl-th num" title="ITA-style doubles points: best-10 win quality, dragged by losses, +10% road wins">POINTS</span>
+      </div>
+      {% for r in prows %}
+      <div class="bl-row">
+        {{ prank(r.rk) }}
+        <span class="bl-school"><a href="{{ url_for('player', pid=r.p1, school=r.school, u=u) }}">{{ r.n1 }}</a> <span style="color:var(--text-faint)">/</span> <a href="{{ url_for('player', pid=r.p2, school=r.school, u=u) }}">{{ r.n2 }}</a></span>
+        <a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {{ pager(p, noun) }}
+</div>
+{% endif %}
 
 <div class="bl-notes">
   <div class="bl-note">

@@ -15,7 +15,8 @@ from flask import Flask, render_template, request, abort, redirect, url_for, jso
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
-from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_championship,
+from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
+                    conferences_for, get_bracket, get_doubles_championship,
                     get_singles_championship, championship_years, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
@@ -405,10 +406,24 @@ def create_app() -> Flask:
     def rankings():
         division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")
+        view = request.args.get("view", "teams")
+        # National field sizes, ITA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
+        small = division == "D2"
+        if view in ("singles", "doubles"):
+            prows = (singles_ranking_rows if view == "singles"
+                     else doubles_ranking_rows)(division, gender)
+            limit = ({"singles": 75, "doubles": 40} if small
+                     else {"singles": 125, "doubles": 60})[view]
+            prows = [r for r in prows if conf == "All" or r["conf"] == conf][:limit]
+            p = paginate(prows, request.args.get("page", 1))
+            return render_template(
+                "rankings.html", active="Rankings", mode=view, view=view, p=p, prows=p.items,
+                total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
+                tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+            )
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
-        # National rankings show a fixed top field, ITA-style: top 75 in D1/D3, top 50 in D2.
-        limit = 50 if division == "D2" else 75
+        limit = 50 if small else 75
         rows = ranking_rows(division, gender)[:limit]
         total = len(rows)
         tiers = ["All"] + sorted({r.tier for r in rows})
@@ -422,8 +437,8 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.p6, reverse=True)
         p = paginate(filtered, request.args.get("page", 1))
         return render_template(
-            "rankings.html", active="Rankings", p=p, rows=p.items, total=total,
-            matches=len(filtered), conferences=conferences_for(division, gender),
+            "rankings.html", active="Rankings", mode="teams", view="teams", p=p, rows=p.items,
+            total=total, matches=len(filtered), conferences=conferences_for(division, gender),
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 

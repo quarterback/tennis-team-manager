@@ -1237,6 +1237,116 @@ def ita_team_points(season_id: int) -> dict:
     return {t: round(92.0 * (v / mx) ** 1.8, 2) for t, v in raw.items()}
 
 
+def _ita_scale(raw: dict, steep: float = 1.8, top: float = 92.0) -> dict:
+    """Scale raw ITA scores to a ~0..`top` points spread (leader = `top`)."""
+    if not raw:
+        return {}
+    mx = max(raw.values()) or 1.0
+    return {k: round(top * (v / mx) ** steep, 2) for k, v in raw.items()}
+
+
+def _ita_score(entities, wins, losses, qual, cap: int = 10) -> dict:
+    """Generic ITA-style score: best-`cap` win quality dragged by losses (a loss to a
+    weak opponent — low qual — hurts most), +10% for road wins. Only entities with a
+    win are scored. wins[e] = [(opp, road_bool)], losses[e] = [opp], qual[e] in 0..1."""
+    raw = {}
+    for e in entities:
+        w = wins.get(e)
+        if not w:
+            continue
+        wv = sorted((qual.get(o, 0.0) * (1.10 if road else 1.0) for o, road in w), reverse=True)[:cap]
+        drag = sum(1 - qual.get(o, 0.0) for o in losses.get(e, []))
+        raw[e] = sum(wv) / (len(wv) + drag)
+    return raw
+
+
+def _singles_results(season_id: int):
+    """One pass over final dual lines → the singles player-vs-player graph.
+    Returns (wins, losses, players, wl) where wins[pid]=[(opp_pid, road)], wl[pid]=[w,l]."""
+    conn = _db()
+    rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                        (season_id,)).fetchall()
+    conn.close()
+    wins, losses, players = {}, {}, set()
+    wl: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
+                continue
+            hp, ap = ln.get("home_pid"), ln.get("away_pid")
+            if hp is None or ap is None:
+                continue
+            players |= {hp, ap}
+            wl.setdefault(hp, [0, 0]); wl.setdefault(ap, [0, 0])
+            if ln.get("home_won"):
+                wins.setdefault(hp, []).append((ap, False)); losses.setdefault(ap, []).append(hp)
+                wl[hp][0] += 1; wl[ap][1] += 1
+            else:                                          # away player won on the road
+                wins.setdefault(ap, []).append((hp, True)); losses.setdefault(hp, []).append(ap)
+                wl[ap][0] += 1; wl[hp][1] += 1
+    return wins, losses, players, wl
+
+
+def _doubles_results(season_id: int):
+    """One pass over final dual lines → the doubles PAIR-vs-pair graph. A pair is the
+    unordered set of its two pids. Returns (wins, losses, pairs, members, wl)."""
+    conn = _db()
+    rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                        (season_id,)).fetchall()
+    conn.close()
+    wins, losses, pairs, members = {}, {}, set(), {}
+    wl: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("D"):
+                continue
+            hps, aps = ln.get("home_pids"), ln.get("away_pids")
+            if not hps or not aps or len(set(hps)) != 2 or len(set(aps)) != 2:
+                continue
+            hp, ap = frozenset(hps), frozenset(aps)
+            pairs |= {hp, ap}; members[hp] = tuple(hps); members[ap] = tuple(aps)
+            wl.setdefault(hp, [0, 0]); wl.setdefault(ap, [0, 0])
+            if ln.get("home_won"):
+                wins.setdefault(hp, []).append((ap, False)); losses.setdefault(ap, []).append(hp)
+                wl[hp][0] += 1; wl[ap][1] += 1
+            else:
+                wins.setdefault(ap, []).append((hp, True)); losses.setdefault(hp, []).append(ap)
+                wl[ap][0] += 1; wl[hp][1] += 1
+    return wins, losses, pairs, members, wl
+
+
+def _str_percentile(keys, str_of) -> dict:
+    """Map keys → quality in (0,1] by descending `str_of(key)` rank-percentile."""
+    order = sorted(keys, key=str_of, reverse=True)
+    n = len(order) or 1
+    q = {k: (n - i) / n for i, k in enumerate(order)}
+    for k in keys:
+        q.setdefault(k, 1.0 / n)
+    return q
+
+
+def ita_singles_points(season_id: int) -> dict:
+    """ITA-style singles player ranking points {pid: points}, anchored to player STR."""
+    strs = season_player_str(season_id)
+    if not strs:
+        return {}
+    wins, losses, players, _ = _singles_results(season_id)
+    qual = _str_percentile(players, lambda p: strs.get(p, (0.0,))[0])
+    return _ita_scale(_ita_score(players, wins, losses, qual))
+
+
+def ita_doubles_points(season_id: int, min_matches: int = 3):
+    """ITA-style doubles ranking points for PAIRS that have played together at least
+    `min_matches` times. Returns ({pair: points}, {pair: (pid, pid)}, {pair: [w, l]})."""
+    strs = season_player_str(season_id)
+    if not strs:
+        return {}, {}, {}
+    wins, losses, pairs, members, wl = _doubles_results(season_id)
+    qual = _str_percentile(pairs, lambda pr: sum(strs.get(p, (0.0,))[0] for p in pr) / 2)
+    eligible = {pr for pr in pairs if wl.get(pr, [0, 0])[0] + wl[pr][1] >= min_matches}
+    return _ita_scale(_ita_score(eligible, wins, losses, qual)), members, wl
+
+
 def conf_rank(season_id: int) -> dict:
     """school -> (conference_rank, conf_wins, conf_losses) from live standings."""
     out: dict = {}
