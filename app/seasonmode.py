@@ -29,7 +29,7 @@ from .season import dual_between, build_corpus, forced_appearances
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
-                      clamp_field, field_for_division, seed_score)
+                      clamp_field, field_for_division)
 from . import ita
 
 from .dbpath import resolve_db_path
@@ -648,7 +648,8 @@ def _ncaa_seeds(conn, s, progs, div):
     ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
     seeded, autobids = select_field(div.programs, ratings, champions,
-                                    size=field_for_division(s["division"]))
+                                    size=field_for_division(s["division"]),
+                                    score=ita_team_points(sid))
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
@@ -993,10 +994,10 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     gender) season is its own separate tournament, so the projection is naturally
     scoped to it. Selection mirrors the real format and the engine's own bracket
     logic (`select_field`): projected conference leaders take the automatic bids,
-    then the remaining at-large spots are filled by seed score — the Power Index
-    plus the power-conference preference (see `bracket.seed_score`). Returns None
-    until enough duals are final for the projection to mean anything (or when the
-    field would swallow everyone)."""
+    then the remaining at-large spots are filled by the ITA team-ranking points
+    (`ita_team_points`), the same metric the bracket seeds by. Returns None until
+    enough duals are final for the projection to mean anything (or when the field
+    would swallow everyone)."""
     s = load_season(season_id)
     if not s:
         return None
@@ -1028,10 +1029,10 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
 
     aq_keys = _conf_leaders(div, cf, ratings)
     at_large_spots = max(0, field - len(aq_keys))
-    # At-large in/out follows the same seed score the bracket selects by, so the
-    # bubble reflects the power-conference preference, not the Power Index alone.
+    # At-large in/out follows the same ITA team points the bracket now seeds by.
+    pts = ita_team_points(season_id)
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
-                    key=lambda p: seed_score(p, ratings), reverse=True)
+                    key=lambda p: pts.get(p.school, 0.0), reverse=True)
     if at_large_spots < edge or len(non_aq) <= at_large_spots:
         return None
 
@@ -1041,7 +1042,7 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
                 "rec": r.record, **extra}
 
     aq = [row(p) for p in sorted((p for p in rated if p.school in aq_keys),
-                                 key=lambda p: seed_score(p, ratings), reverse=True)]
+                                 key=lambda p: pts.get(p.school, 0.0), reverse=True)]
     in_board = [row(p, al_rank=i + 1) for i, p in enumerate(non_aq[:at_large_spots])]
     out_board = [row(p, al_rank=at_large_spots + i + 1)
                  for i, p in enumerate(non_aq[at_large_spots:])]
@@ -1418,7 +1419,8 @@ def bracket_field(season_id: int, size: int | None = None):
                          if v in progs and v in ratings]
         except (ValueError, TypeError):
             champions = []
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size),
+                                    score=ita_team_points(season_id))
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
@@ -1442,10 +1444,11 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     # tournament completes (parsing it as JSON then would fail and drop the seeds).
     champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    pts = ita_team_points(season_id)
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=pts)
     field_keys = {p.key for p in seeded}
     out = sorted((p for p in rated if p.key not in field_keys),
-                 key=lambda p: seed_score(p, ratings), reverse=True)[:out_n]
+                 key=lambda p: pts.get(p.school, 0.0), reverse=True)[:out_n]
     out_board = [{"school": p.school, "conf": p.conf_abbr,
                   "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
                  for p in out]
