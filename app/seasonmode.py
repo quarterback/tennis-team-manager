@@ -765,9 +765,9 @@ def _site_winners(conn, sid) -> list[str]:
 
 def _advance_indoor_round(conn, s, progs) -> dict:
     """One round of the ITA National Team Indoor Championship — a seeded single-elim
-    run akin to the NCAAs. D1's draw is 16 teams (the Kickoff site winners + a
-    top-ranked auto-bid host); the D2/D3 draws are simply the top 8 by prior-year
-    ranking. On the final, the season rolls into its regular-season opener."""
+    run akin to the NCAAs. D1's draw is 16 teams (one per Kickoff site); the D2/D3
+    draws are simply the top 8 by prior-year ranking. On the final, the season rolls
+    into its regular-season opener."""
     sid = s["id"]
     div = s["division"]
     kickoff_lead = ita.kickoff_rounds(div)
