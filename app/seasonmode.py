@@ -1072,6 +1072,33 @@ def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -
     return proj
 
 
+def team_form(season_id: int) -> dict:
+    """Per-team current streak and last-5 form from all final duals, in play order.
+    {school: {'streak': +wins/-losses, 'last5': 'WWLWL', 'w': int, 'l': int}}."""
+    conn = _db()
+    rows = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND status='final'"
+                        " ORDER BY week, round_no, id", (season_id,)).fetchall()
+    conn.close()
+    seq: dict = {}
+    for r in rows:
+        hw = r["winner"] == 0
+        seq.setdefault(r["home"], []).append(hw)
+        seq.setdefault(r["away"], []).append(not hw)
+    out: dict = {}
+    for school, res in seq.items():
+        streak = 0
+        for won in reversed(res):                  # trailing run of same result
+            if streak == 0:
+                streak = 1 if won else -1
+            elif (streak > 0) == won:
+                streak += 1 if won else -1
+            else:
+                break
+        out[school] = {"streak": streak, "w": sum(res), "l": len(res) - sum(res),
+                       "last5": "".join("W" if x else "L" for x in res[-5:])}
+    return out
+
+
 def recent_duals(season_id: int) -> list[dict]:
     """The most recently completed slate (last regular week or last postseason
     round) — drives the hub's 'latest results'."""

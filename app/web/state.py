@@ -432,6 +432,68 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
             "stars": p.recruit_stars, "points": p.junior_points, "str": p.junior_str,
         })
 
+    # --- Bracket Watch (bubble) + opener / champion context ---
+    bubble = sm.bubble_watch(sid)
+    ita_champion = sm.indoor_champion(sid)
+    natl_champion = sm.national_champion(sid)
+
+    # --- Form: hot teams (active win streaks), biggest movers, upset flags ---
+    hot_teams, movers = [], {"risers": [], "fallers": []}
+    if ratings:
+        conf_of = {p.school: p.conf_abbr for p in div.programs}
+        form = sm.team_form(sid)
+        for school, f in form.items():
+            if f["streak"] >= 3 and school in ratings:
+                ab, co = crest(school)
+                hot_teams.append({"school": school, "streak": f["streak"], "last5": f["last5"],
+                                  "rec": f"{f['w']}-{f['l']}", "conf": conf_of.get(school, ""),
+                                  "abbr": ab, "color": co})
+        hot_teams.sort(key=lambda x: -x["streak"])
+        hot_teams = hot_teams[:8]
+        moved = []
+        for rk, p in enumerate(ranked_programs, 1):
+            d = baseline_rank.get(p.school, rk) - rk
+            if d:
+                ab, co = crest(p.school)
+                moved.append({"school": p.school, "move": d, "rk": rk,
+                              "conf": p.conf_abbr, "abbr": ab, "color": co})
+        movers["risers"] = sorted(moved, key=lambda x: -x["move"])[:6]
+        movers["fallers"] = sorted(moved, key=lambda x: x["move"])[:6]
+    for d in recent:                                   # flag upsets in the score strip
+        w_s = d["home"] if d["winner"] == 0 else d["away"]
+        l_s = d["away"] if d["winner"] == 0 else d["home"]
+        d["upset"] = bool(ratings and w_s in ratings and l_s in ratings
+                          and ratings[w_s].pi + 0.03 < ratings[l_s].pi)
+
+    # --- Conference power (average Power Index per league) ---
+    conf_power = []
+    if ratings:
+        by_conf: dict = {}
+        for p in div.programs:
+            if p.school in ratings:
+                by_conf.setdefault(p.conf_abbr, []).append(ratings[p.school].pi)
+        conf_power = sorted(({"conf": c, "avg": sum(v) / len(v), "n": len(v)}
+                             for c, v in by_conf.items()), key=lambda x: -x["avg"])[:8]
+
+    # --- Singles + doubles win leaders ---
+    def _win_leaders(rec_map):
+        board = []
+        for pid, (w, l) in rec_map.items():
+            if pid in pidx and w + l >= 3:
+                info = pidx[pid]; ab, co = crest(info["school"])
+                board.append({"pid": pid, "name": info["name"], "school": info["school"],
+                              "country": info.get("country", ""),
+                              "secondary_country": info.get("secondary_country"),
+                              "w": w, "l": l, "abbr": ab, "color": co})
+        return sorted(board, key=lambda x: (-x["w"], x["l"]))[:8]
+
+    singles_leaders = _win_leaders(recs)
+    line_recs = sm.player_line_records(sid)
+    doubles_map = {pid: (sum(wl[0] for wl in r["doubles"].values()),
+                         sum(wl[1] for wl in r["doubles"].values()))
+                   for pid, r in line_recs.items()}
+    doubles_leaders = _win_leaders(doubles_map)
+
     _portal_result = {
         "season": s, "phase": s["phase"], "current_week": s["current_week"],
         "total_weeks": s["total_weeks"], "programs": len(div.programs),
@@ -441,6 +503,9 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         "standings_leaders": standings_leaders[:8], "recent": recent, "upcoming": upcoming,
         "top_prospects": top_prospects, "junior_kpis": juniors["kpis"],
         "grad_year": junior_year, "has_live_results": bool(ratings) or completed > 0,
+        "bubble": bubble, "ita_champion": ita_champion, "natl_champion": natl_champion,
+        "hot_teams": hot_teams, "movers": movers, "conf_power": conf_power,
+        "singles_leaders": singles_leaders, "doubles_leaders": doubles_leaders,
     }
     _portal_cache[_pkey] = _portal_result
     return _portal_result

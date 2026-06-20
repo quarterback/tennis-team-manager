@@ -56,7 +56,7 @@
     {% if portal.recent %}
       {% for d in portal.recent[:6] %}
       <a class="al-score-card" href="{{ url_for('season_dual', dual_id=d.id, u=u) }}">
-        <div class="al-score-meta">{{ 'Week ' ~ d.week if d.round == 'REG' else d.round }} · {{ 'Conf' if d.is_conf else 'Non-conf' }}</div>
+        <div class="al-score-meta">{{ 'Week ' ~ d.week if d.round == 'REG' else d.round }} · {{ 'Conf' if d.is_conf else 'Non-conf' }}{% if d.upset %} · <span class="al-upset">UPSET</span>{% endif %}</div>
         <div class="al-score-team {{ 'win' if d.winner == 0 else '' }}"><span>{{ d.home }}</span><strong>{{ d.home_points }}</strong></div>
         <div class="al-score-team {{ 'win' if d.winner == 1 else '' }}"><span>{{ d.away }}</span><strong>{{ d.away_points }}</strong></div>
       </a>
@@ -136,4 +136,97 @@
     </div>
   </section>
 </div></div>
+
+<div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Bracket Watch</span><a class="bl-panel-meta" href="{{ url_for('projection', u=u) }}">Projection →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% if portal.natl_champion %}
+        <div class="al-champline">🥇 <strong>{{ portal.natl_champion }}</strong><small>National Champion</small></div>
+      {% elif portal.bubble %}
+        <div class="al-sublabel">Last Four In · {{ portal.bubble.field }}-team field</div>
+        {% for t in portal.bubble.last_in %}
+        <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname">{{ t.school | team_logo }} {{ t.school }} <small>· {{ t.conf }}</small></span><span class="al-leadval">#{{ t.al_rank }}</span></a>
+        {% endfor %}
+        <div class="al-sublabel out">First Four Out</div>
+        {% for t in portal.bubble.first_out %}
+        <a class="al-leadrow out" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname">{{ t.school | team_logo }} {{ t.school }} <small>· {{ t.conf }}</small></span><span class="al-leadval">#{{ t.al_rank }}</span></a>
+        {% endfor %}
+      {% else %}
+        <p class="al-muted">The bubble appears once the season has enough results to project a field.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Season Opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">ITA bracket →</a></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% if portal.ita_champion %}
+        <div class="al-champline">❄️ <strong>{{ portal.ita_champion }}</strong><small>ITA Indoor National Champion</small></div>
+      {% elif portal.phase in ['ita_kickoff', 'ita_indoor'] %}
+        <p class="al-muted">The ITA opener is underway — <a href="{{ url_for('season_ita', u=u) }}">view the live bracket</a>.</p>
+      {% else %}
+        <p class="al-muted">The ITA opener hasn't been played yet.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Conference Power</span><span class="bl-panel-meta">avg Power Index</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for c in portal.conf_power %}
+      <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=c.conf) }}"><span class="al-leadname">{{ loop.index }}. {{ c.conf }} <small>· {{ c.n }} teams</small></span><span class="al-leadval">{{ '%.3f'|format(c.avg) }}</span></a>
+      {% else %}<p class="al-muted">Available once rankings are live.</p>{% endfor %}
+    </div>
+  </section>
+</div></div>
+
+<div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Hot Teams</span><span class="bl-panel-meta">win streaks</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for t in portal.hot_teams %}
+      <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="bl-crest xs" style="background:{{ t.color }}">{{ t.abbr }}</span> {{ t.school }} <small>· {{ t.rec }}</small></span><span class="al-leadval win">W{{ t.streak }}</span></a>
+      {% else %}<p class="al-muted">No active win streaks yet.</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Top Movers</span><span class="bl-panel-meta">vs preseason</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for t in portal.movers.risers %}
+      <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move up">▲{{ t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>
+      {% endfor %}
+      {% for t in portal.movers.fallers %}
+      <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move down">▼{{ -t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>
+      {% endfor %}
+      {% if not portal.movers.risers and not portal.movers.fallers %}<p class="al-muted">Movement appears once results shift the rankings.</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Win Leaders</span><span class="bl-panel-meta">singles · doubles</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      <div class="al-sublabel">Singles</div>
+      {% for p in portal.singles_leaders[:5] %}
+      <a class="al-player-row compact" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}"><span class="al-player-rk">{{ loop.index }}</span><span class="al-player-main"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}<small>{{ p.school }}</small></span><strong>{{ p.w }}-{{ p.l }}</strong></a>
+      {% else %}<p class="al-muted">After completed duals.</p>{% endfor %}
+      {% if portal.doubles_leaders %}<div class="al-sublabel">Doubles</div>{% endif %}
+      {% for p in portal.doubles_leaders[:5] %}
+      <a class="al-player-row compact" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}"><span class="al-player-rk">{{ loop.index }}</span><span class="al-player-main"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}<small>{{ p.school }}</small></span><strong>{{ p.w }}-{{ p.l }}</strong></a>
+      {% endfor %}
+    </div>
+  </section>
+</div></div>
+
+<style>
+.al-upset { color: #b4452f; font-weight: 800; letter-spacing: .04em; }
+.al-champline { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px; font-size: 17px; }
+.al-champline small { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.al-sublabel { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: var(--ls-eyebrow);
+  color: var(--text-muted); margin: 8px 2px 4px; }
+.al-sublabel.out { color: #b4452f; }
+.al-leadrow.out .al-leadval, .al-leadval.win { font-weight: 800; }
+.al-leadval.win { color: #1f7a4d; }
+</style>
 {% endblock %}
