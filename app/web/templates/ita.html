@@ -25,16 +25,7 @@
 </div></div>
 
 {% if not view %}
-<div class="bl-container"><div class="bl-note">
-  {% if division == 'D1' %}
-  The ITA Kickoff Weekend opens the Division I season. It fills in once the season is advanced into the
-  ITA phase — the top 60 teams (seeded by the prior year's final ranking) are drawn into 15
-  four-team sites; the site winners advance to the 16-team National Team Indoor Championship.
-  {% else %}
-  The ITA National Team Indoor opens the {{ division }} season — the top 8 teams (by the prior year's
-  final ranking) play a seeded single-elimination. It fills in once the season is advanced into the ITA phase.
-  {% endif %}
-</div></div>
+<div class="bl-container"><div class="bl-note">Advance the season into the ITA phase to play the opener.</div></div>
 {% else %}
 
 {% if view.indoor_champion %}
@@ -42,14 +33,13 @@
   <span class="bl-crest lg" style="background:{{ crest(view.indoor_champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(view.indoor_champion)[0] }}</span>
   <div><div class="label">ITA Indoor Champion</div>
     <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ view.indoor_champion }}</div>
-    <div class="sub">won the National Team Indoor Championship to open the season</div></div>
+</div>
 </div></div>
 {% endif %}
 
 {% if view.indoor %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">National Team Indoor Championship</span>
-    <span class="bl-panel-meta">{% if division == 'D1' %}final 16 · site winners + auto-bid host{% else %}top 8 · by prior-year ranking{% endif %}</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">National Team Indoor Championship</span></div>
   <div class="bl-rounds bl-rounds-sim" style="padding:8px">
     {% for rnd in view.indoor %}
     <section class="bl-panel bl-round-panel">
@@ -65,8 +55,7 @@
 
 {% if view.sites %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Kickoff Weekend Sites</span>
-    <span class="bl-panel-meta">15 four-team sites · host is the top seed</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Kickoff Weekend Sites</span></div>
   <div class="ita-sites">
     {% for site in view.sites %}
     <div class="ita-site">
@@ -78,12 +67,6 @@
   </div>
 </div></div>
 {% endif %}
-
-<div class="bl-container"><div class="bl-note">
-  {% if view.sites %}Sites are cosmetic — there is no home-court advantage. {% endif %}Seeding follows the
-  prior year's final ranking (roster Power 6 in year 0). Every ITA result counts toward the season
-  dual-match record <em>and</em> the live Power Index — an early read on who's good.
-</div></div>
 
 <style>
 .ita-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding: 8px; }
