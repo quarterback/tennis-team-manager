@@ -284,6 +284,13 @@ def create_season(division: str = "D1", gender: str = "men", *, seed: int = 2026
         " home_points, away_points, winner, lines_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         [(sid, w, "REG", cn, 1 if cn else 0, h, a, "scheduled", None, None, None, None)
          for (w, h, a, cn) in rows])
+    # Draw the ITA opener's first fixtures now (scheduled, unplayed) so the bracket is
+    # visible before it's advanced — the Kickoff sites for D1, the top-8 Indoor for D2/D3.
+    s0 = {"id": sid, "division": division, "gender": gender, "seed": seed}
+    if ita.runs_kickoff(division):
+        _draw_kickoff(conn, s0)
+    elif ita.runs_indoor(division):
+        _draw_indoor(conn, s0)
     conn.commit()
     conn.close()
     return sid
@@ -724,30 +731,49 @@ def _ita_ranking(s) -> list[str]:
     return [p.school for p in sorted(div.programs, key=ita.power6, reverse=True)]
 
 
-def _advance_kickoff_round(conn, s, progs) -> dict:
-    """One round of the ITA Kickoff Weekend: 15 cosmetic four-team sites, each a
-    seeded single-elim (host = top seed, 1v4 / 2v3). Round 1 is the site semifinals,
-    round 2 the site finals; the site winners advance to the Indoor."""
+def _draw_kickoff(conn, s) -> None:
+    """Draw the Kickoff Weekend round-1 fixtures (scheduled, unplayed) so the bracket
+    is visible before it's played. Idempotent — a no-op once any ITAK dual exists."""
     sid = s["id"]
-    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'",
-                            (sid,)).fetchone()["c"]
-    if existing == 0:                                  # draw the sites + seed round 1
-        sites = ita.kickoff_sites(_ita_ranking(s))
-        for k, site in enumerate(sites):
-            label = f"Site {k + 1}"
-            for m, (h, a) in enumerate(ita.site_pairs(site)):
-                _insert_dual(conn, sid, 1, "ITAK", label, 0, 1, k * 2 + m, h, a)
-        round_no = 1
-    else:
-        row = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAK'"
-                           " AND status='scheduled'", (sid,)).fetchone()
-        round_no = row["r"]
-    if round_no is None:
+    if conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'",
+                    (sid,)).fetchone()["c"]:
+        return
+    for k, site in enumerate(ita.kickoff_sites(_ita_ranking(s))):
+        label = f"Site {k + 1}"
+        for m, (h, a) in enumerate(ita.site_pairs(site)):
+            _insert_dual(conn, sid, 1, "ITAK", label, 0, 1, k * 2 + m, h, a)
+
+
+def _draw_indoor(conn, s) -> None:
+    """Draw the Indoor round-1 fixtures (scheduled, unplayed). D1's field is the
+    Kickoff site winners; D2/D3 is the top 8 by prior-year ranking. Idempotent."""
+    sid = s["id"]
+    if conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAI'",
+                    (sid,)).fetchone()["c"]:
+        return
+    div = s["division"]
+    winners = _site_winners(conn, sid) if ita.runs_kickoff(div) else []
+    field = ita.indoor_field(winners, _ita_ranking(s), ita.indoor_size(div))
+    week = ita.kickoff_rounds(div) + 1
+    for bpos, h, a in _round1_pairs(field):
+        _insert_dual(conn, sid, week, "ITAI", _round_name(len(field)), 0, 1, bpos, h, a)
+
+
+def _advance_kickoff_round(conn, s, progs) -> dict:
+    """Play one round of the ITA Kickoff Weekend — the site semifinals (round 1) then
+    the site finals (round 2) — and draw the next round's fixtures so they're visible
+    before being played. The site winners go on to the Indoor."""
+    sid = s["id"]
+    _draw_kickoff(conn, s)                              # ensure round-1 fixtures exist
+    round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAK'"
+                            " AND status='scheduled'", (sid,)).fetchone()["r"]
+    if round_no is None:                               # nothing left → enter the Indoor
         conn.execute("UPDATE seasons SET phase='ita_indoor' WHERE id=?", (sid,))
+        _draw_indoor(conn, s)
         return {"phase": "ita_kickoff", "done": True}
 
     due = _sim_round(conn, s, progs, "ITAK", round_no, "itak")
-    if round_no == 1:                                  # site semifinals done → site finals
+    if round_no == 1:                                  # site semifinals done → draw site finals
         n_sites = conn.execute("SELECT COUNT(DISTINCT conf) c FROM duals WHERE season_id=?"
                                " AND round='ITAK'", (sid,)).fetchone()["c"]
         for k in range(n_sites):
@@ -757,10 +783,9 @@ def _advance_kickoff_round(conn, s, progs) -> dict:
             winners = [w["home"] if w["winner"] == 0 else w["away"] for w in wins]
             if len(winners) == 2:
                 _insert_dual(conn, sid, 2, "ITAK", label, 0, 2, k, winners[0], winners[1])
-    remaining = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAK'"
-                             " AND status='scheduled'", (sid,)).fetchone()["c"]
-    if remaining == 0:
+    else:                                              # site finals done → enter Indoor, draw it
         conn.execute("UPDATE seasons SET phase='ita_indoor' WHERE id=?", (sid,))
+        _draw_indoor(conn, s)
     return {"phase": "ita_kickoff", "round": round_no, "played": len(due)}
 
 
@@ -779,19 +804,9 @@ def _advance_indoor_round(conn, s, progs) -> dict:
     sid = s["id"]
     div = s["division"]
     kickoff_lead = ita.kickoff_rounds(div)
-    existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='ITAI'",
-                            (sid,)).fetchone()["c"]
-    if existing == 0:                                  # seed the Indoor draw
-        ranked = _ita_ranking(s)
-        winners = _site_winners(conn, sid) if ita.runs_kickoff(div) else []
-        field = ita.indoor_field(winners, ranked, ita.indoor_size(div))
-        week = kickoff_lead + 1
-        for bpos, h, a in _round1_pairs(field):
-            _insert_dual(conn, sid, week, "ITAI", _round_name(len(field)), 0, 1, bpos, h, a)
-        round_no = 1
-    else:
-        round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAI'"
-                                " AND status='scheduled'", (sid,)).fetchone()["r"]
+    _draw_indoor(conn, s)                              # ensure round-1 fixtures exist
+    round_no = conn.execute("SELECT MIN(round_no) r FROM duals WHERE season_id=? AND round='ITAI'"
+                            " AND status='scheduled'", (sid,)).fetchone()["r"]
     if round_no is None:
         return _finish_indoor(conn, s)
 
