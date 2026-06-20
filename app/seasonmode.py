@@ -1190,6 +1190,53 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
     return {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
 
 
+def ita_team_points(season_id: int) -> dict:
+    """A simple ITA-style team ranking: the average quality of a team's best-10 wins,
+    dragged down by its losses (a loss to a WEAK team hurts most), with a +10% road-win
+    bonus — the shape of the real ITA algorithm. Opponent quality is the Power Index's
+    rank-percentile, which keeps this iteration-free and anchored to real strength: a
+    raw opponent-quality *iteration* degenerates in a synthetic field (a tight mid-major
+    round-robin bootstraps itself to the top). Returns {school: points on a ~0-92 scale};
+    only teams with a win are ranked (as in the ITA)."""
+    pi = power_index(season_id)
+    if not pi:
+        return {}
+    conn = _db()
+    qs = ",".join("?" for _ in RANKING_ROUNDS)
+    rows = conn.execute(f"SELECT home, away, winner FROM duals WHERE season_id=? AND status='final'"
+                        f" AND round IN ({qs})", (season_id, *RANKING_ROUNDS)).fetchall()
+    conn.close()
+    wins: dict = {}
+    losses: dict = {}
+    teams: set = set()
+    for d in rows:
+        h, a = d["home"], d["away"]
+        teams |= {h, a}
+        if d["winner"] == 0:
+            wins.setdefault(h, []).append((a, False)); losses.setdefault(a, []).append(h)
+        else:
+            wins.setdefault(a, []).append((h, True)); losses.setdefault(h, []).append(a)
+
+    order = sorted((t for t in teams if t in pi), key=lambda t: pi[t].pi, reverse=True)
+    n = len(order) or 1
+    qual = {t: (n - i) / n for i, t in enumerate(order)}   # 1.0 best → ~0 worst
+    for t in teams:
+        qual.setdefault(t, 1.0 / n)
+
+    raw: dict = {}
+    for t in teams:
+        w = wins.get(t)
+        if not w:                                          # no win → not ranked
+            continue
+        wv = sorted((qual[o] * (1.10 if road else 1.0) for o, road in w), reverse=True)[:10]
+        drag = sum(1 - qual[o] for o in losses.get(t, []))
+        raw[t] = sum(wv) / (len(wv) + drag)
+    if not raw:
+        return {}
+    mx = max(raw.values()) or 1.0
+    return {t: round(92.0 * (v / mx) ** 1.8, 2) for t, v in raw.items()}
+
+
 def conf_rank(season_id: int) -> dict:
     """school -> (conference_rank, conf_wins, conf_losses) from live standings."""
     out: dict = {}

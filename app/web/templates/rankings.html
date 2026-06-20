@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% from "_pager.html" import pager %}
-{% block title %}Play to Clinch — Power Index{% endblock %}
+{% block title %}Play to Clinch — National Rankings{% endblock %}
 {% block content %}
-{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 70px 72px 96px 62px 62px' %}
+{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 72px 70px 72px 90px 62px 62px' %}
 
 <form method="get">
 <div class="bl-toolbar">
@@ -59,6 +59,7 @@
         <span class="bl-th">CONF RK</span>
         <span class="bl-th">CONFERENCE</span>
         <span class="bl-th">RECORD</span>
+        <span class="bl-th num" title="ITA-style ranking points: best-10 win quality, dragged by losses, +10% road wins">POINTS</span>
         <span class="bl-th">CONF REC</span>
         <span class="bl-th num" title="Top-6 roster strength, UTR-style Power 6">POWER 6</span>
         <span class="bl-th num">POWER INDEX <span class="caret">▴▾</span></span>
@@ -72,9 +73,10 @@
         <span class="bl-confrk {{ r.confrk_class }}">{{ r.cr }}</span>
         <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.rec }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
         <span class="bl-crec">{{ r.crec }}</span>
         <span class="bl-cell-num"><span class="bl-stat">{{ '%.1f'|format(r.p6) }}</span></span>
-        <span class="bl-cell-num"><span class="bl-stat power">{{ r.fmt(r.pi) }}</span></span>
+        <span class="bl-cell-num"><span class="bl-stat">{{ r.fmt(r.pi) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat {{ r.apr_kind }}">{{ r.fmt(r.apr) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat {{ r.fqi_kind }}">{{ r.fmt(r.fqi) }}</span></span>
       </div>

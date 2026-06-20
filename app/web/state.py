@@ -186,6 +186,7 @@ class LiveRow:
     apr: float
     fqi: float
     p6: float = 0.0
+    points: float = 0.0
     me: bool = False
 
     @property
@@ -237,12 +238,13 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     div = load_division(division, gender)
     ratings = sm.power_index(sid)
     cr = sm.conf_rank(sid)
+    pts = sm.ita_team_points(sid)                              # ITA-style ranking points
 
-    if ratings:
-        rated = sorted((p for p in div.programs if p.school in ratings),
-                       key=lambda p: ratings[p.school].pi, reverse=True)
-        unrated = sorted((p for p in div.programs if p.school not in ratings),
-                         key=_ability, reverse=True)            # not yet played
+    if pts:
+        rated = sorted((p for p in div.programs if p.school in pts),
+                       key=lambda p: pts[p.school], reverse=True)
+        unrated = sorted((p for p in div.programs if p.school not in pts),
+                         key=_ability, reverse=True)            # winless / not yet played → unranked
         ordered = rated + unrated
     else:
         ordered = sorted(div.programs, key=_ability, reverse=True)
@@ -256,7 +258,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            p6=_power6(p), me=(p.school == MY_TEAM),
+            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == MY_TEAM),
         ))
     return rows
 

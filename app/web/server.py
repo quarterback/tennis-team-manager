@@ -407,7 +407,9 @@ def create_app() -> Flask:
         conf = request.args.get("conf", "All")
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
-        rows = ranking_rows(division, gender)
+        # National rankings show a fixed top field, ITA-style: top 75 in D1/D3, top 50 in D2.
+        limit = 50 if division == "D2" else 75
+        rows = ranking_rows(division, gender)[:limit]
         total = len(rows)
         tiers = ["All"] + sorted({r.tier for r in rows})
         filtered = [r for r in rows
