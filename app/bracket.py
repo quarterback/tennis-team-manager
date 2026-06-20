@@ -2,14 +2,14 @@
 Seeded single-elimination dual-match bracket — the NCAA team championship.
 
 Modeled on online March-Madness bracket simulators: teams are **seeded by
-Power Index**, then each round is decided by actually **playing the dual**
-(engine.simulate_dual). The match engine already carries real variance, so
-higher seeds are favored but upsets happen — skill does most of the work,
-but it's lossy, not deterministic. No separate coin-flip model needed.
+seed score** (Power Index + a power-conference preference, see ``seed_score``),
+then each round is decided by actually **playing the dual** (engine.simulate_dual).
+The match engine already carries real variance, so higher seeds are favored but
+upsets happen — skill does most of the work, but it's lossy, not deterministic.
+No separate coin-flip model needed.
 
 Field selection mirrors the real format: **conference champions get
-automatic bids**, the rest of the field is filled by **at-large** Power
-Index order.
+automatic bids**, the rest of the field is filled **at-large by seed score**.
 """
 from __future__ import annotations
 
@@ -26,6 +26,26 @@ ROUND_NAMES = {64: "Round of 64", 32: "Round of 32", 16: "Round of 16",
 
 FIELD_DEFAULT = 64
 FIELD_MIN, FIELD_MAX = 16, 128
+
+# Power-conference seeding preference. A purely results-based Power Index overrates
+# teams that pile up wins against a weak conference schedule — so a mid-major can
+# land a top seed and then lose its first match to a power-conference team it was
+# seeded above. Real selection committees correct for this: they reward teams from
+# deeper leagues (whose week-to-week schedule is far tougher) rather than seeding on
+# results alone. So the NCAA field is selected and seeded by a *seed score* — the
+# Power Index plus a conference-prestige preference. It's a balance, not a takeover:
+# a genuinely dominant mid-major still earns a high seed, and automatic-qualifier
+# status never substitutes for it (an at-large team can out-seed an AQ). The Power
+# Index rankings themselves stay untouched — this tilt lives only at bracket time.
+CONF_SEED_PREF = 0.30     # weight on conference prestige (0 = seed on the Power Index alone)
+CONF_SEED_PIVOT = 0.55    # neutral prestige; only centers the score (order depends on the weight)
+
+
+def seed_score(p: Program, ratings: dict) -> float:
+    """Power Index plus the power-conference preference — the value the NCAA field is
+    selected and seeded by (see ``CONF_SEED_PREF``)."""
+    from .ncaa import conf_prestige
+    return ratings[p.school].pi + CONF_SEED_PREF * (conf_prestige(p.conf_abbr) - CONF_SEED_PIVOT)
 
 
 def field_for_division(division: str) -> int:
@@ -97,26 +117,29 @@ class BracketResult:
 
 def select_field(programs: list[Program], ratings: dict, champions: list[Program],
                  size: int = 64) -> tuple[list[Program], set[str]]:
-    """Return (seeded field of `size`, autobid keys). Champions are auto-in;
-    the rest are at-large by Power Index. The full field is seeded by PI."""
-    by_pi = sorted(programs, key=lambda p: ratings[p.school].pi, reverse=True)
+    """Return (seeded field of `size`, autobid keys). Champions are auto-in; the rest
+    are at-large by seed score, and the full field is seeded by seed score — the
+    Power Index plus the power-conference preference (see ``seed_score``)."""
+    def score(p: Program) -> float:
+        return seed_score(p, ratings)
+    by_score = sorted(programs, key=score, reverse=True)
     champ_keys = {c.key for c in champions}
 
     field_keys: set[str] = set()
     field_progs: list[Program] = []
-    # autobids first (capped at size, best PI first)
-    for p in sorted(champions, key=lambda p: ratings[p.school].pi, reverse=True):
+    # autobids first (capped at size, best seed score first)
+    for p in sorted(champions, key=score, reverse=True):
         if len(field_progs) >= size:
             break
         field_keys.add(p.key); field_progs.append(p)
-    # fill at-large by PI
-    for p in by_pi:
+    # fill at-large by seed score
+    for p in by_score:
         if len(field_progs) >= size:
             break
         if p.key not in field_keys:
             field_keys.add(p.key); field_progs.append(p)
 
-    seeded = sorted(field_progs, key=lambda p: ratings[p.school].pi, reverse=True)
+    seeded = sorted(field_progs, key=score, reverse=True)
     return seeded, champ_keys
 
 
