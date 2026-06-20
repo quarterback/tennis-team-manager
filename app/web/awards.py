@@ -345,6 +345,9 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     champ = sm.national_champion(sid)
     if champ:
         credit_roster(champ, "national_champion", "National Champion", 110)
+    indoor = sm.indoor_champion(sid)
+    if indoor:
+        credit_roster(indoor, "ita_indoor_champion", "ITA Indoor National Champion", 108)
 
     _rec_cache[key] = recs
     return recs
@@ -417,6 +420,9 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     champ = sm.national_champion(sid)
     if champ:
         add_head(champ, "national_champion", "National Champion", 110)
+    indoor = sm.indoor_champion(sid)
+    if indoor:
+        add_head(indoor, "ita_indoor_champion", "ITA Indoor National Champion", 108)
     return recs
 
 
