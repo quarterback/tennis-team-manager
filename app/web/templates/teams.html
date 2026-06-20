@@ -59,22 +59,6 @@
         {% endfor %}
       </div>
     </div>
-    <div class="bl-notes"><div class="bl-note">
-      Lines 1–6 are the singles lineup (by STR). STR is the live, results-based rating;
-      reliability rises with matches played. The bottom of the roster are walk-ons (no scholarship)
-      until a school promotes them.
-      {% if budget %}
-      <br><br>
-      {% if budget.offers_aid %}
-      <b>Scholarships:</b> {{ "%.2f"|format(budget.allocated) }} of {{ "%g"|format(budget.cap) }}
-      equivalencies committed ({{ "%.2f"|format(budget.remaining) }} open) —
-      {{ budget.full_rides }} full + {{ budget.partials }} partial, {{ budget.walk_ons }} walk-on(s).
-      Equivalency caps follow the real NCAA limits for this division.
-      {% else %}
-      <b>No athletic scholarships:</b> this division (D3) offers no athletic aid — the recruited
-      core are commitment slots; programs compete on academics and prestige instead.
-      {% endif %}
-      {% endif %}</div></div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
