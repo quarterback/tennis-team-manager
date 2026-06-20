@@ -1274,6 +1274,42 @@ def team_results(division: str, gender: str, school: str, seed: int = DEFAULT_SE
     return {"results": out, "wins": wins, "losses": losses}
 
 
+def program_history(division: str, gender: str, school: str, seed: int = DEFAULT_SEED) -> dict:
+    """A program's season-by-season history (newest first) and aggregated program
+    honors, across every world-year of this universe that has results."""
+    import app.world as world
+    import app.seasonmode as sm
+    w = world.load_world(seed)
+    base = w["seed"] if w else seed
+    cur_year = w["year"] if w else 0
+    seasons = []
+    for y in range(cur_year + 1):
+        ysid = sm.find_season(division, gender, seed=world.year_seed(base, y))
+        if ysid is None:
+            continue
+        row = sm.season_program_result(ysid, school)
+        if not row:
+            continue
+        row["year"] = 2026 + y
+        row["season_no"] = y + 1
+        seasons.append(row)
+    seasons.reverse()                                  # newest first
+
+    def years(pred):
+        return [s["year"] for s in seasons if pred(s)]
+
+    honors = {
+        "national_titles": years(lambda s: s["national_champ"]),
+        "indoor_titles": years(lambda s: s["indoor_champ"]),
+        "reg_conf_titles": years(lambda s: s["reg_conf_champ"]),
+        "ct_titles": years(lambda s: s["ct_champ"]),
+        "ncaa_appearances": [{"year": s["year"], "round": s["ncaa"]} for s in seasons if s["ncaa"]],
+        "ita_appearances": [{"year": s["year"], "round": s["ita"]} for s in seasons if s["ita"]],
+    }
+    honors["any"] = any(honors[k] for k in honors)
+    return {"seasons": seasons, "honors": honors}
+
+
 def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED):
     import app.world as world
     import app.seasonmode as sm

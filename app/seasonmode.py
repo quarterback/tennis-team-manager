@@ -56,6 +56,14 @@ NATIONAL_FIELD = 64
 RANKING_ROUNDS = ("REG", "ITAK", "ITAI")
 SEED_ROUNDS = ("REG", "CT", "ITAK", "ITAI")
 
+# The furthest round a program reached, in bracket vocabulary. The NCAA field's
+# non-power-of-two play-in (D1's 96) is the Round of 96; the rest follow the draw.
+NCAA_ROUND_LABEL = {
+    "First Round": "R96", "Round of 96": "R96", "Round of 64": "R64",
+    "Round of 32": "R32", "Round of 16": "Sweet 16", "Quarterfinals": "Elite 8",
+    "Semifinals": "Final 4", "Final": "Final",
+}
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS seasons (
   id INTEGER PRIMARY KEY, division TEXT, gender TEXT, seed INTEGER,
@@ -847,6 +855,79 @@ def standings(season_id: int) -> dict:
                       "ol": ov.get(p.school, [0, 0])[1], "cw": cf.get(p.school, [0, 0])[0],
                       "cl": cf.get(p.school, [0, 0])[1], "autobid": p.autobid} for p in table]
     return out
+
+
+def _reg_conf_champions(season_id: int) -> set:
+    """Every regular-season conference champion — by conference win %, with NO
+    tiebreaker, so teams tied atop a conference are ALL co-champions."""
+    champs: set = set()
+    for rows in standings(season_id).values():
+        best = -1.0
+        for r in rows:
+            g = r["cw"] + r["cl"]
+            if g and r["cw"] / g > best:
+                best = r["cw"] / g
+        if best < 0:
+            continue
+        for r in rows:
+            g = r["cw"] + r["cl"]
+            if g and r["cw"] / g == best:
+                champs.add(r["school"])
+    return champs
+
+
+def season_program_result(season_id: int, school: str) -> dict | None:
+    """A program's one-season summary for its history: overall record, conference,
+    regular-season + conference-tournament titles, and the furthest NCAA / ITA Indoor
+    round reached (champion / runner-up special-cased). None if the team has no
+    completed duals that season. `ncaa` is only resolved once the season is complete."""
+    s = load_season(season_id)
+    if not s:
+        return None
+    div = load_division(s["division"], s["gender"])
+    prog = div.by_school(school)
+    if prog is None:
+        return None
+    conn = _db()
+    duals = conn.execute(
+        "SELECT round, conf, round_no, home, away, winner FROM duals WHERE season_id=?"
+        " AND status='final' AND (home=? OR away=?)", (season_id, school, school)).fetchall()
+    if not duals:
+        conn.close()
+        return None
+
+    def won(d) -> bool:
+        return (d["winner"] == 0 and d["home"] == school) or (d["winner"] == 1 and d["away"] == school)
+
+    wins = sum(1 for d in duals if won(d))
+
+    def furthest(tag, labels, champ_label, runner_label):
+        rs = [d for d in duals if d["round"] == tag]
+        if not rs:
+            return None
+        top = conn.execute("SELECT MAX(round_no) m FROM duals WHERE season_id=? AND round=?",
+                           (season_id, tag)).fetchone()["m"]
+        last = max(rs, key=lambda d: d["round_no"])
+        if last["round_no"] == top:
+            return champ_label if won(last) else runner_label
+        return labels.get(last["conf"], last["conf"])
+
+    complete = s["phase"] == "complete"
+    ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "National Champion", "National Runner-Up") if complete else None
+    ita = furthest("ITAI", {}, "ITA Indoor Champion", "ITA Runner-Up")
+    conn.close()
+
+    return {
+        "conf": prog.conf_abbr,
+        "wins": wins, "losses": len(duals) - wins,
+        "reg_conf_champ": school in _reg_conf_champions(season_id),
+        "ct_champ": school in conf_champions(season_id),
+        "ncaa": ncaa,
+        "ita": ita,
+        "national_champ": national_champion(season_id) == school,
+        "indoor_champ": indoor_champion(season_id) == school,
+        "live": not complete,
+    }
 
 
 # Below this many games per team the Power Index is too noisy to project a field;

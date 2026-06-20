@@ -28,6 +28,7 @@ from .state import (ranking_rows, conferences_for, get_bracket, get_doubles_cham
                     recruiting_hub, signing_tracker, team_recruiting_class,
                     junior_setup_view, save_junior_setup, reset_junior_setup,
                     dashboard_view, data_portal_view, team_budget, team_results,
+                    program_history,
                     conference_schools, team_conference, conference_ratings,
                     world_hub, player_career, get_coach)
 from .state import preseason_view as preseason_view_data
@@ -777,7 +778,8 @@ def create_app() -> Flask:
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
-                               budget=team_budget(division, gender, school))
+                               budget=team_budget(division, gender, school),
+                               history=program_history(division, gender, school))
 
     @app.route("/player/<pid>")
     def player(pid):
