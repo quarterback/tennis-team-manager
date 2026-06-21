@@ -6,6 +6,7 @@
 {% set noun = 'players' if mode == 'singles' else 'pairs' if mode == 'doubles' else 'programs' %}
 
 <form method="get">
+<input type="hidden" name="view" value="{{ view }}">
 <div class="bl-toolbar">
   <div class="bl-toolbar-inner">
     <label class="bl-field"><span class="bl-field-label">Season</span>
@@ -113,7 +114,7 @@
         {{ prank(r.rk) }}
         <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}"><span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags(r.secondary_country) }}</span> {{ r.name }}</a>
         <a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
-        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
       </div>
@@ -136,7 +137,7 @@
         {{ prank(r.rk) }}
         <span class="bl-school"><a href="{{ url_for('player', pid=r.p1, school=r.school, u=u) }}">{{ r.n1 }}</a> <span style="color:var(--text-faint)">/</span> <a href="{{ url_for('player', pid=r.p2, school=r.school, u=u) }}">{{ r.n2 }}</a></span>
         <a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
-        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-conf">{{ r.conf_abbr }}</span>
         <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
       </div>

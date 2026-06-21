@@ -273,16 +273,20 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -
     pts = sm.ita_singles_points(sid)
     pidx = sm._pid_index(division, gender)
     recs = sm.player_records(sid)
-    conf_of = {p.school: p.conf_abbr for p in load_division(division, gender).programs}
+    progs = load_division(division, gender).programs
+    conf_full = {p.school: p.conf for p in progs}
+    conf_abbr = {p.school: p.conf_abbr for p in progs}
     rows = []
     for rk, pid in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         info = pidx.get(pid)
         if not info:
             continue
         w, l = recs.get(pid, (0, 0))
-        abbr, color = crest(info["school"])
-        rows.append({"rk": rk, "pid": pid, "name": info["name"], "school": info["school"],
-                     "conf": conf_of.get(info["school"], ""), "country": info.get("country", ""),
+        sch = info["school"]
+        abbr, color = crest(sch)
+        rows.append({"rk": rk, "pid": pid, "name": info["name"], "school": sch,
+                     "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
+                     "country": info.get("country", ""),
                      "secondary_country": info.get("secondary_country"), "class": info.get("class", ""),
                      "w": w, "l": l, "points": pts[pid], "abbr": abbr, "color": color})
     return rows
@@ -297,7 +301,9 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     pts, members, wl = sm.ita_doubles_points(sid)
     pidx = sm._pid_index(division, gender)
-    conf_of = {p.school: p.conf_abbr for p in load_division(division, gender).programs}
+    progs = load_division(division, gender).programs
+    conf_full = {p.school: p.conf for p in progs}
+    conf_abbr = {p.school: p.conf_abbr for p in progs}
     rows = []
     for rk, pr in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         m = members.get(pr)
@@ -306,9 +312,10 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -
         if not i1 or not i2:
             continue
         w, l = wl.get(pr, [0, 0])
-        abbr, color = crest(i1["school"])
+        sch = i1["school"]
+        abbr, color = crest(sch)
         rows.append({"rk": rk, "p1": m[0], "p2": m[1], "n1": i1["name"], "n2": i2["name"],
-                     "school": i1["school"], "conf": conf_of.get(i1["school"], ""),
+                     "school": sch, "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
                      "c1": i1.get("country", ""), "c2": i2.get("country", ""),
                      "sc1": i1.get("secondary_country"), "sc2": i2.get("secondary_country"),
                      "w": w, "l": l, "points": pts[pr], "abbr": abbr, "color": color})
