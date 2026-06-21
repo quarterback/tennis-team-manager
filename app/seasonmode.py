@@ -1223,14 +1223,21 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
     return {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
 
 
+_ITA_CONF_W = 0.30     # weight on conference prestige in opponent quality (0 = results only)
+
+
 def ita_team_points(season_id: int) -> dict:
     """A simple ITA-style team ranking: the average quality of a team's best-10 wins,
     dragged down by its losses (a loss to a WEAK team hurts most), with a +10% road-win
-    bonus — the shape of the real ITA algorithm. Opponent quality is the Power Index's
-    rank-percentile, which keeps this iteration-free and anchored to real strength: a
-    raw opponent-quality *iteration* degenerates in a synthetic field (a tight mid-major
-    round-robin bootstraps itself to the top). Returns {school: points on a ~0-92 scale};
-    only teams with a win are ranked (as in the ITA)."""
+    bonus — the shape of the real ITA algorithm. Opponent quality blends the Power
+    Index's rank-percentile with conference prestige (`_ITA_CONF_W`), so a win over a
+    deep power-conference team counts for more — the conference-strength signal the old
+    bracket seed_score preference provided, now living in the ranking itself. Anchoring
+    to the Power Index also keeps it iteration-free (a raw opponent-quality *iteration*
+    degenerates in a synthetic field — a tight mid-major round-robin bootstraps itself
+    to the top). Returns {school: points on a ~0-92 scale}; only teams with a win are
+    ranked (as in the ITA)."""
+    from .ncaa import conf_prestige
     pi = power_index(season_id)
     if not pi:
         return {}
@@ -1250,11 +1257,17 @@ def ita_team_points(season_id: int) -> dict:
         else:
             wins.setdefault(a, []).append((h, True)); losses.setdefault(h, []).append(a)
 
+    s = load_season(season_id)
+    conf_of = {p.school: p.conf_abbr for p in load_division(s["division"], s["gender"]).programs}
+    cps = {t: conf_prestige(conf_of.get(t, "")) for t in teams}
+    clo, chi = (min(cps.values()), max(cps.values())) if cps else (0.0, 1.0)
+    crange = (chi - clo) or 1.0
     order = sorted((t for t in teams if t in pi), key=lambda t: pi[t].pi, reverse=True)
     n = len(order) or 1
-    qual = {t: (n - i) / n for i, t in enumerate(order)}   # 1.0 best → ~0 worst
-    for t in teams:
-        qual.setdefault(t, 1.0 / n)
+    pct = {t: (n - i) / n for i, t in enumerate(order)}    # Power-Index percentile, 1.0 best
+    # Opponent quality = results percentile blended with conference prestige.
+    qual = {t: (1 - _ITA_CONF_W) * pct.get(t, 1.0 / n) + _ITA_CONF_W * (cps[t] - clo) / crange
+            for t in teams}
 
     raw: dict = {}
     for t in teams:
