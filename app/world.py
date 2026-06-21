@@ -671,31 +671,30 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
 
 
 # Rank-dependent decision timing: where in the signing window a recruit's
-# commitment peaks, as a fraction of the window. Blue-chips hold out and decide
-# LATE (they take every visit, weigh every offer); lower-rated recruits commit
-# EARLY — locking in a program (often one above what their ranking warrants)
-# before the seat is gone. The per-recruit week is drawn around this peak so the
-# tiers interleave (a 5★ can still pop early, a 3★ can drag late) but the bulk
-# of the elite tier lands deep in the season.
-SIGNING_MODE_TOP = 0.82     # #1 recruit's decision-week peak (× window) — latest
+# commitment peaks, as a fraction of the window. Recruits commit at VARYING times
+# across the whole window — the elite tier is spread (centered, no hold-out floor)
+# rather than clustered at the end, so blue-chips don't all decide after mid-tier
+# recruits have reached up and filled the funded power seats (which left them
+# unsigned). Lower-rated recruits still skew early. A recruit can commit anywhere
+# from week 0, drawn around its rank-set peak.
+SIGNING_MODE_TOP = 0.50     # #1 recruit's decision-week peak (× window) — centered
 SIGNING_MODE_BOTTOM = 0.12  # lowest recruit's peak — earliest
-SIGNING_FLOOR_TOP = 0.40    # #1 recruit can't commit before this much of the season
-                            # has elapsed (the back of the class can commit week 0)
+SIGNING_FLOOR_TOP = 0.0     # no hold-out floor — any recruit can commit from week 0
 
 
 def _decision_week(p, salt: str, rank_frac: float = 0.5, window: int = SIGNING_WEEKS) -> int:
     """The 0-based week WITHIN the signing window at which this recruit commits —
-    deterministic per recruit, and SKEWED BY RANK so signings drip across the whole
-    regular season: top recruits decide late, lower recruits decide early.
+    deterministic per recruit, and skewed by rank so signings drip across the whole
+    regular season at VARYING times: top recruits spread around the middle of the
+    window, lower recruits skew early. No recruit is floored out of the early weeks,
+    so the elite tier interleaves with the rest instead of clustering at the end and
+    getting crowded out of the funded power seats.
 
     `rank_frac` is the recruit's position in the national class (0.0 = the #1
-    recruit, 1.0 = the last). It sets both the EARLIEST week a recruit will commit
-    (blue-chips hold out — they can't sign in the opening weeks) and the mode of a
-    triangular draw, so the elite tier clusters late while the back of the class
-    signs quickly — instead of one fat weekly quota clearing the board by mid-season."""
+    recruit, 1.0 = the last) — it sets the mode of a triangular draw over the window."""
     window = max(1, window)
     rng = random.Random(f"{getattr(p, 'pid', '')}|decision|{salt}")
-    lo = window * SIGNING_FLOOR_TOP * (1.0 - rank_frac)          # top recruits can't go early
+    lo = window * SIGNING_FLOOR_TOP * (1.0 - rank_frac)          # 0 → anyone can commit early
     mode_frac = SIGNING_MODE_TOP - (SIGNING_MODE_TOP - SIGNING_MODE_BOTTOM) * rank_frac
     mode = max(lo, window * mode_frac)
     wk = int(rng.triangular(lo, window, mode))
@@ -729,7 +728,7 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
             break
         if p.pid in signed:
             continue
-        # rank_frac: 0.0 = the #1 recruit (decides latest), 1.0 = back of the class
+        # rank_frac: 0.0 = the #1 recruit, 1.0 = back of the class
         if not final and _decision_week(p, salt, i / denom, window) > week:
             continue                                        # hasn't decided to commit yet
         best = _pick_school(p, market, avail, jitter_salt="sign")

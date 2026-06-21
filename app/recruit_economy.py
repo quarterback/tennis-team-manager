@@ -39,7 +39,7 @@ _TIER_FLOOR = {"Blue Chip": 13.5, "5-Star": 10.5, "4-Star": 8.5, "3-Star": 0.0}
 # (low, high) — placed within the band by the program's prestige + a per-world
 # random jitter so funding varies run to run.
 _D1_BANDS = [
-    (0.79, 14.0, 16.0),   # power
+    (0.79, 15.0, 24.0),   # power — wide band so the blue-bloods separate from the rest
     (0.62, 12.0, 14.0),   # high-major
     (0.50, 10.0, 12.0),   # mid-major
     (0.00,  8.0, 10.0),   # low-major
