@@ -186,6 +186,7 @@ class LiveRow:
     apr: float
     fqi: float
     p6: float = 0.0
+    points: float = 0.0
     me: bool = False
 
     @property
@@ -237,12 +238,13 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     div = load_division(division, gender)
     ratings = sm.power_index(sid)
     cr = sm.conf_rank(sid)
+    pts = sm.ita_team_points(sid)                              # ITA-style ranking points
 
-    if ratings:
-        rated = sorted((p for p in div.programs if p.school in ratings),
-                       key=lambda p: ratings[p.school].pi, reverse=True)
-        unrated = sorted((p for p in div.programs if p.school not in ratings),
-                         key=_ability, reverse=True)            # not yet played
+    if pts:
+        rated = sorted((p for p in div.programs if p.school in pts),
+                       key=lambda p: pts[p.school], reverse=True)
+        unrated = sorted((p for p in div.programs if p.school not in pts),
+                         key=_ability, reverse=True)            # winless / not yet played → unranked
         ordered = rated + unrated
     else:
         ordered = sorted(div.programs, key=_ability, reverse=True)
@@ -256,8 +258,67 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            p6=_power6(p), me=(p.school == MY_TEAM),
+            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == MY_TEAM),
         ))
+    return rows
+
+
+def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """ITA-style singles player ranking rows (newest-best first)."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    pts = sm.ita_singles_points(sid)
+    pidx = sm._pid_index(division, gender)
+    recs = sm.player_records(sid)
+    progs = load_division(division, gender).programs
+    conf_full = {p.school: p.conf for p in progs}
+    conf_abbr = {p.school: p.conf_abbr for p in progs}
+    rows = []
+    for rk, pid in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
+        info = pidx.get(pid)
+        if not info:
+            continue
+        w, l = recs.get(pid, (0, 0))
+        sch = info["school"]
+        abbr, color = crest(sch)
+        rows.append({"rk": rk, "pid": pid, "name": info["name"], "school": sch,
+                     "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
+                     "country": info.get("country", ""),
+                     "secondary_country": info.get("secondary_country"), "class": info.get("class", ""),
+                     "w": w, "l": l, "points": pts[pid], "abbr": abbr, "color": color})
+    return rows
+
+
+def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """ITA-style doubles PAIR ranking rows (newest-best first)."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    pts, members, wl = sm.ita_doubles_points(sid)
+    pidx = sm._pid_index(division, gender)
+    progs = load_division(division, gender).programs
+    conf_full = {p.school: p.conf for p in progs}
+    conf_abbr = {p.school: p.conf_abbr for p in progs}
+    rows = []
+    for rk, pr in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
+        m = members.get(pr)
+        i1 = pidx.get(m[0]) if m else None
+        i2 = pidx.get(m[1]) if m else None
+        if not i1 or not i2:
+            continue
+        w, l = wl.get(pr, [0, 0])
+        sch = i1["school"]
+        abbr, color = crest(sch)
+        rows.append({"rk": rk, "p1": m[0], "p2": m[1], "n1": i1["name"], "n2": i2["name"],
+                     "school": sch, "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
+                     "c1": i1.get("country", ""), "c2": i2.get("country", ""),
+                     "sc1": i1.get("secondary_country"), "sc2": i2.get("secondary_country"),
+                     "w": w, "l": l, "points": pts[pr], "abbr": abbr, "color": color})
     return rows
 
 
@@ -351,6 +412,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
     baseline_rank = {r.school: r.rk for r in baseline_rows}
     ratings = sm.power_index(sid)
 
+    wk_move = sm.weekly_movers(sid)                    # week-to-week rank change
     if ratings:
         ranked_programs = sorted(
             (p for p in div.programs if p.school in ratings),
@@ -361,8 +423,7 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         for rk, prog in enumerate(ranked_programs[:12], 1):
             r = ratings[prog.school]
             abbr, color = crest(prog.school)
-            previous = baseline_rank.get(prog.school, rk)
-            move = previous - rk
+            move = wk_move.get(prog.school) or 0
             live_rankings.append({
                 "rk": rk, "school": prog.school, "conf": prog.conf_abbr,
                 "rec": r.record, "pi": r.pi, "apr": r.apr, "fqi": r.fqi,
@@ -432,6 +493,73 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
             "stars": p.recruit_stars, "points": p.junior_points, "str": p.junior_str,
         })
 
+    # --- Bracket Watch (bubble) + opener / champion context ---
+    bubble = sm.bubble_watch(sid)
+    ita_champion = sm.indoor_champion(sid)
+    natl_champion = sm.national_champion(sid)
+
+    # --- Form: hot teams (active win streaks), biggest movers, upset flags ---
+    hot_teams, movers = [], {"risers": [], "fallers": []}
+    if ratings:
+        conf_of = {p.school: p.conf_abbr for p in div.programs}
+        form = sm.team_form(sid)
+        for school, f in form.items():
+            if f["streak"] >= 3 and school in ratings:
+                ab, co = crest(school)
+                hot_teams.append({"school": school, "streak": f["streak"], "last5": f["last5"],
+                                  "rec": f"{f['w']}-{f['l']}", "conf": conf_of.get(school, ""),
+                                  "abbr": ab, "color": co})
+        hot_teams.sort(key=lambda x: -x["streak"])
+        hot_teams = hot_teams[:8]
+        risers, fallers = [], []
+        for rk, p in enumerate(ranked_programs, 1):
+            if p.school not in wk_move:                 # only currently-ranked (top-poll) teams
+                continue
+            m = wk_move[p.school]                       # positions gained/lost, or None = NEW
+            ab, co = crest(p.school)
+            entry = {"school": p.school, "rk": rk, "conf": p.conf_abbr,
+                     "abbr": ab, "color": co, "move": m, "new": m is None}
+            if m is None or m > 0:
+                risers.append(entry)
+            elif m < 0:
+                fallers.append(entry)
+        movers["risers"] = sorted(risers, key=lambda x: (0 if x["new"] else 1, -(x["move"] or 0)))[:6]
+        movers["fallers"] = sorted(fallers, key=lambda x: x["move"])[:6]
+    for d in recent:                                   # flag upsets in the score strip
+        w_s = d["home"] if d["winner"] == 0 else d["away"]
+        l_s = d["away"] if d["winner"] == 0 else d["home"]
+        d["upset"] = bool(ratings and w_s in ratings and l_s in ratings
+                          and ratings[w_s].pi + 0.03 < ratings[l_s].pi)
+
+    # --- Conference power (average Power Index per league) ---
+    conf_power = []
+    if ratings:
+        by_conf: dict = {}
+        for p in div.programs:
+            if p.school in ratings:
+                by_conf.setdefault(p.conf_abbr, []).append(ratings[p.school].pi)
+        conf_power = sorted(({"conf": c, "avg": sum(v) / len(v), "n": len(v)}
+                             for c, v in by_conf.items()), key=lambda x: -x["avg"])[:8]
+
+    # --- Singles + doubles win leaders ---
+    def _win_leaders(rec_map):
+        board = []
+        for pid, (w, l) in rec_map.items():
+            if pid in pidx and w + l >= 3:
+                info = pidx[pid]; ab, co = crest(info["school"])
+                board.append({"pid": pid, "name": info["name"], "school": info["school"],
+                              "country": info.get("country", ""),
+                              "secondary_country": info.get("secondary_country"),
+                              "w": w, "l": l, "abbr": ab, "color": co})
+        return sorted(board, key=lambda x: (-x["w"], x["l"]))[:8]
+
+    singles_leaders = _win_leaders(recs)
+    line_recs = sm.player_line_records(sid)
+    doubles_map = {pid: (sum(wl[0] for wl in r["doubles"].values()),
+                         sum(wl[1] for wl in r["doubles"].values()))
+                   for pid, r in line_recs.items()}
+    doubles_leaders = _win_leaders(doubles_map)
+
     _portal_result = {
         "season": s, "phase": s["phase"], "current_week": s["current_week"],
         "total_weeks": s["total_weeks"], "programs": len(div.programs),
@@ -441,6 +569,9 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         "standings_leaders": standings_leaders[:8], "recent": recent, "upcoming": upcoming,
         "top_prospects": top_prospects, "junior_kpis": juniors["kpis"],
         "grad_year": junior_year, "has_live_results": bool(ratings) or completed > 0,
+        "bubble": bubble, "ita_champion": ita_champion, "natl_champion": natl_champion,
+        "hot_teams": hot_teams, "movers": movers, "conf_power": conf_power,
+        "singles_leaders": singles_leaders, "doubles_leaders": doubles_leaders,
     }
     _portal_cache[_pkey] = _portal_result
     return _portal_result

@@ -29,7 +29,7 @@ from .season import dual_between, build_corpus, forced_appearances
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
-                      clamp_field, field_for_division, seed_score)
+                      clamp_field, field_for_division)
 from . import ita
 
 from .dbpath import resolve_db_path
@@ -648,7 +648,8 @@ def _ncaa_seeds(conn, s, progs, div):
     ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
     seeded, autobids = select_field(div.programs, ratings, champions,
-                                    size=field_for_division(s["division"]))
+                                    size=field_for_division(s["division"]),
+                                    score=ita_team_points(sid))
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
@@ -993,10 +994,10 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     gender) season is its own separate tournament, so the projection is naturally
     scoped to it. Selection mirrors the real format and the engine's own bracket
     logic (`select_field`): projected conference leaders take the automatic bids,
-    then the remaining at-large spots are filled by seed score — the Power Index
-    plus the power-conference preference (see `bracket.seed_score`). Returns None
-    until enough duals are final for the projection to mean anything (or when the
-    field would swallow everyone)."""
+    then the remaining at-large spots are filled by the ITA team-ranking points
+    (`ita_team_points`), the same metric the bracket seeds by. Returns None until
+    enough duals are final for the projection to mean anything (or when the field
+    would swallow everyone)."""
     s = load_season(season_id)
     if not s:
         return None
@@ -1028,10 +1029,10 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
 
     aq_keys = _conf_leaders(div, cf, ratings)
     at_large_spots = max(0, field - len(aq_keys))
-    # At-large in/out follows the same seed score the bracket selects by, so the
-    # bubble reflects the power-conference preference, not the Power Index alone.
+    # At-large in/out follows the same ITA team points the bracket now seeds by.
+    pts = ita_team_points(season_id)
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
-                    key=lambda p: seed_score(p, ratings), reverse=True)
+                    key=lambda p: pts.get(p.school, 0.0), reverse=True)
     if at_large_spots < edge or len(non_aq) <= at_large_spots:
         return None
 
@@ -1041,7 +1042,7 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
                 "rec": r.record, **extra}
 
     aq = [row(p) for p in sorted((p for p in rated if p.school in aq_keys),
-                                 key=lambda p: seed_score(p, ratings), reverse=True)]
+                                 key=lambda p: pts.get(p.school, 0.0), reverse=True)]
     in_board = [row(p, al_rank=i + 1) for i, p in enumerate(non_aq[:at_large_spots])]
     out_board = [row(p, al_rank=at_large_spots + i + 1)
                  for i, p in enumerate(non_aq[at_large_spots:])]
@@ -1070,6 +1071,33 @@ def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -
         return None
     proj["out_board"] = proj["out_board"][:out_n]
     return proj
+
+
+def team_form(season_id: int) -> dict:
+    """Per-team current streak and last-5 form from all final duals, in play order.
+    {school: {'streak': +wins/-losses, 'last5': 'WWLWL', 'w': int, 'l': int}}."""
+    conn = _db()
+    rows = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND status='final'"
+                        " ORDER BY week, round_no, id", (season_id,)).fetchall()
+    conn.close()
+    seq: dict = {}
+    for r in rows:
+        hw = r["winner"] == 0
+        seq.setdefault(r["home"], []).append(hw)
+        seq.setdefault(r["away"], []).append(not hw)
+    out: dict = {}
+    for school, res in seq.items():
+        streak = 0
+        for won in reversed(res):                  # trailing run of same result
+            if streak == 0:
+                streak = 1 if won else -1
+            elif (streak > 0) == won:
+                streak += 1 if won else -1
+            else:
+                break
+        out[school] = {"streak": streak, "w": sum(res), "l": len(res) - sum(res),
+                       "last5": "".join("W" if x else "L" for x in res[-5:])}
+    return out
 
 
 def recent_duals(season_id: int) -> list[dict]:
@@ -1129,6 +1157,195 @@ def power_index(season_id: int) -> dict:
         _pi_cache[key] = compute_ratings(duals) if duals else {}
     conn.close()
     return _pi_cache[key]
+
+
+def weekly_movers(season_id: int, poll: int = 25) -> dict:
+    """Poll-style week-to-week movement for teams currently in the top ``poll``: the
+    move caused by the most recent week of ranking-corpus results. {school: positions
+    gained (+) / lost (-) within the poll, or None if NEW to the poll this week}. Only
+    poll positions are compared, so moves stay bounded and meaningful rather than the
+    100-spot swings a 390-team Power Index reshuffle produces. Empty until there are at
+    least two weeks of results."""
+    conn = _db()
+    qs = ",".join("?" for _ in RANKING_ROUNDS)
+    rows = conn.execute(
+        f"SELECT week, home, away, is_conf, winner, lines_json FROM duals WHERE season_id=?"
+        f" AND status='final' AND round IN ({qs})", (season_id, *RANKING_ROUNDS)).fetchall()
+    conn.close()
+    weeks = sorted({r["week"] for r in rows})
+    if len(weeks) < 2:
+        return {}
+    cutoff = weeks[-1]                                  # the most recent week of results
+
+    def _rec(r):
+        return {"home": r["home"], "away": r["away"], "home_won": r["winner"] == 0,
+                "conf": bool(r["is_conf"]), "lines": json.loads(r["lines_json"] or "[]")}
+
+    def _poll(duals):
+        rt = compute_ratings(duals)
+        order = sorted(rt, key=lambda x: rt[x].pi, reverse=True)[:poll]
+        return {s: i + 1 for i, s in enumerate(order)}
+
+    cur = _poll([_rec(r) for r in rows])
+    prior = _poll([_rec(r) for r in rows if r["week"] < cutoff])
+    return {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
+
+
+def ita_team_points(season_id: int) -> dict:
+    """A simple ITA-style team ranking: the average quality of a team's best-10 wins,
+    dragged down by its losses (a loss to a WEAK team hurts most), with a +10% road-win
+    bonus — the shape of the real ITA algorithm. Opponent quality is the Power Index's
+    rank-percentile, which keeps this iteration-free and anchored to real strength: a
+    raw opponent-quality *iteration* degenerates in a synthetic field (a tight mid-major
+    round-robin bootstraps itself to the top). Returns {school: points on a ~0-92 scale};
+    only teams with a win are ranked (as in the ITA)."""
+    pi = power_index(season_id)
+    if not pi:
+        return {}
+    conn = _db()
+    qs = ",".join("?" for _ in RANKING_ROUNDS)
+    rows = conn.execute(f"SELECT home, away, winner FROM duals WHERE season_id=? AND status='final'"
+                        f" AND round IN ({qs})", (season_id, *RANKING_ROUNDS)).fetchall()
+    conn.close()
+    wins: dict = {}
+    losses: dict = {}
+    teams: set = set()
+    for d in rows:
+        h, a = d["home"], d["away"]
+        teams |= {h, a}
+        if d["winner"] == 0:
+            wins.setdefault(h, []).append((a, False)); losses.setdefault(a, []).append(h)
+        else:
+            wins.setdefault(a, []).append((h, True)); losses.setdefault(h, []).append(a)
+
+    order = sorted((t for t in teams if t in pi), key=lambda t: pi[t].pi, reverse=True)
+    n = len(order) or 1
+    qual = {t: (n - i) / n for i, t in enumerate(order)}   # 1.0 best → ~0 worst
+    for t in teams:
+        qual.setdefault(t, 1.0 / n)
+
+    raw: dict = {}
+    for t in teams:
+        w = wins.get(t)
+        if not w:                                          # no win → not ranked
+            continue
+        wv = sorted((qual[o] * (1.10 if road else 1.0) for o, road in w), reverse=True)[:10]
+        drag = sum(1 - qual[o] for o in losses.get(t, []))
+        raw[t] = sum(wv) / (len(wv) + drag)
+    if not raw:
+        return {}
+    mx = max(raw.values()) or 1.0
+    return {t: round(92.0 * (v / mx) ** 1.8, 2) for t, v in raw.items()}
+
+
+def _ita_scale(raw: dict, steep: float = 1.8, top: float = 92.0) -> dict:
+    """Scale raw ITA scores to a ~0..`top` points spread (leader = `top`)."""
+    if not raw:
+        return {}
+    mx = max(raw.values()) or 1.0
+    return {k: round(top * (v / mx) ** steep, 2) for k, v in raw.items()}
+
+
+def _ita_score(entities, wins, losses, qual, cap: int = 10) -> dict:
+    """Generic ITA-style score: best-`cap` win quality dragged by losses (a loss to a
+    weak opponent — low qual — hurts most), +10% for road wins. Only entities with a
+    win are scored. wins[e] = [(opp, road_bool)], losses[e] = [opp], qual[e] in 0..1."""
+    raw = {}
+    for e in entities:
+        w = wins.get(e)
+        if not w:
+            continue
+        wv = sorted((qual.get(o, 0.0) * (1.10 if road else 1.0) for o, road in w), reverse=True)[:cap]
+        drag = sum(1 - qual.get(o, 0.0) for o in losses.get(e, []))
+        raw[e] = sum(wv) / (len(wv) + drag)
+    return raw
+
+
+def _singles_results(season_id: int):
+    """One pass over final dual lines → the singles player-vs-player graph.
+    Returns (wins, losses, players, wl) where wins[pid]=[(opp_pid, road)], wl[pid]=[w,l]."""
+    conn = _db()
+    rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                        (season_id,)).fetchall()
+    conn.close()
+    wins, losses, players = {}, {}, set()
+    wl: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
+                continue
+            hp, ap = ln.get("home_pid"), ln.get("away_pid")
+            if hp is None or ap is None:
+                continue
+            players |= {hp, ap}
+            wl.setdefault(hp, [0, 0]); wl.setdefault(ap, [0, 0])
+            if ln.get("home_won"):
+                wins.setdefault(hp, []).append((ap, False)); losses.setdefault(ap, []).append(hp)
+                wl[hp][0] += 1; wl[ap][1] += 1
+            else:                                          # away player won on the road
+                wins.setdefault(ap, []).append((hp, True)); losses.setdefault(hp, []).append(ap)
+                wl[ap][0] += 1; wl[hp][1] += 1
+    return wins, losses, players, wl
+
+
+def _doubles_results(season_id: int):
+    """One pass over final dual lines → the doubles PAIR-vs-pair graph. A pair is the
+    unordered set of its two pids. Returns (wins, losses, pairs, members, wl)."""
+    conn = _db()
+    rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                        (season_id,)).fetchall()
+    conn.close()
+    wins, losses, pairs, members = {}, {}, set(), {}
+    wl: dict = {}
+    for r in rows:
+        for ln in json.loads(r["lines_json"] or "[]"):
+            if not ln.get("completed") or not str(ln.get("slot", "")).startswith("D"):
+                continue
+            hps, aps = ln.get("home_pids"), ln.get("away_pids")
+            if not hps or not aps or len(set(hps)) != 2 or len(set(aps)) != 2:
+                continue
+            hp, ap = frozenset(hps), frozenset(aps)
+            pairs |= {hp, ap}; members[hp] = tuple(hps); members[ap] = tuple(aps)
+            wl.setdefault(hp, [0, 0]); wl.setdefault(ap, [0, 0])
+            if ln.get("home_won"):
+                wins.setdefault(hp, []).append((ap, False)); losses.setdefault(ap, []).append(hp)
+                wl[hp][0] += 1; wl[ap][1] += 1
+            else:
+                wins.setdefault(ap, []).append((hp, True)); losses.setdefault(hp, []).append(ap)
+                wl[ap][0] += 1; wl[hp][1] += 1
+    return wins, losses, pairs, members, wl
+
+
+def _str_percentile(keys, str_of) -> dict:
+    """Map keys → quality in (0,1] by descending `str_of(key)` rank-percentile."""
+    order = sorted(keys, key=str_of, reverse=True)
+    n = len(order) or 1
+    q = {k: (n - i) / n for i, k in enumerate(order)}
+    for k in keys:
+        q.setdefault(k, 1.0 / n)
+    return q
+
+
+def ita_singles_points(season_id: int) -> dict:
+    """ITA-style singles player ranking points {pid: points}, anchored to player STR."""
+    strs = season_player_str(season_id)
+    if not strs:
+        return {}
+    wins, losses, players, _ = _singles_results(season_id)
+    qual = _str_percentile(players, lambda p: strs.get(p, (0.0,))[0])
+    return _ita_scale(_ita_score(players, wins, losses, qual))
+
+
+def ita_doubles_points(season_id: int, min_matches: int = 3):
+    """ITA-style doubles ranking points for PAIRS that have played together at least
+    `min_matches` times. Returns ({pair: points}, {pair: (pid, pid)}, {pair: [w, l]})."""
+    strs = season_player_str(season_id)
+    if not strs:
+        return {}, {}, {}
+    wins, losses, pairs, members, wl = _doubles_results(season_id)
+    qual = _str_percentile(pairs, lambda pr: sum(strs.get(p, (0.0,))[0] for p in pr) / 2)
+    eligible = {pr for pr in pairs if wl.get(pr, [0, 0])[0] + wl[pr][1] >= min_matches}
+    return _ita_scale(_ita_score(eligible, wins, losses, qual)), members, wl
 
 
 def conf_rank(season_id: int) -> dict:
@@ -1202,7 +1419,8 @@ def bracket_field(season_id: int, size: int | None = None):
                          if v in progs and v in ratings]
         except (ValueError, TypeError):
             champions = []
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size),
+                                    score=ita_team_points(season_id))
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
@@ -1226,10 +1444,11 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     # tournament completes (parsing it as JSON then would fail and drop the seeds).
     champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size))
+    pts = ita_team_points(season_id)
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=pts)
     field_keys = {p.key for p in seeded}
     out = sorted((p for p in rated if p.key not in field_keys),
-                 key=lambda p: seed_score(p, ratings), reverse=True)[:out_n]
+                 key=lambda p: pts.get(p.school, 0.0), reverse=True)[:out_n]
     out_board = [{"school": p.school, "conf": p.conf_abbr,
                   "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
                  for p in out]

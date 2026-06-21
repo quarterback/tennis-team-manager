@@ -116,30 +116,31 @@ class BracketResult:
 
 
 def select_field(programs: list[Program], ratings: dict, champions: list[Program],
-                 size: int = 64) -> tuple[list[Program], set[str]]:
+                 size: int = 64, score: dict | None = None) -> tuple[list[Program], set[str]]:
     """Return (seeded field of `size`, autobid keys). Champions are auto-in; the rest
-    are at-large by seed score, and the full field is seeded by seed score — the
-    Power Index plus the power-conference preference (see ``seed_score``)."""
-    def score(p: Program) -> float:
-        return seed_score(p, ratings)
-    by_score = sorted(programs, key=score, reverse=True)
+    are at-large by seed value, and the full field is seeded by it. ``score`` is an
+    explicit {school: seed value} map (the ITA team-ranking points); without it the
+    field falls back to ``seed_score`` (Power Index + power-conference preference)."""
+    def sc(p: Program) -> float:
+        return score.get(p.school, 0.0) if score is not None else seed_score(p, ratings)
+    by_score = sorted(programs, key=sc, reverse=True)
     champ_keys = {c.key for c in champions}
 
     field_keys: set[str] = set()
     field_progs: list[Program] = []
-    # autobids first (capped at size, best seed score first)
-    for p in sorted(champions, key=score, reverse=True):
+    # autobids first (capped at size, best seed value first)
+    for p in sorted(champions, key=sc, reverse=True):
         if len(field_progs) >= size:
             break
         field_keys.add(p.key); field_progs.append(p)
-    # fill at-large by seed score
+    # fill at-large by seed value
     for p in by_score:
         if len(field_progs) >= size:
             break
         if p.key not in field_keys:
             field_keys.add(p.key); field_progs.append(p)
 
-    seeded = sorted(field_progs, key=score, reverse=True)
+    seeded = sorted(field_progs, key=sc, reverse=True)
     return seeded, champ_keys
 
 
