@@ -115,9 +115,21 @@ lift conference, the lift conference's weakest member moves down in exchange.
 | Whitman | NWC → SCIAC |
 | La Verne | SCIAC → NWC |
 
-All ten conference sizes are unchanged. The five promoted programs now clear D3
-(Carleton/Macalester/St. Olaf ≈ 0.26, Whitman ≈ 0.31, Washington and Lee ≈ 0.36);
-the five demoted ones drop into the low D4 band as intended.
+A second round promoted four more borderline-but-credible programs the same way:
+
+| School | From → To |
+|---|---|
+| Wheaton (IL) | CCIW → Midwest |
+| Gustavus Adolphus | MIAC → Midwest |
+| Lewis & Clark | NWC → SCIAC |
+| Hampden-Sydney | ODAC → Centennial |
+| Lake Forest | Midwest → CCIW |
+| Cornell College | Midwest → MIAC |
+| Cal Lutheran | SCIAC → NWC |
+| Washington College | Centennial → ODAC |
+
+Every conference size is unchanged. All nine promoted programs now clear D3
+(≈ 0.26–0.36); the demoted ones drop into the low D4 band as intended.
 
 ## Verification
 

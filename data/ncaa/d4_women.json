@@ -42,11 +42,11 @@
         "Dickinson",
         "Franklin & Marshall",
         "Gettysburg",
+        "Hampden-Sydney",
         "Haverford",
         "Muhlenberg",
         "Swarthmore",
         "Ursinus",
-        "Washington College",
         "Washington and Lee"
       ]
     },
@@ -75,7 +75,6 @@
         "Bridgewater (VA)",
         "Eastern Mennonite",
         "Guilford",
-        "Hampden-Sydney",
         "Hollins",
         "Lynchburg",
         "McDaniel",
@@ -84,7 +83,8 @@
         "Roanoke",
         "Shenandoah",
         "Sweet Briar",
-        "Virginia Wesleyan"
+        "Virginia Wesleyan",
+        "Washington College"
       ]
     },
     {
@@ -92,10 +92,10 @@
       "abbr": "SCIAC",
       "autobid": true,
       "teams": [
-        "Cal Lutheran",
         "Caltech",
         "Chapman",
         "Claremont-Mudd-Scripps",
+        "Lewis & Clark",
         "Pomona-Pitzer",
         "Redlands",
         "Whitman",
@@ -180,7 +180,7 @@
         "Augsburg",
         "Bethel (MN)",
         "Concordia-Moorhead",
-        "Gustavus Adolphus",
+        "Cornell College",
         "Hamline",
         "Illinois College",
         "Monmouth (IL)",
@@ -199,13 +199,13 @@
       "teams": [
         "Beloit",
         "Carleton",
-        "Cornell College",
         "Grinnell",
+        "Gustavus Adolphus",
         "Knox",
-        "Lake Forest",
         "Lawrence",
         "Macalester",
-        "St. Olaf"
+        "St. Olaf",
+        "Wheaton (IL)"
       ]
     },
     {
@@ -213,9 +213,9 @@
       "abbr": "NWC",
       "autobid": true,
       "teams": [
+        "Cal Lutheran",
         "George Fox",
         "La Verne",
-        "Lewis & Clark",
         "Pacific (OR)",
         "Pacific Lutheran",
         "Puget Sound",
@@ -267,10 +267,10 @@
         "Carthage",
         "Elmhurst",
         "Illinois Wesleyan",
+        "Lake Forest",
         "Millikin",
         "North Central (IL)",
-        "North Park",
-        "Wheaton (IL)"
+        "North Park"
       ]
     },
     {
