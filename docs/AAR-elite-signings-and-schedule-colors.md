@@ -56,9 +56,19 @@ championship progression.
   never got a clean end-to-end "all 40 blue-chips signed to powers" run. The decision-week
   spread (the mechanism) is deterministic and was verified directly; the signing outcome
   is reasoned, not simulated end-to-end. Worth an in-app confirmation.
+- Prestige redesign (the budget distribution was too narrow): the old formula
+  `base + (conf - 0.50) * 0.9` compressed every D1 program into 0.52-0.97, so the
+  low-major budget band (prestige < 0.50) was NEVER reached — the weakest D1 teams sat in
+  the mid-major band at ~10. Replaced the multiplier with explicit, non-overlapping
+  per-division bands (D3 0.10-0.20, D2 0.20-0.30, D1 0.40-0.97), mapping each conference
+  into its division's band + the blue-blood bump. D1 budget now spans 6.7-24 with 125
+  programs in the low-major (6-10) tier (was 0); recalibrated the dependent D2 budget
+  frac and `_ELITE_D2_PRESTIGE` to the new D2 band.
 - "Widen the band year over year": the budget bands already existed per conference, but
   the jitter was seeded only by world salt + program key — constant across seasons, so a
   program's budget never moved. Fix: widen the power band (14-16 → 15-24) AND seed the
-  jitter with the world `year`, scaling the swing to band width. Now powers move within
-  the wide band season to season (Virginia ~22-24, Pepperdine ~18-20) while low-majors
-  stay put (~9-11) — the existing feature, just widened and made year-aware.
+  jitter with the world `year` FOR THE TOP TIER ONLY (prestige >= 0.79), scaling the
+  swing to band width. Only the blue-bloods move season to season (Virginia ~22-24,
+  Pepperdine ~18-20); high-/mid-/low-majors hold a fixed value in their prescribed bands
+  (Wyoming 13.2, Dayton 12.5, Alcorn State 10.1 every year) — the existing feature, just
+  widened for the powers and made year-aware for them.
