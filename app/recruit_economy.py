@@ -59,9 +59,10 @@ def _free_fill_stars(prestige: float, division: str) -> str:
     return "1-Star"
 
 
-def program_budget(program, salt: str = "") -> float:
-    """Recruiting budget for a program: a prestige-banded base plus a small,
-    deterministic per-world jitter (so each sim funds slightly differently)."""
+def program_budget(program, salt: str = "", year: int = 0) -> float:
+    """Recruiting budget for a program: a prestige-banded base plus a per-world,
+    per-YEAR jitter — a program's funding moves around within its conference's band
+    season to season (the power band is the widest, so the blue-bloods swing most)."""
     div = program.division
     if div == "D3":
         return 0.0
@@ -81,8 +82,12 @@ def program_budget(program, salt: str = "") -> float:
                 frac = max(0.0, min(1.0, (pres - cut) / span)) if span > 0 else 0.5
                 break
     base = lo + frac * (hi - lo)
-    jit = random.Random(f"{salt}|budget|{program.key}").uniform(-1.0, 1.0)
-    return max(0.0, base + jit)
+    # Jitter scales with the band width, so a wide power band (15-24) really does move
+    # year to year while a thin low-major (8-10) barely budges. Seeded by year so each
+    # season redraws within the band.
+    swing = max(1.0, (hi - lo) * 0.30)
+    jit = random.Random(f"{salt}|budget|{program.key}|{year}").uniform(-swing, swing)
+    return max(0.0, min(hi, base + jit))
 
 
 def roster_star_plan(program, salt: str = "", *, roster_size: int = 8,

@@ -590,7 +590,7 @@ def _recruit_market(world: dict, gender: str) -> dict:
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     salt = world.get("salt") or ""
-    budget = {s: recruit_economy.program_budget(p, salt) for s, p in progs.items()}
+    budget = {s: recruit_economy.program_budget(p, salt, world["year"]) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]

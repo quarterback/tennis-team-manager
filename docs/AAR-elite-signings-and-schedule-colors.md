@@ -56,6 +56,9 @@ championship progression.
   never got a clean end-to-end "all 40 blue-chips signed to powers" run. The decision-week
   spread (the mechanism) is deterministic and was verified directly; the signing outcome
   is reasoned, not simulated end-to-end. Worth an in-app confirmation.
-- "Widen the band year over year" was implemented as a static wider band (emergent
-  year-over-year divergence), not a per-year dynamic budget — flagged as a possible
-  follow-up.
+- "Widen the band year over year": the budget bands already existed per conference, but
+  the jitter was seeded only by world salt + program key — constant across seasons, so a
+  program's budget never moved. Fix: widen the power band (14-16 → 15-24) AND seed the
+  jitter with the world `year`, scaling the swing to band width. Now powers move within
+  the wide band season to season (Virginia ~22-24, Pepperdine ~18-20) while low-majors
+  stay put (~9-11) — the existing feature, just widened and made year-aware.
