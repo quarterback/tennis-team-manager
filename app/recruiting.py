@@ -53,6 +53,38 @@ def academic_gate(caliber: float) -> float:
     return 1.0                                    # 3★ and below: full academic consideration
 
 
+# --- International share of a base roster, by division and program level ---------
+# Real college tennis runs heavily international at the top and domestic at the
+# bottom. The base roster reflects that: D1 recruits the world (up to ~50% at the
+# blue-bloods), D2 is also high, D4 is very low EXCEPT its high-prestige academic
+# programs (which recruit nationally and abroad like a small D1), and D3 is the
+# lowest. Prestige sets the spot WITHIN a division's band — it pulls better players
+# AND more internationals. Past year 0 the recruiting sim dictates the mix. Tunable.
+# division -> (min_prestige, max_prestige, share_at_min, share_at_max)
+_INTL_BANDS = {
+    "D1": (0.40, 0.90, 0.40, 0.50),
+    "D2": (0.20, 0.30, 0.30, 0.40),
+    "D3": (0.10, 0.18, 0.07, 0.10),
+    "D4": (0.04, 0.40, 0.09, 0.42),
+}
+
+
+def intl_share_for(division: str, prestige: float) -> float:
+    """Target international fraction of a program's base roster (0..1), by division
+    and prestige — D1 highest (~0.50), D3 lowest (~0.07), D4 prestige-driven."""
+    lo, hi, slo, shi = _INTL_BANDS.get(division, (0.10, 0.30, 0.10, 0.30))
+    if hi <= lo:
+        return slo
+    t = max(0.0, min(1.0, (float(prestige) - lo) / (hi - lo)))
+    return slo + t * (shi - slo)
+
+
+# How strongly base rosters lean on home turf: the share of a program's DOMESTIC
+# recruits drawn from its own region. Applies to EVERY program — prestige drives
+# player quality and the international share, not how regional the domestic pool is.
+LOCAL_REGION_TARGET = 0.70
+
+
 @dataclass
 class School:
     """A program the recruiting model can reason about."""

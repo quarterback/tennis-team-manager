@@ -122,9 +122,11 @@ def set_active(divisions: list[str], genders: list[str]) -> None:
 # --- International share --------------------------------------------------------
 # Fraction of the incoming RECRUIT class that is international. Real college tennis
 # skews far more international than the US-junior pool alone, so this is tunable.
-# (College rosters already draw nationality straight from the band mix, so this
-# knob targets the recruit pipeline — the "players coming in".) Stored as a plain
-# float; the default mirrors the engine constant world.RECRUIT_INTL_SHARE.
+# (Base college rosters set their international SHARE by program level —
+# ncaa.region_weights_for / recruiting.intl_share_for — and use the band mix only
+# for which nations the internationals come from; this knob targets the recruit
+# pipeline, the "players coming in".) Stored as a plain float; the default mirrors
+# the engine constant world.RECRUIT_INTL_SHARE.
 DEFAULT_INTL_SHARE = 0.30
 INTL_SHARE_CHOICES = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
 

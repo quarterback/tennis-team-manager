@@ -397,6 +397,39 @@ def cities_in_state(state_abbr: str) -> list[str]:
     return cities_by_state().get(state_abbr, [])
 
 
+def towns_in_region(region: str) -> list[tuple[str, str]]:
+    """All (city, state) home-town options whose state falls in `region` — used to
+    bias a program's DOMESTIC recruits toward its own backyard. Empty when the
+    region is unknown or has no city pool (caller then falls back to nationwide)."""
+    if not region:
+        return []
+    out: list[tuple[str, str]] = []
+    for st, cities in cities_by_state().items():
+        if STATE_REGION.get(st) == region:
+            out.extend((c, st) for c in cities)
+    return out
+
+
+def region_weights_for(weights: dict, division: str, prestige: float) -> dict:
+    """The name-picker region mix for a program: the world band mix with its
+    domestic ('us') weight reset so the international fraction matches
+    `recruiting.intl_share_for(division, prestige)`. Non-US regions keep their
+    relative proportions, scaled to fill the international share. Returns a new
+    dict; the input is unchanged."""
+    from .recruiting import intl_share_for
+    share = intl_share_for(division, prestige)
+    rest = {k: max(0.0, float(v)) for k, v in weights.items() if k != "us"}
+    rest_total = sum(rest.values())
+    out: dict[str, float] = {}
+    if rest_total > 0:
+        for k, v in rest.items():
+            out[k] = (v / rest_total) * share
+    else:
+        share = 0.0                         # no international regions configured → all domestic
+    out["us"] = 1.0 - share
+    return out
+
+
 def region_proximity(region_a: str, region_b: str) -> float:
     """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
     if not region_a or not region_b:
@@ -612,10 +645,18 @@ def _base_roster(p: Program):
     from generators import make_name_picker
     from .development import generate_prospect, make_pid
     from . import worldconfig
+    from .recruiting import LOCAL_REGION_TARGET
     seed = _stable_seed(f"{WORLD_SALT}|{p.key}") & 0xFFFFFFFF
     rng = random.Random(seed)
+    # Nationality mix is set by program LEVEL: the international share tracks the
+    # division + prestige (D1 recruits the world, D3 is almost entirely domestic),
+    # and the domestic recruits then lean toward the program's own region. Past
+    # year 0 the recruiting sim takes over.
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
-                               region_weights=worldconfig.region_weights())
+                               region_weights=region_weights_for(worldconfig.region_weights(),
+                                                                 p.division, p.prestige))
+    region_towns = towns_in_region(p.region)
+    town_rng = random.Random(seed ^ 0xC17)
     # D1/D2 rosters are built by the recruiting budget economy — a program lands
     # the star tiers its budget + prestige can attract, so blue-chips cluster at
     # the programs that can pay. D3 has no athletic money: it stays on the
@@ -635,9 +676,13 @@ def _base_roster(p: Program):
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
             talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+        domestic = country in ("US", "USA", "United States", "")
+        town_pool = (region_towns if domestic and region_towns
+                     and town_rng.random() < LOCAL_REGION_TARGET else None)
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
-                               maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)))
+                               maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)),
+                               town_pool=town_pool)
         pr.class_year = cls
         # hometown / high_school / domestic are wired by generate_prospect from
         # the player's nation (real city pools + flags), so no synthetic override.
