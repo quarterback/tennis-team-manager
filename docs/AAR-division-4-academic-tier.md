@@ -91,6 +91,34 @@ On rebase this was reconciled deliberately rather than mechanically:
   a 4★ can still choose an academic-elite D4 (an Ivy-calibre classroom is worth
   the athletic step down) while blue-chips never drop that far.
 
+## Academic realignment within D4
+
+The lift is conference-level (it keys on a conference's academic prior ≥ 0.80),
+and only flagship schools carry an *intrinsic* academic rating — everyone else
+inherits their conference's prior. So a genuinely elite college sitting in a
+non-lift D4 league (e.g. **Carleton**, intrinsic 0.94, stranded in MIAC) ranked
+*below* D3. Rather than lower the lift threshold or invent more lift conferences,
+the fix was a set of academics-driven, size-neutral conference swaps (geography
+deprioritized per the user): the standout academic program moves up into a
+lift conference, the lift conference's weakest member moves down in exchange.
+
+| School | From → To |
+|---|---|
+| Carleton | MIAC → Midwest |
+| Macalester | MIAC → Midwest |
+| St. Olaf | MIAC → Midwest |
+| Monmouth (IL) | Midwest → MIAC |
+| Illinois College | Midwest → MIAC |
+| Ripon | Midwest → MIAC |
+| Washington and Lee | ODAC → Centennial |
+| McDaniel | Centennial → ODAC |
+| Whitman | NWC → SCIAC |
+| La Verne | SCIAC → NWC |
+
+All ten conference sizes are unchanged. The five promoted programs now clear D3
+(Carleton/Macalester/St. Olaf ≈ 0.26, Whitman ≈ 0.31, Washington and Lee ≈ 0.36);
+the five demoted ones drop into the low D4 band as intended.
+
 ## Verification
 
 - D4 men's and women's seasons run to completion and are **seed-deterministic**
@@ -100,9 +128,12 @@ On rebase this was reconciled deliberately rather than mechanically:
   `main`** (scholarship-cap tests out of sync with the repo) and were confirmed
   to fail identically on a clean checkout. Zero new failures.
 
-## Open question left for the user
+## Remaining shape
 
-D4's academic flagships out-prestige the remaining D3 schools (the lift, above).
-That matches the "student-first, brand still pulls" framing, but if a strictly
-athletics-below-D3 ordering is preferred, the lift can be dropped for D4 so the
-whole division stays inside its (0.04–0.10) band.
+After the realignment, the 8 academic-elite D4 conferences (NESCAC, Centennial,
+SCIAC, NEWMAC, Liberty League, NCAC, SAA, Midwest) sit **above D3** as recruiting
+draws; the 11 regional D4 conferences (ODAC, MIAC, NWC, SCAC, CCS, CCIW, Landmark,
+Empire 8, CNE, C2C, PAC) stay in the low band **below D3**. That two-group split
+is intentional — those leagues are not academically distinctive enough to clear
+the lift — but it can be revisited with more swaps if specific programs look
+mis-sorted.

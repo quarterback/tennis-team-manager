@@ -24,13 +24,13 @@
       "autobid": true,
       "teams": [
         "Bard",
+        "Connecticut College",
+        "Hamilton",
         "Hobart and William Smith",
         "Ithaca",
         "Skidmore",
-        "Vassar",
-        "Connecticut College",
-        "Hamilton",
-        "Trinity (CT)"
+        "Trinity (CT)",
+        "Vassar"
       ]
     },
     {
@@ -43,11 +43,11 @@
         "Franklin & Marshall",
         "Gettysburg",
         "Haverford",
-        "McDaniel",
         "Muhlenberg",
         "Swarthmore",
         "Ursinus",
-        "Washington College"
+        "Washington College",
+        "Washington and Lee"
       ]
     },
     {
@@ -78,13 +78,13 @@
         "Hampden-Sydney",
         "Hollins",
         "Lynchburg",
+        "McDaniel",
         "Randolph",
         "Randolph-Macon",
         "Roanoke",
         "Shenandoah",
         "Sweet Briar",
-        "Virginia Wesleyan",
-        "Washington and Lee"
+        "Virginia Wesleyan"
       ]
     },
     {
@@ -96,9 +96,9 @@
         "Caltech",
         "Chapman",
         "Claremont-Mudd-Scripps",
-        "La Verne",
         "Pomona-Pitzer",
         "Redlands",
+        "Whitman",
         "Whittier"
       ]
     },
@@ -179,16 +179,16 @@
       "teams": [
         "Augsburg",
         "Bethel (MN)",
-        "Carleton",
         "Concordia-Moorhead",
         "Gustavus Adolphus",
         "Hamline",
-        "Macalester",
+        "Illinois College",
+        "Monmouth (IL)",
+        "Ripon",
         "Saint Benedict",
         "Saint John's (MN)",
         "Saint Mary's (MN)",
         "St. Catherine",
-        "St. Olaf",
         "St. Scholastica"
       ]
     },
@@ -198,14 +198,14 @@
       "autobid": true,
       "teams": [
         "Beloit",
+        "Carleton",
         "Cornell College",
         "Grinnell",
-        "Illinois College",
         "Knox",
         "Lake Forest",
         "Lawrence",
-        "Monmouth (IL)",
-        "Ripon"
+        "Macalester",
+        "St. Olaf"
       ]
     },
     {
@@ -214,11 +214,11 @@
       "autobid": true,
       "teams": [
         "George Fox",
+        "La Verne",
         "Lewis & Clark",
         "Pacific (OR)",
         "Pacific Lutheran",
         "Puget Sound",
-        "Whitman",
         "Whitworth",
         "Willamette"
       ]
