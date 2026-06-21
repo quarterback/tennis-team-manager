@@ -97,39 +97,11 @@ The lift is conference-level (it keys on a conference's academic prior ≥ 0.80)
 and only flagship schools carry an *intrinsic* academic rating — everyone else
 inherits their conference's prior. So a genuinely elite college sitting in a
 non-lift D4 league (e.g. **Carleton**, intrinsic 0.94, stranded in MIAC) ranked
-*below* D3. Rather than lower the lift threshold or invent more lift conferences,
-the fix was a set of academics-driven, size-neutral conference swaps (geography
-deprioritized per the user): the standout academic program moves up into a
-lift conference, the lift conference's weakest member moves down in exchange.
-
-| School | From → To |
-|---|---|
-| Carleton | MIAC → Midwest |
-| Macalester | MIAC → Midwest |
-| St. Olaf | MIAC → Midwest |
-| Monmouth (IL) | Midwest → MIAC |
-| Illinois College | Midwest → MIAC |
-| Ripon | Midwest → MIAC |
-| Washington and Lee | ODAC → Centennial |
-| McDaniel | Centennial → ODAC |
-| Whitman | NWC → SCIAC |
-| La Verne | SCIAC → NWC |
-
-A second round promoted four more borderline-but-credible programs the same way:
-
-| School | From → To |
-|---|---|
-| Wheaton (IL) | CCIW → Midwest |
-| Gustavus Adolphus | MIAC → Midwest |
-| Lewis & Clark | NWC → SCIAC |
-| Hampden-Sydney | ODAC → Centennial |
-| Lake Forest | Midwest → CCIW |
-| Cornell College | Midwest → MIAC |
-| Cal Lutheran | SCIAC → NWC |
-| Washington College | Centennial → ODAC |
-
-Every conference size is unchanged. All nine promoted programs now clear D3
-(≈ 0.26–0.36); the demoted ones drop into the low D4 band as intended.
+*below* D3. The fix was two rounds of academics-driven, size-neutral conference
+swaps that moved **nine stranded elite programs up into lift conferences** (and
+the receiving leagues' weakest members down in exchange) — no threshold change,
+no new conferences. See **`AAR-d4-academic-realignment.md`** for the full swap
+tables and before/after.
 
 ## Verification
 
