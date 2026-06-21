@@ -1,10 +1,11 @@
-# AAR — Coach-dictated localism in the recruiting sim
+# AAR — Coach-dictated recruiting: localism, nationality tilt & home-country pipeline
 
 **Date:** 2026-06-21
-**Scope:** A per-coach **localism** preference, wired into the world recruiting sim
-(`world._pick_school`). Programs whose coach recruits the backyard pull in-region
-recruits harder — the post-year-0, "coach-dictated" complement to the base-roster
-regional bias.
+**Scope:** Per-coach recruiting preferences wired into the world recruiting sim
+(`world._pick_school`): a **localism** lean (recruit the backyard), a **nationality
+tilt** (US coaches lean domestic, foreign lean international), and a foreign coach's
+**home-country compatriot pipeline**. The post-year-0, "coach-dictated" complement to
+the base-roster regional/international model.
 
 ## The gap
 
@@ -42,21 +43,51 @@ score *= (1 + GEO_WEIGHT*geo + coach_geo) * ...
 in-region recruits. It is **additive to** the recruit's own homecooking, so a homer
 program pulls nearby kids even when the recruit isn't especially homesick.
 
+## Nationality tilt & home-country pipeline
+
+The coach model already had `source_fit` (domestic/international lean) and
+`origin_affinity` (shared-origin nudge), but the sim never read them — and a latent
+bug made it worse: `coach_for_program` drew nationality flat from a 30-country pool
+(1 US entry), so **~97% of sim coaches were non-US**. Left unfixed, tilting non-US
+coaches international would have shoved the whole world international and undone the
+base-roster shares. Fixes:
+
+- **Realistic nationality** — `coaches.program_coach(school)` (new, cached) draws a
+  US-weighted home country (`US_COACH_SHARE = 0.68`); measured ≈ 71% US, 29% foreign.
+- **Nationality → sourcing** — `generate_coach` now sets `source_preference` by home
+  country: non-US lean `international`, US lean `high_school`/`blend` (which also
+  feeds the localism bias, so foreign coaches are less local).
+- **Sim wiring** — `_pick_school` multiplies a candidate's score by
+  `coach.source_fit(recruit)` (±~10% domestic/international tilt) and
+  `coach.origin_multiplier(recruit)`.
+- **Home-country pipeline** — `Coach.origin_multiplier` converts the grade-point
+  `origin_affinity` (4.0 country / 1.5 region, on a 20–80 scale — *not* a multiplier)
+  into a gentle `1 + 0.18·(affinity/4.0)`: ≈ **+18%** for a same-country recruit,
+  **+7%** same-region. **US-home coaches return 1.0** — their domestic lean is
+  `source_fit`, so the generic US↔US case never double-counts.
+
 ## Verification
 
 - A localist program (localism 1.0) beat an **identical** non-localist peer
-  (localism 0.0) **200/200** times for an in-region 3-star — coach localism the only
-  difference.
-- `program_localism` varies across the field (0.00–1.00, mean ≈ 0.49) and is stable
-  per school.
-- Full suite: pre-existing failures only, zero new; recruiting- and coach-path
-  tests pass.
+  (localism 0.0) **200/200** times for an in-region 3-star.
+- A Spanish-coached program beat an **identical** US-coached peer **200/200** for a
+  Spanish international recruit (origin pipeline + international tilt the only diff);
+  the Spanish coach's `origin_multiplier` is 1.18 for a Spaniard, 1.00 for an
+  American; a US coach is 1.00 for everyone.
+- Coach nationality ≈ 71% US / 29% foreign; sourcing splits accordingly.
+- Full suite: pre-existing failures only, zero new; 30 recruiting/coach-path tests
+  pass.
 
 ## Notes & future work
 
-- The sim reads the **stable generated** coach (`coach_for_program`) for localism, so
-  career coach moves (`coach_carousel`) don't yet carry a coach's localism to the new
-  seat. Wiring localism through the seated-coach record (`coachreg`) is the natural
-  next step if coach moves should change a program's recruiting geography.
-- `localism` is generated and read but not yet surfaced in the coach UI / persisted
-  seat summary; that's a small add to `coachgen.ensure` + `coachreg` if wanted.
+- The sim reads the **stable generated** coach (`program_coach`), so career coach
+  moves (`coach_carousel`) don't yet carry a coach's localism/nationality to the new
+  seat. Wiring these through the seated-coach record (`coachreg`) is the natural next
+  step if coach moves should change a program's recruiting geography.
+- `localism` and the nationality tilt are generated and read but not yet surfaced in
+  the coach UI / persisted seat summary; a small add to `coachgen.ensure` + `coachreg`
+  if wanted.
+- The home-region branch of `origin_affinity` only fires for internationals (domestic
+  recruits carry a US *state* name, which never matches a coach's coarse home region);
+  that's fine here — the domestic compatriot case is the US↔US one we deliberately
+  route through `source_fit` instead.
