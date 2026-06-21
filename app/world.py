@@ -614,14 +614,17 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
     budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
-    # Division ceiling by tier: a 5★/blue-chip never drops to D3, a 4★ only rarely,
-    # a 3★ (and below) can go anywhere. Keeps elite talent out of small divisions.
-    def _div_ok(div):
+    # Division ceiling by tier: a 5★/blue-chip never drops to D3; a 4★ can choose an
+    # academic-elite D3 (an Ivy-calibre classroom is worth the athletic step down) but
+    # otherwise only rarely; a 3★ (and below) can go anywhere.
+    def _div_ok(div, acad):
         if div != "D3":
             return True
-        if cal >= ELITE_CALIBER:
+        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3
             return False
-        if cal >= FOUR_STAR:
+        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3s
+            if acad >= ELITE_D3_ACADEMICS:
+                return True
             return random.Random(f"{getattr(p, 'pid', '')}|d3gate").random() < 0.05
         return True
     hr = home_region(p)
@@ -643,7 +646,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         if avail.get(s, 0) <= 0:
             continue
         pres, acad, reg, div, fac = traits[s]
-        if not _div_ok(div):                          # tier-gated out of this division
+        if not _div_ok(div, acad):                    # tier-gated out of this division
             continue
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
@@ -664,7 +667,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             best, best_score = s, score
     if best is None:                              # nothing in range with a seat — widen once
         best = next((s for s in reversed(by_pres)
-                     if avail.get(s, 0) > 0 and _div_ok(traits[s][3])
+                     if avail.get(s, 0) > 0 and _div_ok(traits[s][3], traits[s][1])
                      and budget.get(s, 0.0) >= budget_floor
                      and (not exclude or s not in exclude)), None)
     return best
