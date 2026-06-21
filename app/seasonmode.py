@@ -459,6 +459,51 @@ _PEN_REMATCH = 2500        # a regular-season rematch
 _PEN_AQ_VS_AQ = 1000       # two conference champions against each other
 
 
+def _pair_penalty(a, b, conf_of: dict, played_pairs: set, autobid_set: set) -> int:
+    """Bracketing penalty for a first-round matchup: same conference, a regular-season
+    rematch, or two conference champions (AQs) meeting in round one."""
+    if not a or not b:
+        return 0
+    s = 0
+    if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
+        s += _PEN_SAME_CONF
+    if frozenset((a, b)) in played_pairs:
+        s += _PEN_REMATCH
+    if a in autobid_set and b in autobid_set:
+        s += _PEN_AQ_VS_AQ
+    return s
+
+
+def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs: set,
+                       autobid_set: set) -> list[tuple[str, str]]:
+    """Pair a play-in field high-vs-low (seed 33 v 96, 34 v 95, …), then swap the
+    low-seed opponents among games — every game stays a high-vs-low matchup — to avoid
+    same-conference and rematch first-rounders. The same bracketing rule the ≤64 main
+    draw follows, extended to the >64 play-in round."""
+    g = len(playin) // 2
+    tops, bots = playin[:g], playin[g:]            # tops outrank every bot, so any pairing is high/low
+    assign = list(range(g - 1, -1, -1))            # tops[i] meets bots[assign[i]] (reverse seed)
+
+    def total():
+        return sum(_pair_penalty(tops[i], bots[assign[i]], conf_of, played_pairs, autobid_set)
+                   for i in range(g))
+
+    cur = total()
+    for _ in range(60):                            # hill-climb on opponent swaps
+        improved = False
+        for i in range(g):
+            for j in range(i + 1, g):
+                assign[i], assign[j] = assign[j], assign[i]
+                t = total()
+                if t < cur:
+                    cur, improved = t, True
+                else:
+                    assign[i], assign[j] = assign[j], assign[i]
+        if not improved or cur == 0:
+            break
+    return [(tops[i], bots[assign[i]]) for i in range(g)]
+
+
 def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
                   played_pairs: set) -> list[tuple[int, str, str]]:
     """National-championship first round. Place the seeded field into the standard
@@ -474,20 +519,9 @@ def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
     band_size = max(1, n // lines)
     band = [(p - 1) // band_size for p in pos]     # seed band per bracket slot
 
-    def pair_pen(a, b):
-        if not a or not b:
-            return 0
-        s = 0
-        if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
-            s += _PEN_SAME_CONF
-        if frozenset((a, b)) in played_pairs:
-            s += _PEN_REMATCH
-        if a in autobid_set and b in autobid_set:
-            s += _PEN_AQ_VS_AQ
-        return s
-
     def total():
-        return sum(pair_pen(slots[2 * k], slots[2 * k + 1]) for k in range(n // 2))
+        return sum(_pair_penalty(slots[2 * k], slots[2 * k + 1], conf_of, played_pairs, autobid_set)
+                   for k in range(n // 2))
 
     cur = total()
     for _ in range(60):                            # hill-climb on same-band swaps
@@ -674,10 +708,8 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
             # and the winners join the byes to form the main draw next round.
             byes_n = 2 * main - len(schools)
             playin = schools[byes_n:]
-            g = len(playin) // 2
-            for i in range(g):
-                _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i,
-                             playin[i], playin[2 * g - 1 - i])
+            for i, (h, a) in enumerate(_deconflict_playin(playin, conf_of, played, autobid_set)):
+                _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i, h, a)
         else:                                          # clean power-of-two field
             for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played):
                 _insert_dual(conn, sid, week, "NCAA", _round_name(len(schools)), 0, 1, bpos, h, a)
