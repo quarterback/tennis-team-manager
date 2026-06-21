@@ -1191,15 +1191,23 @@ from .ncaa import location  # noqa: E402  (geography for cross-division pairing)
 
 
 def _allowed_cross(a, b) -> bool:
-    """Is a cross-class dual between programs a, b allowed?"""
+    """Is a cross-class dual between programs a, b allowed? Teams play at most ONE
+    classification away — the geographic, capped cross-class sliver — with a single
+    narrow exception: an academically elite D3 (NESCAC/UAA-type) may reach up to D1.
+    So D4 only ever draws its adjacent class (D3); it never gets games two or three
+    classifications up (no D2/D4, no D1/D4)."""
     if a.division == b.division:
         return False
     ra, rb = DIV_RANK[a.division], DIV_RANK[b.division]
-    if abs(ra - rb) == 1:                                  # D1-D2 or D2-D3
+    if abs(ra - rb) == 1:                                  # adjacent classes (D1-D2, D2-D3, D3-D4)
         return True
-    # D1-D3 only when the D3 program is academically elite (NESCAC/UAA-type).
-    d3 = a if a.division == "D3" else b
-    return d3.academics >= ELITE_D3_ACADEMICS
+    # The only non-adjacent pairing: an academically elite D3 reaching up to D1.
+    # Guarded to exactly D1+D3 so non-adjacent D4 pairings (D2/D4, D1/D4) never slip
+    # through on whichever side's academics happen to clear the bar.
+    if {a.division, b.division} == {"D1", "D3"}:
+        d3 = a if a.division == "D3" else b
+        return d3.academics >= ELITE_D3_ACADEMICS
+    return False
 
 
 def cross_schedule(seed: int, year: int) -> list[dict]:
