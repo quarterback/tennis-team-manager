@@ -44,7 +44,8 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
-                         home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL)
+                         home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
+                         COACH_LOCAL_WEIGHT)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker
 
@@ -598,13 +599,15 @@ def _recruit_market(world: dict, gender: str) -> dict:
     salt = world.get("salt") or ""
     budget = {s: recruit_economy.program_budget(p, salt, world["year"]) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
+    from . import coaches
+    localism = {s: coaches.program_localism(s) for s in progs}     # coach backyard-recruiting lean
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]
     academic_top = sorted(progs, key=lambda s: -traits[s][1])[:40]
     by_region: dict[str, list] = {}
     for s in progs:
         by_region.setdefault(traits[s][2], []).append(s)
-    return {"progs": progs, "traits": traits, "cap": cap, "budget": budget,
+    return {"progs": progs, "traits": traits, "cap": cap, "budget": budget, "localism": localism,
             "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
             "by_region": by_region}
 
@@ -617,6 +620,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     from . import recruit_economy
     traits = market["traits"]
     budget = market.get("budget", {})
+    localism = market.get("localism", {})
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
     budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
@@ -656,7 +660,13 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             continue
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
-        geo = hc * region_proximity(hr, reg)
+        prox = region_proximity(hr, reg)
+        geo = hc * prox                                # the recruit's own desire to stay home
+        # Coach-side localism: a program whose coach recruits its backyard pulls
+        # in-region recruits harder, regardless of how homesick the recruit is — so
+        # "homer" programs run even more regional. Internationals sit at proximity 0,
+        # so this only tugs domestic, in-region kids.
+        coach_geo = COACH_LOCAL_WEIGHT * float(localism.get(s, 0.5)) * prox
         # Recruits aspire UP to the most prestigious program that still has a seat
         # for them. With best-recruits-first + seat caps, the class tiers itself —
         # a program fills with whoever's left near its own level once it signs,
@@ -666,7 +676,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         level = 1.0 - 0.30 * max(0.0, cal - pres)      # only penalize signing BELOW your level
         score = ((0.15 + pres) * level
                  * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
-                 * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+                 * (1.0 + GEO_WEIGHT * geo + coach_geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
         if intl:
             score *= INTL_TIER_PULL[_intl_tier(div, acad)]
         if score > best_score:

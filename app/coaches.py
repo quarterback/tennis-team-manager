@@ -236,6 +236,11 @@ class Coach:
     archetype: str = ARCHETYPE_LIFER
     personality: str = "balanced"
     offensive_style: str = "balanced"
+    # How strongly this coach recruits the program's own backyard (0 = recruits
+    # nationally without regard to geography, 1 = a committed homer who prioritizes
+    # in-region kids). A coach-side preference the recruiting sim reads on top of a
+    # recruit's own homecooking. Defaults to a neutral lean.
+    localism: float = 0.5
     pid: str = ""
 
     def __post_init__(self) -> None:
@@ -244,6 +249,10 @@ class Coach:
             self.recruiting = RecruitingSkill(self.recruiting)
         if self.source_preference not in SOURCE_PREFERENCES:
             self.source_preference = SOURCE_BLEND
+        try:
+            self.localism = max(0.0, min(1.0, float(self.localism)))
+        except (TypeError, ValueError):
+            self.localism = 0.5
         if self.archetype not in ARCHETYPES:
             self.archetype = ARCHETYPE_LIFER
         self.home_country = _normalize_country(self.home_country or "US")
@@ -362,6 +371,10 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
     recruiting = {a: _clamp(rng.gauss(base, 9)) for a in RECRUITING_ATTRS}
     _apply_archetype(attrs, recruiting, archetype)
     pref = source_preference or rng.choice(SOURCE_PREFERENCES)
+    # Localism leans on the coach's sourcing instinct: a high-school recruiter skews
+    # toward the backyard, an international recruiter away from it, blend is neutral.
+    _local_bias = {SOURCE_HIGH_SCHOOL: 0.16, SOURCE_INTERNATIONAL: -0.16}.get(pref, 0.0)
+    localism = round(max(0.0, min(1.0, rng.gauss(0.5 + _local_bias, 0.22))), 3)
     region_pool = ("domestic", "europe", "latin_america", "asia_pacific", "canada", "australia", "africa")
     region_pipelines = {r: _clamp(rng.gauss(base + 6, 7), PIPELINE_MIN, PIPELINE_MAX)
                         for r in rng.sample(region_pool, k=2)}
@@ -373,6 +386,7 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
         attrs=attrs,
         recruiting=RecruitingSkill(recruiting),
         source_preference=pref,
+        localism=localism,
         region_pipelines=region_pipelines,
         country_pipelines=country_pipelines,
         home_country=home_country,
@@ -387,3 +401,15 @@ def coach_for_program(school: str, *, seed: int = 2026, base: float = 50.0) -> C
     """Stable generated coach for a school until a career save persists one."""
     rng = random.Random(_stable_seed("coach", school, seed))
     return generate_coach(rng, f"{school} Head Coach", school=school, base=base)
+
+
+_localism_cache: dict[str, float] = {}
+
+
+def program_localism(school: str) -> float:
+    """The program's coach localism (0..1) — how hard it recruits its own backyard.
+    Stable per school and cached; the recruiting sim reads it to bias a localist
+    program toward in-region recruits beyond a recruit's own homecooking."""
+    if school not in _localism_cache:
+        _localism_cache[school] = coach_for_program(school).localism if school else 0.5
+    return _localism_cache[school]

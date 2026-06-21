@@ -30,6 +30,10 @@ _HOT, _WARM, _COLD = "Hot", "Warm", "Cold"
 
 GEO_WEIGHT = 0.55           # max home-proximity pull, at homecooking=1, same region
 FAC_WEIGHT = 0.25           # how much a program's facilities grade lifts appeal
+# Coach-side localism: a program whose coach recruits the backyard pulls in-region
+# recruits harder, on top of the recruit's own homecooking. Max lift (a full homer,
+# same region) = this weight; it fades with region proximity and the coach's lean.
+COACH_LOCAL_WEIGHT = 0.50
 
 # Academics only pull a recruit BELOW their athletic station, and only for
 # sub-elite talent. A blue-chip's ceiling commands a marquee program, so for
