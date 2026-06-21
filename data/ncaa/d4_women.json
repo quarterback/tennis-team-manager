@@ -1,7 +1,7 @@
 {
   "division": "D4",
   "gender": "women",
-  "source_notes": "Compiled for the 2025-26 academic year. NCAA Division IV — a new classification carved out of the former Division III to relieve its size (D3 had grown past 400 full members). D4 is the regional, academic-first liberal-arts tier: small private colleges with strong academic identities and a student-first, non-scholarship athletics model, as distinct from the more competitive, athletics-oriented (still non-scholarship) D3 schools that remain. Founding membership is eighteen academically oriented all-sports conferences moved intact from D3: NESCAC, the Centennial Conference, the North Coast Athletic Conference (NCAC), the Old Dominion Athletic Conference (ODAC), the Southern California Intercollegiate Athletic Conference (SCIAC), the Southern Athletic Association (SAA), the Presidents' Athletic Conference (PAC), the Landmark Conference, the New England Women's and Men's Athletic Conference (NEWMAC), the Minnesota Intercollegiate Athletic Conference (MIAC), the Midwest Conference, the Northwest Conference, the Southern Collegiate Athletic Conference (SCAC), the Collegiate Conference of the South (CCS), the College Conference of Illinois and Wisconsin (CCIW), Empire 8, the Conference of New England (CNE), and the Coast to Coast Athletic Conference (C2C). All full member institutions of every founding conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships and differ only in the 'gender' field. Rosters carry over the 2025-26 D3 alignment as it stood before the July 2026 reshuffle. autobid=true for all conferences (each crowns a champion eligible for an NCAA automatic bid).",
+  "source_notes": "Compiled for the 2025-26 academic year. NCAA Division IV — a new classification carved out of the former Division III to relieve its size (D3 had grown past 400 full members). D4 is the regional, academic-first liberal-arts tier: small private colleges with strong academic identities and a student-first, non-scholarship athletics model, as distinct from the more competitive, athletics-oriented (still non-scholarship) D3 schools that remain. Founding membership is nineteen academically oriented all-sports conferences moved intact from D3: NESCAC, the Centennial Conference, the North Coast Athletic Conference (NCAC), the Old Dominion Athletic Conference (ODAC), the Southern California Intercollegiate Athletic Conference (SCIAC), the Southern Athletic Association (SAA), the Presidents' Athletic Conference (PAC), the Landmark Conference, the New England Women's and Men's Athletic Conference (NEWMAC), the Minnesota Intercollegiate Athletic Conference (MIAC), the Midwest Conference, the Northwest Conference, the Southern Collegiate Athletic Conference (SCAC), the Collegiate Conference of the South (CCS), the College Conference of Illinois and Wisconsin (CCIW), Empire 8, the Conference of New England (CNE), and the Coast to Coast Athletic Conference (C2C). All full member institutions of every founding conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships and differ only in the 'gender' field. Rosters carry over the 2025-26 D3 alignment as it stood before the July 2026 reshuffle. autobid=true for all conferences (each crowns a champion eligible for an NCAA automatic bid). NOTE: the original 16-team NESCAC has been divided into two eight-member conferences — NESCAC (Amherst, Bates, Bowdoin, Colby, Middlebury, Tufts, Wesleyan, Williams) and a revived Liberty League (Bard, Hobart and William Smith, Ithaca, Skidmore, Vassar, Connecticut College, Hamilton, Trinity (CT)) — bringing D4 to nineteen conferences.",
   "conferences": [
     {
       "name": "New England Small College Athletic Conference",
@@ -9,21 +9,28 @@
       "autobid": true,
       "teams": [
         "Amherst",
-        "Bard",
         "Bates",
         "Bowdoin",
         "Colby",
-        "Connecticut College",
-        "Hamilton",
-        "Hobart and William Smith",
-        "Ithaca",
         "Middlebury",
-        "Skidmore",
-        "Trinity (CT)",
         "Tufts",
-        "Vassar",
         "Wesleyan",
         "Williams"
+      ]
+    },
+    {
+      "name": "Liberty League",
+      "abbr": "Liberty League",
+      "autobid": true,
+      "teams": [
+        "Bard",
+        "Hobart and William Smith",
+        "Ithaca",
+        "Skidmore",
+        "Vassar",
+        "Connecticut College",
+        "Hamilton",
+        "Trinity (CT)"
       ]
     },
     {
