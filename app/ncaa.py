@@ -248,19 +248,41 @@ ACADEMIC_SCHOOLS = {
 }
 
 
+# Each division occupies its OWN, non-overlapping prestige band — D3 < D2 < D1 with
+# clear gaps — and D1 is by far the widest, so its programs span from low-major all the
+# way to blue-blood. A conference is mapped into its division's band (no multiplier), then
+# the blue-blood school bump nudges a program toward the top of the band.
+DIVISION_PRESTIGE_RANGE = {"D1": (0.40, 0.97), "D2": (0.20, 0.30), "D3": (0.10, 0.20)}
+_CONF_PRESTIGE_REF = {"D1": (0.34, 0.82), "D2": (0.35, 0.62), "D3": (0.35, 0.63)}
+
+
 def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float:
-    """Per-school prestige from a conference prestige prior, preserving each
-    school's blue-blood bump. Used both for the base value and when a conference
-    prestige override shifts the whole league."""
-    base = DIVISION_PRESTIGE.get(division, 0.40)
-    # Steeper conference weight so within D1 the Power-conference band sits well
-    # clear of the mid-majors, which sit clear of the low-majors.
-    p = base + (conf_prior - 0.50) * 0.9 + PRESTIGE_SCHOOLS.get(school, 0.0)
-    return max(0.12, min(0.97, p))
+    """Per-school prestige: the conference prior placed within the division's prestige
+    band, plus the school's blue-blood bump. Used both for the base value and when a
+    conference prestige override shifts the whole league."""
+    lo, hi = DIVISION_PRESTIGE_RANGE.get(division, (0.20, 0.30))
+    clo, chi = _CONF_PRESTIGE_REF.get(division, (0.34, 0.82))
+    span = hi - lo
+    cf = max(0.0, min(1.0, (conf_prior - clo) / (chi - clo))) if chi > clo else 0.5
+    # conference sets ~82% of the band; the blue-blood bump adds the top slice.
+    p = lo + cf * span * 0.82 + min(PRESTIGE_SCHOOLS.get(school, 0.0), 0.20) / 0.20 * span * 0.18
+    return max(lo, min(hi, p))
+
+
+# D3 conferences this academic (NESCAC/Centennial/SCIAC-tier) punch above their athletic
+# division as a recruiting draw — brand + classroom pulls like a small D1.
+ACADEMIC_D3_LIFT = 0.80
 
 
 def _prestige(school: str, conf_abbr: str, division: str) -> float:
-    return _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
+    p = _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
+    if division == "D3":
+        ap = _academic_prior(conf_abbr, division)
+        if ap >= ACADEMIC_D3_LIFT:
+            # lift the academic-elite D3 conferences out of the band, scaled by how
+            # academic they are: 0.80 -> 0.26 (just clears a low-major D1), 0.99 -> 0.42.
+            p = max(p, 0.26 + (ap - ACADEMIC_D3_LIFT) / (0.99 - ACADEMIC_D3_LIFT) * 0.16)
+    return p
 
 
 def _academic_prior(conf_abbr: str, division: str) -> float:

@@ -350,6 +350,8 @@
 .bl-result .opp { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bl-result .tag { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); }
 .bl-result .tag.ita { color: #0e7c86; font-weight: 700; }
+.bl-result .tag.ct { color: #b45309; font-weight: 700; }
+.bl-result .tag.ncaa { color: #be123c; font-weight: 700; }
 
 /* ============================================================
    Schedule — real-sport row layout

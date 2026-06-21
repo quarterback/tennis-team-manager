@@ -71,7 +71,7 @@
         <span class="ha">{{ 'vs' if m.home else 'at' }}</span>
         <span class="bl-crest xs" style="background:{{ m.color }}">{{ m.abbr }}</span>
         <span class="opp">{{ m.opp }}</span>
-        <span class="tag{% if m.round in ('ITAK','ITAI') %} ita{% endif %}">{% if m.round == 'ITAK' %}ITA KO{% elif m.round == 'ITAI' %}ITA Indoor{% elif m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
+        <span class="tag{% if m.round in ('ITAK','ITAI') %} ita{% elif m.round == 'CT' %} ct{% elif m.round == 'NCAA' %} ncaa{% endif %}">{% if m.round == 'ITAK' %}ITA KO{% elif m.round == 'ITAI' %}ITA Indoor{% elif m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
         <span class="wl {{ 'win' if m.won else 'loss' }}">{{ 'W' if m.won else 'L' }} {{ m.mine }}–{{ m.theirs }}</span>
       </a>
       {% endfor %}
