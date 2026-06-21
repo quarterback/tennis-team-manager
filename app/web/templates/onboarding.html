@@ -9,7 +9,7 @@
     <p class="ob-lede">
       You're the only one here yet — nothing has been simulated. Start a fresh
       league and you'll begin at <strong>preseason, week 0</strong>: real
-      rosters seeded across D1/D2/D3 (men's and women's), no duals played. From
+      rosters seeded across D1/D2/D3/D4 (men's and women's), no duals played. From
       there you advance the world week by week and watch the season unfold.
     </p>
 
@@ -63,7 +63,7 @@
       <label class="ob-field">
         <span class="ob-field-k">Run in detail</span>
         <div class="ob-checks">
-          {% for d in ["D1", "D2", "D3"] %}
+          {% for d in ["D1", "D2", "D3", "D4"] %}
           <label class="ob-chk"><input type="checkbox" name="divisions" value="{{ d }}" checked> {{ d }}</label>
           {% endfor %}
           <span class="ob-chk-sep"></span>

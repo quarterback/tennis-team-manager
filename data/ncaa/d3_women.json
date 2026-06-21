@@ -1,120 +1,8 @@
 {
   "division": "D3",
   "gender": "women",
-  "source_notes": "Compiled for the 2025-26 NCAA Division III academic year (current as of June 2026). Per task spec, ALL full member institutions of every D3 all-sports conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships and differ only in the 'gender' field. Sources: Wikipedia 'List of NCAA Division III institutions', 'NCAA Division III', and individual conference articles (en.wikipedia.org); NCAA.com. This covers all 42 D3 all-sports conferences (the Middle Atlantic Conferences are split into their two member leagues, MAC Commonwealth and MAC Freedom, for 43 conference entries total). Notes / uncertainties: (1) Rosters reflect the 2025-26 alignment BEFORE the July 2026 reshuffle (e.g., SUNY New Paltz to NJAC; Alfred State / SUNY Cobleskill / SUNY Delhi to SUNYAC; Luther to Midwest; Maryville & Wesleyan leaving CCS; McMurry & Schreiner back to ASC; Marywood & Neumann to MAC; Saint Francis (PA) to PAC are all 2026-27 changes and are NOT applied here). (2) MASCAC includes Anna Maria for 2025-26 only (the college is closing). (3) Liberty League: 'Rochester' competes as a Liberty League member for sports the UAA doesn't sponsor; Hobart and William Smith are listed as the combined institution 'Hobart and William Smith'. (4) C2C, SCAC, NCAC etc. reflect 2025-26 incoming members (John Carroll in NCAC; Johnson & Wales-Charlotte and Regent in C2C; LeTourneau and returning Hendrix in SCAC). (5) The American Southwest Conference (ASC) has contracted to 4 full members for 2025-26. (6) CUNYAC reflects its eight senior-college (D3) full members. autobid=true for all conferences (each crowns a champion eligible for an NCAA automatic bid).",
+  "source_notes": "Compiled for the 2025-26 NCAA Division III academic year (current as of June 2026). Per task spec, ALL full member institutions of every D3 all-sports conference are listed regardless of whether the school actually sponsors tennis; the men's and women's files are identical full memberships and differ only in the 'gender' field. Sources: Wikipedia 'List of NCAA Division III institutions', 'NCAA Division III', and individual conference articles (en.wikipedia.org); NCAA.com. This covers all 42 D3 all-sports conferences (the Middle Atlantic Conferences are split into their two member leagues, MAC Commonwealth and MAC Freedom, for 43 conference entries total). Notes / uncertainties: (1) Rosters reflect the 2025-26 alignment BEFORE the July 2026 reshuffle (e.g., SUNY New Paltz to NJAC; Alfred State / SUNY Cobleskill / SUNY Delhi to SUNYAC; Luther to Midwest; Maryville & Wesleyan leaving CCS; McMurry & Schreiner back to ASC; Marywood & Neumann to MAC; Saint Francis (PA) to PAC are all 2026-27 changes and are NOT applied here). (2) MASCAC includes Anna Maria for 2025-26 only (the college is closing). (3) Liberty League: 'Rochester' competes as a Liberty League member for sports the UAA doesn't sponsor; Hobart and William Smith are listed as the combined institution 'Hobart and William Smith'. (4) C2C, SCAC, NCAC etc. reflect 2025-26 incoming members (John Carroll in NCAC; Johnson & Wales-Charlotte and Regent in C2C; LeTourneau and returning Hendrix in SCAC). (5) The American Southwest Conference (ASC) has contracted to 4 full members for 2025-26. (6) CUNYAC reflects its eight senior-college (D3) full members. autobid=true for all conferences (each crowns a champion eligible for an NCAA automatic bid). NOTE (D4 carve-out): eighteen academically oriented conferences — NESCAC, Centennial, NCAC, ODAC, SCIAC, SAA, PAC, Landmark, NEWMAC, MIAC, Midwest, Northwest, SCAC, CCS, CCIW, Empire 8, CNE, and C2C — were moved to the new Division IV and are no longer listed here; D3 now holds the remaining 216 full members across 23 conferences.",
   "conferences": [
-    {
-      "name": "New England Small College Athletic Conference",
-      "abbr": "NESCAC",
-      "autobid": true,
-      "teams": [
-        "Amherst",
-        "Bard",
-        "Bates",
-        "Bowdoin",
-        "Colby",
-        "Connecticut College",
-        "Hamilton",
-        "Hobart and William Smith",
-        "Ithaca",
-        "Middlebury",
-        "Skidmore",
-        "Trinity (CT)",
-        "Tufts",
-        "Vassar",
-        "Wesleyan",
-        "Williams"
-      ]
-    },
-    {
-      "name": "Centennial Conference",
-      "abbr": "Centennial",
-      "autobid": true,
-      "teams": [
-        "Bryn Mawr",
-        "Dickinson",
-        "Franklin & Marshall",
-        "Gettysburg",
-        "Haverford",
-        "McDaniel",
-        "Muhlenberg",
-        "Swarthmore",
-        "Ursinus",
-        "Washington College"
-      ]
-    },
-    {
-      "name": "North Coast Athletic Conference",
-      "abbr": "NCAC",
-      "autobid": true,
-      "teams": [
-        "DePauw",
-        "Denison",
-        "John Carroll",
-        "Kenyon",
-        "Oberlin",
-        "Ohio Wesleyan",
-        "Wabash",
-        "Wittenberg",
-        "Wooster"
-      ]
-    },
-    {
-      "name": "Old Dominion Athletic Conference",
-      "abbr": "ODAC",
-      "autobid": true,
-      "teams": [
-        "Averett",
-        "Bridgewater (VA)",
-        "Eastern Mennonite",
-        "Guilford",
-        "Hampden-Sydney",
-        "Hollins",
-        "Lynchburg",
-        "Randolph",
-        "Randolph-Macon",
-        "Roanoke",
-        "Shenandoah",
-        "Sweet Briar",
-        "Virginia Wesleyan",
-        "Washington and Lee"
-      ]
-    },
-    {
-      "name": "Southern California Intercollegiate Athletic Conference",
-      "abbr": "SCIAC",
-      "autobid": true,
-      "teams": [
-        "Cal Lutheran",
-        "Caltech",
-        "Chapman",
-        "Claremont-Mudd-Scripps",
-        "La Verne",
-        "Pomona-Pitzer",
-        "Redlands",
-        "Whittier"
-      ]
-    },
-    {
-      "name": "Minnesota Intercollegiate Athletic Conference",
-      "abbr": "MIAC",
-      "autobid": true,
-      "teams": [
-        "Augsburg",
-        "Bethel (MN)",
-        "Carleton",
-        "Concordia-Moorhead",
-        "Gustavus Adolphus",
-        "Hamline",
-        "Macalester",
-        "Saint Benedict",
-        "Saint John's (MN)",
-        "Saint Mary's (MN)",
-        "St. Catherine",
-        "St. Olaf",
-        "St. Scholastica"
-      ]
-    },
     {
       "name": "Wisconsin Intercollegiate Athletic Conference",
       "abbr": "WIAC",
@@ -127,77 +15,6 @@
         "UW-River Falls",
         "UW-Stevens Point",
         "UW-Stout"
-      ]
-    },
-    {
-      "name": "College Conference of Illinois and Wisconsin",
-      "abbr": "CCIW",
-      "autobid": true,
-      "teams": [
-        "Augustana (IL)",
-        "Carroll (WI)",
-        "Carthage",
-        "Elmhurst",
-        "Illinois Wesleyan",
-        "Millikin",
-        "North Central (IL)",
-        "North Park",
-        "Wheaton (IL)"
-      ]
-    },
-    {
-      "name": "New England Women's and Men's Athletic Conference",
-      "abbr": "NEWMAC",
-      "autobid": true,
-      "teams": [
-        "Babson",
-        "Clark (MA)",
-        "Coast Guard",
-        "Emerson",
-        "MIT",
-        "Mount Holyoke",
-        "Salve Regina",
-        "Smith",
-        "Springfield",
-        "WPI",
-        "Wellesley",
-        "Wheaton (MA)"
-      ]
-    },
-    {
-      "name": "Empire 8",
-      "abbr": "Empire 8",
-      "autobid": true,
-      "teams": [
-        "Alfred",
-        "Elmira",
-        "Hartwick",
-        "Houghton",
-        "Keuka",
-        "Nazareth",
-        "Russell Sage",
-        "SUNY Brockport",
-        "SUNY Geneseo",
-        "SUNY Poly",
-        "St. John Fisher",
-        "Utica"
-      ]
-    },
-    {
-      "name": "Landmark Conference",
-      "abbr": "Landmark",
-      "autobid": true,
-      "teams": [
-        "Catholic",
-        "Drew",
-        "Elizabethtown",
-        "Goucher",
-        "Juniata",
-        "Lycoming",
-        "Moravian",
-        "Scranton",
-        "Susquehanna",
-        "Wilkes"
       ]
     },
     {
@@ -323,21 +140,6 @@
       ]
     },
     {
-      "name": "Southern Athletic Association",
-      "abbr": "SAA",
-      "autobid": true,
-      "teams": [
-        "Berry",
-        "Centre",
-        "Millsaps",
-        "Oglethorpe",
-        "Rhodes",
-        "Sewanee",
-        "Southwestern (TX)",
-        "Trinity (TX)"
-      ]
-    },
-    {
       "name": "USA South Athletic Conference",
       "abbr": "USA South",
       "autobid": true,
@@ -352,20 +154,6 @@
         "Salem",
         "Southern Virginia",
         "William Peace"
-      ]
-    },
-    {
-      "name": "Coast to Coast Athletic Conference",
-      "abbr": "C2C",
-      "autobid": true,
-      "teams": [
-        "Christopher Newport",
-        "Johnson & Wales (Charlotte)",
-        "Mary Washington",
-        "Regent",
-        "Salisbury",
-        "UC Santa Cruz",
-        "Warren Wilson"
       ]
     },
     {
@@ -524,74 +312,6 @@
       ]
     },
     {
-      "name": "Conference of New England",
-      "abbr": "CNE",
-      "autobid": true,
-      "teams": [
-        "Curry",
-        "Endicott",
-        "Gordon",
-        "Hartford",
-        "Johnson & Wales (Providence)",
-        "New England",
-        "Nichols",
-        "Roger Williams",
-        "Suffolk",
-        "Wentworth",
-        "Western New England"
-      ]
-    },
-    {
-      "name": "Presidents' Athletic Conference",
-      "abbr": "PAC",
-      "autobid": true,
-      "teams": [
-        "Allegheny",
-        "Bethany (WV)",
-        "Chatham",
-        "Franciscan",
-        "Geneva",
-        "Grove City",
-        "Hiram",
-        "Saint Vincent",
-        "Thiel",
-        "Washington & Jefferson",
-        "Waynesburg",
-        "Westminster (PA)"
-      ]
-    },
-    {
-      "name": "Midwest Conference",
-      "abbr": "MWC",
-      "autobid": true,
-      "teams": [
-        "Beloit",
-        "Cornell College",
-        "Grinnell",
-        "Illinois College",
-        "Knox",
-        "Lake Forest",
-        "Lawrence",
-        "Monmouth (IL)",
-        "Ripon"
-      ]
-    },
-    {
-      "name": "Northwest Conference",
-      "abbr": "NWC",
-      "autobid": true,
-      "teams": [
-        "George Fox",
-        "Lewis & Clark",
-        "Pacific (OR)",
-        "Pacific Lutheran",
-        "Puget Sound",
-        "Whitman",
-        "Whitworth",
-        "Willamette"
-      ]
-    },
-    {
       "name": "North Atlantic Conference",
       "abbr": "NAC",
       "autobid": true,
@@ -646,22 +366,6 @@
       ]
     },
     {
-      "name": "Collegiate Conference of the South",
-      "abbr": "CCS",
-      "autobid": true,
-      "teams": [
-        "Agnes Scott",
-        "Asbury",
-        "Belhaven",
-        "Covenant",
-        "Huntingdon",
-        "LaGrange",
-        "Maryville (TN)",
-        "Piedmont",
-        "Wesleyan College"
-      ]
-    },
-    {
       "name": "City University of New York Athletic Conference",
       "abbr": "CUNYAC",
       "autobid": true,
@@ -674,24 +378,6 @@
         "Lehman",
         "Medgar Evers",
         "York (NY)"
-      ]
-    },
-    {
-      "name": "Southern Collegiate Athletic Conference",
-      "abbr": "SCAC",
-      "autobid": true,
-      "teams": [
-        "Austin College",
-        "Centenary (LA)",
-        "Concordia Texas",
-        "Dallas",
-        "Hendrix",
-        "LeTourneau",
-        "McMurry",
-        "Ozarks",
-        "Schreiner",
-        "St. Thomas (TX)",
-        "Texas Lutheran"
       ]
     }
   ]

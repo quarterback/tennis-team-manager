@@ -88,7 +88,7 @@ def set_name_preset(preset: str) -> None:
 
 # --- Active universes (memory): only the chosen divisions × genders are seeded,
 # primed and simulated in detail; the rest are left dormant. ------------------
-_ALL_DIV = ["D1", "D2", "D3"]
+_ALL_DIV = ["D1", "D2", "D3", "D4"]
 _ALL_GEN = ["men", "women"]
 
 

@@ -67,6 +67,8 @@ SCHOLARSHIP_CAPS: dict[tuple[str, str], float] = {
     ("D2", "women"): 6.0,
     ("D3", "men"):   0.0,
     ("D3", "women"): 0.0,
+    ("D4", "men"):   0.0,
+    ("D4", "women"): 0.0,
 }
 
 # Prestige pull for the no-money tier: a top D3 / Ivy program still wins the

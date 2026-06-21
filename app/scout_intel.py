@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 from app.development import overall_to_str
 
-DIVISIONS = ("D1", "D2", "D3")
+DIVISIONS = ("D1", "D2", "D3", "D4")
 _scan_cache: dict = {}
 
 
@@ -277,7 +277,7 @@ class PlayWatch:
     move_dir: str                 # 'up' / 'lateral' / 'down' vs their current division
 
 
-_DIVRANK = {"D1": 0, "D2": 1, "D3": 2}
+_DIVRANK = {"D1": 0, "D2": 1, "D3": 2, "D4": 3}
 
 
 def playing_time_watch(gender: str, seed: int | None = None,

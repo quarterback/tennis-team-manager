@@ -162,7 +162,7 @@ def conf_prestige(conf_abbr: str, division: str | None = None) -> float:
 # Division sets the prestige BAND: every D1 outranks every D2, which outranks
 # every D3 (a low-major D1 still has more athletic brand pull than the best D3).
 # Within D1 the conference prior then separates P5 > mid-major > low-major.
-DIVISION_PRESTIGE = {"D1": 0.66, "D2": 0.40, "D3": 0.26}
+DIVISION_PRESTIGE = {"D1": 0.66, "D2": 0.40, "D3": 0.26, "D4": 0.20}
 
 # Athletic brand bump on top of the conference prior, per program. Keys are the
 # canonical school names used in the data files (e.g. UNC → "North Carolina").
@@ -252,8 +252,10 @@ ACADEMIC_SCHOOLS = {
 # clear gaps — and D1 is by far the widest, so its programs span from low-major all the
 # way to blue-blood. A conference is mapped into its division's band (no multiplier), then
 # the blue-blood school bump nudges a program toward the top of the band.
-DIVISION_PRESTIGE_RANGE = {"D1": (0.40, 0.97), "D2": (0.20, 0.30), "D3": (0.10, 0.20)}
-_CONF_PRESTIGE_REF = {"D1": (0.34, 0.82), "D2": (0.35, 0.62), "D3": (0.35, 0.63)}
+DIVISION_PRESTIGE_RANGE = {"D1": (0.40, 0.97), "D2": (0.20, 0.30),
+                           "D3": (0.10, 0.20), "D4": (0.04, 0.10)}
+_CONF_PRESTIGE_REF = {"D1": (0.34, 0.82), "D2": (0.35, 0.62),
+                      "D3": (0.35, 0.63), "D4": (0.40, 0.63)}
 
 
 def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float:
@@ -276,7 +278,10 @@ ACADEMIC_D3_LIFT = 0.80
 
 def _prestige(school: str, conf_abbr: str, division: str) -> float:
     p = _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
-    if division == "D3":
+    # The academic-elite conferences keep their brand+classroom recruiting draw
+    # whether they sit in D3 or the new academic-first D4 — a NESCAC-tier school
+    # pulls like a small D1 either way, even with athletics de-emphasized.
+    if division in ("D3", "D4"):
         ap = _academic_prior(conf_abbr, division)
         if ap >= ACADEMIC_D3_LIFT:
             # lift the academic-elite D3 conferences out of the band, scaled by how
@@ -289,7 +294,8 @@ def _academic_prior(conf_abbr: str, division: str) -> float:
     """The default academic prior for a conference (before per-school flagships)."""
     if conf_abbr in ACADEMIC_CONF:
         return ACADEMIC_CONF[conf_abbr]
-    return {"D1": 0.55, "D2": 0.48, "D3": 0.62}.get(division, 0.55)
+    # D4 is the academic-first tier, so its default prior sits a touch above D3.
+    return {"D1": 0.55, "D2": 0.48, "D3": 0.62, "D4": 0.66}.get(division, 0.55)
 
 
 def _academics_with_prior(school: str, conf_prior: float, division: str) -> float:
@@ -548,6 +554,8 @@ _TALENT = {
     ("D1", "men"):   (56.0, 23.0), ("D1", "women"): (48.0, 20.0),
     ("D2", "men"):   (50.0, 58.0), ("D2", "women"): (40.0, 46.0),
     ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
+    # D4 sits just below D3 — the smallest, most regional academic-first tier.
+    ("D4", "men"):   (28.0, 44.0), ("D4", "women"): (22.0, 38.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
@@ -580,7 +588,8 @@ _index_cache: dict[str, object] = {}         # pid -> base Prospect, across all 
 # Every division×gender universe — used to build the global pid→player index so
 # the editor can move a player from ANY program to ANY other.
 UNIVERSE_PAIRS = [("D1", "men"), ("D1", "women"), ("D2", "men"),
-                  ("D2", "women"), ("D3", "men"), ("D3", "women")]
+                  ("D2", "women"), ("D3", "men"), ("D3", "women"),
+                  ("D4", "men"), ("D4", "women")]
 
 
 def reset_caches() -> None:

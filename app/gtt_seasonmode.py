@@ -203,7 +203,7 @@ def _active_unis_via(conn) -> set:
         except (sqlite3.OperationalError, ValueError, TypeError):
             v = []
         return [x for x in allv if x in v] or allv
-    return {(d, g) for d in lst("active_divisions", ["D1", "D2", "D3"])
+    return {(d, g) for d in lst("active_divisions", ["D1", "D2", "D3", "D4"])
             for g in lst("active_genders", ["men", "women"])}
 
 

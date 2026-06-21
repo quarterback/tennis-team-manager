@@ -29,7 +29,7 @@ INDOOR_FIELD = 16                                   # D1 final-16 Indoor draw â€
 SMALL_INDOOR_FIELD = 8                              # D2 / D3 top-8 Indoor draw
 
 KICKOFF_DIVISIONS = {"D1"}                          # only D1 runs the Kickoff Weekend draft
-INDOOR_DIVISIONS = {"D1", "D2", "D3"}               # every NCAA division has a Team Indoor
+INDOOR_DIVISIONS = {"D1", "D2", "D3", "D4"}         # every NCAA division has a Team Indoor
 
 
 def runs_kickoff(division: str) -> bool:

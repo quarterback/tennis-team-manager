@@ -50,7 +50,8 @@ from generators import make_name_picker
 
 WORLD_DB = resolve_db_path()        # shares the file with season mode; own tables
 UNIVERSES = [("D1", "men"), ("D1", "women"), ("D2", "men"),
-             ("D2", "women"), ("D3", "men"), ("D3", "women")]
+             ("D2", "women"), ("D3", "men"), ("D3", "women"),
+             ("D4", "men"), ("D4", "women")]
 GENDERS = ["men", "women"]
 DEFAULT_SEED = 2026
 BASE_YEAR = 2026
@@ -92,12 +93,17 @@ RECRUIT_INTL_SHARE = worldconfig.DEFAULT_INTL_SHARE
 # elite D3; ordinary D3 stays local). Tunable — internationals concentrate at the
 # top because they have no homecooking and chase prestige/academics. Real men's
 # D1 tennis runs very international; lower these to dampen it.
-INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15}
+INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15, "D4": 0.05}
 
 
 def _intl_tier(division: str, academics: float) -> str:
-    if division == "D3":
-        return "D3_elite" if academics >= ELITE_D3_ACADEMICS else "D3"
+    # D3 and the academic-first D4 both let only their academically elite reach
+    # the higher international pull; ordinary programs in either stay local. D4
+    # sits below D3, so its baseline pull is the lowest in the world.
+    if division in ("D3", "D4"):
+        if academics >= ELITE_D3_ACADEMICS:
+            return "D3_elite"
+        return division
     return division
 
 
@@ -148,7 +154,7 @@ CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wg ON world_graduates(world_id, year, division, gender);
 """
 
-DIV_RANK = {"D1": 1, "D2": 2, "D3": 3}      # 1 = highest classification
+DIV_RANK = {"D1": 1, "D2": 2, "D3": 3, "D4": 4}   # 1 = highest classification
 MAX_CROSS = 3                               # cross-classification duals per team / year
 ELITE_D3_ACADEMICS = 0.85                   # a D3 this academic can reach up to D1
 
@@ -560,7 +566,7 @@ def national_class(seed: int, year: int, gender: str) -> list:
 
 def _flat_programs(gender: str) -> dict[str, Program]:
     out = {}
-    for division in ("D1", "D2", "D3"):
+    for division in ("D1", "D2", "D3", "D4"):
         try:
             for p in load_division(division, gender).programs:
                 out[p.school] = p
@@ -614,15 +620,15 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
     budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
-    # Division ceiling by tier: a 5★/blue-chip never drops to D3; a 4★ can choose an
-    # academic-elite D3 (an Ivy-calibre classroom is worth the athletic step down) but
+    # Division ceiling by tier: a 5★/blue-chip never drops to D3/D4; a 4★ can choose an
+    # academic-elite D3/D4 (an Ivy-calibre classroom is worth the athletic step down) but
     # otherwise only rarely; a 3★ (and below) can go anywhere.
     def _div_ok(div, acad):
-        if div != "D3":
+        if div not in ("D3", "D4"):
             return True
-        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3
+        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3/D4
             return False
-        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3s
+        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3/D4
             if acad >= ELITE_D3_ACADEMICS:
                 return True
             return random.Random(f"{getattr(p, 'pid', '')}|d3gate").random() < 0.05
@@ -884,8 +890,8 @@ def _churn_mult(s: float, level: float) -> float:
     return 0.6
 
 
-_UP_DIV = {"D2": "D1", "D3": "D2"}      # a transfer climbs at most one level
-_DOWN_DIV = {"D1": "D2", "D2": "D3"}    # ...and drops at most one — never skipping
+_UP_DIV = {"D2": "D1", "D3": "D2", "D4": "D3"}      # a transfer climbs at most one level
+_DOWN_DIV = {"D1": "D2", "D2": "D3", "D3": "D4"}    # ...and drops at most one — never skipping
 
 
 def _career_transfers(p) -> int:

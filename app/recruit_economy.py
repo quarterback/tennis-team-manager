@@ -65,7 +65,7 @@ def program_budget(program, salt: str = "", year: int = 0) -> float:
     band — the blue-bloods' funding rises and falls year to year. Every other tier
     (high-/mid-/low-major, D2) holds a fixed value in its prescribed band."""
     div = program.division
-    if div == "D3":
+    if div in ("D3", "D4"):        # non-scholarship tiers carry no recruiting budget
         return 0.0
     pres = float(getattr(program, "prestige", 0.5))
     if div == "D2":
