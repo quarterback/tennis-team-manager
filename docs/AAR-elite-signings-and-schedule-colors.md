@@ -64,6 +64,15 @@ championship progression.
   into its division's band + the blue-blood bump. D1 budget now spans 6.7-24 with 125
   programs in the low-major (6-10) tier (was 0); recalibrated the dependent D2 budget
   frac and `_ELITE_D2_PRESTIGE` to the new D2 band.
+- Academic D3 fallout + fix: compressing D3 prestige to 0.10-0.20 collapsed the appeal
+  base `(0.15 + prestige)`, flipping smart recruits from academic D3s to low-major D1
+  (Swarthmore-type appeal 1.94 -> 1.07 vs low-D1 1.26). Two-part fix: (1) open the
+  division gate so 4-stars can choose academic-elite D3s (academics >= 0.85) while
+  blue-chips stay blocked; (2) lift academic-elite D3 *conferences* (academic prior
+  >= 0.80 — NESCAC/Centennial/SCIAC-tier) out of the band to 0.26-0.42, scaled by how
+  academic they are. D3 budgets are always 0, so no funding side effect. This is a
+  deliberate, narrow overlap with D2/low-D1 — academic D3s punching above their athletic
+  division, which is realistic.
 - "Widen the band year over year": the budget bands already existed per conference, but
   the jitter was seeded only by world salt + program key — constant across seasons, so a
   program's budget never moved. Fix: widen the power band (14-16 → 15-24) AND seed the

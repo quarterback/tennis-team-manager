@@ -269,8 +269,20 @@ def _prestige_with_prior(school: str, conf_prior: float, division: str) -> float
     return max(lo, min(hi, p))
 
 
+# D3 conferences this academic (NESCAC/Centennial/SCIAC-tier) punch above their athletic
+# division as a recruiting draw — brand + classroom pulls like a small D1.
+ACADEMIC_D3_LIFT = 0.80
+
+
 def _prestige(school: str, conf_abbr: str, division: str) -> float:
-    return _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
+    p = _prestige_with_prior(school, conf_prestige(conf_abbr, division), division)
+    if division == "D3":
+        ap = _academic_prior(conf_abbr, division)
+        if ap >= ACADEMIC_D3_LIFT:
+            # lift the academic-elite D3 conferences out of the band, scaled by how
+            # academic they are: 0.80 -> 0.26 (just clears a low-major D1), 0.99 -> 0.42.
+            p = max(p, 0.26 + (ap - ACADEMIC_D3_LIFT) / (0.99 - ACADEMIC_D3_LIFT) * 0.16)
+    return p
 
 
 def _academic_prior(conf_abbr: str, division: str) -> float:
