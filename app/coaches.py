@@ -403,14 +403,12 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
     # backyard, an international recruiter away from it, blend is neutral.
     _local_bias = {SOURCE_HIGH_SCHOOL: 0.16, SOURCE_INTERNATIONAL: -0.16}.get(pref, 0.0)
     localism = round(max(0.0, min(1.0, rng.gauss(0.5 + _local_bias, 0.22))), 3)
-    # International lean (dice roll): an international recruiter pushes the roster
-    # 20-50% more international, a high-school recruiter 20-50% more American, a blend
-    # wanders mildly either way.
-    _dir = {SOURCE_INTERNATIONAL: 1.0, SOURCE_HIGH_SCHOOL: -1.0}.get(pref, 0.0)
-    if _dir:
-        intl_lean = round(1.0 + _dir * rng.uniform(0.20, 0.50), 3)
-    else:
-        intl_lean = round(1.0 + rng.uniform(-0.15, 0.15), 3)
+    # International lean (dice roll): a per-coach multiplier on the program's base
+    # international share. The sourcing preference (and nationality) TILTS the center,
+    # but the roll is broad enough that any program can land heavily international,
+    # heavily American, or balanced — so it's never fully determined by who coaches.
+    _tilt = {SOURCE_INTERNATIONAL: 0.20, SOURCE_HIGH_SCHOOL: -0.20}.get(pref, 0.0)
+    intl_lean = round(max(0.45, min(1.55, rng.gauss(1.0 + _tilt, 0.32))), 3)
     region_pool = ("domestic", "europe", "latin_america", "asia_pacific", "canada", "australia", "africa")
     region_pipelines = {r: _clamp(rng.gauss(base + 6, 7), PIPELINE_MIN, PIPELINE_MAX)
                         for r in rng.sample(region_pool, k=2)}

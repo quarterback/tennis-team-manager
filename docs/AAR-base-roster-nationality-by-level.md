@@ -28,10 +28,12 @@ Two levers, both keyed off the program (not a global constant):
      NESCAC — recruits US merit and runs ~0.10–0.20 *regardless of division* (so the
      academic D1s and the academic D4s are both US-heavy, by design).
    - **Gender**: women's rosters run ~30% less international than men's.
-   - **Coach dice roll** (`Coach.intl_lean`, 0.5–1.5): an international recruiter
-     pushes the program markedly more international, a high-school recruiter more
-     American — so two same-tier programs differ by who coaches them. Generated with
-     the coach (direction from `source_preference`/nationality, magnitude a roll).
+   - **Coach dice roll** (`Coach.intl_lean`, 0.45–1.55): a broad per-coach multiplier
+     — the sourcing preference/nationality only *tilts* the center (`gauss(1.0 ± 0.20,
+     0.32)`), so the roll can land any (non-academic) program heavily international,
+     heavily American, or balanced; it's never fully determined by who coaches.
+     Athletic tiers swing the full range (SEC men span ~12–100% across programs);
+     academic programs vary too but stay inside their US-heavy band.
 
    `ncaa.region_weights_for()` rewrites the name-picker mix so the `us` weight is
    `1 − share`; the non-US regions keep their relative proportions, so *which* nations
