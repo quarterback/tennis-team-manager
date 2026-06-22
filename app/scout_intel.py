@@ -205,7 +205,9 @@ def underplaced_board(gender: str, seed: int | None = None, division: str = "All
     if division != "All":
         rows = [r for r in rows if r.division == division]
     if class_year != "All":
-        rows = [r for r in rows if r.class_year == class_year]
+        # match base class so medical-redshirt players (RS-Jr) still file under "Jr"
+        rows = [r for r in rows
+                if (r.class_year[3:] if r.class_year.startswith("RS-") else r.class_year) == class_year]
     if q:
         ql = q.strip().lower()
         rows = [r for r in rows if ql in r.name.lower() or ql in r.school.lower()]

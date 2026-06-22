@@ -26,6 +26,7 @@ from . import dbpath
 
 from .ncaa import load_division
 from .season import dual_between, build_corpus, forced_appearances
+from . import injuries
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
@@ -76,6 +77,12 @@ CREATE TABLE IF NOT EXISTS duals (
   round_no INTEGER DEFAULT 0, bpos INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_duals_season ON duals(season_id, round, week);
+CREATE TABLE IF NOT EXISTS injuries (
+  season_id INTEGER, pid TEXT, school TEXT,
+  duals_remaining INTEGER DEFAULT 0, season_ending INTEGER DEFAULT 0,
+  PRIMARY KEY (season_id, pid)
+);
+CREATE INDEX IF NOT EXISTS idx_injuries_season ON injuries(season_id, school);
 """
 
 
@@ -375,19 +382,76 @@ def _forced_for(conn, s, progs, school) -> dict:
     return _forced_cache[key]
 
 
+def _unavailable(conn, season_id, school) -> set:
+    """Pids on `school` that are injured (out 1+ duals or season-ending) — to be
+    dropped from this dual's lineup."""
+    rows = conn.execute(
+        "SELECT pid FROM injuries WHERE season_id=? AND school=?"
+        " AND (season_ending=1 OR duals_remaining>0)", (season_id, school)).fetchall()
+    return {r["pid"] for r in rows}
+
+
+def _recover_team(conn, season_id, school) -> None:
+    """`school` just played a dual, so every one of its short-term injuries burns a
+    dual of recovery; those that hit zero are healed (row removed). Season-ending
+    injuries don't tick — they're out until a medical redshirt next year."""
+    conn.execute(
+        "UPDATE injuries SET duals_remaining=duals_remaining-1"
+        " WHERE season_id=? AND school=? AND season_ending=0 AND duals_remaining>0",
+        (season_id, school))
+    conn.execute(
+        "DELETE FROM injuries WHERE season_id=? AND school=? AND season_ending=0"
+        " AND duals_remaining<=0", (season_id, school))
+
+
+def _roll_new_injuries(conn, season_id, school, played_pids, roster) -> None:
+    """After a dual, roll fresh injuries on exactly the players who competed.
+    Already-injured pids are skipped (they were filtered out and didn't play)."""
+    if not injuries.is_enabled() or not played_pids:
+        return
+    by_pid = {p.pid: p for p in roster}
+    existing = {r["pid"] for r in conn.execute(
+        "SELECT pid FROM injuries WHERE season_id=? AND school=?",
+        (season_id, school)).fetchall()}
+    for pid in played_pids:
+        if pid in existing or pid not in by_pid:
+            continue
+        out = injuries.roll_injury(by_pid[pid])
+        if out == injuries.SEASON_ENDING:
+            conn.execute(
+                "INSERT OR REPLACE INTO injuries"
+                " (season_id, pid, school, duals_remaining, season_ending)"
+                " VALUES (?,?,?,?,1)", (season_id, pid, school, 0))
+        elif out > 0:
+            conn.execute(
+                "INSERT OR REPLACE INTO injuries"
+                " (season_id, pid, school, duals_remaining, season_ending)"
+                " VALUES (?,?,?,?,0)", (season_id, pid, school, out))
+
+
 def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
     # Playing-time guarantee: each team has one dual per roster player where that
     # player is seated into a completing slot (weakest players land in the most
     # favorable duals, so the bench plays up in non-conference).
     fh = _forced_for(conn, s, progs, home).get(dual_id)
     fa = _forced_for(conn, s, progs, away).get(dual_id)
+    sid = s["id"]
     rec = dual_between(progs[home], progs[away],
                        seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
-                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa)
+                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa,
+                       unavailable_home=_unavailable(conn, sid, home),
+                       unavailable_away=_unavailable(conn, sid, away))
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
                  (rec["home_points"], rec["away_points"], winner, json.dumps(rec["lines"]), dual_id))
+    # Injury bookkeeping: this dual counts as a dual of recovery for both teams'
+    # short-term injuries, then roll fresh injuries on whoever just competed.
+    from .ncaa import build_roster
+    _recover_team(conn, sid, home)
+    _recover_team(conn, sid, away)
+    _roll_new_injuries(conn, sid, home, rec.get("home_played"), build_roster(progs[home]))
+    _roll_new_injuries(conn, sid, away, rec.get("away_played"), build_roster(progs[away]))
     return rec
 
 
@@ -1620,6 +1684,19 @@ def _pid_index(division: str, gender: str) -> dict:
 def player_info(season_id: int, pid: str) -> dict | None:
     s = load_season(season_id)
     return _pid_index(s["division"], s["gender"]).get(pid)
+
+
+def season_ending_pids(season_id: int) -> set:
+    """Pids that suffered a season-ending injury this season — the medical-redshirt
+    cohort the world rollover grants a returning (RS-tagged) year of eligibility."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT pid FROM injuries WHERE season_id=? AND season_ending=1",
+            (season_id,)).fetchall()
+    finally:
+        conn.close()
+    return {r["pid"] for r in rows}
 
 
 def season_player_str(season_id: int) -> dict:

@@ -76,7 +76,7 @@ BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs 
 
 def coach_lineup(prog: Program, roster: list, form: dict | None,
                  opp_prestige: float, lineup_seed: int, dual_seed: int = 0,
-                 forced: set | None = None):
+                 forced: set | None = None, unavailable: set | None = None):
     """Return (engine Team, chosen Prospects) for `prog` this dual.
 
     The ladder is set by live results STR (ability before results exist) plus a
@@ -91,7 +91,16 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
     playing-time guarantee — see `forced_appearances`). A forced player is slotted
     around S3, which always completes before a 4-point clinch, so the appearance
     actually counts; it also reflects bench players playing *up* against weaker
-    opponents."""
+    opponents.
+
+    `unavailable` is a set of pids that are INJURED this dual — dropped from
+    contention entirely, so an injured starter pulls up the next body and the
+    coach is forced to use depth. A guaranteed (`forced`) player who's hurt is
+    dropped too (you can't play the injured)."""
+    if unavailable:
+        roster = [p for p in roster if p.pid not in unavailable]
+        if forced:
+            forced = {pid for pid in forced if pid not in unavailable}
     srng = random.Random(f"{prog.key}|lineup|{lineup_seed}")    # season-stable ladder
 
     def score(p):
@@ -235,18 +244,29 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
 
 def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                  form: dict | None = None, lineup_seed: int = 0,
-                 forced_home: set | None = None, forced_away: set | None = None) -> dict:
+                 forced_home: set | None = None, forced_away: set | None = None,
+                 unavailable_home: set | None = None,
+                 unavailable_away: set | None = None) -> dict:
     """Simulate one dual between two programs and return the record dict. Each
     coach sets a lineup from their full roster (results-driven ladder + coach
     noise, rotating bench/walk-ons in against weaker opponents), so the bottom of
     the roster actually gets evaluated. `forced_home`/`forced_away` are pids the
-    season's playing-time guarantee requires in this dual. Used by season mode."""
+    season's playing-time guarantee requires in this dual. `unavailable_*` are
+    injured pids dropped from each lineup. Used by season mode.
+
+    The record carries `home_played`/`away_played` (pids who competed) so the
+    caller can roll fresh injuries on exactly the players who took the court."""
     sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
-                          lineup_seed, seed, forced=forced_home)
+                          lineup_seed, seed, forced=forced_home,
+                          unavailable=unavailable_home)
     sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
-                          lineup_seed, seed, forced=forced_away)
-    return _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
-                        forced_home=forced_home, forced_away=forced_away)
+                          lineup_seed, seed, forced=forced_away,
+                          unavailable=unavailable_away)
+    rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
+                       forced_home=forced_home, forced_away=forced_away)
+    rec["home_played"] = [p.pid for p in la]
+    rec["away_played"] = [p.pid for p in lb]
+    return rec
 
 
 def build_corpus(duals: list[dict]) -> dict[str, list[tuple]]:
