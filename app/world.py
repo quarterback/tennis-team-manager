@@ -157,6 +157,11 @@ CREATE INDEX IF NOT EXISTS idx_wg ON world_graduates(world_id, year, division, g
 
 DIV_RANK = {"D1": 1, "D2": 2, "D3": 3, "D4": 4}   # 1 = highest classification
 MAX_CROSS = 3                               # cross-classification duals per team / year
+CROSS_GAP_DECAY = 0.10                       # per extra class of distance: how much rarer a cross
+                                            # dual gets (adjacent=1, two up=0.10, three up=0.01) —
+                                            # so a D4 plays mostly D3, with nearby D2/D1 a thin sliver
+CROSS_D1_PRESTIGE = 0.25                     # a D1 only reaches down to a D3/D4 this prestigious
+                                            # (a lifted academic peer); else same-region only
 ELITE_D3_ACADEMICS = 0.85                   # a D3 this academic can reach up to D1
 
 
@@ -1191,23 +1196,23 @@ from .ncaa import location  # noqa: E402  (geography for cross-division pairing)
 
 
 def _allowed_cross(a, b) -> bool:
-    """Is a cross-class dual between programs a, b allowed? Teams play at most ONE
-    classification away — the geographic, capped cross-class sliver — with a single
-    narrow exception: an academically elite D3 (NESCAC/UAA-type) may reach up to D1.
-    So D4 only ever draws its adjacent class (D3); it never gets games two or three
-    classifications up (no D2/D4, no D1/D4)."""
+    """Is a cross-class dual between programs a, b allowed? Geography (the same /
+    adjacent-region pool in `cross_schedule`) plus the per-team cap already keep
+    cross-class play local and rare. On top of that:
+      • adjacent classes always pair (D1-D2, D2-D3, D3-D4);
+      • a D2 may reach down to D4 anywhere nearby;
+      • a D1 reaches down to a D3/D4 only when the smaller school is a PRESTIGE peer
+        (the lifted academic programs) OR a same-region neighbor — a top-tier program
+        doesn't drop two or three classes for a random small school far afield."""
     if a.division == b.division:
         return False
     ra, rb = DIV_RANK[a.division], DIV_RANK[b.division]
-    if abs(ra - rb) == 1:                                  # adjacent classes (D1-D2, D2-D3, D3-D4)
+    if abs(ra - rb) == 1:
         return True
-    # The only non-adjacent pairing: an academically elite D3 reaching up to D1.
-    # Guarded to exactly D1+D3 so non-adjacent D4 pairings (D2/D4, D1/D4) never slip
-    # through on whichever side's academics happen to clear the bar.
-    if {a.division, b.division} == {"D1", "D3"}:
-        d3 = a if a.division == "D3" else b
-        return d3.academics >= ELITE_D3_ACADEMICS
-    return False
+    hi, lo = (a, b) if ra < rb else (b, a)        # hi = higher classification
+    if hi.division != "D1":                        # D2 reaching D4 — geography is enough
+        return True
+    return lo.prestige >= CROSS_D1_PRESTIGE or hi.region == lo.region
 
 
 def cross_schedule(seed: int, year: int) -> list[dict]:
@@ -1227,15 +1232,24 @@ def cross_schedule(seed: int, year: int) -> list[dict]:
         order = list(progs.values())
         rng.shuffle(order)
         for p in order:
-            # nearby pool = same region + adjacent regions
-            pool = list(by_region.get(p.region, []))
-            for r in REGION_ADJACENT.get(p.region, ()):
-                pool.extend(by_region.get(r, []))
+            # Nearby pool = same region + adjacent regions, restricted to OTHER
+            # classifications. Weight each candidate by class proximity so adjacent
+            # classes dominate and reaching two / three up (a D4 at a nearby D1) stays
+            # an occasional sliver rather than the bulk — D1 is large and everywhere,
+            # so unweighted picks would otherwise bury a D4 in D1 games.
+            pra = DIV_RANK[p.division]
+            xpool, xw = [], []
+            for r in (p.region, *REGION_ADJACENT.get(p.region, ())):
+                for o in by_region.get(r, ()):
+                    if o.division == p.division or o.school == p.school:
+                        continue
+                    xpool.append(o)
+                    xw.append(CROSS_GAP_DECAY ** (abs(pra - DIV_RANK[o.division]) - 1))
             tries = 0
-            while count[p.school] < MAX_CROSS and tries < 40 and pool:
+            while count[p.school] < MAX_CROSS and tries < 40 and xpool:
                 tries += 1
-                o = rng.choice(pool)
-                if o.school == p.school or count[o.school] >= MAX_CROSS:
+                o = rng.choices(xpool, weights=xw)[0]
+                if count[o.school] >= MAX_CROSS:
                     continue
                 key = tuple(sorted((p.school, o.school)))
                 if key in pairs or not _allowed_cross(p, o):

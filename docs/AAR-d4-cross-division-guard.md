@@ -1,51 +1,56 @@
-# AAR — Guard D4 against non-adjacent cross-division duals
+# AAR — Cross-division scheduling: geography- and prestige-gated reach
 
 **Date:** 2026-06-21
-**Scope:** One-line-of-logic fix in `world._allowed_cross`, flagged by a review of
-the D4 work.
+**Scope:** `world._allowed_cross` + `world.cross_schedule`. Started as a bug fix for
+D4 cross-class scheduling; refined into a geography- and prestige-gated cross-class
+model.
 
 ## The bug
 
-Cross-class non-conference scheduling lets teams play **one classification away**
-(adjacent), plus a single exception: an academically elite D3 (NESCAC/UAA-type) may
-reach up to D1. The exception was coded with a fallback that *assumed* one side of a
-non-adjacent pair was D3:
+Cross-class scheduling let teams play one class away plus an "academically elite D3
+reaches D1" exception, coded with a fallback that assumed every non-adjacent pair was
+D1+D3:
 
 ```python
 d3 = a if a.division == "D3" else b
 return d3.academics >= ELITE_D3_ACADEMICS
 ```
 
-Before D4 existed every non-adjacent pair was indeed D1+D3, so this held. Adding D4
-to `DIV_RANK` introduced D1/D4 (rank gap 3) and D2/D4 (gap 2) pairs where **neither
-side is D3** — the fallback then tested whichever side wasn't D3, so an academic D4
-team (academics ≈ 0.94) cleared the bar and got scheduled. `cross_schedule` produced
-hundreds of D1/D4 and D2/D4 duals: D4 teams playing two or three classifications up.
+Adding D4 created D1/D4 (gap 3) and D2/D4 (gap 2) pairs where neither side is D3; the
+fallback tested the wrong side, so an academic D4 (academics ≈ 0.94) cleared the bar
+and `cross_schedule` produced hundreds of duals two/three classes up.
 
-## The fix
+## The model (after iterating with the user)
 
-Guard the exception to exactly the D1+D3 pairing it was written for; everything else
-non-adjacent is rejected:
+Cross-class play stays a **local, capped sliver** but is allowed to reach up when it
+makes sense — driven by geography and, for the top tier, prestige:
 
-```python
-if {a.division, b.division} == {"D1", "D3"}:
-    d3 = a if a.division == "D3" else b
-    return d3.academics >= ELITE_D3_ACADEMICS
-return False
-```
+1. **`cross_schedule` only pools same / adjacent-region opponents** and caps each team
+   at `MAX_CROSS` per gender (unchanged).
+2. **Class-distance weighting** (`CROSS_GAP_DECAY = 0.10`): a candidate's pick weight
+   decays by `0.10` per extra class of separation (adjacent = 1, two up = 0.10, three
+   up = 0.01). So a team plays mostly its adjacent class, with bigger reaches rare —
+   without this, D1 (large and everywhere) buried D4 schedules in D1 games.
+3. **`_allowed_cross` asymmetry by the higher class:**
+   - adjacent classes always pair (D1-D2, D2-D3, D3-D4);
+   - a **D2** may reach down to D4 anywhere nearby (geography is enough);
+   - a **D1** reaches down to a D3/D4 only when the smaller school is a **prestige
+     peer** (`prestige ≥ CROSS_D1_PRESTIGE = 0.25`, i.e. a lifted academic program) or
+     a **same-region** neighbor — a top program doesn't drop two/three classes for a
+     random small school far afield. UAA stays in D1; this is what lets an academic D4
+     (Williams-tier) still draw a nearby/peer D1.
 
-D4 now only ever draws its **adjacent** class (D3) — the geographic, capped
-cross-class sliver — and never D2/D4 or D1/D4.
+## Measured (`cross_schedule(2026, 2026)`)
 
-## Verification
+| pairing | duals | note |
+|---|---|---|
+| D1–D2 | 1305 | adjacent |
+| D3–D4 | 900 | adjacent — D4's main cross-class |
+| D2–D3 | 311 | adjacent |
+| D2–D4 | 94 | D2 reaches D4 (geographic) |
+| D1–D3 | 85 | D1↔D3, same-region only |
+| D1–D4 | 53 | 26 prestige-peers + 27 same-region |
 
-`cross_schedule(2026, 2026)` pairings after the fix:
-
-| pairing | duals |
-|---|---|
-| D1–D2 | 1360 |
-| D2–D3 | 350 |
-| D3–D4 | 928 |
-
-Zero D1/D4 or D2/D4; D4 pairs only with D3. World/season/season-mode tests pass; no
-new failures.
+D4 cross-class opponents land ≈ 78% D3 / 9% D2 / 12% D1 — adjacent dominant, the
+reach up a thin geographic/prestige sliver. Deterministic; world/season tests pass,
+no new failures.
