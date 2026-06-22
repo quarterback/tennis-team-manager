@@ -410,14 +410,16 @@ def towns_in_region(region: str) -> list[tuple[str, str]]:
     return out
 
 
-def region_weights_for(weights: dict, division: str, prestige: float) -> dict:
+def region_weights_for(weights: dict, division: str, gender: str,
+                       prestige: float, academics: float, coach_intl: float = 1.0) -> dict:
     """The name-picker region mix for a program: the world band mix with its
     domestic ('us') weight reset so the international fraction matches
-    `recruiting.intl_share_for(division, prestige)`. Non-US regions keep their
-    relative proportions, scaled to fill the international share. Returns a new
-    dict; the input is unchanged."""
+    `recruiting.intl_share_for(division, gender, prestige, academics)`, then nudged
+    by the program's coach (`coach_intl`). Non-US regions keep their relative
+    proportions, scaled to fill the international share. Returns a new dict."""
     from .recruiting import intl_share_for
-    share = intl_share_for(division, prestige)
+    share = intl_share_for(division, gender, prestige, academics)
+    share = max(0.0, min(0.95, share * float(coach_intl)))   # coach dice-roll push
     rest = {k: max(0.0, float(v)) for k, v in weights.items() if k != "us"}
     rest_total = sum(rest.values())
     out: dict[str, float] = {}
@@ -652,9 +654,13 @@ def _base_roster(p: Program):
     # division + prestige (D1 recruits the world, D3 is almost entirely domestic),
     # and the domestic recruits then lean toward the program's own region. Past
     # year 0 the recruiting sim takes over.
+    from . import coaches
+    _coach_intl = coaches.program_coach(p.school).intl_lean if p.school else 1.0
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=region_weights_for(worldconfig.region_weights(),
-                                                                 p.division, p.prestige))
+                                                                 p.division, p.gender,
+                                                                 p.prestige, p.academics,
+                                                                 _coach_intl))
     region_towns = towns_in_region(p.region)
     town_rng = random.Random(seed ^ 0xC17)
     # D1/D2 rosters are built by the recruiting budget economy — a program lands
