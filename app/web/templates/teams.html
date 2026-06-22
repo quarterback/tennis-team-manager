@@ -98,6 +98,25 @@
       {% endfor %}
     </div>
   </div>
+
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Injury Log</span>
+      <span class="bl-panel-meta"><a class="bl-school" href="{{ url_for('injuries_page', u=u) }}">league-wide →</a></span></div>
+    {% if injuries %}
+    <div class="bl-injlist">
+      {% for i in injuries %}
+      <div class="bl-injrow{% if not i.active %} done{% endif %}">
+        <span class="bl-injdot {{ 'se' if i.season_ending else ('out' if i.active else 'back') }}"></span>
+        <a class="bl-school" href="{{ url_for('player', pid=i.pid, school=school, u=u) }}">{{ i.name }}</a>
+        <span class="bl-injlen">{{ i.length }}</span>
+        <span class="bl-injstatus">{{ i.status }}{% if i.week %} · Wk {{ i.week }}{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="bl-panel-body"><span class="bl-conf">No injuries this season.</span></div>
+    {% endif %}
+  </div>
   </div>
 </div>
 
@@ -173,5 +192,14 @@
 .bl-honor-label{font-size:13px;font-weight:600;color:var(--text-primary)}
 .bl-honor-count{font-size:15px;font-weight:800;color:var(--brand-strong);text-align:right}
 .bl-honor-detail{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-injlist{display:flex;flex-direction:column;padding:4px 0}
+.bl-injrow{display:grid;grid-template-columns:9px minmax(90px,1fr) auto auto;gap:9px;align-items:center;
+  padding:8px 16px;border-bottom:1px solid var(--border-subtle);font-size:13px}
+.bl-injrow:last-child{border-bottom:none}
+.bl-injrow.done{opacity:.55}
+.bl-injdot{width:8px;height:8px;border-radius:50%;background:var(--border-strong)}
+.bl-injdot.out{background:#d4a017}.bl-injdot.se{background:#c0392b}.bl-injdot.back{background:#2e8b57}
+.bl-injlen{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.bl-injstatus{font-size:11px;color:var(--text-muted);white-space:nowrap;text-align:right}
 </style>
 {% endblock %}

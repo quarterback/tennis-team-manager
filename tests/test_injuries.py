@@ -180,3 +180,26 @@ def test_redshirt_senior_gets_fifth_year():
     grads = graduate(rosters, redshirts={"rs-test-4"})
     assert grads == 0                                  # did NOT graduate
     assert rosters[("D1", "men")]["S"][0].class_year == "RS-Sr"
+
+
+# ---- web UI: injury log pages ----------------------------------------------
+
+def test_injury_pages_render(tmp_path):
+    import app.seasonmode as sm
+    from app.web.server import create_app
+    sm.DB_PATH = str(tmp_path / "inj.db")
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(2026)
+    c = create_app().test_client()
+    c.get("/season?u=D1-men")                 # create the season
+    for _ in range(6):                        # play several weeks so injuries accrue
+        c.post("/season/advance?u=D1-men")
+    league = c.get("/injuries?u=D1-men")
+    assert league.status_code == 200
+    assert b"Injuries" in league.data
+    # conference filter is accepted
+    assert c.get("/injuries?u=D1-men&conf=All").status_code == 200
+    # the per-program page carries the injury log panel
+    team = c.get("/teams?u=D1-men&school=Oregon")
+    assert team.status_code == 200
+    assert b"Injury Log" in team.data

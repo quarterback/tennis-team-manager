@@ -88,6 +88,28 @@ up), `dual_between` reports who played, seasonmode persistence over a full
 division-season, and the RS rollover (repeat+tag, persist, graduate, senior 5th
 year).
 
+## Injury log UI
+
+The `injuries` table is now an **append-only event log** (not a per-pid state row):
+columns `id, season_id, pid, school, name, week, tag, total, duals_remaining,
+season_ending`. A row is **kept after the player returns** (duals_remaining hits 0)
+so the log shows returned injuries too; a fresh injury inserts a new row (re-injury
+is its own entry). The lineup filter / recovery still key off "active" =
+`season_ending=1 OR duals_remaining>0`. An `init_schema` migration drops the old
+shape (injury state is per-save and cheap to re-accrue, never authoritative).
+
+- `seasonmode.injury_log(season_id, school=None)` → display entries with a
+  **length** (`"N duals"`, or `"Season"` for season-ending) and a status label
+  (Season-ending / Out — N more / Returned), active entries first.
+- `state.injury_rows(division, gender, school=None, conf_filter="All")` joins
+  school→conference + crest for the views.
+- **Per-program** (`/teams?school=…`, `teams.html`): an "Injury Log" panel in the
+  side column listing each player, length, and status, with a link to the
+  league-wide page.
+- **League-wide** (`/injuries`, new `injuries.html`): a sortable table **grouped
+  by team** with a **conference dropdown** (and the division selector), colored
+  status dots (out / season-ending / returned). Added to the World nav group.
+
 ## Notes / not done
 
 - Injuries roll in the **gameplay path** (`seasonmode._play_and_store`, which the
