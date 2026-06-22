@@ -104,8 +104,9 @@ shape (injury state is per-save and cheap to re-accrue, never authoritative).
 - `state.injury_rows(division, gender, school=None, conf_filter="All")` joins
   school→conference + crest for the views.
 - **Per-program** (`/teams?school=…`, `teams.html`): an "Injury Log" panel in the
-  side column listing each player, length, and status, with a link to the
-  league-wide page.
+  side column. Leads with **matches left** (`left`: "N of M left" while out, "Out
+  for season", or "Returned") — the actionable number at a program level — with
+  the week + total length as the secondary line.
 - **League-wide** (`/injuries`, new `injuries.html`): a sortable table **grouped
   by team** with a **conference dropdown** (and the division selector), colored
   status dots (out / season-ending / returned). Added to the World nav group.

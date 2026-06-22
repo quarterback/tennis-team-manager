@@ -1726,14 +1726,16 @@ def injury_log(season_id: int, school: str | None = None) -> list[dict]:
         se = bool(r["season_ending"])
         rem = r["duals_remaining"]
         if se:
-            status, length = "Season-ending", "Season"
+            status, length, left = "Season-ending", "Season", "Out for season"
         elif rem > 0:
-            status, length = f"Out — {rem} more", f"{r['total']} duals"
+            status = f"Out — {rem} more"
+            length = f"{r['total']} duals"
+            left = f"{rem} of {r['total']} left"      # matches still to miss
         else:
-            status, length = "Returned", f"{r['total']} duals"
+            status, length, left = "Returned", f"{r['total']} duals", "Returned"
         out.append({
             "pid": r["pid"], "school": r["school"], "name": r["name"] or r["pid"],
-            "week": r["week"], "tag": r["tag"] or "", "length": length,
+            "week": r["week"], "tag": r["tag"] or "", "length": length, "left": left,
             "total": r["total"], "remaining": rem, "season_ending": se,
             "active": se or rem > 0, "status": status,
         })

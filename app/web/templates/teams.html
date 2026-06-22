@@ -108,8 +108,8 @@
       <div class="bl-injrow{% if not i.active %} done{% endif %}">
         <span class="bl-injdot {{ 'se' if i.season_ending else ('out' if i.active else 'back') }}"></span>
         <a class="bl-school" href="{{ url_for('player', pid=i.pid, school=school, u=u) }}">{{ i.name }}</a>
-        <span class="bl-injlen">{{ i.length }}</span>
-        <span class="bl-injstatus">{{ i.status }}{% if i.week %} · Wk {{ i.week }}{% endif %}</span>
+        <span class="bl-injlen">{{ i.left }}</span>
+        <span class="bl-injstatus">{% if i.week %}Wk {{ i.week }} · {% endif %}{{ i.length }}</span>
       </div>
       {% endfor %}
     </div>
