@@ -58,6 +58,18 @@ reverts the rule. (I did exactly this once; it's the mistake this section preven
 
 ---
 
+## ⚠️ Roster capacity & walk-on sourcing (`ncaa.roster_cap`, `autogen_walkons`)
+Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
+**D1 12** (8+4) · **D2 10** (6+4) · **D3/D4 16** (3+13). Walk-on sourcing:
+- **D1/D2**: walk-ons from the recruit pool ONLY — never auto-generated. Carry "up
+  to" cap; if a program doesn't sign enough, it runs fewer walk-ons.
+- **D3/D4**: fill from leftover pool recruits first (`world.assign_pool_walkons` — no
+  junior goes unsigned), then auto-generate only the still-empty seats
+  (`refill_walkons`).
+`RECRUIT_POOL = 2500`/gender is sized to roster turnover (~2,200); don't drop it back
+to the old 1,000 or D1/D2 can't fill from real recruits. See
+`docs/AAR-roster-expansion-walkons-recruit-pool.md`.
+
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See

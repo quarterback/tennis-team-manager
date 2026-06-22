@@ -555,9 +555,25 @@ def load_division(division: str, gender: str) -> Division:
     return div
 
 
-ROSTER_SIZE = 8
+ROSTER_SIZE = 8             # legacy default; real capacity is per-division (roster_cap)
 SCHOLARSHIP_SLOTS = 6        # top of the roster carry scholarships; the rest are walk-ons
 CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
+
+# Max roster size by division — funded core + walk-on depth. D1/D2 fill walk-on slots
+# ONLY from the recruiting pool (never auto-generated); D3/D4 may auto-generate
+# walk-ons. Lets programs carry more of the pool so good players don't go unsigned.
+ROSTER_CAP = {"D1": 12, "D2": 10, "D3": 16, "D4": 16}
+
+
+def roster_cap(division: str) -> int:
+    """Max roster size for a division (funded core + walk-on slots)."""
+    return ROSTER_CAP.get(division, ROSTER_SIZE)
+
+
+def autogen_walkons(division: str) -> bool:
+    """Whether the game may auto-generate walk-ons to fill a roster. D1/D2 fill walk-on
+    depth from the recruiting pool only; D3/D4 may synthesize walk-ons."""
+    return division in ("D3", "D4")
 
 
 # --- Talent calibration (grade units, 20-80) -----------------------------------
@@ -669,13 +685,14 @@ def _base_roster(p: Program):
     # fit/academics-driven talent prior (conf strength).
     from . import recruit_economy
     use_budget = p.division in ("D1", "D2")
+    cap = roster_cap(p.division)            # D1 12 · D2 10 · D3/D4 16
     funded = scholarships.slots(p)          # full funding = more funded spots to spend budget on
     star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
-                                                 roster_size=ROSTER_SIZE,
+                                                 roster_size=cap,
                                                  schol_slots=funded) if use_budget else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
-    for i in range(ROSTER_SIZE):
+    for i in range(cap):
         name, country = name_fn()
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
         if use_budget:

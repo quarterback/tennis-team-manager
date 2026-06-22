@@ -9,7 +9,7 @@ import copy
 import random
 
 from app import world
-from app.ncaa import load_division, build_roster, ROSTER_SIZE
+from app.ncaa import load_division, build_roster, ROSTER_SIZE, roster_cap
 from app.development import generate_prospect, RICH_ATTRS
 
 
@@ -80,9 +80,13 @@ def test_finalize_rollover_deterministic_full_and_brings_in_class():
     sb = world.finalize_rollover(b, signings_for(b), {}, seed=2026, year=0)
     assert sa == sb                                               # deterministic summary
     assert sa["graduated"] > 0 and sa["committed"] > 0
-    for sc in a.values():
+    for (division, gender), sc in a.items():
         for roster in sc.values():
-            assert len(roster) == ROSTER_SIZE                    # topped back up
+            assert len(roster) <= roster_cap(division)           # never over the per-division cap
+            if division in ("D3", "D4"):                         # auto-gen walk-ons top these to cap
+                assert len(roster) == roster_cap(division)
+            # D1/D2 fill up to cap from the recruit pool only (no auto-gen), so with the
+            # test's one-signing-per-program they top up partially — that's by design.
     assert any(p.committed and p.class_year == "Fr"
                for sc in a.values() for ros in sc.values() for p in ros)
 

@@ -1,5 +1,6 @@
 from app.ncaa import (Program, build_roster, squad_and_ladder, reset_caches,
-                      ROSTER_SIZE, SCHOLARSHIP_SLOTS)
+                      ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap)
+from app import scholarships as sch
 from app.season import run_season
 
 
@@ -13,14 +14,16 @@ def test_build_roster_deterministic_and_shaped():
     r1 = build_roster(_prog("Test U", 0.7))
     reset_caches()
     r2 = build_roster(_prog("Test U", 0.7))
+    cap = roster_cap("D1")                                           # _prog is D1 → 12
     assert [p.pid for p in r1] == [p.pid for p in r2]                # process-stable ids
     assert [p.current_overall() for p in r1] == [p.current_overall() for p in r2]
-    assert len(r1) == ROSTER_SIZE
-    assert len({p.pid for p in r1}) == ROSTER_SIZE                   # unique ids
+    assert len(r1) == cap
+    assert len({p.pid for p in r1}) == cap                          # unique ids
     overs = [p.current_overall() for p in r1]
     assert overs == sorted(overs, reverse=True)                     # ladder sorted
     assert all(p.class_year in ("Fr", "So", "Jr", "Sr") for p in r1)
-    assert sum(p.walk_on for p in r1) == ROSTER_SIZE - SCHOLARSHIP_SLOTS
+    # Walk-ons = roster cap minus the funded headcount (D1: 12 − 8 = 4 walk-on depth).
+    assert sum(p.walk_on for p in r1) == cap - sch.slots(_prog("Test U", 0.7))
 
 
 def test_roster_talent_tracks_program_strength():
