@@ -26,6 +26,7 @@ from . import dbpath
 
 from .ncaa import load_division
 from .season import dual_between, build_corpus, forced_appearances
+from . import injuries
 from .rating import compute_ratings
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
@@ -76,6 +77,14 @@ CREATE TABLE IF NOT EXISTS duals (
   round_no INTEGER DEFAULT 0, bpos INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_duals_season ON duals(season_id, round, week);
+CREATE TABLE IF NOT EXISTS injuries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER, pid TEXT, school TEXT, name TEXT,
+  week INTEGER DEFAULT 0, tag TEXT,
+  total INTEGER DEFAULT 0, duals_remaining INTEGER DEFAULT 0,
+  season_ending INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_injuries_season ON injuries(season_id, school);
 """
 
 
@@ -88,6 +97,15 @@ def init_schema() -> None:
     'database is locked' 500s during sim."""
     global _schema_ready_for
     conn = dbpath.connect(DB_PATH)
+    # The injuries table grew from a per-pid state row into an event log (id/name/
+    # week/tag/total). Drop the old shape so the richer CREATE below takes effect —
+    # injury state is per-save and cheap to re-accrue, never authoritative history.
+    try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(injuries)").fetchall()}
+        if cols and "total" not in cols:
+            conn.execute("DROP TABLE injuries")
+    except sqlite3.OperationalError:
+        pass
     conn.executescript(_SCHEMA)
     for col in ("round_no INTEGER DEFAULT 0", "bpos INTEGER DEFAULT 0"):
         try:
@@ -375,19 +393,81 @@ def _forced_for(conn, s, progs, school) -> dict:
     return _forced_cache[key]
 
 
+def _unavailable(conn, season_id, school) -> set:
+    """Pids on `school` that are injured (out 1+ duals or season-ending) — to be
+    dropped from this dual's lineup."""
+    rows = conn.execute(
+        "SELECT pid FROM injuries WHERE season_id=? AND school=?"
+        " AND (season_ending=1 OR duals_remaining>0)", (season_id, school)).fetchall()
+    return {r["pid"] for r in rows}
+
+
+def _recover_team(conn, season_id, school) -> None:
+    """`school` just played a dual, so every one of its short-term injuries burns a
+    dual of recovery; at zero the player is back. The row is KEPT (duals_remaining
+    0) as a returned-from-injury log entry. Season-ending injuries don't tick —
+    they're out until a medical redshirt next year."""
+    conn.execute(
+        "UPDATE injuries SET duals_remaining=duals_remaining-1"
+        " WHERE season_id=? AND school=? AND season_ending=0 AND duals_remaining>0",
+        (season_id, school))
+
+
+def _roll_new_injuries(conn, season_id, school, played_pids, roster, week=0, tag="") -> None:
+    """After a dual, roll fresh injuries on exactly the players who competed.
+    Players with an ACTIVE injury are skipped (they were filtered out and didn't
+    play); healed log rows don't block a fresh injury. Each new injury is logged
+    with the player's name, the week/round it happened, and its length."""
+    if not injuries.is_enabled() or not played_pids:
+        return
+    by_pid = {p.pid: p for p in roster}
+    active = {r["pid"] for r in conn.execute(
+        "SELECT pid FROM injuries WHERE season_id=? AND school=?"
+        " AND (season_ending=1 OR duals_remaining>0)",
+        (season_id, school)).fetchall()}
+    for pid in played_pids:
+        if pid in active or pid not in by_pid:
+            continue
+        out = injuries.roll_injury(by_pid[pid])
+        if out == 0:
+            continue
+        name = getattr(by_pid[pid], "name", "")
+        if out == injuries.SEASON_ENDING:
+            conn.execute(
+                "INSERT INTO injuries"
+                " (season_id, pid, school, name, week, tag, total, duals_remaining, season_ending)"
+                " VALUES (?,?,?,?,?,?,?,?,1)", (season_id, pid, school, name, week, tag, 0, 0))
+        else:
+            conn.execute(
+                "INSERT INTO injuries"
+                " (season_id, pid, school, name, week, tag, total, duals_remaining, season_ending)"
+                " VALUES (?,?,?,?,?,?,?,?,0)", (season_id, pid, school, name, week, tag, out, out))
+
+
 def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
     # Playing-time guarantee: each team has one dual per roster player where that
     # player is seated into a completing slot (weakest players land in the most
     # favorable duals, so the bench plays up in non-conference).
     fh = _forced_for(conn, s, progs, home).get(dual_id)
     fa = _forced_for(conn, s, progs, away).get(dual_id)
+    sid = s["id"]
     rec = dual_between(progs[home], progs[away],
                        seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
-                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa)
+                       form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa,
+                       unavailable_home=_unavailable(conn, sid, home),
+                       unavailable_away=_unavailable(conn, sid, away))
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
                  (rec["home_points"], rec["away_points"], winner, json.dumps(rec["lines"]), dual_id))
+    # Injury bookkeeping: this dual counts as a dual of recovery for both teams'
+    # short-term injuries, then roll fresh injuries on whoever just competed.
+    from .ncaa import build_roster
+    week = s.get("current_week", 0)
+    _recover_team(conn, sid, home)
+    _recover_team(conn, sid, away)
+    _roll_new_injuries(conn, sid, home, rec.get("home_played"), build_roster(progs[home]), week, tag)
+    _roll_new_injuries(conn, sid, away, rec.get("away_played"), build_roster(progs[away]), week, tag)
     return rec
 
 
@@ -1620,6 +1700,59 @@ def _pid_index(division: str, gender: str) -> dict:
 def player_info(season_id: int, pid: str) -> dict | None:
     s = load_season(season_id)
     return _pid_index(s["division"], s["gender"]).get(pid)
+
+
+def injury_log(season_id: int, school: str | None = None) -> list[dict]:
+    """The season's injury log — one entry per injury event (active and returned),
+    newest first. Each entry: pid, school, name, week, tag, length (duals out, or
+    'Season' for season-ending), remaining, season_ending, and a status label.
+    Filter by `school` for a program page; omit it for the league-wide list."""
+    conn = _db()
+    try:
+        q = ("SELECT pid, school, name, week, tag, total, duals_remaining, season_ending"
+             " FROM injuries WHERE season_id=?")
+        args: list = [season_id]
+        if school:
+            q += " AND school=?"
+            args.append(school)
+        # active first (season-ending, then still-out), then returned; recent week first
+        q += (" ORDER BY (season_ending=1 OR duals_remaining>0) DESC,"
+              " season_ending DESC, week DESC, id DESC")
+        rows = conn.execute(q, args).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        se = bool(r["season_ending"])
+        rem = r["duals_remaining"]
+        if se:
+            status, length, left = "Season-ending", "Season", "Out for season"
+        elif rem > 0:
+            status = f"Out — {rem} more"
+            length = f"{r['total']} duals"
+            left = f"{rem} of {r['total']} left"      # matches still to miss
+        else:
+            status, length, left = "Returned", f"{r['total']} duals", "Returned"
+        out.append({
+            "pid": r["pid"], "school": r["school"], "name": r["name"] or r["pid"],
+            "week": r["week"], "tag": r["tag"] or "", "length": length, "left": left,
+            "total": r["total"], "remaining": rem, "season_ending": se,
+            "active": se or rem > 0, "status": status,
+        })
+    return out
+
+
+def season_ending_pids(season_id: int) -> set:
+    """Pids that suffered a season-ending injury this season — the medical-redshirt
+    cohort the world rollover grants a returning (RS-tagged) year of eligibility."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT pid FROM injuries WHERE season_id=? AND season_ending=1",
+            (season_id,)).fetchall()
+    finally:
+        conn.close()
+    return {r["pid"] for r in rows}
 
 
 def season_player_str(season_id: int) -> dict:

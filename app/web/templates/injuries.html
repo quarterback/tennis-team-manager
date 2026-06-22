@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Injuries{% endblock %}
+{% block content %}
+{% set grid = '36px minmax(140px,1.4fr) minmax(120px,1fr) 130px 150px' %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
+      {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ rows|length }} injur{{ 'y' if rows|length == 1 else 'ies' }}</span>
+</div></div>
+</form>
+
+<div class="bl-board">
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
+      <div class="bl-thead">
+        <span class="bl-th"></span><span class="bl-th">PLAYER</span><span class="bl-th">TEAM</span>
+        <span class="bl-th">LENGTH</span><span class="bl-th">STATUS</span>
+      </div>
+      {% for i in rows %}
+      <div class="bl-row{% if not i.active %} bl-row-done{% endif %}">
+        <span class="bl-rank"><span class="bl-injdot {{ 'se' if i.season_ending else ('out' if i.active else 'back') }}"></span></span>
+        <a class="bl-school" href="{{ url_for('player', pid=i.pid, school=i.school, u=u) }}">{{ i.name }}</a>
+        <a class="bl-conf bl-teamlink" href="{{ url_for('teams', school=i.school, u=u) }}">
+          <span class="bl-crest xs" style="background:{{ i.color }}">{{ i.abbr }}</span>
+          <span class="bl-teamtext">{{ i.school }}{% if i.conf %} · {{ i.conf }}{% endif %}</span>
+        </a>
+        <span class="bl-conf">{{ i.length }}{% if i.week %} · Wk {{ i.week }}{% endif %}</span>
+        <span><span class="bl-badge {{ 'tier-D3' if i.season_ending else ('tier-MID' if i.active else 'tier-IVY') }}">{{ i.status }}</span></span>
+      </div>
+      {% endfor %}
+      {% if not rows %}
+      <div class="bl-row"><span></span><span class="bl-conf" style="grid-column:2/-1">No injuries{% if conf != 'All' %} in {{ conf }}{% endif %} this season.</span></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.bl-injdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--border-strong)}
+.bl-injdot.out{background:#d4a017}.bl-injdot.se{background:#c0392b}.bl-injdot.back{background:#2e8b57}
+.bl-row-done{opacity:.55}
+.bl-teamlink{display:flex;align-items:center;gap:7px;text-decoration:none;min-width:0}
+.bl-teamtext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+{% endblock %}

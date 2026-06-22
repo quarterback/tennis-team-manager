@@ -1677,6 +1677,26 @@ def team_conference(division: str, gender: str, school: str) -> str:
     return prog.conf if prog else ""
 
 
+def injury_rows(division: str, gender: str, school: str | None = None,
+                conf_filter: str = "All") -> list[dict]:
+    """The current season's injury log as display rows. For a single program pass
+    `school`; for the league-wide list omit it and optionally filter by conference.
+    Each row carries the player/team, the injury length, status, and crest bits."""
+    import app.seasonmode as sm
+    from app import world as wd, ncaa
+    from .rankings_data import crest
+    sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+    conf_of = {p.school: p.conf for p in ncaa.load_division(division, gender).programs}
+    out = []
+    for e in sm.injury_log(sid, school):
+        c = conf_of.get(e["school"], "")
+        if conf_filter and conf_filter != "All" and c != conf_filter:
+            continue
+        abbr, color = crest(e["school"])
+        out.append({**e, "conf": c, "abbr": abbr, "color": color})
+    return out
+
+
 def conference_ratings(division: str, gender: str, conf: str):
     """Current prestige + academic priors (0–100) for a conference, flagged when
     overridden. Returns None for 'All' or an unknown conference."""

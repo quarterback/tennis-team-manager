@@ -59,6 +59,12 @@ DEFAULT_SEED = 2026
 BASE_YEAR = 2026
 
 _NEXT_CLASS = {"Fr": "So", "So": "Jr", "Jr": "Sr"}
+_RS_PREFIX = "RS-"
+
+
+def _base_class(cy: str) -> str:
+    """Class year with any medical-redshirt tag stripped ('RS-Jr' -> 'Jr')."""
+    return cy[len(_RS_PREFIX):] if cy.startswith(_RS_PREFIX) else cy
 
 # Development drip: a full season's growth spread across ~this many ticks.
 DEV_WEEKS = 16
@@ -207,17 +213,21 @@ def _save_rosters(conn, world_id, year, rosters) -> None:
     conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
 
 
-def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = None) -> int:
-    """Persist the authoritative graduating cohort before ``graduate`` drops it."""
+def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = None,
+                    redshirts: set | None = None) -> int:
+    """Persist the authoritative graduating cohort before ``graduate`` drops it.
+    A senior taking a medical redshirt (`redshirts`) is NOT graduating — they
+    return next year as RS-Sr — so exclude them here."""
     conn.execute("DELETE FROM world_graduates WHERE world_id=? AND year=?", (world_id, year))
     rows = []
     player_str = player_str or {}
+    redshirts = redshirts or set()
     for (d, g), schools in rosters.items():
         if not worldconfig.is_active(d, g):
             continue
         for roster in schools.values():
             for p in roster:
-                if p.class_year != "Sr":
+                if _base_class(p.class_year) != "Sr" or p.pid in redshirts:
                     continue
                 rows.append((world_id, year, d, g, p.pid, float(_str_of(player_str, p)),
                              float(p.current_overall()), json.dumps(prospect_to_dict(p))))
@@ -592,7 +602,7 @@ def _openings(base_rosters: dict, gender: str) -> dict[str, int]:
         if g != gender:
             continue
         for school, roster in schools.items():
-            out[school] = sum(1 for p in roster if p.class_year == "Sr")
+            out[school] = sum(1 for p in roster if _base_class(p.class_year) == "Sr")
     return out
 
 
@@ -872,18 +882,31 @@ def _scholarship_count(roster: list) -> int:
     return sum(1 for p in roster if not p.walk_on)
 
 
-def graduate(rosters: dict) -> int:
+def graduate(rosters: dict, redshirts: set | None = None) -> int:
     """Graduate seniors and bump everyone else up a class. (Development for the
-    year already happened via the weekly drip.)"""
+    year already happened via the weekly drip.)
+
+    `redshirts` are pids that suffered a season-ending injury — they take a medical
+    redshirt: they do NOT advance a class, they repeat it carrying an `RS-` tag
+    that sticks until they graduate (so a hurt Jr replays as RS-Jr, then RS-Sr,
+    then graduates — a 5th year of eligibility). The tag is purely cosmetic
+    eligibility flavor; it never touches the match engine."""
+    redshirts = redshirts or set()
     grads = 0
     for schools in rosters.values():
         for school, roster in schools.items():
             kept = []
             for p in roster:
-                if p.class_year == "Sr":
+                base = _base_class(p.class_year)
+                if p.pid in redshirts:                  # medical redshirt: repeat, tag RS-, no advance
+                    p.class_year = _RS_PREFIX + base
+                    kept.append(p)
+                    continue
+                if base == "Sr":
                     grads += 1
                     continue
-                p.class_year = _NEXT_CLASS.get(p.class_year, "So")
+                nxt = _NEXT_CLASS.get(base, "So")
+                p.class_year = (_RS_PREFIX + nxt) if p.class_year.startswith(_RS_PREFIX) else nxt
                 kept.append(p)
             schools[school] = kept
     return grads
@@ -1135,12 +1158,77 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     return intake
 
 
-def _normalize(rosters: dict) -> None:
-    for (division, gender), schools in rosters.items():
-        cap = roster_cap(division)
-        for school, roster in schools.items():
-            roster.sort(key=lambda p: p.current_overall(), reverse=True)
-            del roster[cap:]
+def _normalize(rosters: dict, protect: set | None = None) -> dict:
+    """Bring every roster to its division cap — by RELOCATING the surplus through
+    the portal, never by deleting players. Signed recruits always join their new
+    team, and a medical-redshirt returner (`protect`) is never the one moved, so
+    over-cap is resolved by sending the weakest *movable* player to the best
+    program (same gender) that has an open slot — dropping a level for playing time
+    if their own is full. Only a player nobody has room for departs the sim.
+
+    Keep priority (highest first): medical-redshirt returner → just-signed
+    freshman → current ability. So the marginal returning walk-on makes way for a
+    recruit, and the promised fifth year is the last to go — exactly the
+    recruiting/redshirt contract the rest of the rollover assumes."""
+    protect = protect or set()
+    moved = departed = 0
+
+    def keep_rank(p):
+        rs = 2 if p.pid in protect else 0          # redshirt returner: protect hardest
+        fr = 1 if p.class_year == "Fr" else 0      # this cycle's signed recruit
+        return (rs, fr, p.current_overall())
+
+    for gender in GENDERS:
+        progs = _flat_programs(gender)
+        pool: dict[str, list] = {}
+        div_of: dict[str, str] = {}
+        for (division, g), schools in rosters.items():
+            if g != gender:
+                continue
+            for school, roster in schools.items():
+                pool[school] = roster
+                div_of[school] = division
+        if not pool:
+            continue
+        prestige = {s: progs[s].prestige for s in pool if s in progs}
+
+        def open_slot(s):
+            return s in progs and len(pool[s]) < roster_cap(div_of.get(s, ""))
+
+        # 1) trim every over-cap roster, collecting the surplus (best movers first)
+        surplus: list[tuple] = []
+        for school, roster in pool.items():
+            cap = roster_cap(div_of.get(school, ""))
+            if len(roster) <= cap:
+                continue
+            roster.sort(key=keep_rank, reverse=True)
+            cut = roster[cap:]
+            keep = roster[:cap]
+            keep.sort(key=lambda p: p.current_overall(), reverse=True)
+            roster[:] = keep
+            for p in cut:
+                surplus.append((p, div_of.get(school, "")))
+
+        # 2) place each surplus player: best open program in their level, else one
+        #    step down (depth chases a roster spot), else up; strongest pick first
+        surplus.sort(key=lambda t: t[0].current_overall(), reverse=True)
+        for p, src_div in surplus:
+            dest = None
+            for div in (src_div, _DOWN_DIV.get(src_div), _UP_DIV.get(src_div)):
+                if not div:
+                    continue
+                cands = [s for s in pool if div_of.get(s) == div and open_slot(s)]
+                if cands:
+                    dest = max(cands, key=lambda s: prestige.get(s, 0.0))
+                    break
+            if dest is None:
+                departed += 1                          # nobody has room — leaves the sim
+                continue
+            p.walk_on = True                            # joins as depth
+            pool[dest].append(p)
+            moved += 1
+
+    return {"relocated": moved, "departed": departed}
 
 
 def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
@@ -1206,11 +1294,12 @@ def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: 
 
 
 def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
-                      seed: int, year: int) -> dict:
+                      seed: int, year: int, medical_redshirts: set | None = None) -> dict:
     """The post-season: graduate → coach carousel → transfer portal (per gender)
-    → bring in the signed class → refill with walk-ons. Mutates `rosters`."""
+    → bring in the signed class → refill with walk-ons. Mutates `rosters`.
+    `medical_redshirts` are season-ending-injury pids granted a returning RS year."""
     rng = random.Random(f"{seed}|finalize|{year}")
-    grads = graduate(rosters)
+    grads = graduate(rosters, medical_redshirts)
     carousel = {"moves": 0, "followers": 0, "sample": []}
     for gender in GENDERS:
         if not any(g == gender for (_, g) in rosters):
@@ -1228,12 +1317,16 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
             portal[k] += pr[k]
         portal["sample"].extend(pr["sample"][:6])
     committed = intake_signings(rosters, signings)
+    # Resolve over-cap by RELOCATING the surplus through the portal (signed recruits
+    # keep their seat; a promised RS returner is never moved) — do it BEFORE the
+    # walk-on fills so displaced real players claim open slots ahead of auto-gen.
+    overflow = _normalize(rosters, protect=medical_redshirts)
     pooled = assign_pool_walkons(rosters, signings, seed, year)   # leftover juniors → D3/D4 walk-ons
     intake = refill_walkons(rosters, year + 1, seed)              # auto-gen only the still-empty seats
-    _normalize(rosters)
     return {"graduated": grads, "committed": committed, "walkons": intake, "pool_walkons": pooled,
             "coach_moves": carousel["moves"], "coach_followers": carousel["followers"],
             "coach_sample": carousel["sample"],
+            "portal_relocated": overflow["relocated"], "portal_departed": overflow["departed"],
             **{f"portal_{k}": v for k, v in portal.items()}}
 
 
@@ -1529,8 +1622,11 @@ def _finalize_year(seed: int, w: dict) -> dict:
     prime(seed)
     # Results-based STR from the just-finished seasons drives the portal.
     player_str: dict = {}
+    redshirts: set = set()           # season-ending injuries → medical-redshirt cohort
     for (d, g) in _active_unis():
-        player_str.update(sm.season_player_str(universe_sid(seed, w, d, g)))
+        sid = universe_sid(seed, w, d, g)
+        player_str.update(sm.season_player_str(sid))
+        redshirts |= sm.season_ending_pids(sid)
 
     # Snapshot the individual championships before graduation/portal change rosters.
     _cconn = _db()
@@ -1548,7 +1644,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     # rather than holding it alongside `rosters` through the heavy rollover.
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
-    _save_graduates(conn, w["id"], w["year"], rosters, player_str)
+    _save_graduates(conn, w["id"], w["year"], rosters, player_str, redshirts)
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():
@@ -1556,7 +1652,8 @@ def _finalize_year(seed: int, w: dict) -> dict:
     conn.commit()
     signings = _load_signings(conn, w)
 
-    summary = finalize_rollover(rosters, signings, player_str, seed=seed, year=w["year"])
+    summary = finalize_rollover(rosters, signings, player_str, seed=seed, year=w["year"],
+                                medical_redshirts=redshirts)
 
     new_year = w["year"] + 1
     _save_rosters(conn, w["id"], new_year, rosters)

@@ -31,7 +31,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     dashboard_view, data_portal_view, team_budget, team_results,
                     program_history,
                     conference_schools, team_conference, conference_ratings,
-                    world_hub, player_career, get_coach)
+                    world_hub, player_career, get_coach, injury_rows)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
@@ -68,6 +68,7 @@ NAV_GROUPS = [
         {"id": "ita",       "label": "ITA Opener",   "icon": "❄️", "endpoint": "season_ita",        "args": {}},
         {"id": "ncaa",      "label": "NCAA Bracket", "icon": "🥇", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "📊", "endpoint": "season_standings", "args": {}},
+        {"id": "injuries",  "label": "Injuries",     "icon": "🩹", "endpoint": "injuries_page",    "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "🏅", "endpoint": "awards",           "args": {}},
         {"id": "hof",       "label": "Hall of Fame", "icon": "🏛️", "endpoint": "hall_of_fame",     "args": {}},
         {"id": "teams",     "label": "All Teams",    "icon": "🏫", "endpoint": "teams",            "args": {}},
@@ -112,6 +113,7 @@ def _active_nav(req) -> str:
     if p.startswith("/data"):             return "data"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
+    if p.startswith("/injuries"):         return "injuries"
     if p.startswith("/ncaa"):             return "ncaa"
     if p.startswith("/awards"):           return "awards"
     if p.startswith("/hall-of-fame"):     return "hof"
@@ -798,7 +800,18 @@ def create_app() -> Flask:
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
                                budget=team_budget(division, gender, school),
+                               injuries=injury_rows(division, gender, school),
                                history=program_history(division, gender, school))
+
+    @app.route("/injuries")
+    def injuries_page():
+        division, gender, label, u = _universe(request)
+        conf = request.args.get("conf", "All")
+        rows = injury_rows(division, gender, conf_filter=conf)
+        rows.sort(key=lambda r: (r["school"], not r["active"]))
+        return render_template("injuries.html", active="Injuries", u=u, uni_label=label,
+                               rows=rows, conf=conf,
+                               conferences=conferences_for(division, gender))
 
     @app.route("/player/<pid>")
     def player(pid):

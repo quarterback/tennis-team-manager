@@ -70,6 +70,24 @@ Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
 to the old 1,000 or D1/D2 can't fill from real recruits. See
 `docs/AAR-roster-expansion-walkons-recruit-pool.md`.
 
+## ⚠️ Injuries are the ONE non-deterministic system — by design (`app/injuries.py`)
+The engine is seed-deterministic everywhere EXCEPT injuries, which roll on **real
+entropy** (`random.SystemRandom`). This is a deliberate owner decision ("I never
+wanted a deterministic sim… save scumming is fine, I'm the only player") — do NOT
+"fix" it back to a seed. Calibration (don't casually retune): `BASE_RATE=0.025`
+per-dual, durability-scaled; ~**0.5 starters hurt at any time**; **1-in-100**
+season-ending; otherwise **out 1–6 duals**.
+- **Wiring:** dice in `injuries.py`; lineup filter in `season.coach_lineup`
+  (`unavailable` pids) so depth gets pulled up; per-**save** persistence + rolling
+  in `seasonmode` (`injuries` table, keyed by season_id — NEVER store injury state
+  on `build_roster` Prospects, they're globally cached and shared across saves).
+- **Medical redshirt:** a season-ending injury → `world.graduate(rosters,
+  redshirts)` repeats the class with an `RS-` tag that persists to graduation
+  (RS-Jr → RS-Sr → grad = 5th year). The tag is cosmetic; strip it with
+  `world._base_class` anywhere you key off class year.
+- **Tests:** an autouse `conftest` fixture disables injuries (determinism);
+  `test_injuries.py` re-enables + seeds. See `docs/AAR-injuries.md`.
+
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
