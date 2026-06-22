@@ -35,14 +35,14 @@ ELITE_D3_ACADEMICS = 0.85              # a D3 this academic awards D1-worth aid
 
 GENDERS = ("men", "women")
 
-# Default per-(classification, gender) limits — edit here, or override live via
-# the editor. The `cap` column is the real NCAA equivalency total per gender.
+# Default per-(classification, gender) limits — edit here, or override live via the
+# editor. GAME RULE: men are FULLY FUNDED to match women (NOT real-NCAA men's 4.5
+# equivalency) — so D1 men = D1 women = 8.0, D2 men = D2 women = 6.0. D3/D4 carry no
+# athletic aid. (See CLAUDE.md — do not "fix" men down to 4.5.)
 DEFAULT_LIMITS = {
-    # Men's tennis is an EQUIVALENCY sport (D1 4.5, D2 4.5 — split across ~6 funded
-    # players); women's D1 is a HEADCOUNT sport (8 full rides), women's D2 equivalency 6.0.
-    ("D1", "men"):   {"count": 6, "rate": 1.00, "cap": 4.5, "fractional": True},
+    ("D1", "men"):   {"count": 8, "rate": 1.00, "cap": 8.0, "fractional": True},
     ("D1", "women"): {"count": 8, "rate": 1.00, "cap": 8.0, "fractional": True},
-    ("D2", "men"):   {"count": 6, "rate": 0.70, "cap": 4.5, "fractional": True},
+    ("D2", "men"):   {"count": 6, "rate": 0.70, "cap": 6.0, "fractional": True},
     ("D2", "women"): {"count": 6, "rate": 0.70, "cap": 6.0, "fractional": True},
     ("D3", "men"):   {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
     ("D3", "women"): {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
