@@ -245,6 +245,13 @@ ACADEMIC_SCHOOLS = {
     "Haverford": 0.93, "Wesleyan": 0.92, "Bates": 0.91, "Colby": 0.91,
     "Case Western Reserve": 0.92, "Brandeis": 0.92, "NYU": 0.90, "Rochester": 0.90,
     "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93,
+    # Engineering/tech + LAC academics in D1 Meridian (the "nerdy major conference")
+    "WPI": 0.88, "Illinois Tech": 0.86, "Clarkson": 0.83, "Union (NY)": 0.88,
+    "RIT": 0.82, "St. Lawrence": 0.85,
+    # Elite academic add-ins to D4 (no real varsity athletics; here for the sim)
+    "Reed": 0.93, "Olin": 0.93,
+    # Service academies are strong academics (Army/Navy/Air Force tagged above)
+    "Coast Guard": 0.86, "Merchant Marine": 0.86,
 }
 
 
@@ -410,14 +417,16 @@ def towns_in_region(region: str) -> list[tuple[str, str]]:
     return out
 
 
-def region_weights_for(weights: dict, division: str, prestige: float) -> dict:
+def region_weights_for(weights: dict, division: str, gender: str,
+                       prestige: float, academics: float, coach_intl: float = 1.0) -> dict:
     """The name-picker region mix for a program: the world band mix with its
     domestic ('us') weight reset so the international fraction matches
-    `recruiting.intl_share_for(division, prestige)`. Non-US regions keep their
-    relative proportions, scaled to fill the international share. Returns a new
-    dict; the input is unchanged."""
+    `recruiting.intl_share_for(division, gender, prestige, academics)`, then nudged
+    by the program's coach (`coach_intl`). Non-US regions keep their relative
+    proportions, scaled to fill the international share. Returns a new dict."""
     from .recruiting import intl_share_for
-    share = intl_share_for(division, prestige)
+    share = intl_share_for(division, gender, prestige, academics)
+    share = max(0.0, min(0.95, share * float(coach_intl)))   # coach dice-roll push
     rest = {k: max(0.0, float(v)) for k, v in weights.items() if k != "us"}
     rest_total = sum(rest.values())
     out: dict[str, float] = {}
@@ -553,9 +562,25 @@ def load_division(division: str, gender: str) -> Division:
     return div
 
 
-ROSTER_SIZE = 8
+ROSTER_SIZE = 8             # legacy default; real capacity is per-division (roster_cap)
 SCHOLARSHIP_SLOTS = 6        # top of the roster carry scholarships; the rest are walk-ons
 CLASS_YEARS = ["Fr", "So", "Jr", "Sr"]
+
+# Max roster size by division — funded core + walk-on depth. D1/D2 fill walk-on slots
+# ONLY from the recruiting pool (never auto-generated); D3/D4 may auto-generate
+# walk-ons. Lets programs carry more of the pool so good players don't go unsigned.
+ROSTER_CAP = {"D1": 12, "D2": 10, "D3": 16, "D4": 16}
+
+
+def roster_cap(division: str) -> int:
+    """Max roster size for a division (funded core + walk-on slots)."""
+    return ROSTER_CAP.get(division, ROSTER_SIZE)
+
+
+def autogen_walkons(division: str) -> bool:
+    """Whether the game may auto-generate walk-ons to fill a roster. D1/D2 fill walk-on
+    depth from the recruiting pool only; D3/D4 may synthesize walk-ons."""
+    return division in ("D3", "D4")
 
 
 # --- Talent calibration (grade units, 20-80) -----------------------------------
@@ -652,9 +677,13 @@ def _base_roster(p: Program):
     # division + prestige (D1 recruits the world, D3 is almost entirely domestic),
     # and the domestic recruits then lean toward the program's own region. Past
     # year 0 the recruiting sim takes over.
+    from . import coaches
+    _coach_intl = coaches.program_coach(p.school).intl_lean if p.school else 1.0
     name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
                                region_weights=region_weights_for(worldconfig.region_weights(),
-                                                                 p.division, p.prestige))
+                                                                 p.division, p.gender,
+                                                                 p.prestige, p.academics,
+                                                                 _coach_intl))
     region_towns = towns_in_region(p.region)
     town_rng = random.Random(seed ^ 0xC17)
     # D1/D2 rosters are built by the recruiting budget economy — a program lands
@@ -663,13 +692,14 @@ def _base_roster(p: Program):
     # fit/academics-driven talent prior (conf strength).
     from . import recruit_economy
     use_budget = p.division in ("D1", "D2")
+    cap = roster_cap(p.division)            # D1 12 · D2 10 · D3/D4 16
     funded = scholarships.slots(p)          # full funding = more funded spots to spend budget on
     star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
-                                                 roster_size=ROSTER_SIZE,
+                                                 roster_size=cap,
                                                  schol_slots=funded) if use_budget else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
-    for i in range(ROSTER_SIZE):
+    for i in range(cap):
         name, country = name_fn()
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
         if use_budget:

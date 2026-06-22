@@ -8,17 +8,19 @@ def _prog(school, strength, division="D1", gender="men"):
                    gender=gender, abbr="XX", color="#000", strength=strength)
 
 
-def test_caps_are_real_ncaa_numbers():
-    assert economy.cap_for("D1", "men") == 4.5
+def test_caps_match_full_funding_rule():
+    # Game rule: men are FULLY FUNDED to match women (not real-NCAA men's 4.5
+    # equivalency) — so D1 men = D1 women = 8.0, D2 men = D2 women = 6.0.
+    assert economy.cap_for("D1", "men") == 8.0
     assert economy.cap_for("D1", "women") == 8.0
-    assert economy.cap_for("D2", "men") == 4.5
+    assert economy.cap_for("D2", "men") == 6.0
     assert economy.cap_for("D2", "women") == 6.0
     assert economy.cap_for("D3", "men") == 0.0
     assert economy.cap_for("D3", "women") == 0.0
 
 
 def test_cap_normalizes_loose_inputs():
-    assert economy.cap_for("d1", "MEN") == 4.5
+    assert economy.cap_for("d1", "MEN") == 8.0
     assert economy.cap_for("Division I", "female") == 8.0
     assert economy.offers_aid("D1", "men") and not economy.offers_aid("D3", "men")
 
@@ -38,21 +40,26 @@ def test_allocation_never_exceeds_cap():
 
 def test_walk_on_count_preserved():
     """The fractional layer must NOT change the binary walk-on model the
-    portal/league logic relies on: top SCHOLARSHIP_SLOTS are the core."""
+    portal/league logic relies on: the top `funded` slots are the core, the rest
+    walk-ons. Funded headcount is per-division (D1 men fully funds all 8)."""
+    from app import scholarships
+    from app.ncaa import roster_cap
     reset_caches()
-    roster = build_roster(_prog("Walk U", 0.7))
-    assert sum(p.walk_on for p in roster) == ROSTER_SIZE - SCHOLARSHIP_SLOTS
+    prog = _prog("Walk U", 0.7)
+    roster = build_roster(prog)
+    assert sum(p.walk_on for p in roster) == roster_cap(prog.division) - scholarships.slots(prog)
     # walk-ons never carry aid
     assert all(p.scholarship == 0.0 for p in roster if p.walk_on)
 
 
-def test_d1_men_split_is_partials_not_eight_full_rides():
+def test_d1_men_fully_funded_eight_full_rides():
+    # Rule change: men are fully funded to match women, so D1 men commit the whole
+    # 8.0 cap as eight full rides (NOT the old 4.5-equivalency partial split).
     reset_caches()
     roster = build_roster(_prog("Split U", 0.8, "D1", "men"))
     summ = economy.budget_summary(roster, "D1", "men")
-    # 4.5 cap → 4 full + 1 half, exactly the cap committed.
-    assert summ["allocated"] == 4.5
-    assert summ["full_rides"] == 4 and summ["partials"] == 1
+    assert summ["allocated"] == 8.0
+    assert summ["full_rides"] == 8 and summ["partials"] == 0
 
 
 def test_d3_offers_no_athletic_aid_but_has_recruited_core():

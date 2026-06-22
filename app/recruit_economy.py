@@ -16,16 +16,20 @@ from __future__ import annotations
 
 import random
 
-# Star tier -> (scholarship cost, men's talent-grade center). Women run lower
-# (GRADE_OFFSET below). 2★/1★ are free depth pieces; blue-chips eat the most.
+# Star tier -> (display stars, SCHOLARSHIP COST, men's talent-grade center).
+# CANONICAL RECRUIT COSTS (in scholarships) — do NOT change without reading
+# CLAUDE.md + the recruiting-economy AARs. A recruit COSTS scholarships from the
+# program's recruiting budget:
+#   Blue Chip = 3 · 5★ = 2 · 4★ = 1.5 · 3★ = 1 · 2★/1★ = free (0).
+# Women run lower on talent (GRADE_OFFSET below); 2★/1★ are free depth pieces.
 #   tier key   stars  cost  men-grade(~UTR)
 TIERS = [
-    ("Blue Chip", 5, 3.0, 70.0),   # ~UTR 14
-    ("5-Star",    5, 2.0, 64.5),   # ~UTR 12.5
-    ("4-Star",    4, 1.5, 58.7),   # ~UTR 11
-    ("3-Star",    3, 1.0, 52.9),   # ~UTR 9.5
-    ("2-Star",    2, 0.0, 47.0),   # ~UTR 8   (free depth)
-    ("1-Star",    1, 0.0, 41.0),   # ~UTR 6.7 (free walk-on)
+    ("Blue Chip", 5, 3.0, 70.0),   # cost 3   · ~UTR 14
+    ("5-Star",    5, 2.0, 64.5),   # cost 2   · ~UTR 12.5
+    ("4-Star",    4, 1.5, 58.7),   # cost 1.5 · ~UTR 11
+    ("3-Star",    3, 1.0, 52.9),   # cost 1   · ~UTR 9.5
+    ("2-Star",    2, 0.0, 47.0),   # FREE     · ~UTR 8   (free depth)
+    ("1-Star",    1, 0.0, 41.0),   # FREE     · ~UTR 6.7 (free walk-on)
 ]
 _GRADE_OFFSET = {"men": 0.0, "women": -9.0}   # women's grades sit a tier lower
 

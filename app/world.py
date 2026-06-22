@@ -42,7 +42,8 @@ from .development import (Prospect, generate_prospect, make_pid, overall_to_str,
                           stagger_scale)
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
-                   REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
+                   REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap,
+                   autogen_walkons)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
                          COACH_LOCAL_WEIGHT)
@@ -72,9 +73,11 @@ RELIABILITY_GATE = 0.4
 
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
-RECRUIT_POOL = 1000     # a bounded recruiting cadre, not a full-blast class; teams
-                        # sign from it, unsigned become walk-ons, and remaining
-                        # roster seats are backfilled with generated walk-ons.
+RECRUIT_POOL = 2500     # sized to cover annual roster TURNOVER (~2,200 pool-filled
+                        # slots/gender: D1 12 + D2 10 + D3/D4 core, ÷4 graduating
+                        # classes), plus a realistic unsigned tail. Must exceed demand
+                        # so D1/D2 fill their cores AND walk-on depth from real recruits
+                        # — they no longer get game-generated walk-ons (only D3/D4 do).
 # The national recruit pool is drawn from the ONE talent scale (ncaa._talent_mean),
 # centred on a mid-tier (D2, median-strength) program for that gender — a dense,
 # bulb-shaped class: a high floor (only college-caliber juniors), a thick middle,
@@ -961,7 +964,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         by_div.setdefault(div_of.get(s, ""), []).append(s)
 
     def open_slot(s):
-        return len(pool[s]) < ROSTER_SIZE and schol[s] < SCHOLARSHIP_SLOTS
+        return len(pool[s]) < roster_cap(div_of.get(s, "")) and schol[s] < SCHOLARSHIP_SLOTS
 
     def line_of(s, val):
         a = strs[s]
@@ -1060,14 +1063,60 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
     return out
 
 
+def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> int:
+    """No junior in the pool goes unsigned: every recruit left over after the season's
+    signings is claimed as a walk-on by a D3/D4 program with an open roster slot
+    (strongest programs get first pick of the best leftover). Auto-generation
+    (refill_walkons) then covers only the seats still empty after this. D1/D2 do NOT
+    claim leftover — they take only the recruits who actively signed with them."""
+    placed = 0
+    for gender in GENDERS:
+        if not any(g == gender for (_, g) in rosters):
+            continue
+        signed = {p.pid for lst in signings.get(gender, {}).values() for p in lst}
+        leftover = [p for p in national_class(seed, year, gender) if p.pid not in signed]
+        if not leftover:
+            continue
+        slots: list = []                       # [strength, roster, room] for open D3/D4 seats
+        for (division, g), schools in rosters.items():
+            if g != gender or not autogen_walkons(division):
+                continue
+            cap = roster_cap(division)
+            progs = {p.school: p for p in load_division(division, gender).programs}
+            for school, roster in schools.items():
+                room = cap - len(roster)
+                if room > 0:
+                    st = progs[school].strength if school in progs else 0.5
+                    slots.append([st, roster, room])
+        slots.sort(key=lambda x: -x[0])        # best leftover (ranked) → strongest open programs
+        li, progressed = 0, True
+        while li < len(leftover) and progressed:
+            progressed = False
+            for slot in slots:
+                if slot[2] <= 0:
+                    continue
+                if li >= len(leftover):
+                    break
+                fr = copy.deepcopy(leftover[li]); li += 1
+                fr.class_year = "Fr"; fr.committed = True; fr.walk_on = True
+                slot[1].append(fr); slot[2] -= 1; placed += 1; progressed = True
+    return placed
+
+
 def refill_walkons(rosters: dict, year: int, seed: int) -> int:
-    """Top every roster back up to size with walk-on freshmen."""
+    """Top D3/D4 rosters back up to size with AUTO-GENERATED walk-on freshmen — only
+    the seats still empty after real pool recruits (signings + leftover sweep) are
+    placed. D1/D2 are skipped: they fill their walk-on depth from the recruiting pool
+    only, so a D1/D2 program that doesn't sign enough simply carries fewer walk-ons."""
     intake = 0
     for (division, gender), schools in rosters.items():
+        if not autogen_walkons(division):          # D1/D2: no game-generated walk-ons
+            continue
+        cap = roster_cap(division)
         progs = {p.school: p for p in load_division(division, gender).programs}
         for school, roster in schools.items():
             prog = progs.get(school)
-            need = ROSTER_SIZE - len(roster)
+            need = cap - len(roster)
             if not prog or need <= 0:
                 continue
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
@@ -1087,10 +1136,11 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
 
 
 def _normalize(rosters: dict) -> None:
-    for schools in rosters.values():
+    for (division, gender), schools in rosters.items():
+        cap = roster_cap(division)
         for school, roster in schools.items():
             roster.sort(key=lambda p: p.current_overall(), reverse=True)
-            del roster[ROSTER_SIZE:]
+            del roster[cap:]
 
 
 def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
@@ -1178,9 +1228,10 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
             portal[k] += pr[k]
         portal["sample"].extend(pr["sample"][:6])
     committed = intake_signings(rosters, signings)
-    intake = refill_walkons(rosters, year + 1, seed)
+    pooled = assign_pool_walkons(rosters, signings, seed, year)   # leftover juniors → D3/D4 walk-ons
+    intake = refill_walkons(rosters, year + 1, seed)              # auto-gen only the still-empty seats
     _normalize(rosters)
-    return {"graduated": grads, "committed": committed, "walkons": intake,
+    return {"graduated": grads, "committed": committed, "walkons": intake, "pool_walkons": pooled,
             "coach_moves": carousel["moves"], "coach_followers": carousel["followers"],
             "coach_sample": carousel["sample"],
             **{f"portal_{k}": v for k, v in portal.items()}}

@@ -1,5 +1,5 @@
 from app.league import new_league, advance_year
-from app.ncaa import ROSTER_SIZE
+from app.ncaa import ROSTER_SIZE, roster_cap
 
 
 def test_league_deterministic_and_invariants():
@@ -11,7 +11,7 @@ def test_league_deterministic_and_invariants():
     assert ra == rb                                        # fully deterministic year summary
     assert ra["graduated"] > 0
     assert ra["intake"] == ra["graduated"] + ra["depart"]  # openings = grads + division-leavers
-    assert all(len(r) == ROSTER_SIZE for r in a.rosters.values())       # rosters stay full
+    assert all(len(r) == roster_cap("D1") for r in a.rosters.values())  # rosters stay full (D1 cap)
     assert any(p.class_year == "Fr" for r in a.rosters.values() for p in r)  # freshmen intake
     assert ra["movers"] > ra["up"]                         # most moves are NOT up (down/out dominate)
     # up-transfers go to stronger programs; down-transfers to weaker ones

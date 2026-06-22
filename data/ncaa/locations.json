@@ -1,4353 +1,4361 @@
 {
-"_doc": [
-"School -> main athletics campus {city, state(USPS)}. Researched per-school",
-"for NCAA D1/D2/D3 tennis programs. Used for cross-division scheduling",
-"proximity and recruiting geography (recruit home state vs school region)."
-],
-"schools": {
-"A&M-Corpus Christi": {
-"city": "Corpus Christi",
-"state": "TX"
-},
-"Abilene Christian": {
-"city": "Abilene",
-"state": "TX"
-},
-"Adams State": {
-"city": "Alamosa",
-"state": "CO"
-},
-"Adelphi": {
-"city": "Garden City",
-"state": "NY"
-},
-"Adrian": {
-"city": "Adrian",
-"state": "MI"
-},
-"Agnes Scott": {
-"city": "Decatur",
-"state": "GA"
-},
-"Air Force": {
-"city": "Colorado Springs",
-"state": "CO"
-},
-"Akron": {
-"city": "Akron",
-"state": "OH"
-},
-"Alabama": {
-"city": "Tuscaloosa",
-"state": "AL"
-},
-"Alabama A&M": {
-"city": "Normal",
-"state": "AL"
-},
-"Alabama State": {
-"city": "Montgomery",
-"state": "AL"
-},
-"Alabama-Huntsville": {
-"city": "Huntsville",
-"state": "AL"
-},
-"Alaska Anchorage": {
-"city": "Anchorage",
-"state": "AK"
-},
-"Alaska Fairbanks": {
-"city": "Fairbanks",
-"state": "AK"
-},
-"Albany": {
-"city": "Albany",
-"state": "NY"
-},
-"Albany State": {
-"city": "Albany",
-"state": "GA"
-},
-"Albertus Magnus": {
-"city": "New Haven",
-"state": "CT"
-},
-"Albion": {
-"city": "Albion",
-"state": "MI"
-},
-"Albright": {
-"city": "Reading",
-"state": "PA"
-},
-"Alcorn State": {
-"city": "Lorman",
-"state": "MS"
-},
-"Alfred": {
-"city": "Alfred",
-"state": "NY"
-},
-"Alfred State": {
-"city": "Alfred",
-"state": "NY"
-},
-"Allegheny": {
-"city": "Meadville",
-"state": "PA"
-},
-"Allen": {
-"city": "Columbia",
-"state": "SC"
-},
-"Alma": {
-"city": "Alma",
-"state": "MI"
-},
-"Alvernia": {
-"city": "Reading",
-"state": "PA"
-},
-"Alverno": {
-"city": "Milwaukee",
-"state": "WI"
-},
-"American": {
-"city": "Washington",
-"state": "DC"
-},
-"American International": {
-"city": "Springfield",
-"state": "MA"
-},
-"Amherst": {
-"city": "Amherst",
-"state": "MA"
-},
-"Anderson (IN)": {
-"city": "Anderson",
-"state": "IN"
-},
-"Anderson (SC)": {
-"city": "Anderson",
-"state": "SC"
-},
-"Angelo State": {
-"city": "San Angelo",
-"state": "TX"
-},
-"Anna Maria": {
-"city": "Paxton",
-"state": "MA"
-},
-"Appalachian State": {
-"city": "Boone",
-"state": "NC"
-},
-"Arcadia": {
-"city": "Glenside",
-"state": "PA"
-},
-"Arizona": {
-"city": "Tucson",
-"state": "AZ"
-},
-"Arizona State": {
-"city": "Tempe",
-"state": "AZ"
-},
-"Arkansas": {
-"city": "Fayetteville",
-"state": "AR"
-},
-"Arkansas State": {
-"city": "Jonesboro",
-"state": "AR"
-},
-"Arkansas Tech": {
-"city": "Russellville",
-"state": "AR"
-},
-"Arkansas-Fort Smith": {
-"city": "Fort Smith",
-"state": "AR"
-},
-"Arkansas-Monticello": {
-"city": "Monticello",
-"state": "AR"
-},
-"Arkansas-Pine Bluff": {
-"city": "Pine Bluff",
-"state": "AR"
-},
-"Army": {
-"city": "West Point",
-"state": "NY"
-},
-"Asbury": {
-"city": "Wilmore",
-"state": "KY"
-},
-"Ashland": {
-"city": "Ashland",
-"state": "OH"
-},
-"Assumption": {
-"city": "Worcester",
-"state": "MA"
-},
-"Auburn": {
-"city": "Auburn",
-"state": "AL"
-},
-"Auburn Montgomery": {
-"city": "Montgomery",
-"state": "AL"
-},
-"Augsburg": {
-"city": "Minneapolis",
-"state": "MN"
-},
-"Augusta": {
-"city": "Augusta",
-"state": "GA"
-},
-"Augustana (IL)": {
-"city": "Rock Island",
-"state": "IL"
-},
-"Augustana (SD)": {
-"city": "Sioux Falls",
-"state": "SD"
-},
-"Aurora": {
-"city": "Aurora",
-"state": "IL"
-},
-"Austin College": {
-"city": "Sherman",
-"state": "TX"
-},
-"Austin Peay": {
-"city": "Clarksville",
-"state": "TN"
-},
-"Averett": {
-"city": "Danville",
-"state": "VA"
-},
-"Azusa Pacific": {
-"city": "Azusa",
-"state": "CA"
-},
-"BYU": {
-"city": "Provo",
-"state": "UT"
-},
-"Babson": {
-"city": "Wellesley",
-"state": "MA"
-},
-"Baldwin Wallace": {
-"city": "Berea",
-"state": "OH"
-},
-"Ball State": {
-"city": "Muncie",
-"state": "IN"
-},
-"Bard": {
-"city": "Annandale-on-Hudson",
-"state": "NY"
-},
-"Barry": {
-"city": "Miami Shores",
-"state": "FL"
-},
-"Barton": {
-"city": "Wilson",
-"state": "NC"
-},
-"Baruch": {
-"city": "New York",
-"state": "NY"
-},
-"Bates": {
-"city": "Lewiston",
-"state": "ME"
-},
-"Baylor": {
-"city": "Waco",
-"state": "TX"
-},
-"Belhaven": {
-"city": "Jackson",
-"state": "MS"
-},
-"Bellarmine": {
-"city": "Louisville",
-"state": "KY"
-},
-"Belmont": {
-"city": "Nashville",
-"state": "TN"
-},
-"Belmont Abbey": {
-"city": "Belmont",
-"state": "NC"
-},
-"Beloit": {
-"city": "Beloit",
-"state": "WI"
-},
-"Bemidji State": {
-"city": "Bemidji",
-"state": "MN"
-},
-"Benedict": {
-"city": "Columbia",
-"state": "SC"
-},
-"Benedictine (IL)": {
-"city": "Lisle",
-"state": "IL"
-},
-"Bentley": {
-"city": "Waltham",
-"state": "MA"
-},
-"Berea": {
-"city": "Berea",
-"state": "KY"
-},
-"Berry": {
-"city": "Mount Berry",
-"state": "GA"
-},
-"Bethany (WV)": {
-"city": "Bethany",
-"state": "WV"
-},
-"Bethany Lutheran": {
-"city": "Mankato",
-"state": "MN"
-},
-"Bethel (MN)": {
-"city": "St. Paul",
-"state": "MN"
-},
-"Bethune-Cookman": {
-"city": "Daytona Beach",
-"state": "FL"
-},
-"Binghamton": {
-"city": "Binghamton",
-"state": "NY"
-},
-"Biola": {
-"city": "La Mirada",
-"state": "CA"
-},
-"Black Hills State": {
-"city": "Spearfish",
-"state": "SD"
-},
-"Blackburn": {
-"city": "Carlinville",
-"state": "IL"
-},
-"Bloomsburg": {
-"city": "Bloomsburg",
-"state": "PA"
-},
-"Bluefield State": {
-"city": "Bluefield",
-"state": "WV"
-},
-"Bluffton": {
-"city": "Bluffton",
-"state": "OH"
-},
-"Boise State": {
-"city": "Boise",
-"state": "ID"
-},
-"Boston College": {
-"city": "Chestnut Hill",
-"state": "MA"
-},
-"Boston University": {
-"city": "Boston",
-"state": "MA"
-},
-"Bowdoin": {
-"city": "Brunswick",
-"state": "ME"
-},
-"Bowie State": {
-"city": "Bowie",
-"state": "MD"
-},
-"Bowling Green": {
-"city": "Bowling Green",
-"state": "OH"
-},
-"Bradley": {
-"city": "Peoria",
-"state": "IL"
-},
-"Brandeis": {
-"city": "Waltham",
-"state": "MA"
-},
-"Brevard": {
-"city": "Brevard",
-"state": "NC"
-},
-"Bridgeport": {
-"city": "Bridgeport",
-"state": "CT"
-},
-"Bridgewater (VA)": {
-"city": "Bridgewater",
-"state": "VA"
-},
-"Bridgewater State": {
-"city": "Bridgewater",
-"state": "MA"
-},
-"Brooklyn": {
-"city": "Brooklyn",
-"state": "NY"
-},
-"Brown": {
-"city": "Providence",
-"state": "RI"
-},
-"Bryant": {
-"city": "Smithfield",
-"state": "RI"
-},
-"Bryn Mawr": {
-"city": "Bryn Mawr",
-"state": "PA"
-},
-"Bucknell": {
-"city": "Lewisburg",
-"state": "PA"
-},
-"Buena Vista": {
-"city": "Storm Lake",
-"state": "IA"
-},
-"Buffalo": {
-"city": "Buffalo",
-"state": "NY"
-},
-"Buffalo State": {
-"city": "Buffalo",
-"state": "NY"
-},
-"Butler": {
-"city": "Indianapolis",
-"state": "IN"
-},
-"CCNY": {
-"city": "New York",
-"state": "NY"
-},
-"CSU Pueblo": {
-"city": "Pueblo",
-"state": "CO"
-},
-"Cairn": {
-"city": "Langhorne",
-"state": "PA"
-},
-"Cal": {
-"city": "Berkeley",
-"state": "CA"
-},
-"Cal Lutheran": {
-"city": "Thousand Oaks",
-"state": "CA"
-},
-"Cal Poly": {
-"city": "San Luis Obispo",
-"state": "CA"
-},
-"Cal Poly Humboldt": {
-"city": "Arcata",
-"state": "CA"
-},
-"Cal Poly Pomona": {
-"city": "Pomona",
-"state": "CA"
-},
-"Cal State Bakersfield": {
-"city": "Bakersfield",
-"state": "CA"
-},
-"Cal State Dominguez Hills": {
-"city": "Carson",
-"state": "CA"
-},
-"Cal State East Bay": {
-"city": "Hayward",
-"state": "CA"
-},
-"Cal State Fullerton": {
-"city": "Fullerton",
-"state": "CA"
-},
-"Cal State LA": {
-"city": "Los Angeles",
-"state": "CA"
-},
-"Cal State Monterey Bay": {
-"city": "Seaside",
-"state": "CA"
-},
-"Cal State Northridge": {
-"city": "Northridge",
-"state": "CA"
-},
-"Cal State San Bernardino": {
-"city": "San Bernardino",
-"state": "CA"
-},
-"Cal State San Marcos": {
-"city": "San Marcos",
-"state": "CA"
-},
-"Caldwell": {
-"city": "Caldwell",
-"state": "NJ"
-},
-"California Baptist": {
-"city": "Riverside",
-"state": "CA"
-},
-"Caltech": {
-"city": "Pasadena",
-"state": "CA"
-},
-"Calvin": {
-"city": "Grand Rapids",
-"state": "MI"
-},
-"Cameron": {
-"city": "Lawton",
-"state": "OK"
-},
-"Campbell": {
-"city": "Buies Creek",
-"state": "NC"
-},
-"Canisius": {
-"city": "Buffalo",
-"state": "NY"
-},
-"Capital": {
-"city": "Columbus",
-"state": "OH"
-},
-"Carleton": {
-"city": "Northfield",
-"state": "MN"
-},
-"Carlow": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Carnegie Mellon": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Carroll (WI)": {
-"city": "Waukesha",
-"state": "WI"
-},
-"Carson-Newman": {
-"city": "Jefferson City",
-"state": "TN"
-},
-"Carthage": {
-"city": "Kenosha",
-"state": "WI"
-},
-"Case Western Reserve": {
-"city": "Cleveland",
-"state": "OH"
-},
-"Castleton": {
-"city": "Castleton",
-"state": "VT"
-},
-"Catawba": {
-"city": "Salisbury",
-"state": "NC"
-},
-"Catholic": {
-"city": "Washington",
-"state": "DC"
-},
-"Cedar Crest": {
-"city": "Allentown",
-"state": "PA"
-},
-"Cedarville": {
-"city": "Cedarville",
-"state": "OH"
-},
-"Centenary (LA)": {
-"city": "Shreveport",
-"state": "LA"
-},
-"Centenary (NJ)": {
-"city": "Hackettstown",
-"state": "NJ"
-},
-"Central (IA)": {
-"city": "Pella",
-"state": "IA"
-},
-"Central Arkansas": {
-"city": "Conway",
-"state": "AR"
-},
-"Central Connecticut": {
-"city": "New Britain",
-"state": "CT"
-},
-"Central Michigan": {
-"city": "Mount Pleasant",
-"state": "MI"
-},
-"Central Missouri": {
-"city": "Warrensburg",
-"state": "MO"
-},
-"Central Oklahoma": {
-"city": "Edmond",
-"state": "OK"
-},
-"Central State": {
-"city": "Wilberforce",
-"state": "OH"
-},
-"Central Washington": {
-"city": "Ellensburg",
-"state": "WA"
-},
-"Centre": {
-"city": "Danville",
-"state": "KY"
-},
-"Chadron State": {
-"city": "Chadron",
-"state": "NE"
-},
-"Chaminade": {
-"city": "Honolulu",
-"state": "HI"
-},
-"Chapman": {
-"city": "Orange",
-"state": "CA"
-},
-"Charleston": {
-"city": "Charleston",
-"state": "SC"
-},
-"Charleston (WV)": {
-"city": "Charleston",
-"state": "WV"
-},
-"Charleston Southern": {
-"city": "Charleston",
-"state": "SC"
-},
-"Charlotte": {
-"city": "Charlotte",
-"state": "NC"
-},
-"Chatham": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Chattanooga": {
-"city": "Chattanooga",
-"state": "TN"
-},
-"Chestnut Hill": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Chicago": {
-"city": "Chicago",
-"state": "IL"
-},
-"Chicago State": {
-"city": "Chicago",
-"state": "IL"
-},
-"Chico State": {
-"city": "Chico",
-"state": "CA"
-},
-"Chowan": {
-"city": "Murfreesboro",
-"state": "NC"
-},
-"Christian Brothers": {
-"city": "Memphis",
-"state": "TN"
-},
-"Christopher Newport": {
-"city": "Newport News",
-"state": "VA"
-},
-"Cincinnati": {
-"city": "Cincinnati",
-"state": "OH"
-},
-"Claflin": {
-"city": "Orangeburg",
-"state": "SC"
-},
-"Claremont-Mudd-Scripps": {
-"city": "Claremont",
-"state": "CA"
-},
-"Clark (MA)": {
-"city": "Worcester",
-"state": "MA"
-},
-"Clark Atlanta": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Clarkson": {
-"city": "Potsdam",
-"state": "NY"
-},
-"Clayton State": {
-"city": "Morrow",
-"state": "GA"
-},
-"Clemson": {
-"city": "Clemson",
-"state": "SC"
-},
-"Cleveland State": {
-"city": "Cleveland",
-"state": "OH"
-},
-"Coast Guard": {
-"city": "New London",
-"state": "CT"
-},
-"Coastal Carolina": {
-"city": "Conway",
-"state": "SC"
-},
-"Coe": {
-"city": "Cedar Rapids",
-"state": "IA"
-},
-"Coker": {
-"city": "Hartsville",
-"state": "SC"
-},
-"Colby": {
-"city": "Waterville",
-"state": "ME"
-},
-"Colby-Sawyer": {
-"city": "New London",
-"state": "NH"
-},
-"Colgate": {
-"city": "Hamilton",
-"state": "NY"
-},
-"Colorado": {
-"city": "Boulder",
-"state": "CO"
-},
-"Colorado Christian": {
-"city": "Lakewood",
-"state": "CO"
-},
-"Colorado College": {
-"city": "Colorado Springs",
-"state": "CO"
-},
-"Colorado Mesa": {
-"city": "Grand Junction",
-"state": "CO"
-},
-"Colorado School of Mines": {
-"city": "Golden",
-"state": "CO"
-},
-"Colorado Springs": {
-"city": "Colorado Springs",
-"state": "CO"
-},
-"Colorado State": {
-"city": "Fort Collins",
-"state": "CO"
-},
-"Columbia": {
-"city": "New York",
-"state": "NY"
-},
-"Columbus State": {
-"city": "Columbus",
-"state": "GA"
-},
-"Concord": {
-"city": "Athens",
-"state": "WV"
-},
-"Concordia Chicago": {
-"city": "River Forest",
-"state": "IL"
-},
-"Concordia Irvine": {
-"city": "Irvine",
-"state": "CA"
-},
-"Concordia Texas": {
-"city": "Austin",
-"state": "TX"
-},
-"Concordia Wisconsin": {
-"city": "Mequon",
-"state": "WI"
-},
-"Concordia-Moorhead": {
-"city": "Moorhead",
-"state": "MN"
-},
-"Concordia-St. Paul": {
-"city": "St. Paul",
-"state": "MN"
-},
-"Connecticut College": {
-"city": "New London",
-"state": "CT"
-},
-"Converse": {
-"city": "Spartanburg",
-"state": "SC"
-},
-"Coppin State": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Cornell": {
-"city": "Ithaca",
-"state": "NY"
-},
-"Cornell College": {
-"city": "Mount Vernon",
-"state": "IA"
-},
-"Covenant": {
-"city": "Lookout Mountain",
-"state": "GA"
-},
-"Creighton": {
-"city": "Omaha",
-"state": "NE"
-},
-"Crown (MN)": {
-"city": "St. Bonifacius",
-"state": "MN"
-},
-"Curry": {
-"city": "Milton",
-"state": "MA"
-},
-"D'Youville": {
-"city": "Buffalo",
-"state": "NY"
-},
-"Daemen": {
-"city": "Amherst",
-"state": "NY"
-},
-"Dallas": {
-"city": "Irving",
-"state": "TX"
-},
-"Dallas Baptist": {
-"city": "Dallas",
-"state": "TX"
-},
-"Dartmouth": {
-"city": "Hanover",
-"state": "NH"
-},
-"Davenport": {
-"city": "Grand Rapids",
-"state": "MI"
-},
-"Davidson": {
-"city": "Davidson",
-"state": "NC"
-},
-"Davis & Elkins": {
-"city": "Elkins",
-"state": "WV"
-},
-"Dayton": {
-"city": "Dayton",
-"state": "OH"
-},
-"DePaul": {
-"city": "Chicago",
-"state": "IL"
-},
-"DePauw": {
-"city": "Greencastle",
-"state": "IN"
-},
-"DeSales": {
-"city": "Center Valley",
-"state": "PA"
-},
-"Dean": {
-"city": "Franklin",
-"state": "MA"
-},
-"Delaware": {
-"city": "Newark",
-"state": "DE"
-},
-"Delaware State": {
-"city": "Dover",
-"state": "DE"
-},
-"Delaware Valley": {
-"city": "Doylestown",
-"state": "PA"
-},
-"Delta State": {
-"city": "Cleveland",
-"state": "MS"
-},
-"Denison": {
-"city": "Granville",
-"state": "OH"
-},
-"Denver": {
-"city": "Denver",
-"state": "CO"
-},
-"Detroit Mercy": {
-"city": "Detroit",
-"state": "MI"
-},
-"Dickinson": {
-"city": "Carlisle",
-"state": "PA"
-},
-"District of Columbia": {
-"city": "Washington",
-"state": "DC"
-},
-"Dominican (CA)": {
-"city": "San Rafael",
-"state": "CA"
-},
-"Dominican (IL)": {
-"city": "River Forest",
-"state": "IL"
-},
-"Dominican (NY)": {
-"city": "Orangeburg",
-"state": "NY"
-},
-"Drake": {
-"city": "Des Moines",
-"state": "IA"
-},
-"Drew": {
-"city": "Madison",
-"state": "NJ"
-},
-"Drexel": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Drury": {
-"city": "Springfield",
-"state": "MO"
-},
-"Dubuque": {
-"city": "Dubuque",
-"state": "IA"
-},
-"Duke": {
-"city": "Durham",
-"state": "NC"
-},
-"Duquesne": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Earlham": {
-"city": "Richmond",
-"state": "IN"
-},
-"East Carolina": {
-"city": "Greenville",
-"state": "NC"
-},
-"East Central": {
-"city": "Ada",
-"state": "OK"
-},
-"East Stroudsburg": {
-"city": "East Stroudsburg",
-"state": "PA"
-},
-"East Tennessee State": {
-"city": "Johnson City",
-"state": "TN"
-},
-"East Texas A&M": {
-"city": "Commerce",
-"state": "TX"
-},
-"East Texas Baptist": {
-"city": "Marshall",
-"state": "TX"
-},
-"Eastern": {
-"city": "St. Davids",
-"state": "PA"
-},
-"Eastern Connecticut State": {
-"city": "Willimantic",
-"state": "CT"
-},
-"Eastern Illinois": {
-"city": "Charleston",
-"state": "IL"
-},
-"Eastern Kentucky": {
-"city": "Richmond",
-"state": "KY"
-},
-"Eastern Mennonite": {
-"city": "Harrisonburg",
-"state": "VA"
-},
-"Eastern Michigan": {
-"city": "Ypsilanti",
-"state": "MI"
-},
-"Eastern New Mexico": {
-"city": "Portales",
-"state": "NM"
-},
-"Eastern Washington": {
-"city": "Cheney",
-"state": "WA"
-},
-"Eckerd": {
-"city": "St. Petersburg",
-"state": "FL"
-},
-"Edgewood": {
-"city": "Madison",
-"state": "WI"
-},
-"Edward Waters": {
-"city": "Jacksonville",
-"state": "FL"
-},
-"Elizabeth City State": {
-"city": "Elizabeth City",
-"state": "NC"
-},
-"Elizabethtown": {
-"city": "Elizabethtown",
-"state": "PA"
-},
-"Elmhurst": {
-"city": "Elmhurst",
-"state": "IL"
-},
-"Elmira": {
-"city": "Elmira",
-"state": "NY"
-},
-"Elms": {
-"city": "Chicopee",
-"state": "MA"
-},
-"Elon": {
-"city": "Elon",
-"state": "NC"
-},
-"Embry-Riddle": {
-"city": "Daytona Beach",
-"state": "FL"
-},
-"Emerson": {
-"city": "Boston",
-"state": "MA"
-},
-"Emmanuel (GA)": {
-"city": "Franklin Springs",
-"state": "GA"
-},
-"Emmanuel (MA)": {
-"city": "Boston",
-"state": "MA"
-},
-"Emory": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Emory & Henry": {
-"city": "Emory",
-"state": "VA"
-},
-"Emporia State": {
-"city": "Emporia",
-"state": "KS"
-},
-"Endicott": {
-"city": "Beverly",
-"state": "MA"
-},
-"Erskine": {
-"city": "Due West",
-"state": "SC"
-},
-"Eureka": {
-"city": "Eureka",
-"state": "IL"
-},
-"Evansville": {
-"city": "Evansville",
-"state": "IN"
-},
-"FDU-Florham": {
-"city": "Madison",
-"state": "NJ"
-},
-"FIU": {
-"city": "Miami",
-"state": "FL"
-},
-"Fairfield": {
-"city": "Fairfield",
-"state": "CT"
-},
-"Fairleigh Dickinson": {
-"city": "Teaneck",
-"state": "NJ"
-},
-"Fairmont State": {
-"city": "Fairmont",
-"state": "WV"
-},
-"Farmingdale State": {
-"city": "Farmingdale",
-"state": "NY"
-},
-"Fayetteville State": {
-"city": "Fayetteville",
-"state": "NC"
-},
-"Felician": {
-"city": "Lodi",
-"state": "NJ"
-},
-"Ferris State": {
-"city": "Big Rapids",
-"state": "MI"
-},
-"Ferrum": {
-"city": "Ferrum",
-"state": "VA"
-},
-"Findlay": {
-"city": "Findlay",
-"state": "OH"
-},
-"Fitchburg State": {
-"city": "Fitchburg",
-"state": "MA"
-},
-"Flagler": {
-"city": "St. Augustine",
-"state": "FL"
-},
-"Florida": {
-"city": "Gainesville",
-"state": "FL"
-},
-"Florida A&M": {
-"city": "Tallahassee",
-"state": "FL"
-},
-"Florida Atlantic": {
-"city": "Boca Raton",
-"state": "FL"
-},
-"Florida Gulf Coast": {
-"city": "Fort Myers",
-"state": "FL"
-},
-"Florida Southern": {
-"city": "Lakeland",
-"state": "FL"
-},
-"Florida State": {
-"city": "Tallahassee",
-"state": "FL"
-},
-"Florida Tech": {
-"city": "Melbourne",
-"state": "FL"
-},
-"Fordham": {
-"city": "Bronx",
-"state": "NY"
-},
-"Fort Hays State": {
-"city": "Hays",
-"state": "KS"
-},
-"Fort Lewis": {
-"city": "Durango",
-"state": "CO"
-},
-"Fort Valley State": {
-"city": "Fort Valley",
-"state": "GA"
-},
-"Framingham State": {
-"city": "Framingham",
-"state": "MA"
-},
-"Francis Marion": {
-"city": "Florence",
-"state": "SC"
-},
-"Franciscan": {
-"city": "Steubenville",
-"state": "OH"
-},
-"Franklin": {
-"city": "Franklin",
-"state": "IN"
-},
-"Franklin & Marshall": {
-"city": "Lancaster",
-"state": "PA"
-},
-"Franklin Pierce": {
-"city": "Rindge",
-"state": "NH"
-},
-"Fresno Pacific": {
-"city": "Fresno",
-"state": "CA"
-},
-"Fresno State": {
-"city": "Fresno",
-"state": "CA"
-},
-"Frostburg State": {
-"city": "Frostburg",
-"state": "MD"
-},
-"Furman": {
-"city": "Greenville",
-"state": "SC"
-},
-"Gallaudet": {
-"city": "Washington",
-"state": "DC"
-},
-"Gannon": {
-"city": "Erie",
-"state": "PA"
-},
-"Gardner-Webb": {
-"city": "Boiling Springs",
-"state": "NC"
-},
-"Geneva": {
-"city": "Beaver Falls",
-"state": "PA"
-},
-"George Fox": {
-"city": "Newberg",
-"state": "OR"
-},
-"George Mason": {
-"city": "Fairfax",
-"state": "VA"
-},
-"George Washington": {
-"city": "Washington",
-"state": "DC"
-},
-"Georgetown": {
-"city": "Washington",
-"state": "DC"
-},
-"Georgia": {
-"city": "Athens",
-"state": "GA"
-},
-"Georgia College": {
-"city": "Milledgeville",
-"state": "GA"
-},
-"Georgia Southern": {
-"city": "Statesboro",
-"state": "GA"
-},
-"Georgia Southwestern": {
-"city": "Americus",
-"state": "GA"
-},
-"Georgia State": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Georgia Tech": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Georgian Court": {
-"city": "Lakewood",
-"state": "NJ"
-},
-"Gettysburg": {
-"city": "Gettysburg",
-"state": "PA"
-},
-"Glenville State": {
-"city": "Glenville",
-"state": "WV"
-},
-"Goldey-Beacom": {
-"city": "Wilmington",
-"state": "DE"
-},
-"Gonzaga": {
-"city": "Spokane",
-"state": "WA"
-},
-"Gordon": {
-"city": "Wenham",
-"state": "MA"
-},
-"Goucher": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Grambling": {
-"city": "Grambling",
-"state": "LA"
-},
-"Grand Canyon": {
-"city": "Phoenix",
-"state": "AZ"
-},
-"Grand Valley State": {
-"city": "Allendale",
-"state": "MI"
-},
-"Green Bay": {
-"city": "Green Bay",
-"state": "WI"
-},
-"Greensboro": {
-"city": "Greensboro",
-"state": "NC"
-},
-"Greenville": {
-"city": "Greenville",
-"state": "IL"
-},
-"Grinnell": {
-"city": "Grinnell",
-"state": "IA"
-},
-"Grove City": {
-"city": "Grove City",
-"state": "PA"
-},
-"Guilford": {
-"city": "Greensboro",
-"state": "NC"
-},
-"Gustavus Adolphus": {
-"city": "St. Peter",
-"state": "MN"
-},
-"Gwynedd Mercy": {
-"city": "Gwynedd Valley",
-"state": "PA"
-},
-"Hamilton": {
-"city": "Clinton",
-"state": "NY"
-},
-"Hamline": {
-"city": "St. Paul",
-"state": "MN"
-},
-"Hampden-Sydney": {
-"city": "Hampden Sydney",
-"state": "VA"
-},
-"Hampton": {
-"city": "Hampton",
-"state": "VA"
-},
-"Hanover": {
-"city": "Hanover",
-"state": "IN"
-},
-"Hardin-Simmons": {
-"city": "Abilene",
-"state": "TX"
-},
-"Harding": {
-"city": "Searcy",
-"state": "AR"
-},
-"Hartford": {
-"city": "West Hartford",
-"state": "CT"
-},
-"Hartwick": {
-"city": "Oneonta",
-"state": "NY"
-},
-"Harvard": {
-"city": "Cambridge",
-"state": "MA"
-},
-"Haverford": {
-"city": "Haverford",
-"state": "PA"
-},
-"Hawaii": {
-"city": "Honolulu",
-"state": "HI"
-},
-"Hawaii Hilo": {
-"city": "Hilo",
-"state": "HI"
-},
-"Hawaii Pacific": {
-"city": "Honolulu",
-"state": "HI"
-},
-"Heidelberg": {
-"city": "Tiffin",
-"state": "OH"
-},
-"Henderson State": {
-"city": "Arkadelphia",
-"state": "AR"
-},
-"Hendrix": {
-"city": "Conway",
-"state": "AR"
-},
-"High Point": {
-"city": "High Point",
-"state": "NC"
-},
-"Hilbert": {
-"city": "Hamburg",
-"state": "NY"
-},
-"Hillsdale": {
-"city": "Hillsdale",
-"state": "MI"
-},
-"Hiram": {
-"city": "Hiram",
-"state": "OH"
-},
-"Hobart and William Smith": {
-"city": "Geneva",
-"state": "NY"
-},
-"Hofstra": {
-"city": "Hempstead",
-"state": "NY"
-},
-"Hollins": {
-"city": "Roanoke",
-"state": "VA"
-},
-"Holy Cross": {
-"city": "Worcester",
-"state": "MA"
-},
-"Holy Family": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Hood": {
-"city": "Frederick",
-"state": "MD"
-},
-"Hope": {
-"city": "Holland",
-"state": "MI"
-},
-"Houghton": {
-"city": "Houghton",
-"state": "NY"
-},
-"Houston": {
-"city": "Houston",
-"state": "TX"
-},
-"Houston Christian": {
-"city": "Houston",
-"state": "TX"
-},
-"Howard": {
-"city": "Washington",
-"state": "DC"
-},
-"Howard Payne": {
-"city": "Brownwood",
-"state": "TX"
-},
-"Hunter": {
-"city": "New York",
-"state": "NY"
-},
-"Huntingdon": {
-"city": "Montgomery",
-"state": "AL"
-},
-"Husson": {
-"city": "Bangor",
-"state": "ME"
-},
-"IU Indianapolis": {
-"city": "Indianapolis",
-"state": "IN"
-},
-"Idaho": {
-"city": "Moscow",
-"state": "ID"
-},
-"Idaho State": {
-"city": "Pocatello",
-"state": "ID"
-},
-"Illinois": {
-"city": "Champaign",
-"state": "IL"
-},
-"Illinois College": {
-"city": "Jacksonville",
-"state": "IL"
-},
-"Illinois Springfield": {
-"city": "Springfield",
-"state": "IL"
-},
-"Illinois State": {
-"city": "Normal",
-"state": "IL"
-},
-"Illinois Tech": {
-"city": "Chicago",
-"state": "IL"
-},
-"Illinois Wesleyan": {
-"city": "Bloomington",
-"state": "IL"
-},
-"Immaculata": {
-"city": "Immaculata",
-"state": "PA"
-},
-"Incarnate Word": {
-"city": "San Antonio",
-"state": "TX"
-},
-"Indiana": {
-"city": "Bloomington",
-"state": "IN"
-},
-"Indiana (PA)": {
-"city": "Indiana",
-"state": "PA"
-},
-"Indiana State": {
-"city": "Terre Haute",
-"state": "IN"
-},
-"Indianapolis": {
-"city": "Indianapolis",
-"state": "IN"
-},
-"Iona": {
-"city": "New Rochelle",
-"state": "NY"
-},
-"Iowa": {
-"city": "Iowa City",
-"state": "IA"
-},
-"Iowa State": {
-"city": "Ames",
-"state": "IA"
-},
-"Ithaca": {
-"city": "Ithaca",
-"state": "NY"
-},
-"Jackson State": {
-"city": "Jackson",
-"state": "MS"
-},
-"Jacksonville": {
-"city": "Jacksonville",
-"state": "FL"
-},
-"Jacksonville State": {
-"city": "Jacksonville",
-"state": "AL"
-},
-"James Madison": {
-"city": "Harrisonburg",
-"state": "VA"
-},
-"Jamestown": {
-"city": "Jamestown",
-"state": "ND"
-},
-"Jessup": {
-"city": "Rocklin",
-"state": "CA"
-},
-"John Carroll": {
-"city": "University Heights",
-"state": "OH"
-},
-"John Jay": {
-"city": "New York",
-"state": "NY"
-},
-"Johns Hopkins": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Johnson & Wales (Charlotte)": {
-"city": "Charlotte",
-"state": "NC"
-},
-"Johnson & Wales (Providence)": {
-"city": "Providence",
-"state": "RI"
-},
-"Johnson C. Smith": {
-"city": "Charlotte",
-"state": "NC"
-},
-"Juniata": {
-"city": "Huntingdon",
-"state": "PA"
-},
-"Kalamazoo": {
-"city": "Kalamazoo",
-"state": "MI"
-},
-"Kansas": {
-"city": "Lawrence",
-"state": "KS"
-},
-"Kansas City": {
-"city": "Kansas City",
-"state": "MO"
-},
-"Kansas State": {
-"city": "Manhattan",
-"state": "KS"
-},
-"Kean": {
-"city": "Union",
-"state": "NJ"
-},
-"Keene State": {
-"city": "Keene",
-"state": "NH"
-},
-"Kennesaw State": {
-"city": "Kennesaw",
-"state": "GA"
-},
-"Kent State": {
-"city": "Kent",
-"state": "OH"
-},
-"Kentucky": {
-"city": "Lexington",
-"state": "KY"
-},
-"Kentucky State": {
-"city": "Frankfort",
-"state": "KY"
-},
-"Kentucky Wesleyan": {
-"city": "Owensboro",
-"state": "KY"
-},
-"Kenyon": {
-"city": "Gambier",
-"state": "OH"
-},
-"Keuka": {
-"city": "Keuka Park",
-"state": "NY"
-},
-"Keystone": {
-"city": "La Plume",
-"state": "PA"
-},
-"King (TN)": {
-"city": "Bristol",
-"state": "TN"
-},
-"King's (PA)": {
-"city": "Wilkes-Barre",
-"state": "PA"
-},
-"Knox": {
-"city": "Galesburg",
-"state": "IL"
-},
-"Kutztown": {
-"city": "Kutztown",
-"state": "PA"
-},
-"LSU": {
-"city": "Baton Rouge",
-"state": "LA"
-},
-"La Roche": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"La Salle": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"La Verne": {
-"city": "La Verne",
-"state": "CA"
-},
-"LaGrange": {
-"city": "LaGrange",
-"state": "GA"
-},
-"Lafayette": {
-"city": "Easton",
-"state": "PA"
-},
-"Lake Erie": {
-"city": "Painesville",
-"state": "OH"
-},
-"Lake Forest": {
-"city": "Lake Forest",
-"state": "IL"
-},
-"Lake Superior State": {
-"city": "Sault Ste. Marie",
-"state": "MI"
-},
-"Lakeland": {
-"city": "Plymouth",
-"state": "WI"
-},
-"Lamar": {
-"city": "Beaumont",
-"state": "TX"
-},
-"Lancaster Bible": {
-"city": "Lancaster",
-"state": "PA"
-},
-"Lander": {
-"city": "Greenwood",
-"state": "SC"
-},
-"Lane": {
-"city": "Jackson",
-"state": "TN"
-},
-"Lasell": {
-"city": "Newton",
-"state": "MA"
-},
-"Lawrence": {
-"city": "Appleton",
-"state": "WI"
-},
-"Le Moyne": {
-"city": "Syracuse",
-"state": "NY"
-},
-"LeMoyne-Owen": {
-"city": "Memphis",
-"state": "TN"
-},
-"LeTourneau": {
-"city": "Longview",
-"state": "TX"
-},
-"Lebanon Valley": {
-"city": "Annville",
-"state": "PA"
-},
-"Lee": {
-"city": "Cleveland",
-"state": "TN"
-},
-"Lees-McRae": {
-"city": "Banner Elk",
-"state": "NC"
-},
-"Lehigh": {
-"city": "Bethlehem",
-"state": "PA"
-},
-"Lehman": {
-"city": "Bronx",
-"state": "NY"
-},
-"Lenoir-Rhyne": {
-"city": "Hickory",
-"state": "NC"
-},
-"Lesley": {
-"city": "Cambridge",
-"state": "MA"
-},
-"Lewis": {
-"city": "Romeoville",
-"state": "IL"
-},
-"Lewis & Clark": {
-"city": "Portland",
-"state": "OR"
-},
-"Liberty": {
-"city": "Lynchburg",
-"state": "VA"
-},
-"Lincoln (MO)": {
-"city": "Jefferson City",
-"state": "MO"
-},
-"Lincoln (PA)": {
-"city": "Lincoln University",
-"state": "PA"
-},
-"Lincoln Memorial": {
-"city": "Harrogate",
-"state": "TN"
-},
-"Lindenwood": {
-"city": "St. Charles",
-"state": "MO"
-},
-"Linfield": {
-"city": "McMinnville",
-"state": "OR"
-},
-"Lipscomb": {
-"city": "Nashville",
-"state": "TN"
-},
-"Little Rock": {
-"city": "Little Rock",
-"state": "AR"
-},
-"Livingstone": {
-"city": "Salisbury",
-"state": "NC"
-},
-"Lock Haven": {
-"city": "Lock Haven",
-"state": "PA"
-},
-"Long Beach State": {
-"city": "Long Beach",
-"state": "CA"
-},
-"Long Island": {
-"city": "Brookville",
-"state": "NY"
-},
-"Longwood": {
-"city": "Farmville",
-"state": "VA"
-},
-"Loras": {
-"city": "Dubuque",
-"state": "IA"
-},
-"Louisiana": {
-"city": "Lafayette",
-"state": "LA"
-},
-"Louisiana Tech": {
-"city": "Ruston",
-"state": "LA"
-},
-"Louisville": {
-"city": "Louisville",
-"state": "KY"
-},
-"Loyola Chicago": {
-"city": "Chicago",
-"state": "IL"
-},
-"Loyola Maryland": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Loyola Marymount": {
-"city": "Los Angeles",
-"state": "CA"
-},
-"Lubbock Christian": {
-"city": "Lubbock",
-"state": "TX"
-},
-"Luther": {
-"city": "Decorah",
-"state": "IA"
-},
-"Lycoming": {
-"city": "Williamsport",
-"state": "PA"
-},
-"Lynchburg": {
-"city": "Lynchburg",
-"state": "VA"
-},
-"Lynn": {
-"city": "Boca Raton",
-"state": "FL"
-},
-"Lyon": {
-"city": "Batesville",
-"state": "AR"
-},
-"MCLA": {
-"city": "North Adams",
-"state": "MA"
-},
-"MIT": {
-"city": "Cambridge",
-"state": "MA"
-},
-"MSOE": {
-"city": "Milwaukee",
-"state": "WI"
-},
-"MSU Denver": {
-"city": "Denver",
-"state": "CO"
-},
-"Macalester": {
-"city": "Saint Paul",
-"state": "MN"
-},
-"Maine": {
-"city": "Orono",
-"state": "ME"
-},
-"Maine Maritime": {
-"city": "Castine",
-"state": "ME"
-},
-"Maine-Farmington": {
-"city": "Farmington",
-"state": "ME"
-},
-"Maine-Presque Isle": {
-"city": "Presque Isle",
-"state": "ME"
-},
-"Malone": {
-"city": "Canton",
-"state": "OH"
-},
-"Manchester": {
-"city": "North Manchester",
-"state": "IN"
-},
-"Manhattan": {
-"city": "Riverdale",
-"state": "NY"
-},
-"Manhattanville": {
-"city": "Purchase",
-"state": "NY"
-},
-"Mansfield": {
-"city": "Mansfield",
-"state": "PA"
-},
-"Marian (WI)": {
-"city": "Fond du Lac",
-"state": "WI"
-},
-"Marietta": {
-"city": "Marietta",
-"state": "OH"
-},
-"Marist": {
-"city": "Poughkeepsie",
-"state": "NY"
-},
-"Marquette": {
-"city": "Milwaukee",
-"state": "WI"
-},
-"Mars Hill": {
-"city": "Mars Hill",
-"state": "NC"
-},
-"Marshall": {
-"city": "Huntington",
-"state": "WV"
-},
-"Martin Luther": {
-"city": "New Ulm",
-"state": "MN"
-},
-"Mary": {
-"city": "Bismarck",
-"state": "ND"
-},
-"Mary Baldwin": {
-"city": "Staunton",
-"state": "VA"
-},
-"Mary Hardin-Baylor": {
-"city": "Belton",
-"state": "TX"
-},
-"Mary Washington": {
-"city": "Fredericksburg",
-"state": "VA"
-},
-"Maryland": {
-"city": "College Park",
-"state": "MD"
-},
-"Maryland Eastern Shore": {
-"city": "Princess Anne",
-"state": "MD"
-},
-"Marymount (VA)": {
-"city": "Arlington",
-"state": "VA"
-},
-"Maryville": {
-"city": "Town and Country",
-"state": "MO"
-},
-"Maryville (TN)": {
-"city": "Maryville",
-"state": "TN"
-},
-"Marywood": {
-"city": "Scranton",
-"state": "PA"
-},
-"Massachusetts": {
-"city": "Amherst",
-"state": "MA"
-},
-"Massachusetts Maritime": {
-"city": "Buzzards Bay",
-"state": "MA"
-},
-"McDaniel": {
-"city": "Westminster",
-"state": "MD"
-},
-"McKendree": {
-"city": "Lebanon",
-"state": "IL"
-},
-"McMurry": {
-"city": "Abilene",
-"state": "TX"
-},
-"McNeese": {
-"city": "Lake Charles",
-"state": "LA"
-},
-"Medgar Evers": {
-"city": "Brooklyn",
-"state": "NY"
-},
-"Memphis": {
-"city": "Memphis",
-"state": "TN"
-},
-"Menlo": {
-"city": "Atherton",
-"state": "CA"
-},
-"Mercer": {
-"city": "Macon",
-"state": "GA"
-},
-"Merchant Marine": {
-"city": "Kings Point",
-"state": "NY"
-},
-"Mercy": {
-"city": "Dobbs Ferry",
-"state": "NY"
-},
-"Mercyhurst": {
-"city": "Erie",
-"state": "PA"
-},
-"Meredith": {
-"city": "Raleigh",
-"state": "NC"
-},
-"Merrimack": {
-"city": "North Andover",
-"state": "MA"
-},
-"Messiah": {
-"city": "Mechanicsburg",
-"state": "PA"
-},
-"Methodist": {
-"city": "Fayetteville",
-"state": "NC"
-},
-"Miami": {
-"city": "Coral Gables",
-"state": "FL"
-},
-"Miami (OH)": {
-"city": "Oxford",
-"state": "OH"
-},
-"Michigan": {
-"city": "Ann Arbor",
-"state": "MI"
-},
-"Michigan State": {
-"city": "East Lansing",
-"state": "MI"
-},
-"Michigan Tech": {
-"city": "Houghton",
-"state": "MI"
-},
-"Middle Georgia State": {
-"city": "Macon",
-"state": "GA"
-},
-"Middle Tennessee": {
-"city": "Murfreesboro",
-"state": "TN"
-},
-"Middlebury": {
-"city": "Middlebury",
-"state": "VT"
-},
-"Midwestern State": {
-"city": "Wichita Falls",
-"state": "TX"
-},
-"Miles": {
-"city": "Fairfield",
-"state": "AL"
-},
-"Millersville": {
-"city": "Millersville",
-"state": "PA"
-},
-"Millikin": {
-"city": "Decatur",
-"state": "IL"
-},
-"Millsaps": {
-"city": "Jackson",
-"state": "MS"
-},
-"Milwaukee": {
-"city": "Milwaukee",
-"state": "WI"
-},
-"Minnesota": {
-"city": "Minneapolis",
-"state": "MN"
-},
-"Minnesota Crookston": {
-"city": "Crookston",
-"state": "MN"
-},
-"Minnesota Duluth": {
-"city": "Duluth",
-"state": "MN"
-},
-"Minnesota State": {
-"city": "Mankato",
-"state": "MN"
-},
-"Minnesota State Moorhead": {
-"city": "Moorhead",
-"state": "MN"
-},
-"Minnesota-Morris": {
-"city": "Morris",
-"state": "MN"
-},
-"Minot State": {
-"city": "Minot",
-"state": "ND"
-},
-"Misericordia": {
-"city": "Dallas",
-"state": "PA"
-},
-"Mississippi College": {
-"city": "Clinton",
-"state": "MS"
-},
-"Mississippi State": {
-"city": "Starkville",
-"state": "MS"
-},
-"Mississippi University for Women": {
-"city": "Columbus",
-"state": "MS"
-},
-"Mississippi Valley State": {
-"city": "Itta Bena",
-"state": "MS"
-},
-"Missouri": {
-"city": "Columbia",
-"state": "MO"
-},
-"Missouri S&T": {
-"city": "Rolla",
-"state": "MO"
-},
-"Missouri Southern": {
-"city": "Joplin",
-"state": "MO"
-},
-"Missouri State": {
-"city": "Springfield",
-"state": "MO"
-},
-"Missouri Western": {
-"city": "St. Joseph",
-"state": "MO"
-},
-"Missouri-St. Louis": {
-"city": "St. Louis",
-"state": "MO"
-},
-"Mitchell": {
-"city": "New London",
-"state": "CT"
-},
-"Molloy": {
-"city": "Rockville Centre",
-"state": "NY"
-},
-"Monmouth": {
-"city": "West Long Branch",
-"state": "NJ"
-},
-"Monmouth (IL)": {
-"city": "Monmouth",
-"state": "IL"
-},
-"Montana": {
-"city": "Missoula",
-"state": "MT"
-},
-"Montana State": {
-"city": "Bozeman",
-"state": "MT"
-},
-"Montana State Billings": {
-"city": "Billings",
-"state": "MT"
-},
-"Montclair State": {
-"city": "Montclair",
-"state": "NJ"
-},
-"Montevallo": {
-"city": "Montevallo",
-"state": "AL"
-},
-"Moravian": {
-"city": "Bethlehem",
-"state": "PA"
-},
-"Morehead State": {
-"city": "Morehead",
-"state": "KY"
-},
-"Morehouse": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Morgan State": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Mount Aloysius": {
-"city": "Cresson",
-"state": "PA"
-},
-"Mount Holyoke": {
-"city": "South Hadley",
-"state": "MA"
-},
-"Mount Olive": {
-"city": "Mount Olive",
-"state": "NC"
-},
-"Mount Saint Mary (NY)": {
-"city": "Newburgh",
-"state": "NY"
-},
-"Mount Saint Vincent": {
-"city": "Bronx",
-"state": "NY"
-},
-"Mount St. Joseph": {
-"city": "Cincinnati",
-"state": "OH"
-},
-"Mount St. Mary's": {
-"city": "Emmitsburg",
-"state": "MD"
-},
-"Mount Union": {
-"city": "Alliance",
-"state": "OH"
-},
-"Muhlenberg": {
-"city": "Allentown",
-"state": "PA"
-},
-"Murray State": {
-"city": "Murray",
-"state": "KY"
-},
-"Muskingum": {
-"city": "New Concord",
-"state": "OH"
-},
-"NC State": {
-"city": "Raleigh",
-"state": "NC"
-},
-"NJIT": {
-"city": "Newark",
-"state": "NJ"
-},
-"NYU": {
-"city": "New York",
-"state": "NY"
-},
-"Navy": {
-"city": "Annapolis",
-"state": "MD"
-},
-"Nazareth": {
-"city": "Rochester",
-"state": "NY"
-},
-"Nebraska": {
-"city": "Lincoln",
-"state": "NE"
-},
-"Nebraska Wesleyan": {
-"city": "Lincoln",
-"state": "NE"
-},
-"Nebraska-Kearney": {
-"city": "Kearney",
-"state": "NE"
-},
-"Neumann": {
-"city": "Aston",
-"state": "PA"
-},
-"Nevada": {
-"city": "Reno",
-"state": "NV"
-},
-"New England": {
-"city": "Biddeford",
-"state": "ME"
-},
-"New England College": {
-"city": "Henniker",
-"state": "NH"
-},
-"New Hampshire": {
-"city": "Durham",
-"state": "NH"
-},
-"New Haven": {
-"city": "West Haven",
-"state": "CT"
-},
-"New Jersey City": {
-"city": "Jersey City",
-"state": "NJ"
-},
-"New Mexico": {
-"city": "Albuquerque",
-"state": "NM"
-},
-"New Mexico Highlands": {
-"city": "Las Vegas",
-"state": "NM"
-},
-"New Mexico State": {
-"city": "Las Cruces",
-"state": "NM"
-},
-"New Orleans": {
-"city": "New Orleans",
-"state": "LA"
-},
-"Newberry": {
-"city": "Newberry",
-"state": "SC"
-},
-"Newman": {
-"city": "Wichita",
-"state": "KS"
-},
-"Niagara": {
-"city": "Niagara University",
-"state": "NY"
-},
-"Nicholls": {
-"city": "Thibodaux",
-"state": "LA"
-},
-"Nichols": {
-"city": "Dudley",
-"state": "MA"
-},
-"Norfolk State": {
-"city": "Norfolk",
-"state": "VA"
-},
-"North Alabama": {
-"city": "Florence",
-"state": "AL"
-},
-"North Carolina": {
-"city": "Chapel Hill",
-"state": "NC"
-},
-"North Carolina A&T": {
-"city": "Greensboro",
-"state": "NC"
-},
-"North Carolina Central": {
-"city": "Durham",
-"state": "NC"
-},
-"North Carolina Wesleyan": {
-"city": "Rocky Mount",
-"state": "NC"
-},
-"North Central (IL)": {
-"city": "Naperville",
-"state": "IL"
-},
-"North Central (MN)": {
-"city": "Minneapolis",
-"state": "MN"
-},
-"North Dakota": {
-"city": "Grand Forks",
-"state": "ND"
-},
-"North Dakota State": {
-"city": "Fargo",
-"state": "ND"
-},
-"North Florida": {
-"city": "Jacksonville",
-"state": "FL"
-},
-"North Georgia": {
-"city": "Dahlonega",
-"state": "GA"
-},
-"North Greenville": {
-"city": "Tigerville",
-"state": "SC"
-},
-"North Park": {
-"city": "Chicago",
-"state": "IL"
-},
-"North Texas": {
-"city": "Denton",
-"state": "TX"
-},
-"Northeastern": {
-"city": "Boston",
-"state": "MA"
-},
-"Northeastern State": {
-"city": "Tahlequah",
-"state": "OK"
-},
-"Northern Arizona": {
-"city": "Flagstaff",
-"state": "AZ"
-},
-"Northern Colorado": {
-"city": "Greeley",
-"state": "CO"
-},
-"Northern Illinois": {
-"city": "DeKalb",
-"state": "IL"
-},
-"Northern Iowa": {
-"city": "Cedar Falls",
-"state": "IA"
-},
-"Northern Kentucky": {
-"city": "Highland Heights",
-"state": "KY"
-},
-"Northern Michigan": {
-"city": "Marquette",
-"state": "MI"
-},
-"Northern State": {
-"city": "Aberdeen",
-"state": "SD"
-},
-"Northern Vermont-Johnson": {
-"city": "Johnson",
-"state": "VT"
-},
-"Northern Vermont-Lyndon": {
-"city": "Lyndonville",
-"state": "VT"
-},
-"Northwest Missouri State": {
-"city": "Maryville",
-"state": "MO"
-},
-"Northwest Nazarene": {
-"city": "Nampa",
-"state": "ID"
-},
-"Northwestern": {
-"city": "Evanston",
-"state": "IL"
-},
-"Northwestern Oklahoma State": {
-"city": "Alva",
-"state": "OK"
-},
-"Northwestern State": {
-"city": "Natchitoches",
-"state": "LA"
-},
-"Northwestern-St. Paul": {
-"city": "St. Paul",
-"state": "MN"
-},
-"Northwood": {
-"city": "Midland",
-"state": "MI"
-},
-"Norwich": {
-"city": "Northfield",
-"state": "VT"
-},
-"Notre Dame": {
-"city": "Notre Dame",
-"state": "IN"
-},
-"Notre Dame of Maryland": {
-"city": "Baltimore",
-"state": "MD"
-},
-"Nova Southeastern": {
-"city": "Fort Lauderdale",
-"state": "FL"
-},
-"Oakland": {
-"city": "Rochester",
-"state": "MI"
-},
-"Oberlin": {
-"city": "Oberlin",
-"state": "OH"
-},
-"Occidental": {
-"city": "Los Angeles",
-"state": "CA"
-},
-"Oglethorpe": {
-"city": "Atlanta",
-"state": "GA"
-},
-"Ohio": {
-"city": "Athens",
-"state": "OH"
-},
-"Ohio Dominican": {
-"city": "Columbus",
-"state": "OH"
-},
-"Ohio Northern": {
-"city": "Ada",
-"state": "OH"
-},
-"Ohio State": {
-"city": "Columbus",
-"state": "OH"
-},
-"Ohio Wesleyan": {
-"city": "Delaware",
-"state": "OH"
-},
-"Oklahoma": {
-"city": "Norman",
-"state": "OK"
-},
-"Oklahoma Baptist": {
-"city": "Shawnee",
-"state": "OK"
-},
-"Oklahoma Christian": {
-"city": "Oklahoma City",
-"state": "OK"
-},
-"Oklahoma State": {
-"city": "Stillwater",
-"state": "OK"
-},
-"Old Dominion": {
-"city": "Norfolk",
-"state": "VA"
-},
-"Ole Miss": {
-"city": "Oxford",
-"state": "MS"
-},
-"Olivet": {
-"city": "Olivet",
-"state": "MI"
-},
-"Omaha": {
-"city": "Omaha",
-"state": "NE"
-},
-"Oral Roberts": {
-"city": "Tulsa",
-"state": "OK"
-},
-"Oregon": {
-"city": "Eugene",
-"state": "OR"
-},
-"Oregon State": {
-"city": "Corvallis",
-"state": "OR"
-},
-"Otterbein": {
-"city": "Westerville",
-"state": "OH"
-},
-"Ouachita Baptist": {
-"city": "Arkadelphia",
-"state": "AR"
-},
-"Ozarks": {
-"city": "Clarksville",
-"state": "AR"
-},
-"Pace": {
-"city": "Pleasantville",
-"state": "NY"
-},
-"Pacific": {
-"city": "Stockton",
-"state": "CA"
-},
-"Pacific (OR)": {
-"city": "Forest Grove",
-"state": "OR"
-},
-"Pacific Lutheran": {
-"city": "Tacoma",
-"state": "WA"
-},
-"Palm Beach Atlantic": {
-"city": "West Palm Beach",
-"state": "FL"
-},
-"Penn": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Penn College": {
-"city": "Williamsport",
-"state": "PA"
-},
-"Penn State": {
-"city": "University Park",
-"state": "PA"
-},
-"Penn State Abington": {
-"city": "Abington",
-"state": "PA"
-},
-"Penn State Altoona": {
-"city": "Altoona",
-"state": "PA"
-},
-"Penn State Behrend": {
-"city": "Erie",
-"state": "PA"
-},
-"Penn State Berks": {
-"city": "Reading",
-"state": "PA"
-},
-"Penn State Brandywine": {
-"city": "Media",
-"state": "PA"
-},
-"Penn State Harrisburg": {
-"city": "Middletown",
-"state": "PA"
-},
-"PennWest California": {
-"city": "California",
-"state": "PA"
-},
-"PennWest Clarion": {
-"city": "Clarion",
-"state": "PA"
-},
-"PennWest Edinboro": {
-"city": "Edinboro",
-"state": "PA"
-},
-"Pepperdine": {
-"city": "Malibu",
-"state": "CA"
-},
-"Pfeiffer": {
-"city": "Misenheimer",
-"state": "NC"
-},
-"Piedmont": {
-"city": "Demorest",
-"state": "GA"
-},
-"Pitt": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Pitt-Bradford": {
-"city": "Bradford",
-"state": "PA"
-},
-"Pitt-Greensburg": {
-"city": "Greensburg",
-"state": "PA"
-},
-"Pitt-Johnstown": {
-"city": "Johnstown",
-"state": "PA"
-},
-"Pittsburg State": {
-"city": "Pittsburg",
-"state": "KS"
-},
-"Plymouth State": {
-"city": "Plymouth",
-"state": "NH"
-},
-"Point Loma Nazarene": {
-"city": "San Diego",
-"state": "CA"
-},
-"Point Park": {
-"city": "Pittsburgh",
-"state": "PA"
-},
-"Pomona-Pitzer": {
-"city": "Claremont",
-"state": "CA"
-},
-"Portland": {
-"city": "Portland",
-"state": "OR"
-},
-"Portland State": {
-"city": "Portland",
-"state": "OR"
-},
-"Post": {
-"city": "Waterbury",
-"state": "CT"
-},
-"Prairie View A&M": {
-"city": "Prairie View",
-"state": "TX"
-},
-"Pratt": {
-"city": "Brooklyn",
-"state": "NY"
-},
-"Presbyterian": {
-"city": "Clinton",
-"state": "SC"
-},
-"Princeton": {
-"city": "Princeton",
-"state": "NJ"
-},
-"Principia": {
-"city": "Elsah",
-"state": "IL"
-},
-"Providence": {
-"city": "Providence",
-"state": "RI"
-},
-"Puget Sound": {
-"city": "Tacoma",
-"state": "WA"
-},
-"Purchase": {
-"city": "Purchase",
-"state": "NY"
-},
-"Purdue": {
-"city": "West Lafayette",
-"state": "IN"
-},
-"Purdue Fort Wayne": {
-"city": "Fort Wayne",
-"state": "IN"
-},
-"Purdue Northwest": {
-"city": "Hammond",
-"state": "IN"
-},
-"Queens": {
-"city": "Charlotte",
-"state": "NC"
-},
-"Queens (NY)": {
-"city": "Queens",
-"state": "NY"
-},
-"Quincy": {
-"city": "Quincy",
-"state": "IL"
-},
-"Quinnipiac": {
-"city": "Hamden",
-"state": "CT"
-},
-"RIT": {
-"city": "Rochester",
-"state": "NY"
-},
-"RPI": {
-"city": "Troy",
-"state": "NY"
-},
-"Radford": {
-"city": "Radford",
-"state": "VA"
-},
-"Ramapo": {
-"city": "Mahwah",
-"state": "NJ"
-},
-"Randolph": {
-"city": "Lynchburg",
-"state": "VA"
-},
-"Randolph-Macon": {
-"city": "Ashland",
-"state": "VA"
-},
-"Redlands": {
-"city": "Redlands",
-"state": "CA"
-},
-"Regent": {
-"city": "Virginia Beach",
-"state": "VA"
-},
-"Regis": {
-"city": "Denver",
-"state": "CO"
-},
-"Regis (MA)": {
-"city": "Weston",
-"state": "MA"
-},
-"Rhode Island": {
-"city": "Kingston",
-"state": "RI"
-},
-"Rhode Island College": {
-"city": "Providence",
-"state": "RI"
-},
-"Rhodes": {
-"city": "Memphis",
-"state": "TN"
-},
-"Rice": {
-"city": "Houston",
-"state": "TX"
-},
-"Richmond": {
-"city": "Richmond",
-"state": "VA"
-},
-"Rider": {
-"city": "Lawrenceville",
-"state": "NJ"
-},
-"Ripon": {
-"city": "Ripon",
-"state": "WI"
-},
-"Rivier": {
-"city": "Nashua",
-"state": "NH"
-},
-"Roanoke": {
-"city": "Salem",
-"state": "VA"
-},
-"Robert Morris": {
-"city": "Moon Township",
-"state": "PA"
-},
-"Roberts Wesleyan": {
-"city": "Rochester",
-"state": "NY"
-},
-"Rochester": {
-"city": "Rochester",
-"state": "NY"
-},
-"Rockford": {
-"city": "Rockford",
-"state": "IL"
-},
-"Rockhurst": {
-"city": "Kansas City",
-"state": "MO"
-},
-"Roger Williams": {
-"city": "Bristol",
-"state": "RI"
-},
-"Rogers State": {
-"city": "Claremore",
-"state": "OK"
-},
-"Rollins": {
-"city": "Winter Park",
-"state": "FL"
-},
-"Roosevelt": {
-"city": "Chicago",
-"state": "IL"
-},
-"Rose-Hulman": {
-"city": "Terre Haute",
-"state": "IN"
-},
-"Rosemont": {
-"city": "Rosemont",
-"state": "PA"
-},
-"Rowan": {
-"city": "Glassboro",
-"state": "NJ"
-},
-"Russell Sage": {
-"city": "Troy",
-"state": "NY"
-},
-"Rutgers": {
-"city": "Piscataway",
-"state": "NJ"
-},
-"Rutgers-Camden": {
-"city": "Camden",
-"state": "NJ"
-},
-"Rutgers-Newark": {
-"city": "Newark",
-"state": "NJ"
-},
-"SIUE": {
-"city": "Edwardsville",
-"state": "IL"
-},
-"SMU": {
-"city": "Dallas",
-"state": "TX"
-},
-"SUNY Brockport": {
-"city": "Brockport",
-"state": "NY"
-},
-"SUNY Canton": {
-"city": "Canton",
-"state": "NY"
-},
-"SUNY Cobleskill": {
-"city": "Cobleskill",
-"state": "NY"
-},
-"SUNY Cortland": {
-"city": "Cortland",
-"state": "NY"
-},
-"SUNY Delhi": {
-"city": "Delhi",
-"state": "NY"
-},
-"SUNY Fredonia": {
-"city": "Fredonia",
-"state": "NY"
-},
-"SUNY Geneseo": {
-"city": "Geneseo",
-"state": "NY"
-},
-"SUNY Maritime": {
-"city": "Bronx",
-"state": "NY"
-},
-"SUNY Morrisville": {
-"city": "Morrisville",
-"state": "NY"
-},
-"SUNY New Paltz": {
-"city": "New Paltz",
-"state": "NY"
-},
-"SUNY Old Westbury": {
-"city": "Old Westbury",
-"state": "NY"
-},
-"SUNY Oneonta": {
-"city": "Oneonta",
-"state": "NY"
-},
-"SUNY Oswego": {
-"city": "Oswego",
-"state": "NY"
-},
-"SUNY Plattsburgh": {
-"city": "Plattsburgh",
-"state": "NY"
-},
-"SUNY Poly": {
-"city": "Utica",
-"state": "NY"
-},
-"SUNY Potsdam": {
-"city": "Potsdam",
-"state": "NY"
-},
-"Sacramento State": {
-"city": "Sacramento",
-"state": "CA"
-},
-"Sacred Heart": {
-"city": "Fairfield",
-"state": "CT"
-},
-"Saginaw Valley State": {
-"city": "University Center",
-"state": "MI"
-},
-"Saint Anselm": {
-"city": "Manchester",
-"state": "NH"
-},
-"Saint Benedict": {
-"city": "St. Joseph",
-"state": "MN"
-},
-"Saint Elizabeth": {
-"city": "Morristown",
-"state": "NJ"
-},
-"Saint Francis (PA)": {
-"city": "Loretto",
-"state": "PA"
-},
-"Saint John's (MN)": {
-"city": "Collegeville",
-"state": "MN"
-},
-"Saint Joseph (CT)": {
-"city": "West Hartford",
-"state": "CT"
-},
-"Saint Joseph's": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Saint Joseph's (ME)": {
-"city": "Standish",
-"state": "ME"
-},
-"Saint Leo": {
-"city": "Saint Leo",
-"state": "FL"
-},
-"Saint Louis": {
-"city": "St. Louis",
-"state": "MO"
-},
-"Saint Martin's": {
-"city": "Lacey",
-"state": "WA"
-},
-"Saint Mary's": {
-"city": "Moraga",
-"state": "CA"
-},
-"Saint Mary's (IN)": {
-"city": "Notre Dame",
-"state": "IN"
-},
-"Saint Mary's (MN)": {
-"city": "Winona",
-"state": "MN"
-},
-"Saint Michael's": {
-"city": "Colchester",
-"state": "VT"
-},
-"Saint Peter's": {
-"city": "Jersey City",
-"state": "NJ"
-},
-"Saint Vincent": {
-"city": "Latrobe",
-"state": "PA"
-},
-"Salem": {
-"city": "Winston-Salem",
-"state": "NC"
-},
-"Salem State": {
-"city": "Salem",
-"state": "MA"
-},
-"Salisbury": {
-"city": "Salisbury",
-"state": "MD"
-},
-"Salve Regina": {
-"city": "Newport",
-"state": "RI"
-},
-"Sam Houston": {
-"city": "Huntsville",
-"state": "TX"
-},
-"Samford": {
-"city": "Birmingham",
-"state": "AL"
-},
-"San Diego": {
-"city": "San Diego",
-"state": "CA"
-},
-"San Diego State": {
-"city": "San Diego",
-"state": "CA"
-},
-"San Francisco": {
-"city": "San Francisco",
-"state": "CA"
-},
-"San Francisco State": {
-"city": "San Francisco",
-"state": "CA"
-},
-"San Jose State": {
-"city": "San Jose",
-"state": "CA"
-},
-"Santa Clara": {
-"city": "Santa Clara",
-"state": "CA"
-},
-"Sarah Lawrence": {
-"city": "Bronxville",
-"state": "NY"
-},
-"Savannah State": {
-"city": "Savannah",
-"state": "GA"
-},
-"Schreiner": {
-"city": "Kerrville",
-"state": "TX"
-},
-"Scranton": {
-"city": "Scranton",
-"state": "PA"
-},
-"Seattle Pacific": {
-"city": "Seattle",
-"state": "WA"
-},
-"Seattle U": {
-"city": "Seattle",
-"state": "WA"
-},
-"Seton Hall": {
-"city": "South Orange",
-"state": "NJ"
-},
-"Seton Hill": {
-"city": "Greensburg",
-"state": "PA"
-},
-"Sewanee": {
-"city": "Sewanee",
-"state": "TN"
-},
-"Shaw": {
-"city": "Raleigh",
-"state": "NC"
-},
-"Shenandoah": {
-"city": "Winchester",
-"state": "VA"
-},
-"Shepherd": {
-"city": "Shepherdstown",
-"state": "WV"
-},
-"Shippensburg": {
-"city": "Shippensburg",
-"state": "PA"
-},
-"Shorter": {
-"city": "Rome",
-"state": "GA"
-},
-"Siena": {
-"city": "Loudonville",
-"state": "NY"
-},
-"Simmons": {
-"city": "Boston",
-"state": "MA"
-},
-"Simon Fraser": {
-"city": "Burnaby",
-"state": "BC"
-},
-"Simpson": {
-"city": "Indianola",
-"state": "IA"
-},
-"Sioux Falls": {
-"city": "Sioux Falls",
-"state": "SD"
-},
-"Skidmore": {
-"city": "Saratoga Springs",
-"state": "NY"
-},
-"Slippery Rock": {
-"city": "Slippery Rock",
-"state": "PA"
-},
-"Smith": {
-"city": "Northampton",
-"state": "MA"
-},
-"South Alabama": {
-"city": "Mobile",
-"state": "AL"
-},
-"South Carolina": {
-"city": "Columbia",
-"state": "SC"
-},
-"South Carolina State": {
-"city": "Orangeburg",
-"state": "SC"
-},
-"South Dakota": {
-"city": "Vermillion",
-"state": "SD"
-},
-"South Dakota Mines": {
-"city": "Rapid City",
-"state": "SD"
-},
-"South Dakota State": {
-"city": "Brookings",
-"state": "SD"
-},
-"South Florida": {
-"city": "Tampa",
-"state": "FL"
-},
-"Southeast Missouri": {
-"city": "Cape Girardeau",
-"state": "MO"
-},
-"Southeastern Louisiana": {
-"city": "Hammond",
-"state": "LA"
-},
-"Southeastern Oklahoma State": {
-"city": "Durant",
-"state": "OK"
-},
-"Southern": {
-"city": "Baton Rouge",
-"state": "LA"
-},
-"Southern Arkansas": {
-"city": "Magnolia",
-"state": "AR"
-},
-"Southern Connecticut": {
-"city": "New Haven",
-"state": "CT"
-},
-"Southern Illinois": {
-"city": "Carbondale",
-"state": "IL"
-},
-"Southern Indiana": {
-"city": "Evansville",
-"state": "IN"
-},
-"Southern Maine": {
-"city": "Gorham",
-"state": "ME"
-},
-"Southern Miss": {
-"city": "Hattiesburg",
-"state": "MS"
-},
-"Southern Nazarene": {
-"city": "Bethany",
-"state": "OK"
-},
-"Southern New Hampshire": {
-"city": "Manchester",
-"state": "NH"
-},
-"Southern Utah": {
-"city": "Cedar City",
-"state": "UT"
-},
-"Southern Virginia": {
-"city": "Buena Vista",
-"state": "VA"
-},
-"Southern Wesleyan": {
-"city": "Central",
-"state": "SC"
-},
-"Southwest Baptist": {
-"city": "Bolivar",
-"state": "MO"
-},
-"Southwest Minnesota State": {
-"city": "Marshall",
-"state": "MN"
-},
-"Southwestern (TX)": {
-"city": "Georgetown",
-"state": "TX"
-},
-"Southwestern Oklahoma State": {
-"city": "Weatherford",
-"state": "OK"
-},
-"Spalding": {
-"city": "Louisville",
-"state": "KY"
-},
-"Spring Hill": {
-"city": "Mobile",
-"state": "AL"
-},
-"Springfield": {
-"city": "Springfield",
-"state": "MA"
-},
-"St. Bonaventure": {
-"city": "St. Bonaventure",
-"state": "NY"
-},
-"St. Catherine": {
-"city": "St. Paul",
-"state": "MN"
-},
-"St. Cloud State": {
-"city": "St. Cloud",
-"state": "MN"
-},
-"St. Edward's": {
-"city": "Austin",
-"state": "TX"
-},
-"St. John Fisher": {
-"city": "Rochester",
-"state": "NY"
-},
-"St. John's": {
-"city": "Queens",
-"state": "NY"
-},
-"St. Joseph's (Brooklyn)": {
-"city": "Brooklyn",
-"state": "NY"
-},
-"St. Joseph's (Long Island)": {
-"city": "Patchogue",
-"state": "NY"
-},
-"St. Lawrence": {
-"city": "Canton",
-"state": "NY"
-},
-"St. Mary's (MD)": {
-"city": "St. Mary's City",
-"state": "MD"
-},
-"St. Mary's (TX)": {
-"city": "San Antonio",
-"state": "TX"
-},
-"St. Norbert": {
-"city": "De Pere",
-"state": "WI"
-},
-"St. Olaf": {
-"city": "Northfield",
-"state": "MN"
-},
-"St. Scholastica": {
-"city": "Duluth",
-"state": "MN"
-},
-"St. Thomas": {
-"city": "St. Paul",
-"state": "MN"
-},
-"St. Thomas (TX)": {
-"city": "Houston",
-"state": "TX"
-},
-"St. Thomas Aquinas": {
-"city": "Sparkill",
-"state": "NY"
-},
-"Stanford": {
-"city": "Stanford",
-"state": "CA"
-},
-"Stanislaus State": {
-"city": "Turlock",
-"state": "CA"
-},
-"Staten Island": {
-"city": "Staten Island",
-"state": "NY"
-},
-"Stephen F. Austin": {
-"city": "Nacogdoches",
-"state": "TX"
-},
-"Stetson": {
-"city": "DeLand",
-"state": "FL"
-},
-"Stevens": {
-"city": "Hoboken",
-"state": "NJ"
-},
-"Stevenson": {
-"city": "Owings Mills",
-"state": "MD"
-},
-"Stockton": {
-"city": "Galloway",
-"state": "NJ"
-},
-"Stonehill": {
-"city": "Easton",
-"state": "MA"
-},
-"Stony Brook": {
-"city": "Stony Brook",
-"state": "NY"
-},
-"Suffolk": {
-"city": "Boston",
-"state": "MA"
-},
-"Sul Ross State": {
-"city": "Alpine",
-"state": "TX"
-},
-"Susquehanna": {
-"city": "Selinsgrove",
-"state": "PA"
-},
-"Swarthmore": {
-"city": "Swarthmore",
-"state": "PA"
-},
-"Sweet Briar": {
-"city": "Sweet Briar",
-"state": "VA"
-},
-"Syracuse": {
-"city": "Syracuse",
-"state": "NY"
-},
-"TCNJ": {
-"city": "Ewing",
-"state": "NJ"
-},
-"TCU": {
-"city": "Fort Worth",
-"state": "TX"
-},
-"Tampa": {
-"city": "Tampa",
-"state": "FL"
-},
-"Tarleton State": {
-"city": "Stephenville",
-"state": "TX"
-},
-"Temple": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Tennessee": {
-"city": "Knoxville",
-"state": "TN"
-},
-"Tennessee State": {
-"city": "Nashville",
-"state": "TN"
-},
-"Tennessee Tech": {
-"city": "Cookeville",
-"state": "TN"
-},
-"Texas": {
-"city": "Austin",
-"state": "TX"
-},
-"Texas A&M": {
-"city": "College Station",
-"state": "TX"
-},
-"Texas A&M International": {
-"city": "Laredo",
-"state": "TX"
-},
-"Texas A&M-Kingsville": {
-"city": "Kingsville",
-"state": "TX"
-},
-"Texas Lutheran": {
-"city": "Seguin",
-"state": "TX"
-},
-"Texas Southern": {
-"city": "Houston",
-"state": "TX"
-},
-"Texas State": {
-"city": "San Marcos",
-"state": "TX"
-},
-"Texas Tech": {
-"city": "Lubbock",
-"state": "TX"
-},
-"Texas Woman's": {
-"city": "Denton",
-"state": "TX"
-},
-"The Citadel": {
-"city": "Charleston",
-"state": "SC"
-},
-"Thiel": {
-"city": "Greenville",
-"state": "PA"
-},
-"Thomas (ME)": {
-"city": "Waterville",
-"state": "ME"
-},
-"Thomas Jefferson": {
-"city": "Philadelphia",
-"state": "PA"
-},
-"Thomas More": {
-"city": "Crestview Hills",
-"state": "KY"
-},
-"Tiffin": {
-"city": "Tiffin",
-"state": "OH"
-},
-"Toledo": {
-"city": "Toledo",
-"state": "OH"
-},
-"Towson": {
-"city": "Towson",
-"state": "MD"
-},
-"Transylvania": {
-"city": "Lexington",
-"state": "KY"
-},
-"Trevecca Nazarene": {
-"city": "Nashville",
-"state": "TN"
-},
-"Trine": {
-"city": "Angola",
-"state": "IN"
-},
-"Trinity (CT)": {
-"city": "Hartford",
-"state": "CT"
-},
-"Trinity (TX)": {
-"city": "San Antonio",
-"state": "TX"
-},
-"Troy": {
-"city": "Troy",
-"state": "AL"
-},
-"Truman State": {
-"city": "Kirksville",
-"state": "MO"
-},
-"Tufts": {
-"city": "Medford",
-"state": "MA"
-},
-"Tulane": {
-"city": "New Orleans",
-"state": "LA"
-},
-"Tulsa": {
-"city": "Tulsa",
-"state": "OK"
-},
-"Tusculum": {
-"city": "Greeneville",
-"state": "TN"
-},
-"Tuskegee": {
-"city": "Tuskegee",
-"state": "AL"
-},
-"UAB": {
-"city": "Birmingham",
-"state": "AL"
-},
-"UC Davis": {
-"city": "Davis",
-"state": "CA"
-},
-"UC Irvine": {
-"city": "Irvine",
-"state": "CA"
-},
-"UC Merced": {
-"city": "Merced",
-"state": "CA"
-},
-"UC Riverside": {
-"city": "Riverside",
-"state": "CA"
-},
-"UC San Diego": {
-"city": "La Jolla",
-"state": "CA"
-},
-"UC Santa Barbara": {
-"city": "Santa Barbara",
-"state": "CA"
-},
-"UC Santa Cruz": {
-"city": "Santa Cruz",
-"state": "CA"
-},
-"UCF": {
-"city": "Orlando",
-"state": "FL"
-},
-"UCLA": {
-"city": "Los Angeles",
-"state": "CA"
-},
-"UConn": {
-"city": "Storrs",
-"state": "CT"
-},
-"UIC": {
-"city": "Chicago",
-"state": "IL"
-},
-"UL Monroe": {
-"city": "Monroe",
-"state": "LA"
-},
-"UMBC": {
-"city": "Baltimore",
-"state": "MD"
-},
-"UMass": {
-"city": "Amherst",
-"state": "MA"
-},
-"UMass Boston": {
-"city": "Boston",
-"state": "MA"
-},
-"UMass Dartmouth": {
-"city": "Dartmouth",
-"state": "MA"
-},
-"UMass Lowell": {
-"city": "Lowell",
-"state": "MA"
-},
-"UNC Asheville": {
-"city": "Asheville",
-"state": "NC"
-},
-"UNC Greensboro": {
-"city": "Greensboro",
-"state": "NC"
-},
-"UNC Pembroke": {
-"city": "Pembroke",
-"state": "NC"
-},
-"UNC Wilmington": {
-"city": "Wilmington",
-"state": "NC"
-},
-"UNLV": {
-"city": "Las Vegas",
-"state": "NV"
-},
-"USC": {
-"city": "Los Angeles",
-"state": "CA"
-},
-"USC Aiken": {
-"city": "Aiken",
-"state": "SC"
-},
-"USC Beaufort": {
-"city": "Bluffton",
-"state": "SC"
-},
-"USC Upstate": {
-"city": "Spartanburg",
-"state": "SC"
-},
-"UT Arlington": {
-"city": "Arlington",
-"state": "TX"
-},
-"UT Dallas": {
-"city": "Richardson",
-"state": "TX"
-},
-"UT Martin": {
-"city": "Martin",
-"state": "TN"
-},
-"UT Permian Basin": {
-"city": "Odessa",
-"state": "TX"
-},
-"UT Tyler": {
-"city": "Tyler",
-"state": "TX"
-},
-"UTEP": {
-"city": "El Paso",
-"state": "TX"
-},
-"UTRGV": {
-"city": "Edinburg",
-"state": "TX"
-},
-"UTSA": {
-"city": "San Antonio",
-"state": "TX"
-},
-"UVA Wise": {
-"city": "Wise",
-"state": "VA"
-},
-"UW-Eau Claire": {
-"city": "Eau Claire",
-"state": "WI"
-},
-"UW-La Crosse": {
-"city": "La Crosse",
-"state": "WI"
-},
-"UW-Oshkosh": {
-"city": "Oshkosh",
-"state": "WI"
-},
-"UW-Platteville": {
-"city": "Platteville",
-"state": "WI"
-},
-"UW-River Falls": {
-"city": "River Falls",
-"state": "WI"
-},
-"UW-Stevens Point": {
-"city": "Stevens Point",
-"state": "WI"
-},
-"UW-Stout": {
-"city": "Menomonie",
-"state": "WI"
-},
-"UW-Superior": {
-"city": "Superior",
-"state": "WI"
-},
-"UW-Whitewater": {
-"city": "Whitewater",
-"state": "WI"
-},
-"Union (NY)": {
-"city": "Schenectady",
-"state": "NY"
-},
-"Union (TN)": {
-"city": "Jackson",
-"state": "TN"
-},
-"Upper Iowa": {
-"city": "Fayette",
-"state": "IA"
-},
-"Ursinus": {
-"city": "Collegeville",
-"state": "PA"
-},
-"Ursuline": {
-"city": "Pepper Pike",
-"state": "OH"
-},
-"Utah": {
-"city": "Salt Lake City",
-"state": "UT"
-},
-"Utah State": {
-"city": "Logan",
-"state": "UT"
-},
-"Utah Tech": {
-"city": "St. George",
-"state": "UT"
-},
-"Utah Valley": {
-"city": "Orem",
-"state": "UT"
-},
-"Utica": {
-"city": "Utica",
-"state": "NY"
-},
-"VCU": {
-"city": "Richmond",
-"state": "VA"
-},
-"VMI": {
-"city": "Lexington",
-"state": "VA"
-},
-"Valdosta State": {
-"city": "Valdosta",
-"state": "GA"
-},
-"Valley Forge": {
-"city": "Phoenixville",
-"state": "PA"
-},
-"Valparaiso": {
-"city": "Valparaiso",
-"state": "IN"
-},
-"Vanderbilt": {
-"city": "Nashville",
-"state": "TN"
-},
-"Vanguard": {
-"city": "Costa Mesa",
-"state": "CA"
-},
-"Vassar": {
-"city": "Poughkeepsie",
-"state": "NY"
-},
-"Vermont": {
-"city": "Burlington",
-"state": "VT"
-},
-"Villanova": {
-"city": "Villanova",
-"state": "PA"
-},
-"Virginia": {
-"city": "Charlottesville",
-"state": "VA"
-},
-"Virginia State": {
-"city": "Petersburg",
-"state": "VA"
-},
-"Virginia Tech": {
-"city": "Blacksburg",
-"state": "VA"
-},
-"Virginia Union": {
-"city": "Richmond",
-"state": "VA"
-},
-"Virginia Wesleyan": {
-"city": "Virginia Beach",
-"state": "VA"
-},
-"WPI": {
-"city": "Worcester",
-"state": "MA"
-},
-"Wabash": {
-"city": "Crawfordsville",
-"state": "IN"
-},
-"Wagner": {
-"city": "Staten Island",
-"state": "NY"
-},
-"Wake Forest": {
-"city": "Winston-Salem",
-"state": "NC"
-},
-"Walsh": {
-"city": "North Canton",
-"state": "OH"
-},
-"Warren Wilson": {
-"city": "Swannanoa",
-"state": "NC"
-},
-"Wartburg": {
-"city": "Waverly",
-"state": "IA"
-},
-"Washburn": {
-"city": "Topeka",
-"state": "KS"
-},
-"Washington": {
-"city": "Seattle",
-"state": "WA"
-},
-"Washington & Jefferson": {
-"city": "Washington",
-"state": "PA"
-},
-"Washington College": {
-"city": "Chestertown",
-"state": "MD"
-},
-"Washington State": {
-"city": "Pullman",
-"state": "WA"
-},
-"Washington University in St. Louis": {
-"city": "St. Louis",
-"state": "MO"
-},
-"Washington and Lee": {
-"city": "Lexington",
-"state": "VA"
-},
-"Wayne State (MI)": {
-"city": "Detroit",
-"state": "MI"
-},
-"Wayne State (NE)": {
-"city": "Wayne",
-"state": "NE"
-},
-"Waynesburg": {
-"city": "Waynesburg",
-"state": "PA"
-},
-"Weber State": {
-"city": "Ogden",
-"state": "UT"
-},
-"Webster": {
-"city": "Webster Groves",
-"state": "MO"
-},
-"Wellesley": {
-"city": "Wellesley",
-"state": "MA"
-},
-"Wentworth": {
-"city": "Boston",
-"state": "MA"
-},
-"Wesleyan": {
-"city": "Middletown",
-"state": "CT"
-},
-"Wesleyan College": {
-"city": "Macon",
-"state": "GA"
-},
-"West Alabama": {
-"city": "Livingston",
-"state": "AL"
-},
-"West Chester": {
-"city": "West Chester",
-"state": "PA"
-},
-"West Florida": {
-"city": "Pensacola",
-"state": "FL"
-},
-"West Georgia": {
-"city": "Carrollton",
-"state": "GA"
-},
-"West Liberty": {
-"city": "West Liberty",
-"state": "WV"
-},
-"West Texas A&M": {
-"city": "Canyon",
-"state": "TX"
-},
-"West Virginia": {
-"city": "Morgantown",
-"state": "WV"
-},
-"West Virginia State": {
-"city": "Institute",
-"state": "WV"
-},
-"West Virginia Wesleyan": {
-"city": "Buckhannon",
-"state": "WV"
-},
-"Western Carolina": {
-"city": "Cullowhee",
-"state": "NC"
-},
-"Western Colorado": {
-"city": "Gunnison",
-"state": "CO"
-},
-"Western Connecticut State": {
-"city": "Danbury",
-"state": "CT"
-},
-"Western Illinois": {
-"city": "Macomb",
-"state": "IL"
-},
-"Western Kentucky": {
-"city": "Bowling Green",
-"state": "KY"
-},
-"Western Michigan": {
-"city": "Kalamazoo",
-"state": "MI"
-},
-"Western New England": {
-"city": "Springfield",
-"state": "MA"
-},
-"Western New Mexico": {
-"city": "Silver City",
-"state": "NM"
-},
-"Western Oregon": {
-"city": "Monmouth",
-"state": "OR"
-},
-"Western Washington": {
-"city": "Bellingham",
-"state": "WA"
-},
-"Westfield State": {
-"city": "Westfield",
-"state": "MA"
-},
-"Westminster (MO)": {
-"city": "Fulton",
-"state": "MO"
-},
-"Westminster (PA)": {
-"city": "New Wilmington",
-"state": "PA"
-},
-"Westminster (UT)": {
-"city": "Salt Lake City",
-"state": "UT"
-},
-"Westmont": {
-"city": "Santa Barbara",
-"state": "CA"
-},
-"Wheaton (IL)": {
-"city": "Wheaton",
-"state": "IL"
-},
-"Wheaton (MA)": {
-"city": "Norton",
-"state": "MA"
-},
-"Wheeling": {
-"city": "Wheeling",
-"state": "WV"
-},
-"Whitman": {
-"city": "Walla Walla",
-"state": "WA"
-},
-"Whittier": {
-"city": "Whittier",
-"state": "CA"
-},
-"Whitworth": {
-"city": "Spokane",
-"state": "WA"
-},
-"Wichita State": {
-"city": "Wichita",
-"state": "KS"
-},
-"Widener": {
-"city": "Chester",
-"state": "PA"
-},
-"Wilkes": {
-"city": "Wilkes-Barre",
-"state": "PA"
-},
-"Willamette": {
-"city": "Salem",
-"state": "OR"
-},
-"William & Mary": {
-"city": "Williamsburg",
-"state": "VA"
-},
-"William Jewell": {
-"city": "Liberty",
-"state": "MO"
-},
-"William Paterson": {
-"city": "Wayne",
-"state": "NJ"
-},
-"William Peace": {
-"city": "Raleigh",
-"state": "NC"
-},
-"Williams": {
-"city": "Williamstown",
-"state": "MA"
-},
-"Wilmington (DE)": {
-"city": "New Castle",
-"state": "DE"
-},
-"Wilmington (OH)": {
-"city": "Wilmington",
-"state": "OH"
-},
-"Wilson (PA)": {
-"city": "Chambersburg",
-"state": "PA"
-},
-"Wingate": {
-"city": "Wingate",
-"state": "NC"
-},
-"Winona State": {
-"city": "Winona",
-"state": "MN"
-},
-"Winston-Salem State": {
-"city": "Winston-Salem",
-"state": "NC"
-},
-"Winthrop": {
-"city": "Rock Hill",
-"state": "SC"
-},
-"Wisconsin": {
-"city": "Madison",
-"state": "WI"
-},
-"Wisconsin Lutheran": {
-"city": "Milwaukee",
-"state": "WI"
-},
-"Wisconsin-Parkside": {
-"city": "Kenosha",
-"state": "WI"
-},
-"Wittenberg": {
-"city": "Springfield",
-"state": "OH"
-},
-"Wofford": {
-"city": "Spartanburg",
-"state": "SC"
-},
-"Wooster": {
-"city": "Wooster",
-"state": "OH"
-},
-"Worcester State": {
-"city": "Worcester",
-"state": "MA"
-},
-"Wright State": {
-"city": "Dayton",
-"state": "OH"
-},
-"Wyoming": {
-"city": "Laramie",
-"state": "WY"
-},
-"Xavier": {
-"city": "Cincinnati",
-"state": "OH"
-},
-"Yale": {
-"city": "New Haven",
-"state": "CT"
-},
-"Yeshiva": {
-"city": "New York",
-"state": "NY"
-},
-"York (NY)": {
-"city": "Jamaica",
-"state": "NY"
-},
-"York (PA)": {
-"city": "York",
-"state": "PA"
-},
-"Young Harris": {
-"city": "Young Harris",
-"state": "GA"
-},
-"Youngstown State": {
-"city": "Youngstown",
-"state": "OH"
-}
-}
+  "_doc": [
+    "School -> main athletics campus {city, state(USPS)}. Researched per-school",
+    "for NCAA D1/D2/D3 tennis programs. Used for cross-division scheduling",
+    "proximity and recruiting geography (recruit home state vs school region)."
+  ],
+  "schools": {
+    "A&M-Corpus Christi": {
+      "city": "Corpus Christi",
+      "state": "TX"
+    },
+    "Abilene Christian": {
+      "city": "Abilene",
+      "state": "TX"
+    },
+    "Adams State": {
+      "city": "Alamosa",
+      "state": "CO"
+    },
+    "Adelphi": {
+      "city": "Garden City",
+      "state": "NY"
+    },
+    "Adrian": {
+      "city": "Adrian",
+      "state": "MI"
+    },
+    "Agnes Scott": {
+      "city": "Decatur",
+      "state": "GA"
+    },
+    "Air Force": {
+      "city": "Colorado Springs",
+      "state": "CO"
+    },
+    "Akron": {
+      "city": "Akron",
+      "state": "OH"
+    },
+    "Alabama": {
+      "city": "Tuscaloosa",
+      "state": "AL"
+    },
+    "Alabama A&M": {
+      "city": "Normal",
+      "state": "AL"
+    },
+    "Alabama State": {
+      "city": "Montgomery",
+      "state": "AL"
+    },
+    "Alabama-Huntsville": {
+      "city": "Huntsville",
+      "state": "AL"
+    },
+    "Alaska Anchorage": {
+      "city": "Anchorage",
+      "state": "AK"
+    },
+    "Alaska Fairbanks": {
+      "city": "Fairbanks",
+      "state": "AK"
+    },
+    "Albany": {
+      "city": "Albany",
+      "state": "NY"
+    },
+    "Albany State": {
+      "city": "Albany",
+      "state": "GA"
+    },
+    "Albertus Magnus": {
+      "city": "New Haven",
+      "state": "CT"
+    },
+    "Albion": {
+      "city": "Albion",
+      "state": "MI"
+    },
+    "Albright": {
+      "city": "Reading",
+      "state": "PA"
+    },
+    "Alcorn State": {
+      "city": "Lorman",
+      "state": "MS"
+    },
+    "Alfred": {
+      "city": "Alfred",
+      "state": "NY"
+    },
+    "Alfred State": {
+      "city": "Alfred",
+      "state": "NY"
+    },
+    "Allegheny": {
+      "city": "Meadville",
+      "state": "PA"
+    },
+    "Allen": {
+      "city": "Columbia",
+      "state": "SC"
+    },
+    "Alma": {
+      "city": "Alma",
+      "state": "MI"
+    },
+    "Alvernia": {
+      "city": "Reading",
+      "state": "PA"
+    },
+    "Alverno": {
+      "city": "Milwaukee",
+      "state": "WI"
+    },
+    "American": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "American International": {
+      "city": "Springfield",
+      "state": "MA"
+    },
+    "Amherst": {
+      "city": "Amherst",
+      "state": "MA"
+    },
+    "Anderson (IN)": {
+      "city": "Anderson",
+      "state": "IN"
+    },
+    "Anderson (SC)": {
+      "city": "Anderson",
+      "state": "SC"
+    },
+    "Angelo State": {
+      "city": "San Angelo",
+      "state": "TX"
+    },
+    "Anna Maria": {
+      "city": "Paxton",
+      "state": "MA"
+    },
+    "Appalachian State": {
+      "city": "Boone",
+      "state": "NC"
+    },
+    "Arcadia": {
+      "city": "Glenside",
+      "state": "PA"
+    },
+    "Arizona": {
+      "city": "Tucson",
+      "state": "AZ"
+    },
+    "Arizona State": {
+      "city": "Tempe",
+      "state": "AZ"
+    },
+    "Arkansas": {
+      "city": "Fayetteville",
+      "state": "AR"
+    },
+    "Arkansas State": {
+      "city": "Jonesboro",
+      "state": "AR"
+    },
+    "Arkansas Tech": {
+      "city": "Russellville",
+      "state": "AR"
+    },
+    "Arkansas-Fort Smith": {
+      "city": "Fort Smith",
+      "state": "AR"
+    },
+    "Arkansas-Monticello": {
+      "city": "Monticello",
+      "state": "AR"
+    },
+    "Arkansas-Pine Bluff": {
+      "city": "Pine Bluff",
+      "state": "AR"
+    },
+    "Army": {
+      "city": "West Point",
+      "state": "NY"
+    },
+    "Asbury": {
+      "city": "Wilmore",
+      "state": "KY"
+    },
+    "Ashland": {
+      "city": "Ashland",
+      "state": "OH"
+    },
+    "Assumption": {
+      "city": "Worcester",
+      "state": "MA"
+    },
+    "Auburn": {
+      "city": "Auburn",
+      "state": "AL"
+    },
+    "Auburn Montgomery": {
+      "city": "Montgomery",
+      "state": "AL"
+    },
+    "Augsburg": {
+      "city": "Minneapolis",
+      "state": "MN"
+    },
+    "Augusta": {
+      "city": "Augusta",
+      "state": "GA"
+    },
+    "Augustana (IL)": {
+      "city": "Rock Island",
+      "state": "IL"
+    },
+    "Augustana (SD)": {
+      "city": "Sioux Falls",
+      "state": "SD"
+    },
+    "Aurora": {
+      "city": "Aurora",
+      "state": "IL"
+    },
+    "Austin College": {
+      "city": "Sherman",
+      "state": "TX"
+    },
+    "Austin Peay": {
+      "city": "Clarksville",
+      "state": "TN"
+    },
+    "Averett": {
+      "city": "Danville",
+      "state": "VA"
+    },
+    "Azusa Pacific": {
+      "city": "Azusa",
+      "state": "CA"
+    },
+    "BYU": {
+      "city": "Provo",
+      "state": "UT"
+    },
+    "Babson": {
+      "city": "Wellesley",
+      "state": "MA"
+    },
+    "Baldwin Wallace": {
+      "city": "Berea",
+      "state": "OH"
+    },
+    "Ball State": {
+      "city": "Muncie",
+      "state": "IN"
+    },
+    "Bard": {
+      "city": "Annandale-on-Hudson",
+      "state": "NY"
+    },
+    "Barry": {
+      "city": "Miami Shores",
+      "state": "FL"
+    },
+    "Barton": {
+      "city": "Wilson",
+      "state": "NC"
+    },
+    "Baruch": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "Bates": {
+      "city": "Lewiston",
+      "state": "ME"
+    },
+    "Baylor": {
+      "city": "Waco",
+      "state": "TX"
+    },
+    "Belhaven": {
+      "city": "Jackson",
+      "state": "MS"
+    },
+    "Bellarmine": {
+      "city": "Louisville",
+      "state": "KY"
+    },
+    "Belmont": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Belmont Abbey": {
+      "city": "Belmont",
+      "state": "NC"
+    },
+    "Beloit": {
+      "city": "Beloit",
+      "state": "WI"
+    },
+    "Bemidji State": {
+      "city": "Bemidji",
+      "state": "MN"
+    },
+    "Benedict": {
+      "city": "Columbia",
+      "state": "SC"
+    },
+    "Benedictine (IL)": {
+      "city": "Lisle",
+      "state": "IL"
+    },
+    "Bentley": {
+      "city": "Waltham",
+      "state": "MA"
+    },
+    "Berea": {
+      "city": "Berea",
+      "state": "KY"
+    },
+    "Berry": {
+      "city": "Mount Berry",
+      "state": "GA"
+    },
+    "Bethany (WV)": {
+      "city": "Bethany",
+      "state": "WV"
+    },
+    "Bethany Lutheran": {
+      "city": "Mankato",
+      "state": "MN"
+    },
+    "Bethel (MN)": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "Bethune-Cookman": {
+      "city": "Daytona Beach",
+      "state": "FL"
+    },
+    "Binghamton": {
+      "city": "Binghamton",
+      "state": "NY"
+    },
+    "Biola": {
+      "city": "La Mirada",
+      "state": "CA"
+    },
+    "Black Hills State": {
+      "city": "Spearfish",
+      "state": "SD"
+    },
+    "Blackburn": {
+      "city": "Carlinville",
+      "state": "IL"
+    },
+    "Bloomsburg": {
+      "city": "Bloomsburg",
+      "state": "PA"
+    },
+    "Bluefield State": {
+      "city": "Bluefield",
+      "state": "WV"
+    },
+    "Bluffton": {
+      "city": "Bluffton",
+      "state": "OH"
+    },
+    "Boise State": {
+      "city": "Boise",
+      "state": "ID"
+    },
+    "Boston College": {
+      "city": "Chestnut Hill",
+      "state": "MA"
+    },
+    "Boston University": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Bowdoin": {
+      "city": "Brunswick",
+      "state": "ME"
+    },
+    "Bowie State": {
+      "city": "Bowie",
+      "state": "MD"
+    },
+    "Bowling Green": {
+      "city": "Bowling Green",
+      "state": "OH"
+    },
+    "Bradley": {
+      "city": "Peoria",
+      "state": "IL"
+    },
+    "Brandeis": {
+      "city": "Waltham",
+      "state": "MA"
+    },
+    "Brevard": {
+      "city": "Brevard",
+      "state": "NC"
+    },
+    "Bridgeport": {
+      "city": "Bridgeport",
+      "state": "CT"
+    },
+    "Bridgewater (VA)": {
+      "city": "Bridgewater",
+      "state": "VA"
+    },
+    "Bridgewater State": {
+      "city": "Bridgewater",
+      "state": "MA"
+    },
+    "Brooklyn": {
+      "city": "Brooklyn",
+      "state": "NY"
+    },
+    "Brown": {
+      "city": "Providence",
+      "state": "RI"
+    },
+    "Bryant": {
+      "city": "Smithfield",
+      "state": "RI"
+    },
+    "Bryn Mawr": {
+      "city": "Bryn Mawr",
+      "state": "PA"
+    },
+    "Bucknell": {
+      "city": "Lewisburg",
+      "state": "PA"
+    },
+    "Buena Vista": {
+      "city": "Storm Lake",
+      "state": "IA"
+    },
+    "Buffalo": {
+      "city": "Buffalo",
+      "state": "NY"
+    },
+    "Buffalo State": {
+      "city": "Buffalo",
+      "state": "NY"
+    },
+    "Butler": {
+      "city": "Indianapolis",
+      "state": "IN"
+    },
+    "CCNY": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "CSU Pueblo": {
+      "city": "Pueblo",
+      "state": "CO"
+    },
+    "Cairn": {
+      "city": "Langhorne",
+      "state": "PA"
+    },
+    "Cal": {
+      "city": "Berkeley",
+      "state": "CA"
+    },
+    "Cal Lutheran": {
+      "city": "Thousand Oaks",
+      "state": "CA"
+    },
+    "Cal Poly": {
+      "city": "San Luis Obispo",
+      "state": "CA"
+    },
+    "Cal Poly Humboldt": {
+      "city": "Arcata",
+      "state": "CA"
+    },
+    "Cal Poly Pomona": {
+      "city": "Pomona",
+      "state": "CA"
+    },
+    "Cal State Bakersfield": {
+      "city": "Bakersfield",
+      "state": "CA"
+    },
+    "Cal State Dominguez Hills": {
+      "city": "Carson",
+      "state": "CA"
+    },
+    "Cal State East Bay": {
+      "city": "Hayward",
+      "state": "CA"
+    },
+    "Cal State Fullerton": {
+      "city": "Fullerton",
+      "state": "CA"
+    },
+    "Cal State LA": {
+      "city": "Los Angeles",
+      "state": "CA"
+    },
+    "Cal State Monterey Bay": {
+      "city": "Seaside",
+      "state": "CA"
+    },
+    "Cal State Northridge": {
+      "city": "Northridge",
+      "state": "CA"
+    },
+    "Cal State San Bernardino": {
+      "city": "San Bernardino",
+      "state": "CA"
+    },
+    "Cal State San Marcos": {
+      "city": "San Marcos",
+      "state": "CA"
+    },
+    "Caldwell": {
+      "city": "Caldwell",
+      "state": "NJ"
+    },
+    "California Baptist": {
+      "city": "Riverside",
+      "state": "CA"
+    },
+    "Caltech": {
+      "city": "Pasadena",
+      "state": "CA"
+    },
+    "Calvin": {
+      "city": "Grand Rapids",
+      "state": "MI"
+    },
+    "Cameron": {
+      "city": "Lawton",
+      "state": "OK"
+    },
+    "Campbell": {
+      "city": "Buies Creek",
+      "state": "NC"
+    },
+    "Canisius": {
+      "city": "Buffalo",
+      "state": "NY"
+    },
+    "Capital": {
+      "city": "Columbus",
+      "state": "OH"
+    },
+    "Carleton": {
+      "city": "Northfield",
+      "state": "MN"
+    },
+    "Carlow": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Carnegie Mellon": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Carroll (WI)": {
+      "city": "Waukesha",
+      "state": "WI"
+    },
+    "Carson-Newman": {
+      "city": "Jefferson City",
+      "state": "TN"
+    },
+    "Carthage": {
+      "city": "Kenosha",
+      "state": "WI"
+    },
+    "Case Western Reserve": {
+      "city": "Cleveland",
+      "state": "OH"
+    },
+    "Castleton": {
+      "city": "Castleton",
+      "state": "VT"
+    },
+    "Catawba": {
+      "city": "Salisbury",
+      "state": "NC"
+    },
+    "Catholic": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Cedar Crest": {
+      "city": "Allentown",
+      "state": "PA"
+    },
+    "Cedarville": {
+      "city": "Cedarville",
+      "state": "OH"
+    },
+    "Centenary (LA)": {
+      "city": "Shreveport",
+      "state": "LA"
+    },
+    "Centenary (NJ)": {
+      "city": "Hackettstown",
+      "state": "NJ"
+    },
+    "Central (IA)": {
+      "city": "Pella",
+      "state": "IA"
+    },
+    "Central Arkansas": {
+      "city": "Conway",
+      "state": "AR"
+    },
+    "Central Connecticut": {
+      "city": "New Britain",
+      "state": "CT"
+    },
+    "Central Michigan": {
+      "city": "Mount Pleasant",
+      "state": "MI"
+    },
+    "Central Missouri": {
+      "city": "Warrensburg",
+      "state": "MO"
+    },
+    "Central Oklahoma": {
+      "city": "Edmond",
+      "state": "OK"
+    },
+    "Central State": {
+      "city": "Wilberforce",
+      "state": "OH"
+    },
+    "Central Washington": {
+      "city": "Ellensburg",
+      "state": "WA"
+    },
+    "Centre": {
+      "city": "Danville",
+      "state": "KY"
+    },
+    "Chadron State": {
+      "city": "Chadron",
+      "state": "NE"
+    },
+    "Chaminade": {
+      "city": "Honolulu",
+      "state": "HI"
+    },
+    "Chapman": {
+      "city": "Orange",
+      "state": "CA"
+    },
+    "Charleston": {
+      "city": "Charleston",
+      "state": "SC"
+    },
+    "Charleston (WV)": {
+      "city": "Charleston",
+      "state": "WV"
+    },
+    "Charleston Southern": {
+      "city": "Charleston",
+      "state": "SC"
+    },
+    "Charlotte": {
+      "city": "Charlotte",
+      "state": "NC"
+    },
+    "Chatham": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Chattanooga": {
+      "city": "Chattanooga",
+      "state": "TN"
+    },
+    "Chestnut Hill": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Chicago": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "Chicago State": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "Chico State": {
+      "city": "Chico",
+      "state": "CA"
+    },
+    "Chowan": {
+      "city": "Murfreesboro",
+      "state": "NC"
+    },
+    "Christian Brothers": {
+      "city": "Memphis",
+      "state": "TN"
+    },
+    "Christopher Newport": {
+      "city": "Newport News",
+      "state": "VA"
+    },
+    "Cincinnati": {
+      "city": "Cincinnati",
+      "state": "OH"
+    },
+    "Claflin": {
+      "city": "Orangeburg",
+      "state": "SC"
+    },
+    "Claremont-Mudd-Scripps": {
+      "city": "Claremont",
+      "state": "CA"
+    },
+    "Clark (MA)": {
+      "city": "Worcester",
+      "state": "MA"
+    },
+    "Clark Atlanta": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Clarkson": {
+      "city": "Potsdam",
+      "state": "NY"
+    },
+    "Clayton State": {
+      "city": "Morrow",
+      "state": "GA"
+    },
+    "Clemson": {
+      "city": "Clemson",
+      "state": "SC"
+    },
+    "Cleveland State": {
+      "city": "Cleveland",
+      "state": "OH"
+    },
+    "Coast Guard": {
+      "city": "New London",
+      "state": "CT"
+    },
+    "Coastal Carolina": {
+      "city": "Conway",
+      "state": "SC"
+    },
+    "Coe": {
+      "city": "Cedar Rapids",
+      "state": "IA"
+    },
+    "Coker": {
+      "city": "Hartsville",
+      "state": "SC"
+    },
+    "Colby": {
+      "city": "Waterville",
+      "state": "ME"
+    },
+    "Colby-Sawyer": {
+      "city": "New London",
+      "state": "NH"
+    },
+    "Colgate": {
+      "city": "Hamilton",
+      "state": "NY"
+    },
+    "Colorado": {
+      "city": "Boulder",
+      "state": "CO"
+    },
+    "Colorado Christian": {
+      "city": "Lakewood",
+      "state": "CO"
+    },
+    "Colorado College": {
+      "city": "Colorado Springs",
+      "state": "CO"
+    },
+    "Colorado Mesa": {
+      "city": "Grand Junction",
+      "state": "CO"
+    },
+    "Colorado School of Mines": {
+      "city": "Golden",
+      "state": "CO"
+    },
+    "Colorado Springs": {
+      "city": "Colorado Springs",
+      "state": "CO"
+    },
+    "Colorado State": {
+      "city": "Fort Collins",
+      "state": "CO"
+    },
+    "Columbia": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "Columbus State": {
+      "city": "Columbus",
+      "state": "GA"
+    },
+    "Concord": {
+      "city": "Athens",
+      "state": "WV"
+    },
+    "Concordia Chicago": {
+      "city": "River Forest",
+      "state": "IL"
+    },
+    "Concordia Irvine": {
+      "city": "Irvine",
+      "state": "CA"
+    },
+    "Concordia Texas": {
+      "city": "Austin",
+      "state": "TX"
+    },
+    "Concordia Wisconsin": {
+      "city": "Mequon",
+      "state": "WI"
+    },
+    "Concordia-Moorhead": {
+      "city": "Moorhead",
+      "state": "MN"
+    },
+    "Concordia-St. Paul": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "Connecticut College": {
+      "city": "New London",
+      "state": "CT"
+    },
+    "Converse": {
+      "city": "Spartanburg",
+      "state": "SC"
+    },
+    "Coppin State": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Cornell": {
+      "city": "Ithaca",
+      "state": "NY"
+    },
+    "Cornell College": {
+      "city": "Mount Vernon",
+      "state": "IA"
+    },
+    "Covenant": {
+      "city": "Lookout Mountain",
+      "state": "GA"
+    },
+    "Creighton": {
+      "city": "Omaha",
+      "state": "NE"
+    },
+    "Crown (MN)": {
+      "city": "St. Bonifacius",
+      "state": "MN"
+    },
+    "Curry": {
+      "city": "Milton",
+      "state": "MA"
+    },
+    "D'Youville": {
+      "city": "Buffalo",
+      "state": "NY"
+    },
+    "Daemen": {
+      "city": "Amherst",
+      "state": "NY"
+    },
+    "Dallas": {
+      "city": "Irving",
+      "state": "TX"
+    },
+    "Dallas Baptist": {
+      "city": "Dallas",
+      "state": "TX"
+    },
+    "Dartmouth": {
+      "city": "Hanover",
+      "state": "NH"
+    },
+    "Davenport": {
+      "city": "Grand Rapids",
+      "state": "MI"
+    },
+    "Davidson": {
+      "city": "Davidson",
+      "state": "NC"
+    },
+    "Davis & Elkins": {
+      "city": "Elkins",
+      "state": "WV"
+    },
+    "Dayton": {
+      "city": "Dayton",
+      "state": "OH"
+    },
+    "DePaul": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "DePauw": {
+      "city": "Greencastle",
+      "state": "IN"
+    },
+    "DeSales": {
+      "city": "Center Valley",
+      "state": "PA"
+    },
+    "Dean": {
+      "city": "Franklin",
+      "state": "MA"
+    },
+    "Delaware": {
+      "city": "Newark",
+      "state": "DE"
+    },
+    "Delaware State": {
+      "city": "Dover",
+      "state": "DE"
+    },
+    "Delaware Valley": {
+      "city": "Doylestown",
+      "state": "PA"
+    },
+    "Delta State": {
+      "city": "Cleveland",
+      "state": "MS"
+    },
+    "Denison": {
+      "city": "Granville",
+      "state": "OH"
+    },
+    "Denver": {
+      "city": "Denver",
+      "state": "CO"
+    },
+    "Detroit Mercy": {
+      "city": "Detroit",
+      "state": "MI"
+    },
+    "Dickinson": {
+      "city": "Carlisle",
+      "state": "PA"
+    },
+    "District of Columbia": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Dominican (CA)": {
+      "city": "San Rafael",
+      "state": "CA"
+    },
+    "Dominican (IL)": {
+      "city": "River Forest",
+      "state": "IL"
+    },
+    "Dominican (NY)": {
+      "city": "Orangeburg",
+      "state": "NY"
+    },
+    "Drake": {
+      "city": "Des Moines",
+      "state": "IA"
+    },
+    "Drew": {
+      "city": "Madison",
+      "state": "NJ"
+    },
+    "Drexel": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Drury": {
+      "city": "Springfield",
+      "state": "MO"
+    },
+    "Dubuque": {
+      "city": "Dubuque",
+      "state": "IA"
+    },
+    "Duke": {
+      "city": "Durham",
+      "state": "NC"
+    },
+    "Duquesne": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Earlham": {
+      "city": "Richmond",
+      "state": "IN"
+    },
+    "East Carolina": {
+      "city": "Greenville",
+      "state": "NC"
+    },
+    "East Central": {
+      "city": "Ada",
+      "state": "OK"
+    },
+    "East Stroudsburg": {
+      "city": "East Stroudsburg",
+      "state": "PA"
+    },
+    "East Tennessee State": {
+      "city": "Johnson City",
+      "state": "TN"
+    },
+    "East Texas A&M": {
+      "city": "Commerce",
+      "state": "TX"
+    },
+    "East Texas Baptist": {
+      "city": "Marshall",
+      "state": "TX"
+    },
+    "Eastern": {
+      "city": "St. Davids",
+      "state": "PA"
+    },
+    "Eastern Connecticut State": {
+      "city": "Willimantic",
+      "state": "CT"
+    },
+    "Eastern Illinois": {
+      "city": "Charleston",
+      "state": "IL"
+    },
+    "Eastern Kentucky": {
+      "city": "Richmond",
+      "state": "KY"
+    },
+    "Eastern Mennonite": {
+      "city": "Harrisonburg",
+      "state": "VA"
+    },
+    "Eastern Michigan": {
+      "city": "Ypsilanti",
+      "state": "MI"
+    },
+    "Eastern New Mexico": {
+      "city": "Portales",
+      "state": "NM"
+    },
+    "Eastern Washington": {
+      "city": "Cheney",
+      "state": "WA"
+    },
+    "Eckerd": {
+      "city": "St. Petersburg",
+      "state": "FL"
+    },
+    "Edgewood": {
+      "city": "Madison",
+      "state": "WI"
+    },
+    "Edward Waters": {
+      "city": "Jacksonville",
+      "state": "FL"
+    },
+    "Elizabeth City State": {
+      "city": "Elizabeth City",
+      "state": "NC"
+    },
+    "Elizabethtown": {
+      "city": "Elizabethtown",
+      "state": "PA"
+    },
+    "Elmhurst": {
+      "city": "Elmhurst",
+      "state": "IL"
+    },
+    "Elmira": {
+      "city": "Elmira",
+      "state": "NY"
+    },
+    "Elms": {
+      "city": "Chicopee",
+      "state": "MA"
+    },
+    "Elon": {
+      "city": "Elon",
+      "state": "NC"
+    },
+    "Embry-Riddle": {
+      "city": "Daytona Beach",
+      "state": "FL"
+    },
+    "Emerson": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Emmanuel (GA)": {
+      "city": "Franklin Springs",
+      "state": "GA"
+    },
+    "Emmanuel (MA)": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Emory": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Emory & Henry": {
+      "city": "Emory",
+      "state": "VA"
+    },
+    "Emporia State": {
+      "city": "Emporia",
+      "state": "KS"
+    },
+    "Endicott": {
+      "city": "Beverly",
+      "state": "MA"
+    },
+    "Erskine": {
+      "city": "Due West",
+      "state": "SC"
+    },
+    "Eureka": {
+      "city": "Eureka",
+      "state": "IL"
+    },
+    "Evansville": {
+      "city": "Evansville",
+      "state": "IN"
+    },
+    "FDU-Florham": {
+      "city": "Madison",
+      "state": "NJ"
+    },
+    "FIU": {
+      "city": "Miami",
+      "state": "FL"
+    },
+    "Fairfield": {
+      "city": "Fairfield",
+      "state": "CT"
+    },
+    "Fairleigh Dickinson": {
+      "city": "Teaneck",
+      "state": "NJ"
+    },
+    "Fairmont State": {
+      "city": "Fairmont",
+      "state": "WV"
+    },
+    "Farmingdale State": {
+      "city": "Farmingdale",
+      "state": "NY"
+    },
+    "Fayetteville State": {
+      "city": "Fayetteville",
+      "state": "NC"
+    },
+    "Felician": {
+      "city": "Lodi",
+      "state": "NJ"
+    },
+    "Ferris State": {
+      "city": "Big Rapids",
+      "state": "MI"
+    },
+    "Ferrum": {
+      "city": "Ferrum",
+      "state": "VA"
+    },
+    "Findlay": {
+      "city": "Findlay",
+      "state": "OH"
+    },
+    "Fitchburg State": {
+      "city": "Fitchburg",
+      "state": "MA"
+    },
+    "Flagler": {
+      "city": "St. Augustine",
+      "state": "FL"
+    },
+    "Florida": {
+      "city": "Gainesville",
+      "state": "FL"
+    },
+    "Florida A&M": {
+      "city": "Tallahassee",
+      "state": "FL"
+    },
+    "Florida Atlantic": {
+      "city": "Boca Raton",
+      "state": "FL"
+    },
+    "Florida Gulf Coast": {
+      "city": "Fort Myers",
+      "state": "FL"
+    },
+    "Florida Southern": {
+      "city": "Lakeland",
+      "state": "FL"
+    },
+    "Florida State": {
+      "city": "Tallahassee",
+      "state": "FL"
+    },
+    "Florida Tech": {
+      "city": "Melbourne",
+      "state": "FL"
+    },
+    "Fordham": {
+      "city": "Bronx",
+      "state": "NY"
+    },
+    "Fort Hays State": {
+      "city": "Hays",
+      "state": "KS"
+    },
+    "Fort Lewis": {
+      "city": "Durango",
+      "state": "CO"
+    },
+    "Fort Valley State": {
+      "city": "Fort Valley",
+      "state": "GA"
+    },
+    "Framingham State": {
+      "city": "Framingham",
+      "state": "MA"
+    },
+    "Francis Marion": {
+      "city": "Florence",
+      "state": "SC"
+    },
+    "Franciscan": {
+      "city": "Steubenville",
+      "state": "OH"
+    },
+    "Franklin": {
+      "city": "Franklin",
+      "state": "IN"
+    },
+    "Franklin & Marshall": {
+      "city": "Lancaster",
+      "state": "PA"
+    },
+    "Franklin Pierce": {
+      "city": "Rindge",
+      "state": "NH"
+    },
+    "Fresno Pacific": {
+      "city": "Fresno",
+      "state": "CA"
+    },
+    "Fresno State": {
+      "city": "Fresno",
+      "state": "CA"
+    },
+    "Frostburg State": {
+      "city": "Frostburg",
+      "state": "MD"
+    },
+    "Furman": {
+      "city": "Greenville",
+      "state": "SC"
+    },
+    "Gallaudet": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Gannon": {
+      "city": "Erie",
+      "state": "PA"
+    },
+    "Gardner-Webb": {
+      "city": "Boiling Springs",
+      "state": "NC"
+    },
+    "Geneva": {
+      "city": "Beaver Falls",
+      "state": "PA"
+    },
+    "George Fox": {
+      "city": "Newberg",
+      "state": "OR"
+    },
+    "George Mason": {
+      "city": "Fairfax",
+      "state": "VA"
+    },
+    "George Washington": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Georgetown": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Georgia": {
+      "city": "Athens",
+      "state": "GA"
+    },
+    "Georgia College": {
+      "city": "Milledgeville",
+      "state": "GA"
+    },
+    "Georgia Southern": {
+      "city": "Statesboro",
+      "state": "GA"
+    },
+    "Georgia Southwestern": {
+      "city": "Americus",
+      "state": "GA"
+    },
+    "Georgia State": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Georgia Tech": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Georgian Court": {
+      "city": "Lakewood",
+      "state": "NJ"
+    },
+    "Gettysburg": {
+      "city": "Gettysburg",
+      "state": "PA"
+    },
+    "Glenville State": {
+      "city": "Glenville",
+      "state": "WV"
+    },
+    "Goldey-Beacom": {
+      "city": "Wilmington",
+      "state": "DE"
+    },
+    "Gonzaga": {
+      "city": "Spokane",
+      "state": "WA"
+    },
+    "Gordon": {
+      "city": "Wenham",
+      "state": "MA"
+    },
+    "Goucher": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Grambling": {
+      "city": "Grambling",
+      "state": "LA"
+    },
+    "Grand Canyon": {
+      "city": "Phoenix",
+      "state": "AZ"
+    },
+    "Grand Valley State": {
+      "city": "Allendale",
+      "state": "MI"
+    },
+    "Green Bay": {
+      "city": "Green Bay",
+      "state": "WI"
+    },
+    "Greensboro": {
+      "city": "Greensboro",
+      "state": "NC"
+    },
+    "Greenville": {
+      "city": "Greenville",
+      "state": "IL"
+    },
+    "Grinnell": {
+      "city": "Grinnell",
+      "state": "IA"
+    },
+    "Grove City": {
+      "city": "Grove City",
+      "state": "PA"
+    },
+    "Guilford": {
+      "city": "Greensboro",
+      "state": "NC"
+    },
+    "Gustavus Adolphus": {
+      "city": "St. Peter",
+      "state": "MN"
+    },
+    "Gwynedd Mercy": {
+      "city": "Gwynedd Valley",
+      "state": "PA"
+    },
+    "Hamilton": {
+      "city": "Clinton",
+      "state": "NY"
+    },
+    "Hamline": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "Hampden-Sydney": {
+      "city": "Hampden Sydney",
+      "state": "VA"
+    },
+    "Hampton": {
+      "city": "Hampton",
+      "state": "VA"
+    },
+    "Hanover": {
+      "city": "Hanover",
+      "state": "IN"
+    },
+    "Hardin-Simmons": {
+      "city": "Abilene",
+      "state": "TX"
+    },
+    "Harding": {
+      "city": "Searcy",
+      "state": "AR"
+    },
+    "Hartford": {
+      "city": "West Hartford",
+      "state": "CT"
+    },
+    "Hartwick": {
+      "city": "Oneonta",
+      "state": "NY"
+    },
+    "Harvard": {
+      "city": "Cambridge",
+      "state": "MA"
+    },
+    "Haverford": {
+      "city": "Haverford",
+      "state": "PA"
+    },
+    "Hawaii": {
+      "city": "Honolulu",
+      "state": "HI"
+    },
+    "Hawaii Hilo": {
+      "city": "Hilo",
+      "state": "HI"
+    },
+    "Hawaii Pacific": {
+      "city": "Honolulu",
+      "state": "HI"
+    },
+    "Heidelberg": {
+      "city": "Tiffin",
+      "state": "OH"
+    },
+    "Henderson State": {
+      "city": "Arkadelphia",
+      "state": "AR"
+    },
+    "Hendrix": {
+      "city": "Conway",
+      "state": "AR"
+    },
+    "High Point": {
+      "city": "High Point",
+      "state": "NC"
+    },
+    "Hilbert": {
+      "city": "Hamburg",
+      "state": "NY"
+    },
+    "Hillsdale": {
+      "city": "Hillsdale",
+      "state": "MI"
+    },
+    "Hiram": {
+      "city": "Hiram",
+      "state": "OH"
+    },
+    "Hobart and William Smith": {
+      "city": "Geneva",
+      "state": "NY"
+    },
+    "Hofstra": {
+      "city": "Hempstead",
+      "state": "NY"
+    },
+    "Hollins": {
+      "city": "Roanoke",
+      "state": "VA"
+    },
+    "Holy Cross": {
+      "city": "Worcester",
+      "state": "MA"
+    },
+    "Holy Family": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Hood": {
+      "city": "Frederick",
+      "state": "MD"
+    },
+    "Hope": {
+      "city": "Holland",
+      "state": "MI"
+    },
+    "Houghton": {
+      "city": "Houghton",
+      "state": "NY"
+    },
+    "Houston": {
+      "city": "Houston",
+      "state": "TX"
+    },
+    "Houston Christian": {
+      "city": "Houston",
+      "state": "TX"
+    },
+    "Howard": {
+      "city": "Washington",
+      "state": "DC"
+    },
+    "Howard Payne": {
+      "city": "Brownwood",
+      "state": "TX"
+    },
+    "Hunter": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "Huntingdon": {
+      "city": "Montgomery",
+      "state": "AL"
+    },
+    "Husson": {
+      "city": "Bangor",
+      "state": "ME"
+    },
+    "IU Indianapolis": {
+      "city": "Indianapolis",
+      "state": "IN"
+    },
+    "Idaho": {
+      "city": "Moscow",
+      "state": "ID"
+    },
+    "Idaho State": {
+      "city": "Pocatello",
+      "state": "ID"
+    },
+    "Illinois": {
+      "city": "Champaign",
+      "state": "IL"
+    },
+    "Illinois College": {
+      "city": "Jacksonville",
+      "state": "IL"
+    },
+    "Illinois Springfield": {
+      "city": "Springfield",
+      "state": "IL"
+    },
+    "Illinois State": {
+      "city": "Normal",
+      "state": "IL"
+    },
+    "Illinois Tech": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "Illinois Wesleyan": {
+      "city": "Bloomington",
+      "state": "IL"
+    },
+    "Immaculata": {
+      "city": "Immaculata",
+      "state": "PA"
+    },
+    "Incarnate Word": {
+      "city": "San Antonio",
+      "state": "TX"
+    },
+    "Indiana": {
+      "city": "Bloomington",
+      "state": "IN"
+    },
+    "Indiana (PA)": {
+      "city": "Indiana",
+      "state": "PA"
+    },
+    "Indiana State": {
+      "city": "Terre Haute",
+      "state": "IN"
+    },
+    "Indianapolis": {
+      "city": "Indianapolis",
+      "state": "IN"
+    },
+    "Iona": {
+      "city": "New Rochelle",
+      "state": "NY"
+    },
+    "Iowa": {
+      "city": "Iowa City",
+      "state": "IA"
+    },
+    "Iowa State": {
+      "city": "Ames",
+      "state": "IA"
+    },
+    "Ithaca": {
+      "city": "Ithaca",
+      "state": "NY"
+    },
+    "Jackson State": {
+      "city": "Jackson",
+      "state": "MS"
+    },
+    "Jacksonville": {
+      "city": "Jacksonville",
+      "state": "FL"
+    },
+    "Jacksonville State": {
+      "city": "Jacksonville",
+      "state": "AL"
+    },
+    "James Madison": {
+      "city": "Harrisonburg",
+      "state": "VA"
+    },
+    "Jamestown": {
+      "city": "Jamestown",
+      "state": "ND"
+    },
+    "Jessup": {
+      "city": "Rocklin",
+      "state": "CA"
+    },
+    "John Carroll": {
+      "city": "University Heights",
+      "state": "OH"
+    },
+    "John Jay": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "Johns Hopkins": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Johnson & Wales (Charlotte)": {
+      "city": "Charlotte",
+      "state": "NC"
+    },
+    "Johnson & Wales (Providence)": {
+      "city": "Providence",
+      "state": "RI"
+    },
+    "Johnson C. Smith": {
+      "city": "Charlotte",
+      "state": "NC"
+    },
+    "Juniata": {
+      "city": "Huntingdon",
+      "state": "PA"
+    },
+    "Kalamazoo": {
+      "city": "Kalamazoo",
+      "state": "MI"
+    },
+    "Kansas": {
+      "city": "Lawrence",
+      "state": "KS"
+    },
+    "Kansas City": {
+      "city": "Kansas City",
+      "state": "MO"
+    },
+    "Kansas State": {
+      "city": "Manhattan",
+      "state": "KS"
+    },
+    "Kean": {
+      "city": "Union",
+      "state": "NJ"
+    },
+    "Keene State": {
+      "city": "Keene",
+      "state": "NH"
+    },
+    "Kennesaw State": {
+      "city": "Kennesaw",
+      "state": "GA"
+    },
+    "Kent State": {
+      "city": "Kent",
+      "state": "OH"
+    },
+    "Kentucky": {
+      "city": "Lexington",
+      "state": "KY"
+    },
+    "Kentucky State": {
+      "city": "Frankfort",
+      "state": "KY"
+    },
+    "Kentucky Wesleyan": {
+      "city": "Owensboro",
+      "state": "KY"
+    },
+    "Kenyon": {
+      "city": "Gambier",
+      "state": "OH"
+    },
+    "Keuka": {
+      "city": "Keuka Park",
+      "state": "NY"
+    },
+    "Keystone": {
+      "city": "La Plume",
+      "state": "PA"
+    },
+    "King (TN)": {
+      "city": "Bristol",
+      "state": "TN"
+    },
+    "King's (PA)": {
+      "city": "Wilkes-Barre",
+      "state": "PA"
+    },
+    "Knox": {
+      "city": "Galesburg",
+      "state": "IL"
+    },
+    "Kutztown": {
+      "city": "Kutztown",
+      "state": "PA"
+    },
+    "LSU": {
+      "city": "Baton Rouge",
+      "state": "LA"
+    },
+    "La Roche": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "La Salle": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "La Verne": {
+      "city": "La Verne",
+      "state": "CA"
+    },
+    "LaGrange": {
+      "city": "LaGrange",
+      "state": "GA"
+    },
+    "Lafayette": {
+      "city": "Easton",
+      "state": "PA"
+    },
+    "Lake Erie": {
+      "city": "Painesville",
+      "state": "OH"
+    },
+    "Lake Forest": {
+      "city": "Lake Forest",
+      "state": "IL"
+    },
+    "Lake Superior State": {
+      "city": "Sault Ste. Marie",
+      "state": "MI"
+    },
+    "Lakeland": {
+      "city": "Plymouth",
+      "state": "WI"
+    },
+    "Lamar": {
+      "city": "Beaumont",
+      "state": "TX"
+    },
+    "Lancaster Bible": {
+      "city": "Lancaster",
+      "state": "PA"
+    },
+    "Lander": {
+      "city": "Greenwood",
+      "state": "SC"
+    },
+    "Lane": {
+      "city": "Jackson",
+      "state": "TN"
+    },
+    "Lasell": {
+      "city": "Newton",
+      "state": "MA"
+    },
+    "Lawrence": {
+      "city": "Appleton",
+      "state": "WI"
+    },
+    "Le Moyne": {
+      "city": "Syracuse",
+      "state": "NY"
+    },
+    "LeMoyne-Owen": {
+      "city": "Memphis",
+      "state": "TN"
+    },
+    "LeTourneau": {
+      "city": "Longview",
+      "state": "TX"
+    },
+    "Lebanon Valley": {
+      "city": "Annville",
+      "state": "PA"
+    },
+    "Lee": {
+      "city": "Cleveland",
+      "state": "TN"
+    },
+    "Lees-McRae": {
+      "city": "Banner Elk",
+      "state": "NC"
+    },
+    "Lehigh": {
+      "city": "Bethlehem",
+      "state": "PA"
+    },
+    "Lehman": {
+      "city": "Bronx",
+      "state": "NY"
+    },
+    "Lenoir-Rhyne": {
+      "city": "Hickory",
+      "state": "NC"
+    },
+    "Lesley": {
+      "city": "Cambridge",
+      "state": "MA"
+    },
+    "Lewis": {
+      "city": "Romeoville",
+      "state": "IL"
+    },
+    "Lewis & Clark": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Liberty": {
+      "city": "Lynchburg",
+      "state": "VA"
+    },
+    "Lincoln (MO)": {
+      "city": "Jefferson City",
+      "state": "MO"
+    },
+    "Lincoln (PA)": {
+      "city": "Lincoln University",
+      "state": "PA"
+    },
+    "Lincoln Memorial": {
+      "city": "Harrogate",
+      "state": "TN"
+    },
+    "Lindenwood": {
+      "city": "St. Charles",
+      "state": "MO"
+    },
+    "Linfield": {
+      "city": "McMinnville",
+      "state": "OR"
+    },
+    "Lipscomb": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Little Rock": {
+      "city": "Little Rock",
+      "state": "AR"
+    },
+    "Livingstone": {
+      "city": "Salisbury",
+      "state": "NC"
+    },
+    "Lock Haven": {
+      "city": "Lock Haven",
+      "state": "PA"
+    },
+    "Long Beach State": {
+      "city": "Long Beach",
+      "state": "CA"
+    },
+    "Long Island": {
+      "city": "Brookville",
+      "state": "NY"
+    },
+    "Longwood": {
+      "city": "Farmville",
+      "state": "VA"
+    },
+    "Loras": {
+      "city": "Dubuque",
+      "state": "IA"
+    },
+    "Louisiana": {
+      "city": "Lafayette",
+      "state": "LA"
+    },
+    "Louisiana Tech": {
+      "city": "Ruston",
+      "state": "LA"
+    },
+    "Louisville": {
+      "city": "Louisville",
+      "state": "KY"
+    },
+    "Loyola Chicago": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "Loyola Maryland": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Loyola Marymount": {
+      "city": "Los Angeles",
+      "state": "CA"
+    },
+    "Lubbock Christian": {
+      "city": "Lubbock",
+      "state": "TX"
+    },
+    "Luther": {
+      "city": "Decorah",
+      "state": "IA"
+    },
+    "Lycoming": {
+      "city": "Williamsport",
+      "state": "PA"
+    },
+    "Lynchburg": {
+      "city": "Lynchburg",
+      "state": "VA"
+    },
+    "Lynn": {
+      "city": "Boca Raton",
+      "state": "FL"
+    },
+    "Lyon": {
+      "city": "Batesville",
+      "state": "AR"
+    },
+    "MCLA": {
+      "city": "North Adams",
+      "state": "MA"
+    },
+    "MIT": {
+      "city": "Cambridge",
+      "state": "MA"
+    },
+    "MSOE": {
+      "city": "Milwaukee",
+      "state": "WI"
+    },
+    "MSU Denver": {
+      "city": "Denver",
+      "state": "CO"
+    },
+    "Macalester": {
+      "city": "Saint Paul",
+      "state": "MN"
+    },
+    "Maine": {
+      "city": "Orono",
+      "state": "ME"
+    },
+    "Maine Maritime": {
+      "city": "Castine",
+      "state": "ME"
+    },
+    "Maine-Farmington": {
+      "city": "Farmington",
+      "state": "ME"
+    },
+    "Maine-Presque Isle": {
+      "city": "Presque Isle",
+      "state": "ME"
+    },
+    "Malone": {
+      "city": "Canton",
+      "state": "OH"
+    },
+    "Manchester": {
+      "city": "North Manchester",
+      "state": "IN"
+    },
+    "Manhattan": {
+      "city": "Riverdale",
+      "state": "NY"
+    },
+    "Manhattanville": {
+      "city": "Purchase",
+      "state": "NY"
+    },
+    "Mansfield": {
+      "city": "Mansfield",
+      "state": "PA"
+    },
+    "Marian (WI)": {
+      "city": "Fond du Lac",
+      "state": "WI"
+    },
+    "Marietta": {
+      "city": "Marietta",
+      "state": "OH"
+    },
+    "Marist": {
+      "city": "Poughkeepsie",
+      "state": "NY"
+    },
+    "Marquette": {
+      "city": "Milwaukee",
+      "state": "WI"
+    },
+    "Mars Hill": {
+      "city": "Mars Hill",
+      "state": "NC"
+    },
+    "Marshall": {
+      "city": "Huntington",
+      "state": "WV"
+    },
+    "Martin Luther": {
+      "city": "New Ulm",
+      "state": "MN"
+    },
+    "Mary": {
+      "city": "Bismarck",
+      "state": "ND"
+    },
+    "Mary Baldwin": {
+      "city": "Staunton",
+      "state": "VA"
+    },
+    "Mary Hardin-Baylor": {
+      "city": "Belton",
+      "state": "TX"
+    },
+    "Mary Washington": {
+      "city": "Fredericksburg",
+      "state": "VA"
+    },
+    "Maryland": {
+      "city": "College Park",
+      "state": "MD"
+    },
+    "Maryland Eastern Shore": {
+      "city": "Princess Anne",
+      "state": "MD"
+    },
+    "Marymount (VA)": {
+      "city": "Arlington",
+      "state": "VA"
+    },
+    "Maryville": {
+      "city": "Town and Country",
+      "state": "MO"
+    },
+    "Maryville (TN)": {
+      "city": "Maryville",
+      "state": "TN"
+    },
+    "Marywood": {
+      "city": "Scranton",
+      "state": "PA"
+    },
+    "Massachusetts": {
+      "city": "Amherst",
+      "state": "MA"
+    },
+    "Massachusetts Maritime": {
+      "city": "Buzzards Bay",
+      "state": "MA"
+    },
+    "McDaniel": {
+      "city": "Westminster",
+      "state": "MD"
+    },
+    "McKendree": {
+      "city": "Lebanon",
+      "state": "IL"
+    },
+    "McMurry": {
+      "city": "Abilene",
+      "state": "TX"
+    },
+    "McNeese": {
+      "city": "Lake Charles",
+      "state": "LA"
+    },
+    "Medgar Evers": {
+      "city": "Brooklyn",
+      "state": "NY"
+    },
+    "Memphis": {
+      "city": "Memphis",
+      "state": "TN"
+    },
+    "Menlo": {
+      "city": "Atherton",
+      "state": "CA"
+    },
+    "Mercer": {
+      "city": "Macon",
+      "state": "GA"
+    },
+    "Merchant Marine": {
+      "city": "Kings Point",
+      "state": "NY"
+    },
+    "Mercy": {
+      "city": "Dobbs Ferry",
+      "state": "NY"
+    },
+    "Mercyhurst": {
+      "city": "Erie",
+      "state": "PA"
+    },
+    "Meredith": {
+      "city": "Raleigh",
+      "state": "NC"
+    },
+    "Merrimack": {
+      "city": "North Andover",
+      "state": "MA"
+    },
+    "Messiah": {
+      "city": "Mechanicsburg",
+      "state": "PA"
+    },
+    "Methodist": {
+      "city": "Fayetteville",
+      "state": "NC"
+    },
+    "Miami": {
+      "city": "Coral Gables",
+      "state": "FL"
+    },
+    "Miami (OH)": {
+      "city": "Oxford",
+      "state": "OH"
+    },
+    "Michigan": {
+      "city": "Ann Arbor",
+      "state": "MI"
+    },
+    "Michigan State": {
+      "city": "East Lansing",
+      "state": "MI"
+    },
+    "Michigan Tech": {
+      "city": "Houghton",
+      "state": "MI"
+    },
+    "Middle Georgia State": {
+      "city": "Macon",
+      "state": "GA"
+    },
+    "Middle Tennessee": {
+      "city": "Murfreesboro",
+      "state": "TN"
+    },
+    "Middlebury": {
+      "city": "Middlebury",
+      "state": "VT"
+    },
+    "Midwestern State": {
+      "city": "Wichita Falls",
+      "state": "TX"
+    },
+    "Miles": {
+      "city": "Fairfield",
+      "state": "AL"
+    },
+    "Millersville": {
+      "city": "Millersville",
+      "state": "PA"
+    },
+    "Millikin": {
+      "city": "Decatur",
+      "state": "IL"
+    },
+    "Millsaps": {
+      "city": "Jackson",
+      "state": "MS"
+    },
+    "Milwaukee": {
+      "city": "Milwaukee",
+      "state": "WI"
+    },
+    "Minnesota": {
+      "city": "Minneapolis",
+      "state": "MN"
+    },
+    "Minnesota Crookston": {
+      "city": "Crookston",
+      "state": "MN"
+    },
+    "Minnesota Duluth": {
+      "city": "Duluth",
+      "state": "MN"
+    },
+    "Minnesota State": {
+      "city": "Mankato",
+      "state": "MN"
+    },
+    "Minnesota State Moorhead": {
+      "city": "Moorhead",
+      "state": "MN"
+    },
+    "Minnesota-Morris": {
+      "city": "Morris",
+      "state": "MN"
+    },
+    "Minot State": {
+      "city": "Minot",
+      "state": "ND"
+    },
+    "Misericordia": {
+      "city": "Dallas",
+      "state": "PA"
+    },
+    "Mississippi College": {
+      "city": "Clinton",
+      "state": "MS"
+    },
+    "Mississippi State": {
+      "city": "Starkville",
+      "state": "MS"
+    },
+    "Mississippi University for Women": {
+      "city": "Columbus",
+      "state": "MS"
+    },
+    "Mississippi Valley State": {
+      "city": "Itta Bena",
+      "state": "MS"
+    },
+    "Missouri": {
+      "city": "Columbia",
+      "state": "MO"
+    },
+    "Missouri S&T": {
+      "city": "Rolla",
+      "state": "MO"
+    },
+    "Missouri Southern": {
+      "city": "Joplin",
+      "state": "MO"
+    },
+    "Missouri State": {
+      "city": "Springfield",
+      "state": "MO"
+    },
+    "Missouri Western": {
+      "city": "St. Joseph",
+      "state": "MO"
+    },
+    "Missouri-St. Louis": {
+      "city": "St. Louis",
+      "state": "MO"
+    },
+    "Mitchell": {
+      "city": "New London",
+      "state": "CT"
+    },
+    "Molloy": {
+      "city": "Rockville Centre",
+      "state": "NY"
+    },
+    "Monmouth": {
+      "city": "West Long Branch",
+      "state": "NJ"
+    },
+    "Monmouth (IL)": {
+      "city": "Monmouth",
+      "state": "IL"
+    },
+    "Montana": {
+      "city": "Missoula",
+      "state": "MT"
+    },
+    "Montana State": {
+      "city": "Bozeman",
+      "state": "MT"
+    },
+    "Montana State Billings": {
+      "city": "Billings",
+      "state": "MT"
+    },
+    "Montclair State": {
+      "city": "Montclair",
+      "state": "NJ"
+    },
+    "Montevallo": {
+      "city": "Montevallo",
+      "state": "AL"
+    },
+    "Moravian": {
+      "city": "Bethlehem",
+      "state": "PA"
+    },
+    "Morehead State": {
+      "city": "Morehead",
+      "state": "KY"
+    },
+    "Morehouse": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Morgan State": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Mount Aloysius": {
+      "city": "Cresson",
+      "state": "PA"
+    },
+    "Mount Holyoke": {
+      "city": "South Hadley",
+      "state": "MA"
+    },
+    "Mount Olive": {
+      "city": "Mount Olive",
+      "state": "NC"
+    },
+    "Mount Saint Mary (NY)": {
+      "city": "Newburgh",
+      "state": "NY"
+    },
+    "Mount Saint Vincent": {
+      "city": "Bronx",
+      "state": "NY"
+    },
+    "Mount St. Joseph": {
+      "city": "Cincinnati",
+      "state": "OH"
+    },
+    "Mount St. Mary's": {
+      "city": "Emmitsburg",
+      "state": "MD"
+    },
+    "Mount Union": {
+      "city": "Alliance",
+      "state": "OH"
+    },
+    "Muhlenberg": {
+      "city": "Allentown",
+      "state": "PA"
+    },
+    "Murray State": {
+      "city": "Murray",
+      "state": "KY"
+    },
+    "Muskingum": {
+      "city": "New Concord",
+      "state": "OH"
+    },
+    "NC State": {
+      "city": "Raleigh",
+      "state": "NC"
+    },
+    "NJIT": {
+      "city": "Newark",
+      "state": "NJ"
+    },
+    "NYU": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "Navy": {
+      "city": "Annapolis",
+      "state": "MD"
+    },
+    "Nazareth": {
+      "city": "Rochester",
+      "state": "NY"
+    },
+    "Nebraska": {
+      "city": "Lincoln",
+      "state": "NE"
+    },
+    "Nebraska Wesleyan": {
+      "city": "Lincoln",
+      "state": "NE"
+    },
+    "Nebraska-Kearney": {
+      "city": "Kearney",
+      "state": "NE"
+    },
+    "Neumann": {
+      "city": "Aston",
+      "state": "PA"
+    },
+    "Nevada": {
+      "city": "Reno",
+      "state": "NV"
+    },
+    "New England": {
+      "city": "Biddeford",
+      "state": "ME"
+    },
+    "New England College": {
+      "city": "Henniker",
+      "state": "NH"
+    },
+    "New Hampshire": {
+      "city": "Durham",
+      "state": "NH"
+    },
+    "New Haven": {
+      "city": "West Haven",
+      "state": "CT"
+    },
+    "New Jersey City": {
+      "city": "Jersey City",
+      "state": "NJ"
+    },
+    "New Mexico": {
+      "city": "Albuquerque",
+      "state": "NM"
+    },
+    "New Mexico Highlands": {
+      "city": "Las Vegas",
+      "state": "NM"
+    },
+    "New Mexico State": {
+      "city": "Las Cruces",
+      "state": "NM"
+    },
+    "New Orleans": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Newberry": {
+      "city": "Newberry",
+      "state": "SC"
+    },
+    "Newman": {
+      "city": "Wichita",
+      "state": "KS"
+    },
+    "Niagara": {
+      "city": "Niagara University",
+      "state": "NY"
+    },
+    "Nicholls": {
+      "city": "Thibodaux",
+      "state": "LA"
+    },
+    "Nichols": {
+      "city": "Dudley",
+      "state": "MA"
+    },
+    "Norfolk State": {
+      "city": "Norfolk",
+      "state": "VA"
+    },
+    "North Alabama": {
+      "city": "Florence",
+      "state": "AL"
+    },
+    "North Carolina": {
+      "city": "Chapel Hill",
+      "state": "NC"
+    },
+    "North Carolina A&T": {
+      "city": "Greensboro",
+      "state": "NC"
+    },
+    "North Carolina Central": {
+      "city": "Durham",
+      "state": "NC"
+    },
+    "North Carolina Wesleyan": {
+      "city": "Rocky Mount",
+      "state": "NC"
+    },
+    "North Central (IL)": {
+      "city": "Naperville",
+      "state": "IL"
+    },
+    "North Central (MN)": {
+      "city": "Minneapolis",
+      "state": "MN"
+    },
+    "North Dakota": {
+      "city": "Grand Forks",
+      "state": "ND"
+    },
+    "North Dakota State": {
+      "city": "Fargo",
+      "state": "ND"
+    },
+    "North Florida": {
+      "city": "Jacksonville",
+      "state": "FL"
+    },
+    "North Georgia": {
+      "city": "Dahlonega",
+      "state": "GA"
+    },
+    "North Greenville": {
+      "city": "Tigerville",
+      "state": "SC"
+    },
+    "North Park": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "North Texas": {
+      "city": "Denton",
+      "state": "TX"
+    },
+    "Northeastern": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Northeastern State": {
+      "city": "Tahlequah",
+      "state": "OK"
+    },
+    "Northern Arizona": {
+      "city": "Flagstaff",
+      "state": "AZ"
+    },
+    "Northern Colorado": {
+      "city": "Greeley",
+      "state": "CO"
+    },
+    "Northern Illinois": {
+      "city": "DeKalb",
+      "state": "IL"
+    },
+    "Northern Iowa": {
+      "city": "Cedar Falls",
+      "state": "IA"
+    },
+    "Northern Kentucky": {
+      "city": "Highland Heights",
+      "state": "KY"
+    },
+    "Northern Michigan": {
+      "city": "Marquette",
+      "state": "MI"
+    },
+    "Northern State": {
+      "city": "Aberdeen",
+      "state": "SD"
+    },
+    "Northern Vermont-Johnson": {
+      "city": "Johnson",
+      "state": "VT"
+    },
+    "Northern Vermont-Lyndon": {
+      "city": "Lyndonville",
+      "state": "VT"
+    },
+    "Northwest Missouri State": {
+      "city": "Maryville",
+      "state": "MO"
+    },
+    "Northwest Nazarene": {
+      "city": "Nampa",
+      "state": "ID"
+    },
+    "Northwestern": {
+      "city": "Evanston",
+      "state": "IL"
+    },
+    "Northwestern Oklahoma State": {
+      "city": "Alva",
+      "state": "OK"
+    },
+    "Northwestern State": {
+      "city": "Natchitoches",
+      "state": "LA"
+    },
+    "Northwestern-St. Paul": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "Northwood": {
+      "city": "Midland",
+      "state": "MI"
+    },
+    "Norwich": {
+      "city": "Northfield",
+      "state": "VT"
+    },
+    "Notre Dame": {
+      "city": "Notre Dame",
+      "state": "IN"
+    },
+    "Notre Dame of Maryland": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "Nova Southeastern": {
+      "city": "Fort Lauderdale",
+      "state": "FL"
+    },
+    "Oakland": {
+      "city": "Rochester",
+      "state": "MI"
+    },
+    "Oberlin": {
+      "city": "Oberlin",
+      "state": "OH"
+    },
+    "Occidental": {
+      "city": "Los Angeles",
+      "state": "CA"
+    },
+    "Oglethorpe": {
+      "city": "Atlanta",
+      "state": "GA"
+    },
+    "Ohio": {
+      "city": "Athens",
+      "state": "OH"
+    },
+    "Ohio Dominican": {
+      "city": "Columbus",
+      "state": "OH"
+    },
+    "Ohio Northern": {
+      "city": "Ada",
+      "state": "OH"
+    },
+    "Ohio State": {
+      "city": "Columbus",
+      "state": "OH"
+    },
+    "Ohio Wesleyan": {
+      "city": "Delaware",
+      "state": "OH"
+    },
+    "Oklahoma": {
+      "city": "Norman",
+      "state": "OK"
+    },
+    "Oklahoma Baptist": {
+      "city": "Shawnee",
+      "state": "OK"
+    },
+    "Oklahoma Christian": {
+      "city": "Oklahoma City",
+      "state": "OK"
+    },
+    "Oklahoma State": {
+      "city": "Stillwater",
+      "state": "OK"
+    },
+    "Old Dominion": {
+      "city": "Norfolk",
+      "state": "VA"
+    },
+    "Ole Miss": {
+      "city": "Oxford",
+      "state": "MS"
+    },
+    "Olivet": {
+      "city": "Olivet",
+      "state": "MI"
+    },
+    "Omaha": {
+      "city": "Omaha",
+      "state": "NE"
+    },
+    "Oral Roberts": {
+      "city": "Tulsa",
+      "state": "OK"
+    },
+    "Oregon": {
+      "city": "Eugene",
+      "state": "OR"
+    },
+    "Oregon State": {
+      "city": "Corvallis",
+      "state": "OR"
+    },
+    "Otterbein": {
+      "city": "Westerville",
+      "state": "OH"
+    },
+    "Ouachita Baptist": {
+      "city": "Arkadelphia",
+      "state": "AR"
+    },
+    "Ozarks": {
+      "city": "Clarksville",
+      "state": "AR"
+    },
+    "Pace": {
+      "city": "Pleasantville",
+      "state": "NY"
+    },
+    "Pacific": {
+      "city": "Stockton",
+      "state": "CA"
+    },
+    "Pacific (OR)": {
+      "city": "Forest Grove",
+      "state": "OR"
+    },
+    "Pacific Lutheran": {
+      "city": "Tacoma",
+      "state": "WA"
+    },
+    "Palm Beach Atlantic": {
+      "city": "West Palm Beach",
+      "state": "FL"
+    },
+    "Penn": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Penn College": {
+      "city": "Williamsport",
+      "state": "PA"
+    },
+    "Penn State": {
+      "city": "University Park",
+      "state": "PA"
+    },
+    "Penn State Abington": {
+      "city": "Abington",
+      "state": "PA"
+    },
+    "Penn State Altoona": {
+      "city": "Altoona",
+      "state": "PA"
+    },
+    "Penn State Behrend": {
+      "city": "Erie",
+      "state": "PA"
+    },
+    "Penn State Berks": {
+      "city": "Reading",
+      "state": "PA"
+    },
+    "Penn State Brandywine": {
+      "city": "Media",
+      "state": "PA"
+    },
+    "Penn State Harrisburg": {
+      "city": "Middletown",
+      "state": "PA"
+    },
+    "PennWest California": {
+      "city": "California",
+      "state": "PA"
+    },
+    "PennWest Clarion": {
+      "city": "Clarion",
+      "state": "PA"
+    },
+    "PennWest Edinboro": {
+      "city": "Edinboro",
+      "state": "PA"
+    },
+    "Pepperdine": {
+      "city": "Malibu",
+      "state": "CA"
+    },
+    "Pfeiffer": {
+      "city": "Misenheimer",
+      "state": "NC"
+    },
+    "Piedmont": {
+      "city": "Demorest",
+      "state": "GA"
+    },
+    "Pitt": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Pitt-Bradford": {
+      "city": "Bradford",
+      "state": "PA"
+    },
+    "Pitt-Greensburg": {
+      "city": "Greensburg",
+      "state": "PA"
+    },
+    "Pitt-Johnstown": {
+      "city": "Johnstown",
+      "state": "PA"
+    },
+    "Pittsburg State": {
+      "city": "Pittsburg",
+      "state": "KS"
+    },
+    "Plymouth State": {
+      "city": "Plymouth",
+      "state": "NH"
+    },
+    "Point Loma Nazarene": {
+      "city": "San Diego",
+      "state": "CA"
+    },
+    "Point Park": {
+      "city": "Pittsburgh",
+      "state": "PA"
+    },
+    "Pomona-Pitzer": {
+      "city": "Claremont",
+      "state": "CA"
+    },
+    "Portland": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Portland State": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Post": {
+      "city": "Waterbury",
+      "state": "CT"
+    },
+    "Prairie View A&M": {
+      "city": "Prairie View",
+      "state": "TX"
+    },
+    "Pratt": {
+      "city": "Brooklyn",
+      "state": "NY"
+    },
+    "Presbyterian": {
+      "city": "Clinton",
+      "state": "SC"
+    },
+    "Princeton": {
+      "city": "Princeton",
+      "state": "NJ"
+    },
+    "Principia": {
+      "city": "Elsah",
+      "state": "IL"
+    },
+    "Providence": {
+      "city": "Providence",
+      "state": "RI"
+    },
+    "Puget Sound": {
+      "city": "Tacoma",
+      "state": "WA"
+    },
+    "Purchase": {
+      "city": "Purchase",
+      "state": "NY"
+    },
+    "Purdue": {
+      "city": "West Lafayette",
+      "state": "IN"
+    },
+    "Purdue Fort Wayne": {
+      "city": "Fort Wayne",
+      "state": "IN"
+    },
+    "Purdue Northwest": {
+      "city": "Hammond",
+      "state": "IN"
+    },
+    "Queens": {
+      "city": "Charlotte",
+      "state": "NC"
+    },
+    "Queens (NY)": {
+      "city": "Queens",
+      "state": "NY"
+    },
+    "Quincy": {
+      "city": "Quincy",
+      "state": "IL"
+    },
+    "Quinnipiac": {
+      "city": "Hamden",
+      "state": "CT"
+    },
+    "RIT": {
+      "city": "Rochester",
+      "state": "NY"
+    },
+    "RPI": {
+      "city": "Troy",
+      "state": "NY"
+    },
+    "Radford": {
+      "city": "Radford",
+      "state": "VA"
+    },
+    "Ramapo": {
+      "city": "Mahwah",
+      "state": "NJ"
+    },
+    "Randolph": {
+      "city": "Lynchburg",
+      "state": "VA"
+    },
+    "Randolph-Macon": {
+      "city": "Ashland",
+      "state": "VA"
+    },
+    "Redlands": {
+      "city": "Redlands",
+      "state": "CA"
+    },
+    "Regent": {
+      "city": "Virginia Beach",
+      "state": "VA"
+    },
+    "Regis": {
+      "city": "Denver",
+      "state": "CO"
+    },
+    "Regis (MA)": {
+      "city": "Weston",
+      "state": "MA"
+    },
+    "Rhode Island": {
+      "city": "Kingston",
+      "state": "RI"
+    },
+    "Rhode Island College": {
+      "city": "Providence",
+      "state": "RI"
+    },
+    "Rhodes": {
+      "city": "Memphis",
+      "state": "TN"
+    },
+    "Rice": {
+      "city": "Houston",
+      "state": "TX"
+    },
+    "Richmond": {
+      "city": "Richmond",
+      "state": "VA"
+    },
+    "Rider": {
+      "city": "Lawrenceville",
+      "state": "NJ"
+    },
+    "Ripon": {
+      "city": "Ripon",
+      "state": "WI"
+    },
+    "Rivier": {
+      "city": "Nashua",
+      "state": "NH"
+    },
+    "Roanoke": {
+      "city": "Salem",
+      "state": "VA"
+    },
+    "Robert Morris": {
+      "city": "Moon Township",
+      "state": "PA"
+    },
+    "Roberts Wesleyan": {
+      "city": "Rochester",
+      "state": "NY"
+    },
+    "Rochester": {
+      "city": "Rochester",
+      "state": "NY"
+    },
+    "Rockford": {
+      "city": "Rockford",
+      "state": "IL"
+    },
+    "Rockhurst": {
+      "city": "Kansas City",
+      "state": "MO"
+    },
+    "Roger Williams": {
+      "city": "Bristol",
+      "state": "RI"
+    },
+    "Rogers State": {
+      "city": "Claremore",
+      "state": "OK"
+    },
+    "Rollins": {
+      "city": "Winter Park",
+      "state": "FL"
+    },
+    "Roosevelt": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "Rose-Hulman": {
+      "city": "Terre Haute",
+      "state": "IN"
+    },
+    "Rosemont": {
+      "city": "Rosemont",
+      "state": "PA"
+    },
+    "Rowan": {
+      "city": "Glassboro",
+      "state": "NJ"
+    },
+    "Russell Sage": {
+      "city": "Troy",
+      "state": "NY"
+    },
+    "Rutgers": {
+      "city": "Piscataway",
+      "state": "NJ"
+    },
+    "Rutgers-Camden": {
+      "city": "Camden",
+      "state": "NJ"
+    },
+    "Rutgers-Newark": {
+      "city": "Newark",
+      "state": "NJ"
+    },
+    "SIUE": {
+      "city": "Edwardsville",
+      "state": "IL"
+    },
+    "SMU": {
+      "city": "Dallas",
+      "state": "TX"
+    },
+    "SUNY Brockport": {
+      "city": "Brockport",
+      "state": "NY"
+    },
+    "SUNY Canton": {
+      "city": "Canton",
+      "state": "NY"
+    },
+    "SUNY Cobleskill": {
+      "city": "Cobleskill",
+      "state": "NY"
+    },
+    "SUNY Cortland": {
+      "city": "Cortland",
+      "state": "NY"
+    },
+    "SUNY Delhi": {
+      "city": "Delhi",
+      "state": "NY"
+    },
+    "SUNY Fredonia": {
+      "city": "Fredonia",
+      "state": "NY"
+    },
+    "SUNY Geneseo": {
+      "city": "Geneseo",
+      "state": "NY"
+    },
+    "SUNY Maritime": {
+      "city": "Bronx",
+      "state": "NY"
+    },
+    "SUNY Morrisville": {
+      "city": "Morrisville",
+      "state": "NY"
+    },
+    "SUNY New Paltz": {
+      "city": "New Paltz",
+      "state": "NY"
+    },
+    "SUNY Old Westbury": {
+      "city": "Old Westbury",
+      "state": "NY"
+    },
+    "SUNY Oneonta": {
+      "city": "Oneonta",
+      "state": "NY"
+    },
+    "SUNY Oswego": {
+      "city": "Oswego",
+      "state": "NY"
+    },
+    "SUNY Plattsburgh": {
+      "city": "Plattsburgh",
+      "state": "NY"
+    },
+    "SUNY Poly": {
+      "city": "Utica",
+      "state": "NY"
+    },
+    "SUNY Potsdam": {
+      "city": "Potsdam",
+      "state": "NY"
+    },
+    "Sacramento State": {
+      "city": "Sacramento",
+      "state": "CA"
+    },
+    "Sacred Heart": {
+      "city": "Fairfield",
+      "state": "CT"
+    },
+    "Saginaw Valley State": {
+      "city": "University Center",
+      "state": "MI"
+    },
+    "Saint Anselm": {
+      "city": "Manchester",
+      "state": "NH"
+    },
+    "Saint Benedict": {
+      "city": "St. Joseph",
+      "state": "MN"
+    },
+    "Saint Elizabeth": {
+      "city": "Morristown",
+      "state": "NJ"
+    },
+    "Saint Francis (PA)": {
+      "city": "Loretto",
+      "state": "PA"
+    },
+    "Saint John's (MN)": {
+      "city": "Collegeville",
+      "state": "MN"
+    },
+    "Saint Joseph (CT)": {
+      "city": "West Hartford",
+      "state": "CT"
+    },
+    "Saint Joseph's": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Saint Joseph's (ME)": {
+      "city": "Standish",
+      "state": "ME"
+    },
+    "Saint Leo": {
+      "city": "Saint Leo",
+      "state": "FL"
+    },
+    "Saint Louis": {
+      "city": "St. Louis",
+      "state": "MO"
+    },
+    "Saint Martin's": {
+      "city": "Lacey",
+      "state": "WA"
+    },
+    "Saint Mary's": {
+      "city": "Moraga",
+      "state": "CA"
+    },
+    "Saint Mary's (IN)": {
+      "city": "Notre Dame",
+      "state": "IN"
+    },
+    "Saint Mary's (MN)": {
+      "city": "Winona",
+      "state": "MN"
+    },
+    "Saint Michael's": {
+      "city": "Colchester",
+      "state": "VT"
+    },
+    "Saint Peter's": {
+      "city": "Jersey City",
+      "state": "NJ"
+    },
+    "Saint Vincent": {
+      "city": "Latrobe",
+      "state": "PA"
+    },
+    "Salem": {
+      "city": "Winston-Salem",
+      "state": "NC"
+    },
+    "Salem State": {
+      "city": "Salem",
+      "state": "MA"
+    },
+    "Salisbury": {
+      "city": "Salisbury",
+      "state": "MD"
+    },
+    "Salve Regina": {
+      "city": "Newport",
+      "state": "RI"
+    },
+    "Sam Houston": {
+      "city": "Huntsville",
+      "state": "TX"
+    },
+    "Samford": {
+      "city": "Birmingham",
+      "state": "AL"
+    },
+    "San Diego": {
+      "city": "San Diego",
+      "state": "CA"
+    },
+    "San Diego State": {
+      "city": "San Diego",
+      "state": "CA"
+    },
+    "San Francisco": {
+      "city": "San Francisco",
+      "state": "CA"
+    },
+    "San Francisco State": {
+      "city": "San Francisco",
+      "state": "CA"
+    },
+    "San Jose State": {
+      "city": "San Jose",
+      "state": "CA"
+    },
+    "Santa Clara": {
+      "city": "Santa Clara",
+      "state": "CA"
+    },
+    "Sarah Lawrence": {
+      "city": "Bronxville",
+      "state": "NY"
+    },
+    "Savannah State": {
+      "city": "Savannah",
+      "state": "GA"
+    },
+    "Schreiner": {
+      "city": "Kerrville",
+      "state": "TX"
+    },
+    "Scranton": {
+      "city": "Scranton",
+      "state": "PA"
+    },
+    "Seattle Pacific": {
+      "city": "Seattle",
+      "state": "WA"
+    },
+    "Seattle U": {
+      "city": "Seattle",
+      "state": "WA"
+    },
+    "Seton Hall": {
+      "city": "South Orange",
+      "state": "NJ"
+    },
+    "Seton Hill": {
+      "city": "Greensburg",
+      "state": "PA"
+    },
+    "Sewanee": {
+      "city": "Sewanee",
+      "state": "TN"
+    },
+    "Shaw": {
+      "city": "Raleigh",
+      "state": "NC"
+    },
+    "Shenandoah": {
+      "city": "Winchester",
+      "state": "VA"
+    },
+    "Shepherd": {
+      "city": "Shepherdstown",
+      "state": "WV"
+    },
+    "Shippensburg": {
+      "city": "Shippensburg",
+      "state": "PA"
+    },
+    "Shorter": {
+      "city": "Rome",
+      "state": "GA"
+    },
+    "Siena": {
+      "city": "Loudonville",
+      "state": "NY"
+    },
+    "Simmons": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Simon Fraser": {
+      "city": "Burnaby",
+      "state": "BC"
+    },
+    "Simpson": {
+      "city": "Indianola",
+      "state": "IA"
+    },
+    "Sioux Falls": {
+      "city": "Sioux Falls",
+      "state": "SD"
+    },
+    "Skidmore": {
+      "city": "Saratoga Springs",
+      "state": "NY"
+    },
+    "Slippery Rock": {
+      "city": "Slippery Rock",
+      "state": "PA"
+    },
+    "Smith": {
+      "city": "Northampton",
+      "state": "MA"
+    },
+    "South Alabama": {
+      "city": "Mobile",
+      "state": "AL"
+    },
+    "South Carolina": {
+      "city": "Columbia",
+      "state": "SC"
+    },
+    "South Carolina State": {
+      "city": "Orangeburg",
+      "state": "SC"
+    },
+    "South Dakota": {
+      "city": "Vermillion",
+      "state": "SD"
+    },
+    "South Dakota Mines": {
+      "city": "Rapid City",
+      "state": "SD"
+    },
+    "South Dakota State": {
+      "city": "Brookings",
+      "state": "SD"
+    },
+    "South Florida": {
+      "city": "Tampa",
+      "state": "FL"
+    },
+    "Southeast Missouri": {
+      "city": "Cape Girardeau",
+      "state": "MO"
+    },
+    "Southeastern Louisiana": {
+      "city": "Hammond",
+      "state": "LA"
+    },
+    "Southeastern Oklahoma State": {
+      "city": "Durant",
+      "state": "OK"
+    },
+    "Southern": {
+      "city": "Baton Rouge",
+      "state": "LA"
+    },
+    "Southern Arkansas": {
+      "city": "Magnolia",
+      "state": "AR"
+    },
+    "Southern Connecticut": {
+      "city": "New Haven",
+      "state": "CT"
+    },
+    "Southern Illinois": {
+      "city": "Carbondale",
+      "state": "IL"
+    },
+    "Southern Indiana": {
+      "city": "Evansville",
+      "state": "IN"
+    },
+    "Southern Maine": {
+      "city": "Gorham",
+      "state": "ME"
+    },
+    "Southern Miss": {
+      "city": "Hattiesburg",
+      "state": "MS"
+    },
+    "Southern Nazarene": {
+      "city": "Bethany",
+      "state": "OK"
+    },
+    "Southern New Hampshire": {
+      "city": "Manchester",
+      "state": "NH"
+    },
+    "Southern Utah": {
+      "city": "Cedar City",
+      "state": "UT"
+    },
+    "Southern Virginia": {
+      "city": "Buena Vista",
+      "state": "VA"
+    },
+    "Southern Wesleyan": {
+      "city": "Central",
+      "state": "SC"
+    },
+    "Southwest Baptist": {
+      "city": "Bolivar",
+      "state": "MO"
+    },
+    "Southwest Minnesota State": {
+      "city": "Marshall",
+      "state": "MN"
+    },
+    "Southwestern (TX)": {
+      "city": "Georgetown",
+      "state": "TX"
+    },
+    "Southwestern Oklahoma State": {
+      "city": "Weatherford",
+      "state": "OK"
+    },
+    "Spalding": {
+      "city": "Louisville",
+      "state": "KY"
+    },
+    "Spring Hill": {
+      "city": "Mobile",
+      "state": "AL"
+    },
+    "Springfield": {
+      "city": "Springfield",
+      "state": "MA"
+    },
+    "St. Bonaventure": {
+      "city": "St. Bonaventure",
+      "state": "NY"
+    },
+    "St. Catherine": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "St. Cloud State": {
+      "city": "St. Cloud",
+      "state": "MN"
+    },
+    "St. Edward's": {
+      "city": "Austin",
+      "state": "TX"
+    },
+    "St. John Fisher": {
+      "city": "Rochester",
+      "state": "NY"
+    },
+    "St. John's": {
+      "city": "Queens",
+      "state": "NY"
+    },
+    "St. Joseph's (Brooklyn)": {
+      "city": "Brooklyn",
+      "state": "NY"
+    },
+    "St. Joseph's (Long Island)": {
+      "city": "Patchogue",
+      "state": "NY"
+    },
+    "St. Lawrence": {
+      "city": "Canton",
+      "state": "NY"
+    },
+    "St. Mary's (MD)": {
+      "city": "St. Mary's City",
+      "state": "MD"
+    },
+    "St. Mary's (TX)": {
+      "city": "San Antonio",
+      "state": "TX"
+    },
+    "St. Norbert": {
+      "city": "De Pere",
+      "state": "WI"
+    },
+    "St. Olaf": {
+      "city": "Northfield",
+      "state": "MN"
+    },
+    "St. Scholastica": {
+      "city": "Duluth",
+      "state": "MN"
+    },
+    "St. Thomas": {
+      "city": "St. Paul",
+      "state": "MN"
+    },
+    "St. Thomas (TX)": {
+      "city": "Houston",
+      "state": "TX"
+    },
+    "St. Thomas Aquinas": {
+      "city": "Sparkill",
+      "state": "NY"
+    },
+    "Stanford": {
+      "city": "Stanford",
+      "state": "CA"
+    },
+    "Stanislaus State": {
+      "city": "Turlock",
+      "state": "CA"
+    },
+    "Staten Island": {
+      "city": "Staten Island",
+      "state": "NY"
+    },
+    "Stephen F. Austin": {
+      "city": "Nacogdoches",
+      "state": "TX"
+    },
+    "Stetson": {
+      "city": "DeLand",
+      "state": "FL"
+    },
+    "Stevens": {
+      "city": "Hoboken",
+      "state": "NJ"
+    },
+    "Stevenson": {
+      "city": "Owings Mills",
+      "state": "MD"
+    },
+    "Stockton": {
+      "city": "Galloway",
+      "state": "NJ"
+    },
+    "Stonehill": {
+      "city": "Easton",
+      "state": "MA"
+    },
+    "Stony Brook": {
+      "city": "Stony Brook",
+      "state": "NY"
+    },
+    "Suffolk": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Sul Ross State": {
+      "city": "Alpine",
+      "state": "TX"
+    },
+    "Susquehanna": {
+      "city": "Selinsgrove",
+      "state": "PA"
+    },
+    "Swarthmore": {
+      "city": "Swarthmore",
+      "state": "PA"
+    },
+    "Sweet Briar": {
+      "city": "Sweet Briar",
+      "state": "VA"
+    },
+    "Syracuse": {
+      "city": "Syracuse",
+      "state": "NY"
+    },
+    "TCNJ": {
+      "city": "Ewing",
+      "state": "NJ"
+    },
+    "TCU": {
+      "city": "Fort Worth",
+      "state": "TX"
+    },
+    "Tampa": {
+      "city": "Tampa",
+      "state": "FL"
+    },
+    "Tarleton State": {
+      "city": "Stephenville",
+      "state": "TX"
+    },
+    "Temple": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Tennessee": {
+      "city": "Knoxville",
+      "state": "TN"
+    },
+    "Tennessee State": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Tennessee Tech": {
+      "city": "Cookeville",
+      "state": "TN"
+    },
+    "Texas": {
+      "city": "Austin",
+      "state": "TX"
+    },
+    "Texas A&M": {
+      "city": "College Station",
+      "state": "TX"
+    },
+    "Texas A&M International": {
+      "city": "Laredo",
+      "state": "TX"
+    },
+    "Texas A&M-Kingsville": {
+      "city": "Kingsville",
+      "state": "TX"
+    },
+    "Texas Lutheran": {
+      "city": "Seguin",
+      "state": "TX"
+    },
+    "Texas Southern": {
+      "city": "Houston",
+      "state": "TX"
+    },
+    "Texas State": {
+      "city": "San Marcos",
+      "state": "TX"
+    },
+    "Texas Tech": {
+      "city": "Lubbock",
+      "state": "TX"
+    },
+    "Texas Woman's": {
+      "city": "Denton",
+      "state": "TX"
+    },
+    "The Citadel": {
+      "city": "Charleston",
+      "state": "SC"
+    },
+    "Thiel": {
+      "city": "Greenville",
+      "state": "PA"
+    },
+    "Thomas (ME)": {
+      "city": "Waterville",
+      "state": "ME"
+    },
+    "Thomas Jefferson": {
+      "city": "Philadelphia",
+      "state": "PA"
+    },
+    "Thomas More": {
+      "city": "Crestview Hills",
+      "state": "KY"
+    },
+    "Tiffin": {
+      "city": "Tiffin",
+      "state": "OH"
+    },
+    "Toledo": {
+      "city": "Toledo",
+      "state": "OH"
+    },
+    "Towson": {
+      "city": "Towson",
+      "state": "MD"
+    },
+    "Transylvania": {
+      "city": "Lexington",
+      "state": "KY"
+    },
+    "Trevecca Nazarene": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Trine": {
+      "city": "Angola",
+      "state": "IN"
+    },
+    "Trinity (CT)": {
+      "city": "Hartford",
+      "state": "CT"
+    },
+    "Trinity (TX)": {
+      "city": "San Antonio",
+      "state": "TX"
+    },
+    "Troy": {
+      "city": "Troy",
+      "state": "AL"
+    },
+    "Truman State": {
+      "city": "Kirksville",
+      "state": "MO"
+    },
+    "Tufts": {
+      "city": "Medford",
+      "state": "MA"
+    },
+    "Tulane": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Tulsa": {
+      "city": "Tulsa",
+      "state": "OK"
+    },
+    "Tusculum": {
+      "city": "Greeneville",
+      "state": "TN"
+    },
+    "Tuskegee": {
+      "city": "Tuskegee",
+      "state": "AL"
+    },
+    "UAB": {
+      "city": "Birmingham",
+      "state": "AL"
+    },
+    "UC Davis": {
+      "city": "Davis",
+      "state": "CA"
+    },
+    "UC Irvine": {
+      "city": "Irvine",
+      "state": "CA"
+    },
+    "UC Merced": {
+      "city": "Merced",
+      "state": "CA"
+    },
+    "UC Riverside": {
+      "city": "Riverside",
+      "state": "CA"
+    },
+    "UC San Diego": {
+      "city": "La Jolla",
+      "state": "CA"
+    },
+    "UC Santa Barbara": {
+      "city": "Santa Barbara",
+      "state": "CA"
+    },
+    "UC Santa Cruz": {
+      "city": "Santa Cruz",
+      "state": "CA"
+    },
+    "UCF": {
+      "city": "Orlando",
+      "state": "FL"
+    },
+    "UCLA": {
+      "city": "Los Angeles",
+      "state": "CA"
+    },
+    "UConn": {
+      "city": "Storrs",
+      "state": "CT"
+    },
+    "UIC": {
+      "city": "Chicago",
+      "state": "IL"
+    },
+    "UL Monroe": {
+      "city": "Monroe",
+      "state": "LA"
+    },
+    "UMBC": {
+      "city": "Baltimore",
+      "state": "MD"
+    },
+    "UMass": {
+      "city": "Amherst",
+      "state": "MA"
+    },
+    "UMass Boston": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "UMass Dartmouth": {
+      "city": "Dartmouth",
+      "state": "MA"
+    },
+    "UMass Lowell": {
+      "city": "Lowell",
+      "state": "MA"
+    },
+    "UNC Asheville": {
+      "city": "Asheville",
+      "state": "NC"
+    },
+    "UNC Greensboro": {
+      "city": "Greensboro",
+      "state": "NC"
+    },
+    "UNC Pembroke": {
+      "city": "Pembroke",
+      "state": "NC"
+    },
+    "UNC Wilmington": {
+      "city": "Wilmington",
+      "state": "NC"
+    },
+    "UNLV": {
+      "city": "Las Vegas",
+      "state": "NV"
+    },
+    "USC": {
+      "city": "Los Angeles",
+      "state": "CA"
+    },
+    "USC Aiken": {
+      "city": "Aiken",
+      "state": "SC"
+    },
+    "USC Beaufort": {
+      "city": "Bluffton",
+      "state": "SC"
+    },
+    "USC Upstate": {
+      "city": "Spartanburg",
+      "state": "SC"
+    },
+    "UT Arlington": {
+      "city": "Arlington",
+      "state": "TX"
+    },
+    "UT Dallas": {
+      "city": "Richardson",
+      "state": "TX"
+    },
+    "UT Martin": {
+      "city": "Martin",
+      "state": "TN"
+    },
+    "UT Permian Basin": {
+      "city": "Odessa",
+      "state": "TX"
+    },
+    "UT Tyler": {
+      "city": "Tyler",
+      "state": "TX"
+    },
+    "UTEP": {
+      "city": "El Paso",
+      "state": "TX"
+    },
+    "UTRGV": {
+      "city": "Edinburg",
+      "state": "TX"
+    },
+    "UTSA": {
+      "city": "San Antonio",
+      "state": "TX"
+    },
+    "UVA Wise": {
+      "city": "Wise",
+      "state": "VA"
+    },
+    "UW-Eau Claire": {
+      "city": "Eau Claire",
+      "state": "WI"
+    },
+    "UW-La Crosse": {
+      "city": "La Crosse",
+      "state": "WI"
+    },
+    "UW-Oshkosh": {
+      "city": "Oshkosh",
+      "state": "WI"
+    },
+    "UW-Platteville": {
+      "city": "Platteville",
+      "state": "WI"
+    },
+    "UW-River Falls": {
+      "city": "River Falls",
+      "state": "WI"
+    },
+    "UW-Stevens Point": {
+      "city": "Stevens Point",
+      "state": "WI"
+    },
+    "UW-Stout": {
+      "city": "Menomonie",
+      "state": "WI"
+    },
+    "UW-Superior": {
+      "city": "Superior",
+      "state": "WI"
+    },
+    "UW-Whitewater": {
+      "city": "Whitewater",
+      "state": "WI"
+    },
+    "Union (NY)": {
+      "city": "Schenectady",
+      "state": "NY"
+    },
+    "Union (TN)": {
+      "city": "Jackson",
+      "state": "TN"
+    },
+    "Upper Iowa": {
+      "city": "Fayette",
+      "state": "IA"
+    },
+    "Ursinus": {
+      "city": "Collegeville",
+      "state": "PA"
+    },
+    "Ursuline": {
+      "city": "Pepper Pike",
+      "state": "OH"
+    },
+    "Utah": {
+      "city": "Salt Lake City",
+      "state": "UT"
+    },
+    "Utah State": {
+      "city": "Logan",
+      "state": "UT"
+    },
+    "Utah Tech": {
+      "city": "St. George",
+      "state": "UT"
+    },
+    "Utah Valley": {
+      "city": "Orem",
+      "state": "UT"
+    },
+    "Utica": {
+      "city": "Utica",
+      "state": "NY"
+    },
+    "VCU": {
+      "city": "Richmond",
+      "state": "VA"
+    },
+    "VMI": {
+      "city": "Lexington",
+      "state": "VA"
+    },
+    "Valdosta State": {
+      "city": "Valdosta",
+      "state": "GA"
+    },
+    "Valley Forge": {
+      "city": "Phoenixville",
+      "state": "PA"
+    },
+    "Valparaiso": {
+      "city": "Valparaiso",
+      "state": "IN"
+    },
+    "Vanderbilt": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Vanguard": {
+      "city": "Costa Mesa",
+      "state": "CA"
+    },
+    "Vassar": {
+      "city": "Poughkeepsie",
+      "state": "NY"
+    },
+    "Vermont": {
+      "city": "Burlington",
+      "state": "VT"
+    },
+    "Villanova": {
+      "city": "Villanova",
+      "state": "PA"
+    },
+    "Virginia": {
+      "city": "Charlottesville",
+      "state": "VA"
+    },
+    "Virginia State": {
+      "city": "Petersburg",
+      "state": "VA"
+    },
+    "Virginia Tech": {
+      "city": "Blacksburg",
+      "state": "VA"
+    },
+    "Virginia Union": {
+      "city": "Richmond",
+      "state": "VA"
+    },
+    "Virginia Wesleyan": {
+      "city": "Virginia Beach",
+      "state": "VA"
+    },
+    "WPI": {
+      "city": "Worcester",
+      "state": "MA"
+    },
+    "Wabash": {
+      "city": "Crawfordsville",
+      "state": "IN"
+    },
+    "Wagner": {
+      "city": "Staten Island",
+      "state": "NY"
+    },
+    "Wake Forest": {
+      "city": "Winston-Salem",
+      "state": "NC"
+    },
+    "Walsh": {
+      "city": "North Canton",
+      "state": "OH"
+    },
+    "Warren Wilson": {
+      "city": "Swannanoa",
+      "state": "NC"
+    },
+    "Wartburg": {
+      "city": "Waverly",
+      "state": "IA"
+    },
+    "Washburn": {
+      "city": "Topeka",
+      "state": "KS"
+    },
+    "Washington": {
+      "city": "Seattle",
+      "state": "WA"
+    },
+    "Washington & Jefferson": {
+      "city": "Washington",
+      "state": "PA"
+    },
+    "Washington College": {
+      "city": "Chestertown",
+      "state": "MD"
+    },
+    "Washington State": {
+      "city": "Pullman",
+      "state": "WA"
+    },
+    "Washington University in St. Louis": {
+      "city": "St. Louis",
+      "state": "MO"
+    },
+    "Washington and Lee": {
+      "city": "Lexington",
+      "state": "VA"
+    },
+    "Wayne State (MI)": {
+      "city": "Detroit",
+      "state": "MI"
+    },
+    "Wayne State (NE)": {
+      "city": "Wayne",
+      "state": "NE"
+    },
+    "Waynesburg": {
+      "city": "Waynesburg",
+      "state": "PA"
+    },
+    "Weber State": {
+      "city": "Ogden",
+      "state": "UT"
+    },
+    "Webster": {
+      "city": "Webster Groves",
+      "state": "MO"
+    },
+    "Wellesley": {
+      "city": "Wellesley",
+      "state": "MA"
+    },
+    "Wentworth": {
+      "city": "Boston",
+      "state": "MA"
+    },
+    "Wesleyan": {
+      "city": "Middletown",
+      "state": "CT"
+    },
+    "Wesleyan College": {
+      "city": "Macon",
+      "state": "GA"
+    },
+    "West Alabama": {
+      "city": "Livingston",
+      "state": "AL"
+    },
+    "West Chester": {
+      "city": "West Chester",
+      "state": "PA"
+    },
+    "West Florida": {
+      "city": "Pensacola",
+      "state": "FL"
+    },
+    "West Georgia": {
+      "city": "Carrollton",
+      "state": "GA"
+    },
+    "West Liberty": {
+      "city": "West Liberty",
+      "state": "WV"
+    },
+    "West Texas A&M": {
+      "city": "Canyon",
+      "state": "TX"
+    },
+    "West Virginia": {
+      "city": "Morgantown",
+      "state": "WV"
+    },
+    "West Virginia State": {
+      "city": "Institute",
+      "state": "WV"
+    },
+    "West Virginia Wesleyan": {
+      "city": "Buckhannon",
+      "state": "WV"
+    },
+    "Western Carolina": {
+      "city": "Cullowhee",
+      "state": "NC"
+    },
+    "Western Colorado": {
+      "city": "Gunnison",
+      "state": "CO"
+    },
+    "Western Connecticut State": {
+      "city": "Danbury",
+      "state": "CT"
+    },
+    "Western Illinois": {
+      "city": "Macomb",
+      "state": "IL"
+    },
+    "Western Kentucky": {
+      "city": "Bowling Green",
+      "state": "KY"
+    },
+    "Western Michigan": {
+      "city": "Kalamazoo",
+      "state": "MI"
+    },
+    "Western New England": {
+      "city": "Springfield",
+      "state": "MA"
+    },
+    "Western New Mexico": {
+      "city": "Silver City",
+      "state": "NM"
+    },
+    "Western Oregon": {
+      "city": "Monmouth",
+      "state": "OR"
+    },
+    "Western Washington": {
+      "city": "Bellingham",
+      "state": "WA"
+    },
+    "Westfield State": {
+      "city": "Westfield",
+      "state": "MA"
+    },
+    "Westminster (MO)": {
+      "city": "Fulton",
+      "state": "MO"
+    },
+    "Westminster (PA)": {
+      "city": "New Wilmington",
+      "state": "PA"
+    },
+    "Westminster (UT)": {
+      "city": "Salt Lake City",
+      "state": "UT"
+    },
+    "Westmont": {
+      "city": "Santa Barbara",
+      "state": "CA"
+    },
+    "Wheaton (IL)": {
+      "city": "Wheaton",
+      "state": "IL"
+    },
+    "Wheaton (MA)": {
+      "city": "Norton",
+      "state": "MA"
+    },
+    "Wheeling": {
+      "city": "Wheeling",
+      "state": "WV"
+    },
+    "Whitman": {
+      "city": "Walla Walla",
+      "state": "WA"
+    },
+    "Whittier": {
+      "city": "Whittier",
+      "state": "CA"
+    },
+    "Whitworth": {
+      "city": "Spokane",
+      "state": "WA"
+    },
+    "Wichita State": {
+      "city": "Wichita",
+      "state": "KS"
+    },
+    "Widener": {
+      "city": "Chester",
+      "state": "PA"
+    },
+    "Wilkes": {
+      "city": "Wilkes-Barre",
+      "state": "PA"
+    },
+    "Willamette": {
+      "city": "Salem",
+      "state": "OR"
+    },
+    "William & Mary": {
+      "city": "Williamsburg",
+      "state": "VA"
+    },
+    "William Jewell": {
+      "city": "Liberty",
+      "state": "MO"
+    },
+    "William Paterson": {
+      "city": "Wayne",
+      "state": "NJ"
+    },
+    "William Peace": {
+      "city": "Raleigh",
+      "state": "NC"
+    },
+    "Williams": {
+      "city": "Williamstown",
+      "state": "MA"
+    },
+    "Wilmington (DE)": {
+      "city": "New Castle",
+      "state": "DE"
+    },
+    "Wilmington (OH)": {
+      "city": "Wilmington",
+      "state": "OH"
+    },
+    "Wilson (PA)": {
+      "city": "Chambersburg",
+      "state": "PA"
+    },
+    "Wingate": {
+      "city": "Wingate",
+      "state": "NC"
+    },
+    "Winona State": {
+      "city": "Winona",
+      "state": "MN"
+    },
+    "Winston-Salem State": {
+      "city": "Winston-Salem",
+      "state": "NC"
+    },
+    "Winthrop": {
+      "city": "Rock Hill",
+      "state": "SC"
+    },
+    "Wisconsin": {
+      "city": "Madison",
+      "state": "WI"
+    },
+    "Wisconsin Lutheran": {
+      "city": "Milwaukee",
+      "state": "WI"
+    },
+    "Wisconsin-Parkside": {
+      "city": "Kenosha",
+      "state": "WI"
+    },
+    "Wittenberg": {
+      "city": "Springfield",
+      "state": "OH"
+    },
+    "Wofford": {
+      "city": "Spartanburg",
+      "state": "SC"
+    },
+    "Wooster": {
+      "city": "Wooster",
+      "state": "OH"
+    },
+    "Worcester State": {
+      "city": "Worcester",
+      "state": "MA"
+    },
+    "Wright State": {
+      "city": "Dayton",
+      "state": "OH"
+    },
+    "Wyoming": {
+      "city": "Laramie",
+      "state": "WY"
+    },
+    "Xavier": {
+      "city": "Cincinnati",
+      "state": "OH"
+    },
+    "Yale": {
+      "city": "New Haven",
+      "state": "CT"
+    },
+    "Yeshiva": {
+      "city": "New York",
+      "state": "NY"
+    },
+    "York (NY)": {
+      "city": "Jamaica",
+      "state": "NY"
+    },
+    "York (PA)": {
+      "city": "York",
+      "state": "PA"
+    },
+    "Young Harris": {
+      "city": "Young Harris",
+      "state": "GA"
+    },
+    "Youngstown State": {
+      "city": "Youngstown",
+      "state": "OH"
+    },
+    "Reed": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Olin": {
+      "city": "Needham",
+      "state": "MA"
+    }
+  }
 }

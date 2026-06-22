@@ -39,4 +39,4 @@ def test_editor_overrides_round_trip():
         assert sch.any_overrides()
     finally:
         sch.clear_overrides()
-    assert not sch.any_overrides() and sch.slots(_prog("D1")) == 6
+    assert not sch.any_overrides() and sch.slots(_prog("D1")) == 8   # D1 fully funds all 8

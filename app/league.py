@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 import app.ncaa as ncaa
 from .ncaa import (Program, load_division, build_roster, _talent_from_strength,
-                   _pick_gender, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
+                   _pick_gender, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap)
 from .development import generate_prospect, make_pid, overall_to_str
 from .season import run_season
 from generators import make_name_picker, region_preset
@@ -92,11 +92,11 @@ def new_league(division: str = "D1", gender: str = "men", *, seed: int = 2026) -
     return lg
 
 
-def _normalize(roster: list) -> None:
+def _normalize(roster: list, cap: int = ROSTER_SIZE) -> None:
     """Sort the ladder (lineup order) and cap size. Walk-on STATUS is persistent
     (set at intake / changed only by retention), so it is NOT reassigned here."""
     roster.sort(key=lambda p: p.current_overall(), reverse=True)
-    del roster[ROSTER_SIZE:]
+    del roster[cap:]
 
 
 def _scholarship_count(roster: list) -> int:
@@ -131,7 +131,8 @@ def _portal(league: League, rng: random.Random, base: float) -> dict:
     by_school = {pr.school: pr for pr in programs}
 
     def open_slot(school):
-        return len(rosters[school]) < ROSTER_SIZE and _scholarship_count(rosters[school]) < SCHOLARSHIP_SLOTS
+        return (len(rosters[school]) < roster_cap(league.division)
+                and _scholarship_count(rosters[school]) < SCHOLARSHIP_SLOTS)
 
     def fit_line(school, s):
         return 1 + sum(1 for q in rosters[school] if _pstr(league, q) > s)
@@ -195,7 +196,7 @@ def _refill(league: League, rng: random.Random) -> int:
     intake = 0
     for prog in league.programs:
         roster = league.rosters[prog.school]
-        need = ROSTER_SIZE - len(roster)
+        need = roster_cap(league.division) - len(roster)
         if need <= 0:
             continue
         prng = random.Random(f"{prog.key}|intake|{league.year}")
@@ -252,7 +253,7 @@ def advance_year(league: League) -> dict:
     # 5. Intake a freshman class to refill, then normalize ladders.
     intake = _refill(league, rng)
     for roster in league.rosters.values():
-        _normalize(roster)
+        _normalize(roster, roster_cap(league.division))
 
     # 6. Re-sim the season with the evolved rosters → fresh live STR.
     league.year += 1

@@ -245,6 +245,11 @@ class Coach:
     # in-region kids). A coach-side preference the recruiting sim reads on top of a
     # recruit's own homecooking. Defaults to a neutral lean.
     localism: float = 0.5
+    # Per-coach push on the program's international share: >1 leans the roster more
+    # international, <1 more American. Direction follows the sourcing preference (and
+    # nationality), magnitude is a dice roll — so two same-tier programs can run quite
+    # differently depending on who's coaching.
+    intl_lean: float = 1.0
     pid: str = ""
 
     def __post_init__(self) -> None:
@@ -398,6 +403,12 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
     # backyard, an international recruiter away from it, blend is neutral.
     _local_bias = {SOURCE_HIGH_SCHOOL: 0.16, SOURCE_INTERNATIONAL: -0.16}.get(pref, 0.0)
     localism = round(max(0.0, min(1.0, rng.gauss(0.5 + _local_bias, 0.22))), 3)
+    # International lean (dice roll): a per-coach multiplier on the program's base
+    # international share. The sourcing preference (and nationality) TILTS the center,
+    # but the roll is broad enough that any program can land heavily international,
+    # heavily American, or balanced — so it's never fully determined by who coaches.
+    _tilt = {SOURCE_INTERNATIONAL: 0.20, SOURCE_HIGH_SCHOOL: -0.20}.get(pref, 0.0)
+    intl_lean = round(max(0.45, min(1.55, rng.gauss(1.0 + _tilt, 0.32))), 3)
     region_pool = ("domestic", "europe", "latin_america", "asia_pacific", "canada", "australia", "africa")
     region_pipelines = {r: _clamp(rng.gauss(base + 6, 7), PIPELINE_MIN, PIPELINE_MAX)
                         for r in rng.sample(region_pool, k=2)}
@@ -410,6 +421,7 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
         recruiting=RecruitingSkill(recruiting),
         source_preference=pref,
         localism=localism,
+        intl_lean=intl_lean,
         region_pipelines=region_pipelines,
         country_pipelines=country_pipelines,
         home_country=home_country,

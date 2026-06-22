@@ -18,21 +18,26 @@ programs recruit their own backyard.
 
 Two levers, both keyed off the program (not a global constant):
 
-1. **International share by level** — `recruiting.intl_share_for(division, prestige)`.
-   Prestige sets the spot within a division's band (it pulls better players *and*
-   more internationals). Targets:
-
-   | Division | intl share |
-   |---|---|
-   | D1 | 0.40 (low-major) → 0.50 (blue-blood) |
-   | D2 | 0.30 → 0.40 |
-   | D4 | 0.09 (regional) → 0.42 (high-prestige academic) |
-   | D3 | 0.07 → 0.10 (lowest) |
+1. **International share** — `recruiting.intl_share_for(division, gender, prestige,
+   academics)`, then nudged by the program's coach. Four inputs, calibrated to real
+   roster patterns but tuned for *playability* (the player wanted Americans to stay
+   viable at the very top, not the real 70–90%):
+   - **Athletic level** (division + prestige) sets it: a D1 blueblood ≈ 0.65, a
+     mid-major ≈ 0.45, strong D2 ≈ 0.45, lower tiers low.
+   - **Academics damps it hard**: a high-academic program — Ivy / Stanford / UAA /
+     NESCAC — recruits US merit and runs ~0.10–0.20 *regardless of division* (so the
+     academic D1s and the academic D4s are both US-heavy, by design).
+   - **Gender**: women's rosters run ~30% less international than men's.
+   - **Coach dice roll** (`Coach.intl_lean`, 0.45–1.55): a broad per-coach multiplier
+     — the sourcing preference/nationality only *tilts* the center (`gauss(1.0 ± 0.20,
+     0.32)`), so the roll can land any (non-academic) program heavily international,
+     heavily American, or balanced; it's never fully determined by who coaches.
+     Athletic tiers swing the full range (SEC men span ~12–100% across programs);
+     academic programs vary too but stay inside their US-heavy band.
 
    `ncaa.region_weights_for()` rewrites the name-picker mix so the `us` weight is
-   `1 − share`; the non-US regions keep their relative proportions (scaled to the
-   share), so *which* nations the internationals come from still follows the world
-   band mix / onboarding preset.
+   `1 − share`; the non-US regions keep their relative proportions, so *which* nations
+   the internationals come from still follows the world band mix / onboarding preset.
 
 2. **Regional bias for every program** — `recruiting.LOCAL_REGION_TARGET = 0.70`.
    A program's domestic recruits are drawn ~70% from its own region's real
@@ -40,16 +45,20 @@ Two levers, both keyed off the program (not a global constant):
    new optional `town_pool`. Applies to all programs — prestige drives quality and
    the international share, not how local the domestic pool is.
 
-## Measured result (men, base rosters)
+## Measured result (men's base rosters)
 
-| Group | intl % | domestic in-region % |
+| Group | intl % | note |
 |---|---|---|
-| D1 power (SEC/ACC/B1G) | 49.0 | 81.9 |
-| D1 low-major | 42.7 | 80.9 |
-| D2 | 35.5 | 74.2 |
-| D4 academic (NESCAC/Centennial) | 40.3 | 74.4 |
-| D4 regional (PAC/Landmark/Empire 8) | 8.5 | 73.5 |
-| D3 | 7.6 | 74.0 |
+| D1 blueblood (Texas/Georgia-tier) | ~67 | top, but Americans still a third+ |
+| Top-D1 conference avg (SEC/ACC/B1G) | 52 | academic members (Vandy/NW) pull it down |
+| Academic D1 (UAA, Ivy, Stanford, JHU, NW, UChicago) | 10–23 | US-heavy by academics |
+| D2 | 45 | |
+| Academic D4 (NESCAC/Centennial) | 10 | US-heavy |
+| Regional D4 / D3 | ~14 | |
+
+Coach dice rolls visibly move a program: SEC men range ~25% → 95% international
+depending on the coach's lean. Domestic recruits land ~74–82% in-region across the
+board.
 
 Range 49% → 7.6%, exactly the requested "50% down to 7%", with D1 highest, D3
 lowest, regional D4 very low, and the high-prestige academic D4 programs the

@@ -35,8 +35,10 @@ ELITE_D3_ACADEMICS = 0.85              # a D3 this academic awards D1-worth aid
 
 GENDERS = ("men", "women")
 
-# Default per-(classification, gender) limits — edit here, or override live via
-# the editor. The `cap` column is the real NCAA equivalency total per gender.
+# Default per-(classification, gender) limits — edit here, or override live via the
+# editor. GAME RULE: men are FULLY FUNDED to match women (NOT real-NCAA men's 4.5
+# equivalency) — so D1 men = D1 women = 8.0, D2 men = D2 women = 6.0. D3/D4 carry no
+# athletic aid. (See CLAUDE.md — do not "fix" men down to 4.5.)
 DEFAULT_LIMITS = {
     ("D1", "men"):   {"count": 8, "rate": 1.00, "cap": 8.0, "fractional": True},
     ("D1", "women"): {"count": 8, "rate": 1.00, "cap": 8.0, "fractional": True},

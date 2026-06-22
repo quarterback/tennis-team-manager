@@ -57,30 +57,38 @@ def academic_gate(caliber: float) -> float:
     return 1.0                                    # 3★ and below: full academic consideration
 
 
-# --- International share of a base roster, by division and program level ---------
-# Real college tennis runs heavily international at the top and domestic at the
-# bottom. The base roster reflects that: D1 recruits the world (up to ~50% at the
-# blue-bloods), D2 is also high, D4 is very low EXCEPT its high-prestige academic
-# programs (which recruit nationally and abroad like a small D1), and D3 is the
-# lowest. Prestige sets the spot WITHIN a division's band — it pulls better players
-# AND more internationals. Past year 0 the recruiting sim dictates the mix. Tunable.
-# division -> (min_prestige, max_prestige, share_at_min, share_at_max)
-_INTL_BANDS = {
-    "D1": (0.40, 0.90, 0.40, 0.50),
-    "D2": (0.20, 0.30, 0.30, 0.40),
-    "D3": (0.10, 0.18, 0.07, 0.10),
-    "D4": (0.04, 0.40, 0.09, 0.42),
+# --- International share of a base roster, by level, academics and gender ---------
+# Calibrated to real NCAA tennis roster patterns (see recruiting guides): the
+# international share is driven by ATHLETIC level (top D1 men 70-90%, mid-major
+# 40-70%, strong D2 30-60%, lower tiers US-heavy), pulled DOWN hard by academics (a
+# high-academic program — Ivy/NESCAC/UAA — recruits US merit and runs 10-25%
+# regardless of athletic brand), and lower for women (≈30% less international than
+# men at the same level).
+# division -> (share at the prestige ref for a non-academic program, prestige slope,
+#              prestige ref). Athletic prestige swings it within a division.
+_INTL_BASE = {
+    "D1": (0.51, 0.57, 0.60),   # power ~0.65, mid-major ~0.45 — Americans stay viable up top
+    "D2": (0.46, 0.55, 0.25),
+    "D3": (0.17, 0.30, 0.14),
+    "D4": (0.17, 0.30, 0.14),
 }
+_WOMEN_INTL_FACTOR = 0.72       # women's rosters run ~30% less international than men's
+_ACADEMIC_INTL_KNEE = 0.60      # academics at/below this don't damp the share
+_ACADEMIC_INTL_DAMP = 1.9       # how hard academics above the knee pull toward US merit
+_ACADEMIC_INTL_FLOOR = 0.20     # the strongest academic damp still leaves this multiple
 
 
-def intl_share_for(division: str, prestige: float) -> float:
-    """Target international fraction of a program's base roster (0..1), by division
-    and prestige — D1 highest (~0.50), D3 lowest (~0.07), D4 prestige-driven."""
-    lo, hi, slo, shi = _INTL_BANDS.get(division, (0.10, 0.30, 0.10, 0.30))
-    if hi <= lo:
-        return slo
-    t = max(0.0, min(1.0, (float(prestige) - lo) / (hi - lo)))
-    return slo + t * (shi - slo)
+def intl_share_for(division: str, gender: str = "men", prestige: float = 0.5,
+                   academics: float = 0.5) -> float:
+    """Target international fraction of a program's base roster (0..1). Athletic level
+    (division + prestige) sets it; academics damps it toward US merit; women lower."""
+    base, slope, ref = _INTL_BASE.get(division, (0.30, 0.40, 0.30))
+    intl = base + slope * (float(prestige) - ref)
+    damp = 1.0 - _ACADEMIC_INTL_DAMP * max(0.0, float(academics) - _ACADEMIC_INTL_KNEE)
+    intl *= max(_ACADEMIC_INTL_FLOOR, damp)
+    if gender == "women":
+        intl *= _WOMEN_INTL_FACTOR
+    return max(0.03, min(0.92, intl))
 
 
 # How strongly base rosters lean on home turf: the share of a program's DOMESTIC
