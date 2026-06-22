@@ -123,13 +123,23 @@ Two edge cases caught in review:
   plays hurt rather than forfeit), and a final clamp pads a genuinely sub-six
   roster so the dual still resolves. (The sub-six-roster crash was actually
   latent pre-injuries; now defended.)
-- **Redshirt-senior slot.** Recruiting counts a senior as a graduating opening
-  (`_openings`) and signs a freshman for that seat during the season; when that
-  senior then medical-redshirts (kept as RS-Sr), the roster is over cap and
-  `_normalize` (trim by rating) could cut the weak returner — sending the promised
-  fifth year to the portal. `_normalize(rosters, protect=…)` now takes the
-  medical-redshirt set and never trims a protected returner; it drops the weakest
-  UNPROTECTED player instead. Wired from `finalize_rollover`.
+- **Redshirt-senior slot + over-cap resolution.** Recruiting counts a senior as a
+  graduating opening (`_openings`) and signs a freshman for that seat during the
+  season; when that senior then medical-redshirts (kept as RS-Sr), the roster is
+  over cap. The old `_normalize` resolved this by **deleting** the surplus (by
+  rating), which could erase the promised fifth year — or any signed recruit —
+  outright. Per the owner's call, `_normalize` now **relocates the surplus through
+  the portal instead of deleting it**:
+  - **Keep priority** (highest first): medical-redshirt returner (`protect`) →
+    just-signed freshman (`class_year == "Fr"`) → current ability. So a signed
+    recruit always keeps its seat, the promised RS year is the last to go, and the
+    marginal returning walk-on is the one displaced.
+  - The displaced player is **moved to the best program (same gender) with an open
+    slot** — its own level first, then a step down for playing time, then up;
+    stronger movers pick first. Only a player **nobody has room for departs** the
+    sim. Runs **before** the walk-on fills so real displaced players claim open
+    slots ahead of auto-gen. Counts surface as `portal_relocated` /
+    `portal_departed` in the rollover summary.
 
 ## Notes / not done
 

@@ -1158,29 +1158,77 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     return intake
 
 
-def _normalize(rosters: dict, protect: set | None = None) -> None:
-    """Trim each roster to its division cap by current ability. `protect` is a set
-    of pids that must survive the cut — the medical-redshirt returners. Recruiting
-    counted a season-ending senior as a graduating opening and signed a freshman
-    for that seat, so the returning RS-Sr is over cap; without protection the trim
-    (by rating) could send the very player we promised a fifth year to the portal.
-    Protected players are kept, and the weakest UNPROTECTED players are dropped
-    instead."""
+def _normalize(rosters: dict, protect: set | None = None) -> dict:
+    """Bring every roster to its division cap — by RELOCATING the surplus through
+    the portal, never by deleting players. Signed recruits always join their new
+    team, and a medical-redshirt returner (`protect`) is never the one moved, so
+    over-cap is resolved by sending the weakest *movable* player to the best
+    program (same gender) that has an open slot — dropping a level for playing time
+    if their own is full. Only a player nobody has room for departs the sim.
+
+    Keep priority (highest first): medical-redshirt returner → just-signed
+    freshman → current ability. So the marginal returning walk-on makes way for a
+    recruit, and the promised fifth year is the last to go — exactly the
+    recruiting/redshirt contract the rest of the rollover assumes."""
     protect = protect or set()
-    for (division, gender), schools in rosters.items():
-        cap = roster_cap(division)
-        for school, roster in schools.items():
-            roster.sort(key=lambda p: p.current_overall(), reverse=True)
+    moved = departed = 0
+
+    def keep_rank(p):
+        rs = 2 if p.pid in protect else 0          # redshirt returner: protect hardest
+        fr = 1 if p.class_year == "Fr" else 0      # this cycle's signed recruit
+        return (rs, fr, p.current_overall())
+
+    for gender in GENDERS:
+        progs = _flat_programs(gender)
+        pool: dict[str, list] = {}
+        div_of: dict[str, str] = {}
+        for (division, g), schools in rosters.items():
+            if g != gender:
+                continue
+            for school, roster in schools.items():
+                pool[school] = roster
+                div_of[school] = division
+        if not pool:
+            continue
+        prestige = {s: progs[s].prestige for s in pool if s in progs}
+
+        def open_slot(s):
+            return s in progs and len(pool[s]) < roster_cap(div_of.get(s, ""))
+
+        # 1) trim every over-cap roster, collecting the surplus (best movers first)
+        surplus: list[tuple] = []
+        for school, roster in pool.items():
+            cap = roster_cap(div_of.get(school, ""))
             if len(roster) <= cap:
                 continue
-            if not any(p.pid in protect for p in roster[cap:]):
-                del roster[cap:]                      # nobody protected is being cut
+            roster.sort(key=keep_rank, reverse=True)
+            cut = roster[cap:]
+            keep = roster[:cap]
+            keep.sort(key=lambda p: p.current_overall(), reverse=True)
+            roster[:] = keep
+            for p in cut:
+                surplus.append((p, div_of.get(school, "")))
+
+        # 2) place each surplus player: best open program in their level, else one
+        #    step down (depth chases a roster spot), else up; strongest pick first
+        surplus.sort(key=lambda t: t[0].current_overall(), reverse=True)
+        for p, src_div in surplus:
+            dest = None
+            for div in (src_div, _DOWN_DIV.get(src_div), _UP_DIV.get(src_div)):
+                if not div:
+                    continue
+                cands = [s for s in pool if div_of.get(s) == div and open_slot(s)]
+                if cands:
+                    dest = max(cands, key=lambda s: prestige.get(s, 0.0))
+                    break
+            if dest is None:
+                departed += 1                          # nobody has room — leaves the sim
                 continue
-            prot = [p for p in roster if p.pid in protect]
-            rest = [p for p in roster if p.pid not in protect]
-            kept = prot + rest[:max(0, cap - len(prot))]
-            kept.sort(key=lambda p: p.current_overall(), reverse=True)
-            roster[:] = kept
+            p.walk_on = True                            # joins as depth
+            pool[dest].append(p)
+            moved += 1
+
+    return {"relocated": moved, "departed": departed}
 
 
 def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
@@ -1269,12 +1317,16 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
             portal[k] += pr[k]
         portal["sample"].extend(pr["sample"][:6])
     committed = intake_signings(rosters, signings)
+    # Resolve over-cap by RELOCATING the surplus through the portal (signed recruits
+    # keep their seat; a promised RS returner is never moved) — do it BEFORE the
+    # walk-on fills so displaced real players claim open slots ahead of auto-gen.
+    overflow = _normalize(rosters, protect=medical_redshirts)
     pooled = assign_pool_walkons(rosters, signings, seed, year)   # leftover juniors → D3/D4 walk-ons
     intake = refill_walkons(rosters, year + 1, seed)              # auto-gen only the still-empty seats
-    _normalize(rosters, protect=medical_redshirts)               # never trim a promised RS returner
     return {"graduated": grads, "committed": committed, "walkons": intake, "pool_walkons": pooled,
             "coach_moves": carousel["moves"], "coach_followers": carousel["followers"],
             "coach_sample": carousel["sample"],
+            "portal_relocated": overflow["relocated"], "portal_departed": overflow["departed"],
             **{f"portal_{k}": v for k, v in portal.items()}}
 
 

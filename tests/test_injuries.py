@@ -243,42 +243,73 @@ def test_short_handed_dual_resolves_end_to_end():
     assert rec["home_points"] + rec["away_points"] >= 4   # a winner was reached
 
 
-def test_normalize_protects_redshirt_returner():
-    """A weak medical-redshirt senior must survive the over-cap trim; the weakest
-    UNPROTECTED player is cut instead (recruiting already filled the 'opening')."""
-    from app.world import _normalize, roster_cap
+def _mk_prospect(pid, rating, cls="So"):
     from app.development import Prospect
     from app.player_attributes import RICH_ATTRS
+    return Prospect(name=pid, pid=pid, class_year=cls,
+                    current={a: rating for a in RICH_ATTRS})
 
-    def mk(pid, rating, cls="So"):
-        return Prospect(name=pid, pid=pid, class_year=cls,
-                        current={a: rating for a in RICH_ATTRS})
+
+def test_normalize_protects_redshirt_returner():
+    """A weak medical-redshirt senior survives the over-cap trim; the weakest
+    movable player is the one displaced (recruiting already filled the opening)."""
+    from app.world import _normalize, roster_cap
 
     cap = roster_cap("D1")                       # 12
-    rs = mk("rs-sr", 30, cls="RS-Sr")            # weakest on the roster
-    others = [mk(f"p{i}", 40 + i) for i in range(cap)]   # 12 distinct, all stronger
+    rs = _mk_prospect("rs-sr", 30, cls="RS-Sr")  # weakest on the roster
+    others = [_mk_prospect(f"p{i}", 40 + i) for i in range(cap)]   # 12, all stronger
     rosters = {("D1", "men"): {"S": others + [rs]}}      # cap+1 -> over by one
 
     _normalize(rosters, protect={"rs-sr"})
     kept = {p.pid for p in rosters[("D1", "men")]["S"]}
     assert "rs-sr" in kept                       # the promised fifth year stays
-    assert "p0" not in kept                       # weakest unprotected cut instead
+    assert "p0" not in kept                       # weakest movable displaced instead
     assert len(kept) == cap
 
 
-def test_normalize_unprotected_redshirt_can_be_cut():
-    """Without protection the same weak senior is the one trimmed — proving the
+def test_normalize_unprotected_redshirt_can_be_displaced():
+    """Without protection the same weak senior is the one displaced — proving the
     protect set is what saves them."""
     from app.world import _normalize, roster_cap
-    from app.development import Prospect
-    from app.player_attributes import RICH_ATTRS
-
-    def mk(pid, rating):
-        return Prospect(name=pid, pid=pid, class_year="So",
-                        current={a: rating for a in RICH_ATTRS})
 
     cap = roster_cap("D1")
-    rs = mk("rs-sr", 30)
-    rosters = {("D1", "men"): {"S": [mk(f"p{i}", 40 + i) for i in range(cap)] + [rs]}}
+    rs = _mk_prospect("rs-sr", 30)
+    rosters = {("D1", "men"): {"S": [_mk_prospect(f"p{i}", 40 + i) for i in range(cap)] + [rs]}}
     _normalize(rosters)                          # no protect
     assert "rs-sr" not in {p.pid for p in rosters[("D1", "men")]["S"]}
+
+
+def test_overcap_surplus_relocates_not_deleted():
+    """The over-cap surplus is sent to a program with an open slot, not deleted —
+    no player vanishes from the universe when another team has room."""
+    from app.world import _normalize, roster_cap
+    div = load_division("D1", "men")
+    a, b = div.programs[0].school, div.programs[1].school
+    cap = roster_cap("D1")
+    full = [_mk_prospect(f"a{i}", 50 + i) for i in range(cap + 1)]   # A is over by one
+    room = [_mk_prospect(f"b{i}", 45 + i) for i in range(cap - 2)]   # B has open slots
+    rosters = {("D1", "men"): {a: full, b: room}}
+    before = sum(len(r) for r in rosters[("D1", "men")].values())
+
+    out = _normalize(rosters)
+    after = {s: [p.pid for p in r] for s, r in rosters[("D1", "men")].items()}
+    assert out["relocated"] == 1 and out["departed"] == 0
+    assert len(after[a]) == cap                              # A trimmed to cap
+    assert "a0" in after[b]                                   # weakest A surplus landed at B
+    assert sum(len(r) for r in rosters[("D1", "men")].values()) == before   # nobody deleted
+
+
+def test_signed_freshman_kept_over_marginal_returner():
+    """A signed recruit (class 'Fr') always keeps its seat; an over-cap roster
+    displaces the weakest RETURNER instead — even if the freshman rates lower."""
+    from app.world import _normalize, roster_cap
+
+    cap = roster_cap("D1")
+    fresh = _mk_prospect("frosh", 30, cls="Fr")                  # weakest overall, but signed
+    returners = [_mk_prospect(f"r{i}", 40 + i) for i in range(cap)]  # all stronger returners
+    rosters = {("D1", "men"): {"S": returners + [fresh]}}        # over by one
+
+    _normalize(rosters)
+    kept = {p.pid for p in rosters[("D1", "men")]["S"]}
+    assert "frosh" in kept                                       # recruit keeps its seat
+    assert "r0" not in kept                                      # weakest returner displaced
