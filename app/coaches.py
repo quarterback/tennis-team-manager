@@ -22,6 +22,10 @@ GRADE_MIN, GRADE_MAX = 20, 80
 PIPELINE_MIN, PIPELINE_MAX = 20, 80
 HOME_COUNTRY_AFFINITY = 4.0
 HOME_REGION_AFFINITY = 1.5
+# Recruiting-sim weight: a foreign coach's home-country compatriot pull, applied as
+# 1 + this * (origin_affinity / HOME_COUNTRY_AFFINITY) — so a same-country recruit
+# gets ~+18%, a same-region one ~+7%. Kept gentle so it nudges, never dictates.
+ORIGIN_PIPELINE_WEIGHT = 0.18
 
 SOURCE_HIGH_SCHOOL = "high_school"
 SOURCE_INTERNATIONAL = "international"
@@ -236,6 +240,11 @@ class Coach:
     archetype: str = ARCHETYPE_LIFER
     personality: str = "balanced"
     offensive_style: str = "balanced"
+    # How strongly this coach recruits the program's own backyard (0 = recruits
+    # nationally without regard to geography, 1 = a committed homer who prioritizes
+    # in-region kids). A coach-side preference the recruiting sim reads on top of a
+    # recruit's own homecooking. Defaults to a neutral lean.
+    localism: float = 0.5
     pid: str = ""
 
     def __post_init__(self) -> None:
@@ -244,6 +253,10 @@ class Coach:
             self.recruiting = RecruitingSkill(self.recruiting)
         if self.source_preference not in SOURCE_PREFERENCES:
             self.source_preference = SOURCE_BLEND
+        try:
+            self.localism = max(0.0, min(1.0, float(self.localism)))
+        except (TypeError, ValueError):
+            self.localism = 0.5
         if self.archetype not in ARCHETYPES:
             self.archetype = ARCHETYPE_LIFER
         self.home_country = _normalize_country(self.home_country or "US")
@@ -318,6 +331,18 @@ class Coach:
             return 1.12 if not domestic else 0.90
         return 1.0
 
+    def origin_multiplier(self, prospect) -> float:
+        """Gentle recruiting bonus for a recruit from the coach's home country (or
+        home region), as a ~1.0–1.18 multiplier — a foreign coach's compatriot
+        pipeline. US-home coaches return 1.0: their domestic lean is `source_fit`,
+        not a home-country pipeline, so this never double-counts the generic US case."""
+        if self.home_country == "US":
+            return 1.0
+        aff = self.origin_affinity(prospect)        # 4.0 country / 1.5 region / 0
+        if not aff:
+            return 1.0
+        return 1.0 + ORIGIN_PIPELINE_WEIGHT * (aff / HOME_COUNTRY_AFFINITY)
+
     def archetype_fit(self, prospect) -> float:
         if self.archetype == ARCHETYPE_FORMER_PRO:
             return 1.04 if not bool(getattr(prospect, "domestic", False)) else 1.01
@@ -361,7 +386,18 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
     attrs = {a: _clamp(rng.gauss(base, 8)) for a in COACH_ATTRS}
     recruiting = {a: _clamp(rng.gauss(base, 9)) for a in RECRUITING_ATTRS}
     _apply_archetype(attrs, recruiting, archetype)
-    pref = source_preference or rng.choice(SOURCE_PREFERENCES)
+    # Sourcing instinct leans on the coach's nationality: a non-US coach recruits
+    # more international (their networks are abroad), a US coach more domestic.
+    if source_preference:
+        pref = source_preference
+    elif home_country != "US":
+        pref = rng.choice((SOURCE_INTERNATIONAL, SOURCE_INTERNATIONAL, SOURCE_BLEND))
+    else:
+        pref = rng.choice((SOURCE_HIGH_SCHOOL, SOURCE_HIGH_SCHOOL, SOURCE_BLEND))
+    # Localism leans on that same instinct: a high-school recruiter skews toward the
+    # backyard, an international recruiter away from it, blend is neutral.
+    _local_bias = {SOURCE_HIGH_SCHOOL: 0.16, SOURCE_INTERNATIONAL: -0.16}.get(pref, 0.0)
+    localism = round(max(0.0, min(1.0, rng.gauss(0.5 + _local_bias, 0.22))), 3)
     region_pool = ("domestic", "europe", "latin_america", "asia_pacific", "canada", "australia", "africa")
     region_pipelines = {r: _clamp(rng.gauss(base + 6, 7), PIPELINE_MIN, PIPELINE_MAX)
                         for r in rng.sample(region_pool, k=2)}
@@ -373,6 +409,7 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
         attrs=attrs,
         recruiting=RecruitingSkill(recruiting),
         source_preference=pref,
+        localism=localism,
         region_pipelines=region_pipelines,
         country_pipelines=country_pipelines,
         home_country=home_country,
@@ -387,3 +424,30 @@ def coach_for_program(school: str, *, seed: int = 2026, base: float = 50.0) -> C
     """Stable generated coach for a school until a career save persists one."""
     rng = random.Random(_stable_seed("coach", school, seed))
     return generate_coach(rng, f"{school} Head Coach", school=school, base=base)
+
+
+# Share of college head coaches who are American. US staffs skew domestic, but the
+# sport recruits globally and carries a sizable international coaching minority.
+US_COACH_SHARE = 0.68
+_coach_cache: dict[str, Coach] = {}
+
+
+def program_coach(school: str, *, seed: int = 2026, base: float = 50.0) -> Coach:
+    """Stable per-program coach the recruiting sim reads (cached). Unlike the raw
+    `coach_for_program`, the nationality is drawn realistically — mostly American,
+    with an international minority — so the world isn't accidentally all-foreign."""
+    if school in _coach_cache:
+        return _coach_cache[school]
+    rng = random.Random(_stable_seed("coach", school, seed))
+    home = "US" if rng.random() < US_COACH_SHARE else rng.choice([c for c in COUNTRY_POOL if c != "US"])
+    c = (generate_coach(rng, f"{school} Head Coach", school=school, base=base, home_country=home)
+         if school else Coach(name="", home_country="US"))
+    _coach_cache[school] = c
+    return c
+
+
+def program_localism(school: str) -> float:
+    """The program's coach localism (0..1) — how hard it recruits its own backyard.
+    Stable per school and cached; the recruiting sim reads it to bias a localist
+    program toward in-region recruits beyond a recruit's own homecooking."""
+    return program_coach(school).localism if school else 0.5

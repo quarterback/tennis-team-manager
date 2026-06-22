@@ -23,6 +23,8 @@ UNIVERSES = [
     ("D2-women", "D2", "women", "D2 Women"),
     ("D3-men", "D3", "men", "D3 Men"),
     ("D3-women", "D3", "women", "D3 Women"),
+    ("D4-men", "D4", "men", "D4 Men"),
+    ("D4-women", "D4", "women", "D4 Women"),
 ]
 
 # Conference → display tier (mirrors the design's P5 / MID / IVY badges).
@@ -1654,7 +1656,7 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
 def all_gender_programs(gender: str):
     from app import ncaa
     progs = []
-    for division in ("D1", "D2", "D3"):
+    for division in ("D1", "D2", "D3", "D4"):
         try:
             progs.extend(ncaa.load_division(division, gender).programs)
         except FileNotFoundError:

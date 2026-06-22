@@ -299,7 +299,8 @@ class Prospect:
 
 def generate_prospect(rng: random.Random, name: str, country: str = "",
                       gender: str = "male", talent: float | None = None,
-                      pid: str = "", maturity_range: tuple | None = None) -> Prospect:
+                      pid: str = "", maturity_range: tuple | None = None,
+                      town_pool: list | None = None) -> Prospect:
     """Create an incoming prospect with reproducible rich attributes.
 
     Ceilings cluster around ``talent``; maturity determines how much is visible
@@ -356,7 +357,9 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     # nation's city pool. (juniors overrides domestic recruits with the
     # state-board dimension.)
     if domestic:
-        city, st = random_town(rng)
+        # `town_pool` (when provided) biases the birthplace toward the program's own
+        # region — a real (city, state) drawn from its backyard rather than nationwide.
+        city, st = rng.choice(town_pool) if town_pool else random_town(rng)
         p.hometown = f"{city}, {st}"
         p.high_school = roll_high_school(country, rng, state=st, home_city=city)
     else:

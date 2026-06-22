@@ -44,13 +44,15 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
-                         home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL)
+                         home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
+                         COACH_LOCAL_WEIGHT)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker
 
 WORLD_DB = resolve_db_path()        # shares the file with season mode; own tables
 UNIVERSES = [("D1", "men"), ("D1", "women"), ("D2", "men"),
-             ("D2", "women"), ("D3", "men"), ("D3", "women")]
+             ("D2", "women"), ("D3", "men"), ("D3", "women"),
+             ("D4", "men"), ("D4", "women")]
 GENDERS = ["men", "women"]
 DEFAULT_SEED = 2026
 BASE_YEAR = 2026
@@ -92,12 +94,17 @@ RECRUIT_INTL_SHARE = worldconfig.DEFAULT_INTL_SHARE
 # elite D3; ordinary D3 stays local). Tunable — internationals concentrate at the
 # top because they have no homecooking and chase prestige/academics. Real men's
 # D1 tennis runs very international; lower these to dampen it.
-INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15}
+INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15, "D4": 0.05}
 
 
 def _intl_tier(division: str, academics: float) -> str:
-    if division == "D3":
-        return "D3_elite" if academics >= ELITE_D3_ACADEMICS else "D3"
+    # D3 and the academic-first D4 both let only their academically elite reach
+    # the higher international pull; ordinary programs in either stay local. D4
+    # sits below D3, so its baseline pull is the lowest in the world.
+    if division in ("D3", "D4"):
+        if academics >= ELITE_D3_ACADEMICS:
+            return "D3_elite"
+        return division
     return division
 
 
@@ -148,8 +155,13 @@ CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wg ON world_graduates(world_id, year, division, gender);
 """
 
-DIV_RANK = {"D1": 1, "D2": 2, "D3": 3}      # 1 = highest classification
+DIV_RANK = {"D1": 1, "D2": 2, "D3": 3, "D4": 4}   # 1 = highest classification
 MAX_CROSS = 3                               # cross-classification duals per team / year
+CROSS_GAP_DECAY = 0.10                       # per extra class of distance: how much rarer a cross
+                                            # dual gets (adjacent=1, two up=0.10, three up=0.01) —
+                                            # so a D4 plays mostly D3, with nearby D2/D1 a thin sliver
+CROSS_D1_PRESTIGE = 0.25                     # a D1 only reaches down to a D3/D4 this prestigious
+                                            # (a lifted academic peer); else same-region only
 ELITE_D3_ACADEMICS = 0.85                   # a D3 this academic can reach up to D1
 
 
@@ -560,7 +572,7 @@ def national_class(seed: int, year: int, gender: str) -> list:
 
 def _flat_programs(gender: str) -> dict[str, Program]:
     out = {}
-    for division in ("D1", "D2", "D3"):
+    for division in ("D1", "D2", "D3", "D4"):
         try:
             for p in load_division(division, gender).programs:
                 out[p.school] = p
@@ -592,13 +604,15 @@ def _recruit_market(world: dict, gender: str) -> dict:
     salt = world.get("salt") or ""
     budget = {s: recruit_economy.program_budget(p, salt, world["year"]) for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
+    from . import coaches
+    coachmap = {s: coaches.program_coach(s) for s in progs}        # per-program coach (localism, sourcing tilt, origin pipeline)
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]
     academic_top = sorted(progs, key=lambda s: -traits[s][1])[:40]
     by_region: dict[str, list] = {}
     for s in progs:
         by_region.setdefault(traits[s][2], []).append(s)
-    return {"progs": progs, "traits": traits, "cap": cap, "budget": budget,
+    return {"progs": progs, "traits": traits, "cap": cap, "budget": budget, "coaches": coachmap,
             "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
             "by_region": by_region}
 
@@ -611,18 +625,19 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     from . import recruit_economy
     traits = market["traits"]
     budget = market.get("budget", {})
+    coachmap = market.get("coaches", {})
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     cal, ac = recruit_caliber(p), recruit_academic01(p)
     budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
-    # Division ceiling by tier: a 5★/blue-chip never drops to D3; a 4★ can choose an
-    # academic-elite D3 (an Ivy-calibre classroom is worth the athletic step down) but
+    # Division ceiling by tier: a 5★/blue-chip never drops to D3/D4; a 4★ can choose an
+    # academic-elite D3/D4 (an Ivy-calibre classroom is worth the athletic step down) but
     # otherwise only rarely; a 3★ (and below) can go anywhere.
     def _div_ok(div, acad):
-        if div != "D3":
+        if div not in ("D3", "D4"):
             return True
-        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3
+        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3/D4
             return False
-        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3s
+        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3/D4
             if acad >= ELITE_D3_ACADEMICS:
                 return True
             return random.Random(f"{getattr(p, 'pid', '')}|d3gate").random() < 0.05
@@ -650,7 +665,14 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             continue
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
-        geo = hc * region_proximity(hr, reg)
+        coach = coachmap.get(s)
+        prox = region_proximity(hr, reg)
+        geo = hc * prox                                # the recruit's own desire to stay home
+        # Coach-side localism: a program whose coach recruits its backyard pulls
+        # in-region recruits harder, regardless of how homesick the recruit is — so
+        # "homer" programs run even more regional. Internationals sit at proximity 0,
+        # so this only tugs domestic, in-region kids.
+        coach_geo = COACH_LOCAL_WEIGHT * (coach.localism if coach is not None else 0.5) * prox
         # Recruits aspire UP to the most prestigious program that still has a seat
         # for them. With best-recruits-first + seat caps, the class tiers itself —
         # a program fills with whoever's left near its own level once it signs,
@@ -660,7 +682,11 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         level = 1.0 - 0.30 * max(0.0, cal - pres)      # only penalize signing BELOW your level
         score = ((0.15 + pres) * level
                  * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
-                 * (1.0 + GEO_WEIGHT * geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+                 * (1.0 + GEO_WEIGHT * geo + coach_geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+        if coach is not None:
+            # Coach sourcing tilt (US coaches lean domestic, foreign lean international)
+            # and a foreign coach's home-country compatriot pipeline.
+            score *= coach.source_fit(p) * coach.origin_multiplier(p)
         if intl:
             score *= INTL_TIER_PULL[_intl_tier(div, acad)]
         if score > best_score:
@@ -884,8 +910,8 @@ def _churn_mult(s: float, level: float) -> float:
     return 0.6
 
 
-_UP_DIV = {"D2": "D1", "D3": "D2"}      # a transfer climbs at most one level
-_DOWN_DIV = {"D1": "D2", "D2": "D3"}    # ...and drops at most one — never skipping
+_UP_DIV = {"D2": "D1", "D3": "D2", "D4": "D3"}      # a transfer climbs at most one level
+_DOWN_DIV = {"D1": "D2", "D2": "D3", "D3": "D4"}    # ...and drops at most one — never skipping
 
 
 def _career_transfers(p) -> int:
@@ -1170,15 +1196,23 @@ from .ncaa import location  # noqa: E402  (geography for cross-division pairing)
 
 
 def _allowed_cross(a, b) -> bool:
-    """Is a cross-class dual between programs a, b allowed?"""
+    """Is a cross-class dual between programs a, b allowed? Geography (the same /
+    adjacent-region pool in `cross_schedule`) plus the per-team cap already keep
+    cross-class play local and rare. On top of that:
+      • adjacent classes always pair (D1-D2, D2-D3, D3-D4);
+      • a D2 may reach down to D4 anywhere nearby;
+      • a D1 reaches down to a D3/D4 only when the smaller school is a PRESTIGE peer
+        (the lifted academic programs) OR a same-region neighbor — a top-tier program
+        doesn't drop two or three classes for a random small school far afield."""
     if a.division == b.division:
         return False
     ra, rb = DIV_RANK[a.division], DIV_RANK[b.division]
-    if abs(ra - rb) == 1:                                  # D1-D2 or D2-D3
+    if abs(ra - rb) == 1:
         return True
-    # D1-D3 only when the D3 program is academically elite (NESCAC/UAA-type).
-    d3 = a if a.division == "D3" else b
-    return d3.academics >= ELITE_D3_ACADEMICS
+    hi, lo = (a, b) if ra < rb else (b, a)        # hi = higher classification
+    if hi.division != "D1":                        # D2 reaching D4 — geography is enough
+        return True
+    return lo.prestige >= CROSS_D1_PRESTIGE or hi.region == lo.region
 
 
 def cross_schedule(seed: int, year: int) -> list[dict]:
@@ -1198,15 +1232,24 @@ def cross_schedule(seed: int, year: int) -> list[dict]:
         order = list(progs.values())
         rng.shuffle(order)
         for p in order:
-            # nearby pool = same region + adjacent regions
-            pool = list(by_region.get(p.region, []))
-            for r in REGION_ADJACENT.get(p.region, ()):
-                pool.extend(by_region.get(r, []))
+            # Nearby pool = same region + adjacent regions, restricted to OTHER
+            # classifications. Weight each candidate by class proximity so adjacent
+            # classes dominate and reaching two / three up (a D4 at a nearby D1) stays
+            # an occasional sliver rather than the bulk — D1 is large and everywhere,
+            # so unweighted picks would otherwise bury a D4 in D1 games.
+            pra = DIV_RANK[p.division]
+            xpool, xw = [], []
+            for r in (p.region, *REGION_ADJACENT.get(p.region, ())):
+                for o in by_region.get(r, ()):
+                    if o.division == p.division or o.school == p.school:
+                        continue
+                    xpool.append(o)
+                    xw.append(CROSS_GAP_DECAY ** (abs(pra - DIV_RANK[o.division]) - 1))
             tries = 0
-            while count[p.school] < MAX_CROSS and tries < 40 and pool:
+            while count[p.school] < MAX_CROSS and tries < 40 and xpool:
                 tries += 1
-                o = rng.choice(pool)
-                if o.school == p.school or count[o.school] >= MAX_CROSS:
+                o = rng.choices(xpool, weights=xw)[0]
+                if count[o.school] >= MAX_CROSS:
                     continue
                 key = tuple(sorted((p.school, o.school)))
                 if key in pairs or not _allowed_cross(p, o):

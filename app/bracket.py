@@ -51,7 +51,7 @@ def seed_score(p: Program, ratings: dict) -> float:
 def field_for_division(division: str) -> int:
     """National-tournament field size by division. D1 here is a ~390-team
     division across 34 automatic-bid leagues, so a 64 field is too small (the
-    autobids alone nearly fill it); D1 uses a 96 field. D2/D3 keep 64."""
+    autobids alone nearly fill it); D1 uses a 96 field. D2/D3/D4 keep 64."""
     return 96 if division == "D1" else FIELD_DEFAULT
 
 

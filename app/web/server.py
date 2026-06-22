@@ -926,7 +926,7 @@ def create_app() -> Flask:
         return render_template("intel_underplaced.html", active="Analytics Bureau",
                                rows=pg.items, p=pg, total=len(rows), gender=gender,
                                div_f=div_f, cls_f=cls_f, sort=sort, q=q, u=u, uni_label=label,
-                               divisions=["All", "D1", "D2", "D3"],
+                               divisions=["All", "D1", "D2", "D3", "D4"],
                                classes=["All", "Fr", "So", "Jr", "Sr"])
 
     @app.route("/intel/scholarships")
@@ -1038,7 +1038,7 @@ def create_app() -> Flask:
             rows, head = editor_roster(division, gender, school)
         from app import scholarships as sch
         schol = [{"division": d, "gender": g, **sch.limits(d, g)}
-                 for d in ("D1", "D2", "D3") for g in ("men", "women")]
+                 for d in ("D1", "D2", "D3", "D4") for g in ("men", "women")]
         prog = div.by_school(school)
         prestige = {"value": round((prog.prestige if prog else 0.5) * 100),
                     "overridden": school in ov.get_prestige()}
@@ -1135,7 +1135,7 @@ def create_app() -> Flask:
     def editor_scholarship():
         from app import scholarships as sch
         u = request.form.get("u", "D1-men")
-        for d in ("D1", "D2", "D3"):
+        for d in ("D1", "D2", "D3", "D4"):
             for g in ("men", "women"):
                 kwargs = {}
                 count_raw = request.form.get(f"count_{d}_{g}")
