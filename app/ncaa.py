@@ -245,6 +245,8 @@ ACADEMIC_SCHOOLS = {
     "Haverford": 0.93, "Wesleyan": 0.92, "Bates": 0.91, "Colby": 0.91,
     "Case Western Reserve": 0.92, "Brandeis": 0.92, "NYU": 0.90, "Rochester": 0.90,
     "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93,
+    # Engineering/tech academics now in D1 Meridian (the "nerdy major conference")
+    "WPI": 0.88,
 }
 
 
