@@ -96,11 +96,24 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
     `unavailable` is a set of pids that are INJURED this dual — dropped from
     contention entirely, so an injured starter pulls up the next body and the
     coach is forced to use depth. A guaranteed (`forced`) player who's hurt is
-    dropped too (you can't play the injured)."""
+    dropped too (you can't play the injured).
+
+    Short-handed safety: the engine fields six singles + three doubles, so the
+    lineup MUST be six. If filtering the injured (or a thin roster) would leave
+    fewer than six healthy bodies, the least-compromised injured players are
+    pressed back into service (best STR first) — a banged-up team plays hurt
+    rather than forfeit. Only a roster with fewer than six players total can't
+    reach six; that's clamped below so the engine never indexes past the end."""
     if unavailable:
-        roster = [p for p in roster if p.pid not in unavailable]
+        healthy = [p for p in roster if p.pid not in unavailable]
+        if len(healthy) < 6 and len(roster) > len(healthy):
+            benched = sorted((p for p in roster if p.pid in unavailable),
+                             key=lambda p: p.str_value(), reverse=True)
+            healthy = healthy + benched[:6 - len(healthy)]
+        roster = healthy
         if forced:
-            forced = {pid for pid in forced if pid not in unavailable}
+            live = {p.pid for p in roster}
+            forced = {pid for pid in forced if pid in live}
     srng = random.Random(f"{prog.key}|lineup|{lineup_seed}")    # season-stable ladder
 
     def score(p):
@@ -149,6 +162,13 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
                 chosen[di] = by_pid[fp_pid]
                 tgt = comp[0] if comp else di
                 chosen[di], chosen[tgt] = chosen[tgt], chosen[di]
+
+    # Final safety: the engine indexes six singles and three doubles pairs. If a
+    # roster is so depleted it can't seat six distinct players, repeat the last
+    # available body into the empty courts so the dual still resolves (a degenerate
+    # forfeit-like lineup) instead of raising IndexError mid-season.
+    if len(chosen) < 6 and chosen:
+        chosen = chosen + [chosen[-1]] * (6 - len(chosen))
 
     doubles = srng.choice(DOUBLES_PERMS)
     team = Team(name=prog.school, singles=[p.engine_player() for p in chosen],

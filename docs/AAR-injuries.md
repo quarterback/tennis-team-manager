@@ -111,6 +111,26 @@ shape (injury state is per-save and cheap to re-accrue, never authoritative).
   by team** with a **conference dropdown** (and the division selector), colored
   status dots (out / season-ending / returned). Added to the World nav group.
 
+## Robustness (post-review fixes)
+
+Two edge cases caught in review:
+
+- **Short-handed lineups.** Filtering the injured (or a thin roster) can leave
+  fewer than six healthy bodies, but `engine.simulate_dual` indexes six singles +
+  three doubles — a short lineup raised `IndexError` and stalled the season.
+  `season.coach_lineup` now guarantees six: if healthy < 6 it presses the
+  least-compromised injured players back in (best STR first — a banged-up team
+  plays hurt rather than forfeit), and a final clamp pads a genuinely sub-six
+  roster so the dual still resolves. (The sub-six-roster crash was actually
+  latent pre-injuries; now defended.)
+- **Redshirt-senior slot.** Recruiting counts a senior as a graduating opening
+  (`_openings`) and signs a freshman for that seat during the season; when that
+  senior then medical-redshirts (kept as RS-Sr), the roster is over cap and
+  `_normalize` (trim by rating) could cut the weak returner — sending the promised
+  fifth year to the portal. `_normalize(rosters, protect=…)` now takes the
+  medical-redshirt set and never trims a protected returner; it drops the weakest
+  UNPROTECTED player instead. Wired from `finalize_rollover`.
+
 ## Notes / not done
 
 - Injuries roll in the **gameplay path** (`seasonmode._play_and_store`, which the

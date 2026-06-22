@@ -1158,12 +1158,29 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     return intake
 
 
-def _normalize(rosters: dict) -> None:
+def _normalize(rosters: dict, protect: set | None = None) -> None:
+    """Trim each roster to its division cap by current ability. `protect` is a set
+    of pids that must survive the cut — the medical-redshirt returners. Recruiting
+    counted a season-ending senior as a graduating opening and signed a freshman
+    for that seat, so the returning RS-Sr is over cap; without protection the trim
+    (by rating) could send the very player we promised a fifth year to the portal.
+    Protected players are kept, and the weakest UNPROTECTED players are dropped
+    instead."""
+    protect = protect or set()
     for (division, gender), schools in rosters.items():
         cap = roster_cap(division)
         for school, roster in schools.items():
             roster.sort(key=lambda p: p.current_overall(), reverse=True)
-            del roster[cap:]
+            if len(roster) <= cap:
+                continue
+            if not any(p.pid in protect for p in roster[cap:]):
+                del roster[cap:]                      # nobody protected is being cut
+                continue
+            prot = [p for p in roster if p.pid in protect]
+            rest = [p for p in roster if p.pid not in protect]
+            kept = prot + rest[:max(0, cap - len(prot))]
+            kept.sort(key=lambda p: p.current_overall(), reverse=True)
+            roster[:] = kept
 
 
 def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
@@ -1254,7 +1271,7 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
     committed = intake_signings(rosters, signings)
     pooled = assign_pool_walkons(rosters, signings, seed, year)   # leftover juniors → D3/D4 walk-ons
     intake = refill_walkons(rosters, year + 1, seed)              # auto-gen only the still-empty seats
-    _normalize(rosters)
+    _normalize(rosters, protect=medical_redshirts)               # never trim a promised RS returner
     return {"graduated": grads, "committed": committed, "walkons": intake, "pool_walkons": pooled,
             "coach_moves": carousel["moves"], "coach_followers": carousel["followers"],
             "coach_sample": carousel["sample"],

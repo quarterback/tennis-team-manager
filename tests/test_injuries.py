@@ -203,3 +203,82 @@ def test_injury_pages_render(tmp_path):
     team = c.get("/teams?u=D1-men&school=Oregon")
     assert team.status_code == 200
     assert b"Injury Log" in team.data
+
+
+# ---- short-handed lineups + redshirt-slot protection ------------------------
+
+def test_lineup_never_short_of_six_when_depth_exists():
+    """Filtering the injured can leave <6 healthy; the engine fields six, so the
+    lineup backfills the least-hurt injured rather than building a short Team
+    (which would IndexError in simulate_dual)."""
+    from app.season import coach_lineup
+    prog = load_division("D1", "men").programs[0]
+    roster = build_roster(prog)                 # D1 cap 12
+    out = {p.pid for p in roster[:8]}           # 8 injured -> 4 healthy
+    team, chosen = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
+                                unavailable=out)
+    assert len(chosen) == 6
+    assert len(team.singles) == 6
+    assert len({p.pid for p in chosen}) == 6    # six distinct bodies pressed in
+
+
+def test_lineup_clamps_a_sub_six_roster():
+    """A roster with fewer than six players total can't seat six; the lineup pads
+    to six so the dual still resolves instead of crashing."""
+    from app.season import coach_lineup
+    prog = load_division("D1", "men").programs[0]
+    roster = build_roster(prog)[:4]             # only four players exist
+    team, chosen = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1)
+    assert len(chosen) == 6
+    assert len(team.singles) == 6
+
+
+def test_short_handed_dual_resolves_end_to_end():
+    from app.season import dual_between
+    div = load_division("D2", "men")
+    a, b = div.programs[0], div.programs[1]
+    ra = build_roster(a)
+    rec = dual_between(a, b, seed=11, conf=False,
+                       unavailable_home={p.pid for p in ra[:len(ra) - 3]})  # 3 healthy
+    assert rec["home_points"] + rec["away_points"] >= 4   # a winner was reached
+
+
+def test_normalize_protects_redshirt_returner():
+    """A weak medical-redshirt senior must survive the over-cap trim; the weakest
+    UNPROTECTED player is cut instead (recruiting already filled the 'opening')."""
+    from app.world import _normalize, roster_cap
+    from app.development import Prospect
+    from app.player_attributes import RICH_ATTRS
+
+    def mk(pid, rating, cls="So"):
+        return Prospect(name=pid, pid=pid, class_year=cls,
+                        current={a: rating for a in RICH_ATTRS})
+
+    cap = roster_cap("D1")                       # 12
+    rs = mk("rs-sr", 30, cls="RS-Sr")            # weakest on the roster
+    others = [mk(f"p{i}", 40 + i) for i in range(cap)]   # 12 distinct, all stronger
+    rosters = {("D1", "men"): {"S": others + [rs]}}      # cap+1 -> over by one
+
+    _normalize(rosters, protect={"rs-sr"})
+    kept = {p.pid for p in rosters[("D1", "men")]["S"]}
+    assert "rs-sr" in kept                       # the promised fifth year stays
+    assert "p0" not in kept                       # weakest unprotected cut instead
+    assert len(kept) == cap
+
+
+def test_normalize_unprotected_redshirt_can_be_cut():
+    """Without protection the same weak senior is the one trimmed — proving the
+    protect set is what saves them."""
+    from app.world import _normalize, roster_cap
+    from app.development import Prospect
+    from app.player_attributes import RICH_ATTRS
+
+    def mk(pid, rating):
+        return Prospect(name=pid, pid=pid, class_year="So",
+                        current={a: rating for a in RICH_ATTRS})
+
+    cap = roster_cap("D1")
+    rs = mk("rs-sr", 30)
+    rosters = {("D1", "men"): {"S": [mk(f"p{i}", 40 + i) for i in range(cap)] + [rs]}}
+    _normalize(rosters)                          # no protect
+    assert "rs-sr" not in {p.pid for p in rosters[("D1", "men")]["S"]}
