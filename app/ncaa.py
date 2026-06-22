@@ -245,8 +245,13 @@ ACADEMIC_SCHOOLS = {
     "Haverford": 0.93, "Wesleyan": 0.92, "Bates": 0.91, "Colby": 0.91,
     "Case Western Reserve": 0.92, "Brandeis": 0.92, "NYU": 0.90, "Rochester": 0.90,
     "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93,
-    # Engineering/tech academics now in D1 Meridian (the "nerdy major conference")
-    "WPI": 0.88,
+    # Engineering/tech + LAC academics in D1 Meridian (the "nerdy major conference")
+    "WPI": 0.88, "Illinois Tech": 0.86, "Clarkson": 0.83, "Union (NY)": 0.88,
+    "RIT": 0.82, "St. Lawrence": 0.85,
+    # Elite academic add-ins to D4 (no real varsity athletics; here for the sim)
+    "Reed": 0.93, "Olin": 0.93,
+    # Service academies are strong academics (Army/Navy/Air Force tagged above)
+    "Coast Guard": 0.86, "Merchant Marine": 0.86,
 }
 
 
