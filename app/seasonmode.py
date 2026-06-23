@@ -1159,23 +1159,45 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     at_large_spots = max(0, field - len(aq_keys))
     # At-large in/out follows the same ITA team points the bracket now seeds by.
     pts = ita_team_points(season_id)
+
+    def sv(school):
+        return pts.get(school, 0.0)
+
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
-                    key=lambda p: pts.get(p.school, 0.0), reverse=True)
+                    key=lambda p: sv(p.school), reverse=True)
     if at_large_spots < edge or len(non_aq) <= at_large_spots:
         return None
 
-    def row(p, **extra):
+    in_al = non_aq[:at_large_spots]          # at-large selections
+    out_al = non_aq[at_large_spots:]         # missed the cut
+    aq_progs = sorted((p for p in rated if p.school in aq_keys),
+                      key=lambda p: sv(p.school), reverse=True)
+
+    # SELECTION is done (AQ + the top at-large). Now SEED: rank the chosen field
+    # purely by strength — AQ and at-large INTERLEAVED, never AQ-first. Method of
+    # qualification answers "why is this team in?", not "how good is it?", so a weak
+    # conference champ can sit at the bottom of the field and a strong at-large near
+    # the top. The unpicked teams are ranked just BELOW the field, so the last team
+    # in is #field and the first four out are #field+1.. — the real seed-list cut.
+    selected = sorted(list(aq_progs) + list(in_al), key=lambda p: sv(p.school), reverse=True)
+    seed_of = {p.school: i + 1 for i, p in enumerate(selected)}
+
+    def row(p, seed, bid, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
-                "rec": r.record, **extra}
+                "rec": r.record, "seed": seed, "field_rank": seed, "bid": bid, **extra}
 
-    aq = [row(p) for p in sorted((p for p in rated if p.school in aq_keys),
-                                 key=lambda p: pts.get(p.school, 0.0), reverse=True)]
-    in_board = [row(p, al_rank=i + 1) for i, p in enumerate(non_aq[:at_large_spots])]
-    out_board = [row(p, al_rank=at_large_spots + i + 1)
-                 for i, p in enumerate(non_aq[at_large_spots:])]
+    seed_list = [row(p, seed_of[p.school], "AQ" if p.school in aq_keys else "AL")
+                 for p in selected]
+    out_board = [row(p, field + i + 1, "AL") for i, p in enumerate(out_al)]
+    aq = [r for r in seed_list if r["bid"] == "AQ"]
+    in_board = [r for r in seed_list if r["bid"] == "AL"]       # at-large teams, true seeds
+    last_in = seed_list[-edge:]                                 # weakest 4 IN the field (the bubble)
+    first_out = out_board[:edge]                                # strongest 4 left out
     return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
-            "aq": aq, "at_large_spots": at_large_spots, "in_board": in_board, "out_board": out_board}
+            "aq": aq, "aq_count": len(aq), "at_large_spots": at_large_spots,
+            "seed_list": seed_list, "in_board": in_board, "out_board": out_board,
+            "last_in": last_in, "first_out": first_out}
 
 
 def bubble_watch(season_id: int, size: int | None = None, edge: int = 4) -> dict | None:
@@ -1185,9 +1207,9 @@ def bubble_watch(season_id: int, size: int | None = None, edge: int = 4) -> dict
     proj = _project(season_id, size, edge)
     if not proj:
         return None
-    return {"field": proj["field"], "aq_count": len(proj["aq"]),
+    return {"field": proj["field"], "aq_count": proj["aq_count"],
             "at_large_spots": proj["at_large_spots"],
-            "last_in": proj["in_board"][-edge:], "first_out": proj["out_board"][:edge]}
+            "last_in": proj["last_in"], "first_out": proj["first_out"]}
 
 
 def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -> dict | None:
