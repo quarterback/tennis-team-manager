@@ -1678,10 +1678,11 @@ def team_conference(division: str, gender: str, school: str) -> str:
 
 
 def injury_rows(division: str, gender: str, school: str | None = None,
-                conf_filter: str = "All") -> list[dict]:
+                conf_filter: str = "All", active_only: bool = False) -> list[dict]:
     """The current season's injury log as display rows. For a single program pass
     `school`; for the league-wide list omit it and optionally filter by conference.
-    Each row carries the player/team, the injury length, status, and crest bits."""
+    `active_only` keeps just the currently-hurt (out / season-ending). Each row
+    carries the player/team, the injury length, status, and crest bits."""
     import app.seasonmode as sm
     from app import world as wd, ncaa
     from .rankings_data import crest
@@ -1689,6 +1690,8 @@ def injury_rows(division: str, gender: str, school: str | None = None,
     conf_of = {p.school: p.conf for p in ncaa.load_division(division, gender).programs}
     out = []
     for e in sm.injury_log(sid, school):
+        if active_only and not e["active"]:
+            continue
         c = conf_of.get(e["school"], "")
         if conf_filter and conf_filter != "All" and c != conf_filter:
             continue

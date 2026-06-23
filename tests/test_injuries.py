@@ -197,8 +197,15 @@ def test_injury_pages_render(tmp_path):
     league = c.get("/injuries?u=D1-men")
     assert league.status_code == 200
     assert b"Injuries" in league.data
-    # conference filter is accepted
+    # conference filter + status toggle are accepted
     assert c.get("/injuries?u=D1-men&conf=All").status_code == 200
+    assert c.get("/injuries?u=D1-men&status=all").status_code == 200
+    # default (currently out) is a subset of the full-season list
+    from app.web.state import injury_rows
+    out_now = injury_rows("D1", "men", active_only=True)
+    all_season = injury_rows("D1", "men", active_only=False)
+    assert all(r["active"] for r in out_now)
+    assert len(out_now) <= len(all_season)
     # the per-program page carries the injury log panel
     team = c.get("/teams?u=D1-men&school=Oregon")
     assert team.status_code == 200

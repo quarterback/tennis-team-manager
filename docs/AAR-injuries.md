@@ -110,6 +110,10 @@ shape (injury state is per-save and cheap to re-accrue, never authoritative).
 - **League-wide** (`/injuries`, new `injuries.html`): a sortable table **grouped
   by team** with a **conference dropdown** (and the division selector), colored
   status dots (out / season-ending / returned). Added to the World nav group.
+  Defaults to **currently out** (`status=active` → `injury_rows(active_only=True)`)
+  so it reads as "who's hurt right now" rather than perpetual; a "Show" dropdown
+  flips to **All (season)** for the full log. The per-program panel keeps the full
+  history.
 
 ## Injury-awareness: out-state + a post-return grace window
 
