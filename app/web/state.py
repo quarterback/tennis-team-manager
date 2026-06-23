@@ -662,10 +662,15 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     return {"gender": gender, "grad_year": grad_year, "count": len(recruits), "board": rows}
 
 
-def signing_tracker(gender: str, seed: int = DEFAULT_SEED) -> dict:
+def signing_tracker(gender: str, division: str | None = None,
+                    seed: int = DEFAULT_SEED) -> dict:
     import app.world as world
+    from app.ncaa import load_division
     from .rankings_data import crest
     by_school = world.signings(seed).get(gender, {})
+    if division:                                    # scope to one classification (D1–D4)
+        in_div = {p.school for p in load_division(division, gender).programs}
+        by_school = {s: r for s, r in by_school.items() if s in in_div}
     classes = []
     commitments = []
     for school, recruits in by_school.items():

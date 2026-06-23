@@ -631,9 +631,12 @@ def _recruit_market(world: dict, gender: str) -> dict:
 
 
 def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
-                 exclude: set | None = None) -> str | None:
+                 exclude: set | None = None, progress: float = 1.0) -> str | None:
     """Score every plausible program for prospect `p` and return the best one
-    with an open seat. `exclude` blocks specific schools (used for decommits)."""
+    with an open seat. `exclude` blocks specific schools (used for decommits).
+    `progress` (0→1 across the signing window) drives the program-side caliber
+    standard: funded programs hold premium seats for elite talent early, relaxing
+    as signing day nears — so blue-chips aren't crowded out by 3★s rushing in."""
     from .recruiting import ELITE_CALIBER, FOUR_STAR
     from . import recruit_economy
     traits = market["traits"]
@@ -678,6 +681,8 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             continue
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
+        if cal < recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress):
+            continue                                  # program holds this seat for better talent (for now)
         coach = coachmap.get(s)
         prox = region_proximity(hr, reg)
         geo = hc * prox                                # the recruit's own desire to stay home
@@ -708,6 +713,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         best = next((s for s in reversed(by_pres)
                      if avail.get(s, 0) > 0 and _div_ok(traits[s][3], traits[s][1])
                      and budget.get(s, 0.0) >= budget_floor
+                     and cal >= recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress)
                      and (not exclude or s not in exclude)), None)
     return best
 
@@ -763,6 +769,9 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
 
     klass = national_class(world["seed"], world["year"], gender)
     denom = max(1, len(klass) - 1)
+    # How far into the signing window we are — drives the program-side caliber
+    # standard (funded programs hold premium seats for elites early, relax late).
+    progress = 1.0 if final else min(1.0, week / max(1, window - 1))
     new = []
     signed_n = 0
     for i, p in enumerate(klass):
@@ -773,7 +782,7 @@ def _sign_batch(conn, world: dict, gender: str, quota: int, *, final: bool = Fal
         # rank_frac: 0.0 = the #1 recruit, 1.0 = back of the class
         if not final and _decision_week(p, salt, i / denom, window) > week:
             continue                                        # hasn't decided to commit yet
-        best = _pick_school(p, market, avail, jitter_salt="sign")
+        best = _pick_school(p, market, avail, jitter_salt="sign", progress=progress)
         if best is None:
             continue
         avail[best] -= 1
@@ -803,6 +812,8 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
     wid, week = world["id"], world["week"]
     if week >= DECOMMIT_CUTOFF_WEEK:
         return 0
+    window = _signing_window(world["seed"], world)
+    progress = min(1.0, week / max(1, window - 1))          # program standard at this point in the cycle
     cutoff = week - DECOMMIT_WINDOW_WEEKS
     rows = conn.execute(
         "SELECT rowid, pid, school, data, flips, commit_history FROM world_signing"
@@ -828,7 +839,8 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
         p = prospect_from_dict(json.loads(r["data"]))
         avail[original] = avail.get(original, 0) + 1            # free the old seat first
         new_school = _pick_school(p, market, avail,
-                                  jitter_salt=f"flip|{week}", exclude={original})
+                                  jitter_salt=f"flip|{week}", exclude={original},
+                                  progress=progress)
         if new_school is None or new_school == original:        # nowhere to go — stay put
             avail[original] -= 1
             continue
