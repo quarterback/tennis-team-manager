@@ -13,7 +13,12 @@
     <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
       {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ rows|length }} injur{{ 'y' if rows|length == 1 else 'ies' }}</span>
+  <label class="bl-field"><span class="bl-field-label">Show</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
+      <option value="active"{% if status != 'all' %} selected{% endif %}>Currently out</option>
+      <option value="all"{% if status == 'all' %} selected{% endif %}>All (season)</option>
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ rows|length }} {{ 'currently out' if status != 'all' else ('injury' if rows|length == 1 else 'injuries') }}</span>
 </div></div>
 </form>
 
@@ -37,7 +42,7 @@
       </div>
       {% endfor %}
       {% if not rows %}
-      <div class="bl-row"><span></span><span class="bl-conf" style="grid-column:2/-1">No injuries{% if conf != 'All' %} in {{ conf }}{% endif %} this season.</span></div>
+      <div class="bl-row"><span></span><span class="bl-conf" style="grid-column:2/-1">{% if status != 'all' %}Nobody is currently out{% else %}No injuries{% endif %}{% if conf != 'All' %} in {{ conf }}{% endif %}{% if status == 'all' %} this season{% endif %}.</span></div>
       {% endif %}
     </div>
   </div>

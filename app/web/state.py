@@ -1678,10 +1678,11 @@ def team_conference(division: str, gender: str, school: str) -> str:
 
 
 def injury_rows(division: str, gender: str, school: str | None = None,
-                conf_filter: str = "All") -> list[dict]:
+                conf_filter: str = "All", active_only: bool = False) -> list[dict]:
     """The current season's injury log as display rows. For a single program pass
     `school`; for the league-wide list omit it and optionally filter by conference.
-    Each row carries the player/team, the injury length, status, and crest bits."""
+    `active_only` keeps just the currently-hurt (out / season-ending). Each row
+    carries the player/team, the injury length, status, and crest bits."""
     import app.seasonmode as sm
     from app import world as wd, ncaa
     from .rankings_data import crest
@@ -1689,6 +1690,8 @@ def injury_rows(division: str, gender: str, school: str | None = None,
     conf_of = {p.school: p.conf for p in ncaa.load_division(division, gender).programs}
     out = []
     for e in sm.injury_log(sid, school):
+        if active_only and not e["active"]:
+            continue
         c = conf_of.get(e["school"], "")
         if conf_filter and conf_filter != "All" and c != conf_filter:
             continue
@@ -1726,11 +1729,13 @@ def team_roster(division: str, gender: str, school: str):
     roster = build_roster(prog) if prog else []
     strmap = sm.season_player_str(sid)
     recs = sm.player_records(sid)
+    injured = {e["pid"]: e for e in sm.injury_log(sid, school) if e["active"]}
     rows = []
     for p in sorted(roster, key=lambda q: q.current_overall(), reverse=True):
         s, rel = strmap.get(p.pid, (p.str_value(), 0.0))
         w, l = recs.get(p.pid, (0, 0))
         rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l,
+                     "injury": injured.get(p.pid),
                      "schol": economy.fraction_label(getattr(p, "scholarship", 0.0))})
     for i, r in enumerate(rows, 1):
         r["line"] = i if i <= 6 else None       # top 6 are the singles lineup

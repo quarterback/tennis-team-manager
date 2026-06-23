@@ -807,10 +807,12 @@ def create_app() -> Flask:
     def injuries_page():
         division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")
-        rows = injury_rows(division, gender, conf_filter=conf)
+        status = request.args.get("status", "active")        # who's hurt now, by default
+        rows = injury_rows(division, gender, conf_filter=conf,
+                           active_only=(status != "all"))
         rows.sort(key=lambda r: (r["school"], not r["active"]))
         return render_template("injuries.html", active="Injuries", u=u, uni_label=label,
-                               rows=rows, conf=conf,
+                               rows=rows, conf=conf, status=status,
                                conferences=conferences_for(division, gender))
 
     @app.route("/player/<pid>")
