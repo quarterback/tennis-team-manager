@@ -42,6 +42,9 @@ SEASON_ENDING_SHARE = 0.01 # 1-in-100 injuries end the season (medical-redshirt 
 MIN_DUALS_OUT = 1          # shortest non-season-ending absence
 MAX_DUALS_OUT = 6          # longest non-season-ending absence
 SEASON_ENDING = -1         # sentinel return value from roll_injury
+RETURN_GRACE_DUALS = 3     # after returning, a player is eased back in and can't be
+                           # re-injured for this many of their team's duals — the
+                           # model is injury-AWARE, so no instant re-injury chains
 
 # A toggle so the deterministic bulk paths / tests can switch the dice off, and a
 # swappable RNG so a test can pin a seed. By default we draw on real entropy.

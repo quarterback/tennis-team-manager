@@ -313,3 +313,58 @@ def test_signed_freshman_kept_over_marginal_returner():
     kept = {p.pid for p in rosters[("D1", "men")]["S"]}
     assert "frosh" in kept                                       # recruit keeps its seat
     assert "r0" not in kept                                      # weakest returner displaced
+
+
+def test_injured_player_stays_on_roster_with_badge(tmp_path):
+    """An injured player must remain visible on the program roster (just flagged
+    out), not disappear until they return."""
+    import app.seasonmode as sm
+    from app import world as wd
+    from app.web.server import create_app
+    from app.web.state import team_roster
+    sm.DB_PATH = str(tmp_path / "inj.db")
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(2026)
+    c = create_app().test_client()
+    c.get("/season?u=D1-men")
+    for _ in range(6):
+        c.post("/season/advance?u=D1-men")
+    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
+    active = [e for e in sm.injury_log(sid) if e["active"]]
+    assert active, "six weeks of D1 should produce at least one active injury"
+    school = active[0]["school"]
+    rows = team_roster("D1", "men", school)
+    hurt = [r for r in rows if r["injury"]]
+    assert hurt, "the injured player is still on the roster"
+    # injured pid is present in the full roster, not filtered out
+    assert active[0]["pid"] in {r["p"].pid for r in rows}
+    html = c.get(f"/teams?u=D1-men&school={school}").data.decode()
+    assert "bl-badge injured" in html        # the out badge renders
+
+
+def test_recovery_grace_blocks_instant_reinjury(tmp_path):
+    """A returning player enters a grace window: available to play, but the model
+    is injury-aware and won't re-injure them until the window ticks out."""
+    import app.seasonmode as sm
+    sm.DB_PATH = str(tmp_path / "g.db")
+    sm.init_schema()
+    sid = sm.create_season("D3", "men", seed=2026)
+    conn = sm._db()
+    conn.execute("INSERT INTO injuries (season_id, pid, school, name, week, tag,"
+                 " total, duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,0)",
+                 (sid, "PID", "S", "Hurt Guy", 1, "REG", 1, 1))   # out for 1 dual
+    conn.commit()
+
+    def protected():
+        return {r["pid"] for r in conn.execute(
+            "SELECT pid FROM injuries WHERE season_id=? AND school=?"
+            " AND (season_ending=1 OR duals_remaining<>0)", (sid, "S")).fetchall()}
+
+    assert "PID" in sm._unavailable(conn, sid, "S")     # out now
+    sm._recover_team(conn, sid, "S")                    # heals -> drops into grace
+    assert "PID" not in sm._unavailable(conn, sid, "S") # back & available
+    assert "PID" in protected()                          # ...but grace-protected
+    for _ in range(injuries.RETURN_GRACE_DUALS):         # ride out the grace window
+        sm._recover_team(conn, sid, "S")
+    assert "PID" not in protected()                      # fully recovered, re-injurable
+    conn.close()

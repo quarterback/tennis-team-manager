@@ -111,6 +111,28 @@ shape (injury state is per-save and cheap to re-accrue, never authoritative).
   by team** with a **conference dropdown** (and the division selector), colored
   status dots (out / season-ending / returned). Added to the World nav group.
 
+## Injury-awareness: out-state + a post-return grace window
+
+A player who's currently injured is never rolled again (the new-injury roll skips
+anyone with an active row) — verified empirically: across a full division-season,
+**max concurrent active injuries per player = 0**. What *looked* like "injuring
+people who are already injured" was a player getting hurt several SEPARATE times
+across a season; because the league page groups by team, those repeat log rows sit
+adjacent and read as perpetual.
+
+To make the model genuinely injury-aware, a returning player now enters a
+**recovery grace window** (`injuries.RETURN_GRACE_DUALS = 3`): when a short-term
+injury heals it drops into a NEGATIVE `duals_remaining` instead of landing on 0,
+so for the next few team-duals the player is **available and plays** but **cannot
+be re-injured** — no instant re-injury chains. The window ticks back up to 0
+(fully recovered), and the new-injury roll skips anyone whose clock is nonzero
+(out `>0`, season-ending, or grace `<0`). `_unavailable` still keys off `>0`, so
+grace players aren't shown as out; `injury_log` reports them as Returned.
+
+Tuning is in `seasonmode._recover_team` (grace ticks up first, then active injuries
+tick down, a healed one dropping straight to `−RETURN_GRACE_DUALS`) and
+`_roll_new_injuries` (`duals_remaining<>0` skip). Out-duration is unchanged.
+
 ## Robustness (post-review fixes)
 
 Two edge cases caught in review:
