@@ -20,6 +20,8 @@ BANDS: list[tuple[str, str]] = [
     ("european", "European"),
     ("americas_pro", "Americas"),
     ("asian_pro", "Asia-Pacific"),
+    ("africa_pro", "Africa"),
+    ("oceania", "Oceania"),
 ]
 _VALID = {b for b, _ in BANDS}
 _DEFAULTS = {"name_preset": "tennis_global"}
@@ -163,7 +165,7 @@ _CONTINENTS: list[tuple[str, list[str]]] = [
                   "guyana", "caribbean_dutch", "caribbean_cricket", "barbados", "bahamas",
                   "bermuda"]),
     ("Asia", ["east_asia", "south_asia", "southeast_asia", "philippines", "malaysia",
-              "indonesia", "thailand", "hong_kong", "mongolia", "north_korea",
+              "indonesia", "thailand", "hong_kong", "mongolia", "south_korea", "north_korea",
               "afghan_central_asia", "central_west_asia", "kazakhstan"]),
     ("Europe", ["british_isles", "scotland", "europe_western", "europe_eastern",
                 "europe_southeast", "nordic", "netherlands", "italy", "finland", "sweden",
