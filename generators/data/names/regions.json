@@ -2972,6 +2972,23 @@
         "korean_north"
       ]
     },
+    "south_korea": {
+      "_doc": [
+        "Republic of Korea (ROK) — a standalone Korean market so South Korea ",
+        "can be dialled up directly, symmetric with the north_korea region. ",
+        "Uses the south-flavored `korean` pool (Lee/Park/Choi/Kim), the same ",
+        "names east_asia draws its KR subregion from; absent from the base ",
+        "presets, so it surfaces via a boost in the nationality editor."
+      ],
+      "label": "South Korea",
+      "country": "KR",
+      "first_keys": [
+        "korean"
+      ],
+      "surname_keys": [
+        "korean"
+      ]
+    },
     "albania": {
       "_doc": [
         "Adriatic frontier baseball nation. The curated Albanian pool existed",
