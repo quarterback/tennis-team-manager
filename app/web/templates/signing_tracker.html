@@ -4,10 +4,16 @@
 {% block title %}Play to Clinch — Signing Tracker{% endblock %}
 {% block content %}
 
+<form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+    </select></span></label>
   <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · live commitments this recruiting year</span>
   <a class="al-feed" style="margin-left:auto" href="{{ url_for('recruiting_hub_page', u=u) }}">← Recruiting HQ</a>
 </div></div>
+</form>
 
 <div class="bl-container">
   <div class="al-kpis">

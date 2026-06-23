@@ -907,7 +907,7 @@ def create_app() -> Flask:
     def signing_tracker_page():
         division, gender, label, u = _universe(request)
         return render_template("signing_tracker.html", active="Recruiting",
-                               trk=signing_tracker(gender), gender=gender,
+                               trk=signing_tracker(gender, division), gender=gender,
                                u=u, uni_label=label)
 
     @app.route("/recruiting/hub")
