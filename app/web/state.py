@@ -1726,11 +1726,13 @@ def team_roster(division: str, gender: str, school: str):
     roster = build_roster(prog) if prog else []
     strmap = sm.season_player_str(sid)
     recs = sm.player_records(sid)
+    injured = {e["pid"]: e for e in sm.injury_log(sid, school) if e["active"]}
     rows = []
     for p in sorted(roster, key=lambda q: q.current_overall(), reverse=True):
         s, rel = strmap.get(p.pid, (p.str_value(), 0.0))
         w, l = recs.get(p.pid, (0, 0))
         rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l,
+                     "injury": injured.get(p.pid),
                      "schol": economy.fraction_label(getattr(p, "scholarship", 0.0))})
     for i, r in enumerate(rows, 1):
         r["line"] = i if i <= 6 else None       # top 6 are the singles lineup

@@ -46,7 +46,7 @@
         </div>
         {% for r in rows %}
         {% set p = r.p %}
-        <div class="bl-row">
+        <div class="bl-row{% if r.injury %} bl-row-hurt{% endif %}">
           <span class="bl-rank">{{ r.line if r.line else '—' }}</span>
           <a class="bl-school" href="{{ url_for('player', pid=p.pid, school=school, u=u) }}"><span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span> {{ p.name }}</a>
           <span class="bl-conf">{{ p.class_year }}</span>
@@ -54,7 +54,9 @@
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.major }}</span>
           <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
           <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
-          <span>{% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% elif r.schol and r.schol != '—' %}<span class="bl-badge tier-IVY" title="scholarship equivalency">{{ r.schol }}</span>{% else %}<span class="bl-badge tier-MID" title="recruited, no athletic aid">Recruited</span>{% endif %}</span>
+          <span style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+            {% if r.injury %}<span class="bl-badge injured" title="{{ r.injury.status }} (Wk {{ r.injury.week }})">🩹 {{ 'Out for season' if r.injury.season_ending else r.injury.left }}</span>{% endif %}
+            {% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% elif r.schol and r.schol != '—' %}<span class="bl-badge tier-IVY" title="scholarship equivalency">{{ r.schol }}</span>{% else %}<span class="bl-badge tier-MID" title="recruited, no athletic aid">Recruited</span>{% endif %}</span>
         </div>
         {% endfor %}
       </div>
@@ -201,5 +203,7 @@
 .bl-injdot.out{background:#d4a017}.bl-injdot.se{background:#c0392b}.bl-injdot.back{background:#2e8b57}
 .bl-injlen{font-size:12px;color:var(--text-muted);white-space:nowrap}
 .bl-injstatus{font-size:11px;color:var(--text-muted);white-space:nowrap;text-align:right}
+.bl-badge.injured{background:#c0392b;color:#fff;white-space:nowrap}
+.bl-row-hurt{background:rgba(192,57,43,.06)}
 </style>
 {% endblock %}
