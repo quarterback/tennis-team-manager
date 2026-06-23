@@ -139,6 +139,32 @@ def recruit_budget_floor(caliber: float) -> float:
     return 0.0
 
 
+# The caliber a budget tier *courts* — the program-side mirror of the recruit
+# floors above. A funded program holds out for talent worthy of its money early in
+# the cycle so it doesn't burn a premium seat on a walk-on-calibre 3★.
+_PROGRAM_CEILING = ((13.5, 0.70), (10.5, 0.62), (8.5, 0.55))
+_STANDARD_HOLD = 0.75       # hold the full standard for this fraction of the window,
+                            # then ramp it to 0 by signing day so seats still fill
+
+
+def program_caliber_floor(budget: float, progress: float) -> float:
+    """Minimum recruit caliber a program will accept RIGHT NOW. A well-funded
+    program courts blue-chips/5★ for most of the cycle (won't spend a premium seat
+    on a 3★ rushing in early), holding its standard through `_STANDARD_HOLD` of the
+    window, then ramping it to zero by signing day (`progress` 1.0) so seats still
+    fill. Unfunded programs (ceiling 0) take anyone, always."""
+    ceiling = 0.0
+    for b, c in _PROGRAM_CEILING:
+        if budget >= b:
+            ceiling = c
+            break
+    if ceiling <= 0.0:
+        return 0.0
+    if progress <= _STANDARD_HOLD:
+        return ceiling
+    return ceiling * max(0.0, (1.0 - progress) / (1.0 - _STANDARD_HOLD))
+
+
 def tier_grade(tier_name: str, gender: str, rng: random.Random) -> float:
     """A talent grade drawn for a star tier, calibrated to the UTR ladder. Women
     sit a tier lower. Small gauss spread so same-tier players aren't identical."""
