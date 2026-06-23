@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from collections import Counter
 
 from . import dbpath
 
@@ -549,28 +550,44 @@ def _round1_pairs(seeded: list[str]) -> list[tuple[int, str, str]]:
 
 # Bracketing penalties (lower total = more credible national draw). Seeding and
 # bracketing are separate: teams are placed into the standard bracket by seed,
-# then swapped WITHIN their seed band to avoid bad first-round matchups.
+# then swapped WITHIN their seed band to avoid bad first-round matchups. The
+# rematch penalty escalates with how often the teams already met — a single
+# regular-season meeting stings, a third meeting is a near-veto.
 _PEN_SAME_CONF = 5000      # two teams from the same conference
-_PEN_REMATCH = 2500        # a regular-season rematch
+_PEN_REMATCH = 2500        # met ONCE in the regular season
+_PEN_MEET2 = 3000          # met TWICE — a heavier rematch
+_PEN_MEET3 = 6000          # met THREE+ times — strongly avoid
 _PEN_AQ_VS_AQ = 1000       # two conference champions against each other
 
 
-def _pair_penalty(a, b, conf_of: dict, played_pairs: set, autobid_set: set) -> int:
+def _meeting_penalty(times: int) -> int:
+    """Escalating penalty for rematching teams that met `times` in the regular
+    season (0 → none, 1 → rematch, 2 → heavier, 3+ → near-veto)."""
+    if times >= 3:
+        return _PEN_MEET3
+    if times == 2:
+        return _PEN_MEET2
+    if times == 1:
+        return _PEN_REMATCH
+    return 0
+
+
+def _pair_penalty(a, b, conf_of: dict, played_pairs, autobid_set: set) -> int:
     """Bracketing penalty for a first-round matchup: same conference, a regular-season
-    rematch, or two conference champions (AQs) meeting in round one."""
+    rematch (scaled by how many times they met), or two conference champions (AQs)
+    meeting in round one. `played_pairs` is a count map {frozenset(pair): meetings}."""
     if not a or not b:
         return 0
     s = 0
     if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
         s += _PEN_SAME_CONF
-    if frozenset((a, b)) in played_pairs:
-        s += _PEN_REMATCH
+    s += _meeting_penalty(played_pairs.get(frozenset((a, b)), 0))
     if a in autobid_set and b in autobid_set:
         s += _PEN_AQ_VS_AQ
     return s
 
 
-def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs: set,
+def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs,
                        autobid_set: set) -> list[tuple[str, str]]:
     """Pair a play-in field high-vs-low (seed 33 v 96, 34 v 95, …), then swap the
     low-seed opponents among games — every game stays a high-vs-low matchup — to avoid
@@ -601,7 +618,7 @@ def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs: set,
 
 
 def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
-                  played_pairs: set) -> list[tuple[int, str, str]]:
+                  played_pairs) -> list[tuple[int, str, str]]:
     """National-championship first round. Place the seeded field into the standard
     bracket (1-seed band vs 16-seed band, etc.), then minimise bracketing penalties
     by swapping teams WITHIN a seed band — preserving seed integrity — to avoid
@@ -783,9 +800,11 @@ def _ncaa_seeds(conn, s, progs, div):
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
-    played = {frozenset((d["home"], d["away"]))
-              for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
-                                    " AND round='REG' AND status='final'", (sid,)).fetchall()}
+    # COUNT regular-season meetings (not just whether they met) so the bracketer can
+    # penalise a 2nd/3rd-meeting first-rounder harder than a single rematch.
+    played = Counter(frozenset((d["home"], d["away"]))
+                     for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
+                                           " AND round='REG' AND status='final'", (sid,)).fetchall())
     return schools, autobid_set, conf_of, played
 
 

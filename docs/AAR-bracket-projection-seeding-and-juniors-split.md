@@ -50,11 +50,15 @@ above weak AQs at #61–64; cutoff #64; first four out #65–68.
 > **not selected** (at-large spots full) and ranks just outside. Ranking happens
 > after the 64 are picked.
 
-The full bracketing constraints (conference separation, regular-season-rematch
-avoidance, AQ-vs-AQ avoidance, multiple-meeting penalties) are **not yet
-implemented** — the draw is still a protected-seed random draw (`seeded_draw`).
-Documented as the next step; see `docs/FEATURE-tournament-selection-seeding.md`
-for the published methodology.
+**Correction (same day):** the bracketing constraints are in fact already
+implemented in the seasonmode tournament — `_seed_bracket` / `_deconflict_playin`
+place by seed then hill-climb swaps **within a seed band** to minimise
+same-conference (5000), regular-season-rematch (2500), and AQ-vs-AQ (1000)
+first-round penalties, with seed integrity preserved. The only piece missing from
+the owner's spec was the **multiple-meeting penalty** (`played` was a set, so a
+2nd/3rd meeting collapsed to one rematch). Added: `played` is now a `Counter` of
+meeting counts and `_meeting_penalty` escalates 1→2500, 2→3000, 3+→6000. See
+`docs/FEATURE-tournament-selection-seeding.md` for the published methodology.
 
 ## 2. Junior rankings — National = US, International = non-US
 
