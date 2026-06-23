@@ -616,15 +616,19 @@ def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",
                         nation: str = "", sort: str = "rank", desc: bool = True,
                         seed: int = DEFAULT_SEED):
     """Points-ledger junior rankings as (rank, Prospect, stat_line) rows, sortable by
-    any almanac column. Scopes: 'world' (whole pool), 'us' (domestic), 'nation'."""
+    any almanac column. Scopes: 'world' (everyone), 'us' (all domestic), 'intl' (all
+    non-US), 'nation' (one international country)."""
     from app import almanac
+    from app.juniors import intl_points_rankings
     klass = get_recruits(gender, grad_year, seed)
     if scope == "us":
-        src = us_points_rankings(klass)[:100]
+        src = us_points_rankings(klass)                 # all domestic (US)
+    elif scope == "intl":
+        src = intl_points_rankings(klass)               # all non-US
     elif scope == "nation" and nation:
         src = [p for p in points_rankings(klass) if not p.domestic and p.region == nation]
     else:
-        src = points_rankings(klass)
+        src = points_rankings(klass)                    # the whole pool
     stats = {p.pid: almanac.stat_line(p) for p in src}
     src = almanac.sort_recruits(src, stats, sort, desc)
     return [(i, p, stats[p.pid], almanac.honor_chip(p)) for i, p in enumerate(src, 1)]

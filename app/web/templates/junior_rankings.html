@@ -59,8 +59,9 @@
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Board</span>
     <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:150px">
-      <option value="world"{% if scope=='world' %} selected{% endif %}>International (all)</option>
-      <option value="us"{% if scope=='us' %} selected{% endif %}>US Top 100</option>
+      <option value="world"{% if scope=='world' %} selected{% endif %}>All (US + International)</option>
+      <option value="us"{% if scope=='us' %} selected{% endif %}>National (US only)</option>
+      <option value="intl"{% if scope=='intl' %} selected{% endif %}>International (non-US)</option>
       <option value="nation"{% if scope=='nation' %} selected{% endif %}>By Nation (Top 10)</option>
     </select></span></label>
   <a class="al-feed" href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}" title="Raw JSON export (the wiring contract)">{ } JSON</a>
@@ -86,7 +87,7 @@
     {% if scope == 'nation' and not nation %}Talent-dense nations · Top 10 each{% else %}Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}{% endif %}
   </div>
   <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
-    {{ 'International' if scope=='world' else ('US Top 100' if scope=='us' else (nation|country_name if nation else 'By Nation')) }} · ranked on combined points · click a header to sort</span>
+    {{ 'All (US + International)' if scope=='world' else ('National — US' if scope=='us' else ('International — non-US' if scope=='intl' else (nation|country_name if nation else 'By Nation'))) }} · ranked on combined points · click a header to sort</span>
 </div></div>
 
 {% if scope == 'nation' and not nation %}
