@@ -668,12 +668,14 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
 
 # --- Class-strength scoring -------------------------------------------------
 # Per recruit:
-#   RankScore    = 100 / NationalRank   (#1 → 100, #10 → 10, #100 → 1, #2500 → 0.04)
+#   RankScore    = sqrt(1000 / NationalRank)   (#1 → 31.6, #10 → 10, #100 → 3.2,
+#                  #1000 → 1) — a softened rank curve so the #1 recruit is the best
+#                  but doesn't 100×-dominate a class on his own.
 #   StarValue    = 7 for a Blue Chip, else the recruit's star count (5★→5 … 1★→1)
 #   RecruitScore = RankScore × STR × StarValue
 # CLASS SCORE = the AVERAGE RecruitScore of a program's TOP 3 recruits — headliner
-# quality, not padded depth. (Numerator matches the owner's fidelity table.)
-_RANK_SCORE_NUMERATOR = 100.0
+# quality, not padded depth.
+_RANK_SCORE_NUMERATOR = 1000.0
 
 
 def _star_value(p) -> int:
@@ -687,7 +689,7 @@ def _recruit_score(p) -> float:
     rank = getattr(p, "recruit_rank", 0) or 0
     if rank <= 0:
         return 0.0
-    rank_score = _RANK_SCORE_NUMERATOR / rank
+    rank_score = (_RANK_SCORE_NUMERATOR / rank) ** 0.5
     str_v = float(getattr(p, "junior_str", 0.0) or 0.0) or p.str_value()
     return rank_score * str_v * _star_value(p)
 
