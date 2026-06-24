@@ -12,8 +12,7 @@ its **headliners**.
 
 ```
 RankScore    = sqrt(1000 / NationalRank)
-StarValue    = 7 if Blue Chip, else the star count (5★→5, 4★→4, 3★→3, 2★→2, 1★→1)
-RecruitScore = RankScore × STR × StarValue
+RecruitScore = RankScore × STR
 ```
 
 - **RankScore** rewards national pedigree on a *softened* curve. The square root
@@ -31,12 +30,10 @@ RecruitScore = RankScore × STR × StarValue
   (A straight `100 / rank` would make #1 worth ~100× a #100; `sqrt(1000 / rank)`
   compresses that to ~10×, so depth and multiple elites matter.)
 
-- **StarValue** gives blue-chips a premium over plain 5★ — the one thing a 1–5 star
-  count can't express. Everyone else is worth their star count; unranked signees
-  score zero.
-
 - **STR** is the recruit's strength rating (the same number shown on their junior
-  profile), so a higher-rated player of the same rank/stars is worth more.
+  profile), so a higher-rated player of the same rank is worth more. Rank and STR
+  already track ability, so the score needs no extra star multiplier — the gaps
+  stay smooth and a deep class of strong recruits isn't dwarfed by one superstar.
 
 ## Per class
 
@@ -53,15 +50,17 @@ Classes are then ranked by ClassScore (ties broken by total stars, then name).
 
 ## Worked example
 
-| Class | Top-3 commits | ClassScore |
-|---|---|---|
-| Two blue-chips + a 4★ | #2 BC, #9 BC, #40 4★ | **≈ 4,380** |
-| One blue-chip + filler | #1 BC, then 2★ depth | ≈ 3,960 |
-| Three 5★/4★ studs | #3 5★, #6 5★, #12 4★ | ≈ 3,310 |
-| Eight-deep 3★ class | three mid-pack 3★ | far back |
+Three D1-women classes that the old flat **Star Pts** metric couldn't tell apart
+(Arizona State and Ole Miss both had three 5★ → "15"):
 
-Landing the literal #1 recruit still grades out near the top — but two or three
-elites beat one elite and a pile of filler, which is the point.
+| Class | Top-3 commits (rank @ STR) | Per-recruit | ClassScore |
+|---|---|---|---|
+| Ole Miss | #3 @ 53.1, #21 @ 50.9, #80 @ 49.6 | 969 / 351 / 175 | **499** |
+| Arizona State | #8 @ 52.2, #18 @ 51.4, #29 @ 52.7 | 584 / 383 / 309 | 425 |
+| Colorado | #22 @ 50.9 (one commit) | 343 | 343 |
+
+Ole Miss edges Arizona State on the strength of its #3-ranked headliner, and a
+one-commit class sits below both — distinctions the star count flattened to a tie.
 
 ## Where it lives
 

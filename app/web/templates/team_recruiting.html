@@ -18,7 +18,7 @@
   <div class="al-kpis">
     <div class="al-kpi"><div class="al-kpi-k">Commits</div><div class="al-kpi-v">{{ c.n }}</div></div>
     <div class="al-kpi"><div class="al-kpi-k">Avg ★</div><div class="al-kpi-v">{{ '%.2f'|format(c.avg_stars) }}</div></div>
-    <div class="al-kpi"><div class="al-kpi-k">Star Pts</div><div class="al-kpi-v">{{ c.total_stars }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Class Score</div><div class="al-kpi-v">{{ "{:,}".format(c.score) }}</div></div>
     <div class="al-kpi" style="flex:1.6 1 220px">
       <div class="al-kpi-k">Class by Star Tier</div>
       <div class="al-kpi-v" style="margin-top:5px">{{ spread(c.breakdown) }}</div>
@@ -36,10 +36,10 @@
   <div class="bl-panel-head"><span class="bl-panel-title">Commits</span>
     <span class="bl-panel-meta">{{ c.n }} signed</span></div>
   <div class="bl-tablescroll">
-  <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(140px,1fr) 60px minmax(120px,1fr) 70px 56px 52px">
+  <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(140px,1fr) 60px minmax(120px,1fr) 70px 52px 48px 56px">
     <div class="bl-thead">
       <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">★</span>
-      <span class="bl-th">HOMETOWN</span><span class="bl-th">TIER</span><span class="bl-th num">STR</span><span class="bl-th num">NAT'L</span></div>
+      <span class="bl-th">HOMETOWN</span><span class="bl-th">TIER</span><span class="bl-th num">STR</span><span class="bl-th num">NAT'L</span><span class="bl-th num">SCORE</span></div>
     {% for p in c.commits %}
     <div class="bl-row">
       <span class="bl-rank">{{ loop.index }}</span>
@@ -49,6 +49,7 @@
       <span><span class="bl-pill" style="font-size:10px">{{ p.recruit_tier or '—' }}</span></span>
       <span class="bl-cell-num">{{ '%.1f'|format(p.str_value()) }}</span>
       <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.recruit_rank or '–' }}</span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ "{:,}".format(c.commit_scores[p.pid]) }}</span></span>
     </div>
     {% endfor %}
   </div></div>

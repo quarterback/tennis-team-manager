@@ -21,15 +21,18 @@ Per recruit:
 
 ```
 RankScore    = sqrt(1000 / NationalRank)   # #1 → 31.6, #10 → 10, #100 → 3.2, #1000 → 1
-StarValue    = 7 if Blue Chip else star count   # 5★→5, 4★→4, 3★→3, 2★→2, 1★→1, Unrated→0
-RecruitScore = RankScore × STR × StarValue
+RecruitScore = RankScore × STR             # STR = str_value() (the figure shown on the recruit page)
 ```
 
-The rank curve evolved over a few passes: `100 / rank` (the original fidelity
-table) made a single #1 recruit ~100× a #100 and dominate the top-3 average, so a
-lone superstar + filler beat genuinely deep classes. The chosen `sqrt(1000 / rank)`
-**softens** that to a ~10× span (#1 → 31.6 vs #100 → 3.2): the #1 recruit is still
-clearly the best, but landing two or three elites now beats landing one and padding.
+The formula evolved over a few passes:
+- `100 / rank` (the original fidelity table) made a single #1 recruit ~100× a #100
+  and dominate the top-3 average, so a lone superstar + filler beat deep classes.
+- `sqrt(1000 / rank)` **softens** that to a ~10× span (#1 → 31.6 vs #100 → 3.2).
+- The **star multiplier was dropped** (owner call): rank and STR already track
+  ability, so the extra 7/5/4/3/2/1 tier weight was redundant and over-steepened
+  the gaps. STR is now `str_value()` (the STR the recruit page displays) so the
+  score is transparent against what the user sees. `_star_value` is kept in the
+  module, unused, for a quick re-add.
 
 **Class score = the AVERAGE RecruitScore of a program's TOP 3 recruits** (by
 RecruitScore) — a class is judged by its headliners, not padded by depth. Classes
