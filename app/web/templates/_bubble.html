@@ -4,10 +4,10 @@
 {% macro _row(t, u, kind) %}
 <a class="bl-bubble-row bl-bubble-row--{{ kind }}" href="{{ url_for('teams', school=t.school, u=u) }}">
   <span class="bl-bubble-seed">#{{ t.field_rank }}</span>
-  <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
+  <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span>{% if t.bid %} <span style="font-size:9px;font-weight:700;letter-spacing:.03em;padding:1px 4px;border-radius:4px;{{ 'background:rgba(14,124,134,.14);color:#0e7c86' if t.bid == 'AQ' else 'background:rgba(0,0,0,.06);color:var(--text-muted)' }}">{{ t.bid }}</span>{% endif %}</span>
   <span class="bl-bubble-conf">{{ t.conf }}</span>
   <span class="bl-bubble-rec">{{ t.rec }}</span>
-  <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+  <span class="bl-bubble-pi">{{ '%.1f'|format(t.pts) if t.pts is defined else '%.3f'|format(t.pi) }}</span>
 </a>
 {% endmacro %}
 

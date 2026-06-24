@@ -33,9 +33,11 @@ taken away by a selection formula. Projected conference leaders hold these bids 
 the live projection.
 
 **At-Large (AL).** Every remaining spot goes to the best teams that did *not* win
-their conference, ranked by **Power Index** — our results-based strength rating.
-No politics, no reputation, no bid-stealing: the strongest available bodies of
-work get the at-large seats, in order, until the field is full.
+their conference, ranked by **team ranking points** — an ITA-style rating that
+blends results with schedule and conference strength (so a deep-league body of
+work counts for more than a padded record). No politics, no reputation, no
+bid-stealing: the strongest available teams get the at-large seats, in order,
+until the field is full.
 
 That's the entire selection step. It decides admission and nothing else. A team's
 method of entry — AQ or AL — is recorded, then deliberately set aside.
@@ -50,9 +52,10 @@ is the part people most often get wrong, so we'll be blunt about it:
 > **Automatic-qualifier status is never a seeding input. A conference champion is
 > not automatically stronger than an at-large team.**
 
-We seed on competitive merit only — Power Index, schedule strength, and the
-quality of a team's league (a team that grinds through a deep conference every
-week has earned more than its raw win-loss suggests). We do **not** seed on:
+We seed on competitive merit only — the same team ranking points used for
+selection, which fold in results, schedule strength, and the quality of a team's
+league (a team that grinds through a deep conference every week has earned more
+than its raw win-loss suggests). We do **not** seed on:
 
 - whether a team is an AQ or an AL,
 - whether it won a conference championship,

@@ -44,22 +44,30 @@ seed list actually reads. `bubble_watch` and the data-portal bubble use the same
 `field_rank` (= seed). Verified on a D2 field: at-large teams seeded as high as #6
 above weak AQs at #61–64; cutoff #64; first four out #65–68.
 
-**Cut-line follow-up (review catch):** `last_in` was first taken as
-`seed_list[-edge:]` — the weakest *seeded* teams overall. But the cut line is an
-at-large bubble: `first_out` are non-AQ teams chasing at-large spots, and a
-protected AQ sitting near the bottom of the seed list can't be bumped by any of
-them. Showing such an AQ in "Last Four In" hides the actual lowest at-large
-selections and misleads. Fixed: `last_in = in_board[-edge:]` (the weakest at-large
-*selections*), so both sides of the bubble are at-large and comparable; the full
-`seed_list` still drives only the seeding display. Verified on a D2 field — cut
-line shows at-large seeds 55–58 in vs 65–68 out, with the AQ teams at 59–64
-correctly absent from the bubble.
+**Cut-line, take 2 (review catch):** `last_in` was briefly `in_board[-edge:]` (the
+at-large bubble) on a reviewer's note that a protected AQ can't be bumped by
+`first_out`. But on a real D1 page that read as confusing: the at-large teams span
+the *top* of the field while weak auto-bids cluster at the bottom, so "Last Four
+In" landed at ~#69–72 while the seed-list cut sat at #96 — two unrelated cut
+points. Reverted to **`last_in = seed_list[-edge:]`** (the four weakest teams
+actually IN the field), so the panel lines up with the seed-list cut at `#field`.
+Every cut-line row now carries an **AQ/AL chip**, which is what answers the
+reviewer's concern *in the UI*: you can see a weak champ is in on an automatic bid
+while a higher-rated at-large is the first out.
 
-> Note on selection vs. seeding optics: a left-out at-large team (e.g. seed #65)
-> can hold *more* points than a weak AQ that's in at #64. That's correct and
+**Display metric bug (same review):** the seed list was **ordered by ITA team
+points** (`ita_team_points` — the 0–92 metric the real bracket actually seeds by)
+but **displayed Power Index** (0–1). So the list looked unsorted — a 0.845 team
+could sit below a 0.763 team. Fixed by displaying the *same* metric it's ordered
+by: the row now carries `pts` (ITA team points), the column is **Pts**, and the
+blurb says "team ranking points" instead of "Power Index." `_bubble.html` shows
+`pts` too (falling back to `pi` for any legacy caller).
+
+> Note on selection vs. seeding optics: a left-out at-large team can hold *more*
+> points than a weak AQ that's in at the bottom of the field. That's correct and
 > intentional — the AQ was **selected** (champ), then seeded last; the at-large was
-> **not selected** (at-large spots full) and ranks just outside. Ranking happens
-> after the 64 are picked.
+> **not selected** (at-large spots full) and ranks just outside. The AQ/AL chips
+> make this visible instead of mysterious.
 
 **Correction (same day):** the bracketing constraints are in fact already
 implemented in the seasonmode tournament — `_seed_bracket` / `_deconflict_playin`

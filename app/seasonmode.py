@@ -1204,6 +1204,7 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     def row(p, seed, bid, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
+                "pts": round(sv(p.school), 1),          # the ITA team points the field is SEEDED by
                 "rec": r.record, "seed": seed, "field_rank": seed, "bid": bid, **extra}
 
     seed_list = [row(p, seed_of[p.school], "AQ" if p.school in aq_keys else "AL")
@@ -1211,13 +1212,13 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     out_board = [row(p, field + i + 1, "AL") for i, p in enumerate(out_al)]
     aq = [r for r in seed_list if r["bid"] == "AQ"]
     in_board = [r for r in seed_list if r["bid"] == "AL"]       # at-large teams, true seeds
-    # The cut line is an AT-LARGE bubble: the lowest at-large SELECTIONS vs the
-    # highest at-large teams left out — both ranked by the same at-large metric, so
-    # one side can actually bump the other. (A protected AQ near the bottom of the
-    # seed list is NOT on the bubble — nothing in `first_out` can displace it — so it
-    # must not appear in `last_in`.) The full `seed_list` drives the seeding display.
-    last_in = in_board[-edge:]                                  # weakest at-large selections
-    first_out = out_board[:edge]                                # strongest at-large teams out
+    # The cut line shows the FIELD boundary so it lines up with the seed list: the
+    # weakest teams still IN (#field-3 … #field) vs the strongest left OUT
+    # (#field+1 …). Each row carries an AQ/AL tag, so it's clear when a team is in on
+    # an automatic bid rather than strength. (Both are ranked by the same seeding
+    # metric — ITA team points — so the displayed order is monotonic.)
+    last_in = seed_list[-edge:]                                 # weakest four still in the field
+    first_out = out_board[:edge]                                # strongest four left out
     return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
             "aq": aq, "aq_count": len(aq), "at_large_spots": at_large_spots,
             "seed_list": seed_list, "in_board": in_board, "out_board": out_board,
