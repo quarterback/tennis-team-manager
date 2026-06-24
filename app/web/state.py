@@ -667,12 +667,12 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
 
 
 # --- Class-strength scoring -------------------------------------------------
-# Each recruit's contribution rewards BOTH where they ranked nationally and how
-# good they are, so a couple of elite signings beat a stack of mid-tier ones:
-#   RankScore   = 100 / NationalRank   (#1 → 100, #10 → 10, #100 → 1, #2500 → 0.04)
-#   StarValue   = 7 for a Blue Chip, else the recruit's star count (5★→5 … 1★→1)
+# Per recruit:
+#   RankScore    = 100 / NationalRank   (#1 → 100, #10 → 10, #100 → 1, #2500 → 0.04)
+#   StarValue    = 7 for a Blue Chip, else the recruit's star count (5★→5 … 1★→1)
 #   RecruitScore = RankScore × STR × StarValue
-# A class's score is the sum of its recruits' RecruitScores.
+# CLASS SCORE = the AVERAGE RecruitScore of a program's TOP 3 recruits — headliner
+# quality, not padded depth. (Numerator matches the owner's fidelity table.)
 _RANK_SCORE_NUMERATOR = 100.0
 
 
@@ -708,9 +708,13 @@ def signing_tracker(gender: str, division: str | None = None,
         scores = {id(p): _recruit_score(p) for p in recruits}
         abbr, color = crest(school)
         commits = sorted(recruits, key=lambda p: -scores[id(p)])
+        # CLASS SCORE = average RecruitScore of the program's TOP 3 recruits, so a
+        # class is judged by the quality of its headliners, not padded by depth.
+        top3 = sorted(scores.values(), reverse=True)[:3]
+        class_score = sum(top3) / len(top3) if top3 else 0.0
         classes.append({
             "school": school, "abbr": abbr, "color": color, "n": len(recruits),
-            "score": round(sum(scores.values())),              # the ranking metric
+            "score": round(class_score),                       # the ranking metric
             "blue": sum(1 for p in recruits if getattr(p, "recruit_tier", "") == "Blue Chip"),
             "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
             "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),

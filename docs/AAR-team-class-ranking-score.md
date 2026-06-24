@@ -25,8 +25,17 @@ StarValue    = 7 if Blue Chip else star count   # 5★→5, 4★→4, 3★→3, 
 RecruitScore = RankScore × STR × StarValue
 ```
 
-Class score = **Σ RecruitScore**; classes rank by it (tiebreak: total stars, then
-school for stability).
+**Class score = the AVERAGE RecruitScore of a program's TOP 3 recruits** (by
+RecruitScore) — a class is judged by its headliners, not padded by depth. Classes
+rank by it (tiebreak: total stars, then school for stability). A class with fewer
+than three signees averages over however many it has.
+
+> **RankScore constant.** The owner's fidelity table (`#1 = 100.00 … #2500 = 0.04`)
+> is `100 / NationalRank`; the shorthand "`1000 / NationalRank`" they also wrote
+> contradicts the table at every point, so the table wins — `_RANK_SCORE_NUMERATOR
+> = 100`. Because the class score is an *average* (and the numerator scales every
+> RecruitScore uniformly), 100 vs 1000 changes only the displayed magnitude, never
+> the ranking.
 
 ### Input mapping (the part that needed care)
 
@@ -46,8 +55,10 @@ The game has two tier systems; the **consensus board** is authoritative here:
   anchor points (#1…#2500).
 - Worked examples: #1 Blue Chip @ STR 53 → 100×53×7 = **37,100**; #40 4★ @ STR 50
   → 2.5×50×4 = **500**; #150 3★ @ STR 48 → 0.667×48×3 ≈ **96**; Unrated → 0.
-- Ranking now rewards quality: a 2-man blue-chip class outscores a six-man 3★
-  class, where the old star-sum put the bigger class on top.
+- Ranking now rewards top-end quality, not depth: a class headlined by the #1
+  recruit (top-3 avg ≈ 12.4k) outscores both a three-strong-5★/4★ class (≈ 4.9k)
+  and an eight-deep 3★ class (≈ 48), where the old star-sum put the biggest class
+  on top.
 
 ## UI
 
