@@ -235,6 +235,12 @@ def us_points_rankings(klass: RecruitClass) -> list[Prospect]:
     return [p for p in points_rankings(klass) if p.domestic]
 
 
+def intl_points_rankings(klass: RecruitClass) -> list[Prospect]:
+    """The whole pool minus the domestic (US) players — every international, ranked
+    by points. The complement of `us_points_rankings`."""
+    return [p for p in points_rankings(klass) if not p.domestic]
+
+
 def dense_nations(klass: RecruitClass, min_players: int = 8) -> list[str]:
     """International nations with enough pool depth to warrant a Top-10 board,
     ordered by that depth (talent density)."""

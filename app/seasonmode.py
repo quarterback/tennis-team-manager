@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from collections import Counter
 
 from . import dbpath
 
@@ -549,28 +550,44 @@ def _round1_pairs(seeded: list[str]) -> list[tuple[int, str, str]]:
 
 # Bracketing penalties (lower total = more credible national draw). Seeding and
 # bracketing are separate: teams are placed into the standard bracket by seed,
-# then swapped WITHIN their seed band to avoid bad first-round matchups.
+# then swapped WITHIN their seed band to avoid bad first-round matchups. The
+# rematch penalty escalates with how often the teams already met — a single
+# regular-season meeting stings, a third meeting is a near-veto.
 _PEN_SAME_CONF = 5000      # two teams from the same conference
-_PEN_REMATCH = 2500        # a regular-season rematch
+_PEN_REMATCH = 2500        # met ONCE in the regular season
+_PEN_MEET2 = 3000          # met TWICE — a heavier rematch
+_PEN_MEET3 = 6000          # met THREE+ times — strongly avoid
 _PEN_AQ_VS_AQ = 1000       # two conference champions against each other
 
 
-def _pair_penalty(a, b, conf_of: dict, played_pairs: set, autobid_set: set) -> int:
+def _meeting_penalty(times: int) -> int:
+    """Escalating penalty for rematching teams that met `times` in the regular
+    season (0 → none, 1 → rematch, 2 → heavier, 3+ → near-veto)."""
+    if times >= 3:
+        return _PEN_MEET3
+    if times == 2:
+        return _PEN_MEET2
+    if times == 1:
+        return _PEN_REMATCH
+    return 0
+
+
+def _pair_penalty(a, b, conf_of: dict, played_pairs, autobid_set: set) -> int:
     """Bracketing penalty for a first-round matchup: same conference, a regular-season
-    rematch, or two conference champions (AQs) meeting in round one."""
+    rematch (scaled by how many times they met), or two conference champions (AQs)
+    meeting in round one. `played_pairs` is a count map {frozenset(pair): meetings}."""
     if not a or not b:
         return 0
     s = 0
     if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
         s += _PEN_SAME_CONF
-    if frozenset((a, b)) in played_pairs:
-        s += _PEN_REMATCH
+    s += _meeting_penalty(played_pairs.get(frozenset((a, b)), 0))
     if a in autobid_set and b in autobid_set:
         s += _PEN_AQ_VS_AQ
     return s
 
 
-def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs: set,
+def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs,
                        autobid_set: set) -> list[tuple[str, str]]:
     """Pair a play-in field high-vs-low (seed 33 v 96, 34 v 95, …), then swap the
     low-seed opponents among games — every game stays a high-vs-low matchup — to avoid
@@ -601,7 +618,7 @@ def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs: set,
 
 
 def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
-                  played_pairs: set) -> list[tuple[int, str, str]]:
+                  played_pairs) -> list[tuple[int, str, str]]:
     """National-championship first round. Place the seeded field into the standard
     bracket (1-seed band vs 16-seed band, etc.), then minimise bracketing penalties
     by swapping teams WITHIN a seed band — preserving seed integrity — to avoid
@@ -783,9 +800,11 @@ def _ncaa_seeds(conn, s, progs, div):
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
-    played = {frozenset((d["home"], d["away"]))
-              for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
-                                    " AND round='REG' AND status='final'", (sid,)).fetchall()}
+    # COUNT regular-season meetings (not just whether they met) so the bracketer can
+    # penalise a 2nd/3rd-meeting first-rounder harder than a single rematch.
+    played = Counter(frozenset((d["home"], d["away"]))
+                     for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
+                                           " AND round='REG' AND status='final'", (sid,)).fetchall())
     return schools, autobid_set, conf_of, played
 
 
@@ -1159,23 +1178,50 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     at_large_spots = max(0, field - len(aq_keys))
     # At-large in/out follows the same ITA team points the bracket now seeds by.
     pts = ita_team_points(season_id)
+
+    def sv(school):
+        return pts.get(school, 0.0)
+
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
-                    key=lambda p: pts.get(p.school, 0.0), reverse=True)
+                    key=lambda p: sv(p.school), reverse=True)
     if at_large_spots < edge or len(non_aq) <= at_large_spots:
         return None
 
-    def row(p, **extra):
+    in_al = non_aq[:at_large_spots]          # at-large selections
+    out_al = non_aq[at_large_spots:]         # missed the cut
+    aq_progs = sorted((p for p in rated if p.school in aq_keys),
+                      key=lambda p: sv(p.school), reverse=True)
+
+    # SELECTION is done (AQ + the top at-large). Now SEED: rank the chosen field
+    # purely by strength — AQ and at-large INTERLEAVED, never AQ-first. Method of
+    # qualification answers "why is this team in?", not "how good is it?", so a weak
+    # conference champ can sit at the bottom of the field and a strong at-large near
+    # the top. The unpicked teams are ranked just BELOW the field, so the last team
+    # in is #field and the first four out are #field+1.. — the real seed-list cut.
+    selected = sorted(list(aq_progs) + list(in_al), key=lambda p: sv(p.school), reverse=True)
+    seed_of = {p.school: i + 1 for i, p in enumerate(selected)}
+
+    def row(p, seed, bid, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
-                "rec": r.record, **extra}
+                "rec": r.record, "seed": seed, "field_rank": seed, "bid": bid, **extra}
 
-    aq = [row(p) for p in sorted((p for p in rated if p.school in aq_keys),
-                                 key=lambda p: pts.get(p.school, 0.0), reverse=True)]
-    in_board = [row(p, al_rank=i + 1) for i, p in enumerate(non_aq[:at_large_spots])]
-    out_board = [row(p, al_rank=at_large_spots + i + 1)
-                 for i, p in enumerate(non_aq[at_large_spots:])]
+    seed_list = [row(p, seed_of[p.school], "AQ" if p.school in aq_keys else "AL")
+                 for p in selected]
+    out_board = [row(p, field + i + 1, "AL") for i, p in enumerate(out_al)]
+    aq = [r for r in seed_list if r["bid"] == "AQ"]
+    in_board = [r for r in seed_list if r["bid"] == "AL"]       # at-large teams, true seeds
+    # The cut line is an AT-LARGE bubble: the lowest at-large SELECTIONS vs the
+    # highest at-large teams left out — both ranked by the same at-large metric, so
+    # one side can actually bump the other. (A protected AQ near the bottom of the
+    # seed list is NOT on the bubble — nothing in `first_out` can displace it — so it
+    # must not appear in `last_in`.) The full `seed_list` drives the seeding display.
+    last_in = in_board[-edge:]                                  # weakest at-large selections
+    first_out = out_board[:edge]                                # strongest at-large teams out
     return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
-            "aq": aq, "at_large_spots": at_large_spots, "in_board": in_board, "out_board": out_board}
+            "aq": aq, "aq_count": len(aq), "at_large_spots": at_large_spots,
+            "seed_list": seed_list, "in_board": in_board, "out_board": out_board,
+            "last_in": last_in, "first_out": first_out}
 
 
 def bubble_watch(season_id: int, size: int | None = None, edge: int = 4) -> dict | None:
@@ -1185,9 +1231,9 @@ def bubble_watch(season_id: int, size: int | None = None, edge: int = 4) -> dict
     proj = _project(season_id, size, edge)
     if not proj:
         return None
-    return {"field": proj["field"], "aq_count": len(proj["aq"]),
+    return {"field": proj["field"], "aq_count": proj["aq_count"],
             "at_large_spots": proj["at_large_spots"],
-            "last_in": proj["in_board"][-edge:], "first_out": proj["out_board"][:edge]}
+            "last_in": proj["last_in"], "first_out": proj["first_out"]}
 
 
 def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -> dict | None:

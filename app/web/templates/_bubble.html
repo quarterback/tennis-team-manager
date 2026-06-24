@@ -3,7 +3,7 @@
 
 {% macro _row(t, u, kind) %}
 <a class="bl-bubble-row bl-bubble-row--{{ kind }}" href="{{ url_for('teams', school=t.school, u=u) }}">
-  <span class="bl-bubble-seed">#{{ t.al_rank }}</span>
+  <span class="bl-bubble-seed">#{{ t.field_rank }}</span>
   <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
   <span class="bl-bubble-conf">{{ t.conf }}</span>
   <span class="bl-bubble-rec">{{ t.rec }}</span>
