@@ -794,9 +794,11 @@ def _ncaa_seeds(conn, s, progs, div):
     sid = s["id"]
     ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
+    # Select + seed by the Committee Seed Score (strength + résumé + AQ pedigree),
+    # so power-conference champions are seeded above comparable at-large teams.
     seeded, autobids = select_field(div.programs, ratings, champions,
                                     size=field_for_division(s["division"]),
-                                    score=ita_team_points(sid))
+                                    score=committee_seed_score(sid, {c.school for c in champions}))
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
@@ -1118,6 +1120,95 @@ def _games_played(rec: str) -> int:
         return 0
 
 
+# --- Committee seed score ----------------------------------------------------
+# The selection committee is not a single sort. It blends three signals — base
+# strength (Power Index), recent résumé (ITA-style points), and championship
+# pedigree (the AQ bonus, tiered by how strong the conference is) — exactly the way
+# a human committee weighs "how good are you", "what have you done", and "did you win
+# something". A power-conference champion gets the biggest AQ bonus, so it seeds
+# above a comparable at-large; a low-major AQ gets only a token bump.
+#
+# Conference tiers are read off the prestige RANKING within the division (a
+# percentile), NOT a hardcoded list of league names — so the cutoffs travel to
+# D2–D4 (whose prestige is on a different absolute scale) and follow realignment
+# automatically. Three tiers, balanced across the ~34 D1 leagues:
+#   top  (Elite/Power) — the blue-bloods: ACC/SEC/Pac-16/Big 12/Big Ten plus the
+#                        next strongest (Ivy, Yankee, WCC, CIC). ~top quartile.
+#   mid  (Mid-major)   — the broad middle: MW, Big West, CUSA, Sun Belt, A-10, …
+#   low  (Low-major)   — the rest.
+# Cutoffs land on real breaks in the D1 men's prestige ladder: elite ends at CIC
+# (0.60), mid ends at Patriot (0.48) just above the 0.48→0.45 gap. "Power" = top.
+_CONF_TIER_PCTL = [(0.75, "top"), (0.40, "mid"), (0.0, "low")]
+_AQ_BONUS = {"top": 100.0, "mid": 40.0, "low": 12.0}
+POWER_TIERS = {"top"}
+
+# Committee Seed Score weights (must sum to 1.0).
+_W_PI, _W_PTS, _W_AQ, _W_RESUME = 0.45, 0.30, 0.15, 0.10
+
+
+def _conf_tier_map(division: str, gender: str) -> dict:
+    """{conf_abbr: tier} where tier ∈ top/mid/low, by each conference's
+    prestige percentile among the division's conferences (best ≈ 1.0)."""
+    from .ncaa import conf_prestige
+    confs = {p.conf_abbr for p in load_division(division, gender).programs}
+    ranked = sorted(confs, key=lambda c: conf_prestige(c, division), reverse=True)
+    n = max(1, len(ranked))
+    out = {}
+    for i, c in enumerate(ranked):
+        pctl = (n - i) / n
+        out[c] = next(tier for cut, tier in _CONF_TIER_PCTL if pctl >= cut)
+    return out
+
+
+def committee_seed_score(season_id: int, aq_set: set) -> dict:
+    """The committee's seed value per team: a weighted blend, NOT a single ranking.
+
+        45%  Power Index rank      — base strength ("how good are you")
+        30%  ITA-points rank       — résumé / recent results ("what have you done")
+        15%  AQ bonus (tiered)     — championship pedigree ("did you win something")
+        10%  recent form           — last-five record ("are you hot right now")
+
+    Each rank is turned into a 0–100 score (#1 ≈ 100, last ≈ 0). `aq_set` is the
+    schools holding automatic bids; only they earn the AQ bonus. The same score is
+    used to SELECT at-large teams and to SEED the whole field, so a power-conference
+    champion can out-seed a comparable at-large without anyone hand-sorting it."""
+    pi = power_index(season_id)
+    if not pi:
+        return {}
+    pts = ita_team_points(season_id)
+    s = load_season(season_id)
+    div = load_division(s["division"], s["gender"])
+    conf_of = {p.school: p.conf_abbr for p in div.programs}
+    tier_of = _conf_tier_map(s["division"], s["gender"])
+    form = team_form(season_id)
+    schools = list(pi.keys())
+    n = max(1, len(schools))
+    pi_rank = {sc: i + 1 for i, sc in enumerate(
+        sorted(schools, key=lambda x: pi[x].pi, reverse=True))}
+    pts_rank = {sc: i + 1 for i, sc in enumerate(
+        sorted(schools, key=lambda x: pts.get(x, 0.0), reverse=True))}
+
+    def rank_score(rank: int) -> float:
+        return 100.0 * (n - rank + 1) / n               # #1 ≈ 100, last ≈ ~0
+
+    def recent(sc: str) -> float:
+        f = form.get(sc) or {}
+        l5 = f.get("last5") or ""
+        return 100.0 * l5.count("W") / len(l5) if l5 else 50.0
+
+    out = {}
+    for sc in schools:
+        aqb = 0.0
+        if sc in aq_set:
+            aqb = _AQ_BONUS[tier_of.get(conf_of.get(sc, ""), "low")]
+        out[sc] = (_W_PI * rank_score(pi_rank[sc])
+                   + _W_PTS * rank_score(pts_rank.get(sc, n))
+                   + _W_AQ * aqb
+                   + _W_RESUME * recent(sc))
+    return out
+
+
+
 def _conf_leaders(div, cf: dict, ratings: dict) -> set[str]:
     """Projected automatic qualifiers — the team currently atop each conference
     (by conference record, Power Index as the tiebreak), as the race stands. Only
@@ -1176,11 +1267,12 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
 
     aq_keys = _conf_leaders(div, cf, ratings)
     at_large_spots = max(0, field - len(aq_keys))
-    # At-large in/out follows the same ITA team points the bracket now seeds by.
-    pts = ita_team_points(season_id)
+    # Selection AND seeding both run on the Committee Seed Score (strength + résumé
+    # + championship pedigree), not a single ranking.
+    committee = committee_seed_score(season_id, set(aq_keys))
 
     def sv(school):
-        return pts.get(school, 0.0)
+        return committee.get(school, 0.0)
 
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
                     key=lambda p: sv(p.school), reverse=True)
@@ -1204,7 +1296,7 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     def row(p, seed, bid, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
-                "pts": round(sv(p.school), 1),          # the ITA team points the field is SEEDED by
+                "score": round(sv(p.school), 1),        # the Committee Seed Score the field is seeded by
                 "rec": r.record, "seed": seed, "field_rank": seed, "bid": bid, **extra}
 
     seed_list = [row(p, seed_of[p.school], "AQ" if p.school in aq_keys else "AL")

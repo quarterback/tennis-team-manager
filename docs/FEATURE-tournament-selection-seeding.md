@@ -33,11 +33,9 @@ taken away by a selection formula. Projected conference leaders hold these bids 
 the live projection.
 
 **At-Large (AL).** Every remaining spot goes to the best teams that did *not* win
-their conference, ranked by **team ranking points** — an ITA-style rating that
-blends results with schedule and conference strength (so a deep-league body of
-work counts for more than a padded record). No politics, no reputation, no
-bid-stealing: the strongest available teams get the at-large seats, in order,
-until the field is full.
+their conference, ranked by the **Committee Seed Score** (described in §2). No
+politics, no reputation, no bid-stealing: the strongest available teams get the
+at-large seats, in order, until the field is full.
 
 That's the entire selection step. It decides admission and nothing else. A team's
 method of entry — AQ or AL — is recorded, then deliberately set aside.
@@ -46,25 +44,46 @@ method of entry — AQ or AL — is recorded, then deliberately set aside.
 
 ## 2. Seeding — how strong each team is
 
-Once the field is chosen, **every team in it is ranked purely by strength.** This
-is the part people most often get wrong, so we'll be blunt about it:
+Once the field is chosen, **every team in it is ranked by the Committee Seed
+Score** — the same number used to fill the at-large spots. It is *not* a single
+sort of one rating; it is a committee-style blend, just as a real selection
+committee weighs more than one thing. Four ingredients, by weight:
 
-> **Automatic-qualifier status is never a seeding input. A conference champion is
-> not automatically stronger than an at-large team.**
+| Weight | Ingredient | The question it answers |
+|---|---|---|
+| **45%** | **Power Index** rank | *How good are you?* (base strength) |
+| **30%** | **Team ranking points** rank | *What have you done?* (ITA-style résumé: results × schedule × league strength) |
+| **15%** | **Championship bonus** (AQ only, tiered) | *Did you win something?* (pedigree) |
+| **10%** | **Recent form** | *Are you hot right now?* (last-five record) |
 
-We seed on competitive merit only — the same team ranking points used for
-selection, which fold in results, schedule strength, and the quality of a team's
-league (a team that grinds through a deep conference every week has earned more
-than its raw win-loss suggests). We do **not** seed on:
+Each rating is turned into a 0–100 rank score (best ≈ 100, last ≈ 0) before
+blending, so Power Index (a 0–1 scale) and team ranking points (a 0–92 scale) can
+be combined on equal footing.
 
-- whether a team is an AQ or an AL,
-- whether it won a conference championship,
-- how it qualified.
+**The championship bonus is the one place a title helps your seed** — and only a
+*little*, capped at 15% of the score, and only for teams that actually won an
+automatic bid. It is **tiered by conference strength**, so a power-conference
+title is worth more than a low-major one:
 
-So the seed list interleaves freely. A dominant at-large team can be the #6 overall
-seed while a champion from a weak league sits near the bottom of the field. Both
-are correct. The question at seeding time is only ever *"how good is this team?"* —
-never *"how did it get here?"*
+- **Power (Elite) conference champion** — full bonus. A blue-blood league title is
+  the strongest pedigree signal, so a power-conference champion seeds above a
+  comparable at-large team.
+- **Mid-major champion** — a moderate bump.
+- **Low-major champion** — a token bump only.
+
+The conference tiers are **not a hardcoded list of league names.** Each league is
+placed by its **prestige percentile** within its own division, so the tiers travel
+automatically to D2–D4 (whose prestige sits on a different absolute scale) and
+follow any realignment. On the D1 men's board this currently yields nine Elite
+leagues (ACC, SEC, Pac-16, Big 12, Big Ten, Ivy, Yankee, WCC, CIC), a broad
+twelve-league Mid-major tier (MW, Big West, CUSA, Sun Belt, A-10, …), and the rest
+Low-major.
+
+Everything *except* that capped 15% bonus is pure competitive merit. We never seed
+on AQ-vs-AL status by itself, and method of entry never moves a team on its own. So
+the seed list interleaves freely: a dominant at-large team can be a top-ten overall
+seed while a champion from a weak league sits near the bottom of the field. Both are
+correct.
 
 **What this looks like in the projection.** The Bracket Projection page shows the
 full **Seed List**, 1 through the field size, with a small **AQ / AL** chip on each
@@ -116,7 +135,8 @@ upsets happen on their own.
 
 ## In one sentence
 
-We pick the field on merit and bids, rank it on strength alone, and only then draw
-the bracket — within seed lines — to make the best, freshest matchups: no
+We pick the field on merit and bids, rank it by the committee's blend — strength,
+résumé, a capped tiered title bonus, and form — and only then draw the bracket —
+within seed lines — to make the best, freshest matchups: no
 same-conference openers, no stale rematches, champions kept apart. Three questions,
 three answers, never crossed.
