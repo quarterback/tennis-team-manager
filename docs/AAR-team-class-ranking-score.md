@@ -19,20 +19,30 @@ flaws (owner-flagged on the live D1 board):
 
 Per recruit:
 
+**Final formula** (`_class_score`): take a program's top 3 recruits by national
+rank, then
+
 ```
-RankScore    = sqrt(1000 / NationalRank)   # #1 → 31.6, #10 → 10, #100 → 3.2, #1000 → 1
-RecruitScore = RankScore × STR             # STR = str_value() (the figure shown on the recruit page)
+ClassScore = 0.1 × Σ STR(top3) × sqrt(1000 / average rank(top3))
 ```
 
-The formula evolved over a few passes:
-- `100 / rank` (the original fidelity table) made a single #1 recruit ~100× a #100
-  and dominate the top-3 average, so a lone superstar + filler beat deep classes.
-- `sqrt(1000 / rank)` **softens** that to a ~10× span (#1 → 31.6 vs #100 → 3.2).
-- The **star multiplier was dropped** (owner call): rank and STR already track
-  ability, so the extra 7/5/4/3/2/1 tier weight was redundant and over-steepened
-  the gaps. STR is now `str_value()` (the STR the recruit page displays) so the
-  score is transparent against what the user sees. `_star_value` is kept in the
-  module, unused, for a quick re-add.
+STR is `str_value()` (the figure the recruit page shows). e.g. Arizona State
+(#8/#18/#29 @ ~52) → `0.1 × 156.3 × sqrt(1000/18.3)` = **115.4**; Ole Miss
+(#3/#21/#80) → **82.5**.
+
+### How it got here (the iteration)
+1. `100 / rank × StarValue × STR`, summed over the class — flat tiers, blue-chips
+   indistinguishable from 5★, padding rewarded.
+2. `sqrt(1000 / rank)` to soften the rank curve; **average** of top-3; **star
+   multiplier dropped** (rank + STR already track ability).
+3. Owner observed a single high-ranked recruit still dominated (STR's tight ~49–53
+   band can't move a product the rank factor swings 10× over). Two fixes weighed —
+   a 50/50 rank/STR blend (made ASU ≈ Ole, a near-tie) vs **sum-STR × average-rank**
+   (made ASU clearly win). Chose the latter, **depth-first**: it uses *combined*
+   STR (rewards three studs over one + filler) and *average* rank (a low-ranked
+   third commit drags the class down, so a lone superstar can't carry it).
+4. Scaled `× 0.1` so scores read on a ~100 line (uncapped — elite classes exceed
+   100). `_star_value` stays in the module, unused, for a possible re-add.
 
 **Class score = the AVERAGE RecruitScore of a program's TOP 3 recruits** (by
 RecruitScore) — a class is judged by its headliners, not padded by depth. Classes

@@ -667,28 +667,28 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
 
 
 # --- Class-strength scoring -------------------------------------------------
-# Per recruit:
-#   RankScore    = sqrt(1000 / NationalRank)   (#1 → 31.6, #10 → 10, #100 → 3.2, #1000 → 1)
-#   RecruitScore = RankScore × STR
-# CLASS SCORE = the AVERAGE RecruitScore of a program's TOP 3 recruits — headliner
-# quality, not padded depth.
+# A class is judged by its TOP 3 recruits, on two axes at once:
+#   • combined STR  (how good they are — rewards depth, three studs > one + filler)
+#   • average national rank (how highly regarded — sqrt-softened)
+#   ClassScore = 0.1 × Σ STR(top3) × sqrt(1000 / avg rank(top3))
+# The 0.1 just lands it on a ~100 scale (a strong class clears 100, e.g. 115.4).
+_CLASS_SCORE_SCALE = 0.1
 _RANK_SCORE_NUMERATOR = 1000.0
 
 
-def _star_value(p) -> int:
-    """Blue chips carry a premium over plain 5★; everyone else is worth their stars.
-    (Currently NOT applied to the class score — kept for reference / quick re-add.)"""
-    if getattr(p, "recruit_tier", "") == "Blue Chip":
-        return 7
-    return int(getattr(p, "recruit_stars", 0) or 0)
+def _top3(recruits: list):
+    """A program's three best signees by national rank (only ranked recruits)."""
+    ranked = [p for p in recruits if (getattr(p, "recruit_rank", 0) or 0) > 0]
+    return sorted(ranked, key=lambda p: p.recruit_rank)[:3]
 
 
-def _recruit_score(p) -> float:
-    rank = getattr(p, "recruit_rank", 0) or 0
-    if rank <= 0:
+def _class_score(recruits: list) -> float:
+    top = _top3(recruits)
+    if not top:
         return 0.0
-    rank_score = (_RANK_SCORE_NUMERATOR / rank) ** 0.5
-    return rank_score * p.str_value()      # STR = the value shown on the recruit page
+    sum_str = sum(p.str_value() for p in top)
+    avg_rank = sum(p.recruit_rank for p in top) / len(top)
+    return _CLASS_SCORE_SCALE * sum_str * (_RANK_SCORE_NUMERATOR / avg_rank) ** 0.5
 
 
 def signing_tracker(gender: str, division: str | None = None,
@@ -704,16 +704,11 @@ def signing_tracker(gender: str, division: str | None = None,
     commitments = []
     for school, recruits in by_school.items():
         stars = [getattr(p, "recruit_stars", 0) for p in recruits]
-        scores = {id(p): _recruit_score(p) for p in recruits}
         abbr, color = crest(school)
-        commits = sorted(recruits, key=lambda p: -scores[id(p)])
-        # CLASS SCORE = average RecruitScore of the program's TOP 3 recruits, so a
-        # class is judged by the quality of its headliners, not padded by depth.
-        top3 = sorted(scores.values(), reverse=True)[:3]
-        class_score = sum(top3) / len(top3) if top3 else 0.0
+        commits = sorted(recruits, key=lambda p: getattr(p, "recruit_rank", 1e9))
         classes.append({
             "school": school, "abbr": abbr, "color": color, "n": len(recruits),
-            "score": round(class_score),                       # the ranking metric
+            "score": round(_class_score(recruits), 1),         # the ranking metric
             "blue": sum(1 for p in recruits if getattr(p, "recruit_tier", "") == "Blue Chip"),
             "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
             "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
@@ -724,12 +719,11 @@ def signing_tracker(gender: str, division: str | None = None,
         })
         for p in recruits:
             commitments.append({"p": p, "school": school, "abbr": abbr, "color": color,
-                                "stars": getattr(p, "recruit_stars", 0),
-                                "score": round(scores[id(p)])})
+                                "stars": getattr(p, "recruit_stars", 0)})
     classes.sort(key=lambda c: (-c["score"], -c["total_stars"], c["school"]))
     for i, c in enumerate(classes, 1):
         c["rank"] = i
-    commitments.sort(key=lambda r: (-r["score"], getattr(r["p"], "recruit_rank", 1e9)))
+    commitments.sort(key=lambda r: getattr(r["p"], "recruit_rank", 1e9))
     flipped_total = sum(1 for school_pl in by_school.values()
                         for p in school_pl if getattr(p, "flips", 0) > 0)
     return {"classes": classes, "commitments": commitments,
@@ -749,19 +743,16 @@ def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) ->
     recruits = world.signings(seed).get(gender, {}).get(school, [])
     stars = [getattr(p, "recruit_stars", 0) for p in recruits]
     abbr, color = crest(school)
-    scores = {id(p): _recruit_score(p) for p in recruits}
-    commits = sorted(recruits, key=lambda p: -scores[id(p)])
-    top3 = sorted(scores.values(), reverse=True)[:3]
+    commits = sorted(recruits, key=lambda p: getattr(p, "recruit_rank", 1e9))
     return {
         "school": school, "abbr": abbr, "color": color, "n": len(recruits),
-        "score": round(sum(top3) / len(top3)) if top3 else 0,    # top-3 avg RecruitScore
+        "score": round(_class_score(recruits), 1),              # top-3: 0.1 × ΣSTR × sqrt(1000/avgRank)
         "blue": sum(1 for p in recruits if getattr(p, "recruit_tier", "") == "Blue Chip"),
         "five": sum(1 for x in stars if x >= 5), "four": sum(1 for x in stars if x == 4),
         "three": sum(1 for x in stars if x == 3), "two": sum(1 for x in stars if x == 2),
         "one": sum(1 for x in stars if x == 1),
         "breakdown": star_breakdown(stars),
         "total_stars": sum(stars), "avg_stars": round(sum(stars) / len(stars), 2) if stars else 0.0,
-        "commit_scores": {p.pid: round(scores[id(p)]) for p in recruits},
         "commits": commits,
     }
 
