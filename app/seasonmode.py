@@ -33,6 +33,7 @@ from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
                       clamp_field, field_for_division)
 from . import ita
+from . import regions
 
 from .dbpath import resolve_db_path
 
@@ -62,8 +63,8 @@ SEED_ROUNDS = ("REG", "CT", "ITAK", "ITAI")
 # non-power-of-two play-in (D1's 96) is the Round of 96; the rest follow the draw.
 NCAA_ROUND_LABEL = {
     "First Round": "R96", "Round of 96": "R96", "Round of 64": "R64",
-    "Round of 32": "R32", "Round of 16": "Sweet 16", "Quarterfinals": "Elite 8",
-    "Semifinals": "Final 4", "Final": "Final",
+    "Round of 32": "R32", "Round of 16": "S16", "Quarterfinals": "E8",
+    "Semifinals": "🥉 Final Four", "Final": "Final",
 }
 
 _SCHEMA = """
@@ -654,6 +655,77 @@ def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
     return [(k, slots[2 * k], slots[2 * k + 1]) for k in range(n // 2)]
 
 
+def _region_play_in(schools: list[str], conf_of: dict, played_pairs,
+                    autobid_set: set) -> list[tuple[int, str, str]]:
+    """The 96-team regional opening round. Split the national seed list into four
+    24-team regions by S-curve, then in each region pair seed lines 9v24, 10v23,
+    … 16v17 (deconflicted to dodge same-conference / rematch openers). bpos is
+    region-major (region r, game g → r*8 + g) so the winners come back grouped by
+    region for the main draw."""
+    out = []
+    for r, members in enumerate(regions.scurve_regions(schools)):
+        pairs = _deconflict_playin(members[8:24], conf_of, played_pairs, autobid_set)
+        for g, (h, a) in enumerate(pairs):
+            out.append((r * 8 + g, h, a))
+    return out
+
+
+def _region_r16(byes: list[str], winners: list[str], conf_of: dict, played_pairs,
+                autobid_set: set) -> list[tuple[str, str]]:
+    """One region's 16-team bracket: bye seed BYE_SEQ[k] hosts the opening-round
+    winner of line (17 − BYE_SEQ[k]). Every winner is lower-seeded than every bye,
+    so we may swap which winner faces which bye (seed-safe) to minimise penalties."""
+    base = [8 - s for s in regions.BYE_SEQ]        # canonical winner index per game k
+    order = list(base)
+
+    def total():
+        return sum(_pair_penalty(byes[regions.BYE_SEQ[k] - 1], winners[order[k]],
+                                 conf_of, played_pairs, autobid_set) for k in range(8))
+
+    cur = total()
+    for _ in range(60):
+        improved = False
+        for i in range(8):
+            for j in range(i + 1, 8):
+                order[i], order[j] = order[j], order[i]
+                t = total()
+                if t < cur:
+                    cur, improved = t, True
+                else:
+                    order[i], order[j] = order[j], order[i]
+        if not improved or cur == 0:
+            break
+    return [(byes[regions.BYE_SEQ[k] - 1], winners[order[k]]) for k in range(8)]
+
+
+def _region_main_draw(schools: list[str], winners: list[str], conf_of: dict,
+                      played_pairs, autobid_set: set) -> list[tuple[int, str, str]]:
+    """The 64-team main draw after the regional play-in: each region's eight byes
+    plus its eight play-in winners, laid out as four 16-brackets concatenated in
+    MAIN_DRAW_ORDER so the region champions meet in the national semifinals."""
+    regs = regions.scurve_regions(schools)
+    out = []
+    for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
+        rw = winners[r * 8:(r + 1) * 8]            # this region's play-in winners (game order)
+        for k, (h, a) in enumerate(_region_r16(regs[r][:8], rw, conf_of, played_pairs, autobid_set)):
+            out.append((slot * 8 + k, h, a))
+    return out
+
+
+def _region_main_draw_64(schools: list[str], conf_of: dict, played_pairs,
+                         autobid_set: set) -> list[tuple[int, str, str]]:
+    """A 64-team field by the same regional methodology, without a play-in: split
+    into four S-curve regions of 16 (no byes — all 16 play), seed each region's
+    16-bracket (within-band deconfliction preserved), and concatenate the four in
+    MAIN_DRAW_ORDER so the region champions meet in the national semifinals."""
+    regs = regions.scurve_regions(schools)
+    out = []
+    for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
+        for k, h, a in _seed_bracket(regs[r], autobid_set, conf_of, played_pairs):
+            out.append((slot * 8 + k, h, a))
+    return out
+
+
 def _insert_dual(conn, sid, week, rnd, conf, is_conf, round_no, bpos, home, away):
     conn.execute(
         "INSERT INTO duals (season_id, week, round, conf, is_conf, round_no, bpos, home, away,"
@@ -794,9 +866,11 @@ def _ncaa_seeds(conn, s, progs, div):
     sid = s["id"]
     ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
+    # Select + seed by the Committee Seed Score (strength + résumé + AQ pedigree),
+    # so power-conference champions are seeded above comparable at-large teams.
     seeded, autobids = select_field(div.programs, ratings, champions,
                                     size=field_for_division(s["division"]),
-                                    score=ita_team_points(sid))
+                                    score=committee_seed_score(sid, {c.school for c in champions}))
     schools = [p.school for p in seeded]
     autobid_set = {p.school for p in seeded if p.key in autobids}
     conf_of = {p.school: p.conf for p in seeded}
@@ -817,15 +891,22 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
         main = _pow2_le(len(schools))
         week = _next_post_week(conn, sid)
-        if len(schools) > main:
-            # Non-power-of-two field (e.g. D1's 96): a play-in round. The top seeds
-            # get byes; the lowest 2*(field-main) seeds play in (seed 33 v 96, …),
-            # and the winners join the byes to form the main draw next round.
+        if len(schools) == 96:
+            # D1's 96-team field: four S-curve regions of 24. Top 8 per region get
+            # byes; lines 9–24 play the regional opening round (9v24, …, 16v17).
+            for bpos, h, a in _region_play_in(schools, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, bpos, h, a)
+        elif len(schools) > main:
+            # Other non-power-of-two field: a flat play-in (top seeds bye, 33 v 96, …).
             byes_n = 2 * main - len(schools)
             playin = schools[byes_n:]
             for i, (h, a) in enumerate(_deconflict_playin(playin, conf_of, played, autobid_set)):
                 _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i, h, a)
-        else:                                          # clean power-of-two field
+        elif len(schools) == 64:
+            # D2/D3/D4: four S-curve regions of 16, no play-in (all 16 play).
+            for bpos, h, a in _region_main_draw_64(schools, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 1, bpos, h, a)
+        else:                                          # other clean power-of-two field
             for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played):
                 _insert_dual(conn, sid, week, "NCAA", _round_name(len(schools)), 0, 1, bpos, h, a)
         round_no = 1
@@ -842,6 +923,13 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
     if round_no == 1:
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
         main = _pow2_le(len(schools))
+        if len(schools) == 96:
+            # Regional main draw: each region's byes + its play-in winners, four
+            # 16-brackets laid out so the region champions meet in the semifinals.
+            week = _next_post_week(conn, sid)
+            for bpos, h, a in _region_main_draw(schools, winners, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 2, bpos, h, a)
+            return {"phase": "ncaa", "round": 1, "round_name": "First Round", "played": len(due)}
         if len(schools) > main:
             byes_n = 2 * main - len(schools)
             r64 = schools[:byes_n] + winners           # byes (top seeds) + play-in winners
@@ -1088,8 +1176,11 @@ def season_program_result(season_id: int, school: str) -> dict | None:
         return labels.get(last["conf"], last["conf"])
 
     complete = s["phase"] == "complete"
-    ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "National Champion", "National Runner-Up") if complete else None
+    ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "🏆 National Champion", "🥈 National Runner-Up") if complete else None
     ita = furthest("ITAI", {}, "ITA Indoor Champion", "ITA Runner-Up")
+    # Regional champion = won the Elite Eight (the regional final), i.e. reached the
+    # Final Four / national semifinals (`Semifinals` round). Each region crowns one.
+    regional_champ = any(d["round"] == "NCAA" and d["conf"] == "Semifinals" for d in duals)
     conn.close()
 
     return {
@@ -1101,6 +1192,7 @@ def season_program_result(season_id: int, school: str) -> dict | None:
         "ita": ita,
         "national_champ": national_champion(season_id) == school,
         "indoor_champ": indoor_champion(season_id) == school,
+        "regional_champ": regional_champ,
         "live": not complete,
     }
 
@@ -1116,6 +1208,100 @@ def _games_played(rec: str) -> int:
         return int(w) + int(l)
     except (ValueError, AttributeError):
         return 0
+
+
+# --- Committee seed score ----------------------------------------------------
+# The selection committee is not a single sort. It blends three signals — base
+# strength (Power Index), recent résumé (ITA-style points), and championship
+# pedigree (the AQ bonus, tiered by how strong the conference is) — exactly the way
+# a human committee weighs "how good are you", "what have you done", and "did you win
+# something". A power-conference champion gets the biggest AQ bonus, so it seeds
+# above a comparable at-large; a low-major AQ gets only a token bump.
+#
+# Conference tiers = the master 4-tier hierarchy (ncaa.CONF_TIER): Blue Blood
+# (top) / Major / Mid / Low. For D1 we read the canonical hand-curated map so the
+# seeding bonus agrees exactly with the recruiting-budget tiers; for D2–D4 (which
+# have no curated tier list) we fall back to a prestige-percentile split so the
+# bonus still travels. AQ bonus is tiered: a Blue Blood champion's title is worth
+# far more pedigree than a low-major's. "Power" = top + major.
+_CONF_TIER_PCTL = [(0.78, "top"), (0.55, "major"), (0.30, "mid"), (0.0, "low")]
+_AQ_BONUS = {"top": 100.0, "major": 65.0, "mid": 35.0, "low": 12.0}
+POWER_TIERS = {"top", "major"}
+
+# Committee Seed Score weights (must sum to 1.0).
+_W_PI, _W_PTS, _W_AQ, _W_RESUME = 0.45, 0.30, 0.15, 0.10
+
+
+def _conf_tier_map(division: str, gender: str) -> dict:
+    """{conf_abbr: tier} where tier ∈ top/major/mid/low. D1 uses the canonical
+    ncaa.CONF_TIER map (so seeding tiers match the recruiting-budget tiers); other
+    divisions fall back to a prestige-percentile split among their conferences."""
+    from .ncaa import conf_prestige, CONF_TIER
+    confs = {p.conf_abbr for p in load_division(division, gender).programs}
+    if division == "D1":
+        return {c: CONF_TIER.get(c, "low") for c in confs}
+    ranked = sorted(confs, key=lambda c: conf_prestige(c, division), reverse=True)
+    n = max(1, len(ranked))
+    out = {}
+    for i, c in enumerate(ranked):
+        pctl = (n - i) / n
+        out[c] = next(tier for tier_cut, tier in _CONF_TIER_PCTL if pctl >= tier_cut)
+    return out
+
+
+def committee_seed_score(season_id: int, aq_set: set) -> dict:
+    """The committee's seed value per team: a weighted blend, NOT a single ranking.
+
+        45%  Power Index rank      — base strength ("how good are you")
+        30%  ITA-points rank       — résumé / recent results ("what have you done")
+        15%  AQ bonus (tiered)     — championship pedigree ("did you win something")
+        10%  recent form           — last-five record ("are you hot right now")
+
+    Each rank is turned into a 0–100 score (#1 ≈ 100, last ≈ 0). `aq_set` is the
+    schools holding automatic bids; only they earn the AQ bonus. The same score is
+    used to SELECT at-large teams and to SEED the whole field, so a power-conference
+    champion can out-seed a comparable at-large without anyone hand-sorting it."""
+    pi = power_index(season_id)
+    if not pi:
+        return {}
+    pts = ita_team_points(season_id)
+    s = load_season(season_id)
+    div = load_division(s["division"], s["gender"])
+    conf_of = {p.school: p.conf_abbr for p in div.programs}
+    tier_of = _conf_tier_map(s["division"], s["gender"])
+    form = team_form(season_id)
+    schools = list(pi.keys())
+    n = max(1, len(schools))
+    pi_rank = {sc: i + 1 for i, sc in enumerate(
+        sorted(schools, key=lambda x: pi[x].pi, reverse=True))}
+    # Rank ONLY teams that actually have ITA points. ita_team_points deliberately
+    # omits teams with no quality wins, so default them to 0.0 — but a 0.0 team must
+    # NOT get a unique rank by dict order. Every point-less team shares the floor
+    # rank `n` below (`.get(sc, n)`), so their 30% résumé component is identical
+    # rather than an arbitrary spread.
+    pts_rank = {sc: i + 1 for i, sc in enumerate(
+        sorted((sc for sc in schools if pts.get(sc, 0.0) > 0.0),
+               key=lambda x: pts[x], reverse=True))}
+
+    def rank_score(rank: int) -> float:
+        return 100.0 * (n - rank + 1) / n               # #1 ≈ 100, last ≈ ~0
+
+    def recent(sc: str) -> float:
+        f = form.get(sc) or {}
+        l5 = f.get("last5") or ""
+        return 100.0 * l5.count("W") / len(l5) if l5 else 50.0
+
+    out = {}
+    for sc in schools:
+        aqb = 0.0
+        if sc in aq_set:
+            aqb = _AQ_BONUS[tier_of.get(conf_of.get(sc, ""), "low")]
+        out[sc] = (_W_PI * rank_score(pi_rank[sc])
+                   + _W_PTS * rank_score(pts_rank.get(sc, n))
+                   + _W_AQ * aqb
+                   + _W_RESUME * recent(sc))
+    return out
+
 
 
 def _conf_leaders(div, cf: dict, ratings: dict) -> set[str]:
@@ -1176,11 +1362,12 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
 
     aq_keys = _conf_leaders(div, cf, ratings)
     at_large_spots = max(0, field - len(aq_keys))
-    # At-large in/out follows the same ITA team points the bracket now seeds by.
-    pts = ita_team_points(season_id)
+    # Selection AND seeding both run on the Committee Seed Score (strength + résumé
+    # + championship pedigree), not a single ranking.
+    committee = committee_seed_score(season_id, set(aq_keys))
 
     def sv(school):
-        return pts.get(school, 0.0)
+        return committee.get(school, 0.0)
 
     non_aq = sorted((p for p in rated if p.school not in aq_keys),
                     key=lambda p: sv(p.school), reverse=True)
@@ -1204,6 +1391,7 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     def row(p, seed, bid, **extra):
         r = ratings[p.school]
         return {"school": p.school, "conf": p.conf_abbr, "pi": round(r.pi, 3),
+                "score": round(sv(p.school), 1),        # the Committee Seed Score the field is seeded by
                 "rec": r.record, "seed": seed, "field_rank": seed, "bid": bid, **extra}
 
     seed_list = [row(p, seed_of[p.school], "AQ" if p.school in aq_keys else "AL")
@@ -1211,13 +1399,13 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     out_board = [row(p, field + i + 1, "AL") for i, p in enumerate(out_al)]
     aq = [r for r in seed_list if r["bid"] == "AQ"]
     in_board = [r for r in seed_list if r["bid"] == "AL"]       # at-large teams, true seeds
-    # The cut line is an AT-LARGE bubble: the lowest at-large SELECTIONS vs the
-    # highest at-large teams left out — both ranked by the same at-large metric, so
-    # one side can actually bump the other. (A protected AQ near the bottom of the
-    # seed list is NOT on the bubble — nothing in `first_out` can displace it — so it
-    # must not appear in `last_in`.) The full `seed_list` drives the seeding display.
-    last_in = in_board[-edge:]                                  # weakest at-large selections
-    first_out = out_board[:edge]                                # strongest at-large teams out
+    # The cut line shows the FIELD boundary so it lines up with the seed list: the
+    # weakest teams still IN (#field-3 … #field) vs the strongest left OUT
+    # (#field+1 …). Each row carries an AQ/AL tag, so it's clear when a team is in on
+    # an automatic bid rather than strength. (Both are ranked by the same seeding
+    # metric — ITA team points — so the displayed order is monotonic.)
+    last_in = seed_list[-edge:]                                 # weakest four still in the field
+    first_out = out_board[:edge]                                # strongest four left out
     return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
             "aq": aq, "aq_count": len(aq), "at_large_spots": at_large_spots,
             "seed_list": seed_list, "in_board": in_board, "out_board": out_board,
@@ -1607,7 +1795,7 @@ def bracket_field(season_id: int, size: int | None = None):
         except (ValueError, TypeError):
             champions = []
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size),
-                                    score=ita_team_points(season_id))
+                                    score=committee_seed_score(season_id, {c.school for c in champions}))
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
@@ -1631,11 +1819,13 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     # tournament completes (parsing it as JSON then would fail and drop the seeds).
     champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
-    pts = ita_team_points(season_id)
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=pts)
+    # Select + seed by the SAME Committee Seed Score the actual draw uses
+    # (`_ncaa_seeds`), so the revealed seeds/labels match the scheduled matchups.
+    committee = committee_seed_score(season_id, {c.school for c in champions})
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=committee)
     field_keys = {p.key for p in seeded}
     out = sorted((p for p in rated if p.key not in field_keys),
-                 key=lambda p: pts.get(p.school, 0.0), reverse=True)[:out_n]
+                 key=lambda p: committee.get(p.school, 0.0), reverse=True)[:out_n]
     out_board = [{"school": p.school, "conf": p.conf_abbr,
                   "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
                  for p in out]

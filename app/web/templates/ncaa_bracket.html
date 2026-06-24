@@ -41,6 +41,8 @@
 <div class="bl-container"><div class="bl-note new">
   <strong>🎉 Bracket reveal — the field is set.</strong> Conference champions are in (AQ); the rest of the
   {{ br.size }}-team field is at-large by Power Index (AL). Advance the world to start the NCAAs.
+  {% if br.regions %}<br>Four regions (S-curve balanced):
+  {% for r in br.regions %}<span class="rgn">{{ r }}</span>{% endfor %}{% endif %}
 </div></div>
 <div class="bl-container"><div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">The Field</span>
@@ -51,6 +53,7 @@
       <span class="seed">{{ p.seed }}</span>
       {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
       <span class="nm">{{ p.school }}</span>
+      {% if p.region %}<span class="rgn">{{ p.region }}</span>{% endif %}
       <span class="conf">{{ p.conf }}</span>
       <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
     </a>
@@ -83,6 +86,8 @@
 .rs-seedrow .seed { width: 26px; text-align: right; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .rs-seedrow .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rs-seedrow .conf { font-size: 11px; color: var(--text-muted); }
+.rgn { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
+  background: var(--green-50, rgba(14,124,134,.10)); color: var(--green-700, #0e7c86); white-space: nowrap; }
 </style>
 
 {% else %}
@@ -106,6 +111,7 @@
         <span class="seed">{{ p.seed }}</span>
         {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
         <span class="school">{{ p.school }}</span>
+        {% if p.region %}<span class="rgn">{{ p.region }}</span>{% endif %}
         <span class="conf">{{ p.conf }}</span>
         <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
       </a>

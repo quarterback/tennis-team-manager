@@ -20,15 +20,17 @@ import random
 # CANONICAL RECRUIT COSTS (in scholarships) — do NOT change without reading
 # CLAUDE.md + the recruiting-economy AARs. A recruit COSTS scholarships from the
 # program's recruiting budget:
-#   Blue Chip = 3 · 5★ = 2 · 4★ = 1.5 · 3★ = 1 · 2★/1★ = free (0).
-# Women run lower on talent (GRADE_OFFSET below); 2★/1★ are free depth pieces.
+#   Blue Chip = 7 · 5★ = 3.5 · 4★ = 3 · 3★ = 2 · 2★ = 1 · 1★ = free (0).
+# Steep curve: a blue-chip core is a major investment, so only the deepest-funded
+# powers stack them. Women run lower on talent (GRADE_OFFSET below); 1★ are the
+# free walk-on depth pieces.
 #   tier key   stars  cost  men-grade(~UTR)
 TIERS = [
-    ("Blue Chip", 5, 3.0, 70.0),   # cost 3   · ~UTR 14
-    ("5-Star",    5, 2.0, 64.5),   # cost 2   · ~UTR 12.5
-    ("4-Star",    4, 1.5, 58.7),   # cost 1.5 · ~UTR 11
-    ("3-Star",    3, 1.0, 52.9),   # cost 1   · ~UTR 9.5
-    ("2-Star",    2, 0.0, 47.0),   # FREE     · ~UTR 8   (free depth)
+    ("Blue Chip", 5, 7.0, 70.0),   # cost 7   · ~UTR 14
+    ("5-Star",    5, 3.5, 64.5),   # cost 3.5 · ~UTR 12.5
+    ("4-Star",    4, 3.0, 58.7),   # cost 3   · ~UTR 11
+    ("3-Star",    3, 2.0, 52.9),   # cost 2   · ~UTR 9.5
+    ("2-Star",    2, 1.0, 47.0),   # cost 1   · ~UTR 8
     ("1-Star",    1, 0.0, 41.0),   # FREE     · ~UTR 6.7 (free walk-on)
 ]
 _GRADE_OFFSET = {"men": 0.0, "women": -9.0}   # women's grades sit a tier lower
@@ -37,22 +39,72 @@ _GRADE_OFFSET = {"men": 0.0, "women": -9.0}   # women's grades sit a tier lower
 # the cost. This is what makes blue-chips cluster: only programs funded ~14+
 # (powers) can land them; 5★ need ~10.5 (powers/high-majors); 4★ need ~8.5; 3★
 # and below go anywhere. So a budget-8 program can't simply buy two blue-chips.
-_TIER_FLOOR = {"Blue Chip": 13.5, "5-Star": 10.5, "4-Star": 8.5, "3-Star": 0.0}
+_TIER_FLOOR = {"Blue Chip": 16.5, "5-Star": 10.5, "4-Star": 5.0, "3-Star": 0.0}
 
-# Budget bands by D1 prestige tier (scholarship equivalency); D2 lower; D3 none.
-# (low, high) — placed within the band by the program's prestige + a per-world
-# random jitter so funding varies run to run.
-_D1_BANDS = [
-    (0.79, 15.0, 24.0),   # power — wide band so the blue-bloods separate from the rest
-    (0.62, 12.0, 14.0),   # high-major
-    (0.50, 10.0, 12.0),   # mid-major
-    (0.00,  6.0, 10.0),   # low-major — wider, thinner floor
-]
-_D2_BAND = (2.0, 9.0)   # wide: the best D2 funds ~4-star level, the worst is genuinely thin
+# Budget bands by D1 conference TIER (scholarship equivalency). Tiers are the
+# master hierarchy (ncaa.CONF_TIER); a program funds WITHIN its tier's band by its
+# own prestige (so a stronger program funds higher in the band), plus a per-world
+# jitter. Only the top tier redraws season to season within its wide band.
+_D1_TIER_BANDS = {
+    "top":   (16.0, 26.0),   # Blue Blood — wide so the blue-bloods separate (≈3 blue chips)
+    "major": ( 9.0, 16.0),   # High-major — a 5★/4★ core, the odd blue-chip reach
+    "mid":   ( 6.0,  9.0),   # Mid-major — 4★/3★ core
+    "low":   ( 6.0,  7.0),   # Low-major — 3★ core, thin; the floor sits just above D2
+}
+_D2_BAND = (4.0, 6.0)   # stabilized: D2 funds a tight 4-6, brushing D1 low-major at the top
+
+# A program whose OWN prestige outranks its conference tier funds UP to its prestige
+# tier — so a program genuinely better than its league isn't capped by it (the
+# decoupling lever: give such a school a PRESTIGE_SCHOOLS bump big enough to cross a
+# cut, or an editor prestige override). Normally a program's prestige matches its
+# conf tier (CONF_PRESTIGE is re-leveled to agree), so this is a no-op. Cuts sit in
+# the gaps between the re-leveled tier prestige bands.
+_TIER_RANK = {"low": 0, "mid": 1, "major": 2, "top": 3}
+_PRESTIGE_TIER_CUTS = ((0.82, "top"), (0.685, "major"), (0.565, "mid"), (0.0, "low"))
+
+
+def _prestige_tier(prestige: float) -> str:
+    return next(t for cut, t in _PRESTIGE_TIER_CUTS if prestige >= cut)
 # Standout D2 programs (Barry/Washburn-tier) fully fund — they max their
 # scholarships every year, so the per-world jitter never drops them off the
 # 4-star floor. Keyed to the D2 recruiting-prestige scale.
 _ELITE_D2_PRESTIGE = 0.28   # top of the D2 prestige band (0.20-0.30)
+
+# D3/D4 carry no athletic money EXCEPT a thin 1-3 allocation for the very top, so a
+# handful of programs can "sop up hidden gems" (out-recruit their peers for one
+# undervalued player). Who qualifies:
+#   • D4 — the academic-elite leagues/flagships (academics ≥ 0.85), which ARE tagged.
+#   • D3 — academic conferences aren't tagged in D3 anymore, so cap it to the Top-20
+#     programs by prestige in the division (recomputed per save, so overrides count).
+_D3D4_BAND = (1.0, 3.0)
+_D3_TOP_N = 20
+_ELITE_D3D4_ACADEMICS = 0.85   # matches scholarships.ELITE_D3_ACADEMICS
+_d3_top_cache: dict = {}
+
+
+def _d3_top_keys(gender: str) -> set:
+    g = gender or "men"
+    if g not in _d3_top_cache:
+        from .ncaa import load_division
+        progs = load_division("D3", g).programs
+        top = sorted(progs, key=lambda p: float(getattr(p, "prestige", 0.0)),
+                     reverse=True)[:_D3_TOP_N]
+        _d3_top_cache[g] = {p.key for p in top}
+    return _d3_top_cache[g]
+
+
+def reset_d3_top_cache() -> None:
+    _d3_top_cache.clear()
+
+
+def _d3d4_funded(program) -> bool:
+    """Whether a D3/D4 program gets the thin gem-hunting allocation."""
+    div = program.division
+    if div == "D4":
+        return float(getattr(program, "academics", 0.0)) >= _ELITE_D3D4_ACADEMICS
+    if div == "D3":
+        return program.key in _d3_top_keys(getattr(program, "gender", "men"))
+    return False
 
 
 def _free_fill_stars(prestige: float, division: str) -> str:
@@ -64,38 +116,49 @@ def _free_fill_stars(prestige: float, division: str) -> str:
 
 
 def program_budget(program, salt: str = "", year: int = 0) -> float:
-    """Recruiting budget for a program: a prestige-banded base plus a per-world jitter.
-    Only the TOP TIER (power conferences) redraws season to season within its wide
-    band — the blue-bloods' funding rises and falls year to year. Every other tier
-    (high-/mid-/low-major, D2) holds a fixed value in its prescribed band."""
+    """Recruiting budget for a program: its conference TIER sets the band, the
+    program's own prestige positions it within the band, and a per-world jitter
+    varies funding run to run. Only the top tier (Blue Bloods) redraws season to
+    season within its wide band. D2 is a single low band; D3/D4 carry none."""
     div = program.division
-    if div in ("D3", "D4"):        # non-scholarship tiers carry no recruiting budget
-        return 0.0
+    if div in ("D3", "D4"):        # non-scholarship tiers — only the funded few
+        if not _d3d4_funded(program):
+            return 0.0
+        lo, hi = _D3D4_BAND
+        pres = float(getattr(program, "prestige", 0.5))
+        frac = max(0.0, min(1.0, (pres - 0.26) / (0.42 - 0.26)))   # academic-lifted span
+        base = lo + frac * (hi - lo)
+        jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.4, 0.4)
+        return max(lo, min(hi, base + jit))
     pres = float(getattr(program, "prestige", 0.5))
     if div == "D2":
         lo, hi = _D2_BAND
         if pres >= _ELITE_D2_PRESTIGE:      # standout D2: fully funded, every year
             return hi
         frac = max(0.0, min(1.0, (pres - 0.20) / 0.10))   # D2 prestige band 0.20-0.30
-    else:  # D1
-        lo, hi = next((l, h) for cut, l, h in _D1_BANDS if pres >= cut)
-        # position within the band by where the program sits inside its tier
-        frac = 0.5
-        for cut, l, h in _D1_BANDS:
-            if pres >= cut:
-                span = 0.97 - cut
-                frac = max(0.0, min(1.0, (pres - cut) / span)) if span > 0 else 0.5
-                break
+        base = lo + frac * (hi - lo)
+        jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.5, 0.5)
+        return max(lo, base + jit)
+    # D1: conference tier sets the band, but a program funds UP to its own prestige
+    # tier when it outranks its league (decoupling — a great program in a weak conf
+    # isn't capped by it). Prestige positions the program within the chosen band.
+    from .ncaa import conf_tier
+    ctier = conf_tier(getattr(program, "conf_abbr", ""), div)
+    ptier = _prestige_tier(pres)
+    tier = ctier if _TIER_RANK[ctier] >= _TIER_RANK[ptier] else ptier
+    lo, hi = _D1_TIER_BANDS.get(tier, _D1_TIER_BANDS["low"])
+    frac = max(0.0, min(1.0, (pres - 0.44) / (0.97 - 0.44)))   # position by overall prestige
     base = lo + frac * (hi - lo)
-    if div == "D1" and pres >= _D1_BANDS[0][0]:
-        # Top-tier powers only: redraw within the wide band each season (year-seeded),
-        # swing scaled to the band so the blue-bloods' funding genuinely moves.
+    if tier == "top":
+        # Blue Bloods redraw within the wide band each season (year-seeded), swing
+        # scaled to the band so their funding genuinely rises and falls year to year.
         swing = (hi - lo) * 0.30
         jit = random.Random(f"{salt}|budget|{program.key}|{year}").uniform(-swing, swing)
         return max(0.0, min(hi, base + jit))
-    # Every other tier holds a fixed value in its band — a per-world jitter, same every season.
-    jit = random.Random(f"{salt}|budget|{program.key}").uniform(-1.0, 1.0)
-    return max(0.0, base + jit)
+    # Every other tier holds a fixed value in its band — a per-world jitter, same
+    # every season, clamped to the band floor (so "low = 6" really means ≥6).
+    jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.5, 0.5)
+    return max(lo, base + jit)
 
 
 def roster_star_plan(program, salt: str = "", *, roster_size: int = 8,
@@ -130,19 +193,17 @@ def recruit_budget_floor(caliber: float) -> float:
     """The minimum program budget a recruit of this caliber will sign with — the
     running-recruiting mirror of the roster floors. A blue-chip/5★ only goes to a
     power (budget ~13.5+); a 4★ needs a funded program; 3★ and below go anywhere."""
-    if caliber >= 0.70:          # 5★ / blue-chip
-        return 13.5
-    if caliber >= 0.62:          # high 4★ / low 5★
+    if caliber >= 0.62:          # 5★ / blue-chip — a Major+ budget (Blue Bloods win them via seat-holding)
         return 10.5
-    if caliber >= 0.55:          # 4★
-        return 8.5
+    if caliber >= 0.55:          # 4★ — any funded D1 program, or a top D2 (spillover)
+        return 5.0
     return 0.0
 
 
 # The caliber a budget tier *courts* — the program-side mirror of the recruit
 # floors above. A funded program holds out for talent worthy of its money early in
 # the cycle so it doesn't burn a premium seat on a walk-on-calibre 3★.
-_PROGRAM_CEILING = ((13.5, 0.70), (10.5, 0.62), (8.5, 0.55))
+_PROGRAM_CEILING = ((16.5, 0.70), (10.5, 0.62), (8.5, 0.55))
 _STANDARD_HOLD = 0.75       # hold the full standard for this fraction of the window,
                             # then ramp it to 0 by signing day so seats still fill
 

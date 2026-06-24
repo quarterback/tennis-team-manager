@@ -27,9 +27,17 @@ def test_build_roster_deterministic_and_shaped():
 
 
 def test_roster_talent_tracks_program_strength():
+    # D1 roster talent is EARNED by the recruiting-budget economy (budget = conf
+    # tier + program prestige), not by the raw per-season `strength` field — see
+    # recruit_economy + build_roster. So a blue-blood-prestige program in a top
+    # conference must out-recruit a low-major-prestige program in a weak one.
     reset_caches()
-    strong = sum(p.current_overall() for p in build_roster(_prog("Strong U", 0.9))) / ROSTER_SIZE
-    weak = sum(p.current_overall() for p in build_roster(_prog("Weak U", 0.2))) / ROSTER_SIZE
+    strong_p = Program(school="Strong U", conf="SEC", conf_abbr="SEC", division="D1",
+                       gender="men", abbr="ST", color="#000", strength=0.9, prestige=0.92)
+    weak_p = Program(school="Weak U", conf="NEC", conf_abbr="NEC", division="D1",
+                     gender="men", abbr="WK", color="#000", strength=0.2, prestige=0.45)
+    strong = sum(p.current_overall() for p in build_roster(strong_p)) / ROSTER_SIZE
+    weak = sum(p.current_overall() for p in build_roster(weak_p)) / ROSTER_SIZE
     assert strong > weak
 
 

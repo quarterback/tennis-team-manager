@@ -1199,7 +1199,17 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
     duals (seeds included, since the field is seeded from those same results)."""
     import app.world as world
     import app.seasonmode as sm
+    from app import regions as _regions
     from .rankings_data import crest
+
+    def _region_map(seeded):
+        """({school: cosmetic region name}, [4 names]) for a regional field — 96
+        teams (D1) or 64 (D2/D3/D4), both split into four S-curve regions."""
+        if len(seeded) not in (64, 96):
+            return {}, []
+        names = _regions.region_names(sm.load_season(sid)["seed"])
+        idx = _regions.region_index_of([p.school for p in seeded])
+        return {sch: names[r] for sch, r in idx.items()}, names
     if year is not None:
         idx = year - world.BASE_YEAR
         sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
@@ -1213,27 +1223,30 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
         phase = sm.load_season(sid).get("phase")
         if phase in ("selection", "ncaa"):
             seeded, autobids, out_board, _r = sm.ncaa_field(sid)
+            region_of, region_names = _region_map(seeded)
             field = []
             for i, p in enumerate(seeded, 1):
                 ab, col = crest(p.school)
                 field.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
                               "conf": getattr(p, "conf_abbr", ""),
-                              "aq": p.key in autobids})
+                              "aq": p.key in autobids, "region": region_of.get(p.school)})
             snubs = []
             for o in out_board:
                 ab, col = crest(o["school"])
                 snubs.append({**o, "abbr": ab, "color": col})
             return {"reveal": True, "field": field, "size": len(field),
-                    "n_aq": len(autobids), "out_board": snubs,
+                    "n_aq": len(autobids), "out_board": snubs, "regions": region_names,
                     "rounds": [], "champion": None, "complete": False}
         return None
     # Seed / conference / bid context — the field is locked for the whole
     # postseason, so the same seeding the bracket was drawn from labels every team
     # (so you can see who the seeds were and trace a seed's path round to round).
     seed_map, conf_map, aq_set = {}, {}, set()
+    region_of, region_names = {}, []
     top_seeds = []
     try:
         seeded, autobids, _out, _r = sm.ncaa_field(sid)
+        region_of, region_names = _region_map(seeded)
         for i, p in enumerate(seeded, 1):
             seed_map[p.school] = i
             conf_map[p.school] = getattr(p, "conf_abbr", "")
@@ -1242,14 +1255,15 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
             if i <= 16:
                 ab, col = crest(p.school)
                 top_seeds.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
-                                  "conf": getattr(p, "conf_abbr", ""), "aq": p.key in autobids})
+                                  "conf": getattr(p, "conf_abbr", ""), "aq": p.key in autobids,
+                                  "region": region_of.get(p.school)})
     except Exception:
         pass
 
     def _team(school, abbr, color, won):
         return {"school": school, "abbr": abbr, "color": color, "won": won,
                 "seed": seed_map.get(school), "conf": conf_map.get(school, ""),
-                "aq": school in aq_set}
+                "aq": school in aq_set, "region": region_of.get(school)}
 
     by_round: dict = {}
     for r in rows:
@@ -1275,7 +1289,7 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
         champion = {"school": win["school"], "abbr": win["abbr"], "color": win["color"],
                     "seed": win["seed"]}
     return {"rounds": rounds, "champion": champion, "top_seeds": top_seeds,
-            "complete": champion is not None}
+            "regions": region_names, "complete": champion is not None}
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
@@ -1469,13 +1483,15 @@ def program_history(division: str, gender: str, school: str, seed: int = DEFAULT
 
     honors = {
         "national_titles": years(lambda s: s["national_champ"]),
+        "regional_titles": years(lambda s: s.get("regional_champ")),
         "indoor_titles": years(lambda s: s["indoor_champ"]),
         "reg_conf_titles": years(lambda s: s["reg_conf_champ"]),
         "ct_titles": years(lambda s: s["ct_champ"]),
         "ncaa_appearances": [{"year": s["year"], "round": s["ncaa"]} for s in seasons if s["ncaa"]],
         "ita_appearances": [{"year": s["year"], "round": s["ita"]} for s in seasons if s["ita"]],
     }
-    honors["any"] = any(honors[k] for k in honors)
+    honors["division"] = division
+    honors["any"] = any(honors[k] for k in honors if k != "division")
     return {"seasons": seasons, "honors": honors}
 
 

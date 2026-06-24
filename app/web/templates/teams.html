@@ -136,6 +136,7 @@
     </div>
     {% endmacro %}
     {% if h.national_titles %}{{ hline('National Championships', 'gold', h.national_titles|length, h.national_titles|join(', ')) }}{% endif %}
+    {% if h.regional_titles %}{{ hline((h.division ~ ' Regional Championships'), 'bronze', h.regional_titles|length, h.regional_titles|join(', ')) }}{% endif %}
     {% if h.indoor_titles %}{{ hline('ITA Indoor National Champions', 'teal', h.indoor_titles|length, h.indoor_titles|join(', ')) }}{% endif %}
     {% if h.ncaa_appearances %}
     <div class="bl-honorrow"><span class="bl-honor-dot"></span><span class="bl-honor-label">NCAA Tournament Appearances</span>
@@ -190,7 +191,7 @@
   padding:9px 16px;border-bottom:1px solid var(--border-subtle)}
 .bl-honorrow:last-child{border-bottom:none}
 .bl-honor-dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong)}
-.bl-honor-dot.gold{background:#d4a017}.bl-honor-dot.teal{background:#0e7c86}.bl-honor-dot.brand{background:var(--brand)}
+.bl-honor-dot.gold{background:#d4a017}.bl-honor-dot.teal{background:#0e7c86}.bl-honor-dot.brand{background:var(--brand)}.bl-honor-dot.bronze{background:#a97142}
 .bl-honor-label{font-size:13px;font-weight:600;color:var(--text-primary)}
 .bl-honor-count{font-size:15px;font-weight:800;color:var(--brand-strong);text-align:right}
 .bl-honor-detail{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

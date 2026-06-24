@@ -25,25 +25,28 @@
     <h1 style="margin:0 0 4px;font-size:22px">NCAA {{ division }} Bracket Projection</h1>
     <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:720px">
       The {{ proj.field }}-team field if the tournament were seeded today. <strong>Selection:</strong>
-      projected conference leaders take the {{ proj.aq|length }} automatic bids; the remaining {{ cut }}
-      at-large spots go to the best of the rest by Power Index. <strong>Seeding:</strong> the whole field is
-      then ranked by strength alone — AQ and at-large interleaved, so a strong at-large can out-seed a
-      conference champion. How a team qualified never changes its seed. Each men's / women's D1–D4 season
-      is its own separate tournament.
+      projected conference leaders take the {{ proj.aq|length }} automatic bids (AQ); the remaining {{ cut }}
+      at-large spots (AL) go to the best of the rest by <strong>Committee Seed Score</strong>.
+      <strong>Seeding:</strong> the whole field is then ranked by that same score — a committee-style blend of
+      <strong>Power Index</strong> (base strength, 45%), <strong>team ranking points</strong> (résumé, 30%),
+      a tiered <strong>championship bonus</strong> for automatic qualifiers (15%, larger for power-conference
+      champs), and <strong>recent form</strong> (10%). AQ and AL interleave, so a strong at-large can out-seed
+      a weak champion while a power-conference title still lifts a comparable team above it. How a team
+      qualified never changes its seed. Each men's / women's D1–D4 season is its own separate tournament.
     </p>
   </div>
 
   <div class="bl-metric-grid" style="margin-bottom:18px">
     <div class="bl-metric"><span class="lbl">Field</span><strong>{{ proj.field }}</strong><span>{{ proj.aq|length }} AQ / {{ cut }} at-large</span></div>
     <div class="bl-metric"><span class="lbl">Auto bids</span><strong>{{ proj.aq|length }}</strong><span>projected conf leaders</span></div>
-    <div class="bl-metric"><span class="lbl">At-large</span><strong>{{ cut }}</strong><span>by Power Index</span></div>
+    <div class="bl-metric"><span class="lbl">At-large</span><strong>{{ cut }}</strong><span>by committee score</span></div>
     <div class="bl-metric"><span class="lbl">On the bubble</span><strong>{{ proj.out_board|length }}</strong><span>teams chasing in</span></div>
   </div>
 
   {# Quick read: the cut line. #}
   <div class="bl-panel" style="margin-bottom:18px">
     <div class="bl-panel-head"><span class="bl-panel-title">The Cut Line</span>
-      <span class="bl-panel-meta">at-large bubble · first out at #{{ proj.field + 1 }}</span></div>
+      <span class="bl-panel-meta">last in at #{{ proj.field }} · first out at #{{ proj.field + 1 }}</span></div>
     {{ bubble_split({'last_in': proj.last_in, 'first_out': proj.first_out}, u) }}
   </div>
 
@@ -52,9 +55,9 @@
        the cut line at the field size, then the teams chasing in. #}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Seed List</span>
-        <span class="bl-panel-meta">full field · seeded by strength · AQ &amp; at-large interleaved</span></div>
+        <span class="bl-panel-meta">full field · seeded by committee score · AQ &amp; at-large interleaved</span></div>
       <div class="bl-stand-hdr" style="grid-template-columns:42px 1fr 40px 56px 70px 56px">
-        <span>Seed</span><span>Team</span><span>Bid</span><span>Conf</span><span>Overall</span><span>PI</span>
+        <span>Seed</span><span>Team</span><span>Bid</span><span>Conf</span><span>Overall</span><span>Score</span>
       </div>
       {% for t in proj.seed_list %}
       <a class="bl-brk-match bl-proj-row{% if t.seed > proj.field - edge %} bl-proj-lastin{% endif %}"
@@ -65,7 +68,7 @@
         <span class="bl-proj-bid bl-proj-bid--{{ t.bid|lower }}">{{ t.bid }}</span>
         <span class="bl-bubble-conf">{{ t.conf }}</span>
         <span class="bl-bubble-rec">{{ t.rec }}</span>
-        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+        <span class="bl-bubble-pi">{{ '%.1f'|format(t.score) }}</span>
       </a>
       {% endfor %}
       <div class="bl-proj-cut">▲ in · cut line at #{{ proj.field }} · out ▼</div>
@@ -78,7 +81,7 @@
         <span class="bl-proj-bid bl-proj-bid--al">AL</span>
         <span class="bl-bubble-conf">{{ t.conf }}</span>
         <span class="bl-bubble-rec">{{ t.rec }}</span>
-        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+        <span class="bl-bubble-pi">{{ '%.1f'|format(t.score) }}</span>
       </a>
       {% endfor %}
     </div>
@@ -92,7 +95,7 @@
          href="{{ url_for('teams', school=t.school, u=u) }}">
         <span class="bl-bubble-team">{{ t.school | team_logo }}<span class="nm">{{ t.school }}</span></span>
         <span class="bl-bubble-conf">{{ t.conf }}</span>
-        <span class="bl-bubble-pi">{{ '%.3f'|format(t.pi) }}</span>
+        <span class="bl-bubble-pi">{{ '%.1f'|format(t.score) }}</span>
       </a>
       {% endfor %}
     </div>
