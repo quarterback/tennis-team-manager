@@ -49,29 +49,39 @@ SCHOOL_META = {
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
 CONF_PRESTIGE = {
-    # Power conferences — pushed clear of the pack so the top tier stands apart
-    # (Pac-16 revives the classic Pac with its tennis blue-bloods: Stanford,
-    # UCLA, USC, Cal).
-    "ACC": 0.82, "SEC": 0.82, "Pac-16": 0.82, "Big 12": 0.81, "Big Ten": 0.79,
-    # High / strong mid-majors
-    "Ivy": 0.68, "Yankee": 0.64, "WCC": 0.63, "CIC": 0.60, "MW": 0.58, "Big West": 0.57,
-    # UAA moved up to D1 — academic powerhouses, low-major athletically (academics
-    # come from ACADEMIC_CONF["UAA"]=0.95, athletics sit at the bottom of the D1 band).
-    "UAA": 0.45,
-    # Meridian League — a fun mix of D1-hockey schools (upstate NY) plus
-    # promoted D2/D3 programs. Low-major athletically.
-    "Meridian": 0.45,
-    "CUSA": 0.56, "Sun Belt": 0.55,
-    # Mid-majors
-    "A-10": 0.52, "ASUN": 0.52, "SoCon": 0.51, "Big East": 0.50, "MAC": 0.49,
-    "CAA": 0.49, "WAC": 0.49, "Patriot": 0.48,
-    # Low-majors
-    "Southland": 0.45, "Big Sky": 0.44, "Summit": 0.44, "Horizon": 0.43,
-    "Big South": 0.43, "OVC": 0.42, "MAAC": 0.40, "NEC": 0.38,
-    # Heritage League — the merged SWAC + MEAC (HBCU) conference.
-    "Heritage": 0.34,
-    # Not in the supplied list — placeholders pending values
-    "MVC": 0.44, "America East": 0.42,
+    # === D1 conference prestige, re-leveled to agree with the 4-tier hierarchy
+    # (CONF_TIER below). Tiers are the MASTER structure the owner hand-curates;
+    # these priors are set so the prestige ranking falls out in tier order
+    # (Blue Blood > Major > Mid > Low). Re-leveling a league moves its on-court
+    # strength AND recruiting budget together (owner decision) — e.g. Yankee
+    # promoted to Blue Blood, Heritage/UAA lifted to Major, CUSA dropped to Low.
+    # --- Blue Blood (top) ---
+    "Pac-16": 0.84, "SEC": 0.84, "ACC": 0.83, "Big 12": 0.82, "Big Ten": 0.81, "Yankee": 0.80,
+    # --- Major / High-major ---
+    "Ivy": 0.74, "WCC": 0.72, "MW": 0.69, "Big East": 0.68, "UAA": 0.67, "Heritage": 0.66,
+    # --- Mid-Major ---
+    "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "ASUN": 0.56, "MAC": 0.55,
+    "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
+    # --- Low-Major (everyone else) ---
+    "CUSA": 0.49, "SoCon": 0.47, "Southland": 0.46, "Meridian": 0.45, "Big Sky": 0.44, "MVC": 0.43,
+    "Summit": 0.43, "Big South": 0.42, "Horizon": 0.42, "America East": 0.41, "OVC": 0.40,
+    "MAAC": 0.39, "NEC": 0.38,
+}
+
+# D1 conference TIER hierarchy — the master 4-tier structure (Blue Blood / Major /
+# Mid-Major / Low-Major), hand-curated by the owner. Drives the recruiting-budget
+# bands (recruit_economy._D1_TIER_BANDS) and the tournament AQ seeding bonus
+# (seasonmode). CONF_PRESTIGE above is re-leveled to agree with these tiers, so
+# budget, on-court strength, and seeding all follow one hierarchy.
+CONF_TIER = {
+    "Pac-16": "top", "SEC": "top", "ACC": "top", "Big 12": "top", "Big Ten": "top", "Yankee": "top",
+    "Ivy": "major", "WCC": "major", "MW": "major", "Big East": "major",
+    "UAA": "major", "Heritage": "major",
+    "Big West": "mid", "CIC": "mid", "Sun Belt": "mid", "A-10": "mid", "ASUN": "mid",
+    "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid",
+    "CUSA": "low", "SoCon": "low", "Southland": "low", "Meridian": "low", "Big Sky": "low",
+    "MVC": "low", "Summit": "low", "Big South": "low", "Horizon": "low", "America East": "low",
+    "OVC": "low", "MAAC": "low", "NEC": "low",
 }
 
 # D2 / D3 priors are keyed by conference NAME (abbrs collide across divisions —
@@ -148,6 +158,14 @@ def conf_prestige(conf_abbr: str, division: str | None = None) -> float:
     """Conference prestige prior for a data-file abbr (now unique across all
     divisions). `division` is accepted for caller compatibility but unused."""
     return CONF_PRESTIGE.get(conf_abbr, 0.50)
+
+
+def conf_tier(conf_abbr: str, division: str | None = None) -> str:
+    """The conference's tier in the master 4-tier hierarchy (top/major/mid/low).
+    D1 uses the canonical CONF_TIER map; unknown abbrs (incl. other divisions,
+    which don't tier recruiting budgets — D2 is flat, D3/D4 unfunded) default to
+    'low'."""
+    return CONF_TIER.get(conf_abbr, "low")
 
 # --------------------------------------------------------------------------
 # Prestige + academics — the two recruiting levers.
@@ -261,7 +279,7 @@ ACADEMIC_SCHOOLS = {
 # the blue-blood school bump nudges a program toward the top of the band.
 DIVISION_PRESTIGE_RANGE = {"D1": (0.40, 0.97), "D2": (0.20, 0.30),
                            "D3": (0.10, 0.20), "D4": (0.04, 0.10)}
-_CONF_PRESTIGE_REF = {"D1": (0.34, 0.82), "D2": (0.35, 0.62),
+_CONF_PRESTIGE_REF = {"D1": (0.34, 0.84), "D2": (0.35, 0.62),
                       "D3": (0.35, 0.63), "D4": (0.40, 0.63)}
 
 
@@ -694,9 +712,14 @@ def _base_roster(p: Program):
     use_budget = p.division in ("D1", "D2")
     cap = roster_cap(p.division)            # D1 12 · D2 10 · D3/D4 16
     funded = scholarships.slots(p)          # full funding = more funded spots to spend budget on
+    # Funded D3/D4 (top-prestige programs) get a thin 1-3 budget on top of their
+    # conf-strength baseline — it LIFTS the few slots where it lands a real recruit
+    # tier (the academic "hidden gems"), leaving the rest at baseline.
+    d3d4_gem = (not use_budget and p.division in ("D3", "D4")
+                and recruit_economy.program_budget(p, WORLD_SALT) > 0.0)
     star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
                                                  roster_size=cap,
-                                                 schol_slots=funded) if use_budget else None
+                                                 schol_slots=funded) if (use_budget or d3d4_gem) else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     roster = []
     for i in range(cap):
@@ -706,6 +729,9 @@ def _base_roster(p: Program):
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
             talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+            if d3d4_gem:                                            # budget lifts only the gem slots
+                gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
+                talent = max(talent, gem)
         domestic = country in ("US", "USA", "United States", "")
         town_pool = (region_towns if domestic and region_towns
                      and town_rng.random() < LOCAL_REGION_TARGET else None)

@@ -1128,35 +1128,34 @@ def _games_played(rec: str) -> int:
 # something". A power-conference champion gets the biggest AQ bonus, so it seeds
 # above a comparable at-large; a low-major AQ gets only a token bump.
 #
-# Conference tiers are read off the prestige RANKING within the division (a
-# percentile), NOT a hardcoded list of league names — so the cutoffs travel to
-# D2–D4 (whose prestige is on a different absolute scale) and follow realignment
-# automatically. Three tiers, balanced across the ~34 D1 leagues:
-#   top  (Elite/Power) — the blue-bloods: ACC/SEC/Pac-16/Big 12/Big Ten plus the
-#                        next strongest (Ivy, Yankee, WCC, CIC). ~top quartile.
-#   mid  (Mid-major)   — the broad middle: MW, Big West, CUSA, Sun Belt, A-10, …
-#   low  (Low-major)   — the rest.
-# Cutoffs land on real breaks in the D1 men's prestige ladder: elite ends at CIC
-# (0.60), mid ends at Patriot (0.48) just above the 0.48→0.45 gap. "Power" = top.
-_CONF_TIER_PCTL = [(0.75, "top"), (0.40, "mid"), (0.0, "low")]
-_AQ_BONUS = {"top": 100.0, "mid": 40.0, "low": 12.0}
-POWER_TIERS = {"top"}
+# Conference tiers = the master 4-tier hierarchy (ncaa.CONF_TIER): Blue Blood
+# (top) / Major / Mid / Low. For D1 we read the canonical hand-curated map so the
+# seeding bonus agrees exactly with the recruiting-budget tiers; for D2–D4 (which
+# have no curated tier list) we fall back to a prestige-percentile split so the
+# bonus still travels. AQ bonus is tiered: a Blue Blood champion's title is worth
+# far more pedigree than a low-major's. "Power" = top + major.
+_CONF_TIER_PCTL = [(0.78, "top"), (0.55, "major"), (0.30, "mid"), (0.0, "low")]
+_AQ_BONUS = {"top": 100.0, "major": 65.0, "mid": 35.0, "low": 12.0}
+POWER_TIERS = {"top", "major"}
 
 # Committee Seed Score weights (must sum to 1.0).
 _W_PI, _W_PTS, _W_AQ, _W_RESUME = 0.45, 0.30, 0.15, 0.10
 
 
 def _conf_tier_map(division: str, gender: str) -> dict:
-    """{conf_abbr: tier} where tier ∈ top/mid/low, by each conference's
-    prestige percentile among the division's conferences (best ≈ 1.0)."""
-    from .ncaa import conf_prestige
+    """{conf_abbr: tier} where tier ∈ top/major/mid/low. D1 uses the canonical
+    ncaa.CONF_TIER map (so seeding tiers match the recruiting-budget tiers); other
+    divisions fall back to a prestige-percentile split among their conferences."""
+    from .ncaa import conf_prestige, CONF_TIER
     confs = {p.conf_abbr for p in load_division(division, gender).programs}
+    if division == "D1":
+        return {c: CONF_TIER.get(c, "low") for c in confs}
     ranked = sorted(confs, key=lambda c: conf_prestige(c, division), reverse=True)
     n = max(1, len(ranked))
     out = {}
     for i, c in enumerate(ranked):
         pctl = (n - i) / n
-        out[c] = next(tier for cut, tier in _CONF_TIER_PCTL if pctl >= cut)
+        out[c] = next(tier for tier_cut, tier in _CONF_TIER_PCTL if pctl >= tier_cut)
     return out
 
 

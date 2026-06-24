@@ -16,37 +16,47 @@ is wrong — the test may be the stale side. Before changing any number here, re
 
 ### ‼️ The big one: a program does NOT have a flat 8 scholarships
 Rosters are built by a **scholarship-BUDGET economy**, not a fixed scholarship count.
-A program **has a budget** (by prestige tier) and **spends it on recruits**, who
+A program **has a budget** (by **conference tier**) and **spends it on recruits**, who
 **cost** scholarships by star. The "8" you'll see in `scholarships.py` is a *separate,
 downstream aid-DISPLAY layer* — do not mistake it for "the program's scholarships."
 
-### 1. Recruiting budget = what a program actually has to spend (`recruit_economy._D1_BANDS`, `_D2_BAND`)
-Per-program budget (scholarship equivalency), with a per-world jitter; only D1 power
-redraws season-to-season:
+### 1. Recruiting budget = what a program actually has to spend (`recruit_economy._D1_TIER_BANDS`, `_D2_BAND`, `_D3D4_BAND`)
+Per-program budget (scholarship equivalency), with a per-world jitter; only D1 top
+tier redraws season-to-season. **Budget is keyed on the CONFERENCE TIER**
+(`ncaa.CONF_TIER` — the master 4-tier hand-curated hierarchy: top/major/mid/low),
+NOT a flat prestige cutoff. A program funds **within** its tier's band by its own
+prestige, and **funds UP** to its own prestige tier if it genuinely outranks its
+league (the decoupling lever — a great program isn't capped by a weak conference;
+see `_prestige_tier`).
 
 | Tier | Budget band |
 |---|---|
-| D1 power (prestige ≥ 0.79) | **15–24** (wide, so blue-bloods separate) |
-| D1 high-major (≥ 0.62) | 12–14 |
-| D1 mid-major (≥ 0.50) | 10–12 |
-| D1 low-major | 6–10 |
-| D2 | 2–9 (elite D2, prestige ≥ 0.28, fully fund at 9) |
-| D3 / D4 | 0 (no athletic money — fit/academics prior) |
+| D1 Blue Blood (`CONF_TIER` "top") | **16–26** (wide, redraws yearly, so blue-bloods separate) |
+| D1 Major / High-major ("major") | 9–16 |
+| D1 Mid-major ("mid") | 6–9 |
+| D1 Low-major ("low") | 6–7 (the floor, just above D2) |
+| D2 | 4–6 (elite D2, prestige ≥ 0.28, funds at 6) |
+| D3 / D4 | **0**, EXCEPT a thin **1–3 "gem" allocation** for the top: D4 academic-elite leagues (academics ≥ 0.85) + the **Top-20 D3 programs by prestige** (academic confs aren't tagged in D3, so it's a per-save prestige cap). Lets them sop up one undervalued recruit. |
 
 ### 2. Recruit cost by star — what the budget is spent on (`recruit_economy.TIERS`)
+Steep curve (deliberately): a premium core is a real investment, so only the
+deepest-funded blue-bloods stack blue-chips.
+
 | Tier | Cost (scholarships) |
 |---|---|
-| Blue Chip | **3** |
-| 5★ | **2** |
-| 4★ | **1.5** |
-| 3★ | **1** |
-| 2★ / 1★ | **free (0)** |
+| Blue Chip | **7** |
+| 5★ | **3.5** |
+| 4★ | **3** |
+| 3★ | **2** |
+| 2★ | **1** |
+| 1★ | **free (0)** |
 
 ### 3. Tier floors gate attainment (`_TIER_FLOOR`)
 A program must clear a budget floor to *attract* a tier (not just afford it):
-blue-chip ≥ 13.5, 5★ ≥ 10.5, 4★ ≥ 8.5, 3★ and below anywhere. So clustering is
-earned: only powers land blue-chips (e.g. budget-24 power can buy eight blue-chips;
-a budget-8 program can attract none).
+blue-chip ≥ **16.5** (Blue Bloods only), 5★ ≥ **10.5** (Major+), 4★ ≥ **5.0**
+(any funded D1 / top D2 — cascades down so 4★s always find a home), 3★ and below
+anywhere. So clustering is earned: only Blue Bloods land blue-chips; Majors top out
+at a 5★/4★ core; mid/low majors build 4★/3★; a low-major can attract no 5★.
 
 ### 4. Aid-DISPLAY caps — a SEPARATE layer (`app/scholarships.py`)
 Distinct from the budget above. `economy.allocate_scholarships` spreads a per-division
