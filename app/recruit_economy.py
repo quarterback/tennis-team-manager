@@ -20,15 +20,17 @@ import random
 # CANONICAL RECRUIT COSTS (in scholarships) — do NOT change without reading
 # CLAUDE.md + the recruiting-economy AARs. A recruit COSTS scholarships from the
 # program's recruiting budget:
-#   Blue Chip = 3 · 5★ = 2 · 4★ = 1.5 · 3★ = 1 · 2★/1★ = free (0).
-# Women run lower on talent (GRADE_OFFSET below); 2★/1★ are free depth pieces.
+#   Blue Chip = 7 · 5★ = 3.5 · 4★ = 3 · 3★ = 2 · 2★ = 1 · 1★ = free (0).
+# Steep curve: a blue-chip core is a major investment, so only the deepest-funded
+# powers stack them. Women run lower on talent (GRADE_OFFSET below); 1★ are the
+# free walk-on depth pieces.
 #   tier key   stars  cost  men-grade(~UTR)
 TIERS = [
-    ("Blue Chip", 5, 3.0, 70.0),   # cost 3   · ~UTR 14
-    ("5-Star",    5, 2.0, 64.5),   # cost 2   · ~UTR 12.5
-    ("4-Star",    4, 1.5, 58.7),   # cost 1.5 · ~UTR 11
-    ("3-Star",    3, 1.0, 52.9),   # cost 1   · ~UTR 9.5
-    ("2-Star",    2, 0.0, 47.0),   # FREE     · ~UTR 8   (free depth)
+    ("Blue Chip", 5, 7.0, 70.0),   # cost 7   · ~UTR 14
+    ("5-Star",    5, 3.5, 64.5),   # cost 3.5 · ~UTR 12.5
+    ("4-Star",    4, 3.0, 58.7),   # cost 3   · ~UTR 11
+    ("3-Star",    3, 2.0, 52.9),   # cost 2   · ~UTR 9.5
+    ("2-Star",    2, 1.0, 47.0),   # cost 1   · ~UTR 8
     ("1-Star",    1, 0.0, 41.0),   # FREE     · ~UTR 6.7 (free walk-on)
 ]
 _GRADE_OFFSET = {"men": 0.0, "women": -9.0}   # women's grades sit a tier lower
@@ -43,10 +45,10 @@ _TIER_FLOOR = {"Blue Chip": 13.5, "5-Star": 10.5, "4-Star": 8.5, "3-Star": 0.0}
 # (low, high) — placed within the band by the program's prestige + a per-world
 # random jitter so funding varies run to run.
 _D1_BANDS = [
-    (0.79, 15.0, 24.0),   # power — wide band so the blue-bloods separate from the rest
-    (0.62, 12.0, 14.0),   # high-major
-    (0.50, 10.0, 12.0),   # mid-major
-    (0.00,  6.0, 10.0),   # low-major — wider, thinner floor
+    (0.79, 14.0, 22.0),   # power — wide band so the blue-bloods separate (≈2-3 blue chips)
+    (0.62,  8.0, 11.0),   # high-major — a 5★/4★ core, the odd reach for more
+    (0.50,  5.0,  8.0),   # mid-major — 4★ core, a 5★ only for the best-funded
+    (0.00,  3.0,  6.0),   # low-major — 3★ core, thin
 ]
 _D2_BAND = (2.0, 9.0)   # wide: the best D2 funds ~4-star level, the worst is genuinely thin
 # Standout D2 programs (Barry/Washburn-tier) fully fund — they max their
