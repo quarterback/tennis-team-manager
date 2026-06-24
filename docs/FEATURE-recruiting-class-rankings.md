@@ -4,68 +4,56 @@
 
 Two programs can both sign "a good class," but a flat star count can't tell them
 apart — a blue-chip and a borderline 5★ both read as five stars, and a program can
-pad its total by signing bodies. The class rankings instead score each commit on
-**where they ranked nationally** and **how good they are**, then judge a class by
-its **headliners**.
+pad its total by signing bodies. The class score instead judges a program by its
+**top three recruits**, on two axes at once: **how good they are** (combined STR)
+and **how highly regarded they are** (average national rank).
 
-## Per recruit
-
-```
-RankScore    = sqrt(1000 / NationalRank)
-StarValue    = 7 if Blue Chip, else the star count (5★→5, 4★→4, 3★→3, 2★→2, 1★→1)
-RecruitScore = RankScore × STR × StarValue
-```
-
-- **RankScore** rewards national pedigree on a *softened* curve. The square root
-  keeps the #1 recruit clearly the most valuable without letting one signing
-  dominate a whole class:
-
-  | National rank | RankScore |
-  |---|---|
-  | #1 | 31.6 |
-  | #10 | 10.0 |
-  | #100 | 3.2 |
-  | #1000 | 1.0 |
-  | #2500 | 0.6 |
-
-  (A straight `100 / rank` would make #1 worth ~100× a #100; `sqrt(1000 / rank)`
-  compresses that to ~10×, so depth and multiple elites matter.)
-
-- **StarValue** gives blue-chips a premium over plain 5★ — the one thing a 1–5 star
-  count can't express. Everyone else is worth their star count; unranked signees
-  score zero.
-
-- **STR** is the recruit's strength rating (the same number shown on their junior
-  profile), so a higher-rated player of the same rank/stars is worth more.
-
-## Per class
+## The formula
 
 ```
-ClassScore = average RecruitScore of the program's TOP 3 recruits
+Take the program's TOP 3 recruits by national rank.
+ClassScore = 0.1 × Σ STR(top3) × sqrt(1000 / average rank(top3))
 ```
 
-Taking the **average of the top three** judges a class by its best signings, not by
-how many names it collected. A program that lands two or three elites outranks one
-that lands a single star and pads the rest; a deep class of mid-tier recruits sits
-below both.
+- **Σ STR** — the combined strength of the three headliners. Summing (not
+  averaging) rewards landing *three* strong players over one strong player and
+  filler; a class with fewer than three signees just sums what it has.
+- **sqrt(1000 / average rank)** — how highly the trio is regarded, on a softened
+  curve (#1 → 31.6, #10 → 10, #100 → 3.2). Using the *average* rank means a single
+  superstar can't carry a class on his own — a low-ranked third commit pulls the
+  whole class down.
+- **× 0.1** — purely cosmetic, to land scores on a ~100 scale. A strong class
+  clears 100; weak ones sit in the tens. Nothing caps it — an elite class can run
+  well over 100.
 
-Classes are then ranked by ClassScore (ties broken by total stars, then name).
+Classes rank by ClassScore (ties broken by total stars, then name).
+
+Why both axes: STR alone barely separates recruits (they all sit in a tight ~49–53
+band), and rank alone ignores that a deeper class is genuinely better. Combining
+combined-STR with average-rank lets a deep, high-STR class out-point a one-star
+class — which a flat star count or a single-headliner metric can't.
 
 ## Worked example
 
-| Class | Top-3 commits | ClassScore |
-|---|---|---|
-| Two blue-chips + a 4★ | #2 BC, #9 BC, #40 4★ | **≈ 4,380** |
-| One blue-chip + filler | #1 BC, then 2★ depth | ≈ 3,960 |
-| Three 5★/4★ studs | #3 5★, #6 5★, #12 4★ | ≈ 3,310 |
-| Eight-deep 3★ class | three mid-pack 3★ | far back |
+Three D1-women classes the old flat **Star Pts** metric couldn't tell apart
+(Arizona State and Ole Miss both had three 5★ → "15"):
 
-Landing the literal #1 recruit still grades out near the top — but two or three
-elites beat one elite and a pile of filler, which is the point.
+| Class | Top-3 (rank @ STR) | Σ STR | avg rank | ClassScore |
+|---|---|---|---|---|
+| **Arizona State** | #8 @ 52.2, #18 @ 51.4, #29 @ 52.7 | 156.3 | 18.3 | **115.4** |
+| Ole Miss | #3 @ 53.1, #21 @ 50.9, #80 @ 49.6 | 153.6 | 34.7 | 82.5 |
+| Colorado | #22 @ 50.9 (one commit) | 50.9 | 22.0 | 34.3 |
+
+Arizona State's three Top-30 signees outscore Ole Miss even though Ole Miss landed
+the higher individual recruit (#3) — the #80 third commit drags Ole's average rank
+down, and ASU's depth + slightly better STR wins. A one-commit class sits well
+below both. (Earlier "edges ahead" framing from a per-recruit-average draft no
+longer applies; this is the chosen depth-first scoring.)
 
 ## Where it lives
 
-`app/web/state.py` — `_recruit_score()` (per recruit) and `signing_tracker()` (the
-top-3 average + ranking). The rank-curve constant is `_RANK_SCORE_NUMERATOR = 1000`
-(inside the square root) if the steepness ever needs tuning. Change history in
+`app/web/state.py` — `_class_score()` (the formula) and `_top3()`, used by both
+`signing_tracker()` (league rankings) and `team_recruiting_class()` (the per-team
+page). Tunables: `_CLASS_SCORE_SCALE = 0.1` (the ~100-scale factor) and
+`_RANK_SCORE_NUMERATOR = 1000` (inside the square root). Change history in
 `docs/AAR-team-class-ranking-score.md`.

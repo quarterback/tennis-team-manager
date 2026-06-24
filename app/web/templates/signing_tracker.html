@@ -23,7 +23,7 @@
     {% if trk.classes %}
     <a class="al-kpi al-kpi-link" href="{{ url_for('team_recruiting', school=trk.classes[0].school, u=u) }}">
       <div class="al-kpi-k">No. 1 Class</div><div class="al-kpi-v sm">{{ trk.classes[0].school }}</div>
-      <div class="al-kpi-sub">{{ "{:,}".format(trk.classes[0].score) }} pts · {{ trk.classes[0].n }} commits{% if trk.classes[0].blue %} · {{ trk.classes[0].blue }} blue-chip{{ '' if trk.classes[0].blue == 1 else 's' }}{% endif %}</div></a>
+      <div class="al-kpi-sub">{{ '%.1f'|format(trk.classes[0].score) }} pts · {{ trk.classes[0].n }} commits{% if trk.classes[0].blue %} · {{ trk.classes[0].blue }} blue-chip{{ '' if trk.classes[0].blue == 1 else 's' }}{% endif %}</div></a>
     {% endif %}
   </div>
 </div>
@@ -50,7 +50,7 @@
       <div class="bl-row">
         <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
         <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}{% if c.blue %} <span style="font-size:11px">💎{{ c.blue }}</span>{% endif %}</a>
-        <span class="bl-cell-num"><span class="bl-stat power">{{ "{:,}".format(c.score) }}</span></span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(c.score) }}</span></span>
         <span class="bl-cell-num"><span class="bl-conf">{{ c.n }}</span></span>
         <span>{{ spread(c.breakdown, 'sm') }}</span>
         <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
