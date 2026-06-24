@@ -67,7 +67,16 @@ champ is the "last in."
 
 ## Gotchas for the next agent
 - Weights must sum to 1.0 (`_W_PI + _W_PTS + _W_AQ + _W_RESUME`).
-- Tiers are **percentile-relative**, so adding/removing conferences shifts
+- **All seeding paths must use `committee_seed_score`, not `ita_team_points`.** The
+  live draw (`_ncaa_seeds`), the reveal/lock (`ncaa_field`), and the as-it-stands
+  sim (`bracket_field`) all seed by the committee score — if one reverts to ITA
+  points, the displayed seeds/labels disagree with the scheduled matchups.
+- **Zero-point résumé floor:** `pts_rank` is built ONLY from teams with ITA points
+  > 0; every point-less team shares the floor rank `n` via `.get(sc, n)`. Do NOT
+  sort all PI teams (default 0.0) into `pts_rank` — that hands tied no-point teams
+  unique ranks by dict order, an arbitrary ~12-pt swing in the committee score.
+- Tiers are **percentile-relative** (for D2–D4; D1 is the canonical CONF_TIER), so
+  adding/removing conferences shifts
   membership. If a count changes materially, re-eyeball the cutoffs against the
   prestige ladder rather than assuming the old breaks still land cleanly.
 - The AQ bonus is a *seeding* nudge only; it never changes selection (champions

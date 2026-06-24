@@ -1184,8 +1184,14 @@ def committee_seed_score(season_id: int, aq_set: set) -> dict:
     n = max(1, len(schools))
     pi_rank = {sc: i + 1 for i, sc in enumerate(
         sorted(schools, key=lambda x: pi[x].pi, reverse=True))}
+    # Rank ONLY teams that actually have ITA points. ita_team_points deliberately
+    # omits teams with no quality wins, so default them to 0.0 — but a 0.0 team must
+    # NOT get a unique rank by dict order. Every point-less team shares the floor
+    # rank `n` below (`.get(sc, n)`), so their 30% résumé component is identical
+    # rather than an arbitrary spread.
     pts_rank = {sc: i + 1 for i, sc in enumerate(
-        sorted(schools, key=lambda x: pts.get(x, 0.0), reverse=True))}
+        sorted((sc for sc in schools if pts.get(sc, 0.0) > 0.0),
+               key=lambda x: pts[x], reverse=True))}
 
     def rank_score(rank: int) -> float:
         return 100.0 * (n - rank + 1) / n               # #1 ≈ 100, last ≈ ~0
@@ -1699,7 +1705,7 @@ def bracket_field(season_id: int, size: int | None = None):
         except (ValueError, TypeError):
             champions = []
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size),
-                                    score=ita_team_points(season_id))
+                                    score=committee_seed_score(season_id, {c.school for c in champions}))
     return run_bracket(seeded, autobids, seed=s["seed"])
 
 
@@ -1723,11 +1729,13 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     # tournament completes (parsing it as JSON then would fail and drop the seeds).
     champions = [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]
     rated = [p for p in div.programs if p.school in ratings]
-    pts = ita_team_points(season_id)
-    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=pts)
+    # Select + seed by the SAME Committee Seed Score the actual draw uses
+    # (`_ncaa_seeds`), so the revealed seeds/labels match the scheduled matchups.
+    committee = committee_seed_score(season_id, {c.school for c in champions})
+    seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=committee)
     field_keys = {p.key for p in seeded}
     out = sorted((p for p in rated if p.key not in field_keys),
-                 key=lambda p: pts.get(p.school, 0.0), reverse=True)[:out_n]
+                 key=lambda p: committee.get(p.school, 0.0), reverse=True)[:out_n]
     out_board = [{"school": p.school, "conf": p.conf_abbr,
                   "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
                  for p in out]
