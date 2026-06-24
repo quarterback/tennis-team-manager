@@ -1211,8 +1211,13 @@ def _project(season_id: int, size: int | None = None, edge: int = 4) -> dict | N
     out_board = [row(p, field + i + 1, "AL") for i, p in enumerate(out_al)]
     aq = [r for r in seed_list if r["bid"] == "AQ"]
     in_board = [r for r in seed_list if r["bid"] == "AL"]       # at-large teams, true seeds
-    last_in = seed_list[-edge:]                                 # weakest 4 IN the field (the bubble)
-    first_out = out_board[:edge]                                # strongest 4 left out
+    # The cut line is an AT-LARGE bubble: the lowest at-large SELECTIONS vs the
+    # highest at-large teams left out — both ranked by the same at-large metric, so
+    # one side can actually bump the other. (A protected AQ near the bottom of the
+    # seed list is NOT on the bubble — nothing in `first_out` can displace it — so it
+    # must not appear in `last_in`.) The full `seed_list` drives the seeding display.
+    last_in = in_board[-edge:]                                  # weakest at-large selections
+    first_out = out_board[:edge]                                # strongest at-large teams out
     return {"division": s["division"], "gender": s["gender"], "field": field, "edge": edge,
             "aq": aq, "aq_count": len(aq), "at_large_spots": at_large_spots,
             "seed_list": seed_list, "in_board": in_board, "out_board": out_board,

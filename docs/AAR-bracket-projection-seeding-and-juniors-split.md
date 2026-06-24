@@ -44,6 +44,17 @@ seed list actually reads. `bubble_watch` and the data-portal bubble use the same
 `field_rank` (= seed). Verified on a D2 field: at-large teams seeded as high as #6
 above weak AQs at #61–64; cutoff #64; first four out #65–68.
 
+**Cut-line follow-up (review catch):** `last_in` was first taken as
+`seed_list[-edge:]` — the weakest *seeded* teams overall. But the cut line is an
+at-large bubble: `first_out` are non-AQ teams chasing at-large spots, and a
+protected AQ sitting near the bottom of the seed list can't be bumped by any of
+them. Showing such an AQ in "Last Four In" hides the actual lowest at-large
+selections and misleads. Fixed: `last_in = in_board[-edge:]` (the weakest at-large
+*selections*), so both sides of the bubble are at-large and comparable; the full
+`seed_list` still drives only the seeding display. Verified on a D2 field — cut
+line shows at-large seeds 55–58 in vs 65–68 out, with the AQ teams at 59–64
+correctly absent from the bubble.
+
 > Note on selection vs. seeding optics: a left-out at-large team (e.g. seed #65)
 > can hold *more* points than a weak AQ that's in at #64. That's correct and
 > intentional — the AQ was **selected** (champ), then seeded last; the at-large was
