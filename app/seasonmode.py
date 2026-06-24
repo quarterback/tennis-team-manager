@@ -33,6 +33,7 @@ from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
                       clamp_field, field_for_division)
 from . import ita
+from . import regions
 
 from .dbpath import resolve_db_path
 
@@ -654,6 +655,77 @@ def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
     return [(k, slots[2 * k], slots[2 * k + 1]) for k in range(n // 2)]
 
 
+def _region_play_in(schools: list[str], conf_of: dict, played_pairs,
+                    autobid_set: set) -> list[tuple[int, str, str]]:
+    """The 96-team regional opening round. Split the national seed list into four
+    24-team regions by S-curve, then in each region pair seed lines 9v24, 10v23,
+    … 16v17 (deconflicted to dodge same-conference / rematch openers). bpos is
+    region-major (region r, game g → r*8 + g) so the winners come back grouped by
+    region for the main draw."""
+    out = []
+    for r, members in enumerate(regions.scurve_regions(schools)):
+        pairs = _deconflict_playin(members[8:24], conf_of, played_pairs, autobid_set)
+        for g, (h, a) in enumerate(pairs):
+            out.append((r * 8 + g, h, a))
+    return out
+
+
+def _region_r16(byes: list[str], winners: list[str], conf_of: dict, played_pairs,
+                autobid_set: set) -> list[tuple[str, str]]:
+    """One region's 16-team bracket: bye seed BYE_SEQ[k] hosts the opening-round
+    winner of line (17 − BYE_SEQ[k]). Every winner is lower-seeded than every bye,
+    so we may swap which winner faces which bye (seed-safe) to minimise penalties."""
+    base = [8 - s for s in regions.BYE_SEQ]        # canonical winner index per game k
+    order = list(base)
+
+    def total():
+        return sum(_pair_penalty(byes[regions.BYE_SEQ[k] - 1], winners[order[k]],
+                                 conf_of, played_pairs, autobid_set) for k in range(8))
+
+    cur = total()
+    for _ in range(60):
+        improved = False
+        for i in range(8):
+            for j in range(i + 1, 8):
+                order[i], order[j] = order[j], order[i]
+                t = total()
+                if t < cur:
+                    cur, improved = t, True
+                else:
+                    order[i], order[j] = order[j], order[i]
+        if not improved or cur == 0:
+            break
+    return [(byes[regions.BYE_SEQ[k] - 1], winners[order[k]]) for k in range(8)]
+
+
+def _region_main_draw(schools: list[str], winners: list[str], conf_of: dict,
+                      played_pairs, autobid_set: set) -> list[tuple[int, str, str]]:
+    """The 64-team main draw after the regional play-in: each region's eight byes
+    plus its eight play-in winners, laid out as four 16-brackets concatenated in
+    MAIN_DRAW_ORDER so the region champions meet in the national semifinals."""
+    regs = regions.scurve_regions(schools)
+    out = []
+    for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
+        rw = winners[r * 8:(r + 1) * 8]            # this region's play-in winners (game order)
+        for k, (h, a) in enumerate(_region_r16(regs[r][:8], rw, conf_of, played_pairs, autobid_set)):
+            out.append((slot * 8 + k, h, a))
+    return out
+
+
+def _region_main_draw_64(schools: list[str], conf_of: dict, played_pairs,
+                         autobid_set: set) -> list[tuple[int, str, str]]:
+    """A 64-team field by the same regional methodology, without a play-in: split
+    into four S-curve regions of 16 (no byes — all 16 play), seed each region's
+    16-bracket (within-band deconfliction preserved), and concatenate the four in
+    MAIN_DRAW_ORDER so the region champions meet in the national semifinals."""
+    regs = regions.scurve_regions(schools)
+    out = []
+    for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
+        for k, h, a in _seed_bracket(regs[r], autobid_set, conf_of, played_pairs):
+            out.append((slot * 8 + k, h, a))
+    return out
+
+
 def _insert_dual(conn, sid, week, rnd, conf, is_conf, round_no, bpos, home, away):
     conn.execute(
         "INSERT INTO duals (season_id, week, round, conf, is_conf, round_no, bpos, home, away,"
@@ -819,15 +891,22 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
         main = _pow2_le(len(schools))
         week = _next_post_week(conn, sid)
-        if len(schools) > main:
-            # Non-power-of-two field (e.g. D1's 96): a play-in round. The top seeds
-            # get byes; the lowest 2*(field-main) seeds play in (seed 33 v 96, …),
-            # and the winners join the byes to form the main draw next round.
+        if len(schools) == 96:
+            # D1's 96-team field: four S-curve regions of 24. Top 8 per region get
+            # byes; lines 9–24 play the regional opening round (9v24, …, 16v17).
+            for bpos, h, a in _region_play_in(schools, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, bpos, h, a)
+        elif len(schools) > main:
+            # Other non-power-of-two field: a flat play-in (top seeds bye, 33 v 96, …).
             byes_n = 2 * main - len(schools)
             playin = schools[byes_n:]
             for i, (h, a) in enumerate(_deconflict_playin(playin, conf_of, played, autobid_set)):
                 _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i, h, a)
-        else:                                          # clean power-of-two field
+        elif len(schools) == 64:
+            # D2/D3/D4: four S-curve regions of 16, no play-in (all 16 play).
+            for bpos, h, a in _region_main_draw_64(schools, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 1, bpos, h, a)
+        else:                                          # other clean power-of-two field
             for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played):
                 _insert_dual(conn, sid, week, "NCAA", _round_name(len(schools)), 0, 1, bpos, h, a)
         round_no = 1
@@ -844,6 +923,13 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
     if round_no == 1:
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
         main = _pow2_le(len(schools))
+        if len(schools) == 96:
+            # Regional main draw: each region's byes + its play-in winners, four
+            # 16-brackets laid out so the region champions meet in the semifinals.
+            week = _next_post_week(conn, sid)
+            for bpos, h, a in _region_main_draw(schools, winners, conf_of, played, autobid_set):
+                _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 2, bpos, h, a)
+            return {"phase": "ncaa", "round": 1, "round_name": "First Round", "played": len(due)}
         if len(schools) > main:
             byes_n = 2 * main - len(schools)
             r64 = schools[:byes_n] + winners           # byes (top seeds) + play-in winners
