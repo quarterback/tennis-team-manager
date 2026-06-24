@@ -1483,13 +1483,15 @@ def program_history(division: str, gender: str, school: str, seed: int = DEFAULT
 
     honors = {
         "national_titles": years(lambda s: s["national_champ"]),
+        "regional_titles": years(lambda s: s.get("regional_champ")),
         "indoor_titles": years(lambda s: s["indoor_champ"]),
         "reg_conf_titles": years(lambda s: s["reg_conf_champ"]),
         "ct_titles": years(lambda s: s["ct_champ"]),
         "ncaa_appearances": [{"year": s["year"], "round": s["ncaa"]} for s in seasons if s["ncaa"]],
         "ita_appearances": [{"year": s["year"], "round": s["ita"]} for s in seasons if s["ita"]],
     }
-    honors["any"] = any(honors[k] for k in honors)
+    honors["division"] = division
+    honors["any"] = any(honors[k] for k in honors if k != "division")
     return {"seasons": seasons, "honors": honors}
 
 

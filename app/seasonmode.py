@@ -63,8 +63,8 @@ SEED_ROUNDS = ("REG", "CT", "ITAK", "ITAI")
 # non-power-of-two play-in (D1's 96) is the Round of 96; the rest follow the draw.
 NCAA_ROUND_LABEL = {
     "First Round": "R96", "Round of 96": "R96", "Round of 64": "R64",
-    "Round of 32": "R32", "Round of 16": "Sweet 16", "Quarterfinals": "Elite 8",
-    "Semifinals": "Final 4", "Final": "Final",
+    "Round of 32": "R32", "Round of 16": "S16", "Quarterfinals": "E8",
+    "Semifinals": "🥉 Final Four", "Final": "Final",
 }
 
 _SCHEMA = """
@@ -1176,8 +1176,11 @@ def season_program_result(season_id: int, school: str) -> dict | None:
         return labels.get(last["conf"], last["conf"])
 
     complete = s["phase"] == "complete"
-    ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "National Champion", "National Runner-Up") if complete else None
+    ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "🏆 National Champion", "🥈 National Runner-Up") if complete else None
     ita = furthest("ITAI", {}, "ITA Indoor Champion", "ITA Runner-Up")
+    # Regional champion = won the Elite Eight (the regional final), i.e. reached the
+    # Final Four / national semifinals (`Semifinals` round). Each region crowns one.
+    regional_champ = any(d["round"] == "NCAA" and d["conf"] == "Semifinals" for d in duals)
     conn.close()
 
     return {
@@ -1189,6 +1192,7 @@ def season_program_result(season_id: int, school: str) -> dict | None:
         "ita": ita,
         "national_champ": national_champion(season_id) == school,
         "indoor_champ": indoor_champion(season_id) == school,
+        "regional_champ": regional_champ,
         "live": not complete,
     }
 
