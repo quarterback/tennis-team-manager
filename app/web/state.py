@@ -534,14 +534,34 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
                           and ratings[w_s].pi + 0.03 < ratings[l_s].pi)
 
     # --- Conference power (average Power Index per league) ---
+    from app.ncaa import conf_tier as _conf_tier
     conf_power = []
     if ratings:
         by_conf: dict = {}
         for p in div.programs:
             if p.school in ratings:
                 by_conf.setdefault(p.conf_abbr, []).append(ratings[p.school].pi)
-        conf_power = sorted(({"conf": c, "avg": sum(v) / len(v), "n": len(v)}
+        conf_power = sorted(({"conf": c, "avg": sum(v) / len(v), "n": len(v),
+                              "tier": _conf_tier(c)}
                              for c, v in by_conf.items()), key=lambda x: -x["avg"])[:8]
+
+    # --- Program prestige board (where every program sits + YoY drift) ----------
+    import app.overrides as overrides
+    from app.recruit_economy import _prestige_tier
+    mom = overrides.get_prestige_momentum()
+    prestige_board = []
+    for rk, p in enumerate(sorted(div.programs, key=lambda p: p.prestige, reverse=True), 1):
+        ab, co = crest(p.school)
+        m = mom.get((p.school, gender), 0.0)
+        prestige_board.append({
+            "rk": rk, "school": p.school, "conf": p.conf_abbr,
+            "tier": _conf_tier(p.conf_abbr), "fund_tier": _prestige_tier(p.prestige),
+            "prestige": round(p.prestige, 3), "mom": round(m, 3),
+            "abbr": ab, "color": co,
+        })
+    _nz = [r for r in prestige_board if abs(r["mom"]) >= 0.005]
+    prestige_risers = sorted(_nz, key=lambda r: -r["mom"])[:6]
+    prestige_fallers = sorted(_nz, key=lambda r: r["mom"])[:6]
 
     # --- Singles + doubles win leaders ---
     def _win_leaders(rec_map):
@@ -574,6 +594,8 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         "bubble": bubble, "ita_champion": ita_champion, "natl_champion": natl_champion,
         "hot_teams": hot_teams, "movers": movers, "conf_power": conf_power,
         "singles_leaders": singles_leaders, "doubles_leaders": doubles_leaders,
+        "prestige_board": prestige_board, "prestige_risers": prestige_risers,
+        "prestige_fallers": prestige_fallers,
     }
     _portal_cache[_pkey] = _portal_result
     return _portal_result
