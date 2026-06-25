@@ -556,8 +556,9 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         prestige_board.append({
             "rk": rk, "school": p.school, "conf": p.conf_abbr,
             "tier": _conf_tier(p.conf_abbr), "fund_tier": _prestige_tier(p.prestige),
-            "prestige": round(p.prestige, 3), "mom": round(m, 3),
-            "abbr": ab, "color": co,
+            "base_tier": _prestige_tier(p.prestige - m),
+            "prestige": round(p.prestige, 3), "base": round(p.prestige - m, 3),
+            "mom": round(m, 3), "abbr": ab, "color": co,
         })
     _nz = [r for r in prestige_board if abs(r["mom"]) >= 0.005]
     prestige_risers = sorted(_nz, key=lambda r: -r["mom"])[:6]
