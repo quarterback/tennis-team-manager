@@ -83,6 +83,7 @@ NAV_GROUPS = [
     ]),
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "🛰️", "endpoint": "intel_hub",         "args": {}},
+        {"id": "intel_lineups","label": "Lineup Lab",       "icon": "📊", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "📡", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "🎾", "endpoint": "intel_scholarships", "args": {}},
     ]),
@@ -128,6 +129,7 @@ def _active_nav(req) -> str:
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
+    if p.startswith("/intel/lineups"):    return "intel_lineups"
     if p.startswith("/intel/underplaced"): return "intel_under"
     if p.startswith("/intel/scholarships"): return "intel_aid"
     if p.startswith("/intel"):            return "intel"
@@ -955,6 +957,23 @@ def create_app() -> Flask:
                                rows=pg.items, p=pg, total=len(rows), gender=gender,
                                div_f=div_f, u=u, uni_label=label,
                                divisions=["All", "D1", "D2"])
+
+    @app.route("/intel/lineups")
+    def intel_lineups():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_f = request.args.get("div", division)
+        if div_f not in ("D1", "D2", "D3", "D4"):
+            div_f = division
+        confs = si.conference_list(div_f, gender)
+        conf = request.args.get("conf") or (confs[0] if confs else "")
+        highlight = request.args.get("team") or None
+        lineups = si.conference_lineups(div_f, gender, conf, highlight=highlight)
+        strength = si.conference_strength(div_f, gender)
+        return render_template("intel_lineups.html", active="Analytics Bureau",
+                               gender=gender, u=u, uni_label=label, div_f=div_f, conf=conf,
+                               confs=confs, lineups=lineups, strength=strength,
+                               highlight=highlight, divisions=["D1", "D2", "D3", "D4"])
 
     @app.route("/intel/fit/<pid>")
     def intel_fit(pid):
