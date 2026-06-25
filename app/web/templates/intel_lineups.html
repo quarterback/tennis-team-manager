@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Lineup Lab{% endblock %}
+{% block content %}
+
+<form method="get" id="ll-form">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Lineup Lab</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="document.getElementById('ll-conf').value='';this.form.submit()" style="min-width:84px">
+      {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select id="ll-conf" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:130px">
+      {% for c in confs %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Highlight team</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="team" onchange="this.form.submit()" style="min-width:150px">
+      <option value="">— none —</option>
+      {% for t in lineups %}<option value="{{ t.school }}"{% if t.school == highlight %} selected{% endif %}>{{ t.school }}</option>{% endfor %}
+    </select></span></label>
+</div></div>
+</form>
+
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+  <div style="margin-bottom:14px">
+    <h1 style="margin:0 0 4px;font-size:22px">Lineup Lab — {{ div_f }} {{ conf }}</h1>
+    <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:760px">
+      How every team's singles lineup stacks up across the conference. Each dot is a starter's
+      <strong>STR</strong> at their lineup position (1–6). Hover a dot to read that school's full ladder.
+      Use it to gauge roster depth league-wide, spot likely matchups line by line, and see where a recruit
+      with a given STR would slot in — across <em>every</em> team, not just one recommendation.
+    </p>
+  </div>
+
+  {% if not lineups %}
+  <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
+    <h2 style="margin:0 0 8px">No lineup data</h2>
+    <p class="bl-conf">No rated teams found for {{ div_f }} {{ conf }} yet.</p>
+  </div></div>
+  {% else %}
+
+  {# ---- the strip plot ---- #}
+  <div class="bl-panel" style="margin-bottom:18px">
+    <div class="bl-panel-head"><span class="bl-panel-title">STR Lineup vs Conference</span>
+      <span class="bl-panel-meta">
+        {% if highlight %}<span class="ll-key"><span class="ll-dot hl"></span>{{ highlight }}</span>{% endif %}
+        <span class="ll-key"><span class="ll-dot"></span>{{ conf }}</span></span></div>
+    <div id="ll-chart" style="position:relative;padding:8px 6px 4px">
+      <svg id="ll-svg" width="100%" height="460" role="img" aria-label="Lineup STR by position"></svg>
+      <div id="ll-tip" class="ll-tip" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="bl-board-grid" style="grid-template-columns:1fr 360px;align-items:start">
+    {# ---- per-team depth table ---- #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span>
+        <span class="bl-panel-meta">ranked by average starter STR</span></div>
+      <div class="bl-stand-hdr" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
+        <span>#</span><span>Team</span><span>Avg</span><span>Top</span><span>Low</span><span>Ladder (1→6)</span>
+      </div>
+      {% for t in lineups %}
+      <div class="bl-brk-match{% if t.highlight %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
+        <span class="bl-bubble-seed">{{ t.rank }}</span>
+        <span class="bl-bubble-team">{% set ab = crest(t.school) %}{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span></span>
+        <span class="bl-bubble-pi">{{ '%.1f'|format(t.avg) }}</span>
+        <span class="bl-bubble-pi" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
+        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
+        <span style="font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums">
+          {% for x in t.lineup %}{{ '%.1f'|format(x.str) }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# ---- relative league strength ---- #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} — league strength</span>
+        <span class="bl-panel-meta">avg starter STR · all conferences</span></div>
+      <div class="bl-stand-hdr" style="grid-template-columns:30px 1fr 40px 52px 48px">
+        <span>#</span><span>Conf</span><span>Tms</span><span>Avg</span><span>Top</span>
+      </div>
+      {% for r in strength %}
+      <a class="bl-brk-match{% if r.conf == conf %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 40px 52px 48px;text-decoration:none"
+         href="{{ url_for('intel_lineups', u=u, div=div_f, conf=r.conf) }}">
+        <span class="bl-bubble-seed">{{ r.rank }}</span>
+        <span class="bl-bubble-team"><span class="nm">{{ r.conf }}</span> <span class="ll-tier ll-{{ r.tier }}">{{ r.tier }}</span></span>
+        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ r.n_teams }}</span>
+        <span class="bl-bubble-pi">{{ '%.1f'|format(r.avg_str) }}</span>
+        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.ll-key { display:inline-flex; align-items:center; gap:5px; margin-left:12px; font-size:12px; color:var(--text-muted); }
+.ll-dot { width:10px; height:10px; border-radius:50%; background:#2bb3c0; display:inline-block; }
+.ll-dot.hl { background:#d81e5b; }
+.ll-row-hl { background:rgba(216,30,91,.07); }
+.ll-tier { font-size:9px; font-weight:700; letter-spacing:.03em; padding:1px 5px; border-radius:999px; text-transform:uppercase; }
+.ll-top { background:rgba(212,160,23,.16); color:#946c00; } .ll-major { background:rgba(14,124,134,.14); color:#0e7c86; }
+.ll-mid { background:rgba(0,0,0,.06); color:var(--text-muted); } .ll-low { background:rgba(0,0,0,.04); color:var(--text-muted); }
+.ll-tip { position:absolute; pointer-events:none; z-index:30; background:#0f1720; color:#fff; border-radius:8px;
+  padding:8px 10px; font-size:11.5px; line-height:1.5; box-shadow:0 6px 24px rgba(0,0,0,.28); min-width:150px; }
+.ll-tip .h { font-weight:800; font-size:12.5px; margin-bottom:3px; }
+.ll-tip .lr { display:flex; justify-content:space-between; gap:14px; }
+.ll-tip .lr .p { color:#9fb3c8; } .ll-tip .lr.on { color:#ffd23f; font-weight:700; }
+.ll-cell circle { cursor:pointer; transition:r .08s; }
+</style>
+
+<script>
+(function(){
+  var DATA = {{ lineups|tojson }};
+  var HL = {{ (highlight or '')|tojson }};
+  if (!DATA.length) return;
+  var svg = document.getElementById('ll-svg');
+  var tip = document.getElementById('ll-tip');
+  var NS = 'http://www.w3.org/2000/svg';
+
+  // y-domain from the data, padded and snapped.
+  var allStr = [];
+  DATA.forEach(function(t){ t.lineup.forEach(function(x){ allStr.push(x.str); }); });
+  var lo = Math.floor(Math.min.apply(null, allStr) - 1);
+  var hi = Math.ceil(Math.max.apply(null, allStr) + 1);
+
+  var M = {t:14, r:16, b:34, l:44};
+  function draw(){
+    var W = svg.clientWidth || svg.parentNode.clientWidth || 900;
+    var H = 460;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var plotW = W - M.l - M.r, plotH = H - M.t - M.b;
+    var colW = plotW / 6;
+    function X(pos){ return M.l + (pos - 0.5) * colW; }                 // pos 1..6 → column centre
+    function Y(s){ return M.t + plotH * (1 - (s - lo) / (hi - lo)); }
+
+    function el(tag, attrs){ var e = document.createElementNS(NS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+
+    // y gridlines + labels
+    var step = (hi - lo) <= 12 ? 2 : 4;
+    for (var s = lo; s <= hi; s += step){
+      svg.appendChild(el('line', {x1:M.l, y1:Y(s), x2:W-M.r, y2:Y(s), stroke:'#e8edf2', 'stroke-width':1}));
+      var tl = el('text', {x:M.l-8, y:Y(s)+3, 'text-anchor':'end', 'font-size':11, fill:'#8a99a8'});
+      tl.textContent = s.toFixed(0); svg.appendChild(tl);
+    }
+    // x labels
+    for (var p = 1; p <= 6; p++){
+      var xt = el('text', {x:X(p), y:H-12, 'text-anchor':'middle', 'font-size':12, fill:'#5a6b7b', 'font-weight':600});
+      xt.textContent = p; svg.appendChild(xt);
+    }
+    // deterministic horizontal jitter within a column, by school name
+    function jit(name){ var h=0; for (var i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))%1000;
+      return ((h/1000) - 0.5) * (colW * 0.62); }
+
+    // draw non-highlight first, highlight on top
+    var order = DATA.slice().sort(function(a,b){ return (a.school===HL?1:0)-(b.school===HL?1:0); });
+    order.forEach(function(t){
+      var on = (t.school === HL);
+      t.lineup.forEach(function(x){
+        var c = el('circle', {cx:X(x.line)+jit(t.school), cy:Y(x.str), r: on?6:5,
+          fill: on?'#d81e5b':'#2bb3c0', 'fill-opacity': on?1:0.72,
+          stroke:'#fff', 'stroke-width': on?1.4:0.8});
+        c.classList.add('ll-cell-c');
+        c.addEventListener('mouseenter', function(ev){ showTip(ev, t, x.line); });
+        c.addEventListener('mousemove', moveTip);
+        c.addEventListener('mouseleave', function(){ tip.style.display='none'; });
+        svg.appendChild(c);
+      });
+    });
+  }
+
+  function showTip(ev, t, onLine){
+    var rows = t.lineup.map(function(x){
+      return '<div class="lr'+(x.line===onLine?' on':'')+'"><span class="p">#'+x.line+' '+esc(x.name)+'</span><span>'+x.str.toFixed(1)+'</span></div>';
+    }).join('');
+    tip.innerHTML = '<div class="h">'+esc(t.school)+' · avg '+t.avg.toFixed(1)+'</div>'+rows;
+    tip.style.display = 'block'; moveTip(ev);
+  }
+  function moveTip(ev){
+    var box = document.getElementById('ll-chart').getBoundingClientRect();
+    var x = ev.clientX - box.left + 14, y = ev.clientY - box.top + 12;
+    if (x + 180 > box.width) x = ev.clientX - box.left - 180;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  draw();
+  var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(draw, 120); });
+})();
+</script>
+{% endblock %}

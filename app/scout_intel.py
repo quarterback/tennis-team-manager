@@ -388,3 +388,74 @@ def overview(gender: str, seed: int | None = None) -> dict:
         "top_underplaced": under[:8],
         "top_aid": aid[:8],
     }
+
+
+# ---- Lineup Lab: every team's singles ladder by conference ------------------
+
+def conference_list(division: str, gender: str, seed: int | None = None) -> list[str]:
+    """Conference abbreviations in a division, with team counts, for the selector."""
+    from app.ncaa import load_division
+    div = load_division(division, gender)
+    counts: dict[str, int] = {}
+    for p in div.programs:
+        counts[p.conf_abbr] = counts.get(p.conf_abbr, 0) + 1
+    return sorted(counts)
+
+
+def conference_lineups(division: str, gender: str, conf: str, seed: int | None = None,
+                       highlight: str | None = None) -> list[dict]:
+    """Every team in a conference with its top-6 singles ladder by STR — the data
+    behind the lineup-comparison plot and the per-team depth table. Each team:
+    {school, lineup:[{line,name,pid,str,true_str,class,walk_on}], avg/top/low STR}."""
+    data = scan(gender, seed)
+    teams: dict[str, dict] = {}
+    for r in data["players"]:
+        if r.division != division or r.team_tier != conf or r.line is None:
+            continue
+        teams.setdefault(r.school, {})[r.line] = r
+    rows = []
+    for school, slots in teams.items():
+        lineup = [{"line": ln, "name": r.name, "pid": r.pid, "str": r.cur_str,
+                   "true_str": r.true_str, "class": r.class_year,
+                   "walk_on": r.walk_on}
+                  for ln in range(1, 7) if (r := slots.get(ln))]
+        strs = [x["str"] for x in lineup]
+        rows.append({
+            "school": school, "lineup": lineup,
+            "avg": round(sum(strs) / len(strs), 1) if strs else 0.0,
+            "top": max(strs) if strs else 0.0,
+            "low": min(strs) if strs else 0.0,
+            "highlight": school == highlight,
+        })
+    rows.sort(key=lambda t: t["avg"], reverse=True)
+    for i, t in enumerate(rows, 1):
+        t["rank"] = i
+    return rows
+
+
+def conference_strength(division: str, gender: str, seed: int | None = None) -> list[dict]:
+    """Relative league strength across a division: every conference ranked by the
+    average STR of its starters (lineup positions 1–6), with its strongest starter,
+    team count, and the curated conference tier/prestige for context."""
+    from app.ncaa import conf_tier, conf_prestige
+    data = scan(gender, seed)
+    confs: dict[str, dict] = {}
+    for r in data["players"]:
+        if r.division != division or r.line is None:
+            continue
+        d = confs.setdefault(r.team_tier, {"strs": [], "teams": set()})
+        d["strs"].append(r.cur_str)
+        d["teams"].add(r.school)
+    rows = []
+    for conf, d in confs.items():
+        strs = d["strs"]
+        rows.append({
+            "conf": conf, "n_teams": len(d["teams"]),
+            "avg_str": round(sum(strs) / len(strs), 1) if strs else 0.0,
+            "top_str": round(max(strs), 1) if strs else 0.0,
+            "tier": conf_tier(conf), "prestige": round(conf_prestige(conf), 2),
+        })
+    rows.sort(key=lambda r: r["avg_str"], reverse=True)
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+    return rows
