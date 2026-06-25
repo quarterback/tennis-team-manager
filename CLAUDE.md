@@ -22,12 +22,19 @@ downstream aid-DISPLAY layer* — do not mistake it for "the program's scholarsh
 
 ### 1. Recruiting budget = what a program actually has to spend (`recruit_economy._D1_TIER_BANDS`, `_D2_BAND`, `_D3D4_BAND`)
 Per-program budget (scholarship equivalency), with a per-world jitter; only D1 top
-tier redraws season-to-season. **Budget is keyed on the CONFERENCE TIER**
-(`ncaa.CONF_TIER` — the master 4-tier hand-curated hierarchy: top/major/mid/low),
-NOT a flat prestige cutoff. A program funds **within** its tier's band by its own
-prestige, and **funds UP** to its own prestige tier if it genuinely outranks its
-league (the decoupling lever — a great program isn't capped by a weak conference;
-see `_prestige_tier`).
+tier redraws season-to-season. The D1 band is keyed on the program's **prestige
+tier** (`_prestige_tier`). At baseline prestige is re-leveled to the **CONFERENCE
+TIER** (`ncaa.CONF_TIER` — the master 4-tier hand-curated hierarchy:
+top/major/mid/low), so conference sets the *starting* band; the within-band slot is
+set by prestige.
+
+> ⚠️ **Prestige is DYNAMIC (YoY), not static.** A program's prestige drifts each
+> world rollover by how it over/under-performs its expectation (`world.
+> _update_prestige_momentum`; signed per-(school,gender) momentum persisted as
+> `roster_overrides kind='prestige_dyn'`, applied in `load_division`, capped ±0.20).
+> So budget moves BOTH ways over seasons: a low-major that keeps overachieving funds
+> up a tier; a sliding blue-blood funds down. Tests asserting a fixed prestige must
+> clear the momentum store. See `docs/AAR-dynamic-prestige-momentum.md`.
 
 | Tier | Budget band |
 |---|---|

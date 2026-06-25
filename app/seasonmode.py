@@ -1197,6 +1197,29 @@ def season_program_result(season_id: int, school: str) -> dict | None:
     }
 
 
+def ncaa_participants(season_id: int) -> set[str]:
+    """Schools that made the NCAA field (appeared in any NCAA dual)."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT home FROM duals WHERE season_id=? AND round='NCAA'"
+        " UNION SELECT away FROM duals WHERE season_id=? AND round='NCAA'",
+        (season_id, season_id)).fetchall()
+    conn.close()
+    return {r[0] for r in rows}
+
+
+def ncaa_semifinalists(season_id: int) -> set[str]:
+    """The four region champions — schools that reached the Final Four (Semifinals)."""
+    conn = _db()
+    rows = conn.execute("SELECT home, away FROM duals WHERE season_id=? AND round='NCAA'"
+                        " AND conf='Semifinals'", (season_id,)).fetchall()
+    conn.close()
+    out: set[str] = set()
+    for r in rows:
+        out.add(r["home"]); out.add(r["away"])
+    return out
+
+
 # Below this many games per team the Power Index is too noisy to project a field;
 # the Bubble Watch stays hidden until the season has run a few weeks.
 BUBBLE_MIN_GAMES = 5

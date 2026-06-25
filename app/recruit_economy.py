@@ -139,13 +139,12 @@ def program_budget(program, salt: str = "", year: int = 0) -> float:
         base = lo + frac * (hi - lo)
         jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.5, 0.5)
         return max(lo, base + jit)
-    # D1: conference tier sets the band, but a program funds UP to its own prestige
-    # tier when it outranks its league (decoupling — a great program in a weak conf
-    # isn't capped by it). Prestige positions the program within the chosen band.
-    from .ncaa import conf_tier
-    ctier = conf_tier(getattr(program, "conf_abbr", ""), div)
-    ptier = _prestige_tier(pres)
-    tier = ctier if _TIER_RANK[ctier] >= _TIER_RANK[ptier] else ptier
+    # D1: the budget band follows the program's PRESTIGE tier. At baseline a
+    # program's prestige is re-leveled to its conference tier (so conf sets the
+    # starting band), but dynamic prestige momentum then moves it BOTH ways — a
+    # program that keeps overperforming funds up a tier, a sliding one funds down —
+    # and a genuinely strong program in a weak league funds up regardless.
+    tier = _prestige_tier(pres)
     lo, hi = _D1_TIER_BANDS.get(tier, _D1_TIER_BANDS["low"])
     frac = max(0.0, min(1.0, (pres - 0.44) / (0.97 - 0.44)))   # position by overall prestige
     base = lo + frac * (hi - lo)
