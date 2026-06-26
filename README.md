@@ -1,67 +1,120 @@
 # tennis-team-manager
 
-My longheld white whale of a tennis text simulation — a college dual-match
-tennis simulator built on the O27 baseball engine's substrate (deterministic
-seeded engine, global name generators, currency/recruiting/motivation
-systems) rather than a from-scratch fork.
+A college dual-match **tennis season simulator and team manager**. Simulate
+matches point by point, advance a living world year over year, and watch
+rankings, recruiting, conferences, prestige, and the College bracket evolve across
+**D1, D2, D3, and D4 — men's and women's** — each its own independent tournament.
 
-See [`docs/DESIGN-college-tennis-sim-fork.md`](docs/DESIGN-college-tennis-sim-fork.md)
-for the full architecture + roadmap. This commit is the **P0/P1 skeleton**:
-a runnable, deterministic singles match engine, a fast bulk model, a
-dual-match team layer, and the lifted name generators.
+It began as a deterministic singles match engine; the original
+[`docs/README-genesis.md`](docs/README-genesis.md) keeps that starting point. Today
+it runs as a full web app spanning the match engine, the season and postseason,
+recruiting, prestige, and a pro tour.
 
-## Layout
+> **Single-player sandbox, god-mode friendly.** One owner runs a whole tennis
+> universe, peeks under the hood, and tweaks anything. Runs are seed-deterministic
+> and reproducible. Injuries roll on real entropy, so save-scumming suits a
+> single-player world — it's your world.
 
-```
-engine/       match engine
-  state.py    Player (9 attributes), PlayerStats, MatchState
-  rally.py    serve + rally probability tables (talent shifts the distribution)
-  match.py    point→game→set→match scoring; simulate_match()
-  fast.py     game-level hold-probability model (bulk juniors/HS); simulate_fast()
-  dual.py     NCAA dual: 3 doubles + 6 singles, clinch at 4; simulate_dual()
-  format.py   MatchFormat — the toggleable scoring rules (see below)
-  render.py   box score + play-by-play text
-generators/   make_name_picker + zaryan_names + data/names/* (lifted from O27)
-app/          db.py — SQLite persistence scaffold
-tests/        determinism, scoring correctness, stat invariants, names, dual
-manage.py     CLI
-docs/         design + roadmap
-```
+---
 
 ## Run
 
 ```bash
-python3 manage.py simulate-match --seed 7 --pbp
-python3 manage.py simulate-match --seed 7 --format pro_set_8
-python3 manage.py simulate-dual  --seed 7
-python3 manage.py ita-kickoff    --seed 2026 --gender men # D1 season opener: ITA Kickoff + Indoor
-python3 manage.py simulate-gtt   --seed 7                 # co-ed GTT dual: 3 MS + 3 WS + 3 XD
-python3 manage.py gtt-season     --seed 2026 --teams 8    # create + run a GTT league season
-python3 manage.py gen-players    --seed 7 --n 8 --gender female --region european
-python3 manage.py presets
-pytest          # determinism + scoring + invariants
+pip install -r requirements.txt
+python3 manage.py runserver            # web app at http://localhost:5000  (PORT to override)
 ```
 
-Everything is **seed-deterministic**: same seed + flags ⇒ identical
-transcript and scoreline.
+Open the app, start a league, and advance the world week by week. The CLI also
+drives the engine directly:
 
-## Match formats (toggleable rules)
+```bash
+python3 manage.py simulate-match --seed 7 --pbp        # one singles match, play-by-play
+python3 manage.py simulate-dual  --seed 7              # a College dual (3 doubles + 6 singles)
+python3 manage.py season         --seed 2026 --division D1 --gender men
+python3 manage.py ita-kickoff    --seed 2026 --gender men   # the opening season tournament
+python3 manage.py simulate-gtt   --seed 7              # a co-ed Pro Tour dual
+python3 manage.py runserver --port 8000
+pytest                                                 # determinism + invariants (~10 min full)
+```
 
-`engine/format.py` exposes each scoring variant as an independent switch
-(`MatchFormat`), so they map cleanly to UI checkboxes:
+---
 
-| Toggle | Meaning |
-| --- | --- |
-| `no_ad` | sudden-death deciding point at deuce |
-| `set_tiebreak` / `set_tiebreak_target` | tiebreak at games-all (off ⇒ advantage set) |
-| `final_set_tiebreak` / `final_set_tiebreak_target` | **10-point tiebreak in lieu of a third set** |
-| `pro_set` / `pro_set_games` | **8-game pro set** — one set to 8, tiebreak at 8-8 |
-| `best_of` | 3 or 5 sets |
+## What's in the world
 
-Presets: `ncaa_dual`, `best_of_3_mtb` (default), `grand_slam`, `advantage`, `pro_set_8`.
+**The match engine** (`engine/`) — point→game→set→match scoring with a serve/rally
+probability model, a fast game-level model for bulk sims, the College **dual**
+format (3 doubles + 6 singles, clinch at 4), doubles, and box-score/play-by-play
+render. Scoring rules toggle independently (`engine/format.py`): set and final-set
+tiebreaks, 8-game pro sets, best-of-3/5, sudden-death deuce, with presets like
+`grand_slam` and `pro_set_8`.
 
-## What's next
+**Ratings** — every player carries an **STR** rating, a UTR-style number on a
+distinctive 31–57 band, solved to a fixed point from results. Teams rank by a
+**Power Index** and by **ITA-style team points** (résumé × schedule × league
+strength), which feed the bracket.
 
-P2+ in the design doc: leagues/seasons across D1/D2/D3 × M/W, the
-modified-UTR rating + convergence pass, junior/HS circuits, and the
-recruiting/scholarship layer.
+**The season + postseason** — a full schedule, conference races, the **opening
+season tournament**, conference tournaments (automatic bids), then the **College
+championship**. A **Committee Seed Score** selects and seeds the field (Power Index
+45%, ITA points 30%, a tiered automatic-bid championship bonus 15%, recent form
+10%), holding selection, seeding, and bracketing as three separate questions. The
+96-team D1 field (64 for D2–D4) draws into **four S-curve regions** with cosmetic
+rotating names; region champions meet in the national semifinals. Then the
+individual **singles** and **doubles** championships.
+
+**The recruiting budget economy** — each program earns its roster. A recruiting
+**budget** set by conference tier buys recruits that **cost** by star, from
+blue-chip down to free walk-on. Blue-bloods fund deep and stack blue-chips; mid-
+and low-majors build 4★/3★ cores; the top D3/D4 academic programs draw a thin
+"gem" allocation. The guardrails live in [`CLAUDE.md`](CLAUDE.md) as tuned
+game-design values.
+
+**Dynamic prestige** — a program's prestige evolves each year by how it performs
+against expectation, so a low-major that keeps overachieving climbs and recruits up
+a budget tier, and a sliding blue-blood drifts down. The drift stays self-correcting
+and bounded, and the journey shows on the Data Portal.
+
+**The Analytics Bureau** — talent intelligence with zero scouting fog: every
+player's true ceiling beside where they actually sit (buried studs, aid
+misallocations, best-fit landing spots), plus a **Lineup Lab** strip-plot comparing
+every team's singles ladder across a conference and ranking relative league strength.
+
+**More** — a season-long **recruiting** pipeline (a junior pool, signings, the
+transfer portal), **coaches** (careers, localism, moves), an ATP/WTA-style **Data
+Portal** newsroom, a **Pro Tour** (GTT) college-to-pro pipeline, program **honors /
+hall of fame / archives**, and a live **editor** to move players, set lineups, and
+override prestige, academics, and scholarship limits.
+
+---
+
+## Layout
+
+```
+engine/            match engine — state, rally, match, fast, dual, doubles, gtt, format, render, tournament
+app/               the world: divisions, programs, rosters, prestige, season + postseason, recruiting, coaches…
+  world.py           the living world — year rollover, development, portal, prestige momentum
+  seasonmode.py      schedule, results, Power Index, College bracket draw + advancement
+  recruit_economy.py the budget-by-tier recruiting economy (costs, floors, bands)
+  regions.py         S-curve regional bracket structure + cosmetic region names
+  scout_intel.py     Analytics Bureau (underplaced, playing time, fit, Lineup Lab)
+  str_rating.py / rating.py   STR + Power Index
+  recruiting.py / scholarships.py / economy.py   recruiting + scholarship layers
+  gtt_seasonmode.py  the Pro Tour league
+  web/               the Flask app — server.py (routes), state.py (data), templates/
+docs/              DESIGN doc + ~70 AARs (one per change, the running changelog)
+CLAUDE.md          agent guardrails — the recruiting/prestige economy invariants
+manage.py          CLI;  wsgi.py / Dockerfile / fly.toml / Procfile  — deploy (Fly)
+tests/             determinism, scoring, economy, bracket, world-rollover invariants
+```
+
+Most tests assert **invariants and determinism**.
+
+---
+
+## Docs
+
+- [`CLAUDE.md`](CLAUDE.md) — the design invariants (the budget economy, walk-on
+  sourcing, injuries, dynamic prestige). Read it before changing numbers.
+- [`docs/`](docs/) — an AAR (after-action report) per change documents how each
+  system works and why.
+- [`docs/README-genesis.md`](docs/README-genesis.md) — where this started.
