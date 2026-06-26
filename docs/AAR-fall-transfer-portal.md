@@ -96,3 +96,67 @@ the season and releases everyone to the regular season.
 `world.FALL_PORTAL_MAX_RISERS` (per-gender cap), `world.UP_THRESHOLD`, and the
 `div_level` median bar. `seasonmode.FALL_PORTAL_ENABLED = False` restores the old
 `ita_indoor → regular` flow.
+
+## Future work — make the slate user-editable (FOR THE NEXT AGENT)
+
+Today `/fall-portal` only lets the owner **approve/reject** the sim's proposed slate.
+The owner wants three more first-class actions during the hold:
+1. **Redirect a riser** to a different destination than the suggestion box picked —
+   the owner's words: "what if I want them to go to a school different than the one
+   the suggestion box picks." This is the priority one.
+2. **Add a mover** the sim didn't propose ("I see someone else I want moved").
+3. Have **manual editor moves made during the fall window** get the same two-stint
+   history + cascade balance, instead of collapsing the season to one school the way
+   a normal editor move does.
+
+All three are the same problem: a user-chosen move must flow through the SAME pipeline
+as a sim proposal so it inherits the cascade balance + the ITA-stint freeze for free.
+
+### Recommended design: intents → resolve
+The `fall_portal` table currently stores a STATIC resolved slate (riders + their
+cascade demotions as sibling rows). That's awkward to edit, because changing one
+rider's destination invalidates its cascade child. Refactor to two layers:
+- **Intents** (what the user wants): per rider, `pid → {dest: school | 'auto', status}`.
+  Approve / reject / add / redirect all just mutate intents.
+- **Resolve** (`world.resolve_fall_portal(seed)`): build the `developed_rosters`
+  snapshot + the `fall_portal_proposals` indexing, then apply each *approved* intent
+  in a deterministic order (str desc, pid) — explicit `dest` if set, else
+  `highest_fit` — running the existing `place_riser`/`settle` cascade against the
+  RUNNING snapshot so seats and caps stay correct across the whole slate. The output
+  (riders + cascades) is the resolved set the page renders and `commit_fall_portal`
+  applies. Re-resolve from a FRESH snapshot on every edit.
+
+This makes redirect/add/remove correct by construction: the cascade is always
+recomputed against every other locked-in choice, so a redirect that frees the old
+destination's displaced player and creates a new displacement at the new one just
+falls out of re-resolving.
+
+### Wiring
+- **Redirect**: `POST /fall-portal/redirect (pid, dest)` → set that intent's dest →
+  re-resolve. The destination cell on `/fall-portal` becomes a program picker (offer
+  programs where the player would make the lineup first, but allow any same-gender
+  program — it's god-mode). `commit_fall_portal` already does `set_move` to whatever
+  `dest_school` the row holds, so honoring a redirected dest is automatic once the
+  resolved row carries it.
+- **Add**: `POST /fall-portal/add (pid, dest='auto'|school)` → add an approved intent
+  → re-resolve. UI: a player search (reuse `state.search_players`) + optional dest.
+  **Bypass the discovery GATES** (top-2, median-level, `_career_transfers`) for a
+  user pick — those gates exist only for *auto* discovery — but the players the pick
+  DISPLACES should still respect them.
+- **Editor-window two-stint**: in the `/editor/move` route (`server.py` ~1217), if the
+  world is currently holding in `fall_portal`, route the move through the add path
+  (add an intent + re-resolve) instead of a bare `overrides.set_move`. That one hook
+  gives in-window editor moves the ITA-stint freeze + cascade automatically — i.e.
+  "can I just move someone myself" becomes yes, treated like a portal add. Outside the
+  window an editor move stays a plain single-school move (no clean stint boundary).
+
+### Gotchas
+- Snapshot the ITA stint (`ita_w/l/line`) from the SOURCE universe at resolve/commit
+  time — the season is held at the post-ITA boundary, so `sm.player_records` /
+  `player_primary_lines` ARE the ITA results.
+- Re-resolve must start from a fresh `developed_rosters` snapshot each time, or
+  repeated edits double-apply moves.
+- A redirect into a FULL program must still displace + cascade; into an open seat,
+  straight promotion. `place_riser` already does both — reuse it, don't fork it.
+- Keep the per-gender `FALL_PORTAL_MAX_RISERS` cap on the *auto* discovery pass only;
+  user-added riders are intentional and shouldn't count against it.
