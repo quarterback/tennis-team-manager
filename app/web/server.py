@@ -1280,6 +1280,16 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")
         if pid and dest:
+            w = wd.load_world()
+            if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
+                # During the fall-portal window an editor move becomes a portal ADD,
+                # so it earns the two-stint history + balancing cascade instead of
+                # collapsing the season to one school. It lands when you commit the
+                # portal, not immediately — review it on the fall-portal screen.
+                if not ov.get_proposals(w["year"]):
+                    wd.run_fall_portal()
+                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+                return redirect(url_for("fall_portal"))
             ov.set_move(pid, dest)
             reset_all()
         return redirect(url_for("editor", u=u, school=school))

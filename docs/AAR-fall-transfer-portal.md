@@ -135,8 +135,12 @@ pid, src, chosen `dest_school`, status). Cascades are NOT stored — they're DER
 - `FALL_PORTAL_MAX_RISERS` caps only the auto discovery pass; user-added riders are
   intentional and don't count against it.
 
-### Still open for a future agent
-- **Editor-window two-stint**: route `/editor/move` (`server.py` ~1217) through
-  `add_fall_portal_mover` when the world is holding in `fall_portal`, so a bare editor
-  move during the window also gets the ITA-stint freeze + cascade. Outside the window
-  an editor move stays a plain single-school move (no clean stint boundary).
+### Editor-window two-stint (IMPLEMENTED)
+`/editor/move` checks the world: while it's holding in `fall_portal`, a move is routed
+through `add_fall_portal_mover` (queued as a portal add, landing when you commit the
+portal) instead of a bare `overrides.set_move`, so an in-window editor move earns the
+ITA-stint freeze + cascade too. It redirects to `/fall-portal` so the queued move is
+visible. Outside the window an editor move stays a plain single-school move (there's
+no clean stint boundary to split on). If the portal slate hasn't been generated yet
+(user hit the editor before visiting `/fall-portal`), the route runs the sim discovery
+first so the user's add coexists with the sim's picks.

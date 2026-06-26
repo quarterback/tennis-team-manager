@@ -122,7 +122,14 @@ lower division) and is **deliberately curated**, not a migration:
   the rollover **bakes** the move and clears the override (`_bake_fall_moves`).
 - `fall_portal` is a HOLD only under the world driver (`advance_week` skips it);
   standalone `sm.advance` passes it straight through to `regular`. Toggle with
-  `seasonmode.FALL_PORTAL_ENABLED`. See `docs/AAR-fall-transfer-portal.md`.
+  `seasonmode.FALL_PORTAL_ENABLED`.
+- The slate is **user-editable** (intents→resolve): the `fall_portal` table stores only
+  rider INTENTS; cascades are derived by `world.resolve_fall_portal` on every view/commit
+  (`_FPPlanner` — which MUST shallow-copy roster lists, since `developed_rosters` is a
+  shared cache). You can redirect a rider, add one the sim missed, or drop one. An editor
+  move made **while holding in `fall_portal`** is routed through the portal (gets the
+  two-stint + cascade); outside the window it's a plain move. See
+  `docs/AAR-fall-transfer-portal.md`.
 
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
