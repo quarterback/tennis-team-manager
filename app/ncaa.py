@@ -559,6 +559,17 @@ def load_division(division: str, gender: str) -> Division:
     # (preserving each school's relative bump); per-team overrides then win.
     try:
         from . import overrides
+        # Dynamic prestige momentum: the YoY drift earned by on-court over/under-
+        # performance (recomputed at each world rollover). Added to the base, clamped
+        # to the division band — so a program that keeps beating its prestige climbs
+        # (and recruits up a tier) while a sliding one falls. Editor pins below still win.
+        mom = overrides.get_prestige_momentum()
+        if mom:
+            plo, phi = DIVISION_PRESTIGE_RANGE.get(division, (0.20, 0.97))
+            for p in div.programs:
+                m = mom.get((p.school, p.gender), 0.0)
+                if m:
+                    p.prestige = max(plo, min(phi, p.prestige + m))
         conf_pres = overrides.get_conf_prestige()
         conf_acad = overrides.get_conf_academics()
         if conf_pres or conf_acad:

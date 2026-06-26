@@ -116,6 +116,37 @@ def clear_prestige(school: str) -> None:
     conn.commit(); conn.close()
 
 
+# --- Dynamic prestige momentum (YoY drift from on-court overperformance) ------
+# A SIGNED per-(school, gender) delta, distinct from the absolute editor override
+# above. The world rollover recomputes it each year; load_division adds it to the
+# base prestige (clamped to the division band). Keyed "school|gender".
+
+def get_prestige_momentum() -> dict:
+    """{(school, gender): signed momentum} — dynamic YoY prestige drift."""
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='prestige_dyn'").fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        try:
+            school, gender = k.rsplit("|", 1)
+            out[(school, gender)] = float(v)
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def set_prestige_momentum_batch(items: dict) -> None:
+    """Persist {(school, gender): momentum} in one transaction (rollover writes all)."""
+    if not items:
+        return
+    conn = _db()
+    conn.executemany(
+        "INSERT OR REPLACE INTO roster_overrides (kind, key, value) VALUES ('prestige_dyn',?,?)",
+        [(f"{s}|{g}", f"{float(m):.4f}") for (s, g), m in items.items()])
+    conn.commit(); conn.close()
+
+
 # --------------------------------------------------------------------------
 # Academics + conference-level ratings — the rest of the recruiting levers.
 #   kind='academics'      key=school  → overridden academic profile (0..1)

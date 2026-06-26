@@ -175,11 +175,67 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Conference Power</span><span class="bl-panel-meta">avg Power Index</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for c in portal.conf_power %}
-      <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=c.conf) }}"><span class="al-leadname">{{ loop.index }}. {{ c.conf }} <small>· {{ c.n }} teams</small></span><span class="al-leadval">{{ '%.3f'|format(c.avg) }}</span></a>
+      <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=c.conf) }}"><span class="al-leadname">{{ loop.index }}. {{ c.conf }} <span class="al-tier al-tier-{{ c.tier }}">{{ c.tier }}</span> <small>· {{ c.n }} teams</small></span><span class="al-leadval">{{ '%.3f'|format(c.avg) }}</span></a>
       {% else %}<p class="al-muted">Available once rankings are live.</p>{% endfor %}
     </div>
   </section>
 </div></div>
+
+<div class="bl-container"><div class="al-portal-grid">
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Program Prestige</span>
+      <span class="bl-panel-meta">where every program sits · ▲▼ year-to-year drift</span></div>
+    <div class="bl-panel-body">
+      <div class="al-presrow al-pres-hdr"><span>#</span><span>Team</span><span>Conf · tier</span><span>Prestige (base → now)</span><span>Trend</span></div>
+      <div class="al-pres-scroll">
+        {% for r in portal.prestige_board %}
+        {% set moved = (r.mom > 0.004 or r.mom < -0.004) %}
+        <a class="al-presrow" href="{{ url_for('teams', school=r.school, u=u) }}">
+          <span class="al-presrk">{{ r.rk }}</span>
+          <span class="al-presname"><span class="bl-crest xs" style="background:{{ r.color }}">{{ r.abbr }}</span> {{ r.school }}</span>
+          <span class="al-presconf">{{ r.conf }} <span class="al-tier al-tier-{{ r.tier }}">{{ r.tier }}</span></span>
+          <span class="al-presval">{% if moved %}<span class="al-presbase">{{ '%.3f'|format(r.base) }} →</span> {% endif %}{{ '%.3f'|format(r.prestige) }}{% if moved and r.fund_tier != r.base_tier %} <span class="al-tier al-tier-{{ r.fund_tier }}">{{ r.base_tier }}→{{ r.fund_tier }}</span>{% endif %}</span>
+          <span class="al-presmom {{ 'up' if r.mom > 0.004 else 'down' if r.mom < -0.004 else '' }}">{% if r.mom > 0.004 %}▲{{ '%.2f'|format(r.mom) }}{% elif r.mom < -0.004 %}▼{{ '%.2f'|format(-r.mom) }}{% else %}·{% endif %}</span>
+        </a>
+        {% else %}<p class="al-muted">No programs.</p>{% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Prestige Risers &amp; Fallers</span>
+      <span class="bl-panel-meta">year-to-year momentum</span></div>
+    <div class="bl-panel-body al-leadwrap">
+      {% for r in portal.prestige_risers %}
+      <a class="al-leadrow" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="al-leadname"><span class="al-move up">▲{{ '%.2f'|format(r.mom) }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ '%.3f'|format(r.prestige) }}</span></a>
+      {% endfor %}
+      {% for r in portal.prestige_fallers %}
+      <a class="al-leadrow" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="al-leadname"><span class="al-move down">▼{{ '%.2f'|format(-r.mom) }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ '%.3f'|format(r.prestige) }}</span></a>
+      {% endfor %}
+      {% if not portal.prestige_risers and not portal.prestige_fallers %}<p class="al-muted">Prestige drifts after a season rolls over — none yet.</p>{% endif %}
+    </div>
+  </section>
+</div></div>
+
+<style>
+.al-pres-scroll { max-height: 540px; overflow-y: auto; }
+.al-presrow { display: grid; grid-template-columns: 34px 1fr 110px 172px 50px; align-items: center; gap: 8px;
+  padding: 5px 8px; text-decoration: none; color: var(--text-primary); font-size: 13px;
+  border-bottom: 1px solid var(--border-subtle); }
+.al-presrow:hover { background: var(--green-50, rgba(14,124,134,.06)); }
+.al-pres-hdr { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted);
+  font-weight: 700; position: sticky; top: 0; background: var(--surface, #fff); }
+.al-presrk { text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.al-presname { display: flex; align-items: center; gap: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-presconf { font-size: 11px; color: var(--text-muted); }
+.al-presval { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-presbase { color: var(--text-muted); font-weight: 600; font-size: 11.5px; }
+.al-presmom { text-align: right; font-size: 11px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.al-presmom.up { color: #1a8a4a; } .al-presmom.down { color: #c0392b; }
+.al-tier { font-size: 9px; font-weight: 800; letter-spacing: .03em; padding: 1px 5px; border-radius: 999px; text-transform: uppercase; }
+.al-tier-top { background: rgba(212,160,23,.18); color: #946c00; } .al-tier-major { background: rgba(14,124,134,.15); color: #0e7c86; }
+.al-tier-mid { background: rgba(0,0,0,.06); color: var(--text-muted); } .al-tier-low { background: rgba(0,0,0,.04); color: var(--text-muted); }
+</style>
 
 <div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
   <section class="bl-panel">

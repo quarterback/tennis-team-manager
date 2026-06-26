@@ -402,7 +402,8 @@ def create_app() -> Flask:
                     "completed_duals", "total_duals",
                     "live_rankings", "player_leaders",
                     "standings_leaders", "recent", "upcoming",
-                    "top_prospects", "has_live_results")},
+                    "top_prospects", "has_live_results",
+                    "conf_power", "prestige_board")},
             })
         return jsonify({"universes": universes})
 

@@ -1629,6 +1629,58 @@ def championship_years(seed: int, division: str, gender: str) -> list[int]:
     return [BASE_YEAR + r["year"] for r in rows]
 
 
+# Dynamic prestige momentum — how fast/far a program's prestige drifts on results.
+# Aggressive (owner choice): the cap allows multi-tier movement over many seasons.
+PRESTIGE_MOM_CAP = 0.20      # max signed drift from base prestige (≈ 2 budget tiers)
+PRESTIGE_MOM_GAIN = 0.10     # how much one season's over/under-performance nudges it
+PRESTIGE_MOM_DECAY = 0.85    # regress toward base each year (mean-reversion)
+
+
+def _update_prestige_momentum(seed: int, w: dict) -> None:
+    """At year-end, drift each program's prestige by how it OVER/UNDER-performed its
+    expectation. Expectation = its current prestige percentile in the division;
+    result = its end-of-season Power-Index percentile plus a small pedigree bonus
+    (NCAA field / Final Four / title). Beat your bar → climb (recruit up a tier);
+    fall short → slide. Self-correcting (the bar rises with you) and capped. Per
+    (school, gender). Persisted, so it compounds season to season."""
+    import app.overrides as overrides
+    from app.ncaa import load_division
+    cur = overrides.get_prestige_momentum()
+    out = dict(cur)
+    for (d, g) in _active_unis():
+        sid = universe_sid(seed, w, d, g)
+        if sid is None:
+            continue
+        pi = sm.power_index(sid)
+        if not pi:
+            continue
+        div = load_division(d, g)
+        progs = [p for p in div.programs if p.school in pi]
+        n = len(progs)
+        if n < 2:
+            continue
+        by_pi = sorted(progs, key=lambda p: pi[p.school].pi, reverse=True)
+        pi_pct = {p.school: 1 - i / (n - 1) for i, p in enumerate(by_pi)}
+        by_pres = sorted(progs, key=lambda p: p.prestige, reverse=True)
+        pres_pct = {p.school: 1 - i / (n - 1) for i, p in enumerate(by_pres)}
+        champ = sm.national_champion(sid)
+        ff = sm.ncaa_semifinalists(sid)
+        field = sm.ncaa_participants(sid)
+        ct = sm.conf_champions(sid)
+        for p in progs:
+            s = p.school
+            bonus = 0.10 if s == champ else 0.06 if s in ff else 0.03 if s in field else 0.0
+            if s in ct:
+                bonus += 0.02
+            result = pi_pct[s] + min(0.10, bonus)
+            delta = result - pres_pct[s]                       # >0 overperformed
+            m_old = cur.get((s, g), 0.0)
+            m_new = PRESTIGE_MOM_DECAY * m_old + PRESTIGE_MOM_GAIN * delta
+            m_new = max(-PRESTIGE_MOM_CAP, min(PRESTIGE_MOM_CAP, m_new))
+            out[(s, g)] = round(m_new, 4)
+    overrides.set_prestige_momentum_batch(out)
+
+
 def _finalize_year(seed: int, w: dict) -> dict:
     """End-of-year: develop to a full year, then graduate / portal / intake."""
     prime(seed)
@@ -1639,6 +1691,9 @@ def _finalize_year(seed: int, w: dict) -> dict:
         sid = universe_sid(seed, w, d, g)
         player_str.update(sm.season_player_str(sid))
         redshirts |= sm.season_ending_pids(sid)
+    # Drift program prestige on this year's results BEFORE the rollover recruits the
+    # next class, so a rising program immediately recruits up to its new tier.
+    _update_prestige_momentum(seed, w)
 
     # Snapshot the individual championships before graduation/portal change rosters.
     _cconn = _db()
