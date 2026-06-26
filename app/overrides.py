@@ -21,6 +21,14 @@ _SCHEMA = """
 CREATE TABLE IF NOT EXISTS roster_overrides (
   kind TEXT, key TEXT, value TEXT, PRIMARY KEY (kind, key)
 );
+CREATE TABLE IF NOT EXISTS fall_portal (
+  year INTEGER, gender TEXT, pid TEXT,
+  src_school TEXT, dest_school TEXT, src_div TEXT, dest_div TEXT,
+  str REAL, status TEXT,
+  ita_w INTEGER, ita_l INTEGER, ita_line TEXT,
+  cascade_from TEXT,
+  PRIMARY KEY (year, gender, pid)
+);
 """
 
 _schema_ready_for = None        # the DB_PATH the schema was last created for
@@ -44,6 +52,19 @@ def _db():
     if _schema_ready_for != DB_PATH:
         init_schema()
     return dbpath.connect(DB_PATH, row=False)
+
+
+def _retry_locked(fn, *, tries: int = 6, delay: float = 0.3):
+    """Retry a DB op on a transient 'database is locked' (busy_timeout already
+    WAITS on normal contention; this backstops the rare overrun under heavy load)."""
+    import time
+    for attempt in range(tries):
+        try:
+            return fn()
+        except sqlite3.OperationalError as e:
+            if "locked" not in str(e).lower() or attempt == tries - 1:
+                raise
+            time.sleep(delay * (attempt + 1))
 
 
 def get_moves() -> dict:
@@ -220,9 +241,91 @@ def clear_conf_academics(conf: str) -> None:
     _clear("conf_academics", conf)
 
 
+# --------------------------------------------------------------------------
+# Fall transfer portal — the post-ITA talent reshuffle. Proposals are generated
+# by the sim (status='proposed'), the user approves/removes them, and a commit
+# pass relocates the approved movers (via set_move) and flips them to
+# 'committed'. Distinct from `kind='move'` (the always-on editor relocation) so
+# the year-end history pass knows which movers earned a two-stint season record.
+# --------------------------------------------------------------------------
+_FP_COLS = ("year", "gender", "pid", "src_school", "dest_school", "src_div",
+            "dest_div", "str", "status", "ita_w", "ita_l", "ita_line", "cascade_from")
+
+
+def _fp_row(r) -> dict:
+    return dict(zip(_FP_COLS, r))
+
+
+def set_proposals(year: int, gender: str, rows: list[dict]) -> None:
+    """Replace this (year, gender) slate with a fresh set of 'proposed' rows."""
+    def _do():
+        conn = _db()
+        try:
+            conn.execute("DELETE FROM fall_portal WHERE year=? AND gender=?", (year, gender))
+            conn.executemany(
+                "INSERT INTO fall_portal (year,gender,pid,src_school,dest_school,src_div,"
+                "dest_div,str,status,ita_w,ita_l,ita_line,cascade_from)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                [(year, gender, r["pid"], r["src_school"], r["dest_school"], r["src_div"],
+                  r["dest_div"], float(r.get("str", 0.0)), r.get("status", "proposed"),
+                  int(r.get("ita_w", 0)), int(r.get("ita_l", 0)),
+                  (None if r.get("ita_line") is None else str(r["ita_line"])),
+                  r.get("cascade_from")) for r in rows])
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def get_proposals(year: int, status: str | None = None) -> list[dict]:
+    """All fall-portal rows for a year (optionally filtered by status), strongest
+    riser first."""
+    conn = _db()
+    if status is None:
+        rows = conn.execute("SELECT year,gender,pid,src_school,dest_school,src_div,"
+                            "dest_div,str,status,ita_w,ita_l,ita_line,cascade_from"
+                            " FROM fall_portal WHERE year=? ORDER BY str DESC", (year,)).fetchall()
+    else:
+        rows = conn.execute("SELECT year,gender,pid,src_school,dest_school,src_div,"
+                            "dest_div,str,status,ita_w,ita_l,ita_line,cascade_from"
+                            " FROM fall_portal WHERE year=? AND status=? ORDER BY str DESC",
+                            (year, status)).fetchall()
+    conn.close()
+    return [_fp_row(r) for r in rows]
+
+
+def set_status(year: int, gender: str, pid: str, status: str) -> None:
+    def _do():
+        conn = _db()
+        try:
+            conn.execute("UPDATE fall_portal SET status=? WHERE year=? AND gender=? AND pid=?",
+                         (status, year, gender, pid))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def committed_movers(year: int) -> set:
+    """pids that fall-transferred (committed) this year — drives the two-stint
+    history record at rollover."""
+    conn = _db()
+    rows = conn.execute("SELECT pid FROM fall_portal WHERE year=? AND status='committed'",
+                        (year,)).fetchall()
+    conn.close()
+    return {r[0] for r in rows}
+
+
+def clear_year(year: int) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM fall_portal WHERE year=?", (year,))
+    conn.commit(); conn.close()
+
+
 def clear_all() -> None:
     conn = _db()
     conn.execute("DELETE FROM roster_overrides")
+    conn.execute("DELETE FROM fall_portal")
     conn.commit(); conn.close()
 
 

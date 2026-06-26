@@ -1169,7 +1169,8 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
     events = []
     for school, roster in rosters.items():
         for p in roster:
-            hist = sorted((getattr(p, "history", []) or []), key=lambda h: h.get("year", 0))
+            hist = sorted((getattr(p, "history", []) or []),
+                          key=lambda h: (h.get("year", 0), h.get("stint", 0)))
             seq = [(world.BASE_YEAR + h["year"], h.get("school")) for h in hist]
             seq.append((cur_cal, school))               # current spot closes the timeline
             for i in range(1, len(seq)):
@@ -1189,6 +1190,36 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
         events = [e for e in events if e["year"] == year]
     return {"transfers": events, "n": len(events), "current_year": cur_cal,
             "years": years, "year": year}
+
+
+def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
+    """The pending fall-portal slate for the current year: the proposed risers and
+    the players they'd push down the ladder, for the review/approve screen."""
+    import app.world as world
+    from app import overrides as ov
+    from .rankings_data import crest
+    w = world.load_world(seed)
+    if not w:
+        return {"year": None, "proposals": [], "n": 0, "pending": 0, "committed": 0}
+    rows = ov.get_proposals(w["year"])
+    out = []
+    for r in rows:
+        p = world.find_persisted_player(r["pid"], seed)
+        fa, fc = crest(r["src_school"])
+        ta, tc = crest(r["dest_school"])
+        out.append({
+            **r,
+            "name": getattr(p, "name", r["pid"]),
+            "class": getattr(p, "class_year", ""),
+            "country": getattr(p, "country", ""),
+            "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
+            "is_riser": not r.get("cascade_from"),
+        })
+    pending = [r for r in rows if r["status"] in ("proposed", "approved")]
+    committed = [r for r in rows if r["status"] == "committed"]
+    return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+            "proposals": out, "n": len(out),
+            "pending": len(pending), "committed": len(committed)}
 
 
 def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
@@ -1561,12 +1592,15 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
             "class": h.get("class", ""), "line": h.get("line"),
             "w": h.get("w", 0), "l": h.get("l", 0), "str": h.get("str"),
             "accolades": hbyyear.get(cal, []), "live": False,
+            "stint": h.get("stint", 0), "phase": h.get("phase", "full"),
         })
 
-    # In-progress current season (only if not already recorded into history).
+    # In-progress current season. A fall-portal mover already has their ITA stint
+    # (stint 0) recorded for this year; we still want the live destination stint
+    # (stint 1) shown, so the guard keys on the destination stint, not the year.
     wld = world.load_world(seed)
     cur = wld["year"] if wld else 0
-    if not any(h.get("year") == cur for h in hist):
+    if not any(h.get("year") == cur and h.get("stint", 0) == 1 for h in hist):
         sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
         info = sm.player_info(sid, pid)
         if info:
@@ -1579,9 +1613,10 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
                 "line": sm.player_primary_lines(sid).get(pid),
                 "w": w_, "l": l_, "str": round(strv, 1) if strv else None,
                 "accolades": hbyyear.get(cal, []), "live": True,
+                "stint": 1, "phase": "regular_post",
             })
 
-    rows.sort(key=lambda r: r["cal_year"], reverse=True)
+    rows.sort(key=lambda r: (-r["cal_year"], r.get("stint", 0)))
     for r in rows:
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
@@ -1665,15 +1700,18 @@ def world_hub(seed: int = DEFAULT_SEED):
     # on a dormant universe, whose honors are never stamped).
     awards_done = complete and all(honors.has_season(year, d, g)
                                    for (_v, d, g, _l) in active_unis)
-    _ORDER = ["ita", "regular", "conf_tournaments", "selection", "ncaa", "awards", "offseason"]
-    _PH = {"ita_kickoff": -2, "ita_indoor": -1, "regular": 0, "conf_tournaments": 1,
-           "selection": 2, "ncaa": 3, "complete": 4}
+    _ORDER = ["ita", "fall_portal", "regular", "conf_tournaments", "selection", "ncaa",
+              "awards", "offseason"]
+    _PH = {"ita_kickoff": -2, "ita_indoor": -1, "fall_portal": -0.5, "regular": 0,
+           "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
     if not complete:
         raw = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
-        stage = "ita" if raw in ("ita_kickoff", "ita_indoor") else raw
+        stage = ("ita" if raw in ("ita_kickoff", "ita_indoor") else raw)
     else:
         stage = "offseason" if awards_done else "awards"
-    if stage == "selection":
+    if stage == "fall_portal":
+        primary = {"endpoint": "fall_portal", "label": "🔄 Review fall portal →", "link": True}
+    elif stage == "selection":
         primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
     elif stage in ("ita", "regular", "conf_tournaments", "ncaa"):
         if w["week"] == 0 and stage in ("ita", "regular"):
@@ -1687,9 +1725,9 @@ def world_hub(seed: int = DEFAULT_SEED):
         primary = {"endpoint": "world_awards", "label": "🏅 Run awards →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
-    _LABELS = {"ita": "ITA Kickoff", "regular": "Regular season", "conf_tournaments": "Conf tournaments",
-               "selection": "Bracket Reveal", "ncaa": "NCAA championship",
-               "awards": "Awards", "offseason": "Offseason"}
+    _LABELS = {"ita": "ITA Kickoff", "fall_portal": "Fall portal", "regular": "Regular season",
+               "conf_tournaments": "Conf tournaments", "selection": "Bracket Reveal",
+               "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
     ci = _ORDER.index(stage)
     stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
               for i, k in enumerate(_ORDER)]

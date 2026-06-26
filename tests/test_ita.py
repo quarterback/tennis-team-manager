@@ -73,14 +73,18 @@ def test_d2_d3_open_on_a_top8_indoor_with_no_kickoff(db):
         assert sm.indoor_champion(sid)
 
 
-def test_ita_runs_then_hands_off_to_the_regular_season(db):
+def test_ita_runs_then_hands_off_to_the_fall_portal(db):
     sid = sm.create_season("D1", "women", seed=11)
     guard = 0
     while sm.load_season(sid)["phase"].startswith("ita") and guard < 20:
         sm.advance(sid); guard += 1
     s = sm.load_season(sid)
-    assert s["phase"] == "regular"
+    # The opener now hands off to the fall-portal boundary, with the regular-season
+    # first week already pre-set. A standalone advance passes straight through it to
+    # the regular season (the world driver instead holds there to run the portal).
+    assert s["phase"] == "fall_portal"
     assert s["current_week"] == ita.lead_weeks("D1") + 1
+    assert sm.advance(sid)["phase"] == "regular"
     # a single Indoor champion was crowned, and it's a real program
     champ = sm.indoor_champion(sid)
     assert champ in {p.school for p in sm.load_division("D1", "women").programs}

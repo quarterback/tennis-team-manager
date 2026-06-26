@@ -31,7 +31,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     dashboard_view, data_portal_view, team_budget, team_results,
                     program_history,
                     conference_schools, team_conference, conference_ratings,
-                    world_hub, player_career, get_coach, injury_rows)
+                    world_hub, player_career, get_coach, injury_rows, fall_portal_view)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
@@ -160,12 +160,12 @@ def _game_context():
         # always "Regular season".
         import app.seasonmode as sm
         from app import worldconfig
-        _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "regular": 2, "conf_tournaments": 3,
-                "selection": 4, "ncaa": 5, "complete": 6}
+        _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "fall_portal": 1.5, "regular": 2,
+                "conf_tournaments": 3, "selection": 4, "ncaa": 5, "complete": 6}
         _LBL = {"ita_kickoff": "ITA Kickoff Weekend", "ita_indoor": "ITA Indoor",
-                "regular": "Regular season", "conf_tournaments": "Conf tournaments",
-                "selection": "Bracket reveal", "ncaa": "NCAA championship",
-                "complete": "Postseason complete"}
+                "fall_portal": "Fall transfer portal", "regular": "Regular season",
+                "conf_tournaments": "Conf tournaments", "selection": "Bracket reveal",
+                "ncaa": "NCAA championship", "complete": "Postseason complete"}
         phases = []
         for _v, d, g, _lbl in UNIVERSES:
             if not worldconfig.is_active(d, g):
@@ -364,6 +364,48 @@ def create_app() -> Flask:
     def world_awards():
         stamp_world_honors()
         return redirect(request.referrer or url_for("world_view"))
+
+    @app.route("/fall-portal")
+    def fall_portal():
+        # Review/approve the post-ITA talent reshuffle. If we're holding in the
+        # portal but nothing's been proposed yet (e.g. the user navigated here
+        # directly), generate the slate now.
+        fp = fall_portal_view()
+        w = wd.load_world()
+        if fp.get("n", 0) == 0 and w and wd._all_in_fall_portal(DEFAULT_SEED, w):
+            wd.run_fall_portal()
+            fp = fall_portal_view()
+        return render_template("fall_portal.html", active="World", fp=fp, crest=crest)
+
+    @app.route("/fall-portal/approve", methods=["POST"])
+    def fall_portal_approve():
+        w = wd.load_world()
+        year = w["year"] if w else 0
+        action = request.form.get("action", "")
+        if action == "approve_all":
+            for r in ov.get_proposals(year, status="proposed"):
+                ov.set_status(year, r["gender"], r["pid"], "approved")
+        elif action == "reject_all":
+            for r in ov.get_proposals(year):
+                if r["status"] in ("proposed", "approved"):
+                    ov.set_status(year, r["gender"], r["pid"], "rejected")
+        else:
+            pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
+            if pid and gender:
+                ov.set_status(year, gender, pid, request.form.get("status", "approved"))
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/commit", methods=["POST"])
+    def fall_portal_commit():
+        w = wd.load_world()
+        year = w["year"] if w else 0
+        # A fresh "Commit" with nothing explicitly approved commits the whole
+        # proposed slate — the obvious default for "accept the sim's reshuffle".
+        if not ov.get_proposals(year, status="approved"):
+            for r in ov.get_proposals(year, status="proposed"):
+                ov.set_status(year, r["gender"], r["pid"], "approved")
+        wd.commit_fall_portal()
+        return redirect(url_for("world_view"))
 
     @app.route("/")
     def dashboard():

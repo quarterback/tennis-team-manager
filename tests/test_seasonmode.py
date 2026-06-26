@@ -59,7 +59,7 @@ def test_every_roster_player_gets_a_match(db):
     from app.ncaa import build_roster, load_division
     sid = sm.create_season("D2", "women", seed=5)
     guard = 0
-    while sm.load_season(sid)["phase"] in ("ita_indoor", "regular") and guard < 50:
+    while sm.load_season(sid)["phase"] in ("ita_indoor", "fall_portal", "regular") and guard < 50:
         sm.advance(sid); guard += 1
     conn = sm._db()
     rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'"

@@ -77,6 +77,15 @@ UP_THRESHOLD = 0.8
 UP_SUCCESS = 0.35
 RELIABILITY_GATE = 0.4
 
+# Fall transfer portal calibration. The post-ITA reshuffle is a CURATED event, not
+# a mass migration: it should rescue the handful of genuinely mis-allocated players
+# (a D1-caliber talent stuck in a lower division), not relocate the best one or two
+# players at every program. A riser must (a) be a top-2 starter at their school and
+# (b) clear a higher division's TYPICAL (median) expected level — proof they belong
+# a tier up, not just that they're the best of a weak team. We then move only the
+# most mis-allocated up to a per-gender cap (each can trigger one cascade demotion).
+FALL_PORTAL_MAX_RISERS = 30
+
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
 RECRUIT_POOL = 2500     # sized to cover annual roster TURNOVER (~2,200 pool-filled
@@ -203,6 +212,21 @@ def _db() -> sqlite3.Connection:
     if _schema_ready_for != WORLD_DB:
         init_schema()
     return dbpath.connect(WORLD_DB)
+
+
+def _retry_locked(fn, *, tries: int = 6, delay: float = 0.3):
+    """Run a DB op, retrying on a transient 'database is locked'. The connection's
+    busy_timeout already WAITS on normal contention; this backstops the rare case
+    where a lock outlasts it (e.g. a sibling write under heavy suite load) so a
+    one-off contention blip can't 500 the world advance. Re-raises anything else."""
+    import time
+    for attempt in range(tries):
+        try:
+            return fn()
+        except sqlite3.OperationalError as e:
+            if "locked" not in str(e).lower() or attempt == tries - 1:
+                raise
+            time.sleep(delay * (attempt + 1))
 
 
 def _save_rosters(conn, world_id, year, rosters) -> None:
@@ -956,7 +980,8 @@ def _career_transfers(p) -> int:
     """How many times this player has already changed schools (school changes in
     their season history). The engine moves a player at most ONCE per career — a
     repeat transfer only happens if you do it manually in the editor."""
-    hist = sorted((getattr(p, "history", []) or []), key=lambda h: h.get("year", 0))
+    hist = sorted((getattr(p, "history", []) or []),
+                  key=lambda h: (h.get("year", 0), h.get("stint", 0)))
     seq = [h.get("school") for h in hist if h.get("school")]
     return sum(1 for a, b in zip(seq, seq[1:]) if a != b)
 
@@ -1096,6 +1121,337 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
                 moved = True
         # otherwise they stay put — no forced departure out of the universe
     return out
+
+
+# ==========================================================================
+# Fall transfer portal — the post-ITA talent reshuffle (sim proposes, you
+# approve). A D1-caliber player buried in a lower division climbs to the highest
+# division whose lineup they'd crack; if their new program is full it sends its
+# weakest player back DOWN the ladder (a cascade), ideally into the very seat the
+# riser vacated. The net effect: no program runs over cap, and the only roster
+# shrinkage is at the very bottom, repaired by `refill_walkons` at rollover.
+# Unlike the year-end `transfer_portal`, movers keep BOTH stints of the split
+# season (ITA at the old school, regular+postseason at the new one).
+# ==========================================================================
+_FP_DIV_ORDER = ["D1", "D2", "D3", "D4"]    # high → low
+
+
+def fall_portal_proposals(rosters: dict, player_str: dict, rng: random.Random,
+                          gender: str) -> list[dict]:
+    """Deterministic cross-division reshuffle for one gender. Returns a list of
+    move dicts (pid, src/dest school+division, str, cascade_from) computed on an
+    in-memory snapshot — the caller persists them as proposals and only mutates
+    real rosters on commit (via `overrides.set_move`)."""
+    progs = _flat_programs(gender)
+    pool: dict[str, list] = {}
+    div_of: dict[str, str] = {}
+    for (division, g), schools_ in rosters.items():
+        if g != gender:
+            continue
+        pool.update(schools_)
+        for s in schools_:
+            div_of[s] = division
+    schools = [s for s in pool if s in progs]
+    if not schools:
+        return []
+    prestige = {s: progs[s].prestige for s in schools}
+    facilities = {s: progs[s].facilities for s in schools}
+    level = {s: _prog_level(progs[s]) for s in schools}
+    strs = {s: sorted(_str_of(player_str, p) for p in pool[s]) for s in schools}
+    by_div: dict[str, list] = {}
+    for s in schools:
+        by_div.setdefault(div_of.get(s, ""), []).append(s)
+    for d in by_div:
+        by_div[d].sort()                       # stable, deterministic iteration
+    # A division's TYPICAL expected level (median program level) — the bar a riser
+    # must clear to count as genuinely that division's caliber.
+    div_level: dict[str, float] = {}
+    for d, ss in by_div.items():
+        lv = sorted(level[s] for s in ss)
+        div_level[d] = lv[len(lv) // 2] if lv else 0.0
+
+    def open_slot(s):
+        return len(pool[s]) < roster_cap(div_of.get(s, ""))
+
+    def line_of(s, val):
+        a = strs[s]
+        return 1 + (len(a) - bisect.bisect_right(a, val))
+
+    def best_in(div, val, want_line, avoid=None):
+        """Best-prestige program in `div` with an OPEN seat where the player would
+        slot at `want_line` or better. `avoid` skips programs that already took a
+        riser this run (so risers spread instead of funnelling to one blue-blood).
+        Ties break on school name (deterministic)."""
+        best, draw = None, -1.0
+        for d in by_div.get(div, ()):
+            if not d or (avoid and d in avoid) or not open_slot(d) or line_of(d, val) > want_line:
+                continue
+            w = prestige[d] + 0.3 * facilities[d]
+            if w > draw:
+                best, draw = d, w
+        return best
+
+    def _weakest_eligible(s, val):
+        """The weakest player at `s` who is below `val` and free to be displaced
+        (not already moved this run, no prior career transfer)."""
+        cand = [q for q in pool[s] if q.pid not in touched
+                and _career_transfers(q) == 0 and _str_of(player_str, q) < val]
+        if not cand:
+            return None
+        return min(cand, key=lambda q: (_str_of(player_str, q), q.pid))
+
+    def fullest_below(div, val, avoid=None):
+        """Best-prestige FULL program in `div` holding at least one eligible player
+        weaker than `val` (a candidate to displace). `avoid` skips programs that
+        already took a riser this run."""
+        best, draw = None, -1.0
+        for d in by_div.get(div, ()):
+            if not d or (avoid and d in avoid) or open_slot(d) or _weakest_eligible(d, val) is None:
+                continue
+            w = prestige[d] + 0.3 * facilities[d]
+            if w > draw:
+                best, draw = d, w
+        return best
+
+    def apply_move(p, src, dest):
+        sval = _str_of(player_str, p)
+        pool[src].remove(p)
+        a = strs[src]
+        i = bisect.bisect_left(a, sval)
+        a.pop(i if i < len(a) and a[i] == sval else a.index(sval))
+        pool[dest].append(p)
+        bisect.insort(strs[dest], sval)
+
+    def mk(p, src, dest, cascade_from):
+        return {"pid": p.pid, "name": getattr(p, "name", ""),
+                "src_school": src, "dest_school": dest,
+                "src_div": div_of[src], "dest_div": div_of[dest],
+                "str": round(_str_of(player_str, p), 1), "cascade_from": cascade_from}
+
+    moves: list[dict] = []
+    touched: set = set()
+
+    def over_div(src, val):
+        """Highest division above the player's whose TYPICAL level they already
+        clear — i.e. they genuinely belong a tier (or more) up. None if they're
+        merely the best player on a weak team."""
+        src_rank = _FP_DIV_ORDER.index(div_of[src])
+        for d in _FP_DIV_ORDER[:src_rank]:
+            if val >= div_level.get(d, float("inf")):
+                return d
+        return None
+
+    def highest_fit(src, val, avoid=None):
+        """Highest division ABOVE the player's whose typical level they clear AND
+        where they'd make the lineup (line ≤ 6) at a program not already used this
+        run, by an open seat or by displacing a weaker man. The level bar keeps
+        weak-team standouts from over-promoting."""
+        src_rank = _FP_DIV_ORDER.index(div_of[src])
+        for d in _FP_DIV_ORDER[:src_rank]:
+            if val < div_level.get(d, float("inf")):
+                continue
+            if best_in(d, val, 6, avoid) is not None or fullest_below(d, val, avoid) is not None:
+                return d
+        return None
+
+    def settle(p, from_school, prefer):
+        """Place a displaced player into an open seat, preferring the seat the
+        riser just vacated (a clean swap-back), else the best open seat further
+        down the ladder. If nothing is open below, they depart (refilled at
+        rollover) — the only roster shrinkage the cascade allows."""
+        val = _str_of(player_str, p)
+        from_rank = _FP_DIV_ORDER.index(div_of[from_school])
+        if (prefer and prefer in pool and open_slot(prefer)
+                and _FP_DIV_ORDER.index(div_of[prefer]) >= from_rank
+                and line_of(prefer, val) <= roster_cap(div_of[prefer])):
+            apply_move(p, from_school, prefer)
+            moves.append(mk(p, from_school, prefer, from_school))
+            return True
+        for d in _FP_DIV_ORDER[from_rank + 1:]:
+            dest = best_in(d, val, roster_cap(d))
+            if dest is not None:
+                apply_move(p, from_school, dest)
+                moves.append(mk(p, from_school, dest, from_school))
+                return True
+        return False
+
+    received: set = set()       # programs that already took a riser (spread, don't funnel)
+
+    def place_riser(p, src):
+        val = _str_of(player_str, p)
+        want = highest_fit(src, val, received)
+        if want is None:
+            return
+        dest = best_in(want, val, 6, received)
+        if dest is not None:                    # open seat — straight promotion
+            apply_move(p, src, dest)
+            moves.append(mk(p, src, dest, None))
+            received.add(dest)
+            return
+        dest = fullest_below(want, val, received)   # full program — displace + cascade
+        if dest is None:
+            return
+        weakest = _weakest_eligible(dest, val)
+        if weakest is None:
+            return
+        apply_move(p, src, dest)
+        moves.append(mk(p, src, dest, None))
+        received.add(dest)
+        touched.add(weakest.pid)
+        settle(weakest, dest, prefer=src)
+
+    # Risers are picked on TALENT, not on the ITA result sample — the opener is far
+    # too few duals to trust a results-based gate, and the mis-allocation we correct
+    # is a player whose underlying ability is too good for their division. We require
+    # a top-2 starter who clears a HIGHER division's typical level, then move only the
+    # most mis-allocated up to the per-gender cap so this stays a curated reshuffle.
+    candidates = []
+    for s in schools:
+        if div_of[s] == "D1":                   # only lower divisions feed risers
+            continue
+        for p in pool[s]:
+            if p.walk_on or _career_transfers(p) != 0:
+                continue
+            val = _str_of(player_str, p)
+            if line_of(s, val) <= 2 and over_div(s, val) is not None:
+                gap = val - div_level.get(div_of[s], 0.0)   # how mis-allocated
+                candidates.append((p, s, val, gap))
+    # the most mis-allocated first, capped; then place best-talent-first so the
+    # strongest claim the best fits.
+    candidates.sort(key=lambda r: (-r[3], r[0].pid))
+    risers = sorted(candidates[:FALL_PORTAL_MAX_RISERS], key=lambda r: (-r[2], r[0].pid))
+    for p, s, _val, _gap in risers:
+        if p.pid in touched:
+            continue
+        touched.add(p.pid)
+        place_riser(p, s)
+    return moves
+
+
+def _all_in_fall_portal(seed: int, w: dict) -> bool:
+    sids = [universe_sid(seed, w, d, g) for (d, g) in _active_unis()]
+    phases = [sm.load_season(sid)["phase"] for sid in sids]
+    return bool(phases) and all(p == "fall_portal" for p in phases)
+
+
+def _release_fall_portal(seed: int, w: dict) -> None:
+    """Send every held universe on to the regular season (current_week was already
+    set to the post-ITA first week when the ITA closed)."""
+    def _do():
+        conn = _db()
+        try:
+            for (d, g) in _active_unis():
+                sid = universe_sid(seed, w, d, g)
+                conn.execute("UPDATE seasons SET phase='regular'"
+                             " WHERE id=? AND phase='fall_portal'", (sid,))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def run_fall_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Generate the fall-portal proposals across all active universes and persist
+    them (status='proposed'). Returns a pending event for the UI to act on."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    prime(seed)
+    rosters = developed_rosters(w)
+    # The reshuffle reads developed ABILITY (str_value, via the empty-map fallback in
+    # `fall_portal_proposals`). The ITA result/line is snapshotted separately, only to
+    # stamp the mover's frozen ITA stint on their career history at commit.
+    recs: dict = {}
+    lines: dict = {}
+    for (d, g) in _active_unis():
+        sid = universe_sid(seed, w, d, g)
+        recs[(d, g)] = sm.player_records(sid)
+        lines[(d, g)] = sm.player_primary_lines(sid)
+    total = 0
+    for gender in worldconfig.active_genders():
+        rng = random.Random(f"{seed}|fallportal|{w['year']}|{gender}")
+        props = fall_portal_proposals(rosters, {}, rng, gender)
+        rows = []
+        for m in props:
+            sd = (m["src_div"], gender)
+            ww, ll = recs.get(sd, {}).get(m["pid"], (0, 0))
+            rows.append({**m, "status": "proposed", "ita_w": ww, "ita_l": ll,
+                         "ita_line": lines.get(sd, {}).get(m["pid"])})
+        ov.set_proposals(w["year"], gender, rows)
+        total += len(rows)
+    reset_caches(); _primed.pop(seed, None)
+    return {"event": "fall_portal_pending", "year": w["year"], "proposals": total}
+
+
+def _stamp_ita_stint(conn, w: dict, row: dict) -> None:
+    """Freeze a mover's ITA stint at their old school onto their persisted career
+    history (stint 0) so it survives the move — the regular+postseason stint at the
+    new school is stamped as stint 1 at year-end by `_record_world_history`."""
+    r = conn.execute("SELECT data FROM world_roster WHERE world_id=? AND year=? AND pid=?",
+                     (w["id"], w["year"], row["pid"])).fetchone()
+    if not r:
+        return
+    p = prospect_from_dict(json.loads(r["data"]))
+    yr = w["year"]
+    if any(h.get("year") == yr and h.get("stint", 0) == 0 for h in p.history):
+        return
+    p.history.append({
+        "year": yr, "season_no": yr + 1, "division": row["src_div"], "gender": row["gender"],
+        "school": row["src_school"], "class": p.class_year, "line": row["ita_line"],
+        "w": row["ita_w"], "l": row["ita_l"], "str": round(row["str"], 1),
+        "singles_lines": {}, "doubles_lines": {}, "stint": 0, "phase": "ita"})
+    conn.execute("UPDATE world_roster SET data=? WHERE world_id=? AND year=? AND pid=?",
+                 (json.dumps(prospect_to_dict(p)), w["id"], w["year"], row["pid"]))
+
+
+def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Apply the approved fall-portal moves: relocate each mover for the rest of
+    the season (set_move), freeze their ITA stint, mark them committed, then
+    release every held universe to the regular season."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    year = w["year"]
+    approved = ov.get_proposals(year, status="approved")
+    # Freeze every mover's ITA stint on one connection first (a held write lock here
+    # would deadlock the per-row override writes, which open their own connections).
+    conn = _db()
+    for row in approved:
+        _stamp_ita_stint(conn, w, row)
+    conn.commit(); conn.close()
+    moved = 0
+    for row in approved:
+        ov.set_move(row["pid"], row["dest_school"])
+        ov.set_status(year, row["gender"], row["pid"], "committed")
+        moved += 1
+    _base_cache.pop((w["id"], w["year"]), None)      # ITA stint changed the stored roster
+    _dev_cache.clear()
+    _release_fall_portal(seed, w)
+    reset_caches(); _primed.pop(seed, None)
+    return {"event": "fall_portal_committed", "year": year, "moved": moved}
+
+
+def _bake_fall_moves(seed: int, w: dict, rosters: dict) -> int:
+    """Make the season's committed fall-portal moves permanent: relocate each mover
+    from their source to their destination roster list (so next year's persisted
+    roster has them at the new school), clear the live move override, and clear the
+    year's portal slate. Runs AFTER `_record_world_history` (which needs the
+    override + portal table) and BEFORE graduation/rollover (so they roll over as
+    destination players, and the year-end `transfer_portal` sees their used-up
+    career transfer and leaves them be)."""
+    from app import overrides as ov
+    rows = [r for r in ov.get_proposals(w["year"]) if r["status"] == "committed"]
+    baked = 0
+    for r in rows:
+        src_list = rosters.get((r["src_div"], r["gender"]), {}).get(r["src_school"])
+        if src_list is not None:
+            moved = next((p for p in src_list if p.pid == r["pid"]), None)
+            if moved is not None:
+                src_list.remove(moved)
+                rosters.setdefault((r["dest_div"], r["gender"]), {}) \
+                       .setdefault(r["dest_school"], []).append(moved)
+                baked += 1
+        ov.clear_move(r["pid"])
+    ov.clear_year(w["year"])
+    return baked
 
 
 def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> int:
@@ -1496,6 +1852,27 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     if _all_complete(seed, w):
         return _finalize_year(seed, w)
 
+    # Fall transfer portal barrier: once EVERY active universe has finished its
+    # ITA opener and is holding in 'fall_portal', pause the world here. First
+    # encounter generates proposals; thereafter we keep holding until the user
+    # commits (which releases the hold). An empty slate releases immediately.
+    if sm.FALL_PORTAL_ENABLED and _all_in_fall_portal(seed, w):
+        from app import overrides as ov
+        existing = ov.get_proposals(w["year"])
+        if not existing:
+            res = run_fall_portal(seed)
+            if res["proposals"] == 0:
+                _release_fall_portal(seed, w)
+                return {"event": "fall_portal", "year": w["year"], "proposals": 0,
+                        "released": True}
+            return res
+        pending = [r for r in existing if r["status"] in ("proposed", "approved")]
+        if pending:
+            return {"event": "fall_portal_pending", "year": w["year"],
+                    "proposals": len(pending)}
+        _release_fall_portal(seed, w)           # safety net: nothing left pending
+        return {"event": "fall_portal", "year": w["year"], "released": True}
+
     prime(seed)
     cross = 0
     if w["week"] == 0:                      # start of year: play the cross-division slate
@@ -1503,7 +1880,10 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     played = 0
     for (d, g) in _active_unis():
         sid = universe_sid(seed, w, d, g)
-        if sm.load_season(sid)["phase"] != "complete":
+        # Hold any universe that's finished its ITA at the fall-portal boundary
+        # (don't advance it) so they all converge there before the portal runs;
+        # the barrier above fires once every active universe has arrived.
+        if sm.load_season(sid)["phase"] not in ("complete", "fall_portal"):
             res = sm.advance(sid)
             played += res.get("played", 0)
 
@@ -1533,6 +1913,7 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
     school change between a player's entries is a transfer. Idempotent per year."""
     from app import overrides as ov
     moves = ov.get_moves()                # pid -> destination school (editor moves)
+    fall_movers = ov.committed_movers(world["year"])   # split-season (two-stint) movers
     year, season_no = world["year"], world["year"] + 1
     # Per active universe: that season's stats + a school->division map. A moved
     # player actually PLAYS in their destination universe's duals, so we read
@@ -1550,9 +1931,16 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
     for (division, gender) in _active_unis():
         for school, roster in rosters.get((division, gender), {}).items():
             for p in roster:
-                if any(h.get("year") == year for h in p.history):
-                    continue                      # already recorded this year
-                played_school = moves.get(p.pid, school)   # honor editor moves
+                # A fall-portal mover already carries an ITA stint (stint 0) for
+                # this year; here we append their destination stint (stint 1, the
+                # regular season + postseason at the new school). Everyone else gets
+                # the usual single full-season entry (stint 0).
+                stint = 1 if p.pid in fall_movers else 0
+                phase = "regular_post" if stint else "full"
+                if any(h.get("year") == year and h.get("stint", 0) == stint
+                       for h in p.history):
+                    continue                      # already recorded this stint
+                played_school = moves.get(p.pid, school)   # honor editor / portal moves
                 dest_div = sch_div.get(gender, {}).get(played_school, division)
                 src = udata.get((dest_div, gender), udata[(division, gender)])
                 w_, l_ = src["recs"].get(p.pid, (0, 0))
@@ -1565,6 +1953,7 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
                     "w": w_, "l": l_, "str": round(s, 1),
                     "singles_lines": {str(k): v for k, v in lr["singles"].items()},
                     "doubles_lines": {str(k): v for k, v in lr["doubles"].items()},
+                    "stint": stint, "phase": phase,
                 })
 
 
@@ -1706,6 +2095,9 @@ def _finalize_year(seed: int, w: dict) -> dict:
     # graduation/portal moves them — so the player card (and, later, the pro
     # league) can show where they played year over year.
     _record_world_history(seed, w, rosters)
+    # Make this season's committed fall-portal moves permanent now that both stints
+    # are on the record — relocate the movers in `rosters` and drop the overrides.
+    _bake_fall_moves(seed, w, rosters)
     # season_player_str above needed the primed cache; the rollover works on
     # `rosters` (an independent copy), so free the ~170MB primed roster cache now
     # rather than holding it alongside `rosters` through the heavy rollover.
