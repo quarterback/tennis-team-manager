@@ -1136,196 +1136,223 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
 _FP_DIV_ORDER = ["D1", "D2", "D3", "D4"]    # high → low
 
 
-def fall_portal_proposals(rosters: dict, player_str: dict, rng: random.Random,
-                          gender: str) -> list[dict]:
-    """Deterministic cross-division reshuffle for one gender. Returns a list of
-    move dicts (pid, src/dest school+division, str, cascade_from) computed on an
-    in-memory snapshot — the caller persists them as proposals and only mutates
-    real rosters on commit (via `overrides.set_move`)."""
-    progs = _flat_programs(gender)
-    pool: dict[str, list] = {}
-    div_of: dict[str, str] = {}
-    for (division, g), schools_ in rosters.items():
-        if g != gender:
-            continue
-        pool.update(schools_)
-        for s in schools_:
-            div_of[s] = division
-    schools = [s for s in pool if s in progs]
-    if not schools:
-        return []
-    prestige = {s: progs[s].prestige for s in schools}
-    facilities = {s: progs[s].facilities for s in schools}
-    level = {s: _prog_level(progs[s]) for s in schools}
-    strs = {s: sorted(_str_of(player_str, p) for p in pool[s]) for s in schools}
-    by_div: dict[str, list] = {}
-    for s in schools:
-        by_div.setdefault(div_of.get(s, ""), []).append(s)
-    for d in by_div:
-        by_div[d].sort()                       # stable, deterministic iteration
-    # A division's TYPICAL expected level (median program level) — the bar a riser
-    # must clear to count as genuinely that division's caliber.
-    div_level: dict[str, float] = {}
-    for d, ss in by_div.items():
-        lv = sorted(level[s] for s in ss)
-        div_level[d] = lv[len(lv) // 2] if lv else 0.0
+class _FPPlanner:
+    """One in-memory snapshot of a gender's cross-division rosters, with the cascade
+    engine on top. `discover` finds the sim's risers and places them; `place` puts a
+    single rider (auto or at an explicit destination) and cascades — so the same
+    machinery serves both the auto proposal and the user's edits/adds at resolve."""
 
-    def open_slot(s):
-        return len(pool[s]) < roster_cap(div_of.get(s, ""))
+    def __init__(self, rosters: dict, player_str: dict, gender: str):
+        progs = _flat_programs(gender)
+        self.player_str = player_str
+        pool: dict[str, list] = {}
+        div_of: dict[str, str] = {}
+        for (division, g), schools_ in rosters.items():
+            if g != gender:
+                continue
+            # SHALLOW-COPY each roster list: the planner relocates players by mutating
+            # these lists, and `rosters` is the SHARED, cached `developed_rosters` —
+            # mutating it in place would corrupt the cache for every later resolve
+            # (movers' src would drift to wherever a prior pass placed them).
+            for s, roster in schools_.items():
+                pool[s] = list(roster)
+                div_of[s] = division
+        schools = [s for s in pool if s in progs]
+        self.pool, self.div_of, self.schools = pool, div_of, schools
+        self.prestige = {s: progs[s].prestige for s in schools}
+        self.facilities = {s: progs[s].facilities for s in schools}
+        self.level = {s: _prog_level(progs[s]) for s in schools}
+        self.strs = {s: sorted(self._sv(p) for p in pool[s]) for s in schools}
+        by_div: dict[str, list] = {}
+        for s in schools:
+            by_div.setdefault(div_of.get(s, ""), []).append(s)
+        for d in by_div:
+            by_div[d].sort()
+        self.by_div = by_div
+        # A division's TYPICAL (median) expected level — the bar a riser must clear.
+        self.div_level = {}
+        for d, ss in by_div.items():
+            lv = sorted(self.level[s] for s in ss)
+            self.div_level[d] = lv[len(lv) // 2] if lv else 0.0
+        self.moves: list[dict] = []
+        self.touched: set = set()
+        self.received: set = set()
+        self.by_pid = {p.pid: (s, p) for s in schools for p in pool[s]}
 
-    def line_of(s, val):
-        a = strs[s]
+    def _sv(self, p):
+        return _str_of(self.player_str, p)
+
+    def open_slot(self, s):
+        return len(self.pool[s]) < roster_cap(self.div_of.get(s, ""))
+
+    def line_of(self, s, val):
+        a = self.strs[s]
         return 1 + (len(a) - bisect.bisect_right(a, val))
 
-    def best_in(div, val, want_line, avoid=None):
-        """Best-prestige program in `div` with an OPEN seat where the player would
-        slot at `want_line` or better. `avoid` skips programs that already took a
-        riser this run (so risers spread instead of funnelling to one blue-blood).
-        Ties break on school name (deterministic)."""
+    def best_in(self, div, val, want_line, avoid=None):
+        """Best-prestige program in `div` with an OPEN seat where the player slots at
+        `want_line` or better; `avoid` skips programs that already took a riser."""
         best, draw = None, -1.0
-        for d in by_div.get(div, ()):
-            if not d or (avoid and d in avoid) or not open_slot(d) or line_of(d, val) > want_line:
+        for d in self.by_div.get(div, ()):
+            if (not d or (avoid and d in avoid) or not self.open_slot(d)
+                    or self.line_of(d, val) > want_line):
                 continue
-            w = prestige[d] + 0.3 * facilities[d]
+            w = self.prestige[d] + 0.3 * self.facilities[d]
             if w > draw:
                 best, draw = d, w
         return best
 
-    def _weakest_eligible(s, val):
-        """The weakest player at `s` who is below `val` and free to be displaced
-        (not already moved this run, no prior career transfer)."""
-        cand = [q for q in pool[s] if q.pid not in touched
-                and _career_transfers(q) == 0 and _str_of(player_str, q) < val]
-        if not cand:
-            return None
-        return min(cand, key=lambda q: (_str_of(player_str, q), q.pid))
+    def _weakest_eligible(self, s, val):
+        cand = [q for q in self.pool[s] if q.pid not in self.touched
+                and _career_transfers(q) == 0 and self._sv(q) < val]
+        return min(cand, key=lambda q: (self._sv(q), q.pid)) if cand else None
 
-    def fullest_below(div, val, avoid=None):
-        """Best-prestige FULL program in `div` holding at least one eligible player
-        weaker than `val` (a candidate to displace). `avoid` skips programs that
-        already took a riser this run."""
+    def fullest_below(self, div, val, avoid=None):
         best, draw = None, -1.0
-        for d in by_div.get(div, ()):
-            if not d or (avoid and d in avoid) or open_slot(d) or _weakest_eligible(d, val) is None:
+        for d in self.by_div.get(div, ()):
+            if (not d or (avoid and d in avoid) or self.open_slot(d)
+                    or self._weakest_eligible(d, val) is None):
                 continue
-            w = prestige[d] + 0.3 * facilities[d]
+            w = self.prestige[d] + 0.3 * self.facilities[d]
             if w > draw:
                 best, draw = d, w
         return best
 
-    def apply_move(p, src, dest):
-        sval = _str_of(player_str, p)
-        pool[src].remove(p)
-        a = strs[src]
+    def _apply(self, p, src, dest):
+        sval = self._sv(p)
+        self.pool[src].remove(p)
+        a = self.strs[src]
         i = bisect.bisect_left(a, sval)
         a.pop(i if i < len(a) and a[i] == sval else a.index(sval))
-        pool[dest].append(p)
-        bisect.insort(strs[dest], sval)
+        self.pool[dest].append(p)
+        bisect.insort(self.strs[dest], sval)
+        self.by_pid[p.pid] = (dest, p)
 
-    def mk(p, src, dest, cascade_from):
+    def _mk(self, p, src, dest, cascade_from):
         return {"pid": p.pid, "name": getattr(p, "name", ""),
                 "src_school": src, "dest_school": dest,
-                "src_div": div_of[src], "dest_div": div_of[dest],
-                "str": round(_str_of(player_str, p), 1), "cascade_from": cascade_from}
+                "src_div": self.div_of[src], "dest_div": self.div_of[dest],
+                "str": round(self._sv(p), 1), "cascade_from": cascade_from}
 
-    moves: list[dict] = []
-    touched: set = set()
-
-    def over_div(src, val):
-        """Highest division above the player's whose TYPICAL level they already
-        clear — i.e. they genuinely belong a tier (or more) up. None if they're
-        merely the best player on a weak team."""
-        src_rank = _FP_DIV_ORDER.index(div_of[src])
+    def over_div(self, src, val):
+        """Highest division above the player's whose typical level they already clear."""
+        src_rank = _FP_DIV_ORDER.index(self.div_of[src])
         for d in _FP_DIV_ORDER[:src_rank]:
-            if val >= div_level.get(d, float("inf")):
+            if val >= self.div_level.get(d, float("inf")):
                 return d
         return None
 
-    def highest_fit(src, val, avoid=None):
-        """Highest division ABOVE the player's whose typical level they clear AND
-        where they'd make the lineup (line ≤ 6) at a program not already used this
-        run, by an open seat or by displacing a weaker man. The level bar keeps
-        weak-team standouts from over-promoting."""
-        src_rank = _FP_DIV_ORDER.index(div_of[src])
+    def highest_fit(self, src, val, avoid=None, *, gated=True):
+        """Highest division above the player's where they'd make the lineup (line ≤ 6).
+        With `gated`, also require clearing that division's median level (the auto
+        discovery bar); user picks pass gated=False so any climb they'd fit is allowed."""
+        src_rank = _FP_DIV_ORDER.index(self.div_of[src])
         for d in _FP_DIV_ORDER[:src_rank]:
-            if val < div_level.get(d, float("inf")):
+            if gated and val < self.div_level.get(d, float("inf")):
                 continue
-            if best_in(d, val, 6, avoid) is not None or fullest_below(d, val, avoid) is not None:
+            if (self.best_in(d, val, 6, avoid) is not None
+                    or self.fullest_below(d, val, avoid) is not None):
                 return d
         return None
 
-    def settle(p, from_school, prefer):
-        """Place a displaced player into an open seat, preferring the seat the
-        riser just vacated (a clean swap-back), else the best open seat further
-        down the ladder. If nothing is open below, they depart (refilled at
-        rollover) — the only roster shrinkage the cascade allows."""
-        val = _str_of(player_str, p)
-        from_rank = _FP_DIV_ORDER.index(div_of[from_school])
-        if (prefer and prefer in pool and open_slot(prefer)
-                and _FP_DIV_ORDER.index(div_of[prefer]) >= from_rank
-                and line_of(prefer, val) <= roster_cap(div_of[prefer])):
-            apply_move(p, from_school, prefer)
-            moves.append(mk(p, from_school, prefer, from_school))
+    def settle(self, p, from_school, prefer):
+        """Place a displaced player into an open seat — preferring the seat the riser
+        vacated (a clean swap-back), else the best open seat further down."""
+        val = self._sv(p)
+        from_rank = _FP_DIV_ORDER.index(self.div_of[from_school])
+        if (prefer and prefer in self.pool and self.open_slot(prefer)
+                and _FP_DIV_ORDER.index(self.div_of[prefer]) >= from_rank
+                and self.line_of(prefer, val) <= roster_cap(self.div_of[prefer])):
+            self._apply(p, from_school, prefer)
+            self.moves.append(self._mk(p, from_school, prefer, from_school))
             return True
         for d in _FP_DIV_ORDER[from_rank + 1:]:
-            dest = best_in(d, val, roster_cap(d))
+            dest = self.best_in(d, val, roster_cap(d))
             if dest is not None:
-                apply_move(p, from_school, dest)
-                moves.append(mk(p, from_school, dest, from_school))
+                self._apply(p, from_school, dest)
+                self.moves.append(self._mk(p, from_school, dest, from_school))
                 return True
         return False
 
-    received: set = set()       # programs that already took a riser (spread, don't funnel)
-
-    def place_riser(p, src):
-        val = _str_of(player_str, p)
-        want = highest_fit(src, val, received)
-        if want is None:
-            return
-        dest = best_in(want, val, 6, received)
-        if dest is not None:                    # open seat — straight promotion
-            apply_move(p, src, dest)
-            moves.append(mk(p, src, dest, None))
-            received.add(dest)
-            return
-        dest = fullest_below(want, val, received)   # full program — displace + cascade
+    def place(self, p, src, dest=None, *, gated=True):
+        """Place one rider. With no `dest`, auto-pick the highest division they fit;
+        with an explicit `dest` (a user redirect/add), honor it. A full destination
+        displaces its weakest, who cascades down. Returns the destination, or None if
+        no fit was found for an auto placement."""
+        val = self._sv(p)
         if dest is None:
-            return
-        weakest = _weakest_eligible(dest, val)
-        if weakest is None:
-            return
-        apply_move(p, src, dest)
-        moves.append(mk(p, src, dest, None))
-        received.add(dest)
-        touched.add(weakest.pid)
-        settle(weakest, dest, prefer=src)
+            want = self.highest_fit(src, val, self.received, gated=gated)
+            if want is None:
+                return None
+            open_dest = self.best_in(want, val, 6, self.received)
+            if open_dest is not None:
+                self._apply(p, src, open_dest)
+                self.moves.append(self._mk(p, src, open_dest, None))
+                self.received.add(open_dest)
+                return open_dest
+            dest = self.fullest_below(want, val, self.received)
+            if dest is None:
+                return None
+        if dest not in self.pool:               # unknown school (defensive)
+            return None
+        if self.open_slot(dest):                # open seat — straight promotion
+            self._apply(p, src, dest)
+            self.moves.append(self._mk(p, src, dest, None))
+            self.received.add(dest)
+            return dest
+        weakest = self._weakest_eligible(dest, val)
+        self._apply(p, src, dest)               # a user pick into a full team still lands
+        self.moves.append(self._mk(p, src, dest, None))
+        self.received.add(dest)
+        if weakest is not None:                 # ...sending the weakest down the ladder
+            self.touched.add(weakest.pid)
+            self.settle(weakest, dest, prefer=src)
+        return dest
 
-    # Risers are picked on TALENT, not on the ITA result sample — the opener is far
-    # too few duals to trust a results-based gate, and the mis-allocation we correct
-    # is a player whose underlying ability is too good for their division. We require
-    # a top-2 starter who clears a HIGHER division's typical level, then move only the
-    # most mis-allocated up to the per-gender cap so this stays a curated reshuffle.
-    candidates = []
-    for s in schools:
-        if div_of[s] == "D1":                   # only lower divisions feed risers
-            continue
-        for p in pool[s]:
-            if p.walk_on or _career_transfers(p) != 0:
+    def discover(self, cap: int):
+        """The sim's auto pass: top-2 lower-division players who clear a higher
+        division's median level, the most mis-allocated first up to `cap`."""
+        candidates = []
+        for s in self.schools:
+            if self.div_of[s] == "D1":
                 continue
-            val = _str_of(player_str, p)
-            if line_of(s, val) <= 2 and over_div(s, val) is not None:
-                gap = val - div_level.get(div_of[s], 0.0)   # how mis-allocated
-                candidates.append((p, s, val, gap))
-    # the most mis-allocated first, capped; then place best-talent-first so the
-    # strongest claim the best fits.
-    candidates.sort(key=lambda r: (-r[3], r[0].pid))
-    risers = sorted(candidates[:FALL_PORTAL_MAX_RISERS], key=lambda r: (-r[2], r[0].pid))
-    for p, s, _val, _gap in risers:
-        if p.pid in touched:
-            continue
-        touched.add(p.pid)
-        place_riser(p, s)
-    return moves
+            for p in self.pool[s]:
+                if p.walk_on or _career_transfers(p) != 0:
+                    continue
+                val = self._sv(p)
+                if self.line_of(s, val) <= 2 and self.over_div(s, val) is not None:
+                    candidates.append((p, s, val, val - self.div_level.get(self.div_of[s], 0.0)))
+        candidates.sort(key=lambda r: (-r[3], r[0].pid))
+        risers = sorted(candidates[:cap], key=lambda r: (-r[2], r[0].pid))
+        for p, s, _v, _g in risers:
+            if p.pid in self.touched:
+                continue
+            self.touched.add(p.pid)
+            self.place(p, s)
+
+    def auto_dest(self, pid: str, *, gated: bool = False):
+        """The destination the engine would pick for a single player on a clean
+        snapshot — used to pre-fill the destination when the user adds a mover."""
+        entry = self.by_pid.get(pid)
+        if not entry:
+            return None
+        src, p = entry
+        return self.highest_fit(src, self._sv(p), gated=gated)
+
+
+def fall_portal_proposals(rosters: dict, player_str: dict, rng: random.Random,
+                          gender: str) -> list[dict]:
+    """Deterministic cross-division reshuffle for one gender. Returns a list of move
+    dicts (pid, src/dest school+division, str, cascade_from) computed on an in-memory
+    snapshot — the caller persists the riders as proposals; cascades are re-derived
+    at resolve. Only real rosters mutate, on commit, via `overrides.set_move`."""
+    if not any(g == gender for (_d, g) in rosters):
+        return []
+    plan = _FPPlanner(rosters, player_str, gender)
+    if not plan.schools:
+        return []
+    plan.discover(FALL_PORTAL_MAX_RISERS)
+    return plan.moves
 
 
 def _all_in_fall_portal(seed: int, w: dict) -> bool:
@@ -1350,44 +1377,72 @@ def _release_fall_portal(seed: int, w: dict) -> None:
     _retry_locked(_do)
 
 
-def run_fall_portal(seed: int = DEFAULT_SEED) -> dict:
-    """Generate the fall-portal proposals across all active universes and persist
-    them (status='proposed'). Returns a pending event for the UI to act on."""
-    from app import overrides as ov
-    w = get_or_create(seed)
-    prime(seed)
-    rosters = developed_rosters(w)
-    # The reshuffle reads developed ABILITY (str_value, via the empty-map fallback in
-    # `fall_portal_proposals`). The ITA result/line is snapshotted separately, only to
-    # stamp the mover's frozen ITA stint on their career history at commit.
+def _ita_lookup(seed: int, w: dict):
+    """(records, lines) keyed (division, gender) for every active universe. With the
+    world held at the post-ITA boundary, these ARE the ITA stint's W/L and primary
+    line for each mover — what we freeze onto their career history at commit."""
     recs: dict = {}
     lines: dict = {}
     for (d, g) in _active_unis():
         sid = universe_sid(seed, w, d, g)
         recs[(d, g)] = sm.player_records(sid)
         lines[(d, g)] = sm.player_primary_lines(sid)
+    return recs, lines
+
+
+def run_fall_portal(seed: int = DEFAULT_SEED) -> dict:
+    """The sim's auto pass: discover RIDER intents across all active universes and
+    persist them (status='proposed'). Cascades are NOT stored — they're re-derived
+    from these riders by `resolve_fall_portal` on every view/edit/commit, so the user
+    can freely redirect or add movers. Returns a pending event for the UI."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    prime(seed)
+    rosters = developed_rosters(w)
     total = 0
     for gender in worldconfig.active_genders():
         rng = random.Random(f"{seed}|fallportal|{w['year']}|{gender}")
         props = fall_portal_proposals(rosters, {}, rng, gender)
-        rows = []
-        for m in props:
-            sd = (m["src_div"], gender)
-            ww, ll = recs.get(sd, {}).get(m["pid"], (0, 0))
-            rows.append({**m, "status": "proposed", "ita_w": ww, "ita_l": ll,
-                         "ita_line": lines.get(sd, {}).get(m["pid"])})
-        ov.set_proposals(w["year"], gender, rows)
-        total += len(rows)
+        riders = [{**m, "status": "proposed"} for m in props if m["cascade_from"] is None]
+        ov.set_proposals(w["year"], gender, riders)
+        total += len(riders)
     reset_caches(); _primed.pop(seed, None)
     return {"event": "fall_portal_pending", "year": w["year"], "proposals": total}
 
 
-def _stamp_ita_stint(conn, w: dict, row: dict) -> None:
+def resolve_fall_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Resolve the stored rider intents into the full move slate (riders + their
+    derived cascade demotions) per gender, on a fresh snapshot. Re-run on every view
+    and at commit so user edits (redirect / add / drop) always recompute a correct,
+    cap-safe cascade against every other locked-in choice."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    out: dict = {}
+    for gender in worldconfig.active_genders():
+        riders = [r for r in ov.get_proposals(w["year"])
+                  if r["gender"] == gender and r["cascade_from"] is None
+                  and r["status"] != "rejected"]
+        riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
+        plan = _FPPlanner(rosters, {}, gender)
+        for r in riders:
+            entry = plan.by_pid.get(r["pid"])
+            if not entry:
+                continue                                       # graduated / not on a roster
+            src, p = entry
+            plan.touched.add(p.pid)
+            plan.place(p, src, dest=r["dest_school"], gated=False)
+        out[gender] = plan.moves
+    return out
+
+
+def _stamp_ita_stint(conn, w: dict, pid: str, src_school: str, src_div: str,
+                     gender: str, ita_w: int, ita_l: int, ita_line, strv: float) -> None:
     """Freeze a mover's ITA stint at their old school onto their persisted career
     history (stint 0) so it survives the move — the regular+postseason stint at the
     new school is stamped as stint 1 at year-end by `_record_world_history`."""
     r = conn.execute("SELECT data FROM world_roster WHERE world_id=? AND year=? AND pid=?",
-                     (w["id"], w["year"], row["pid"])).fetchone()
+                     (w["id"], w["year"], pid)).fetchone()
     if not r:
         return
     p = prospect_from_dict(json.loads(r["data"]))
@@ -1395,38 +1450,117 @@ def _stamp_ita_stint(conn, w: dict, row: dict) -> None:
     if any(h.get("year") == yr and h.get("stint", 0) == 0 for h in p.history):
         return
     p.history.append({
-        "year": yr, "season_no": yr + 1, "division": row["src_div"], "gender": row["gender"],
-        "school": row["src_school"], "class": p.class_year, "line": row["ita_line"],
-        "w": row["ita_w"], "l": row["ita_l"], "str": round(row["str"], 1),
+        "year": yr, "season_no": yr + 1, "division": src_div, "gender": gender,
+        "school": src_school, "class": p.class_year, "line": ita_line,
+        "w": ita_w, "l": ita_l, "str": round(strv, 1),
         "singles_lines": {}, "doubles_lines": {}, "stint": 0, "phase": "ita"})
     conn.execute("UPDATE world_roster SET data=? WHERE world_id=? AND year=? AND pid=?",
-                 (json.dumps(prospect_to_dict(p)), w["id"], w["year"], row["pid"]))
+                 (json.dumps(prospect_to_dict(p)), w["id"], w["year"], pid))
 
 
 def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
-    """Apply the approved fall-portal moves: relocate each mover for the rest of
-    the season (set_move), freeze their ITA stint, mark them committed, then
-    release every held universe to the regular season."""
+    """Resolve the (edited) slate, then for every move — riders AND their cascade
+    demotions — relocate the player (set_move), freeze their ITA stint, and record a
+    committed row (so the year-end two-stint history + rollover bake cover the whole
+    cascade). Finally release every held universe to the regular season."""
     from app import overrides as ov
     w = get_or_create(seed)
     year = w["year"]
-    approved = ov.get_proposals(year, status="approved")
+    resolved = resolve_fall_portal(seed)              # {gender: [moves]}
+    recs, lines = _ita_lookup(seed, w)
     # Freeze every mover's ITA stint on one connection first (a held write lock here
     # would deadlock the per-row override writes, which open their own connections).
     conn = _db()
-    for row in approved:
-        _stamp_ita_stint(conn, w, row)
-    conn.commit(); conn.close()
+    committed: dict = {}
     moved = 0
-    for row in approved:
-        ov.set_move(row["pid"], row["dest_school"])
-        ov.set_status(year, row["gender"], row["pid"], "committed")
-        moved += 1
-    _base_cache.pop((w["id"], w["year"]), None)      # ITA stint changed the stored roster
+    for gender, moves in resolved.items():
+        rows = []
+        for m in moves:
+            sd = (m["src_div"], gender)
+            ww, ll = recs.get(sd, {}).get(m["pid"], (0, 0))
+            ln = lines.get(sd, {}).get(m["pid"])
+            _stamp_ita_stint(conn, w, m["pid"], m["src_school"], m["src_div"],
+                             gender, ww, ll, ln, m["str"])
+            rows.append({**m, "status": "committed", "ita_w": ww, "ita_l": ll, "ita_line": ln})
+            moved += 1
+        committed[gender] = rows
+    conn.commit(); conn.close()
+    for gender, rows in committed.items():
+        ov.set_proposals(year, gender, rows)          # the slate is now the committed moves
+        for m in rows:
+            ov.set_move(m["pid"], m["dest_school"])
+    _base_cache.pop((w["id"], w["year"]), None)        # ITA stint changed the stored roster
     _dev_cache.clear()
     _release_fall_portal(seed, w)
     reset_caches(); _primed.pop(seed, None)
     return {"event": "fall_portal_committed", "year": year, "moved": moved}
+
+
+def _fp_find(seed: int, w: dict, rosters: dict, pid: str):
+    """(gender, src_school, src_div, Prospect, planner) for a pid currently on a
+    fall-held roster, or None. The planner is a throwaway snapshot for that gender."""
+    for gender in worldconfig.active_genders():
+        plan = _FPPlanner(rosters, {}, gender)
+        if pid in plan.by_pid:
+            src, p = plan.by_pid[pid]
+            return gender, src, plan.div_of[src], p, plan
+    return None
+
+
+def redirect_fall_portal_mover(seed: int, pid: str, dest_school: str) -> dict:
+    """Send a proposed rider to a different destination than the sim picked. The
+    cascade is recomputed at the next resolve, so the displaced-player chain updates
+    automatically."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    for gender in worldconfig.active_genders():
+        rider = next((r for r in ov.get_proposals(w["year"])
+                      if r["gender"] == gender and r["pid"] == pid
+                      and r["cascade_from"] is None), None)
+        if not rider:
+            continue
+        plan = _FPPlanner(rosters, {}, gender)
+        if dest_school not in plan.div_of:
+            return {"error": "unknown destination"}
+        ov.set_dest(w["year"], gender, pid, dest_school, plan.div_of[dest_school])
+        return {"ok": True, "pid": pid, "dest": dest_school}
+    return {"error": "rider not found"}
+
+
+def add_fall_portal_mover(seed: int, pid: str, dest_school: str | None = None) -> dict:
+    """Add a player the sim didn't propose as a rider (your pick). With no
+    destination, the engine pre-fills the best fit (ignoring the auto-discovery
+    gates — it's your call). They then ride the same resolve/commit path, so they
+    get the cascade balance and two-stint history like any sim mover."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    found = _fp_find(seed, w, rosters, pid)
+    if not found:
+        return {"error": "player not on a current roster"}
+    gender, src, src_div, p, plan = found
+    if dest_school in (None, "", "auto"):
+        dest_school = plan.place(p, src, dest=None, gated=False)   # throwaway planner
+    if not dest_school or dest_school not in plan.div_of:
+        return {"error": "no destination found — pick a school"}
+    recs, lines = _ita_lookup(seed, w)
+    sd = (src_div, gender)
+    ww, ll = recs.get(sd, {}).get(pid, (0, 0))
+    ov.upsert_proposal(w["year"], gender, {
+        "pid": pid, "name": getattr(p, "name", ""), "src_school": src,
+        "dest_school": dest_school, "src_div": src_div, "dest_div": plan.div_of[dest_school],
+        "str": round(_str_of({}, p), 1), "status": "proposed", "cascade_from": None,
+        "ita_w": ww, "ita_l": ll, "ita_line": lines.get(sd, {}).get(pid)})
+    return {"ok": True, "pid": pid, "dest": dest_school, "gender": gender}
+
+
+def fall_portal_destinations(seed: int = DEFAULT_SEED) -> list[str]:
+    """Every program in the active universes (sorted), for the redirect/add picker."""
+    names: set = set()
+    for gender in worldconfig.active_genders():
+        names.update(_flat_programs(gender).keys())
+    return sorted(names)
 
 
 def _bake_fall_moves(seed: int, w: dict, rosters: dict) -> int:

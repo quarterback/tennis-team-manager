@@ -367,43 +367,60 @@ def create_app() -> Flask:
 
     @app.route("/fall-portal")
     def fall_portal():
-        # Review/approve the post-ITA talent reshuffle. If we're holding in the
-        # portal but nothing's been proposed yet (e.g. the user navigated here
-        # directly), generate the slate now.
-        fp = fall_portal_view()
+        # Review the post-ITA reshuffle: redirect a rider, add one the sim missed,
+        # or drop one, then commit. If we're holding in the portal but nothing's been
+        # proposed yet (e.g. the user navigated here directly), generate the slate.
         w = wd.load_world()
-        if fp.get("n", 0) == 0 and w and wd._all_in_fall_portal(DEFAULT_SEED, w):
+        year = w["year"] if w else 0
+        if w and wd._all_in_fall_portal(DEFAULT_SEED, w) and not ov.get_proposals(year):
             wd.run_fall_portal()
-            fp = fall_portal_view()
-        return render_template("fall_portal.html", active="World", fp=fp, crest=crest)
+        return render_template("fall_portal.html", active="World", fp=fall_portal_view(), crest=crest)
 
     @app.route("/fall-portal/approve", methods=["POST"])
     def fall_portal_approve():
+        # Keep/drop riders (cascades follow their rider, so only riders toggle).
         w = wd.load_world()
         year = w["year"] if w else 0
         action = request.form.get("action", "")
-        if action == "approve_all":
-            for r in ov.get_proposals(year, status="proposed"):
-                ov.set_status(year, r["gender"], r["pid"], "approved")
-        elif action == "reject_all":
+        if action == "reject_all":
             for r in ov.get_proposals(year):
-                if r["status"] in ("proposed", "approved"):
+                if r["cascade_from"] is None and r["status"] != "rejected":
                     ov.set_status(year, r["gender"], r["pid"], "rejected")
+        elif action == "approve_all":
+            for r in ov.get_proposals(year):
+                if r["cascade_from"] is None and r["status"] == "rejected":
+                    ov.set_status(year, r["gender"], r["pid"], "proposed")
         else:
             pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
             if pid and gender:
-                ov.set_status(year, gender, pid, request.form.get("status", "approved"))
+                ov.set_status(year, gender, pid, request.form.get("status", "rejected"))
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/redirect", methods=["POST"])
+    def fall_portal_redirect():
+        pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
+        if pid and dest:
+            wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/add", methods=["POST"])
+    def fall_portal_add():
+        pid = request.form.get("pid", "").strip()
+        dest = request.form.get("dest", "").strip() or None
+        if not pid:
+            name = request.form.get("player", "").strip()
+            if name:
+                hits = search_players(name).get("players", [])
+                if hits:
+                    pid = hits[0]["pid"]
+        if pid:
+            wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
         return redirect(url_for("fall_portal"))
 
     @app.route("/fall-portal/commit", methods=["POST"])
     def fall_portal_commit():
-        w = wd.load_world()
-        year = w["year"] if w else 0
-        # A fresh "Commit" with nothing explicitly approved commits the whole
-        # proposed slate — the obvious default for "accept the sim's reshuffle".
-        if not ov.get_proposals(year, status="approved"):
-            for r in ov.get_proposals(year, status="proposed"):
-                ov.set_status(year, r["gender"], r["pid"], "approved")
+        # Commit resolves the whole kept slate (sim picks + your edits/adds) and
+        # applies it — relocations, two-stint history, cascade and all.
         wd.commit_fall_portal()
         return redirect(url_for("world_view"))
 

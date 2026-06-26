@@ -294,6 +294,52 @@ def get_proposals(year: int, status: str | None = None) -> list[dict]:
     return [_fp_row(r) for r in rows]
 
 
+def upsert_proposal(year: int, gender: str, r: dict) -> None:
+    """Insert or replace a single rider intent (used when the user ADDS a mover)."""
+    def _do():
+        conn = _db()
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO fall_portal (year,gender,pid,src_school,dest_school,"
+                "src_div,dest_div,str,status,ita_w,ita_l,ita_line,cascade_from)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (year, gender, r["pid"], r["src_school"], r["dest_school"], r["src_div"],
+                 r["dest_div"], float(r.get("str", 0.0)), r.get("status", "proposed"),
+                 int(r.get("ita_w", 0)), int(r.get("ita_l", 0)),
+                 (None if r.get("ita_line") is None else str(r["ita_line"])),
+                 r.get("cascade_from")))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def set_dest(year: int, gender: str, pid: str, dest_school: str, dest_div: str) -> None:
+    """Redirect a rider to a different destination (the cascade re-derives at resolve)."""
+    def _do():
+        conn = _db()
+        try:
+            conn.execute("UPDATE fall_portal SET dest_school=?, dest_div=?"
+                         " WHERE year=? AND gender=? AND pid=?",
+                         (dest_school, dest_div, year, gender, pid))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def delete_proposal(year: int, gender: str, pid: str) -> None:
+    def _do():
+        conn = _db()
+        try:
+            conn.execute("DELETE FROM fall_portal WHERE year=? AND gender=? AND pid=?",
+                         (year, gender, pid))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
 def set_status(year: int, gender: str, pid: str, status: str) -> None:
     def _do():
         conn = _db()

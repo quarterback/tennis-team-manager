@@ -97,66 +97,46 @@ the season and releases everyone to the regular season.
 `div_level` median bar. `seasonmode.FALL_PORTAL_ENABLED = False` restores the old
 `ita_indoor → regular` flow.
 
-## Future work — make the slate user-editable (FOR THE NEXT AGENT)
+## User-editable slate — intents → resolve (IMPLEMENTED)
 
-Today `/fall-portal` only lets the owner **approve/reject** the sim's proposed slate.
-The owner wants three more first-class actions during the hold:
-1. **Redirect a riser** to a different destination than the suggestion box picked —
-   the owner's words: "what if I want them to go to a school different than the one
-   the suggestion box picks." This is the priority one.
-2. **Add a mover** the sim didn't propose ("I see someone else I want moved").
-3. Have **manual editor moves made during the fall window** get the same two-stint
-   history + cascade balance, instead of collapsing the season to one school the way
-   a normal editor move does.
+`/fall-portal` is not just approve/reject — the owner gets three first-class actions
+during the hold:
+1. **Redirect a rider** to a different destination than the suggestion box picked
+   (an editable destination cell → `POST /fall-portal/redirect`).
+2. **Add a mover** the sim didn't propose (player-name box + optional destination →
+   `POST /fall-portal/add`; name resolves via `state.search_players`).
+3. **Drop / keep** a rider (`POST /fall-portal/approve`, status `rejected`/`proposed`).
 
-All three are the same problem: a user-chosen move must flow through the SAME pipeline
-as a sim proposal so it inherits the cascade balance + the ITA-stint freeze for free.
+### Architecture: intents → resolve
+The `fall_portal` table stores only **rider intents** (one row per riser:
+pid, src, chosen `dest_school`, status). Cascades are NOT stored — they're DERIVED:
+- `world._FPPlanner` holds one gender's snapshot + the cascade engine (`place`,
+  `settle`, `discover`). `place(p, src, dest=None)` auto-picks the highest fit; with
+  an explicit `dest` it honors a redirect/add. A full destination displaces its
+  weakest, who cascades down.
+- `world.resolve_fall_portal(seed)` rebuilds a FRESH `developed_rosters` snapshot and
+  replays every non-rejected rider intent (str desc, pid) through `place`, producing
+  the full slate (riders + cascades). Called on every view and at commit, so any edit
+  recomputes a correct, cap-safe cascade against all other locked-in choices.
+- `run_fall_portal` stores the sim's discovered riders as intents; `commit_fall_portal`
+  resolves, stamps each mover's ITA stint, writes a committed row for EVERY move
+  (riders + cascades, so the year-end two-stint history + bake cover the cascade),
+  `set_move`s them, and releases the hold.
+- `add_fall_portal_mover` / `redirect_fall_portal_mover` mutate intents (bypassing the
+  discovery gates for the user's pick; displaced players still respect them).
 
-### Recommended design: intents → resolve
-The `fall_portal` table currently stores a STATIC resolved slate (riders + their
-cascade demotions as sibling rows). That's awkward to edit, because changing one
-rider's destination invalidates its cascade child. Refactor to two layers:
-- **Intents** (what the user wants): per rider, `pid → {dest: school | 'auto', status}`.
-  Approve / reject / add / redirect all just mutate intents.
-- **Resolve** (`world.resolve_fall_portal(seed)`): build the `developed_rosters`
-  snapshot + the `fall_portal_proposals` indexing, then apply each *approved* intent
-  in a deterministic order (str desc, pid) — explicit `dest` if set, else
-  `highest_fit` — running the existing `place_riser`/`settle` cascade against the
-  RUNNING snapshot so seats and caps stay correct across the whole slate. The output
-  (riders + cascades) is the resolved set the page renders and `commit_fall_portal`
-  applies. Re-resolve from a FRESH snapshot on every edit.
+### Gotchas burned in here
+- **`_FPPlanner` must shallow-copy each roster list.** `developed_rosters` is a shared
+  cache; the planner relocates players by mutating lists, so without the copy every
+  resolve corrupts the cache and movers' `src_school` drifts to wherever a prior pass
+  placed them (their ITA stint then records the wrong school).
+- ITA stint (`ita_w/l/line`) is read from the SOURCE universe at commit via
+  `_ita_lookup` — the hold sits at the post-ITA boundary, so those ARE the ITA results.
+- `FALL_PORTAL_MAX_RISERS` caps only the auto discovery pass; user-added riders are
+  intentional and don't count against it.
 
-This makes redirect/add/remove correct by construction: the cascade is always
-recomputed against every other locked-in choice, so a redirect that frees the old
-destination's displaced player and creates a new displacement at the new one just
-falls out of re-resolving.
-
-### Wiring
-- **Redirect**: `POST /fall-portal/redirect (pid, dest)` → set that intent's dest →
-  re-resolve. The destination cell on `/fall-portal` becomes a program picker (offer
-  programs where the player would make the lineup first, but allow any same-gender
-  program — it's god-mode). `commit_fall_portal` already does `set_move` to whatever
-  `dest_school` the row holds, so honoring a redirected dest is automatic once the
-  resolved row carries it.
-- **Add**: `POST /fall-portal/add (pid, dest='auto'|school)` → add an approved intent
-  → re-resolve. UI: a player search (reuse `state.search_players`) + optional dest.
-  **Bypass the discovery GATES** (top-2, median-level, `_career_transfers`) for a
-  user pick — those gates exist only for *auto* discovery — but the players the pick
-  DISPLACES should still respect them.
-- **Editor-window two-stint**: in the `/editor/move` route (`server.py` ~1217), if the
-  world is currently holding in `fall_portal`, route the move through the add path
-  (add an intent + re-resolve) instead of a bare `overrides.set_move`. That one hook
-  gives in-window editor moves the ITA-stint freeze + cascade automatically — i.e.
-  "can I just move someone myself" becomes yes, treated like a portal add. Outside the
-  window an editor move stays a plain single-school move (no clean stint boundary).
-
-### Gotchas
-- Snapshot the ITA stint (`ita_w/l/line`) from the SOURCE universe at resolve/commit
-  time — the season is held at the post-ITA boundary, so `sm.player_records` /
-  `player_primary_lines` ARE the ITA results.
-- Re-resolve must start from a fresh `developed_rosters` snapshot each time, or
-  repeated edits double-apply moves.
-- A redirect into a FULL program must still displace + cascade; into an open seat,
-  straight promotion. `place_riser` already does both — reuse it, don't fork it.
-- Keep the per-gender `FALL_PORTAL_MAX_RISERS` cap on the *auto* discovery pass only;
-  user-added riders are intentional and shouldn't count against it.
+### Still open for a future agent
+- **Editor-window two-stint**: route `/editor/move` (`server.py` ~1217) through
+  `add_fall_portal_mover` when the world is holding in `fall_portal`, so a bare editor
+  move during the window also gets the ITA-stint freeze + cascade. Outside the window
+  an editor move stays a plain single-school move (no clean stint boundary).

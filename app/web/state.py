@@ -1193,33 +1193,42 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
 
 
 def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
-    """The pending fall-portal slate for the current year: the proposed risers and
-    the players they'd push down the ladder, for the review/approve screen."""
+    """The fall-portal slate for the review screen: each kept rider plus the player
+    they'd push down the ladder, freshly RESOLVED so the cascade reflects any
+    redirects/adds the user has made. Riders carry an editable destination."""
     import app.world as world
     from app import overrides as ov
     from .rankings_data import crest
     w = world.load_world(seed)
     if not w:
-        return {"year": None, "proposals": [], "n": 0, "pending": 0, "committed": 0}
-    rows = ov.get_proposals(w["year"])
+        return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
+                "destinations": []}
+    committed = [r for r in ov.get_proposals(w["year"], status="committed")]
+    resolved = world.resolve_fall_portal(seed)        # {gender: [moves]} (riders + cascades)
+    recs, lines = world._ita_lookup(seed, w)
     out = []
-    for r in rows:
-        p = world.find_persisted_player(r["pid"], seed)
-        fa, fc = crest(r["src_school"])
-        ta, tc = crest(r["dest_school"])
-        out.append({
-            **r,
-            "name": getattr(p, "name", r["pid"]),
-            "class": getattr(p, "class_year", ""),
-            "country": getattr(p, "country", ""),
-            "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
-            "is_riser": not r.get("cascade_from"),
-        })
-    pending = [r for r in rows if r["status"] in ("proposed", "approved")]
-    committed = [r for r in rows if r["status"] == "committed"]
+    for gender, moves in resolved.items():
+        for m in moves:
+            p = world.find_persisted_player(m["pid"], seed)
+            fa, fc = crest(m["src_school"])
+            ta, tc = crest(m["dest_school"])
+            sd = (m["src_div"], gender)
+            ww, ll = recs.get(sd, {}).get(m["pid"], (0, 0))
+            out.append({
+                **m, "gender": gender,
+                "name": getattr(p, "name", m["pid"]),
+                "class": getattr(p, "class_year", ""),
+                "country": getattr(p, "country", ""),
+                "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
+                "is_riser": m["cascade_from"] is None,
+                "ita_w": ww, "ita_l": ll, "ita_line": lines.get(sd, {}).get(m["pid"]),
+            })
+    out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
             "proposals": out, "n": len(out),
-            "pending": len(pending), "committed": len(committed)}
+            "riders": sum(1 for r in out if r["is_riser"]),
+            "committed": len(committed),
+            "destinations": world.fall_portal_destinations(seed)}
 
 
 def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
