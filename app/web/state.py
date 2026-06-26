@@ -632,7 +632,7 @@ def get_recruits(gender: str, grad_year: int, seed: int = DEFAULT_SEED, division
     separate web-board universe and pids always match the sim. `division` is
     accepted for caller compatibility but ignored."""
     from app import world
-    return world.recruit_class(gender, grad_year, world.active_salt(seed))
+    return world.board_class(gender, grad_year, world.active_salt(seed))
 
 
 def junior_ranking_rows(gender: str, grad_year: int, scope: str = "world",

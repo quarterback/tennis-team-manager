@@ -581,9 +581,15 @@ def recruit_class(gender: str, grad_year: int, salt: str):
     truth shared by the web board, the recruit detail pages, committed-player
     lookup, and the sim's signing logic. Keyed by (salt, canonical-gender,
     grad_year) so it is fresh per New League but stable within a league, and so
-    "women"/"female" (and "men"/"male") resolve to the SAME class. Enriched with
-    the junior circuit so the web board's results/rankings are present; pids and
-    identities are identical to what the sim signs from."""
+    "women"/"female" (and "men"/"male") resolve to the SAME class. pids and
+    identities are identical to what the sim signs from.
+
+    NOTE: this builds only the class + national/star ranking (`rank_class`), which
+    is ALL the simulation's signing logic needs. The junior circuit — a full season
+    simulated over the whole RECRUIT_POOL (~2,500/gender), the single most expensive
+    compute in the app — is NOT run here. It is purely board enrichment and is
+    deferred to `board_class()`, so advancing the world (the hot path) never pays for
+    it. See AAR-junior-circuit-lazy-board-enrichment."""
     gender = _GENDER_CANON.get(gender, gender)
     key = (salt, gender, grad_year)
     if key not in _class_cache:
@@ -593,12 +599,24 @@ def recruit_class(gender: str, grad_year: int, salt: str):
                                talent_sd=RECRUIT_TALENT_SD, intl_share=worldconfig.intl_share(),
                                intl_weights=worldconfig.region_weights())
         rank_class(klass)                          # national rank + star ladder
-        from app.junior_circuit import run_junior_circuit
-        run_junior_circuit(klass, seed=salt)       # junior results/points for the board
-        from app.juniors import points_rankings
-        points_rankings(klass)                     # freeze points-ledger rank
         _class_cache[key] = klass
     return _class_cache[key]
+
+
+def board_class(gender: str, grad_year: int, salt: str):
+    """The recruiting class ENRICHED with the junior circuit — what the web board,
+    rankings, and recruit detail pages render. Same cached object `recruit_class`
+    returns, run once through the (expensive) junior-circuit simulation and frozen
+    in place; `run_junior_circuit` is idempotent via `klass.circuit_done`, so repeat
+    calls are free. Keep this OFF the world-advance / signing path — only the board
+    needs junior results, so only the board should pay for them."""
+    klass = recruit_class(gender, grad_year, salt)
+    if not getattr(klass, "circuit_done", False):
+        from app.junior_circuit import run_junior_circuit
+        from app.juniors import points_rankings
+        run_junior_circuit(klass, seed=salt)       # junior results/points for the board
+        points_rankings(klass)                     # freeze points-ledger rank
+    return klass
 
 
 def national_class(seed: int, year: int, gender: str) -> list:
