@@ -24,9 +24,15 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'off'
-  auto_start_machines = true
-  min_machines_running = 1
+  # Off until manually booted: Fly stops the machine when idle and does NOT
+  # auto-start it on incoming requests, so it stays off (no charges) until
+  # you explicitly start it with `fly machine start --app tennis-team-manager`
+  # (or `fly scale count 1`). While stopped, visiting the URL will NOT wake
+  # the machine — the request fails until you boot it. This matches the other
+  # sims: stop it and it stays stopped instead of being kept always-on.
+  auto_stop_machines = 'stop'
+  auto_start_machines = false
+  min_machines_running = 0
   processes = ['app']
 
   [[http_service.checks]]
