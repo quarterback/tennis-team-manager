@@ -31,7 +31,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     dashboard_view, data_portal_view, team_budget, team_results,
                     program_history,
                     conference_schools, team_conference, conference_ratings,
-                    world_hub, player_career, get_coach, injury_rows)
+                    world_hub, player_career, get_coach, injury_rows, fall_portal_view)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
@@ -160,12 +160,12 @@ def _game_context():
         # always "Regular season".
         import app.seasonmode as sm
         from app import worldconfig
-        _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "regular": 2, "conf_tournaments": 3,
-                "selection": 4, "ncaa": 5, "complete": 6}
+        _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "fall_portal": 1.5, "regular": 2,
+                "conf_tournaments": 3, "selection": 4, "ncaa": 5, "complete": 6}
         _LBL = {"ita_kickoff": "ITA Kickoff Weekend", "ita_indoor": "ITA Indoor",
-                "regular": "Regular season", "conf_tournaments": "Conf tournaments",
-                "selection": "Bracket reveal", "ncaa": "NCAA championship",
-                "complete": "Postseason complete"}
+                "fall_portal": "Fall transfer portal", "regular": "Regular season",
+                "conf_tournaments": "Conf tournaments", "selection": "Bracket reveal",
+                "ncaa": "NCAA championship", "complete": "Postseason complete"}
         phases = []
         for _v, d, g, _lbl in UNIVERSES:
             if not worldconfig.is_active(d, g):
@@ -364,6 +364,65 @@ def create_app() -> Flask:
     def world_awards():
         stamp_world_honors()
         return redirect(request.referrer or url_for("world_view"))
+
+    @app.route("/fall-portal")
+    def fall_portal():
+        # Review the post-ITA reshuffle: redirect a rider, add one the sim missed,
+        # or drop one, then commit. If we're holding in the portal but nothing's been
+        # proposed yet (e.g. the user navigated here directly), generate the slate.
+        w = wd.load_world()
+        year = w["year"] if w else 0
+        if w and wd._all_in_fall_portal(DEFAULT_SEED, w) and not ov.get_proposals(year):
+            wd.run_fall_portal()
+        return render_template("fall_portal.html", active="World", fp=fall_portal_view(), crest=crest)
+
+    @app.route("/fall-portal/approve", methods=["POST"])
+    def fall_portal_approve():
+        # Keep/drop riders (cascades follow their rider, so only riders toggle).
+        w = wd.load_world()
+        year = w["year"] if w else 0
+        action = request.form.get("action", "")
+        if action == "reject_all":
+            for r in ov.get_proposals(year):
+                if r["cascade_from"] is None and r["status"] != "rejected":
+                    ov.set_status(year, r["gender"], r["pid"], "rejected")
+        elif action == "approve_all":
+            for r in ov.get_proposals(year):
+                if r["cascade_from"] is None and r["status"] == "rejected":
+                    ov.set_status(year, r["gender"], r["pid"], "proposed")
+        else:
+            pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
+            if pid and gender:
+                ov.set_status(year, gender, pid, request.form.get("status", "rejected"))
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/redirect", methods=["POST"])
+    def fall_portal_redirect():
+        pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
+        if pid and dest:
+            wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/add", methods=["POST"])
+    def fall_portal_add():
+        pid = request.form.get("pid", "").strip()
+        dest = request.form.get("dest", "").strip() or None
+        if not pid:
+            name = request.form.get("player", "").strip()
+            if name:
+                hits = search_players(name).get("players", [])
+                if hits:
+                    pid = hits[0]["pid"]
+        if pid:
+            wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("fall_portal"))
+
+    @app.route("/fall-portal/commit", methods=["POST"])
+    def fall_portal_commit():
+        # Commit resolves the whole kept slate (sim picks + your edits/adds) and
+        # applies it — relocations, two-stint history, cascade and all.
+        wd.commit_fall_portal()
+        return redirect(url_for("world_view"))
 
     @app.route("/")
     def dashboard():
@@ -1221,6 +1280,16 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")
         if pid and dest:
+            w = wd.load_world()
+            if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
+                # During the fall-portal window an editor move becomes a portal ADD,
+                # so it earns the two-stint history + balancing cascade instead of
+                # collapsing the season to one school. It lands when you commit the
+                # portal, not immediately — review it on the fall-portal screen.
+                if not ov.get_proposals(w["year"]):
+                    wd.run_fall_portal()
+                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+                return redirect(url_for("fall_portal"))
             ov.set_move(pid, dest)
             reset_all()
         return redirect(url_for("editor", u=u, school=school))

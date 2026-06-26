@@ -105,6 +105,32 @@ season-ending; otherwise **out 1–6 duals**.
 - **Tests:** an autouse `conftest` fixture disables injuries (determinism);
   `test_injuries.py` re-enables + seeds. See `docs/AAR-injuries.md`.
 
+## ⚠️ Fall transfer portal — the ONLY in-season player movement (`world.fall_portal_proposals`)
+After the ITA opener every universe HOLDS at a new **`fall_portal`** phase while the
+world runs a cross-division reshuffle (sim proposes → user approves on `/fall-portal`
+→ commit). It rescues genuinely mis-allocated talent (a D1-caliber player stuck in a
+lower division) and is **deliberately curated**, not a migration:
+- Risers are picked on **ability**, NOT ITA results (the opener is too few duals to
+  trust). A riser must be a top-2 starter AND clear a **higher division's median
+  level** (`div_level`); only the most mis-allocated move, capped at
+  `FALL_PORTAL_MAX_RISERS` (**30/gender**). ~60 moves on a fresh world, not thousands
+  — do NOT "fix" the cap/median bar away. A receiving program takes at most one riser
+  (spread, no blue-blood funnel); displaced players cascade DOWN to fill open seats.
+- A mover keeps **both stints** of the split season via a `stint` key on history
+  entries (ITA at old school = stint 0, frozen at commit; regular+post at new school
+  = stint 1, at year-end). `_record_world_history` idempotency is `(year, stint)`;
+  the rollover **bakes** the move and clears the override (`_bake_fall_moves`).
+- `fall_portal` is a HOLD only under the world driver (`advance_week` skips it);
+  standalone `sm.advance` passes it straight through to `regular`. Toggle with
+  `seasonmode.FALL_PORTAL_ENABLED`.
+- The slate is **user-editable** (intents→resolve): the `fall_portal` table stores only
+  rider INTENTS; cascades are derived by `world.resolve_fall_portal` on every view/commit
+  (`_FPPlanner` — which MUST shallow-copy roster lists, since `developed_rosters` is a
+  shared cache). You can redirect a rider, add one the sim missed, or drop one. An editor
+  move made **while holding in `fall_portal`** is routed through the portal (gets the
+  two-stint + cascade); outside the window it's a plain move. See
+  `docs/AAR-fall-transfer-portal.md`.
+
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See

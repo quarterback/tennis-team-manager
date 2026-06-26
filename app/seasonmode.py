@@ -38,6 +38,13 @@ from . import regions
 from .dbpath import resolve_db_path
 
 DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
+
+# Fall transfer portal — the post-ITA talent reshuffle. When on, a finished ITA
+# opener parks the season in the 'fall_portal' hold phase (see `_finish_indoor`
+# and `advance`) until `world.commit_fall_portal` releases it. Set False to
+# restore the old ita_indoor → regular flow.
+FALL_PORTAL_ENABLED = True
+
 # Schedule shape: every team plays toward TARGET_DUALS, non-conf front-loaded,
 # then conference play. Conferences under 10 teams play a DOUBLE round-robin
 # (where it fits); larger ones play a single round-robin, with the balance made
@@ -750,6 +757,16 @@ def advance(season_id: int) -> dict:
         conn.commit(); conn.close()
         return out
 
+    if s["phase"] == "fall_portal":
+        # Standalone, the fall-portal hold is a transparent pass-through to the
+        # regular season. The WORLD driver instead synchronises here: it SKIPS
+        # fall_portal universes (never calling advance on them) so they all wait at
+        # the post-ITA boundary while the cross-division portal is proposed and
+        # committed; `world.commit_fall_portal` then sets phase='regular' directly.
+        conn.execute("UPDATE seasons SET phase='regular' WHERE id=?", (season_id,))
+        conn.commit(); conn.close()
+        return advance(season_id)
+
     if s["phase"] == "regular":
         wk = s["current_week"]
         due = conn.execute("SELECT * FROM duals WHERE season_id=? AND round='REG' AND week=?"
@@ -1074,9 +1091,13 @@ def _advance_indoor_round(conn, s, progs) -> dict:
 
 
 def _finish_indoor(conn, s, champion: str | None = None) -> dict:
-    """Close the ITA opener and start the regular season at its (offset) first week."""
-    conn.execute("UPDATE seasons SET phase='regular', current_week=? WHERE id=?",
-                 (ita.lead_weeks(s["division"]) + 1, s["id"]))
+    """Close the ITA opener. With the fall portal enabled the season HOLDS in
+    'fall_portal' (the world-level reshuffle runs, then releases it to 'regular');
+    otherwise it goes straight to the regular season. Either way `current_week` is
+    pre-set to the offset first regular-season week, so the release is a no-op bump."""
+    nxt = "fall_portal" if FALL_PORTAL_ENABLED else "regular"
+    conn.execute("UPDATE seasons SET phase=?, current_week=? WHERE id=?",
+                 (nxt, ita.lead_weeks(s["division"]) + 1, s["id"]))
     return {"phase": "ita_indoor", "done": True, "indoor_champion": champion}
 
 
