@@ -45,6 +45,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap,
                    autogen_walkons)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
+                         perceived_caliber, consensus_caliber,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
                          COACH_LOCAL_WEIGHT)
 from .juniors import generate_class, rank_class
@@ -603,26 +604,42 @@ def recruit_class(gender: str, grad_year: int, salt: str):
     return _class_cache[key]
 
 
+# The junior circuit is simulated over the RECRUITED CADRE — the top of the pool
+# by the service's talent read. The walk-on tail sits below every funding floor and
+# signs as a walk-on regardless, so it needs no junior résumé; capping the field
+# keeps the (expensive) circuit's worst case bounded. Raise for more tail fidelity
+# at a roughly linear cost. See docs/AAR-fog-of-war-recruiting.md.
+CIRCUIT_FIELD = 1500
+
+
 def board_class(gender: str, grad_year: int, salt: str):
-    """The recruiting class ENRICHED with the junior circuit — what the web board,
-    rankings, and recruit detail pages render. Same cached object `recruit_class`
-    returns, run once through the (expensive) junior-circuit simulation and frozen
-    in place; `run_junior_circuit` is idempotent via `klass.circuit_done`, so repeat
-    calls are free. Keep this OFF the world-advance / signing path — only the board
-    needs junior results, so only the board should pay for them."""
+    """The recruiting class ENRICHED with the junior circuit — the performance
+    record the AI's perceived caliber reads at signing AND what the web board /
+    recruit pages render. Same cached object `recruit_class` returns, run once
+    through the (expensive) junior-circuit simulation over the recruited cadre and
+    frozen in place (idempotent via `klass.circuit_done`), so repeat calls are free."""
     klass = recruit_class(gender, grad_year, salt)
     if not getattr(klass, "circuit_done", False):
         from app.junior_circuit import run_junior_circuit
-        from app.juniors import points_rankings
-        run_junior_circuit(klass, seed=salt)       # junior results/points for the board
-        points_rankings(klass)                     # freeze points-ledger rank
+        from app.juniors import points_rankings, _recruiting_score, RecruitClass
+        # Field = the recruited cadre (top by the service's talent read); the
+        # objects are shared, so the circuit freezes its résumé onto the real
+        # prospects. The tail keeps junior defaults (perf_caliber → 0).
+        field = sorted(klass.recruits, key=_recruiting_score, reverse=True)[:CIRCUIT_FIELD]
+        sub = RecruitClass(grad_year=klass.grad_year, gender=klass.gender, recruits=field)
+        run_junior_circuit(sub, seed=salt)         # junior results/STR for the cadre
+        points_rankings(klass)                     # rank the FULL pool; tail = 0 points
+        klass.circuit_done = True
     return klass
 
 
 def national_class(seed: int, year: int, gender: str) -> list:
-    """The sim's signing pool for a world-year: the canonical class ranked by
-    recruiting score. grad_year = BASE_YEAR + year + 1."""
-    return rank_class(recruit_class(gender, BASE_YEAR + year + 1, active_salt(seed)))
+    """The sim's signing pool for a world-year: the canonical class ranked by the
+    service's star signal. Uses `board_class` (not `recruit_class`) because the AI
+    now signs on PERCEIVED caliber — a blend of the star projection and junior
+    PERFORMANCE — so the junior circuit must be run before signing. grad_year =
+    BASE_YEAR + year + 1."""
+    return rank_class(board_class(gender, BASE_YEAR + year + 1, active_salt(seed)))
 
 
 def _flat_programs(gender: str) -> dict[str, Program]:
@@ -685,8 +702,12 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     budget = market.get("budget", {})
     coachmap = market.get("coaches", {})
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
-    cal, ac = recruit_caliber(p), recruit_academic01(p)
-    budget_floor = recruit_economy.recruit_budget_floor(cal)   # elites only sign with funded programs
+    # FOG OF WAR: the AI never sees true ability here. `cal` is the recruit's own
+    # market-consensus sense of their level (balanced stars-vs-results), driving
+    # who they aspire to; each PROGRAM re-reads them through its own philosophy
+    # below. recruit_caliber (the truth) is owner-only. See AAR-fog-of-war-recruiting.
+    cal, ac = consensus_caliber(p), recruit_academic01(p)
+    budget_floor = recruit_economy.recruit_budget_floor(cal)   # perceived elites only chase funded programs
     # Division ceiling by tier: a 5★/blue-chip never drops to D3/D4; a 4★ can choose an
     # academic-elite D3/D4 (an Ivy-calibre classroom is worth the athletic step down) but
     # otherwise only rarely; a 3★ (and below) can go anywhere.
@@ -723,9 +744,13 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
             continue
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
-        if cal < recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress):
-            continue                                  # program holds this seat for better talent (for now)
         coach = coachmap.get(s)
+        # THIS program's read of the recruit, through its own stars↔results
+        # philosophy — so a tape-trusting staff rates a junior-circuit winner the
+        # stars missed, and a stars-trusting staff holds out for the projection.
+        pcal = perceived_caliber(p, coach.results_bias if coach is not None else 0.5)
+        if pcal < recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress):
+            continue                                  # this program doesn't rate them enough (yet)
         prox = region_proximity(hr, reg)
         geo = hc * prox                                # the recruit's own desire to stay home
         # Coach-side localism: a program whose coach recruits its backyard pulls
@@ -752,10 +777,17 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         if score > best_score:
             best, best_score = s, score
     if best is None:                              # nothing in range with a seat — widen once
+        # Mid-window, hold to the floors (the recruit waits for a worthy seat). On
+        # signing day (progress≈1) drop them: an unsigned recruit takes the best seat
+        # left rather than VANISH — so an under-scouted gem the fog buried slides DOWN
+        # a level (where scout_intel / the fall portal pick them up) instead of
+        # disappearing from the world entirely.
+        relax = progress >= 0.999
         best = next((s for s in reversed(by_pres)
-                     if avail.get(s, 0) > 0 and _div_ok(traits[s][3], traits[s][1])
-                     and budget.get(s, 0.0) >= budget_floor
-                     and cal >= recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress)
+                     if avail.get(s, 0) > 0
+                     and (relax or _div_ok(traits[s][3], traits[s][1]))
+                     and (relax or budget.get(s, 0.0) >= budget_floor)
+                     and (relax or cal >= recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress))
                      and (not exclude or s not in exclude)), None)
     return best
 

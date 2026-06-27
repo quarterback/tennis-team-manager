@@ -183,6 +183,19 @@ class Prospect:
     junior_matches: list = field(default_factory=list)   # [{date, tournament, round, opponent, score, won}]
     ranking_history: list = field(default_factory=list)  # [{date, primary*, secondary*, str}]
     junior_badges: list = field(default_factory=list)    # permanent profile labels
+    # Junior-circuit performance counters the board/almanac read. Fields (not bare
+    # dynamic attrs) with zero defaults so EVERY recruit has them — the circuit only
+    # runs over the recruited cadre (world.CIRCUIT_FIELD), and the walk-on tail must
+    # still read as a clean 0-record, not an AttributeError. See AAR-fog-of-war-recruiting.
+    junior_points: int = 0
+    singles_points: int = 0
+    doubles_points: int = 0
+    tournaments_played: int = 0
+    doubles_played: int = 0
+    points_rank: int = 0
+    junior_doubles_str: float | None = None
+    junior_doubles_results: list = field(default_factory=list)
+    junior_doubles_matches: list = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.current = normalize_grades(self.current)

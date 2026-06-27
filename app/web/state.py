@@ -903,10 +903,47 @@ def get_recruit(gender: str, grad_year: int, pid: str, seed: int = DEFAULT_SEED,
         smap = _signed_school_map(gender, grad_year, seed)
         p.commit_school = smap.get(pid)
         p.committed = p.commit_school is not None
+        # The junior circuit now runs lazily (board_class), so a recruit signed
+        # before any board view was viewed has an EMPTY junior résumé on its
+        # persisted blob. For an active-class signee, re-resolve the résumé live
+        # by pid — it's deterministic from the world salt, so it's the SAME data
+        # the open board shows. (Junior data is a current-class board concern;
+        # rostered/past players never surface it — see get_recruit callers.)
+        if pid in smap:
+            _overlay_junior_resume(p, gender, grad_year, seed)
         return p
     klass = get_recruits(gender, grad_year, seed)
     _apply_committed_flag(klass, gender, grad_year)
     return next((q for q in klass.recruits if q.pid == pid), None)
+
+
+# Everything the junior circuit freezes onto a recruit — both the persisted
+# dataclass fields (junior_str/results/badges/…) and the dynamic board fields
+# (points ledger, doubles, ranks). Overlaid live onto a signed recruit whose
+# persisted blob predates the circuit run. Keep in sync with junior_circuit's
+# freeze step + juniors.points_rankings.
+_JUNIOR_RESUME_FIELDS = (
+    "junior_tier", "junior_str", "junior_str_reliability",
+    "junior_results", "junior_matches", "ranking_history", "junior_badges",
+    "singles_points", "doubles_points", "junior_points",
+    "tournaments_played", "doubles_played",
+    "junior_doubles_str", "junior_doubles_results", "junior_doubles_matches",
+    "points_rank",
+)
+
+
+def _overlay_junior_resume(p, gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> None:
+    """Copy the live junior-circuit résumé from the active board class onto a
+    persisted signed recruit `p` (matched by pid). Triggers the lazy circuit via
+    `get_recruits` → `world.board_class`, then mirrors every junior field so the
+    signee's profile is identical to the open-board view."""
+    klass = get_recruits(gender, grad_year, seed)        # board_class → ensures circuit
+    live = next((q for q in klass.recruits if q.pid == p.pid), None)
+    if live is None:
+        return
+    for f in _JUNIOR_RESUME_FIELDS:
+        if hasattr(live, f):
+            setattr(p, f, getattr(live, f))
 
 
 _REV_RECRUIT_GENDERS = {v: k for k, v in RECRUIT_GENDERS.items()}

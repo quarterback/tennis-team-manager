@@ -30,7 +30,10 @@ def test_national_ranking_sorted_and_deterministic():
     a = national_rankings(_klass(seed=7))
     b = national_rankings(_klass(seed=7))
     assert [p.name for p in a] == [p.name for p in b]   # deterministic
-    scores = [0.6 * p.current_overall() + 0.4 * p.scouting_report("service") for p in a]
+    # Stars rank on the recruiting service's talent projection (the scouting
+    # 'feel'), NOT true ability and NOT performance — the fog-of-war signal. See
+    # docs/AAR-fog-of-war-recruiting.md.
+    scores = [p.scouting_report("service") for p in a]
     assert scores == sorted(scores, reverse=True)        # descending recruiting score
 
 

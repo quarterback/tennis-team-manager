@@ -250,6 +250,12 @@ class Coach:
     # nationality), magnitude is a dice roll — so two same-tier programs can run quite
     # differently depending on who's coaching.
     intl_lean: float = 1.0
+    # Recruiting philosophy on a stars↔results axis (0 = trust the service's star
+    # projection of TALENT, 1 = trust junior-circuit RESULTS/performance). The AI's
+    # perceived caliber blends the two public signals by this weight, so two equally
+    # funded programs chase different kids — and get fooled differently. A neutral
+    # 0.5 by default; spread per coach. See docs/AAR-fog-of-war-recruiting.md.
+    results_bias: float = 0.5
     pid: str = ""
 
     def __post_init__(self) -> None:
@@ -262,6 +268,10 @@ class Coach:
             self.localism = max(0.0, min(1.0, float(self.localism)))
         except (TypeError, ValueError):
             self.localism = 0.5
+        try:
+            self.results_bias = max(0.0, min(1.0, float(self.results_bias)))
+        except (TypeError, ValueError):
+            self.results_bias = 0.5
         if self.archetype not in ARCHETYPES:
             self.archetype = ARCHETYPE_LIFER
         self.home_country = _normalize_country(self.home_country or "US")
@@ -409,6 +419,10 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
     # heavily American, or balanced — so it's never fully determined by who coaches.
     _tilt = {SOURCE_INTERNATIONAL: 0.20, SOURCE_HIGH_SCHOOL: -0.20}.get(pref, 0.0)
     intl_lean = round(max(0.45, min(1.55, rng.gauss(1.0 + _tilt, 0.32))), 3)
+    # Recruiting philosophy (stars↔results). Centered neutral with a wide spread so
+    # most staffs are balanced but the tails are distinctly "trust the service" (low)
+    # or "trust the tape" (high) — and so make their own kind of recruiting mistake.
+    results_bias = round(max(0.0, min(1.0, rng.gauss(0.5, 0.22))), 3)
     region_pool = ("domestic", "europe", "latin_america", "asia_pacific", "canada", "australia", "africa")
     region_pipelines = {r: _clamp(rng.gauss(base + 6, 7), PIPELINE_MIN, PIPELINE_MAX)
                         for r in rng.sample(region_pool, k=2)}
@@ -422,6 +436,7 @@ def generate_coach(rng: random.Random, name: str, school: str = "", *, base: flo
         source_preference=pref,
         localism=localism,
         intl_lean=intl_lean,
+        results_bias=results_bias,
         region_pipelines=region_pipelines,
         country_pipelines=country_pipelines,
         home_country=home_country,

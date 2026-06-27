@@ -105,9 +105,12 @@ class RecruitClass:
 
 
 def _recruiting_score(p: Prospect) -> float:
-    """Consensus recruiting signal: mostly visible current ability, partly the
-    shared service's ceiling projection. Deliberately NOT the hidden truth."""
-    return 0.6 * p.current_overall() + 0.4 * p.scouting_report("service")
+    """The recruiting service's published ranking signal — a NOISY projection of
+    the recruit's ceiling (the scouting 'feel'), deliberately NOT the hidden truth
+    and NOT performance. Stars derive from this; junior points/STR (performance)
+    are a separate axis, so the board and the results ledger diverge — the gem
+    signal. See docs/AAR-fog-of-war-recruiting.md."""
+    return p.scouting_report("service")
 
 
 def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
