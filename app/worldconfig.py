@@ -45,6 +45,22 @@ def get(key: str) -> str:
     return val
 
 
+def snapshot() -> dict[str, str]:
+    """All persisted settings as a {key: value} dict. Used to hand the active
+    config to generation worker processes so they don't depend on the DB being
+    readable from a child (see app.parallel)."""
+    conn = _conn()
+    rows = conn.execute("SELECT key, value FROM world_setting").fetchall()
+    conn.close()
+    return {r["key"]: r["value"] for r in rows}
+
+
+def prime_cache(values: dict[str, str]) -> None:
+    """Seed the in-process config cache directly (no DB read) — for a worker
+    process that received the parent's `snapshot()`."""
+    _cache.update(values or {})
+
+
 def set(key: str, value: str) -> None:        # noqa: A001 (tiny config API)
     conn = _conn()
     conn.execute("INSERT INTO world_setting (key, value) VALUES (?,?) "

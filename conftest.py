@@ -4,6 +4,12 @@ import sys
 # Ensure the repo root is importable so `engine`, `app`, `generators` resolve.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Run generation serially in the suite: parallel world-build / junior-circuit
+# spawn worker processes (re-import cost, slower in CI) and are byte-identical to
+# serial anyway. The parallel path has its own focused determinism test
+# (test_parallel_gen.py), which clears this for the cases it exercises.
+os.environ.setdefault("GEN_WORKERS", "1")
+
 import pytest
 
 
