@@ -1624,8 +1624,23 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
                 "accolades": hbyyear.get(cal, []), "live": True,
                 "stint": 1, "phase": "regular_post",
             })
+            # If they've MOVED this season (current school != where they started) and
+            # it isn't already shown as a fall-portal two-stint, surface the origin
+            # school so the transfer is visible now — not just after the year closes.
+            already_split = any(h.get("year") == cur and h.get("stint", 0) == 0 for h in hist)
+            origin_school, origin_div = world.persisted_team(pid, seed)
+            if origin_school and origin_school != info["school"] and not already_split:
+                rows.append({
+                    "cal_year": cal, "season_no": cur + 1, "school": origin_school,
+                    "division": origin_div or division, "class": info.get("class_year", ""),
+                    "line": None, "w": None, "l": None, "str": None,
+                    "accolades": [], "live": False, "stint": 0, "phase": "transfer_out",
+                    "transferred": True,
+                })
 
-    rows.sort(key=lambda r: (-r["cal_year"], r.get("stint", 0)))
+    # Newest first, and within a split season the CURRENT school (higher stint) on
+    # top with the school they came from below — a transfer reads top-to-bottom.
+    rows.sort(key=lambda r: (-r["cal_year"], -r.get("stint", 0)))
     for r in rows:
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
