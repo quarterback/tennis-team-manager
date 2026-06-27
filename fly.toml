@@ -29,10 +29,17 @@ primary_region = 'iad'
   min_machines_running = 1
   processes = ['app']
 
+  # The app runs ONE gunicorn worker (keeps the season/roster cache warm), so a
+  # heavy CPU-bound request — first-advance signing, which runs the junior circuit
+  # for both genders, or a recruit/data board build — holds the GIL and blocks
+  # /api/health for tens of seconds. A short check timeout then marks the machine
+  # unhealthy mid-compute and drops/recycles it, which re-primes cold on the next
+  # load: the "slow + crashing on load" loop. A generous timeout/grace lets a
+  # legitimate compute finish and the check pass once the worker frees the GIL.
   [[http_service.checks]]
-    interval = '30s'
-    timeout = '30s'
-    grace_period = '10s'
+    interval = '60s'
+    timeout = '150s'
+    grace_period = '60s'
     method = 'GET'
     path = '/api/health'
 
