@@ -121,6 +121,15 @@ def _pick_weighted_key(rng: random.Random, weights: dict[str, float]) -> str:
 # Picker
 # ---------------------------------------------------------------------------
 
+# Diversity / diaspora: the share of draws where a citizen of one region carries
+# a name from ANOTHER culture (the country/flag stays the home region's, only the
+# name comes from elsewhere) — so diverse nations field diverse people, not a
+# monoculture. A region can override this with a `diversity` field in regions.json
+# (e.g. crank the melting-pot nations up, keep insular ones near 0). Only fires
+# when the world mix spans more than one region. See AAR-name-pool-diversity.
+DIASPORA_SHARE = 0.12
+
+
 def make_name_picker(
     rng: random.Random,
     *,
@@ -210,10 +219,43 @@ def make_name_picker(
             return None, None, country
         return rng.choice(first_candidates), rng.choice(last_candidates), country
 
+    def _country_for(region_id: str) -> str:
+        """The nationality/flag for a region, independent of which culture's name
+        we draw. Samples the home subregion by the SAME weights a normal draw uses,
+        so a multi-country region (latin_america, south_america) still follows its
+        weighted country mix on a diaspora draw — not always the first-listed one."""
+        region = regions_meta.get(region_id)
+        if region is None:
+            return ""
+        subregions = region.get("subregions")
+        if isinstance(subregions, list) and subregions:
+            sr_weights = _normalise_weights(
+                {str(i): float(sr.get("weight", 0.0)) for i, sr in enumerate(subregions)}
+            )
+            idx = int(_pick_weighted_key(rng, sr_weights))
+            sr = subregions[idx]
+            return _resolve_country(sr) or _resolve_country(region)
+        return _resolve_country(region)
+
+    multi_region = len(weights) > 1
+
     def _name() -> tuple[str, str]:
         for _ in range(500):
             region_id = _pick_weighted_key(rng, weights)
-            first, last, country = _draw_from_region(region_id)
+            # Diversity: sometimes this citizen carries another culture's name. The
+            # flag stays this region's; only the name is drawn from elsewhere.
+            name_region = region_id
+            if multi_region:
+                reg = regions_meta.get(region_id) or {}
+                share = reg.get("diversity")
+                share = DIASPORA_SHARE if share is None else float(share)
+                if share > 0.0 and rng.random() < share:
+                    name_region = _pick_weighted_key(rng, weights)
+                    if name_region == "zaryanovia":    # fictional, procedural — not
+                        name_region = region_id        # a real diaspora heritage
+            first, last, country = _draw_from_region(name_region)
+            if name_region != region_id:
+                country = _country_for(region_id)      # nationality = home region
             if not first or not last:
                 continue
             full = f"{first} {last}"

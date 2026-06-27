@@ -31,7 +31,8 @@
             "american_south",
             "american_midwest",
             "american_west",
-            "american_texas_southwest"
+            "american_texas_southwest",
+            "american_general"
           ],
           "surname_keys": [
             "american_general"

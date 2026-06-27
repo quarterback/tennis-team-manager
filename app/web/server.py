@@ -313,12 +313,14 @@ def create_app() -> Flask:
     @app.route("/start")
     def onboarding():
         from app import worldconfig
+        import secrets
         return render_template("onboarding.html", active="World",
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
                                region_groups=worldconfig.region_groups(),
                                mult_choices=worldconfig.MULT_CHOICES,
                                intl_share=worldconfig.intl_share(),
-                               intl_share_choices=worldconfig.INTL_SHARE_CHOICES)
+                               intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
+                               default_seed=secrets.token_hex(4))
 
     @app.route("/world/new", methods=["POST"])
     def world_new():
@@ -334,7 +336,11 @@ def create_app() -> Flask:
                 except (TypeError, ValueError):
                     pass
         worldconfig.set_region_mult(mult)
-        wd.start_new()
+        # The world SEED is the generation salt — it drives every name, roster and
+        # recruit roll. A typed seed makes the world reproducible; blank → a fresh
+        # random one (so two restarts never collide). See onboarding "World seed".
+        seed = request.form.get("seed", "").strip()
+        wd.start_new(salt=seed or None)
         reset_all()
         return redirect(url_for("world_view"))
 
