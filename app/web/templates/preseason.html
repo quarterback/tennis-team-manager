@@ -30,7 +30,7 @@
     {% endfor %}
   </div>
 
-  <form method="post" action="{{ url_for('world_advance') }}" class="ps-go">
+  <form method="post" action="{{ url_for('world_advance') }}" class="ps-go" data-loading='{"title":"Starting the season…","sub":"Signing every recruiting class and running the junior circuit for the first time — this takes about a minute. Weekly advances after this are quick.","stages":["Signing recruits…","Running the junior circuit…","Building the schedule…","Playing week 1…"]}'>
     <button class="ps-btn" type="submit">▶ Sim to first week →</button>
     <span class="ps-go-hint">Locks in the schedule and plays week 1.</span>
   </form>

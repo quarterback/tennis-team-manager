@@ -124,7 +124,7 @@
               </select>
             </span>
           </form>
-          <form method="post" action="{{ url_for('world_advance', u=u) }}">
+          <form method="post" action="{{ url_for('world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit — that one takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results & rankings…"]}'>
             <button class="fm-advance" type="submit">
               <span class="fm-advance-label">{{ 'Finalize season' if game and game.complete else 'Advance week' }}</span>
               <span aria-hidden="true">⏭</span></button>
@@ -137,5 +137,63 @@
       </main>
     </div>
   </div>
+
+  {# ---- Loading overlay: feedback for heavy server work (world build, the
+        first advance's junior circuit) so a long wait reads as "working",
+        not "broken". Shown only after a short delay, so quick actions don't
+        flash it. ---- #}
+  <div id="loading-overlay" class="loading-overlay" hidden aria-live="polite">
+    <div class="loading-card">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div class="loading-title" id="loading-title">Working…</div>
+      <div class="loading-stage" id="loading-stage"></div>
+      <div class="loading-sub" id="loading-sub"></div>
+      <div class="loading-elapsed"><span id="loading-secs">0</span>s elapsed — please keep this tab open</div>
+    </div>
+  </div>
+  <style>
+    .loading-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;
+      justify-content:center;background:rgba(12,14,18,.82);backdrop-filter:blur(3px)}
+    .loading-overlay[hidden]{display:none}
+    .loading-card{max-width:30rem;margin:1.5rem;padding:2rem 2.25rem;border-radius:14px;
+      background:#161a21;border:1px solid #2a3140;box-shadow:0 18px 50px rgba(0,0,0,.5);
+      text-align:center;color:#e8edf4;font-family:inherit}
+    .loading-spinner{width:46px;height:46px;margin:0 auto 1.1rem;border-radius:50%;
+      border:4px solid #2a3140;border-top-color:#5b8cff;animation:lspin .9s linear infinite}
+    @keyframes lspin{to{transform:rotate(360deg)}}
+    .loading-title{font-size:1.2rem;font-weight:700;letter-spacing:.2px}
+    .loading-stage{margin-top:.5rem;font-size:1rem;color:#9fd0ff;min-height:1.3em}
+    .loading-sub{margin-top:.75rem;font-size:.84rem;line-height:1.45;color:#9aa4b2}
+    .loading-elapsed{margin-top:1rem;font-size:.78rem;color:#6b7585;
+      font-variant-numeric:tabular-nums}
+  </style>
+  <script>
+  (function(){
+    var overlay=document.getElementById('loading-overlay');
+    if(!overlay) return;
+    var titleEl=document.getElementById('loading-title');
+    var stageEl=document.getElementById('loading-stage');
+    var subEl=document.getElementById('loading-sub');
+    var secsEl=document.getElementById('loading-secs');
+    function start(cfg){
+      titleEl.textContent=cfg.title||'Working…';
+      subEl.textContent=cfg.sub||'';
+      var stages=cfg.stages&&cfg.stages.length?cfg.stages:[''];
+      var i=0; stageEl.textContent=stages[0];
+      overlay.hidden=false;
+      var t0=Date.now();
+      setInterval(function(){secsEl.textContent=Math.floor((Date.now()-t0)/1000);},250);
+      if(stages.length>1)setInterval(function(){i=(i+1)%stages.length;stageEl.textContent=stages[i];},2600);
+    }
+    document.querySelectorAll('form[data-loading]').forEach(function(f){
+      f.addEventListener('submit',function(){
+        var cfg={}; try{cfg=JSON.parse(f.getAttribute('data-loading'))||{};}catch(e){}
+        // Delay so a fast action (most weekly advances) navigates before the
+        // overlay ever appears; a slow one (first build/advance) shows it.
+        setTimeout(function(){start(cfg);}, 450);
+      });
+    });
+  })();
+  </script>
 </body>
 </html>
