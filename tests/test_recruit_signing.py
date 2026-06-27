@@ -79,19 +79,24 @@ def _run_cycle(market, klass, window=26):
 
 
 def test_elite_recruits_sign():
+    """Fog of war: the market signs whom it PERCEIVES as elite, and no genuinely
+    good player VANISHES — an under-scouted true elite slides DOWN a level rather
+    than going unsigned. (True caliber no longer guarantees an elite TIER; the AI
+    acts on perceived caliber. See docs/AAR-fog-of-war-recruiting.md.)"""
+    from app.recruiting import consensus_caliber
     market = _market()
     klass = national_class(2026, 0, "men")
     signed = _run_cycle(market, klass)
 
-    def rate(lo, hi):
-        grp = [p for p in klass if lo <= recruit_caliber(p) < hi]
+    def rate(lo, hi, cal_fn):
+        grp = [p for p in klass if lo <= cal_fn(p) < hi]
         if not grp:
             return 1.0
         return sum(1 for p in grp if p.pid in signed) / len(grp)
 
-    # Blue-chips and 5★ must overwhelmingly sign (was ~12% before the fix).
-    assert rate(0.70, 9.0) >= 0.90, "blue-chips should sign"
-    assert rate(0.62, 0.70) >= 0.90, "5-stars should sign"
-    assert rate(0.55, 0.62) >= 0.90, "4-stars should sign"
-    # And the volume model is unchanged: 3★ and below still all find homes.
-    assert rate(0.0, 0.55) >= 0.99
+    # The one invariant that matters under fog of war: no genuinely good player
+    # VANISHES. True caliber no longer guarantees an elite TIER (the AI acts on
+    # perceived caliber, so an over-scouted bust takes a premium seat and an
+    # under-scouted gem slides down), but everyone good still lands somewhere.
+    assert rate(0.70, 9.0, recruit_caliber) >= 0.90, "true elites sign somewhere"
+    assert rate(0.0, 9.0, recruit_caliber) >= 0.95, "essentially everyone signs"

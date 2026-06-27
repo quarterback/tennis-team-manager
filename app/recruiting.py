@@ -214,8 +214,58 @@ def _interest(fit: float, rng: random.Random) -> str:
 
 
 def recruit_caliber(p) -> float:
-    """Visible athletic caliber on a 0..1 scale."""
+    """TRUE athletic caliber on a 0..1 scale (visible current ability). This is the
+    hidden truth — only the owner sees it (editor / scout_intel). The AI's
+    recruiting must NOT key on this; use `perceived_caliber` instead. See
+    docs/AAR-fog-of-war-recruiting.md."""
     return max(0.0, min(1.0, (p.current_overall() - 20) / 60.0))
+
+
+# ---------------------------------------------------------------------------
+# Fog-of-war recruiting — what a PROGRAM perceives, never the hidden truth.
+# Two public signals every team sees, plus a per-coach blend. The whole AI
+# recruiting matrix runs on these so computer programs get fooled exactly like
+# real ones; the owner alone sees the truth (recruit_caliber / scout_intel).
+# ---------------------------------------------------------------------------
+def talent_caliber(p) -> float:
+    """The recruiting service's STAR read: a NOISY projection of the recruit's
+    ceiling (scouting_report's jittered 'feel'), on the 0..1 caliber scale.
+    Sometimes dead-on, sometimes badly off — that's the point. Stars are built on
+    this; performance (below) is a separate axis."""
+    return max(0.0, min(1.0, (p.scouting_report("service") - 20) / 60.0))
+
+
+def perf_caliber(p) -> float:
+    """The recruit's PERFORMANCE read: their results-based junior STR (band
+    31..57) mapped to the 0..1 caliber scale. 0 for anyone with no junior-circuit
+    record. Pure performance — what they actually DID, not what they might become."""
+    js = float(getattr(p, "junior_str", 0.0) or 0.0)
+    return max(0.0, min(1.0, (js - 31.0) / 26.0))
+
+
+def perceived_caliber(p, results_bias: float = 0.5) -> float:
+    """How a program weighing `results_bias` sees this recruit: 0 = trust the
+    service's stars (talent projection), 1 = trust the junior results
+    (performance). The AI recruiting matrix runs on this — so the same kid is a
+    steal to a tape-trusting program and a reach to a stars-trusting one, and each
+    gets fooled in its own way.
+
+    A program can only trust results that EXIST: the performance weight is scaled
+    by `junior_str_reliability` (0 with no record → 1 with a thick one), so a kid
+    with a thin/absent junior résumé is judged on the star projection even by a
+    tape-trusting staff. Without this, an unproven recruit reads as half-caliber and
+    genuinely good kids go unsigned."""
+    b = max(0.0, min(1.0, results_bias))
+    rel = max(0.0, min(1.0, float(getattr(p, "junior_str_reliability", 0.0) or 0.0)))
+    w = b * rel                                  # how much THIS read leans on results
+    return (1.0 - w) * talent_caliber(p) + w * perf_caliber(p)
+
+
+def consensus_caliber(p) -> float:
+    """The market's balanced read (stars-vs-results even) — used for a recruit's
+    own sense of their level (who they aspire to) where no single program's
+    philosophy applies."""
+    return perceived_caliber(p, 0.5)
 
 
 def recruit_academic01(p) -> float:
