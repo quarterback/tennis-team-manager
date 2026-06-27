@@ -315,6 +315,22 @@ SURNAME_CITY_KEEP = {
     # Genuine family names that collide with a world city in the birthplace pool
     # (Leone = common Italian surname, not the place) — kept, not stripped.
     "Leone",
+    # Common English surname that also names a town (and scraped in as sports
+    # junk) — a real family name, kept.
+    "Pickering",
+}
+
+
+# ---------------------------------------------------------------------------
+# Given names that double as a US city / sports token (Denver, Houston, Dallas,
+# Montana, London...). They appear in the sports-junk sets above for when they
+# scraped in as TEAM references, but they are also genuine American given names
+# — so keep them in the FIRST-name pools instead of stripping them.
+# ---------------------------------------------------------------------------
+LEGIT_FIRST_NAME_KEEP = {
+    "Aspen", "Austin", "Boston", "Brooklyn", "Camden", "Carolina", "Cheyenne",
+    "Dakota", "Dallas", "Denver", "Houston", "Kingston", "London", "Memphis",
+    "Montana", "Orlando", "Phoenix", "Savannah", "Sydney", "Trenton", "Weston",
 }
 
 
@@ -618,7 +634,7 @@ def scrub(dry_run: bool = False) -> dict:
 
     # First names: mascots + explicit foreign-city junk only.
     # Korean & Chinese first-name buckets are rebuilt separately (below).
-    first_block = mascots | FIRST_NAME_CITY_JUNK
+    first_block = (mascots | FIRST_NAME_CITY_JUNK) - LEGIT_FIRST_NAME_KEEP
     handled_first = ("korean", "chinese", "japanese", "chinese_taiwanese")
     for pool_name, pool in (("male_first", male), ("female_first", female)):
         for key, values in pool.items():

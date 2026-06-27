@@ -121,6 +121,15 @@ def _pick_weighted_key(rng: random.Random, weights: dict[str, float]) -> str:
 # Picker
 # ---------------------------------------------------------------------------
 
+# Diversity / diaspora: the share of draws where a citizen of one region carries
+# a name from ANOTHER culture (the country/flag stays the home region's, only the
+# name comes from elsewhere) — so diverse nations field diverse people, not a
+# monoculture. A region can override this with a `diversity` field in regions.json
+# (e.g. crank the melting-pot nations up, keep insular ones near 0). Only fires
+# when the world mix spans more than one region. See AAR-name-pool-diversity.
+DIASPORA_SHARE = 0.12
+
+
 def make_name_picker(
     rng: random.Random,
     *,
@@ -210,10 +219,39 @@ def make_name_picker(
             return None, None, country
         return rng.choice(first_candidates), rng.choice(last_candidates), country
 
+    def _country_for(region_id: str) -> str:
+        """The nationality/flag for a region, independent of which culture's name
+        we draw — region-level country first, then the first subregion that names
+        one."""
+        region = regions_meta.get(region_id) or {}
+        c = _resolve_country(region)
+        if c:
+            return c
+        for sr in (region.get("subregions") or []):
+            c = _resolve_country(sr)
+            if c:
+                return c
+        return ""
+
+    multi_region = len(weights) > 1
+
     def _name() -> tuple[str, str]:
         for _ in range(500):
             region_id = _pick_weighted_key(rng, weights)
-            first, last, country = _draw_from_region(region_id)
+            # Diversity: sometimes this citizen carries another culture's name. The
+            # flag stays this region's; only the name is drawn from elsewhere.
+            name_region = region_id
+            if multi_region:
+                reg = regions_meta.get(region_id) or {}
+                share = reg.get("diversity")
+                share = DIASPORA_SHARE if share is None else float(share)
+                if share > 0.0 and rng.random() < share:
+                    name_region = _pick_weighted_key(rng, weights)
+                    if name_region == "zaryanovia":    # fictional, procedural — not
+                        name_region = region_id        # a real diaspora heritage
+            first, last, country = _draw_from_region(name_region)
+            if name_region != region_id:
+                country = _country_for(region_id)      # nationality = home region
             if not first or not last:
                 continue
             full = f"{first} {last}"
