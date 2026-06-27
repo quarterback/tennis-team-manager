@@ -221,17 +221,21 @@ def make_name_picker(
 
     def _country_for(region_id: str) -> str:
         """The nationality/flag for a region, independent of which culture's name
-        we draw — region-level country first, then the first subregion that names
-        one."""
-        region = regions_meta.get(region_id) or {}
-        c = _resolve_country(region)
-        if c:
-            return c
-        for sr in (region.get("subregions") or []):
-            c = _resolve_country(sr)
-            if c:
-                return c
-        return ""
+        we draw. Samples the home subregion by the SAME weights a normal draw uses,
+        so a multi-country region (latin_america, south_america) still follows its
+        weighted country mix on a diaspora draw — not always the first-listed one."""
+        region = regions_meta.get(region_id)
+        if region is None:
+            return ""
+        subregions = region.get("subregions")
+        if isinstance(subregions, list) and subregions:
+            sr_weights = _normalise_weights(
+                {str(i): float(sr.get("weight", 0.0)) for i, sr in enumerate(subregions)}
+            )
+            idx = int(_pick_weighted_key(rng, sr_weights))
+            sr = subregions[idx]
+            return _resolve_country(sr) or _resolve_country(region)
+        return _resolve_country(region)
 
     multi_region = len(weights) > 1
 
