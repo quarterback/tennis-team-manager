@@ -284,6 +284,30 @@ def _seed_year0(division, gender) -> dict:
     return {p.school: [copy.deepcopy(q) for q in build_roster(p)] for p in div.programs}
 
 
+# Year-0 build runs one universe per worker; each holds a full universe (~3.5k rich
+# prospects) in RAM, so cap concurrency to bound the memory peak (the old serial
+# build deliberately capped at ONE universe to avoid OOM). 4 is a safe ceiling on a
+# 4–8 GB machine; raise alongside RAM. Override with GEN_WORKERS for ops/tests.
+_BUILD_WORKER_CAP = 4
+
+
+def _build_universe(args):
+    """Process-pool worker (top-level so it's importable under spawn): build one
+    universe's year-0 rosters for `salt` and return them SERIALIZED (picklable
+    dicts). Deterministic from the salt + config, so the result is byte-identical
+    to building the universe inline in the parent. `cfg` is the parent's worldconfig
+    snapshot, primed directly so the child never depends on the DB being readable."""
+    salt, cfg, division, gender = args
+    from app import worldconfig
+    worldconfig.prime_cache(cfg)
+    ncaa.WORLD_SALT = salt
+    reset_caches()
+    uni = _seed_year0(division, gender)
+    return (division, gender,
+            {school: [prospect_to_dict(p) for p in roster]
+             for school, roster in uni.items()})
+
+
 def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
     conn = _db()
     row = conn.execute("SELECT * FROM world WHERE seed=?", (seed,)).fetchone()
@@ -299,19 +323,24 @@ def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
     ncaa.WORLD_SALT = salt
     cur = conn.execute("INSERT INTO world (seed, year, week, salt) VALUES (?,0,0,?)", (seed, salt))
     wid = cur.lastrowid
-    # Seed year-0 rosters ONE universe at a time, persisting and freeing each
-    # before building the next. Building all six universes' rich rosters at once
-    # (~17k prospects) was the memory spike behind the OOM; this caps the peak at
-    # roughly a single universe.
-    reset_caches()
     conn.execute("DELETE FROM world_roster WHERE world_id=? AND year=?", (wid, 0))
-    for (d, g) in UNIVERSES:
-        uni = _seed_year0(d, g)
-        rows = [(wid, 0, d, g, school, p.pid, json.dumps(prospect_to_dict(p)))
+    conn.commit()                  # make the world row visible to child processes
+    reset_caches()
+    # Seed year-0 rosters for all universes IN PARALLEL — each is independent and
+    # deterministic from the salt, so child processes rebuild them byte-identically
+    # (serial fallback inside pmap if no pool). Worker count is capped: each holds a
+    # full universe in RAM, so this trades a higher memory peak for wall-clock. See
+    # docs/AAR-parallel-generation.md.
+    from app.parallel import pmap, workers_for
+    from app import worldconfig
+    cfg = worldconfig.snapshot()
+    tasks = [(salt, cfg, d, g) for (d, g) in UNIVERSES]
+    for (d, g, uni) in pmap(_build_universe, tasks,
+                            workers=workers_for(len(tasks), cap=_BUILD_WORKER_CAP)):
+        rows = [(wid, 0, d, g, school, p["pid"], json.dumps(p))
                 for school, roster in uni.items() for p in roster]
         conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
         del uni, rows
-        reset_caches()                               # free this universe before the next
     conn.commit()
     row = conn.execute("SELECT * FROM world WHERE id=?", (wid,)).fetchone()
     conn.close()
@@ -631,6 +660,59 @@ def board_class(gender: str, grad_year: int, salt: str):
         points_rankings(klass)                     # rank the FULL pool; tail = 0 points
         klass.circuit_done = True
     return klass
+
+
+def _build_board_class(args):
+    """Process-pool worker: build one gender's ENRICHED recruit class (the
+    expensive junior circuit) for `salt` and return its prospects SERIALIZED.
+    Deterministic from salt + config, so identical to building it inline."""
+    salt, cfg, gender, grad_year = args
+    from app import worldconfig
+    worldconfig.prime_cache(cfg)
+    ncaa.WORLD_SALT = salt
+    klass = board_class(gender, grad_year, salt)
+    return (klass.gender, klass.grad_year,
+            [prospect_to_dict(p) for p in klass.recruits])
+
+
+def prime_recruit_classes(seed: int = DEFAULT_SEED, year: int | None = None) -> None:
+    """Precompute the active genders' enriched recruit classes — the junior circuit,
+    the single most expensive step of an advance — IN PARALLEL, and populate the
+    class cache so the per-gender signing that follows is a cache hit (men's and
+    women's circuits run at the same time instead of back to back).
+
+    Best-effort: only engages a pool when there are 2+ uncached classes AND 2+
+    cores; otherwise it's a no-op and the classes build lazily during signing
+    exactly as before. The reconstructed class is re-ranked (`rank_class`, which
+    `recruit_class` runs too) so stars/rank are byte-identical to the serial build;
+    the circuit's junior fields round-trip losslessly. See docs/AAR-parallel-generation.md."""
+    from app.juniors import RecruitClass, rank_class as _rank
+    from app.parallel import workers_for
+    salt = active_salt(seed)
+    if year is None:
+        w = load_world(seed)
+        year = w["year"] if w else 0
+    grad_year = BASE_YEAR + year + 1
+    genders, seen = [], set()
+    for (_d, g) in _active_unis():
+        gc = _GENDER_CANON.get(g, g)
+        if gc in seen:
+            continue
+        seen.add(gc)
+        if not getattr(_class_cache.get((salt, gc, grad_year)), "circuit_done", False):
+            genders.append(gc)
+    if len(genders) < 2 or workers_for(len(genders)) < 2:
+        return                                  # nothing to parallelize — let signing build them
+    from app.parallel import pmap
+    from app import worldconfig
+    cfg = worldconfig.snapshot()
+    tasks = [(salt, cfg, g, grad_year) for g in genders]
+    for (g, gy, dicts) in pmap(_build_board_class, tasks, workers=workers_for(len(tasks))):
+        klass = RecruitClass(grad_year=gy, gender=g,
+                             recruits=[prospect_from_dict(d) for d in dicts])
+        _rank(klass)                            # match serial recruit_class's ranking exactly
+        klass.circuit_done = True
+        _class_cache[(salt, g, gy)] = klass
 
 
 def national_class(seed: int, year: int, gender: str) -> list:
@@ -2077,6 +2159,10 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     signed = 0
     flips = 0
     window = _signing_window(seed, w)        # drip across the whole regular season
+    # Precompute every active gender's junior circuit in parallel up front, so the
+    # per-gender signing below is a cache hit instead of running men's then women's
+    # circuit back to back (the dominant cost of the first advance of a world).
+    prime_recruit_classes(seed, w["year"])
     for gender in worldconfig.active_genders():
         flips += _decommit_pass(conn, w, gender)
         quota = max(1, sum(_openings(_base_rosters(w), gender).values()) // window)
