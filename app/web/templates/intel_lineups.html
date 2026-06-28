@@ -34,6 +34,28 @@
     </p>
   </div>
 
+  {# ---- STR ↔ UTR ↔ WTN reference (collapsed by default; reference only) ---- #}
+  <details class="bl-panel ll-scale" style="margin-bottom:18px">
+    <summary class="bl-panel-head" style="cursor:pointer;list-style:none">
+      <span class="bl-panel-title">STR ↔ UTR ↔ WTN scale</span>
+      <span class="bl-panel-meta">how the game's 31–57 STR maps to real-world ratings ▾</span>
+    </summary>
+    <div style="padding:14px 16px 16px">
+      <p style="margin:0 0 12px;font-size:12.5px;color:var(--text-muted);line-height:1.5;max-width:720px">
+        <strong>STR</strong> is the game's native 31–57 rating. <strong>UTR</strong> (1.00–16.50) is the
+        upward-facing real-world comparison; <strong>WTN</strong> (40 beginner → 1 elite pro) runs the other way.
+        Endpoints line up exactly with the band, but UTR and WTN are separate proprietary systems, so the
+        off-anchor values are approximate — good enough for balancing, not a published conversion.
+      </p>
+      <div class="ll-scale-grid">
+        <div class="ll-scale-hdr"><span>STR</span><span>UTR</span><span>WTN</span></div>
+        {% for r in scale_rows %}
+        <div class="ll-scale-row"><span>{{ r.str }}</span><span>{{ '%.2f'|format(r.utr) }}</span><span>{{ '%.1f'|format(r.wtn) }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+
   {% if not lineups %}
   <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
     <h2 style="margin:0 0 8px">No lineup data</h2>
@@ -110,6 +132,16 @@
 .ll-tip .lr { display:flex; justify-content:space-between; gap:14px; }
 .ll-tip .lr .p { color:#9fb3c8; } .ll-tip .lr.on { color:#ffd23f; font-weight:700; }
 .ll-cell circle { cursor:pointer; transition:r .08s; }
+.ll-scale summary::-webkit-details-marker { display:none; }
+.ll-scale summary:hover .bl-panel-meta { color:var(--text); }
+.ll-scale-grid { font-variant-numeric:tabular-nums; border:1px solid var(--border,#e8edf2); border-radius:8px; overflow:hidden; max-width:340px; }
+.ll-scale-hdr, .ll-scale-row { display:grid; grid-template-columns:1fr 1fr 1fr; }
+.ll-scale-hdr { background:var(--bg-muted,#f4f7fa); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted); }
+.ll-scale-hdr span { padding:6px 14px; text-align:right; }
+.ll-scale-row span { padding:4px 14px; text-align:right; font-size:12.5px; }
+.ll-scale-row:nth-child(even) { background:rgba(0,0,0,.025); }
+.ll-scale-row span:first-child { font-weight:700; color:var(--text); }
+.ll-scale-row span:not(:first-child) { color:var(--text-muted); }
 </style>
 
 <script>

@@ -190,6 +190,23 @@ def _universe(req) -> tuple[str, str, str, str]:
     return division, gender, label, match[0]
 
 
+def _str_scale_rows():
+    """STR ↔ UTR ↔ WTN reference rows, derived from the canonical band in
+    app.str_rating so the table can never drift from the engine. STR is the
+    game-native 31–57 scale; UTR is the upward-facing real-world comparison
+    (1.00–16.50); WTN is the inverse-facing one (40 beginner → 1 elite). The
+    UTR/WTN endpoints line up cleanly with the band, but they're separate
+    proprietary systems, so treat the off-anchor values as approximate."""
+    from app.str_rating import STR_MIN, STR_MAX
+    span = STR_MAX - STR_MIN                      # 26.0
+    rows = []
+    for s in range(int(STR_MIN), int(STR_MAX) + 1):
+        utr = 1.0 + (s - STR_MIN) / span * 15.5   # 1.00 → 16.50
+        wtn = 40.0 - (s - STR_MIN) / span * 39.0   # 40 → 1
+        rows.append({"str": s, "utr": round(utr, 2), "wtn": round(wtn, 1)})
+    return rows
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
@@ -1043,7 +1060,8 @@ def create_app() -> Flask:
         return render_template("intel_lineups.html", active="Analytics Bureau",
                                gender=gender, u=u, uni_label=label, div_f=div_f, conf=conf,
                                confs=confs, lineups=lineups, strength=strength,
-                               highlight=highlight, divisions=["D1", "D2", "D3", "D4"])
+                               highlight=highlight, divisions=["D1", "D2", "D3", "D4"],
+                               scale_rows=_str_scale_rows())
 
     @app.route("/intel/fit/<pid>")
     def intel_fit(pid):
