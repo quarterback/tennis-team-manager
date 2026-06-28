@@ -1902,6 +1902,48 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
             "is_preseason": w["week"] == 0}
 
 
+def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
+    """The coached program's clubhouse: identity, record, lineup, incoming class,
+    scholarships and schedule — scoped to worldconfig.user_program(). None in
+    spectator mode (no team chosen) or if the saved program no longer exists."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    p = load_division(division, gender).by_school(school)
+    if not p:
+        return None
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    roster = team_roster(division, gender, school)
+    rec = team_results(division, gender, school, seed)
+    sched = sm.team_schedule(sid, school)
+    nxt = next((d for d in sched if d["status"] != "final"), None)
+    if nxt:
+        opp = nxt["away"] if nxt["home"] == school else nxt["home"]
+        nxt = {"week": nxt["week"], "opp": opp, "home": nxt["home"] == school,
+               "round": nxt["round"], "conf": bool(nxt["is_conf"])}
+    return {
+        "division": division, "gender": gender, "school": school,
+        "u": f"{division}-{gender}",
+        "conf": p.conf, "conf_abbr": p.conf_abbr,
+        "prestige": round(getattr(p, "prestige", 0.0) * 100),
+        "year": world.BASE_YEAR + w["year"], "week": w["week"],
+        "is_preseason": w["week"] == 0,
+        "wins": rec["wins"], "losses": rec["losses"], "results": rec["results"][-5:],
+        "roster": roster,
+        "starters": [r for r in roster if r["line"]],
+        "budget": team_budget(division, gender, school),
+        "incoming": team_recruiting_class(gender, school, seed),
+        "next": nxt,
+        "remaining_duals": sum(1 for d in sched if d["status"] != "final"),
+    }
+
+
 def all_gender_programs(gender: str):
     from app import ncaa
     progs = []

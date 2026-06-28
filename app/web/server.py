@@ -35,6 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
+from .state import my_program_view
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -95,6 +96,7 @@ NAV_GROUPS = [
     # coached program: the school arg is injected and `u` is pinned to the
     # program's own universe. The whole group is hidden in spectator mode.
     ("Your Team", [
+        {"id": "my_program","label": "Clubhouse",    "icon": "🏠", "endpoint": "my_program",      "args": {}},
         {"id": "preseason", "label": "Preseason",     "icon": "⚙️", "endpoint": "preseason_view",   "args": {}},
         {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {}},
         {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {}},
@@ -150,6 +152,7 @@ NAV_GROUPS = [
 def _active_nav(req) -> str:
     p = req.path
     if p == "/":                          return "dashboard"
+    if p.startswith("/my-program"):       return "my_program"
     if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
@@ -464,6 +467,13 @@ def create_app() -> Flask:
     @app.route("/preseason")
     def preseason_view():
         return render_template("preseason.html", active="Preseason", ps=preseason_view_data())
+
+    @app.route("/my-program")
+    def my_program():
+        mp = my_program_view()
+        if not mp:                      # spectator mode (or saved team gone) → pick one
+            return redirect(url_for("onboarding"))
+        return render_template("my_program.html", active="My Program", mp=mp)
 
     @app.route("/world")
     def world_view():

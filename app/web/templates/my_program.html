@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}{{ mp.school }} · Clubhouse — Play to Clinch{% endblock %}
+{% block content %}
+<div class="mp-wrap">
+
+  <header class="mp-head">
+    <div class="mp-id">
+      <h1 class="mp-h1">{{ mp.school }}</h1>
+      <div class="mp-sub">{{ mp.division }} {{ mp.gender|capitalize }} · {{ mp.conf }}</div>
+    </div>
+    <div class="mp-meta">
+      <div class="mp-stat"><span class="mp-k">Record</span><span class="mp-v">{{ mp.wins }}–{{ mp.losses }}</span></div>
+      <div class="mp-stat"><span class="mp-k">Prestige</span><span class="mp-v">{{ mp.prestige }}</span></div>
+      <div class="mp-stat"><span class="mp-k">Season</span><span class="mp-v">{{ mp.year }}{% if mp.is_preseason %} · Preseason{% else %} · Wk {{ mp.week }}{% endif %}</span></div>
+    </div>
+  </header>
+
+  {% if mp.next %}
+  <div class="mp-next">
+    <span class="mp-next-k">Next dual</span>
+    <span class="mp-next-v">{% if mp.next.home %}vs{% else %}at{% endif %} {{ mp.next.opp }}</span>
+    <span class="mp-next-t">Week {{ mp.next.week }}{% if mp.next.conf %} · conference{% endif %}</span>
+    <a class="mp-next-link" href="{{ url_for('season_schedule', u=mp.u, school=mp.school) }}">Full schedule →</a>
+  </div>
+  {% endif %}
+
+  <div class="mp-grid">
+
+    <section class="mp-card mp-span2">
+      <div class="mp-card-h"><h2>Singles lineup</h2>
+        <a class="mp-card-link" href="{{ url_for('teams', u=mp.u, school=mp.school) }}">Full roster →</a></div>
+      <table class="mp-table">
+        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
+        <tbody>
+          {% for r in mp.starters %}
+          <tr{% if r.injury %} class="mp-hurt"{% endif %}>
+            <td class="mp-line">{{ r.line }}</td>
+            <td>{{ r.p.name }}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
+            <td>{{ r.p.class_year }}</td>
+            <td class="mp-num">{{ r.str }}</td>
+            <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
+            <td>{{ r.schol }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="mp-note">The match lineup is set by player strength each week (with a little coach
+        discretion). Hand-picking your order is coming — see the roadmap.</p>
+    </section>
+
+    <section class="mp-card">
+      <div class="mp-card-h"><h2>Incoming class</h2>
+        <a class="mp-card-link" href="{{ url_for('team_recruiting', school=mp.school, u=mp.u) }}">Recruiting →</a></div>
+      <div class="mp-kpis">
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.incoming.n }}</span><span class="mp-kpi-k">signed</span></div>
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.incoming.score }}</span><span class="mp-kpi-k">class score</span></div>
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.incoming.avg_stars }}</span><span class="mp-kpi-k">avg ★</span></div>
+      </div>
+      {% if mp.incoming.commits %}
+      <ul class="mp-commits">
+        {% for c in mp.incoming.commits[:6] %}
+        <li><span class="mp-c-name">{{ c.name }}</span>
+          <span class="mp-c-tier">{{ c.recruit_tier or (c.recruit_stars ~ '★') }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mp-note">No commits yet this cycle.</p>
+      {% endif %}
+    </section>
+
+    <section class="mp-card">
+      <h2>Scholarships</h2>
+      {% if mp.budget.offers_aid %}
+      <div class="mp-kpis">
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.allocated }}</span><span class="mp-kpi-k">of {{ mp.budget.cap }} used</span></div>
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.full_rides }}</span><span class="mp-kpi-k">full rides</span></div>
+        <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.walk_ons }}</span><span class="mp-kpi-k">walk-ons</span></div>
+      </div>
+      <div class="mp-bar"><span style="width: {{ (100 * mp.budget.allocated / mp.budget.cap)|round|int if mp.budget.cap else 0 }}%"></span></div>
+      {% else %}
+      <p class="mp-note">This division offers no athletic aid — the whole roster is walk-ons ({{ mp.budget.walk_ons }}).</p>
+      {% endif %}
+    </section>
+
+    <section class="mp-card">
+      <h2>Recent results</h2>
+      {% if mp.results %}
+      <ul class="mp-results">
+        {% for d in mp.results %}
+        <li class="{{ 'win' if d.won else 'loss' }}">
+          <span class="mp-r-wl">{{ 'W' if d.won else 'L' }}</span>
+          <span class="mp-r-opp">{% if d.home %}vs{% else %}at{% endif %} {{ d.opp }}</span>
+          <span class="mp-r-sc">{{ d.mine }}–{{ d.theirs }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mp-note">No duals played yet.{% if mp.remaining_duals %} {{ mp.remaining_duals }} on the slate.{% endif %}</p>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+
+<style>
+  .mp-wrap { max-width: 960px; margin: 0 auto; padding: 8px 4px 40px; }
+  .mp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap; margin-bottom: 16px; }
+  .mp-h1 { font-size: 26px; margin: 0; color: var(--text-primary); }
+  .mp-sub { font-size: 13.5px; color: var(--text-secondary); margin-top: 4px; }
+  .mp-meta { display: flex; gap: 18px; }
+  .mp-stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .mp-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .mp-v { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .mp-next { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 10px 14px; margin-bottom: 18px; border: 1px solid var(--border-subtle);
+    border-radius: 10px; background: var(--surface-card); }
+  .mp-next-k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .mp-next-v { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .mp-next-t { font-size: 12.5px; color: var(--text-secondary); }
+  .mp-next-link { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--text-link); text-decoration: none; }
+  .mp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .mp-card { border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 18px;
+    background: var(--surface-card); }
+  .mp-span2 { grid-column: 1 / -1; }
+  .mp-card h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-primary); }
+  .mp-card-h { display: flex; align-items: baseline; justify-content: space-between; }
+  .mp-card-link { font-size: 12.5px; font-weight: 600; color: var(--text-link); text-decoration: none; }
+  .mp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .mp-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); }
+  .mp-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+  .mp-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mp-line { font-weight: 700; color: var(--text-secondary); }
+  .mp-hurt td { opacity: .6; }
+  .mp-tag { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--stat-bad, #c0392b);
+    border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
+  .mp-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
+  .mp-kpis { display: flex; gap: 18px; margin-bottom: 6px; }
+  .mp-kpi { display: flex; flex-direction: column; }
+  .mp-kpi-n { font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+  .mp-kpi-k { font-size: 11px; color: var(--text-muted); }
+  .mp-commits { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 5px; }
+  .mp-commits li { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-primary); }
+  .mp-c-tier { font-size: 11.5px; color: var(--text-secondary); }
+  .mp-bar { height: 7px; border-radius: 4px; background: var(--surface-page); overflow: hidden; margin-top: 10px; }
+  .mp-bar span { display: block; height: 100%; background: var(--brand); }
+  .mp-results { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .mp-results li { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .mp-r-wl { font-weight: 800; width: 16px; }
+  .mp-results li.win .mp-r-wl { color: var(--stat-good, #2e7d32); }
+  .mp-results li.loss .mp-r-wl { color: var(--stat-bad, #c0392b); }
+  .mp-r-opp { color: var(--text-primary); flex: 1 1 auto; }
+  .mp-r-sc { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  @media (max-width: 720px) { .mp-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
