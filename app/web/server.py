@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import my_program_view, my_schedule_plan, my_season_report
+from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -507,6 +507,39 @@ def create_app() -> Flask:
                 order[i], order[j] = order[j], order[i]
                 ov.set_lineup(school, order)
                 reset_all()
+        return redirect(url_for("my_program"))
+
+    @app.route("/my-program/offers")
+    def my_offers():
+        off = job_offers()
+        if not off:
+            return redirect(url_for("onboarding"))
+        return render_template("my_offers.html", active="My Program", off=off)
+
+    @app.route("/my-program/offers/accept", methods=["POST"])
+    def my_offers_accept():
+        # Take a new job. Opt-in only; the chosen offer must be on the live slate.
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        gender = prog["gender"]
+        new_div = request.form.get("division", "")
+        new_school = request.form.get("school", "")
+        off = job_offers() or {}
+        if off.get("available") and any(o["school"] == new_school and o["division"] == new_div
+                                        for o in off.get("offers", [])):
+            rep = my_season_report() or {}
+            worldconfig.push_coach_seat({          # archive the seat you're leaving
+                "year": rep.get("year"), "division": prog["division"],
+                "school": prog["school"], "gender": gender,
+                "wins": rep.get("wins"), "losses": rep.get("losses"),
+                "verdict": rep.get("verdict"), "finish": rep.get("pi_rank")})
+            worldconfig.set_user_program(new_div, new_school, gender)
+            worldconfig.set_active(                # the new universe must run in detail
+                list(dict.fromkeys(worldconfig.active_divisions() + [new_div])),
+                list(dict.fromkeys(worldconfig.active_genders() + [gender])))
+            reset_all()
         return redirect(url_for("my_program"))
 
     @app.route("/my-program/report")

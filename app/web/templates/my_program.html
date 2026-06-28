@@ -16,7 +16,10 @@
   </header>
 
   {% if not mp.is_preseason %}
-  <div class="mp-reportcta"><a href="{{ url_for('my_report') }}">📊 Season report card →</a></div>
+  <div class="mp-reportcta">
+    <a href="{{ url_for('my_report') }}">📊 Season report card →</a>
+    {% if mp.season_complete %}<a href="{{ url_for('my_offers') }}" style="margin-left:16px;">💼 Job offers →</a>{% endif %}
+  </div>
   {% endif %}
 
   {% if mp.is_preseason %}

@@ -1942,6 +1942,7 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "prestige": round(getattr(p, "prestige", 0.0) * 100),
         "year": world.BASE_YEAR + w["year"], "week": w["week"],
         "is_preseason": w["week"] == 0,
+        "season_complete": sm.load_season(sid).get("phase") == "complete",
         "wins": rec["wins"], "losses": rec["losses"], "results": rec["results"][-5:],
         "roster": roster,
         "starters": [r for r in roster if r["line"]],
@@ -2052,6 +2053,70 @@ def my_season_report(seed: int = DEFAULT_SEED) -> dict | None:
         "class_score": cls["score"], "class_grade": _class_grade(cls["avg_stars"], cls["n"]),
         "class_n": cls["n"], "class_avg": cls["avg_stars"], "notable": notable,
     }
+
+
+def _prestige_tier_label(p: float) -> str:
+    return ("Blue blood" if p >= 0.78 else "Powerhouse" if p >= 0.62
+            else "Established" if p >= 0.45 else "Up-and-comer" if p >= 0.30 else "Rebuild")
+
+
+def _programs_for_gender(gender: str):
+    from app.ncaa import load_division
+    out = []
+    for d in ("D1", "D2", "D3", "D4"):
+        try:
+            div = load_division(d, gender)
+        except FileNotFoundError:
+            continue
+        out += [(d, p) for p in div.programs]
+    return out
+
+
+def job_offers(seed: int = DEFAULT_SEED) -> dict | None:
+    """Prestige-gated coaching offers for the human coach. Opt-in UPWARD mobility
+    only — there is no firing. Offers open once the season is complete; a strong
+    season (overperforming expectation) widens the reach to better programs. The
+    slate is deterministic per (seed, year, school). None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    import random
+    from app.ncaa import load_division
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    cur = load_division(division, gender).by_school(school)
+    if not cur:
+        return None
+    cur_prestige = getattr(cur, "prestige", 0.5)
+    rep = my_season_report(seed)
+    complete = bool(rep and rep.get("complete"))
+    delta = rep.get("delta", 0.0) if (rep and rep.get("started")) else 0.0
+    head = {"school": school, "division": division, "gender": gender,
+            "u": f"{division}-{gender}", "conf": cur.conf,
+            "prestige": round(cur_prestige * 100),
+            "tier": _prestige_tier_label(cur_prestige),
+            "career": worldconfig.get_coach_career(),
+            "verdict": rep.get("verdict") if rep else None}
+    if not complete:
+        return {**head, "available": False, "offers": [],
+                "note": "Job offers open once your season is complete."}
+    # A good season widens the reach upward; offers are always at least lateral-plus.
+    band_lo = cur_prestige + 0.02
+    band_hi = cur_prestige + 0.06 + max(0.0, delta) * 0.6
+    pool = [(d, p) for (d, p) in _programs_for_gender(gender)
+            if p.school != school and band_lo <= getattr(p, "prestige", 0.0) <= band_hi]
+    rng = random.Random(f"{seed}|offers|{w['year']}|{school}")
+    rng.shuffle(pool)                                    # break prestige ties stably per save
+    pool.sort(key=lambda dp: getattr(dp[1], "prestige", 0.0), reverse=True)
+    offers = [{"school": p.school, "division": d, "conf": p.conf,
+               "prestige": round(getattr(p, "prestige", 0.0) * 100),
+               "tier": _prestige_tier_label(getattr(p, "prestige", 0.0))}
+              for d, p in pool[:4]]
+    return {**head, "available": True, "offers": offers,
+            "note": None if offers else "No better jobs opened up this year — keep building."}
 
 
 def all_gender_programs(gender: str):

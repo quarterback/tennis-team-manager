@@ -170,6 +170,20 @@ def clear_user_program() -> None:
         set(k, "")
 
 
+def get_coach_career() -> list:
+    """Past coaching seats (career mode), oldest first. Each: {year, division,
+    school, gender, wins, losses, verdict, finish}. The CURRENT seat is
+    user_program(); this is only the programs you've LEFT."""
+    car = get_json("coach_career", [])
+    return car if isinstance(car, list) else []
+
+
+def push_coach_seat(entry: dict) -> None:
+    car = get_coach_career()
+    car.append(entry)
+    set("coach_career", json.dumps(car))
+
+
 # --- International share --------------------------------------------------------
 # Fraction of the incoming RECRUIT class that is international. Real college tennis
 # skews far more international than the US-junior pool alone, so this is tunable.
