@@ -1954,6 +1954,30 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     }
 
 
+def my_schedule_plan(seed: int = DEFAULT_SEED) -> dict | None:
+    """Preseason non-conference planner for the coached program: its editable
+    non-conf duals + the pool of eligible opponents. None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    duals = sm.nonconf_duals(sid, school)
+    for d in duals:
+        d["abbr"], d["color"] = crest(d["opponent"])
+    return {
+        "school": school, "division": division, "gender": gender,
+        "u": f"{division}-{gender}", "is_preseason": w["week"] == 0,
+        "duals": duals,
+        "eligible": sm.eligible_nonconf_opponents(sid, division, gender, school),
+    }
+
+
 def all_gender_programs(gender: str):
     from app import ncaa
     progs = []

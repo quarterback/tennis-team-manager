@@ -15,7 +15,14 @@
     </div>
   </header>
 
-  {% if mp.next %}
+  {% if mp.is_preseason %}
+  <div class="mp-next">
+    <span class="mp-next-k">Preseason</span>
+    <span class="mp-next-v">Set your non-conference schedule</span>
+    <span class="mp-next-t">Pick who you play out of conference before the season locks.</span>
+    <a class="mp-next-link" href="{{ url_for('my_schedule') }}">Plan schedule →</a>
+  </div>
+  {% elif mp.next %}
   <div class="mp-next">
     <span class="mp-next-k">Next dual</span>
     <span class="mp-next-v">{% if mp.next.home %}vs{% else %}at{% endif %} {{ mp.next.opp }}</span>

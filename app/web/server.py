@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import my_program_view
+from .state import my_program_view, my_schedule_plan
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -501,6 +501,33 @@ def create_app() -> Flask:
                 ov.set_lineup(school, order)
                 reset_all()
         return redirect(url_for("my_program"))
+
+    @app.route("/my-program/schedule")
+    def my_schedule():
+        plan = my_schedule_plan()
+        if not plan:
+            return redirect(url_for("onboarding"))
+        return render_template("my_schedule.html", active="My Program", plan=plan)
+
+    @app.route("/my-program/schedule/edit", methods=["POST"])
+    def my_schedule_edit():
+        # Re-opponent a non-conference dual — preseason only, coached team only.
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        division, gender, school = prog["division"], prog["gender"], prog["school"]
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        if wd.load_world()["week"] == 0:            # planning locks once the season starts
+            dual_id = request.form.get("dual_id", type=int)
+            action = request.form.get("action", "")
+            if dual_id and action == "swap":
+                sm.swap_nonconf_opponent(sid, dual_id, school,
+                                         request.form.get("opponent", ""), division, gender)
+            elif dual_id and action == "home":
+                sm.set_nonconf_home(sid, dual_id, school, request.form.get("home") == "1")
+            reset_all()
+        return redirect(url_for("my_schedule"))
 
     @app.route("/world")
     def world_view():

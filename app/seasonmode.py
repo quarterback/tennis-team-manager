@@ -1929,6 +1929,85 @@ def team_schedule(season_id: int, school: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# --- Coached-team non-conference scheduling (career mode, preseason planning) ---
+# The slate is generated once and persisted; at preseason nothing's been played, so
+# a coach can re-opponent their own non-conf duals by editing the persisted rows.
+# One `duals` row IS the dual for both teams, so a swap stays symmetric automatically
+# (the dropped opponent loses the game, the chosen one gains it). Only unplayed,
+# non-conf REGULAR-season duals that the school actually plays are editable.
+
+def nonconf_duals(season_id: int, school: str) -> list[dict]:
+    """`school`'s editable non-conference duals as {id, week, opponent, home}."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT id, week, home, away FROM duals WHERE season_id=? AND round='REG'"
+        " AND is_conf=0 AND status='scheduled' AND (home=? OR away=?) ORDER BY week, id",
+        (season_id, school, school)).fetchall()
+    conn.close()
+    out = []
+    for r in rows:
+        home = r["home"] == school
+        out.append({"id": r["id"], "week": r["week"], "home": home,
+                    "opponent": r["away"] if home else r["home"]})
+    return out
+
+
+def _slate_opponents(conn, season_id: int, school: str) -> set:
+    rows = conn.execute("SELECT home, away FROM duals WHERE season_id=? AND (home=? OR away=?)",
+                        (season_id, school, school)).fetchall()
+    return {(r["away"] if r["home"] == school else r["home"]) for r in rows}
+
+
+def eligible_nonconf_opponents(season_id: int, division: str, gender: str, school: str) -> list[str]:
+    """Programs in the same division/gender a coach may add: not themselves and not
+    already anywhere on their slate (so no accidental double-booking)."""
+    conn = _db()
+    booked = _slate_opponents(conn, season_id, school)
+    conn.close()
+    progs = sorted(p.school for p in load_division(division, gender).programs)
+    return [s for s in progs if s != school and s not in booked]
+
+
+def _editable_nonconf(conn, season_id: int, dual_id: int, school: str):
+    r = conn.execute("SELECT home, away, is_conf, round, status FROM duals"
+                     " WHERE id=? AND season_id=?", (dual_id, season_id)).fetchone()
+    if (not r or r["is_conf"] or r["round"] != "REG" or r["status"] != "scheduled"
+            or school not in (r["home"], r["away"])):
+        return None
+    return r
+
+
+def swap_nonconf_opponent(season_id: int, dual_id: int, school: str, new_opp: str,
+                          division: str, gender: str) -> bool:
+    """Replace the opponent on one of `school`'s unplayed non-conf duals, keeping
+    `school` on its home/away side. Returns False unless the dual is editable and
+    new_opp is eligible."""
+    if new_opp not in eligible_nonconf_opponents(season_id, division, gender, school):
+        return False
+    conn = _db()
+    r = _editable_nonconf(conn, season_id, dual_id, school)
+    if not r:
+        conn.close(); return False
+    col = "away" if r["home"] == school else "home"
+    conn.execute(f"UPDATE duals SET {col}=? WHERE id=?", (new_opp, dual_id))
+    conn.commit(); conn.close()
+    return True
+
+
+def set_nonconf_home(season_id: int, dual_id: int, school: str, home: bool) -> bool:
+    """Flip home/away for `school` on one of its unplayed non-conf duals."""
+    conn = _db()
+    r = _editable_nonconf(conn, season_id, dual_id, school)
+    if not r:
+        conn.close(); return False
+    if (r["home"] == school) != home:
+        conn.execute("UPDATE duals SET home=?, away=? WHERE id=?",
+                     (r["away"], r["home"], dual_id))
+        conn.commit()
+    conn.close()
+    return True
+
+
 DEV_LINE_SLOTS = {"S4", "S5", "S6", "D3"}   # the developmental bottom of the lineup
 
 
