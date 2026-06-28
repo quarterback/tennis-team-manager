@@ -47,7 +47,7 @@
       <span class="bl-cell-num">{{ '★'*p.recruit_stars if p.recruit_stars else '–' }}</span>
       <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.hometown }}</span>
       <span><span class="bl-pill" style="font-size:10px">{{ p.recruit_tier or '—' }}</span></span>
-      <span class="bl-cell-num">{{ '%.1f'|format(p.str_value()) }}</span>
+      <span class="bl-cell-num">{% if p.junior_str %}{{ '%.1f'|format(p.junior_str) }}{% else %}—{% endif %}</span>
       <span class="bl-cell-num" style="color:var(--text-muted)">{{ p.recruit_rank or '–' }}</span>
     </div>
     {% endfor %}

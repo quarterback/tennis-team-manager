@@ -16,9 +16,16 @@
         <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div>
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
-    <div style="text-align:right"><div class="bl-th" style="font-size:10px">STR</div>
-      <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
-      <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
+    <div style="display:flex;gap:20px;text-align:right">
+      <div title="OVERALL — static talent rating (20–80); ceiling is the projected peak">
+        <div class="bl-th" style="font-size:10px">OVR</div>
+        <span class="bl-stat" style="font-size:22px;color:var(--text-primary)">{{ info.overall }}</span>
+        <div class="tsub">talent · ceiling {{ info.ceiling }}</div></div>
+      <div title="STR — live results-based rating, earned from this season's matches">
+        <div class="bl-th" style="font-size:10px">STR</div>
+        <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
+        <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
+    </div>
   </div>
 
   <div class="bl-board-grid">
@@ -116,7 +123,7 @@
     <div style="display:flex;flex-direction:column;gap:16px">
       {% if ranks %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR Rating</span>
-        <span class="bl-panel-meta">developed ability · {{ ranks.division }}</span></div>
+        <span class="bl-panel-meta">results-based · {{ ranks.division }}</span></div>
         <div class="bl-panel-body">
           <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
             <span class="bl-stat power" style="font-size:30px">{{ "%.1f"|format(ranks.str) }}</span>
@@ -134,6 +141,20 @@
               <div class="bl-stat power" style="font-size:18px">#{{ ranks.team }}</div>
               <div class="tsub" style="font-size:10px">of {{ ranks.team_total }}</div></div>
           </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if attrs %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
+        <span class="bl-panel-meta">scouting grades · 20–80</span></div>
+        <div class="bl-panel-body">
+          <table class="bl-protable" style="width:100%"><tbody>
+            {% for label, g in attrs %}
+            <tr><td style="width:120px">{{ label }}</td>
+              <td class="w" style="width:34px">{{ g }}</td>
+              <td><span style="display:inline-block;height:7px;border-radius:4px;background:var(--brand);width:{{ ((g-20)/60*100)|round|int }}%;min-width:3px"></span></td></tr>
+            {% endfor %}
+          </tbody></table>
         </div>
       </div>
       {% endif %}

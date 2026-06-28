@@ -1983,6 +1983,7 @@ def _pid_index(division: str, gender: str) -> dict:
             for pr in build_roster(p):
                 idx[pr.pid] = {"name": pr.name, "school": p.school, "class": pr.class_year,
                                "country": pr.country, "hometown": pr.hometown, "major": pr.major,
+                               "overall": pr.current_overall(), "ceiling": pr.ceiling_overall(),
                                "walk_on": pr.walk_on, "high_school": pr.high_school,
                                "secondary_country": pr.secondary_country,
                                "school_city": p.location,

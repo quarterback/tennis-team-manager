@@ -909,6 +909,10 @@ def create_app() -> Flask:
         if not info:
             abort(404)
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
+        from app.ncaa import player_by_pid
+        from app.web.state import scout_bars
+        pr = player_by_pid(pid)
+        attrs = scout_bars(pr) if pr else []
         career, (wins, losses) = player_career(division, gender, pid)
         career_table = player_career_table(division, gender, pid)
         records = player_career_records(division, gender, pid)
@@ -919,7 +923,7 @@ def create_app() -> Flask:
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, ranks=ranks, journey=journey,
-                               crest=crest, u=u, uni_label=label)
+                               attrs=attrs, crest=crest, u=u, uni_label=label)
 
     @app.route("/ncaa")
     def ncaa_bracket():
