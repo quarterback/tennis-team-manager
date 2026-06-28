@@ -24,7 +24,7 @@
   <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.4fr) minmax(120px,1fr) 56px minmax(140px,1.2fr) minmax(110px,1fr)">
     <div class="bl-thead">
       <span class="bl-th">#</span><span class="bl-th">WALK-ON</span><span class="bl-th">SITTING AT</span>
-      <span class="bl-th num" title="Current results rating">NOW</span>
+      <span class="bl-th num" title="Current ability — OVERALL, 20–80">OVR</span>
       <span class="bl-th" title="Best program where their current ability makes the lineup">COULD START AT</span>
       <span class="bl-th" title="Lineup spot they'd claim there">AS</span>
     </div>
@@ -39,7 +39,7 @@
         <a class="ib-fit" href="{{ url_for('intel_fit', pid=f.player.pid, u=u) }}" title="All landing spots">fit ↗</a></span>
       <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.school }} <span class="ib-divchip">{{ f.player.division }}</span></span>
-      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.cur_str) }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ f.player.cur_overall }}</span></span>
       <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(f.best_school, tb[0], tb[1], 'xs') }} {{ f.best_school }}
         <span class="ib-divchip">{{ f.best_division }}</span>

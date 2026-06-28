@@ -1,9 +1,9 @@
 # AAR — STR is results-only; OVERALL is the static talent number (two-STR defect)
 
 **Date:** 2026-06-28
-**Status:** ⛔ **Decision recorded — implementation PENDING.** Do not treat the
-"current state" below as intended; it's the bug. Captured now (per owner) so the
-direction is fixed before anyone builds it. Branch `claude/tennis-sim-engine-tests-tpbdfx`.
+**Status:** ✅ **RESOLVED — implemented.** The "defect (current state)" section
+below is the *pre-fix* state, kept for the record; see **Resolution** at the
+bottom for what shipped. Branch `claude/tennis-sim-engine-tests-tpbdfx`.
 
 ## The realization (owner's call)
 There should **not be two STR numbers**. There should be exactly two ratings, with
@@ -94,3 +94,44 @@ is implemented.
   and the Bureau templates, `app/development.py` (`str_value`/`overall_to_str` role),
   `app/seasonmode.py` (`season_player_str`), `docs/match-engine-and-ratings.md` (§3,
   reconcile once code matches).
+
+---
+
+## Resolution (implemented)
+The "two STR numbers" defect is gone. The single rule now holds across the Bureau
+and Lineup Lab: **STR = live results (`season_player_str`); talent = OVERALL (20–80);
+`overall_to_str` is only a seed/preseason fallback, never a displayed "STR."**
+
+**`scout_intel.scan`** now pulls each division's live results STR
+(`season_player_str` for that (division, gender) season) and carries it on every
+`Intel` as `live_str` (+ `live_rel`). The `Intel` STR-from-ability fields
+(`cur_str`/`true_str`/`upside`) were removed; talent is carried by `cur_overall`/
+`true_overall`/`ovr_upside`. Unplayed players fall back to the ability prior (which
+is also the seed `converge_ids` blends toward), so STR == "talent so far" until
+results accumulate. The displayed singles **ladder now orders by live STR (form)** —
+the same signal the coach AI sets lineups by — so the Lineup Lab mirrors who'd
+actually play, not a static talent order. (The program-level metric behind the
+"deserved program" ladder stays on OVERALL — it's a talent comparison.)
+
+**Surfaces:**
+- *Underplaced board* — **TALENT** = OVERALL ceiling (20–80); **STR** = live results
+  (the column whose label already promised "this season's results").
+- *Bureau hub* (Buried Talent / Scholarship Watch) — **OVR** columns; explainer
+  rewritten to distinguish static OVR from dynamic STR.
+- *Fit Finder* — TRUE TALENT shown as OVERALL; **STR (now)** = live results; GROWTH =
+  OVERALL headroom; **TEAM OVR** replaces "Team STR".
+- *Playing-time watch* — current-ability column relabelled **OVR**.
+- *Lineup Lab* — ladder/plot/tables show live STR; the lens toggle is now
+  **STR | UTR | OVR** (UTR is the STR remapped to real-world units; OVR is static
+  talent, a different value so dots reposition). Each datapoint carries both
+  `str` and `ovr`; team aggregates provided in both.
+
+**Caching:** `scan`'s stamp already ticks with the world week, and live STR is keyed
+on completed-dual count, so results refresh as the season advances (paired with the
+roster-override stamp fix in `AAR-bureau-lineup-stale-after-fall-portal.md`).
+
+**Validation:** all five Bureau pages + Fit render 200 with live STR; headless
+Chromium confirms the OVR lens repositions dots, re-domains the axis (STR ticks
+35→OVR 32+) and flips every table cell (43.3 STR → 48 OVR) with no JS errors;
+`test_intel_bureau_live` + web suites green (10 passed). `overall_to_str` retained
+**only** as the `season_player_str` prior and the unplayed-player fallback.

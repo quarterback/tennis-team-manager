@@ -38,8 +38,8 @@
   <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.5fr) minmax(120px,1fr) 60px 60px 130px minmax(140px,1.2fr)">
     <div class="bl-thead">
       <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th">TEAM</span>
-      <span class="bl-th num" title="Real ability — the Bureau's true talent rating">TALENT</span>
-      <span class="bl-th num" title="How they're rated on this season's results">NOW</span>
+      <span class="bl-th num" title="True talent ceiling — OVERALL rating, 20–80 (static)">TALENT</span>
+      <span class="bl-th num" title="Live results-based STR — how they're rated on this season's play (dynamic)">STR</span>
       <span class="bl-th" title="How far their talent sits above their current team's level">vs TEAM</span>
       <span class="bl-th" title="The level of program their talent would actually fit">FITS</span>
     </div>
@@ -53,8 +53,8 @@
         <a class="ib-fit" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}" title="Fit Finder">fit ↗</a></span>
       <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.school }} <span class="ib-divchip">{{ r.division }} #{{ r.team_pi_rank }}</span></span>
-      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>
-      <span class="bl-cell-num" style="color:var(--text-muted)">{{ '%.1f'|format(r.cur_str) }}</span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ r.true_overall }}</span></span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ '%.1f'|format(r.live_str) }}</span>
       <span class="ib-gap">
         <span class="ib-gapbar"><span class="talent" style="width:{{ (r.talent_pct*100)|round|int }}%"></span><span class="level" style="left:{{ (r.team_level_pct*100)|round|int }}%"></span></span>
         <span class="ib-gapval">+{{ '%.0f'|format(r.placement_gap*100) }}</span>

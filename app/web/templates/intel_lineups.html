@@ -27,10 +27,10 @@
   <div style="margin-bottom:14px">
     <h1 style="margin:0 0 4px;font-size:22px">Lineup Lab — {{ div_f }} {{ conf }}</h1>
     <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:760px">
-      How every team's singles lineup stacks up across the conference. Each dot is a starter's
-      <strong>STR</strong> at their lineup position (1–6). Hover a dot to read that school's full ladder.
-      Use it to gauge roster depth league-wide, spot likely matchups line by line, and see where a recruit
-      with a given STR would slot in — across <em>every</em> team, not just one recommendation.
+      How every team's singles lineup stacks up across the conference. The ladder follows live,
+      results-based <strong>STR</strong> (form) — the same order the coach sets lineups by — at each
+      position (1–6). Hover a dot to read that school's full ladder. Toggle <strong>OVR</strong> to
+      view static talent (OVERALL) instead, or <strong>UTR</strong> for the real-world unit.
     </p>
   </div>
 
@@ -67,9 +67,10 @@
   <div class="bl-panel" style="margin-bottom:18px">
     <div class="bl-panel-head"><span class="bl-panel-title">Lineup vs Conference</span>
       <span class="bl-panel-meta">
-        <span class="ll-unit" role="group" aria-label="rating unit">
-          <button type="button" class="ll-unit-btn on" data-unit="STR">STR</button>
-          <button type="button" class="ll-unit-btn" data-unit="UTR">UTR</button>
+        <span class="ll-unit" role="group" aria-label="rating lens">
+          <button type="button" class="ll-unit-btn on" data-unit="STR" title="Live results-based STR (form)">STR</button>
+          <button type="button" class="ll-unit-btn" data-unit="UTR" title="Results STR in real-world UTR units">UTR</button>
+          <button type="button" class="ll-unit-btn" data-unit="OVR" title="Static talent — OVERALL, 20–80">OVR</button>
         </span>
         {% if highlight %}<span class="ll-key"><span class="ll-dot hl"></span>{{ highlight }}</span>{% endif %}
         <span class="ll-key"><span class="ll-dot"></span>{{ conf }}</span></span></div>
@@ -91,11 +92,11 @@
       <div class="bl-brk-match{% if t.highlight %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
         <span class="bl-bubble-seed">{{ t.rank }}</span>
         <span class="bl-bubble-team">{% set ab = crest(t.school) %}{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span></span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.avg }}">{{ '%.1f'|format(t.avg) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.top }}" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.low }}" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.avg }}" data-ovr="{{ t.avg_ovr }}">{{ '%.1f'|format(t.avg) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.top }}" data-ovr="{{ t.top_ovr }}" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.low }}" data-ovr="{{ t.low_ovr }}" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
         <span style="font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums">
-          {% for x in t.lineup %}<span class="ll-num" data-str="{{ x.str }}">{{ '%.1f'|format(x.str) }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</span>
+          {% for x in t.lineup %}<span class="ll-num" data-str="{{ x.str }}" data-ovr="{{ x.ovr }}">{{ '%.1f'|format(x.str) }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</span>
       </div>
       {% endfor %}
     </div>
@@ -113,8 +114,8 @@
         <span class="bl-bubble-seed">{{ r.rank }}</span>
         <span class="bl-bubble-team"><span class="nm">{{ r.conf }}</span> <span class="ll-tier ll-{{ r.tier }}">{{ r.tier }}</span></span>
         <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ r.n_teams }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ r.avg_str }}">{{ '%.1f'|format(r.avg_str) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ r.top_str }}" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ r.avg_str }}" data-ovr="{{ r.avg_ovr }}">{{ '%.1f'|format(r.avg_str) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ r.top_str }}" data-ovr="{{ r.top_ovr }}" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
       </a>
       {% endfor %}
     </div>
@@ -161,18 +162,17 @@
   var tip = document.getElementById('ll-tip');
   var NS = 'http://www.w3.org/2000/svg';
 
-  // STR is the native scale; UTR is a linear remap (dot positions never move,
-  // only the axis labels and displayed numbers change). 31->1.00, 57->16.50.
-  var MODE = 'STR';
+  // Three lenses. STR = live results-based rating (native 31–57). UTR = the same
+  // STR remapped to the real-world unit (positions unchanged, ticks relabelled).
+  // OVR = static talent (OVERALL 20–80) — a DIFFERENT value per player, so dots
+  // reposition. Every lineup point carries both x.str and x.ovr.
+  var MODE = 'STR';                 // STR | UTR | OVR
   function toUtr(s){ return 1 + (s - 31) / 1.677; }
   function toStr(u){ return 31 + (u - 1) * 1.677; }
-  function fmt(s){ return (MODE === 'UTR' ? toUtr(s) : s).toFixed(1); }
-
-  // y-domain from the data, padded and snapped.
-  var allStr = [];
-  DATA.forEach(function(t){ t.lineup.forEach(function(x){ allStr.push(x.str); }); });
-  var lo = Math.floor(Math.min.apply(null, allStr) - 1);
-  var hi = Math.ceil(Math.max.apply(null, allStr) + 1);
+  function val(x){ return MODE === 'OVR' ? x.ovr : x.str; }   // raw plotted value
+  function fmtStr(v){ return MODE === 'UTR' ? toUtr(v).toFixed(1)
+                    : MODE === 'OVR' ? Math.round(v).toString()
+                    : v.toFixed(1); }
 
   var M = {t:14, r:16, b:34, l:44};
   function draw(){
@@ -183,23 +183,27 @@
     var plotW = W - M.l - M.r, plotH = H - M.t - M.b;
     var colW = plotW / 6;
     function X(pos){ return M.l + (pos - 0.5) * colW; }                 // pos 1..6 → column centre
-    function Y(s){ return M.t + plotH * (1 - (s - lo) / (hi - lo)); }
+
+    // y-domain from the ACTIVE metric (STR/UTR share the str value; OVR differs)
+    var vals = [];
+    DATA.forEach(function(t){ t.lineup.forEach(function(x){ vals.push(val(x)); }); });
+    var lo = Math.floor(Math.min.apply(null, vals) - 1);
+    var hi = Math.ceil(Math.max.apply(null, vals) + 1);
+    function Y(v){ return M.t + plotH * (1 - (v - lo) / (hi - lo)); }
 
     function el(tag, attrs){ var e = document.createElementNS(NS, tag);
       for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
 
-    // y gridlines + labels — positions always computed in STR (Y), labels in the
-    // active unit. In UTR mode we snap gridlines to round UTR values for clean ticks.
-    function gridline(syPos, label){
-      svg.appendChild(el('line', {x1:M.l, y1:Y(syPos), x2:W-M.r, y2:Y(syPos), stroke:'#e8edf2', 'stroke-width':1}));
-      var tl = el('text', {x:M.l-8, y:Y(syPos)+3, 'text-anchor':'end', 'font-size':11, fill:'#8a99a8'});
+    function gridline(vPos, label){
+      svg.appendChild(el('line', {x1:M.l, y1:Y(vPos), x2:W-M.r, y2:Y(vPos), stroke:'#e8edf2', 'stroke-width':1}));
+      var tl = el('text', {x:M.l-8, y:Y(vPos)+3, 'text-anchor':'end', 'font-size':11, fill:'#8a99a8'});
       tl.textContent = label; svg.appendChild(tl);
     }
-    if (MODE === 'UTR'){
+    if (MODE === 'UTR'){                       // ticks at round UTR values
       var ulo = Math.ceil(toUtr(lo)), uhi = Math.floor(toUtr(hi));
       var ustep = (uhi - ulo) <= 8 ? 1 : 2;
       for (var u = ulo; u <= uhi; u += ustep) gridline(toStr(u), u.toFixed(0));
-    } else {
+    } else {                                   // STR or OVR: plain integer ticks
       var step = (hi - lo) <= 12 ? 2 : 4;
       for (var s = lo; s <= hi; s += step) gridline(s, s.toFixed(0));
     }
@@ -217,7 +221,7 @@
     order.forEach(function(t){
       var on = (t.school === HL);
       t.lineup.forEach(function(x){
-        var c = el('circle', {cx:X(x.line)+jit(t.school), cy:Y(x.str), r: on?6:5,
+        var c = el('circle', {cx:X(x.line)+jit(t.school), cy:Y(val(x)), r: on?6:5,
           fill: on?'#d81e5b':'#2bb3c0', 'fill-opacity': on?1:0.72,
           stroke:'#fff', 'stroke-width': on?1.4:0.8});
         c.classList.add('ll-cell-c');
@@ -231,9 +235,10 @@
 
   function showTip(ev, t, onLine){
     var rows = t.lineup.map(function(x){
-      return '<div class="lr'+(x.line===onLine?' on':'')+'"><span class="p">#'+x.line+' '+esc(x.name)+'</span><span>'+fmt(x.str)+'</span></div>';
+      return '<div class="lr'+(x.line===onLine?' on':'')+'"><span class="p">#'+x.line+' '+esc(x.name)+'</span><span>'+fmtStr(val(x))+'</span></div>';
     }).join('');
-    tip.innerHTML = '<div class="h">'+esc(t.school)+' · avg '+fmt(t.avg)+' '+MODE+'</div>'+rows;
+    var agg = MODE === 'OVR' ? t.avg_ovr : t.avg;
+    tip.innerHTML = '<div class="h">'+esc(t.school)+' · avg '+fmtStr(agg)+' '+MODE+'</div>'+rows;
     tip.style.display = 'block'; moveTip(ev);
   }
   function moveTip(ev){
@@ -245,10 +250,12 @@
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-  // Unit toggle: re-label the chart and rewrite every [data-str] table cell.
+  // Lens toggle: re-label the chart and rewrite every table cell from its
+  // data-str / data-ovr attributes in the active lens.
   function applyTables(){
     Array.prototype.forEach.call(document.querySelectorAll('.ll-num'), function(elx){
-      elx.textContent = fmt(parseFloat(elx.dataset.str));
+      elx.textContent = MODE === 'OVR' ? elx.dataset.ovr
+                                       : fmtStr(parseFloat(elx.dataset.str));
     });
   }
   Array.prototype.forEach.call(document.querySelectorAll('.ll-unit-btn'), function(b){
