@@ -16,6 +16,7 @@ import app.world as world
 import app.worldconfig as wc
 import app.seasonmode as sm
 import app.scout_intel as si
+import app.overrides as ov
 from app.ncaa import reset_caches
 from app.web.server import create_app
 
@@ -71,3 +72,46 @@ def test_bureau_player_links_resolve_after_rollover(rolled_over_women_world):
         f"stale (base) rosters instead of the live season")
     # And the bureau must agree with the live roster it links into.
     assert {r.pid for r in d1} <= live_pids
+
+
+@pytest.fixture
+def women_world_d1_d3():
+    create_app()
+    if world.exists():
+        world.reset()
+    wc.set_active(["D1", "D3"], ["women"])
+    try:
+        world.get_or_create()
+        yield
+    finally:
+        wc.set_active(["D1", "D2", "D3"], ["men", "women"])
+        if world.exists():
+            world.reset()           # clear_all() wipes the move override too
+
+
+def test_bureau_and_lineup_lab_refresh_after_transfer_same_week(women_world_d1_d3):
+    """A fall-portal commit moves players but does NOT advance the world week, so
+    a week-only cache stamp served a stale snapshot — the Bureau and Lineup Lab
+    kept showing pre-transfer rosters. The stamp now folds in a roster-override
+    fingerprint, so applying a move (exactly what `commit_fall_portal` does per
+    rider) refreshes the scan with no week tick and no manual cache clear."""
+    si._scan_cache.clear()
+    data = si.scan("women")
+    mover = next(r for r in data["players"] if r.division == "D1" and r.line == 1)
+    dest = next(t["school"] for t in data["team_ladder"] if t["division"] == "D3")
+    assert data["by_pid"][mover.pid].school == mover.school
+
+    week_before = world.load_world()["week"]
+    ov.set_move(mover.pid, dest)                 # one rider, as commit_fall_portal does
+    assert world.load_world()["week"] == week_before, "precondition: week unchanged"
+
+    data2 = si.scan("women")                      # no week advance, no manual clear
+    assert mover.pid in data2["by_pid"], "moved player vanished from the scan"
+    assert data2["by_pid"][mover.pid].school == dest, (
+        "Bureau served a stale snapshot — the transfer didn't refresh the scan")
+
+    # Lineup Lab reads the same scan: the destination conference now fields the mover.
+    dest_conf = data2["by_pid"][mover.pid].team_tier
+    rows = si.conference_lineups("D3", "women", dest_conf)
+    assert any(any(x["pid"] == mover.pid for x in row["lineup"]) for row in rows), (
+        "Lineup Lab didn't reflect the transfer")
