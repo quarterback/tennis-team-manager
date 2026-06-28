@@ -35,10 +35,10 @@
         <span class="rc-hero-tier">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} · {{ p.recruit_tier or 'Unrated' }}</span>
       </div>
     </div>
-    <div class="rc-hero-side">
-      <div class="rc-hero-str-k">STR</div>
-      <div class="rc-hero-str">{{ "%.1f"|format(p.str_value()) }}</div>
-      <div class="rc-hero-str-sub">4-yr proj {{ "%.1f"|format(view.projection) }}</div>
+    <div class="rc-hero-side" title="OVR — static talent rating (20–80). STR is the match-based junior-circuit results rating.">
+      <div class="rc-hero-str-k">OVR</div>
+      <div class="rc-hero-str">{{ p.current_overall() }}</div>
+      <div class="rc-hero-str-sub">ceiling {{ p.ceiling_overall() }}{% if view.junior_str %} · STR {{ "%.1f"|format(view.junior_str) }}{% endif %}</div>
     </div>
   </div>
   {% if p.committed %}
@@ -84,9 +84,9 @@
       <span class="rc-rate-stars">{{ stars(p.recruit_stars) }}</span>
     </div>
     <div class="rc-rankrow">
-      <div class="rc-rankcell"><div class="k">CURRENT</div><div class="v">{{ "%.1f"|format(view.service) }}</div></div>
-      <div class="rc-rankcell"><div class="k">DEPT</div><div class="v">{{ "%.1f"|format(view.dept) }}</div></div>
-      <div class="rc-rankcell"><div class="k">4-YR</div><div class="v">{{ "%.1f"|format(view.projection) }}</div></div>
+      <div class="rc-rankcell" title="Current ability — OVERALL, 20–80"><div class="k">CURRENT</div><div class="v">{{ view.service }}</div></div>
+      <div class="rc-rankcell" title="Scouted depth/potential — OVERALL"><div class="k">DEPTH</div><div class="v">{{ view.dept }}</div></div>
+      <div class="rc-rankcell" title="4-year projection — OVERALL"><div class="k">4-YR</div><div class="v">{{ view.projection }}</div></div>
     </div>
   </div>
 </div>
@@ -259,9 +259,9 @@
         </div>
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
-            <tr><td>Shared service (consensus)</td><td class="w">{{ "%.1f"|format(view.service) }}</td></tr>
-            <tr><td>Your department</td><td class="w">{{ "%.1f"|format(view.dept) }}</td></tr>
-            <tr><td>4-year projection</td><td class="w">{{ "%.1f"|format(view.projection) }}</td></tr>
+            <tr><td>Shared service (consensus)</td><td class="w">{{ view.service }}</td></tr>
+            <tr><td>Your department</td><td class="w">{{ view.dept }}</td></tr>
+            <tr><td>4-year projection</td><td class="w">{{ view.projection }}</td></tr>
           </tbody></table>
         </div>
       </div>

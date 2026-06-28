@@ -51,7 +51,7 @@
         <strong>{{ uni_label }}</strong> prospects run hotter than D2/D3, exactly like the rostered players do.</p>
       <ol>
         <li><strong>Generation.</strong> A 400-player class per gender &amp; grad year, ~35% international,
-          each with a hidden development ceiling and a visible current ability (shown as STR).</li>
+          each with a hidden development ceiling and a results-based STR earned on the junior circuit.</li>
         <li><strong>Consensus board.</strong> Rank = 60% visible current ability + 40% the scouting service's
           noisy read of the ceiling — so the board mis-ranks late bloomers (gems) and early peakers (busts).</li>
         <li><strong>Star tiers</strong> are count-based: Blue Chip = top 25 · 5★ 26–75 · 4★ 76–200 · 3★ 201–400.</li>
@@ -86,7 +86,7 @@
         {{ stars(q.recruit_stars, 'sm') }}
         <span class="g">{{ "%.4f"|format(composite) }}</span>
       </span>
-      <span class="rc-pstr">{{ "%.1f"|format(q.str_value()) }}</span>
+      <span class="rc-pstr">{% if q.junior_str %}{{ "%.1f"|format(q.junior_str) }}{% else %}—{% endif %}</span>
       <span class="rc-pcommit">
         {% if q.committed %}<a href="{{ url_for('team_recruiting', school=q.commit_school, u=u) }}" title="{{ q.commit_school }}">{{ crest_box(q.commit_school, '', '', 'xs') }}</a>{% else %}<span class="none">—</span>{% endif %}
       </span>

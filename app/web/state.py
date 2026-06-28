@@ -1051,9 +1051,10 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "tournaments_played": getattr(p, "tournaments_played", 0),
         "junior_str": getattr(p, "junior_str", None),
         "junior_tier_label": TIER_LABELS.get(p.junior_tier, ""),
-        "service": overall_to_str(p.scouting_report("service")),
-        "dept": overall_to_str(p.scouting_report("dept")),
-        "projection": overall_to_str(p.project(4)),
+        # OVR grades (20–80), NOT ability-derived STR — STR is match-based only.
+        "service": round(p.scouting_report("service")),
+        "dept": round(p.scouting_report("dept")),
+        "projection": round(p.project(4)),
         "recruiting": rec,
         "scout_bars": scout_bars(p),
         "rating": rating,
@@ -1686,16 +1687,22 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
 
 
 def player_ranks(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED) -> dict | None:
-    """The player's STR (developed ability) with national / conference / team ranks —
-    the at-a-glance rating header (like the recruiting sites' NATL/POS/ST boxes).
-    Ranked on ability so it's meaningful before results exist."""
+    """The player's STR (results-based, fluctuating) with national / conference /
+    team ranks — the at-a-glance header (like the recruiting sites' NATL/POS/ST
+    boxes). Ranked on STR, the performance metric. Players with no results yet sit
+    at their ability prior (the seed converge_ids blends toward), so early-season
+    ranks ≈ talent and shift as matches accrue."""
     import app.seasonmode as sm
+    import app.world as world
     from app.ncaa import load_division, build_roster
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    strmap = sm.season_player_str(sid)
     progs = load_division(division, gender).programs
     entries = []                                          # (pid, str, school, conf)
     for p in progs:
         for pr in build_roster(p):
-            entries.append((pr.pid, pr.str_value(), p.school, p.conf))
+            s = strmap.get(pr.pid, (pr.str_value(), 0.0))[0]
+            entries.append((pr.pid, s, p.school, p.conf))
     if not any(e[0] == pid for e in entries):
         return None
     entries.sort(key=lambda e: (-e[1], e[0]))
