@@ -1372,7 +1372,27 @@ def create_app() -> Flask:
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         s = sm.load_season(sid)
         cw, tw = s["current_week"], s["total_weeks"]
-        upcoming = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
+        all_week = sm.week_duals(sid, cw) if s["phase"] == "regular" and cw <= tw else []
+        # The week is ~500+ duals, so search it BY CONFERENCE: pick a league and see
+        # every game its teams play that week (conference AND non-conference). Order
+        # by the two teams' combined Power Index so the marquee matchups lead.
+        conf_of = {p.school: p.conf_abbr for p in sm.load_division(division, gender).programs}
+        week_confs = sorted({conf_of.get(d["home"]) for d in all_week}
+                            | {conf_of.get(d["away"]) for d in all_week} - {None})
+        conf_sel = request.args.get("conf", "All")
+        pi = sm.power_index(sid)
+        rank = {s: i + 1 for i, s in enumerate(sorted(pi, key=lambda s: pi[s].pi, reverse=True))} if pi else {}
+        if pi:
+            all_week.sort(key=lambda d: (pi[d["home"]].pi if d["home"] in pi else 0)
+                          + (pi[d["away"]].pi if d["away"] in pi else 0), reverse=True)
+        for d in all_week:
+            d["home_rank"], d["away_rank"] = rank.get(d["home"]), rank.get(d["away"])
+            d["home_conf"], d["away_conf"] = conf_of.get(d["home"]), conf_of.get(d["away"])
+        if conf_sel != "All":
+            upcoming = [d for d in all_week
+                        if conf_sel in (conf_of.get(d["home"]), conf_of.get(d["away"]))]
+        else:
+            upcoming = all_week[:16]
         last = sm.recent_duals(sid)
         champions = {}
         if s["phase"] in ("ncaa", "complete") and s["champion"]:
@@ -1381,7 +1401,8 @@ def create_app() -> Flask:
             except Exception:
                 champions = {}
         return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
-                               upcoming=upcoming, last=last, top=sm.national_top(sid, 15), crest=crest,
+                               upcoming=upcoming, n_week=len(all_week), week_confs=week_confs,
+                               conf_sel=conf_sel, last=last, top=sm.national_top(sid, 15), crest=crest,
                                bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
     @app.route("/season/advance", methods=["POST"])
