@@ -52,11 +52,11 @@ class Intel:
     division: str
     gender: str
     class_year: str
-    cur_overall: int
-    true_overall: int
-    cur_str: float
-    true_str: float
-    upside: float                 # true_str - cur_str (untapped growth)
+    cur_overall: int              # OVERALL now (static talent, 20–80)
+    true_overall: int             # OVERALL ceiling (static talent, 20–80)
+    ovr_upside: int               # true_overall - cur_overall (untapped talent)
+    live_str: float               # results-based STR (dynamic, this season's play)
+    live_rel: float               # STR reliability 0–1 (grows with matches)
     walk_on: bool
     scholarship: float
     schol_label: str
@@ -108,6 +108,7 @@ def scan(gender: str, seed: int | None = None) -> dict:
     # deterministic year-0 base), so once players develop/graduate/transfer at a
     # rollover the bureau lists stale pids and every "player" link 404s.
     import app.world as world
+    import app.seasonmode as sm
     if world.exists(seed):
         world.prime(seed)
 
@@ -122,11 +123,23 @@ def scan(gender: str, seed: int | None = None) -> dict:
         pi_rank = {r.school: r.rk for r in ranking_rows(division, gender, seed)}
         n_teams_div = len(div.programs)
         offers_aid = economy.offers_aid(division, gender)
+        # Live, results-based STR for this division's season — the dynamic rating
+        # that actually drives weekly lineups. Unplayed players aren't in the map;
+        # they fall back to the ability prior (overall_to_str), which is also the
+        # seed converge_ids blends toward, so STR == "talent so far" until results
+        # accumulate. STR is the ONLY surfaced STR; OVERALL carries static talent.
+        try:
+            sid = sm.find_season(division, gender, seed=world.current_year_seed(seed))
+            strmap = sm.season_player_str(sid) if sid else {}
+        except Exception:
+            strmap = {}
         for prog in div.programs:
             roster = build_roster(prog)
             if not roster:
                 continue
-            # roster is current-ability ordered; the top 6 are the singles ladder.
+            # The TALENT top 6 (by current overall) feed the program-level metric
+            # used for the "deserved program" ladder — a talent comparison, so it
+            # stays on OVERALL, independent of who's hot.
             top6 = roster[:6]
             team_level = sum(p.ceiling_overall() for p in top6) / len(top6)
             top6_cur = sorted((p.current_overall() for p in top6), reverse=True)
@@ -139,24 +152,30 @@ def scan(gender: str, seed: int | None = None) -> dict:
                 "aid_remaining": budget["remaining"], "offers_aid": offers_aid,
                 "n_core": sum(1 for p in roster if not getattr(p, "walk_on", False)),
             }
-            for i, p in enumerate(roster, 1):
+            prog_players: list[Intel] = []
+            for p in roster:
                 cur_o = p.current_overall()
                 true_o = p.ceiling_overall()
-                cur_s = overall_to_str(cur_o)
-                true_s = overall_to_str(true_o)
+                lstr, lrel = strmap.get(p.pid, (overall_to_str(cur_o), 0.0))
                 schol = float(getattr(p, "scholarship", 0.0) or 0.0)
-                players.append(Intel(
+                prog_players.append(Intel(
                     pid=p.pid, name=p.name, country=getattr(p, "country", ""),
                     school=prog.school, division=division, gender=gender,
                     class_year=getattr(p, "class_year", ""),
-                    cur_overall=cur_o, true_overall=true_o,
-                    cur_str=round(cur_s, 1), true_str=round(true_s, 1),
-                    upside=round(true_s - cur_s, 1),
+                    cur_overall=cur_o, true_overall=true_o, ovr_upside=true_o - cur_o,
+                    live_str=round(lstr, 1), live_rel=round(lrel, 2),
                     walk_on=bool(getattr(p, "walk_on", False)),
                     scholarship=schol, schol_label=economy.fraction_label(schol),
-                    line=(i if i <= 6 else None),
+                    line=None,
                     team_pi_rank=rk, team_tier=getattr(prog, "conf_abbr", ""),
                 ))
+            # The displayed singles ladder follows live STR (form) — the same signal
+            # the coach AI sets lineups by — so the Lineup Lab mirrors who'd actually
+            # play, not a static talent order.
+            prog_players.sort(key=lambda r: r.live_str, reverse=True)
+            for i, r in enumerate(prog_players, 1):
+                r.line = i if i <= 6 else None
+            players.extend(prog_players)
 
     # ---- global tables (absolute ceiling → comparable across divisions) ----
     players.sort(key=lambda r: r.true_overall, reverse=True)
@@ -217,7 +236,7 @@ def underplaced_board(gender: str, seed: int | None = None, division: str = "All
         rows = [r for r in rows if ql in r.name.lower() or ql in r.school.lower()]
     keys = {
         "gap": lambda r: (r.placement_gap, r.true_overall),
-        "now": lambda r: (r.cur_overall, r.cur_str, r.placement_gap),   # good today
+        "now": lambda r: (r.live_str, r.cur_overall, r.placement_gap),   # hottest now
         "talent": lambda r: (r.true_overall, r.placement_gap),
     }
     rows.sort(key=keys.get(sort, keys["gap"]), reverse=True)
@@ -267,7 +286,7 @@ def scholarship_watch(gender: str, seed: int | None = None,
                 economy.offered_fraction(w.division, gender, _caliber(w.true_overall)))
             flags.append(AidFlag(
                 player=w, outranks=len(weaker), weakest_funded=wk.name,
-                weakest_funded_true=wk.true_str, weakest_funded_schol=wk.schol_label,
+                weakest_funded_true=wk.true_overall, weakest_funded_schol=wk.schol_label,
                 recommended=rec))
     flags.sort(key=lambda f: (f.outranks, f.player.true_overall), reverse=True)
     return flags
@@ -329,7 +348,7 @@ class FitTarget:
     division: str
     pi_rank: int
     tier: str
-    team_level_str: float
+    team_level_ovr: int           # program's top-6 talent average (OVERALL, 20–80)
     slot: int                     # projected lineup slot by CURRENT ability
     slot_label: str
     aid_label: str
@@ -372,7 +391,7 @@ def fit_targets(gender: str, pid: str, seed: int | None = None,
         score = t["level_pct"] + (7 - slot) * 0.04 + (0.05 if t["level_pct"] > here_level else 0)
         out.append((score, FitTarget(
             school=t["school"], division=t["division"], pi_rank=t["pi_rank"],
-            tier=t["tier"], team_level_str=round(overall_to_str(t["team_level"]), 1),
+            tier=t["tier"], team_level_ovr=round(t["team_level"]),
             slot=slot, slot_label=_slot_label(slot), aid_label=aid,
             move_up=t["level_pct"] > here_level)))
     out.sort(key=lambda x: x[0], reverse=True)
@@ -408,9 +427,13 @@ def conference_list(division: str, gender: str, seed: int | None = None) -> list
 
 def conference_lineups(division: str, gender: str, conf: str, seed: int | None = None,
                        highlight: str | None = None) -> list[dict]:
-    """Every team in a conference with its top-6 singles ladder by STR — the data
-    behind the lineup-comparison plot and the per-team depth table. Each team:
-    {school, lineup:[{line,name,pid,str,true_str,class,walk_on}], avg/top/low STR}."""
+    """Every team in a conference with its top-6 singles ladder — the data behind
+    the lineup-comparison plot and the per-team depth table. The ladder follows
+    live, results-based STR (form), the same order the coach AI plays. Each player
+    carries both `str` (results STR) and `ovr` (static OVERALL talent) so the view
+    can toggle lens; team aggregates are provided in both. Each team:
+    {school, lineup:[{line,name,pid,str,ovr,class,walk_on}], avg/top/low (STR) +
+    avg_ovr/top_ovr/low_ovr}."""
     data = scan(gender, seed)
     teams: dict[str, dict] = {}
     for r in data["players"]:
@@ -419,16 +442,20 @@ def conference_lineups(division: str, gender: str, conf: str, seed: int | None =
         teams.setdefault(r.school, {})[r.line] = r
     rows = []
     for school, slots in teams.items():
-        lineup = [{"line": ln, "name": r.name, "pid": r.pid, "str": r.cur_str,
-                   "true_str": r.true_str, "class": r.class_year,
-                   "walk_on": r.walk_on}
+        lineup = [{"line": ln, "name": r.name, "pid": r.pid,
+                   "str": r.live_str, "ovr": r.cur_overall,
+                   "class": r.class_year, "walk_on": r.walk_on}
                   for ln in range(1, 7) if (r := slots.get(ln))]
         strs = [x["str"] for x in lineup]
+        ovrs = [x["ovr"] for x in lineup]
         rows.append({
             "school": school, "lineup": lineup,
             "avg": round(sum(strs) / len(strs), 1) if strs else 0.0,
             "top": max(strs) if strs else 0.0,
             "low": min(strs) if strs else 0.0,
+            "avg_ovr": round(sum(ovrs) / len(ovrs)) if ovrs else 0,
+            "top_ovr": max(ovrs) if ovrs else 0,
+            "low_ovr": min(ovrs) if ovrs else 0,
             "highlight": school == highlight,
         })
     rows.sort(key=lambda t: t["avg"], reverse=True)
@@ -447,16 +474,19 @@ def conference_strength(division: str, gender: str, seed: int | None = None) -> 
     for r in data["players"]:
         if r.division != division or r.line is None:
             continue
-        d = confs.setdefault(r.team_tier, {"strs": [], "teams": set()})
-        d["strs"].append(r.cur_str)
+        d = confs.setdefault(r.team_tier, {"strs": [], "ovrs": [], "teams": set()})
+        d["strs"].append(r.live_str)
+        d["ovrs"].append(r.cur_overall)
         d["teams"].add(r.school)
     rows = []
     for conf, d in confs.items():
-        strs = d["strs"]
+        strs, ovrs = d["strs"], d["ovrs"]
         rows.append({
             "conf": conf, "n_teams": len(d["teams"]),
             "avg_str": round(sum(strs) / len(strs), 1) if strs else 0.0,
             "top_str": round(max(strs), 1) if strs else 0.0,
+            "avg_ovr": round(sum(ovrs) / len(ovrs)) if ovrs else 0,
+            "top_ovr": max(ovrs) if ovrs else 0,
             "tier": conf_tier(conf), "prestige": round(conf_prestige(conf), 2),
         })
     rows.sort(key=lambda r: r["avg_str"], reverse=True)

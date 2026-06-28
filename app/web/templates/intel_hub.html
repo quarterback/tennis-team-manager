@@ -32,13 +32,13 @@
       <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">Full board →</a></div>
     <div class="bl-tablescroll">
       <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 70px minmax(110px,1fr)">
-        <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th num">TRUE</span>
+        <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th num" title="True talent ceiling — OVERALL, 20–80">OVR</span>
           <span class="bl-th">GAP</span><span class="bl-th">DESERVES</span></div>
         {% for r in ov.top_underplaced %}
         {% set ab = crest(r.school) %}
         <div class="bl-row">
           <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=r.division ~ '-' ~ r.gender) }}">{{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.name }} <span class="ib-divchip">{{ r.division }}</span></a>
-          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.true_str) }}</span></span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ r.true_overall }}</span></span>
           <span class="ib-gapval">+{{ '%.0f'|format(r.placement_gap*100) }}</span>
           <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.deserved_school }} <span class="ib-divchip">{{ r.deserved_division }} #{{ r.deserved_pi_rank }}</span></span>
         </div>
@@ -53,13 +53,13 @@
       <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">Full list →</a></div>
     <div class="bl-tablescroll">
       <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 64px minmax(110px,1fr)">
-        <div class="bl-thead"><span class="bl-th">WALK-ON</span><span class="bl-th num">TRUE</span>
+        <div class="bl-thead"><span class="bl-th">WALK-ON</span><span class="bl-th num" title="True talent ceiling — OVERALL, 20–80">OVR</span>
           <span class="bl-th num">BEATS</span><span class="bl-th">MERITS</span></div>
         {% for f in ov.top_aid %}
         {% set ab = crest(f.player.school) %}
         <div class="bl-row">
           <a class="bl-school" href="{{ url_for('player', pid=f.player.pid, school=f.player.school, u=f.player.division ~ '-' ~ f.player.gender) }}">{{ crest_box(f.player.school, ab[0], ab[1], 'xs') }} {{ f.player.name }} <span class="ib-divchip">{{ f.player.division }}</span></a>
-          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(f.player.true_str) }}</span></span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ f.player.true_overall }}</span></span>
           <span class="bl-cell-num">{{ f.outranks }} funded</span>
           <span class="bl-conf">{{ f.recommended }} ride</span>
         </div>
@@ -70,9 +70,10 @@
 </div>
 
 <div class="bl-notes"><div class="bl-note">
-  <strong>How it reads talent:</strong> every figure here is the player's true 20–80 ceiling
-  (<code>ceiling_overall</code>), expressed in STR — the absolute scale, so it's comparable across
-  D1/D2/D3. That's what makes "stuck at the wrong level" measurable. <strong>Gap</strong> = talent
-  percentile − program-level percentile. Click any player for their Fit Finder.
+  <strong>How it reads talent:</strong> <strong>OVR</strong> is the player's true 20–80 talent
+  ceiling (<code>ceiling_overall</code>) — the absolute, static scale, comparable across D1/D2/D3,
+  so "stuck at the wrong level" is measurable. (That's distinct from <strong>STR</strong>, the
+  dynamic results rating that moves with weekly form.) <strong>Gap</strong> = talent percentile −
+  program-level percentile. Click any player for their Fit Finder.
 </div></div>
 {% endblock %}
