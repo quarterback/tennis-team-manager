@@ -17,9 +17,14 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from collections import defaultdict
+
+# Make `app` importable whether run as `python3 scripts/eval_realism.py` (which
+# only puts scripts/ on sys.path) or `python3 -m scripts.eval_realism`.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import app.seasonmode as sm
 from app.ncaa import build_roster, load_division

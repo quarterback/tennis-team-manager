@@ -12,6 +12,9 @@ from __future__ import annotations
 import json, os, sys, time
 from collections import defaultdict
 
+# Importable whether run as a script or with -m (see eval_realism.py).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import engine.fast as ef
 import app.seasonmode as sm
 from app.ncaa import build_roster, load_division
