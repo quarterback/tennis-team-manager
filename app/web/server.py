@@ -49,7 +49,9 @@ from app import overrides as ov
 from app.ncaa import load_division
 from .state import DEFAULT_SEED
 
-MY_TEAM = "Oregon"          # the club the human manages
+# The coached program (career mode) is per-save state, resolved at request time
+# from worldconfig.user_program() — NOT a module constant. None => spectator mode
+# (the "Your Team" nav group hides entirely). See docs/DESIGN-team-takeover-career-mode.md.
 
 # A cold prime (fresh machine, or a rebuild after a week advance / roster move)
 # materialises the whole world's rosters and can take a minute+. Rather than block
@@ -89,10 +91,13 @@ LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 # per-request so the universe `u` carries through. "World" is the primary
 # season-to-season surface; the legacy per-universe season views sit under it.
 NAV_GROUPS = [
+    # "Your Team" items are resolved per-request in _inject_chrome against the
+    # coached program: the school arg is injected and `u` is pinned to the
+    # program's own universe. The whole group is hidden in spectator mode.
     ("Your Team", [
         {"id": "preseason", "label": "Preseason",     "icon": "⚙️", "endpoint": "preseason_view",   "args": {}},
-        {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {"school": MY_TEAM}},
-        {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+        {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {}},
+        {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {}},
     ]),
     ("World", [
         {"id": "season",    "label": "Season Hub",   "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -176,7 +181,9 @@ def _active_nav(req) -> str:
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
-        return "roster" if req.args.get("school") == MY_TEAM else "teams"
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        return "roster" if prog and req.args.get("school") == prog["school"] else "teams"
     if p.startswith("/editor"):           return "editor"
     if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
     if p.startswith("/gtt"):              return "gtt"
@@ -283,11 +290,27 @@ def create_app() -> Flask:
         """Everything the persistent FM shell needs on every page: grouped
         sidebar (hrefs resolved with the current universe), active item, and the
         world game-context top bar."""
+        from app import worldconfig
         division, gender, label, u = _universe(request)
-        groups = [(glabel, [{**it, "href": url_for(it["endpoint"], u=u, **it["args"])}
-                            for it in items])
-                  for glabel, items in NAV_GROUPS]
-        return {"universes": UNIVERSES, "u": u, "uni_label": label, "my_team": MY_TEAM,
+        prog = worldconfig.user_program()
+        groups = []
+        for glabel, items in NAV_GROUPS:
+            if glabel == "Your Team":
+                if not prog:
+                    continue                       # spectator mode: hide the group
+                pu = f"{prog['division']}-{prog['gender']}"   # pin to the coached universe
+                built = []
+                for it in items:
+                    a = dict(it["args"])
+                    if it["id"] in ("roster", "schedule"):
+                        a["school"] = prog["school"]
+                    built.append({**it, "href": url_for(it["endpoint"], u=pu, **a)})
+                groups.append((glabel, built))
+            else:
+                groups.append((glabel, [{**it, "href": url_for(it["endpoint"], u=u, **it["args"])}
+                                        for it in items]))
+        return {"universes": UNIVERSES, "u": u, "uni_label": label,
+                "my_team": prog["school"] if prog else None,
                 "nav_groups": groups, "active_nav": _active_nav(request),
                 "game": _game_context()}
 
@@ -391,6 +414,7 @@ def create_app() -> Flask:
     @app.route("/start")
     def onboarding():
         from app import worldconfig
+        from .state import all_programs_by_universe
         import secrets
         return render_template("onboarding.html", active="World",
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
@@ -398,6 +422,8 @@ def create_app() -> Flask:
                                mult_choices=worldconfig.MULT_CHOICES,
                                intl_share=worldconfig.intl_share(),
                                intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
+                               programs_by_universe=all_programs_by_universe(),
+                               user_program=worldconfig.user_program(),
                                default_seed=secrets.token_hex(4))
 
     @app.route("/world/new", methods=["POST"])
@@ -406,6 +432,19 @@ def create_app() -> Flask:
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
         worldconfig.set_intl_share(request.form.get("intl_share"))
         worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
+        # Coached program (career mode). Value is "division|gender|school", or empty
+        # for spectate-only. The coached universe is force-activated so it always
+        # runs in detail, even if its division/gender box was left unchecked.
+        prog_raw = request.form.get("user_program", "").strip()
+        if prog_raw.count("|") == 2:
+            pdiv, pgen, pschool = prog_raw.split("|", 2)
+            worldconfig.set_user_program(pdiv, pschool, pgen)
+            if worldconfig.user_program():
+                worldconfig.set_active(
+                    list(dict.fromkeys(worldconfig.active_divisions() + [pdiv])),
+                    list(dict.fromkeys(worldconfig.active_genders() + [pgen])))
+        else:
+            worldconfig.clear_user_program()
         mult = {}
         for grp in worldconfig.region_groups():
             for r in grp["regions"]:

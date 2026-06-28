@@ -12,7 +12,6 @@ from app.season import run_season
 from app.bracket import select_field, run_bracket, clamp_field, FIELD_DEFAULT, field_for_division
 
 DEFAULT_SEED = 2026
-MY_TEAM = "Oregon"
 FIELD_PRESETS = [32, 64, 76, 96]    # offered in the UI; any 16–128 works
 
 # Division×gender universes exposed in the UI (value, division, gender, label).
@@ -251,6 +250,10 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     else:
         ordered = sorted(div.programs, key=_ability, reverse=True)
 
+    from app import worldconfig
+    _prog = worldconfig.user_program()
+    _my_school = (_prog["school"] if _prog and _prog["division"] == division
+                  and _prog["gender"] == gender else None)
     rows: list[LiveRow] = []
     for rk, p in enumerate(ordered, 1):
         r = ratings.get(p.school)
@@ -260,7 +263,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == MY_TEAM),
+            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == _my_school),
         ))
     return rows
 
@@ -1889,7 +1892,7 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
         {"icon": "📅", "title": "Schedule",
          "auto": "Every team's non-conference + conference slate is already set.",
          "desc": "Review your slate, or edit a team's schedule in the editor.",
-         "label": "View schedule →", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+         "label": "View schedule →", "endpoint": "season_schedule", "args": {}},
         {"icon": "🎾", "title": "Lineups",
          "auto": "Ladders auto-shuffle by player strength.",
          "desc": "Reorder any ladder in the editor to override the auto order.",
