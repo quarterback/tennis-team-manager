@@ -58,6 +58,7 @@ MY_TEAM = "Oregon"          # the club the human manages
 # polls /api/ready and reloads itself once the world is warm. Self-contained (no
 # base.html / context processor, which would themselves touch the cold world).
 _warming = threading.Event()        # set while a background warm is in flight
+_warmed_once = threading.Event()    # set after the FIRST successful warm this process
 LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <title>Play to Clinch — loading…</title>
@@ -302,11 +303,16 @@ def create_app() -> Flask:
             if request.endpoint == "dashboard":
                 return redirect(url_for("onboarding"))
             return
-        # League exists. If it's already warm, prime() is an instant no-op — carry
-        # on. If it's cold (fresh machine, or a rebuild after an advance/move), warm
-        # it in the background and answer with the loader so the URL responds now
-        # instead of blocking for a minute.
+        # League exists and is warm → prime() is an instant no-op, carry on.
         if wd.is_primed():
+            wd.prime()
+            return
+        # Cold. The genuine cold boot (fresh machine) is the slow one — warm it in
+        # the background and show the loader so the URL answers now. But once this
+        # process has warmed once, a later cold cache is just a re-prime after a
+        # week advance / roster move: the developed-roster cache stays warm, so that
+        # rebuild is quick — do it inline instead of flashing the loader every week.
+        if _warmed_once.is_set():
             wd.prime()
             return
         if not _warming.is_set():
@@ -315,6 +321,7 @@ def create_app() -> Flask:
             def _warm():
                 try:
                     wd.prime()
+                    _warmed_once.set()      # only on success → a failed warm retries
                 finally:
                     _warming.clear()
 

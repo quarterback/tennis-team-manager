@@ -67,13 +67,15 @@ the warm. A *process*-level fix wasn't needed; the key was simply not doing the 
   never create a *world*, so `wd.exists()` is False and the loader path isn't hit —
   no test churn.
 
-## Known follow-up (not done)
-`advance_week` ends with `_primed.pop` (next access re-primes with more development),
-so the loader also flashes briefly after a **week advance**. That re-prime is *fast*
-(the developed-roster cache stays warm — only `_primed`/`_roster_cache` were cleared),
-so it flashes rather than hangs. If undesired, gate the loader on a process-level
-"has ever warmed" flag so only the genuine cold boot shows it and post-advance
-re-primes run synchronously. Flagged to the owner; left as a choice.
+## Loader is first-boot-only (implemented)
+`advance_week` ends with `_primed.pop`, so the cache goes cold again after every
+week — which would flash the loader on the next page. That's now gated: a
+process-level `_warmed_once` event is set after the first successful warm, and
+**only the genuine cold boot shows the loader.** Once warmed, a later cold cache
+(post-advance / roster move) is re-primed **inline** — measured ~1.9s in a D1-men
+world (the developed-roster recompute for the new week), versus the minute+ cold
+boot — so the user gets a brief synchronous wait, not a loader flash. A failed warm
+leaves `_warmed_once` unset, so it retries on the next request rather than wedging.
 
 ## Files touched
 - `app/world.py` — `is_primed()` (read-only warmth check).
