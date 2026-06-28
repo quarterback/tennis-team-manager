@@ -11,7 +11,8 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 from __future__ import annotations
 
 import os
-from flask import Flask, render_template, request, abort, redirect, url_for, jsonify
+import threading
+from flask import Flask, render_template, request, abort, redirect, url_for, jsonify, Response
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -49,6 +50,40 @@ from app.ncaa import load_division
 from .state import DEFAULT_SEED
 
 MY_TEAM = "Oregon"          # the club the human manages
+
+# A cold prime (fresh machine, or a rebuild after a week advance / roster move)
+# materialises the whole world's rosters and can take a minute+. Rather than block
+# the request — and the GIL, which would starve /api/health and trip fly's recycle
+# loop — we warm in a background thread and answer instantly with this loader, which
+# polls /api/ready and reloads itself once the world is warm. Self-contained (no
+# base.html / context processor, which would themselves touch the cold world).
+_warming = threading.Event()        # set while a background warm is in flight
+_warmed_once = threading.Event()    # set after the FIRST successful warm this process
+LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Play to Clinch — loading…</title>
+<style>
+ html,body{height:100%;margin:0}
+ body{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;
+   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+   background:#0f1720;color:#e8edf2}
+ .ring{width:46px;height:46px;border:4px solid #25323f;border-top-color:#2bb3c0;
+   border-radius:50%;animation:spin 1s linear infinite}
+ @keyframes spin{to{transform:rotate(360deg)}}
+ .t{font-size:15px;font-weight:600;letter-spacing:.02em}
+ .s{font-size:12.5px;color:#8a99a8;max-width:300px;text-align:center;line-height:1.5}
+</style></head><body>
+ <div class=ring></div>
+ <div class=t>Warming up the league…</div>
+ <div class=s>Building this season's rosters and ratings. This can take up to a minute on a cold start — the page will load automatically.</div>
+ <script>
+ (function poll(){
+   fetch('/api/ready',{cache:'no-store'}).then(function(r){return r.json()})
+     .then(function(d){ if(d&&d.ready){ location.reload(); } else { setTimeout(poll,1500); } })
+     .catch(function(){ setTimeout(poll,2500); });
+ })();
+ </script>
+</body></html>"""
 
 # Grouped sidebar nav (Football-Manager style). Each item's href is resolved
 # per-request so the universe `u` carries through. "World" is the primary
@@ -258,15 +293,40 @@ def create_app() -> Flask:
 
     @app.before_request
     def _prime_world():
-        # A league exists → prime every page to its current week and carry on.
-        if wd.exists():
+        # Health/readiness/static must answer INSTANTLY even while the world is
+        # cold — never prime here, or a cold health check holds the GIL for a
+        # minute, fly marks the machine unhealthy, and it recycles (the 503 loop).
+        if request.endpoint in ("health", "ready", "static"):
+            return
+        if not wd.exists():
+            # No league yet → first-login lands on onboarding via the dashboard.
+            if request.endpoint == "dashboard":
+                return redirect(url_for("onboarding"))
+            return
+        # League exists and is warm → prime() is an instant no-op, carry on.
+        if wd.is_primed():
             wd.prime()
             return
-        # No league yet → the entry point (dashboard) is the "ongoing sim" the
-        # user lands in, so send first-login there to onboarding instead. Other
-        # pages stay browsable against the deterministic baseline.
-        if request.endpoint == "dashboard":
-            return redirect(url_for("onboarding"))
+        # Cold. The genuine cold boot (fresh machine) is the slow one — warm it in
+        # the background and show the loader so the URL answers now. But once this
+        # process has warmed once, a later cold cache is just a re-prime after a
+        # week advance / roster move: the developed-roster cache stays warm, so that
+        # rebuild is quick — do it inline instead of flashing the loader every week.
+        if _warmed_once.is_set():
+            wd.prime()
+            return
+        if not _warming.is_set():
+            _warming.set()
+
+            def _warm():
+                try:
+                    wd.prime()
+                    _warmed_once.set()      # only on success → a failed warm retries
+                finally:
+                    _warming.clear()
+
+            threading.Thread(target=_warm, name="world-warm", daemon=True).start()
+        return Response(LOADING_HTML, mimetype="text/html")
 
     @app.route("/export/db")
     def export_db():
@@ -822,7 +882,14 @@ def create_app() -> Flask:
 
     @app.route("/api/health")
     def health():
+        # Liveness only — must NOT touch the world (see _prime_world). Always 200.
         return {"status": "ok"}, 200
+
+    @app.route("/api/ready")
+    def ready():
+        # The loader polls this. Ready = no league yet (loader hands off to
+        # onboarding) or the world is warm. Cheap + read-only; never primes.
+        return {"ready": (not wd.exists()) or wd.is_primed()}, 200
 
     @app.route("/methodology")
     def methodology():

@@ -584,6 +584,20 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     return w
 
 
+def is_primed(seed: int = DEFAULT_SEED) -> bool:
+    """True when this world's rosters are already warm for the current
+    (year, week, roster-override) stamp — i.e. prime() would be an instant no-op.
+    Read-only and cheap (no get_or_create, no roster build): the web layer uses it
+    to decide between serving content and showing a loader while a cold prime warms
+    in the background, so a slow prime never blocks a request — or the health check."""
+    from app import overrides as ov
+    if not exists(seed):
+        return False
+    w = load_world(seed)
+    stamp = (w["id"], w["year"], w["week"], ov.roster_version())
+    return _primed.get(seed) == stamp and bool(_roster_cache)
+
+
 def season_complete(seed: int = DEFAULT_SEED) -> bool:
     """True when every universe has finished its postseason — i.e. the season is
     ready for the awards phase and year rollover."""
