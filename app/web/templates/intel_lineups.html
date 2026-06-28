@@ -65,8 +65,12 @@
 
   {# ---- the strip plot ---- #}
   <div class="bl-panel" style="margin-bottom:18px">
-    <div class="bl-panel-head"><span class="bl-panel-title">STR Lineup vs Conference</span>
+    <div class="bl-panel-head"><span class="bl-panel-title">Lineup vs Conference</span>
       <span class="bl-panel-meta">
+        <span class="ll-unit" role="group" aria-label="rating unit">
+          <button type="button" class="ll-unit-btn on" data-unit="STR">STR</button>
+          <button type="button" class="ll-unit-btn" data-unit="UTR">UTR</button>
+        </span>
         {% if highlight %}<span class="ll-key"><span class="ll-dot hl"></span>{{ highlight }}</span>{% endif %}
         <span class="ll-key"><span class="ll-dot"></span>{{ conf }}</span></span></div>
     <div id="ll-chart" style="position:relative;padding:8px 6px 4px">
@@ -87,11 +91,11 @@
       <div class="bl-brk-match{% if t.highlight %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
         <span class="bl-bubble-seed">{{ t.rank }}</span>
         <span class="bl-bubble-team">{% set ab = crest(t.school) %}{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span></span>
-        <span class="bl-bubble-pi">{{ '%.1f'|format(t.avg) }}</span>
-        <span class="bl-bubble-pi" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
-        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.avg }}">{{ '%.1f'|format(t.avg) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.top }}" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ t.low }}" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
         <span style="font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums">
-          {% for x in t.lineup %}{{ '%.1f'|format(x.str) }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+          {% for x in t.lineup %}<span class="ll-num" data-str="{{ x.str }}">{{ '%.1f'|format(x.str) }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</span>
       </div>
       {% endfor %}
     </div>
@@ -109,8 +113,8 @@
         <span class="bl-bubble-seed">{{ r.rank }}</span>
         <span class="bl-bubble-team"><span class="nm">{{ r.conf }}</span> <span class="ll-tier ll-{{ r.tier }}">{{ r.tier }}</span></span>
         <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ r.n_teams }}</span>
-        <span class="bl-bubble-pi">{{ '%.1f'|format(r.avg_str) }}</span>
-        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ r.avg_str }}">{{ '%.1f'|format(r.avg_str) }}</span>
+        <span class="bl-bubble-pi ll-num" data-str="{{ r.top_str }}" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
       </a>
       {% endfor %}
     </div>
@@ -132,6 +136,10 @@
 .ll-tip .lr { display:flex; justify-content:space-between; gap:14px; }
 .ll-tip .lr .p { color:#9fb3c8; } .ll-tip .lr.on { color:#ffd23f; font-weight:700; }
 .ll-cell circle { cursor:pointer; transition:r .08s; }
+.ll-unit { display:inline-flex; border:1px solid var(--border,#d8e0e8); border-radius:7px; overflow:hidden; margin-right:4px; }
+.ll-unit-btn { border:0; background:transparent; padding:3px 11px; font-size:11px; font-weight:700; letter-spacing:.03em; color:var(--text-muted); cursor:pointer; }
+.ll-unit-btn + .ll-unit-btn { border-left:1px solid var(--border,#d8e0e8); }
+.ll-unit-btn.on { background:#2bb3c0; color:#fff; }
 .ll-scale summary::-webkit-details-marker { display:none; }
 .ll-scale summary:hover .bl-panel-meta { color:var(--text); }
 .ll-scale-grid { font-variant-numeric:tabular-nums; border:1px solid var(--border,#e8edf2); border-radius:8px; overflow:hidden; max-width:340px; }
@@ -153,6 +161,13 @@
   var tip = document.getElementById('ll-tip');
   var NS = 'http://www.w3.org/2000/svg';
 
+  // STR is the native scale; UTR is a linear remap (dot positions never move,
+  // only the axis labels and displayed numbers change). 31->1.00, 57->16.50.
+  var MODE = 'STR';
+  function toUtr(s){ return 1 + (s - 31) / 1.677; }
+  function toStr(u){ return 31 + (u - 1) * 1.677; }
+  function fmt(s){ return (MODE === 'UTR' ? toUtr(s) : s).toFixed(1); }
+
   // y-domain from the data, padded and snapped.
   var allStr = [];
   DATA.forEach(function(t){ t.lineup.forEach(function(x){ allStr.push(x.str); }); });
@@ -173,12 +188,20 @@
     function el(tag, attrs){ var e = document.createElementNS(NS, tag);
       for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
 
-    // y gridlines + labels
-    var step = (hi - lo) <= 12 ? 2 : 4;
-    for (var s = lo; s <= hi; s += step){
-      svg.appendChild(el('line', {x1:M.l, y1:Y(s), x2:W-M.r, y2:Y(s), stroke:'#e8edf2', 'stroke-width':1}));
-      var tl = el('text', {x:M.l-8, y:Y(s)+3, 'text-anchor':'end', 'font-size':11, fill:'#8a99a8'});
-      tl.textContent = s.toFixed(0); svg.appendChild(tl);
+    // y gridlines + labels — positions always computed in STR (Y), labels in the
+    // active unit. In UTR mode we snap gridlines to round UTR values for clean ticks.
+    function gridline(syPos, label){
+      svg.appendChild(el('line', {x1:M.l, y1:Y(syPos), x2:W-M.r, y2:Y(syPos), stroke:'#e8edf2', 'stroke-width':1}));
+      var tl = el('text', {x:M.l-8, y:Y(syPos)+3, 'text-anchor':'end', 'font-size':11, fill:'#8a99a8'});
+      tl.textContent = label; svg.appendChild(tl);
+    }
+    if (MODE === 'UTR'){
+      var ulo = Math.ceil(toUtr(lo)), uhi = Math.floor(toUtr(hi));
+      var ustep = (uhi - ulo) <= 8 ? 1 : 2;
+      for (var u = ulo; u <= uhi; u += ustep) gridline(toStr(u), u.toFixed(0));
+    } else {
+      var step = (hi - lo) <= 12 ? 2 : 4;
+      for (var s = lo; s <= hi; s += step) gridline(s, s.toFixed(0));
     }
     // x labels
     for (var p = 1; p <= 6; p++){
@@ -208,9 +231,9 @@
 
   function showTip(ev, t, onLine){
     var rows = t.lineup.map(function(x){
-      return '<div class="lr'+(x.line===onLine?' on':'')+'"><span class="p">#'+x.line+' '+esc(x.name)+'</span><span>'+x.str.toFixed(1)+'</span></div>';
+      return '<div class="lr'+(x.line===onLine?' on':'')+'"><span class="p">#'+x.line+' '+esc(x.name)+'</span><span>'+fmt(x.str)+'</span></div>';
     }).join('');
-    tip.innerHTML = '<div class="h">'+esc(t.school)+' · avg '+t.avg.toFixed(1)+'</div>'+rows;
+    tip.innerHTML = '<div class="h">'+esc(t.school)+' · avg '+fmt(t.avg)+' '+MODE+'</div>'+rows;
     tip.style.display = 'block'; moveTip(ev);
   }
   function moveTip(ev){
@@ -221,6 +244,25 @@
   }
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  // Unit toggle: re-label the chart and rewrite every [data-str] table cell.
+  function applyTables(){
+    Array.prototype.forEach.call(document.querySelectorAll('.ll-num'), function(elx){
+      elx.textContent = fmt(parseFloat(elx.dataset.str));
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.ll-unit-btn'), function(b){
+    b.addEventListener('click', function(){
+      if (b.dataset.unit === MODE) return;
+      MODE = b.dataset.unit;
+      Array.prototype.forEach.call(document.querySelectorAll('.ll-unit-btn'), function(x){
+        x.classList.toggle('on', x.dataset.unit === MODE);
+      });
+      tip.style.display = 'none';
+      applyTables();
+      draw();
+    });
+  });
 
   draw();
   var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(draw, 120); });
