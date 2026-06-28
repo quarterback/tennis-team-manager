@@ -74,13 +74,17 @@ class Intel:
 
 def _world_stamp(seed: int):
     import app.world as world
+    from app import overrides as ov
     try:
         if world.exists(seed):
             w = world.load_world(seed)
-            return (w["id"], w["year"], w["week"])
+            # roster_version() folds in transfers/lineups so the scan refreshes
+            # the moment the fall portal commits (which changes rosters but NOT
+            # the world week) — not only on a week tick.
+            return (w["id"], w["year"], w["week"], ov.roster_version())
     except Exception:
         pass
-    return ("noworld", 0, 0)
+    return ("noworld", 0, 0, "")
 
 
 def scan(gender: str, seed: int | None = None) -> dict:

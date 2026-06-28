@@ -67,6 +67,27 @@ def _retry_locked(fn, *, tries: int = 6, delay: float = 0.3):
             time.sleep(delay * (attempt + 1))
 
 
+def roster_version() -> str:
+    """Cheap fingerprint of the roster-affecting overrides — transfers (`move`)
+    and pinned lineups (`lineup`). Changes the instant such an edit lands,
+    INCLUDING the fall-portal commit, so caches keyed on it refresh without
+    waiting for a week tick (a fall-portal commit changes per-season phase but
+    not the world week, so a week-only stamp would serve stale rosters). Prestige
+    / academic overrides are excluded: they only shift at the year rollover, which
+    already bumps the world year. The table is tiny, so hashing it per call is
+    negligible next to the scan/prime it guards."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute(
+        "SELECT kind, key, value FROM roster_overrides"
+        " WHERE kind IN ('move','lineup') ORDER BY kind, key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
 def get_moves() -> dict:
     """pid -> destination school."""
     conn = _db()
