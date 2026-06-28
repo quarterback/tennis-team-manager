@@ -679,6 +679,7 @@ def junior_feed(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
             "rank": p.points_rank, "pid": p.pid, "name": p.name, "nation": p.country,
             "domestic": p.domestic, "region": p.region, "grad_year": p.grad_year,
             "stars": getattr(p, "recruit_stars", 0), "board_rank": getattr(p, "recruit_rank", None),
+            "tenniseye": getattr(p, "tenniseye_stars", 0),
             "points": p.junior_points, "singles_points": p.singles_points,
             "doubles_points": p.doubles_points, "str": p.junior_str,
             "doubles_str": p.junior_doubles_str, "events": p.tournaments_played,

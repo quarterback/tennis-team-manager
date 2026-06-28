@@ -234,6 +234,38 @@ def points_rankings(klass: RecruitClass) -> list[Prospect]:
     return ranked
 
 
+# ---- TennisEye: a SECOND star rating, from RESULTS (not projection) ----------
+# The consensus board (rank_class) rates on projected ability + ceiling — the
+# scout's eye, correlated with the overall composite. TennisEye instead rates what
+# a junior actually DID: ranking points (accomplishments) + demonstrated junior STR
+# (level). Same TIER_CUTOFFS pyramid, so the two star sets are directly comparable,
+# and where they DISAGREE is the read teams care about — a high-TennisEye /
+# low-consensus kid is proven-but-unhyped; the reverse is hype without results.
+_TE_W_POINTS, _TE_W_STR = 0.6, 0.4
+
+
+def _tenniseye_score(p, pmax: float, smin: float, sspan: float) -> float:
+    pts = (getattr(p, "junior_points", 0) or 0) / pmax
+    st = ((getattr(p, "junior_str", 0.0) or 0.0) - smin) / sspan
+    return _TE_W_POINTS * pts + _TE_W_STR * st
+
+
+def tenniseye_rankings(klass: RecruitClass) -> list[Prospect]:
+    """Assign each recruit a TennisEye rank + star tier from junior RESULTS
+    (ranking points + STR). Same pyramid as the consensus board; sets
+    `tenniseye_rank`, `tenniseye_tier`, `tenniseye_stars` on every recruit."""
+    recs = klass.recruits
+    pmax = max((getattr(p, "junior_points", 0) or 0 for p in recs), default=0) or 1.0
+    strs = [getattr(p, "junior_str", 0.0) or 0.0 for p in recs]
+    smin = min(strs, default=0.0)
+    sspan = (max(strs, default=0.0) - smin) or 1.0
+    ranked = sorted(recs, key=lambda p: (-_tenniseye_score(p, pmax, smin, sspan), p.pid))
+    for i, p in enumerate(ranked, 1):
+        p.tenniseye_rank = i
+        p.tenniseye_tier, p.tenniseye_stars = tier_for_rank(i, len(ranked))
+    return ranked
+
+
 def us_points_rankings(klass: RecruitClass) -> list[Prospect]:
     return [p for p in points_rankings(klass) if p.domestic]
 
