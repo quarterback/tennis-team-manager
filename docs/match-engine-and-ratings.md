@@ -104,36 +104,38 @@ their last ~30 matches, reliability rising to 1.0 after ~5. **STR is an output**
 Targets are in **UTR magnitude** (the band is ~1.677 STR/UTR, so these are ~2.5 /
 3.35 / 5 STR):
 
+Targets are **deliberately flat** — college tennis is upset-prone, and we want
+results, not ratings, to decide most matches:
+
 | ΔUTR | intended |
 |---|---|
-| ≤ 1.5 | comes down to attributes (~55–65%) |
-| ~2 | ~75% favorite |
-| ≥ 3 | ~90% favorite |
+| ≤ 1.5 | near a coin-flip (~55–63%) |
+| ~2 | high-60s to low-70s |
+| 2–3 | high-70s |
+| ≥ 3 | ~86–89% (a real gap, but never a foregone conclusion) |
 
-**Achieved** with `skill_slope = 2.2`, `tb_slope = 1.65` (flat pairing, single
-match): ΔUTR 1→62%, 1.5→69%, 2→**75%**, 3→84%, 4→91%, 5→95%. (A single logistic
-can't be both flat-low and steep-high, so we anchor on 2 UTR → 75% and let
-cross-flight gaps run ~90%+.)
+**Realized over a full simulated D1 season** (emergent, talent vs talent),
+bucketed by UTR gap — measured with `scripts/eval_realism.py`, `skill_slope =
+1.5`, `tb_slope = 1.13`:
 
-**Realized over a full simulated D1-men season** (emergent, talent vs talent),
-bucketed by UTR gap:
+| ΔUTR gap | favorite wins (men) | favorite wins (women) | matches/gender |
+|---|---|---|---|
+| 0–0.5 | 52% | 52% | ~4–5k |
+| 0.5–1 | 57% | 57% | ~5–6k |
+| 1–1.5 | 63% | 63% | ~4k |
+| 1.5–2 | 69% | 69% | ~2.5k |
+| 2–3 | 77% | 76% | ~3k |
+| 3+ | 87% | 87% | ~3.5k |
+| **overall** | **65%** | **65%** | ~23k |
 
-| ΔUTR gap | favorite wins | matches |
-|---|---|---|
-| 0–0.5 | 55% | 2509 |
-| 0.5–1 | 61% | 4394 |
-| 1–1.5 | 66% | 3312 |
-| 1.5–2 | 72% | 2198 |
-| 2–3 | 82% | 1824 |
-| 3+ | 90% | 295 |
-| **overall** | **66%** | — |
-
-The per-gap curve matches the targets — but note the **match counts**: ~10k of
-~14.5k matches fall in the 0–1.5 UTR band (55–66%), and only 295 have a 3+ gap,
-because the talent is densely packed (§5). So the overall favorite rate is just
-**66%** — college tennis where most matches are within a margin of error and
-outcomes aren't predetermined. *Density, not the engine, drives the
-competitiveness.*
+The curve holds identically across D1 men and women (and D2/D3 track within a
+couple points). Note the **match counts**: most matches fall in the 0–1.5 UTR
+band (52–63%), because the talent is densely packed (§5). So the overall favorite
+rate is just **65%** — college tennis where most matches are within a margin of
+error and outcomes aren't predetermined. *Density, not the engine, drives the
+competitiveness.* A single logistic can't make 1–1.5 a true coin-flip AND keep
+3+ up near 87%, so 1–1.5 settles at ~63% (as flat as the dial reaches without
+collapsing the high-gap buckets).
 
 Sanity: at **equal `overall`**, win rate is ~50% regardless of grit/stamina/
 consistency profile — no outcome-rigging.
