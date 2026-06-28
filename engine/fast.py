@@ -23,12 +23,15 @@ TUNE = {
     # average of a player's whole attribute table (each of the 9 drivers is itself
     # an average of rich attributes, so serve, grit, stamina, consistency, etc.
     # all feed in here) — drives every game; randomness is only the residual.
-    # Calibrated to STR so the favorite wins ~75% at a 2.0-STR gap and ~88% at 3.0
-    # (a flat-attribute pairing); a dense, realistic talent distribution is what
-    # keeps same-level college matches competitive, not match-time dials.
+    # Deliberately FLAT: talent tells, but college tennis is upset-prone, so the
+    # gap bites gently and results — not ratings — decide most matches. Emergent
+    # over a full D1 season (favorite = higher-talent player), by UTR gap:
+    # 1-1.5 ~63%, 1.5-2 ~69%, 2-3 ~77%, 3+ ~87%; overall favorite rate ~65%. The
+    # dense, realistic talent distribution (top players bunched within a margin of
+    # error) is what keeps same-level matches competitive — not match-time dials.
     "hold_base_logit": 0.9,     # server's natural hold advantage
-    "skill_slope": 2.2,         # how hard the overall gap bites, per game
-    "tb_slope": 1.65,           # tiebreaks a touch more volatile than a set
+    "skill_slope": 1.5,         # how hard the overall gap bites, per game
+    "tb_slope": 1.13,           # tiebreaks a touch more volatile than a set
     "context_slope": 0.18,      # venue / wind / heat / crowd comfort
 }
 
