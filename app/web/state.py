@@ -1906,10 +1906,10 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     """The coached program's clubhouse: identity, record, lineup, incoming class,
     scholarships and schedule — scoped to worldconfig.user_program(). None in
     spectator mode (no team chosen) or if the saved program no longer exists."""
-    from app import worldconfig
+    from app import worldconfig, overrides as ov
     import app.world as world
     import app.seasonmode as sm
-    from app.ncaa import load_division
+    from app.ncaa import load_division, build_roster
     prog = worldconfig.user_program()
     if not prog:
         return None
@@ -1920,6 +1920,14 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     w = world.get_or_create(seed)
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     roster = team_roster(division, gender, school)
+    # team_roster re-sorts by ability, which would hide a hand-set lineup. Order the
+    # rows by build_roster (which honors the lineup pin) so the displayed ladder is
+    # exactly what the team fields, and renumber the singles lines to match.
+    order = {pr.pid: i for i, pr in enumerate(build_roster(p))}
+    roster.sort(key=lambda r: order.get(r["p"].pid, len(order)))
+    for i, r in enumerate(roster, 1):
+        r["line"] = i if i <= 6 else None
+    lineup_pinned = school in ov.get_lineups()
     rec = team_results(division, gender, school, seed)
     sched = sm.team_schedule(sid, school)
     nxt = next((d for d in sched if d["status"] != "final"), None)
@@ -1937,6 +1945,8 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "wins": rec["wins"], "losses": rec["losses"], "results": rec["results"][-5:],
         "roster": roster,
         "starters": [r for r in roster if r["line"]],
+        "bench": [r for r in roster if not r["line"]],
+        "lineup_pinned": lineup_pinned,
         "budget": team_budget(division, gender, school),
         "incoming": team_recruiting_class(gender, school, seed),
         "next": nxt,

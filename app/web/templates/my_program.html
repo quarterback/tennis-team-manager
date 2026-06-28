@@ -29,23 +29,46 @@
     <section class="mp-card mp-span2">
       <div class="mp-card-h"><h2>Singles lineup</h2>
         <a class="mp-card-link" href="{{ url_for('teams', u=mp.u, school=mp.school) }}">Full roster →</a></div>
+      <div class="mp-lineup-status">
+        {% if mp.lineup_pinned %}
+          <span class="mp-badge on">Custom lineup</span>
+          <span class="mp-note" style="margin:0;">Your hand-set order is fielded every dual.</span>
+          <form method="post" action="{{ url_for('my_program_lineup') }}" style="margin-left:auto;">
+            <input type="hidden" name="action" value="reset">
+            <button class="mp-reset" type="submit">↺ Reset to auto</button>
+          </form>
+        {% else %}
+          <span class="mp-badge">Auto lineup</span>
+          <span class="mp-note" style="margin:0;">The AI sets the ladder by strength. Nudge a player to take it over — leave it alone and you're at no disadvantage.</span>
+        {% endif %}
+      </div>
+      {% set ladder = mp.starters + mp.bench[:4] %}
       <table class="mp-table">
-        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th><th></th></tr></thead>
         <tbody>
-          {% for r in mp.starters %}
-          <tr{% if r.injury %} class="mp-hurt"{% endif %}>
-            <td class="mp-line">{{ r.line }}</td>
+          {% for r in ladder %}
+          <tr{% if r.injury %} class="mp-hurt"{% endif %}{% if not r.line %} class="mp-benchrow"{% endif %}>
+            <td class="mp-line">{{ r.line or '—' }}</td>
             <td>{{ r.p.name }}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
             <td>{{ r.p.class_year }}</td>
             <td class="mp-num">{{ r.str }}</td>
             <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
             <td>{{ r.schol }}</td>
+            <td class="mp-move">
+              <form method="post" action="{{ url_for('my_program_lineup') }}">
+                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="up">
+                <button type="submit" title="Move up"{% if loop.first %} disabled{% endif %}>▲</button>
+              </form>
+              <form method="post" action="{{ url_for('my_program_lineup') }}">
+                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="down">
+                <button type="submit" title="Move down"{% if loop.last %} disabled{% endif %}>▼</button>
+              </form>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-      <p class="mp-note">The match lineup is set by player strength each week (with a little coach
-        discretion). Hand-picking your order is coming — see the roadmap.</p>
+      <p class="mp-note">Top 6 play singles (and feed the doubles pairings). The row below the line is your next-up bench — promote one to bump it into the lineup.</p>
     </section>
 
     <section class="mp-card">
@@ -133,6 +156,19 @@
   .mp-num { text-align: right; font-variant-numeric: tabular-nums; }
   .mp-line { font-weight: 700; color: var(--text-secondary); }
   .mp-hurt td { opacity: .6; }
+  .mp-benchrow td { color: var(--text-secondary); background: var(--surface-page); }
+  .mp-lineup-status { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .mp-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    padding: 2px 8px; border-radius: 999px; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+  .mp-badge.on { color: var(--brand-contrast, #fff); background: var(--brand); border-color: var(--brand); }
+  .mp-reset { font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-link);
+    background: none; border: 1px solid var(--border-subtle); border-radius: 7px; padding: 4px 9px; }
+  .mp-move { white-space: nowrap; text-align: right; }
+  .mp-move form { display: inline; }
+  .mp-move button { cursor: pointer; font-size: 11px; line-height: 1; color: var(--text-secondary);
+    background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 3px 6px; }
+  .mp-move button:disabled { opacity: .3; cursor: default; }
+  .mp-move button:hover:not(:disabled) { color: var(--brand); border-color: var(--brand); }
   .mp-tag { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--stat-bad, #c0392b);
     border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
   .mp-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }

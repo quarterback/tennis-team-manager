@@ -475,6 +475,33 @@ def create_app() -> Flask:
             return redirect(url_for("onboarding"))
         return render_template("my_program.html", active="My Program", mp=mp)
 
+    @app.route("/my-program/lineup", methods=["POST"])
+    def my_program_lineup():
+        # Hand-set the coached team's singles ladder. The school is taken from the
+        # saved program, never the form, so this only ever edits your own team.
+        from app import worldconfig
+        from app.ncaa import build_roster, load_division
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        school, division, gender = prog["school"], prog["division"], prog["gender"]
+        if request.form.get("action") == "reset":
+            ov.clear_lineup(school)             # back to the auto ladder
+            reset_all()
+            return redirect(url_for("my_program"))
+        pid = request.form.get("pid", "")
+        direction = request.form.get("dir", "")
+        p = load_division(division, gender).by_school(school)
+        order = [pr.pid for pr in build_roster(p)] if p else []
+        if pid in order:
+            i = order.index(pid)
+            j = i - 1 if direction == "up" else i + 1
+            if 0 <= j < len(order):
+                order[i], order[j] = order[j], order[i]
+                ov.set_lineup(school, order)
+                reset_all()
+        return redirect(url_for("my_program"))
+
     @app.route("/world")
     def world_view():
         return render_template("world.html", active="World", hub=world_hub(), crest=crest)
