@@ -137,6 +137,53 @@ def set_active(divisions: list[str], genders: list[str]) -> None:
     set("active_genders", json.dumps([g for g in _ALL_GEN if g in (genders or [])] or _ALL_GEN))
 
 
+# --- Coached program (career mode) ---------------------------------------------
+# The single program the human manages, as (division, school, gender). Unset =>
+# spectator mode (the "Your Team" surface hides entirely). Division is stored
+# alongside the school so we never have to scan divisions to find which one a
+# school belongs to. The coached universe is always force-activated at world
+# creation (see web.server.world_new), so a program is never stuck dormant.
+def user_program() -> dict | None:
+    """The coached program as {"division","school","gender"}, or None if unset."""
+    school = get("user_school")
+    gender = get("user_gender")
+    division = get("user_division")
+    if school and gender in _ALL_GEN and division in _ALL_DIV:
+        return {"division": division, "school": school, "gender": gender}
+    return None
+
+
+def has_user_program() -> bool:
+    return user_program() is not None
+
+
+def set_user_program(division: str, school: str, gender: str) -> None:
+    """Persist the coached program. No-op on a malformed (div, school, gender)."""
+    if division in _ALL_DIV and gender in _ALL_GEN and (school or "").strip():
+        set("user_division", division)
+        set("user_school", school.strip())
+        set("user_gender", gender)
+
+
+def clear_user_program() -> None:
+    for k in ("user_division", "user_school", "user_gender"):
+        set(k, "")
+
+
+def get_coach_career() -> list:
+    """Past coaching seats (career mode), oldest first. Each: {year, division,
+    school, gender, wins, losses, verdict, finish}. The CURRENT seat is
+    user_program(); this is only the programs you've LEFT."""
+    car = get_json("coach_career", [])
+    return car if isinstance(car, list) else []
+
+
+def push_coach_seat(entry: dict) -> None:
+    car = get_coach_career()
+    car.append(entry)
+    set("coach_career", json.dumps(car))
+
+
 # --- International share --------------------------------------------------------
 # Fraction of the incoming RECRUIT class that is international. Real college tennis
 # skews far more international than the US-junior pool alone, so this is tunable.

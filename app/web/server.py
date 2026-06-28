@@ -35,6 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
+from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -49,7 +50,9 @@ from app import overrides as ov
 from app.ncaa import load_division
 from .state import DEFAULT_SEED
 
-MY_TEAM = "Oregon"          # the club the human manages
+# The coached program (career mode) is per-save state, resolved at request time
+# from worldconfig.user_program() — NOT a module constant. None => spectator mode
+# (the "Your Team" nav group hides entirely). See docs/DESIGN-team-takeover-career-mode.md.
 
 # A cold prime (fresh machine, or a rebuild after a week advance / roster move)
 # materialises the whole world's rosters and can take a minute+. Rather than block
@@ -89,10 +92,14 @@ LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 # per-request so the universe `u` carries through. "World" is the primary
 # season-to-season surface; the legacy per-universe season views sit under it.
 NAV_GROUPS = [
+    # "Your Team" items are resolved per-request in _inject_chrome against the
+    # coached program: the school arg is injected and `u` is pinned to the
+    # program's own universe. The whole group is hidden in spectator mode.
     ("Your Team", [
+        {"id": "my_program","label": "Clubhouse",    "icon": "🏠", "endpoint": "my_program",      "args": {}},
         {"id": "preseason", "label": "Preseason",     "icon": "⚙️", "endpoint": "preseason_view",   "args": {}},
-        {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {"school": MY_TEAM}},
-        {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+        {"id": "roster",    "label": "Roster",       "icon": "🎾", "endpoint": "teams",           "args": {}},
+        {"id": "schedule",  "label": "Schedule",     "icon": "📅", "endpoint": "season_schedule", "args": {}},
     ]),
     ("World", [
         {"id": "season",    "label": "Season Hub",   "icon": "📆", "endpoint": "season_hub",       "args": {}},
@@ -145,6 +152,7 @@ NAV_GROUPS = [
 def _active_nav(req) -> str:
     p = req.path
     if p == "/":                          return "dashboard"
+    if p.startswith("/my-program"):       return "my_program"
     if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
@@ -176,7 +184,9 @@ def _active_nav(req) -> str:
     if p.startswith("/juniors"):          return "juniors"
     if p.startswith("/recruit"):          return "recruiting"
     if p.startswith("/teams") or p.startswith("/player"):
-        return "roster" if req.args.get("school") == MY_TEAM else "teams"
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        return "roster" if prog and req.args.get("school") == prog["school"] else "teams"
     if p.startswith("/editor"):           return "editor"
     if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
     if p.startswith("/gtt"):              return "gtt"
@@ -272,6 +282,13 @@ def create_app() -> Flask:
     app.jinja_env.filters["team_logo"] = team_logo
     app.jinja_env.filters["has_team_logo"] = has_team_logo
     app.jinja_env.filters["team_logo_src"] = team_logo_src
+    def _ordsuffix(n):
+        try:
+            n = int(n)
+        except (TypeError, ValueError):
+            return ""
+        return "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    app.jinja_env.filters["ordsuffix"] = _ordsuffix
     from app.almanac import badge_shield, profile_badges
     app.jinja_env.filters["shield"] = badge_shield
     app.jinja_env.filters["profile_badges"] = profile_badges
@@ -283,11 +300,27 @@ def create_app() -> Flask:
         """Everything the persistent FM shell needs on every page: grouped
         sidebar (hrefs resolved with the current universe), active item, and the
         world game-context top bar."""
+        from app import worldconfig
         division, gender, label, u = _universe(request)
-        groups = [(glabel, [{**it, "href": url_for(it["endpoint"], u=u, **it["args"])}
-                            for it in items])
-                  for glabel, items in NAV_GROUPS]
-        return {"universes": UNIVERSES, "u": u, "uni_label": label, "my_team": MY_TEAM,
+        prog = worldconfig.user_program()
+        groups = []
+        for glabel, items in NAV_GROUPS:
+            if glabel == "Your Team":
+                if not prog:
+                    continue                       # spectator mode: hide the group
+                pu = f"{prog['division']}-{prog['gender']}"   # pin to the coached universe
+                built = []
+                for it in items:
+                    a = dict(it["args"])
+                    if it["id"] in ("roster", "schedule"):
+                        a["school"] = prog["school"]
+                    built.append({**it, "href": url_for(it["endpoint"], u=pu, **a)})
+                groups.append((glabel, built))
+            else:
+                groups.append((glabel, [{**it, "href": url_for(it["endpoint"], u=u, **it["args"])}
+                                        for it in items]))
+        return {"universes": UNIVERSES, "u": u, "uni_label": label,
+                "my_team": prog["school"] if prog else None,
                 "nav_groups": groups, "active_nav": _active_nav(request),
                 "game": _game_context()}
 
@@ -391,6 +424,7 @@ def create_app() -> Flask:
     @app.route("/start")
     def onboarding():
         from app import worldconfig
+        from .state import all_programs_by_universe
         import secrets
         return render_template("onboarding.html", active="World",
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
@@ -398,6 +432,8 @@ def create_app() -> Flask:
                                mult_choices=worldconfig.MULT_CHOICES,
                                intl_share=worldconfig.intl_share(),
                                intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
+                               programs_by_universe=all_programs_by_universe(),
+                               user_program=worldconfig.user_program(),
                                default_seed=secrets.token_hex(4))
 
     @app.route("/world/new", methods=["POST"])
@@ -406,6 +442,19 @@ def create_app() -> Flask:
         worldconfig.set_name_preset(request.form.get("name_preset", "tennis_global"))
         worldconfig.set_intl_share(request.form.get("intl_share"))
         worldconfig.set_active(request.form.getlist("divisions"), request.form.getlist("genders"))
+        # Coached program (career mode). Value is "division|gender|school", or empty
+        # for spectate-only. The coached universe is force-activated so it always
+        # runs in detail, even if its division/gender box was left unchecked.
+        prog_raw = request.form.get("user_program", "").strip()
+        if prog_raw.count("|") == 2:
+            pdiv, pgen, pschool = prog_raw.split("|", 2)
+            worldconfig.set_user_program(pdiv, pschool, pgen)
+            if worldconfig.user_program():
+                worldconfig.set_active(
+                    list(dict.fromkeys(worldconfig.active_divisions() + [pdiv])),
+                    list(dict.fromkeys(worldconfig.active_genders() + [pgen])))
+        else:
+            worldconfig.clear_user_program()
         mult = {}
         for grp in worldconfig.region_groups():
             for r in grp["regions"]:
@@ -425,6 +474,107 @@ def create_app() -> Flask:
     @app.route("/preseason")
     def preseason_view():
         return render_template("preseason.html", active="Preseason", ps=preseason_view_data())
+
+    @app.route("/my-program")
+    def my_program():
+        mp = my_program_view()
+        if not mp:                      # spectator mode (or saved team gone) → pick one
+            return redirect(url_for("onboarding"))
+        return render_template("my_program.html", active="My Program", mp=mp)
+
+    @app.route("/my-program/lineup", methods=["POST"])
+    def my_program_lineup():
+        # Hand-set the coached team's singles ladder. The school is taken from the
+        # saved program, never the form, so this only ever edits your own team.
+        from app import worldconfig
+        from app.ncaa import build_roster, load_division
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        school, division, gender = prog["school"], prog["division"], prog["gender"]
+        if request.form.get("action") == "reset":
+            ov.clear_lineup(school)             # back to the auto ladder
+            reset_all()
+            return redirect(url_for("my_program"))
+        pid = request.form.get("pid", "")
+        direction = request.form.get("dir", "")
+        p = load_division(division, gender).by_school(school)
+        order = [pr.pid for pr in build_roster(p)] if p else []
+        if pid in order:
+            i = order.index(pid)
+            j = i - 1 if direction == "up" else i + 1
+            if 0 <= j < len(order):
+                order[i], order[j] = order[j], order[i]
+                ov.set_lineup(school, order)
+                reset_all()
+        return redirect(url_for("my_program"))
+
+    @app.route("/my-program/offers")
+    def my_offers():
+        off = job_offers()
+        if not off:
+            return redirect(url_for("onboarding"))
+        return render_template("my_offers.html", active="My Program", off=off)
+
+    @app.route("/my-program/offers/accept", methods=["POST"])
+    def my_offers_accept():
+        # Take a new job. Opt-in only; the chosen offer must be on the live slate.
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        gender = prog["gender"]
+        new_div = request.form.get("division", "")
+        new_school = request.form.get("school", "")
+        off = job_offers() or {}
+        if off.get("available") and any(o["school"] == new_school and o["division"] == new_div
+                                        for o in off.get("offers", [])):
+            rep = my_season_report() or {}
+            worldconfig.push_coach_seat({          # archive the seat you're leaving
+                "year": rep.get("year"), "division": prog["division"],
+                "school": prog["school"], "gender": gender,
+                "wins": rep.get("wins"), "losses": rep.get("losses"),
+                "verdict": rep.get("verdict"), "finish": rep.get("pi_rank")})
+            worldconfig.set_user_program(new_div, new_school, gender)
+            worldconfig.set_active(                # the new universe must run in detail
+                list(dict.fromkeys(worldconfig.active_divisions() + [new_div])),
+                list(dict.fromkeys(worldconfig.active_genders() + [gender])))
+            reset_all()
+        return redirect(url_for("my_program"))
+
+    @app.route("/my-program/report")
+    def my_report():
+        rep = my_season_report()
+        if not rep:
+            return redirect(url_for("onboarding"))
+        return render_template("my_report.html", active="My Program", rep=rep)
+
+    @app.route("/my-program/schedule")
+    def my_schedule():
+        plan = my_schedule_plan()
+        if not plan:
+            return redirect(url_for("onboarding"))
+        return render_template("my_schedule.html", active="My Program", plan=plan)
+
+    @app.route("/my-program/schedule/edit", methods=["POST"])
+    def my_schedule_edit():
+        # Re-opponent a non-conference dual — preseason only, coached team only.
+        from app import worldconfig
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        division, gender, school = prog["division"], prog["gender"], prog["school"]
+        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        if wd.load_world()["week"] == 0:            # planning locks once the season starts
+            dual_id = request.form.get("dual_id", type=int)
+            action = request.form.get("action", "")
+            if dual_id and action == "swap":
+                sm.swap_nonconf_opponent(sid, dual_id, school,
+                                         request.form.get("opponent", ""), division, gender)
+            elif dual_id and action == "home":
+                sm.set_nonconf_home(sid, dual_id, school, request.form.get("home") == "1")
+            reset_all()
+        return redirect(url_for("my_schedule"))
 
     @app.route("/world")
     def world_view():

@@ -76,7 +76,8 @@ BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs 
 
 def coach_lineup(prog: Program, roster: list, form: dict | None,
                  opp_prestige: float, lineup_seed: int, dual_seed: int = 0,
-                 forced: set | None = None, unavailable: set | None = None):
+                 forced: set | None = None, unavailable: set | None = None,
+                 pinned: list | None = None):
     """Return (engine Team, chosen Prospects) for `prog` this dual.
 
     The ladder is set by live results STR (ability before results exist) plus a
@@ -123,19 +124,32 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         return base + srng.gauss(0, LINEUP_NOISE)
 
     scores = {p.pid: score(p) for p in roster}                  # one draw per player, in order
-    order = sorted(roster, key=lambda p: scores[p.pid], reverse=True)
-    starters, bench = order[:6], order[6:]
-    drng = random.Random(f"{prog.key}|rot|{dual_seed}")         # per-dual rotation
-    gap = getattr(prog, "prestige", 0.5) - opp_prestige
-    rotate = 2 if gap > 0.18 else 1 if gap > 0.05 else 0
-    if rotate == 0 and drng.random() < BASELINE_REP_CHANCE:
-        rotate = 1
-    rotate = min(rotate, len(bench))
-    if rotate:
-        picks = drng.sample(bench, rotate)                      # varied bench each time
-        chosen = starters[:6 - rotate] + picks
+    if pinned:
+        # The human coach hand-set this team's order (career mode, coached team
+        # ONLY — see dual_between._coached_pin). Pinned, available players lead in
+        # the coach's order; everyone else falls in behind by ladder score. No
+        # auto-rotation — the coach decides who plays. Injured pids were already
+        # dropped above, so a hurt pin pulls up the next body; the playing-time
+        # guarantee (`forced`) below still applies. With no pin this branch never
+        # runs, so a coach who leaves the lineup alone is treated exactly like the
+        # AI and is never disadvantaged.
+        rank = {pid: i for i, pid in enumerate(pinned)}
+        order = sorted(roster, key=lambda p: (rank.get(p.pid, len(pinned)), -scores[p.pid]))
+        chosen = order[:6]
     else:
-        chosen = list(starters)
+        order = sorted(roster, key=lambda p: scores[p.pid], reverse=True)
+        starters, bench = order[:6], order[6:]
+        drng = random.Random(f"{prog.key}|rot|{dual_seed}")     # per-dual rotation
+        gap = getattr(prog, "prestige", 0.5) - opp_prestige
+        rotate = 2 if gap > 0.18 else 1 if gap > 0.05 else 0
+        if rotate == 0 and drng.random() < BASELINE_REP_CHANCE:
+            rotate = 1
+        rotate = min(rotate, len(bench))
+        if rotate:
+            picks = drng.sample(bench, rotate)                  # varied bench each time
+            chosen = starters[:6 - rotate] + picks
+        else:
+            chosen = list(starters)
 
     if forced:                                                  # guarantee these pids play
         by_pid = {p.pid: p for p in roster}
@@ -262,6 +276,26 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     }
 
 
+def _coached_pin(prog) -> list | None:
+    """The hand-set lineup order for `prog`, but ONLY when it is the human-coached
+    program (career mode). Every other program — and a coached program whose coach
+    never set a lineup — returns None and plays the normal auto ladder, so opting
+    out, spectating, or simply not touching the lineup never disadvantages a team.
+
+    Cheap for the ~all non-coached teams: a cached identity check (worldconfig's
+    in-process cache), no DB read. Only the coached team's own duals hit get_lineups().
+    Wrapped defensively so a config/DB hiccup degrades to auto, never an error."""
+    try:
+        from app import worldconfig, overrides as ov
+        cp = worldconfig.user_program()
+        if not cp or cp["school"] != prog.school or cp["gender"] != prog.gender \
+                or cp["division"] != prog.division:
+            return None
+        return ov.get_lineups().get(prog.school) or None
+    except Exception:
+        return None
+
+
 def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                  form: dict | None = None, lineup_seed: int = 0,
                  forced_home: set | None = None, forced_away: set | None = None,
@@ -278,10 +312,10 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
     caller can roll fresh injuries on exactly the players who took the court."""
     sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
                           lineup_seed, seed, forced=forced_home,
-                          unavailable=unavailable_home)
+                          unavailable=unavailable_home, pinned=_coached_pin(a))
     sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
                           lineup_seed, seed, forced=forced_away,
-                          unavailable=unavailable_away)
+                          unavailable=unavailable_away, pinned=_coached_pin(b))
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away)
     rec["home_played"] = [p.pid for p in la]

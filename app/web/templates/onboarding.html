@@ -86,6 +86,23 @@
         </div>
         <span class="ob-field-hint">Unchecked divisions/genders still exist but run dormant in the background — lighter on memory.</span>
       </label>
+
+      <label class="ob-field">
+        <span class="ob-field-k">Your team</span>
+        <select name="user_program" class="ob-select">
+          <option value="">Spectate — no team (browse only)</option>
+          {% for division, gender, label, schools in programs_by_universe %}
+          <optgroup label="{{ label }}">
+            {% for school in schools %}
+            <option value="{{ division }}|{{ gender }}|{{ school }}"
+              {% if user_program and user_program.division == division and user_program.gender == gender and user_program.school == school %}selected{% endif %}>{{ school }}</option>
+            {% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+        <span class="ob-field-hint">The one program you manage. Whichever team you pick, its division &amp; gender are always run in detail. Leave on “Spectate” to just watch the world.</span>
+      </label>
+
       <button type="submit" class="ob-btn-primary">Start a new league →</button>
     </form>
 

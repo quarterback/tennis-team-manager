@@ -12,7 +12,6 @@ from app.season import run_season
 from app.bracket import select_field, run_bracket, clamp_field, FIELD_DEFAULT, field_for_division
 
 DEFAULT_SEED = 2026
-MY_TEAM = "Oregon"
 FIELD_PRESETS = [32, 64, 76, 96]    # offered in the UI; any 16–128 works
 
 # Division×gender universes exposed in the UI (value, division, gender, label).
@@ -251,6 +250,10 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     else:
         ordered = sorted(div.programs, key=_ability, reverse=True)
 
+    from app import worldconfig
+    _prog = worldconfig.user_program()
+    _my_school = (_prog["school"] if _prog and _prog["division"] == division
+                  and _prog["gender"] == gender else None)
     rows: list[LiveRow] = []
     for rk, p in enumerate(ordered, 1):
         r = ratings.get(p.school)
@@ -260,7 +263,7 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
-            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == MY_TEAM),
+            p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == _my_school),
         ))
     return rows
 
@@ -1889,7 +1892,7 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
         {"icon": "📅", "title": "Schedule",
          "auto": "Every team's non-conference + conference slate is already set.",
          "desc": "Review your slate, or edit a team's schedule in the editor.",
-         "label": "View schedule →", "endpoint": "season_schedule", "args": {"school": MY_TEAM}},
+         "label": "View schedule →", "endpoint": "season_schedule", "args": {}},
         {"icon": "🎾", "title": "Lineups",
          "auto": "Ladders auto-shuffle by player strength.",
          "desc": "Reorder any ladder in the editor to override the auto order.",
@@ -1897,6 +1900,223 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
     ]
     return {"year": year, "active": active, "dormant": dormant, "steps": steps,
             "is_preseason": w["week"] == 0}
+
+
+def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
+    """The coached program's clubhouse: identity, record, lineup, incoming class,
+    scholarships and schedule — scoped to worldconfig.user_program(). None in
+    spectator mode (no team chosen) or if the saved program no longer exists."""
+    from app import worldconfig, overrides as ov
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division, build_roster
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    p = load_division(division, gender).by_school(school)
+    if not p:
+        return None
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    roster = team_roster(division, gender, school)
+    # team_roster re-sorts by ability, which would hide a hand-set lineup. Order the
+    # rows by build_roster (which honors the lineup pin) so the displayed ladder is
+    # exactly what the team fields, and renumber the singles lines to match.
+    order = {pr.pid: i for i, pr in enumerate(build_roster(p))}
+    roster.sort(key=lambda r: order.get(r["p"].pid, len(order)))
+    for i, r in enumerate(roster, 1):
+        r["line"] = i if i <= 6 else None
+    lineup_pinned = school in ov.get_lineups()
+    rec = team_results(division, gender, school, seed)
+    sched = sm.team_schedule(sid, school)
+    nxt = next((d for d in sched if d["status"] != "final"), None)
+    if nxt:
+        opp = nxt["away"] if nxt["home"] == school else nxt["home"]
+        nxt = {"week": nxt["week"], "opp": opp, "home": nxt["home"] == school,
+               "round": nxt["round"], "conf": bool(nxt["is_conf"])}
+    return {
+        "division": division, "gender": gender, "school": school,
+        "u": f"{division}-{gender}",
+        "conf": p.conf, "conf_abbr": p.conf_abbr,
+        "prestige": round(getattr(p, "prestige", 0.0) * 100),
+        "year": world.BASE_YEAR + w["year"], "week": w["week"],
+        "is_preseason": w["week"] == 0,
+        "season_complete": sm.load_season(sid).get("phase") == "complete",
+        "wins": rec["wins"], "losses": rec["losses"], "results": rec["results"][-5:],
+        "roster": roster,
+        "starters": [r for r in roster if r["line"]],
+        "bench": [r for r in roster if not r["line"]],
+        "lineup_pinned": lineup_pinned,
+        "budget": team_budget(division, gender, school),
+        "incoming": team_recruiting_class(gender, school, seed),
+        "next": nxt,
+        "remaining_duals": sum(1 for d in sched if d["status"] != "final"),
+    }
+
+
+def my_schedule_plan(seed: int = DEFAULT_SEED) -> dict | None:
+    """Preseason non-conference planner for the coached program: its editable
+    non-conf duals + the pool of eligible opponents. None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    duals = sm.nonconf_duals(sid, school)
+    for d in duals:
+        d["abbr"], d["color"] = crest(d["opponent"])
+    return {
+        "school": school, "division": division, "gender": gender,
+        "u": f"{division}-{gender}", "is_preseason": w["week"] == 0,
+        "duals": duals,
+        "eligible": sm.eligible_nonconf_opponents(sid, division, gender, school),
+    }
+
+
+def _class_grade(avg_stars: float, n: int) -> str:
+    if not n:
+        return "—"
+    return ("A" if avg_stars >= 3.8 else "B" if avg_stars >= 3.0
+            else "C" if avg_stars >= 2.2 else "D" if avg_stars >= 1.2 else "F")
+
+
+def my_season_report(seed: int = DEFAULT_SEED) -> dict | None:
+    """End-of-season report card for the coached program. Expectation = preseason
+    prestige rank; result = Power-Index rank + a postseason pedigree bonus (same
+    over/under-performance the prestige-momentum rollover uses). Read-only; reads
+    the live season, never writes momentum. None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    div = load_division(division, gender)
+    if not div.by_school(school):
+        return None
+    pi = sm.power_index(sid)
+    rec = team_results(division, gender, school, seed)
+    played = rec["wins"] + rec["losses"]
+    base = {"school": school, "u": f"{division}-{gender}", "conf": div.by_school(school).conf,
+            "year": world.BASE_YEAR + w["year"]}
+    progs = [p for p in div.programs if p.school in pi]
+    if played == 0 or len(progs) < 2:
+        return {**base, "started": False}
+
+    npres = len(div.programs)
+    by_pres = sorted(div.programs, key=lambda p: p.prestige, reverse=True)
+    pres_rank = next(i for i, p in enumerate(by_pres, 1) if p.school == school)
+    by_pi = sorted(progs, key=lambda p: pi[p.school].pi, reverse=True)
+    pi_rank = next(i for i, p in enumerate(by_pi, 1) if p.school == school)
+    n = len(progs)
+    pres_pct = 1 - (pres_rank - 1) / (npres - 1) if npres > 1 else 0.5
+    pi_pct = 1 - (pi_rank - 1) / (n - 1)
+
+    champ = sm.national_champion(sid)
+    ff = sm.ncaa_semifinalists(sid)
+    field = sm.ncaa_participants(sid)
+    ct = sm.conf_champions(sid)
+    bonus = (0.10 if school == champ else 0.06 if school in ff
+             else 0.03 if school in field else 0.0) + (0.02 if school in ct else 0.0)
+    delta = (pi_pct + min(0.10, bonus)) - pres_pct
+    verdict = "overachieved" if delta > 0.12 else "underachieved" if delta < -0.12 else "met"
+    post = ("National champion" if school == champ else "NCAA Final Four" if school in ff
+            else "Made the NCAA field" if school in field else "Missed the NCAA field")
+
+    cr = sm.conf_rank(sid).get(school)                 # (rank, w, l) or None
+    cls = team_recruiting_class(gender, school, seed)
+    pirank = {p.school: i for i, p in enumerate(by_pi, 1)}
+    notable = sorted(
+        ({"opp": d["opp"], "rank": pirank[d["opp"]], "mine": d["mine"],
+          "theirs": d["theirs"], "home": d["home"]}
+         for d in rec["results"] if d["won"] and pirank.get(d["opp"], 1e9) < pi_rank),
+        key=lambda x: x["rank"])[:4]
+
+    season = sm.load_season(sid)
+    return {
+        **base, "started": True, "complete": season.get("phase") == "complete",
+        "wins": rec["wins"], "losses": rec["losses"],
+        "pres_rank": pres_rank, "pi_rank": pi_rank, "field": n, "field_pres": npres,
+        "verdict": verdict, "delta": round(delta, 3),
+        "conf_rank": cr[0] if cr else None, "conf_w": cr[1] if cr else None,
+        "conf_l": cr[2] if cr else None, "ct_champ": school in ct, "post": post,
+        "class_score": cls["score"], "class_grade": _class_grade(cls["avg_stars"], cls["n"]),
+        "class_n": cls["n"], "class_avg": cls["avg_stars"], "notable": notable,
+    }
+
+
+def _prestige_tier_label(p: float) -> str:
+    return ("Blue blood" if p >= 0.78 else "Powerhouse" if p >= 0.62
+            else "Established" if p >= 0.45 else "Up-and-comer" if p >= 0.30 else "Rebuild")
+
+
+def _programs_for_gender(gender: str):
+    from app.ncaa import load_division
+    out = []
+    for d in ("D1", "D2", "D3", "D4"):
+        try:
+            div = load_division(d, gender)
+        except FileNotFoundError:
+            continue
+        out += [(d, p) for p in div.programs]
+    return out
+
+
+def job_offers(seed: int = DEFAULT_SEED) -> dict | None:
+    """Prestige-gated coaching offers for the human coach. Opt-in UPWARD mobility
+    only — there is no firing. Offers open once the season is complete; a strong
+    season (overperforming expectation) widens the reach to better programs. The
+    slate is deterministic per (seed, year, school). None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    import random
+    from app.ncaa import load_division
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    cur = load_division(division, gender).by_school(school)
+    if not cur:
+        return None
+    cur_prestige = getattr(cur, "prestige", 0.5)
+    rep = my_season_report(seed)
+    complete = bool(rep and rep.get("complete"))
+    delta = rep.get("delta", 0.0) if (rep and rep.get("started")) else 0.0
+    head = {"school": school, "division": division, "gender": gender,
+            "u": f"{division}-{gender}", "conf": cur.conf,
+            "prestige": round(cur_prestige * 100),
+            "tier": _prestige_tier_label(cur_prestige),
+            "career": worldconfig.get_coach_career(),
+            "verdict": rep.get("verdict") if rep else None}
+    if not complete:
+        return {**head, "available": False, "offers": [],
+                "note": "Job offers open once your season is complete."}
+    # A good season widens the reach upward; offers are always at least lateral-plus.
+    band_lo = cur_prestige + 0.02
+    band_hi = cur_prestige + 0.06 + max(0.0, delta) * 0.6
+    pool = [(d, p) for (d, p) in _programs_for_gender(gender)
+            if p.school != school and band_lo <= getattr(p, "prestige", 0.0) <= band_hi]
+    rng = random.Random(f"{seed}|offers|{w['year']}|{school}")
+    rng.shuffle(pool)                                    # break prestige ties stably per save
+    pool.sort(key=lambda dp: getattr(dp[1], "prestige", 0.0), reverse=True)
+    offers = [{"school": p.school, "division": d, "conf": p.conf,
+               "prestige": round(getattr(p, "prestige", 0.0) * 100),
+               "tier": _prestige_tier_label(getattr(p, "prestige", 0.0))}
+              for d, p in pool[:4]]
+    return {**head, "available": True, "offers": offers,
+            "note": None if offers else "No better jobs opened up this year — keep building."}
 
 
 def all_gender_programs(gender: str):
