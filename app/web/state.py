@@ -1978,6 +1978,82 @@ def my_schedule_plan(seed: int = DEFAULT_SEED) -> dict | None:
     }
 
 
+def _class_grade(avg_stars: float, n: int) -> str:
+    if not n:
+        return "—"
+    return ("A" if avg_stars >= 3.8 else "B" if avg_stars >= 3.0
+            else "C" if avg_stars >= 2.2 else "D" if avg_stars >= 1.2 else "F")
+
+
+def my_season_report(seed: int = DEFAULT_SEED) -> dict | None:
+    """End-of-season report card for the coached program. Expectation = preseason
+    prestige rank; result = Power-Index rank + a postseason pedigree bonus (same
+    over/under-performance the prestige-momentum rollover uses). Read-only; reads
+    the live season, never writes momentum. None in spectator mode."""
+    from app import worldconfig
+    import app.world as world
+    import app.seasonmode as sm
+    from app.ncaa import load_division
+    prog = worldconfig.user_program()
+    if not prog:
+        return None
+    division, gender, school = prog["division"], prog["gender"], prog["school"]
+    w = world.get_or_create(seed)
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    div = load_division(division, gender)
+    if not div.by_school(school):
+        return None
+    pi = sm.power_index(sid)
+    rec = team_results(division, gender, school, seed)
+    played = rec["wins"] + rec["losses"]
+    base = {"school": school, "u": f"{division}-{gender}", "conf": div.by_school(school).conf,
+            "year": world.BASE_YEAR + w["year"]}
+    progs = [p for p in div.programs if p.school in pi]
+    if played == 0 or len(progs) < 2:
+        return {**base, "started": False}
+
+    npres = len(div.programs)
+    by_pres = sorted(div.programs, key=lambda p: p.prestige, reverse=True)
+    pres_rank = next(i for i, p in enumerate(by_pres, 1) if p.school == school)
+    by_pi = sorted(progs, key=lambda p: pi[p.school].pi, reverse=True)
+    pi_rank = next(i for i, p in enumerate(by_pi, 1) if p.school == school)
+    n = len(progs)
+    pres_pct = 1 - (pres_rank - 1) / (npres - 1) if npres > 1 else 0.5
+    pi_pct = 1 - (pi_rank - 1) / (n - 1)
+
+    champ = sm.national_champion(sid)
+    ff = sm.ncaa_semifinalists(sid)
+    field = sm.ncaa_participants(sid)
+    ct = sm.conf_champions(sid)
+    bonus = (0.10 if school == champ else 0.06 if school in ff
+             else 0.03 if school in field else 0.0) + (0.02 if school in ct else 0.0)
+    delta = (pi_pct + min(0.10, bonus)) - pres_pct
+    verdict = "overachieved" if delta > 0.12 else "underachieved" if delta < -0.12 else "met"
+    post = ("National champion" if school == champ else "NCAA Final Four" if school in ff
+            else "Made the NCAA field" if school in field else "Missed the NCAA field")
+
+    cr = sm.conf_rank(sid).get(school)                 # (rank, w, l) or None
+    cls = team_recruiting_class(gender, school, seed)
+    pirank = {p.school: i for i, p in enumerate(by_pi, 1)}
+    notable = sorted(
+        ({"opp": d["opp"], "rank": pirank[d["opp"]], "mine": d["mine"],
+          "theirs": d["theirs"], "home": d["home"]}
+         for d in rec["results"] if d["won"] and pirank.get(d["opp"], 1e9) < pi_rank),
+        key=lambda x: x["rank"])[:4]
+
+    season = sm.load_season(sid)
+    return {
+        **base, "started": True, "complete": season.get("phase") == "complete",
+        "wins": rec["wins"], "losses": rec["losses"],
+        "pres_rank": pres_rank, "pi_rank": pi_rank, "field": n, "field_pres": npres,
+        "verdict": verdict, "delta": round(delta, 3),
+        "conf_rank": cr[0] if cr else None, "conf_w": cr[1] if cr else None,
+        "conf_l": cr[2] if cr else None, "ct_champ": school in ct, "post": post,
+        "class_score": cls["score"], "class_grade": _class_grade(cls["avg_stars"], cls["n"]),
+        "class_n": cls["n"], "class_avg": cls["avg_stars"], "notable": notable,
+    }
+
+
 def all_gender_programs(gender: str):
     from app import ncaa
     progs = []

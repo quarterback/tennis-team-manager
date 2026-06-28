@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import my_program_view, my_schedule_plan
+from .state import my_program_view, my_schedule_plan, my_season_report
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -282,6 +282,13 @@ def create_app() -> Flask:
     app.jinja_env.filters["team_logo"] = team_logo
     app.jinja_env.filters["has_team_logo"] = has_team_logo
     app.jinja_env.filters["team_logo_src"] = team_logo_src
+    def _ordsuffix(n):
+        try:
+            n = int(n)
+        except (TypeError, ValueError):
+            return ""
+        return "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    app.jinja_env.filters["ordsuffix"] = _ordsuffix
     from app.almanac import badge_shield, profile_badges
     app.jinja_env.filters["shield"] = badge_shield
     app.jinja_env.filters["profile_badges"] = profile_badges
@@ -501,6 +508,13 @@ def create_app() -> Flask:
                 ov.set_lineup(school, order)
                 reset_all()
         return redirect(url_for("my_program"))
+
+    @app.route("/my-program/report")
+    def my_report():
+        rep = my_season_report()
+        if not rep:
+            return redirect(url_for("onboarding"))
+        return render_template("my_report.html", active="My Program", rep=rep)
 
     @app.route("/my-program/schedule")
     def my_schedule():
