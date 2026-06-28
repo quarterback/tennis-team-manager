@@ -50,15 +50,23 @@
 
   <div class="bl-board-grid" style="grid-template-columns:1fr 340px">
     <div style="display:flex;flex-direction:column;gap:16px">
-      {% if upcoming %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">This week</span>
-        <span class="bl-panel-meta">week {{ s.current_week }} · {{ upcoming|length }} duals</span></div>
-        <div>{% for d in upcoming[:16] %}
+      {% if n_week %}
+      <div class="bl-panel"><div class="bl-panel-head">
+        <span class="bl-panel-title">This week</span>
+        <span class="bl-panel-meta" style="display:inline-flex;align-items:center;gap:8px">
+          week {{ s.current_week }} · {{ n_week }} duals
+          <form method="get" style="margin:0"><input type="hidden" name="u" value="{{ u }}">
+            <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:120px;font-size:12px">
+              <option value="All"{% if conf_sel == 'All' %} selected{% endif %}>All — top matchups</option>
+              {% for c in week_confs %}<option value="{{ c }}"{% if c == conf_sel %} selected{% endif %}>{{ c }}</option>{% endfor %}
+            </select></span></form></span></div>
+        <div>{% for d in upcoming %}
           <div class="bl-brk-match" style="grid-template-columns:1fr auto 1fr">
-            <span class="bl-brk-team"><span class="nm">{{ d.home }}</span></span>
-            <span class="bl-brk-seed">{{ 'conf' if d.is_conf else 'nc' }}</span>
-            <span class="bl-brk-team" style="justify-content:flex-end"><span class="nm">{{ d.away }}</span></span>
-          </div>{% endfor %}</div>
+            <span class="bl-brk-team"><span class="nm">{% if d.home_rank and d.home_rank <= 25 %}<span class="bl-rank" style="margin-right:5px">{{ d.home_rank }}</span>{% endif %}{{ d.home }}</span></span>
+            <span class="bl-brk-seed" title="{{ d.home_conf }} vs {{ d.away_conf }}">{{ 'conf' if d.is_conf else 'nc' }}</span>
+            <span class="bl-brk-team" style="justify-content:flex-end"><span class="nm">{{ d.away }}{% if d.away_rank and d.away_rank <= 25 %} <span class="bl-rank" style="margin-left:5px">{{ d.away_rank }}</span>{% endif %}</span></span>
+          </div>{% else %}<div class="bl-panel-body"><span class="bl-conf">No duals for {{ conf_sel }} this week.</span></div>{% endfor %}</div>
+        <a class="bl-bubble-more" style="display:block;padding:8px 12px" href="{{ url_for('season_schedule', u=u) }}">Full schedule →</a>
       </div>{% endif %}
       {% if last %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Latest results</span>
