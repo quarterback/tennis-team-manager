@@ -1986,6 +1986,8 @@ def _pid_index(division: str, gender: str) -> dict:
                                "walk_on": pr.walk_on, "high_school": pr.high_school,
                                "secondary_country": pr.secondary_country,
                                "school_city": p.location,
+                               "recruit_stars": getattr(pr, "recruit_stars", 0),
+                               "recruit_tier": getattr(pr, "recruit_tier", ""),
                                "scholarship": getattr(pr, "scholarship", 0.0),
                                "scholarship_label": economy.fraction_label(
                                    getattr(pr, "scholarship", 0.0))}

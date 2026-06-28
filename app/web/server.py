@@ -31,7 +31,8 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     dashboard_view, data_portal_view, team_budget, team_results,
                     program_history,
                     conference_schools, team_conference, conference_ratings,
-                    world_hub, player_career, get_coach, injury_rows, fall_portal_view)
+                    world_hub, player_career, get_coach, injury_rows, fall_portal_view,
+                    player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
 from app import world as wd
 from app.juniors import US_STATES
@@ -895,10 +896,13 @@ def create_app() -> Flask:
         career_table = player_career_table(division, gender, pid)
         records = player_career_records(division, gender, pid)
         honor_years = player_career_honors(division, gender, pid)
+        ranks = player_ranks(division, gender, pid)
+        journey = player_journey(division, gender, pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
-                               honor_years=honor_years, crest=crest, u=u, uni_label=label)
+                               honor_years=honor_years, ranks=ranks, journey=journey,
+                               crest=crest, u=u, uni_label=label)
 
     @app.route("/ncaa")
     def ncaa_bracket():

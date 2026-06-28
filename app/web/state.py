@@ -1661,12 +1661,91 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
                 "accolades": hbyyear.get(cal, []), "live": True,
                 "stint": 1, "phase": "regular_post",
             })
+            # If they've MOVED this season (current school != where they started) and
+            # it isn't already shown as a fall-portal two-stint, surface the origin
+            # school so the transfer is visible now — not just after the year closes.
+            already_split = any(h.get("year") == cur and h.get("stint", 0) == 0 for h in hist)
+            origin_school, origin_div = world.persisted_team(pid, seed)
+            if origin_school and origin_school != info["school"] and not already_split:
+                rows.append({
+                    "cal_year": cal, "season_no": cur + 1, "school": origin_school,
+                    "division": origin_div or division, "class": info.get("class_year", ""),
+                    "line": None, "w": None, "l": None, "str": None,
+                    "accolades": [], "live": False, "stint": 0, "phase": "transfer_out",
+                    "transferred": True,
+                })
 
-    rows.sort(key=lambda r: (-r["cal_year"], r.get("stint", 0)))
+    # Newest first, and within a split season the CURRENT school (higher stint) on
+    # top with the school they came from below — a transfer reads top-to-bottom.
+    rows.sort(key=lambda r: (-r["cal_year"], -r.get("stint", 0)))
     for r in rows:
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
     return rows
+
+
+def player_ranks(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED) -> dict | None:
+    """The player's STR (developed ability) with national / conference / team ranks —
+    the at-a-glance rating header (like the recruiting sites' NATL/POS/ST boxes).
+    Ranked on ability so it's meaningful before results exist."""
+    import app.seasonmode as sm
+    from app.ncaa import load_division, build_roster
+    progs = load_division(division, gender).programs
+    entries = []                                          # (pid, str, school, conf)
+    for p in progs:
+        for pr in build_roster(p):
+            entries.append((pr.pid, pr.str_value(), p.school, p.conf))
+    if not any(e[0] == pid for e in entries):
+        return None
+    entries.sort(key=lambda e: (-e[1], e[0]))
+    def rank_in(subset):
+        return (next(i for i, e in enumerate(subset) if e[0] == pid) + 1, len(subset))
+    me = next(e for e in entries if e[0] == pid)
+    natl_rk, natl_n = rank_in(entries)
+    conf_rk, conf_n = rank_in([e for e in entries if e[3] == me[3]])
+    team_rk, team_n = rank_in([e for e in entries if e[2] == me[2]])
+    return {"str": round(me[1], 1), "division": division,
+            "natl": natl_rk, "natl_total": natl_n,
+            "conf": conf_rk, "conf_total": conf_n, "conf_name": me[3],
+            "team": team_rk, "team_total": team_n}
+
+
+def player_journey(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """The player's path (newest first), badged like a recruiting-site 'Journey':
+    the current school (CURRENT), every prior program (TRANSFER), and their high
+    school (HIGH SCHOOL, carrying the recruit stars). Built from the career table so
+    a mid-season move — editor or portal — shows up immediately, not just at year-end.
+    Collapses consecutive same-school years into one stop."""
+    import app.world as world
+    import app.seasonmode as sm
+    from .rankings_data import crest
+    rows = player_career_table(division, gender, pid, seed)
+    chrono = sorted(rows, key=lambda r: (r["cal_year"], r.get("stint", 0)))   # oldest first
+    stops: list[dict] = []
+    for r in chrono:
+        sch = r["school"]
+        if stops and stops[-1]["school"] == sch:
+            stops[-1]["end"] = r["cal_year"]
+        else:
+            stops.append({"school": sch, "division": r.get("division", division),
+                          "start": r["cal_year"], "end": r["cal_year"]})
+    out = []
+    for i, st in enumerate(stops):
+        abbr, color = crest(st["school"])
+        yrs = (str(st["start"]) if st["start"] == st["end"]
+               else f"{st['start']}–{st['end']}")
+        out.append({"school": st["school"], "division": st["division"],
+                    "badge": "current" if i == len(stops) - 1 else "transfer",
+                    "years": yrs, "abbr": abbr, "color": color})
+    out.reverse()                                        # newest (current) first
+    sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    info = sm.player_info(sid, pid)
+    if info and (info.get("high_school") or info.get("hometown")):
+        out.append({"school": info.get("high_school") or "High school",
+                    "division": "", "badge": "high_school",
+                    "years": info.get("hometown", ""), "abbr": "HS", "color": "#888",
+                    "stars": info.get("recruit_stars", 0), "tier": info.get("recruit_tier", "")})
+    return out
 
 
 def search_players(query: str, seed: int = DEFAULT_SEED, limit: int = 80) -> dict:

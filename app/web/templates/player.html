@@ -33,14 +33,16 @@
             </div>
             {% if career_table %}
             {% for s in career_table %}
-            <div class="bl-row">
-              <span class="bl-conf" style="white-space:nowrap">{{ s.cal_year }}{% if s.live %} <span class="pl-live">live</span>{% endif %}</span>
+            <div class="bl-row"{% if s.transferred %} style="opacity:.72"{% endif %}>
+              <span class="bl-conf" style="white-space:nowrap">{{ s.cal_year }}
+                {%- if s.live %} <span class="pl-live">live</span>
+                {%- elif s.transferred %} <span class="pl-live" style="background:#c0392b">transfer</span>{% endif %}</span>
               <a class="bl-school" href="{{ url_for('teams', school=s.school, u=s.division ~ '-' ~ gender) }}">
                 <span class="bl-crest xs" style="background:{{ s.color }}">{{ s.abbr }}</span>{{ s.school }}
                 <span class="bl-conf" style="font-size:11px">{{ s.division }}</span></a>
               <span class="bl-conf">{{ s.class }}</span>
               <span class="bl-conf">{{ s.pos }}</span>
-              <span class="bl-rec" style="text-align:right">{{ s.w }}-{{ s.l }}</span>
+              <span class="bl-rec" style="text-align:right">{% if s.w is none %}—{% else %}{{ s.w }}-{{ s.l }}{% endif %}</span>
               <span class="bl-cell-num"><span class="bl-stat power">{% if s.str %}{{ "%.1f"|format(s.str) }}{% else %}—{% endif %}</span></span>
             </div>
             {% endfor %}
@@ -112,6 +114,51 @@
       </details>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
+      {% if ranks %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR Rating</span>
+        <span class="bl-panel-meta">developed ability · {{ ranks.division }}</span></div>
+        <div class="bl-panel-body">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+            <span class="bl-stat power" style="font-size:30px">{{ "%.1f"|format(ranks.str) }}</span>
+            {% if info.recruit_stars %}<span style="color:#e8a13a;font-size:15px;letter-spacing:1px">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span>
+              <span class="bl-panel-meta">{{ info.recruit_tier }}</span>{% endif %}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+            <div><div class="bl-th" style="font-size:10px">NATIONAL</div>
+              <div class="bl-stat power" style="font-size:18px">#{{ ranks.natl }}</div>
+              <div class="tsub" style="font-size:10px">of {{ ranks.natl_total }}</div></div>
+            <div><div class="bl-th" style="font-size:10px">CONFERENCE</div>
+              <div class="bl-stat power" style="font-size:18px">#{{ ranks.conf }}</div>
+              <div class="tsub" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ranks.conf_name }}</div></div>
+            <div><div class="bl-th" style="font-size:10px">TEAM</div>
+              <div class="bl-stat power" style="font-size:18px">#{{ ranks.team }}</div>
+              <div class="tsub" style="font-size:10px">of {{ ranks.team_total }}</div></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if journey %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">The Journey</span>
+        <span class="bl-panel-meta">where they've been</span></div>
+        <div class="bl-panel-body">
+          {% set badge_class = {'current':'tier-IVY','transfer':'tier-D3','committed':'tier-D2','high_school':'tier-D4'} %}
+          {% set badge_label = {'current':'CURRENT','transfer':'TRANSFER','committed':'COMMITTED','high_school':'HIGH SCHOOL'} %}
+          {% for st in journey %}
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+            <span class="bl-crest xs" style="background:{{ st.color }}">{{ st.abbr }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                {% if st.badge != 'high_school' %}<a class="bl-school" href="{{ url_for('teams', school=st.school, u=st.division ~ '-' ~ gender) }}">{{ st.school }}</a>{% else %}{{ st.school }}{% endif %}
+                {% if st.division %}<span class="bl-conf" style="font-size:11px">{{ st.division }}</span>{% endif %}
+              </div>
+              <div class="tsub" style="font-size:11px">{{ st.years }}{% if st.stars %} · <span style="color:#e8a13a">{% for _ in range(st.stars) %}★{% endfor %}</span>{% endif %}</div>
+            </div>
+            <span class="bl-badge {{ badge_class[st.badge] }}" style="font-size:9px">{{ badge_label[st.badge] }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>
         <span class="bl-panel-meta">follows the player</span></div>
         <div class="bl-panel-body">
@@ -135,6 +182,8 @@
           <tr><td>Class</td><td>{{ info.class }}</td></tr>
           <tr><td>Nationality</td><td><span class="player-flag">{{ info.country|flags(info.secondary_country) }}</span> {{ info.country|country_name }}{% if info.secondary_country %} / {{ info.secondary_country|country_name }}{% endif %}</td></tr>
           <tr><td>Hometown</td><td>{{ info.hometown }}</td></tr>
+          {% if info.high_school %}<tr><td>High school</td><td>{{ info.high_school }}</td></tr>{% endif %}
+          {% if info.recruit_stars %}<tr><td>Recruit</td><td><span style="color:#e8a13a">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span> {{ info.recruit_tier }}</td></tr>{% endif %}
           <tr><td>Major</td><td>{{ info.major }}</td></tr>
           {% if info.school_city %}<tr><td>Program</td><td>{{ info.school }} · {{ info.school_city }}</td></tr>{% endif %}
           <tr><td>Scholarship</td><td>{% if info.walk_on %}Walk-on{% elif info.scholarship and info.scholarship > 0 %}{{ info.scholarship_label }} ride ({{ "%.2f"|format(info.scholarship) }} equiv.){% else %}Recruited (no athletic aid){% endif %}</td></tr>

@@ -465,6 +465,24 @@ def signings(seed: int = DEFAULT_SEED) -> dict:
         conn.close()
 
 
+def persisted_team(pid: str, seed: int = DEFAULT_SEED):
+    """(school, division) the player STARTED this year at — their persisted
+    world_roster slot, before any in-season editor/portal move override. Lets the
+    player card show a mid-season transfer (current school != where they started)
+    before the year-end history records it. Returns (None, None) if not found."""
+    w = load_world(seed)
+    if not w:
+        return (None, None)
+    conn = _db()
+    try:
+        r = conn.execute("SELECT school, division FROM world_roster"
+                         " WHERE world_id=? AND pid=? ORDER BY year DESC LIMIT 1",
+                         (w["id"], pid)).fetchone()
+        return (r["school"], r["division"]) if r else (None, None)
+    finally:
+        conn.close()
+
+
 def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
     """Look up a player by pid in the active league's PERSISTED data — committed
     signees first (world_signing), then rostered players (world_roster, newest
