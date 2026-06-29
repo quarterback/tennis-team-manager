@@ -22,13 +22,13 @@
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">
     <div class="k">Aid Misallocations</div><div class="v">{{ ov.n_aid_flags }}</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_lineups', u=u) }}">
-    <div class="k">Lineup Lab</div><div class="v">📊</div><div class="k" style="margin-top:2px">every team by conference</div></a>
+    <div class="k">Lineup Lab</div><div class="v"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">every team by conference</div></a>
 </div>
 
 <div class="bl-board-grid" style="align-items:start">
   <!-- Underplaced preview -->
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">📡 Buried Talent</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Buried Talent</span>
       <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">Full board →</a></div>
     <div class="bl-tablescroll">
       <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 70px minmax(110px,1fr)">
@@ -49,7 +49,7 @@
 
   <!-- Scholarship preview -->
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">💸 Scholarship Watch</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i> Scholarship Watch</span>
       <a class="bl-panel-meta" style="color:var(--text-link);text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">Full list →</a></div>
     <div class="bl-tablescroll">
       <div class="bl-table al-dense" style="--bl-grid-cols: minmax(130px,1fr) 54px 64px minmax(110px,1fr)">

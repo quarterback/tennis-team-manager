@@ -28,7 +28,7 @@
             <input type="hidden" name="action" value="home">
             <input type="hidden" name="dual_id" value="{{ d.id }}">
             <input type="hidden" name="home" value="{{ 0 if d.home else 1 }}">
-            <button type="submit" class="sp-sitebtn" title="Toggle home/away">{{ 'Home' if d.home else 'Away' }} ⇄</button>
+            <button type="submit" class="sp-sitebtn" title="Toggle home/away">{{ 'Home' if d.home else 'Away' }} <i class="fa-solid fa-right-left" aria-hidden="true"></i></button>
           </form>
           {% else %}
           <span class="sp-sitetxt">{{ 'Home' if d.home else 'Away' }}</span>

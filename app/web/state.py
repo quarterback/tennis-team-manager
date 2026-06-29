@@ -1846,19 +1846,19 @@ def world_hub(seed: int = DEFAULT_SEED):
     else:
         stage = "offseason" if awards_done else "awards"
     if stage == "fall_portal":
-        primary = {"endpoint": "fall_portal", "label": "🔄 Review fall portal →", "link": True}
+        primary = {"endpoint": "fall_portal", "icon": "fa-solid fa-arrows-rotate", "label": "Review fall portal →", "link": True}
     elif stage == "selection":
         primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
     elif stage in ("ita", "regular", "conf_tournaments", "ncaa"):
         if w["week"] == 0 and stage in ("ita", "regular"):
-            primary = {"endpoint": "preseason_view", "label": "⚙ Preseason setup →", "link": True}
+            primary = {"endpoint": "preseason_view", "icon": "fa-solid fa-gear", "label": "Preseason setup →", "link": True}
         else:
             primary = {"endpoint": "world_advance",
                        "label": ("Run ITA opener →" if stage == "ita"
                                  else "Advance week →" if stage == "regular"
                                  else "Advance postseason →")}
     elif stage == "awards":
-        primary = {"endpoint": "world_awards", "label": "🏅 Run awards →"}
+        primary = {"endpoint": "world_awards", "icon": "fa-solid fa-medal", "label": "Run awards →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
     _LABELS = {"ita": "ITA Kickoff", "fall_portal": "Fall portal", "regular": "Regular season",

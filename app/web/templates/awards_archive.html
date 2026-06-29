@@ -47,7 +47,7 @@
 
 <div class="bl-container"><div class="aw-top">
   <div class="bl-panel aw-poty">
-    <div class="bl-panel-head"><span class="bl-panel-title">👑 Player of the Year</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-crown" aria-hidden="true"></i> Player of the Year</span></div>
     <div class="bl-panel-body">
       {% if aw.national_poty %}{% set p = aw.national_poty %}
       <div class="aw-poty-nat">
@@ -62,7 +62,7 @@
     </div>
   </div>
   <div class="bl-panel aw-champs">
-    <div class="bl-panel-head"><span class="bl-panel-title">🏆 Champions</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champions</span></div>
     <div class="bl-panel-body">
       {% if aw.national_champion %}{% set c = aw.national_champion %}
       <div class="aw-natchamp">
@@ -85,7 +85,7 @@
 </div></div>
 
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">🧑‍🏫 Coach of the Year</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span></div>
   <div class="bl-panel-body">
     {% if aw.national_coty %}{% set cn = aw.national_coty %}
     <div class="aw-poty-nat">
@@ -107,7 +107,7 @@
 </div></div>
 
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">🏅 All-Americans</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> All-Americans</span></div>
   <div class="bl-panel-body">
     {% if aw.all_american %}<div class="aw-aa-grid">
       {% for team in aw.all_american %}

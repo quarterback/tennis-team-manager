@@ -22,7 +22,7 @@
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · singles honors · selected from {{ aw.player_count }} rated players</span>
-  {% if past_years %}<a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('awards_archive_page', u=u) }}">🗄️ Past winners →</a>{% endif %}
+  {% if past_years %}<a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('awards_archive_page', u=u) }}"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Past winners →</a>{% endif %}
 </div></div></form>
 
 <div class="bl-container">
@@ -44,7 +44,7 @@
 <div class="bl-container">
   <div class="aw-top">
     <div class="bl-panel aw-poty">
-      <div class="bl-panel-head"><span class="bl-panel-title">👑 Player of the Year</span>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-crown" aria-hidden="true"></i> Player of the Year</span>
         <span class="bl-panel-meta">national &amp; conference</span></div>
       <div class="bl-panel-body">
         {% if aw.national_poty %}
@@ -70,7 +70,7 @@
       </div>
     </div>
     <div class="bl-panel aw-champs">
-      <div class="bl-panel-head"><span class="bl-panel-title">🏆 Champions</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champions</span></div>
       <div class="bl-panel-body">
         {% if aw.national_champion %}{% set abbr, color = crest(aw.national_champion) %}
         <div class="aw-natchamp">
@@ -96,7 +96,7 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">🧑‍🏫 Coach of the Year</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span>
       <span class="bl-panel-meta">national &amp; conference</span></div>
     <div class="bl-panel-body">
       {% if coach_awards.national %}{% set cn = coach_awards.national %}{% set abbr, color = crest(cn.school) %}
@@ -129,7 +129,7 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">🏅 All-Americans</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> All-Americans</span>
       <span class="bl-panel-meta">national · by season record at position</span></div>
     <div class="bl-panel-body">
       {% if aw.all_american %}

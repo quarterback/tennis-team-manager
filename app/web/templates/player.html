@@ -15,7 +15,7 @@
         {{ info.name }}
         <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div>
-      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
+      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="display:flex;gap:20px;text-align:right">
       <div title="OVERALL — static talent rating (20–80); ceiling is the projected peak">
         <div class="bl-th" style="font-size:10px">OVR</div>
@@ -180,7 +180,7 @@
         </div>
       </div>
       {% endif %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span>
         <span class="bl-panel-meta">follows the player</span></div>
         <div class="bl-panel-body">
           {% if honor_years %}

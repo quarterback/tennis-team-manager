@@ -14,7 +14,7 @@
     <div><div class="tname">{% if c.home_country %}<span class="player-flag" title="{{ c.home_country|country_name }}">{{ c.home_country|flags }}</span> {% endif %}{{ c.name }}</div>
       <div class="tsub">{{ c.role_label|default('Head Coach') }}{% if c.school %} · {{ c.school }}{% endif %}
         {% if c.tenure %} · {{ c.tenure }}-yr tenure{% endif %}{% if c.archetype %} · {{ c.archetype }}{% endif %}</div>
-      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}">🏅 {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
+      {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="text-align:right">
       {% if career and career.head_seasons %}<div class="bl-th" style="font-size:10px">CAREER (HEAD)</div>
       <span class="bl-stat power" style="font-size:22px">{{ career.career_w }}-{{ career.career_l }}</span>
@@ -26,7 +26,7 @@
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🏅 Career Honors</span>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span>
         <span class="bl-panel-meta">follows the coach</span></div>
         <div class="bl-panel-body">
           {% if honor_years %}
@@ -107,7 +107,7 @@
       </div>
 
       {% if c.school %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">🛠️ Move coach</span>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Move coach</span>
         <span class="bl-panel-meta">god-mode editor · swaps seats</span></div>
         <div class="bl-panel-body">
           {% set others = staff | rejectattr('coach_id', 'equalto', c.coach_id) | list %}
@@ -118,7 +118,7 @@
             <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
               <input type="hidden" name="u" value="{{ u }}">
               <input type="hidden" name="target" value="{{ c.division }}|{{ c.gender }}|{{ c.school }}|{{ o.role }}">
-              <button class="bl-pill" type="submit" title="swap seats with {{ o.name }}">⇄ {{ o.title }}</button>
+              <button class="bl-pill" type="submit" title="swap seats with {{ o.name }}"><i class="fa-solid fa-right-left" aria-hidden="true"></i> {{ o.title }}</button>
             </form>
             {% endfor %}
           </div>

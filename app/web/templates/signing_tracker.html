@@ -49,7 +49,7 @@
       {% for c in trk.classes %}
       <div class="bl-row">
         <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
-        <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}{% if c.blue %} <span style="font-size:11px">💎{{ c.blue }}</span>{% endif %}</a>
+        <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}{% if c.blue %} <span style="font-size:11px"><i class="fa-solid fa-gem" aria-hidden="true"></i>{{ c.blue }}</span>{% endif %}</a>
         <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(c.score) }}</span></span>
         <span class="bl-cell-num"><span class="bl-conf">{{ c.n }}</span></span>
         <span>{{ spread(c.breakdown, 'sm') }}</span>

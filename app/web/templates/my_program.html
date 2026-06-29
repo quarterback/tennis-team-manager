@@ -17,8 +17,8 @@
 
   {% if not mp.is_preseason %}
   <div class="mp-reportcta">
-    <a href="{{ url_for('my_report') }}">📊 Season report card →</a>
-    {% if mp.season_complete %}<a href="{{ url_for('my_offers') }}" style="margin-left:16px;">💼 Job offers →</a>{% endif %}
+    <a href="{{ url_for('my_report') }}"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Season report card →</a>
+    {% if mp.season_complete %}<a href="{{ url_for('my_offers') }}" style="margin-left:16px;"><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Job offers →</a>{% endif %}
   </div>
   {% endif %}
 
@@ -49,7 +49,7 @@
           <span class="mp-note" style="margin:0;">Your hand-set order is fielded every dual.</span>
           <form method="post" action="{{ url_for('my_program_lineup') }}" style="margin-left:auto;">
             <input type="hidden" name="action" value="reset">
-            <button class="mp-reset" type="submit">↺ Reset to auto</button>
+            <button class="mp-reset" type="submit"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to auto</button>
           </form>
         {% else %}
           <span class="mp-badge">Auto lineup</span>

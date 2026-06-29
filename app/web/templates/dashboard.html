@@ -105,7 +105,7 @@
         <div class="bl-panel-head"><span class="bl-panel-title">NCAA Top Seeds</span>
           <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Full bracket →</a></div>
         <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:7px">
-          {% if d.champion %}<div class="bl-champ" style="margin-bottom:4px">🏆 Projected champion: <strong>{{ d.champion }}</strong></div>{% endif %}
+          {% if d.champion %}<div class="bl-champ" style="margin-bottom:4px"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Projected champion: <strong>{{ d.champion }}</strong></div>{% endif %}
           {% for s in d.top_seeds %}
           <div style="display:flex;align-items:center;gap:8px">
             <span class="bl-rank" style="width:20px">{{ loop.index }}</span>
