@@ -87,21 +87,72 @@
         <span class="ob-field-hint">Unchecked divisions/genders still exist but run dormant in the background — lighter on memory.</span>
       </label>
 
-      <label class="ob-field">
+      <div class="ob-field">
         <span class="ob-field-k">Your team</span>
-        <select name="user_program" class="ob-select">
+        <div class="ob-seg" id="ob-tp-gender">
+          <label><input type="radio" name="tp_gender" value="men" checked><span>Men</span></label>
+          <label><input type="radio" name="tp_gender" value="women"><span>Women</span></label>
+        </div>
+        <div class="ob-seg" id="ob-tp-div">
+          {% for d in ["D1", "D2", "D3", "D4"] %}
+          <label><input type="radio" name="tp_div" value="{{ d }}"{% if loop.first %} checked{% endif %}><span>{{ d }}</span></label>
+          {% endfor %}
+        </div>
+        <select name="user_program" id="ob-school" class="ob-select">
           <option value="">Spectate — no team (browse only)</option>
           {% for division, gender, label, schools in programs_by_universe %}
-          <optgroup label="{{ label }}">
             {% for school in schools %}
-            <option value="{{ division }}|{{ gender }}|{{ school }}"
+            <option value="{{ division }}|{{ gender }}|{{ school }}" data-div="{{ division }}" data-gender="{{ gender }}"
               {% if user_program and user_program.division == division and user_program.gender == gender and user_program.school == school %}selected{% endif %}>{{ school }}</option>
             {% endfor %}
-          </optgroup>
           {% endfor %}
         </select>
-        <span class="ob-field-hint">The one program you manage. Whichever team you pick, its division &amp; gender are always run in detail. Leave on “Spectate” to just watch the world.</span>
-      </label>
+        <span class="ob-field-hint">Choose a side and division, then your program — the list filters to match.
+          The universe you coach is always run in detail. Leave it on “Spectate” to just watch the world.</span>
+      </div>
+      <script>
+      (function () {
+        var sel = document.getElementById('ob-school');
+        // Snapshot every option ONCE, then rebuild the list per universe. We detach
+        // non-matching <option>s from the DOM rather than using option.hidden, which
+        // iOS/WebKit ignores in the native picker (it would leave every division/
+        // gender selectable and let a hidden mismatch submit).
+        var spectate = { value: '', text: 'Spectate — no team (browse only)' };
+        var all = [], preselected = null;
+        Array.prototype.forEach.call(sel.options, function (o) {
+          if (!o.dataset.div) { spectate = { value: o.value, text: o.text }; return; }
+          var rec = { value: o.value, text: o.text, div: o.dataset.div, gender: o.dataset.gender };
+          all.push(rec);
+          if (o.selected) preselected = rec;
+        });
+        function cur(name) { return document.querySelector('input[name=' + name + ']:checked').value; }
+        function setChecked(name, val) {
+          var el = document.querySelector('input[name=' + name + '][value="' + val + '"]');
+          if (el) el.checked = true;
+        }
+        function opt(value, text) {
+          var el = document.createElement('option'); el.value = value; el.textContent = text; return el;
+        }
+        function rebuild() {
+          var g = cur('tp_gender'), d = cur('tp_div'), prev = sel.value, keep = false;
+          sel.textContent = '';
+          sel.appendChild(opt(spectate.value, spectate.text));
+          all.forEach(function (o) {
+            if (o.gender === g && o.div === d) {
+              sel.appendChild(opt(o.value, o.text));
+              if (o.value === prev) keep = true;
+            }
+          });
+          sel.value = keep ? prev : '';        // keep a still-valid pick, else fall back to Spectate
+        }
+        // returning to onboarding with a saved team → point the toggles at it first
+        if (preselected) { setChecked('tp_gender', preselected.gender); setChecked('tp_div', preselected.div); }
+        document.querySelectorAll('#ob-tp-gender input, #ob-tp-div input')
+          .forEach(function (r) { r.addEventListener('change', rebuild); });
+        rebuild();
+        if (preselected) sel.value = preselected.value;
+      })();
+      </script>
 
       <button type="submit" class="ob-btn-primary">Start a new league →</button>
     </form>
@@ -130,6 +181,15 @@
 .ob-select { font-size: 14px; padding: 9px 11px; border-radius: 8px; color: var(--text-primary);
   background: var(--surface-card); border: 1px solid var(--border-subtle); }
 .ob-field-hint { font-size: 12px; color: var(--text-secondary); }
+.ob-seg { display: inline-flex; gap: 0; border: 1px solid var(--border-subtle); border-radius: 9px;
+  overflow: hidden; background: var(--surface-page); width: fit-content; }
+.ob-seg label { margin: 0; cursor: pointer; }
+.ob-seg input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ob-seg span { display: block; padding: 7px 16px; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); border-right: 1px solid var(--border-subtle); transition: background var(--dur-fast, .12s); }
+.ob-seg label:last-child span { border-right: 0; }
+.ob-seg input:checked + span { background: var(--brand); color: var(--brand-contrast, #fff); }
+.ob-seg label:hover input:not(:checked) + span { background: var(--surface-card); color: var(--text-primary); }
 .ob-checks { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 0; }
 .ob-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
 .ob-chk-sep { width: 1px; height: 18px; background: var(--border-subtle); }
