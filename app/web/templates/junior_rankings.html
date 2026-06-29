@@ -2,7 +2,7 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Junior Rankings{% endblock %}
 {% block content %}
-{% set grid = '40px minmax(150px,1fr) 52px 52px 46px 44px 40px 38px 38px 38px 48px 62px 52px 52px 50px 50px 44px' %}
+{% set grid = '40px minmax(150px,1fr) 52px 52px 46px 78px 40px 38px 38px 38px 48px 62px 52px 52px 50px 50px 44px' %}
 
 {# a sortable column header: clicking sorts by `key`, clicking again flips direction #}
 {% macro th(key, label, numeric=true) %}
@@ -17,7 +17,7 @@
   <div class="bl-table al-dense" style="--bl-grid-cols: {{ grid }}">
     <div class="bl-thead">
       {{ th('rank','#') }}<span class="bl-th">PLAYER</span><span class="bl-th num">CLASS</span><span class="bl-th">NAT</span>
-      {{ th('stars','★') }}<span class="bl-th num te-star" title="TennisEye — results-based: points + STR">TE</span>{{ th('events','Ev') }}{{ th('titles','Ti') }}{{ th('finals','F') }}
+      {{ th('stars','★') }}<span class="bl-th num te-star" title="TennisEye, results-based: points + STR">TennisEye</span>{{ th('events','Ev') }}{{ th('titles','Ti') }}{{ th('finals','F') }}
       {{ th('won','W') }}<span class="bl-th num">L</span>{{ th('pct','Win%') }}
       {{ th('pts','Pts') }}{{ th('spts','Sgl') }}{{ th('dpts','Dbl') }}
       {{ th('str','STR') }}{{ th('dstr','dSTR') }}{{ th('board','Brd') }}
@@ -109,8 +109,8 @@
 <div class="bl-notes"><div class="bl-note">
   Ti = titles · F = finals reached · Pts = combined ranking points (Sgl + ¼·Dbl) · STR / dSTR = results-based
   singles / doubles ratings · Brd = consensus recruiting-board rank. ★ = scout consensus (ability + ceiling),
-  <span class="te-star">TE</span> = TennisEye (results: points + STR) — where they split is the gem signal.
+  <span class="te-star">TennisEye</span> = results (points + STR); where they split is the gem signal.
   <a href="{{ url_for('junior_feed_json', u=u, grad_year=grad_year) }}" style="color:var(--text-link)">JSON feed →</a>
 </div></div>
-<style>.te-star { color: #0e7c86; }</style>
+<style>.te-star { color: #7c3aed; }</style>
 {% endblock %}

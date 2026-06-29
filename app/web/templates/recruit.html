@@ -32,7 +32,7 @@
       </div>
       <div class="rc-hero-stars">
         {{ stars(p.recruit_stars, 'lg on-dark') }}
-        <span class="rc-hero-tier">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} · {{ p.recruit_tier or 'Unrated' }}</span>
+        <span class="rc-hero-tier">{{ p.recruit_tier or 'Unrated' }}</span>
       </div>
     </div>
     <div class="rc-hero-side" title="OVR — static talent rating (20–80). STR is the match-based junior-circuit results rating.">
@@ -57,7 +57,7 @@
 <div class="rc-ratings">
   <div class="rc-ratecard primary">
     <div class="rc-rate-head">
-      <span class="rc-rate-svc"><span class="dot">●</span> PLAY TO CLINCH RATING</span>
+      <span class="rc-rate-svc"><span class="dot">●</span> OVR</span>
       <span class="rc-rate-info">national board</span>
     </div>
     <div class="rc-rate-body">
@@ -87,6 +87,25 @@
       <div class="rc-rankcell" title="Current ability — OVERALL, 20–80"><div class="k">CURRENT</div><div class="v">{{ view.service }}</div></div>
       <div class="rc-rankcell" title="Scouted depth/potential — OVERALL"><div class="k">DEPTH</div><div class="v">{{ view.dept }}</div></div>
       <div class="rc-rankcell" title="4-year projection — OVERALL"><div class="k">4-YR</div><div class="v">{{ view.projection }}</div></div>
+    </div>
+  </div>
+
+  <div class="rc-ratecard te">
+    <div class="rc-rate-head">
+      <span class="rc-rate-svc te"><span class="dot">●</span> TennisEye</span>
+      <span class="rc-rate-info">results based</span>
+    </div>
+    <div class="rc-rate-body">
+      <span class="rc-rate-grade te">{% if p.tenniseye_stars %}{{ p.tenniseye_stars }}★{% else %}–{% endif %}</span>
+      <span class="rc-rate-stars">{{ stars(p.tenniseye_stars, 'te') }}
+        <span class="rc-rate-tier">{{ p.tenniseye_tier or 'Unrated' }}</span></span>
+    </div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">TE RANK</div>
+        <div class="v{{ '' if p.tenniseye_rank else ' muted' }}">{% if p.tenniseye_rank %}#{{ p.tenniseye_rank }}{% else %}—{% endif %}</div></div>
+      <div class="rc-rankcell"><div class="k">POINTS</div><div class="v">{{ "{:,}".format(p.junior_points) }}</div></div>
+      <div class="rc-rankcell"><div class="k">STR</div>
+        <div class="v">{{ "%.1f"|format(p.junior_str) if p.junior_str else '—' }}</div></div>
     </div>
   </div>
 </div>

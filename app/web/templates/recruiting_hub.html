@@ -55,11 +55,11 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Top Prospects</span>
       <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">Combined points · full board →</a></div>
     <div class="bl-tablescroll">
-    <div class="bl-table al-dense" style="--bl-grid-cols: 30px minmax(100px,1fr) 44px 44px 44px 52px 44px">
+    <div class="bl-table al-dense" style="--bl-grid-cols: 30px minmax(100px,1fr) 44px 44px 78px 52px 44px">
       <div class="bl-thead">
         <span class="bl-th">#</span><span class="bl-th">PLAYER</span><span class="bl-th num">CLASS</span>
         <span class="bl-th num" title="Scout consensus — projected ability + ceiling">SCT</span>
-        <span class="bl-th num te-star" title="TennisEye — results-based: junior points + STR">TE</span>
+        <span class="bl-th num te-star" title="TennisEye, results-based: junior points + STR">TennisEye</span>
         <span class="bl-th num">PTS</span><span class="bl-th num">STR</span></div>
       {% for rk, p, s, h in hub.top_rows %}
       <div class="bl-row">
@@ -73,7 +73,7 @@
       </div>
       {% endfor %}
     </div>
-    <div class="al-te-note">★ <strong>SCT</strong> = scout consensus (projected ability &amp; ceiling) · <span class="te-star">★ <strong>TE</strong></span> = TennisEye (results: points &amp; STR). Where they split is the read — high TE / low SCT is proven-but-unhyped.</div>
+    <div class="al-te-note">★ <strong>SCT</strong> = scout consensus (projected ability &amp; ceiling) · <span class="te-star">★ <strong>TennisEye</strong></span> = results (points &amp; STR). Where they split is the read: high TennisEye / low SCT is proven-but-unhyped.</div>
     </div>
   </div>
 
@@ -95,8 +95,8 @@
   </div>
 </div></div>
 <style>
-.te-star { color: #0e7c86; }
+.te-star { color: #7c3aed; }
 .al-te-note { font-size: 11px; color: var(--text-muted); padding: 8px 4px 2px; line-height: 1.5; }
-.al-te-note .te-star strong { color: #0e7c86; }
+.al-te-note .te-star strong { color: #7c3aed; }
 </style>
 {% endblock %}
