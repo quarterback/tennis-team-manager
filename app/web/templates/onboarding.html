@@ -113,27 +113,44 @@
       <script>
       (function () {
         var sel = document.getElementById('ob-school');
+        // Snapshot every option ONCE, then rebuild the list per universe. We detach
+        // non-matching <option>s from the DOM rather than using option.hidden, which
+        // iOS/WebKit ignores in the native picker (it would leave every division/
+        // gender selectable and let a hidden mismatch submit).
+        var spectate = { value: '', text: 'Spectate — no team (browse only)' };
+        var all = [], preselected = null;
+        Array.prototype.forEach.call(sel.options, function (o) {
+          if (!o.dataset.div) { spectate = { value: o.value, text: o.text }; return; }
+          var rec = { value: o.value, text: o.text, div: o.dataset.div, gender: o.dataset.gender };
+          all.push(rec);
+          if (o.selected) preselected = rec;
+        });
         function cur(name) { return document.querySelector('input[name=' + name + ']:checked').value; }
         function setChecked(name, val) {
           var el = document.querySelector('input[name=' + name + '][value="' + val + '"]');
           if (el) el.checked = true;
         }
-        function filter() {
-          var g = cur('tp_gender'), d = cur('tp_div');
-          for (var i = 0; i < sel.options.length; i++) {
-            var o = sel.options[i];
-            if (!o.dataset.div) { o.hidden = false; continue; }   // the Spectate option, always shown
-            o.hidden = !(o.dataset.gender === g && o.dataset.div === d);
-          }
-          var chosen = sel.options[sel.selectedIndex];
-          if (chosen && chosen.hidden) sel.value = '';            // fell out of view → back to Spectate
+        function opt(value, text) {
+          var el = document.createElement('option'); el.value = value; el.textContent = text; return el;
         }
-        // sync the toggles to a pre-selected team (returning to onboarding)
-        var init = sel.options[sel.selectedIndex];
-        if (init && init.dataset.div) { setChecked('tp_gender', init.dataset.gender); setChecked('tp_div', init.dataset.div); }
+        function rebuild() {
+          var g = cur('tp_gender'), d = cur('tp_div'), prev = sel.value, keep = false;
+          sel.textContent = '';
+          sel.appendChild(opt(spectate.value, spectate.text));
+          all.forEach(function (o) {
+            if (o.gender === g && o.div === d) {
+              sel.appendChild(opt(o.value, o.text));
+              if (o.value === prev) keep = true;
+            }
+          });
+          sel.value = keep ? prev : '';        // keep a still-valid pick, else fall back to Spectate
+        }
+        // returning to onboarding with a saved team → point the toggles at it first
+        if (preselected) { setChecked('tp_gender', preselected.gender); setChecked('tp_div', preselected.div); }
         document.querySelectorAll('#ob-tp-gender input, #ob-tp-div input')
-          .forEach(function (r) { r.addEventListener('change', filter); });
-        filter();
+          .forEach(function (r) { r.addEventListener('change', rebuild); });
+        rebuild();
+        if (preselected) sel.value = preselected.value;
       })();
       </script>
 
