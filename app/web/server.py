@@ -61,7 +61,7 @@ from .state import DEFAULT_SEED
 # polls /api/ready and reloads itself once the world is warm. Self-contained (no
 # base.html / context processor, which would themselves touch the cold world).
 _warming = threading.Event()        # set while a background warm is in flight
-_warmed_once = threading.Event()    # set after the FIRST successful warm this process
+_warmed_salt = {"v": None}          # generation salt whose first (slow) prime is done
 LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <title>Play to Clinch — loading…</title>
@@ -340,12 +340,18 @@ def create_app() -> Flask:
         if wd.is_primed():
             wd.prime()
             return
-        # Cold. The genuine cold boot (fresh machine) is the slow one — warm it in
-        # the background and show the loader so the URL answers now. But once this
-        # process has warmed once, a later cold cache is just a re-prime after a
-        # week advance / roster move: the developed-roster cache stays warm, so that
-        # rebuild is quick — do it inline instead of flashing the loader every week.
-        if _warmed_once.is_set():
+        # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
+        # fresh random per New League / takeover, stable within a league), NOT a
+        # process flag and NOT the world row id (SQLite reuses the rowid after
+        # start_new, so a brand-new takeover world reappears as id 1):
+        #  • same league we've already warmed → a fast re-prime (post week advance /
+        #    roster edit): the developed-roster cache stays warm, so do it inline.
+        #  • a DIFFERENT league — takeover, new league, or a fresh machine — is the
+        #    slow cold gen: warm in the background and answer with the loader so the
+        #    URL responds now instead of blocking for a minute (the page that
+        #    "wouldn't reload" after a takeover).
+        cur_salt = wd.active_salt()
+        if cur_salt and _warmed_salt["v"] == cur_salt:
             wd.prime()
             return
         if not _warming.is_set():
@@ -354,7 +360,7 @@ def create_app() -> Flask:
             def _warm():
                 try:
                     wd.prime()
-                    _warmed_once.set()      # only on success → a failed warm retries
+                    _warmed_salt["v"] = cur_salt   # only on success → a fail retries
                 finally:
                     _warming.clear()
 
