@@ -930,6 +930,7 @@ _JUNIOR_RESUME_FIELDS = (
     "tournaments_played", "doubles_played",
     "junior_doubles_str", "junior_doubles_results", "junior_doubles_matches",
     "points_rank",
+    "tenniseye_rank", "tenniseye_tier", "tenniseye_stars",
 )
 
 

@@ -89,6 +89,25 @@
       <div class="rc-rankcell"><div class="k">4-YR</div><div class="v">{{ "%.1f"|format(view.projection) }}</div></div>
     </div>
   </div>
+
+  <div class="rc-ratecard te">
+    <div class="rc-rate-head">
+      <span class="rc-rate-svc te"><span class="dot">●</span> TennisEye</span>
+      <span class="rc-rate-info">results based</span>
+    </div>
+    <div class="rc-rate-body">
+      <span class="rc-rate-grade te">{% if p.tenniseye_stars %}{{ p.tenniseye_stars }}★{% else %}–{% endif %}</span>
+      <span class="rc-rate-stars">{{ stars(p.tenniseye_stars, 'te') }}
+        <span class="rc-rate-tier">{{ p.tenniseye_tier or 'Unrated' }}</span></span>
+    </div>
+    <div class="rc-rankrow">
+      <div class="rc-rankcell"><div class="k">TE RANK</div>
+        <div class="v{{ '' if p.tenniseye_rank else ' muted' }}">{% if p.tenniseye_rank %}#{{ p.tenniseye_rank }}{% else %}—{% endif %}</div></div>
+      <div class="rc-rankcell"><div class="k">POINTS</div><div class="v">{{ "{:,}".format(p.junior_points) }}</div></div>
+      <div class="rc-rankcell"><div class="k">STR</div>
+        <div class="v">{{ "%.1f"|format(p.junior_str) if p.junior_str else '—' }}</div></div>
+    </div>
+  </div>
 </div>
 
 {# ============ Crystal-ball prediction ============ #}

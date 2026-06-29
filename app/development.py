@@ -193,6 +193,13 @@ class Prospect:
     tournaments_played: int = 0
     doubles_played: int = 0
     points_rank: int = 0
+    # TennisEye = the results-based second star service (juniors.tenniseye_rankings).
+    # Declared fields (not dynamic attrs) so they survive prospect_to_dict/asdict and
+    # round-trip through the parallel board build (prime_recruit_classes); otherwise
+    # the web board reads them off reconstructed prospects and they'd all be 0.
+    tenniseye_rank: int = 0
+    tenniseye_tier: str = ""
+    tenniseye_stars: int = 0
     junior_doubles_str: float | None = None
     junior_doubles_results: list = field(default_factory=list)
     junior_doubles_matches: list = field(default_factory=list)
