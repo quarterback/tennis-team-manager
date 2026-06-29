@@ -752,6 +752,30 @@ def prime_recruit_classes(seed: int = DEFAULT_SEED, year: int | None = None) -> 
         _class_cache[(salt, g, gy)] = klass
 
 
+def warm_caches(seed: int = DEFAULT_SEED) -> None:
+    """Build the expensive caches up front, for a boot-time warm off the request
+    path: the as-of-now roster cache (`prime`) and every active gender's ENRICHED
+    recruit board (the junior circuit). `prime_recruit_classes` takes the multi-core
+    fast path; the `board_class` loop then guarantees each class is actually built
+    even when the pool can't engage (single core, one active gender, GEN_WORKERS=1),
+    since `prime_recruit_classes` deliberately no-ops in that case. Best-effort and
+    idempotent — every step is a cache hit if already warm."""
+    if not exists(seed):
+        return
+    salt = active_salt(seed)
+    w = get_or_create(seed)
+    prime(seed)                                   # roster cache (~170MB)
+    prime_recruit_classes(seed, w["year"])        # parallel recruit prime (no-op if it can't parallelize)
+    grad_year = BASE_YEAR + w["year"] + 1
+    seen: set[str] = set()
+    for (_d, g) in _active_unis():
+        gc = _GENDER_CANON.get(g, g)
+        if gc in seen:
+            continue
+        seen.add(gc)
+        board_class(gc, grad_year, salt)          # ensure built (covers the serial path)
+
+
 def national_class(seed: int, year: int, gender: str) -> list:
     """The sim's signing pool for a world-year: the canonical class ranked by the
     service's star signal. Uses `board_class` (not `recruit_class`) because the AI

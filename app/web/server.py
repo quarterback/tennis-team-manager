@@ -260,6 +260,28 @@ def create_app() -> Flask:
     from app import db as _db
     _db.bootstrap()
 
+    # Warm the expensive caches at BOOT, off the request path, in a daemon thread.
+    # The first reload after a cold start or a Fly machine recycle otherwise pays
+    # (and BLOCKS the single gunicorn worker on) the ~170MB roster build plus the
+    # junior-circuit recruit build — which holds the GIL, starves /api/health, and
+    # gets the machine recycled mid-build: the crash-on-reload loop. Doing it here
+    # spends that cost once during the health-check grace window instead. The
+    # roster prime is GIL-bound but runs with no user traffic yet; the recruit
+    # prime offloads to a process pool, so it never holds the worker's GIL. Skipped
+    # under pytest and via PTC_NO_BOOT_WARM; best-effort, since the lazy
+    # request-path builds still cover anything this misses.
+    # See docs/AAR-boot-cache-warm.md.
+    import sys as _sys
+    if "pytest" not in _sys.modules and not os.environ.get("PTC_NO_BOOT_WARM"):
+        def _warm_caches_async():
+            try:
+                wd.warm_caches()              # roster cache + every gender's recruit board
+            except Exception:
+                pass                          # lazy paths still build on demand
+        import threading as _threading
+        _threading.Thread(target=_warm_caches_async, name="ptc-cache-warm",
+                          daemon=True).start()
+
     @app.before_request
     def _publish_world_salt():
         # Keep the ncaa generator pinned to the active league's salt so every
