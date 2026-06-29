@@ -32,7 +32,7 @@
       </div>
       <div class="rc-hero-stars">
         {{ stars(p.recruit_stars, 'lg on-dark') }}
-        <span class="rc-hero-tier">{{ '★' * p.recruit_stars if p.recruit_stars else 'NR' }} · {{ p.recruit_tier or 'Unrated' }}</span>
+        <span class="rc-hero-tier">{{ p.recruit_tier or 'Unrated' }}</span>
       </div>
     </div>
     <div class="rc-hero-side">
