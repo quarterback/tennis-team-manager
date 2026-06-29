@@ -1702,11 +1702,11 @@ def player_ranks(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED)
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     strmap = sm.season_player_str(sid)
     progs = load_division(division, gender).programs
-    entries = []                                          # (pid, str, school, conf)
+    entries = []                                          # (pid, str, school, conf, conf_abbr)
     for p in progs:
         for pr in build_roster(p):
             s = strmap.get(pr.pid, (pr.str_value(), 0.0))[0]
-            entries.append((pr.pid, s, p.school, p.conf))
+            entries.append((pr.pid, s, p.school, p.conf, p.conf_abbr))
     if not any(e[0] == pid for e in entries):
         return None
     entries.sort(key=lambda e: (-e[1], e[0]))
@@ -1718,7 +1718,7 @@ def player_ranks(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED)
     team_rk, team_n = rank_in([e for e in entries if e[2] == me[2]])
     return {"str": round(me[1], 1), "division": division,
             "natl": natl_rk, "natl_total": natl_n,
-            "conf": conf_rk, "conf_total": conf_n, "conf_name": me[3],
+            "conf": conf_rk, "conf_total": conf_n, "conf_name": me[3], "conf_abbr": me[4],
             "team": team_rk, "team_total": team_n}
 
 

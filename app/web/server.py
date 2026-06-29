@@ -1132,8 +1132,9 @@ def create_app() -> Flask:
         row = get_row(school)
         prog = load_division(division, gender).by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
+        conf_abbr = (prog.conf_abbr if prog else "") or conf
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, conf_abbr=conf_abbr, schools=schools, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
