@@ -350,8 +350,15 @@ def create_app() -> Flask:
         #    slow cold gen: warm in the background and answer with the loader so the
         #    URL responds now instead of blocking for a minute (the page that
         #    "wouldn't reload" after a takeover).
-        cur_salt = wd.active_salt()
-        if cur_salt and _warmed_salt["v"] == cur_salt:
+        cur_key = wd.active_salt()
+        if not cur_key:
+            # Legacy saves created before the salt column was backfilled have an
+            # empty salt; fall back to the world id (stable for a continuing save —
+            # rowid reuse only bites across start_new, which always sets a fresh
+            # non-empty salt) so they still get the fast inline re-prime.
+            w = wd.load_world()
+            cur_key = str(w["id"]) if w else None
+        if cur_key and _warmed_salt["v"] == cur_key:
             wd.prime()
             return
         if not _warming.is_set():
@@ -360,7 +367,7 @@ def create_app() -> Flask:
             def _warm():
                 try:
                     wd.prime()
-                    _warmed_salt["v"] = cur_salt   # only on success → a fail retries
+                    _warmed_salt["v"] = cur_key    # only on success → a fail retries
                 finally:
                     _warming.clear()
 
