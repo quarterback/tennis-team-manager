@@ -1885,15 +1885,15 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
     active = [lbl for (_v, d, g, lbl) in UNIVERSES if worldconfig.is_active(d, g)]
     dormant = [lbl for (_v, d, g, lbl) in UNIVERSES if not worldconfig.is_active(d, g)]
     steps = [
-        {"icon": "🎓", "title": "Recruiting",
+        {"icon": "fa-solid fa-graduation-cap", "title": "Recruiting",
          "auto": "Your class signs automatically, a slice each week.",
          "desc": "Open the board to track the pool and steer your targets.",
          "label": "Open recruiting →", "endpoint": "recruiting", "args": {}},
-        {"icon": "📅", "title": "Schedule",
+        {"icon": "fa-solid fa-calendar-days", "title": "Schedule",
          "auto": "Every team's non-conference + conference slate is already set.",
          "desc": "Review your slate, or edit a team's schedule in the editor.",
          "label": "View schedule →", "endpoint": "season_schedule", "args": {}},
-        {"icon": "🎾", "title": "Lineups",
+        {"icon": "fa-solid fa-table-tennis-paddle-ball", "title": "Lineups",
          "auto": "Ladders auto-shuffle by player strength.",
          "desc": "Reorder any ladder in the editor to override the auto order.",
          "label": "Open editor →", "endpoint": "editor", "args": {}},

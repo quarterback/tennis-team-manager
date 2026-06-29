@@ -81,7 +81,6 @@ body { background: var(--fm-app-bg); }
 }
 .fm-navicon {
   flex: none; width: 20px; text-align: center; font-size: 14px; line-height: 1;
-  filter: grayscale(0.15);
 }
 .fm-navlabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
