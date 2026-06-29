@@ -11,16 +11,16 @@
       <span class="bl-panel-meta">{{ p.franchise }} · age {{ p.age }} · STR {{ p.str }} · {{ p.w }}-{{ p.l }} this season{% if p.status == 'retired' %} · retired{% endif %}</span>
     </div>
     {% if p.origin == 'college' %}
-    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">🎓 College graduate — career honors below span college and pro.</div>
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> College graduate — career honors below span college and pro.</div>
     {% endif %}
     <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff">{{ h }}</span>{% endfor %}
       {% if p.enshrined %}
-      <span class="bl-pill" style="background:var(--surface-header);color:#fff">🏛️ Hall of Fame</span>
+      <span class="bl-pill" style="background:var(--surface-header);color:#fff"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Hall of Fame</span>
       {% else %}
       <form method="post" action="{{ url_for('gtt_enshrine', pid=p.pid) }}" style="margin-left:auto">
         <input type="hidden" name="lg" value="{{ league.id }}">
-        <button class="bl-pill" type="submit">🏛️ Enshrine in Hall of Fame</button></form>
+        <button class="bl-pill" type="submit"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Enshrine in Hall of Fame</button></form>
       {% endif %}
     </div>
   </div>
@@ -42,7 +42,7 @@
 
   {% if p.career_honors %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">🏅 Career honors</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career honors</span>
       <span class="bl-panel-meta">college → pro, one timeline</span></div>
     <div style="padding:8px 16px">
       {% for grp in p.career_honors %}

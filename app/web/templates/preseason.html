@@ -19,7 +19,7 @@
   <div class="ps-steps">
     {% for s in ps.steps %}
     <div class="ps-step">
-      <div class="ps-icon">{{ s.icon }}</div>
+      <div class="ps-icon"><i class="{{ s.icon }}" aria-hidden="true"></i></div>
       <div class="ps-body">
         <div class="ps-title">{{ s.title }}</div>
         <div class="ps-auto">✓ {{ s.auto }}</div>

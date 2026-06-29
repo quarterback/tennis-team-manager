@@ -17,7 +17,7 @@
   </form>
 
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">🏛️ Hall of Fame</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Hall of Fame</span>
       <span class="bl-panel-meta">{{ hof|length }} enshrined · frozen profiles</span></div>
     {% if hof %}
     <div style="padding:6px 16px">
@@ -55,8 +55,8 @@
       {% for h in history %}
       <div class="bl-row gtt-arch-row">
         <span class="bl-cell-num">{{ h.cal_year }}</span>
-        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">🏆 {{ h.champion }}</a>{% else %}—{% endif %}</span>
-        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none">🏅 {{ h.mvp }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600"><i class="fa-solid fa-trophy" aria-hidden="true"></i> {{ h.champion }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.mvp }}</a>{% else %}—{% endif %}</span>
       </div>
       {% endfor %}
     </div></div>

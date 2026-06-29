@@ -15,7 +15,7 @@
     </div>
     {% if t.champion %}
     <a class="jt-champ" href="{{ url_for('recruit', pid=t.champion[1], u=u, grad_year=grad_year) }}">
-      <span class="jt-champ-k">🏆 Champion</span>
+      <span class="jt-champ-k"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champion</span>
       <span class="jt-champ-v">{{ t.champion[0] }}</span></a>
     {% endif %}
   </div>

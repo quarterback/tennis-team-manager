@@ -33,14 +33,14 @@
           {% if league.phase == 'complete' %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">
-            <button class="bl-pill" type="submit">↻ Start next season (draft + intake)</button></form>
+            <button class="bl-pill" type="submit"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Start next season (draft + intake)</button></form>
           {% else %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">
             <button class="bl-pill" type="submit">▶ Advance {{ 'round' if league.phase == 'playoffs' else 'week' }} (full engine)</button></form>
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="finish">
-            <button class="bl-pill" type="submit">⏭ Simulate to champion (fast)</button></form>
+            <button class="bl-pill" type="submit"><i class="fa-solid fa-forward-step" aria-hidden="true"></i> Simulate to champion (fast)</button></form>
           {% endif %}
         </div>
       </div>
@@ -53,15 +53,15 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Honors</span></div>
     <div style="display:flex;gap:24px;padding:14px 16px;flex-wrap:wrap">
       {% if honors.champion %}
-      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🏆 Champion</div>
+      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champion</div>
         <a href="{{ url_for('gtt_franchise', fid=honors.champion.id, lg=league.id) }}" style="font-weight:700;font-size:16px;text-decoration:none;color:var(--text-primary)">{{ honors.champion.name }}</a></div>
       {% endif %}
       {% if honors.mvp %}
-      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🏅 Season MVP</div>
+      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-medal" aria-hidden="true"></i> Season MVP</div>
         <a href="{{ url_for('gtt_player', pid=honors.mvp.pid, lg=league.id) }}" style="font-weight:700;font-size:16px;text-decoration:none;color:var(--text-primary)">{{ honors.mvp.name }}</a>
         <span style="color:var(--text-muted)">· {{ honors.mvp.w }}-{{ honors.mvp.l }} · {{ honors.mvp.franchise }}</span></div>
       {% elif honors.potw %}
-      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em">⭐ Player of the Week {{ honors.potw.week }}</div>
+      <div><div style="color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-star" aria-hidden="true"></i> Player of the Week {{ honors.potw.week }}</div>
         <a href="{{ url_for('gtt_player', pid=honors.potw.pid, lg=league.id) }}" style="font-weight:700;font-size:16px;text-decoration:none;color:var(--text-primary)">{{ honors.potw.name }}</a>
         <span style="color:var(--text-muted)">· {{ honors.potw.w }}-{{ honors.potw.l }} · {{ honors.potw.franchise }}</span></div>
       {% endif %}
@@ -139,8 +139,8 @@
       {% for h in history %}
       <div class="bl-row gtt-hist-row">
         <span class="bl-cell-num">{{ h.cal_year }}</span>
-        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">🏆 {{ h.champion }}</a>{% else %}—{% endif %}</span>
-        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none">🏅 {{ h.mvp }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.champion_fid %}<a href="{{ url_for('gtt_franchise', fid=h.champion_fid, lg=league.id) }}" style="text-decoration:none;font-weight:600"><i class="fa-solid fa-trophy" aria-hidden="true"></i> {{ h.champion }}</a>{% else %}—{% endif %}</span>
+        <span class="bl-cell">{% if h.mvp_pid %}<a href="{{ url_for('gtt_player', pid=h.mvp_pid, lg=league.id) }}" style="text-decoration:none"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.mvp }}</a>{% else %}—{% endif %}</span>
       </div>
       {% endfor %}
     </div></div>

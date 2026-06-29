@@ -5,7 +5,7 @@
 
 <div class="bl-container">
   <div class="bl-prose" style="padding-top:18px">
-    <h1 style="margin:0">🏛️ Hall of Fame</h1>
+    <h1 style="margin:0"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Hall of Fame</h1>
     <p class="lede" style="margin:6px 0 0">Season-by-season champions and national honorees. Each season is
       archived here once its awards phase is run.</p>
   </div>
@@ -28,17 +28,17 @@
         <div class="hof-uni">
           <div class="hof-uni-head">{{ ulabel }}</div>
           {% if slot.champion %}{% set abbr, color = crest(slot.champion) %}
-          <div class="hof-row"><span class="hof-k">🏆 Champion</span>
+          <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champion</span>
             <span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
             <a class="bl-school" href="{{ url_for('teams', school=slot.champion, u=u) }}">{{ slot.champion }}</a></div>
           {% endif %}
           {% if slot.national_poty %}{% set p = slot.national_poty %}
-          <div class="hof-row"><span class="hof-k">👑 Player of the Year</span>
+          <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-crown" aria-hidden="true"></i> Player of the Year</span>
             <a class="bl-school" href="{{ url_for('player', pid=p.subject_id, school=p.school, u=u) }}">{{ p.name }}</a>
             <span class="bl-conf">{{ p.school }}</span></div>
           {% endif %}
           {% if slot.national_coty %}{% set c = slot.national_coty %}
-          <div class="hof-row"><span class="hof-k">🧑‍🏫 Coach of the Year</span>
+          <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span>
             <a class="bl-school" href="{{ url_for('coach', coach_id=c.subject_id, u=u) }}">{{ c.name }}</a>
             <span class="bl-conf">{{ c.school }}</span></div>
           {% endif %}

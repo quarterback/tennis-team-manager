@@ -55,7 +55,7 @@
           <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
           <span class="bl-cell-num"><span class="bl-rec">{{ r.w }}-{{ r.l }}</span></span>
           <span style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-            {% if r.injury %}<span class="bl-badge injured" title="{{ r.injury.status }} (Wk {{ r.injury.week }})">🩹 {{ 'Out for season' if r.injury.season_ending else r.injury.left }}</span>{% endif %}
+            {% if r.injury %}<span class="bl-badge injured" title="{{ r.injury.status }} (Wk {{ r.injury.week }})"><i class="fa-solid fa-bandage" aria-hidden="true"></i> {{ 'Out for season' if r.injury.season_ending else r.injury.left }}</span>{% endif %}
             {% if p.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% elif r.schol and r.schol != '—' %}<span class="bl-badge tier-IVY" title="scholarship equivalency">{{ r.schol }}</span>{% else %}<span class="bl-badge tier-MID" title="recruited, no athletic aid">Recruited</span>{% endif %}</span>
         </div>
         {% endfor %}

@@ -78,7 +78,7 @@
           <form method="post" action="{{ url_for('fall_portal_redirect') }}" style="display:flex;gap:3px;align-items:center">
             <input type="hidden" name="pid" value="{{ t.pid }}">
             <input class="bl-select" name="dest" list="fp-dests" value="{{ t.dest_school }}" style="min-width:128px;height:24px;font-size:12px">
-            <button class="bl-btn bl-btn-sm" type="submit" title="Send here instead">↻</button>
+            <button class="bl-btn bl-btn-sm" type="submit" title="Send here instead"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i></button>
           </form>
         {% else %}
           {{ t.dest_school }} <span style="color:var(--text-faint)">{{ t.dest_div }}</span>

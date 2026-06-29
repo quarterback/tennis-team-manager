@@ -39,7 +39,7 @@
       <span><span class="al-tier al-t-{{ t.level|replace(' ','') }}">{{ t.level }}</span></span>
       <span class="bl-cell-num">{{ t.n_entrants }}</span>
       <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-        {% if t.champion %}<a href="{{ url_for('recruit', pid=t.champion[1], u=u, grad_year=grad_year) }}" style="color:var(--text-link);text-decoration:none">🏆 {{ t.champion[0] }}</a>{% else %}—{% endif %}</span>
+        {% if t.champion %}<a href="{{ url_for('recruit', pid=t.champion[1], u=u, grad_year=grad_year) }}" style="color:var(--text-link);text-decoration:none"><i class="fa-solid fa-trophy" aria-hidden="true"></i> {{ t.champion[0] }}</a>{% else %}—{% endif %}</span>
     </div>
     {% endfor %}
   </div>

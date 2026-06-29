@@ -1,11 +1,13 @@
 """Presentation helpers exposed to Jinja as template filters.
 
-Country/flag rendering for the player & recruit cards, ported from o27
-baseball's formatters: real ISO 3166-1 alpha-2 codes render as a
-regional-indicator emoji; fictional countries with custom art (e.g. ZR)
-render as an inline <img> from /static/flags/. Dual-nationality players
-show both flags. The code -> "Spain" / "ESP" name lookups come from
-generators.flavor so the web and the engine agree on display names.
+Country/flag rendering for the player & recruit cards: real ISO 3166-1
+alpha-2 codes render as a self-hosted flag-icons SVG (`<span class="fi
+fi-xx">`), which displays identically on every platform — unlike the old
+regional-indicator emoji, which Windows/Chrome render as bare letters.
+Fictional countries with custom art (e.g. ZR) keep their inline <img> from
+/static/flags/. Dual-nationality players show both flags. The code ->
+"Spain" / "ESP" name lookups come from generators.flavor so the web and the
+engine agree on display names.
 """
 from __future__ import annotations
 
@@ -16,12 +18,29 @@ from markupsafe import Markup, escape
 
 from generators.flavor import country_name as _country_name
 from generators.flavor import country_abbrev as _country_abbrev
-from generators.flavor import flag_emoji as _flag_emoji
 
 # Fictional countries with custom flag art under app/web/static/flags/.
 _CUSTOM_FLAGS: dict[str, str] = {
     "ZR": "zr.png",   # Zaryanovia — alt-history Far East
 }
+
+# Real alpha-2 codes we ship a flag-icons SVG for (4x3 set under
+# static/vendor/flag-icons/flags/4x3/). Built once at import so an unknown
+# code degrades to no mark instead of an empty box.
+_FLAG_ICON_DIR = (
+    Path(__file__).resolve().parent / "static" / "vendor" / "flag-icons"
+    / "flags" / "4x3"
+)
+
+
+def _load_flag_codes() -> set[str]:
+    try:
+        return {p.stem.upper() for p in _FLAG_ICON_DIR.glob("*.svg")}
+    except OSError:
+        return set()
+
+
+_FLAG_CODES: set[str] = _load_flag_codes()
 
 # School name -> {"slug", "espn_id"} mapping built by
 # scripts/fetch_team_logos.py; logo PNGs live under app/web/static/logos/.
@@ -44,8 +63,8 @@ _LOGOS: dict[str, dict] = _load_logo_map()
 
 
 def flag(country_code) -> Markup:
-    """A single flag for a country code: emoji for real codes, <img> for
-    custom-art codes, '' for blanks/unknowns."""
+    """A single flag for a country code: a flag-icons SVG span for real
+    codes, <img> for custom-art codes, '' for blanks/unknowns."""
     if not country_code:
         return Markup("")
     s = str(country_code).strip().upper()
@@ -54,7 +73,12 @@ def flag(country_code) -> Markup:
             f'<img src="/static/flags/{_CUSTOM_FLAGS[s]}" alt="{escape(s)}" '
             f'class="player-flag-img" style="height:1em;vertical-align:-0.15em;width:auto" />'
         )
-    return Markup(_flag_emoji(s))
+    if s in _FLAG_CODES:
+        return Markup(
+            f'<span class="fi fi-{s.lower()}" '
+            f'style="vertical-align:-0.1em"></span>'
+        )
+    return Markup("")
 
 
 def flags(primary, secondary="") -> Markup:

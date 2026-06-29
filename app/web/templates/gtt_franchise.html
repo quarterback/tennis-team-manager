@@ -7,7 +7,7 @@
 
   <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
     <div class="bl-panel-head">
-      <span class="bl-panel-title">{{ fr.name }} {% if is_champion %}🏆{% endif %}</span>
+      <span class="bl-panel-title">{{ fr.name }} {% if is_champion %}<i class="fa-solid fa-trophy" aria-hidden="true"></i>{% endif %}</span>
       <span class="bl-panel-meta">{{ fr.city }} · [{{ fr.abbrev }}]{% if row %} · {{ row.w }}-{{ row.l }} ({{ "%+d"|format(row.diff) }}){% endif %}</span>
     </div>
     <div class="bl-tablescroll"><div class="bl-table gtt-ros">
@@ -51,7 +51,7 @@
   {% endif %}
 
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">🛠️ Edit roster</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Edit roster</span>
       <span class="bl-panel-meta">move a player to another franchise or waive to free agency</span></div>
     <div style="padding:8px 16px">
       {% for p in roster %}
@@ -108,7 +108,7 @@
   {% endif %}
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">🛠️ Edit franchise</span>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Edit franchise</span>
       <span class="bl-panel-meta">cosmetic only — never changes results</span></div>
     <form method="post" action="{{ url_for('gtt_franchise_edit', fid=fr.id) }}"
           style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px">

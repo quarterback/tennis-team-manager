@@ -142,7 +142,7 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Bracket Watch</span><a class="bl-panel-meta" href="{{ url_for('projection', u=u) }}">Projection →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.natl_champion %}
-        <div class="al-champline">🥇 <strong>{{ portal.natl_champion }}</strong><small>National Champion</small></div>
+        <div class="al-champline"><i class="fa-solid fa-medal" aria-hidden="true"></i> <strong>{{ portal.natl_champion }}</strong><small>National Champion</small></div>
       {% elif portal.bubble %}
         <div class="al-sublabel">Last Four In · {{ portal.bubble.field }}-team field</div>
         {% for t in portal.bubble.last_in %}
@@ -162,7 +162,7 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Season Opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">ITA bracket →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.ita_champion %}
-        <div class="al-champline">❄️ <strong>{{ portal.ita_champion }}</strong><small>ITA Indoor National Champion</small></div>
+        <div class="al-champline"><i class="fa-solid fa-snowflake" aria-hidden="true"></i> <strong>{{ portal.ita_champion }}</strong><small>ITA Indoor National Champion</small></div>
       {% elif portal.phase in ['ita_kickoff', 'ita_indoor'] %}
         <p class="al-muted">The ITA opener is underway — <a href="{{ url_for('season_ita', u=u) }}">view the live bracket</a>.</p>
       {% else %}
