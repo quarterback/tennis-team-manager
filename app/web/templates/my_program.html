@@ -6,7 +6,7 @@
   <header class="mp-head">
     <div class="mp-id">
       <h1 class="mp-h1">{{ mp.school }}</h1>
-      <div class="mp-sub">{{ mp.division }} {{ mp.gender|capitalize }} · {{ mp.conf }}</div>
+      <div class="mp-sub" title="{{ mp.conf }}">{{ mp.division }} {{ mp.gender|capitalize }} · {{ mp.conf_abbr or mp.conf }}</div>
     </div>
     <div class="mp-meta">
       <div class="mp-stat"><span class="mp-k">Record</span><span class="mp-v">{{ mp.wins }}–{{ mp.losses }}</span></div>
@@ -56,7 +56,7 @@
           <span class="mp-note" style="margin:0;">The AI sets the ladder by strength. Nudge a player to take it over — leave it alone and you're at no disadvantage.</span>
         {% endif %}
       </div>
-      {% set ladder = mp.starters + mp.bench[:4] %}
+      {% set ladder = mp.starters + mp.bench %}
       <table class="mp-table">
         <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th><th></th></tr></thead>
         <tbody>

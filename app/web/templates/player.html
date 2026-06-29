@@ -136,7 +136,7 @@
               <div class="tsub" style="font-size:10px">of {{ ranks.natl_total }}</div></div>
             <div><div class="bl-th" style="font-size:10px">CONFERENCE</div>
               <div class="bl-stat power" style="font-size:18px">#{{ ranks.conf }}</div>
-              <div class="tsub" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ranks.conf_name }}</div></div>
+              <div class="tsub" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ ranks.conf_name }}">{{ ranks.conf_abbr or ranks.conf_name }}</div></div>
             <div><div class="bl-th" style="font-size:10px">TEAM</div>
               <div class="bl-stat power" style="font-size:18px">#{{ ranks.team }}</div>
               <div class="tsub" style="font-size:10px">of {{ ranks.team_total }}</div></div>
