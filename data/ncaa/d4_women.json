@@ -31,7 +31,14 @@
         "Olin",
         "Skidmore",
         "Trinity (CT)",
-        "Vassar"
+        "Vassar",
+        "MIT",
+        "WPI",
+        "Illinois Tech",
+        "Union (NY)",
+        "St. Lawrence",
+        "Clarkson",
+        "RIT"
       ]
     },
     {
@@ -322,20 +329,6 @@
         "RPI",
         "Rochester",
         "Washington University in St. Louis"
-      ]
-    },
-    {
-      "name": "Liberty League",
-      "abbr": "Liberty League",
-      "autobid": true,
-      "teams": [
-        "MIT",
-        "WPI",
-        "Illinois Tech",
-        "Union (NY)",
-        "St. Lawrence",
-        "Clarkson",
-        "RIT"
       ]
     }
   ]
