@@ -86,7 +86,7 @@ def roster_version() -> str:
     conn = _db()
     rows = conn.execute(
         "SELECT kind, key, value FROM roster_overrides"
-        " WHERE kind IN ('move','lineup') ORDER BY kind, key").fetchall()
+        " WHERE kind IN ('move','lineup','doubles') ORDER BY kind, key").fetchall()
     conn.close()
     h = hashlib.md5()
     for r in rows:
@@ -133,6 +133,29 @@ def set_lineup(school: str, pids: list[str]) -> None:
 def clear_lineup(school: str) -> None:
     conn = _db()
     conn.execute("DELETE FROM roster_overrides WHERE kind='lineup' AND key=?", (school,))
+    conn.commit(); conn.close()
+
+
+def get_doubles() -> dict:
+    """school -> ordered list of 6 pids forming the 3 doubles pairs
+    [(0,1),(2,3),(4,5)]. INDEPENDENT of the singles lineup, so a doubles specialist
+    who isn't a singles starter can be paired here."""
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='doubles'").fetchall()
+    conn.close()
+    return {k: json.loads(v) for k, v in rows}
+
+
+def set_doubles(school: str, pids: list[str]) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value) VALUES ('doubles',?,?)",
+                 (school, json.dumps(pids)))
+    conn.commit(); conn.close()
+
+
+def clear_doubles(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='doubles' AND key=?", (school,))
     conn.commit(); conn.close()
 
 

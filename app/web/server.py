@@ -230,8 +230,11 @@ def _game_context():
 
 
 def _universe(req) -> tuple[str, str, str, str]:
-    """Resolve (division, gender, label, u-key) from the request."""
-    u = req.args.get("u", "D1-men")
+    """Resolve (division, gender, label, u-key) from the request. POST forms carry
+    `u` as a hidden field (no query string), so fall back to the form body — without
+    it an editor edit for any non-default universe is validated against the D1-men
+    roster. `request.form` is empty on GET, so this is a no-op there."""
+    u = req.args.get("u") or req.form.get("u") or "D1-men"
     match = next((x for x in UNIVERSES if x[0] == u), UNIVERSES[0])
     _, division, gender, label = match
     return division, gender, label, match[0]
@@ -533,9 +536,20 @@ def create_app() -> Flask:
             ov.clear_lineup(school)             # back to the auto ladder
             reset_all()
             return redirect(url_for("my_program"))
+        p = load_division(division, gender).by_school(school)
+        valid = {pr.pid for pr in build_roster(p)} if p else set()
+        # Slot picker: six S1-S6 dropdowns set the whole singles ladder at once (any
+        # roster player into any slot — no more nudging ▲▼ one row at a time).
+        slots = ["s1", "s2", "s3", "s4", "s5", "s6"]
+        if any(request.form.get(s) for s in slots):
+            pids = [request.form.get(s, "").strip() for s in slots]
+            if all(pid in valid for pid in pids) and len(set(pids)) == 6:
+                ov.set_lineup(school, pids)     # pinned six lead; rest fall in by ability
+                reset_all()
+            return redirect(url_for("my_program"))
+        # Legacy single-step nudge (kept for any old links / accessibility).
         pid = request.form.get("pid", "")
         direction = request.form.get("dir", "")
-        p = load_division(division, gender).by_school(school)
         order = [pr.pid for pr in build_roster(p)] if p else []
         if pid in order:
             i = order.index(pid)
@@ -544,6 +558,30 @@ def create_app() -> Flask:
                 order[i], order[j] = order[j], order[i]
                 ov.set_lineup(school, order)
                 reset_all()
+        return redirect(url_for("my_program"))
+
+    @app.route("/my-program/doubles", methods=["POST"])
+    def my_program_doubles():
+        # Hand-set the coached team's INDEPENDENT doubles lineup (3 pairs). Players may
+        # be any roster member, not just singles starters — a doubles specialist. School
+        # comes from the saved program, so this only ever edits your own team.
+        from app import worldconfig
+        from app.ncaa import build_roster, load_division
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        school, division, gender = prog["school"], prog["division"], prog["gender"]
+        if request.form.get("action") == "reset":
+            ov.clear_doubles(school)            # back to the auto pairing
+            reset_all()
+            return redirect(url_for("my_program"))
+        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        pids = [request.form.get(s, "").strip() for s in slots]
+        p = load_division(division, gender).by_school(school)
+        valid = {pr.pid for pr in build_roster(p)} if p else set()
+        if all(pid in valid for pid in pids) and len(set(pids)) == 6:
+            ov.set_doubles(school, pids)
+            reset_all()
         return redirect(url_for("my_program"))
 
     @app.route("/my-program/offers")
@@ -1491,6 +1529,7 @@ def create_app() -> Flask:
         conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
+                               doubles_pin=ov.get_doubles().get(school) or [],
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
@@ -1677,6 +1716,31 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         if school:
             ov.clear_lineup(school)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/doubles", methods=["POST"])
+    def editor_doubles():
+        # Pin an INDEPENDENT doubles lineup: 6 pids (d1a,d1b,d2a,d2b,d3a,d3b) → 3 pairs.
+        # Players may be ANY roster member, not just singles starters (doubles
+        # specialists). Rejected unless all six are distinct roster pids.
+        division, gender, label, u = _universe(request)
+        school = request.form.get("school", "")
+        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        pids = [request.form.get(s, "").strip() for s in slots]
+        rows, _ = editor_roster(division, gender, school)
+        valid = {r["pid"] for r in (rows or [])}
+        if all(p in valid for p in pids) and len(set(pids)) == 6:
+            ov.set_doubles(school, pids)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/clear_doubles", methods=["POST"])
+    def editor_clear_doubles():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        if school:
+            ov.clear_doubles(school)
             reset_all()
         return redirect(url_for("editor", u=u, school=school))
 

@@ -58,7 +58,7 @@
       </div>
       {% set ladder = mp.starters + mp.bench %}
       <table class="mp-table">
-        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
         <tbody>
           {% for r in ladder %}
           <tr{% if r.injury %} class="mp-hurt"{% endif %}{% if not r.line %} class="mp-benchrow"{% endif %}>
@@ -68,22 +68,58 @@
             <td class="mp-num">{{ r.str }}</td>
             <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
             <td>{{ r.schol }}</td>
-            <td class="mp-move">
-              <form method="post" action="{{ url_for('my_program_lineup') }}">
-                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="up">
-                <button type="submit" title="Move up"{% if loop.first %} disabled{% endif %}>▲</button>
-              </form>
-              <form method="post" action="{{ url_for('my_program_lineup') }}">
-                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="down">
-                <button type="submit" title="Move down"{% if loop.last %} disabled{% endif %}>▼</button>
-              </form>
-            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-      <p class="mp-note">Top 6 play singles (and feed the doubles pairings). The row below the line is your next-up bench — promote one to bump it into the lineup.</p>
+      {% if ladder|length >= 6 %}
+      {% set lpin = ladder[:6]|map(attribute='p.pid')|list %}
+      <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
+        {% for i in range(6) %}
+        <div class="mp-dblrow">
+          <span class="mp-dbl-line">S{{ i + 1 }}</span>
+          <select name="s{{ i + 1 }}">{% for r in ladder %}<option value="{{ r.p.pid }}"{% if r.p.pid == lpin[i] %} selected{% endif %}>{{ r.p.name }}{% if r.injury %} (out){% endif %}</option>{% endfor %}</select>
+        </div>
+        {% endfor %}
+        <button class="mp-dbl-save" type="submit">Save lineup</button>
+      </form>
+      {% endif %}
+      <p class="mp-note">Pick any roster player into any singles slot — set all six at once. The “—” rows below the line are your bench. Doubles is set separately below.</p>
     </section>
+
+    {% set pool = mp.starters + mp.bench %}
+    {% if pool|length >= 6 %}
+    {% set dpin = mp.doubles_pin if mp.doubles_pin|length == 6 else pool[:6]|map(attribute='p.pid')|list %}
+    <section class="mp-card mp-span2">
+      <div class="mp-card-h"><h2>Doubles lineup</h2></div>
+      <div class="mp-lineup-status">
+        {% if mp.doubles_pinned %}
+          <span class="mp-badge on">Custom pairings</span>
+          <span class="mp-note" style="margin:0;">Your three pairs are fielded every dual.</span>
+          <form method="post" action="{{ url_for('my_program_doubles') }}" style="margin-left:auto;">
+            <input type="hidden" name="action" value="reset">
+            <button class="mp-reset" type="submit"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to auto</button>
+          </form>
+        {% else %}
+          <span class="mp-badge">Auto pairings</span>
+          <span class="mp-note" style="margin:0;">The AI pairs your top 6. Set your own — you can pair anyone on the roster, including depth from outside your singles six.</span>
+        {% endif %}
+      </div>
+      <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl">
+        {% for pair in [('1','d1a','d1b'), ('2','d2a','d2b'), ('3','d3a','d3b')] %}
+        {% set base = loop.index0 * 2 %}
+        <div class="mp-dblrow">
+          <span class="mp-dbl-line">D{{ pair[0] }}</span>
+          <select name="{{ pair[1] }}">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+          <span class="mp-amp">&amp;</span>
+          <select name="{{ pair[2] }}">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base + 1] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+        </div>
+        {% endfor %}
+        <button class="mp-dbl-save" type="submit">Save pairings</button>
+      </form>
+      <p class="mp-note">Doubles is picked independently of singles, so players can play both — and you can use a depth player in doubles who isn't in that day's singles six. If a paired player is injured, that dual falls back to the auto pairing.</p>
+    </section>
+    {% endif %}
 
     <section class="mp-card">
       <div class="mp-card-h"><h2>Incoming class</h2>
@@ -187,6 +223,16 @@
   .mp-move button:hover:not(:disabled) { color: var(--brand); border-color: var(--brand); }
   .mp-tag { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--stat-bad, #c0392b);
     border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
+  .mp-dbl { display: flex; flex-direction: column; gap: 8px; }
+  .mp-dblrow { display: flex; align-items: center; gap: 8px; }
+  .mp-dbl-line { font-weight: 700; color: var(--text-secondary); width: 28px; flex: none; }
+  .mp-dblrow select { flex: 1 1 0; min-width: 0; font-size: 13px; padding: 5px 7px;
+    border: 1px solid var(--border-subtle); border-radius: 7px; background: var(--surface-page);
+    color: var(--text-primary); }
+  .mp-amp { color: var(--text-faint); flex: none; }
+  .mp-dbl-save { align-self: flex-start; margin-top: 2px; font-size: 13px; font-weight: 700; cursor: pointer;
+    color: var(--brand-contrast, #fff); background: var(--brand); border: 0; border-radius: 8px; padding: 7px 14px; }
+  .mp-dbl-save:hover { background: var(--brand-strong, var(--brand)); }
   .mp-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
   .mp-kpis { display: flex; gap: 18px; margin-bottom: 6px; }
   .mp-kpi { display: flex; flex-direction: column; }

@@ -77,7 +77,7 @@ BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs 
 def coach_lineup(prog: Program, roster: list, form: dict | None,
                  opp_prestige: float, lineup_seed: int, dual_seed: int = 0,
                  forced: set | None = None, unavailable: set | None = None,
-                 pinned: list | None = None):
+                 pinned: list | None = None, doubles_pin: list | None = None):
     """Return (engine Team, chosen Prospects) for `prog` this dual.
 
     The ladder is set by live results STR (ability before results exist) plus a
@@ -184,10 +184,27 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
     if len(chosen) < 6 and chosen:
         chosen = chosen + [chosen[-1]] * (6 - len(chosen))
 
-    doubles = srng.choice(DOUBLES_PERMS)
+    # Doubles is its OWN lineup. By default it's the classic auto-permutation of the
+    # singles six. If the coach pinned a doubles lineup (career mode, coached team),
+    # honor it — INDEPENDENT of singles, so a doubles specialist who isn't a singles
+    # starter can play (real college tennis: a "1 doubles / 5 singles" player). The
+    # pin is 6 pids → pairs [(0,1),(2,3),(4,5)]; it's used only if all six are on the
+    # available (healthy) roster, otherwise we fall back to the auto pairing.
+    dbl_players = None
+    chosen_dbl = chosen
+    if doubles_pin:
+        avail = {p.pid: p for p in roster}
+        picks = [avail[pid] for pid in doubles_pin if pid in avail]
+        if len(picks) >= 6:
+            chosen_dbl = picks[:6]
+            dbl_players = [p.engine_player() for p in chosen_dbl]
+    if dbl_players is not None:
+        doubles = [(0, 1), (2, 3), (4, 5)]
+    else:
+        doubles = [tuple(x) for x in srng.choice(DOUBLES_PERMS)]
     team = Team(name=prog.school, singles=[p.engine_player() for p in chosen],
-                doubles=[tuple(x) for x in doubles])
-    return team, chosen
+                doubles=doubles, doubles_players=dbl_players)
+    return team, chosen, chosen_dbl
 
 
 def forced_appearances(prog: Program, roster: list,
@@ -215,10 +232,15 @@ def forced_appearances(prog: Program, roster: list,
 
 
 def _line_identity(slot: str, la: list, lb: list,
-                   ha_dbl: list, aw_dbl: list) -> dict:
+                   ha_dbl: list, aw_dbl: list,
+                   la_d: list | None = None, lb_d: list | None = None) -> dict:
     """Who played a line, both sides, so box scores can show position↔player.
-    Singles carry stable pids (STR/record are singles-based); doubles use the
-    actual (possibly permuted) pairing for each side."""
+    Singles carry stable pids (STR/record are singles-based); doubles use the actual
+    pairing, indexing each side's DOUBLES roster (`la_d`/`lb_d`) — which may differ
+    from the singles six when a coach pins an independent doubles lineup. Falls back
+    to the singles list when no separate doubles roster is supplied."""
+    la_d = la if la_d is None else la_d
+    lb_d = lb if lb_d is None else lb_d
     out: dict = {}
     if slot.startswith("S"):
         i = int(slot[1:]) - 1
@@ -230,8 +252,8 @@ def _line_identity(slot: str, la: list, lb: list,
     else:                                        # doubles — a pair per side
         i = int(slot[1:]) - 1
         if 0 <= i < len(ha_dbl) and i < len(aw_dbl):
-            hp = [la[x] for x in ha_dbl[i] if x < len(la)]
-            ap = [lb[x] for x in aw_dbl[i] if x < len(lb)]
+            hp = [la_d[x] for x in ha_dbl[i] if x < len(la_d)]
+            ap = [lb_d[x] for x in aw_dbl[i] if x < len(lb_d)]
             if hp and ap:
                 out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
                            away_player=" / ".join(p.name.split()[-1] for p in ap),
@@ -241,7 +263,8 @@ def _line_identity(slot: str, la: list, lb: list,
 
 def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                  la: list, lb: list, *, seed: int, conf: bool,
-                 forced_home: set | None = None, forced_away: set | None = None) -> dict:
+                 forced_home: set | None = None, forced_away: set | None = None,
+                 la_d: list | None = None, lb_d: list | None = None) -> dict:
     """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the
     Prospects who played (la[i] ↔ sa.singles[i]) so every line carries the
     identity of who played that position (singles pids + names; doubles names
@@ -259,14 +282,14 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
             # shows where it stood, not a blank "did not play".
             rec = {"slot": ln.slot, "completed": False,
                    "sets": [[h, a] for (h, a) in (ln.partial or [])]}
-            rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles))
+            rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles, la_d, lb_d))
             lines.append(rec)
             continue
         gw = ln.result.games_won
         rec = {"slot": ln.slot, "completed": True, "home_won": ln.home_won,
                "home_games": gw[0], "away_games": gw[1],
                "sets": [[h, a] for (h, a) in ln.result.set_scores]}
-        rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles))
+        rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles, la_d, lb_d))
         lines.append(rec)
     return {
         "home": a.school, "away": b.school, "conf": conf,
@@ -296,6 +319,21 @@ def _coached_pin(prog) -> list | None:
         return None
 
 
+def _coached_doubles(prog) -> list | None:
+    """The hand-set doubles lineup (6 pids → 3 pairs) for `prog`, but ONLY when it is
+    the human-coached program — same guard as `_coached_pin`. None everywhere else, so
+    every other team auto-pairs its doubles exactly as before."""
+    try:
+        from app import worldconfig, overrides as ov
+        cp = worldconfig.user_program()
+        if not cp or cp["school"] != prog.school or cp["gender"] != prog.gender \
+                or cp["division"] != prog.division:
+            return None
+        return ov.get_doubles().get(prog.school) or None
+    except Exception:
+        return None
+
+
 def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                  form: dict | None = None, lineup_seed: int = 0,
                  forced_home: set | None = None, forced_away: set | None = None,
@@ -310,16 +348,22 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
 
     The record carries `home_played`/`away_played` (pids who competed) so the
     caller can roll fresh injuries on exactly the players who took the court."""
-    sa, la = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
-                          lineup_seed, seed, forced=forced_home,
-                          unavailable=unavailable_home, pinned=_coached_pin(a))
-    sb, lb = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
-                          lineup_seed, seed, forced=forced_away,
-                          unavailable=unavailable_away, pinned=_coached_pin(b))
+    sa, la, la_d = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
+                                lineup_seed, seed, forced=forced_home,
+                                unavailable=unavailable_home, pinned=_coached_pin(a),
+                                doubles_pin=_coached_doubles(a))
+    sb, lb, lb_d = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
+                                lineup_seed, seed, forced=forced_away,
+                                unavailable=unavailable_away, pinned=_coached_pin(b),
+                                doubles_pin=_coached_doubles(b))
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
-                       forced_home=forced_home, forced_away=forced_away)
-    rec["home_played"] = [p.pid for p in la]
-    rec["away_played"] = [p.pid for p in lb]
+                       forced_home=forced_home, forced_away=forced_away,
+                       la_d=la_d, lb_d=lb_d)
+    # Everyone who took the court — singles AND doubles — so season-mode rolls fresh
+    # injuries on them. A doubles-only specialist (in la_d but not la) must be counted
+    # or they'd play every dual injury-free.
+    rec["home_played"] = list(dict.fromkeys([p.pid for p in la] + [p.pid for p in la_d]))
+    rec["away_played"] = list(dict.fromkeys([p.pid for p in lb] + [p.pid for p in lb_d]))
     return rec
 
 

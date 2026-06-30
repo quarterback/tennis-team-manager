@@ -1611,6 +1611,7 @@ def active_overrides():
         moves.append({"pid": pid, "name": pr.name if pr else pid,
                       "str": round(pr.str_value(), 1) if pr else "—", "dest": dest})
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
+    doubles = [{"school": s, "n": len(pids) // 2} for s, pids in sorted(ov.get_doubles().items())]
     prestige = [{"school": s, "value": round(v * 100)}
                 for s, v in sorted(ov.get_prestige().items())]
     academics = [{"school": s, "value": round(v * 100)}
@@ -1619,10 +1620,10 @@ def active_overrides():
                      for c, v in sorted(ov.get_conf_prestige().items())]
     conf_academics = [{"conf": c, "value": round(v * 100)}
                       for c, v in sorted(ov.get_conf_academics().items())]
-    return {"moves": moves, "lineups": lineups, "prestige": prestige,
+    return {"moves": moves, "lineups": lineups, "doubles": doubles, "prestige": prestige,
             "academics": academics, "conf_prestige": conf_prestige,
             "conf_academics": conf_academics,
-            "any": bool(moves or lineups or prestige or academics
+            "any": bool(moves or lineups or doubles or prestige or academics
                         or conf_prestige or conf_academics)}
 
 
@@ -2022,6 +2023,7 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     for i, r in enumerate(roster, 1):
         r["line"] = i if i <= 6 else None
     lineup_pinned = school in ov.get_lineups()
+    doubles_pin = ov.get_doubles().get(school) or []
     rec = team_results(division, gender, school, seed)
     sched = sm.team_schedule(sid, school)
     nxt = next((d for d in sched if d["status"] != "final"), None)
@@ -2042,6 +2044,8 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "starters": [r for r in roster if r["line"]],
         "bench": [r for r in roster if not r["line"]],
         "lineup_pinned": lineup_pinned,
+        "doubles_pinned": bool(doubles_pin),
+        "doubles_pin": doubles_pin,
         "budget": team_budget(division, gender, school),
         "incoming": team_recruiting_class(gender, school, seed),
         "next": nxt,

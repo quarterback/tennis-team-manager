@@ -242,6 +242,42 @@
       Reorder with ▲▼ to pin a custom lineup (lines 1–6 are the singles ladder). “Move” relocates a
       player to any program in any division — drop a great D1 player onto a D3 roster and run a dual to
       see what happens. Edits persist and feed the dual simulator, team pages, and new season sims.</div></div>
+
+    {% if rows and rows|length >= 6 %}
+    {# ---- Doubles lineup: picked independently of singles (3 pairs). Any roster
+           player can be paired — including depth outside the singles six. Players
+           play both; there's no doubles-only player type. ---- #}
+    {% set dpin = doubles_pin if doubles_pin|length == 6 else rows[:6]|map(attribute='pid')|list %}
+    <div class="bl-panel" style="margin-top:16px">
+      <div class="bl-panel-head"><span class="bl-panel-title">Doubles lineup</span>
+        <span class="bl-panel-meta">3 pairs — picked independently of singles; pair anyone on the roster (players play both)</span></div>
+      <form method="post" action="{{ url_for('editor_doubles') }}" class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
+        <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+        {% for pair in [('D1','d1a','d1b'), ('D2','d2a','d2b'), ('D3','d3a','d3b')] %}
+        {% set base = loop.index0 * 2 %}
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="bl-rank" style="width:28px">{{ pair[0] }}</span>
+          {% for si in (1, 2) %}
+          <select class="bl-select" name="{{ pair[si] }}" style="flex:1;min-width:0;font-size:12px">
+            {% for r in rows %}<option value="{{ r.pid }}"{% if r.pid == dpin[base + si - 1] %} selected{% endif %}>{{ r.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}
+          </select>
+          {% if si == 1 %}<span style="color:var(--text-faint)">&amp;</span>{% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="bl-pill" type="submit" style="background:var(--brand);color:#fff">Save doubles</button>
+          {% if doubles_pin|length == 6 %}
+          <span style="font-size:12px;color:var(--stat-good,var(--brand))">✓ Pinned</span>
+          {% else %}<span style="font-size:12px;color:var(--text-muted)">Auto (best pairing of the top 6)</span>{% endif %}
+        </div>
+      </form>
+      <div class="bl-note" style="margin:0 12px 12px;font-size:12px;color:var(--text-faint)">
+        Applies to the coached team's season duals. Leave unset and the AI auto-pairs. If a pinned
+        player is injured for a dual, that week falls back to the auto pairing.
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div style="display:flex;flex-direction:column;gap:16px">
@@ -265,6 +301,14 @@
           <span class="bl-clinch-name" style="font-size:12px">Lineup pinned · {{ ln.school }} ({{ ln.n }})</span>
           <form method="post" action="{{ url_for('editor_clear_lineup') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ ln.school }}">
+            <button class="bl-pill" type="submit">Undo</button></form>
+        </div>
+        {% endfor %}
+        {% for db in ov.doubles %}
+        <div class="bl-clinchrow" style="align-items:center">
+          <span class="bl-clinch-name" style="font-size:12px">Doubles pinned · {{ db.school }} ({{ db.n }} pairs)</span>
+          <form method="post" action="{{ url_for('editor_clear_doubles') }}">
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ db.school }}">
             <button class="bl-pill" type="submit">Undo</button></form>
         </div>
         {% endfor %}
