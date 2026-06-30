@@ -101,7 +101,7 @@ def test_lineup_drops_injured():
     roster = build_roster(prog)
     healthy = sorted(roster, key=lambda p: p.str_value(), reverse=True)
     ace = healthy[0]
-    team, chosen = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
+    team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
                                 unavailable={ace.pid})
     assert ace.pid not in {p.pid for p in chosen}
     assert len(chosen) == 6   # a depth body pulled up
@@ -222,7 +222,7 @@ def test_lineup_never_short_of_six_when_depth_exists():
     prog = load_division("D1", "men").programs[0]
     roster = build_roster(prog)                 # D1 cap 12
     out = {p.pid for p in roster[:8]}           # 8 injured -> 4 healthy
-    team, chosen = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
+    team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
                                 unavailable=out)
     assert len(chosen) == 6
     assert len(team.singles) == 6
@@ -235,7 +235,7 @@ def test_lineup_clamps_a_sub_six_roster():
     from app.season import coach_lineup
     prog = load_division("D1", "men").programs[0]
     roster = build_roster(prog)[:4]             # only four players exist
-    team, chosen = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1)
+    team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1)
     assert len(chosen) == 6
     assert len(team.singles) == 6
 

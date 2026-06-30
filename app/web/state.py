@@ -1611,6 +1611,7 @@ def active_overrides():
         moves.append({"pid": pid, "name": pr.name if pr else pid,
                       "str": round(pr.str_value(), 1) if pr else "—", "dest": dest})
     lineups = [{"school": s, "n": len(pids)} for s, pids in sorted(ov.get_lineups().items())]
+    doubles = [{"school": s, "n": len(pids) // 2} for s, pids in sorted(ov.get_doubles().items())]
     prestige = [{"school": s, "value": round(v * 100)}
                 for s, v in sorted(ov.get_prestige().items())]
     academics = [{"school": s, "value": round(v * 100)}
@@ -1619,10 +1620,10 @@ def active_overrides():
                      for c, v in sorted(ov.get_conf_prestige().items())]
     conf_academics = [{"conf": c, "value": round(v * 100)}
                       for c, v in sorted(ov.get_conf_academics().items())]
-    return {"moves": moves, "lineups": lineups, "prestige": prestige,
+    return {"moves": moves, "lineups": lineups, "doubles": doubles, "prestige": prestige,
             "academics": academics, "conf_prestige": conf_prestige,
             "conf_academics": conf_academics,
-            "any": bool(moves or lineups or prestige or academics
+            "any": bool(moves or lineups or doubles or prestige or academics
                         or conf_prestige or conf_academics)}
 
 

@@ -1491,6 +1491,7 @@ def create_app() -> Flask:
         conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
+                               doubles_pin=ov.get_doubles().get(school) or [],
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
@@ -1677,6 +1678,31 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         if school:
             ov.clear_lineup(school)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/doubles", methods=["POST"])
+    def editor_doubles():
+        # Pin an INDEPENDENT doubles lineup: 6 pids (d1a,d1b,d2a,d2b,d3a,d3b) → 3 pairs.
+        # Players may be ANY roster member, not just singles starters (doubles
+        # specialists). Rejected unless all six are distinct roster pids.
+        division, gender, label, u = _universe(request)
+        school = request.form.get("school", "")
+        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        pids = [request.form.get(s, "").strip() for s in slots]
+        rows, _ = editor_roster(division, gender, school)
+        valid = {r["pid"] for r in (rows or [])}
+        if all(p in valid for p in pids) and len(set(pids)) == 6:
+            ov.set_doubles(school, pids)
+            reset_all()
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/clear_doubles", methods=["POST"])
+    def editor_clear_doubles():
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        if school:
+            ov.clear_doubles(school)
             reset_all()
         return redirect(url_for("editor", u=u, school=school))
 

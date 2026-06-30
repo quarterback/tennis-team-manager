@@ -37,8 +37,14 @@ class Team:
     name: str
     # Six singles players, ordered 1..6 by strength (lineup order).
     singles: list[Player]
-    # Doubles pairings as index pairs into `singles`; defaults to 1/2, 3/4, 5/6.
+    # Doubles pairings as index pairs; defaults to 1/2, 3/4, 5/6.
     doubles: list[tuple[int, int]] = field(default_factory=lambda: [(0, 1), (2, 3), (4, 5)])
+    # Optional SEPARATE doubles roster the pairings index into. When None (default),
+    # the pairs index into `singles` (the classic "doubles is a permutation of the
+    # six"). When set, doubles is its own lineup — so a doubles specialist who isn't
+    # in the singles six can still play (real college tennis: a "1 doubles / 5
+    # singles" player). Pairs then index into THIS list.
+    doubles_players: list[Player] | None = None
 
 
 @dataclass
@@ -63,8 +69,10 @@ class DualResult:
 
 
 def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
-    """Build the two-player doubles side for a lineup pairing."""
-    return DoublesTeam(players=(team.singles[pair[0]], team.singles[pair[1]]))
+    """Build the two-player doubles side for a lineup pairing. The pair indexes into
+    the team's separate `doubles_players` roster when set, else into `singles`."""
+    pool = team.doubles_players if team.doubles_players is not None else team.singles
+    return DoublesTeam(players=(pool[pair[0]], pool[pair[1]]))
 
 
 def _match_length(res: MatchResult) -> int:
