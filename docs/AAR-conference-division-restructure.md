@@ -56,13 +56,28 @@ Two rating tables, hooked into the existing D3/D4 gem economy
   gem allocation regardless of conference (SAA's other members, ~0.78, stay unfunded),
   plus `PRESTIGE_SCHOOLS += 0.15` each to seat them atop their D4 band.
 
+### 6. Conference sizing (no league under 8, with two exceptions)
+Owner rule: **no conference should have fewer than 8 teams** (7-team leagues are
+tolerated). Two cleanups + the rule pass:
+- **Duplicate Liberty League fixed.** The new D4 "Liberty League" created for the
+  Meridian academics collided with a pre-existing D4 Liberty League. Merged (one
+  league), then **rebalanced**: four NY schools (Bard, Vassar, Hobart and William
+  Smith, Ithaca) moved Liberty League → **Atlantic East** (6 → 10), leaving Liberty
+  League at **12**.
+- **American Southwest (4) merged into Collegiate Conference of the South → 11**; ASC
+  dissolved.
+- **Montclair State** moved from the Northeast Conference (D1) back to the **NJAC**
+  (D3 → 8). (New Jersey City University is *not* added — it is closing/merging into
+  Kean.)
+- Left at 7 by owner preference: **WIAC** and **Upper Midwest**. No league is below 7.
+
 ## State after (per gender; men's and women's memberships are identical except single-sex)
 | Div | Schools | Confs |
 |---|---:|---:|
-| D1 | 382 | 32 |
+| D1 | 381 | 32 |
 | D2 | 307 | 24 |
-| D3 | 211 | 24 |
-| D4 | 190 | 20 |
+| D3 | 212 | 23 |
+| D4 | 190 | 19 |
 
 Flagship invariant: all 50 states + DC have a D1 program; the territories (PR/VI/GU)
 and BC intentionally top out at D2 (UVI stays D2 by owner decision).
