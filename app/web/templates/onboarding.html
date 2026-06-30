@@ -50,28 +50,26 @@
       <details class="ob-regions" id="ob-regions">
         <summary>Fine-tune by nation/region <span class="ob-opt">optional</span></summary>
         <p class="ob-regions-hint">
-          Dial any region up or down to change its slice of the <strong>international</strong>
-          portion — e.g. crank Canada or Africa to make them proliferate. The
-          <strong class="ob-reff-key">%</strong> next to each name is its live share of the whole
-          world (US included) and updates as you change the split, band, and multipliers.
-          <em>The US row is set by the “US vs. world split” above — its multiplier is intentionally fixed.</em>
+          Set a <strong>weight</strong> for any region to author the <strong>international</strong>
+          mix directly — the weights are relative, so e.g. Europe 160, Latin America 60,
+          Canada 40, Africa 60, everything else 0 gives a European core with real Latin America,
+          Canada &amp; Africa. The <strong class="ob-reff-key">%</strong> next to each name is its
+          live share of the whole world (US included) and updates as you type.
+          <em>Picking a band just pre-fills these weights; the US row is the “US vs. world split” above.</em>
+          <button type="button" class="ob-reset" id="ob-reset">Reset to band</button>
         </p>
         {% for grp in region_groups %}
         <details class="ob-cont">
           <summary>{{ grp.continent }} <span class="ob-cont-n">{{ grp.regions|length }}</span></summary>
           <div class="ob-rgrid">
             {% for r in grp.regions %}
-            <div class="ob-rrow" data-region="{{ r.id }}" data-weight="{{ r.weight }}"
-                 data-inband="{{ 1 if r.in_band else 0 }}"{% if r.is_domestic %} data-domestic="1"{% endif %}>
+            <div class="ob-rrow" data-region="{{ r.id }}"{% if r.is_domestic %} data-domestic="1"{% endif %}>
               <span class="ob-rlabel">{{ r.label }}<span class="ob-reff" data-eff>—</span></span>
               {% if r.is_domestic %}
               <span class="ob-rfixed" title="Set by the “US vs. world split” above">auto</span>
               {% else %}
-              <select name="mult_{{ r.id }}" class="ob-rmult{% if r.mult != 1.0 %} on{% endif %}">
-                {% for c in mult_choices %}
-                <option value="{{ c }}" {% if c == r.mult %}selected{% endif %}>{{ '%g'|format(c) }}×{% if c == 0 %} off{% endif %}</option>
-                {% endfor %}
-              </select>
+              <input type="number" name="w_{{ r.id }}" class="ob-rweight" min="0" step="1"
+                     value="{{ r.weight }}" inputmode="numeric">
               {% endif %}
             </div>
             {% endfor %}
@@ -82,64 +80,57 @@
       <script id="ob-band-weights" type="application/json">{{ band_weights|tojson }}</script>
       <script>
       (function () {
-        var INTRO_FLOOR = {{ intro_floor }};
+        var SCALE = {{ weight_scale }};
         var bandWeights = JSON.parse(document.getElementById('ob-band-weights').textContent || '{}');
         var intlSel = document.getElementById('ob-intl');
         var bandSel = document.querySelector('select[name="name_preset"]');
         var rows = Array.prototype.slice.call(document.querySelectorAll('#ob-regions .ob-rrow'));
+        var inputOf = function (row) { return row.querySelector('input.ob-rweight'); };
 
         function fmt(p) {
           if (p >= 9.95) return Math.round(p) + '%';
           if (p >= 0.05) return p.toFixed(1) + '%';
           return '0%';
         }
-        // Mirror the engine: a region absent from the band surfaces only when its
-        // multiplier != 1 (at INTRO_FLOOR·mult); the US share is 1 - intl_share and
-        // the rest of the world is scaled to fill the international slice.
-        function effWeight(row) {
-          var w = parseFloat(row.dataset.weight) || 0;
-          var inBand = row.dataset.inband === '1';
-          var sel = row.querySelector('select');
-          var m = sel ? parseFloat(sel.value) : 1;
-          if (m === 1) return inBand ? w : 0;
-          return (inBand ? w : INTRO_FLOOR) * (m > 0 ? m : 0);
-        }
+        // Direct weights: US share = 1 - intl_share; the rest of the world is the
+        // authored weights renormalized to fill the international slice. Mirrors
+        // ncaa.region_weights_for / generate_class (which renormalize the non-US mix).
         function recompute() {
           var intl = parseFloat(intlSel.value) || 0;
-          var eff = {}, sum = 0;
+          var w = {}, sum = 0;
           rows.forEach(function (row) {
             if (row.dataset.domestic) return;
-            var e = effWeight(row);
-            eff[row.dataset.region] = e;
-            sum += e;
+            var v = Math.max(0, parseFloat(inputOf(row).value) || 0);
+            w[row.dataset.region] = v;
+            sum += v;
           });
           rows.forEach(function (row) {
             var span = row.querySelector('[data-eff]');
             if (!span) return;
             var pct = row.dataset.domestic ? (1 - intl) * 100
-                    : (sum > 0 ? intl * (eff[row.dataset.region] / sum) * 100 : 0);
+                    : (sum > 0 ? intl * (w[row.dataset.region] / sum) * 100 : 0);
             span.textContent = fmt(pct);
             span.classList.toggle('zero', pct < 0.05);
-            var sel = row.querySelector('select');
-            if (sel) sel.classList.toggle('on', parseFloat(sel.value) !== 1);
           });
         }
-        // Switching bands rewrites every row's base weight from that band's map.
+        // Pre-fill every weight input from a band's map (band fraction × SCALE).
         function applyBand() {
-          var w = bandWeights[bandSel.value] || {};
+          var m = bandWeights[bandSel.value] || {};
           rows.forEach(function (row) {
-            var v = w[row.dataset.region];
-            row.dataset.weight = (v == null ? 0 : v);
-            row.dataset.inband = (v == null ? 0 : 1);
+            if (row.dataset.domestic) return;
+            var v = m[row.dataset.region];
+            inputOf(row).value = (v == null ? 0 : Math.max(1, Math.round(v * SCALE)));
           });
           recompute();
         }
         intlSel.addEventListener('change', recompute);
         rows.forEach(function (row) {
-          var sel = row.querySelector('select');
-          if (sel) sel.addEventListener('change', recompute);
+          var inp = inputOf(row);
+          if (inp) inp.addEventListener('input', recompute);
         });
         if (bandSel) bandSel.addEventListener('change', applyBand);
+        var reset = document.getElementById('ob-reset');
+        if (reset) reset.addEventListener('click', applyBand);
         recompute();
       })();
       </script>
@@ -279,8 +270,10 @@
 .ob-reff.zero { color: var(--text-muted); font-weight: 400; }
 .ob-reff-key { color: var(--brand); }
 .ob-rfixed { font-size: 11px; color: var(--text-muted); font-style: italic; padding: 2px 6px; border: 1px dashed var(--border-subtle); border-radius: 6px; flex: 0 0 auto; }
-.ob-rmult { font-size: 12px; padding: 2px 4px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-page); color: var(--text-primary); flex: 0 0 auto; }
-.ob-rmult.on { border-color: var(--brand); color: var(--brand); font-weight: 600; }
+.ob-rweight { font-size: 12px; width: 60px; padding: 3px 6px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-page); color: var(--text-primary); flex: 0 0 auto; text-align: right; font-variant-numeric: tabular-nums; }
+.ob-rweight:focus { border-color: var(--brand); outline: none; }
+.ob-reset { float: right; cursor: pointer; font-size: 11px; color: var(--brand); background: none; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 2px 8px; }
+.ob-reset:hover { border-color: var(--brand); }
 .ob-btn-primary { cursor: pointer; font-size: 15px; font-weight: 700;
   color: var(--brand-contrast); background: var(--brand); border: 1px solid var(--brand);
   border-radius: 9px; padding: 12px 20px; transition: background var(--dur-fast, .12s); }
