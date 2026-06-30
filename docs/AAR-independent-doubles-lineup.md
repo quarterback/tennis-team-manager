@@ -43,11 +43,18 @@ ladder); applies to the coached team's season duals.
 - **Persistence** (`overrides.py`): a new `kind='doubles'` row (key=school, value=
   JSON list of 6 pids), with `get/set/clear_doubles`. Added to `roster_version`
   (so caches refresh the instant the pin changes) and `clear_all`.
-- **UI** (`editor.html` + routes `editor_doubles` / `editor_clear_doubles`): a
-  "Doubles lineup" panel under the singles table — three pair rows, each a pair of
-  roster dropdowns (every option labeled with the player's singles line, e.g.
-  "· S5", so a "1 doubles / 5 singles" pick is obvious). Saved only if the six picks
-  are distinct roster pids. Surfaces in the "Active overrides" panel with an Undo.
+- **UI — two surfaces.** Both write the same `kind='doubles'` override, so they're
+  interchangeable:
+  - **Clubhouse / My Program** (`my_program.html` + routes `my_program_doubles`):
+    the primary, run-a-team surface. A "Doubles lineup" card under the singles card —
+    three pair dropdowns over the full roster, each option labeled with the player's
+    singles line ("· S5"), an auto/custom badge, and a "Reset to auto". School comes
+    from the saved program, so it only ever edits your own team.
+  - **Editor** (`editor.html` + routes `editor_doubles` / `editor_clear_doubles`):
+    the god-mode surface, per-school — handy for intervening on *other* programs (e.g.
+    getting a buried player court time the AI wouldn't). Same panel, in the "Active
+    overrides" list with an Undo.
+  Both save only if the six picks are distinct roster pids.
 
 ## Gotchas / scope
 

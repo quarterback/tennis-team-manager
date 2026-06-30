@@ -546,6 +546,30 @@ def create_app() -> Flask:
                 reset_all()
         return redirect(url_for("my_program"))
 
+    @app.route("/my-program/doubles", methods=["POST"])
+    def my_program_doubles():
+        # Hand-set the coached team's INDEPENDENT doubles lineup (3 pairs). Players may
+        # be any roster member, not just singles starters — a doubles specialist. School
+        # comes from the saved program, so this only ever edits your own team.
+        from app import worldconfig
+        from app.ncaa import build_roster, load_division
+        prog = worldconfig.user_program()
+        if not prog:
+            return redirect(url_for("onboarding"))
+        school, division, gender = prog["school"], prog["division"], prog["gender"]
+        if request.form.get("action") == "reset":
+            ov.clear_doubles(school)            # back to the auto pairing
+            reset_all()
+            return redirect(url_for("my_program"))
+        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        pids = [request.form.get(s, "").strip() for s in slots]
+        p = load_division(division, gender).by_school(school)
+        valid = {pr.pid for pr in build_roster(p)} if p else set()
+        if all(pid in valid for pid in pids) and len(set(pids)) == 6:
+            ov.set_doubles(school, pids)
+            reset_all()
+        return redirect(url_for("my_program"))
+
     @app.route("/my-program/offers")
     def my_offers():
         off = job_offers()

@@ -2023,6 +2023,7 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     for i, r in enumerate(roster, 1):
         r["line"] = i if i <= 6 else None
     lineup_pinned = school in ov.get_lineups()
+    doubles_pin = ov.get_doubles().get(school) or []
     rec = team_results(division, gender, school, seed)
     sched = sm.team_schedule(sid, school)
     nxt = next((d for d in sched if d["status"] != "final"), None)
@@ -2043,6 +2044,8 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "starters": [r for r in roster if r["line"]],
         "bench": [r for r in roster if not r["line"]],
         "lineup_pinned": lineup_pinned,
+        "doubles_pinned": bool(doubles_pin),
+        "doubles_pin": doubles_pin,
         "budget": team_budget(division, gender, school),
         "incoming": team_recruiting_class(gender, school, seed),
         "next": nxt,
