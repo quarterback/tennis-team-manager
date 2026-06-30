@@ -91,7 +91,8 @@
         "Rutgers-Newark",
         "Stockton",
         "TCNJ",
-        "William Paterson"
+        "William Paterson",
+        "Montclair State"
       ]
     },
     {
@@ -125,17 +126,6 @@
         "Mount St. Joseph",
         "Rose-Hulman",
         "Transylvania"
-      ]
-    },
-    {
-      "name": "American Southwest Conference",
-      "abbr": "ASC",
-      "autobid": true,
-      "teams": [
-        "East Texas Baptist",
-        "Hardin-Simmons",
-        "Howard Payne",
-        "Mary Hardin-Baylor"
       ]
     },
     {
@@ -343,7 +333,11 @@
         "Marymount (VA)",
         "Neumann",
         "Pratt",
-        "Saint Elizabeth"
+        "Saint Elizabeth",
+        "Bard",
+        "Vassar",
+        "Hobart and William Smith",
+        "Ithaca"
       ]
     },
     {

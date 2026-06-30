@@ -23,15 +23,11 @@
       "abbr": "Liberty League",
       "autobid": true,
       "teams": [
-        "Bard",
         "Connecticut College",
         "Hamilton",
-        "Hobart and William Smith",
-        "Ithaca",
         "Olin",
         "Skidmore",
         "Trinity (CT)",
-        "Vassar",
         "MIT",
         "WPI",
         "Illinois Tech",
@@ -255,7 +251,11 @@
         "Huntingdon",
         "LaGrange",
         "Maryville (TN)",
-        "Piedmont"
+        "Piedmont",
+        "East Texas Baptist",
+        "Hardin-Simmons",
+        "Howard Payne",
+        "Mary Hardin-Baylor"
       ]
     },
     {
