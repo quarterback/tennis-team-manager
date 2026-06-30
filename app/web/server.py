@@ -230,8 +230,11 @@ def _game_context():
 
 
 def _universe(req) -> tuple[str, str, str, str]:
-    """Resolve (division, gender, label, u-key) from the request."""
-    u = req.args.get("u", "D1-men")
+    """Resolve (division, gender, label, u-key) from the request. POST forms carry
+    `u` as a hidden field (no query string), so fall back to the form body — without
+    it an editor edit for any non-default universe is validated against the D1-men
+    roster. `request.form` is empty on GET, so this is a no-op there."""
+    u = req.args.get("u") or req.form.get("u") or "D1-men"
     match = next((x for x in UNIVERSES if x[0] == u), UNIVERSES[0])
     _, division, gender, label = match
     return division, gender, label, match[0]

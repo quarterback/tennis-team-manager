@@ -359,8 +359,11 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away,
                        la_d=la_d, lb_d=lb_d)
-    rec["home_played"] = [p.pid for p in la]
-    rec["away_played"] = [p.pid for p in lb]
+    # Everyone who took the court — singles AND doubles — so season-mode rolls fresh
+    # injuries on them. A doubles-only specialist (in la_d but not la) must be counted
+    # or they'd play every dual injury-free.
+    rec["home_played"] = list(dict.fromkeys([p.pid for p in la] + [p.pid for p in la_d]))
+    rec["away_played"] = list(dict.fromkeys([p.pid for p in lb] + [p.pid for p in lb_d]))
     return rec
 
 

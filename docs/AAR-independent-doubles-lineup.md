@@ -67,6 +67,14 @@ ladder); applies to the coached team's season duals.
 - **Injury fallback is all-or-nothing** for now: if any pinned doubles player is out
   that week, the whole doubles lineup reverts to auto for that dual. Per-seat
   substitution could be added later but adds complexity for a rare case.
+- **Played list includes doubles-only players.** `dual_between` builds
+  `home_played`/`away_played` from the union of the singles *and* doubles rosters
+  (`la ∪ la_d`), so a doubles specialist who never plays singles is still rolled for
+  injuries by season mode — otherwise they'd play every dual injury-free.
+- **`_universe` reads the POST form too.** Editor edits post `u` as a hidden field
+  with no query string; `_universe` now falls back to `request.form` (it's empty on
+  GET), so a doubles/lineup edit for a non-D1-men universe validates against the
+  *right* roster instead of silently resolving to D1-men.
 - **No two-pairs-share-a-player guard beyond distinctness**: the editor enforces six
   *distinct* pids, which is correct (a player can't be in two pairs at once).
 
