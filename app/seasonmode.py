@@ -1198,7 +1198,7 @@ def season_program_result(season_id: int, school: str) -> dict | None:
 
     complete = s["phase"] == "complete"
     ncaa = furthest("NCAA", NCAA_ROUND_LABEL, "🏆 National Champion", "🥈 National Runner-Up") if complete else None
-    ita = furthest("ITAI", {}, "ITA Indoor Champion", "ITA Runner-Up")
+    ita = furthest("ITAI", {}, "Preseason NIT Champion", "Preseason NIT Runner-Up")
     # Regional champion = won the Elite Eight (the regional final), i.e. reached the
     # Final Four / national semifinals (`Semifinals` round). Each region crowns one.
     regional_champ = any(d["round"] == "NCAA" and d["conf"] == "Semifinals" for d in duals)

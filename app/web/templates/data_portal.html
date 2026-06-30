@@ -159,14 +159,14 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Season Opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">ITA bracket →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Season Opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">NIT bracket →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.ita_champion %}
-        <div class="al-champline"><i class="fa-solid fa-snowflake" aria-hidden="true"></i> <strong>{{ portal.ita_champion }}</strong><small>ITA Indoor National Champion</small></div>
+        <div class="al-champline"><i class="fa-solid fa-snowflake" aria-hidden="true"></i> <strong>{{ portal.ita_champion }}</strong><small>Preseason NIT Champion</small></div>
       {% elif portal.phase in ['ita_kickoff', 'ita_indoor'] %}
-        <p class="al-muted">The ITA opener is underway — <a href="{{ url_for('season_ita', u=u) }}">view the live bracket</a>.</p>
+        <p class="al-muted">The Preseason NIT is underway — <a href="{{ url_for('season_ita', u=u) }}">view the live bracket</a>.</p>
       {% else %}
-        <p class="al-muted">The ITA opener hasn't been played yet.</p>
+        <p class="al-muted">The Preseason NIT hasn't been played yet.</p>
       {% endif %}
     </div>
   </section>

@@ -80,50 +80,82 @@
     </div>
   </div>
 
-  <div class="bl-board-grid" style="grid-template-columns:1fr 360px;align-items:start">
+  <div class="bl-board-grid" style="grid-template-columns:1fr 380px;align-items:start">
     {# ---- per-team depth table ---- #}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span>
         <span class="bl-panel-meta">ranked by average starter STR</span></div>
-      <div class="bl-stand-hdr" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
-        <span>#</span><span>Team</span><span>Avg</span><span>Top</span><span>Low</span><span>Ladder (1→6)</span>
+      <div class="ll-tbl ll-depth">
+        <div class="ll-thead">
+          <span>#</span><span>Team</span><span class="n">Avg</span><span class="n">Top</span><span class="n">Low</span>
+          <span class="ll-ladhdr"><span>Ladder</span><span class="ll-lad6">{% for i in range(1,7) %}<i>{{ i }}</i>{% endfor %}</span></span>
+        </div>
+        {% for t in lineups %}
+        <div class="ll-tr{% if t.highlight %} ll-row-hl{% endif %}">
+          <span class="ll-rank">{{ t.rank }}</span>
+          <span class="ll-team">{% set ab = crest(t.school) %}{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span></span>
+          <span class="ll-stat ll-num" data-str="{{ t.avg }}" data-ovr="{{ t.avg_ovr }}">{{ '%.1f'|format(t.avg) }}</span>
+          <span class="ll-stat top ll-num" data-str="{{ t.top }}" data-ovr="{{ t.top_ovr }}">{{ '%.1f'|format(t.top) }}</span>
+          <span class="ll-stat low ll-num" data-str="{{ t.low }}" data-ovr="{{ t.low_ovr }}">{{ '%.1f'|format(t.low) }}</span>
+          <span class="ll-lad6">
+            {% for x in t.lineup %}<span class="ll-num" data-str="{{ x.str }}" data-ovr="{{ x.ovr }}">{{ '%.1f'|format(x.str) }}</span>{% endfor %}
+          </span>
+        </div>
+        {% endfor %}
       </div>
-      {% for t in lineups %}
-      <div class="bl-brk-match{% if t.highlight %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 52px 52px 52px 1fr">
-        <span class="bl-bubble-seed">{{ t.rank }}</span>
-        <span class="bl-bubble-team">{% set ab = crest(t.school) %}{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span></span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.avg }}" data-ovr="{{ t.avg_ovr }}">{{ '%.1f'|format(t.avg) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.top }}" data-ovr="{{ t.top_ovr }}" style="color:var(--green-700,#0e7c86)">{{ '%.1f'|format(t.top) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ t.low }}" data-ovr="{{ t.low_ovr }}" style="color:var(--text-muted)">{{ '%.1f'|format(t.low) }}</span>
-        <span style="font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums">
-          {% for x in t.lineup %}<span class="ll-num" data-str="{{ x.str }}" data-ovr="{{ x.ovr }}">{{ '%.1f'|format(x.str) }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</span>
-      </div>
-      {% endfor %}
     </div>
 
     {# ---- relative league strength ---- #}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} — league strength</span>
-        <span class="bl-panel-meta">avg starter STR · all conferences</span></div>
-      <div class="bl-stand-hdr" style="grid-template-columns:30px 1fr 40px 52px 48px">
-        <span>#</span><span>Conf</span><span>Tms</span><span>Avg</span><span>Top</span>
+        <span class="bl-panel-meta">avg starter STR</span></div>
+      <div class="ll-tbl ll-str">
+        <div class="ll-thead">
+          <span>#</span><span>Conf</span><span class="n">Tms</span><span class="n">Avg</span><span class="n">Top</span>
+        </div>
+        {% for r in strength %}
+        <a class="ll-tr{% if r.conf == conf %} ll-row-hl{% endif %}"
+           href="{{ url_for('intel_lineups', u=u, div=div_f, conf=r.conf) }}">
+          <span class="ll-rank">{{ r.rank }}</span>
+          <span class="ll-team"><span class="nm">{{ r.conf }}</span> <span class="ll-tier ll-{{ r.tier }}">{{ r.tier }}</span></span>
+          <span class="ll-stat low">{{ r.n_teams }}</span>
+          <span class="ll-stat ll-num" data-str="{{ r.avg_str }}" data-ovr="{{ r.avg_ovr }}">{{ '%.1f'|format(r.avg_str) }}</span>
+          <span class="ll-stat top ll-num" data-str="{{ r.top_str }}" data-ovr="{{ r.top_ovr }}">{{ '%.1f'|format(r.top_str) }}</span>
+        </a>
+        {% endfor %}
       </div>
-      {% for r in strength %}
-      <a class="bl-brk-match{% if r.conf == conf %} ll-row-hl{% endif %}" style="grid-template-columns:30px 1fr 40px 52px 48px;text-decoration:none"
-         href="{{ url_for('intel_lineups', u=u, div=div_f, conf=r.conf) }}">
-        <span class="bl-bubble-seed">{{ r.rank }}</span>
-        <span class="bl-bubble-team"><span class="nm">{{ r.conf }}</span> <span class="ll-tier ll-{{ r.tier }}">{{ r.tier }}</span></span>
-        <span class="bl-bubble-pi" style="color:var(--text-muted)">{{ r.n_teams }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ r.avg_str }}" data-ovr="{{ r.avg_ovr }}">{{ '%.1f'|format(r.avg_str) }}</span>
-        <span class="bl-bubble-pi ll-num" data-str="{{ r.top_str }}" data-ovr="{{ r.top_ovr }}" style="color:var(--text-muted)">{{ '%.1f'|format(r.top_str) }}</span>
-      </a>
-      {% endfor %}
     </div>
   </div>
   {% endif %}
 </div>
 
 <style>
+/* ---- Lineup Lab tables: self-contained grid so header + every row share one
+   column track and line up exactly (the old bracket classes collided with
+   bracket.css `display:block` and wrapped). ---- */
+.ll-tbl { font-variant-numeric:tabular-nums; }
+.ll-thead, .ll-tr { display:grid; grid-template-columns:var(--ll-cols); gap:10px; align-items:center; }
+.ll-depth { --ll-cols:28px minmax(96px,1fr) 44px 44px 44px minmax(168px,1.7fr); }
+.ll-str   { --ll-cols:26px minmax(70px,1fr) 38px 46px 46px; }
+.ll-thead {
+  padding:7px 14px; background:var(--surface-th); border-bottom:1px solid var(--border-default);
+  font-size:10px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-muted);
+}
+.ll-thead .n { text-align:right; }
+.ll-tr { padding:8px 14px; border-bottom:1px solid var(--border-subtle); color:inherit; text-decoration:none; }
+.ll-tr:last-child { border-bottom:none; }
+a.ll-tr:hover { background:var(--surface-hover); }
+.ll-rank { font-size:11px; font-weight:700; color:var(--text-muted); }
+.ll-team { display:flex; align-items:center; gap:7px; min-width:0; color:var(--text-primary); font-weight:600; font-size:13.5px; }
+.ll-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ll-stat { text-align:right; font-weight:600; font-size:13.5px; color:var(--text-primary); }
+.ll-stat.top { color:var(--green-700,#0e7c86); font-weight:700; }
+.ll-stat.low { color:var(--text-muted); font-weight:500; }
+/* the 1→6 ladder: a fixed 6-col micro-grid so positions stack vertically across rows */
+.ll-lad6 { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; }
+.ll-lad6 > span, .ll-lad6 > i { text-align:right; font-size:11.5px; font-style:normal; color:var(--text-secondary); }
+.ll-ladhdr { display:grid; grid-template-columns:auto 1fr; align-items:center; gap:8px; }
+.ll-ladhdr .ll-lad6 > i { font-size:10px; color:var(--text-faint); font-weight:600; }
 .ll-key { display:inline-flex; align-items:center; gap:5px; margin-left:12px; font-size:12px; color:var(--text-muted); }
 .ll-dot { width:10px; height:10px; border-radius:50%; background:#2bb3c0; display:inline-block; }
 .ll-dot.hl { background:#d81e5b; }

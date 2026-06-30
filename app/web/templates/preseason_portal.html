@@ -1,64 +1,73 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
-{% block title %}Play to Clinch — Fall Transfer Portal{% endblock %}
+{% block title %}Play to Clinch — Pre-season Portal{% endblock %}
 {% block content %}
 
-<datalist id="fp-dests">
-  {% for s in fp.destinations %}<option value="{{ s }}">{% endfor %}
+<datalist id="pp-dests">
+  {% for s in pp.destinations %}<option value="{{ s }}">{% endfor %}
 </datalist>
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">
-    <strong style="color:var(--text-primary)">Fall transfer portal{% if fp.year %} · {{ fp.year }}{% endif %}</strong>
+    <strong style="color:var(--text-primary)">Pre-season portal{% if pp.year %} · {{ pp.year }}{% endif %}</strong>
   </div>
   <span class="bl-entries-right">
-    {{ fp.riders }} rising · {{ fp.n - fp.riders }} cascading
+    {% if pp.done %}{{ pp.n }} move{{ '' if pp.n == 1 else 's' }} committed{% else %}{{ pp.riders }} rising · {{ pp.n - pp.riders }} cascading{% endif %}
   </span>
 </div></div>
 
 <div class="bl-container"><div class="bl-note">
-  The Preseason NIT is done. Players who outgrew their division are proposed to move UP; any roster they'd
-  overfill sends its weakest player back DOWN the ladder so no team loses a spot. You can <strong>redirect</strong>
-  a riser to a different school, <strong>add</strong> someone the sim missed, or <strong>drop</strong> a move —
-  the cascade re-balances automatically. Movers keep their NIT stint at the old school and finish the season at
-  the new one. Commit to start the regular season.
+  Before the season opens, fix talent that landed in the wrong division at world generation — the studs
+  parked in D3/D4 who never belonged there. Players who outgrew their division are proposed to move UP; any
+  roster they'd overfill sends its weakest player back DOWN the ladder so no team loses a spot. You can
+  <strong>redirect</strong> a riser, <strong>add</strong> someone the sim missed, or <strong>drop</strong> a
+  move — the cascade re-balances automatically. Commit applies the moves for the whole season, so the
+  Preseason NIT and everything after sees the corrected rosters.
 </div></div>
 
+{% if not pp.done %}
 <div class="bl-container" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
-  <form method="post" action="{{ url_for('fall_portal_add') }}" style="display:flex;gap:6px;align-items:end">
+  <form method="post" action="{{ url_for('preseason_portal_add') }}" style="display:flex;gap:6px;align-items:end">
     <label class="bl-field"><span class="bl-field-label">Add a player</span>
       <input class="bl-select" name="player" placeholder="player name" style="min-width:160px" required></label>
     <label class="bl-field"><span class="bl-field-label">To (optional)</span>
-      <input class="bl-select" name="dest" list="fp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
+      <input class="bl-select" name="dest" list="pp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
     <button class="bl-btn" type="submit">+ Add</button>
   </form>
   <span style="margin-left:auto;display:flex;gap:8px">
-    <form method="post" action="{{ url_for('fall_portal_approve') }}">
+    <form method="post" action="{{ url_for('preseason_portal_approve') }}">
       <input type="hidden" name="action" value="approve_all"><button class="bl-btn" type="submit">Keep all</button>
     </form>
-    <form method="post" action="{{ url_for('fall_portal_approve') }}">
+    <form method="post" action="{{ url_for('preseason_portal_approve') }}">
       <input type="hidden" name="action" value="reject_all"><button class="bl-btn" type="submit">Drop all</button>
     </form>
-    <form method="post" action="{{ url_for('fall_portal_commit') }}">
-      <button class="bl-btn bl-btn-primary" type="submit">Commit → start regular season</button>
+    <form method="post" action="{{ url_for('preseason_portal_commit') }}">
+      <button class="bl-btn bl-btn-primary" type="submit">Commit moves</button>
     </form>
   </span>
 </div>
+{% else %}
+<div class="bl-container" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <span class="bl-stat power">✓ Moves applied.</span>
+  <span style="font-size:13px;color:var(--text-muted)">These players now start the season at their new program. Head to
+    <a href="{{ url_for('preseason_view') }}">Preseason setup</a> and sim to the first week.</span>
+</div>
+{% endif %}
 
-{% if not fp.proposals %}
+{% if not pp.proposals %}
 <div class="bl-container"><div class="bl-note">
-  No moves on the slate — the talent's already where it belongs (or you dropped them all). Commit to begin the
-  regular season.
+  {% if pp.done %}No moves were applied.{% else %}No moves on the slate — the talent's already where it belongs
+  (or you dropped them all). Nothing to fix before the season.{% endif %}
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-tablescroll">
-  <div class="bl-table" style="--bl-grid-cols: 64px minmax(150px,1.3fr) 48px 96px minmax(120px,1fr) 28px minmax(190px,1.2fr) 40px">
+  <div class="bl-table" style="--bl-grid-cols: 64px minmax(150px,1.3fr) 48px minmax(120px,1fr) 28px minmax(190px,1.2fr) 40px">
     <div class="bl-thead">
       <span class="bl-th">MOVE</span><span class="bl-th">PLAYER</span><span class="bl-th num">STR</span>
-      <span class="bl-th">NIT</span><span class="bl-th">FROM</span><span class="bl-th"></span><span class="bl-th">TO</span>
+      <span class="bl-th">FROM</span><span class="bl-th"></span><span class="bl-th">TO</span>
       <span class="bl-th"></span>
     </div>
-    {% for t in fp.proposals %}
+    {% for t in pp.proposals %}
     <div class="bl-row">
       <span class="bl-conf">
         {% if t.is_riser %}<span class="bl-stat power" title="Rising to a higher division">▲ rise</span>
@@ -68,16 +77,15 @@
         <span class="player-flag" title="{{ t.country|country_name }}">{{ t.country|flags }}</span>
         {{ t.name }} <span style="color:var(--text-faint)">{{ t.class }}</span></a>
       <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(t.str) }}</span></span>
-      <span class="bl-conf" style="font-variant-numeric:tabular-nums">{{ t.ita_w }}–{{ t.ita_l }}{% if t.ita_line %} · {{ t.ita_line }}{% endif %}</span>
       <a class="bl-conf" href="{{ url_for('teams', school=t.src_school) }}" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;color:var(--text-muted)">
         {{ crest_box(t.src_school, t.from_abbr, t.from_color, 'xs') }} {{ t.src_school }} <span style="color:var(--text-faint)">{{ t.src_div }}</span></a>
       <span style="color:var(--text-faint);text-align:center">→</span>
       <span style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(t.dest_school, t.to_abbr, t.to_color, 'xs') }}
-        {% if t.is_riser %}
-          <form method="post" action="{{ url_for('fall_portal_redirect') }}" style="display:flex;gap:3px;align-items:center">
+        {% if t.is_riser and not pp.done %}
+          <form method="post" action="{{ url_for('preseason_portal_redirect') }}" style="display:flex;gap:3px;align-items:center">
             <input type="hidden" name="pid" value="{{ t.pid }}">
-            <input class="bl-select" name="dest" list="fp-dests" value="{{ t.dest_school }}" style="min-width:128px;height:24px;font-size:12px">
+            <input class="bl-select" name="dest" list="pp-dests" value="{{ t.dest_school }}" style="min-width:128px;height:24px;font-size:12px">
             <button class="bl-btn bl-btn-sm" type="submit" title="Send here instead"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i></button>
           </form>
         {% else %}
@@ -85,8 +93,8 @@
         {% endif %}
       </span>
       <span class="bl-conf">
-        {% if t.is_riser %}
-        <form method="post" action="{{ url_for('fall_portal_approve') }}" style="display:inline">
+        {% if t.is_riser and not pp.done %}
+        <form method="post" action="{{ url_for('preseason_portal_approve') }}" style="display:inline">
           <input type="hidden" name="pid" value="{{ t.pid }}">
           <input type="hidden" name="gender" value="{{ t.gender }}">
           <input type="hidden" name="status" value="rejected">
@@ -98,8 +106,10 @@
     {% endfor %}
   </div>
 </div></div>
+{% if not pp.done %}
 <div class="bl-container"><div class="bl-note" style="font-size:12px;color:var(--text-faint)">
   Dropped a move by mistake? "Keep all" brings every dropped riser back.
 </div></div>
+{% endif %}
 {% endif %}
 {% endblock %}

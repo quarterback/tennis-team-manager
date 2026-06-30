@@ -13,8 +13,8 @@
   <span style="font-size:13px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
   <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
     <span class="bl-field-label">
-      {% if ph == 'ita_kickoff' %}ITA Kickoff Weekend — the season opener
-      {% elif ph == 'ita_indoor' %}ITA National Team Indoor Championship
+      {% if ph == 'ita_kickoff' %}Preseason NIT — Kickoff Weekend
+      {% elif ph == 'ita_indoor' %}Preseason NIT — National Indoor Tournament
       {% elif ph == 'regular' %}Week {{ [s.current_week, s.total_weeks]|min }} of {{ s.total_weeks }}
       {% elif ph == 'conf_tournaments' %}Regular season complete — conference tournaments next
       {% elif ph == 'ncaa' %}Conference tournaments done — NCAA next
@@ -23,7 +23,7 @@
     {% if ph != 'complete' %}
     <form method="post" action="{{ url_for('season_advance', u=u) }}" style="display:inline">
       <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">
-        {% if ph == 'ita_kickoff' %}Run ITA Kickoff round →{% elif ph == 'ita_indoor' %}Run ITA Indoor round →
+        {% if ph == 'ita_kickoff' %}Run NIT Kickoff round →{% elif ph == 'ita_indoor' %}Run NIT Indoor round →
         {% elif ph == 'regular' %}Advance week →{% elif ph == 'conf_tournaments' %}Run conference tournaments →
         {% elif ph == 'ncaa' %}Run NCAA bracket →{% endif %}
       </button>
@@ -31,7 +31,7 @@
     {% endif %}
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', u=u) }}">Schedule</a>
-    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_ita', u=u) }}">ITA</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_ita', u=u) }}">NIT</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Bracket</a>
   </span>
 </div></div>
@@ -44,8 +44,8 @@
   {% elif ita_champ %}
   <a class="bl-champ" style="text-decoration:none;color:inherit" href="{{ url_for('season_ita', u=u) }}">
     <span class="bl-crest lg" style="background:{{ crest(ita_champ)[1] }};width:56px;height:56px;font-size:16px">{{ crest(ita_champ)[0] }}</span>
-    <div><div class="label">ITA Indoor Champion</div><div class="name">{{ ita_champ }}</div>
-      <div class="sub">2026 {{ uni_label }} — won the ITA National Team Indoor Championship to open the season</div></div></a>
+    <div><div class="label">Preseason NIT Champion</div><div class="name">{{ ita_champ }}</div>
+      <div class="sub">2026 {{ uni_label }} — won the Preseason NIT (National Indoor Tournament) to open the season</div></div></a>
   {% endif %}
 
   <div class="bl-board-grid" style="grid-template-columns:1fr 340px">

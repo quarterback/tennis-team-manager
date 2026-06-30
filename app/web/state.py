@@ -1274,6 +1274,62 @@ def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
             "destinations": world.fall_portal_destinations(seed)}
 
 
+def preseason_portal_view(seed: int = DEFAULT_SEED) -> dict:
+    """The pre-season-portal slate for the week-0 review screen: each kept rider plus
+    the player they'd push down the ladder, freshly RESOLVED so the cascade reflects
+    any redirects / adds. Riders carry an editable destination. Once committed, the
+    rows come back with status='committed' so the screen shows what was applied."""
+    import app.world as world
+    from app import overrides as ov
+    from .rankings_data import crest
+    w = world.load_world(seed)
+    if not w:
+        return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
+                "destinations": [], "is_preseason": False}
+    committed = ov.ps_get_proposals(w["year"], status="committed")
+    if committed:
+        # Already applied — show the committed slate as-is (no re-resolve).
+        out = []
+        for m in committed:
+            fa, fc = crest(m["src_school"])
+            ta, tc = crest(m["dest_school"])
+            p = world.find_persisted_player(m["pid"], seed)
+            out.append({
+                **m, "name": m.get("name") or getattr(p, "name", m["pid"]),
+                "class": getattr(p, "class_year", ""), "country": getattr(p, "country", ""),
+                "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
+                "is_riser": m["cascade_from"] is None})
+        out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
+        return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+                "proposals": out, "n": len(out),
+                "riders": sum(1 for r in out if r["is_riser"]),
+                "committed": len(committed), "done": True,
+                "is_preseason": w["week"] == 0,
+                "destinations": world.fall_portal_destinations(seed)}
+    resolved = world.resolve_preseason_portal(seed)   # {gender: [moves]} (riders + cascades)
+    out = []
+    for gender, moves in resolved.items():
+        for m in moves:
+            p = world.find_persisted_player(m["pid"], seed)
+            fa, fc = crest(m["src_school"])
+            ta, tc = crest(m["dest_school"])
+            out.append({
+                **m, "gender": gender,
+                "name": getattr(p, "name", m.get("name") or m["pid"]),
+                "class": getattr(p, "class_year", ""),
+                "country": getattr(p, "country", ""),
+                "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
+                "is_riser": m["cascade_from"] is None,
+            })
+    out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
+    return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+            "proposals": out, "n": len(out),
+            "riders": sum(1 for r in out if r["is_riser"]),
+            "committed": 0, "done": False,
+            "is_preseason": w["week"] == 0,
+            "destinations": world.fall_portal_destinations(seed)}
+
+
 def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
     """Calendar years (newest first) that have a stored NCAA bracket for this
     universe — every past world-year whose season reached the bracket. Drives the
@@ -1855,14 +1911,14 @@ def world_hub(seed: int = DEFAULT_SEED):
             primary = {"endpoint": "preseason_view", "icon": "fa-solid fa-gear", "label": "Preseason setup →", "link": True}
         else:
             primary = {"endpoint": "world_advance",
-                       "label": ("Run ITA opener →" if stage == "ita"
+                       "label": ("Run Preseason NIT →" if stage == "ita"
                                  else "Advance week →" if stage == "regular"
                                  else "Advance postseason →")}
     elif stage == "awards":
         primary = {"endpoint": "world_awards", "icon": "fa-solid fa-medal", "label": "Run awards →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
-    _LABELS = {"ita": "ITA Kickoff", "fall_portal": "Fall portal", "regular": "Regular season",
+    _LABELS = {"ita": "Preseason NIT", "fall_portal": "Fall portal", "regular": "Regular season",
                "conf_tournaments": "Conf tournaments", "selection": "Bracket Reveal",
                "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
     ci = _ORDER.index(stage)
@@ -1886,6 +1942,11 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
     active = [lbl for (_v, d, g, lbl) in UNIVERSES if worldconfig.is_active(d, g)]
     dormant = [lbl for (_v, d, g, lbl) in UNIVERSES if not worldconfig.is_active(d, g)]
     steps = [
+        {"icon": "fa-solid fa-arrows-rotate", "title": "Pre-season portal",
+         "auto": "The sim flags talent that generated into the wrong division.",
+         "desc": "Move studs stuck in D3/D4 (and any other misallocated player) up to "
+                 "a fitting program before the season opens. Cascades re-balance rosters.",
+         "label": "Open pre-season portal →", "endpoint": "preseason_portal", "args": {}},
         {"icon": "fa-solid fa-graduation-cap", "title": "Recruiting",
          "auto": "Your class signs automatically, a slice each week.",
          "desc": "Open the board to track the pool and steer your targets.",

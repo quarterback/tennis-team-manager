@@ -35,6 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
+from .state import preseason_portal_view
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
@@ -108,7 +109,7 @@ NAV_GROUPS = [
         {"id": "data",      "label": "Data Portal",  "icon": "fa-solid fa-chart-line", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "fa-solid fa-ranking-star", "endpoint": "rankings",         "args": {}},
         {"id": "results",   "label": "Results",      "icon": "fa-solid fa-clipboard-list", "endpoint": "results",          "args": {}},
-        {"id": "ita",       "label": "ITA Opener",   "icon": "fa-solid fa-snowflake", "endpoint": "season_ita",        "args": {}},
+        {"id": "ita",       "label": "Preseason NIT", "icon": "fa-solid fa-snowflake", "endpoint": "season_ita",        "args": {}},
         {"id": "ncaa",      "label": "NCAA Bracket", "icon": "fa-solid fa-medal", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "fa-solid fa-table-list", "endpoint": "season_standings", "args": {}},
         {"id": "injuries",  "label": "Injuries",     "icon": "fa-solid fa-bandage", "endpoint": "injuries_page",    "args": {}},
@@ -208,7 +209,7 @@ def _game_context():
         from app import worldconfig
         _ORD = {"ita_kickoff": 0, "ita_indoor": 1, "fall_portal": 1.5, "regular": 2,
                 "conf_tournaments": 3, "selection": 4, "ncaa": 5, "complete": 6}
-        _LBL = {"ita_kickoff": "ITA Kickoff Weekend", "ita_indoor": "ITA Indoor",
+        _LBL = {"ita_kickoff": "NIT Kickoff Weekend", "ita_indoor": "Preseason NIT",
                 "fall_portal": "Fall transfer portal", "regular": "Regular season",
                 "conf_tournaments": "Conf tournaments", "selection": "Bracket reveal",
                 "ncaa": "NCAA championship", "complete": "Postseason complete"}
@@ -692,6 +693,62 @@ def create_app() -> Flask:
         # applies it — relocations, two-stint history, cascade and all.
         wd.commit_fall_portal()
         return redirect(url_for("world_view"))
+
+    @app.route("/preseason-portal")
+    def preseason_portal():
+        # The week-0 misallocation reshuffle: move players who are too good for their
+        # division (the first-launch D3/D4 over-allocation) to a fitting program before
+        # the season opens. Seeds the slate on first visit if nothing's proposed yet.
+        w = wd.load_world()
+        if w and w["week"] == 0 and not ov.ps_get_proposals(w["year"]):
+            wd.run_preseason_portal()
+        return render_template("preseason_portal.html", active="Preseason",
+                               pp=preseason_portal_view(), crest=crest)
+
+    @app.route("/preseason-portal/approve", methods=["POST"])
+    def preseason_portal_approve():
+        w = wd.load_world()
+        year = w["year"] if w else 0
+        action = request.form.get("action", "")
+        if action == "reject_all":
+            for r in ov.ps_get_proposals(year):
+                if r["cascade_from"] is None and r["status"] != "rejected":
+                    ov.ps_set_status(year, r["gender"], r["pid"], "rejected")
+        elif action == "approve_all":
+            for r in ov.ps_get_proposals(year):
+                if r["cascade_from"] is None and r["status"] == "rejected":
+                    ov.ps_set_status(year, r["gender"], r["pid"], "proposed")
+        else:
+            pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
+            if pid and gender:
+                ov.ps_set_status(year, gender, pid, request.form.get("status", "rejected"))
+        return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/redirect", methods=["POST"])
+    def preseason_portal_redirect():
+        pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
+        if pid and dest:
+            wd.redirect_preseason_portal_mover(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/add", methods=["POST"])
+    def preseason_portal_add():
+        pid = request.form.get("pid", "").strip()
+        dest = request.form.get("dest", "").strip() or None
+        if not pid:
+            name = request.form.get("player", "").strip()
+            if name:
+                hits = search_players(name).get("players", [])
+                if hits:
+                    pid = hits[0]["pid"]
+        if pid:
+            wd.add_preseason_portal_mover(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/commit", methods=["POST"])
+    def preseason_portal_commit():
+        wd.commit_preseason_portal()
+        return redirect(url_for("preseason_portal"))
 
     @app.route("/")
     def dashboard():
