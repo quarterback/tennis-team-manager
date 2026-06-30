@@ -815,9 +815,9 @@
     "placeholder": true,
     "slug": "concordia-irvine"
   },
-  "Concordia Texas": {
+  "Northern New Mexico": {
     "placeholder": true,
-    "slug": "concordia-texas"
+    "slug": "northern-new-mexico"
   },
   "Concordia Wisconsin": {
     "placeholder": true,
@@ -959,9 +959,9 @@
     "placeholder": true,
     "slug": "dominican-ca"
   },
-  "Dominican (IL)": {
+  "Lewis-Clark State": {
     "placeholder": true,
-    "slug": "dominican-il"
+    "slug": "lewis-clark-state"
   },
   "Dominican (NY)": {
     "placeholder": true,
@@ -2343,9 +2343,9 @@
     "placeholder": true,
     "slug": "mount-olive"
   },
-  "Mount Saint Mary (NY)": {
+  "Carroll (MT)": {
     "placeholder": true,
-    "slug": "mount-saint-mary-ny"
+    "slug": "carroll-mt"
   },
   "Mount Saint Vincent": {
     "placeholder": true,
@@ -3483,9 +3483,9 @@
     "placeholder": true,
     "slug": "st-mary-s-md"
   },
-  "St. Mary's (TX)": {
+  "Mount Marty": {
     "placeholder": true,
-    "slug": "st-mary-s-tx"
+    "slug": "mount-marty"
   },
   "St. Norbert": {
     "espn_id": "2832",
@@ -4091,9 +4091,9 @@
     "placeholder": true,
     "slug": "wesleyan"
   },
-  "Wesleyan College": {
+  "Arizona Christian": {
     "placeholder": true,
-    "slug": "wesleyan-college"
+    "slug": "arizona-christian"
   },
   "West Alabama": {
     "espn_id": "2695",
