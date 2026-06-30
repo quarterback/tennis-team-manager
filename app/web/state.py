@@ -1274,6 +1274,38 @@ def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
             "destinations": world.fall_portal_destinations(seed)}
 
 
+def recruit_economy_view() -> dict:
+    """Live reference for the scholarship-BUDGET economy: recruit cost by star, the
+    budget floor to attract each tier, and the per-program budget bands by conference
+    tier. Read straight off `recruit_economy` so the page never drifts from the sim."""
+    from app import recruit_economy as re
+    off = re._GRADE_OFFSET
+    tiers = [{"name": n, "stars": st, "cost": c, "free": c == 0.0,
+              "men_grade": round(g + off.get("men", 0.0), 1),
+              "women_grade": round(g + off.get("women", 0.0), 1),
+              "floor": re._TIER_FLOOR.get(n)}
+             for (n, st, c, g) in re.TIERS]
+    # what core each band can realistically build (from the design comments)
+    _core = {"top": "≈3 blue chips — only the blue-bloods stack them",
+             "major": "a 5★/4★ core, the odd blue-chip reach",
+             "mid": "4★/3★ core", "low": "3★ core, thin (the D1 floor)"}
+    d1 = [{"tier": t, "label": lbl, "lo": re._D1_TIER_BANDS[t][0],
+           "hi": re._D1_TIER_BANDS[t][1], "core": _core[t]}
+          for t, lbl in (("top", "Blue Blood (top)"), ("major", "High-major (major)"),
+                         ("mid", "Mid-major (mid)"), ("low", "Low-major (low)"))]
+    return {
+        "tiers": tiers,
+        "d1_bands": d1,
+        "d2_band": re._D2_BAND,
+        "d3d4_band": re._D3D4_BAND,
+        "elite_d2_prestige": re._ELITE_D2_PRESTIGE,
+        "d3_top_n": re._D3_TOP_N,
+        "elite_academics": re._ELITE_D3D4_ACADEMICS,
+        "roster_caps": {"D1": "12 (8 core + 4 walk-on)", "D2": "10 (6 + 4)",
+                        "D3/D4": "16 (3 + 13)"},
+    }
+
+
 def preseason_portal_view(seed: int = DEFAULT_SEED) -> dict:
     """The pre-season-portal slate for the week-0 review screen: each kept rider plus
     the player they'd push down the ladder, freshly RESOLVED so the cascade reflects

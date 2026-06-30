@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import preseason_portal_view
+from .state import preseason_portal_view, recruit_economy_view
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
@@ -124,6 +124,7 @@ NAV_GROUPS = [
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
+        {"id": "rec_econ",  "label": "Scholarship Economy","icon": "fa-solid fa-coins", "endpoint": "recruit_economy_page","args": {}},
     ]),
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
@@ -1322,6 +1323,13 @@ def create_app() -> Flask:
                                hub=recruiting_hub(rg, grad_year), gender=gender,
                                grad_year=grad_year, u=u, uni_label=label,
                                grad_years=[grad_year])
+
+    @app.route("/recruiting/economy")
+    def recruit_economy_page():
+        division, gender, label, u = _universe(request)
+        return render_template("recruit_economy.html", active="Recruiting",
+                               econ=recruit_economy_view(), gender=gender,
+                               u=u, uni_label=label)
 
     # ---- Analytics Bureau: god-mode player intelligence (additive mod) ----
     @app.route("/intel")
