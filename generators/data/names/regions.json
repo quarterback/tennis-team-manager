@@ -640,16 +640,6 @@
           ]
         },
         {
-          "weight": 0.1,
-          "country": "GU",
-          "first_keys": [
-            "chamorro"
-          ],
-          "surname_keys": [
-            "chamorro"
-          ]
-        },
-        {
           "weight": 0.06,
           "country": "AS",
           "first_keys": [
@@ -1839,8 +1829,11 @@
         "Western given names. NOTE: Guam is a US TERRITORY here, not a standalone",
         "nationality — it is generated as a US dual-citizen origin (like Puerto",
         "Rico / US Virgin Islands) via app/juniors.US_STATES, and this region only",
-        "backs the Chamorro name picker for those recruits. Do NOT re-add 'guam'",
-        "to any nationality preset or to worldconfig._CONTINENTS."
+        "backs the Chamorro name picker for those recruits. It is force-excluded",
+        "from the international mix by worldconfig._HIDDEN_REGIONS. Do NOT re-add",
+        "'guam' to any nationality preset/_CONTINENTS, and do NOT add a GU subregion",
+        "to pacific_islands (that would leak Guam back into the international pool,",
+        "where generate_class would convert it to a domestic recruit)."
       ],
       "label": "Guam",
       "country": "GU",

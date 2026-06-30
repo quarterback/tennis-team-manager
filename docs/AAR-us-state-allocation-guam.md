@@ -37,6 +37,16 @@ uncoordinated. Separately, Guam existed only as a foreign nationality.
   `regions.json` (its 0.1 folded into `pacific_islands`). The `guam` **region
   definition is kept** — it now only backs the Chamorro name picker. **Do not re-add
   `guam` to any nationality preset or to `_CONTINENTS`.**
+- Two follow-up leaks were closed (Codex review):
+  - **Editor "Other" group:** `region_groups()` appends every unplaced region to
+    "Other", which re-surfaced `guam`. Added **`worldconfig._HIDDEN_REGIONS = {"guam"}`**,
+    filtered out of both `region_groups()` (so it's not selectable) and
+    `region_weights()` (so a stale stored multiplier can't reintroduce it).
+  - **`pacific_islands` GU subregion:** that region carried a `country:"GU"` (Chamorro)
+    subregion, so an international Pacific-Islands draw produced a GU player that
+    `generate_class` then converted to a domestic recruit — undercutting the chosen
+    international share. The **GU subregion was removed** from `pacific_islands`. Verified:
+    an all-international Pacific-Islands class now yields **0** Guam recruits.
 
 ### 3. Canada boost (count + quality)
 - Region weight raised ~2.5–3× across presets (`regions.json`): `tennis_global`
