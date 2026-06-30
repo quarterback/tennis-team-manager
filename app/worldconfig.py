@@ -237,7 +237,9 @@ _CONTINENTS: list[tuple[str, list[str]]] = [
                 "san_marino", "switzerland", "lithuania", "spain", "poland", "belgium",
                 "albania", "estonia", "georgia", "iceland", "latvia"]),
     ("Middle East", ["israel", "palestine", "lebanon", "iran", "gulf_cricket"]),
-    ("Oceania", ["anzac", "pacific_islands", "guam"]),
+    # Guam is intentionally NOT here: it is a US territory generated as a domestic
+    # dual-citizen origin (see app/juniors.US_STATES), not a selectable nationality.
+    ("Oceania", ["anzac", "pacific_islands"]),
 ]
 
 

@@ -44,13 +44,29 @@ US_STATES = [
     ("West Virginia", "WV"), ("Wisconsin", "WI"), ("Wyoming", "WY"),
     # US territories — treated as US states here (their players are US dual-citizens,
     # rendered with two flags), so they generate readily. Puerto Rico in particular
-    # has a robust tennis pipeline.
-    ("Puerto Rico", "PR"), ("U.S. Virgin Islands", "VI"),
+    # has a robust tennis pipeline; Guam is a Pacific territory with Chamorro names.
+    ("Puerto Rico", "PR"), ("U.S. Virgin Islands", "VI"), ("Guam", "GU"),
 ]
-# Population-ish weighting so tennis hotbeds (CA/FL/TX, + PR) supply more recruits.
-_STATE_WEIGHT = {"CA": 8, "FL": 7, "TX": 7, "NY": 5, "PR": 5, "GA": 4, "NC": 3,
-                 "IL": 3, "PA": 3, "OH": 3, "VA": 3, "NJ": 3, "AZ": 2, "WA": 2, "MA": 2}
-_US_TERRITORIES = {"PR", "VI"}      # country = US, secondary = the territory (dual flag)
+# Calibrated junior-tennis origin distribution — the real (USTA-ish) share each
+# state/territory contributes to the domestic recruit pool. Drives BOTH which
+# states supply more recruits on average (hotbeds CA/FL/TX/NY heavy) AND, with the
+# guaranteed per-state floor in generate_class, that every state generates yearly.
+# Relative weights (need not sum to 1); rng.choices renormalizes.
+US_JUNIOR_TENNIS_ORIGIN_WEIGHTS = {
+    "AK": 0.0011, "AL": 0.0102, "AR": 0.0064, "AZ": 0.0166, "CA": 0.1341,
+    "CO": 0.0214, "CT": 0.0122, "DC": 0.0010, "DE": 0.0020, "FL": 0.1126,
+    "GA": 0.0354, "GU": 0.0005, "HI": 0.0038, "IA": 0.0120, "ID": 0.0057,
+    "IL": 0.0325, "IN": 0.0185, "KS": 0.0122, "KY": 0.0115, "LA": 0.0076,
+    "MA": 0.0231, "MD": 0.0130, "ME": 0.0038, "MI": 0.0334, "MN": 0.0195,
+    "MO": 0.0144, "MS": 0.0074, "MT": 0.0038, "NC": 0.0276, "ND": 0.0024,
+    "NE": 0.0066, "NH": 0.0034, "NJ": 0.0424, "NM": 0.0033, "NV": 0.0053,
+    "NY": 0.0545, "OH": 0.0240, "OK": 0.0074, "OR": 0.0111, "PA": 0.0160,
+    "PR": 0.0061, "RI": 0.0033, "SC": 0.0111, "SD": 0.0017, "TN": 0.0161,
+    "TX": 0.0886, "UT": 0.0100, "VA": 0.0202, "VI": 0.0006, "VT": 0.0003,
+    "WA": 0.0420, "WI": 0.0156, "WV": 0.0030, "WY": 0.0017,
+}
+_DEFAULT_STATE_WEIGHT = 0.0005      # any abbr missing from the table above
+_US_TERRITORIES = {"PR", "VI", "GU"}   # country = US, secondary = the territory (dual flag)
 
 _STATE_ABBR = dict(US_STATES)   # full state name -> postal abbr
 _ABBR_STATE = {a: s for s, a in US_STATES}   # postal abbr -> full state name
@@ -133,21 +149,44 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
     intl_weights = {k: v for k, v in intl_weights.items() if k != "us"}
     intl_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                  region_weights=intl_weights)
-    # Puerto Rico players are US dual-citizens but read authentically (Hispanic names).
+    # Puerto Rico players are US dual-citizens but read authentically (Hispanic names);
+    # Guam likewise reads authentically with Chamorro names.
     latin_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
                                   region_weights={"latin_america": 1.0})
-    state_names = [s[0] for s in US_STATES]
-    state_weights = [_STATE_WEIGHT.get(s[1], 1) for s in US_STATES]
+    chamorro_name = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=gender,
+                                     region_weights={"guam": 1.0})
+    state_abbrs = [s[1] for s in US_STATES]
+    state_weights = [US_JUNIOR_TENNIS_ORIGIN_WEIGHTS.get(a, _DEFAULT_STATE_WEIGHT)
+                     for a in state_abbrs]
+
+    # Decide domestic vs international up front so we can GUARANTEE every state a
+    # recruit: the domestic slots are filled FLOOR-first (one of every state, so no
+    # state — incl. DC/PR/VI/GU — is empty in a year) then the remainder by the
+    # calibrated origin weights (hotbeds supply more on average). Each recruit's
+    # talent is still an independent N(mean, sd) draw, so every state gets a full
+    # range of talent.
+    domestic_flags = [rng.random() >= intl_share for _ in range(n)]
+    n_domestic = sum(domestic_flags)
+    if n_domestic >= len(state_abbrs):
+        state_queue = list(state_abbrs)        # guaranteed floor: one of every state
+        state_queue += rng.choices(state_abbrs, weights=state_weights,
+                                   k=n_domestic - len(state_abbrs))
+    else:                                       # tiny class (tests): no floor possible
+        state_queue = rng.choices(state_abbrs, weights=state_weights, k=n_domestic)
+    rng.shuffle(state_queue)                    # so the floor states aren't front-loaded
+    _state_iter = iter(state_queue)
 
     recruits: list[Prospect] = []
     for i in range(n):
-        domestic = rng.random() >= intl_share
+        domestic = domestic_flags[i]
         secondary = None
         hs_state = None
         if domestic:
-            state = rng.choices(state_names, weights=state_weights, k=1)[0]
-            abbr = _STATE_ABBR.get(state, state)
-            name, _ = (latin_name() if abbr == "PR" else us_name())
+            abbr = next(_state_iter)
+            state = _ABBR_STATE.get(abbr, abbr)
+            name, _ = (latin_name() if abbr == "PR"
+                       else chamorro_name() if abbr == "GU"
+                       else us_name())
             region, country = state, "US"
             if abbr in _US_TERRITORIES:           # US territory → dual flag (US + terr.)
                 secondary = abbr
