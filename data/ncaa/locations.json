@@ -1573,10 +1573,6 @@
       "city": "Bloomington",
       "state": "IL"
     },
-    "Immaculata": {
-      "city": "Immaculata",
-      "state": "PA"
-    },
     "Incarnate Word": {
       "city": "San Antonio",
       "state": "TX"
@@ -2072,10 +2068,6 @@
     "Maryville (TN)": {
       "city": "Maryville",
       "state": "TN"
-    },
-    "Marywood": {
-      "city": "Scranton",
-      "state": "PA"
     },
     "Massachusetts": {
       "city": "Amherst",
@@ -4356,6 +4348,30 @@
     "Oregon Tech": {
       "city": "Klamath Falls",
       "state": "OR"
+    },
+    "Virgin Islands": {
+      "city": "Charlotte Amalie",
+      "state": "VI"
+    },
+    "Puerto Rico-Bayamón": {
+      "city": "Bayamón",
+      "state": "PR"
+    },
+    "Puerto Rico-Cayey": {
+      "city": "Cayey",
+      "state": "PR"
+    },
+    "Puerto Rico-Mayagüez": {
+      "city": "Mayagüez",
+      "state": "PR"
+    },
+    "Puerto Rico-Río Piedras": {
+      "city": "San Juan",
+      "state": "PR"
+    },
+    "Guam": {
+      "city": "Mangilao",
+      "state": "GU"
     }
   }
 }

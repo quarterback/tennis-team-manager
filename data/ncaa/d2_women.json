@@ -179,7 +179,8 @@
         "Vanguard",
         "Westmont",
         "Arizona Christian",
-        "Anna Maria"
+        "Anna Maria",
+        "Guam"
       ]
     },
     {
@@ -457,6 +458,25 @@
         "Roberts Wesleyan",
         "St. Thomas Aquinas",
         "Staten Island"
+      ]
+    },
+    {
+      "name": "Coast to Coast Athletic Conference",
+      "abbr": "C2C",
+      "autobid": true,
+      "teams": [
+        "Christopher Newport",
+        "Johnson & Wales (Charlotte)",
+        "Mary Washington",
+        "Regent",
+        "Salisbury",
+        "UC Santa Cruz",
+        "Warren Wilson",
+        "Virgin Islands",
+        "Puerto Rico-Bayamón",
+        "Puerto Rico-Cayey",
+        "Puerto Rico-Mayagüez",
+        "Puerto Rico-Río Piedras"
       ]
     }
   ]

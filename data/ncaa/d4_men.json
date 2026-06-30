@@ -309,20 +309,6 @@
         "Wentworth",
         "Western New England"
       ]
-    },
-    {
-      "name": "Coast to Coast Athletic Conference",
-      "abbr": "C2C",
-      "autobid": true,
-      "teams": [
-        "Christopher Newport",
-        "Johnson & Wales (Charlotte)",
-        "Mary Washington",
-        "Regent",
-        "Salisbury",
-        "UC Santa Cruz",
-        "Warren Wilson"
-      ]
     }
   ]
 }

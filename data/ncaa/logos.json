@@ -1567,10 +1567,6 @@
     "espn_id": "306",
     "slug": "illinois-wesleyan"
   },
-  "Immaculata": {
-    "placeholder": true,
-    "slug": "immaculata"
-  },
   "Incarnate Word": {
     "espn_id": "2916",
     "slug": "incarnate-word"
@@ -2066,10 +2062,6 @@
   "Maryville (TN)": {
     "espn_id": "2373",
     "slug": "maryville-tn"
-  },
-  "Marywood": {
-    "placeholder": true,
-    "slug": "marywood"
   },
   "Massachusetts": {
     "espn_id": "113",
@@ -4342,5 +4334,29 @@
   "Oregon Tech": {
     "placeholder": true,
     "slug": "oregon-tech"
+  },
+  "Virgin Islands": {
+    "placeholder": true,
+    "slug": "virgin-islands"
+  },
+  "Puerto Rico-Bayamón": {
+    "placeholder": true,
+    "slug": "puerto-rico-bayamon"
+  },
+  "Puerto Rico-Cayey": {
+    "placeholder": true,
+    "slug": "puerto-rico-cayey"
+  },
+  "Puerto Rico-Mayagüez": {
+    "placeholder": true,
+    "slug": "puerto-rico-mayaguez"
+  },
+  "Puerto Rico-Río Piedras": {
+    "placeholder": true,
+    "slug": "puerto-rico-rio-piedras"
+  },
+  "Guam": {
+    "placeholder": true,
+    "slug": "guam"
   }
 }
