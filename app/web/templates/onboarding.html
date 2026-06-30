@@ -38,40 +38,111 @@
       </label>
 
       <label class="ob-field">
-        <span class="ob-field-k">International recruits</span>
-        <select name="intl_share" class="ob-select">
+        <span class="ob-field-k">US vs. world split</span>
+        <select name="intl_share" id="ob-intl" class="ob-select">
           {% for c in intl_share_choices %}
-          <option value="{{ c }}" {% if (c - intl_share)|abs < 0.001 %}selected{% endif %}>{{ (c * 100)|round|int }}% international</option>
+          <option value="{{ c }}" {% if (c - intl_share)|abs < 0.001 %}selected{% endif %}>{{ (100 - (c * 100))|round|int }}% US / {{ (c * 100)|round|int }}% international</option>
           {% endfor %}
         </select>
-        <span class="ob-field-hint">Share of each incoming recruiting class born outside the US — college tennis runs high. The rest are domestic; the nationality mix above decides which countries the internationals come from.</span>
+        <span class="ob-field-hint">This — not the multipliers below — sets how much of each incoming recruiting class is American vs. from the rest of the world. The nationality mix above only decides <em>which</em> countries the international slice is split among.</span>
       </label>
 
-      <details class="ob-regions">
+      <details class="ob-regions" id="ob-regions">
         <summary>Fine-tune by nation/region <span class="ob-opt">optional</span></summary>
         <p class="ob-regions-hint">
-          The mix above is the starting point. Dial any region up or down to change how
-          many of its players appear — e.g. crank Africa or Oceania to make them proliferate.
-          <em>1× leaves a region as the preset has it; ×% shows its share in the current preset.</em>
+          Dial any region up or down to change its slice of the <strong>international</strong>
+          portion — e.g. crank Canada or Africa to make them proliferate. The
+          <strong class="ob-reff-key">%</strong> next to each name is its live share of the whole
+          world (US included) and updates as you change the split, band, and multipliers.
+          <em>The US row is set by the “US vs. world split” above — its multiplier is intentionally fixed.</em>
         </p>
         {% for grp in region_groups %}
         <details class="ob-cont">
           <summary>{{ grp.continent }} <span class="ob-cont-n">{{ grp.regions|length }}</span></summary>
           <div class="ob-rgrid">
             {% for r in grp.regions %}
-            <div class="ob-rrow">
-              <span class="ob-rlabel">{{ r.label }}{% if r.base_pct %}<span class="ob-rpct">{{ r.base_pct }}%</span>{% endif %}</span>
+            <div class="ob-rrow" data-region="{{ r.id }}" data-weight="{{ r.weight }}"
+                 data-inband="{{ 1 if r.in_band else 0 }}"{% if r.is_domestic %} data-domestic="1"{% endif %}>
+              <span class="ob-rlabel">{{ r.label }}<span class="ob-reff" data-eff>—</span></span>
+              {% if r.is_domestic %}
+              <span class="ob-rfixed" title="Set by the “US vs. world split” above">auto</span>
+              {% else %}
               <select name="mult_{{ r.id }}" class="ob-rmult{% if r.mult != 1.0 %} on{% endif %}">
                 {% for c in mult_choices %}
                 <option value="{{ c }}" {% if c == r.mult %}selected{% endif %}>{{ '%g'|format(c) }}×{% if c == 0 %} off{% endif %}</option>
                 {% endfor %}
               </select>
+              {% endif %}
             </div>
             {% endfor %}
           </div>
         </details>
         {% endfor %}
       </details>
+      <script id="ob-band-weights" type="application/json">{{ band_weights|tojson }}</script>
+      <script>
+      (function () {
+        var INTRO_FLOOR = {{ intro_floor }};
+        var bandWeights = JSON.parse(document.getElementById('ob-band-weights').textContent || '{}');
+        var intlSel = document.getElementById('ob-intl');
+        var bandSel = document.querySelector('select[name="name_preset"]');
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#ob-regions .ob-rrow'));
+
+        function fmt(p) {
+          if (p >= 9.95) return Math.round(p) + '%';
+          if (p >= 0.05) return p.toFixed(1) + '%';
+          return '0%';
+        }
+        // Mirror the engine: a region absent from the band surfaces only when its
+        // multiplier != 1 (at INTRO_FLOOR·mult); the US share is 1 - intl_share and
+        // the rest of the world is scaled to fill the international slice.
+        function effWeight(row) {
+          var w = parseFloat(row.dataset.weight) || 0;
+          var inBand = row.dataset.inband === '1';
+          var sel = row.querySelector('select');
+          var m = sel ? parseFloat(sel.value) : 1;
+          if (m === 1) return inBand ? w : 0;
+          return (inBand ? w : INTRO_FLOOR) * (m > 0 ? m : 0);
+        }
+        function recompute() {
+          var intl = parseFloat(intlSel.value) || 0;
+          var eff = {}, sum = 0;
+          rows.forEach(function (row) {
+            if (row.dataset.domestic) return;
+            var e = effWeight(row);
+            eff[row.dataset.region] = e;
+            sum += e;
+          });
+          rows.forEach(function (row) {
+            var span = row.querySelector('[data-eff]');
+            if (!span) return;
+            var pct = row.dataset.domestic ? (1 - intl) * 100
+                    : (sum > 0 ? intl * (eff[row.dataset.region] / sum) * 100 : 0);
+            span.textContent = fmt(pct);
+            span.classList.toggle('zero', pct < 0.05);
+            var sel = row.querySelector('select');
+            if (sel) sel.classList.toggle('on', parseFloat(sel.value) !== 1);
+          });
+        }
+        // Switching bands rewrites every row's base weight from that band's map.
+        function applyBand() {
+          var w = bandWeights[bandSel.value] || {};
+          rows.forEach(function (row) {
+            var v = w[row.dataset.region];
+            row.dataset.weight = (v == null ? 0 : v);
+            row.dataset.inband = (v == null ? 0 : 1);
+          });
+          recompute();
+        }
+        intlSel.addEventListener('change', recompute);
+        rows.forEach(function (row) {
+          var sel = row.querySelector('select');
+          if (sel) sel.addEventListener('change', recompute);
+        });
+        if (bandSel) bandSel.addEventListener('change', applyBand);
+        recompute();
+      })();
+      </script>
 
       <label class="ob-field">
         <span class="ob-field-k">Run in detail</span>
@@ -204,6 +275,10 @@
 .ob-rrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ob-rlabel { font-size: 12.5px; color: var(--text-secondary); display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .ob-rpct { font-size: 10.5px; color: var(--text-muted); }
+.ob-reff { font-size: 10.5px; font-weight: 600; color: var(--brand); font-variant-numeric: tabular-nums; min-width: 30px; }
+.ob-reff.zero { color: var(--text-muted); font-weight: 400; }
+.ob-reff-key { color: var(--brand); }
+.ob-rfixed { font-size: 11px; color: var(--text-muted); font-style: italic; padding: 2px 6px; border: 1px dashed var(--border-subtle); border-radius: 6px; flex: 0 0 auto; }
 .ob-rmult { font-size: 12px; padding: 2px 4px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-page); color: var(--text-primary); flex: 0 0 auto; }
 .ob-rmult.on { border-color: var(--brand); color: var(--brand); font-weight: 600; }
 .ob-btn-primary { cursor: pointer; font-size: 15px; font-weight: 700;

@@ -464,12 +464,18 @@ def create_app() -> Flask:
     @app.route("/start")
     def onboarding():
         from app import worldconfig
+        from generators import region_preset
         from .state import all_programs_by_universe
         import secrets
+        # Every band's raw {region: weight} map, so the editor can recompute live
+        # effective shares when the player switches bands (not just multipliers).
+        band_weights = {value: region_preset(value) for value, _ in worldconfig.BANDS}
         return render_template("onboarding.html", active="World",
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
                                region_groups=worldconfig.region_groups(),
+                               band_weights=band_weights,
                                mult_choices=worldconfig.MULT_CHOICES,
+                               intro_floor=worldconfig._INTRO_FLOOR,
                                intl_share=worldconfig.intl_share(),
                                intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
                                programs_by_universe=all_programs_by_universe(),

@@ -218,6 +218,12 @@ def set_intl_share(value) -> None:
 _INTRO_FLOOR = 0.004
 MULT_CHOICES = [0.0, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
 
+# Regions that exist in the name data (so the picker can still draw their names for
+# OTHER purposes) but must NEVER be selectable as a standalone nationality in the
+# editor, nor reintroduced into the international mix. `guam` only backs the Chamorro
+# name picker for US-territory recruits (app/juniors); it is a US origin, not a nation.
+_HIDDEN_REGIONS = {"guam"}
+
 # Continents → ordered region ids, for grouping the editor. Any region not listed
 # here is appended to "Other" so the editor always covers every region in the data.
 _CONTINENTS: list[tuple[str, list[str]]] = [
@@ -237,7 +243,9 @@ _CONTINENTS: list[tuple[str, list[str]]] = [
                 "san_marino", "switzerland", "lithuania", "spain", "poland", "belgium",
                 "albania", "estonia", "georgia", "iceland", "latvia"]),
     ("Middle East", ["israel", "palestine", "lebanon", "iran", "gulf_cricket"]),
-    ("Oceania", ["anzac", "pacific_islands", "guam"]),
+    # Guam is intentionally NOT here: it is a US territory generated as a domestic
+    # dual-citizen origin (see app/juniors.US_STATES), not a selectable nationality.
+    ("Oceania", ["anzac", "pacific_islands"]),
 ]
 
 
@@ -267,16 +275,15 @@ def region_weights() -> dict[str, float]:
     per-region multiplier applied. This is what every generator should use."""
     from generators import region_preset
     base = dict(region_preset(name_preset()))
-    mult = region_mult()
-    if not mult:
-        return base
     out = dict(base)
-    for region, f in mult.items():
+    for region, f in region_mult().items():
         if region in out:
             out[region] = out[region] * f
         elif f > 0:
             out[region] = _INTRO_FLOOR * f      # surface a region the band omits
-    return {k: v for k, v in out.items() if v > 0}
+    # Hidden regions (e.g. guam) are never part of the international nationality mix,
+    # even if a stale multiplier is stored for them.
+    return {k: v for k, v in out.items() if v > 0 and k not in _HIDDEN_REGIONS}
 
 
 def region_groups() -> list[dict]:
@@ -293,14 +300,20 @@ def region_groups() -> list[dict]:
     def _row(rid: str) -> dict:
         label = (meta.get(rid) or {}).get("label") or rid.replace("_", " ").title()
         return {"id": rid, "label": label, "mult": mult.get(rid, 1.0),
-                "base_pct": round(100 * base.get(rid, 0.0) / total, 1)}
+                "base_pct": round(100 * base.get(rid, 0.0) / total, 1),
+                # Raw band weight + flags so the editor can compute the LIVE effective
+                # share (US is special: its share is 1 - intl_share, not its weight).
+                "weight": round(base.get(rid, 0.0), 6),
+                "in_band": rid in base,
+                "is_domestic": rid == "us"}
 
     placed = {r for _c, rids in _CONTINENTS for r in rids if r in meta}
     for cont, rids in _CONTINENTS:
-        rows = [_row(r) for r in rids if r in meta]
+        rows = [_row(r) for r in rids if r in meta and r not in _HIDDEN_REGIONS]
         if rows:
             groups.append({"continent": cont, "regions": rows})
-    other = [_row(r) for r in sorted(meta) if r not in placed]
+    other = [_row(r) for r in sorted(meta)
+             if r not in placed and r not in _HIDDEN_REGIONS]
     if other:
         groups.append({"continent": "Other", "regions": other})
     return groups
