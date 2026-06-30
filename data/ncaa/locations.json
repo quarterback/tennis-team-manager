@@ -138,8 +138,8 @@
       "state": "TX"
     },
     "Anna Maria": {
-      "city": "Paxton",
-      "state": "MA"
+      "city": "Honolulu",
+      "state": "HI"
     },
     "Appalachian State": {
       "city": "Boone",
@@ -462,8 +462,8 @@
       "state": "CO"
     },
     "Cairn": {
-      "city": "Langhorne",
-      "state": "PA"
+      "city": "Nampa",
+      "state": "ID"
     },
     "Cal": {
       "city": "Berkeley",
@@ -556,10 +556,6 @@
     "Carleton": {
       "city": "Northfield",
       "state": "MN"
-    },
-    "Carlow": {
-      "city": "Pittsburgh",
-      "state": "PA"
     },
     "Carnegie Mellon": {
       "city": "Pittsburgh",
@@ -680,10 +676,6 @@
     "Chattanooga": {
       "city": "Chattanooga",
       "state": "TN"
-    },
-    "Chestnut Hill": {
-      "city": "Philadelphia",
-      "state": "PA"
     },
     "Chicago": {
       "city": "Chicago",
@@ -1505,10 +1497,6 @@
       "city": "Worcester",
       "state": "MA"
     },
-    "Holy Family": {
-      "city": "Philadelphia",
-      "state": "PA"
-    },
     "Hood": {
       "city": "Frederick",
       "state": "MD"
@@ -1518,8 +1506,8 @@
       "state": "MI"
     },
     "Houghton": {
-      "city": "Houghton",
-      "state": "NY"
+      "city": "Juneau",
+      "state": "AK"
     },
     "Houston": {
       "city": "Houston",
@@ -1730,8 +1718,8 @@
       "state": "NY"
     },
     "Keystone": {
-      "city": "La Plume",
-      "state": "PA"
+      "city": "Cheyenne",
+      "state": "WY"
     },
     "King (TN)": {
       "city": "Bristol",
@@ -3022,8 +3010,8 @@
       "state": "IN"
     },
     "Rosemont": {
-      "city": "Rosemont",
-      "state": "PA"
+      "city": "Reno",
+      "state": "NV"
     },
     "Rowan": {
       "city": "Glassboro",
@@ -3962,8 +3950,8 @@
       "state": "GA"
     },
     "Valley Forge": {
-      "city": "Phoenixville",
-      "state": "PA"
+      "city": "Bozeman",
+      "state": "MT"
     },
     "Valparaiso": {
       "city": "Valparaiso",
@@ -4356,6 +4344,18 @@
     "Olin": {
       "city": "Needham",
       "state": "MA"
+    },
+    "Southern Oregon": {
+      "city": "Ashland",
+      "state": "OR"
+    },
+    "Eastern Oregon": {
+      "city": "La Grande",
+      "state": "OR"
+    },
+    "Oregon Tech": {
+      "city": "Klamath Falls",
+      "state": "OR"
     }
   }
 }

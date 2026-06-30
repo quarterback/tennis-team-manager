@@ -110,7 +110,11 @@
         "Regis",
         "South Dakota Mines",
         "Western Colorado",
-        "Westminster (UT)"
+        "Westminster (UT)",
+        "Mount Marty",
+        "Northern New Mexico",
+        "Keystone",
+        "Rosemont"
       ]
     },
     {
@@ -173,7 +177,9 @@
         "Menlo",
         "Point Loma Nazarene",
         "Vanguard",
-        "Westmont"
+        "Westmont",
+        "Arizona Christian",
+        "Anna Maria"
       ]
     },
     {
@@ -364,12 +370,10 @@
       "teams": [
         "Bridgeport",
         "Caldwell",
-        "Chestnut Hill",
         "Dominican (NY)",
         "Felician",
         "Georgian Court",
         "Goldey-Beacom",
-        "Holy Family",
         "Post",
         "Thomas Jefferson",
         "Wilmington (DE)"
@@ -405,7 +409,16 @@
         "Seattle Pacific",
         "Simon Fraser",
         "Western Oregon",
-        "Western Washington"
+        "Western Washington",
+        "Southern Oregon",
+        "Eastern Oregon",
+        "Oregon Tech",
+        "College of Idaho",
+        "Lewis-Clark State",
+        "Carroll (MT)",
+        "Valley Forge",
+        "Cairn",
+        "Houghton"
       ]
     },
     {
@@ -421,7 +434,6 @@
         "Midwestern State",
         "Oklahoma Christian",
         "St. Edward's",
-        "Mount Marty",
         "Sul Ross State",
         "Texas A&M International",
         "Texas A&M-Kingsville",

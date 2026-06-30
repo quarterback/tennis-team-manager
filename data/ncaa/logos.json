@@ -551,10 +551,6 @@
     "espn_id": "2101",
     "slug": "carleton"
   },
-  "Carlow": {
-    "placeholder": true,
-    "slug": "carlow"
-  },
   "Carnegie Mellon": {
     "espn_id": "2102",
     "slug": "carnegie-mellon"
@@ -674,10 +670,6 @@
   "Chattanooga": {
     "espn_id": "236",
     "slug": "chattanooga"
-  },
-  "Chestnut Hill": {
-    "placeholder": true,
-    "slug": "chestnut-hill"
   },
   "Chicago": {
     "espn_id": "80",
@@ -1498,10 +1490,6 @@
   "Holy Cross": {
     "espn_id": "107",
     "slug": "holy-cross"
-  },
-  "Holy Family": {
-    "placeholder": true,
-    "slug": "holy-family"
   },
   "Hood": {
     "placeholder": true,
@@ -4342,5 +4330,17 @@
   "Youngstown State": {
     "espn_id": "2754",
     "slug": "youngstown-state"
+  },
+  "Southern Oregon": {
+    "placeholder": true,
+    "slug": "southern-oregon"
+  },
+  "Eastern Oregon": {
+    "placeholder": true,
+    "slug": "eastern-oregon"
+  },
+  "Oregon Tech": {
+    "placeholder": true,
+    "slug": "oregon-tech"
   }
 }

@@ -162,7 +162,6 @@
       "teams": [
         "Farmingdale State",
         "Manhattanville",
-        "Carroll (MT)",
         "Mount Saint Vincent",
         "Purchase",
         "SUNY Maritime",
@@ -179,7 +178,6 @@
       "autobid": true,
       "teams": [
         "Alfred State",
-        "Carlow",
         "Hilbert",
         "La Roche",
         "Mount Aloysius",
@@ -215,7 +213,6 @@
       "abbr": "MASCAC",
       "autobid": true,
       "teams": [
-        "Anna Maria",
         "Bridgewater State",
         "Fitchburg State",
         "Framingham State",
@@ -234,9 +231,7 @@
         "Alverno",
         "Aurora",
         "Benedictine (IL)",
-        "College of Idaho",
         "Concordia Wisconsin",
-        "Lewis-Clark State",
         "Edgewood",
         "Lakeland",
         "MSOE",
@@ -330,10 +325,8 @@
       "abbr": "United East",
       "autobid": true,
       "teams": [
-        "Cairn",
         "Cedar Crest",
         "Gallaudet",
-        "Keystone",
         "Lancaster Bible",
         "Notre Dame of Maryland",
         "Penn College",
@@ -341,9 +334,7 @@
         "Penn State Berks",
         "Penn State Brandywine",
         "Penn State Harrisburg",
-        "Rosemont",
         "St. Mary's (MD)",
-        "Valley Forge",
         "Wilson (PA)"
       ]
     },
