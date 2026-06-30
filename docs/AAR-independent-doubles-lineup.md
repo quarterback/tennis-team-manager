@@ -1,14 +1,19 @@
-# AAR — Independent doubles lineup (coach-set pairings, doubles specialists)
+# AAR — Independent doubles lineup (coach-set pairings)
 
 ## Why
 
 In US college tennis the doubles lineup (3 pairs) is its **own** lineup, separate
-from the singles six — a player can be "1 doubles / 5 singles" (a doubles
-specialist who pairs at the top but isn't a top-six singles player). The sim only
-ever auto-paired doubles as a permutation of the singles six (`season.DOUBLES_PERMS`
-→ `random.choice`), so the coach had **zero** control over pairings and a specialist
-who isn't a singles starter could never play doubles. The owner asked to be able to
-set the three pairs, explicitly including non-singles players.
+from the singles six — a player can be "1 doubles / 5 singles" (plays *both*: 1st
+doubles and 5th singles), and a coach can pull in depth from outside the singles six
+to play doubles. The sim only ever auto-paired doubles as a permutation of the
+singles six (`season.DOUBLES_PERMS` → `random.choice`), so the coach had **zero**
+control over pairings and couldn't use a depth player in doubles. The owner asked to
+set the three pairs from anywhere on the roster.
+
+**Explicit non-goal:** there is NO "doubles-only / never plays singles" player type —
+that would confuse the engine. Every player remains fully singles-eligible; the
+doubles pin just chooses *who pairs for doubles this dual*, and players freely play
+both.
 
 ## What it does
 
@@ -34,7 +39,7 @@ ladder); applies to the coached team's season duals.
   otherwise that dual falls back to auto (so one injury can't field a broken pair).
 - **Identity / box score** (`season._line_identity`, `_dual_record`): doubles slots
   resolve their player identity (names + pids) from the **doubles** Prospect lists
-  (`la_d`/`lb_d`), not the singles list — so a specialist's name shows on the
+  (`la_d`/`lb_d`), not the singles list — so a depth player's name shows on the
   doubles line. Both default to the singles list, so the other `_dual_record` caller
   (the prebuilt-squads all-play path) and any auto team are unaffected.
 - **Coached-team guard** (`season._coached_doubles`): mirrors `_coached_pin` — the
@@ -69,8 +74,8 @@ ladder); applies to the coached team's season duals.
   substitution could be added later but adds complexity for a rare case.
 - **Played list includes doubles-only players.** `dual_between` builds
   `home_played`/`away_played` from the union of the singles *and* doubles rosters
-  (`la ∪ la_d`), so a doubles specialist who never plays singles is still rolled for
-  injuries by season mode — otherwise they'd play every dual injury-free.
+  (`la ∪ la_d`), so a depth player used only in doubles for a given dual is still
+  rolled for injuries by season mode — otherwise they'd take the court injury-free.
 - **`_universe` reads the POST form too.** Editor edits post `u` as a hidden field
   with no query string; `_universe` now falls back to `request.form` (it's empty on
   GET), so a doubles/lineup edit for a non-D1-men universe validates against the
@@ -80,8 +85,8 @@ ladder); applies to the coached team's season duals.
 
 ## Tests
 
-`tests/test_doubles_lineup.py`: overrides round-trip; a pinned non-singles
-specialist plays doubles but not singles; no/invalid pin falls back to auto; and the
-engine pairs from `doubles_players` when set (dual completes, 3 doubles + 6 singles
-lines). Verified end-to-end with a web smoke: a pinned specialist appears on the
-doubles lines of a real coached-team season dual, and the editor renders the form.
+`tests/test_doubles_lineup.py`: overrides round-trip; a pinned depth player (outside
+the singles six) plays doubles for that dual; no/invalid pin falls back to auto; and
+the engine pairs from `doubles_players` when set (dual completes, 3 doubles + 6
+singles lines). Verified end-to-end with a web smoke: a pinned depth player appears on
+the doubles lines of a real coached-team season dual, and the editor renders the form.

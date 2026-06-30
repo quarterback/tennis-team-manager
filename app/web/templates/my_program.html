@@ -102,7 +102,7 @@
           </form>
         {% else %}
           <span class="mp-badge">Auto pairings</span>
-          <span class="mp-note" style="margin:0;">The AI pairs your top 6. Set your own — a doubles specialist can play here without being a singles starter.</span>
+          <span class="mp-note" style="margin:0;">The AI pairs your top 6. Set your own — you can pair anyone on the roster, including depth from outside your singles six.</span>
         {% endif %}
       </div>
       <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl">
@@ -117,7 +117,7 @@
         {% endfor %}
         <button class="mp-dbl-save" type="submit">Save pairings</button>
       </form>
-      <p class="mp-note">Doubles is its own lineup, independent of singles ("1 doubles / 5 singles" is fine). If a paired player is injured for a dual, that week falls back to the auto pairing.</p>
+      <p class="mp-note">Doubles is picked independently of singles, so players can play both — and you can use a depth player in doubles who isn't in that day's singles six. If a paired player is injured, that dual falls back to the auto pairing.</p>
     </section>
     {% endif %}
 
