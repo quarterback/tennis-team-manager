@@ -302,7 +302,8 @@
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
-        "Sam Houston"
+        "Sam Houston",
+        "Rice"
       ]
     },
     {
@@ -339,42 +340,6 @@
         "Princeton",
         "William & Mary",
         "Yale"
-      ]
-    },
-    {
-      "name": "Meridian League",
-      "abbr": "Meridian",
-      "autobid": true,
-      "teams": [
-        "Bemidji State",
-        "Clarkson",
-        "Grand Valley State",
-        "Illinois Tech",
-        "MIT",
-        "Michigan Tech",
-        "Minnesota State",
-        "RIT",
-        "Rowan",
-        "St. Lawrence",
-        "Union (NY)",
-        "WPI"
-      ]
-    },
-    {
-      "name": "University Athletic Association",
-      "abbr": "UAA",
-      "autobid": true,
-      "teams": [
-        "Brandeis",
-        "Carnegie Mellon",
-        "Case Western Reserve",
-        "Colorado College",
-        "Emory",
-        "NYU",
-        "RPI",
-        "Rice",
-        "Rochester",
-        "Washington University in St. Louis"
       ]
     },
     {
@@ -415,7 +380,8 @@
         "Toledo",
         "UW-Whitewater",
         "Western Kentucky",
-        "Western Michigan"
+        "Western Michigan",
+        "Rowan"
       ]
     },
     {
@@ -579,7 +545,11 @@
         "Oral Roberts",
         "South Dakota",
         "South Dakota State",
-        "St. Thomas"
+        "St. Thomas",
+        "Bemidji State",
+        "Grand Valley State",
+        "Michigan Tech",
+        "Minnesota State"
       ]
     },
     {

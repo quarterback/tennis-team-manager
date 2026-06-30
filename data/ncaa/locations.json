@@ -4372,6 +4372,66 @@
     "Guam": {
       "city": "Mangilao",
       "state": "GU"
+    },
+    "Dillard": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Fisk": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Huston-Tillotson": {
+      "city": "Austin",
+      "state": "TX"
+    },
+    "Oakwood": {
+      "city": "Huntsville",
+      "state": "AL"
+    },
+    "Paul Quinn": {
+      "city": "Dallas",
+      "state": "TX"
+    },
+    "Philander Smith": {
+      "city": "Little Rock",
+      "state": "AR"
+    },
+    "Rust": {
+      "city": "Holly Springs",
+      "state": "MS"
+    },
+    "Southern New Orleans": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Stillman": {
+      "city": "Tuscaloosa",
+      "state": "AL"
+    },
+    "Talladega": {
+      "city": "Talladega",
+      "state": "AL"
+    },
+    "Tougaloo": {
+      "city": "Tougaloo",
+      "state": "MS"
+    },
+    "Voorhees": {
+      "city": "Denmark",
+      "state": "SC"
+    },
+    "Wilberforce": {
+      "city": "Wilberforce",
+      "state": "OH"
+    },
+    "Wiley": {
+      "city": "Marshall",
+      "state": "TX"
+    },
+    "Spelman": {
+      "city": "Atlanta",
+      "state": "GA"
     }
   }
 }

@@ -43,7 +43,6 @@
         "Dickinson",
         "Franklin & Marshall",
         "Gettysburg",
-        "Hampden-Sydney",
         "Haverford",
         "Muhlenberg",
         "Swarthmore",
@@ -62,7 +61,6 @@
         "Kenyon",
         "Oberlin",
         "Ohio Wesleyan",
-        "Wabash",
         "Wittenberg",
         "Wooster"
       ]
@@ -116,7 +114,8 @@
         "Rhodes",
         "Sewanee",
         "Southwestern (TX)",
-        "Trinity (TX)"
+        "Trinity (TX)",
+        "Spelman"
       ]
     },
     {
@@ -187,7 +186,6 @@
         "Monmouth (IL)",
         "Ripon",
         "Saint Benedict",
-        "Saint John's (MN)",
         "Saint Mary's (MN)",
         "St. Catherine",
         "St. Scholastica"
@@ -308,6 +306,36 @@
         "Suffolk",
         "Wentworth",
         "Western New England"
+      ]
+    },
+    {
+      "name": "University Athletic Association",
+      "abbr": "UAA",
+      "autobid": true,
+      "teams": [
+        "Brandeis",
+        "Carnegie Mellon",
+        "Case Western Reserve",
+        "Colorado College",
+        "Emory",
+        "NYU",
+        "RPI",
+        "Rochester",
+        "Washington University in St. Louis"
+      ]
+    },
+    {
+      "name": "Liberty League",
+      "abbr": "Liberty League",
+      "autobid": true,
+      "teams": [
+        "MIT",
+        "WPI",
+        "Illinois Tech",
+        "Union (NY)",
+        "St. Lawrence",
+        "Clarkson",
+        "RIT"
       ]
     }
   ]

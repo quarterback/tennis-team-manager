@@ -39,7 +39,6 @@
       "abbr": "Centennial",
       "autobid": true,
       "teams": [
-        "Bryn Mawr",
         "Dickinson",
         "Franklin & Marshall",
         "Gettysburg",
@@ -76,14 +75,12 @@
         "Bridgewater (VA)",
         "Eastern Mennonite",
         "Guilford",
-        "Hollins",
         "Lynchburg",
         "McDaniel",
         "Randolph",
         "Randolph-Macon",
         "Roanoke",
         "Shenandoah",
-        "Sweet Briar",
         "Virginia Wesleyan",
         "Washington College"
       ]
@@ -116,7 +113,8 @@
         "Rhodes",
         "Sewanee",
         "Southwestern (TX)",
-        "Trinity (TX)"
+        "Trinity (TX)",
+        "Morehouse"
       ]
     },
     {
@@ -165,11 +163,8 @@
         "Coast Guard",
         "Emerson",
         "Merchant Marine",
-        "Mount Holyoke",
         "Salve Regina",
-        "Smith",
         "Springfield",
-        "Wellesley",
         "Wheaton (MA)"
       ]
     },
@@ -186,7 +181,6 @@
         "Illinois College",
         "Monmouth (IL)",
         "Ripon",
-        "Saint Benedict",
         "Saint John's (MN)",
         "Saint Mary's (MN)",
         "St. Catherine",
@@ -248,7 +242,6 @@
       "abbr": "CCS",
       "autobid": true,
       "teams": [
-        "Agnes Scott",
         "Asbury",
         "Belhaven",
         "Covenant",
@@ -308,6 +301,36 @@
         "Suffolk",
         "Wentworth",
         "Western New England"
+      ]
+    },
+    {
+      "name": "University Athletic Association",
+      "abbr": "UAA",
+      "autobid": true,
+      "teams": [
+        "Brandeis",
+        "Carnegie Mellon",
+        "Case Western Reserve",
+        "Colorado College",
+        "Emory",
+        "NYU",
+        "RPI",
+        "Rochester",
+        "Washington University in St. Louis"
+      ]
+    },
+    {
+      "name": "Liberty League",
+      "abbr": "Liberty League",
+      "autobid": true,
+      "teams": [
+        "MIT",
+        "WPI",
+        "Illinois Tech",
+        "Union (NY)",
+        "St. Lawrence",
+        "Clarkson",
+        "RIT"
       ]
     }
   ]

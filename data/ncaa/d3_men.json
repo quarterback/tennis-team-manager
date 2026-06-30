@@ -146,11 +146,9 @@
         "Brevard",
         "Greensboro",
         "Mary Baldwin",
-        "Meredith",
         "Methodist",
         "North Carolina Wesleyan",
         "Pfeiffer",
-        "Salem",
         "Southern Virginia",
         "William Peace"
       ]
@@ -204,8 +202,7 @@
         "Regis (MA)",
         "Rivier",
         "Saint Joseph (CT)",
-        "Saint Joseph's (ME)",
-        "Simmons"
+        "Saint Joseph's (ME)"
       ]
     },
     {
@@ -299,7 +296,6 @@
         "Hope",
         "Kalamazoo",
         "Olivet",
-        "Saint Mary's (IN)",
         "Trine"
       ]
     },
@@ -325,7 +321,6 @@
       "abbr": "United East",
       "autobid": true,
       "teams": [
-        "Cedar Crest",
         "Gallaudet",
         "Lancaster Bible",
         "Notre Dame of Maryland",
@@ -364,6 +359,27 @@
         "Lehman",
         "Medgar Evers",
         "York (NY)"
+      ]
+    },
+    {
+      "name": "Legacy League",
+      "abbr": "Legacy League",
+      "autobid": true,
+      "teams": [
+        "Dillard",
+        "Fisk",
+        "Huston-Tillotson",
+        "Oakwood",
+        "Paul Quinn",
+        "Philander Smith",
+        "Rust",
+        "Southern New Orleans",
+        "Stillman",
+        "Talladega",
+        "Tougaloo",
+        "Voorhees",
+        "Wilberforce",
+        "Wiley"
       ]
     }
   ]

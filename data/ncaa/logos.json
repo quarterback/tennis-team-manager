@@ -4358,5 +4358,65 @@
   "Guam": {
     "placeholder": true,
     "slug": "guam"
+  },
+  "Dillard": {
+    "placeholder": true,
+    "slug": "dillard"
+  },
+  "Fisk": {
+    "placeholder": true,
+    "slug": "fisk"
+  },
+  "Huston-Tillotson": {
+    "placeholder": true,
+    "slug": "huston-tillotson"
+  },
+  "Oakwood": {
+    "placeholder": true,
+    "slug": "oakwood"
+  },
+  "Paul Quinn": {
+    "placeholder": true,
+    "slug": "paul-quinn"
+  },
+  "Philander Smith": {
+    "placeholder": true,
+    "slug": "philander-smith"
+  },
+  "Rust": {
+    "placeholder": true,
+    "slug": "rust"
+  },
+  "Southern New Orleans": {
+    "placeholder": true,
+    "slug": "southern-new-orleans"
+  },
+  "Stillman": {
+    "placeholder": true,
+    "slug": "stillman"
+  },
+  "Talladega": {
+    "placeholder": true,
+    "slug": "talladega"
+  },
+  "Tougaloo": {
+    "placeholder": true,
+    "slug": "tougaloo"
+  },
+  "Voorhees": {
+    "placeholder": true,
+    "slug": "voorhees"
+  },
+  "Wilberforce": {
+    "placeholder": true,
+    "slug": "wilberforce"
+  },
+  "Wiley": {
+    "placeholder": true,
+    "slug": "wiley"
+  },
+  "Spelman": {
+    "placeholder": true,
+    "slug": "spelman"
   }
 }

@@ -365,6 +365,27 @@
         "Medgar Evers",
         "York (NY)"
       ]
+    },
+    {
+      "name": "Legacy League",
+      "abbr": "Legacy League",
+      "autobid": true,
+      "teams": [
+        "Dillard",
+        "Fisk",
+        "Huston-Tillotson",
+        "Oakwood",
+        "Paul Quinn",
+        "Philander Smith",
+        "Rust",
+        "Southern New Orleans",
+        "Stillman",
+        "Talladega",
+        "Tougaloo",
+        "Voorhees",
+        "Wilberforce",
+        "Wiley"
+      ]
     }
   ]
 }
