@@ -58,7 +58,7 @@
       </div>
       {% set ladder = mp.starters + mp.bench %}
       <table class="mp-table">
-        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
         <tbody>
           {% for r in ladder %}
           <tr{% if r.injury %} class="mp-hurt"{% endif %}{% if not r.line %} class="mp-benchrow"{% endif %}>
@@ -68,21 +68,23 @@
             <td class="mp-num">{{ r.str }}</td>
             <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
             <td>{{ r.schol }}</td>
-            <td class="mp-move">
-              <form method="post" action="{{ url_for('my_program_lineup') }}">
-                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="up">
-                <button type="submit" title="Move up"{% if loop.first %} disabled{% endif %}>▲</button>
-              </form>
-              <form method="post" action="{{ url_for('my_program_lineup') }}">
-                <input type="hidden" name="pid" value="{{ r.p.pid }}"><input type="hidden" name="dir" value="down">
-                <button type="submit" title="Move down"{% if loop.last %} disabled{% endif %}>▼</button>
-              </form>
-            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-      <p class="mp-note">Top 6 play singles. The row below the line is your next-up bench — promote one to bump it into the lineup. Doubles is set separately below.</p>
+      {% if ladder|length >= 6 %}
+      {% set lpin = ladder[:6]|map(attribute='p.pid')|list %}
+      <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
+        {% for i in range(6) %}
+        <div class="mp-dblrow">
+          <span class="mp-dbl-line">S{{ i + 1 }}</span>
+          <select name="s{{ i + 1 }}">{% for r in ladder %}<option value="{{ r.p.pid }}"{% if r.p.pid == lpin[i] %} selected{% endif %}>{{ r.p.name }}{% if r.injury %} (out){% endif %}</option>{% endfor %}</select>
+        </div>
+        {% endfor %}
+        <button class="mp-dbl-save" type="submit">Save lineup</button>
+      </form>
+      {% endif %}
+      <p class="mp-note">Pick any roster player into any singles slot — set all six at once. The “—” rows below the line are your bench. Doubles is set separately below.</p>
     </section>
 
     {% set pool = mp.starters + mp.bench %}

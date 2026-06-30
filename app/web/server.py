@@ -533,9 +533,20 @@ def create_app() -> Flask:
             ov.clear_lineup(school)             # back to the auto ladder
             reset_all()
             return redirect(url_for("my_program"))
+        p = load_division(division, gender).by_school(school)
+        valid = {pr.pid for pr in build_roster(p)} if p else set()
+        # Slot picker: six S1-S6 dropdowns set the whole singles ladder at once (any
+        # roster player into any slot — no more nudging ▲▼ one row at a time).
+        slots = ["s1", "s2", "s3", "s4", "s5", "s6"]
+        if any(request.form.get(s) for s in slots):
+            pids = [request.form.get(s, "").strip() for s in slots]
+            if all(pid in valid for pid in pids) and len(set(pids)) == 6:
+                ov.set_lineup(school, pids)     # pinned six lead; rest fall in by ability
+                reset_all()
+            return redirect(url_for("my_program"))
+        # Legacy single-step nudge (kept for any old links / accessibility).
         pid = request.form.get("pid", "")
         direction = request.form.get("dir", "")
-        p = load_division(division, gender).by_school(school)
         order = [pr.pid for pr in build_roster(p)] if p else []
         if pid in order:
             i = order.index(pid)
