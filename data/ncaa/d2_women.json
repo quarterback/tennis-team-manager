@@ -85,7 +85,6 @@
         "Lane",
         "LeMoyne-Owen",
         "Miles",
-        "Morehouse",
         "Savannah State",
         "Spring Hill",
         "Tuskegee"
@@ -110,7 +109,11 @@
         "Regis",
         "South Dakota Mines",
         "Western Colorado",
-        "Westminster (UT)"
+        "Westminster (UT)",
+        "Mount Marty",
+        "Northern New Mexico",
+        "Keystone",
+        "Rosemont"
       ]
     },
     {
@@ -173,7 +176,10 @@
         "Menlo",
         "Point Loma Nazarene",
         "Vanguard",
-        "Westmont"
+        "Westmont",
+        "Arizona Christian",
+        "Anna Maria",
+        "Guam"
       ]
     },
     {
@@ -364,12 +370,10 @@
       "teams": [
         "Bridgeport",
         "Caldwell",
-        "Chestnut Hill",
         "Dominican (NY)",
         "Felician",
         "Georgian Court",
         "Goldey-Beacom",
-        "Holy Family",
         "Post",
         "Thomas Jefferson",
         "Wilmington (DE)"
@@ -405,7 +409,14 @@
         "Seattle Pacific",
         "Simon Fraser",
         "Western Oregon",
-        "Western Washington"
+        "Western Washington",
+        "Southern Oregon",
+        "Eastern Oregon",
+        "Oregon Tech",
+        "Lewis-Clark State",
+        "Valley Forge",
+        "Cairn",
+        "Houghton"
       ]
     },
     {
@@ -421,7 +432,6 @@
         "Midwestern State",
         "Oklahoma Christian",
         "St. Edward's",
-        "St. Mary's (TX)",
         "Sul Ross State",
         "Texas A&M International",
         "Texas A&M-Kingsville",
@@ -447,6 +457,25 @@
         "Roberts Wesleyan",
         "St. Thomas Aquinas",
         "Staten Island"
+      ]
+    },
+    {
+      "name": "Coast to Coast Athletic Conference",
+      "abbr": "C2C",
+      "autobid": true,
+      "teams": [
+        "Christopher Newport",
+        "Johnson & Wales (Charlotte)",
+        "Mary Washington",
+        "Regent",
+        "Salisbury",
+        "UC Santa Cruz",
+        "Warren Wilson",
+        "Virgin Islands",
+        "Puerto Rico-Bayamón",
+        "Puerto Rico-Cayey",
+        "Puerto Rico-Mayagüez",
+        "Puerto Rico-Río Piedras"
       ]
     }
   ]

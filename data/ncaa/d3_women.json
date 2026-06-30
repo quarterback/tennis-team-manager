@@ -91,7 +91,8 @@
         "Rutgers-Newark",
         "Stockton",
         "TCNJ",
-        "William Paterson"
+        "William Paterson",
+        "Montclair State"
       ]
     },
     {
@@ -128,17 +129,6 @@
       ]
     },
     {
-      "name": "American Southwest Conference",
-      "abbr": "ASC",
-      "autobid": true,
-      "teams": [
-        "East Texas Baptist",
-        "Hardin-Simmons",
-        "Howard Payne",
-        "Mary Hardin-Baylor"
-      ]
-    },
-    {
       "name": "USA South Athletic Conference",
       "abbr": "USA South",
       "autobid": true,
@@ -162,7 +152,6 @@
       "teams": [
         "Farmingdale State",
         "Manhattanville",
-        "Mount Saint Mary (NY)",
         "Mount Saint Vincent",
         "Purchase",
         "SUNY Maritime",
@@ -179,7 +168,6 @@
       "autobid": true,
       "teams": [
         "Alfred State",
-        "Carlow",
         "Hilbert",
         "La Roche",
         "Mount Aloysius",
@@ -215,7 +203,6 @@
       "abbr": "MASCAC",
       "autobid": true,
       "teams": [
-        "Anna Maria",
         "Bridgewater State",
         "Fitchburg State",
         "Framingham State",
@@ -234,9 +221,7 @@
         "Alverno",
         "Aurora",
         "Benedictine (IL)",
-        "Concordia Chicago",
         "Concordia Wisconsin",
-        "Dominican (IL)",
         "Edgewood",
         "Lakeland",
         "MSOE",
@@ -330,10 +315,8 @@
       "abbr": "United East",
       "autobid": true,
       "teams": [
-        "Cairn",
         "Cedar Crest",
         "Gallaudet",
-        "Keystone",
         "Lancaster Bible",
         "Notre Dame of Maryland",
         "Penn College",
@@ -341,9 +324,7 @@
         "Penn State Berks",
         "Penn State Brandywine",
         "Penn State Harrisburg",
-        "Rosemont",
         "St. Mary's (MD)",
-        "Valley Forge",
         "Wilson (PA)"
       ]
     },
@@ -354,12 +335,14 @@
       "teams": [
         "Centenary (NJ)",
         "Gwynedd Mercy",
-        "Immaculata",
         "Marymount (VA)",
-        "Marywood",
         "Neumann",
         "Pratt",
-        "Saint Elizabeth"
+        "Saint Elizabeth",
+        "Bard",
+        "Vassar",
+        "Hobart and William Smith",
+        "Ithaca"
       ]
     },
     {
@@ -375,6 +358,27 @@
         "Lehman",
         "Medgar Evers",
         "York (NY)"
+      ]
+    },
+    {
+      "name": "Legacy League",
+      "abbr": "Legacy League",
+      "autobid": true,
+      "teams": [
+        "Dillard",
+        "Fisk",
+        "Huston-Tillotson",
+        "Oakwood",
+        "Paul Quinn",
+        "Philander Smith",
+        "Rust",
+        "Southern New Orleans",
+        "Stillman",
+        "Talladega",
+        "Tougaloo",
+        "Voorhees",
+        "Wilberforce",
+        "Wiley"
       ]
     }
   ]

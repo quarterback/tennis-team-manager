@@ -23,15 +23,18 @@
       "abbr": "Liberty League",
       "autobid": true,
       "teams": [
-        "Bard",
         "Connecticut College",
         "Hamilton",
-        "Hobart and William Smith",
-        "Ithaca",
         "Olin",
         "Skidmore",
         "Trinity (CT)",
-        "Vassar"
+        "MIT",
+        "WPI",
+        "Illinois Tech",
+        "Union (NY)",
+        "St. Lawrence",
+        "Clarkson",
+        "RIT"
       ]
     },
     {
@@ -43,7 +46,6 @@
         "Dickinson",
         "Franklin & Marshall",
         "Gettysburg",
-        "Hampden-Sydney",
         "Haverford",
         "Muhlenberg",
         "Swarthmore",
@@ -62,7 +64,6 @@
         "Kenyon",
         "Oberlin",
         "Ohio Wesleyan",
-        "Wabash",
         "Wittenberg",
         "Wooster"
       ]
@@ -116,7 +117,8 @@
         "Rhodes",
         "Sewanee",
         "Southwestern (TX)",
-        "Trinity (TX)"
+        "Trinity (TX)",
+        "Spelman"
       ]
     },
     {
@@ -187,7 +189,6 @@
         "Monmouth (IL)",
         "Ripon",
         "Saint Benedict",
-        "Saint John's (MN)",
         "Saint Mary's (MN)",
         "St. Catherine",
         "St. Scholastica"
@@ -221,7 +222,9 @@
         "Pacific Lutheran",
         "Puget Sound",
         "Whitworth",
-        "Willamette"
+        "Willamette",
+        "College of Idaho",
+        "Carroll (MT)"
       ]
     },
     {
@@ -231,7 +234,6 @@
       "teams": [
         "Austin College",
         "Centenary (LA)",
-        "Concordia Texas",
         "Dallas",
         "Hendrix",
         "LeTourneau",
@@ -255,7 +257,10 @@
         "LaGrange",
         "Maryville (TN)",
         "Piedmont",
-        "Wesleyan College"
+        "East Texas Baptist",
+        "Hardin-Simmons",
+        "Howard Payne",
+        "Mary Hardin-Baylor"
       ]
     },
     {
@@ -282,7 +287,6 @@
         "Alfred",
         "Elmira",
         "Hartwick",
-        "Houghton",
         "Keuka",
         "Nazareth",
         "Russell Sage",
@@ -312,17 +316,19 @@
       ]
     },
     {
-      "name": "Coast to Coast Athletic Conference",
-      "abbr": "C2C",
+      "name": "University Athletic Association",
+      "abbr": "UAA",
       "autobid": true,
       "teams": [
-        "Christopher Newport",
-        "Johnson & Wales (Charlotte)",
-        "Mary Washington",
-        "Regent",
-        "Salisbury",
-        "UC Santa Cruz",
-        "Warren Wilson"
+        "Brandeis",
+        "Carnegie Mellon",
+        "Case Western Reserve",
+        "Colorado College",
+        "Emory",
+        "NYU",
+        "RPI",
+        "Rochester",
+        "Washington University in St. Louis"
       ]
     }
   ]

@@ -551,10 +551,6 @@
     "espn_id": "2101",
     "slug": "carleton"
   },
-  "Carlow": {
-    "placeholder": true,
-    "slug": "carlow"
-  },
   "Carnegie Mellon": {
     "espn_id": "2102",
     "slug": "carnegie-mellon"
@@ -674,10 +670,6 @@
   "Chattanooga": {
     "espn_id": "236",
     "slug": "chattanooga"
-  },
-  "Chestnut Hill": {
-    "placeholder": true,
-    "slug": "chestnut-hill"
   },
   "Chicago": {
     "espn_id": "80",
@@ -807,17 +799,17 @@
     "espn_id": "2148",
     "slug": "concord"
   },
-  "Concordia Chicago": {
-    "espn_id": "2151",
-    "slug": "concordia-chicago"
+  "College of Idaho": {
+    "placeholder": true,
+    "slug": "college-of-idaho"
   },
   "Concordia Irvine": {
     "placeholder": true,
     "slug": "concordia-irvine"
   },
-  "Concordia Texas": {
+  "Northern New Mexico": {
     "placeholder": true,
-    "slug": "concordia-texas"
+    "slug": "northern-new-mexico"
   },
   "Concordia Wisconsin": {
     "placeholder": true,
@@ -959,9 +951,9 @@
     "placeholder": true,
     "slug": "dominican-ca"
   },
-  "Dominican (IL)": {
+  "Lewis-Clark State": {
     "placeholder": true,
-    "slug": "dominican-il"
+    "slug": "lewis-clark-state"
   },
   "Dominican (NY)": {
     "placeholder": true,
@@ -1499,10 +1491,6 @@
     "espn_id": "107",
     "slug": "holy-cross"
   },
-  "Holy Family": {
-    "placeholder": true,
-    "slug": "holy-family"
-  },
   "Hood": {
     "placeholder": true,
     "slug": "hood"
@@ -1578,10 +1566,6 @@
   "Illinois Wesleyan": {
     "espn_id": "306",
     "slug": "illinois-wesleyan"
-  },
-  "Immaculata": {
-    "placeholder": true,
-    "slug": "immaculata"
   },
   "Incarnate Word": {
     "espn_id": "2916",
@@ -2079,10 +2063,6 @@
     "espn_id": "2373",
     "slug": "maryville-tn"
   },
-  "Marywood": {
-    "placeholder": true,
-    "slug": "marywood"
-  },
   "Massachusetts": {
     "espn_id": "113",
     "slug": "massachusetts"
@@ -2343,9 +2323,9 @@
     "placeholder": true,
     "slug": "mount-olive"
   },
-  "Mount Saint Mary (NY)": {
+  "Carroll (MT)": {
     "placeholder": true,
-    "slug": "mount-saint-mary-ny"
+    "slug": "carroll-mt"
   },
   "Mount Saint Vincent": {
     "placeholder": true,
@@ -3483,9 +3463,9 @@
     "placeholder": true,
     "slug": "st-mary-s-md"
   },
-  "St. Mary's (TX)": {
+  "Mount Marty": {
     "placeholder": true,
-    "slug": "st-mary-s-tx"
+    "slug": "mount-marty"
   },
   "St. Norbert": {
     "espn_id": "2832",
@@ -4091,9 +4071,9 @@
     "placeholder": true,
     "slug": "wesleyan"
   },
-  "Wesleyan College": {
+  "Arizona Christian": {
     "placeholder": true,
-    "slug": "wesleyan-college"
+    "slug": "arizona-christian"
   },
   "West Alabama": {
     "espn_id": "2695",
@@ -4342,5 +4322,101 @@
   "Youngstown State": {
     "espn_id": "2754",
     "slug": "youngstown-state"
+  },
+  "Southern Oregon": {
+    "placeholder": true,
+    "slug": "southern-oregon"
+  },
+  "Eastern Oregon": {
+    "placeholder": true,
+    "slug": "eastern-oregon"
+  },
+  "Oregon Tech": {
+    "placeholder": true,
+    "slug": "oregon-tech"
+  },
+  "Virgin Islands": {
+    "placeholder": true,
+    "slug": "virgin-islands"
+  },
+  "Puerto Rico-Bayamón": {
+    "placeholder": true,
+    "slug": "puerto-rico-bayamon"
+  },
+  "Puerto Rico-Cayey": {
+    "placeholder": true,
+    "slug": "puerto-rico-cayey"
+  },
+  "Puerto Rico-Mayagüez": {
+    "placeholder": true,
+    "slug": "puerto-rico-mayaguez"
+  },
+  "Puerto Rico-Río Piedras": {
+    "placeholder": true,
+    "slug": "puerto-rico-rio-piedras"
+  },
+  "Guam": {
+    "placeholder": true,
+    "slug": "guam"
+  },
+  "Dillard": {
+    "placeholder": true,
+    "slug": "dillard"
+  },
+  "Fisk": {
+    "placeholder": true,
+    "slug": "fisk"
+  },
+  "Huston-Tillotson": {
+    "placeholder": true,
+    "slug": "huston-tillotson"
+  },
+  "Oakwood": {
+    "placeholder": true,
+    "slug": "oakwood"
+  },
+  "Paul Quinn": {
+    "placeholder": true,
+    "slug": "paul-quinn"
+  },
+  "Philander Smith": {
+    "placeholder": true,
+    "slug": "philander-smith"
+  },
+  "Rust": {
+    "placeholder": true,
+    "slug": "rust"
+  },
+  "Southern New Orleans": {
+    "placeholder": true,
+    "slug": "southern-new-orleans"
+  },
+  "Stillman": {
+    "placeholder": true,
+    "slug": "stillman"
+  },
+  "Talladega": {
+    "placeholder": true,
+    "slug": "talladega"
+  },
+  "Tougaloo": {
+    "placeholder": true,
+    "slug": "tougaloo"
+  },
+  "Voorhees": {
+    "placeholder": true,
+    "slug": "voorhees"
+  },
+  "Wilberforce": {
+    "placeholder": true,
+    "slug": "wilberforce"
+  },
+  "Wiley": {
+    "placeholder": true,
+    "slug": "wiley"
+  },
+  "Spelman": {
+    "placeholder": true,
+    "slug": "spelman"
   }
 }

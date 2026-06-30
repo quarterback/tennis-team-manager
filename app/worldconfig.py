@@ -209,14 +209,15 @@ def set_intl_share(value) -> None:
     set("intl_share", repr(f))
 
 
-# --- Per-region fidelity --------------------------------------------------------
-# A chosen band is just the starting weight map; on top of it the player can dial
-# any individual region/nation up or down with a multiplier. This lets you, say,
-# make African or Oceanian players proliferate without abandoning the preset.
-# Stored sparsely: only regions whose multiplier != 1.0. A region absent from the
-# base band is introduced at a small floor (so a boost can surface rare nations).
-_INTRO_FLOOR = 0.004
-MULT_CHOICES = [0.0, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+# --- Per-region weights ---------------------------------------------------------
+# A chosen band is a STARTING point; the editor then exposes a DIRECT weight per
+# region, so any bespoke international mix is expressible — e.g. a European core
+# with meaningful Latin America / Canada / Africa — instead of capped multipliers
+# on a fixed preset (where ×8 on a tiny base still renormalizes to ~nothing).
+# Stored as the full authored {region_id: weight} map; empty = use the band as-is.
+# Editor weights are on a band×WEIGHT_SCALE integer scale; the values are RELATIVE
+# (every consumer renormalizes), so the absolute scale is purely cosmetic.
+WEIGHT_SCALE = 1000
 
 # Regions that exist in the name data (so the picker can still draw their names for
 # OTHER purposes) but must NEVER be selectable as a standalone nationality in the
@@ -249,64 +250,68 @@ _CONTINENTS: list[tuple[str, list[str]]] = [
 ]
 
 
-def region_mult() -> dict[str, float]:
-    raw = get("region_mult")
+def region_weights_custom() -> dict[str, float]:
+    """The player's authored absolute {region: weight} international mix, or {} when
+    none is set (fall back to the chosen band)."""
+    raw = get("region_w")
     try:
-        return {str(k): float(v) for k, v in (json.loads(raw) if raw else {}).items()}
+        d = json.loads(raw) if raw else {}
+        return {str(k): float(v) for k, v in d.items()
+                if float(v) > 0 and str(k) not in _HIDDEN_REGIONS and str(k) != "us"}
     except (ValueError, TypeError, AttributeError):
         return {}
 
 
-def set_region_mult(mult: dict) -> None:
-    """Persist only the regions the player actually changed (multiplier != 1)."""
+def set_region_weights(weights: dict) -> None:
+    """Persist the authored {region: weight} international mix. A region at 0 is
+    dropped (excluded from the pool); an empty/all-zero map clears back to the band."""
     clean = {}
-    for k, v in (mult or {}).items():
+    for k, v in (weights or {}).items():
         try:
             f = float(v)
         except (ValueError, TypeError):
             continue
-        if f >= 0 and abs(f - 1.0) > 1e-9:
-            clean[str(k)] = f
-    set("region_mult", json.dumps(clean))
+        if f > 0 and str(k) not in _HIDDEN_REGIONS and str(k) != "us":
+            clean[str(k)] = round(f, 3)
+    set("region_w", json.dumps(clean))
 
 
 def region_weights() -> dict[str, float]:
-    """The effective {region_id: weight} mix = the chosen band, with each region's
-    per-region multiplier applied. This is what every generator should use."""
+    """The effective {region_id: weight} international mix every generator uses: the
+    player's authored mix if set, else the chosen band. US is omitted (its share is
+    the domestic split — see intl_share); hidden regions (guam) are excluded. Weights
+    are relative; consumers renormalize."""
+    custom = region_weights_custom()
+    if custom:
+        return dict(custom)
     from generators import region_preset
     base = dict(region_preset(name_preset()))
-    out = dict(base)
-    for region, f in region_mult().items():
-        if region in out:
-            out[region] = out[region] * f
-        elif f > 0:
-            out[region] = _INTRO_FLOOR * f      # surface a region the band omits
-    # Hidden regions (e.g. guam) are never part of the international nationality mix,
-    # even if a stale multiplier is stored for them.
-    return {k: v for k, v in out.items() if v > 0 and k not in _HIDDEN_REGIONS}
+    return {k: v for k, v in base.items()
+            if v > 0 and k not in _HIDDEN_REGIONS and k != "us"}
 
 
 def region_groups() -> list[dict]:
-    """Editor model: continents → regions with label + current multiplier, plus
-    the region's share in the *base band* (so the UI can show what's already
-    prominent). Covers every region in the data (unmapped → 'Other')."""
+    """Editor model: continents → regions, each with its current editor WEIGHT — the
+    authored value if the player set one, else the band weight on the WEIGHT_SCALE
+    integer scale. Covers every region in the data (unmapped → 'Other')."""
     from generators.names import get_name_regions, region_preset
     meta = get_name_regions()
     base = region_preset(name_preset())
-    total = sum(base.values()) or 1.0
-    mult = region_mult()
-    groups: list[dict] = []
+    custom = region_weights_custom()
+
+    def _weight(rid: str):
+        if rid in custom:
+            return round(custom[rid], 2)
+        if rid in base:
+            return max(1, round(base[rid] * WEIGHT_SCALE))
+        return 0
 
     def _row(rid: str) -> dict:
         label = (meta.get(rid) or {}).get("label") or rid.replace("_", " ").title()
-        return {"id": rid, "label": label, "mult": mult.get(rid, 1.0),
-                "base_pct": round(100 * base.get(rid, 0.0) / total, 1),
-                # Raw band weight + flags so the editor can compute the LIVE effective
-                # share (US is special: its share is 1 - intl_share, not its weight).
-                "weight": round(base.get(rid, 0.0), 6),
-                "in_band": rid in base,
+        return {"id": rid, "label": label, "weight": _weight(rid),
                 "is_domestic": rid == "us"}
 
+    groups: list[dict] = []
     placed = {r for _c, rids in _CONTINENTS for r in rids if r in meta}
     for cont, rids in _CONTINENTS:
         rows = [_row(r) for r in rids if r in meta and r not in _HIDDEN_REGIONS]

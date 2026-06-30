@@ -474,8 +474,7 @@ def create_app() -> Flask:
                                bands=worldconfig.BANDS, band=worldconfig.name_preset(),
                                region_groups=worldconfig.region_groups(),
                                band_weights=band_weights,
-                               mult_choices=worldconfig.MULT_CHOICES,
-                               intro_floor=worldconfig._INTRO_FLOOR,
+                               weight_scale=worldconfig.WEIGHT_SCALE,
                                intl_share=worldconfig.intl_share(),
                                intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
                                programs_by_universe=all_programs_by_universe(),
@@ -501,14 +500,16 @@ def create_app() -> Flask:
                     list(dict.fromkeys(worldconfig.active_genders() + [pgen])))
         else:
             worldconfig.clear_user_program()
-        mult = {}
+        weights = {}
         for grp in worldconfig.region_groups():
             for r in grp["regions"]:
+                if r.get("is_domestic"):
+                    continue                      # US share is the intl_share split
                 try:
-                    mult[r["id"]] = float(request.form.get(f"mult_{r['id']}", "1"))
+                    weights[r["id"]] = float(request.form.get(f"w_{r['id']}", "0"))
                 except (TypeError, ValueError):
                     pass
-        worldconfig.set_region_mult(mult)
+        worldconfig.set_region_weights(weights)
         # The world SEED is the generation salt — it drives every name, roster and
         # recruit roll. A typed seed makes the world reproducible; blank → a fresh
         # random one (so two restarts never collide). See onboarding "World seed".

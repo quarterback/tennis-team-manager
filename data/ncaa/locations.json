@@ -138,8 +138,8 @@
       "state": "TX"
     },
     "Anna Maria": {
-      "city": "Paxton",
-      "state": "MA"
+      "city": "Honolulu",
+      "state": "HI"
     },
     "Appalachian State": {
       "city": "Boone",
@@ -462,8 +462,8 @@
       "state": "CO"
     },
     "Cairn": {
-      "city": "Langhorne",
-      "state": "PA"
+      "city": "Nampa",
+      "state": "ID"
     },
     "Cal": {
       "city": "Berkeley",
@@ -556,10 +556,6 @@
     "Carleton": {
       "city": "Northfield",
       "state": "MN"
-    },
-    "Carlow": {
-      "city": "Pittsburgh",
-      "state": "PA"
     },
     "Carnegie Mellon": {
       "city": "Pittsburgh",
@@ -680,10 +676,6 @@
     "Chattanooga": {
       "city": "Chattanooga",
       "state": "TN"
-    },
-    "Chestnut Hill": {
-      "city": "Philadelphia",
-      "state": "PA"
     },
     "Chicago": {
       "city": "Chicago",
@@ -813,17 +805,17 @@
       "city": "Athens",
       "state": "WV"
     },
-    "Concordia Chicago": {
-      "city": "River Forest",
-      "state": "IL"
+    "College of Idaho": {
+      "city": "Caldwell",
+      "state": "ID"
     },
     "Concordia Irvine": {
       "city": "Irvine",
       "state": "CA"
     },
-    "Concordia Texas": {
-      "city": "Austin",
-      "state": "TX"
+    "Northern New Mexico": {
+      "city": "Española",
+      "state": "NM"
     },
     "Concordia Wisconsin": {
       "city": "Mequon",
@@ -965,9 +957,9 @@
       "city": "San Rafael",
       "state": "CA"
     },
-    "Dominican (IL)": {
-      "city": "River Forest",
-      "state": "IL"
+    "Lewis-Clark State": {
+      "city": "Lewiston",
+      "state": "ID"
     },
     "Dominican (NY)": {
       "city": "Orangeburg",
@@ -1505,10 +1497,6 @@
       "city": "Worcester",
       "state": "MA"
     },
-    "Holy Family": {
-      "city": "Philadelphia",
-      "state": "PA"
-    },
     "Hood": {
       "city": "Frederick",
       "state": "MD"
@@ -1518,8 +1506,8 @@
       "state": "MI"
     },
     "Houghton": {
-      "city": "Houghton",
-      "state": "NY"
+      "city": "Juneau",
+      "state": "AK"
     },
     "Houston": {
       "city": "Houston",
@@ -1584,10 +1572,6 @@
     "Illinois Wesleyan": {
       "city": "Bloomington",
       "state": "IL"
-    },
-    "Immaculata": {
-      "city": "Immaculata",
-      "state": "PA"
     },
     "Incarnate Word": {
       "city": "San Antonio",
@@ -1730,8 +1714,8 @@
       "state": "NY"
     },
     "Keystone": {
-      "city": "La Plume",
-      "state": "PA"
+      "city": "Cheyenne",
+      "state": "WY"
     },
     "King (TN)": {
       "city": "Bristol",
@@ -2085,10 +2069,6 @@
       "city": "Maryville",
       "state": "TN"
     },
-    "Marywood": {
-      "city": "Scranton",
-      "state": "PA"
-    },
     "Massachusetts": {
       "city": "Amherst",
       "state": "MA"
@@ -2349,9 +2329,9 @@
       "city": "Mount Olive",
       "state": "NC"
     },
-    "Mount Saint Mary (NY)": {
-      "city": "Newburgh",
-      "state": "NY"
+    "Carroll (MT)": {
+      "city": "Helena",
+      "state": "MT"
     },
     "Mount Saint Vincent": {
       "city": "Bronx",
@@ -3022,8 +3002,8 @@
       "state": "IN"
     },
     "Rosemont": {
-      "city": "Rosemont",
-      "state": "PA"
+      "city": "Reno",
+      "state": "NV"
     },
     "Rowan": {
       "city": "Glassboro",
@@ -3489,9 +3469,9 @@
       "city": "St. Mary's City",
       "state": "MD"
     },
-    "St. Mary's (TX)": {
-      "city": "San Antonio",
-      "state": "TX"
+    "Mount Marty": {
+      "city": "Yankton",
+      "state": "SD"
     },
     "St. Norbert": {
       "city": "De Pere",
@@ -3962,8 +3942,8 @@
       "state": "GA"
     },
     "Valley Forge": {
-      "city": "Phoenixville",
-      "state": "PA"
+      "city": "Bozeman",
+      "state": "MT"
     },
     "Valparaiso": {
       "city": "Valparaiso",
@@ -4097,9 +4077,9 @@
       "city": "Middletown",
       "state": "CT"
     },
-    "Wesleyan College": {
-      "city": "Macon",
-      "state": "GA"
+    "Arizona Christian": {
+      "city": "Glendale",
+      "state": "AZ"
     },
     "West Alabama": {
       "city": "Livingston",
@@ -4356,6 +4336,102 @@
     "Olin": {
       "city": "Needham",
       "state": "MA"
+    },
+    "Southern Oregon": {
+      "city": "Ashland",
+      "state": "OR"
+    },
+    "Eastern Oregon": {
+      "city": "La Grande",
+      "state": "OR"
+    },
+    "Oregon Tech": {
+      "city": "Klamath Falls",
+      "state": "OR"
+    },
+    "Virgin Islands": {
+      "city": "Charlotte Amalie",
+      "state": "VI"
+    },
+    "Puerto Rico-Bayamón": {
+      "city": "Bayamón",
+      "state": "PR"
+    },
+    "Puerto Rico-Cayey": {
+      "city": "Cayey",
+      "state": "PR"
+    },
+    "Puerto Rico-Mayagüez": {
+      "city": "Mayagüez",
+      "state": "PR"
+    },
+    "Puerto Rico-Río Piedras": {
+      "city": "San Juan",
+      "state": "PR"
+    },
+    "Guam": {
+      "city": "Mangilao",
+      "state": "GU"
+    },
+    "Dillard": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Fisk": {
+      "city": "Nashville",
+      "state": "TN"
+    },
+    "Huston-Tillotson": {
+      "city": "Austin",
+      "state": "TX"
+    },
+    "Oakwood": {
+      "city": "Huntsville",
+      "state": "AL"
+    },
+    "Paul Quinn": {
+      "city": "Dallas",
+      "state": "TX"
+    },
+    "Philander Smith": {
+      "city": "Little Rock",
+      "state": "AR"
+    },
+    "Rust": {
+      "city": "Holly Springs",
+      "state": "MS"
+    },
+    "Southern New Orleans": {
+      "city": "New Orleans",
+      "state": "LA"
+    },
+    "Stillman": {
+      "city": "Tuscaloosa",
+      "state": "AL"
+    },
+    "Talladega": {
+      "city": "Talladega",
+      "state": "AL"
+    },
+    "Tougaloo": {
+      "city": "Tougaloo",
+      "state": "MS"
+    },
+    "Voorhees": {
+      "city": "Denmark",
+      "state": "SC"
+    },
+    "Wilberforce": {
+      "city": "Wilberforce",
+      "state": "OH"
+    },
+    "Wiley": {
+      "city": "Marshall",
+      "state": "TX"
+    },
+    "Spelman": {
+      "city": "Atlanta",
+      "state": "GA"
     }
   }
 }

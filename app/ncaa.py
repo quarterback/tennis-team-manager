@@ -123,6 +123,10 @@ CONF_PRESTIGE_D3 = {
     "Upper Midwest Athletic": 0.38, "MASCAC": 0.37, "CUNYAC": 0.35, "D3 Independent": 0.40,
     "Collegiate Conference of the South": 0.58, "Midwest Conference": 0.46,
     "New Jersey Athletic": 0.60,
+    # The promoted NAIA HBCU conference: a top-of-D3 prestige league so its members
+    # land in the Top-20 D3 gem pool (recruit_economy._d3_top_keys) and out-recruit
+    # their level — the D3 analogue of the D4 academic-elite bump.
+    "Legacy League": 0.60,
 }
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
@@ -234,6 +238,8 @@ PRESTIGE_SCHOOLS = {
     "Trinity (TX)": 0.12, "Gustavus Adolphus": 0.10, "Mary Washington": 0.10,
     "Christopher Newport": 0.10, "Washington and Lee": 0.08, "TCNJ": 0.07,
     "Babson": 0.06, "Vassar": 0.05, "Whitman": 0.05,
+    # Elite HBCU flagships — a clear brand bump so they sit atop their D4 band.
+    "Morehouse": 0.15, "Spelman": 0.15,
 }
 
 # Per-conference academic prior (default by division below). Academic leagues
@@ -270,6 +276,10 @@ ACADEMIC_SCHOOLS = {
     "Reed": 0.93, "Olin": 0.93,
     # Service academies are strong academics (Army/Navy/Air Force tagged above)
     "Coast Guard": 0.86, "Merchant Marine": 0.86,
+    # Elite HBCU flagships — tagged >= 0.85 so they draw the D4 gem-hunting
+    # allocation (recruit_economy._d3d4_funded) and recruit above their level,
+    # regardless of which conference they sit in.
+    "Morehouse": 0.88, "Spelman": 0.88,
 }
 
 
