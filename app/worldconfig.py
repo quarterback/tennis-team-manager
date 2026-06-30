@@ -295,7 +295,12 @@ def region_groups() -> list[dict]:
     def _row(rid: str) -> dict:
         label = (meta.get(rid) or {}).get("label") or rid.replace("_", " ").title()
         return {"id": rid, "label": label, "mult": mult.get(rid, 1.0),
-                "base_pct": round(100 * base.get(rid, 0.0) / total, 1)}
+                "base_pct": round(100 * base.get(rid, 0.0) / total, 1),
+                # Raw band weight + flags so the editor can compute the LIVE effective
+                # share (US is special: its share is 1 - intl_share, not its weight).
+                "weight": round(base.get(rid, 0.0), 6),
+                "in_band": rid in base,
+                "is_domestic": rid == "us"}
 
     placed = {r for _c, rids in _CONTINENTS for r in rids if r in meta}
     for cont, rids in _CONTINENTS:
