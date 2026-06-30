@@ -807,9 +807,9 @@
     "espn_id": "2148",
     "slug": "concord"
   },
-  "Concordia Chicago": {
-    "espn_id": "2151",
-    "slug": "concordia-chicago"
+  "College of Idaho": {
+    "placeholder": true,
+    "slug": "college-of-idaho"
   },
   "Concordia Irvine": {
     "placeholder": true,
