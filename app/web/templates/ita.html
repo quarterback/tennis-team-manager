@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Play to Clinch — ITA Kickoff & Indoor{% endblock %}
+{% block title %}Play to Clinch — Preseason NIT{% endblock %}
 {% block content %}
 
 {% macro mrow(d) %}
@@ -20,18 +20,18 @@
         {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
       </select></span></label>
   </form>
-  <span style="font-size:13px;color:var(--text-muted)">ITA Kickoff Weekend &amp; National Team Indoor · {{ uni_label }}</span>
+  <span style="font-size:13px;color:var(--text-muted)">Preseason NIT — Kickoff Weekend &amp; National Indoor Tournament · {{ uni_label }}</span>
   <span style="margin-left:auto"><a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_hub', u=u) }}">← Season</a></span>
 </div></div>
 
 {% if not view %}
-<div class="bl-container"><div class="bl-note">Advance the season into the ITA phase to play the opener.</div></div>
+<div class="bl-container"><div class="bl-note">Advance the season into the Preseason NIT to play the opener.</div></div>
 {% else %}
 
 {% if view.indoor_champion %}
 <div class="bl-container"><div class="bl-champ">
   <span class="bl-crest lg" style="background:{{ crest(view.indoor_champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(view.indoor_champion)[0] }}</span>
-  <div><div class="label">ITA Indoor Champion</div>
+  <div><div class="label">Preseason NIT Champion</div>
     <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ view.indoor_champion }}</div>
 </div>
 </div></div>

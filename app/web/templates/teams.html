@@ -73,7 +73,7 @@
         <span class="ha">{{ 'vs' if m.home else 'at' }}</span>
         <span class="bl-crest xs" style="background:{{ m.color }}">{{ m.abbr }}</span>
         <span class="opp">{{ m.opp }}</span>
-        <span class="tag{% if m.round in ('ITAK','ITAI') %} ita{% elif m.round == 'CT' %} ct{% elif m.round == 'NCAA' %} ncaa{% endif %}">{% if m.round == 'ITAK' %}ITA KO{% elif m.round == 'ITAI' %}ITA Indoor{% elif m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
+        <span class="tag{% if m.round in ('ITAK','ITAI') %} ita{% elif m.round == 'CT' %} ct{% elif m.round == 'NCAA' %} ncaa{% endif %}">{% if m.round == 'ITAK' %}NIT KO{% elif m.round == 'ITAI' %}NIT{% elif m.round == 'CT' %}CT{% elif m.round == 'NCAA' %}NCAA{% elif m.conf %}conf{% else %}nc{% endif %}</span>
         <span class="wl {{ 'win' if m.won else 'loss' }}">{{ 'W' if m.won else 'L' }} {{ m.mine }}–{{ m.theirs }}</span>
       </a>
       {% endfor %}
@@ -137,14 +137,14 @@
     {% endmacro %}
     {% if h.national_titles %}{{ hline('National Championships', 'gold', h.national_titles|length, h.national_titles|join(', ')) }}{% endif %}
     {% if h.regional_titles %}{{ hline((h.division ~ ' Regional Championships'), 'bronze', h.regional_titles|length, h.regional_titles|join(', ')) }}{% endif %}
-    {% if h.indoor_titles %}{{ hline('ITA Indoor National Champions', 'teal', h.indoor_titles|length, h.indoor_titles|join(', ')) }}{% endif %}
+    {% if h.indoor_titles %}{{ hline('Preseason NIT Champions', 'teal', h.indoor_titles|length, h.indoor_titles|join(', ')) }}{% endif %}
     {% if h.ncaa_appearances %}
     <div class="bl-honorrow"><span class="bl-honor-dot"></span><span class="bl-honor-label">NCAA Tournament Appearances</span>
       <span class="bl-honor-count">{{ h.ncaa_appearances|length }}</span>
       <span class="bl-honor-detail">{% for a in h.ncaa_appearances %}{{ a.year }} ({{ a.round }}){% if not loop.last %}, {% endif %}{% endfor %}</span></div>
     {% endif %}
     {% if h.ita_appearances %}
-    <div class="bl-honorrow"><span class="bl-honor-dot teal"></span><span class="bl-honor-label">ITA Indoor Appearances</span>
+    <div class="bl-honorrow"><span class="bl-honor-dot teal"></span><span class="bl-honor-label">Preseason NIT Appearances</span>
       <span class="bl-honor-count">{{ h.ita_appearances|length }}</span>
       <span class="bl-honor-detail">{% for a in h.ita_appearances %}{{ a.year }} ({{ a.round }}){% if not loop.last %}, {% endif %}{% endfor %}</span></div>
     {% endif %}
@@ -161,7 +161,7 @@
     <div class="bl-table" style="--bl-grid-cols: 86px 80px 88px 1fr 150px 130px">
       <div class="bl-thead">
         <span class="bl-th">YEAR</span><span class="bl-th">CONF</span><span class="bl-th">RECORD</span>
-        <span class="bl-th">CONFERENCE TITLE</span><span class="bl-th">ITA INDOOR</span><span class="bl-th">NCAA</span>
+        <span class="bl-th">CONFERENCE TITLE</span><span class="bl-th">PRESEASON NIT</span><span class="bl-th">NCAA</span>
       </div>
       {% for s in history.seasons %}
       <div class="bl-row">

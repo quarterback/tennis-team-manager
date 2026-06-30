@@ -1756,6 +1756,136 @@ def fall_portal_destinations(seed: int = DEFAULT_SEED) -> list[str]:
     return sorted(names)
 
 
+# --------------------------------------------------------------------------
+# Pre-season portal — the SAME cross-division reshuffle engine as the fall portal
+# (`_FPPlanner`: top-2 lower-division players who clear a higher division's median
+# rise UP; the roster they'd overfill cascades its weakest DOWN), but run at week 0
+# before the season opens. At week 0 there are no results yet, so the planner reads
+# each player's intrinsic ability (`_str_of` falls back to `str_value()`) — exactly
+# the talent signal we want for fixing first-launch over-allocation. Commit is a
+# plain `set_move` per mover: no NIT stint, no two-stint history, no phase hold —
+# the player simply starts the year at the new school. Lives in its own table so it
+# never collides with the post-NIT fall portal that may run later the same year.
+# --------------------------------------------------------------------------
+def preseason_portal_proposals(rosters: dict, gender: str) -> list[dict]:
+    """Deterministic week-0 reshuffle for one gender (riders only; cascades are
+    re-derived at resolve). Thin wrapper over the shared `_FPPlanner` discovery."""
+    if not any(g == gender for (_d, g) in rosters):
+        return []
+    plan = _FPPlanner(rosters, {}, gender)
+    if not plan.schools:
+        return []
+    plan.discover(FALL_PORTAL_MAX_RISERS)
+    return plan.moves
+
+
+def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Discover RIDER intents across all active universes and persist them
+    ('proposed'). Cascades are NOT stored — they re-derive from these riders at
+    every view/edit/commit. Idempotent: only seeds a slate that doesn't exist yet
+    (so it never clobbers the user's edits or a committed run)."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    if ov.ps_get_proposals(w["year"]):                 # already seeded / committed
+        return {"event": "preseason_portal_exists", "year": w["year"]}
+    prime(seed)
+    rosters = developed_rosters(w)
+    total = 0
+    for gender in worldconfig.active_genders():
+        props = preseason_portal_proposals(rosters, gender)
+        riders = [{**m, "status": "proposed"} for m in props if m["cascade_from"] is None]
+        ov.ps_set_proposals(w["year"], gender, riders)
+        total += len(riders)
+    return {"event": "preseason_portal_pending", "year": w["year"], "proposals": total}
+
+
+def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Resolve the stored rider intents into the full move slate (riders + derived
+    cascades) per gender, on a fresh snapshot — recomputed on every view and at
+    commit so redirects / adds / drops always yield a correct, cap-safe cascade."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    out: dict = {}
+    for gender in worldconfig.active_genders():
+        riders = [r for r in ov.ps_get_proposals(w["year"])
+                  if r["gender"] == gender and r["cascade_from"] is None
+                  and r["status"] != "rejected"]
+        riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
+        plan = _FPPlanner(rosters, {}, gender)
+        for r in riders:
+            entry = plan.by_pid.get(r["pid"])
+            if not entry:
+                continue                                       # not on a roster
+            src, p = entry
+            plan.touched.add(p.pid)
+            plan.place(p, src, dest=r["dest_school"], gated=False)
+        out[gender] = plan.moves
+    return out
+
+
+def commit_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Resolve the (edited) slate and relocate every mover — riders AND their cascade
+    demotions — with a plain `set_move`. The whole committed slate is kept in the
+    table (status='committed') so the review screen can show what happened and a
+    re-open won't re-propose the same players."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    year = w["year"]
+    resolved = resolve_preseason_portal(seed)          # {gender: [moves]}
+    moved = 0
+    for gender, moves in resolved.items():
+        rows = [{**m, "status": "committed"} for m in moves]
+        ov.ps_set_proposals(year, gender, rows)        # the slate is now the committed moves
+        for m in rows:
+            ov.set_move(m["pid"], m["dest_school"])
+            moved += 1
+    reset_caches(); _primed.pop(seed, None)
+    return {"event": "preseason_portal_committed", "year": year, "moved": moved}
+
+
+def redirect_preseason_portal_mover(seed: int, pid: str, dest_school: str) -> dict:
+    """Send a proposed rider to a different destination; the cascade recomputes at
+    the next resolve."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    for gender in worldconfig.active_genders():
+        rider = next((r for r in ov.ps_get_proposals(w["year"])
+                      if r["gender"] == gender and r["pid"] == pid
+                      and r["cascade_from"] is None), None)
+        if not rider:
+            continue
+        plan = _FPPlanner(rosters, {}, gender)
+        if dest_school not in plan.div_of:
+            return {"error": "unknown destination"}
+        ov.ps_set_dest(w["year"], gender, pid, dest_school, plan.div_of[dest_school])
+        return {"ok": True, "pid": pid, "dest": dest_school}
+    return {"error": "rider not found"}
+
+
+def add_preseason_portal_mover(seed: int, pid: str, dest_school: str | None = None) -> dict:
+    """Add a player the sim didn't propose (your pick). With no destination the engine
+    pre-fills the best fit (ungated — your call). They ride the same resolve/commit
+    path, so they pick up the cascade balance like any sim mover."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    rosters = developed_rosters(w)
+    found = _fp_find(seed, w, rosters, pid)
+    if not found:
+        return {"error": "player not on a current roster"}
+    gender, src, src_div, p, plan = found
+    if dest_school in (None, "", "auto"):
+        dest_school = plan.place(p, src, dest=None, gated=False)   # throwaway planner
+    if not dest_school or dest_school not in plan.div_of:
+        return {"error": "no destination found — pick a school"}
+    ov.ps_upsert_proposal(w["year"], gender, {
+        "pid": pid, "name": getattr(p, "name", ""), "src_school": src,
+        "dest_school": dest_school, "src_div": src_div, "dest_div": plan.div_of[dest_school],
+        "str": round(_str_of({}, p), 1), "status": "proposed", "cascade_from": None})
+    return {"ok": True, "pid": pid, "dest": dest_school, "gender": gender}
+
+
 def _bake_fall_moves(seed: int, w: dict, rosters: dict) -> int:
     """Make the season's committed fall-portal moves permanent: relocate each mover
     from their source to their destination roster list (so next year's persisted
