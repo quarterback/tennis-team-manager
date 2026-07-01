@@ -17,13 +17,14 @@ The Bureau boards and the portal read the world's talent through **different doo
 - **`world.run_preseason_portal` / `resolve_preseason_portal`** sourced rosters from
   `developed_rosters(w)`, which is **restricted to the ACTIVE universes** (`_active_unis`).
 
-When a save runs with, say, `active_divisions = ["D1","D2","D3"]` (D4 dormant — common),
-the portal never even sees the D4 rosters, so the most mis-allocated players — the D4 studs
-who most need to move up — are invisible to it. Combined with a well-allocated active
-D1–D3 core, the slate can come up empty while the boards are overflowing.
+The intended, correct setup is **all four levels active** (D1–D4). The portal should be
+tied to the same all-division view the boards use so it can never silently diverge from
+them — whatever the active-division set is. Keying the portal to `developed_rosters`
+(active-only) made it fragile to that config in a way the boards are not; sourcing it the
+same way the boards do removes the coupling entirely.
 
-Confirmed by repro: a freshly built world produces the documented ~60 moves; with the fix,
-**13–14 of the 30 riders per gender now come from the previously-invisible dormant D4.**
+Confirmed by repro: a freshly built world produces the documented ~60 moves through the
+new all-division source, riders drawn from across every level.
 
 ## Fix
 
