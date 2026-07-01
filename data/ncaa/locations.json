@@ -914,8 +914,8 @@
       "state": "PA"
     },
     "Dean": {
-      "city": "Franklin",
-      "state": "MA"
+      "city": "Cheyenne",
+      "state": "WY"
     },
     "Delaware": {
       "city": "Newark",
@@ -1082,8 +1082,8 @@
       "state": "NY"
     },
     "Elms": {
-      "city": "Chicopee",
-      "state": "MA"
+      "city": "Reno",
+      "state": "NV"
     },
     "Elon": {
       "city": "Elon",
@@ -1790,8 +1790,8 @@
       "state": "TN"
     },
     "Lasell": {
-      "city": "Newton",
-      "state": "MA"
+      "city": "Anchorage",
+      "state": "AK"
     },
     "Lawrence": {
       "city": "Appleton",
@@ -4370,32 +4370,32 @@
       "state": "GU"
     },
     "Dillard": {
-      "city": "New Orleans",
-      "state": "LA"
+      "city": "Los Angeles",
+      "state": "CA"
     },
     "Fisk": {
-      "city": "Nashville",
-      "state": "TN"
+      "city": "Oakland",
+      "state": "CA"
     },
     "Huston-Tillotson": {
       "city": "Austin",
       "state": "TX"
     },
     "Oakwood": {
-      "city": "Huntsville",
-      "state": "AL"
+      "city": "Riverside",
+      "state": "CA"
     },
     "Paul Quinn": {
       "city": "Dallas",
       "state": "TX"
     },
     "Philander Smith": {
-      "city": "Little Rock",
-      "state": "AR"
+      "city": "Fresno",
+      "state": "CA"
     },
     "Rust": {
-      "city": "Holly Springs",
-      "state": "MS"
+      "city": "Sacramento",
+      "state": "CA"
     },
     "Southern New Orleans": {
       "city": "New Orleans",
@@ -4406,16 +4406,16 @@
       "state": "AL"
     },
     "Talladega": {
-      "city": "Talladega",
-      "state": "AL"
+      "city": "Charlotte Amalie",
+      "state": "VI"
     },
     "Tougaloo": {
       "city": "Tougaloo",
       "state": "MS"
     },
     "Voorhees": {
-      "city": "Denmark",
-      "state": "SC"
+      "city": "Mangilao",
+      "state": "GU"
     },
     "Wilberforce": {
       "city": "Wilberforce",
@@ -4428,6 +4428,78 @@
     "Spelman": {
       "city": "Atlanta",
       "state": "GA"
+    },
+    "Notre Dame de Namur": {
+      "city": "Belmont",
+      "state": "CA"
+    },
+    "Holy Names": {
+      "city": "Oakland",
+      "state": "CA"
+    },
+    "University of Oregon-Portland": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Dana College": {
+      "city": "San Francisco",
+      "state": "CA"
+    },
+    "MacMurray College": {
+      "city": "Murrieta",
+      "state": "CA"
+    },
+    "California Wesleyan": {
+      "city": "Tahoe City",
+      "state": "CA"
+    },
+    "Judson (NV)": {
+      "city": "Winnemucca",
+      "state": "NV"
+    },
+    "Fontbonne": {
+      "city": "Jackson",
+      "state": "WY"
+    },
+    "Cal State Antelope Valley": {
+      "city": "Lancaster",
+      "state": "CA"
+    },
+    "Cal State Napa Valley": {
+      "city": "Napa",
+      "state": "CA"
+    },
+    "Cal State Redwood Coast": {
+      "city": "Eureka",
+      "state": "CA"
+    },
+    "Cal State Sierra": {
+      "city": "Sonora",
+      "state": "CA"
+    },
+    "Cal State Tahoe": {
+      "city": "Tahoe City",
+      "state": "CA"
+    },
+    "Cal State Yuba Valley": {
+      "city": "Marysville",
+      "state": "CA"
+    },
+    "Cal State Imperial Valley": {
+      "city": "El Centro",
+      "state": "CA"
+    },
+    "Cal State Ventura County": {
+      "city": "Camarillo",
+      "state": "CA"
+    },
+    "Cal State Coachella": {
+      "city": "Palm Desert",
+      "state": "CA"
+    },
+    "Cal State High Desert": {
+      "city": "Victorville",
+      "state": "CA"
     }
   }
 }

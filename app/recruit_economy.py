@@ -74,10 +74,14 @@ _ELITE_D2_PRESTIGE = 0.28   # top of the D2 prestige band (0.20-0.30)
 # handful of programs can "sop up hidden gems" (out-recruit their peers for one
 # undervalued player). Who qualifies:
 #   • D4 — the academic-elite leagues/flagships (academics ≥ 0.85), which ARE tagged.
-#   • D3 — academic conferences aren't tagged in D3 anymore, so cap it to the Top-20
+#   • D3 — academic conferences aren't tagged in D3 anymore, so cap it to the top
 #     programs by prestige in the division (recomputed per save, so overrides count).
+#     The gem pool scales with the division: max(50, 15% of D3 programs), so adding
+#     conferences (or a per-save prestige shuffle) doesn't over-squeeze it, and the
+#     hidden-gem hunt is spread across the country rather than a tiny elite.
 _D3D4_BAND = (1.0, 3.0)
-_D3_TOP_N = 20
+_D3_TOP_MIN = 50
+_D3_TOP_FRAC = 0.15
 _ELITE_D3D4_ACADEMICS = 0.85   # matches scholarships.ELITE_D3_ACADEMICS
 _d3_top_cache: dict = {}
 
@@ -87,8 +91,9 @@ def _d3_top_keys(gender: str) -> set:
     if g not in _d3_top_cache:
         from .ncaa import load_division
         progs = load_division("D3", g).programs
+        n = max(_D3_TOP_MIN, round(len(progs) * _D3_TOP_FRAC))
         top = sorted(progs, key=lambda p: float(getattr(p, "prestige", 0.0)),
-                     reverse=True)[:_D3_TOP_N]
+                     reverse=True)[:n]
         _d3_top_cache[g] = {p.key for p in top}
     return _d3_top_cache[g]
 

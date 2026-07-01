@@ -483,9 +483,17 @@
     "badge": true,
     "slug": "cal-poly-pomona"
   },
+  "Cal State Antelope Valley": {
+    "slug": "cal-state-antelope-valley",
+    "badge": true
+  },
   "Cal State Bakersfield": {
     "espn_id": "2934",
     "slug": "cal-state-bakersfield"
+  },
+  "Cal State Coachella": {
+    "slug": "cal-state-coachella",
+    "badge": true
   },
   "Cal State Dominguez Hills": {
     "logo_source": "wikidata",
@@ -499,6 +507,10 @@
     "espn_id": "2239",
     "slug": "cal-state-fullerton"
   },
+  "Cal State Imperial Valley": {
+    "slug": "cal-state-imperial-valley",
+    "badge": true
+  },
   "Cal State LA": {
     "espn_id": "129760",
     "slug": "cal-state-la"
@@ -507,9 +519,17 @@
     "logo_source": "wikidata",
     "slug": "cal-state-monterey-bay"
   },
+  "Cal State Napa Valley": {
+    "slug": "cal-state-napa-valley",
+    "badge": true
+  },
   "Cal State Northridge": {
     "logo_source": "sub:Concord Mountain Lions",
     "slug": "cal-state-northridge"
+  },
+  "Cal State Redwood Coast": {
+    "slug": "cal-state-redwood-coast",
+    "badge": true
   },
   "Cal State San Bernardino": {
     "logo_source": "sub:Concordia (WI) Falcons",
@@ -519,6 +539,18 @@
     "logo_source": "wikidata",
     "slug": "cal-state-san-marcos"
   },
+  "Cal State Tahoe": {
+    "slug": "cal-state-tahoe",
+    "badge": true
+  },
+  "Cal State Ventura County": {
+    "slug": "cal-state-ventura-county",
+    "badge": true
+  },
+  "Cal State Yuba Valley": {
+    "slug": "cal-state-yuba-valley",
+    "badge": true
+  },
   "Caldwell": {
     "logo_source": "sub:Catawba Indians",
     "slug": "caldwell"
@@ -526,6 +558,11 @@
   "California Baptist": {
     "espn_id": "2856",
     "slug": "california-baptist"
+  },
+  "California Wesleyan": {
+    "slug": "california-wesleyan",
+    "badge": true,
+    "logo_source": "identity:Iowa Wesleyan (purple)"
   },
   "Caltech": {
     "logo_source": "wikidata",
@@ -879,6 +916,10 @@
     "badge": true,
     "slug": "dallas-baptist"
   },
+  "Dana College": {
+    "logo_source": "any:DePaul Blue Demons",
+    "slug": "dana-college"
+  },
   "Dartmouth": {
     "espn_id": "159",
     "slug": "dartmouth"
@@ -1219,6 +1260,10 @@
     "logo_source": "wiki",
     "slug": "florida-tech"
   },
+  "Fontbonne": {
+    "logo_source": "any:Findlay Oilers",
+    "slug": "fontbonne"
+  },
   "Fordham": {
     "espn_id": "2230",
     "slug": "fordham"
@@ -1506,6 +1551,10 @@
   "Holy Cross": {
     "espn_id": "107",
     "slug": "holy-cross"
+  },
+  "Holy Names": {
+    "logo_source": "wiki",
+    "slug": "holy-names"
   },
   "Hood": {
     "logo_source": "any:Howard Payne Yellow Jackets",
@@ -1982,6 +2031,10 @@
   "MSU Denver": {
     "logo_source": "wikidata",
     "slug": "msu-denver"
+  },
+  "MacMurray College": {
+    "logo_source": "wiki",
+    "slug": "macmurray-college"
   },
   "Macalester": {
     "espn_id": "2359",
@@ -2619,6 +2672,10 @@
     "espn_id": "87",
     "slug": "notre-dame"
   },
+  "Notre Dame de Namur": {
+    "logo_source": "any:North Greenville Trailblazers",
+    "slug": "notre-dame-de-namur"
+  },
   "Notre Dame of Maryland": {
     "logo_source": "sub:New Hampshire Wildcats",
     "slug": "notre-dame-of-maryland"
@@ -2887,7 +2944,7 @@
     "espn_id": "2507",
     "slug": "providence"
   },
-  "Puerto Rico-Bayam\u00f3n": {
+  "Puerto Rico-Bayamón": {
     "logo_source": "sub:Portland Pilots",
     "slug": "puerto-rico-bayamon"
   },
@@ -2895,11 +2952,11 @@
     "logo_source": "sub:Pacific (OR) Boxers",
     "slug": "puerto-rico-cayey"
   },
-  "Puerto Rico-Mayag\u00fcez": {
+  "Puerto Rico-Mayagüez": {
     "logo_source": "sub:Pikeville Bears",
     "slug": "puerto-rico-mayaguez"
   },
-  "Puerto Rico-R\u00edo Piedras": {
+  "Puerto Rico-Río Piedras": {
     "logo_source": "sub:Purdue Fort Wayne Mastodons",
     "slug": "puerto-rico-rio-piedras"
   },
@@ -3979,6 +4036,10 @@
     "badge": true,
     "slug": "union-tn"
   },
+  "University of Oregon-Portland": {
+    "logo_source": "reuse:Oregon",
+    "slug": "oregon"
+  },
   "Upper Iowa": {
     "espn_id": "389",
     "slug": "upper-iowa"
@@ -4422,5 +4483,17 @@
   "Youngstown State": {
     "espn_id": "2754",
     "slug": "youngstown-state"
+  },
+  "Cal State Sierra": {
+    "slug": "cal-state-sierra",
+    "badge": true
+  },
+  "Cal State High Desert": {
+    "slug": "cal-state-high-desert",
+    "badge": true
+  },
+  "Judson (NV)": {
+    "slug": "judson-nv",
+    "badge": true
   }
 }

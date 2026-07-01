@@ -140,7 +140,8 @@
         "North Carolina Wesleyan",
         "Pfeiffer",
         "Southern Virginia",
-        "William Peace"
+        "William Peace",
+        "Mississippi University for Women"
       ]
     },
     {
@@ -154,7 +155,6 @@
         "Purchase",
         "SUNY Maritime",
         "SUNY Old Westbury",
-        "Sarah Lawrence",
         "St. Joseph's (Brooklyn)",
         "St. Joseph's (Long Island)",
         "Yeshiva"
@@ -180,17 +180,11 @@
       "abbr": "GNAC-D3",
       "autobid": true,
       "teams": [
-        "Albertus Magnus",
-        "Colby-Sawyer",
-        "Dean",
-        "Elms",
         "Emmanuel (MA)",
-        "Lasell",
-        "Mitchell",
         "New England College",
         "Norwich",
         "Regis (MA)",
-        "Rivier",
+        "Rowan",
         "Saint Joseph (CT)",
         "Saint Joseph's (ME)"
       ]
@@ -237,11 +231,12 @@
         "Eureka",
         "Greenville",
         "Lyon",
-        "Mississippi University for Women",
         "Principia",
         "Spalding",
         "Webster",
-        "Westminster (MO)"
+        "Westminster (MO)",
+        "Monmouth (IL)",
+        "Illinois College"
       ]
     },
     {
@@ -301,8 +296,6 @@
         "Maine-Presque Isle",
         "Northern Vermont-Johnson",
         "Northern Vermont-Lyndon",
-        "SUNY Cobleskill",
-        "SUNY Delhi",
         "Thomas (ME)"
       ]
     },
@@ -315,12 +308,10 @@
         "Lancaster Bible",
         "Notre Dame of Maryland",
         "Penn College",
-        "Penn State Abington",
-        "Penn State Berks",
-        "Penn State Brandywine",
         "Penn State Harrisburg",
         "St. Mary's (MD)",
-        "Wilson (PA)"
+        "Wilson (PA)",
+        "Gwynedd Mercy"
       ]
     },
     {
@@ -329,7 +320,6 @@
       "autobid": true,
       "teams": [
         "Centenary (NJ)",
-        "Gwynedd Mercy",
         "Marymount (VA)",
         "Neumann",
         "Pratt",
@@ -360,20 +350,74 @@
       "abbr": "Legacy League",
       "autobid": true,
       "teams": [
-        "Dillard",
-        "Fisk",
         "Huston-Tillotson",
-        "Oakwood",
         "Paul Quinn",
-        "Philander Smith",
-        "Rust",
         "Southern New Orleans",
         "Stillman",
-        "Talladega",
         "Tougaloo",
-        "Voorhees",
         "Wilberforce",
         "Wiley"
+      ]
+    },
+    {
+      "name": "Western Sky Conference",
+      "abbr": "Western Sky Conference",
+      "autobid": true,
+      "teams": [
+        "Dillard",
+        "Fisk",
+        "Oakwood",
+        "Philander Smith",
+        "Rust",
+        "Talladega",
+        "Voorhees"
+      ]
+    },
+    {
+      "name": "Western Seas Athletic Conference",
+      "abbr": "Western Seas Athletic Conference",
+      "autobid": true,
+      "teams": [
+        "Dean",
+        "Elms",
+        "Lasell",
+        "Colby-Sawyer",
+        "Mitchell",
+        "Rivier",
+        "Albertus Magnus",
+        "Linfield"
+      ]
+    },
+    {
+      "name": "Pacific Frontier Conference",
+      "abbr": "Pacific Frontier Conference",
+      "autobid": true,
+      "teams": [
+        "Notre Dame de Namur",
+        "Holy Names",
+        "University of Oregon-Portland",
+        "Dana College",
+        "MacMurray College",
+        "California Wesleyan",
+        "Judson (NV)",
+        "Fontbonne"
+      ]
+    },
+    {
+      "name": "Golden State Athletic Association",
+      "abbr": "Golden State Athletic Association",
+      "autobid": true,
+      "teams": [
+        "Cal State Antelope Valley",
+        "Cal State Napa Valley",
+        "Cal State Redwood Coast",
+        "Cal State Sierra",
+        "Cal State Tahoe",
+        "Cal State Yuba Valley",
+        "Cal State Imperial Valley",
+        "Cal State Ventura County",
+        "Cal State Coachella",
+        "Cal State High Desert"
       ]
     }
   ]
