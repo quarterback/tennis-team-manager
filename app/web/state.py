@@ -1354,11 +1354,14 @@ def preseason_portal_view(seed: int = DEFAULT_SEED) -> dict:
                 "is_riser": m["cascade_from"] is None,
             })
     out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
+    # When the slate is empty, surface WHY (scan counts + the per-division bar) so an
+    # unexpected 0 is explainable and the user can force a re-scan.
+    debug = world.preseason_portal_debug(seed) if not out else None
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
             "proposals": out, "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": 0, "done": False,
-            "is_preseason": w["week"] == 0,
+            "is_preseason": w["week"] == 0, "debug": debug,
             "destinations": world.fall_portal_destinations(seed)}
 
 

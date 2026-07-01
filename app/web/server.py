@@ -751,6 +751,11 @@ def create_app() -> Flask:
         return render_template("preseason_portal.html", active="Preseason",
                                pp=preseason_portal_view(), crest=crest)
 
+    @app.route("/preseason-portal/rescan", methods=["POST"])
+    def preseason_portal_rescan():
+        wd.rescan_preseason_portal()
+        return redirect(url_for("preseason_portal"))
+
     @app.route("/preseason-portal/approve", methods=["POST"])
     def preseason_portal_approve():
         w = wd.load_world()

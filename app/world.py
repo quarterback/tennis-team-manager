@@ -1819,6 +1819,45 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     return {"event": "preseason_portal_pending", "year": w["year"], "proposals": total}
 
 
+def rescan_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Force a fresh scan: clear this year's stored slate and re-run discovery. Lets a
+    'sticky' slate (one that was seeded/committed/dropped once and never re-scans on its
+    own) be regenerated without starting a new league. Returns the seeding result."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    ov.ps_clear_year(w["year"])
+    return run_preseason_portal(seed)
+
+
+def preseason_portal_debug(seed: int = DEFAULT_SEED) -> dict:
+    """Why the slate is what it is: per active gender, how many lower-division starters
+    are top-2 on their team, how many clear a higher division's median, and how many are
+    BOTH (the riders), plus the per-division median bar. Surfaced when the slate is empty
+    so an unexpected 0 is explainable rather than mysterious."""
+    rosters = scan_rosters(seed)
+    out: dict = {}
+    for gender in worldconfig.active_genders():
+        if not any(g == gender for (_d, g) in rosters):
+            continue
+        plan = _FPPlanner(rosters, {}, gender)
+        top2 = clears = both = pool = 0
+        for s in plan.schools:
+            if plan.div_of[s] == "D1":
+                continue
+            for p in plan.pool[s]:
+                if p.walk_on or _career_transfers(p) != 0:
+                    continue
+                pool += 1
+                val = plan._sv(p)
+                is_top2 = plan.line_of(s, val) <= 2
+                is_over = plan.over_div(s, val) is not None
+                top2 += is_top2; clears += is_over; both += (is_top2 and is_over)
+        out[gender] = {"div_level": {k: round(v, 1) for k, v in plan.div_level.items()},
+                       "scanned": pool, "top2": top2, "clear_higher_div": clears,
+                       "riders": both, "schools": len(plan.schools)}
+    return out
+
+
 def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     """Resolve the stored rider intents into the full move slate (riders + derived
     cascades) per gender, on a fresh snapshot — recomputed on every view and at

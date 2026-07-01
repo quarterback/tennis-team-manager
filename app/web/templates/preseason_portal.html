@@ -41,6 +41,9 @@
     <form method="post" action="{{ url_for('preseason_portal_approve') }}">
       <input type="hidden" name="action" value="reject_all"><button class="bl-btn" type="submit">Drop all</button>
     </form>
+    <form method="post" action="{{ url_for('preseason_portal_rescan') }}">
+      <button class="bl-btn" type="submit" title="Clear this slate and scan all four divisions again">Re-scan</button>
+    </form>
     <form method="post" action="{{ url_for('preseason_portal_commit') }}">
       <button class="bl-btn bl-btn-primary" type="submit">Commit moves</button>
     </form>
@@ -57,7 +60,28 @@
 {% if not pp.proposals %}
 <div class="bl-container"><div class="bl-note">
   {% if pp.done %}No moves were applied.{% else %}No moves on the slate — the talent's already where it belongs
-  (or you dropped them all). Nothing to fix before the season.{% endif %}
+  (or you dropped them all). Nothing to fix before the season.
+  <form method="post" action="{{ url_for('preseason_portal_rescan') }}" style="display:inline">
+    <button class="bl-btn" type="submit" style="margin-left:8px">Re-scan all divisions</button>
+  </form>{% endif %}
+  {% if pp.debug %}
+  <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+    <b>Scan diagnostic</b> (lower-division starters, walk-ons excluded):
+    <table style="margin-top:4px;border-collapse:collapse">
+      <tr style="text-align:left"><th style="padding:2px 10px">Gender</th><th style="padding:2px 10px">Scanned</th>
+        <th style="padding:2px 10px">Top-2 on team</th><th style="padding:2px 10px">Clear a higher div</th>
+        <th style="padding:2px 10px">Riders (both)</th><th style="padding:2px 10px">Div median bar</th></tr>
+      {% for g, d in pp.debug.items() %}
+      <tr><td style="padding:2px 10px">{{ g }}</td><td style="padding:2px 10px">{{ d.scanned }}</td>
+        <td style="padding:2px 10px">{{ d.top2 }}</td><td style="padding:2px 10px">{{ d.clear_higher_div }}</td>
+        <td style="padding:2px 10px">{{ d.riders }}</td>
+        <td style="padding:2px 10px">{% for k, v in d.div_level.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
+      {% endfor %}
+    </table>
+    <div style="margin-top:4px">If "Riders" &gt; 0 but the slate is empty, the stored slate is stale — click Re-scan.
+      If "Riders" is 0, no lower-division starter clears a higher division's median (nothing to promote).</div>
+  </div>
+  {% endif %}
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-tablescroll">
