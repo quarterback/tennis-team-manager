@@ -259,7 +259,7 @@
     "slug": "ball-state"
   },
   "Bard": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "bard"
   },
   "Barry": {
@@ -271,7 +271,8 @@
     "slug": "barton"
   },
   "Baruch": {
-    "placeholder": true,
+    "espn_id": "2913",
+    "logo_source": "any:Brevard Tornados",
     "slug": "baruch"
   },
   "Bates": {
@@ -295,7 +296,8 @@
     "slug": "belmont"
   },
   "Belmont Abbey": {
-    "placeholder": true,
+    "espn_id": "2802",
+    "logo_source": "any:Bethel (MN) Royals",
     "slug": "belmont-abbey"
   },
   "Beloit": {
@@ -319,7 +321,7 @@
     "slug": "bentley"
   },
   "Berea": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "berea"
   },
   "Berry": {
@@ -347,7 +349,8 @@
     "slug": "binghamton"
   },
   "Biola": {
-    "placeholder": true,
+    "espn_id": "2083",
+    "logo_source": "any:Bucknell Bison",
     "slug": "biola"
   },
   "Black Hills State": {
@@ -355,7 +358,7 @@
     "slug": "black-hills-state"
   },
   "Blackburn": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "blackburn"
   },
   "Bloomsburg": {
@@ -399,7 +402,8 @@
     "slug": "bradley"
   },
   "Brandeis": {
-    "placeholder": true,
+    "espn_id": "2062",
+    "logo_source": "any:Bethany (WV) Bison",
     "slug": "brandeis"
   },
   "Brevard": {
@@ -407,11 +411,11 @@
     "slug": "brevard"
   },
   "Bridgeport": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "bridgeport"
   },
   "Bridgewater (VA)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "bridgewater-va"
   },
   "Bridgewater State": {
@@ -419,7 +423,7 @@
     "slug": "bridgewater-state"
   },
   "Brooklyn": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "brooklyn"
   },
   "Brown": {
@@ -431,7 +435,7 @@
     "slug": "bryant"
   },
   "Bryn Mawr": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "bryn-mawr"
   },
   "Bucknell": {
@@ -455,7 +459,7 @@
     "slug": "butler"
   },
   "CCNY": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "ccny"
   },
   "CSU Pueblo": {
@@ -463,7 +467,7 @@
     "slug": "csu-pueblo"
   },
   "Cairn": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "cairn"
   },
   "Cal": {
