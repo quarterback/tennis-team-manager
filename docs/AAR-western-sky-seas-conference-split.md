@@ -64,11 +64,13 @@ Western Seas Athletic Conference**, with **Linfield** added to bring it to **8**
 | Mitchell | — | joined; not relocated |
 | Rivier | — | joined; not relocated |
 | Albertus Magnus | — | joined; not relocated |
-| Linfield | — | added (was already in OR); gives the league its 8th team |
+| Linfield | Oregon (unchanged) | moved **D1 (WAC) → D3**; gives the league its 8th team |
 
 **GNAC-D3 (remaining):** Emmanuel (MA), New England College, Norwich, Regis (MA),
-Saint Joseph (CT), Saint Joseph's (ME) — plus **Simmons** (women-only). So GNAC-D3 is
-**6** (men) / **7** (women).
+**Rowan**, Saint Joseph (CT), Saint Joseph's (ME) — plus **Simmons** (women-only). So
+GNAC-D3 is **7** (men) / **8** (women). **Rowan** was pulled back **D1 (Mid-American
+Conference) → D3** to refill the seat Western Seas emptied (it stays in Glassboro, NJ —
+fits a Northeast league).
 
 ## Design decisions / things to know
 
@@ -79,10 +81,11 @@ Saint Joseph (CT), Saint Joseph's (ME) — plus **Simmons** (women-only). So GNA
   mismatch. As a result **HI was not seeded** by this pass, and **VI/GU were seeded from
   the Legacy/Western Sky split** (Talladega, Voorhees) instead. CA got 5, WY/NV/AK got 1
   each, VI/GU 1 each.
-- **GNAC-D3 dropped to 6 (men).** Western Seas took 4 GNAC schools + 3 relocations +
-  Linfield = 8, which pulls GNAC-D3 below the owner's usual "7 is okay" floor on the men's
-  side (women's stays at 7 via women-only Simmons). Flagged for the owner in case a school
-  should be shuffled back.
+- **GNAC-D3 refilled with Rowan.** Western Seas took 4 GNAC schools + 3 relocations +
+  Linfield = 8, which briefly dropped GNAC-D3 to 6 (men). **Rowan** (D1 Mid-American →
+  D3) was moved in to refill it, so GNAC-D3 is back to **7** (men) / **8** (women).
+- **Linfield D1 → D3 was intentional** (owner-confirmed): real Linfield is a D3 school;
+  it was sitting in the D1 WAC, which drops to 10 with it gone.
 
 ## Recruiting economy: Western Sky prestige = 0.60 + gem pool expanded
 
@@ -114,7 +117,7 @@ pool auto-grows if more D3 conferences are added later. The economy explainer
 | Legacy League | D3 | 7 | 7 |
 | Western Sky Conference | D3 | 7 | 7 |
 | Western Seas Athletic Conference | D3 | 8 | 8 |
-| GNAC-D3 | D3 | 6 | 7 |
+| GNAC-D3 | D3 | 7 | 8 |
 
 ## Verify
 
