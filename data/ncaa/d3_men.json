@@ -393,6 +393,38 @@
         "Albertus Magnus",
         "Linfield"
       ]
+    },
+    {
+      "name": "Pacific Frontier Conference",
+      "abbr": "Pacific Frontier Conference",
+      "autobid": true,
+      "teams": [
+        "Notre Dame de Namur",
+        "Holy Names",
+        "University of Oregon-Portland",
+        "Dana College",
+        "MacMurray College",
+        "California Wesleyan",
+        "Judson (NV)",
+        "Fontbonne"
+      ]
+    },
+    {
+      "name": "Golden State Athletic Association",
+      "abbr": "Golden State Athletic Association",
+      "autobid": true,
+      "teams": [
+        "Cal State Antelope Valley",
+        "Cal State Napa Valley",
+        "Cal State Redwood Coast",
+        "Cal State Sierra",
+        "Cal State Tahoe",
+        "Cal State Yuba Valley",
+        "Cal State Imperial Valley",
+        "Cal State Ventura County",
+        "Cal State Coachella",
+        "Cal State High Desert"
+      ]
     }
   ]
 }

@@ -133,6 +133,11 @@ CONF_PRESTIGE_D3 = {
     # that league's 0.40. See docs/AAR-western-sky-seas-conference-split.md.
     "Western Sky Conference": 0.60,
     "Western Seas Athletic Conference": 0.40,
+    # Western-fill conferences (see docs/AAR-western-sky-seas-conference-split.md):
+    # a fictional Cal State expansion + a Pacific-coast catch-all of relocated/revived
+    # small colleges. Normal mid-pack D3 priors.
+    "Golden State Athletic Association": 0.44,
+    "Pacific Frontier Conference": 0.42,
 }
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",

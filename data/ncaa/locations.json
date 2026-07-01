@@ -4428,6 +4428,78 @@
     "Spelman": {
       "city": "Atlanta",
       "state": "GA"
+    },
+    "Notre Dame de Namur": {
+      "city": "Belmont",
+      "state": "CA"
+    },
+    "Holy Names": {
+      "city": "Oakland",
+      "state": "CA"
+    },
+    "University of Oregon-Portland": {
+      "city": "Portland",
+      "state": "OR"
+    },
+    "Dana College": {
+      "city": "San Francisco",
+      "state": "CA"
+    },
+    "MacMurray College": {
+      "city": "Murrieta",
+      "state": "CA"
+    },
+    "California Wesleyan": {
+      "city": "Tahoe City",
+      "state": "CA"
+    },
+    "Judson (NV)": {
+      "city": "Winnemucca",
+      "state": "NV"
+    },
+    "Fontbonne": {
+      "city": "Jackson",
+      "state": "WY"
+    },
+    "Cal State Antelope Valley": {
+      "city": "Lancaster",
+      "state": "CA"
+    },
+    "Cal State Napa Valley": {
+      "city": "Napa",
+      "state": "CA"
+    },
+    "Cal State Redwood Coast": {
+      "city": "Eureka",
+      "state": "CA"
+    },
+    "Cal State Sierra": {
+      "city": "Sonora",
+      "state": "CA"
+    },
+    "Cal State Tahoe": {
+      "city": "Tahoe City",
+      "state": "CA"
+    },
+    "Cal State Yuba Valley": {
+      "city": "Marysville",
+      "state": "CA"
+    },
+    "Cal State Imperial Valley": {
+      "city": "El Centro",
+      "state": "CA"
+    },
+    "Cal State Ventura County": {
+      "city": "Camarillo",
+      "state": "CA"
+    },
+    "Cal State Coachella": {
+      "city": "Palm Desert",
+      "state": "CA"
+    },
+    "Cal State High Desert": {
+      "city": "Victorville",
+      "state": "CA"
     }
   }
 }

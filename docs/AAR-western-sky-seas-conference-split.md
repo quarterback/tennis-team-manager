@@ -108,6 +108,42 @@ pool auto-grows if more D3 conferences are added later. The economy explainer
 
 **Western Seas Athletic Conference = 0.40**, inheriting GNAC-D3's level (no economy change).
 
+## Follow-up pass: Western-fill via new/revived programs (D3)
+
+The relocations above still left D3 thin in the West (11 Western programs vs D4's 20 —
+because the naturally-Western D3 leagues, SCIAC + Northwest Conference, are in D4). Rather
+than trim the crowded East, we **added Western programs** to D3, two new conferences:
+
+**Pacific Frontier Conference (0.42)** — 8 real/revived small colleges placed on the Pacific
+coast + frontier (none were previously in the game; these are net-new entries at the
+destination city):
+
+| School | City / state | Logo |
+|---|---|---|
+| Notre Dame de Namur | Belmont, CA | substitute (real school, closed athletics) |
+| Holy Names | Oakland, CA | own Wikipedia mark |
+| University of Oregon-Portland | Portland, OR | **reuses University of Oregon's mark** (owner call; ex-Concordia Portland campus) |
+| Dana College | San Francisco, CA | substitute (defunct NE school, revived on the Bay) |
+| MacMurray College | Murrieta, CA | own Wikipedia mark (defunct IL school) |
+| California Wesleyan | Tahoe City, CA | **fictional** — Iowa Wesleyan's identity (purple Tigers), purple badge |
+| Judson (NV) | Winnemucca, NV | badge (ex-Judson AL) |
+| Fontbonne | Jackson, WY | substitute (closing MO school) |
+
+**Golden State Athletic Association (0.44)** — a **fictional expansion of the Cal State
+system** (the agent's point: CSU/UC never got modeled at their real scale, so California is
+under-represented). 10 fictional campuses, all California, all given **clean consistent
+badges** (a themed system reads better than random borrowed logos):
+
+Cal State Antelope Valley (Lancaster) · Napa Valley (Napa) · Redwood Coast (Eureka) ·
+Sierra (Sonora) · Tahoe (Tahoe City) · Yuba Valley (Marysville) · Imperial Valley
+(El Centro) · Ventura County (Camarillo) · Coachella (Palm Desert) · High Desert
+(Victorville).
+
+**Effect:** D3 California **5 → 20**, D3 Western **11 → 29**; D3 grows to 234 (men) / 239
+(women). Gem pool stays 50 (well above the new 15%-of-234 = 35). A **UC-system league
+(Golden Sun Collegiate League)** was scoped but deferred — the owner chose the CSU league
+only for this pass.
+
 ## Resulting sizes
 
 | Conference | Div | Men | Women |
@@ -118,6 +154,8 @@ pool auto-grows if more D3 conferences are added later. The economy explainer
 | Western Sky Conference | D3 | 7 | 7 |
 | Western Seas Athletic Conference | D3 | 8 | 8 |
 | GNAC-D3 | D3 | 7 | 8 |
+| Pacific Frontier Conference | D3 | 8 | 8 |
+| Golden State Athletic Association | D3 | 10 | 10 |
 
 ## Verify
 
