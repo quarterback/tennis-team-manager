@@ -149,7 +149,8 @@
     "slug": "arizona"
   },
   "Arizona Christian": {
-    "placeholder": true,
+    "espn_id": "2000",
+    "logo_source": "sub:Abilene Christian Wildcats",
     "slug": "arizona-christian"
   },
   "Arizona State": {
@@ -333,7 +334,8 @@
     "slug": "bethany-wv"
   },
   "Bethany Lutheran": {
-    "placeholder": true,
+    "espn_id": "2639",
+    "logo_source": "sub:Texas Lutheran Bulldogs",
     "slug": "bethany-lutheran"
   },
   "Bethel (MN)": {
@@ -570,7 +572,8 @@
     "slug": "carnegie-mellon"
   },
   "Carroll (MT)": {
-    "placeholder": true,
+    "espn_id": "32",
+    "logo_source": "sub:Carroll (WI) Pioneers",
     "slug": "carroll-mt"
   },
   "Carroll (WI)": {
@@ -603,7 +606,8 @@
     "slug": "catholic"
   },
   "Cedar Crest": {
-    "placeholder": true,
+    "espn_id": "2155",
+    "logo_source": "sub:Cornell (IA) Rams",
     "slug": "cedar-crest"
   },
   "Cedarville": {
@@ -967,7 +971,8 @@
     "slug": "dickinson"
   },
   "Dillard": {
-    "placeholder": true,
+    "espn_id": "150",
+    "logo_source": "sub:Duke Blue Devils",
     "slug": "dillard"
   },
   "District of Columbia": {
@@ -1206,7 +1211,8 @@
     "slug": "findlay"
   },
   "Fisk": {
-    "placeholder": true,
+    "espn_id": "2232",
+    "logo_source": "sub:Fort Valley State Wildcats",
     "slug": "fisk"
   },
   "Fitchburg State": {
@@ -1371,7 +1377,7 @@
     "slug": "glenville-state"
   },
   "Goldey-Beacom": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "goldey-beacom"
   },
   "Gonzaga": {
@@ -1379,11 +1385,11 @@
     "slug": "gonzaga"
   },
   "Gordon": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "gordon"
   },
   "Goucher": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "goucher"
   },
   "Grambling": {
@@ -1419,7 +1425,8 @@
     "slug": "grove-city"
   },
   "Guam": {
-    "placeholder": true,
+    "espn_id": "2257",
+    "logo_source": "sub:Greenville Panthers",
     "slug": "guam"
   },
   "Guilford": {
@@ -1431,7 +1438,7 @@
     "slug": "gustavus-adolphus"
   },
   "Gwynedd Mercy": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "gwynedd-mercy"
   },
   "Hamilton": {
@@ -1475,7 +1482,7 @@
     "slug": "harvard"
   },
   "Haverford": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "haverford"
   },
   "Hawaii": {
@@ -1519,7 +1526,7 @@
     "slug": "hiram"
   },
   "Hobart and William Smith": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "hobart-and-william-smith"
   },
   "Hofstra": {
@@ -1527,7 +1534,8 @@
     "slug": "hofstra"
   },
   "Hollins": {
-    "placeholder": true,
+    "espn_id": "2273",
+    "logo_source": "any:Hillsdale Chargers",
     "slug": "hollins"
   },
   "Holy Cross": {
@@ -1535,7 +1543,8 @@
     "slug": "holy-cross"
   },
   "Hood": {
-    "placeholder": true,
+    "espn_id": "2758",
+    "logo_source": "any:Howard Payne Yellow Jackets",
     "slug": "hood"
   },
   "Hope": {
@@ -1543,7 +1552,8 @@
     "slug": "hope"
   },
   "Houghton": {
-    "placeholder": true,
+    "espn_id": "248",
+    "logo_source": "sub:Houston Cougars",
     "slug": "houghton"
   },
   "Houston": {
@@ -1563,7 +1573,7 @@
     "slug": "howard-payne"
   },
   "Hunter": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "hunter"
   },
   "Huntingdon": {
@@ -1599,7 +1609,7 @@
     "slug": "illinois-college"
   },
   "Illinois Springfield": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "illinois-springfield"
   },
   "Illinois State": {
@@ -1607,7 +1617,7 @@
     "slug": "illinois-state"
   },
   "Illinois Tech": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "illinois-tech"
   },
   "Illinois Wesleyan": {
@@ -1623,7 +1633,7 @@
     "slug": "indiana"
   },
   "Indiana (PA)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "indiana-pa"
   },
   "Indiana State": {
@@ -1671,7 +1681,8 @@
     "slug": "jamestown"
   },
   "Jessup": {
-    "placeholder": true,
+    "espn_id": "2302",
+    "logo_source": "any:John Carroll Blue Streaks",
     "slug": "jessup"
   },
   "John Carroll": {
@@ -1679,7 +1690,7 @@
     "slug": "john-carroll"
   },
   "John Jay": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "john-jay"
   },
   "Johns Hopkins": {
@@ -1687,11 +1698,11 @@
     "slug": "johns-hopkins"
   },
   "Johnson & Wales (Charlotte)": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "johnson-wales-charlotte"
   },
   "Johnson & Wales (Providence)": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "johnson-wales-providence"
   },
   "Johnson C. Smith": {
@@ -1723,7 +1734,7 @@
     "slug": "kean"
   },
   "Keene State": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "keene-state"
   },
   "Kennesaw State": {
@@ -1751,7 +1762,7 @@
     "slug": "kenyon"
   },
   "Keuka": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "keuka"
   },
   "Keystone": {
@@ -1759,11 +1770,11 @@
     "slug": "keystone"
   },
   "King (TN)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "king-tn"
   },
   "King's (PA)": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "king-s-pa"
   },
   "Knox": {
@@ -1779,7 +1790,8 @@
     "slug": "lsu"
   },
   "La Roche": {
-    "placeholder": true,
+    "espn_id": "377",
+    "logo_source": "any:Lehigh Mountain Hawks",
     "slug": "la-roche"
   },
   "La Salle": {
@@ -1807,7 +1819,7 @@
     "slug": "lake-forest"
   },
   "Lake Superior State": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "lake-superior-state"
   },
   "Lakeland": {
@@ -1819,11 +1831,11 @@
     "slug": "lamar"
   },
   "Lancaster Bible": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "lancaster-bible"
   },
   "Lander": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lander"
   },
   "Lane": {
@@ -1831,7 +1843,7 @@
     "slug": "lane"
   },
   "Lasell": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lasell"
   },
   "Lawrence": {
@@ -1843,11 +1855,13 @@
     "slug": "le-moyne"
   },
   "LeMoyne-Owen": {
-    "placeholder": true,
+    "espn_id": "377",
+    "logo_source": "any:Lehigh Mountain Hawks",
     "slug": "lemoyne-owen"
   },
   "LeTourneau": {
-    "placeholder": true,
+    "espn_id": "2354",
+    "logo_source": "any:Lycoming Warriors",
     "slug": "letourneau"
   },
   "Lebanon Valley": {
@@ -1855,11 +1869,13 @@
     "slug": "lebanon-valley"
   },
   "Lee": {
-    "placeholder": true,
+    "espn_id": "99",
+    "logo_source": "any:LSU Tigers",
     "slug": "lee"
   },
   "Lees-McRae": {
-    "placeholder": true,
+    "espn_id": "209",
+    "logo_source": "any:Lock Haven University Bald Eagles",
     "slug": "lees-mcrae"
   },
   "Lehigh": {
@@ -1875,11 +1891,12 @@
     "slug": "lenoir-rhyne"
   },
   "Lesley": {
-    "placeholder": true,
+    "espn_id": "309",
+    "logo_source": "any:Louisiana Ragin' Cajuns",
     "slug": "lesley"
   },
   "Lewis": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lewis"
   },
   "Lewis & Clark": {
@@ -1903,7 +1920,7 @@
     "slug": "lincoln-pa"
   },
   "Lincoln Memorial": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lincoln-memorial"
   },
   "Lindenwood": {
@@ -1983,11 +2000,11 @@
     "slug": "lycoming"
   },
   "Lynchburg": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lynchburg"
   },
   "Lynn": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lynn"
   },
   "Lyon": {
@@ -1995,7 +2012,8 @@
     "slug": "lyon"
   },
   "MCLA": {
-    "placeholder": true,
+    "espn_id": "130",
+    "logo_source": "any:Michigan Wolverines",
     "slug": "mcla"
   },
   "MIT": {
@@ -2003,11 +2021,11 @@
     "slug": "mit"
   },
   "MSOE": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "msoe"
   },
   "MSU Denver": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "msu-denver"
   },
   "Macalester": {
@@ -2023,15 +2041,17 @@
     "slug": "maine-maritime"
   },
   "Maine-Farmington": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "maine-farmington"
   },
   "Maine-Presque Isle": {
-    "placeholder": true,
+    "espn_id": "235",
+    "logo_source": "sub:Memphis Tigers",
     "slug": "maine-presque-isle"
   },
   "Malone": {
-    "placeholder": true,
+    "espn_id": "311",
+    "logo_source": "sub:Maine Black Bears",
     "slug": "malone"
   },
   "Manchester": {
@@ -2043,7 +2063,8 @@
     "slug": "manhattan"
   },
   "Manhattanville": {
-    "placeholder": true,
+    "espn_id": "2363",
+    "logo_source": "sub:Manhattan Jaspers",
     "slug": "manhattanville"
   },
   "Mansfield": {
@@ -2083,7 +2104,8 @@
     "slug": "mary"
   },
   "Mary Baldwin": {
-    "placeholder": true,
+    "espn_id": "2371",
+    "logo_source": "sub:Mary Hardin Baylor Crusaders",
     "slug": "mary-baldwin"
   },
   "Mary Hardin-Baylor": {
@@ -2091,7 +2113,8 @@
     "slug": "mary-hardin-baylor"
   },
   "Mary Washington": {
-    "placeholder": true,
+    "espn_id": "45",
+    "logo_source": "sub:George Washington Revolutionaries",
     "slug": "mary-washington"
   },
   "Maryland": {
@@ -2103,11 +2126,13 @@
     "slug": "maryland-eastern-shore"
   },
   "Marymount (VA)": {
-    "placeholder": true,
+    "espn_id": "393",
+    "logo_source": "sub:Mount St. Mary's Mountaineers",
     "slug": "marymount-va"
   },
   "Maryville": {
-    "placeholder": true,
+    "espn_id": "2373",
+    "logo_source": "sub:Maryville (TN) Scots",
     "slug": "maryville"
   },
   "Maryville (TN)": {
@@ -2119,7 +2144,8 @@
     "slug": "massachusetts"
   },
   "Massachusetts Maritime": {
-    "placeholder": true,
+    "espn_id": "113",
+    "logo_source": "sub:Massachusetts Minutemen",
     "slug": "massachusetts-maritime"
   },
   "McDaniel": {
@@ -2139,7 +2165,8 @@
     "slug": "mcneese"
   },
   "Medgar Evers": {
-    "placeholder": true,
+    "espn_id": "127",
+    "logo_source": "sub:Michigan State Spartans",
     "slug": "medgar-evers"
   },
   "Memphis": {
@@ -2147,7 +2174,8 @@
     "slug": "memphis"
   },
   "Menlo": {
-    "placeholder": true,
+    "espn_id": "134",
+    "logo_source": "sub:Minnesota Duluth Bulldogs",
     "slug": "menlo"
   },
   "Mercer": {
@@ -2159,7 +2187,8 @@
     "slug": "merchant-marine"
   },
   "Mercy": {
-    "placeholder": true,
+    "espn_id": "2382",
+    "logo_source": "sub:Mercer Bears",
     "slug": "mercy"
   },
   "Mercyhurst": {
@@ -2167,7 +2196,8 @@
     "slug": "mercyhurst"
   },
   "Meredith": {
-    "placeholder": true,
+    "espn_id": "2363",
+    "logo_source": "sub:Manhattan Jaspers",
     "slug": "meredith"
   },
   "Merrimack": {
@@ -2175,7 +2205,8 @@
     "slug": "merrimack"
   },
   "Messiah": {
-    "placeholder": true,
+    "espn_id": "2701",
+    "logo_source": "sub:Montana Western Bulldogs",
     "slug": "messiah"
   },
   "Methodist": {
@@ -2203,7 +2234,8 @@
     "slug": "michigan-tech"
   },
   "Middle Georgia State": {
-    "placeholder": true,
+    "espn_id": "2247",
+    "logo_source": "sub:Georgia State Panthers",
     "slug": "middle-georgia-state"
   },
   "Middle Tennessee": {
@@ -2243,7 +2275,8 @@
     "slug": "minnesota"
   },
   "Minnesota Crookston": {
-    "placeholder": true,
+    "espn_id": "2364",
+    "logo_source": "sub:Minnesota State Mavericks",
     "slug": "minnesota-crookston"
   },
   "Minnesota Duluth": {
@@ -2279,7 +2312,8 @@
     "slug": "mississippi-state"
   },
   "Mississippi University for Women": {
-    "placeholder": true,
+    "espn_id": "2818",
+    "logo_source": "sub:Montclair State Red Hawks",
     "slug": "mississippi-university-for-women"
   },
   "Mississippi Valley State": {
@@ -2307,7 +2341,8 @@
     "slug": "missouri-western"
   },
   "Missouri-St. Louis": {
-    "placeholder": true,
+    "espn_id": "2623",
+    "logo_source": "sub:Missouri State Bears",
     "slug": "missouri-st-louis"
   },
   "Mitchell": {
@@ -2315,7 +2350,8 @@
     "slug": "mitchell"
   },
   "Molloy": {
-    "placeholder": true,
+    "espn_id": "2701",
+    "logo_source": "sub:Montana Western Bulldogs",
     "slug": "molloy"
   },
   "Monmouth": {
@@ -2335,7 +2371,8 @@
     "slug": "montana-state"
   },
   "Montana State Billings": {
-    "placeholder": true,
+    "espn_id": "2701",
+    "logo_source": "sub:Montana Western Bulldogs",
     "slug": "montana-state-billings"
   },
   "Montclair State": {
@@ -2343,7 +2380,8 @@
     "slug": "montclair-state"
   },
   "Montevallo": {
-    "placeholder": true,
+    "espn_id": "177",
+    "logo_source": "sub:Middle Tennessee Blue Raiders",
     "slug": "montevallo"
   },
   "Moravian": {
@@ -2363,23 +2401,28 @@
     "slug": "morgan-state"
   },
   "Mount Aloysius": {
-    "placeholder": true,
+    "espn_id": "2368",
+    "logo_source": "sub:Marist Red Foxes",
     "slug": "mount-aloysius"
   },
   "Mount Holyoke": {
-    "placeholder": true,
+    "espn_id": "74",
+    "logo_source": "sub:Millikin Big Blue",
     "slug": "mount-holyoke"
   },
   "Mount Marty": {
-    "placeholder": true,
+    "espn_id": "116",
+    "logo_source": "sub:Mount St. Mary's Mountaineers",
     "slug": "mount-marty"
   },
   "Mount Olive": {
-    "placeholder": true,
+    "espn_id": "332",
+    "logo_source": "sub:Muskingum Fighting Muskies",
     "slug": "mount-olive"
   },
   "Mount Saint Vincent": {
-    "placeholder": true,
+    "espn_id": "2614",
+    "logo_source": "sub:Saint Vincent Bearcats",
     "slug": "mount-saint-vincent"
   },
   "Mount St. Joseph": {
@@ -2415,7 +2458,8 @@
     "slug": "njit"
   },
   "NYU": {
-    "placeholder": true,
+    "espn_id": "400",
+    "logo_source": "sub:Norfolk State Spartans",
     "slug": "nyu"
   },
   "Navy": {
@@ -2423,7 +2467,8 @@
     "slug": "navy"
   },
   "Nazareth": {
-    "placeholder": true,
+    "espn_id": "94",
+    "logo_source": "sub:Northern Kentucky Norse",
     "slug": "nazareth"
   },
   "Nebraska": {
@@ -2463,7 +2508,8 @@
     "slug": "new-haven"
   },
   "New Jersey City": {
-    "placeholder": true,
+    "espn_id": "2442",
+    "logo_source": "sub:The College of New Jersey Lions",
     "slug": "new-jersey-city"
   },
   "New Mexico": {
@@ -2487,7 +2533,8 @@
     "slug": "newberry"
   },
   "Newman": {
-    "placeholder": true,
+    "espn_id": "2822",
+    "logo_source": "sub:North Greenville Trailblazers",
     "slug": "newman"
   },
   "Niagara": {
@@ -2527,11 +2574,13 @@
     "slug": "north-carolina-wesleyan"
   },
   "North Central (IL)": {
-    "placeholder": true,
+    "espn_id": "3071",
+    "logo_source": "sub:North Central College Cardinals",
     "slug": "north-central-il"
   },
   "North Central (MN)": {
-    "placeholder": true,
+    "espn_id": "3071",
+    "logo_source": "sub:North Central College Cardinals",
     "slug": "north-central-mn"
   },
   "North Dakota": {
@@ -2603,11 +2652,13 @@
     "slug": "northern-state"
   },
   "Northern Vermont-Johnson": {
-    "placeholder": true,
+    "espn_id": "286",
+    "logo_source": "sub:North Carolina Wesleyan Battling Bishops",
     "slug": "northern-vermont-johnson"
   },
   "Northern Vermont-Lyndon": {
-    "placeholder": true,
+    "espn_id": "296",
+    "logo_source": "sub:North Florida Ospreys",
     "slug": "northern-vermont-lyndon"
   },
   "Northwest Missouri State": {
@@ -2615,7 +2666,8 @@
     "slug": "northwest-missouri-state"
   },
   "Northwest Nazarene": {
-    "placeholder": true,
+    "espn_id": "200",
+    "logo_source": "sub:Southern Nazarene Crimson Storm",
     "slug": "northwest-nazarene"
   },
   "Northwestern": {
@@ -2623,7 +2675,8 @@
     "slug": "northwestern"
   },
   "Northwestern Oklahoma State": {
-    "placeholder": true,
+    "espn_id": "2927",
+    "logo_source": "sub:Southwestern Oklahoma State Bulldogs",
     "slug": "northwestern-oklahoma-state"
   },
   "Northwestern State": {
@@ -2631,7 +2684,8 @@
     "slug": "northwestern-state"
   },
   "Northwestern-St. Paul": {
-    "placeholder": true,
+    "espn_id": "2466",
+    "logo_source": "sub:Northwestern State Demons",
     "slug": "northwestern-st-paul"
   },
   "Northwood": {
@@ -2647,7 +2701,8 @@
     "slug": "notre-dame"
   },
   "Notre Dame of Maryland": {
-    "placeholder": true,
+    "espn_id": "160",
+    "logo_source": "sub:New Hampshire Wildcats",
     "slug": "notre-dame-of-maryland"
   },
   "Nova Southeastern": {
@@ -2659,7 +2714,8 @@
     "slug": "oakland"
   },
   "Oakwood": {
-    "placeholder": true,
+    "espn_id": "2980",
+    "logo_source": "sub:Ohio Wesleyan Battling Bishops",
     "slug": "oakwood"
   },
   "Oberlin": {
@@ -2667,7 +2723,8 @@
     "slug": "oberlin"
   },
   "Occidental": {
-    "placeholder": true,
+    "espn_id": "92",
+    "logo_source": "sub:Ole Miss Rebels",
     "slug": "occidental"
   },
   "Oglethorpe": {
@@ -2679,7 +2736,8 @@
     "slug": "ohio"
   },
   "Ohio Dominican": {
-    "placeholder": true,
+    "espn_id": "201",
+    "logo_source": "sub:Oklahoma Sooners",
     "slug": "ohio-dominican"
   },
   "Ohio Northern": {
@@ -2703,7 +2761,8 @@
     "slug": "oklahoma-baptist"
   },
   "Oklahoma Christian": {
-    "placeholder": true,
+    "espn_id": "2347",
+    "logo_source": "sub:Louisiana Christian Wildcats",
     "slug": "oklahoma-christian"
   },
   "Oklahoma State": {
@@ -2739,7 +2798,8 @@
     "slug": "oregon-state"
   },
   "Oregon Tech": {
-    "placeholder": true,
+    "espn_id": "204",
+    "logo_source": "sub:Oregon State Beavers",
     "slug": "oregon-tech"
   },
   "Otterbein": {
@@ -2771,11 +2831,13 @@
     "slug": "pacific-lutheran"
   },
   "Palm Beach Atlantic": {
-    "placeholder": true,
+    "espn_id": "2504",
+    "logo_source": "sub:Prairie View A&M Panthers",
     "slug": "palm-beach-atlantic"
   },
   "Paul Quinn": {
-    "placeholder": true,
+    "espn_id": "205",
+    "logo_source": "sub:Pacific (OR) Boxers",
     "slug": "paul-quinn"
   },
   "Penn": {
@@ -2791,39 +2853,48 @@
     "slug": "penn-state"
   },
   "Penn State Abington": {
-    "placeholder": true,
+    "espn_id": "2506",
+    "logo_source": "sub:Presbyterian Blue Hose",
     "slug": "penn-state-abington"
   },
   "Penn State Altoona": {
-    "placeholder": true,
+    "espn_id": "221",
+    "logo_source": "sub:Pittsburgh Panthers",
     "slug": "penn-state-altoona"
   },
   "Penn State Behrend": {
-    "placeholder": true,
+    "espn_id": "2870",
+    "logo_source": "sub:Purdue Fort Wayne Mastodons",
     "slug": "penn-state-behrend"
   },
   "Penn State Berks": {
-    "placeholder": true,
+    "espn_id": "2501",
+    "logo_source": "sub:Portland Pilots",
     "slug": "penn-state-berks"
   },
   "Penn State Brandywine": {
-    "placeholder": true,
+    "espn_id": "213",
+    "logo_source": "sub:Penn State Nittany Lions",
     "slug": "penn-state-brandywine"
   },
   "Penn State Harrisburg": {
-    "placeholder": true,
+    "espn_id": "2508",
+    "logo_source": "sub:Puget Sound Loggers",
     "slug": "penn-state-harrisburg"
   },
   "PennWest California": {
-    "placeholder": true,
+    "espn_id": "115",
+    "logo_source": "sub:Pittsburgh Panthers",
     "slug": "pennwest-california"
   },
   "PennWest Clarion": {
-    "placeholder": true,
+    "espn_id": "187",
+    "logo_source": "sub:Pepperdine Waves",
     "slug": "pennwest-clarion"
   },
   "PennWest Edinboro": {
-    "placeholder": true,
+    "espn_id": "2501",
+    "logo_source": "sub:Portland Pilots",
     "slug": "pennwest-edinboro"
   },
   "Pepperdine": {
@@ -2831,15 +2902,18 @@
     "slug": "pepperdine"
   },
   "Pfeiffer": {
-    "placeholder": true,
+    "espn_id": "419",
+    "logo_source": "sub:Providence Friars",
     "slug": "pfeiffer"
   },
   "Philander Smith": {
-    "placeholder": true,
+    "espn_id": "419",
+    "logo_source": "sub:Providence Friars",
     "slug": "philander-smith"
   },
   "Piedmont": {
-    "placeholder": true,
+    "espn_id": "187",
+    "logo_source": "sub:Pepperdine Waves",
     "slug": "piedmont"
   },
   "Pitt": {
@@ -2847,15 +2921,18 @@
     "slug": "pitt"
   },
   "Pitt-Bradford": {
-    "placeholder": true,
+    "espn_id": "221",
+    "logo_source": "sub:Pittsburgh Panthers",
     "slug": "pitt-bradford"
   },
   "Pitt-Greensburg": {
-    "placeholder": true,
+    "espn_id": "221",
+    "logo_source": "sub:Pittsburgh Panthers",
     "slug": "pitt-greensburg"
   },
   "Pitt-Johnstown": {
-    "placeholder": true,
+    "espn_id": "419",
+    "logo_source": "sub:Providence Friars",
     "slug": "pitt-johnstown"
   },
   "Pittsburg State": {
@@ -2867,11 +2944,13 @@
     "slug": "plymouth-state"
   },
   "Point Loma Nazarene": {
-    "placeholder": true,
+    "espn_id": "90",
+    "logo_source": "sub:Pittsburg State Gorillas",
     "slug": "point-loma-nazarene"
   },
   "Point Park": {
-    "placeholder": true,
+    "espn_id": "205",
+    "logo_source": "sub:Pacific (OR) Boxers",
     "slug": "point-park"
   },
   "Pomona-Pitzer": {
@@ -2895,7 +2974,8 @@
     "slug": "prairie-view-a-m"
   },
   "Pratt": {
-    "placeholder": true,
+    "espn_id": "419",
+    "logo_source": "sub:Providence Friars",
     "slug": "pratt"
   },
   "Presbyterian": {
@@ -2907,7 +2987,8 @@
     "slug": "princeton"
   },
   "Principia": {
-    "placeholder": true,
+    "espn_id": "413",
+    "logo_source": "sub:Pacific Tigers",
     "slug": "principia"
   },
   "Providence": {
@@ -2915,19 +2996,23 @@
     "slug": "providence"
   },
   "Puerto Rico-Bayam\u00f3n": {
-    "placeholder": true,
+    "espn_id": "416",
+    "logo_source": "sub:Portland Pilots",
     "slug": "puerto-rico-bayamon"
   },
   "Puerto Rico-Cayey": {
-    "placeholder": true,
+    "espn_id": "205",
+    "logo_source": "sub:Pacific (OR) Boxers",
     "slug": "puerto-rico-cayey"
   },
   "Puerto Rico-Mayag\u00fcez": {
-    "placeholder": true,
+    "espn_id": "95",
+    "logo_source": "sub:Pikeville Bears",
     "slug": "puerto-rico-mayaguez"
   },
   "Puerto Rico-R\u00edo Piedras": {
-    "placeholder": true,
+    "espn_id": "2870",
+    "logo_source": "sub:Purdue Fort Wayne Mastodons",
     "slug": "puerto-rico-rio-piedras"
   },
   "Puget Sound": {
@@ -2947,7 +3032,8 @@
     "slug": "purdue-fort-wayne"
   },
   "Purdue Northwest": {
-    "placeholder": true,
+    "espn_id": "2870",
+    "logo_source": "sub:Purdue Fort Wayne Mastodons",
     "slug": "purdue-northwest"
   },
   "Queens": {
