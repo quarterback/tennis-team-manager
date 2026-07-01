@@ -556,6 +556,25 @@ def developed_rosters(world: dict) -> dict:
     return rosters
 
 
+def scan_rosters(seed: int = DEFAULT_SEED) -> dict:
+    """Live rosters for EVERY division×gender, built the exact way the Analytics
+    Bureau boards are (scout_intel.scan): prime the world, then read `build_roster`
+    for every program across all divisions. Unlike `developed_rosters` this is NOT
+    limited to the ACTIVE universes — dormant divisions build fresh on a cache miss —
+    so a cross-division consumer (the pre-season portal) scans the same universe the
+    Underplaced/Playing-Time boards show, never only the active persisted subset."""
+    prime(seed)
+    from app.ncaa import load_division, build_roster
+    out: dict = {}
+    for (division, gender) in UNIVERSES:
+        try:
+            div = load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        out[(division, gender)] = {p.school: build_roster(p) for p in div.programs}
+    return out
+
+
 def prime(seed: int = DEFAULT_SEED) -> dict:
     """Load this world's as-of-now rosters into the shared roster cache so every
     consumer — season mode, run_season rankings, team pages, box scores — sees
@@ -1788,8 +1807,9 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     w = get_or_create(seed)
     if ov.ps_get_proposals(w["year"]):                 # already seeded / committed
         return {"event": "preseason_portal_exists", "year": w["year"]}
-    prime(seed)
-    rosters = developed_rosters(w)
+    # Source rosters the SAME way the Bureau boards do — every division, live — so the
+    # portal never comes up empty just because a division is dormant/persisted-stale.
+    rosters = scan_rosters(seed)
     total = 0
     for gender in worldconfig.active_genders():
         props = preseason_portal_proposals(rosters, gender)
@@ -1805,7 +1825,7 @@ def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     commit so redirects / adds / drops always yield a correct, cap-safe cascade."""
     from app import overrides as ov
     w = get_or_create(seed)
-    rosters = developed_rosters(w)
+    rosters = scan_rosters(seed)          # same all-division live source as seeding
     out: dict = {}
     for gender in worldconfig.active_genders():
         riders = [r for r in ov.ps_get_proposals(w["year"])
