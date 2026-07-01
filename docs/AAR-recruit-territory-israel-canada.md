@@ -46,8 +46,10 @@ Implementation: when a school is in the map, the name-picker region mix becomes
 
 Note (Simon Fraser): UBC is **not** an NCAA school (U Sports); Simon Fraser is the lone
 Canadian NCAA member. In reality SFU is returning to U Sports in 2027-28, but it is kept
-in the game per the owner. **Its division placement (stay D2 vs move to D3/D4 for Western
-balance) is a pending owner decision** — the Canada territory applies wherever it lands.
+in the game per the owner. It was **moved D2 (Great Northwest) → D4 Northwest Conference**
+(Burnaby, BC, joining its real Pacific-NW peers; NWC 10 → 11, GNAC-D2 16 → 15): D4 was the
+thinner Western division (20 vs D3's 29) after this session's D3 Western-fill. Verified
+roster there: 11 CA / 5 US.
 
 ## Verify
 ```python
