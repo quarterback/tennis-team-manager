@@ -1299,7 +1299,7 @@ def recruit_economy_view() -> dict:
         "d2_band": re._D2_BAND,
         "d3d4_band": re._D3D4_BAND,
         "elite_d2_prestige": re._ELITE_D2_PRESTIGE,
-        "d3_top_n": re._D3_TOP_N,
+        "d3_top_n": len(re._d3_top_keys("men")),  # max(30, 5% of D3)
         "elite_academics": re._ELITE_D3D4_ACADEMICS,
         "roster_caps": {"D1": "12 (8 core + 4 walk-on)", "D2": "10 (6 + 4)",
                         "D3/D4": "16 (3 + 13)"},

@@ -127,6 +127,12 @@ CONF_PRESTIGE_D3 = {
     # land in the Top-20 D3 gem pool (recruit_economy._d3_top_keys) and out-recruit
     # their level — the D3 analogue of the D4 academic-elite bump.
     "Legacy League": 0.60,
+    # Western Sky = the CA/VI/GU-relocated half of the Legacy League (same HBCU
+    # programs), so it keeps the Legacy League's 0.60 gem-pool treatment. Western
+    # Seas = the relocated half of the D3 Great Northeast (GNAC-D3), so it inherits
+    # that league's 0.40. See docs/AAR-western-sky-seas-conference-split.md.
+    "Western Sky Conference": 0.60,
+    "Western Seas Athletic Conference": 0.40,
 }
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",

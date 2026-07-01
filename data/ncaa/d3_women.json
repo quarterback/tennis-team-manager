@@ -142,7 +142,8 @@
         "Pfeiffer",
         "Salem",
         "Southern Virginia",
-        "William Peace"
+        "William Peace",
+        "Mississippi University for Women"
       ]
     },
     {
@@ -182,17 +183,10 @@
       "abbr": "GNAC-D3",
       "autobid": true,
       "teams": [
-        "Albertus Magnus",
-        "Colby-Sawyer",
-        "Dean",
-        "Elms",
         "Emmanuel (MA)",
-        "Lasell",
-        "Mitchell",
         "New England College",
         "Norwich",
         "Regis (MA)",
-        "Rivier",
         "Saint Joseph (CT)",
         "Saint Joseph's (ME)",
         "Simmons"
@@ -240,11 +234,12 @@
         "Eureka",
         "Greenville",
         "Lyon",
-        "Mississippi University for Women",
         "Principia",
         "Spalding",
         "Webster",
-        "Westminster (MO)"
+        "Westminster (MO)",
+        "Monmouth (IL)",
+        "Illinois College"
       ]
     },
     {
@@ -365,20 +360,42 @@
       "abbr": "Legacy League",
       "autobid": true,
       "teams": [
-        "Dillard",
-        "Fisk",
         "Huston-Tillotson",
-        "Oakwood",
         "Paul Quinn",
-        "Philander Smith",
-        "Rust",
         "Southern New Orleans",
         "Stillman",
-        "Talladega",
         "Tougaloo",
-        "Voorhees",
         "Wilberforce",
         "Wiley"
+      ]
+    },
+    {
+      "name": "Western Sky Conference",
+      "abbr": "Western Sky Conference",
+      "autobid": true,
+      "teams": [
+        "Dillard",
+        "Fisk",
+        "Oakwood",
+        "Philander Smith",
+        "Rust",
+        "Talladega",
+        "Voorhees"
+      ]
+    },
+    {
+      "name": "Western Seas Athletic Conference",
+      "abbr": "Western Seas Athletic Conference",
+      "autobid": true,
+      "teams": [
+        "Dean",
+        "Elms",
+        "Lasell",
+        "Colby-Sawyer",
+        "Mitchell",
+        "Rivier",
+        "Albertus Magnus",
+        "Linfield"
       ]
     }
   ]
