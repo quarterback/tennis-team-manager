@@ -155,7 +155,6 @@
         "Purchase",
         "SUNY Maritime",
         "SUNY Old Westbury",
-        "Sarah Lawrence",
         "St. Joseph's (Brooklyn)",
         "St. Joseph's (Long Island)",
         "Yeshiva"
@@ -297,8 +296,6 @@
         "Maine-Presque Isle",
         "Northern Vermont-Johnson",
         "Northern Vermont-Lyndon",
-        "SUNY Cobleskill",
-        "SUNY Delhi",
         "Thomas (ME)"
       ]
     },
@@ -311,12 +308,10 @@
         "Lancaster Bible",
         "Notre Dame of Maryland",
         "Penn College",
-        "Penn State Abington",
-        "Penn State Berks",
-        "Penn State Brandywine",
         "Penn State Harrisburg",
         "St. Mary's (MD)",
-        "Wilson (PA)"
+        "Wilson (PA)",
+        "Gwynedd Mercy"
       ]
     },
     {
@@ -325,7 +320,6 @@
       "autobid": true,
       "teams": [
         "Centenary (NJ)",
-        "Gwynedd Mercy",
         "Marymount (VA)",
         "Neumann",
         "Pratt",

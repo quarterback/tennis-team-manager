@@ -279,7 +279,7 @@ ACADEMIC_SCHOOLS = {
     "Middlebury": 0.94, "Tufts": 0.93, "Wellesley": 0.93, "Carleton": 0.94,
     "Haverford": 0.93, "Wesleyan": 0.92, "Bates": 0.91, "Colby": 0.91,
     "Case Western Reserve": 0.92, "Brandeis": 0.92, "NYU": 0.90, "Rochester": 0.90,
-    "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93,
+    "Kenyon": 0.88, "Claremont-Mudd-Scripps": 0.93, "Sarah Lawrence": 0.90,
     # Engineering/tech + LAC academics in D1 Meridian (the "nerdy major conference")
     "WPI": 0.88, "Illinois Tech": 0.86, "Clarkson": 0.83, "Union (NY)": 0.88,
     "RIT": 0.82, "St. Lawrence": 0.85,
@@ -476,6 +476,18 @@ def region_weights_for(weights: dict, division: str, gender: str,
         share = 0.0                         # no international regions configured → all domestic
     out["us"] = 1.0 - share
     return out
+
+
+# A few programs recruit ONE foreign territory as essentially their home pipeline
+# rather than the general international band — a heavy (not exclusive) tilt to a
+# single nation, overriding the level-based mix. (school -> (region_id, intl_share)).
+# See docs/AAR-recruit-territory-israel-canada.md.
+#   • Yeshiva — the NYC Modern-Orthodox university; Israel is its natural pipeline.
+#   • Simon Fraser — the lone NCAA member in Canada (Burnaby, BC), so Canadian.
+SCHOOL_RECRUIT_TERRITORY = {
+    "Yeshiva": ("israel", 0.65),
+    "Simon Fraser": ("canada", 0.70),
+}
 
 
 def region_proximity(region_a: str, region_b: str) -> float:
@@ -729,11 +741,17 @@ def _base_roster(p: Program):
     # year 0 the recruiting sim takes over.
     from . import coaches
     _coach_intl = coaches.program_coach(p.school).intl_lean if p.school else 1.0
-    name_fn = make_name_picker(random.Random(seed ^ 0x5EED), gender=_pick_gender(p.gender),
-                               region_weights=region_weights_for(worldconfig.region_weights(),
-                                                                 p.division, p.gender,
-                                                                 p.prestige, p.academics,
-                                                                 _coach_intl))
+    _terr = SCHOOL_RECRUIT_TERRITORY.get(p.school)
+    if _terr:
+        # A single-nation home pipeline (e.g. Yeshiva⇄Israel, Simon Fraser⇄Canada):
+        # heavy but not exclusive, the rest domestic.
+        _region, _share = _terr
+        _rweights = {"us": max(0.0, 1.0 - _share), _region: _share}
+    else:
+        _rweights = region_weights_for(worldconfig.region_weights(), p.division,
+                                       p.gender, p.prestige, p.academics, _coach_intl)
+    name_fn = make_name_picker(random.Random(seed ^ 0x5EED),
+                               gender=_pick_gender(p.gender), region_weights=_rweights)
     region_towns = towns_in_region(p.region)
     town_rng = random.Random(seed ^ 0xC17)
     # D1/D2 rosters are built by the recruiting budget economy — a program lands
