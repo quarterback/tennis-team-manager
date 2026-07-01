@@ -971,15 +971,15 @@
     "slug": "dillard"
   },
   "District of Columbia": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "district-of-columbia"
   },
   "Dominican (CA)": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "dominican-ca"
   },
   "Dominican (NY)": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "dominican-ny"
   },
   "Drake": {
@@ -987,7 +987,8 @@
     "slug": "drake"
   },
   "Drew": {
-    "placeholder": true,
+    "espn_id": "150",
+    "logo_source": "any:Duke Blue Devils",
     "slug": "drew"
   },
   "Drexel": {
@@ -995,7 +996,7 @@
     "slug": "drexel"
   },
   "Drury": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "drury"
   },
   "Dubuque": {
@@ -1011,7 +1012,7 @@
     "slug": "duquesne"
   },
   "Earlham": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "earlham"
   },
   "East Carolina": {
@@ -1043,7 +1044,8 @@
     "slug": "eastern"
   },
   "Eastern Connecticut State": {
-    "placeholder": true,
+    "espn_id": "2843",
+    "logo_source": "sub:Western Connecticut State Wolves",
     "slug": "eastern-connecticut-state"
   },
   "Eastern Illinois": {
@@ -1055,7 +1057,7 @@
     "slug": "eastern-kentucky"
   },
   "Eastern Mennonite": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "eastern-mennonite"
   },
   "Eastern Michigan": {
@@ -1075,11 +1077,13 @@
     "slug": "eastern-washington"
   },
   "Eckerd": {
-    "placeholder": true,
+    "espn_id": "2837",
+    "logo_source": "any:East Texas A&M Lions",
     "slug": "eckerd"
   },
   "Edgewood": {
-    "placeholder": true,
+    "espn_id": "2206",
+    "logo_source": "any:Edward Waters Tigers",
     "slug": "edgewood"
   },
   "Edward Waters": {
@@ -1091,7 +1095,8 @@
     "slug": "elizabeth-city-state"
   },
   "Elizabethtown": {
-    "placeholder": true,
+    "espn_id": "452",
+    "logo_source": "any:Endicott Gulls",
     "slug": "elizabethtown"
   },
   "Elmhurst": {
@@ -1099,11 +1104,12 @@
     "slug": "elmhurst"
   },
   "Elmira": {
-    "placeholder": true,
+    "espn_id": "2198",
+    "logo_source": "any:Eastern Kentucky Colonels",
     "slug": "elmira"
   },
   "Elms": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "elms"
   },
   "Elon": {
@@ -1111,23 +1117,24 @@
     "slug": "elon"
   },
   "Embry-Riddle": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "embry-riddle"
   },
   "Emerson": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "emerson"
   },
   "Emmanuel (GA)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "emmanuel-ga"
   },
   "Emmanuel (MA)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "emmanuel-ma"
   },
   "Emory": {
-    "placeholder": true,
+    "espn_id": "2188",
+    "logo_source": "any:East Stroudsburg Warriors",
     "slug": "emory"
   },
   "Emory & Henry": {
@@ -1175,7 +1182,7 @@
     "slug": "fairmont-state"
   },
   "Farmingdale State": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "farmingdale-state"
   },
   "Fayetteville State": {
@@ -1183,7 +1190,7 @@
     "slug": "fayetteville-state"
   },
   "Felician": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "felician"
   },
   "Ferris State": {
@@ -1207,7 +1214,7 @@
     "slug": "fitchburg-state"
   },
   "Flagler": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "flagler"
   },
   "Florida": {
@@ -1235,7 +1242,7 @@
     "slug": "florida-state"
   },
   "Florida Tech": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "florida-tech"
   },
   "Fordham": {
@@ -1243,7 +1250,8 @@
     "slug": "fordham"
   },
   "Fort Hays State": {
-    "placeholder": true,
+    "espn_id": "2231",
+    "logo_source": "sub:Fort Hays Tigers",
     "slug": "fort-hays-state"
   },
   "Fort Lewis": {
@@ -1263,7 +1271,7 @@
     "slug": "francis-marion"
   },
   "Franciscan": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "franciscan"
   },
   "Franklin": {
@@ -1279,7 +1287,7 @@
     "slug": "franklin-pierce"
   },
   "Fresno Pacific": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "fresno-pacific"
   },
   "Fresno State": {
@@ -1339,7 +1347,7 @@
     "slug": "georgia-southern"
   },
   "Georgia Southwestern": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "georgia-southwestern"
   },
   "Georgia State": {
@@ -1351,7 +1359,7 @@
     "slug": "georgia-tech"
   },
   "Georgian Court": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "georgian-court"
   },
   "Gettysburg": {
@@ -1879,7 +1887,7 @@
     "slug": "lewis-clark"
   },
   "Lewis-Clark State": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "lewis-clark-state"
   },
   "Liberty": {
