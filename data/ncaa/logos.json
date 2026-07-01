@@ -12,7 +12,7 @@
     "slug": "adams-state"
   },
   "Adelphi": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "adelphi"
   },
   "Adrian": {
@@ -20,7 +20,7 @@
     "slug": "adrian"
   },
   "Agnes Scott": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "agnes-scott"
   },
   "Air Force": {
@@ -44,15 +44,16 @@
     "slug": "alabama-state"
   },
   "Alabama-Huntsville": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "alabama-huntsville"
   },
   "Alaska Anchorage": {
-    "placeholder": true,
+    "espn_id": "2026",
+    "logo_source": "any:App State Mountaineers",
     "slug": "alaska-anchorage"
   },
   "Alaska Fairbanks": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "alaska-fairbanks"
   },
   "Albany": {
@@ -64,7 +65,7 @@
     "slug": "albany-state"
   },
   "Albertus Magnus": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "albertus-magnus"
   },
   "Albion": {
@@ -104,7 +105,7 @@
     "slug": "alvernia"
   },
   "Alverno": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "alverno"
   },
   "American": {
@@ -140,12 +141,16 @@
     "slug": "appalachian-state"
   },
   "Arcadia": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "arcadia"
   },
   "Arizona": {
     "espn_id": "12",
     "slug": "arizona"
+  },
+  "Arizona Christian": {
+    "placeholder": true,
+    "slug": "arizona-christian"
   },
   "Arizona State": {
     "espn_id": "9",
@@ -164,7 +169,7 @@
     "slug": "arkansas-tech"
   },
   "Arkansas-Fort Smith": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "arkansas-fort-smith"
   },
   "Arkansas-Monticello": {
@@ -180,7 +185,8 @@
     "slug": "army"
   },
   "Asbury": {
-    "placeholder": true,
+    "espn_id": "2532",
+    "logo_source": "sub:Salisbury Sea Gulls",
     "slug": "asbury"
   },
   "Ashland": {
@@ -196,7 +202,7 @@
     "slug": "auburn"
   },
   "Auburn Montgomery": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "auburn-montgomery"
   },
   "Augsburg": {
@@ -204,7 +210,8 @@
     "slug": "augsburg"
   },
   "Augusta": {
-    "placeholder": true,
+    "espn_id": "2006",
+    "logo_source": "any:Akron Zips",
     "slug": "augusta"
   },
   "Augustana (IL)": {
@@ -240,7 +247,7 @@
     "slug": "byu"
   },
   "Babson": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "babson"
   },
   "Baldwin Wallace": {
@@ -555,6 +562,10 @@
     "espn_id": "2102",
     "slug": "carnegie-mellon"
   },
+  "Carroll (MT)": {
+    "placeholder": true,
+    "slug": "carroll-mt"
+  },
   "Carroll (WI)": {
     "espn_id": "32",
     "slug": "carroll-wi"
@@ -759,6 +770,10 @@
     "espn_id": "2142",
     "slug": "colgate"
   },
+  "College of Idaho": {
+    "placeholder": true,
+    "slug": "college-of-idaho"
+  },
   "Colorado": {
     "espn_id": "38",
     "slug": "colorado"
@@ -799,17 +814,9 @@
     "espn_id": "2148",
     "slug": "concord"
   },
-  "College of Idaho": {
-    "placeholder": true,
-    "slug": "college-of-idaho"
-  },
   "Concordia Irvine": {
     "placeholder": true,
     "slug": "concordia-irvine"
-  },
-  "Northern New Mexico": {
-    "placeholder": true,
-    "slug": "northern-new-mexico"
   },
   "Concordia Wisconsin": {
     "placeholder": true,
@@ -943,6 +950,10 @@
     "espn_id": "2175",
     "slug": "dickinson"
   },
+  "Dillard": {
+    "placeholder": true,
+    "slug": "dillard"
+  },
   "District of Columbia": {
     "placeholder": true,
     "slug": "district-of-columbia"
@@ -950,10 +961,6 @@
   "Dominican (CA)": {
     "placeholder": true,
     "slug": "dominican-ca"
-  },
-  "Lewis-Clark State": {
-    "placeholder": true,
-    "slug": "lewis-clark-state"
   },
   "Dominican (NY)": {
     "placeholder": true,
@@ -1042,6 +1049,10 @@
   "Eastern New Mexico": {
     "espn_id": "2201",
     "slug": "eastern-new-mexico"
+  },
+  "Eastern Oregon": {
+    "placeholder": true,
+    "slug": "eastern-oregon"
   },
   "Eastern Washington": {
     "espn_id": "331",
@@ -1170,6 +1181,10 @@
   "Findlay": {
     "espn_id": "2224",
     "slug": "findlay"
+  },
+  "Fisk": {
+    "placeholder": true,
+    "slug": "fisk"
   },
   "Fitchburg State": {
     "espn_id": "114",
@@ -1379,6 +1394,10 @@
     "espn_id": "146",
     "slug": "grove-city"
   },
+  "Guam": {
+    "placeholder": true,
+    "slug": "guam"
+  },
   "Guilford": {
     "espn_id": "2258",
     "slug": "guilford"
@@ -1530,6 +1549,10 @@
   "Husson": {
     "espn_id": "2280",
     "slug": "husson"
+  },
+  "Huston-Tillotson": {
+    "placeholder": true,
+    "slug": "huston-tillotson"
   },
   "IU Indianapolis": {
     "espn_id": "85",
@@ -1838,6 +1861,10 @@
   "Lewis & Clark": {
     "espn_id": "2333",
     "slug": "lewis-clark"
+  },
+  "Lewis-Clark State": {
+    "placeholder": true,
+    "slug": "lewis-clark-state"
   },
   "Liberty": {
     "espn_id": "2335",
@@ -2319,13 +2346,13 @@
     "placeholder": true,
     "slug": "mount-holyoke"
   },
+  "Mount Marty": {
+    "placeholder": true,
+    "slug": "mount-marty"
+  },
   "Mount Olive": {
     "placeholder": true,
     "slug": "mount-olive"
-  },
-  "Carroll (MT)": {
-    "placeholder": true,
-    "slug": "carroll-mt"
   },
   "Mount Saint Vincent": {
     "placeholder": true,
@@ -2543,6 +2570,10 @@
     "espn_id": "128",
     "slug": "northern-michigan"
   },
+  "Northern New Mexico": {
+    "placeholder": true,
+    "slug": "northern-new-mexico"
+  },
   "Northern State": {
     "placeholder": true,
     "slug": "northern-state"
@@ -2602,6 +2633,10 @@
   "Oakland": {
     "espn_id": "2473",
     "slug": "oakland"
+  },
+  "Oakwood": {
+    "placeholder": true,
+    "slug": "oakwood"
   },
   "Oberlin": {
     "espn_id": "391",
@@ -2679,6 +2714,10 @@
     "espn_id": "204",
     "slug": "oregon-state"
   },
+  "Oregon Tech": {
+    "placeholder": true,
+    "slug": "oregon-tech"
+  },
   "Otterbein": {
     "espn_id": "359",
     "slug": "otterbein"
@@ -2710,6 +2749,10 @@
   "Palm Beach Atlantic": {
     "placeholder": true,
     "slug": "palm-beach-atlantic"
+  },
+  "Paul Quinn": {
+    "placeholder": true,
+    "slug": "paul-quinn"
   },
   "Penn": {
     "espn_id": "219",
@@ -2766,6 +2809,10 @@
   "Pfeiffer": {
     "placeholder": true,
     "slug": "pfeiffer"
+  },
+  "Philander Smith": {
+    "placeholder": true,
+    "slug": "philander-smith"
   },
   "Piedmont": {
     "placeholder": true,
@@ -2842,6 +2889,22 @@
   "Providence": {
     "espn_id": "2507",
     "slug": "providence"
+  },
+  "Puerto Rico-Bayam\u00f3n": {
+    "placeholder": true,
+    "slug": "puerto-rico-bayamon"
+  },
+  "Puerto Rico-Cayey": {
+    "placeholder": true,
+    "slug": "puerto-rico-cayey"
+  },
+  "Puerto Rico-Mayag\u00fcez": {
+    "placeholder": true,
+    "slug": "puerto-rico-mayaguez"
+  },
+  "Puerto Rico-R\u00edo Piedras": {
+    "placeholder": true,
+    "slug": "puerto-rico-rio-piedras"
   },
   "Puget Sound": {
     "espn_id": "2508",
@@ -3006,6 +3069,10 @@
   "Russell Sage": {
     "placeholder": true,
     "slug": "russell-sage"
+  },
+  "Rust": {
+    "placeholder": true,
+    "slug": "rust"
   },
   "Rutgers": {
     "espn_id": "164",
@@ -3383,6 +3450,14 @@
     "placeholder": true,
     "slug": "southern-new-hampshire"
   },
+  "Southern New Orleans": {
+    "placeholder": true,
+    "slug": "southern-new-orleans"
+  },
+  "Southern Oregon": {
+    "placeholder": true,
+    "slug": "southern-oregon"
+  },
   "Southern Utah": {
     "espn_id": "253",
     "slug": "southern-utah"
@@ -3414,6 +3489,10 @@
   "Spalding": {
     "placeholder": true,
     "slug": "spalding"
+  },
+  "Spelman": {
+    "placeholder": true,
+    "slug": "spelman"
   },
   "Spring Hill": {
     "placeholder": true,
@@ -3462,10 +3541,6 @@
   "St. Mary's (MD)": {
     "placeholder": true,
     "slug": "st-mary-s-md"
-  },
-  "Mount Marty": {
-    "placeholder": true,
-    "slug": "mount-marty"
   },
   "St. Norbert": {
     "espn_id": "2832",
@@ -3519,6 +3594,10 @@
     "espn_id": "471",
     "slug": "stevenson"
   },
+  "Stillman": {
+    "placeholder": true,
+    "slug": "stillman"
+  },
   "Stockton": {
     "placeholder": true,
     "slug": "stockton"
@@ -3562,6 +3641,10 @@
   "TCU": {
     "espn_id": "2628",
     "slug": "tcu"
+  },
+  "Talladega": {
+    "placeholder": true,
+    "slug": "talladega"
   },
   "Tampa": {
     "placeholder": true,
@@ -3650,6 +3733,10 @@
   "Toledo": {
     "espn_id": "2649",
     "slug": "toledo"
+  },
+  "Tougaloo": {
+    "placeholder": true,
+    "slug": "tougaloo"
   },
   "Towson": {
     "espn_id": "119",
@@ -3963,6 +4050,10 @@
     "espn_id": "222",
     "slug": "villanova"
   },
+  "Virgin Islands": {
+    "placeholder": true,
+    "slug": "virgin-islands"
+  },
   "Virginia": {
     "espn_id": "258",
     "slug": "virginia"
@@ -3982,6 +4073,10 @@
   "Virginia Wesleyan": {
     "placeholder": true,
     "slug": "virginia-wesleyan"
+  },
+  "Voorhees": {
+    "placeholder": true,
+    "slug": "voorhees"
   },
   "WPI": {
     "espn_id": "2749",
@@ -4070,10 +4165,6 @@
   "Wesleyan": {
     "placeholder": true,
     "slug": "wesleyan"
-  },
-  "Arizona Christian": {
-    "placeholder": true,
-    "slug": "arizona-christian"
   },
   "West Alabama": {
     "espn_id": "2695",
@@ -4203,6 +4294,14 @@
     "espn_id": "2725",
     "slug": "widener"
   },
+  "Wilberforce": {
+    "placeholder": true,
+    "slug": "wilberforce"
+  },
+  "Wiley": {
+    "placeholder": true,
+    "slug": "wiley"
+  },
   "Wilkes": {
     "espn_id": "398",
     "slug": "wilkes"
@@ -4322,101 +4421,5 @@
   "Youngstown State": {
     "espn_id": "2754",
     "slug": "youngstown-state"
-  },
-  "Southern Oregon": {
-    "placeholder": true,
-    "slug": "southern-oregon"
-  },
-  "Eastern Oregon": {
-    "placeholder": true,
-    "slug": "eastern-oregon"
-  },
-  "Oregon Tech": {
-    "placeholder": true,
-    "slug": "oregon-tech"
-  },
-  "Virgin Islands": {
-    "placeholder": true,
-    "slug": "virgin-islands"
-  },
-  "Puerto Rico-Bayamón": {
-    "placeholder": true,
-    "slug": "puerto-rico-bayamon"
-  },
-  "Puerto Rico-Cayey": {
-    "placeholder": true,
-    "slug": "puerto-rico-cayey"
-  },
-  "Puerto Rico-Mayagüez": {
-    "placeholder": true,
-    "slug": "puerto-rico-mayaguez"
-  },
-  "Puerto Rico-Río Piedras": {
-    "placeholder": true,
-    "slug": "puerto-rico-rio-piedras"
-  },
-  "Guam": {
-    "placeholder": true,
-    "slug": "guam"
-  },
-  "Dillard": {
-    "placeholder": true,
-    "slug": "dillard"
-  },
-  "Fisk": {
-    "placeholder": true,
-    "slug": "fisk"
-  },
-  "Huston-Tillotson": {
-    "placeholder": true,
-    "slug": "huston-tillotson"
-  },
-  "Oakwood": {
-    "placeholder": true,
-    "slug": "oakwood"
-  },
-  "Paul Quinn": {
-    "placeholder": true,
-    "slug": "paul-quinn"
-  },
-  "Philander Smith": {
-    "placeholder": true,
-    "slug": "philander-smith"
-  },
-  "Rust": {
-    "placeholder": true,
-    "slug": "rust"
-  },
-  "Southern New Orleans": {
-    "placeholder": true,
-    "slug": "southern-new-orleans"
-  },
-  "Stillman": {
-    "placeholder": true,
-    "slug": "stillman"
-  },
-  "Talladega": {
-    "placeholder": true,
-    "slug": "talladega"
-  },
-  "Tougaloo": {
-    "placeholder": true,
-    "slug": "tougaloo"
-  },
-  "Voorhees": {
-    "placeholder": true,
-    "slug": "voorhees"
-  },
-  "Wilberforce": {
-    "placeholder": true,
-    "slug": "wilberforce"
-  },
-  "Wiley": {
-    "placeholder": true,
-    "slug": "wiley"
-  },
-  "Spelman": {
-    "placeholder": true,
-    "slug": "spelman"
   }
 }
