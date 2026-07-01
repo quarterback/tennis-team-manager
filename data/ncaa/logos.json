@@ -483,7 +483,7 @@
     "slug": "cal-poly"
   },
   "Cal Poly Humboldt": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "cal-poly-humboldt"
   },
   "Cal Poly Pomona": {
@@ -495,11 +495,11 @@
     "slug": "cal-state-bakersfield"
   },
   "Cal State Dominguez Hills": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "cal-state-dominguez-hills"
   },
   "Cal State East Bay": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "cal-state-east-bay"
   },
   "Cal State Fullerton": {
@@ -511,7 +511,7 @@
     "slug": "cal-state-la"
   },
   "Cal State Monterey Bay": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "cal-state-monterey-bay"
   },
   "Cal State Northridge": {
@@ -519,15 +519,17 @@
     "slug": "cal-state-northridge"
   },
   "Cal State San Bernardino": {
-    "placeholder": true,
+    "espn_id": "2463",
+    "logo_source": "any:Cal State Northridge Matadors",
     "slug": "cal-state-san-bernardino"
   },
   "Cal State San Marcos": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "cal-state-san-marcos"
   },
   "Caldwell": {
-    "placeholder": true,
+    "espn_id": "2101",
+    "logo_source": "any:Carleton Knights",
     "slug": "caldwell"
   },
   "California Baptist": {
@@ -535,7 +537,7 @@
     "slug": "california-baptist"
   },
   "Caltech": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "caltech"
   },
   "Calvin": {
@@ -543,7 +545,8 @@
     "slug": "calvin"
   },
   "Cameron": {
-    "placeholder": true,
+    "espn_id": "2570",
+    "logo_source": "any:CSU Pueblo Thunderwolves",
     "slug": "cameron"
   },
   "Campbell": {
@@ -587,7 +590,8 @@
     "slug": "case-western-reserve"
   },
   "Castleton": {
-    "placeholder": true,
+    "espn_id": "2101",
+    "logo_source": "sub:Carleton Knights",
     "slug": "castleton"
   },
   "Catawba": {
@@ -603,7 +607,8 @@
     "slug": "cedar-crest"
   },
   "Cedarville": {
-    "placeholder": true,
+    "espn_id": "2154",
+    "logo_source": "any:Coppin State Eagles",
     "slug": "cedarville"
   },
   "Centenary (LA)": {
@@ -611,11 +616,12 @@
     "slug": "centenary-la"
   },
   "Centenary (NJ)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "centenary-nj"
   },
   "Central (IA)": {
-    "placeholder": true,
+    "espn_id": "2964",
+    "logo_source": "sub:Central College Dutch",
     "slug": "central-ia"
   },
   "Central Arkansas": {
@@ -655,7 +661,7 @@
     "slug": "chadron-state"
   },
   "Chaminade": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "chaminade"
   },
   "Chapman": {
@@ -679,7 +685,7 @@
     "slug": "charlotte"
   },
   "Chatham": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "chatham"
   },
   "Chattanooga": {
@@ -695,7 +701,7 @@
     "slug": "chicago-state"
   },
   "Chico State": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "chico-state"
   },
   "Chowan": {
@@ -703,7 +709,7 @@
     "slug": "chowan"
   },
   "Christian Brothers": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "christian-brothers"
   },
   "Christopher Newport": {
@@ -715,7 +721,8 @@
     "slug": "cincinnati"
   },
   "Claflin": {
-    "placeholder": true,
+    "espn_id": "117",
+    "logo_source": "any:Clemson Tigers",
     "slug": "claflin"
   },
   "Claremont-Mudd-Scripps": {
@@ -723,7 +730,7 @@
     "slug": "claremont-mudd-scripps"
   },
   "Clark (MA)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "clark-ma"
   },
   "Clark Atlanta": {
@@ -731,11 +738,11 @@
     "slug": "clark-atlanta"
   },
   "Clarkson": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "clarkson"
   },
   "Clayton State": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "clayton-state"
   },
   "Clemson": {
@@ -759,7 +766,8 @@
     "slug": "coe"
   },
   "Coker": {
-    "placeholder": true,
+    "espn_id": "2429",
+    "logo_source": "any:Charlotte 49ers",
     "slug": "coker"
   },
   "Colby": {
@@ -767,7 +775,7 @@
     "slug": "colby"
   },
   "Colby-Sawyer": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "colby-sawyer"
   },
   "Colgate": {
@@ -775,7 +783,7 @@
     "slug": "colgate"
   },
   "College of Idaho": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "college-of-idaho"
   },
   "Colorado": {
@@ -783,7 +791,7 @@
     "slug": "colorado"
   },
   "Colorado Christian": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "colorado-christian"
   },
   "Colorado College": {
@@ -799,7 +807,7 @@
     "slug": "colorado-school-of-mines"
   },
   "Colorado Springs": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "colorado-springs"
   },
   "Colorado State": {
@@ -811,7 +819,7 @@
     "slug": "columbia"
   },
   "Columbus State": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "columbus-state"
   },
   "Concord": {
@@ -819,15 +827,16 @@
     "slug": "concord"
   },
   "Concordia Irvine": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "concordia-irvine"
   },
   "Concordia Wisconsin": {
-    "placeholder": true,
+    "espn_id": "409",
+    "logo_source": "sub:Concordia (WI) Falcons",
     "slug": "concordia-wisconsin"
   },
   "Concordia-Moorhead": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "concordia-moorhead"
   },
   "Concordia-St. Paul": {
@@ -835,11 +844,12 @@
     "slug": "concordia-st-paul"
   },
   "Connecticut College": {
-    "placeholder": true,
+    "espn_id": "2115",
+    "logo_source": "sub:Central Connecticut Blue Devils",
     "slug": "connecticut-college"
   },
   "Converse": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "converse"
   },
   "Coppin State": {
@@ -855,7 +865,7 @@
     "slug": "cornell-college"
   },
   "Covenant": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "covenant"
   },
   "Creighton": {
@@ -863,7 +873,7 @@
     "slug": "creighton"
   },
   "Crown (MN)": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "crown-mn"
   },
   "Curry": {
@@ -871,15 +881,16 @@
     "slug": "curry"
   },
   "D'Youville": {
-    "placeholder": true,
+    "espn_id": "2171",
+    "logo_source": "any:Denison Big Red",
     "slug": "d-youville"
   },
   "Daemen": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "daemen"
   },
   "Dallas": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "dallas"
   },
   "Dallas Baptist": {
@@ -891,7 +902,7 @@
     "slug": "dartmouth"
   },
   "Davenport": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "davenport"
   },
   "Davidson": {
@@ -899,7 +910,7 @@
     "slug": "davidson"
   },
   "Davis & Elkins": {
-    "placeholder": true,
+    "logo_source": "wikidata",
     "slug": "davis-elkins"
   },
   "Dayton": {
@@ -915,7 +926,8 @@
     "slug": "depauw"
   },
   "DeSales": {
-    "placeholder": true,
+    "espn_id": "100",
+    "logo_source": "any:Dartmouth Big Green",
     "slug": "desales"
   },
   "Dean": {
@@ -2575,7 +2587,7 @@
     "slug": "northern-michigan"
   },
   "Northern New Mexico": {
-    "placeholder": true,
+    "logo_source": "wiki",
     "slug": "northern-new-mexico"
   },
   "Northern State": {
