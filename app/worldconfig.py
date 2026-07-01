@@ -209,6 +209,25 @@ def set_intl_share(value) -> None:
     set("intl_share", repr(f))
 
 
+DEFAULT_PRESEASON_PORTAL_CAP = 250
+
+
+def preseason_portal_cap() -> int:
+    """Max risers the one-time PRE-SEASON portal promotes per gender (the world-gen
+    misallocation fix). Tunable per save; the fall portal keeps its own fixed cap."""
+    try:
+        return max(0, int(get("preseason_portal_cap") or DEFAULT_PRESEASON_PORTAL_CAP))
+    except (ValueError, TypeError):
+        return DEFAULT_PRESEASON_PORTAL_CAP
+
+
+def set_preseason_portal_cap(value) -> None:
+    try:
+        set("preseason_portal_cap", str(max(0, int(value))))
+    except (ValueError, TypeError):
+        return
+
+
 # --- Per-region weights ---------------------------------------------------------
 # A chosen band is a STARTING point; the editor then exposes a DIRECT weight per
 # region, so any bespoke international mix is expressible — e.g. a European core

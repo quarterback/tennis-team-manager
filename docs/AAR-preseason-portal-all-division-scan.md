@@ -65,6 +65,47 @@ assert any(m['src_div']=='D4' for m in res['women'] if m['cascade_from'] is None
 ```
 Tests: `test_preseason_portal`, `test_fall_portal`, `test_world*` all pass.
 
+## Follow-ups shipped in the same pass
+
+### Its own (larger, tunable) rider cap
+Both portals called `discover(FALL_PORTAL_MAX_RISERS)` — the same **30**. That 30 is the
+*fall* portal's deliberate mid-season curation ("~60 moves, not thousands"); the *pre-season*
+portal is a **one-time generation fix** and 30 left ~800 qualifying studs stuck. The
+pre-season portal now uses its own cap, **`worldconfig.preseason_portal_cap()` (default
+250)**, tunable per save; the fall portal keeps its 30. At 250 the slate is 250 riders +
+250 cascades per gender. Diagnostic on a fresh world: ~850 men / ~1090 women *qualify*, so
+250 is a chosen middle ground, not a ceiling.
+
+### UI: tuner, gender filter, pagination, re-scan
+The slate now runs to hundreds of rows, so `/preseason-portal` got:
+- **Cap tuner** — a "Max risers / gender" number input (`POST /preseason-portal/cap` →
+  `set_preseason_portal_cap` + re-scan).
+- **Gender tabs** — All / Men / Women with live counts (`?gender=`); the view no longer
+  mixes both into one list.
+- **Pagination** — 50 rows/page (`?page=`), Prev/Next.
+- **Re-scan** — `POST /preseason-portal/rescan` clears the year's slate and re-runs
+  discovery, recovering a "sticky" slate without a new league.
+- **Empty-slate diagnostic** — `world.preseason_portal_debug()` shows, per gender, how many
+  lower-division starters were scanned / are top-2 / clear a higher division / are riders,
+  plus the per-division median bar, so an unexpected 0 is explainable.
+
+Bug caught in review: the live-view loop `for gender, moves in resolved.items()` shadowed the
+`gender` filter parameter, so pagination filtered by the last-iterated gender. Renamed the
+loop var to `g`.
+
+### Codex review: never promote INTO an inactive division
+Feeding all divisions into `_FPPlanner` (the whole point — so a stud in a dormant level can
+be rescued up) introduced a hazard for **subset-active** leagues: the planner could pick an
+**inactive** higher-division school as a destination, and `commit_preseason_portal` would
+record that override even though season simulation only iterates `_active_unis` — so the
+mover would leave the playable season. Fix: `_FPPlanner` takes `active_divs`; **sources span
+every division, but destinations (the `by_div` pool, the median bar, and `settle`'s
+swap-back) are restricted to active divisions.** The pre-season paths pass
+`worldconfig.active_divisions()`; the fall portal is unaffected (it already feeds only active
+universes). Verified: with only D2+D3 active, D4 studs still rise into D2 and **no** move
+lands in dormant D1/D4; with all four active (the intended setup), D2→D1 / D3→D1/D2 /
+D4→D1/D2 promotions all happen normally.
+
 ## Still open
 
 - **If the portal is still empty on an existing save with all four levels active**, the

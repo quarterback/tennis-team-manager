@@ -26,6 +26,21 @@
 </div></div>
 
 {% if not pp.done %}
+<div class="bl-container" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+  <span style="display:flex;gap:4px">
+    <a class="bl-btn {% if pp.gender == 'all' %}bl-btn-primary{% endif %}" href="{{ url_for('preseason_portal', gender='all') }}">All ({{ pp.gender_counts.all }})</a>
+    <a class="bl-btn {% if pp.gender == 'men' %}bl-btn-primary{% endif %}" href="{{ url_for('preseason_portal', gender='men') }}">Men ({{ pp.gender_counts.men }})</a>
+    <a class="bl-btn {% if pp.gender == 'women' %}bl-btn-primary{% endif %}" href="{{ url_for('preseason_portal', gender='women') }}">Women ({{ pp.gender_counts.women }})</a>
+  </span>
+  <form method="post" action="{{ url_for('preseason_portal_cap_set') }}" style="display:flex;gap:6px;align-items:center;margin-left:auto" title="Max risers promoted per gender by the one-time pre-season fix">
+    <label style="font-size:13px;color:var(--text-muted)">Max risers / gender</label>
+    <input type="number" name="cap" value="{{ pp.cap }}" min="0" max="2000" step="10" style="width:78px" class="bl-input">
+    <button class="bl-btn" type="submit">Apply &amp; re-scan</button>
+  </form>
+</div>
+{% endif %}
+
+{% if not pp.done %}
 <div class="bl-container" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
   <form method="post" action="{{ url_for('preseason_portal_add') }}" style="display:flex;gap:6px;align-items:end">
     <label class="bl-field"><span class="bl-field-label">Add a player</span>
@@ -130,6 +145,13 @@
     {% endfor %}
   </div>
 </div></div>
+{% if pp.pages > 1 %}
+<div class="bl-container" style="display:flex;gap:10px;align-items:center;justify-content:center">
+  {% if pp.page > 1 %}<a class="bl-btn" href="{{ url_for('preseason_portal', gender=pp.gender, page=pp.page - 1) }}">‹ Prev</a>{% endif %}
+  <span style="font-size:13px;color:var(--text-muted)">Page {{ pp.page }} of {{ pp.pages }} · showing {{ pp.gender }}</span>
+  {% if pp.page < pp.pages %}<a class="bl-btn" href="{{ url_for('preseason_portal', gender=pp.gender, page=pp.page + 1) }}">Next ›</a>{% endif %}
+</div>
+{% endif %}
 {% if not pp.done %}
 <div class="bl-container"><div class="bl-note" style="font-size:12px;color:var(--text-faint)">
   Dropped a move by mistake? "Keep all" brings every dropped riser back.
