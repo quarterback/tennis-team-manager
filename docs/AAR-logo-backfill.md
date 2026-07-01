@@ -64,6 +64,20 @@ substitutes/badges to a school's own logo if one becomes available.
 - Trademarks belong to their institutions; used for nominative identification in a personal,
   non-commercial sim (see `app/web/static/logos/README.md`).
 
+## Follow-up (Codex review)
+- **Don't persist borrowed ESPN ids.** `sub:`/`any:` substitutes were storing the
+  borrowed team's `espn_id`; on a re-run the collision pass groups by `espn_id`, so a
+  borrowed id would flag the *real* owner as a loser and exclude its own match. Stripped
+  the id from all 260 substitute entries (provenance stays in `logo_source`) and both
+  scripts now persist `espn_id` only for a school's OWN ESPN logo. Also reassigned the one
+  lingering real collision (Dallas Baptist off Loras's id → badge).
+- **Keep campus logos distinct.** The lookup dropped the parenthetical qualifier, so
+  disambiguated campuses (Emmanuel GA/MA, Dominican CA/NY, North Central IL/MN, Saint
+  Mary's IN/MN, Union NY/TN, Johnson & Wales Charlotte/Providence) resolved to one
+  article and shared a logo. Fixed those six pairs (disambiguated wiki art where found,
+  else a distinct badge) and `wiki_logo`/`wikidata_logo` now query the state-qualified
+  title first, so campuses get their own mark.
+
 ## Verify
 ```python
 import json, glob, os

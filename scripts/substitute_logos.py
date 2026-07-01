@@ -89,7 +89,10 @@ def main():
         slug = F.slugify(s)
         if not download(href, LOGO_DIR / f"{slug}.png"):
             continue
-        logos[s] = {"slug": slug, "espn_id": eid, "logo_source": f"sub:{id_disp.get(eid)}"}
+        # A substitute borrows another team's art; do NOT persist its espn_id (the
+        # collision pass groups by espn_id and would flag the real owner). Keep the
+        # provenance in logo_source only (Codex).
+        logos[s] = {"slug": slug, "logo_source": f"sub:{id_disp.get(eid)}"}
         done += 1
         if done % 25 == 0:
             MAP.write_text(json.dumps(logos, indent=2, sort_keys=True) + "\n")

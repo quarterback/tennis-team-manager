@@ -54,10 +54,30 @@ def espn_index():
                     idx.setdefault(F.norm(key), (tid, href))
     return idx, id_disp, pool
 
+# US state abbr -> name, so a disambiguated campus ("Emmanuel (GA)") resolves to
+# its OWN article instead of a sibling's (Codex: keep campus logos distinct).
+STATES = {"CA": "California", "NY": "New York", "GA": "Georgia", "MA": "Massachusetts",
+          "IL": "Illinois", "MN": "Minnesota", "IN": "Indiana", "TN": "Tennessee",
+          "PA": "Pennsylvania", "OH": "Ohio", "VA": "Virginia", "WI": "Wisconsin",
+          "MT": "Montana", "MD": "Maryland", "CT": "Connecticut", "ME": "Maine",
+          "KS": "Kansas", "MO": "Missouri", "NC": "North Carolina", "SC": "South Carolina",
+          "TX": "Texas", "FL": "Florida", "MI": "Michigan", "IA": "Iowa", "LA": "Louisiana",
+          "KY": "Kentucky", "NE": "Nebraska", "OR": "Oregon", "WA": "Washington"}
+
+def _qual(name):
+    import re
+    m = re.search(r"\(([^)]+)\)", name)
+    q = m.group(1) if m else ""
+    return name.split("(")[0].strip(), STATES.get(q, q)
+
 # ---- Wikipedia article logo/seal -------------------------------------------
 def wiki_logo(name):
-    base = name.split("(")[0].strip()
-    cands = [f"{base} College", f"{base} University", base, f"University of {base}"]
+    base, full = _qual(name)
+    cands = []
+    if full:   # disambiguated campus first
+        cands += [f"{base} College ({full})", f"{base} University ({full})",
+                  f"{base} College, {full}", f"{base} ({full})"]
+    cands += [f"{base} College", f"{base} University", base, f"University of {base}"]
     api = "https://en.wikipedia.org/w/api.php"
     for c in cands:
         q = urllib.parse.urlencode({"action": "query", "format": "json", "redirects": "1",
@@ -80,11 +100,12 @@ def wiki_logo(name):
 
 # ---- Wikidata logo (P154) / seal (P158) ------------------------------------
 def wikidata_logo(name):
-    base = name.split("(")[0].strip()
+    base, full = _qual(name)
+    search = f"{base} {full}".strip() if full else base   # disambiguate the campus
     api = "https://www.wikidata.org/w/api.php"
     try:
         hits = http(f"{api}?" + urllib.parse.urlencode({"action": "wbsearchentities",
-            "search": base, "language": "en", "format": "json", "limit": "1", "type": "item"})).get("search", [])
+            "search": search, "language": "en", "format": "json", "limit": "1", "type": "item"})).get("search", [])
     except Exception:
         return None
     if not hits:
@@ -197,7 +218,10 @@ def main():
         if not ok:
             stats["dl_fail"] += 1; continue
         entry = {"slug": slug, "logo_source": src}
-        if espn_id:
+        # Only persist espn_id for the school's OWN ESPN logo. A borrowed id from a
+        # sub:/any: substitute must NOT be stored — the collision pass groups by
+        # espn_id, so a borrowed id would flag the real owner as a loser (Codex).
+        if espn_id and src.startswith("espn:"):
             entry["espn_id"] = espn_id
         logos[s] = entry
         kind = src.split(":")[0]
