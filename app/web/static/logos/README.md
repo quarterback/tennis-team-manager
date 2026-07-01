@@ -27,13 +27,21 @@ them.
 - `app/web/formatters.py` exposes the Jinja filters `team_logo` (ready-made
   inline `<img>`), `team_logo_src` (bare URL for crest boxes), and
   `has_team_logo`.
-- Schools ESPN doesn't track (mostly small D2/D3 programs) get a **generated
-  monogram placeholder** instead of a real logo: a team-colored rounded badge
-  with the school's initials, matching the crest style in
-  `app/web/rankings_data.py`. These entries carry `"placeholder": true` (and
-  no `espn_id`) in `logos.json`, so a future re-run can swap in a real logo if
-  one becomes available. Every school therefore shows *some* mark — no broken
-  images, no blank cells.
+- Schools ESPN doesn't track (small D2/D3/NAIA) are backfilled with **real art**
+  by `scripts/backfill_logos.py`: the school's own logo/seal from Wikipedia
+  (`pageimages`) or Wikidata (`P154`/`P158`), else a real ESPN substitute (a
+  close-named or same-region team). `scripts/substitute_logos.py` is the fast
+  ESPN-only finisher. All fetched art is rasterized + scaled to the logo box
+  (PIL). `logo_source` records the origin (`wiki` / `wikidata` / `sub:<team>` /
+  `espn:<team>`).
+- The handful with no findable real art (and any download 404s) get a **clean,
+  consistent GitHub-style badge** from `scripts/make_badges.py` — a flat rounded
+  square, deterministic tasteful color, crisp white monogram (supersampled), flagged
+  `"badge": true`. This replaced the older crude monograms. Every school therefore
+  shows *some* real-looking mark — no broken images, no blank cells.
+- Note: shared-id collisions (an "X College" showing flagship "X"'s logo, e.g.
+  Colorado College → University of Colorado) were fixed — losers reassigned off the
+  flagship id to their own or a substitute logo.
 
 ## Conventions
 

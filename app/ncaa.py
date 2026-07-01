@@ -273,7 +273,7 @@ ACADEMIC_SCHOOLS = {
     "WPI": 0.88, "Illinois Tech": 0.86, "Clarkson": 0.83, "Union (NY)": 0.88,
     "RIT": 0.82, "St. Lawrence": 0.85,
     # Elite academic add-ins to D4 (no real varsity athletics; here for the sim)
-    "Reed": 0.93, "Olin": 0.93,
+    "Reed": 0.93,
     # Service academies are strong academics (Army/Navy/Air Force tagged above)
     "Coast Guard": 0.86, "Merchant Marine": 0.86,
     # Elite HBCU flagships — tagged >= 0.85 so they draw the D4 gem-hunting
