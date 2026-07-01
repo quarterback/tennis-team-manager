@@ -86,6 +86,11 @@ RELIABILITY_GATE = 0.4
 # a tier up, not just that they're the best of a weak team. We then move only the
 # most mis-allocated up to a per-gender cap (each can trigger one cascade demotion).
 FALL_PORTAL_MAX_RISERS = 30
+# The PRE-SEASON portal is a one-time correction of world-GENERATION misallocation, not
+# the fall portal's curated mid-season reshuffle — so it gets its OWN, larger cap, tunable
+# per save in the UI (worldconfig.preseason_portal_cap, default 250). The fall portal keeps
+# FALL_PORTAL_MAX_RISERS. This module-level value is just the fallback default.
+PRESEASON_PORTAL_MAX_RISERS = 250
 
 # National recruiting pool per gender — large + bottom-heavy so it feeds freshman
 # openings across all three divisions with a realistic long tail.
@@ -554,6 +559,25 @@ def developed_rosters(world: dict) -> dict:
                         p.develop(s)
     _dev_cache[key] = rosters
     return rosters
+
+
+def scan_rosters(seed: int = DEFAULT_SEED) -> dict:
+    """Live rosters for EVERY division×gender, built the exact way the Analytics
+    Bureau boards are (scout_intel.scan): prime the world, then read `build_roster`
+    for every program across all divisions. Unlike `developed_rosters` this is NOT
+    limited to the ACTIVE universes — dormant divisions build fresh on a cache miss —
+    so a cross-division consumer (the pre-season portal) scans the same universe the
+    Underplaced/Playing-Time boards show, never only the active persisted subset."""
+    prime(seed)
+    from app.ncaa import load_division, build_roster
+    out: dict = {}
+    for (division, gender) in UNIVERSES:
+        try:
+            div = load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        out[(division, gender)] = {p.school: build_roster(p) for p in div.programs}
+    return out
 
 
 def prime(seed: int = DEFAULT_SEED) -> dict:
@@ -1335,9 +1359,16 @@ class _FPPlanner:
     single rider (auto or at an explicit destination) and cascades — so the same
     machinery serves both the auto proposal and the user's edits/adds at resolve."""
 
-    def __init__(self, rosters: dict, player_str: dict, gender: str):
+    def __init__(self, rosters: dict, player_str: dict, gender: str,
+                 active_divs=None):
         progs = _flat_programs(gender)
         self.player_str = player_str
+        # Destinations are limited to these divisions. A player may be discovered as a
+        # riser FROM any division (so a stud in a dormant level can be rescued up), but
+        # must never be moved INTO an inactive division — that program is never simulated,
+        # so the mover would leave the playable season. None = every present division is a
+        # valid destination (the fall portal already feeds only active universes).
+        self.active_divs = set(active_divs) if active_divs is not None else None
         pool: dict[str, list] = {}
         div_of: dict[str, str] = {}
         for (division, g), schools_ in rosters.items():
@@ -1356,8 +1387,12 @@ class _FPPlanner:
         self.facilities = {s: progs[s].facilities for s in schools}
         self.level = {s: _prog_level(progs[s]) for s in schools}
         self.strs = {s: sorted(self._sv(p) for p in pool[s]) for s in schools}
+        # by_div (destination pool + the median bar) holds ONLY valid-destination
+        # divisions; sources (pool/schools/by_pid) keep every division.
         by_div: dict[str, list] = {}
         for s in schools:
+            if not self._dest_ok(div_of.get(s, "")):
+                continue
             by_div.setdefault(div_of.get(s, ""), []).append(s)
         for d in by_div:
             by_div[d].sort()
@@ -1374,6 +1409,10 @@ class _FPPlanner:
 
     def _sv(self, p):
         return _str_of(self.player_str, p)
+
+    def _dest_ok(self, division: str) -> bool:
+        """Whether a division is a valid MOVE DESTINATION (active/simulated)."""
+        return self.active_divs is None or division in self.active_divs
 
     def open_slot(self, s):
         return len(self.pool[s]) < roster_cap(self.div_of.get(s, ""))
@@ -1453,7 +1492,8 @@ class _FPPlanner:
         vacated (a clean swap-back), else the best open seat further down."""
         val = self._sv(p)
         from_rank = _FP_DIV_ORDER.index(self.div_of[from_school])
-        if (prefer and prefer in self.pool and self.open_slot(prefer)
+        if (prefer and prefer in self.pool and self._dest_ok(self.div_of[prefer])
+                and self.open_slot(prefer)
                 and _FP_DIV_ORDER.index(self.div_of[prefer]) >= from_rank
                 and self.line_of(prefer, val) <= roster_cap(self.div_of[prefer])):
             self._apply(p, from_school, prefer)
@@ -1617,7 +1657,7 @@ def resolve_fall_portal(seed: int = DEFAULT_SEED) -> dict:
                   if r["gender"] == gender and r["cascade_from"] is None
                   and r["status"] != "rejected"]
         riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
-        plan = _FPPlanner(rosters, {}, gender)
+        plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
         for r in riders:
             entry = plan.by_pid.get(r["pid"])
             if not entry:
@@ -1772,10 +1812,12 @@ def preseason_portal_proposals(rosters: dict, gender: str) -> list[dict]:
     re-derived at resolve). Thin wrapper over the shared `_FPPlanner` discovery."""
     if not any(g == gender for (_d, g) in rosters):
         return []
-    plan = _FPPlanner(rosters, {}, gender)
+    # Sources span every division (scan_rosters), but a rider may only be PLACED into an
+    # ACTIVE division — never into a dormant one that the season never simulates.
+    plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
     if not plan.schools:
         return []
-    plan.discover(FALL_PORTAL_MAX_RISERS)
+    plan.discover(worldconfig.preseason_portal_cap())
     return plan.moves
 
 
@@ -1788,8 +1830,9 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     w = get_or_create(seed)
     if ov.ps_get_proposals(w["year"]):                 # already seeded / committed
         return {"event": "preseason_portal_exists", "year": w["year"]}
-    prime(seed)
-    rosters = developed_rosters(w)
+    # Source rosters the SAME way the Bureau boards do — every division, live — so the
+    # portal never comes up empty just because a division is dormant/persisted-stale.
+    rosters = scan_rosters(seed)
     total = 0
     for gender in worldconfig.active_genders():
         props = preseason_portal_proposals(rosters, gender)
@@ -1799,20 +1842,59 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     return {"event": "preseason_portal_pending", "year": w["year"], "proposals": total}
 
 
+def rescan_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
+    """Force a fresh scan: clear this year's stored slate and re-run discovery. Lets a
+    'sticky' slate (one that was seeded/committed/dropped once and never re-scans on its
+    own) be regenerated without starting a new league. Returns the seeding result."""
+    from app import overrides as ov
+    w = get_or_create(seed)
+    ov.ps_clear_year(w["year"])
+    return run_preseason_portal(seed)
+
+
+def preseason_portal_debug(seed: int = DEFAULT_SEED) -> dict:
+    """Why the slate is what it is: per active gender, how many lower-division starters
+    are top-2 on their team, how many clear a higher division's median, and how many are
+    BOTH (the riders), plus the per-division median bar. Surfaced when the slate is empty
+    so an unexpected 0 is explainable rather than mysterious."""
+    rosters = scan_rosters(seed)
+    out: dict = {}
+    for gender in worldconfig.active_genders():
+        if not any(g == gender for (_d, g) in rosters):
+            continue
+        plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
+        top2 = clears = both = pool = 0
+        for s in plan.schools:
+            if plan.div_of[s] == "D1":
+                continue
+            for p in plan.pool[s]:
+                if p.walk_on or _career_transfers(p) != 0:
+                    continue
+                pool += 1
+                val = plan._sv(p)
+                is_top2 = plan.line_of(s, val) <= 2
+                is_over = plan.over_div(s, val) is not None
+                top2 += is_top2; clears += is_over; both += (is_top2 and is_over)
+        out[gender] = {"div_level": {k: round(v, 1) for k, v in plan.div_level.items()},
+                       "scanned": pool, "top2": top2, "clear_higher_div": clears,
+                       "riders": both, "schools": len(plan.schools)}
+    return out
+
+
 def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     """Resolve the stored rider intents into the full move slate (riders + derived
     cascades) per gender, on a fresh snapshot — recomputed on every view and at
     commit so redirects / adds / drops always yield a correct, cap-safe cascade."""
     from app import overrides as ov
     w = get_or_create(seed)
-    rosters = developed_rosters(w)
+    rosters = scan_rosters(seed)          # same all-division live source as seeding
     out: dict = {}
     for gender in worldconfig.active_genders():
         riders = [r for r in ov.ps_get_proposals(w["year"])
                   if r["gender"] == gender and r["cascade_from"] is None
                   and r["status"] != "rejected"]
         riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
-        plan = _FPPlanner(rosters, {}, gender)
+        plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
         for r in riders:
             entry = plan.by_pid.get(r["pid"])
             if not entry:

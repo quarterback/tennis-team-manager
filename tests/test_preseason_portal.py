@@ -37,13 +37,20 @@ def _clean():
 # --- the engine (shared with the fall portal) ----------------------------
 
 def test_preseason_proposals_match_fall_engine():
-    """The pre-season wrapper is the same discovery as the fall portal's riders."""
+    """The pre-season wrapper is the same discovery as the fall portal's riders — at the
+    same cap. (The pre-season portal defaults to a larger, UI-tunable cap since it is a
+    one-time world-generation fix, not the fall portal's curated reshuffle.)"""
     import random
-    r1, r2 = _world4(), _world4()
-    pre = world.preseason_portal_proposals(r1, "men")
-    fall = world.fall_portal_proposals(r2, {}, random.Random(0), "men")
-    key = lambda ms: [(m["pid"], m["src_school"], m["dest_school"]) for m in ms]
-    assert key(pre) == key(fall)
+    from app import worldconfig
+    worldconfig.set_preseason_portal_cap(world.FALL_PORTAL_MAX_RISERS)
+    try:
+        r1, r2 = _world4(), _world4()
+        pre = world.preseason_portal_proposals(r1, "men")
+        fall = world.fall_portal_proposals(r2, {}, random.Random(0), "men")
+        key = lambda ms: [(m["pid"], m["src_school"], m["dest_school"]) for m in ms]
+        assert key(pre) == key(fall)
+    finally:
+        worldconfig.set_preseason_portal_cap(worldconfig.DEFAULT_PRESEASON_PORTAL_CAP)
 
 
 def test_preseason_cascade_keeps_rosters_within_cap():

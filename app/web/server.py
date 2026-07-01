@@ -748,8 +748,25 @@ def create_app() -> Flask:
         w = wd.load_world()
         if w and w["week"] == 0 and not ov.ps_get_proposals(w["year"]):
             wd.run_preseason_portal()
+        gender = request.args.get("gender", "all")
+        try:
+            page = int(request.args.get("page", 1))
+        except (ValueError, TypeError):
+            page = 1
         return render_template("preseason_portal.html", active="Preseason",
-                               pp=preseason_portal_view(), crest=crest)
+                               pp=preseason_portal_view(gender=gender, page=page), crest=crest)
+
+    @app.route("/preseason-portal/rescan", methods=["POST"])
+    def preseason_portal_rescan():
+        wd.rescan_preseason_portal()
+        return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/cap", methods=["POST"])
+    def preseason_portal_cap_set():
+        from app import worldconfig
+        worldconfig.set_preseason_portal_cap(request.form.get("cap", ""))
+        wd.rescan_preseason_portal()          # re-scan with the new per-gender cap
+        return redirect(url_for("preseason_portal"))
 
     @app.route("/preseason-portal/approve", methods=["POST"])
     def preseason_portal_approve():
