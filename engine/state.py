@@ -12,7 +12,7 @@ small drivers before the point engine sees a player.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 # Ordered attribute list - the stable surface area the rally tables read from.
 ATTRS = (
@@ -139,6 +139,40 @@ class PlayerStats:
     @property
     def serve_points_won_pct(self) -> float:
         return self.serve_points_won / self.serve_points_total if self.serve_points_total else 0.0
+
+    @property
+    def has_data(self) -> bool:
+        """True once any point has been recorded — distinguishes real stats from
+        the empty placeholder the fast (scoreline-only) model returns."""
+        return bool(self.serve_points_total or self.return_points_total)
+
+    def add(self, other: "PlayerStats") -> None:
+        """Accumulate another stat line into this one (all fields are counters)."""
+        for f in fields(PlayerStats):
+            setattr(self, f.name, getattr(self, f.name) + getattr(other, f.name))
+
+    def to_dict(self) -> dict:
+        """Compact JSON form for persistence (e.g. inside a dual's lines_json).
+        Short keys keep thousands of persisted duals small; the mapping is the
+        module-level `STAT_KEYS` (short -> field name)."""
+        return {k: getattr(self, f) for k, f in STAT_KEYS}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "PlayerStats":
+        return cls(**{f: int(d.get(k, 0) or 0) for k, f in STAT_KEYS})
+
+
+# Persisted short key -> PlayerStats field. The one place the wire format lives.
+STAT_KEYS: tuple[tuple[str, str], ...] = (
+    ("ace", "aces"), ("df", "double_faults"),
+    ("fsi", "first_serves_in"), ("fsp", "first_serve_points"),
+    ("ssp", "second_serve_points"),
+    ("svw", "serve_points_won"), ("svt", "serve_points_total"),
+    ("rtw", "return_points_won"), ("rtt", "return_points_total"),
+    ("bpf", "break_points_faced"), ("bps", "break_points_saved"),
+    ("bpc", "break_points_converted"),
+    ("win", "winners"), ("ue", "unforced_errors"), ("pts", "points_won"),
+)
 
 
 @dataclass

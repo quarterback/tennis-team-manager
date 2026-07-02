@@ -22,6 +22,9 @@ import json
 import os
 import sqlite3
 from collections import Counter
+from dataclasses import fields as _dc_fields
+
+from engine import PlayerStats
 
 from . import dbpath
 
@@ -2182,6 +2185,65 @@ def player_records(season_id: int) -> dict:
     return _prec_cache[key]
 
 
+_pstats_cache: dict = {}
+
+
+def _stat_block(ps: PlayerStats, matches: int) -> dict:
+    """A PlayerStats total as a display-ready dict: full field names, match
+    count, and the derived serve/return rates."""
+    d = {f.name: getattr(ps, f.name) for f in _dc_fields(PlayerStats)}
+    d["matches"] = matches
+    d["first_serve_pct"] = ps.first_serve_pct
+    d["serve_pts_pct"] = ps.serve_points_won_pct
+    d["return_pts_pct"] = (ps.return_points_won / ps.return_points_total
+                           if ps.return_points_total else 0.0)
+    return d
+
+
+def player_season_stats(season_id: int) -> dict:
+    """Season box-stat totals per player, aggregated from the per-line stats
+    persisted in lines_json — ``pid -> {"singles": {...}, "doubles": {...}}``
+    (a kind is present only if the player logged stats in it). Counters carry
+    full PlayerStats field names plus ``matches`` and derived rates. Completed
+    lines only; duals played before box stats existed (older saves) simply
+    don't contribute. One pass, cached by completed-dual count."""
+    conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    key = (season_id, cnt)
+    if key not in _pstats_cache:
+        rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
+                            (season_id,)).fetchall()
+        agg: dict = {}                      # (pid, kind) -> [PlayerStats, matches]
+
+        def bump(pid, kind, d):
+            cell = agg.setdefault((pid, kind), [PlayerStats(), 0])
+            cell[0].add(PlayerStats.from_dict(d))
+            cell[1] += 1
+
+        for r in rows:
+            for ln in json.loads(r["lines_json"] or "[]"):
+                st = ln.get("stats")
+                if not ln.get("completed") or not st:
+                    continue
+                slot = ln.get("slot") or ""
+                if slot.startswith("S") and ln.get("home_pid") is not None:
+                    bump(ln["home_pid"], "singles", st["home"])
+                    bump(ln["away_pid"], "singles", st["away"])
+                elif slot.startswith("D") and ln.get("home_pids"):
+                    for pid, d in zip(ln["home_pids"], st["home"]):
+                        bump(pid, "doubles", d)
+                    for pid, d in zip(ln.get("away_pids", []), st["away"]):
+                        bump(pid, "doubles", d)
+        out: dict = {}
+        for (pid, kind), (ps, n) in agg.items():
+            out.setdefault(pid, {})[kind] = _stat_block(ps, n)
+        _pstats_cache.clear()
+        _pstats_cache[key] = out
+    conn.close()
+    return _pstats_cache[key]
+
+
 _pline_cache: dict = {}
 
 
@@ -2267,19 +2329,25 @@ def player_log(season_id: int, pid: str) -> list[dict]:
             if not ln.get("completed"):
                 continue
             raw_sets = ln.get("sets") or []
+            line_stats = ln.get("stats") or {}
             if ln.get("home_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
                                                 ln["home_won"], ln.get("away_pid"), r["away"])
                 sets = [[h, a] for (h, a) in raw_sets]
+                stats = line_stats.get("home")
             elif ln.get("away_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
                                                 not ln["home_won"], ln.get("home_pid"), r["home"])
                 sets = [[a, h] for (h, a) in raw_sets]   # flip to the player's POV
+                stats = line_stats.get("away")
             else:
                 continue
             phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
             log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
                         "opp": idx.get(opp, {}).get("name", "—"), "opp_pid": opp,
                         "opp_school": opp_school, "week": r["week"],
-                        "sets": sets, "gf": gf, "ga": ga, "won": won})
+                        "sets": sets, "gf": gf, "ga": ga, "won": won,
+                        # per-match box stats (compact engine.state.STAT_KEYS
+                        # form, this player's side) — None on pre-stats saves
+                        "stats": stats})
     return log

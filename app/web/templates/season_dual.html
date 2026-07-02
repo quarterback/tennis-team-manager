@@ -21,11 +21,23 @@
         {% set ppid = ln.get(who ~ '_pid') %}
         {% set country = ln.get(who ~ '_country') %}
         {% set school = d.home if who == 'home' else d.away %}
+        {% set lst = ln.get('stats') %}
         <div class="bl-side {{ 'won' if won else '' }}">
           <span class="nm">{% if won %}<span class="chk">✓</span>{% endif %}
             {% if country %}<span class="player-flag">{{ country|flag }}</span> {% endif %}
             {% if player %}{% if ppid and not is_d %}<a class="bl-school" href="{{ url_for('player', pid=ppid, school=school, u=u) }}">{{ player }}</a>{% else %}{{ player }}{% endif %} <span class="bl-court-team">{{ school }}</span>
-            {% else %}{{ school }}{% endif %}</span>
+            {% else %}{{ school }}{% endif %}
+            {% if lst %}{# per-side box stats — pair totals on doubles lines #}
+              {% set sst = lst[who] %}
+              {% set A = (sst[0].ace + sst[1].ace) if is_d else sst.ace %}
+              {% set DF = (sst[0].df + sst[1].df) if is_d else sst.df %}
+              {% set W = (sst[0].win + sst[1].win) if is_d else sst.win %}
+              {% set UE = (sst[0].ue + sst[1].ue) if is_d else sst.ue %}
+              {% set FSI = (sst[0].fsi + sst[1].fsi) if is_d else sst.fsi %}
+              {% set FSP = (sst[0].fsp + sst[1].fsp) if is_d else sst.fsp %}
+              <span class="tsub" style="font-size:10px;display:block;margin-top:1px" title="Aces · Double faults · Winners · Unforced errors · 1st-serve %">
+                A {{ A }} · DF {{ DF }} · W {{ W }} · UE {{ UE }}{% if FSP %} · 1st {{ (FSI * 100 / FSP)|round|int }}%{% endif %}</span>
+            {% endif %}</span>
           <span class="bl-setnums">
             {% if ln.sets %}{% for s in ln.sets %}{% set sw = (s[0] > s[1]) if who == 'home' else (s[1] > s[0]) %}<span class="g {{ 'w' if sw }}">{{ s[0] if who == 'home' else s[1] }}</span>{% endfor %}
             {% else %}<span class="g {{ 'w' if won }}">{{ ln.home_games if who == 'home' else ln.away_games }}</span>{% endif %}

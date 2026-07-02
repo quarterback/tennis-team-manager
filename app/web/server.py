@@ -1292,10 +1292,12 @@ def create_app() -> Flask:
         honor_years = player_career_honors(division, gender, pid)
         ranks = player_ranks(division, gender, pid)
         journey = player_journey(division, gender, pid)
+        season_stats = sm.player_season_stats(sid).get(pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, ranks=ranks, journey=journey,
+                               season_stats=season_stats,
                                attrs=attrs, crest=crest, u=u, uni_label=label)
 
     @app.route("/ncaa")

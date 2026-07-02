@@ -30,6 +30,7 @@ from .state import MatchContext, Player
 from .format import PRESETS
 from .match import simulate_match, MatchResult
 from .doubles import simulate_doubles, DoublesTeam, DoublesResult
+from .boxstats import overlay as _overlay_stats
 
 
 @dataclass
@@ -106,13 +107,20 @@ def _partial_score(set_scores: list[tuple[int, int]], elapsed: float,
 
 def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                   context: MatchContext | None = None,
-                  priority_finish: set[int] | None = None) -> DualResult:
+                  priority_finish: set[int] | None = None,
+                  box_stats: bool = False) -> DualResult:
     """Simulate an NCAA dual. `priority_finish` lists singles court indices (0-5)
     that should finish among the first matches off the court — used by season mode
     so a guaranteed-appearance player's line actually completes regardless of how
     long it ran. The first three singles to finish always complete (a 4-point
     clinch needs more than doubles + two singles), so a small priority set is a
-    hard guarantee."""
+    hard guarantee.
+
+    `box_stats=True` attaches engine-faithful per-player stats to every COMPLETED
+    line of a fast-fidelity dual (engine.boxstats conditioned replay — the fast
+    model still decides every outcome; scorelines are unchanged). Abandoned lines
+    stay stat-less: they're excluded from records and the stats layer alike. At
+    full fidelity stats already exist and this flag is a no-op."""
     context = context or MatchContext()
     priority_finish = priority_finish or set()
     lines: list[DualLine] = []
@@ -126,6 +134,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         res = simulate_doubles(_pair(home, home.doubles[i]), _pair(away, away.doubles[i]),
                                seed=seed + 10 + i, fmt=doubles_pro,
                                fidelity=fidelity, context=context)
+        if box_stats:
+            _overlay_stats(res, seed=seed + 10 + i, fmt=doubles_pro, context=context)
         home_won = res.winner == 0
         d_wins[0 if home_won else 1] += 1
         lines.append(DualLine(slot=f"D{i+1}", home_won=home_won, result=res))
@@ -159,6 +169,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                 partial=_partial_score(res.set_scores, clinch_at, length[i]))
             continue
         res = results[i]
+        if box_stats:
+            _overlay_stats(res, seed=seed + 100 + i, fmt=singles_fmt, context=context)
         home_won = res.winner == 0
         points[0 if home_won else 1] += 1
         by_slot[i] = DualLine(slot=f"S{i+1}", home_won=home_won, result=res)

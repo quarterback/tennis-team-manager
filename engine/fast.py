@@ -62,30 +62,40 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext) -> float:
 
 
 def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int, context: MatchContext):
-    """Returns (winner, (g0,g1), next_server)."""
+    """Returns (winner, (g0,g1), next_server, flow).
+
+    `flow` records what happened, game by game — [server, winner] pairs plus
+    tiebreak [first_server, winner] — WITHOUT consuming any extra rng draws, so
+    scorelines are bit-identical to the pre-recording model. engine.boxstats
+    replays this flow at point level to attach real stats to a fast match."""
     if final_tb:
         win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
-        return win, ((1, 0) if win == 0 else (0, 1)), 1 - server
+        flow = {"games": [], "tb": [server, win], "mtb": True}
+        return win, ((1, 0) if win == 0 else (0, 1)), 1 - server, flow
 
     games = [0, 0]
+    flow_games: list[list[int]] = []
     tg = target_games
     while True:
         r = players[1 - server]
         s = players[server]
         if rng.random() < _hold_prob(s, r, context):
             games[server] += 1
+            flow_games.append([server, server])
         else:
             games[1 - server] += 1
+            flow_games.append([server, 1 - server])
         server = 1 - server
 
         if fmt.set_tiebreak and games[0] == tg and games[1] == tg:
             win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
             games[win] += 1
-            return win, (games[0], games[1]), 1 - server
+            flow = {"games": flow_games, "tb": [server, win], "mtb": False}
+            return win, (games[0], games[1]), 1 - server, flow
         if games[0] >= tg and games[0] - games[1] >= 2:
-            return 0, (games[0], games[1]), server
+            return 0, (games[0], games[1]), server, {"games": flow_games, "tb": None, "mtb": False}
         if games[1] >= tg and games[1] - games[0] >= 2:
-            return 1, (games[0], games[1]), server
+            return 1, (games[0], games[1]), server, {"games": flow_games, "tb": None, "mtb": False}
 
 
 def simulate_fast(
@@ -106,27 +116,32 @@ def simulate_fast(
     games_won = [0, 0]
     server = first_server
 
+    flows: list[dict] = []
+
     if fmt.pro_set:
-        win, score, server = _play_set(rng, players, server, fmt, False, fmt.pro_set_games, context)
+        win, score, server, flow = _play_set(rng, players, server, fmt, False, fmt.pro_set_games, context)
         sets[win] += 1
         set_scores.append(score)
+        flows.append(flow)
         games_won = [score[0], score[1]]
         overall = 0 if sets[0] > sets[1] else 1
         return MatchResult(
             players=players, winner=overall, sets=sets, set_scores=set_scores,
             games_won=(games_won[0], games_won[1]),
             stats=(PlayerStats(), PlayerStats()), pbp=[], fidelity="fast",
+            game_flow=flows,
         )
 
     sets_needed = fmt.best_of // 2 + 1
     while max(sets) < sets_needed:
         is_final = sets[0] == sets_needed - 1 and sets[1] == sets_needed - 1
-        win, score, server = _play_set(
+        win, score, server, flow = _play_set(
             rng, players, server, fmt,
             is_final and fmt.final_set_tiebreak, fmt.set_games, context,
         )
         sets[win] += 1
         set_scores.append(score)
+        flows.append(flow)
         games_won[0] += score[0]
         games_won[1] += score[1]
 
@@ -140,4 +155,5 @@ def simulate_fast(
         stats=(PlayerStats(), PlayerStats()),
         pbp=[],
         fidelity="fast",
+        game_flow=flows,
     )

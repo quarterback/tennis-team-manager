@@ -142,6 +142,10 @@ class DoublesResult:
     stats: tuple[PlayerStats, PlayerStats, PlayerStats, PlayerStats]
     pbp: list[str]
     fidelity: str = "full"
+    # Per-set game sequence recorded by the FAST model (None at full fidelity):
+    # same shape as MatchResult.game_flow, sides 0/1 are the two teams. Lets
+    # engine.boxstats replay a fast doubles match at point level for real stats.
+    game_flow: list[dict] | None = None
 
     @property
     def players(self):
@@ -462,7 +466,8 @@ def _seed_orders(state: _DState) -> None:
             state.recv_order[side] = [1, 0]   # a (slot 0) on ad
 
 
-def _result(state: _DState, teams, fidelity: str) -> DoublesResult:
+def _result(state: _DState, teams, fidelity: str,
+            game_flow: list[dict] | None = None) -> DoublesResult:
     overall = 0 if state.sets[0] > state.sets[1] else 1
     games = [0, 0]
     for a, b in state.set_scores:
@@ -473,7 +478,7 @@ def _result(state: _DState, teams, fidelity: str) -> DoublesResult:
     return DoublesResult(
         teams=teams, winner=overall, sets=list(state.sets),
         set_scores=list(state.set_scores), games_won=(games[0], games[1]),
-        stats=stats, pbp=state.pbp, fidelity=fidelity,
+        stats=stats, pbp=state.pbp, fidelity=fidelity, game_flow=game_flow,
     )
 
 
@@ -493,32 +498,44 @@ def _fast_tb(state: _DState, s0: int = 0) -> int:
 def _simulate_fast(state: _DState) -> DoublesResult:
     fmt = state.fmt
     rng = state.rng
+    flows: list[dict] = []
 
     def play_set(target_games: int, final_tb: bool) -> tuple[int, tuple[int, int]]:
+        # Records the game-by-game flow ([server, winner] pairs + tiebreak
+        # [first_server, winner]) without extra rng draws — same contract as
+        # engine.fast._play_set, consumed by engine.boxstats.
         if final_tb:
             win = _fast_tb(state)
+            flows.append({"games": [], "tb": [state.server, win], "mtb": True})
             return win, ((1, 0) if win == 0 else (0, 1))
         games = [0, 0]
+        flow_games: list[list[int]] = []
         while True:
+            srv = state.server
             if rng.random() < _fast_hold(state):
                 games[state.server] += 1
+                flow_games.append([srv, srv])
             else:
                 games[state.returner] += 1
+                flow_games.append([srv, 1 - srv])
             state.server = 1 - state.server
             if fmt.set_tiebreak and games[0] == target_games and games[1] == target_games:
                 win = _fast_tb(state)
                 games[win] += 1
+                flows.append({"games": flow_games, "tb": [state.server, win], "mtb": False})
                 return win, (games[0], games[1])
             if games[0] >= target_games and games[0] - games[1] >= 2:
+                flows.append({"games": flow_games, "tb": None, "mtb": False})
                 return 0, (games[0], games[1])
             if games[1] >= target_games and games[1] - games[0] >= 2:
+                flows.append({"games": flow_games, "tb": None, "mtb": False})
                 return 1, (games[0], games[1])
 
     if fmt.pro_set:
         win, score = play_set(fmt.pro_set_games, False)
         state.sets[win] += 1
         state.set_scores.append(score)
-        return _result(state, state.teams, "fast")
+        return _result(state, state.teams, "fast", game_flow=flows)
 
     while max(state.sets) < state.sets_needed:
         is_final = (state.sets[0] == state.sets_needed - 1
@@ -526,7 +543,7 @@ def _simulate_fast(state: _DState) -> DoublesResult:
         win, score = play_set(fmt.set_games, is_final and fmt.final_set_tiebreak)
         state.sets[win] += 1
         state.set_scores.append(score)
-    return _result(state, state.teams, "fast")
+    return _result(state, state.teams, "fast", game_flow=flows)
 
 
 # --- Public entry point ----------------------------------------------------
