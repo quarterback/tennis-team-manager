@@ -152,3 +152,53 @@ matters.
 - Doubles "who struck the error" attribution inside a rally is a coin flip
   between partners (`doubles._play_point` already worked that way at full
   fidelity) — inherited, not new.
+
+## Addendum — why the full engine tilts even near-equal matchups
+*(kept here as reference data for any future refactor that wants full-engine
+outcomes in season play)*
+
+The calibration table above is not a bug in the full engine and not a small
+gap to "tune away" — it is structural. Competitive balance is the ONLY reason
+season play didn't just switch to the full engine (the ~5x speed cost would
+have been tolerable).
+
+**1. One weakly-tilted coin vs. 150 compounding ones.** The fast model
+collapses talent into a single number — the `overall` gap — applied once per
+game through a deliberately flat logistic (`skill_slope` 1.5). A match is ~20
+weakly-tilted coin flips, so a small talent edge stays a small result edge
+(0.03 gap → 58.8% favorite). The full engine resolves ~150 points, and the
+gap tilts *every point through several channels at once*: first-serve %
+(`serve_placement`), ace probability (`serve_power` vs `return_game`), rally
+win probability (`rally_slope` 3.2 on the rally-skill diff), unforced-error
+suppression (`consistency`), and clutch on the big points (`mental` gap, and
+BP/SP/MP points are exactly where matches are decided). A ~52% per-point edge
+compounds binomially into a 75%+ per-match edge — same 0.03 gap → 75.3%
+favorite. Small edges never stay small over 150 trials.
+
+**2. It tilts on profile, not just level.** Two players with identical
+`overall` but different shapes (big serve vs grinder, clutch vs fragile,
+serve-power vs return-game mismatches) are NOT a coin flip in the full engine
+— the sub-skill channels don't cancel. The fast model, reading only `overall`,
+treats them as one. So "close in ability" in the rating sense still gets
+tilted by everything else the point model knows about.
+
+**3. What the overlay does with this.** The hybrid is deliberate: the flat
+fast model keeps *match outcomes* at the tuned college-tennis upset rate,
+while the conditioned replay lets the same profile channels express themselves
+in the *stats* — the big server piles up aces, the clutch player saves break
+points — inside whatever scoreline the fast model decided. Engine texture
+without engine compounding.
+
+**4. If a future refactor wants full-engine outcomes anyway.** The honest
+path is flattening the full engine's per-POINT slopes until its emergent
+per-MATCH favorite curve reproduces the fast model's tuned targets (the
+`fast.TUNE` comment block: ~63/69/77/87% by UTR-gap band, ~65% overall) —
+i.e. retune `rally.TUNE` (`rally_slope`, `ace_swing`, serve-plus terms,
+`clutch_logit`) against simulated season-scale samples, not per-point
+intuition. Beware: per-point flattening also flattens the STAT distributions
+(fewer aces for big servers, etc.), so the current split — flat model for
+outcomes, steep model for stats — is genuinely two different jobs, and any
+unification has to pick one texture or re-derive both. Note the repo has been
+here before from the other direction: see
+`docs/AAR-engine-upset-recalibration-and-rating-scale-map.md` — the flat
+game-level model IS the prior answer to upset calibration.
