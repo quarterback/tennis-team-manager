@@ -27,6 +27,25 @@ from .bracket import play_dual, _seed_positions
 NONCONF_PER_TEAM = 3
 NATIONAL_FIELD = 64
 
+# Persist per-player box stats (aces / DFs / winners / UEs / serve+return points /
+# break points) on every completed line of a SEASON-MODE dual. Outcomes still come
+# from the tuned fast model; stats are an engine.boxstats conditioned replay, so
+# scorelines are unchanged (see docs/AAR-box-stat-persistence.md). Costs ~10ms per
+# dual. This constant is the code default; the per-save UI switch on the world hub
+# (worldconfig.box_stats_enabled) overrides it at sim time.
+BOX_STATS = True
+
+
+def _box_stats_on() -> bool:
+    """The per-save box-stats switch, defaulting to BOX_STATS. Wrapped
+    defensively (same as _coached_pin) so a config/DB hiccup degrades to the
+    code default, never an error."""
+    try:
+        from app import worldconfig
+        return worldconfig.box_stats_enabled() and BOX_STATS
+    except Exception:
+        return BOX_STATS
+
 
 @dataclass
 class SeasonResult:
@@ -261,20 +280,37 @@ def _line_identity(slot: str, la: list, lb: list,
     return out
 
 
+def _line_stats(ln) -> dict | None:
+    """Per-player box stats for a completed line, JSON-ready (compact keys per
+    engine.state.STAT_KEYS). Singles: one stat dict per side. Doubles: a list of
+    two per side, ordered exactly like `home_pids`/`away_pids`. None when the
+    result carries no stats (overlay off / legacy)."""
+    stats = getattr(ln.result, "stats", None)
+    if not stats or not stats[0].has_data:
+        return None
+    if len(stats) == 2:                      # singles
+        return {"home": stats[0].to_dict(), "away": stats[1].to_dict()}
+    return {"home": [stats[0].to_dict(), stats[1].to_dict()],
+            "away": [stats[2].to_dict(), stats[3].to_dict()]}
+
+
 def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                  la: list, lb: list, *, seed: int, conf: bool,
                  forced_home: set | None = None, forced_away: set | None = None,
-                 la_d: list | None = None, lb_d: list | None = None) -> dict:
+                 la_d: list | None = None, lb_d: list | None = None,
+                 box_stats: bool = False) -> dict:
     """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the
     Prospects who played (la[i] ↔ sa.singles[i]) so every line carries the
     identity of who played that position (singles pids + names; doubles names
-    from the actual pairing)."""
+    from the actual pairing). `box_stats=True` additionally records per-player
+    box stats on every completed line (see engine.boxstats)."""
     # A court with a guaranteed-appearance player on either side finishes early so
     # that line completes (and lands in the corpus) regardless of how long it ran.
     forced = (forced_home or set()) | (forced_away or set())
     priority = {i for i in range(len(la))
                 if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
-    res = simulate_dual(sa, sb, seed=seed, fidelity="fast", priority_finish=priority)
+    res = simulate_dual(sa, sb, seed=seed, fidelity="fast", priority_finish=priority,
+                        box_stats=box_stats)
     lines = []
     for ln in res.lines:
         if not ln.completed:
@@ -290,6 +326,9 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                "home_games": gw[0], "away_games": gw[1],
                "sets": [[h, a] for (h, a) in ln.result.set_scores]}
         rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles, la_d, lb_d))
+        st = _line_stats(ln)
+        if st:
+            rec["stats"] = st
         lines.append(rec)
     return {
         "home": a.school, "away": b.school, "conf": conf,
@@ -358,7 +397,7 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                                 doubles_pin=_coached_doubles(b))
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away,
-                       la_d=la_d, lb_d=lb_d)
+                       la_d=la_d, lb_d=lb_d, box_stats=_box_stats_on())
     # Everyone who took the court — singles AND doubles — so season-mode rolls fresh
     # injuries on them. A doubles-only specialist (in la_d but not la) must be counted
     # or they'd play every dual injury-free.

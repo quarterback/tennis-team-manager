@@ -203,7 +203,9 @@ def save_match(conn: sqlite3.Connection, result: MatchResult, *, seed: int,
          result.scoreline, result.games_won[0], result.games_won[1]),
     )
     match_id = cur.lastrowid
-    if result.fidelity != "fast":
+    # Persist stats whenever they exist: full-fidelity matches always carry them,
+    # and fast matches do too once engine.boxstats has overlaid them.
+    if any(s.has_data for s in result.stats):
         for side, s in enumerate(result.stats):
             conn.execute(
                 "INSERT INTO match_stats (match_id, side, aces, double_faults, "

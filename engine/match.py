@@ -34,6 +34,12 @@ class MatchResult:
     stats: tuple[PlayerStats, PlayerStats]
     pbp: list[str]
     fidelity: str = "full"
+    # Per-set game sequence recorded by the FAST model (None at full fidelity,
+    # where stats are real): one dict per set, {"games": [[server, winner], ...],
+    # "tb": [first_server, winner] | None, "mtb": bool}. Consumed by
+    # engine.boxstats to replay the match at point level, conditioned on these
+    # outcomes, so a fast-fidelity match can still carry engine-faithful stats.
+    game_flow: list[dict] | None = None
 
     @property
     def winner_name(self) -> str:

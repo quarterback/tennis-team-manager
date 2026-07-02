@@ -144,6 +144,27 @@
         </div>
       </div>
       {% endif %}
+      {% if season_stats %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Season Box Stats</span>
+        <span class="bl-panel-meta">this season · completed lines only</span></div>
+        <div class="bl-panel-body">
+          {% for kind, st in [('Singles', season_stats.get('singles')), ('Doubles', season_stats.get('doubles'))] %}
+          {% if st %}
+          <div class="bl-th" style="font-size:10px;margin:{{ '10px' if not loop.first else '0' }} 0 4px">{{ kind }} · {{ st.matches }} match{{ 'es' if st.matches != 1 }}</div>
+          <table class="bl-protable" style="width:100%"><tbody>
+            <tr><td style="width:130px">Aces / DFs</td><td class="w">{{ st.aces }} / {{ st.double_faults }}</td></tr>
+            <tr><td>1st serve in</td><td class="w">{{ (st.first_serve_pct * 100)|round|int }}%</td></tr>
+            <tr><td>Serve pts won</td><td class="w">{{ (st.serve_pts_pct * 100)|round|int }}% <span class="tsub">({{ st.serve_points_won }}/{{ st.serve_points_total }})</span></td></tr>
+            <tr><td>Return pts won</td><td class="w">{{ (st.return_pts_pct * 100)|round|int }}% <span class="tsub">({{ st.return_points_won }}/{{ st.return_points_total }})</span></td></tr>
+            <tr><td>Winners / UEs</td><td class="w">{{ st.winners }} / {{ st.unforced_errors }}</td></tr>
+            <tr><td>BPs saved</td><td class="w">{{ st.break_points_saved }}/{{ st.break_points_faced }}</td></tr>
+            <tr><td>BPs converted</td><td class="w">{{ st.break_points_converted }}</td></tr>
+          </tbody></table>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
       {% if attrs %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
         <span class="bl-panel-meta">scouting grades · 20–80</span></div>
