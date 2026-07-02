@@ -209,6 +209,19 @@ def set_intl_share(value) -> None:
     set("intl_share", repr(f))
 
 
+def box_stats_enabled() -> bool:
+    """Per-match box stats (aces/DFs/winners/UEs/serve+return/BPs) recorded on
+    every season dual via the engine.boxstats overlay. On by default; the world
+    hub exposes a per-save switch to turn it off (scoreline-only persistence,
+    ~4x faster dual sims). Read at sim time, so flipping it mid-season simply
+    stops/starts stat recording from the next dual on."""
+    return get("box_stats") != "off"
+
+
+def set_box_stats(on) -> None:
+    set("box_stats", "on" if on else "off")
+
+
 DEFAULT_PRESEASON_PORTAL_CAP = 250
 
 

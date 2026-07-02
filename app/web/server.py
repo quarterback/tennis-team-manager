@@ -660,7 +660,17 @@ def create_app() -> Flask:
 
     @app.route("/world")
     def world_view():
-        return render_template("world.html", active="World", hub=world_hub(), crest=crest)
+        from app import worldconfig
+        return render_template("world.html", active="World", hub=world_hub(), crest=crest,
+                               box_stats=worldconfig.box_stats_enabled())
+
+    @app.route("/world/boxstats", methods=["POST"])
+    def world_boxstats():
+        # Per-save switch for per-match box stats on season duals (outcomes are
+        # untouched either way — off just means scoreline-only persistence).
+        from app import worldconfig
+        worldconfig.set_box_stats(request.form.get("on") == "1")
+        return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/world/advance", methods=["POST"])
     def world_advance():

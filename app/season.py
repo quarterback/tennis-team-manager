@@ -31,8 +31,20 @@ NATIONAL_FIELD = 64
 # break points) on every completed line of a SEASON-MODE dual. Outcomes still come
 # from the tuned fast model; stats are an engine.boxstats conditioned replay, so
 # scorelines are unchanged (see docs/AAR-box-stat-persistence.md). Costs ~10ms per
-# dual; flip off to fall back to scoreline-only persistence.
+# dual. This constant is the code default; the per-save UI switch on the world hub
+# (worldconfig.box_stats_enabled) overrides it at sim time.
 BOX_STATS = True
+
+
+def _box_stats_on() -> bool:
+    """The per-save box-stats switch, defaulting to BOX_STATS. Wrapped
+    defensively (same as _coached_pin) so a config/DB hiccup degrades to the
+    code default, never an error."""
+    try:
+        from app import worldconfig
+        return worldconfig.box_stats_enabled() and BOX_STATS
+    except Exception:
+        return BOX_STATS
 
 
 @dataclass
@@ -385,7 +397,7 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                                 doubles_pin=_coached_doubles(b))
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away,
-                       la_d=la_d, lb_d=lb_d, box_stats=BOX_STATS)
+                       la_d=la_d, lb_d=lb_d, box_stats=_box_stats_on())
     # Everyone who took the court — singles AND doubles — so season-mode rolls fresh
     # injuries on them. A doubles-only specialist (in la_d but not la) must be counted
     # or they'd play every dual injury-free.

@@ -3,12 +3,19 @@
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:13px;color:var(--text-muted)">Unified World · one calendar across every division &amp; gender</span>
+  <form method="post" action="{{ url_for('world_boxstats') }}" style="margin-left:auto">
+    <input type="hidden" name="on" value="{{ '0' if box_stats else '1' }}">
+    <button class="bl-pill" style="cursor:pointer"
+      title="Per-match box stats (aces, double faults, winners, UEs, break points) recorded on every season dual. Scorelines are identical either way; off = faster sims, scoreline-only history.">
+      <i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Box stats: {{ 'On' if box_stats else 'Off' }}
+    </button>
+  </form>
   {% if hub.primary.link %}
-  <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:auto;padding:0 16px;font-size:13px;text-decoration:none">
+  <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:8px;padding:0 16px;font-size:13px;text-decoration:none">
     {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}
   </a>
   {% else %}
-  <form method="post" action="{{ url_for(hub.primary.endpoint) }}" style="margin-left:auto">
+  <form method="post" action="{{ url_for(hub.primary.endpoint) }}" style="margin-left:8px">
     <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 16px;font-size:13px">
       {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}
     </button>
