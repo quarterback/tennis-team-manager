@@ -1395,6 +1395,7 @@ class _FPPlanner:
                 div_of[s] = division
         schools = [s for s in pool if s in progs]
         self.pool, self.div_of, self.schools = pool, div_of, schools
+        self._sv_cache: dict = {}
         self.prestige = {s: progs[s].prestige for s in schools}
         self.facilities = {s: progs[s].facilities for s in schools}
         self.level = {s: _prog_level(progs[s]) for s in schools}
@@ -1402,12 +1403,17 @@ class _FPPlanner:
         # by_div (destination pool + the median bar) holds ONLY valid-destination
         # divisions; sources (pool/schools/by_pid) keep every division.
         by_div: dict[str, list] = {}
+        # Destination "draw" weight per school; by_div sorted by it (desc, then name for
+        # determinism) so best_in/fullest_below EARLY-EXIT at the first match instead of
+        # scanning every program — and receiving programs are dropped from the pool as they
+        # fill, so placing N riders is ~linear, not quadratic in N (the portal seed cost).
+        self._weight = {s: self.prestige[s] + 0.3 * self.facilities[s] for s in schools}
         for s in schools:
             if not self._dest_ok(div_of.get(s, "")):
                 continue
             by_div.setdefault(div_of.get(s, ""), []).append(s)
         for d in by_div:
-            by_div[d].sort()
+            by_div[d].sort(key=lambda s: (-self._weight[s], s))
         self.by_div = by_div
         # A division's TYPICAL (median) expected level — the bar a riser must clear.
         self.div_level = {}
@@ -1420,7 +1426,14 @@ class _FPPlanner:
         self.by_pid = {p.pid: (s, p) for s in schools for p in pool[s]}
 
     def _sv(self, p):
-        return _str_of(self.player_str, p)
+        # Memoize per pid: with an empty player_str (the preseason portal) this falls to
+        # p.str_value(), which re-normalizes attributes on every call — and the planner asks
+        # for the same players' STR many times over (init, discover, place, cascade). A
+        # player's intrinsic STR never changes as it's relocated, so one compute per pid.
+        c = self._sv_cache.get(p.pid)
+        if c is None:
+            c = self._sv_cache[p.pid] = _str_of(self.player_str, p)
+        return c
 
     def _dest_ok(self, division: str) -> bool:
         """Whether a division is a valid MOVE DESTINATION (active/simulated)."""
@@ -1435,16 +1448,14 @@ class _FPPlanner:
 
     def best_in(self, div, val, want_line, avoid=None):
         """Best-prestige program in `div` with an OPEN seat where the player slots at
-        `want_line` or better; `avoid` skips programs that already took a riser."""
-        best, draw = None, -1.0
+        `want_line` or better; `avoid` skips programs that already took a riser. by_div is
+        weight-sorted, so the FIRST program that passes is the answer (early exit)."""
         for d in self.by_div.get(div, ()):
-            if (not d or (avoid and d in avoid) or not self.open_slot(d)
-                    or self.line_of(d, val) > want_line):
+            if not d or (avoid and d in avoid) or not self.open_slot(d):
                 continue
-            w = self.prestige[d] + 0.3 * self.facilities[d]
-            if w > draw:
-                best, draw = d, w
-        return best
+            if self.line_of(d, val) <= want_line:
+                return d
+        return None
 
     def _weakest_eligible(self, s, val):
         cand = [q for q in self.pool[s] if q.pid not in self.touched
@@ -1452,15 +1463,14 @@ class _FPPlanner:
         return min(cand, key=lambda q: (self._sv(q), q.pid)) if cand else None
 
     def fullest_below(self, div, val, avoid=None):
-        best, draw = None, -1.0
+        # Weight-sorted by_div → first full program that can shed a weaker player is the
+        # best-prestige one (early exit).
         for d in self.by_div.get(div, ()):
-            if (not d or (avoid and d in avoid) or self.open_slot(d)
-                    or self._weakest_eligible(d, val) is None):
+            if not d or (avoid and d in avoid) or self.open_slot(d):
                 continue
-            w = self.prestige[d] + 0.3 * self.facilities[d]
-            if w > draw:
-                best, draw = d, w
-        return best
+            if self._weakest_eligible(d, val) is not None:
+                return d
+        return None
 
     def _apply(self, p, src, dest):
         sval = self._sv(p)
