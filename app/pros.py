@@ -17,11 +17,13 @@ from __future__ import annotations
 import random
 
 from .development import generate_prospect, make_pid, overall_to_str
+from .player_attributes import RICH_ATTRS, clamp_grade
 
 PRO_BADGE = "PRO"                    # green profile label (Prospect.junior_badges)
-PRO_GRADE = (79.0, 80.0)            # talent at the top of the band (Blue Chip is 74); after
-                                    # the attribute spread + full maturity, OVR lands ~76-79,
-                                    # a clear cut above a blue-chip recruit, within the 80 cap
+PRO_ATTR = (80.0, 90.0)            # pros live ABOVE the 80 college ceiling — every attribute
+                                    # drawn in 80-90, so OVR lands ~82-87 and their drivers
+                                    # normalize above 1.0 (clearly better on court). Only the
+                                    # pro tier reaches this headroom; everyone else stays <= 80.
 PRO_PER_CYCLE = (15, 20)           # up to this many per gender, per portal cycle
 PRO_COST_LO, PRO_COST_HI = 8.5, 15.0
 
@@ -41,9 +43,9 @@ def is_pro(p) -> bool:
 
 
 def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) -> list:
-    """A deterministic pro cohort for one gender in one portal cycle. Grades 78-80, pro
-    badge, real STR. `cycle_key` (e.g. "2026-fall") + salt key the RNG so each cycle in
-    each league is fresh but reproducible."""
+    """A deterministic pro cohort for one gender in one portal cycle. Attributes in the
+    80-90 headroom (above the college ceiling), pro badge, real STR. `cycle_key` (e.g.
+    "2026-fall") + salt key the RNG so each cycle in each league is fresh but reproducible."""
     from generators import make_name_picker
     seed = f"{salt}|pros|{gender}|{cycle_key}"
     rng = random.Random(seed)
@@ -54,10 +56,18 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
     pros = []
     for i in range(n):
         name, country = name_fn()
-        grade = rng.uniform(*PRO_GRADE)
         p = generate_prospect(rng, name=name, country=country, gender=pgender,
-                              talent=grade, pid=make_pid(salt, "pro", gender, cycle_key, i),
-                              maturity_range=(0.98, 1.0))   # fully developed — they're pros
+                              talent=80.0, pid=make_pid(salt, "pro", gender, cycle_key, i),
+                              maturity_range=(1.0, 1.0))     # fully developed — they're pros
+        # Lift every attribute into the 80-90 pro headroom (a per-pro centre with a small
+        # per-attribute jitter, so pros differ from each other but all read elite). This
+        # bypasses the 80 generation clamp — only pros reach here.
+        centre = rng.uniform(83.0, 88.0)
+        for a in RICH_ATTRS:
+            v = clamp_grade(rng.gauss(centre, 2.0))
+            v = min(PRO_ATTR[1], max(PRO_ATTR[0], v))
+            p.current[a] = v
+            p.potential[a] = v
         p.junior_badges = list(p.junior_badges or []) + [PRO_BADGE]
         p.recruit_stars = 6            # above the 5-star ladder
         pros.append(p)

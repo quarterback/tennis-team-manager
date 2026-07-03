@@ -15,6 +15,13 @@ from dataclasses import dataclass
 from typing import Mapping
 
 GRADE_MIN, GRADE_MAX = 20, 80
+# GRADE_MAX (80) stays the NORMALIZATION reference — grade 80 == unit 1.0 == "college
+# ceiling" — so every normal player is completely unchanged. GRADE_CEIL is a separate,
+# higher HARD clamp: only the pro tier (app.pros) is generated into the 80-GRADE_CEIL
+# headroom, so pros read above 80 (OVR/STR) and their drivers normalize ABOVE 1.0, making
+# them measurably better on court (the engine clamps the final probability, not the input).
+# Normal generation still clamps to GRADE_MAX, so raising this ceiling touches nobody else.
+GRADE_CEIL = 100
 
 RICH_ATTRS = (
     # Serve / return
@@ -78,11 +85,16 @@ _WEIGHT_TOTAL = sum(OVERALL_WEIGHTS.values())
 
 
 def clamp_grade(v: float) -> float:
-    return float(GRADE_MIN if v < GRADE_MIN else GRADE_MAX if v > GRADE_MAX else v)
+    # Upper bound is GRADE_CEIL (pros live in 80-GRADE_CEIL); normal generation clamps to
+    # GRADE_MAX itself, so ordinary players never reach the headroom.
+    return float(GRADE_MIN if v < GRADE_MIN else GRADE_CEIL if v > GRADE_CEIL else v)
 
 
 def grade_to_unit(g: float) -> float:
-    return max(0.0, min(1.0, (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN)))
+    # No upper clamp: grade 80 -> 1.0 (unchanged), and a pro's 80-90 attribute normalizes
+    # ABOVE 1.0 so it reads as genuinely better through the engine's driver formulas (which
+    # clamp the resulting probability, not this input). Reference stays GRADE_MAX (80).
+    return max(0.0, (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN))
 
 
 def unit_to_grade(v: float) -> float:

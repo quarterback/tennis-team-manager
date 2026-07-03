@@ -74,6 +74,20 @@ above a blue-chip recruit), international-heavy nationalities, the green **PRO**
 (`junior_badges`), `recruit_stars=6`. `pro_cost(pro, cohort)` indexes cost to STR-vs-cohort
 across **8.5–15**, so the top pro costs 15 (≤ the raised 33.5 cap) and every pro is signable.
 
+### Pros exceed 80 — how, without touching anyone else (owner: "no hard 80; pros 81-90")
+The 80 grade ceiling is kept as the **normalization reference** (grade 80 == unit 1.0 ==
+college ceiling), so every normal player is byte-identical. A separate, higher **hard
+clamp** `player_attributes.GRADE_CEIL = 100` lets ONLY pros sit in the 80-90 headroom:
+- `clamp_grade` upper bound → `GRADE_CEIL`; `current_grade` clamp → `GRADE_CEIL`
+  (normal generation still clamps to `GRADE_MAX`, so ordinary players never reach it).
+- `grade_to_unit` drops its `min(1.0, …)` cap: grade 80→1.0 (unchanged), a pro's 85→1.083,
+  so pro drivers feed the engine ABOVE 1.0 and win more — the engine already clamps the
+  *resulting probability* (`_clamp01`), so it's "clearly better, not superpowered."
+- `pros.generate_pros` lifts every attribute into **80-90** → **OVR 83-85, STR 58-59**.
+Verified: pros beat a blue-chip **130+/200** on court; a grade-74 blue-chip is unchanged
+(OVR 78); `test_engine` + `test_pros` green. Every non-pro cap is untouched (33.5 is the
+elite-only budget top; recruit tiers, D3/D4 levels, display bands all unchanged).
+
 **Remaining integration (the live wiring):**
 1. Emit a pro cohort each of the **three portal cycles** (pre-season, fall, year-end
    transfer), keyed by `<year>-<cycle>`, persisted so a save's pros are stable.

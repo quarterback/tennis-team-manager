@@ -9,16 +9,26 @@ def _cohort(salt="s1", gender="men", cycle="2026-fall", n=18):
     return pros.generate_pros(salt, gender, cycle, n=n)
 
 
-def test_cohort_above_blue_chip_with_badge():
-    from app import recruit_economy as re
+def test_cohort_in_pro_band_with_badge():
     c = _cohort()
     assert len(c) == 18
-    # a blue-chip RECRUIT's expected grade — pros must clear it (they're a cut above)
-    bc = next(g for (name, _s, _c, g) in re.TIERS if name == "Blue Chip")   # 74
     for p in c:
-        assert p.current_overall() >= 75 > bc - 1        # above the blue-chip gate
+        assert 81 <= p.current_overall() <= 90            # above the 80 college ceiling
         assert pros.is_pro(p)
         assert p.recruit_stars == 6                       # above the 5-star ladder
+
+
+def test_pro_beats_a_blue_chip_on_court():
+    """A pro should win a clear majority of duels vs a top blue-chip recruit — the whole
+    point of the tier is that they're demonstrably better, not just higher on paper."""
+    from engine import simulate_match
+    from app.development import generate_prospect
+    pro = _cohort(n=1)[0]
+    bc = generate_prospect(random.Random(7), "Chip Elite", "US", "male",
+                           talent=74.0, maturity_range=(1.0, 1.0))   # blue-chip grade
+    wins = sum(simulate_match(pro.engine_player(), bc.engine_player(), seed=s).winner == 0
+               for s in range(200))
+    assert wins >= 130            # pro clearly favoured (not a coin flip, not a lock)
 
 
 def test_default_size_in_range():
