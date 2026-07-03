@@ -31,11 +31,11 @@ Reject the "video-game pyramid" (a handful of greats, everyone else falls away).
 - **D3/D4:** *average* roster **UTR ~7**; better programs reach 8–9, the occasional 10. No
   engineered D3/D4 spread — it emerges from the sim.
 - **Elite roster depth:** ~2–3 UTR #1→#6 (looser than the stacked real Texas).
-- **Pros:** **OVR 81–90**, clearly better (not superpowered). Up to **15–20/gender per portal
-  cycle**, all three cycles, real STR/OVR, green badge, **recruitable only in the portal**.
-  Cost **8.5–15** indexed to STR-vs-pool so they always sign. Same team **can** get more than
-  one (budget-gated). A **live UI lever** controls the count. **Only pros exceed 80; every
-  other cap is unchanged** (33.5 is the *elite-only* budget top).
+- **Pros:** **OVR 81–90**, clearly better (not superpowered), real STR/OVR, green badge,
+  **recruitable only in the portal**. *(This bullet is the original brief; it evolved — the
+  shipped model is free agents at cost **18–30**, signed by hand across the pre-season + fall
+  windows. See §3b-iii.)* A **live UI lever** controls the pool size. **Only pros exceed 80;
+  every other cap is unchanged** (33.5 is the *elite-only* budget top).
 
 ---
 
@@ -69,17 +69,19 @@ ceiling) so every normal player is byte-identical. A separate higher **hard clam
 - Verified: pros beat a grade-74 blue-chip **130+/200**; the blue-chip is unchanged (OVR 78);
   `test_engine` green.
 
-### 3b. Generation, cost, assignment (`app/pros.py`, `tests/test_pros.py` 6/6)
+### 3b. Generation + cost (`app/pros.py`, `tests/test_pros.py` 6/6)
 - **`generate_pros(salt, gender, cycle_key)`** — deterministic cohort of
   `worldconfig.pros_per_cycle()` players; every attribute drawn in **80–90** → **OVR 83–85 /
-  STR 58–59**; international-heavy names; green **PRO** badge (`junior_badges`);
-  `recruit_stars = 6`.
-- **`pro_cost(pro, cohort)`** — cost indexed to STR-vs-cohort across **8.5–15** (best pays 15,
-  weakest 8.5), always ≤ the 33.5 elite cap → every pro signable.
-- **`assign_pros(cohort, programs)`** — best pro first to the highest-prestige program that
-  can still afford it; the program's **budget is then depleted**, so a blue-blood can **stack
-  2–3 pros** while its money lasts, then the flow spills to the next-best (funnel-then-spread,
-  not a hard 1-each cap). A pro always takes a roster spot.
+  STR 58–61**; international-heavy names; green **PRO** badge (`junior_badges`);
+  `recruit_stars = 6`. **Regenerable on demand — a pro is never persisted until signed** (so an
+  unsigned free agent's profile can still be scouted; see 3b-iii).
+- **`pro_cost(pro, cohort)`** — STR-indexed across **18–30** (best pays 30, weakest 18). Pitched
+  near the **33.5** elite cap so one pro eats most of a club's ONE budget — a blue-blood affords
+  **one**, a major (9–16) **none** → pros **spread** instead of stacking, and still ≤ the cap so a
+  pro a club *can* fund stays signable.
+- **`assign_pros(cohort, programs)`** — budget-gated auto-placement (only an affording club signs,
+  one per club, never overspends). **Retired from the live path** — the shipped model signs pros by
+  hand (3b-iii); kept as a tested primitive.
 
 ### 3b-i. ONE budget — pros compete with the recruit class (non-obvious; read this)
 A program has a **single** recruiting budget (scholarship-equivalency by conference tier).
@@ -89,11 +91,11 @@ exists*. Concretely:
 - The `world_pro` ledger records each pro's cost per `(school, gender, year)`.
 - `world._pro_spend(conn, world_id, year, gender)` sums a program's pro spend this year.
 - **`_recruit_market`** (the annual recruiting budget every program reads) is
-  `program_budget − pro_spend`. So a program that spent on pros has *less* to attract recruits
-  and can drop **below a caliber floor** — e.g. two 15-cost pros on a 33.5 budget leaves ~3,
-  under the 16.5 blue-chip floor → **no blue-chips that year**.
-- **`inject_pros`** likewise starts each cycle's assignment from `budget − pro_spend so far`,
-  so pro spend accumulates across the three cycles against the one budget.
+  `program_budget − pro_spend`. So a program that spent on a pro has *less* to attract recruits
+  and can drop **below a caliber floor** — e.g. a 28-cost pro on a 33.5 budget leaves ~5, under the
+  16.5 blue-chip floor → **no blue-chips that year**.
+- **`_commit_pro_signings`** writes each signed pro's cost to `world_pro`, so a signing across
+  either window (pre-season / fall) draws the one budget down for that year.
 - Why it's not obvious: normal recruiting treats the budget as a *standing caliber floor*
   (it isn't "spent down" year to year — it's the program's persistent funding level, re-used
   each year to fill graduation's openings). Pros are the **one thing that actively draws that
@@ -101,29 +103,21 @@ exists*. Concretely:
   for recruiting — but a **pro signing does consume it for that year**, which is exactly the
   constraint that makes chasing a pro cost you.
 
-### 3b-ii. Pros enter FROM a synthetic "Pros" pool, VISIBLE in the portal (owner model)
-The pro tier is presented as a synthetic **"Pros" team** the cohort is generated onto; the
-pros then **enter through the portal** from that pool and sign real clubs — **no one flows
-back** into Pros (it is source-only, never a cascade destination). Two rules from the owner:
-- **Every generated pro signs.** The per-cycle lever IS the intake count — `assign_pros` no
-  longer drops a pro for lack of budget; when no club can strictly afford one it signs the
-  deepest-pocket club anyway (pushing that club's one budget hard, shrinking its class). So
-  "18/gender" means 18 enter, period.
-- **Visible in the portal.** Pros are injected at **portal-seed time** (`run_preseason_portal`
-  → `inject_pros`, idempotent) so they exist the moment the page opens, and surfaced as a
-  dedicated **"Pros entering via the portal"** section (`world.list_pros` → `preseason_portal_view`
-  `pros`): each pro shows the green badge, real STR, cost, and the club it signed — sourced
-  `Pros → club`. The row links to the pro's profile in its **dest** universe (they're persisted
-  onto the club), so the link resolves instead of 404ing.
+### 3b-ii. How the model evolved (two rejected drafts — context so the code reads right)
+The pro tier went through two auto-signing drafts the owner rejected, both preserved in `git`
+only as history:
+1. **Budget auto-assign** (`assign_pros`, funnel-then-spread) → **clustered the whole cohort at
+   ~4 blue-bloods** ("you mistakenly send them all to the same place").
+2. **All-sign at portal-seed** (auto-inject, deepest-pocket fallback, a read-only "Pros entering
+   via the portal" list) → still auto, and at the old **8.5–15** cost a club could **stack
+   several** ("too cheap").
 
-This is the lighter "portal-source-only" model: there is no separately browsable Pros roster
-page — "Pros" is the FROM label + generation pool, and the portal is where you see them arrive.
+The shipped model (3b-iii) throws both out: pros are **free agents the user signs by hand**, and
+the cost is **18–30**. `Pros` remains the conceptual **source pool** (nothing flows back into it),
+but there is no auto-assignment and no separately browsable Pros roster page.
 
-### 3b-iii. ADDENDUM — pros are FREE AGENTS, not auto-signed (supersedes 3b-ii)
-Seeing the auto-assignment in action, the owner rejected it: it **funnelled the whole cohort to
-the same 4 blue-bloods** ("you mistakenly send them all to the same place"), and at the old
-8.5–15 cost a single club could **stack several**. New model: pros are **free agents you sign by
-hand, anywhere.**
+### 3b-iii. THE MODEL — pros are FREE AGENTS you sign by hand
+Pros are **free agents you sign by hand, anywhere.**
 - **Cost raised to `PRO_COST_LO/HI = 18–30`** (STR-indexed). Pitched near the **33.5** elite cap so
   one pro eats most of a club's ONE budget — a blue-blood affords **one** without gutting its
   class, a major (9–16) affords **none**. Pros **spread** by economics instead of stacking; still
@@ -153,38 +147,36 @@ hand, anywhere.**
   persists exactly those; committed profiles resolve 200; all three templates render.
 
 ### 3c. Live wiring (`app/world.py`)
-- **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
-  `world_roster`** (so `developed_rosters`/`prime` pick them up and they play). A full roster
-  **displaces its weakest player** (walk-on bumped; refills at rollover). Idempotent per
-  `(year, cycle)` via the **`world_pro`** ledger; plus **row-level idempotency** (delete any
-  prior row for the pro's pid this year before insert) so a pro can never double-persist even
-  off a half-cleared ledger. Clears `_base_cache`/`_dev_cache`/`_primed` + `reset_caches()`.
-- **All three cycles hooked:** `<year>-preseason` (seeded at **portal-open** in
-  `run_preseason_portal`, and still belt-and-suspenders on `advance_week` wk 0), `<year>-fall`
-  (`commit_fall_portal`), `<year>-transfer` (end of `_finalize_year`, into the new year). The
-  pre-season route calls `run_preseason_portal` on every week-0 visit (idempotent) so an
-  already-seeded world still gets its pros.
-- **`list_pros(seed, cycle_key=None)`** — display rows for the pros that entered this year
-  (`Pros → club`, real STR/cost/badge) read off the ledger + persisted roster; feeds the
-  portal view's `pros` section.
-- **Portal-only:** pros are generated by `app.pros` and injected by the portal path ONLY —
-  they never enter the HS recruit class / board.
+- **`pro_cohort(seed, cycle_key)`** — the free-agent pool for a window: regenerate the
+  deterministic cohort, attach STR + 18–30 cost + whichever club (if any) the user has signed each
+  to (`overrides.pro_signing`). Blank dest = still a free agent. Feeds the portal `pros` sections.
+- **`sign_pro` / `unsign_pro`** — store/clear a pro→club intent (any program, any division;
+  `pro_destinations` = every program). **`find_pro`** resolves an unsigned pro from the cohort so
+  its `/player` preview renders before it's on any roster.
+- **`_commit_pro_signings(seed, cycle_key)`** — at commit, persist each signed pro into
+  `world_roster` (displacing the club's weakest if full) + write its cost to the **`world_pro`**
+  ledger. Idempotent per cycle; clears the roster caches. **Unsigned pros don't enter.**
+- **Two interactive windows:** `<year>-preseason` (persist on pre-season commit + belt-and-
+  suspenders on `advance_week` wk 0) and `<year>-fall` (persist on `commit_fall_portal`). The
+  year-end `-transfer` auto-intake was **removed**; `inject_pros`/`assign_pros` are unused by the
+  live path. **`list_pros`** reads the ledger for the post-commit (already-signed) display.
+- **Portal-only:** pros are generated by `app.pros` and enter ONLY through the portal signings —
+  never the HS recruit class / board.
 
 ### 3d. UI lever + badge
 - **`worldconfig.pros_per_cycle()`** — default **18**, always **even** (men == women), **0
-  disables the tier**. Set live from the **"Pros / cycle / gender"** input on
-  `/preseason-portal` (route `/preseason-portal/pros`). Owner note: not worried about the
-  count — many D1 teams absorb them and the same team may get >1 pro; the lever dials volume
-  down in real time.
+  disables the tier**. Sets how many free agents appear in the **pool** each window (you then sign
+  whom you want). Set live from the **"Pros / cycle / gender"** input on `/preseason-portal`
+  (route `/preseason-portal/pros`).
 - **Green PRO badge:** `is_pro` Jinja filter + `.pro-badge` (green) in `app.css`; rendered on
   the roster (`my_program.html`) and the player page (`player.html`, via `info.is_pro`
   resolved from the persisted roster since pros aren't in the base index).
 
-**Verified end-to-end (Flask client, primed world):** the pre-season portal renders 200; the
-**"Pros entering via the portal"** section shows; **36 pros = 18/gender all sign** (the
-all-sign rule holds even when a club is pushed hard); each pro links to its profile in the
-dest universe and resolves **200** (the 404 is gone); budget-depletion still lets the rich
-stack; re-inject and row-level dedupe keep the count exact.
+**Verified end-to-end (Flask client, primed world):** the pre-season + fall portals render 200
+with the **"Pro free agents"** section; each window's cohort is 36 and **starts unsigned**; an
+**unsigned** pro's `/player` preview returns **200** (badge + attribute bars); signing a man→Duke
+(D1) / woman→Emory (D4) / fall pro→UCLA shows them signed; **Commit persists exactly the signed
+ones** and their profiles resolve **200**; the 404 on cross-division movers is gone.
 
 ### 3d-ii. The portal player-profile 404 (both portals)
 Clicking a portal mover 404'd: the pre-season + fall portal links called
@@ -235,8 +227,8 @@ speeds the fall portal:
   (`pro_cohort` pre-commit, `list_pros` post-commit).
 - `templates/{preseason_portal,fall_portal}.html` — per-pro "Sign with — any program" control +
   scout link; `templates/player.html` — free-agent preview (badge, breadcrumb, empty career).
-- `app/web/static/css/app.css`, `templates/{my_program,player,preseason_portal}.html` — badge +
-  lever + the "Pros entering via the portal" section.
+- `app/web/static/css/app.css`, `templates/{my_program,player}.html` — green PRO badge.
+- `templates/recruit_economy.html` — Scholarship Economy page updated to the free-agent pro model.
 - `templates/{preseason_portal,fall_portal}.html` — player-profile links now pass the universe
   (`u=`) so cross-division movers resolve instead of 404.
 - `tests/test_pros.py` — **new** (6 tests).

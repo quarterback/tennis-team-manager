@@ -45,20 +45,23 @@
     A small elite cohort of ex-pros sits <strong>above the 80 college ceiling</strong> — the only
     players who exceed it. Their attributes are drawn in the <strong>{{ econ.pros.attr_lo }}–{{ econ.pros.attr_hi }}</strong>
     band (landing <strong>OVR in the mid-80s</strong>), shown with a real STR/OVR like anyone else and
-    clearly better on court. They carry the green <span class="pro-badge">PRO</span> badge and can be
-    signed <strong>only through the transfer portal</strong> — never on the recruit board above.
+    clearly better on court. They carry the green <span class="pro-badge">PRO</span> badge and are
+    <strong>free agents</strong> out of a synthetic <em>Pros</em> pool — signable <strong>only through the
+    portal</strong>, never on the recruit board above.
     <ul style="margin:8px 0 0;padding-left:18px;line-height:1.7">
-      <li><strong>{{ econ.pros.per_cycle }} per gender, every portal cycle</strong> (pre-season, fall, year-end) —
-        tunable live on the <a href="{{ url_for('preseason_portal') }}">Pre-season portal</a> page
-        (0 disables the tier).</li>
+      <li><strong>{{ econ.pros.per_cycle }} free agents per gender, each portal window</strong> (pre-season +
+        fall) — the pool size is tunable live on the <a href="{{ url_for('preseason_portal') }}">Pre-season
+        portal</a> page (0 disables the tier).</li>
+      <li><strong>You sign them by hand to ANY program, ANY division</strong> — an <strong>unsigned</strong>
+        free agent doesn't enter. Scout a pro's full attributes before you commit.</li>
       <li><strong>Cost {{ '%.1f'|format(econ.pros.cost_lo) }}–{{ '%.1f'|format(econ.pros.cost_hi) }}</strong>,
-        indexed to STR relative to the cohort — never priced above what a top program can afford, so
-        every pro gets signed. A blue-blood can <strong>stack more than one</strong> until its budget runs out,
-        then the next pro flows to the next-best program.</li>
+        indexed to STR — pitched high (near the 33.5 elite budget cap) so one pro
+        eats most of a club's budget: a blue-blood realistically affords <strong>one</strong>, a mid-major
+        <strong>none</strong>. Pros spread across clubs instead of stacking.</li>
       <li><strong>Paid out of the SAME budget as the recruit class</strong> — one pool, not a separate pro
-        fund. A pro's cost is deducted from the program's budget for the year, so chasing pros means a
-        weaker class: sign two 15-cost pros on a 33.5 budget and you've ~3 left — below the blue-chip
-        floor, so no blue-chips that year. That tradeoff is the whole point of the tier.</li>
+        fund. A pro's cost is deducted for the year, so chasing one means a weaker class: a 28-cost pro on a
+        33.5 budget leaves ~5 — below the blue-chip floor, so no blue-chips that year. That tradeoff is the
+        whole point of the tier.</li>
       <li>Signing one <strong>bumps the roster's weakest player</strong> (a walk-on) — the walk-on tail refills at rollover.</li>
     </ul>
   </div></div>
