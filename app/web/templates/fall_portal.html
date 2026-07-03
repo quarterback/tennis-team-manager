@@ -64,7 +64,9 @@
         {% if t.is_riser %}<span class="bl-stat power" title="Rising to a higher division">▲ rise</span>
         {% else %}<span class="bl-conf" title="Pushed down to make room for a riser">▽ down</span>{% endif %}
       </span>
-      <a class="bl-school" href="{{ url_for('player', pid=t.pid, school=t.dest_school) }}">
+      {# During the fall-portal hold the mover still sits on their SOURCE roster (ITA stint
+         at the old school) — link there with its universe so the profile resolves, not 404. #}
+      <a class="bl-school" href="{{ url_for('player', pid=t.pid, school=t.src_school, u=t.src_div ~ '-' ~ t.gender) }}">
         <span class="player-flag" title="{{ t.country|country_name }}">{{ t.country|flags }}</span>
         {{ t.name }} <span style="color:var(--text-faint)">{{ t.class }}</span></a>
       <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(t.str) }}</span></span>
