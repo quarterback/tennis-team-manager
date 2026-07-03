@@ -690,7 +690,7 @@ _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
 def _talent_mean(strength: float, division: str, gender: str) -> float:
     """Program strength + division + gender → a roster talent-grade mean."""
     base, spread = _TALENT.get((division, gender), (60.0, 22.0))
-    return max(34.0, min(80.0, base + spread * (strength - 0.5)))
+    return max(24.0, min(80.0, base + spread * (strength - 0.5)))
 
 
 def _talent_from_strength(strength: float, division: str = "D1", gender: str = "men") -> float:
@@ -782,7 +782,7 @@ def _base_roster(p: Program):
         if use_budget:
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
-            talent = max(34.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+            talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
             if d3d4_gem:                                            # budget lifts only the gem slots
                 gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
                 talent = max(talent, gem)
