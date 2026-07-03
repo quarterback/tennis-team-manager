@@ -81,6 +81,26 @@ ceiling) so every normal player is byte-identical. A separate higher **hard clam
   2–3 pros** while its money lasts, then the flow spills to the next-best (funnel-then-spread,
   not a hard 1-each cap). A pro always takes a roster spot.
 
+### 3b-i. ONE budget — pros compete with the recruit class (non-obvious; read this)
+A program has a **single** recruiting budget (scholarship-equivalency by conference tier).
+There is **no separate pro fund** — a pro is paid **out of that same pool**, so signing pros
+is a real tradeoff against the freshman class, and that tradeoff is *the reason the tier
+exists*. Concretely:
+- The `world_pro` ledger records each pro's cost per `(school, gender, year)`.
+- `world._pro_spend(conn, world_id, year, gender)` sums a program's pro spend this year.
+- **`_recruit_market`** (the annual recruiting budget every program reads) is
+  `program_budget − pro_spend`. So a program that spent on pros has *less* to attract recruits
+  and can drop **below a caliber floor** — e.g. two 15-cost pros on a 33.5 budget leaves ~3,
+  under the 16.5 blue-chip floor → **no blue-chips that year**.
+- **`inject_pros`** likewise starts each cycle's assignment from `budget − pro_spend so far`,
+  so pro spend accumulates across the three cycles against the one budget.
+- Why it's not obvious: normal recruiting treats the budget as a *standing caliber floor*
+  (it isn't "spent down" year to year — it's the program's persistent funding level, re-used
+  each year to fill graduation's openings). Pros are the **one thing that actively draws that
+  level down** within a year. So the budget is neither per-year-consumed nor lifetime-consumed
+  for recruiting — but a **pro signing does consume it for that year**, which is exactly the
+  constraint that makes chasing a pro cost you.
+
 ### 3c. Live wiring (`app/world.py`)
 - **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
   `world_roster`** (so `developed_rosters`/`prime` pick them up and they play). A full roster
@@ -105,6 +125,20 @@ ceiling) so every normal player is byte-identical. A separate higher **hard clam
 **Verified end-to-end:** 12/gender signed onto the top programs (Wake Forest, Georgia, Texas,
 Stanford, USC) at OVR 85–87, each displacing a walk-on; budget-depletion lets the rich stack;
 re-inject no-ops; badge + lever render via the Flask client.
+
+### 3e. Pre-season portal first-load perf (shared `_FPPlanner`)
+Wiring pros into the portal exposed a pre-existing slowness on first load (a cold
+`rescan_preseason_portal` ran **~54s**). Fixed in the shared cascade engine, so it also
+speeds the fall portal:
+- **`best_in` / `fullest_below`** scanned *every* program in a division per rider tracking a
+  max draw-weight → O(programs) per rider, quadratic in the slate. Now `by_div` is sorted once
+  by weight (`prestige + 0.3·facilities`, desc, name tie-break) and both early-exit at the
+  first program passing the open-slot / line / shed checks — the weight-desc + name order
+  returns the *exact* program the old max-weight-first-encountered scan did.
+- **`_sv`** re-normalized a player's attributes on every call (empty `player_str`); memoized
+  per pid within the planner (a player's intrinsic STR is invariant under relocation).
+- **Verified byte-identical** resolved slate vs before (200 moves/gender, both). Cold rescan
+  **54s → ~7s**; warm seed **1.7s**, view **1.5s** (were 48s / 5s).
 
 ---
 

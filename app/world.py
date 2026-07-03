@@ -847,7 +847,13 @@ def _recruit_market(world: dict, gender: str) -> dict:
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     salt = world.get("salt") or ""
-    budget = {s: recruit_economy.program_budget(p, salt, world["year"]) for s, p in progs.items()}
+    # ONE budget: pros are paid out of the same pool as the class, so a program's recruiting
+    # power is its budget MINUS what it already spent on pros this year.
+    _c = _db()
+    _spent = _pro_spend(_c, world["id"], world["year"], gender)
+    _c.close()
+    budget = {s: max(0.0, recruit_economy.program_budget(p, salt, world["year"]) - _spent.get(s, 0.0))
+              for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     from . import coaches
     coachmap = {s: coaches.program_coach(s) for s in progs}        # per-program coach (localism, sourcing tilt, origin pipeline)
@@ -1389,6 +1395,7 @@ class _FPPlanner:
                 div_of[s] = division
         schools = [s for s in pool if s in progs]
         self.pool, self.div_of, self.schools = pool, div_of, schools
+        self._sv_cache: dict = {}
         self.prestige = {s: progs[s].prestige for s in schools}
         self.facilities = {s: progs[s].facilities for s in schools}
         self.level = {s: _prog_level(progs[s]) for s in schools}
@@ -1396,12 +1403,17 @@ class _FPPlanner:
         # by_div (destination pool + the median bar) holds ONLY valid-destination
         # divisions; sources (pool/schools/by_pid) keep every division.
         by_div: dict[str, list] = {}
+        # Destination "draw" weight per school; by_div sorted by it (desc, then name for
+        # determinism) so best_in/fullest_below EARLY-EXIT at the first match instead of
+        # scanning every program — and receiving programs are dropped from the pool as they
+        # fill, so placing N riders is ~linear, not quadratic in N (the portal seed cost).
+        self._weight = {s: self.prestige[s] + 0.3 * self.facilities[s] for s in schools}
         for s in schools:
             if not self._dest_ok(div_of.get(s, "")):
                 continue
             by_div.setdefault(div_of.get(s, ""), []).append(s)
         for d in by_div:
-            by_div[d].sort()
+            by_div[d].sort(key=lambda s: (-self._weight[s], s))
         self.by_div = by_div
         # A division's TYPICAL (median) expected level — the bar a riser must clear.
         self.div_level = {}
@@ -1414,7 +1426,14 @@ class _FPPlanner:
         self.by_pid = {p.pid: (s, p) for s in schools for p in pool[s]}
 
     def _sv(self, p):
-        return _str_of(self.player_str, p)
+        # Memoize per pid: with an empty player_str (the preseason portal) this falls to
+        # p.str_value(), which re-normalizes attributes on every call — and the planner asks
+        # for the same players' STR many times over (init, discover, place, cascade). A
+        # player's intrinsic STR never changes as it's relocated, so one compute per pid.
+        c = self._sv_cache.get(p.pid)
+        if c is None:
+            c = self._sv_cache[p.pid] = _str_of(self.player_str, p)
+        return c
 
     def _dest_ok(self, division: str) -> bool:
         """Whether a division is a valid MOVE DESTINATION (active/simulated)."""
@@ -1429,16 +1448,14 @@ class _FPPlanner:
 
     def best_in(self, div, val, want_line, avoid=None):
         """Best-prestige program in `div` with an OPEN seat where the player slots at
-        `want_line` or better; `avoid` skips programs that already took a riser."""
-        best, draw = None, -1.0
+        `want_line` or better; `avoid` skips programs that already took a riser. by_div is
+        weight-sorted, so the FIRST program that passes is the answer (early exit)."""
         for d in self.by_div.get(div, ()):
-            if (not d or (avoid and d in avoid) or not self.open_slot(d)
-                    or self.line_of(d, val) > want_line):
+            if not d or (avoid and d in avoid) or not self.open_slot(d):
                 continue
-            w = self.prestige[d] + 0.3 * self.facilities[d]
-            if w > draw:
-                best, draw = d, w
-        return best
+            if self.line_of(d, val) <= want_line:
+                return d
+        return None
 
     def _weakest_eligible(self, s, val):
         cand = [q for q in self.pool[s] if q.pid not in self.touched
@@ -1446,15 +1463,14 @@ class _FPPlanner:
         return min(cand, key=lambda q: (self._sv(q), q.pid)) if cand else None
 
     def fullest_below(self, div, val, avoid=None):
-        best, draw = None, -1.0
+        # Weight-sorted by_div → first full program that can shed a weaker player is the
+        # best-prestige one (early exit).
         for d in self.by_div.get(div, ()):
-            if (not d or (avoid and d in avoid) or self.open_slot(d)
-                    or self._weakest_eligible(d, val) is None):
+            if not d or (avoid and d in avoid) or self.open_slot(d):
                 continue
-            w = self.prestige[d] + 0.3 * self.facilities[d]
-            if w > draw:
-                best, draw = d, w
-        return best
+            if self._weakest_eligible(d, val) is not None:
+                return d
+        return None
 
     def _apply(self, p, src, dest):
         sval = self._sv(p)
@@ -1820,6 +1836,19 @@ def fall_portal_destinations(seed: int = DEFAULT_SEED) -> list[str]:
 # is STR-indexed and always ≤ the elite budget cap, so every pro signs. Idempotent per
 # (year, cycle) via the world_pro ledger. Volume is worldconfig.pros_per_cycle (even, UI).
 # --------------------------------------------------------------------------
+def _pro_spend(conn, world_id: int, year: int, gender: str) -> dict:
+    """Per-school pro-signing spend this year FOR ONE GENDER (men's and women's programs
+    are separate). Pros are paid out of the SAME recruiting budget as the class (one pool),
+    so this is deducted from a program's budget — a program that signs an expensive pro has
+    that much less to spend on recruits, and can even drop below a caliber floor (no more
+    blue-chips this year)."""
+    rows = conn.execute(
+        "SELECT school, SUM(cost) AS spent FROM world_pro "
+        "WHERE world_id=? AND year=? AND gender=? AND school!='' GROUP BY school",
+        (world_id, year, gender)).fetchall()
+    return {r["school"]: (r["spent"] or 0.0) for r in rows}
+
+
 def inject_pros(seed: int, cycle_key: str) -> dict:
     from app import pros, recruit_economy
     if worldconfig.pros_per_cycle() <= 0:
@@ -1838,6 +1867,7 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
         cohort = pros.generate_pros(salt, gender, cycle_key)
         if not cohort:
             continue
+        spent = _pro_spend(conn, w["id"], w["year"], gender)   # pro budget already committed this year
         progs = _flat_programs(gender)
         div_of, roster_of, programs = {}, {}, []
         for (d, g), schools in rosters.items():
@@ -1849,8 +1879,9 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
                     continue
                 div_of[school] = d
                 roster_of[school] = roster
-                programs.append({"school": school,
-                                 "budget": recruit_economy.program_budget(prog, salt, w["year"]),
+                # ONE budget: what's left after any pros already signed this year.
+                budget = recruit_economy.program_budget(prog, salt, w["year"]) - spent.get(school, 0.0)
+                programs.append({"school": school, "budget": max(0.0, budget),
                                  "prestige": float(getattr(prog, "prestige", 0.5))})
         by_pid = {p.pid: p for p in cohort}
         for a in pros.assign_pros(cohort, programs):
