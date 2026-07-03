@@ -35,6 +35,11 @@ CREATE TABLE IF NOT EXISTS preseason_portal (
   str REAL, status TEXT, cascade_from TEXT, name TEXT,
   PRIMARY KEY (year, gender, pid)
 );
+CREATE TABLE IF NOT EXISTS pro_signing (
+  year INTEGER, cycle TEXT, gender TEXT, pid TEXT,
+  dest_school TEXT, dest_div TEXT,
+  PRIMARY KEY (year, cycle, pid)
+);
 """
 
 _schema_ready_for = None        # the DB_PATH the schema was last created for
@@ -517,11 +522,61 @@ def ps_clear_year(year: int) -> None:
     conn.commit(); conn.close()
 
 
+# --- Pro free-agent signings (which pro signed which club, per portal cycle) ----------
+def pro_set_sign(year: int, cycle: str, gender: str, pid: str,
+                 dest_school: str, dest_div: str) -> None:
+    """Sign a free-agent pro to a club (upsert the intent). Committed onto the roster
+    when the portal commits; until then it's just the user's chosen destination."""
+    def _do():
+        conn = _db()
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO pro_signing (year,cycle,gender,pid,dest_school,dest_div)"
+                " VALUES (?,?,?,?,?,?)", (year, cycle, gender, pid, dest_school, dest_div))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def pro_unsign(year: int, cycle: str, pid: str) -> None:
+    """Drop a pro's signing — back to an unsigned free agent."""
+    def _do():
+        conn = _db()
+        try:
+            conn.execute("DELETE FROM pro_signing WHERE year=? AND cycle=? AND pid=?",
+                         (year, cycle, pid))
+            conn.commit()
+        finally:
+            conn.close()
+    _retry_locked(_do)
+
+
+def pro_get_signs(year: int, cycle: str | None = None) -> dict:
+    """{pid: {gender, dest_school, dest_div}} for a year (optionally one cycle)."""
+    conn = _db()
+    if cycle is None:
+        rows = conn.execute("SELECT gender,pid,dest_school,dest_div FROM pro_signing"
+                            " WHERE year=?", (year,)).fetchall()
+    else:
+        rows = conn.execute("SELECT gender,pid,dest_school,dest_div FROM pro_signing"
+                            " WHERE year=? AND cycle=?", (year, cycle)).fetchall()
+    conn.close()
+    return {r[1]: {"gender": r[0], "dest_school": r[2], "dest_div": r[3]} for r in rows}
+
+
+def pro_clear_year(year: int) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM pro_signing WHERE year=?", (year,))
+    conn.commit(); conn.close()
+
+
 def clear_all() -> None:
     conn = _db()
     conn.execute("DELETE FROM roster_overrides")
     conn.execute("DELETE FROM fall_portal")
     conn.execute("DELETE FROM preseason_portal")
+    conn.execute("DELETE FROM pro_signing")
     conn.commit(); conn.close()
 
 

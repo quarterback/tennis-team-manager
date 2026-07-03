@@ -748,8 +748,8 @@ def create_app() -> Flask:
         # division (the first-launch D3/D4 over-allocation) to a fitting program before
         # the season opens. Seeds the slate on first visit if nothing's proposed yet.
         w = wd.load_world()
-        if w and w["week"] == 0:
-            wd.run_preseason_portal()   # seeds riders on first visit + ensures pros; both idempotent
+        if w and w["week"] == 0 and not ov.ps_get_proposals(w["year"]):
+            wd.run_preseason_portal()
         gender = request.args.get("gender", "all")
         try:
             page = int(request.args.get("page", 1))
@@ -775,6 +775,14 @@ def create_app() -> Flask:
         from app import worldconfig
         worldconfig.set_pros_per_cycle(request.form.get("pros", ""))   # even, per gender
         return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/pro-sign", methods=["POST"])
+    def preseason_portal_pro_sign():
+        pid = request.form.get("pid", "")
+        dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        if pid:
+            wd.sign_pro(DEFAULT_SEED, pid, dest)
+        return redirect(url_for("preseason_portal", gender=request.form.get("gender", "all")))
 
     @app.route("/preseason-portal/approve", methods=["POST"])
     def preseason_portal_approve():
