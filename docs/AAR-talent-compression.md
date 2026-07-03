@@ -62,6 +62,27 @@ Population peak moved up ~2 UTR; floor lifted to ~grade 34 (was a tail to UTR 1)
 fattened (75–79: 1→25, 70–74: 103→258). Per-division avg UTR: D1 10.2 · D2 9.3 · D3 7.4 ·
 D4 7.3. Elite roster spread 5.7 → **3.4** (Texas); low-major D1 (Cornell) 2.1.
 
+## Stage 1 — LOCKED (owner-approved)
+Per owner: **no caps** (floor clamp reverted 34→24, "if they fall they fall"), **D3/D4 avg
+UTR 7** kept (no engineered spread — it emerges from the sim). Population lifted ~2 UTR, top
+fattened, elite roster depth ~3.4 UTR. This is the approved calibration.
+
+## Stage 2 — pro tier: CORE done (`app/pros.py`), integration next
+Built + unit-tested (`tests/test_pros.py`): `generate_pros(salt, gender, cycle_key)` →
+a deterministic cohort of 15–20, grade 79–80 talent → **OVR ~76–77 / STR ~55** (a clear cut
+above a blue-chip recruit), international-heavy nationalities, the green **PRO** badge
+(`junior_badges`), `recruit_stars=6`. `pro_cost(pro, cohort)` indexes cost to STR-vs-cohort
+across **8.5–15**, so the top pro costs 15 (≤ the raised 33.5 cap) and every pro is signable.
+
+**Remaining integration (the live wiring):**
+1. Emit a pro cohort each of the **three portal cycles** (pre-season, fall, year-end
+   transfer), keyed by `<year>-<cycle>`, persisted so a save's pros are stable.
+2. **Auto-sign** each pro to an affordable program (budget ≥ `pro_cost`), portal-only —
+   they never appear on the HS recruit board.
+3. **Green badge** render wherever players show (rankings, roster, player page) off
+   `pros.is_pro`.
+4. Persist signed pros into `world_roster`/`world_signing` so they play the season.
+
 ## Open tuning (next pass)
 - **D3/D4 average is at the top edge of the 4–7 target** (~7.3) — nudge bases down ~1.5 UTR
   so average programs center ~UTR 5–6 and "better ones 8–10" reads as genuinely better.
