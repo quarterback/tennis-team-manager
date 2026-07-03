@@ -101,6 +101,24 @@ exists*. Concretely:
   for recruiting — but a **pro signing does consume it for that year**, which is exactly the
   constraint that makes chasing a pro cost you.
 
+### 3b-ii. Pros enter FROM a synthetic "Pros" pool, VISIBLE in the portal (owner model)
+The pro tier is presented as a synthetic **"Pros" team** the cohort is generated onto; the
+pros then **enter through the portal** from that pool and sign real clubs — **no one flows
+back** into Pros (it is source-only, never a cascade destination). Two rules from the owner:
+- **Every generated pro signs.** The per-cycle lever IS the intake count — `assign_pros` no
+  longer drops a pro for lack of budget; when no club can strictly afford one it signs the
+  deepest-pocket club anyway (pushing that club's one budget hard, shrinking its class). So
+  "18/gender" means 18 enter, period.
+- **Visible in the portal.** Pros are injected at **portal-seed time** (`run_preseason_portal`
+  → `inject_pros`, idempotent) so they exist the moment the page opens, and surfaced as a
+  dedicated **"Pros entering via the portal"** section (`world.list_pros` → `preseason_portal_view`
+  `pros`): each pro shows the green badge, real STR, cost, and the club it signed — sourced
+  `Pros → club`. The row links to the pro's profile in its **dest** universe (they're persisted
+  onto the club), so the link resolves instead of 404ing.
+
+This is the lighter "portal-source-only" model: there is no separately browsable Pros roster
+page — "Pros" is the FROM label + generation pool, and the portal is where you see them arrive.
+
 ### 3c. Live wiring (`app/world.py`)
 - **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
   `world_roster`** (so `developed_rosters`/`prime` pick them up and they play). A full roster
