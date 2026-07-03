@@ -1748,8 +1748,8 @@ def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
     _dev_cache.clear()
     _release_fall_portal(seed, w)
     reset_caches(); _primed.pop(seed, None)
-    inject_pros(seed, f"{year}-fall")                  # the fall portal cycle's pro intake
-    return {"event": "fall_portal_committed", "year": year, "moved": moved}
+    signed = _commit_pro_signings(seed, f"{year}-fall")   # persist the free-agent pros signed this window
+    return {"event": "fall_portal_committed", "year": year, "moved": moved, "pros": signed}
 
 
 def _fp_find(seed: int, w: dict, rosters: dict, pid: str):
@@ -2021,6 +2021,32 @@ def unsign_pro(seed: int, pid: str, cycle_key: str | None = None) -> dict:
         return {"ok": False}
     ov.pro_unsign(w["year"], cycle_key or f"{w['year']}-preseason", pid)
     return {"ok": True, "pid": pid}
+
+
+# The portal cycles a free-agent pro can be viewed/signed in this year (deterministic
+# cohorts, regenerable — so an UNSIGNED pro's profile resolves without being on a roster).
+def _pro_cycles(year: int) -> list[str]:
+    return [f"{year}-preseason", f"{year}-fall"]
+
+
+def find_pro(seed: int, pid: str):
+    """Locate a free-agent pro by pid across this year's cohorts (regenerated on demand).
+    Returns (Prospect, gender, cycle_key, signed_dest_or_'') or None — lets the player page
+    render an unsigned pro (STR + attributes) BEFORE they're signed onto any roster."""
+    from app import pros
+    from app import overrides as ov
+    w = load_world(seed)
+    if not w:
+        return None
+    salt = active_salt(seed)
+    for cyc in _pro_cycles(w["year"]):
+        signs = ov.pro_get_signs(w["year"], cyc)
+        for gender in worldconfig.active_genders():
+            for p in pros.generate_pros(salt, gender, cyc):
+                if p.pid == pid:
+                    dest = signs.get(pid, {}).get("dest_school", "")
+                    return (p, gender, cyc, dest)
+    return None
 
 
 def _commit_pro_signings(seed: int, cycle_key: str) -> int:
@@ -2955,6 +2981,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     conn.commit()
     conn.close()
     _base_cache.clear(); _dev_cache.clear(); _primed.pop(seed, None)
-    inject_pros(seed, f"{new_year}-transfer")     # the year-end transfer cycle's pro intake
+    # Pros are FREE AGENTS signed by hand through the two interactive portals (pre-season +
+    # fall) — no auto year-end intake. The new season's pre-season portal is the next window.
     summary.update(event="finalize", year=new_year, week=0)
     return summary

@@ -103,7 +103,7 @@
         <span class="bl-school" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
           <span class="pro-badge">PRO</span>
           <span class="player-flag" title="{{ pr.country|country_name }}">{{ pr.country|flags }}</span>
-          {% if pp.done %}<a class="bl-school" href="{{ url_for('player', pid=pr.pid, school=pr.dest_school, u=pr.dest_div ~ '-' ~ pr.gender) }}">{{ pr.name }}</a>{% else %}{{ pr.name }}{% endif %}
+          {% if pp.done %}<a class="bl-school" href="{{ url_for('player', pid=pr.pid, school=pr.dest_school, u=pr.dest_div ~ '-' ~ pr.gender) }}">{{ pr.name }}</a>{% else %}<a class="bl-school" href="{{ url_for('player', pid=pr.pid) }}" title="Scout this free agent">{{ pr.name }}</a>{% endif %}
         </span>
         <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(pr.str) }}</span></span>
         <span class="bl-cell-num"><span class="bl-stat">{{ "%.1f"|format(pr.cost) }}</span></span>

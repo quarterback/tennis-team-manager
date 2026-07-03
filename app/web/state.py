@@ -1267,10 +1267,19 @@ def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
                 "ita_w": ww, "ita_l": ll, "ita_line": lines.get(sd, {}).get(m["pid"]),
             })
     out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
+    # Free-agent pros for the FALL cycle — same manual model as the pre-season portal.
+    cyc = f"{w['year']}-fall"
+    committed_pros = world.list_pros(seed, cyc)
+    _pro_src = committed_pros if committed_pros else world.pro_cohort(seed, cyc)
+    pros_in = []
+    for pr in _pro_src:
+        ta, tc = crest(pr["dest_school"]) if pr.get("dest_school") else ("", "")
+        pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
             "proposals": out, "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
-            "committed": len(committed),
+            "committed": len(committed), "pros": pros_in,
+            "pros_committed": bool(committed_pros),
             "destinations": world.fall_portal_destinations(seed)}
 
 

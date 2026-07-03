@@ -119,7 +119,7 @@ back** into Pros (it is source-only, never a cascade destination). Two rules fro
 This is the lighter "portal-source-only" model: there is no separately browsable Pros roster
 page — "Pros" is the FROM label + generation pool, and the portal is where you see them arrive.
 
-### 3b-iii. ADDENDUM — pros are FREE AGENTS, not auto-signed (supersedes 3b-ii for pre-season)
+### 3b-iii. ADDENDUM — pros are FREE AGENTS, not auto-signed (supersedes 3b-ii)
 Seeing the auto-assignment in action, the owner rejected it: it **funnelled the whole cohort to
 the same 4 blue-bloods** ("you mistakenly send them all to the same place"), and at the old
 8.5–15 cost a single club could **stack several**. New model: pros are **free agents you sign by
@@ -136,15 +136,21 @@ hand, anywhere.**
   clubs only at **Commit** (`_commit_pro_signings`, idempotent per cycle; belt-and-suspenders on
   the wk-0 `advance_week`), which then feeds the shared-budget deduction (`_pro_spend`) exactly as
   before. Un-sign with the row's ✕ (back to free agent).
-- **Fall / year-end cycles stay AUTO** (`inject_pros` → `assign_pros`) but `assign_pros` is now
-  **budget-gated + spread** (reverted from the all-sign fallback): only a club that can afford a
-  pro signs one, **one per club, never overspends**; the high cost makes it spread there too.
-  *Follow-up:* give fall + year-end the same manual free-agent UI so all three cycles match.
-- **Player-profile links:** an **unsigned** pro isn't on any roster, so it's shown as plain text
-  (no profile yet); once **committed** onto a club it links to its dest universe and resolves.
-- **Verified end-to-end:** cohort of 36 all start unsigned; cost renders 18–30; signing a man→Duke
-  (D1) and a woman→Emory (D4) shows them signed; Commit persists exactly those two; their profiles
-  resolve 200; the portal renders the per-pro "Sign with — any program" control.
+- **Both interactive windows are manual.** The **fall portal** gets the same free-agent section
+  and `/fall-portal/pro-sign` route (cycle `<year>-fall`), persisted by `_commit_pro_signings` at
+  fall commit. The **year-end `-transfer` auto-intake is REMOVED** — a pro is never auto-signed
+  anywhere (`inject_pros`/`assign_pros` are now unused by the live path, kept only as a tested
+  primitive). Pros enter through the **two gates the user actually reviews — pre-season + fall**;
+  the next season's pre-season window is the year-end intake (same moment: rollover → wk-0 portal).
+- **Scout a pro BEFORE signing.** An unsigned pro isn't on a roster, but the cohort is
+  regenerable, so `world.find_pro` resolves it and the `/player` route renders a **preview** (green
+  badge, real STR, full attribute bars, empty career, "Pro free agent" breadcrumb). The portal
+  links every pro — signed or not — so you can open the profile to decide. Once committed onto a
+  club the link points at its dest universe as usual.
+- **Verified end-to-end (Flask client):** pre-season + fall cohorts each 36, all start unsigned and
+  are distinct; cost renders 18–30; an **unsigned** pro's `/player` page returns **200** with badge
+  + attributes; signing a man→Duke (D1) / woman→Emory (D4) / fall pro→UCLA shows them signed; Commit
+  persists exactly those; committed profiles resolve 200; all three templates render.
 
 ### 3c. Live wiring (`app/world.py`)
 - **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
@@ -216,15 +222,19 @@ speeds the fall portal:
   assignment (fall/transfer), `is_pro`.
 - `app/overrides.py` — **`pro_signing`** table + `pro_set_sign`/`pro_unsign`/`pro_get_signs`/
   `pro_clear_year` (free-agent signing intents); cleared on reset.
-- `app/world.py` — `world_pro` schema + reset, `inject_pros` (+ row-level idempotency,
-  fall/transfer only), **`pro_cohort`/`sign_pro`/`unsign_pro`/`_commit_pro_signings`/
-  `pro_destinations`** (pre-season free agents), `list_pros`; portal `_FPPlanner` perf
-  (`best_in`/`fullest_below` early-exit, `_sv` memoization).
+- `app/world.py` — `world_pro` schema + reset, **`pro_cohort`/`sign_pro`/`unsign_pro`/
+  `find_pro`/`_commit_pro_signings`/`pro_destinations`** (free-agent pros, both windows),
+  `_commit_pro_signings` wired into pre-season commit + wk-0 advance + fall commit; year-end
+  `-transfer` inject removed; `list_pros`; portal `_FPPlanner` perf (`best_in`/`fullest_below`
+  early-exit, `_sv` memoization). `inject_pros`/`assign_pros` now unused by the live path.
 - `app/worldconfig.py` — `pros_per_cycle` / `set_pros_per_cycle` (even).
-- `app/web/server.py` — `is_pro` filter, `/preseason-portal/pros` (lever) + `/preseason-portal/
-  pro-sign` (sign/unsign) routes, player-page `is_pro`.
-- `app/web/state.py` — `pros_cycle` + the free-agent `pros` section in `preseason_portal_view`
+- `app/web/server.py` — `is_pro` filter, `/preseason-portal/pros` (lever), `/preseason-portal/
+  pro-sign` + `/fall-portal/pro-sign` (sign/unsign) routes, **player route renders an unsigned-pro
+  preview via `find_pro`**.
+- `app/web/state.py` — free-agent `pros` section in `preseason_portal_view` AND `fall_portal_view`
   (`pro_cohort` pre-commit, `list_pros` post-commit).
+- `templates/{preseason_portal,fall_portal}.html` — per-pro "Sign with — any program" control +
+  scout link; `templates/player.html` — free-agent preview (badge, breadcrumb, empty career).
 - `app/web/static/css/app.css`, `templates/{my_program,player,preseason_portal}.html` — badge +
   lever + the "Pros entering via the portal" section.
 - `templates/{preseason_portal,fall_portal}.html` — player-profile links now pass the universe

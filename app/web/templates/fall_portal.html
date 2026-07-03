@@ -45,6 +45,62 @@
   </span>
 </div>
 
+{% if fp.pros %}
+{% set _signed = fp.pros|selectattr('signed')|list|length %}
+<div class="bl-container">
+  <div class="bl-entries"><div class="bl-entries-left">
+    <strong style="color:var(--text-primary)"><span class="pro-badge">PRO</span> Pro free agents — fall window</strong>
+  </div><span class="bl-entries-right">{{ _signed }} signed · {{ fp.pros|length - _signed }} available</span></div>
+  <div class="bl-note" style="font-size:12px;margin-bottom:8px">
+    Elite ex-pros out of the synthetic <strong>Pros</strong> pool — free agents you sign to <strong>any program,
+    any division</strong> (the cost is high, so a club realistically affords one). An <strong>unsigned</strong>
+    pro doesn't enter. Signings apply when you <strong>Commit</strong>.
+  </div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.5fr) 48px 60px minmax(210px,1.5fr) 34px">
+      <div class="bl-thead">
+        <span class="bl-th">PLAYER</span><span class="bl-th num">STR</span>
+        <span class="bl-th num" title="Scholarship-equivalency spent from the club's one budget">COST</span>
+        <span class="bl-th">{% if fp.pros_committed %}SIGNED WITH{% else %}SIGN WITH — any program{% endif %}</span>
+        <span class="bl-th"></span>
+      </div>
+      {% for pr in fp.pros %}
+      <div class="bl-row">
+        <span class="bl-school" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+          <span class="pro-badge">PRO</span>
+          <span class="player-flag" title="{{ pr.country|country_name }}">{{ pr.country|flags }}</span>
+          {% if fp.pros_committed %}<a class="bl-school" href="{{ url_for('player', pid=pr.pid, school=pr.dest_school, u=pr.dest_div ~ '-' ~ pr.gender) }}">{{ pr.name }}</a>{% else %}<a class="bl-school" href="{{ url_for('player', pid=pr.pid) }}" title="Scout this free agent">{{ pr.name }}</a>{% endif %}
+        </span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(pr.str) }}</span></span>
+        <span class="bl-cell-num"><span class="bl-stat">{{ "%.1f"|format(pr.cost) }}</span></span>
+        {% if fp.pros_committed %}
+        <a class="bl-conf" href="{{ url_for('teams', school=pr.dest_school) }}" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+          {{ crest_box(pr.dest_school, pr.to_abbr, pr.to_color, 'xs') }} {{ pr.dest_school }}
+          <span style="color:var(--text-faint)">{{ pr.dest_div }}</span></a>
+        <span></span>
+        {% else %}
+        <form method="post" action="{{ url_for('fall_portal_pro_sign') }}" style="display:flex;gap:4px;align-items:center">
+          <input type="hidden" name="pid" value="{{ pr.pid }}">
+          <input class="bl-select" name="dest" list="fp-dests" value="{{ pr.dest_school }}"
+                 placeholder="unsigned — type any program" style="min-width:186px;height:24px;font-size:12px">
+          <button class="bl-btn bl-btn-sm" type="submit" title="Sign here"><i class="fa-solid fa-check" aria-hidden="true"></i></button>
+        </form>
+        <span class="bl-conf">
+          {% if pr.signed %}
+          <form method="post" action="{{ url_for('fall_portal_pro_sign') }}" style="display:inline">
+            <input type="hidden" name="pid" value="{{ pr.pid }}">
+            <input type="hidden" name="dest" value="">
+            <button class="bl-btn bl-btn-sm" type="submit" title="Drop this signing (back to free agent)">✕</button>
+          </form>{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if not fp.proposals %}
 <div class="bl-container"><div class="bl-note">
   No moves on the slate — the talent's already where it belongs (or you dropped them all). Commit to begin the

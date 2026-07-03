@@ -3,8 +3,13 @@
 {% block content %}
 {% set abbr, color = crest(info.school) %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
+  {% if info.free_agent %}
+  <span style="font-size:13px;color:var(--text-muted)">Portal › Pros pool › Free agent</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('preseason_portal') }}">← Pro free agents</a>
+  {% else %}
   <span style="font-size:13px;color:var(--text-muted)">Teams › {{ info.school }} › Player</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=info.school, u=u) }}">← {{ info.school }} roster</a>
+  {% endif %}
 </div></div>
 
 <div class="bl-board">

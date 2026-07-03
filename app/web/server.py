@@ -735,6 +735,16 @@ def create_app() -> Flask:
             wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
         return redirect(url_for("fall_portal"))
 
+    @app.route("/fall-portal/pro-sign", methods=["POST"])
+    def fall_portal_pro_sign():
+        pid = request.form.get("pid", "")
+        dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        if pid:
+            w = wd.load_world()
+            cyc = f"{w['year']}-fall" if w else None
+            wd.sign_pro(DEFAULT_SEED, pid, dest, cycle_key=cyc)
+        return redirect(url_for("fall_portal"))
+
     @app.route("/fall-portal/commit", methods=["POST"])
     def fall_portal_commit():
         # Commit resolves the whole kept slate (sim picks + your edits/adds) and
@@ -1296,7 +1306,30 @@ def create_app() -> Flask:
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         info = sm.player_info(sid, pid)
         if not info:
-            abort(404)
+            # Maybe it's a free-agent pro not yet on any roster — render a preview (STR +
+            # attributes) so they can be scouted BEFORE being signed through the portal.
+            found = wd.find_pro(DEFAULT_SEED, pid)
+            if not found:
+                abort(404)
+            from app.web.state import scout_bars as _sb
+            from app import pros as _pros
+            pro, pg, _cyc, _dest = found
+            info = {"name": pro.name, "school": _dest or "Pros", "class": "Pro",
+                    "country": pro.country, "secondary_country": getattr(pro, "secondary_country", ""),
+                    "hometown": getattr(pro, "hometown", ""), "major": "",
+                    "overall": pro.current_overall(), "ceiling": pro.ceiling_overall(),
+                    "walk_on": False, "high_school": "", "school_city": "",
+                    "recruit_stars": 6, "is_pro": True, "free_agent": not _dest,
+                    "signed_with": _dest, "scholarship": 0.0, "scholarship_label": ""}
+            _empty_box = {"any": False, "lines": [], "rows": [], "tcells": {},
+                          "toverall": "", "tdual": ""}
+            return render_template("player.html", active="", pid=pid, info=info,
+                                   career=[], career_table=[],
+                                   records={"singles": _empty_box, "doubles": _empty_box},
+                                   strv=round(pro.str_value(), 1), rel=0.0, wins=0, losses=0,
+                                   gender=pg, honor_years=[], ranks=[], journey=[],
+                                   attrs=_sb(pro), crest=crest, u=u,
+                                   uni_label="Pro free agent")
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         from app.ncaa import player_by_pid
         from app.web.state import scout_bars
