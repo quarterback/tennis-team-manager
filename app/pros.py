@@ -74,6 +74,30 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
     return pros
 
 
+def assign_pros(cohort: list, programs: list) -> list:
+    """Decide which program signs each pro. `programs` is a list of dicts with keys
+    `school`, `budget` (recruiting-budget headroom), `prestige`, `open` (has a roster seat).
+    Best pro first goes to the highest-prestige program that can AFFORD them (budget ≥ cost)
+    and has an opening; one pro per program (spread — no blue-blood funnel). Because cost is
+    capped at PRO_COST_HI ≤ the elite budget, the top programs can always take the top pros,
+    so every pro finds a home. Returns [{pid, school, cost, str}] in signing order."""
+    ranked = sorted(cohort, key=lambda p: (-overall_to_str(p.current_overall()), p.pid))
+    avail = {pr["school"]: pr for pr in programs}
+    taken: set = set()
+    out = []
+    for pro in ranked:
+        cost = pro_cost(pro, cohort)
+        cands = [pr for s, pr in avail.items()
+                 if s not in taken and pr.get("open", True) and pr["budget"] >= cost]
+        if not cands:                                  # nobody affluent enough left
+            continue
+        dest = max(cands, key=lambda pr: (pr["prestige"], pr["school"]))
+        taken.add(dest["school"])
+        out.append({"pid": pro.pid, "school": dest["school"], "cost": cost,
+                    "str": round(overall_to_str(pro.current_overall()), 1)})
+    return out
+
+
 def pro_cost(pro, cohort: list) -> float:
     """Recruiting-budget cost for a pro, indexed to their STR relative to the cohort:
     the cohort's best pays `PRO_COST_HI`, its weakest `PRO_COST_LO`, linear between. This

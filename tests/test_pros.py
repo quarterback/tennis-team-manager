@@ -45,6 +45,20 @@ def test_deterministic_per_cycle():
     assert [p.pid for p in a] != [p.pid for p in c]
 
 
+def test_assign_every_pro_to_an_affordable_program():
+    c = _cohort(n=12)
+    # a spread of programs: a few elite (budget up to 33.5), many mid, some poor
+    programs = ([{"school": f"Elite{i}", "budget": 33.5, "prestige": 0.90 - i * 0.01, "open": True} for i in range(6)]
+                + [{"school": f"Mid{i}", "budget": 12.0, "prestige": 0.55, "open": True} for i in range(10)]
+                + [{"school": f"Poor{i}", "budget": 5.0, "prestige": 0.30, "open": True} for i in range(10)])
+    out = pros.assign_pros(c, programs)
+    assert len(out) == len(c)                             # every pro signed
+    assert len({a["school"] for a in out}) == len(out)    # one pro per program (spread)
+    # the priciest pro lands at an elite program (only they can afford ~15)
+    top = max(out, key=lambda a: a["cost"])
+    assert top["school"].startswith("Elite") and top["cost"] <= 33.5
+
+
 def test_cost_indexed_to_str_and_always_affordable():
     c = _cohort()
     costs = {p.pid: pros.pro_cost(p, c) for p in c}
