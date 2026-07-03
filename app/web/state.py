@@ -1293,6 +1293,8 @@ def recruit_economy_view() -> dict:
            "hi": re._D1_TIER_BANDS[t][1], "core": _core[t]}
           for t, lbl in (("top", "Blue Blood (top)"), ("major", "High-major (major)"),
                          ("mid", "Mid-major (mid)"), ("low", "Low-major (low)"))]
+    from app import pros as _pros
+    import app.worldconfig as _wc
     return {
         "tiers": tiers,
         "d1_bands": d1,
@@ -1303,6 +1305,9 @@ def recruit_economy_view() -> dict:
         "elite_academics": re._ELITE_D3D4_ACADEMICS,
         "roster_caps": {"D1": "12 (8 core + 4 walk-on)", "D2": "10 (6 + 4)",
                         "D3/D4": "16 (3 + 13)"},
+        "pros": {"per_cycle": _wc.pros_per_cycle(),
+                 "attr_lo": int(_pros.PRO_ATTR[0]), "attr_hi": int(_pros.PRO_ATTR[1]),
+                 "cost_lo": _pros.PRO_COST_LO, "cost_hi": _pros.PRO_COST_HI},
     }
 
 
