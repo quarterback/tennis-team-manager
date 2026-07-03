@@ -39,6 +39,26 @@
     </div>
   </div></div>
 
+  {# ---- The pro tier (portal-only, above the recruit board) ---- #}
+  <h2 style="margin:14px 0 8px;font-size:16px"><span class="pro-badge">PRO</span> The pro tier — above blue-chip, portal-only</h2>
+  <div class="bl-container"><div class="bl-note">
+    A small elite cohort of ex-pros sits <strong>above the 80 college ceiling</strong> — the only
+    players who exceed it. Their attributes are drawn in the <strong>{{ econ.pros.attr_lo }}–{{ econ.pros.attr_hi }}</strong>
+    band (landing <strong>OVR in the mid-80s</strong>), shown with a real STR/OVR like anyone else and
+    clearly better on court. They carry the green <span class="pro-badge">PRO</span> badge and can be
+    signed <strong>only through the transfer portal</strong> — never on the recruit board above.
+    <ul style="margin:8px 0 0;padding-left:18px;line-height:1.7">
+      <li><strong>{{ econ.pros.per_cycle }} per gender, every portal cycle</strong> (pre-season, fall, year-end) —
+        tunable live on the <a href="{{ url_for('preseason_portal') }}">Pre-season portal</a> page
+        (0 disables the tier).</li>
+      <li><strong>Cost {{ '%.1f'|format(econ.pros.cost_lo) }}–{{ '%.1f'|format(econ.pros.cost_hi) }}</strong>,
+        indexed to STR relative to the cohort — never priced above what a top program can afford, so
+        every pro gets signed. A blue-blood can <strong>stack more than one</strong> until its budget runs out,
+        then the next pro flows to the next-best program.</li>
+      <li>Signing one <strong>bumps the roster's weakest player</strong> (a walk-on) — the walk-on tail refills at rollover.</li>
+    </ul>
+  </div></div>
+
   {# ---- Budget bands by conference tier ---- #}
   <h2 style="margin:6px 0 8px;font-size:16px">Per-program budget bands</h2>
   <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.5;max-width:820px">
