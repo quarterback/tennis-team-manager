@@ -21,6 +21,31 @@ Reject the "video-game pyramid" (a handful of greats, everyone else falls away).
   portal-only**, real STR, entering through all three portal cycles (~15–20/gender/cycle),
   cost 8.5–15 indexed to STR-vs-pool so they always get signed.
 
+## Acceptance targets (owner's exact numbers — build to these)
+
+- **Floor:** the absolute bottom (D3/D4, or rock-bottom D2) sits at **grade 36–49** (~UTR
+  5–8); ~**10** players below that worldwide are fine, no more.
+- **D3/D4 programs:** *average* roster **UTR 4–7**; the better programs reach **8–9**, with the
+  **occasional 10** — because the talent pool shifted up, not because the floor was lifted to
+  elite. (So don't over-lift D3/D4: average should read clearly below "good.")
+- **80+ pro tier:** ~**25** standing in the world at any time.
+- **Elite roster depth:** **~2–3 UTR** from #1 to #6 — deliberately *looser* than the real
+  Texas super-team (0.7 is "egregiously wild and stacked"); most elite teams are baggier.
+- **Structure preserved:** boost the levels so everything *looks like it does now* but higher;
+  haves/have-nots still emerge organically. Do **not** flatten everyone equal — "not everyone
+  across the board should have access to this talent; that's the point." More teams than real
+  college tennis → a **college-basketball feel with tiny rosters** (the intended texture).
+
+### Pro tier — full spec (Stage 2)
+- **Volume:** up to **15–20 male and 15–20 female per transfer-portal cycle**, across **all
+  three** portal cycles (pre-season, fall, year-end). Standing 80+ population settles ~25.
+- **Identity:** grade **80+**, a **green badge**, and a **real STR/OVR** shown like any other
+  player — the whole point is to see how they stack. **Recruitable only through the portal.**
+- **Cost:** rolls **8.5–15**, **indexed to the recruit's STR relative to the current pool**, so
+  a pro is never priced above what some program can afford → they **always get signed**.
+- **Budget headroom:** elite programs' recruiting-budget cap raised so they can land them —
+  blue-blood band top **→ 33.5**.
+
 ## Stage 1 pass 1 — what changed (uncommitted calibration, now checkpointed)
 
 - **`recruit_economy.TIERS`** grades compressed + lifted (drives D1/D2 rosters): Blue Chip
