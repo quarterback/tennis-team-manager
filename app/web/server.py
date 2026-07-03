@@ -301,6 +301,8 @@ def create_app() -> Flask:
         flag, flags, country_name, country_abbrev, state_abbrev,
         team_logo, has_team_logo, team_logo_src,
     )
+    from app.pros import is_pro as _is_pro
+    app.jinja_env.filters["is_pro"] = _is_pro
     app.jinja_env.filters["flag"] = flag
     app.jinja_env.filters["flags"] = flags
     app.jinja_env.filters["country_name"] = country_name
@@ -776,6 +778,12 @@ def create_app() -> Flask:
         from app import worldconfig
         worldconfig.set_preseason_portal_cap(request.form.get("cap", ""))
         wd.rescan_preseason_portal()          # re-scan with the new per-gender cap
+        return redirect(url_for("preseason_portal"))
+
+    @app.route("/preseason-portal/pros", methods=["POST"])
+    def preseason_portal_pros_set():
+        from app import worldconfig
+        worldconfig.set_pros_per_cycle(request.form.get("pros", ""))   # even, per gender
         return redirect(url_for("preseason_portal"))
 
     @app.route("/preseason-portal/approve", methods=["POST"])
@@ -1294,8 +1302,13 @@ def create_app() -> Flask:
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         from app.ncaa import player_by_pid
         from app.web.state import scout_bars
+        from app import pros as _pros
         pr = player_by_pid(pid)
         attrs = scout_bars(pr) if pr else []
+        # Pros live in world_roster (portal-injected), not the base index — resolve from
+        # the persisted roster so the green PRO badge shows on their page.
+        _pp = pr or wd.find_persisted_player(pid)
+        info["is_pro"] = _pros.is_pro(_pp) if _pp else False
         career, (wins, losses) = player_career(division, gender, pid)
         career_table = player_career_table(division, gender, pid)
         records = player_career_records(division, gender, pid)

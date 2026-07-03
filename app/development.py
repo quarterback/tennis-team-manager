@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 from engine import Player, ATTRS
 from app.player_attributes import (
-    GRADE_MIN, GRADE_MAX, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
+    GRADE_MIN, GRADE_MAX, GRADE_CEIL, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
     clamp_grade, normalize_grades,
 )
 
@@ -221,7 +221,9 @@ class Prospect:
 
     # ---- current ability (visible) ----
     def current_grade(self, attr: str) -> int:
-        return int(_clamp(round(self._attrs().grade(attr)), GRADE_MIN, GRADE_MAX))
+        # Ceiling is GRADE_CEIL so a pro's 80-90 attributes display truthfully; normal
+        # players are all <= GRADE_MAX anyway, so this is a no-op for them.
+        return int(_clamp(round(self._attrs().grade(attr)), GRADE_MIN, GRADE_CEIL))
 
     def current_overall(self) -> int:
         return round(self._attrs().overall_grade())

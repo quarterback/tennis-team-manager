@@ -241,6 +241,28 @@ def set_preseason_portal_cap(value) -> None:
         return
 
 
+DEFAULT_PROS_PER_CYCLE = 18          # per gender, per portal cycle (kept EVEN)
+
+
+def pros_per_cycle() -> int:
+    """How many pros enter PER GENDER each portal cycle (the elite portal-only tier).
+    Always even so men and women get the same count; tunable so a spike can be dialled
+    down. 0 disables the pro tier entirely."""
+    try:
+        n = int(get("pros_per_cycle") or DEFAULT_PROS_PER_CYCLE)
+    except (ValueError, TypeError):
+        n = DEFAULT_PROS_PER_CYCLE
+    return max(0, n - (n % 2))       # clamp to even
+
+
+def set_pros_per_cycle(value) -> None:
+    try:
+        n = max(0, int(value))
+        set("pros_per_cycle", str(n - (n % 2)))    # store even
+    except (ValueError, TypeError):
+        return
+
+
 # --- Per-region weights ---------------------------------------------------------
 # A chosen band is a STARTING point; the editor then exposes a DIRECT weight per
 # region, so any bespoke international mix is expressible — e.g. a European core

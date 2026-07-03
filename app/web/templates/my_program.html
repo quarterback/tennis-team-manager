@@ -57,13 +57,14 @@
         {% endif %}
       </div>
       {% set ladder = mp.starters + mp.bench %}
+      <div class="mp-tscroll">
       <table class="mp-table">
         <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
         <tbody>
           {% for r in ladder %}
           <tr{% if r.injury %} class="mp-hurt"{% endif %}{% if not r.line %} class="mp-benchrow"{% endif %}>
             <td class="mp-line">{{ r.line or '—' }}</td>
-            <td>{{ r.p.name }}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
+            <td>{{ r.p.name }}{% if r.p | is_pro %} <span class="mp-pro" title="Ex-pro — entered via the portal">PRO</span>{% endif %}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
             <td>{{ r.p.class_year }}</td>
             <td class="mp-num">{{ r.str }}</td>
             <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
@@ -72,6 +73,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% if ladder|length >= 6 %}
       {% set lpin = ladder[:6]|map(attribute='p.pid')|list %}
       <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
@@ -201,6 +203,14 @@
   .mp-card h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-primary); }
   .mp-card-h { display: flex; align-items: baseline; justify-content: space-between; }
   .mp-card-link { font-size: 12.5px; font-weight: 600; color: var(--text-link); text-decoration: none; }
+  .mp-wrap { min-width: 0; }
+  /* Grid cards must be allowed to shrink below their content width, or a wide table
+     stretches the track and (with html{overflow-x:hidden}) gets clipped unreachably. */
+  .mp-grid > * { min-width: 0; }
+  /* Wide tables scroll horizontally INSIDE their card instead of being clipped by the
+     page. min-width keeps the columns readable while the box scrolls on a phone. */
+  .mp-tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .mp-tscroll .mp-table { min-width: 30rem; }
   .mp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .mp-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
     color: var(--text-muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); }
@@ -223,6 +233,10 @@
   .mp-move button:hover:not(:disabled) { color: var(--brand); border-color: var(--brand); }
   .mp-tag { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--stat-bad, #c0392b);
     border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
+  /* Ex-pro badge — green, portal-only elite tier. */
+  .mp-pro, .pro-badge { font-size: 9.5px; font-weight: 800; letter-spacing: .03em; color: #fff;
+    background: var(--stat-good, #2e7d32); border-radius: 4px; padding: 1px 5px;
+    vertical-align: middle; }
   .mp-dbl { display: flex; flex-direction: column; gap: 8px; }
   .mp-dblrow { display: flex; align-items: center; gap: 8px; }
   .mp-dbl-line { font-weight: 700; color: var(--text-secondary); width: 28px; flex: none; }

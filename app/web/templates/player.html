@@ -12,7 +12,7 @@
     <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
     <div><div class="tname">
         <span class="player-flag" title="{{ info.country|country_name }}">{{ info.country|flags(info.secondary_country) }}</span>
-        {{ info.name }}
+        {{ info.name }}{% if info.is_pro %} <span class="pro-badge" title="Ex-pro — entered via the portal">PRO</span>{% endif %}
         <span style="font-size:13px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div>
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>

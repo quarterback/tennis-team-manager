@@ -84,6 +84,10 @@
   overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
   border: 1px solid var(--border-subtle); border-radius: 8px;
 }
+/* Borderless horizontal-scroll wrapper for raw <table>s (schedule, coach/recruit
+   history, …) so a too-wide table scrolls in place on mobile instead of being clipped
+   by html{overflow-x:hidden}. Wrap the <table>; it keeps its own borders. */
+.tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .bl-table { min-width: 920px; }
 .bl-thead, .bl-row {
   display: grid; grid-template-columns: var(--bl-grid-cols); gap: 12px; align-items: center;
@@ -630,4 +634,12 @@ img, svg, table { max-width: 100%; }
   letter-spacing: var(--ls-eyebrow); color: var(--tint-loss-fg); text-align: center;
   background: repeating-linear-gradient(45deg, var(--surface-subtle), var(--surface-subtle) 8px, transparent 8px, transparent 16px);
   border-top: 1px dashed var(--border-default); border-bottom: 1px dashed var(--border-default);
+}
+
+/* Ex-pro badge — the green, portal-only elite tier (app.pros). Rendered next to a
+   player's name on the player page, roster, rankings, etc. */
+.pro-badge {
+  font-size: 9.5px; font-weight: 800; letter-spacing: .03em; color: #fff;
+  background: var(--stat-good, #2e7d32); border-radius: 4px; padding: 1px 5px;
+  vertical-align: middle;
 }

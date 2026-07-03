@@ -37,6 +37,11 @@
     <input type="number" name="cap" value="{{ pp.cap }}" min="0" max="2000" step="10" style="width:78px" class="bl-input">
     <button class="bl-btn" type="submit">Apply &amp; re-scan</button>
   </form>
+  <form method="post" action="{{ url_for('preseason_portal_pros_set') }}" style="display:flex;gap:6px;align-items:center" title="Ex-pros (green PRO badge) entering per gender each portal cycle — kept even; 0 disables the tier">
+    <label style="font-size:13px;color:var(--text-muted)">Pros / cycle / gender</label>
+    <input type="number" name="pros" value="{{ pp.pros_cycle }}" min="0" max="40" step="2" style="width:64px" class="bl-input">
+    <button class="bl-btn" type="submit">Apply</button>
+  </form>
 </div>
 {% endif %}
 

@@ -1,0 +1,131 @@
+# AAR — Talent compression + the pro tier
+
+> **Status:** Stage 1 (talent compression) is **locked** to owner-approved calibration.
+> Stage 2 (the portal-only pro tier) is **fully wired and tested** end to end. The one
+> deferred item is the 1,000-dual engine-validation pass and re-baselining the old
+> calibration unit tests (see *Open items*). The full suite was intentionally **not** run
+> per owner while the calibration is settling.
+
+---
+
+## 1. The vision (owner)
+
+Reject the "video-game pyramid" (a handful of greats, everyone else falls away). Instead:
+- **Everything lifted + compressed.** A fat band of genuinely-good players; the floor rises;
+  divisions overlap heavily instead of stacking. A great D3 kid can out-talent a mid-D1 kid
+  — he's just "ranked lower because he didn't win."
+- **Rosters tighter, but organically loose.** An elite roster runs **~2–3 UTR** deep, not the
+  old 7-UTR cliff (and not the absurdly-stacked real Texas 0.7). Haves/have-nots still emerge
+  — **don't blow up the structure, boost the levels.** "Not everyone across the board should
+  have access to this talent — that's the point." More teams than real college tennis → a
+  **college-basketball feel with tiny rosters.**
+- **Separation from the engine, not the generator.** With talent near-equal, match scores
+  (attributes + margins) decide who's actually good — also the best **engine test**: 1,000
+  duals of 68v69 / 71v72 / 77v77 should still separate the good from the rest.
+- **A pro tier above the college ceiling.** Elite ex-pros, **green-badged, portal-only**,
+  real STR, entering every portal cycle.
+
+### Owner acceptance numbers
+- **Floor:** absolute bottom (D3/D4, rock-bottom D2) ~grade 36–49; **no hard cap** — "if they
+  fall they fall" (a natural low tail is fine).
+- **D3/D4:** *average* roster **UTR ~7**; better programs reach 8–9, the occasional 10. No
+  engineered D3/D4 spread — it emerges from the sim.
+- **Elite roster depth:** ~2–3 UTR #1→#6 (looser than the stacked real Texas).
+- **Pros:** **OVR 81–90**, clearly better (not superpowered). Up to **15–20/gender per portal
+  cycle**, all three cycles, real STR/OVR, green badge, **recruitable only in the portal**.
+  Cost **8.5–15** indexed to STR-vs-pool so they always sign. Same team **can** get more than
+  one (budget-gated). A **live UI lever** controls the count. **Only pros exceed 80; every
+  other cap is unchanged** (33.5 is the *elite-only* budget top).
+
+---
+
+## 2. Stage 1 — talent compression (LOCKED)
+
+| Lever | Change | Effect |
+|---|---|---|
+| `recruit_economy.TIERS` (D1/D2 roster grades) | Blue Chip 70→**74**, 5★ 64.5→**71**, 4★ 58.7→**67**, 3★ 52.9→**62**, 2★ 47→**56**, 1★ 41→**50** | the 29-pt cliff → a ~24-pt ladder a roster only samples a slice of, so 1–6 cluster; budget economy (who *signs* which star) unchanged |
+| `_D1_TIER_BANDS["top"]` | blue-blood budget cap 26 → **33.5** (elite tier only) | deeper elite cores; also lets elites afford pros |
+| `ncaa._TALENT` (D3/D4 + program levels) | D1 (56,23)→(60,16) · D2 (50,58)→(50,24) · D3 (33,44)→(43,20) · D4 (28,44)→(40,18) (+women) | bases lifted, spreads compressed; heavy division overlap |
+| Floor clamp (`_talent_mean`, `_base_roster`) | **kept at 24** (no artificial lift) | per owner "no caps"; the low tail forms naturally |
+
+**Resulting men's shape:** population peak up ~2 UTR; top fattened (75–79: 1→**25**, 70–74:
+103→**258**); per-division avg UTR **D1 10.2 · D2 9.3 · D3 7.4 · D4 7.3**; elite roster spread
+**5.7 → 3.4** (Texas), low-major D1 (Cornell) **2.1**. Matches the owner's calls (avg-7 D3/D4,
+natural floor, structure preserved).
+
+---
+
+## 3. Stage 2 — the pro tier (WIRED + TESTED)
+
+### 3a. Exceeding 80 without touching anyone else
+`GRADE_MAX = 80` stays the **normalization reference** (grade 80 == unit 1.0 == college
+ceiling) so every normal player is byte-identical. A separate higher **hard clamp**
+`player_attributes.GRADE_CEIL = 100` is the only thing lifted:
+- `clamp_grade` / `Prospect.current_grade` clamp to `GRADE_CEIL`; normal **generation still
+  clamps to `GRADE_MAX`**, so ordinary players never reach the headroom.
+- `grade_to_unit` drops its `min(1.0)` cap → grade 80 = 1.0 (unchanged), a pro's 85 = 1.083,
+  so pro drivers feed the engine **above 1.0** and win more; the engine already clamps the
+  **resulting probability** (`_clamp01`) → "clearly better, not superpowered."
+- Verified: pros beat a grade-74 blue-chip **130+/200**; the blue-chip is unchanged (OVR 78);
+  `test_engine` green.
+
+### 3b. Generation, cost, assignment (`app/pros.py`, `tests/test_pros.py` 6/6)
+- **`generate_pros(salt, gender, cycle_key)`** — deterministic cohort of
+  `worldconfig.pros_per_cycle()` players; every attribute drawn in **80–90** → **OVR 83–85 /
+  STR 58–59**; international-heavy names; green **PRO** badge (`junior_badges`);
+  `recruit_stars = 6`.
+- **`pro_cost(pro, cohort)`** — cost indexed to STR-vs-cohort across **8.5–15** (best pays 15,
+  weakest 8.5), always ≤ the 33.5 elite cap → every pro signable.
+- **`assign_pros(cohort, programs)`** — best pro first to the highest-prestige program that
+  can still afford it; the program's **budget is then depleted**, so a blue-blood can **stack
+  2–3 pros** while its money lasts, then the flow spills to the next-best (funnel-then-spread,
+  not a hard 1-each cap). A pro always takes a roster spot.
+
+### 3c. Live wiring (`app/world.py`)
+- **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
+  `world_roster`** (so `developed_rosters`/`prime` pick them up and they play). A full roster
+  **displaces its weakest player** (walk-on bumped; refills at rollover). Idempotent per
+  `(year, cycle)` via a new **`world_pro`** ledger; clears `_base_cache`/`_dev_cache`/`_primed`
+  + `reset_caches()`.
+- **All three cycles hooked:** `<year>-preseason` (`advance_week` wk 0), `<year>-fall`
+  (`commit_fall_portal`), `<year>-transfer` (end of `_finalize_year`, into the new year).
+- **Portal-only:** pros are generated by `app.pros` and injected by the portal path ONLY —
+  they never enter the HS recruit class / board.
+
+### 3d. UI lever + badge
+- **`worldconfig.pros_per_cycle()`** — default **18**, always **even** (men == women), **0
+  disables the tier**. Set live from the **"Pros / cycle / gender"** input on
+  `/preseason-portal` (route `/preseason-portal/pros`). Owner note: not worried about the
+  count — many D1 teams absorb them and the same team may get >1 pro; the lever dials volume
+  down in real time.
+- **Green PRO badge:** `is_pro` Jinja filter + `.pro-badge` (green) in `app.css`; rendered on
+  the roster (`my_program.html`) and the player page (`player.html`, via `info.is_pro`
+  resolved from the persisted roster since pros aren't in the base index).
+
+**Verified end-to-end:** 12/gender signed onto the top programs (Wake Forest, Georgia, Texas,
+Stanford, USC) at OVR 85–87, each displacing a walk-on; budget-depletion lets the rich stack;
+re-inject no-ops; badge + lever render via the Flask client.
+
+---
+
+## 4. Files touched
+- `app/player_attributes.py` — `GRADE_CEIL`, `clamp_grade`, `grade_to_unit`.
+- `app/development.py` — import `GRADE_CEIL`, `current_grade` clamp.
+- `app/recruit_economy.py` — `TIERS` grades, `_D1_TIER_BANDS["top"]` 33.5.
+- `app/ncaa.py` — `_TALENT` bases/spreads (Stage 1).
+- `app/pros.py` — **new**: generation, cost, budget-depletion assignment, `is_pro`.
+- `app/world.py` — `world_pro` schema + reset, `inject_pros`, 3 cycle hooks.
+- `app/worldconfig.py` — `pros_per_cycle` / `set_pros_per_cycle` (even).
+- `app/web/server.py` — `is_pro` filter, `/preseason-portal/pros` route, player-page `is_pro`.
+- `app/web/state.py` — `pros_cycle` in the portal view.
+- `app/web/static/css/app.css`, `templates/{my_program,player,preseason_portal}.html` — badge + lever.
+- `tests/test_pros.py` — **new** (6 tests).
+
+## 5. Open items
+- **Engine-validation gate (not yet run):** 1,000 near-equal duals (68v69 / 71v72 / 77v77) —
+  confirm the compressed band still separates the good from the rest via scores.
+- **Re-baseline the old calibration tests:** `test_roster`, `test_development`, and the other
+  UTR-band assertions expect the *pre*-compression numbers and will fail until updated to the
+  new bands. The full suite was deliberately not run while numbers settle.
+- **In-game eyeball:** watch the pro count across the 3 cycles (18/gender × 3 ≈ 54/gender/yr
+  entering) and dial the lever if it reads high; confirm the compressed talent feels right.

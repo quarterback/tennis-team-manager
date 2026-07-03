@@ -49,6 +49,7 @@
         <span class="bl-panel-meta">by team · year over year</span></div>
         <div class="bl-panel-body">
           {% if career and career.rows %}
+          <div class="tbl-scroll">
           <table class="bl-protable cr-table"><thead>
             <tr><th>Year</th><th>Team</th><th>Role</th><th style="text-align:right">Record</th></tr></thead>
             <tbody>
@@ -68,6 +69,7 @@
               <td style="text-align:right;font-weight:700">{{ career.career_w }}-{{ career.career_l }}</td>
             </tr></tfoot>{% endif %}
           </table>
+          </div>
           <p class="bl-note" style="margin-top:8px">Career wins count head-coach seasons only — an assistant's team record is shown for context but doesn't bank wins until they run a program.</p>
           {% else %}
           <p class="aw-empty" style="padding:4px 2px">No seasons recorded yet — stamped when a season concludes.</p>
