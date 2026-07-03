@@ -78,26 +78,25 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
 
 def assign_pros(cohort: list, programs: list) -> list:
     """Decide which program signs each pro. `programs` is a list of dicts with keys
-    `school`, `budget` (recruiting-budget headroom), `prestige`, `open` (has a roster seat).
-    Best pro first goes to the highest-prestige program that can AFFORD them (budget ≥ cost)
-    and has an opening; one pro per program (spread — no blue-blood funnel). Because cost is
-    capped at PRO_COST_HI ≤ the elite budget, the top programs can always take the top pros,
-    so every pro finds a home. Returns [{pid, school, cost, str}] in signing order."""
+    `school`, `budget` (recruiting-budget headroom), `prestige`. Best pro first goes to the
+    highest-prestige program that can still AFFORD them, and that program's budget is then
+    DEPLETED by the cost — so a blue-blood can stack 2-3 pros while its money lasts, then the
+    flow spills to the next-best program (a natural funnel-then-spread, not a hard 1-each
+    cap). A pro always takes a roster spot (displacing the weakest if full), so budget is the
+    only gate; cost ≤ PRO_COST_HI ≤ the elite cap keeps every pro signable. Returns
+    [{pid, school, cost, str}] in signing order."""
     ranked = sorted(cohort, key=lambda p: (-overall_to_str(p.current_overall()), p.pid))
-    avail = {pr["school"]: pr for pr in programs}
-    taken: set = set()
+    prog = {pr["school"]: pr for pr in programs}
+    budget_left = {s: pr["budget"] for s, pr in prog.items()}
     out = []
     for pro in ranked:
         cost = pro_cost(pro, cohort)
-        # A pro can always take a roster spot (displacing the weakest if full), so the
-        # only gate is budget — never an open seat.
-        cands = [pr for s, pr in avail.items()
-                 if s not in taken and pr["budget"] >= cost]
+        cands = [s for s, b in budget_left.items() if b >= cost]
         if not cands:                                  # nobody affluent enough left
             continue
-        dest = max(cands, key=lambda pr: (pr["prestige"], pr["school"]))
-        taken.add(dest["school"])
-        out.append({"pid": pro.pid, "school": dest["school"], "cost": cost,
+        dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
+        budget_left[dest] -= cost                      # spend it — deplete for the next pro
+        out.append({"pid": pro.pid, "school": dest, "cost": cost,
                     "str": round(overall_to_str(pro.current_overall()), 1)})
     return out
 
