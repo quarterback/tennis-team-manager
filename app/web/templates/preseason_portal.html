@@ -77,6 +77,43 @@
 </div>
 {% endif %}
 
+{% if pp.pros %}
+<div class="bl-container">
+  <div class="bl-entries"><div class="bl-entries-left">
+    <strong style="color:var(--text-primary)"><span class="pro-badge">PRO</span> Pros entering via the portal</strong>
+  </div><span class="bl-entries-right">{{ pp.pros|length }} from the Pros pool</span></div>
+  <div class="bl-note" style="font-size:12px;margin-bottom:8px">
+    Elite ex-pros — a cut above blue-chip and the only players over the 80 ceiling. They come out of
+    a synthetic <strong>Pros</strong> pool and sign ONLY through the portal, going to the best club that
+    can fund them (paid from the <strong>same</strong> budget as the recruit class). Every generated pro
+    signs — set the volume with <strong>Pros / cycle / gender</strong> above (0 disables the tier).
+  </div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.5fr) 48px 60px 24px minmax(150px,1.2fr)">
+      <div class="bl-thead">
+        <span class="bl-th">PLAYER</span><span class="bl-th num">STR</span>
+        <span class="bl-th num" title="Scholarship-equivalency spent from the program's one budget">COST</span>
+        <span class="bl-th"></span><span class="bl-th">SIGNED WITH</span>
+      </div>
+      {% for pr in pp.pros %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('player', pid=pr.pid, school=pr.dest_school, u=pr.dest_div ~ '-' ~ pr.gender) }}">
+          <span class="pro-badge">PRO</span>
+          <span class="player-flag" title="{{ pr.country|country_name }}">{{ pr.country|flags }}</span>
+          {{ pr.name }}</a>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(pr.str) }}</span></span>
+        <span class="bl-cell-num"><span class="bl-stat">{{ "%.1f"|format(pr.cost) }}</span></span>
+        <span style="color:var(--text-faint);text-align:center">→</span>
+        <a class="bl-conf" href="{{ url_for('teams', school=pr.dest_school) }}" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+          {{ crest_box(pr.dest_school, pr.to_abbr, pr.to_color, 'xs') }} {{ pr.dest_school }}
+          <span style="color:var(--text-faint)">{{ pr.dest_div }}</span></a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if not pp.proposals %}
 <div class="bl-container"><div class="bl-note">
   {% if pp.done %}No moves were applied.{% else %}No moves on the slate — the talent's already where it belongs
@@ -117,7 +154,10 @@
         {% if t.is_riser %}<span class="bl-stat power" title="Rising to a higher division">▲ rise</span>
         {% else %}<span class="bl-conf" title="Pushed down to make room for a riser">▽ down</span>{% endif %}
       </span>
-      <a class="bl-school" href="{{ url_for('player', pid=t.pid, school=t.dest_school) }}">
+      {# The player physically lives in their SOURCE universe until the slate commits, then in
+         the DEST universe — link to wherever they currently resolve so the profile never 404s
+         (the /player route looks the pid up within one division×gender). #}
+      <a class="bl-school" href="{{ url_for('player', pid=t.pid, school=(t.dest_school if pp.done else t.src_school), u=(t.dest_div if pp.done else t.src_div) ~ '-' ~ t.gender) }}">
         <span class="player-flag" title="{{ t.country|country_name }}">{{ t.country|flags }}</span>
         {{ t.name }} <span style="color:var(--text-faint)">{{ t.class }}</span></a>
       <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(t.str) }}</span></span>

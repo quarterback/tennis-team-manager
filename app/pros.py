@@ -81,20 +81,26 @@ def assign_pros(cohort: list, programs: list) -> list:
     `school`, `budget` (recruiting-budget headroom), `prestige`. Best pro first goes to the
     highest-prestige program that can still AFFORD them, and that program's budget is then
     DEPLETED by the cost — so a blue-blood can stack 2-3 pros while its money lasts, then the
-    flow spills to the next-best program (a natural funnel-then-spread, not a hard 1-each
-    cap). A pro always takes a roster spot (displacing the weakest if full), so budget is the
-    only gate; cost ≤ PRO_COST_HI ≤ the elite cap keeps every pro signable. Returns
-    [{pid, school, cost, str}] in signing order."""
+    flow spills to the next-best program (a natural funnel-then-spread, not a hard 1-each cap).
+
+    EVERY generated pro signs — the per-cycle lever IS the intake count, so a pro is never
+    dropped for lack of budget. When no club can still strictly afford one, it signs with the
+    club that has the most budget left anyway, pushing that club hard: its budget goes toward
+    (or past) zero, so its recruiting class shrinks accordingly (the shared-budget cost of
+    chasing pros). Returns [{pid, school, cost, str}] in signing order."""
     ranked = sorted(cohort, key=lambda p: (-overall_to_str(p.current_overall()), p.pid))
     prog = {pr["school"]: pr for pr in programs}
     budget_left = {s: pr["budget"] for s, pr in prog.items()}
     out = []
     for pro in ranked:
+        if not budget_left:
+            break                                      # no programs at all — nothing to sign to
         cost = pro_cost(pro, cohort)
         cands = [s for s, b in budget_left.items() if b >= cost]
-        if not cands:                                  # nobody affluent enough left
-            continue
-        dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
+        if cands:                                      # prefer a club that can afford it
+            dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
+        else:                                          # none can — sign to the deepest pocket anyway
+            dest = max(budget_left, key=lambda s: (budget_left[s], prog[s]["prestige"], s))
         budget_left[dest] -= cost                      # spend it — deplete for the next pro
         out.append({"pid": pro.pid, "school": dest, "cost": cost,
                     "str": round(overall_to_str(pro.current_overall()), 1)})

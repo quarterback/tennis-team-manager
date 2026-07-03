@@ -1899,6 +1899,11 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
                                 json.dumps(prospect_to_dict(p))))
             pro_rows.append((w["id"], w["year"], cycle_key, gender, d, school, p.pid, a["cost"]))
     if roster_rows:
+        # Defensive: clear any prior row for these pids this year before inserting, so a pro
+        # can never appear twice in world_roster even if this ever runs off a half-cleared
+        # ledger (the cycle guard above already prevents a clean double-inject).
+        conn.executemany("DELETE FROM world_roster WHERE world_id=? AND year=? AND pid=?",
+                         [(w["id"], w["year"], r[5]) for r in roster_rows])
         conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", roster_rows)
     # Always leave a ledger marker for the cycle so it never re-injects (even if 0 signed).
     conn.execute("INSERT INTO world_pro VALUES (?,?,?,?,?,?,?,?)",
@@ -1911,6 +1916,41 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
     reset_caches()
     return {"event": "pros_injected", "year": w["year"], "cycle": cycle_key,
             "signed": len(pro_rows)}
+
+
+def list_pros(seed: int = DEFAULT_SEED, cycle_key: str | None = None) -> list[dict]:
+    """Display rows for the pros that entered via the portal this year — the synthetic
+    'Pros' pool → their signing club, carrying the real STR/cost/badge. `cycle_key` limits
+    to one cycle (e.g. the pre-season intake); None returns every cycle so far this year.
+    Read-only: the assignment is budget-driven and the count is the pros-per-cycle lever."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        q = ("SELECT cycle, gender, division, school, pid, cost FROM world_pro"
+             " WHERE world_id=? AND year=? AND pid!=''")
+        args = [w["id"], w["year"]]
+        if cycle_key:
+            q += " AND cycle=?"
+            args.append(cycle_key)
+        rows = conn.execute(q, args).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        p = find_persisted_player(r["pid"], seed)
+        if not p:
+            continue
+        out.append({"pid": r["pid"], "gender": r["gender"],
+                    "src_school": "Pros", "src_div": "PRO",
+                    "dest_school": r["school"], "dest_div": r["division"],
+                    "name": getattr(p, "name", r["pid"]),
+                    "country": getattr(p, "country", ""),
+                    "str": round(p.str_value(), 1), "cost": round(r["cost"] or 0.0, 1),
+                    "cycle": r["cycle"]})
+    out.sort(key=lambda d: (-d["str"], d["pid"]))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -1935,6 +1975,10 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     (so it never clobbers the user's edits or a committed run)."""
     from app import overrides as ov
     w = get_or_create(seed)
+    # Pros enter through the portal, so seed the pre-season cohort here (idempotent per the
+    # world_pro cycle guard) — they're persisted onto their signing clubs and surfaced in the
+    # portal view as movers from the synthetic "Pros" pool.
+    inject_pros(seed, f"{w['year']}-preseason")
     if ov.ps_get_proposals(w["year"]):                 # already seeded / committed
         return {"event": "preseason_portal_exists", "year": w["year"]}
     # Source rosters the SAME way the Bureau boards do — every division, live — so the

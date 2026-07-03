@@ -1348,8 +1348,18 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
     if not w:
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
                 "destinations": [], "is_preseason": False, "cap": cap, "pros_cycle": pros_cycle,
-                "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
+                "pros": [], "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
                 "page": 1, "pages": 1}
+    # Pros enter through the portal from the synthetic "Pros" pool — surface this year's
+    # pre-season intake (signed onto their clubs) so they're visible + clickable here.
+    _g = gender if gender in ("men", "women") else "all"
+    _all_pros = world.list_pros(seed, f"{w['year']}-preseason")
+    pros_in = []
+    for pr in _all_pros:
+        if _g != "all" and pr["gender"] != _g:
+            continue
+        ta, tc = crest(pr["dest_school"])
+        pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
     committed = ov.ps_get_proposals(w["year"], status="committed")
     if committed:
         # Already applied — show the committed slate as-is (no re-resolve).
@@ -1369,7 +1379,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
                 "proposals": pg["page_rows"], "n": len(out),
                 "riders": sum(1 for r in out if r["is_riser"]),
                 "committed": len(committed), "done": True, "cap": cap, "pros_cycle": pros_cycle,
-                "is_preseason": w["week"] == 0,
+                "is_preseason": w["week"] == 0, "pros": pros_in,
                 "gender": pg["gender"], "gender_counts": pg["gender_counts"],
                 "page": pg["page"], "pages": pg["pages"],
                 "destinations": world.fall_portal_destinations(seed)}
@@ -1397,7 +1407,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
             "proposals": pg["page_rows"], "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": 0, "done": False, "cap": cap, "pros_cycle": pros_cycle,
-            "is_preseason": w["week"] == 0, "debug": debug,
+            "is_preseason": w["week"] == 0, "debug": debug, "pros": pros_in,
             "gender": pg["gender"], "gender_counts": pg["gender_counts"],
             "page": pg["page"], "pages": pg["pages"],
             "destinations": world.fall_portal_destinations(seed)}

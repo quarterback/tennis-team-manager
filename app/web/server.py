@@ -758,8 +758,8 @@ def create_app() -> Flask:
         # division (the first-launch D3/D4 over-allocation) to a fitting program before
         # the season opens. Seeds the slate on first visit if nothing's proposed yet.
         w = wd.load_world()
-        if w and w["week"] == 0 and not ov.ps_get_proposals(w["year"]):
-            wd.run_preseason_portal()
+        if w and w["week"] == 0:
+            wd.run_preseason_portal()   # seeds riders on first visit + ensures pros; both idempotent
         gender = request.args.get("gender", "all")
         try:
             page = int(request.args.get("page", 1))
