@@ -52,22 +52,22 @@ def test_deterministic_per_cycle():
     assert [p.pid for p in a] != [p.pid for p in c]
 
 
-def test_assign_depletes_budget_and_stacks_on_the_rich():
+def test_assign_spreads_one_per_club_and_never_overspends():
+    """With the cost pitched high (18–30, near the elite cap), a club affords ONE pro and the
+    flow SPREADS — no stacking, no overspend, and clubs that can't fund one sign none."""
     c = _cohort(n=12)
     programs = ([{"school": f"Elite{i}", "budget": 33.5, "prestige": 0.90 - i * 0.01} for i in range(6)]
                 + [{"school": f"Mid{i}", "budget": 12.0, "prestige": 0.55} for i in range(10)]
                 + [{"school": f"Poor{i}", "budget": 5.0, "prestige": 0.30} for i in range(10)])
     out = pros.assign_pros(c, programs)
-    assert len(out) == len(c)                             # every pro signed
-    # a program can sign MORE than one pro (budget-gated), and no program overspends
     by_school = {}
     for a in out:
         by_school.setdefault(a["school"], 0.0)
         by_school[a["school"]] += a["cost"]
-    assert max(by_school.values()) <= 33.5                # never over its budget
-    assert any(sum(1 for a in out if a["school"] == s) >= 2 for s in by_school)  # stacking happens
-    # poor programs (budget 5 < min cost 8.5) never sign a pro
-    assert not any(a["school"].startswith("Poor") for a in out)
+    assert max(by_school.values()) <= 33.5                       # never over its budget
+    assert all(sum(1 for a in out if a["school"] == s) == 1 for s in by_school)  # one per club — spread
+    # only the elite budgets (33.5) can afford a pro at 18–30; mids (12) and poor (5) can't
+    assert all(a["school"].startswith("Elite") for a in out)
 
 
 def test_cost_indexed_to_str_and_always_affordable():

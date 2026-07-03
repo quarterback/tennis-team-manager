@@ -25,7 +25,11 @@ PRO_ATTR = (80.0, 90.0)            # pros live ABOVE the 80 college ceiling — 
                                     # normalize above 1.0 (clearly better on court). Only the
                                     # pro tier reaches this headroom; everyone else stays <= 80.
 PRO_PER_CYCLE = (15, 20)           # up to this many per gender, per portal cycle
-PRO_COST_LO, PRO_COST_HI = 8.5, 15.0
+# STR-indexed cost band. Pitched HIGH on purpose (near the elite budget cap of 33.5): a pro
+# eats most of a program's one budget, so even a blue-blood affords ONE without gutting its
+# recruit class and majors can't afford one at all — pros SPREAD instead of stacking at a
+# handful of rich clubs. Still ≤ the elite cap so a pro a program CAN fund is always signable.
+PRO_COST_LO, PRO_COST_HI = 18.0, 30.0
 
 # Pros are drawn from the pro tour, which is overwhelmingly international — mirror that
 # with a heavy non-US mix (the name picker fills nationalities from these weights).
@@ -83,24 +87,22 @@ def assign_pros(cohort: list, programs: list) -> list:
     DEPLETED by the cost — so a blue-blood can stack 2-3 pros while its money lasts, then the
     flow spills to the next-best program (a natural funnel-then-spread, not a hard 1-each cap).
 
-    EVERY generated pro signs — the per-cycle lever IS the intake count, so a pro is never
-    dropped for lack of budget. When no club can still strictly afford one, it signs with the
-    club that has the most budget left anyway, pushing that club hard: its budget goes toward
-    (or past) zero, so its recruiting class shrinks accordingly (the shared-budget cost of
-    chasing pros). Returns [{pid, school, cost, str}] in signing order."""
+    Budget-gated (used by the fall/transfer auto cycles; the pre-season portal signs pros by
+    hand instead). A club only signs a pro it can AFFORD, and with the cost pitched high
+    (`PRO_COST_LO/HI`) that eats most of a budget, so a club realistically takes ONE and the
+    flow SPREADS to the next-best club rather than stacking — no overspend, no funnel. Pros a
+    club can't fund simply go unsigned that cycle. Returns [{pid, school, cost, str}] in
+    signing order."""
     ranked = sorted(cohort, key=lambda p: (-overall_to_str(p.current_overall()), p.pid))
     prog = {pr["school"]: pr for pr in programs}
     budget_left = {s: pr["budget"] for s, pr in prog.items()}
     out = []
     for pro in ranked:
-        if not budget_left:
-            break                                      # no programs at all — nothing to sign to
         cost = pro_cost(pro, cohort)
         cands = [s for s, b in budget_left.items() if b >= cost]
-        if cands:                                      # prefer a club that can afford it
-            dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
-        else:                                          # none can — sign to the deepest pocket anyway
-            dest = max(budget_left, key=lambda s: (budget_left[s], prog[s]["prestige"], s))
+        if not cands:                                  # nobody affluent enough left — unsigned
+            continue
+        dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
         budget_left[dest] -= cost                      # spend it — deplete for the next pro
         out.append({"pid": pro.pid, "school": dest, "cost": cost,
                     "str": round(overall_to_str(pro.current_overall()), 1)})

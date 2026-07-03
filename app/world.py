@@ -1748,8 +1748,8 @@ def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
     _dev_cache.clear()
     _release_fall_portal(seed, w)
     reset_caches(); _primed.pop(seed, None)
-    inject_pros(seed, f"{year}-fall")                  # the fall portal cycle's pro intake
-    return {"event": "fall_portal_committed", "year": year, "moved": moved}
+    signed = _commit_pro_signings(seed, f"{year}-fall")   # persist the free-agent pros signed this window
+    return {"event": "fall_portal_committed", "year": year, "moved": moved, "pros": signed}
 
 
 def _fp_find(seed: int, w: dict, rosters: dict, pid: str):
@@ -1948,9 +1948,163 @@ def list_pros(seed: int = DEFAULT_SEED, cycle_key: str | None = None) -> list[di
                     "name": getattr(p, "name", r["pid"]),
                     "country": getattr(p, "country", ""),
                     "str": round(p.str_value(), 1), "cost": round(r["cost"] or 0.0, 1),
-                    "cycle": r["cycle"]})
+                    "cycle": r["cycle"], "signed": True})
     out.sort(key=lambda d: (-d["str"], d["pid"]))
     return out
+
+
+def pro_destinations(seed: int = DEFAULT_SEED) -> list[str]:
+    """Every program a free-agent pro can sign with — ALL programs, ANY division."""
+    return fall_portal_destinations(seed)
+
+
+def pro_cohort(seed: int = DEFAULT_SEED, cycle_key: str | None = None) -> list[dict]:
+    """This cycle's pro FREE-AGENT pool: the deterministic cohort (regenerated on demand —
+    they aren't persisted until signed), each with real STR, an STR-indexed cost, and the club
+    the user has signed them to (blank = still a free agent). Pre-commit source for the portal;
+    after the slate commits, signed pros live in `world_pro`/`world_roster` — read `list_pros`."""
+    from app import pros
+    from app import overrides as ov
+    w = load_world(seed)
+    if not w:
+        return []
+    cycle_key = cycle_key or f"{w['year']}-preseason"
+    salt = active_salt(seed)
+    signs = ov.pro_get_signs(w["year"], cycle_key)
+    out = []
+    for gender in worldconfig.active_genders():
+        cohort = pros.generate_pros(salt, gender, cycle_key)
+        for p in cohort:
+            sg = signs.get(p.pid)
+            out.append({"pid": p.pid, "gender": gender,
+                        "name": getattr(p, "name", p.pid),
+                        "country": getattr(p, "country", ""),
+                        "str": round(p.str_value(), 1),
+                        "cost": round(pros.pro_cost(p, cohort), 1),
+                        "src_school": "Pros", "src_div": "PRO",
+                        "dest_school": sg["dest_school"] if sg else "",
+                        "dest_div": sg["dest_div"] if sg else "",
+                        "signed": bool(sg), "cycle": cycle_key})
+    out.sort(key=lambda d: (-d["str"], d["pid"]))
+    return out
+
+
+def sign_pro(seed: int, pid: str, dest_school: str, cycle_key: str | None = None) -> dict:
+    """Sign a free-agent pro to ANY program (any division). Stores the intent; the pro is
+    persisted onto the roster at commit. `dest_school` empty → unsign (back to free agent)."""
+    w = load_world(seed)
+    if not w:
+        return {"ok": False, "error": "no world"}
+    from app import overrides as ov
+    cycle_key = cycle_key or f"{w['year']}-preseason"
+    dest_school = (dest_school or "").strip()
+    if not dest_school:
+        ov.pro_unsign(w["year"], cycle_key, pid)
+        return {"ok": True, "pid": pid, "dest": ""}
+    salt = active_salt(seed)
+    from app import pros
+    for gender in worldconfig.active_genders():
+        if any(p.pid == pid for p in pros.generate_pros(salt, gender, cycle_key)):
+            prog = _flat_programs(gender).get(dest_school)
+            if not prog:
+                return {"ok": False, "error": f"unknown program {dest_school!r}"}
+            ov.pro_set_sign(w["year"], cycle_key, gender, pid, dest_school, prog.division)
+            return {"ok": True, "pid": pid, "dest": dest_school, "div": prog.division}
+    return {"ok": False, "error": "unknown pro"}
+
+
+def unsign_pro(seed: int, pid: str, cycle_key: str | None = None) -> dict:
+    """Drop a pro's signing — back to an unsigned free agent."""
+    from app import overrides as ov
+    w = load_world(seed)
+    if not w:
+        return {"ok": False}
+    ov.pro_unsign(w["year"], cycle_key or f"{w['year']}-preseason", pid)
+    return {"ok": True, "pid": pid}
+
+
+# The portal cycles a free-agent pro can be viewed/signed in this year (deterministic
+# cohorts, regenerable — so an UNSIGNED pro's profile resolves without being on a roster).
+def _pro_cycles(year: int) -> list[str]:
+    return [f"{year}-preseason", f"{year}-fall"]
+
+
+def find_pro(seed: int, pid: str):
+    """Locate a free-agent pro by pid across this year's cohorts (regenerated on demand).
+    Returns (Prospect, gender, cycle_key, signed_dest_or_'') or None — lets the player page
+    render an unsigned pro (STR + attributes) BEFORE they're signed onto any roster."""
+    from app import pros
+    from app import overrides as ov
+    w = load_world(seed)
+    if not w:
+        return None
+    salt = active_salt(seed)
+    for cyc in _pro_cycles(w["year"]):
+        signs = ov.pro_get_signs(w["year"], cyc)
+        for gender in worldconfig.active_genders():
+            for p in pros.generate_pros(salt, gender, cyc):
+                if p.pid == pid:
+                    dest = signs.get(pid, {}).get("dest_school", "")
+                    return (p, gender, cyc, dest)
+    return None
+
+
+def _commit_pro_signings(seed: int, cycle_key: str) -> int:
+    """Persist the pros the user signed this cycle onto their clubs (world_roster + the
+    world_pro ledger), displacing each club's weakest player if it's full. Idempotent per
+    cycle via the ledger marker; the shared-budget deduction (`_pro_spend`) then reads it."""
+    from app import pros
+    from app import overrides as ov
+    w = get_or_create(seed)
+    signs = ov.pro_get_signs(w["year"], cycle_key)
+    conn = _db()
+    if conn.execute("SELECT 1 FROM world_pro WHERE world_id=? AND year=? AND cycle=? LIMIT 1",
+                    (w["id"], w["year"], cycle_key)).fetchone():
+        conn.close()
+        return 0                                       # already committed this cycle
+    if not signs:
+        conn.close()
+        return 0
+    salt = active_salt(seed)
+    prime(seed)
+    rosters = developed_rosters(w)
+    roster_rows, pro_rows = [], []
+    for gender in worldconfig.active_genders():
+        cohort = {p.pid: p for p in pros.generate_pros(salt, gender, cycle_key)}
+        cohort_list = list(cohort.values())
+        for pid, sg in signs.items():
+            if sg["gender"] != gender:
+                continue
+            p = cohort.get(pid)
+            if not p:
+                continue
+            d, school = sg["dest_div"], sg["dest_school"]
+            roster = rosters.get((d, gender), {}).get(school)
+            if roster is None:
+                continue                               # program not present/active — skip
+            if len(roster) >= roster_cap(d):
+                weakest = min(roster, key=lambda q: q.current_overall())
+                conn.execute("DELETE FROM world_roster WHERE world_id=? AND year=? AND pid=?",
+                             (w["id"], w["year"], weakest.pid))
+                roster.remove(weakest)
+            roster.append(p)
+            roster_rows.append((w["id"], w["year"], d, gender, school, p.pid,
+                                json.dumps(prospect_to_dict(p))))
+            pro_rows.append((w["id"], w["year"], cycle_key, gender, d, school, p.pid,
+                             round(pros.pro_cost(p, cohort_list), 2)))
+    if roster_rows:
+        conn.executemany("DELETE FROM world_roster WHERE world_id=? AND year=? AND pid=?",
+                         [(w["id"], w["year"], r[5]) for r in roster_rows])
+        conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", roster_rows)
+    conn.execute("INSERT INTO world_pro VALUES (?,?,?,?,?,?,?,?)",
+                 (w["id"], w["year"], cycle_key, "", "", "", "", 0.0))
+    if pro_rows:
+        conn.executemany("INSERT INTO world_pro VALUES (?,?,?,?,?,?,?,?)", pro_rows)
+    conn.commit()
+    conn.close()
+    _base_cache.clear(); _dev_cache.clear(); _primed.clear()
+    reset_caches()
+    return len(pro_rows)
 
 
 # --------------------------------------------------------------------------
@@ -1975,10 +2129,9 @@ def run_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     (so it never clobbers the user's edits or a committed run)."""
     from app import overrides as ov
     w = get_or_create(seed)
-    # Pros enter through the portal, so seed the pre-season cohort here (idempotent per the
-    # world_pro cycle guard) — they're persisted onto their signing clubs and surfaced in the
-    # portal view as movers from the synthetic "Pros" pool.
-    inject_pros(seed, f"{w['year']}-preseason")
+    # Pros are FREE AGENTS here — a deterministic cohort (regenerated on demand) the user signs
+    # to any club through the portal; they are NOT auto-injected. Signed pros are persisted onto
+    # their clubs only at commit (`_commit_pro_signings`). So nothing to seed for pros here.
     if ov.ps_get_proposals(w["year"]):                 # already seeded / committed
         return {"event": "preseason_portal_exists", "year": w["year"]}
     # Source rosters the SAME way the Bureau boards do — every division, live — so the
@@ -2073,8 +2226,9 @@ def commit_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
         for m in rows:
             ov.set_move(m["pid"], m["dest_school"])
             moved += 1
+    signed = _commit_pro_signings(seed, f"{year}-preseason")   # persist the free-agent pros the user signed
     reset_caches(); _primed.pop(seed, None)
-    return {"event": "preseason_portal_committed", "year": year, "moved": moved}
+    return {"event": "preseason_portal_committed", "year": year, "moved": moved, "pros": signed}
 
 
 def redirect_preseason_portal_mover(seed: int, pid: str, dest_school: str) -> dict:
@@ -2566,7 +2720,7 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     prime(seed)
     cross = 0
     if w["week"] == 0:                      # start of year: play the cross-division slate
-        inject_pros(seed, f"{w['year']}-preseason")   # pros enter before the season opens
+        _commit_pro_signings(seed, f"{w['year']}-preseason")   # persist any free-agent pros the user signed
         cross = simulate_cross(seed)
     played = 0
     for (d, g) in _active_unis():
@@ -2827,6 +2981,7 @@ def _finalize_year(seed: int, w: dict) -> dict:
     conn.commit()
     conn.close()
     _base_cache.clear(); _dev_cache.clear(); _primed.pop(seed, None)
-    inject_pros(seed, f"{new_year}-transfer")     # the year-end transfer cycle's pro intake
+    # Pros are FREE AGENTS signed by hand through the two interactive portals (pre-season +
+    # fall) — no auto year-end intake. The new season's pre-season portal is the next window.
     summary.update(event="finalize", year=new_year, week=0)
     return summary

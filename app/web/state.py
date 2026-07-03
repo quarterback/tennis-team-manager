@@ -1267,10 +1267,19 @@ def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
                 "ita_w": ww, "ita_l": ll, "ita_line": lines.get(sd, {}).get(m["pid"]),
             })
     out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
+    # Free-agent pros for the FALL cycle — same manual model as the pre-season portal.
+    cyc = f"{w['year']}-fall"
+    committed_pros = world.list_pros(seed, cyc)
+    _pro_src = committed_pros if committed_pros else world.pro_cohort(seed, cyc)
+    pros_in = []
+    for pr in _pro_src:
+        ta, tc = crest(pr["dest_school"]) if pr.get("dest_school") else ("", "")
+        pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
             "proposals": out, "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
-            "committed": len(committed),
+            "committed": len(committed), "pros": pros_in,
+            "pros_committed": bool(committed_pros),
             "destinations": world.fall_portal_destinations(seed)}
 
 
@@ -1350,17 +1359,18 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
                 "destinations": [], "is_preseason": False, "cap": cap, "pros_cycle": pros_cycle,
                 "pros": [], "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
                 "page": 1, "pages": 1}
-    # Pros enter through the portal from the synthetic "Pros" pool — surface this year's
-    # pre-season intake (signed onto their clubs) so they're visible + clickable here.
+    committed = ov.ps_get_proposals(w["year"], status="committed")
+    # Pros are FREE AGENTS out of the synthetic "Pros" pool — pre-commit show the whole cohort
+    # (each with an editable, initially-blank destination the user signs to any club); once the
+    # slate commits, show the signed pros as persisted. Both carry the green badge + real STR/cost.
     _g = gender if gender in ("men", "women") else "all"
-    _all_pros = world.list_pros(seed, f"{w['year']}-preseason")
+    _pro_src = world.list_pros if committed else world.pro_cohort
     pros_in = []
-    for pr in _all_pros:
+    for pr in _pro_src(seed, f"{w['year']}-preseason"):
         if _g != "all" and pr["gender"] != _g:
             continue
-        ta, tc = crest(pr["dest_school"])
+        ta, tc = crest(pr["dest_school"]) if pr.get("dest_school") else ("", "")
         pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
-    committed = ov.ps_get_proposals(w["year"], status="committed")
     if committed:
         # Already applied — show the committed slate as-is (no re-resolve).
         out = []
