@@ -25,13 +25,17 @@ import random
 # powers stack them. Women run lower on talent (GRADE_OFFSET below); 1★ are the
 # free walk-on depth pieces.
 #   tier key   stars  cost  men-grade(~UTR)
+# Compressed + lifted (talent-boost redesign): the grade gap between tiers is tight so a
+# roster's 1-6 are near-equal on court (results/attributes separate them, not talent), and
+# the whole ladder sits higher. A blue-blood runs ~2-3 UTR deep (not the old 7-UTR cliff),
+# a low-major fields UTR ~9-12, all overlapping. See docs AAR-talent-compression.
 TIERS = [
-    ("Blue Chip", 5, 7.0, 70.0),   # cost 7   · ~UTR 14
-    ("5-Star",    5, 3.5, 64.5),   # cost 3.5 · ~UTR 12.5
-    ("4-Star",    4, 3.0, 58.7),   # cost 3   · ~UTR 11
-    ("3-Star",    3, 2.0, 52.9),   # cost 2   · ~UTR 9.5
-    ("2-Star",    2, 1.0, 47.0),   # cost 1   · ~UTR 8
-    ("1-Star",    1, 0.0, 41.0),   # FREE     · ~UTR 6.7 (free walk-on)
+    ("Blue Chip", 5, 7.0, 74.0),   # cost 7   · ~UTR 15
+    ("5-Star",    5, 3.5, 71.0),   # cost 3.5 · ~UTR 14.2
+    ("4-Star",    4, 3.0, 67.0),   # cost 3   · ~UTR 13.2
+    ("3-Star",    3, 2.0, 62.0),   # cost 2   · ~UTR 11.9
+    ("2-Star",    2, 1.0, 56.0),   # cost 1   · ~UTR 10.3
+    ("1-Star",    1, 0.0, 50.0),   # FREE     · ~UTR 8.8 (walk-on, still good)
 ]
 _GRADE_OFFSET = {"men": 0.0, "women": -9.0}   # women's grades sit a tier lower
 
@@ -46,7 +50,7 @@ _TIER_FLOOR = {"Blue Chip": 16.5, "5-Star": 10.5, "4-Star": 5.0, "3-Star": 0.0}
 # own prestige (so a stronger program funds higher in the band), plus a per-world
 # jitter. Only the top tier redraws season to season within its wide band.
 _D1_TIER_BANDS = {
-    "top":   (16.0, 26.0),   # Blue Blood — wide so the blue-bloods separate (≈3 blue chips)
+    "top":   (16.0, 33.5),   # Blue Blood — wide so the blue-bloods separate; cap raised to
     "major": ( 9.0, 16.0),   # High-major — a 5★/4★ core, the odd blue-chip reach
     "mid":   ( 6.0,  9.0),   # Mid-major — 4★/3★ core
     "low":   ( 6.0,  7.0),   # Low-major — 3★ core, thin; the floor sits just above D2

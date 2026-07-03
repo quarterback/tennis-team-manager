@@ -670,12 +670,16 @@ def autogen_walkons(division: str) -> bool:
 # at the edges the way they really do. Individual players are drawn around the
 # team mean, so a power program's #1 can poke toward UTR 14 without anyone hitting
 # the pro ceiling.
+# Talent-boost redesign: bases lifted and spreads COMPRESSED so rosters cluster (the
+# floor rises, better lower-div programs reach UTR 8-10 while the average sits 4-7) and
+# divisions overlap heavily instead of stacking. D1/D2 rosters are built by the recruiting
+# star plan (recruit_economy.TIERS), so these mainly drive D3/D4 rosters + program levels.
 _TALENT = {
-    ("D1", "men"):   (56.0, 23.0), ("D1", "women"): (48.0, 20.0),
-    ("D2", "men"):   (50.0, 58.0), ("D2", "women"): (40.0, 46.0),
-    ("D3", "men"):   (33.0, 44.0), ("D3", "women"): (27.0, 38.0),
+    ("D1", "men"):   (60.0, 16.0), ("D1", "women"): (52.0, 14.0),
+    ("D2", "men"):   (50.0, 24.0), ("D2", "women"): (43.0, 20.0),
+    ("D3", "men"):   (43.0, 20.0), ("D3", "women"): (37.0, 17.0),
     # D4 sits just below D3 — the smallest, most regional academic-first tier.
-    ("D4", "men"):   (28.0, 44.0), ("D4", "women"): (22.0, 38.0),
+    ("D4", "men"):   (40.0, 18.0), ("D4", "women"): (35.0, 16.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
@@ -686,7 +690,7 @@ _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
 def _talent_mean(strength: float, division: str, gender: str) -> float:
     """Program strength + division + gender → a roster talent-grade mean."""
     base, spread = _TALENT.get((division, gender), (60.0, 22.0))
-    return max(24.0, min(80.0, base + spread * (strength - 0.5)))
+    return max(34.0, min(80.0, base + spread * (strength - 0.5)))
 
 
 def _talent_from_strength(strength: float, division: str = "D1", gender: str = "men") -> float:
@@ -778,7 +782,7 @@ def _base_roster(p: Program):
         if use_budget:
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
-            talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
+            talent = max(34.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
             if d3d4_gem:                                            # budget lifts only the gem slots
                 gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
                 talent = max(talent, gem)
