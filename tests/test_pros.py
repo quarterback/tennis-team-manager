@@ -31,9 +31,16 @@ def test_pro_beats_a_blue_chip_on_court():
     assert wins >= 130            # pro clearly favoured (not a coin flip, not a lock)
 
 
-def test_default_size_in_range():
-    c = pros.generate_pros("s", "women", "2026-preseason")
-    assert pros.PRO_PER_CYCLE[0] <= len(c) <= pros.PRO_PER_CYCLE[1]
+def test_default_size_from_config_even():
+    from app import worldconfig
+    worldconfig.set_pros_per_cycle(14)
+    try:
+        assert worldconfig.pros_per_cycle() == 14
+        assert len(pros.generate_pros("s", "women", "2026-preseason")) == 14
+        worldconfig.set_pros_per_cycle(15)          # odd -> clamped down to even
+        assert worldconfig.pros_per_cycle() == 14
+    finally:
+        worldconfig.set_pros_per_cycle(worldconfig.DEFAULT_PROS_PER_CYCLE)
 
 
 def test_deterministic_per_cycle():

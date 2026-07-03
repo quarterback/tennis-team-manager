@@ -1338,10 +1338,11 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
     from .rankings_data import crest
     per_page = PRESEASON_PORTAL_PER_PAGE
     cap = worldconfig.preseason_portal_cap()
+    pros_cycle = worldconfig.pros_per_cycle()
     w = world.load_world(seed)
     if not w:
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
-                "destinations": [], "is_preseason": False, "cap": cap,
+                "destinations": [], "is_preseason": False, "cap": cap, "pros_cycle": pros_cycle,
                 "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
                 "page": 1, "pages": 1}
     committed = ov.ps_get_proposals(w["year"], status="committed")
@@ -1362,7 +1363,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
         return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
                 "proposals": pg["page_rows"], "n": len(out),
                 "riders": sum(1 for r in out if r["is_riser"]),
-                "committed": len(committed), "done": True, "cap": cap,
+                "committed": len(committed), "done": True, "cap": cap, "pros_cycle": pros_cycle,
                 "is_preseason": w["week"] == 0,
                 "gender": pg["gender"], "gender_counts": pg["gender_counts"],
                 "page": pg["page"], "pages": pg["pages"],
@@ -1390,7 +1391,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
             "proposals": pg["page_rows"], "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
-            "committed": 0, "done": False, "cap": cap,
+            "committed": 0, "done": False, "cap": cap, "pros_cycle": pros_cycle,
             "is_preseason": w["week"] == 0, "debug": debug,
             "gender": pg["gender"], "gender_counts": pg["gender_counts"],
             "page": pg["page"], "pages": pg["pages"],

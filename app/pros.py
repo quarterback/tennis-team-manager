@@ -47,9 +47,11 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
     80-90 headroom (above the college ceiling), pro badge, real STR. `cycle_key` (e.g.
     "2026-fall") + salt key the RNG so each cycle in each league is fresh but reproducible."""
     from generators import make_name_picker
+    if n is None:
+        from . import worldconfig
+        n = worldconfig.pros_per_cycle()          # UI-tunable, even, per gender per cycle
     seed = f"{salt}|pros|{gender}|{cycle_key}"
     rng = random.Random(seed)
-    n = n if n is not None else rng.randint(*PRO_PER_CYCLE)
     pgender = "male" if gender in ("men", "male") else "female"
     name_fn = make_name_picker(random.Random(f"{seed}|names"), gender=pgender,
                                region_weights=_PRO_REGION_WEIGHTS)
@@ -87,8 +89,10 @@ def assign_pros(cohort: list, programs: list) -> list:
     out = []
     for pro in ranked:
         cost = pro_cost(pro, cohort)
+        # A pro can always take a roster spot (displacing the weakest if full), so the
+        # only gate is budget — never an open seat.
         cands = [pr for s, pr in avail.items()
-                 if s not in taken and pr.get("open", True) and pr["budget"] >= cost]
+                 if s not in taken and pr["budget"] >= cost]
         if not cands:                                  # nobody affluent enough left
             continue
         dest = max(cands, key=lambda pr: (pr["prestige"], pr["school"]))
