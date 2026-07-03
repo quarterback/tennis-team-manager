@@ -84,6 +84,10 @@
   overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
   border: 1px solid var(--border-subtle); border-radius: 8px;
 }
+/* Borderless horizontal-scroll wrapper for raw <table>s (schedule, coach/recruit
+   history, …) so a too-wide table scrolls in place on mobile instead of being clipped
+   by html{overflow-x:hidden}. Wrap the <table>; it keeps its own borders. */
+.tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .bl-table { min-width: 920px; }
 .bl-thead, .bl-row {
   display: grid; grid-template-columns: var(--bl-grid-cols); gap: 12px; align-items: center;
