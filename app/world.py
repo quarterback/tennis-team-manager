@@ -847,7 +847,13 @@ def _recruit_market(world: dict, gender: str) -> dict:
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     salt = world.get("salt") or ""
-    budget = {s: recruit_economy.program_budget(p, salt, world["year"]) for s, p in progs.items()}
+    # ONE budget: pros are paid out of the same pool as the class, so a program's recruiting
+    # power is its budget MINUS what it already spent on pros this year.
+    _c = _db()
+    _spent = _pro_spend(_c, world["id"], world["year"], gender)
+    _c.close()
+    budget = {s: max(0.0, recruit_economy.program_budget(p, salt, world["year"]) - _spent.get(s, 0.0))
+              for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     from . import coaches
     coachmap = {s: coaches.program_coach(s) for s in progs}        # per-program coach (localism, sourcing tilt, origin pipeline)
@@ -1820,6 +1826,19 @@ def fall_portal_destinations(seed: int = DEFAULT_SEED) -> list[str]:
 # is STR-indexed and always ≤ the elite budget cap, so every pro signs. Idempotent per
 # (year, cycle) via the world_pro ledger. Volume is worldconfig.pros_per_cycle (even, UI).
 # --------------------------------------------------------------------------
+def _pro_spend(conn, world_id: int, year: int, gender: str) -> dict:
+    """Per-school pro-signing spend this year FOR ONE GENDER (men's and women's programs
+    are separate). Pros are paid out of the SAME recruiting budget as the class (one pool),
+    so this is deducted from a program's budget — a program that signs an expensive pro has
+    that much less to spend on recruits, and can even drop below a caliber floor (no more
+    blue-chips this year)."""
+    rows = conn.execute(
+        "SELECT school, SUM(cost) AS spent FROM world_pro "
+        "WHERE world_id=? AND year=? AND gender=? AND school!='' GROUP BY school",
+        (world_id, year, gender)).fetchall()
+    return {r["school"]: (r["spent"] or 0.0) for r in rows}
+
+
 def inject_pros(seed: int, cycle_key: str) -> dict:
     from app import pros, recruit_economy
     if worldconfig.pros_per_cycle() <= 0:
@@ -1838,6 +1857,7 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
         cohort = pros.generate_pros(salt, gender, cycle_key)
         if not cohort:
             continue
+        spent = _pro_spend(conn, w["id"], w["year"], gender)   # pro budget already committed this year
         progs = _flat_programs(gender)
         div_of, roster_of, programs = {}, {}, []
         for (d, g), schools in rosters.items():
@@ -1849,8 +1869,9 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
                     continue
                 div_of[school] = d
                 roster_of[school] = roster
-                programs.append({"school": school,
-                                 "budget": recruit_economy.program_budget(prog, salt, w["year"]),
+                # ONE budget: what's left after any pros already signed this year.
+                budget = recruit_economy.program_budget(prog, salt, w["year"]) - spent.get(school, 0.0)
+                programs.append({"school": school, "budget": max(0.0, budget),
                                  "prestige": float(getattr(prog, "prestige", 0.5))})
         by_pid = {p.pid: p for p in cohort}
         for a in pros.assign_pros(cohort, programs):

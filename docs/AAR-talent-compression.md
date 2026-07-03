@@ -81,6 +81,26 @@ ceiling) so every normal player is byte-identical. A separate higher **hard clam
   2–3 pros** while its money lasts, then the flow spills to the next-best (funnel-then-spread,
   not a hard 1-each cap). A pro always takes a roster spot.
 
+### 3b-i. ONE budget — pros compete with the recruit class (non-obvious; read this)
+A program has a **single** recruiting budget (scholarship-equivalency by conference tier).
+There is **no separate pro fund** — a pro is paid **out of that same pool**, so signing pros
+is a real tradeoff against the freshman class, and that tradeoff is *the reason the tier
+exists*. Concretely:
+- The `world_pro` ledger records each pro's cost per `(school, gender, year)`.
+- `world._pro_spend(conn, world_id, year, gender)` sums a program's pro spend this year.
+- **`_recruit_market`** (the annual recruiting budget every program reads) is
+  `program_budget − pro_spend`. So a program that spent on pros has *less* to attract recruits
+  and can drop **below a caliber floor** — e.g. two 15-cost pros on a 33.5 budget leaves ~3,
+  under the 16.5 blue-chip floor → **no blue-chips that year**.
+- **`inject_pros`** likewise starts each cycle's assignment from `budget − pro_spend so far`,
+  so pro spend accumulates across the three cycles against the one budget.
+- Why it's not obvious: normal recruiting treats the budget as a *standing caliber floor*
+  (it isn't "spent down" year to year — it's the program's persistent funding level, re-used
+  each year to fill graduation's openings). Pros are the **one thing that actively draws that
+  level down** within a year. So the budget is neither per-year-consumed nor lifetime-consumed
+  for recruiting — but a **pro signing does consume it for that year**, which is exactly the
+  constraint that makes chasing a pro cost you.
+
 ### 3c. Live wiring (`app/world.py`)
 - **`inject_pros(seed, cycle_key)`** — generate → assign → **persist each pro into
   `world_roster`** (so `developed_rosters`/`prime` pick them up and they play). A full roster
