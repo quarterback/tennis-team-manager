@@ -861,19 +861,24 @@ def portal_class_rankings(seed: int = DEFAULT_SEED, gender: str = "all",
     for i, c in enumerate(classes, 1):
         c["rank"] = i
 
-    all_str = [m["str"] for m in moves]
+    # KPIs describe the board you're LOOKING at, so scope them to acquisitions that LANDED in
+    # the selected classification (by dest_div). A player who came FROM a higher division still
+    # counts here — they landed in this division — so a lower program signing a D1-origin player
+    # shows on its own board; only pickups landing in OTHER divisions drop off.
+    kpi_moves = moves if division == "All" else [m for m in moves if m["dest_div"] == division]
+    all_str = [m["str"] for m in kpi_moves]
     kpis = {
-        "total_moves": len(moves),
-        "risers": sum(1 for m in moves if m["kind"] == "riser"),
-        "pros": sum(1 for m in moves if m["kind"] == "pro"),
-        "depth": sum(1 for m in moves if m["kind"] == "cascade"),
+        "total_moves": len(kpi_moves),
+        "risers": sum(1 for m in kpi_moves if m["kind"] == "riser"),
+        "pros": sum(1 for m in kpi_moves if m["kind"] == "pro"),
+        "depth": sum(1 for m in kpi_moves if m["kind"] == "cascade"),
         "avg_str": round(sum(all_str) / len(all_str), 1) if all_str else 0.0,
         "programs": len(classes),
-        "top_pickup": max(moves, key=lambda m: m["str"]) if moves else None,
+        "top_pickup": max(kpi_moves, key=lambda m: m["str"]) if kpi_moves else None,
     }
     return {"year": year, "year_label": world.BASE_YEAR + year, "years": year_opts,
             "classes": classes, "gender": g, "division": division, "kpis": kpis,
-            "n_programs": len(classes), "total_moves": len(moves)}
+            "n_programs": len(classes), "total_moves": len(kpi_moves)}
 
 
 def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
