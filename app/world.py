@@ -2000,9 +2000,34 @@ def pro_cohort(seed: int = DEFAULT_SEED, cycle_key: str | None = None) -> list[d
     return out
 
 
+def _resolve_program(progs: dict, name: str) -> str | None:
+    """Forgivingly map a typed school name to a real program key in `progs`: exact, then
+    case-insensitive exact, then a UNIQUE case-insensitive prefix, then a UNIQUE substring.
+    So 'texas' → Texas and 'Wake' → Wake Forest, but an ambiguous stub returns None instead of
+    silently dropping the pick onto the wrong club."""
+    name = (name or "").strip()
+    if not name:
+        return None
+    if name in progs:
+        return name
+    low = name.lower()
+    exact = [s for s in progs if s.lower() == low]
+    if len(exact) == 1:
+        return exact[0]
+    pref = [s for s in progs if s.lower().startswith(low)]
+    if len(pref) == 1:
+        return pref[0]
+    sub = [s for s in progs if low in s.lower()]
+    if len(sub) == 1:
+        return sub[0]
+    return None
+
+
 def sign_pro(seed: int, pid: str, dest_school: str, cycle_key: str | None = None) -> dict:
     """Sign a free-agent pro to ANY program (any division). Stores the intent; the pro is
-    persisted onto the roster at commit. `dest_school` empty → unsign (back to free agent)."""
+    persisted onto the roster at commit. `dest_school` empty → unsign (back to free agent).
+    The school is resolved forgivingly (case/partial), so a near-miss still lands rather than
+    silently doing nothing."""
     w = load_world(seed)
     if not w:
         return {"ok": False, "error": "no world"}
@@ -2016,11 +2041,14 @@ def sign_pro(seed: int, pid: str, dest_school: str, cycle_key: str | None = None
     from app import pros
     for gender in worldconfig.active_genders():
         if any(p.pid == pid for p in pros.generate_pros(salt, gender, cycle_key)):
-            prog = _flat_programs(gender).get(dest_school)
-            if not prog:
-                return {"ok": False, "error": f"unknown program {dest_school!r}"}
-            ov.pro_set_sign(w["year"], cycle_key, gender, pid, dest_school, prog.division)
-            return {"ok": True, "pid": pid, "dest": dest_school, "div": prog.division}
+            progs = _flat_programs(gender)
+            match = _resolve_program(progs, dest_school)
+            if not match:
+                return {"ok": False, "error": f"No program matches “{dest_school}”. "
+                        f"Pick one from the list."}
+            prog = progs[match]
+            ov.pro_set_sign(w["year"], cycle_key, gender, pid, match, prog.division)
+            return {"ok": True, "pid": pid, "dest": match, "div": prog.division}
     return {"ok": False, "error": "unknown pro"}
 
 

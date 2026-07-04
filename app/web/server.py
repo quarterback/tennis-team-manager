@@ -743,11 +743,14 @@ def create_app() -> Flask:
     def fall_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        args = {}
         if pid:
             w = wd.load_world()
             cyc = f"{w['year']}-fall" if w else None
-            wd.sign_pro(DEFAULT_SEED, pid, dest, cycle_key=cyc)
-        return redirect(url_for("fall_portal"))
+            r = wd.sign_pro(DEFAULT_SEED, pid, dest, cycle_key=cyc)
+            if not r.get("ok") and dest.strip():
+                args["signerr"] = r.get("error", "Could not sign that pro.")
+        return redirect(url_for("fall_portal", **args))
 
     @app.route("/fall-portal/commit", methods=["POST"])
     def fall_portal_commit():
@@ -794,9 +797,12 @@ def create_app() -> Flask:
     def preseason_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        args = {"gender": request.form.get("gender", "all")}
         if pid:
-            wd.sign_pro(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal", gender=request.form.get("gender", "all")))
+            r = wd.sign_pro(DEFAULT_SEED, pid, dest)
+            if not r.get("ok") and dest.strip():
+                args["signerr"] = r.get("error", "Could not sign that pro.")
+        return redirect(url_for("preseason_portal", **args))
 
     @app.route("/preseason-portal/approve", methods=["POST"])
     def preseason_portal_approve():
