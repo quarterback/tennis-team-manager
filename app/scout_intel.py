@@ -416,6 +416,80 @@ def fit_targets(gender: str, pid: str, seed: int | None = None,
     return p, [ft for _, ft in out[:limit]]
 
 
+_IMPACT_SLOT = {"first": 1, "top3": 3, "top6": 6}   # how high a fit must project to show
+
+
+def targets_for_my_program(seed: int | None = None, div_filter: str = "All",
+                           sort: str = "fit", upgrades_only: bool = False,
+                           impact: str = "top3") -> dict | None:
+    """The INVERSE of the Fit Finder, scoped to the ONE program the user coaches
+    (`worldconfig.user_program`): every player in the world who would crack YOUR lineup —
+    a starter or upgrade on your roster — ranked by how much they'd help. `impact` trims to the
+    meaningful ones (a Top-3 starter by default, since with compressed talent almost anyone
+    clears a weak No. 6). Returns None if no program has been picked yet."""
+    from app import worldconfig
+    from app.web.rankings_data import crest
+    up = worldconfig.user_program()
+    if not up:
+        return None
+    gender, my_school, my_div = up["gender"], up["school"], up["division"]
+    data = scan(gender, seed)
+    mine = sorted((r for r in data["players"] if r.school == my_school),
+                  key=lambda r: r.cur_overall, reverse=True)
+    my_top6 = mine[:6]                                  # my current singles ladder (by ability)
+    my_cur = [r.cur_overall for r in my_top6]
+    n_start = len(my_top6)
+    my_abbr, my_color = crest(my_school)
+
+    slot_cap = _IMPACT_SLOT.get(impact, 3)
+    targets = []
+    for r in data["players"]:
+        if r.school == my_school:
+            continue
+        slot = 1 + sum(1 for cs in my_cur if cs > r.cur_overall)
+        if slot > slot_cap:                             # not a high-enough fit for this impact tier
+            continue
+        bumps = my_top6[slot - 1] if slot - 1 < n_start else None   # who they'd leapfrog (None = open slot)
+        is_upgrade = bumps is not None
+        if upgrades_only and not is_upgrade:
+            continue
+        if div_filter != "All" and r.division != div_filter:
+            continue
+        dr = _DIVRANK[r.division] - _DIVRANK[my_div]
+        ab, co = crest(r.school)
+        targets.append({
+            "pid": r.pid, "name": r.name, "country": r.country,
+            "secondary_country": getattr(r, "secondary_country", ""), "gender": gender,
+            "school": r.school, "division": r.division, "abbr": ab, "color": co,
+            "line": r.line, "cur_overall": r.cur_overall, "true_overall": r.true_overall,
+            "live_str": r.live_str, "walk_on": r.walk_on,
+            "slot": slot, "slot_label": _slot_label(slot),
+            "is_upgrade": is_upgrade,
+            "upgrade_over": bumps.name if bumps else "(open lineup slot)",
+            "upgrade_over_ovr": bumps.cur_overall if bumps else 0,
+            "from": "up" if dr < 0 else ("down" if dr > 0 else "lateral"),
+        })
+
+    keys = {
+        "fit": lambda t: (t["slot"], -t["true_overall"], -t["live_str"]),
+        "talent": lambda t: (-t["true_overall"], t["slot"]),
+        "str": lambda t: (-t["live_str"], t["slot"]),
+    }
+    reverse = False
+    targets.sort(key=keys.get(sort, keys["fit"]), reverse=reverse)
+
+    return {
+        "program": {"school": my_school, "division": my_div, "gender": gender,
+                    "abbr": my_abbr, "color": my_color},
+        "my_top6": [{"name": r.name, "ovr": r.cur_overall, "str": r.live_str} for r in my_top6],
+        "targets": targets, "n": len(targets),
+        "n_instant1": sum(1 for t in targets if t["slot"] == 1),
+        "n_upgrade": sum(1 for t in targets if t["is_upgrade"]),
+        "sort": sort, "div_filter": div_filter, "upgrades_only": upgrades_only,
+        "impact": impact,
+    }
+
+
 def overview(gender: str, seed: int | None = None) -> dict:
     """Bureau landing KPIs + the headline finds."""
     data = scan(gender, seed)

@@ -129,6 +129,7 @@ NAV_GROUPS = [
     ]),
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
+        {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
@@ -183,6 +184,7 @@ def _active_nav(req) -> str:
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/portal-rankings"):  return "portal_rk"
+    if p.startswith("/intel/my-targets"): return "intel_targets"
     if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -1274,15 +1276,29 @@ def create_app() -> Flask:
         if not rows:
             school = live[0].school
             rows = team_roster(division, gender, school)
-        schools = [r.school for r in live]
         power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
         row = get_row(school)
-        prog = load_division(division, gender).by_school(school)
+        div_obj = load_division(division, gender)
+        prog = div_obj.by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
         conf_abbr = (prog.conf_abbr if prog else "") or conf
+        # Team picker: a separate CONFERENCE filter + ALPHABETICAL schools, so a team is easy to
+        # find (the old picker listed every school in ranking order).
+        _progs = {p.school: p for p in div_obj.programs}
+        _sch_conf = {r.school: getattr(_progs.get(r.school), "conf_abbr", "") for r in live}
+        conferences = sorted({c for c in _sch_conf.values() if c})
+        conf_filter = request.args.get("conf", "All")
+        if conf_filter != "All" and conf_filter not in conferences:
+            conf_filter = "All"
+        schools = sorted(r.school for r in live
+                         if conf_filter == "All" or _sch_conf.get(r.school) == conf_filter)
+        if school not in schools:                       # keep the current team selectable
+            schools = sorted(set(schools) | {school})
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, conf_abbr=conf_abbr, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, power6=power6, conf=conf,
+                               conf_abbr=conf_abbr, schools=schools, conferences=conferences,
+                               conf_filter=conf_filter, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
@@ -1534,6 +1550,20 @@ def create_app() -> Flask:
             abort(404)
         return render_template("intel_fit.html", active="Analytics Bureau",
                                p=p, targets=targets, gender=gender, u=u, uni_label=label)
+
+    @app.route("/intel/my-targets")
+    def intel_my_targets():
+        _division, _g, label, u = _universe(request)
+        import app.scout_intel as si
+        tg = si.targets_for_my_program(
+            div_filter=request.args.get("div", "All"),
+            sort=request.args.get("sort", "fit"),
+            impact=request.args.get("impact", "top3"),
+            upgrades_only=request.args.get("upgrades") == "1")
+        pg = paginate(tg["targets"], request.args.get("page", 1)) if tg else None
+        return render_template("intel_my_targets.html", active="Analytics Bureau",
+                               tg=tg, p=pg, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2", "D3", "D4"])
 
     @app.route("/juniors/rankings")
     def junior_rankings():
