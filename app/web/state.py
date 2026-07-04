@@ -784,6 +784,103 @@ def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) ->
     }
 
 
+# ---- Portal Rankings (transfer-class board, On3/247 style) ---------------------
+_PORTAL_SCORE_SCALE = 0.1   # top-3 STR sum × this → a readable "points" number (~15-18 strong)
+
+
+def _portal_score(movers: list) -> float:
+    """Score a portal class the same TOP-3 shape as recruiting, but on STR — portal movers
+    carry a live STR, not a recruit rank. Σ of the three best STRs × scale."""
+    top = sorted(movers, key=lambda m: m["str"], reverse=True)[:3]
+    return _PORTAL_SCORE_SCALE * sum(m["str"] for m in top) if top else 0.0
+
+
+def portal_class_rankings(seed: int = DEFAULT_SEED, gender: str = "all",
+                          division: str = "All", year=None) -> dict:
+    """Transfer-class rankings for a portal year — every program's IN class (risers + pros +
+    depth it picked up) vs what it LOST, scored + ranked like recruiting classes. Filterable
+    by year / gender / classification (D1–D4 or All), so a lower-division coach can see which
+    D3/D4 programs actually got better in the window. Reads the durable `world_portal_move`
+    archive, so past years stay available."""
+    import app.world as world
+    from .rankings_data import crest
+    years = world.portal_years(seed)
+    year_opts = [{"val": y, "label": world.BASE_YEAR + y} for y in years]
+    if not years:
+        return {"year": None, "year_label": None, "years": [], "classes": [], "gender": gender,
+                "division": division, "kpis": {}, "n_programs": 0, "total_moves": 0}
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        year = None
+    if year not in years:
+        year = years[0]
+    g = gender if gender in ("men", "women") else "all"
+    moves = world.portal_moves(seed, year, g if g != "all" else None)
+
+    prog: dict = {}
+
+    def _p(school):
+        return prog.setdefault(school, {"in": [], "out": [], "div": ""})
+
+    for m in moves:
+        pin = _p(m["dest_school"])                      # this school is the destination = a gain
+        pin["in"].append(m)
+        if not pin["div"]:
+            pin["div"] = m["dest_div"]
+        # the source lost the player (rose away, or was bumped down). Pros come from the
+        # synthetic "Pros" pool — not a real program — so they never count as an OUT.
+        if m["src_school"] and m["src_school"] != "Pros":
+            pout = _p(m["src_school"])
+            pout["out"].append(m)
+            if not pout["div"]:
+                pout["div"] = m["src_div"]
+
+    classes = []
+    for school, d in prog.items():
+        div = d["div"]
+        if division != "All" and div != division:
+            continue
+        ins, outs = d["in"], d["out"]
+        in_str = [m["str"] for m in ins]
+        out_str = [m["str"] for m in outs]
+        score = _portal_score(ins)
+        abbr, color = crest(school)
+        classes.append({
+            "school": school, "abbr": abbr, "color": color, "div": div,
+            "in_n": len(ins), "in_avg": round(sum(in_str) / len(in_str), 1) if in_str else 0.0,
+            "out_n": len(outs), "out_avg": round(sum(out_str) / len(out_str), 1) if out_str else 0.0,
+            "risers": sum(1 for m in ins if m["kind"] == "riser"),
+            "pros": sum(1 for m in ins if m["kind"] == "pro"),
+            "depth": sum(1 for m in ins if m["kind"] == "cascade"),
+            "score": round(score, 1),
+            "net": round(score - _portal_score(outs), 1),   # improved (+) / maintained / lost (−)
+            "best": sorted(ins, key=lambda m: m["str"], reverse=True)[:5],
+        })
+    classes.sort(key=lambda c: (-c["score"], -c["net"], c["school"]))
+    for i, c in enumerate(classes, 1):
+        c["rank"] = i
+
+    # KPIs describe the board you're LOOKING at, so scope them to acquisitions that LANDED in
+    # the selected classification (by dest_div). A player who came FROM a higher division still
+    # counts here — they landed in this division — so a lower program signing a D1-origin player
+    # shows on its own board; only pickups landing in OTHER divisions drop off.
+    kpi_moves = moves if division == "All" else [m for m in moves if m["dest_div"] == division]
+    all_str = [m["str"] for m in kpi_moves]
+    kpis = {
+        "total_moves": len(kpi_moves),
+        "risers": sum(1 for m in kpi_moves if m["kind"] == "riser"),
+        "pros": sum(1 for m in kpi_moves if m["kind"] == "pro"),
+        "depth": sum(1 for m in kpi_moves if m["kind"] == "cascade"),
+        "avg_str": round(sum(all_str) / len(all_str), 1) if all_str else 0.0,
+        "programs": len(classes),
+        "top_pickup": max(kpi_moves, key=lambda m: m["str"]) if kpi_moves else None,
+    }
+    return {"year": year, "year_label": world.BASE_YEAR + year, "years": year_opts,
+            "classes": classes, "gender": g, "division": division, "kpis": kpis,
+            "n_programs": len(classes), "total_moves": len(kpi_moves)}
+
+
 def recruiting_hub(gender: str, grad_year: int, seed: int = DEFAULT_SEED) -> dict:
     """The Recruiting HQ landing: class KPIs + top prospects + league leaders — the
     data-portal overview that ties the dense sub-pages together."""

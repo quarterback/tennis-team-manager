@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import preseason_portal_view, recruit_economy_view
+from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
@@ -121,6 +121,7 @@ NAV_GROUPS = [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "fa-solid fa-binoculars", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "fa-solid fa-graduation-cap","endpoint": "recruiting",       "args": {}},
         {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
+        {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
@@ -128,6 +129,7 @@ NAV_GROUPS = [
     ]),
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
+        {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
@@ -181,6 +183,8 @@ def _active_nav(req) -> str:
     if p.startswith("/intel"):            return "intel"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
+    if p.startswith("/portal-rankings"):  return "portal_rk"
+    if p.startswith("/intel/my-targets"): return "intel_targets"
     if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -749,11 +753,14 @@ def create_app() -> Flask:
     def fall_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        args = {}
         if pid:
             w = wd.load_world()
             cyc = f"{w['year']}-fall" if w else None
-            wd.sign_pro(DEFAULT_SEED, pid, dest, cycle_key=cyc)
-        return redirect(url_for("fall_portal"))
+            r = wd.sign_pro(DEFAULT_SEED, pid, dest, cycle_key=cyc)
+            if not r.get("ok") and dest.strip():
+                args["signerr"] = r.get("error", "Could not sign that pro.")
+        return redirect(url_for("fall_portal", **args))
 
     @app.route("/fall-portal/commit", methods=["POST"])
     def fall_portal_commit():
@@ -800,9 +807,12 @@ def create_app() -> Flask:
     def preseason_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
+        args = {"gender": request.form.get("gender", "all")}
         if pid:
-            wd.sign_pro(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal", gender=request.form.get("gender", "all")))
+            r = wd.sign_pro(DEFAULT_SEED, pid, dest)
+            if not r.get("ok") and dest.strip():
+                args["signerr"] = r.get("error", "Could not sign that pro.")
+        return redirect(url_for("preseason_portal", **args))
 
     @app.route("/preseason-portal/approve", methods=["POST"])
     def preseason_portal_approve():
@@ -1282,15 +1292,29 @@ def create_app() -> Flask:
         if not rows:
             school = live[0].school
             rows = team_roster(division, gender, school)
-        schools = [r.school for r in live]
         power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
         row = get_row(school)
-        prog = load_division(division, gender).by_school(school)
+        div_obj = load_division(division, gender)
+        prog = div_obj.by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
         conf_abbr = (prog.conf_abbr if prog else "") or conf
+        # Team picker: a separate CONFERENCE filter + ALPHABETICAL schools, so a team is easy to
+        # find (the old picker listed every school in ranking order).
+        _progs = {p.school: p for p in div_obj.programs}
+        _sch_conf = {r.school: getattr(_progs.get(r.school), "conf_abbr", "") for r in live}
+        conferences = sorted({c for c in _sch_conf.values() if c})
+        conf_filter = request.args.get("conf", "All")
+        if conf_filter != "All" and conf_filter not in conferences:
+            conf_filter = "All"
+        schools = sorted(r.school for r in live
+                         if conf_filter == "All" or _sch_conf.get(r.school) == conf_filter)
+        if school not in schools:                       # keep the current team selectable
+            schools = sorted(set(schools) | {school})
         return render_template("teams.html", active="Teams", rows=rows, school=school,
-                               abbr=abbr, color=color, row=row, power6=power6, conf=conf, conf_abbr=conf_abbr, schools=schools, u=u,
+                               abbr=abbr, color=color, row=row, power6=power6, conf=conf,
+                               conf_abbr=conf_abbr, schools=schools, conferences=conferences,
+                               conf_filter=conf_filter, u=u,
                                uni_label=label, staff=coaching_staff(division, gender, school),
                                results=team_results(division, gender, school), crest=crest,
                                city=(prog.location if prog else ""),
@@ -1442,6 +1466,16 @@ def create_app() -> Flask:
                                trk=signing_tracker(gender, division), gender=gender,
                                u=u, uni_label=label)
 
+    @app.route("/portal-rankings")
+    def portal_rankings_page():
+        _division, _g, label, u = _universe(request)
+        pr = portal_class_rankings(gender=request.args.get("gender", "all"),
+                                   division=request.args.get("div", "All"),
+                                   year=request.args.get("year"))
+        return render_template("portal_rankings.html", active="World", u=u, uni_label=label,
+                               pr=pr, divisions=["All", "D1", "D2", "D3", "D4"],
+                               genders=["all", "men", "women"])
+
     @app.route("/recruiting/hub")
     def recruiting_hub_page():
         division, gender, label, u = _universe(request)
@@ -1534,6 +1568,20 @@ def create_app() -> Flask:
             abort(404)
         return render_template("intel_fit.html", active="Analytics Bureau",
                                p=p, targets=targets, gender=gender, u=u, uni_label=label)
+
+    @app.route("/intel/my-targets")
+    def intel_my_targets():
+        _division, _g, label, u = _universe(request)
+        import app.scout_intel as si
+        tg = si.targets_for_my_program(
+            div_filter=request.args.get("div", "All"),
+            sort=request.args.get("sort", "fit"),
+            impact=request.args.get("impact", "top3"),
+            upgrades_only=request.args.get("upgrades") == "1")
+        pg = paginate(tg["targets"], request.args.get("page", 1)) if tg else None
+        return render_template("intel_my_targets.html", active="Analytics Bureau",
+                               tg=tg, p=pg, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2", "D3", "D4"])
 
     @app.route("/juniors/rankings")
     def junior_rankings():
