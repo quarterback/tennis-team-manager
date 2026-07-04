@@ -34,6 +34,25 @@
   <span class="bl-entries-right">{{ uni_label }} · better than the team they're on</span>
 </div></div>
 
+<div class="bl-container" style="padding-top:0">
+  <form method="post" action="{{ url_for('intel_underplaced_fit_band') }}"
+        style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--text-muted)"
+        title="How wide a calibre band (OVR grade points) a talent is matched to programs for in the FITS column">
+    <input type="hidden" name="sort" value="{{ sort }}"><input type="hidden" name="div" value="{{ div_f }}">
+    <input type="hidden" name="class" value="{{ cls_f }}"><input type="hidden" name="q" value="{{ q }}">
+    <input type="hidden" name="u" value="{{ u }}">
+    <span><strong style="color:var(--text-primary)">FITS band</strong> (OVR pts) —</span>
+    <label style="display:flex;gap:5px;align-items:center" title="How far ABOVE their talent a fit may reach (a slight stretch)">
+      reach up <input class="bl-input" type="number" name="fit_up" value="{{ '%g'|format(fit_up) }}"
+                      min="0" max="20" step="1" style="width:56px"></label>
+    <label style="display:flex;gap:5px;align-items:center" title="How far BELOW — wider = more tiers / more spread in the fits">
+      reach down <input class="bl-input" type="number" name="fit_down" value="{{ '%g'|format(fit_down) }}"
+                        min="1" max="40" step="1" style="width:56px"></label>
+    <button class="bl-btn" type="submit">Apply</button>
+    <span style="color:var(--text-faint)">wider “down” → fits span more tiers</span>
+  </form>
+</div>
+
 <div class="bl-container"><div class="bl-tablescroll">
   <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.5fr) minmax(120px,1fr) 60px 60px 130px minmax(140px,1.2fr)">
     <div class="bl-thead">

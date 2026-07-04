@@ -24,6 +24,8 @@ caches are, so the pages stay snappy over ~11k players a gender.
 """
 from __future__ import annotations
 
+import bisect
+import zlib
 from dataclasses import dataclass
 
 from app.development import overall_to_str
@@ -91,9 +93,13 @@ def scan(gender: str, seed: int | None = None) -> dict:
     """Full god-mode talent scan for one gender across every division. Returns
     ``{players, teams, by_pid, team_ladder}``, memoised per world snapshot."""
     from app.web.state import DEFAULT_SEED
+    from app import worldconfig as _wc
     if seed is None:
         seed = DEFAULT_SEED
-    key = (_world_stamp(seed), gender)
+    # The fit-band reach is live-tunable, so fold it into the cache key — nudging the knob
+    # must recompute the FITS column, not serve a stale scan.
+    fit_up, fit_down = _wc.fit_reach_up(), _wc.fit_reach_down()
+    key = (_world_stamp(seed), gender, fit_up, fit_down)
     cached = _scan_cache.get(key)
     if cached is not None:
         return cached
@@ -190,15 +196,27 @@ def scan(gender: str, seed: int | None = None) -> dict:
         t["level_pct"] = _pct(i, n_t)
         t["level_rank"] = i
 
+    # The "fits" band, by CALIBRE in grade points (team_level and true_overall are both the
+    # 20–80 OVR scale): any program a talent would genuinely slot into — from a hair above their
+    # level (a slight reach) down through everywhere they'd be a clear upgrade/star. Grade-based
+    # so it stays tier-appropriate: a blue-chip spans the whole of D1 (top → low), NOT pushed
+    # into D3/D4 where they'd just dominate; a mid talent naturally spans the D1/D2/D3 boundary.
+    # We surface ONE program from that band by a STABLE per-player hash, so the column shows the
+    # full spread of matching programs — any tier that fits, never the same four repeated — while
+    # each player's fit stays stable. (The per-row Fit Finder link lists the full ranked set.)
+    # Live-tunable band width (Analytics Bureau UI) — see worldconfig.fit_reach_up/down.
+    _FIT_UP, _FIT_DOWN = fit_up, fit_down
+    asc = ladder[::-1]                                   # ascending by team_level
+    asc_lvls = [t["team_level"] for t in asc]
     for r in players:
         t = teams.get(r.school, {})
         r.team_level_pct = t.get("level_pct", 0.0)
         r.placement_gap = round(r.talent_pct - r.team_level_pct, 4)
-        # The program a talent of this calibre "deserves": the team sitting at
-        # the same percentile on the program ladder.
-        idx = min(n_t - 1, max(0, round((1 - r.talent_pct) * (n_t - 1)))) if n_t else 0
-        if ladder:
-            d = ladder[idx]
+        if asc:
+            i0 = bisect.bisect_left(asc_lvls, r.true_overall - _FIT_DOWN)
+            i1 = bisect.bisect_right(asc_lvls, r.true_overall + _FIT_UP)
+            band = asc[i0:i1] or [min(ladder, key=lambda p: abs(p["team_level"] - r.true_overall))]
+            d = band[zlib.crc32(r.pid.encode()) % len(band)]
             r.deserved_school = d["school"]
             r.deserved_division = d["division"]
             r.deserved_pi_rank = d["pi_rank"]
