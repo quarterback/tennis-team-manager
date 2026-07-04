@@ -24,6 +24,7 @@ caches are, so the pages stay snappy over ~11k players a gender.
 """
 from __future__ import annotations
 
+import bisect
 import zlib
 from dataclasses import dataclass
 
@@ -191,26 +192,26 @@ def scan(gender: str, seed: int | None = None) -> dict:
         t["level_pct"] = _pct(i, n_t)
         t["level_rank"] = i
 
-    # Width of the "fits" band, in programs each side of the calibre-matched centre. The
-    # surfaced fit is drawn from this window (not the single closest school), so the column
-    # SPREADS across the whole array of appropriate programs instead of collapsing every
-    # same-calibre player onto one blue-blood. ~25 programs wide → a diverse cross-section.
-    _FIT_BAND_HALF = 12
+    # The "fits" band, by CALIBRE in grade points (team_level and true_overall are both the
+    # 20–80 OVR scale): any program a talent would genuinely slot into — from a hair above their
+    # level (a slight reach) down through everywhere they'd be a clear upgrade/star. Grade-based
+    # so it stays tier-appropriate: a blue-chip spans the whole of D1 (top → low), NOT pushed
+    # into D3/D4 where they'd just dominate; a mid talent naturally spans the D1/D2/D3 boundary.
+    # We surface ONE program from that band by a STABLE per-player hash, so the column shows the
+    # full spread of matching programs — any tier that fits, never the same four repeated — while
+    # each player's fit stays stable. (The per-row Fit Finder link lists the full ranked set.)
+    _FIT_UP = 3.0      # OVR points a fit may reach ABOVE their talent (small — else they'd sit)
+    _FIT_DOWN = 15.0   # OVR points BELOW — the range where they're still a real fit/upgrade
+    asc = ladder[::-1]                                   # ascending by team_level
+    asc_lvls = [t["team_level"] for t in asc]
     for r in players:
         t = teams.get(r.school, {})
         r.team_level_pct = t.get("level_pct", 0.0)
         r.placement_gap = round(r.talent_pct - r.team_level_pct, 4)
-        # The program a talent of this calibre "deserves": centre on the team sitting at the
-        # same percentile on the (cross-division) program ladder, then pick ONE program from a
-        # band around that centre by a STABLE per-player hash. Same calibre → same band, but
-        # different players land on different schools, so the list shows the full spread of
-        # programs that could use talent — not the same four repeated. (The Fit Finder link
-        # per row still lists a player's complete ranked fit set.)
-        if ladder:
-            center = min(n_t - 1, max(0, round((1 - r.talent_pct) * (n_t - 1))))
-            lo = max(0, center - _FIT_BAND_HALF)
-            hi = min(n_t - 1, center + _FIT_BAND_HALF)
-            band = ladder[lo:hi + 1]
+        if asc:
+            i0 = bisect.bisect_left(asc_lvls, r.true_overall - _FIT_DOWN)
+            i1 = bisect.bisect_right(asc_lvls, r.true_overall + _FIT_UP)
+            band = asc[i0:i1] or [min(ladder, key=lambda p: abs(p["team_level"] - r.true_overall))]
             d = band[zlib.crc32(r.pid.encode()) % len(band)]
             r.deserved_school = d["school"]
             r.deserved_division = d["division"]
