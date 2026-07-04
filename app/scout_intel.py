@@ -24,6 +24,7 @@ caches are, so the pages stay snappy over ~11k players a gender.
 """
 from __future__ import annotations
 
+import zlib
 from dataclasses import dataclass
 
 from app.development import overall_to_str
@@ -190,15 +191,27 @@ def scan(gender: str, seed: int | None = None) -> dict:
         t["level_pct"] = _pct(i, n_t)
         t["level_rank"] = i
 
+    # Width of the "fits" band, in programs each side of the calibre-matched centre. The
+    # surfaced fit is drawn from this window (not the single closest school), so the column
+    # SPREADS across the whole array of appropriate programs instead of collapsing every
+    # same-calibre player onto one blue-blood. ~25 programs wide → a diverse cross-section.
+    _FIT_BAND_HALF = 12
     for r in players:
         t = teams.get(r.school, {})
         r.team_level_pct = t.get("level_pct", 0.0)
         r.placement_gap = round(r.talent_pct - r.team_level_pct, 4)
-        # The program a talent of this calibre "deserves": the team sitting at
-        # the same percentile on the program ladder.
-        idx = min(n_t - 1, max(0, round((1 - r.talent_pct) * (n_t - 1)))) if n_t else 0
+        # The program a talent of this calibre "deserves": centre on the team sitting at the
+        # same percentile on the (cross-division) program ladder, then pick ONE program from a
+        # band around that centre by a STABLE per-player hash. Same calibre → same band, but
+        # different players land on different schools, so the list shows the full spread of
+        # programs that could use talent — not the same four repeated. (The Fit Finder link
+        # per row still lists a player's complete ranked fit set.)
         if ladder:
-            d = ladder[idx]
+            center = min(n_t - 1, max(0, round((1 - r.talent_pct) * (n_t - 1))))
+            lo = max(0, center - _FIT_BAND_HALF)
+            hi = min(n_t - 1, center + _FIT_BAND_HALF)
+            band = ladder[lo:hi + 1]
+            d = band[zlib.crc32(r.pid.encode()) % len(band)]
             r.deserved_school = d["school"]
             r.deserved_division = d["division"]
             r.deserved_pi_rank = d["pi_rank"]
