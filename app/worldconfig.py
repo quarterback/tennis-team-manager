@@ -250,6 +250,42 @@ def set_pros_per_cycle(value) -> None:
         return
 
 
+# --- Analytics Bureau "fit" band (Underplaced Talent → FITS column) -------------
+# How wide the calibre band is, in OVR grade points, that a talent is matched to a
+# program for. Reach UP = a slight stretch above their level; reach DOWN = how far
+# below they'll still be surfaced as a fit. Wider DOWN → more tiers / more spread.
+DEFAULT_FIT_REACH_UP = 3.0
+DEFAULT_FIT_REACH_DOWN = 15.0
+
+
+def fit_reach_up() -> float:
+    try:
+        return max(0.0, min(20.0, float(get("fit_reach_up") or DEFAULT_FIT_REACH_UP)))
+    except (ValueError, TypeError):
+        return DEFAULT_FIT_REACH_UP
+
+
+def set_fit_reach_up(value) -> None:
+    try:
+        set("fit_reach_up", repr(max(0.0, min(20.0, float(value)))))
+    except (ValueError, TypeError):
+        return
+
+
+def fit_reach_down() -> float:
+    try:
+        return max(1.0, min(40.0, float(get("fit_reach_down") or DEFAULT_FIT_REACH_DOWN)))
+    except (ValueError, TypeError):
+        return DEFAULT_FIT_REACH_DOWN
+
+
+def set_fit_reach_down(value) -> None:
+    try:
+        set("fit_reach_down", repr(max(1.0, min(40.0, float(value)))))
+    except (ValueError, TypeError):
+        return
+
+
 # --- Per-region weights ---------------------------------------------------------
 # A chosen band is a STARTING point; the editor then exposes a DIRECT weight per
 # region, so any bespoke international mix is expressible — e.g. a European core

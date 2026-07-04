@@ -104,14 +104,24 @@ Grade-banding is **self-scaling by tier**:
 The column now "rolls up the entirety of the section" — a diverse snapshot across every tier a
 talent genuinely fits, each fit stable and calibre-appropriate. Intel Bureau tests pass.
 
-## 5. Tuning knobs (`app/scout_intel.py`)
+## 5. Tuning knobs — LIVE in the UI
 
-- **`_FIT_UP`** (default 3.0) — how far above their level a fit may reach. Higher = more
-  "reach" fits where they'd be a mid-lineup piece; 0 = only at-or-below their level.
-- **`_FIT_DOWN`** (default 15.0) — how far below. Widen to let top talents dip toward D2 (more
-  cross-division spread); tighten to keep fits closer to their exact calibre.
+The band width is exposed on the **Underplaced Talent** page as a **"FITS band (OVR pts)"**
+tuner (reach up / reach down + Apply), persisted per save via `worldconfig`:
+
+- **reach up** (`fit_reach_up`, default **3**) — OVR a fit may stretch ABOVE their level.
+  Higher = more "reach" fits where they'd be a mid-lineup piece; 0 = only at-or-below.
+- **reach down** (`fit_reach_down`, default **15**) — OVR below. **Wider → fits span more
+  tiers.** Measured live: down **6** → 17 distinct, almost all D1; down **15** → 45 distinct,
+  mostly D1 + a little D2/D3; down **30** → 48 distinct, a full D1/D2/D3/D4 spread.
+
+The knob values are folded into the `scan()` cache key, so a change recomputes the column
+immediately rather than serving a stale scan.
 
 ## 6. Files touched
 
 - `app/scout_intel.py` — `import bisect`/`zlib`; the `deserved_school` calibre-band pick in
-  `scan()`.
+  `scan()`; band width read from `worldconfig` + folded into the scan cache key.
+- `app/worldconfig.py` — `fit_reach_up` / `fit_reach_down` get/set (persisted per save).
+- `app/web/server.py` — `/intel/underplaced/fit-band` setter route; pass current values to the view.
+- `app/web/templates/intel_underplaced.html` — the "FITS band" tuner (reach up / down / Apply).

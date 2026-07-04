@@ -93,9 +93,13 @@ def scan(gender: str, seed: int | None = None) -> dict:
     """Full god-mode talent scan for one gender across every division. Returns
     ``{players, teams, by_pid, team_ladder}``, memoised per world snapshot."""
     from app.web.state import DEFAULT_SEED
+    from app import worldconfig as _wc
     if seed is None:
         seed = DEFAULT_SEED
-    key = (_world_stamp(seed), gender)
+    # The fit-band reach is live-tunable, so fold it into the cache key — nudging the knob
+    # must recompute the FITS column, not serve a stale scan.
+    fit_up, fit_down = _wc.fit_reach_up(), _wc.fit_reach_down()
+    key = (_world_stamp(seed), gender, fit_up, fit_down)
     cached = _scan_cache.get(key)
     if cached is not None:
         return cached
@@ -200,8 +204,8 @@ def scan(gender: str, seed: int | None = None) -> dict:
     # We surface ONE program from that band by a STABLE per-player hash, so the column shows the
     # full spread of matching programs — any tier that fits, never the same four repeated — while
     # each player's fit stays stable. (The per-row Fit Finder link lists the full ranked set.)
-    _FIT_UP = 3.0      # OVR points a fit may reach ABOVE their talent (small — else they'd sit)
-    _FIT_DOWN = 15.0   # OVR points BELOW — the range where they're still a real fit/upgrade
+    # Live-tunable band width (Analytics Bureau UI) — see worldconfig.fit_reach_up/down.
+    _FIT_UP, _FIT_DOWN = fit_up, fit_down
     asc = ladder[::-1]                                   # ascending by team_level
     asc_lvls = [t["team_level"] for t in asc]
     for r in players:

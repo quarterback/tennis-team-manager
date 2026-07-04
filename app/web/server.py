@@ -1459,6 +1459,7 @@ def create_app() -> Flask:
     def intel_underplaced():
         division, gender, label, u = _universe(request)
         import app.scout_intel as si
+        from app import worldconfig
         div_f = request.args.get("div", "All")
         cls_f = request.args.get("class", "All")
         sort = request.args.get("sort", "gap")
@@ -1469,7 +1470,18 @@ def create_app() -> Flask:
                                rows=pg.items, p=pg, total=len(rows), gender=gender,
                                div_f=div_f, cls_f=cls_f, sort=sort, q=q, u=u, uni_label=label,
                                divisions=["All", "D1", "D2", "D3", "D4"],
-                               classes=["All", "Fr", "So", "Jr", "Sr"])
+                               classes=["All", "Fr", "So", "Jr", "Sr"],
+                               fit_up=worldconfig.fit_reach_up(),
+                               fit_down=worldconfig.fit_reach_down())
+
+    @app.route("/intel/underplaced/fit-band", methods=["POST"])
+    def intel_underplaced_fit_band():
+        from app import worldconfig
+        worldconfig.set_fit_reach_up(request.form.get("fit_up", ""))
+        worldconfig.set_fit_reach_down(request.form.get("fit_down", ""))
+        args = {k: request.form.get(k) for k in ("sort", "div", "class", "q", "u")
+                if request.form.get(k)}
+        return redirect(url_for("intel_underplaced", **args))
 
     @app.route("/intel/scholarships")
     def intel_scholarships():
