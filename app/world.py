@@ -178,6 +178,15 @@ CREATE TABLE IF NOT EXISTS world_pro (
   school TEXT, pid TEXT, cost REAL
 );
 CREATE INDEX IF NOT EXISTS idx_wpro ON world_pro(world_id, year, cycle);
+-- Durable archive of committed portal MOVES (risers + cascade demotions), written at commit
+-- so the Portal Rankings board survives the rollover that clears the transient slate tables.
+-- Pros are read from world_pro; this covers the transfer (riser/cascade) side.
+CREATE TABLE IF NOT EXISTS world_portal_move (
+  world_id INTEGER, year INTEGER, cycle TEXT, gender TEXT, kind TEXT,
+  pid TEXT, name TEXT, str REAL,
+  src_school TEXT, src_div TEXT, dest_school TEXT, dest_div TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_wpm ON world_portal_move(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wr ON world_roster(world_id, year);
 CREATE INDEX IF NOT EXISTS idx_ws ON world_signing(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS idx_wx ON world_crossmatch(world_id, year, gender);
@@ -378,6 +387,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn.executescript(
         "DELETE FROM world_crossmatch; DELETE FROM world_signing; "
         "DELETE FROM world_graduates; DELETE FROM world_pro; "
+        "DELETE FROM world_portal_move; "
         "DELETE FROM world_roster; DELETE FROM world;"
     )
     conn.commit()
@@ -1744,6 +1754,7 @@ def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
         ov.set_proposals(year, gender, rows)          # the slate is now the committed moves
         for m in rows:
             ov.set_move(m["pid"], m["dest_school"])
+        _archive_portal_moves(seed, w, gender, "fall", rows)   # durable record for Portal Rankings
     _base_cache.pop((w["id"], w["year"]), None)        # ITA stint changed the stored roster
     _dev_cache.clear()
     _release_fall_portal(seed, w)
@@ -2066,9 +2077,10 @@ def _commit_pro_signings(seed: int, cycle_key: str) -> int:
         conn.close()
         return 0
     salt = active_salt(seed)
+    window = cycle_key.split("-", 1)[1] if "-" in cycle_key else cycle_key   # 'preseason' / 'fall'
     prime(seed)
     rosters = developed_rosters(w)
-    roster_rows, pro_rows = [], []
+    roster_rows, pro_rows, arch_rows = [], [], []
     for gender in worldconfig.active_genders():
         cohort = {p.pid: p for p in pros.generate_pros(salt, gender, cycle_key)}
         cohort_list = list(cohort.values())
@@ -2092,6 +2104,10 @@ def _commit_pro_signings(seed: int, cycle_key: str) -> int:
                                 json.dumps(prospect_to_dict(p))))
             pro_rows.append((w["id"], w["year"], cycle_key, gender, d, school, p.pid,
                              round(pros.pro_cost(p, cohort_list), 2)))
+            # durable Portal Rankings record — a pro is an IN acquisition from the "Pros" pool
+            arch_rows.append((w["id"], w["year"], window, gender, "pro", p.pid,
+                              getattr(p, "name", p.pid), round(p.str_value(), 1),
+                              "Pros", "PRO", school, d))
     if roster_rows:
         conn.executemany("DELETE FROM world_roster WHERE world_id=? AND year=? AND pid=?",
                          [(w["id"], w["year"], r[5]) for r in roster_rows])
@@ -2100,6 +2116,10 @@ def _commit_pro_signings(seed: int, cycle_key: str) -> int:
                  (w["id"], w["year"], cycle_key, "", "", "", "", 0.0))
     if pro_rows:
         conn.executemany("INSERT INTO world_pro VALUES (?,?,?,?,?,?,?,?)", pro_rows)
+    conn.execute("DELETE FROM world_portal_move WHERE world_id=? AND year=? AND cycle=? AND kind='pro'",
+                 (w["id"], w["year"], window))
+    if arch_rows:
+        conn.executemany("INSERT INTO world_portal_move VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", arch_rows)
     conn.commit()
     conn.close()
     _base_cache.clear(); _dev_cache.clear(); _primed.clear()
@@ -2210,6 +2230,66 @@ def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     return out
 
 
+def _archive_portal_moves(seed: int, w: dict, gender: str, cycle: str, moves: list) -> None:
+    """Write this window's committed transfer moves to the durable `world_portal_move`
+    archive (riser = a rise UP, cascade = a displaced demotion DOWN). Idempotent per
+    (world, year, gender, cycle) so a re-commit replaces rather than duplicates. This is
+    the record the Portal Rankings board reads — it outlives the transient slate tables
+    the rollover clears. (Pros live in `world_pro`, read separately.)"""
+    conn = _db()
+    try:
+        # scope the replace to the transfer kinds only — pro archive rows (kind='pro') for the
+        # same cycle are written separately by _commit_pro_signings and must not be wiped here.
+        conn.execute("DELETE FROM world_portal_move WHERE world_id=? AND year=? AND gender=? "
+                     "AND cycle=? AND kind!='pro'", (w["id"], w["year"], gender, cycle))
+        rows = [(w["id"], w["year"], cycle, gender,
+                 "riser" if m.get("cascade_from") is None else "cascade",
+                 m["pid"], m.get("name", ""), float(m.get("str", 0.0)),
+                 m["src_school"], m["src_div"], m["dest_school"], m["dest_div"])
+                for m in moves]
+        if rows:
+            conn.executemany("INSERT INTO world_portal_move VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def portal_moves(seed: int, year: int, gender: str | None = None) -> list[dict]:
+    """Every archived committed portal move for a year — risers (up), cascades (down), and
+    pros (in from the Pros pool). Each: cycle, gender, kind, pid, name, str, src/dest school+div.
+    The durable source for the Portal Rankings board (survives the rollover)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        q = ("SELECT cycle,gender,kind,pid,name,str,src_school,src_div,dest_school,dest_div"
+             " FROM world_portal_move WHERE world_id=? AND year=?")
+        args: list = [w["id"], year]
+        if gender in ("men", "women"):
+            q += " AND gender=?"
+            args.append(gender)
+        rows = conn.execute(q, args).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def portal_years(seed: int = DEFAULT_SEED) -> list[int]:
+    """Years with archived portal data, newest first (for the board's year dropdown)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        ys = [r[0] for r in conn.execute(
+            "SELECT DISTINCT year FROM world_portal_move WHERE world_id=? ORDER BY year DESC",
+            (w["id"],)).fetchall()]
+    finally:
+        conn.close()
+    return ys
+
+
 def commit_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
     """Resolve the (edited) slate and relocate every mover — riders AND their cascade
     demotions — with a plain `set_move`. The whole committed slate is kept in the
@@ -2226,6 +2306,7 @@ def commit_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
         for m in rows:
             ov.set_move(m["pid"], m["dest_school"])
             moved += 1
+        _archive_portal_moves(seed, w, gender, "preseason", moves)   # durable record for Portal Rankings
     signed = _commit_pro_signings(seed, f"{year}-preseason")   # persist the free-agent pros the user signed
     reset_caches(); _primed.pop(seed, None)
     return {"event": "preseason_portal_committed", "year": year, "moved": moved, "pros": signed}

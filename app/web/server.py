@@ -35,7 +35,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import preseason_portal_view, recruit_economy_view
+from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from app import world as wd
 from app.juniors import US_STATES
@@ -121,6 +121,7 @@ NAV_GROUPS = [
         {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "fa-solid fa-binoculars", "endpoint": "recruiting_hub_page","args": {}},
         {"id": "recruiting","label": "Recruiting Board","icon": "fa-solid fa-graduation-cap","endpoint": "recruiting",       "args": {}},
         {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
+        {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
@@ -181,6 +182,7 @@ def _active_nav(req) -> str:
     if p.startswith("/intel"):            return "intel"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
+    if p.startswith("/portal-rankings"):  return "portal_rk"
     if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -1429,6 +1431,16 @@ def create_app() -> Flask:
         return render_template("signing_tracker.html", active="Recruiting",
                                trk=signing_tracker(gender, division), gender=gender,
                                u=u, uni_label=label)
+
+    @app.route("/portal-rankings")
+    def portal_rankings_page():
+        _division, _g, label, u = _universe(request)
+        pr = portal_class_rankings(gender=request.args.get("gender", "all"),
+                                   division=request.args.get("div", "All"),
+                                   year=request.args.get("year"))
+        return render_template("portal_rankings.html", active="World", u=u, uni_label=label,
+                               pr=pr, divisions=["All", "D1", "D2", "D3", "D4"],
+                               genders=["all", "men", "women"])
 
     @app.route("/recruiting/hub")
     def recruiting_hub_page():

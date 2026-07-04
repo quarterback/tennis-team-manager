@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Portal Rankings{% endblock %}
+{% block content %}
+
+<form method="get">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <input type="hidden" name="u" value="{{ u }}">
+  <span style="font-size:13px;color:var(--text-muted)">Transfer Portal › Class Rankings</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Year</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
+      {% for y in pr.years %}<option value="{{ y.val }}"{% if y.val == pr.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Gender</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:84px">
+      {% for g in genders %}<option value="{{ g }}"{% if g == pr.gender %} selected{% endif %}>{{ {'all':'All','men':'Men','women':'Women'}[g] }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Classification</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:76px">
+      {% for d in divisions %}<option{% if d == pr.division %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <button class="bl-pill" type="submit">Go</button>
+</div></div>
+</form>
+
+<div class="bl-container" style="padding-bottom:0">
+  <h1 style="margin:2px 0 2px;font-size:22px">{{ pr.year_label or '' }} Transfer Portal Team Rankings</h1>
+  <p style="margin:0 0 4px;font-size:12.5px;color:var(--text-muted)">
+    How much each program improved, held, or lost talent in the portal — risers + pros in, players out.
+    {{ pr.division if pr.division != 'All' else 'All divisions' }} · {{ {'all':'Men & Women','men':'Men','women':'Women'}[pr.gender] }}.
+  </p>
+</div>
+
+{% if not pr.classes %}
+<div class="bl-container"><div class="bl-note">
+  No portal classes yet{% if pr.year_label %} for {{ pr.year_label }}{% endif %}. Rankings fill in once a portal
+  window <strong>commits</strong> — run the <a href="{{ url_for('preseason_portal') }}">pre-season portal</a>
+  (and the fall portal later), then check back. Past years stay here once they're in the books.
+</div></div>
+{% else %}
+
+<div class="bl-container">
+  <div class="al-kpis">
+    <div class="al-kpi"><div class="al-kpi-k">Portal Moves</div><div class="al-kpi-v">{{ pr.kpis.total_moves }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Risers</div><div class="al-kpi-v">{{ pr.kpis.risers }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Pros Signed</div><div class="al-kpi-v">{{ pr.kpis.pros }}</div></div>
+    <div class="al-kpi"><div class="al-kpi-k">Avg STR (in)</div><div class="al-kpi-v">{{ '%.1f'|format(pr.kpis.avg_str) }}</div></div>
+    {% if pr.kpis.top_pickup %}
+    <div class="al-kpi"><div class="al-kpi-k">Top Pickup</div>
+      <div class="al-kpi-v sm">{{ pr.kpis.top_pickup.name }}</div>
+      <div class="al-kpi-sub">{{ '%.1f'|format(pr.kpis.top_pickup.str) }} STR → {{ pr.kpis.top_pickup.dest_school }}</div></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table al-dense" style="--bl-grid-cols: 40px minmax(150px,1.4fr) 74px 96px 96px 88px minmax(150px,1.3fr)">
+    <div class="bl-thead">
+      <span class="bl-th">#</span><span class="bl-th">PROGRAM</span>
+      <span class="bl-th num" title="Top-3 STR class score of who they brought IN">SCORE</span>
+      <span class="bl-th num" title="Transfers IN — count · average STR">IN (n · avg)</span>
+      <span class="bl-th num" title="Transfers OUT — count · average STR">OUT (n · avg)</span>
+      <span class="bl-th num" title="Net talent change: IN class score minus OUT — improved (+) or lost (−)">NET Δ</span>
+      <span class="bl-th">HAUL</span>
+    </div>
+    {% for c in pr.classes %}
+    <div class="bl-row">
+      <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
+      <a class="bl-school" href="{{ url_for('teams', school=c.school, u=c.div ~ '-' ~ (pr.gender if pr.gender != 'all' else 'men')) }}">
+        {{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }} <span class="ib-divchip">{{ c.div }}</span></a>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(c.score) }}</span></span>
+      <span class="bl-cell-num"><span class="bl-conf">{{ c.in_n }} · {{ '%.1f'|format(c.in_avg) }}</span></span>
+      <span class="bl-cell-num"><span class="bl-conf" style="color:var(--text-muted)">{{ c.out_n }} · {{ '%.1f'|format(c.out_avg) }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat" style="color:{{ '#1a8f4c' if c.net > 0.5 else '#c0392b' if c.net < -0.5 else 'var(--text-muted)' }}">{{ '+' if c.net > 0 else '' }}{{ '%.1f'|format(c.net) }}</span></span>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;gap:5px;display:flex;align-items:center;flex-wrap:wrap">
+        {% if c.pros %}<span class="pro-badge" title="{{ c.pros }} pro{{ '' if c.pros==1 else 's' }} signed">{{ c.pros }} PRO</span>{% endif %}
+        {% for m in c.best %}<span title="{{ m.kind }} · {{ '%.1f'|format(m.str) }} STR">{{ m.name }}{% if not loop.last %},{% endif %}</span>{% endfor %}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div></div>
+
+<div class="bl-container"><div class="bl-note" style="font-size:12px;color:var(--text-faint)">
+  <strong>SCORE</strong> ranks the incoming class (top-3 STR, same shape as recruiting classes).
+  <strong>NET Δ</strong> nets it against who left — so a program can top its division's class board yet still
+  show a small net if it also lost a star. Filter <strong>Classification</strong> to D2/D3/D4 to see which
+  lower-division programs actually got better in the window.
+</div></div>
+{% endif %}
+{% endblock %}
