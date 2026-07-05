@@ -3399,7 +3399,7 @@
    ],
    "weights": {
     "us": 0.2,
-    "british_isles": 22.0,
+    "british_isles": 7.3,
     "south_america": 7.0,
     "brazil": 5.0,
     "canada": 6.0,
@@ -3426,8 +3426,8 @@
     "philippines": 1.5,
     "indonesia": 0.6,
     "malaysia": 0.6,
-    "africa": 2.0,
-    "north_africa": 1.0,
+    "africa": 7.0,
+    "north_africa": 4.0,
     "switzerland": 1.2,
     "austria": 0.6,
     "belgium": 0.6,
@@ -3435,7 +3435,22 @@
     "greece": 1.0,
     "turkey": 1.0,
     "kazakhstan": 0.5,
-    "israel": 0.5
+    "israel": 0.5,
+    "africa_cricket": 2.5,
+    "mauritius": 1.0,
+    "cape_verde": 1.0,
+    "uganda": 0.8,
+    "namibia": 0.8,
+    "caribbean_cricket": 5.0,
+    "caribbean_dutch": 2.0,
+    "barbados": 1.2,
+    "bahamas": 1.2,
+    "bermuda": 1.0,
+    "haiti": 1.5,
+    "cuba": 1.5,
+    "dominican": 1.8,
+    "guyana": 0.6,
+    "suriname": 0.6
    }
   }
  }

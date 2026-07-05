@@ -52,8 +52,28 @@ influential. Shares scale with program prestige (top programs more international
 
 **Recommended:** pick band **Pro Tour — global mix** + international share **0.70–0.80**.
 
-## 5. Files touched
+## 5. Africa + West Indies — represented AND good at tennis (owner)
 
-- `generators/data/names/regions.json` — new `pro_tour` preset.
+The first cut gave Africa a weight of 2 and the West Indies **zero**, and Africa's only rated
+nation (South Africa) sat *below* neutral. Fixed both levers:
+
+- **Talent (`nation_talent.json`):** raised/added **16 African** and **18 West Indies/Caribbean**
+  nations above neutral — Tunisia 74/66 (+3 grade, ~1-in-134 blue-chip), South Africa 66/62,
+  Zimbabwe/Egypt/Nigeria/Kenya…; Jamaica 64/58, Cuba 64/58, Bahamas/Barbados/Trinidad/Dominican…
+  So players from those nations generate a genuine grade lift + better blue-chip odds — "better
+  at tennis" everywhere, not just in this preset.
+- **Representation (`pro_tour` weights):** per owner, **cut UK by two-thirds (22→7.3)** and poured
+  it into Africa (Sub-Saharan + **North Africa** + cricket nations + islands, weight 3→17) and the
+  **West Indies** (caribbean_cricket/dutch + Barbados/Bahamas/Bermuda/Haiti/Cuba/Dominican…, 0→16).
+
+**Resulting mix (upper-D1, intl_share 0.8):** W.Europe 17.6 · US 14.5 · **West Indies 11.5** ·
+**Africa 11.2** · E.Europe 11.0 · S.America 8.3 · Canada 4.5 · E.Asia 4.2 · UK 3.9 · Australia 3.0
+· SE.Asia 3.0 · Mexico 1.9 · Nordic 1.4 %. Africa + West Indies ≈ **23% combined**, and strong.
+
+## 6. Files touched
+
+- `generators/data/names/regions.json` — new `pro_tour` preset (Africa + West Indies weighted up,
+  UK down).
+- `generators/data/names/nation_talent.json` — Africa + West Indies nations lifted above neutral.
 - `app/worldconfig.py` — `pro_tour` in `BANDS`.
 - `app/recruiting.py` — `intl_share_for` base-roster tilt (default-neutral).
