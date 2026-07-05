@@ -3075,6 +3075,61 @@
    "surname_keys": [
     "french"
    ]
+  },
+  "argentina": {
+   "label": "Argentina",
+   "country": "AR",
+   "first_keys": [
+    "argentinian",
+    "spanish",
+    "italian"
+   ],
+   "surname_keys": [
+    "argentinian"
+   ]
+  },
+  "china": {
+   "label": "China",
+   "country": "CN",
+   "first_keys": [
+    "chinese"
+   ],
+   "surname_keys": [
+    "chinese"
+   ]
+  },
+  "japan": {
+   "label": "Japan",
+   "country": "JP",
+   "first_keys": [
+    "japanese"
+   ],
+   "surname_keys": [
+    "japanese"
+   ]
+  },
+  "chile": {
+   "label": "Chile",
+   "country": "CL",
+   "first_keys": [
+    "latino_hispanic",
+    "latin_american"
+   ],
+   "surname_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "spanish"
+   ]
+  },
+  "bulgaria": {
+   "label": "Bulgaria",
+   "country": "BG",
+   "first_keys": [
+    "bulgarian"
+   ],
+   "surname_keys": [
+    "bulgarian"
+   ]
   }
  },
  "presets": {
@@ -3410,7 +3465,7 @@
    "weights": {
     "us": 0.2,
     "british_isles": 20.44,
-    "south_america": 4.47,
+    "south_america": 2.6,
     "brazil": 3.2,
     "canada": 6.0,
     "mexico": 2.5,
@@ -3419,7 +3474,7 @@
     "germany": 5.0,
     "italy": 5.0,
     "poland": 2.18,
-    "europe_eastern": 2.18,
+    "europe_eastern": 1.7,
     "russia": 1.45,
     "czechia": 1.09,
     "serbia": 1.09,
@@ -3429,7 +3484,7 @@
     "ukraine": 0.73,
     "nordic": 2.0,
     "anzac": 10.68,
-    "east_asia": 4.0,
+    "east_asia": 1.8,
     "south_korea": 1.0,
     "hong_kong": 0.6,
     "thailand": 1.5,
@@ -3442,7 +3497,7 @@
     "austria": 0.6,
     "belgium": 0.6,
     "netherlands": 1.0,
-    "greece": 0.73,
+    "greece": 1.6,
     "turkey": 1.0,
     "kazakhstan": 0.5,
     "israel": 0.5,
@@ -3462,7 +3517,12 @@
     "guyana": 0.34,
     "suriname": 0.34,
     "pacific_islands": 1.6,
-    "france": 4.0
+    "france": 4.0,
+    "argentina": 1.6,
+    "chile": 0.8,
+    "china": 1.2,
+    "japan": 1.2,
+    "bulgaria": 0.6
    }
   }
  }

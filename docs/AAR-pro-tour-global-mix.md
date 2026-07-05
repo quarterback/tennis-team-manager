@@ -77,6 +77,17 @@ out of `europe_western`, same `french` name pool) so it could be weighted direct
 · Aus/NZ 7.5 · **West Indies 6.5** · **Africa 6.0** · S.America 5.6 · Canada 4.5 · E.Asia 4.0 ·
 France 3.6 · SE.Asia 3.0 · Mexico 1.9 · Nordic 1.5 · Oceania 1.0 % (Africa+WI ≈ 12.5% combined).
 
+### 5b. Un-burying tennis nations (owner: "any others left out like France?")
+Several tennis nations had no standalone region — they only lived inside a **mixed** pool, so they
+couldn't be weighted directly: **Argentina, Chile** (in `south_america`), **China, Japan** (in
+`east_asia`), **Bulgaria** (in `europe_eastern`). Promoted all five to their own single-country
+regions (same name pools they used inside the mix) and gave them direct `pro_tour` weight, trimming
+the parent pools so the S.America / E.Asia / E.Europe bucket totals held. Also bumped **Greece**
+(already standalone) back over **1%** direct.
+
+Now at intl_share 0.8 (upper-D1): Argentina 1.5 · Japan 1.4 · Greece 1.1 · China 0.9 · Chile 0.8 ·
+Bulgaria 0.4 % — each individually weightable, with the S.America bucket steady at ~5.8%.
+
 ## 6. Files touched
 
 - `generators/data/names/regions.json` — new `pro_tour` preset (owner-tuned mix) + new standalone
