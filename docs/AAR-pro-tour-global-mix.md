@@ -66,14 +66,21 @@ nation (South Africa) sat *below* neutral. Fixed both levers:
   it into Africa (Sub-Saharan + **North Africa** + cricket nations + islands, weight 3→17) and the
   **West Indies** (caribbean_cricket/dutch + Barbados/Bahamas/Bermuda/Haiti/Cuba/Dominican…, 0→16).
 
-**Resulting mix (upper-D1, intl_share 0.8):** W.Europe 17.6 · US 14.5 · **West Indies 11.5** ·
-**Africa 11.2** · E.Europe 11.0 · S.America 8.3 · Canada 4.5 · E.Asia 4.2 · UK 3.9 · Australia 3.0
-· SE.Asia 3.0 · Mexico 1.9 · Nordic 1.4 %. Africa + West Indies ≈ **23% combined**, and strong.
+### 5a. Owner rebalance (final)
+After seeing Africa+WI at ~23%, the owner dialed it in: **Africa+WI → ~13% combined**, and the
+freed weight went **UK +7%, France +3%**; then **−3% from Eastern Europe and −3% from South
+America** to **Australia/NZ (+5%) and Oceania (+1%)**. France had no standalone region (it was
+~20% of the mixed `europe_western` pool), so a dedicated **`france`** region was added (promoted
+out of `europe_western`, same `french` name pool) so it could be weighted directly.
+
+**Resulting mix (upper-D1, intl_share 0.8):** W.Eur-non-FR 16.2 · US 14.7 · UK 10.5 · E.Europe 8.0
+· Aus/NZ 7.5 · **West Indies 6.5** · **Africa 6.0** · S.America 5.6 · Canada 4.5 · E.Asia 4.0 ·
+France 3.6 · SE.Asia 3.0 · Mexico 1.9 · Nordic 1.5 · Oceania 1.0 % (Africa+WI ≈ 12.5% combined).
 
 ## 6. Files touched
 
-- `generators/data/names/regions.json` — new `pro_tour` preset (Africa + West Indies weighted up,
-  UK down).
+- `generators/data/names/regions.json` — new `pro_tour` preset (owner-tuned mix) + new standalone
+  `france` region.
 - `generators/data/names/nation_talent.json` — Africa + West Indies nations lifted above neutral.
 - `app/worldconfig.py` — `pro_tour` in `BANDS`.
 - `app/recruiting.py` — `intl_share_for` base-roster tilt (default-neutral).
