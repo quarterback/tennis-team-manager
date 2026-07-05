@@ -88,6 +88,11 @@ the parent pools so the S.America / E.Asia / E.Europe bucket totals held. Also b
 Now at intl_share 0.8 (upper-D1): Argentina 1.5 · Japan 1.4 · Greece 1.1 · China 0.9 · Chile 0.8 ·
 Bulgaria 0.4 % — each individually weightable, with the S.America bucket steady at ~5.8%.
 
+Then promoted the rest of the buried tail too (owner: "all of them"): **Colombia, Peru, Uruguay,
+Ecuador** (`south_america`), **Romania** (`europe_eastern`), **Taiwan** (`east_asia`) — same
+pattern, parents trimmed. Every tennis nation with a name file is now its own weightable region
+(Colombia 0.6 · Taiwan 0.6 · Peru 0.5 · Romania/Uruguay/Ecuador ~0.35% at intl_share 0.8).
+
 ## 6. Files touched
 
 - `generators/data/names/regions.json` — new `pro_tour` preset (owner-tuned mix) + new standalone

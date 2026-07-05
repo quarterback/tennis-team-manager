@@ -3130,6 +3130,80 @@
    "surname_keys": [
     "bulgarian"
    ]
+  },
+  "colombia": {
+   "label": "Colombia",
+   "country": "CO",
+   "first_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "afro_caribbean"
+   ],
+   "surname_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "spanish"
+   ]
+  },
+  "peru": {
+   "label": "Peru",
+   "country": "PE",
+   "first_keys": [
+    "latino_hispanic",
+    "latin_american"
+   ],
+   "surname_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "spanish"
+   ]
+  },
+  "uruguay": {
+   "label": "Uruguay",
+   "country": "UY",
+   "first_keys": [
+    "latino_hispanic",
+    "latin_american"
+   ],
+   "surname_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "spanish",
+    "italian"
+   ]
+  },
+  "ecuador": {
+   "label": "Ecuador",
+   "country": "EC",
+   "first_keys": [
+    "latino_hispanic",
+    "latin_american"
+   ],
+   "surname_keys": [
+    "latino_hispanic",
+    "latin_american",
+    "spanish"
+   ]
+  },
+  "romania": {
+   "label": "Romania",
+   "country": "RO",
+   "first_keys": [
+    "romanian"
+   ],
+   "surname_keys": [
+    "romanian"
+   ]
+  },
+  "taiwan": {
+   "label": "Taiwan",
+   "country": "TW",
+   "first_keys": [
+    "chinese_taiwanese"
+   ],
+   "surname_keys": [
+    "chinese_taiwanese"
+   ]
   }
  },
  "presets": {
@@ -3465,7 +3539,7 @@
    "weights": {
     "us": 0.2,
     "british_isles": 20.44,
-    "south_america": 2.6,
+    "south_america": 1.2,
     "brazil": 3.2,
     "canada": 6.0,
     "mexico": 2.5,
@@ -3474,7 +3548,7 @@
     "germany": 5.0,
     "italy": 5.0,
     "poland": 2.18,
-    "europe_eastern": 1.7,
+    "europe_eastern": 1.4,
     "russia": 1.45,
     "czechia": 1.09,
     "serbia": 1.09,
@@ -3484,7 +3558,7 @@
     "ukraine": 0.73,
     "nordic": 2.0,
     "anzac": 10.68,
-    "east_asia": 1.8,
+    "east_asia": 1.4,
     "south_korea": 1.0,
     "hong_kong": 0.6,
     "thailand": 1.5,
@@ -3522,7 +3596,13 @@
     "chile": 0.8,
     "china": 1.2,
     "japan": 1.2,
-    "bulgaria": 0.6
+    "bulgaria": 0.6,
+    "colombia": 0.8,
+    "peru": 0.7,
+    "uruguay": 0.5,
+    "ecuador": 0.4,
+    "romania": 0.6,
+    "taiwan": 0.6
    }
   }
  }
