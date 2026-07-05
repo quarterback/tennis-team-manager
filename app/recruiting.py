@@ -76,18 +76,27 @@ _WOMEN_INTL_FACTOR = 0.72       # women's rosters run ~30% less international th
 _ACADEMIC_INTL_KNEE = 0.60      # academics at/below this don't damp the share
 _ACADEMIC_INTL_DAMP = 1.9       # how hard academics above the knee pull toward US merit
 _ACADEMIC_INTL_FLOOR = 0.20     # the strongest academic damp still leaves this multiple
+# The onboarding "international share" dial now also tilts the BASE roster (it used to move
+# only the recruit class, which is why a global world felt impossible to get). Additive from
+# the 0.30 baseline so the DEFAULT is a NO-OP (no calibration change); raising it pushes the
+# whole world global — at 0.80 a top program lands ~US 20% (tour-like), lower keeps US-heavy.
+_INTL_BASELINE = 0.30
+_INTL_GLOBAL_TILT = 0.70
 
 
 def intl_share_for(division: str, gender: str = "men", prestige: float = 0.5,
                    academics: float = 0.5) -> float:
     """Target international fraction of a program's base roster (0..1). Athletic level
-    (division + prestige) sets it; academics damps it toward US merit; women lower."""
+    (division + prestige) sets it; academics damps it toward US merit; women lower; then the
+    world's international-share dial tilts the whole thing global (default 0.30 = unchanged)."""
     base, slope, ref = _INTL_BASE.get(division, (0.30, 0.40, 0.30))
     intl = base + slope * (float(prestige) - ref)
     damp = 1.0 - _ACADEMIC_INTL_DAMP * max(0.0, float(academics) - _ACADEMIC_INTL_KNEE)
     intl *= max(_ACADEMIC_INTL_FLOOR, damp)
     if gender == "women":
         intl *= _WOMEN_INTL_FACTOR
+    from app import worldconfig
+    intl += (worldconfig.intl_share() - _INTL_BASELINE) * _INTL_GLOBAL_TILT
     return max(0.03, min(0.92, intl))
 
 

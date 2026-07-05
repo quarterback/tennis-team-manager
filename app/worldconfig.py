@@ -15,6 +15,7 @@ from . import dbpath
 # Each value must be a real preset in generators/data/names/regions.json.
 BANDS: list[tuple[str, str]] = [
     ("tennis_global", "Realistic tour geography (default)"),
+    ("pro_tour", "Pro Tour — global mix (ATP/WTA-shaped)"),
     ("global", "Worldwide — even mix"),
     ("us_majority", "USA-heavy"),
     ("european", "European"),
