@@ -59,6 +59,8 @@ _STOP = {"university", "the", "of", "at", "college"}
 ALIASES = {
     "albany": "ualbany",
     "appalachian state": "app state",
+    "boston university": "boston u",     # else norm("boston u.")->boston->Boston College (103)
+    "louisiana": "louisiana ragin cajuns",  # Ragin' Cajuns (309), not SE Louisiana
     "southeastern louisiana": "se louisiana",
     "utrgv": "ut rio grande valley",
     "a&m-corpus christi": "texas a&m-corpus christi",
