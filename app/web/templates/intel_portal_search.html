@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Portal Search{% endblock %}
+{% block content %}
+
+<form method="get">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Gender</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+      {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Origin</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:118px">
+      <option value="all"{% if scope == 'all' %} selected{% endif %}>US + International</option>
+      <option value="us"{% if scope == 'us' %} selected{% endif %}>US only</option>
+      <option value="intl"{% if scope == 'intl' %} selected{% endif %}>International only</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Region (US)</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="region" onchange="this.form.submit()" style="min-width:118px">
+      {% for rg in regions %}<option{% if rg == region %} selected{% endif %}>{{ rg }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">State</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="state" onchange="this.form.submit()" style="min-width:74px">
+      {% for s in states %}<option{% if s == state %} selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
+      {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="class" onchange="this.form.submit()" style="min-width:66px">
+      {% for c in classes %}<option{% if c == cls_f %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Sort</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:118px">
+      <option value="talent"{% if sort == 'talent' %} selected{% endif %}>Highest ceiling</option>
+      <option value="now"{% if sort == 'now' %} selected{% endif %}>Best right now</option>
+      <option value="state"{% if sort == 'state' %} selected{% endif %}>Home state (A–Z)</option>
+      <option value="class"{% if sort == 'class' %} selected{% endif %}>Class (Fr→Sr)</option>
+      <option value="name"{% if sort == 'name' %} selected{% endif %}>Name (A–Z)</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Search</span>
+    <input class="bl-input" type="search" name="q" value="{{ q }}" placeholder="name, school, or hometown"
+           style="min-width:170px" onsearch="this.form.submit()"></label>
+  <button class="bl-pill" type="submit">Go</button>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} players</div>
+  <span class="bl-entries-right">{{ uni_label }} · the placeable pool — find who to move, then place them on the portal</span>
+</div></div>
+
+<div class="bl-notes"><div class="bl-note" style="font-size:12px">
+  Every rostered player, filterable by where they're <strong>from</strong> — US state, region, or
+  international — plus class and division. Built for portal placement: narrow to the profile you want,
+  then type the name into the <a href="{{ url_for('preseason_portal', u=u) }}">Pre-season</a> /
+  <a href="{{ url_for('fall_portal') }}">Fall</a> portal's <em>Add a player</em> box.
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table" style="--bl-grid-cols: 40px minmax(150px,1.5fr) minmax(130px,1.1fr) minmax(120px,1fr) 62px 56px 44px">
+    <div class="bl-thead">
+      <span class="bl-th">#</span><span class="bl-th">PLAYER</span>
+      <span class="bl-th" title="Where the player is from">FROM</span>
+      <span class="bl-th">TEAM</span>
+      <span class="bl-th num" title="True talent ceiling — OVERALL rating, 20–80 (static)">TALENT</span>
+      <span class="bl-th num" title="Live results-based STR — this season's play (dynamic)">STR</span>
+      <span class="bl-th"></span>
+    </div>
+    {% for r in rows %}
+    {% set ab = crest(r.school) %}
+    <div class="bl-row">
+      <span class="bl-rank">{{ p.start + loop.index0 }}</span>
+      <span class="bl-school" style="gap:6px">
+        <a href="{{ url_for('player', pid=r.pid, school=r.school, u=r.division ~ '-' ~ r.gender) }}"><span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}</a>
+        {% if gender == 'all' %}<span class="ib-divchip" title="{{ r.gender }}">{{ 'M' if r.gender == 'men' else 'W' }}</span>{% endif %}
+        <span class="ib-divchip">{{ r.class_year or '—' }}</span></span>
+      <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        {% set st = home_state(r) %}
+        {% if st %}<span class="ib-divchip" title="{{ home_region(r) }}">{{ st }}</span> {{ r.hometown.rsplit(',', 1)[0] }}
+        {% else %}<span style="color:var(--text-faint)">{{ r.hometown or (r.country|country_name) }}</span>{% endif %}
+      </span>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(r.school, ab[0], ab[1], 'xs') }} {{ r.school }} <span class="ib-divchip">{{ r.division }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ r.true_overall }}</span></span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ '%.1f'|format(r.live_str) }}</span>
+      <span class="bl-conf"><a class="ib-fit" href="{{ url_for('intel_fit', pid=r.pid, u=u) }}" title="Fit Finder">fit ↗</a></span>
+    </div>
+    {% endfor %}
+    {% if not rows %}
+    <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">No players match these filters — widen the origin, region, or class.</span></div>
+    {% endif %}
+  </div>
+</div>
+{{ pager(p, 'players') }}
+</div>
+{% endblock %}
