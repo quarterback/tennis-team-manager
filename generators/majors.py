@@ -43,6 +43,48 @@ _REAL = [
     "Dietetics", "Epidemiology", "Geophysics", "Industrial Design", "Marine Science",
     "Meteorology", "Oceanography", "Paleontology", "Recreation Management", "Speech Pathology",
     "Textile Engineering", "Toxicology", "Viticulture & Enology", "Welding Engineering",
+    # Languages, humanities & culture
+    "Arabic", "Mandarin Chinese", "Korean", "Portuguese", "Latin", "Modern Greek", "Hebrew",
+    "Hindi", "Swahili", "Slavic Studies", "Medieval Studies", "Renaissance Studies",
+    "Folklore Studies", "Rhetoric", "Ethnomusicology", "Museum Studies", "Library Science",
+    "Translation & Interpretation", "Digital Humanities", "Semiotics", "Archaeology",
+    # Social sciences & area studies
+    "Peace & Conflict Studies", "Development Studies", "Demography", "Public Administration",
+    "Gerontology", "Disability Studies", "Latin American Studies", "East Asian Studies",
+    "Middle Eastern Studies", "European Studies", "Indigenous Studies", "Behavioral Economics",
+    "Political Economy", "Social Policy", "Forensic Psychology",
+    # Arts & design
+    "Ceramics", "Sculpture", "Printmaking", "Illustration", "Animation", "Fashion Design",
+    "Costume Design", "Musical Theater", "Jazz Studies", "Studio Art", "Sound Design",
+    "Screenwriting", "Arts Administration", "Art Education",
+    # Business
+    "Sales & Sales Management", "Risk Management", "Taxation", "Digital Marketing",
+    "Fashion Merchandising", "Sports Marketing", "Innovation Management", "Tourism Management",
+    # Health & clinical
+    "Respiratory Therapy", "Medical Laboratory Science", "Health Informatics",
+    "Genetic Counseling", "Sports Nutrition", "Midwifery", "Chiropractic", "Podiatry",
+    "Health Education", "Radiologic Science",
+    # Engineering & computing
+    "Systems Engineering", "Structural Engineering", "Nuclear Engineering",
+    "Agricultural Engineering", "Ocean Engineering", "Mining Engineering", "Optical Engineering",
+    "Automotive Engineering", "Renewable Energy Engineering", "Artificial Intelligence",
+    "Machine Learning", "Human-Computer Interaction", "Geographic Information Systems",
+    "Network Engineering",
+    # Natural sciences
+    "Astrobiology", "Planetary Science", "Bioinformatics", "Immunology", "Pharmacology",
+    "Conservation Biology", "Soil Science", "Atmospheric Science", "Hydrology", "Entomology",
+    "Ornithology", "Marine Ecology", "Neurobiology", "Systems Biology",
+    # Agriculture, environment & the outdoors
+    "Horticulture", "Animal Science", "Equine Studies", "Fisheries Science",
+    "Sustainable Agriculture", "Turfgrass Science", "Environmental Health", "Rangeland Management",
+    # Education
+    "Secondary Education", "Early Childhood Education", "Physical Education",
+    "Educational Psychology", "TESOL", "Curriculum & Instruction",
+    # Applied & interdisciplinary
+    "Sports Analytics", "Esports Management", "Emergency Management", "Homeland Security",
+    "Fire Science", "Aviation", "Culinary Arts", "Baking & Pastry Arts", "Event Management",
+    "Bioethics", "Sports Psychology", "Forensic Science", "Nautical Science",
+    "Packaging Science", "Sign Language Interpretation",
 ]
 
 # Invented / tongue-in-cheek majors for color.
@@ -60,6 +102,23 @@ _FICTIONAL = [
     "Cryptozoological Studies", "Experimental Cartooning", "Strategic Hammocking",
     "Interdimensional History", "Recreational Linguistics", "Artisanal Data Hoarding",
     "Holistic Parking", "Conceptual Juggling",
+    # More flavor — same tongue-in-cheek voice, kept distinct from the above
+    "Advanced Vibe Curation", "Speculative Snack Architecture", "Competitive Overthinking",
+    "Applied Serendipity", "Theoretical Parallel Parking", "Ceremonial Emailing",
+    "Introductory Time Travel", "Recreational Bureaucracy", "Artisanal Complaint Writing",
+    "Post-Modern Small Talk", "Tactical Snacking", "Experimental Nap Dynamics",
+    "Applied Eavesdropping", "Gourmet Cereal Studies", "Competitive Standing in Line",
+    "Speculative Weather Complaining", "Existential Parallel Parking", "Advanced Doorway Loitering",
+    "Interpretive Meeting Attendance", "Quantum Procrastination", "Applied Buzzword Generation",
+    "Recreational Conspiracy Mapping", "Ambient Gossip Theory", "Strategic Ghosting",
+    "Decorative Bureaucracy", "Theoretical Umbrella Management", "Competitive Couch Selection",
+    "Applied Wandering", "Folkloric Meme Curation", "Experimental Elevator Etiquette",
+    "Gourmet Instant Noodle Theory", "Speculative Parking Meter Studies", "Advanced Sighing",
+    "Tactical Brunching", "Post-Ironic Cartography", "Recreational Spreadsheet Aesthetics",
+    "Applied Cloud Watching", "Competitive Alphabetizing", "Narrative Grocery Listing",
+    "Holistic Doomscrolling", "Theoretical Sock Matching", "Avant-Garde Small Talk",
+    "Experimental Hallway Navigation", "Applied Overpacking", "Ornamental Keyboard Shortcuts",
+    "Speculative Leftover Management", "Competitive Thermostat Negotiation",
 ]
 
 MAJORS = _REAL + _FICTIONAL
