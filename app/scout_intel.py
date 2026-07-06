@@ -318,11 +318,15 @@ def portal_search(gender: str, seed: int | None = None, division: str = "All",
     filter by where a player is FROM (US state / region / domestic vs
     international) and by class, division, name; sort by talent, form, or origin.
 
+    `gender`: 'men' | 'women' | 'all' (both, merged). Picking one halves the pool.
     `scope`: 'all' | 'us' (domestic only) | 'intl' (foreign only).
     `state`: 2-letter US code (implies domestic). `region`: a US_REGIONS bucket.
     `q` matches name, school, or hometown.
     """
-    rows = list(scan(gender, seed)["players"])
+    if gender == "all":
+        rows = list(scan("men", seed)["players"]) + list(scan("women", seed)["players"])
+    else:
+        rows = list(scan(gender, seed)["players"])
     if division != "All":
         rows = [r for r in rows if r.division == division]
     if scope == "us":
@@ -359,7 +363,8 @@ def portal_search(gender: str, seed: int | None = None, division: str = "All",
 def portal_search_states(gender: str, seed: int | None = None) -> list[str]:
     """US states actually present in this world's rosters, in region order then
     alphabetical — so the dropdown only offers states you'd find someone from."""
-    present = {home_state(r) for r in scan(gender, seed)["players"]}
+    genders = ("men", "women") if gender == "all" else (gender,)
+    present = {home_state(r) for g in genders for r in scan(g, seed)["players"]}
     present.discard("")
     return sorted(present, key=lambda s: (US_REGION_ORDER.index(US_REGIONS[s]), s))
 

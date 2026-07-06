@@ -1520,8 +1520,14 @@ def create_app() -> Flask:
 
     @app.route("/intel/portal-search")
     def intel_portal_search():
-        division, gender, label, u = _universe(request)
+        division, uni_gender, label, u = _universe(request)
         import app.scout_intel as si
+        # Gender is a first-class filter here (not just the universe key): pick Men,
+        # Women, or Both. Defaults to the current universe gender; one gender ~halves
+        # the rows loaded. `all` merges both scans.
+        gender = request.args.get("gender", uni_gender)
+        if gender not in ("men", "women", "all"):
+            gender = uni_gender
         div_f = request.args.get("div", "All")
         cls_f = request.args.get("class", "All")
         scope = request.args.get("scope", "all")
@@ -1538,6 +1544,7 @@ def create_app() -> Flask:
                                region=region, sort=sort, q=q, u=u, uni_label=label,
                                divisions=["All", "D1", "D2", "D3", "D4"],
                                classes=["All", "Fr", "So", "Jr", "Sr"],
+                               genders=[("men", "Men"), ("women", "Women"), ("all", "Both")],
                                regions=["All"] + si.US_REGION_ORDER,
                                states=["All"] + si.portal_search_states(gender),
                                home_state=si.home_state, home_region=si.home_region)

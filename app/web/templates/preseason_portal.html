@@ -54,9 +54,9 @@
       <input class="bl-select" name="dest" list="pp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
     <button class="bl-btn" type="submit">+ Add</button>
   </form>
-  {# Preserve the selected portal gender: search is single-gender (u carries it). The
-     'all' tab has no single gender, so fall back to men. #}
-  <a class="bl-btn" href="{{ url_for('intel_portal_search', u='D1-' ~ (pp.gender if pp.gender in ('men', 'women') else 'men')) }}" title="Search the placeable pool by hometown, region, class"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Search players</a>
+  {# Carry the selected portal gender straight into the search's Gender filter
+     (men / women / all → Both). #}
+  <a class="bl-btn" href="{{ url_for('intel_portal_search', gender=pp.gender) }}" title="Search the placeable pool by hometown, region, class"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Search players</a>
   <span style="margin-left:auto;display:flex;gap:8px">
     <form method="post" action="{{ url_for('preseason_portal_approve') }}">
       <input type="hidden" name="action" value="approve_all"><button class="bl-btn" type="submit">Keep all</button>

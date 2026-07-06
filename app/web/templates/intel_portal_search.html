@@ -8,7 +8,11 @@
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
   <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
-  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Origin</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Gender</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+      {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Origin</span>
     <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:118px">
       <option value="all"{% if scope == 'all' %} selected{% endif %}>US + International</option>
       <option value="us"{% if scope == 'us' %} selected{% endif %}>US only</option>
@@ -73,6 +77,7 @@
       <span class="bl-rank">{{ p.start + loop.index0 }}</span>
       <span class="bl-school" style="gap:6px">
         <a href="{{ url_for('player', pid=r.pid, school=r.school, u=r.division ~ '-' ~ r.gender) }}"><span class="player-flag" title="{{ r.country|country_name }}">{{ r.country|flags }}</span> {{ r.name }}</a>
+        {% if gender == 'all' %}<span class="ib-divchip" title="{{ r.gender }}">{{ 'M' if r.gender == 'men' else 'W' }}</span>{% endif %}
         <span class="ib-divchip">{{ r.class_year or '—' }}</span></span>
       <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         {% set st = home_state(r) %}

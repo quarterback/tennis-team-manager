@@ -34,9 +34,12 @@ didn't carry hometown/domestic through.
   links to the profile and the Fit Finder). Reuses `_pager` (preserves all filter args).
 - **Discoverability**: nav item **Portal Search** (Analytics Bureau), a hub KPI card, and a
   **"🔎 Search players"** button on both the pre-season and fall portal pages next to *Add a player*
-  — so you narrow to the profile you want, then type the name into the portal's add box. The
-  pre-season button **preserves the selected gender tab** (women tab → `u=D1-women`) since search is
-  single-gender; `all` falls back to men, and the mixed-gender fall portal defaults to men.
+  — so you narrow to the profile you want, then type the name into the portal's add box.
+- **Gender is a first-class filter** (not just the buried universe key): a **Gender** dropdown —
+  **Men / Women / Both** — leads the toolbar. Defaults to the current universe gender; picking one
+  gender ~halves the rows loaded (Men+D1 = ~4.6k vs ~28.7k for Both). `Both` merges the two per-gender
+  scans and shows an **M/W chip** per row so they stay distinguishable. The portal buttons carry the
+  tab's gender straight in (`men`/`women`/`all`→Both; the mixed-gender fall portal opens on Both).
 
 ## 4. Why a read-only analytics page (not inline portal actions)
 The portal slate is small and curated; the *placement* decision needs the whole ~14k-player pool.
