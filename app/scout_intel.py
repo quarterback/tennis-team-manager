@@ -33,6 +33,51 @@ from app.development import overall_to_str
 DIVISIONS = ("D1", "D2", "D3", "D4")
 _scan_cache: dict = {}
 
+# US regions for the Portal Search hometown filter — a recruiting-style 6-way cut
+# (finer than the 4 Census regions where tennis density warrants it: Texas/South
+# Central split out, Mountain vs West Coast split). DC files under Mid-Atlantic.
+US_REGIONS: dict[str, str] = {
+    # Northeast
+    "ME": "Northeast", "NH": "Northeast", "VT": "Northeast", "MA": "Northeast",
+    "RI": "Northeast", "CT": "Northeast", "NY": "Northeast", "NJ": "Northeast",
+    "PA": "Northeast",
+    # Mid-Atlantic / Upper South
+    "DE": "Mid-Atlantic", "MD": "Mid-Atlantic", "DC": "Mid-Atlantic",
+    "VA": "Mid-Atlantic", "WV": "Mid-Atlantic",
+    # Southeast
+    "NC": "Southeast", "SC": "Southeast", "GA": "Southeast", "FL": "Southeast",
+    "TN": "Southeast", "KY": "Southeast", "AL": "Southeast", "MS": "Southeast",
+    # South Central
+    "TX": "South Central", "OK": "South Central", "AR": "South Central",
+    "LA": "South Central",
+    # Midwest
+    "OH": "Midwest", "MI": "Midwest", "IN": "Midwest", "IL": "Midwest",
+    "WI": "Midwest", "MN": "Midwest", "IA": "Midwest", "MO": "Midwest",
+    "KS": "Midwest", "NE": "Midwest", "ND": "Midwest", "SD": "Midwest",
+    # Mountain
+    "CO": "Mountain", "UT": "Mountain", "NV": "Mountain", "AZ": "Mountain",
+    "NM": "Mountain", "ID": "Mountain", "MT": "Mountain", "WY": "Mountain",
+    # West Coast
+    "CA": "West Coast", "OR": "West Coast", "WA": "West Coast", "AK": "West Coast",
+    "HI": "West Coast",
+}
+US_REGION_ORDER = ["Northeast", "Mid-Atlantic", "Southeast", "South Central",
+                   "Midwest", "Mountain", "West Coast"]
+
+
+def home_state(r) -> str:
+    """2-letter US state parsed from a domestic player's ``hometown`` ("City, ST"),
+    else "" (international, or unparseable)."""
+    if not getattr(r, "domestic", False):
+        return ""
+    ht = getattr(r, "hometown", "") or ""
+    tail = ht.rsplit(",", 1)[-1].strip().upper() if "," in ht else ""
+    return tail if tail in US_REGIONS else ""
+
+
+def home_region(r) -> str:
+    return US_REGIONS.get(home_state(r), "")
+
 
 def _caliber(overall: float) -> float:
     return max(0.0, min(1.0, (overall - 20) / 60.0))
@@ -65,6 +110,8 @@ class Intel:
     line: int | None              # current lineup slot on their own team (1–6) or None
     team_pi_rank: int
     team_tier: str
+    hometown: str = ""            # "City, ST" (domestic) / "City, NAT" (intl)
+    domestic: bool = False        # US-born (hometown state parseable)
     # filled in the second pass (need global tables):
     talent_pct: float = 0.0       # global true-talent percentile (same gender, all div)
     team_level_pct: float = 0.0   # their program's level percentile
@@ -168,6 +215,8 @@ def scan(gender: str, seed: int | None = None) -> dict:
                     pid=p.pid, name=p.name, country=getattr(p, "country", ""),
                     school=prog.school, division=division, gender=gender,
                     class_year=getattr(p, "class_year", ""),
+                    hometown=getattr(p, "hometown", ""),
+                    domestic=bool(getattr(p, "domestic", False)),
                     cur_overall=cur_o, true_overall=true_o, ovr_upside=true_o - cur_o,
                     live_str=round(lstr, 1), live_rel=round(lrel, 2),
                     walk_on=bool(getattr(p, "walk_on", False)),
@@ -259,6 +308,60 @@ def underplaced_board(gender: str, seed: int | None = None, division: str = "All
     }
     rows.sort(key=keys.get(sort, keys["gap"]), reverse=True)
     return rows
+
+
+def portal_search(gender: str, seed: int | None = None, division: str = "All",
+                  class_year: str = "All", scope: str = "all", state: str = "All",
+                  region: str = "All", sort: str = "talent", q: str = "") -> list[Intel]:
+    """Searchable directory of the whole placeable universe — every rostered
+    player, the pool you pull transfers from. Immersion aid for portal placement:
+    filter by where a player is FROM (US state / region / domestic vs
+    international) and by class, division, name; sort by talent, form, or origin.
+
+    `scope`: 'all' | 'us' (domestic only) | 'intl' (foreign only).
+    `state`: 2-letter US code (implies domestic). `region`: a US_REGIONS bucket.
+    `q` matches name, school, or hometown.
+    """
+    rows = list(scan(gender, seed)["players"])
+    if division != "All":
+        rows = [r for r in rows if r.division == division]
+    if scope == "us":
+        rows = [r for r in rows if r.domestic]
+    elif scope == "intl":
+        rows = [r for r in rows if not r.domestic]
+    if state and state != "All":
+        st = state.upper()
+        rows = [r for r in rows if home_state(r) == st]
+    if region and region != "All":
+        rows = [r for r in rows if home_region(r) == region]
+    if class_year != "All":
+        rows = [r for r in rows
+                if (r.class_year[3:] if r.class_year.startswith("RS-") else r.class_year) == class_year]
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows
+                if ql in r.name.lower() or ql in r.school.lower() or ql in (r.hometown or "").lower()]
+    _CLASS_ORD = {"Fr": 0, "So": 1, "Jr": 2, "Sr": 3}
+    keys = {
+        "talent": (lambda r: (r.true_overall, r.live_str), True),
+        "now": (lambda r: (r.live_str, r.cur_overall), True),
+        "name": (lambda r: r.name.lower(), False),
+        "state": (lambda r: (home_state(r) or "~~", r.name.lower()), False),  # US first, then A–Z
+        "class": (lambda r: (_CLASS_ORD.get(
+            r.class_year[3:] if r.class_year.startswith("RS-") else r.class_year, 9),
+            -r.true_overall), False),
+    }
+    key, rev = keys.get(sort, keys["talent"])
+    rows.sort(key=key, reverse=rev)
+    return rows
+
+
+def portal_search_states(gender: str, seed: int | None = None) -> list[str]:
+    """US states actually present in this world's rosters, in region order then
+    alphabetical — so the dropdown only offers states you'd find someone from."""
+    present = {home_state(r) for r in scan(gender, seed)["players"]}
+    present.discard("")
+    return sorted(present, key=lambda s: (US_REGION_ORDER.index(US_REGIONS[s]), s))
 
 
 @dataclass

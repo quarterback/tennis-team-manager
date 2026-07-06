@@ -130,6 +130,7 @@ NAV_GROUPS = [
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
         {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
+        {"id": "intel_search", "label": "Portal Search",    "icon": "fa-solid fa-magnifying-glass-location", "endpoint": "intel_portal_search", "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
@@ -1516,6 +1517,30 @@ def create_app() -> Flask:
         args = {k: request.form.get(k) for k in ("sort", "div", "class", "q", "u")
                 if request.form.get(k)}
         return redirect(url_for("intel_underplaced", **args))
+
+    @app.route("/intel/portal-search")
+    def intel_portal_search():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_f = request.args.get("div", "All")
+        cls_f = request.args.get("class", "All")
+        scope = request.args.get("scope", "all")
+        state = request.args.get("state", "All")
+        region = request.args.get("region", "All")
+        sort = request.args.get("sort", "talent")
+        q = request.args.get("q", "")
+        rows = si.portal_search(gender, division=div_f, class_year=cls_f, scope=scope,
+                                state=state, region=region, sort=sort, q=q)
+        pg = paginate(rows, request.args.get("page", 1))
+        return render_template("intel_portal_search.html", active="Analytics Bureau",
+                               rows=pg.items, p=pg, total=len(rows), gender=gender,
+                               div_f=div_f, cls_f=cls_f, scope=scope, state=state,
+                               region=region, sort=sort, q=q, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2", "D3", "D4"],
+                               classes=["All", "Fr", "So", "Jr", "Sr"],
+                               regions=["All"] + si.US_REGION_ORDER,
+                               states=["All"] + si.portal_search_states(gender),
+                               home_state=si.home_state, home_region=si.home_region)
 
     @app.route("/intel/scholarships")
     def intel_scholarships():

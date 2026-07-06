@@ -32,6 +32,7 @@
       <input class="bl-select" name="dest" list="fp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
     <button class="bl-btn" type="submit">+ Add</button>
   </form>
+  <a class="bl-btn" href="{{ url_for('intel_portal_search') }}" title="Search the placeable pool by hometown, region, class"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Search players</a>
   <span style="margin-left:auto;display:flex;gap:8px">
     <form method="post" action="{{ url_for('fall_portal_approve') }}">
       <input type="hidden" name="action" value="approve_all"><button class="bl-btn" type="submit">Keep all</button>
