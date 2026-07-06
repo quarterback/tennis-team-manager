@@ -790,6 +790,18 @@ def create_app() -> Flask:
         return render_template("preseason_portal.html", active="Preseason",
                                pp=preseason_portal_view(gender=gender, page=page), crest=crest)
 
+    def _pp_return():
+        """Redirect back to the portal on the SAME page + gender the action was fired
+        from, so editing a row (redirect/sign/drop/add) doesn't bounce you to page 1."""
+        args = {}
+        g = (request.form.get("gender", "") or "").strip()
+        if g:
+            args["gender"] = g
+        p = (request.form.get("page", "") or "").strip()
+        if p:
+            args["page"] = p
+        return redirect(url_for("preseason_portal", **args))
+
     @app.route("/preseason-portal/rescan", methods=["POST"])
     def preseason_portal_rescan():
         wd.rescan_preseason_portal()
@@ -813,6 +825,9 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
         args = {"gender": request.form.get("gender", "all")}
+        page = (request.form.get("page", "") or "").strip()
+        if page:
+            args["page"] = page
         if pid:
             r = wd.sign_pro(DEFAULT_SEED, pid, dest)
             if not r.get("ok") and dest.strip():
@@ -836,6 +851,7 @@ def create_app() -> Flask:
             pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
             if pid and gender:
                 ov.ps_set_status(year, gender, pid, request.form.get("status", "rejected"))
+            return _pp_return()          # single-row drop: stay on the current page
         return redirect(url_for("preseason_portal"))
 
     @app.route("/preseason-portal/redirect", methods=["POST"])
@@ -843,7 +859,7 @@ def create_app() -> Flask:
         pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
         if pid and dest:
             wd.redirect_preseason_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal"))
+        return _pp_return()
 
     @app.route("/preseason-portal/add", methods=["POST"])
     def preseason_portal_add():
@@ -857,7 +873,7 @@ def create_app() -> Flask:
                     pid = hits[0]["pid"]
         if pid:
             wd.add_preseason_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal"))
+        return _pp_return()
 
     @app.route("/preseason-portal/commit", methods=["POST"])
     def preseason_portal_commit():

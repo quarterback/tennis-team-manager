@@ -445,14 +445,26 @@ def cities_in_state(state_abbr: str) -> list[str]:
 
 def towns_in_region(region: str) -> list[tuple[str, str]]:
     """All (city, state) home-town options whose state falls in `region` — used to
-    bias a program's DOMESTIC recruits toward its own backyard. Empty when the
-    region is unknown or has no city pool (caller then falls back to nationwide)."""
+    bias a program's DOMESTIC recruits toward its own backyard. Draws from the
+    expansive per-state city pool (generators `hometowns.json` `us_states`, ~1.5k
+    real towns) so a program's local players span its whole region rather than a
+    handful of campus towns; the researched campus cities are merged in too. Empty
+    when the region is unknown or has no city pool (caller then falls back to
+    nationwide). Order is deterministic (both sources iterate in a stable order)."""
     if not region:
         return []
+    from generators.flavor import _load_us_states
+    seen: set[tuple[str, str]] = set()
     out: list[tuple[str, str]] = []
-    for st, cities in cities_by_state().items():
-        if STATE_REGION.get(st) == region:
-            out.extend((c, st) for c in cities)
+    for source in (_load_us_states(), cities_by_state()):
+        for st, cities in source.items():
+            if STATE_REGION.get(st) != region:
+                continue
+            for c in cities:
+                pair = (c, st)
+                if c and pair not in seen:
+                    seen.add(pair)
+                    out.append(pair)
     return out
 
 

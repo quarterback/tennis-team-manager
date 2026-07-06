@@ -1432,9 +1432,13 @@ def _paginate_portal(rows: list, gender: str, page: int, per_page: int) -> dict:
     pages = max(1, (total + per_page - 1) // per_page)
     page = max(1, min(page, pages))
     start = (page - 1) * per_page
+    from .pagination import Page
     return {"page_rows": filtered[start:start + per_page], "gender": g,
             "gender_counts": counts, "page": page, "pages": pages,
-            "per_page": per_page, "total_filtered": total}
+            "per_page": per_page, "total_filtered": total,
+            # A Page for the shared numbered pager (_pager.html) — items unused here,
+            # it only needs the counts to render the window + prev/next.
+            "pager": Page([], page, per_page, total)}
 
 
 def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
@@ -1456,7 +1460,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
                 "destinations": [], "is_preseason": False, "cap": cap, "pros_cycle": pros_cycle,
                 "pros": [], "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
-                "page": 1, "pages": 1}
+                "page": 1, "pages": 1, "pager": _paginate_portal([], "all", 1, per_page)["pager"]}
     committed = ov.ps_get_proposals(w["year"], status="committed")
     # Pros are FREE AGENTS out of the synthetic "Pros" pool — pre-commit show the whole cohort
     # (each with an editable, initially-blank destination the user signs to any club); once the
@@ -1489,7 +1493,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
                 "committed": len(committed), "done": True, "cap": cap, "pros_cycle": pros_cycle,
                 "is_preseason": w["week"] == 0, "pros": pros_in,
                 "gender": pg["gender"], "gender_counts": pg["gender_counts"],
-                "page": pg["page"], "pages": pg["pages"],
+                "page": pg["page"], "pages": pg["pages"], "pager": pg["pager"],
                 "destinations": world.fall_portal_destinations(seed)}
     resolved = world.resolve_preseason_portal(seed)   # {gender: [moves]} (riders + cascades)
     out = []
@@ -1517,7 +1521,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
             "committed": 0, "done": False, "cap": cap, "pros_cycle": pros_cycle,
             "is_preseason": w["week"] == 0, "debug": debug, "pros": pros_in,
             "gender": pg["gender"], "gender_counts": pg["gender_counts"],
-            "page": pg["page"], "pages": pg["pages"],
+            "page": pg["page"], "pages": pg["pages"], "pager": pg["pager"],
             "destinations": world.fall_portal_destinations(seed)}
 
 

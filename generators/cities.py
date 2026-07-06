@@ -90,7 +90,55 @@ def program_location(school: str) -> str:
     return f"{city}, {state}" if city else ""
 
 
+# Tennis-recruiting heat by USPS state/territory — biases the nationwide
+# birthplace pool toward the regions that actually produce college tennis (the
+# CA / TX / FL Sun Belt corridor heavy, the cold-weather north lighter). A state
+# absent from the table draws at weight 1. Territories are US, so kept.
+_STATE_HEAT: dict[str, int] = {
+    "CA": 8, "TX": 7, "FL": 7, "GA": 4, "NY": 4, "NC": 3, "IL": 3, "OH": 3,
+    "PA": 3, "VA": 3, "NJ": 3, "AZ": 3, "TN": 2, "SC": 2, "MI": 2, "MA": 2,
+    "MD": 2, "WA": 2, "CO": 2, "IN": 2, "MO": 2, "AL": 2, "LA": 2, "UT": 2,
+    "OR": 2, "MN": 2, "WI": 2, "KY": 2, "OK": 2, "NV": 2,
+}
+
+# Valid US birthplace codes: 50 states + DC + the territories that carry US
+# players — drops any stray non-US code (e.g. a Canadian province) that shares
+# the city data.
+_US_CODES = frozenset({
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI",
+    "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN",
+    "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH",
+    "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA",
+    "WV", "WI", "WY", "PR", "VI", "GU", "AS",
+})
+
+_US_TOWNS: tuple[tuple[str, str], ...] | None = None
+
+
+def _us_towns() -> tuple[tuple[str, str], ...]:
+    """The expansive nationwide (city, state-abbr) birthplace pool: every real US
+    city in the per-state tier of `hometowns.json` (~1.5k towns spanning all 50
+    states + territories), each state repeated by its tennis-recruiting heat so the
+    mix still leans Sun Belt. Built once and cached; falls back to the compact
+    college-town list only if the data can't be loaded."""
+    global _US_TOWNS
+    if _US_TOWNS is None:
+        from .flavor import _load_us_states
+        pool: list[tuple[str, str]] = []
+        for st, cities in _load_us_states().items():
+            code = (st or "").upper()
+            if code not in _US_CODES:
+                continue
+            weight = _STATE_HEAT.get(code, 1)
+            for city in cities:
+                pool.extend([(city, code)] * weight)
+        _US_TOWNS = tuple(pool) or _COLLEGE_TOWNS
+    return _US_TOWNS
+
+
 def random_town(rng) -> tuple[str, str]:
-    """A random real (city, state-abbr) from the US college-town pool — used for
-    American player hometowns so they read 'City, ST' with a real state."""
-    return rng.choice(_COLLEGE_TOWNS)
+    """A random real (city, state-abbr) drawn from the expansive nationwide US city
+    pool — used for American player hometowns so they read 'City, ST' with the city
+    actually located in its state, from a broad base rather than a handful of
+    college towns."""
+    return rng.choice(_us_towns())
