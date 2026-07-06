@@ -34,11 +34,15 @@ def _generate(school: str, gender: str, role: str, base: float):
                           school=school, base=base, home_country=country or None)
 
 
-def ensure(division: str, gender: str, school: str, role: str) -> dict:
+def ensure(division: str, gender: str, school: str, role: str, prog=None) -> dict:
     """Return the persisted coach record for this seat, generating + registering
-    a coach the first time the seat is filled. Idempotent."""
-    div = ncaa.load_division(division, gender)
-    prog = div.by_school(school)
+    a coach the first time the seat is filled. Idempotent.
+
+    `prog` lets a bulk caller pass the already-loaded program object so we skip the
+    per-seat ``load_division`` (the dominant cost when enumerating every seat in the
+    world — see state.staff_search)."""
+    if prog is None:
+        prog = ncaa.load_division(division, gender).by_school(school)
     base = 50.0 + (12.0 * prog.strength if prog else 0.0)
     c = _generate(school, gender, role, base=max(28.0, base + _ROLE_BUMP[role]))
     dev, rec, tac = round(c.development_score), round(c.recruiting_score), round(c.tactical_score)

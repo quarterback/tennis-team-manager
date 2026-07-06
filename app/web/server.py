@@ -37,6 +37,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
 from .state import preseason_view as preseason_view_data
 from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
+from .state import staff_search
 from app import world as wd
 from app.juniors import US_STATES
 from .pagination import paginate
@@ -125,6 +126,7 @@ NAV_GROUPS = [
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
+        {"id": "staff",     "label": "Staff Search",  "icon": "fa-solid fa-user-tie", "endpoint": "staff_search_page","args": {}},
         {"id": "rec_econ",  "label": "Scholarship Economy","icon": "fa-solid fa-coins", "endpoint": "recruit_economy_page","args": {}},
     ]),
     ("Analytics Bureau", [
@@ -181,11 +183,13 @@ def _active_nav(req) -> str:
     if p.startswith("/intel/lineups"):    return "intel_lineups"
     if p.startswith("/intel/underplaced"): return "intel_under"
     if p.startswith("/intel/scholarships"): return "intel_aid"
+    if p.startswith("/intel/my-targets"): return "intel_targets"
+    if p.startswith("/intel/portal-search"): return "intel_search"
     if p.startswith("/intel"):            return "intel"
+    if p.startswith("/staff-search"):     return "staff"
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/portal-rankings"):  return "portal_rk"
-    if p.startswith("/intel/my-targets"): return "intel_targets"
     if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -931,6 +935,29 @@ def create_app() -> Flask:
             total=total, matches=len(filtered), conferences=conferences_for(division, gender),
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
+
+    @app.route("/staff-search")
+    def staff_search_page():
+        division, uni_gender, label, u = _universe(request)
+        gender = request.args.get("gender", uni_gender)
+        if gender not in ("men", "women", "all"):
+            gender = uni_gender
+        div_f = request.args.get("div", "All")
+        role = request.args.get("role", "both")
+        if role not in ("head", "assistant", "both"):
+            role = "both"
+        sort = request.args.get("sort", "overall")
+        q = request.args.get("q", "")
+        res = staff_search(gender, division=div_f, role=role, sort=sort, q=q)
+        pg = paginate(res["rows"], request.args.get("page", 1))
+        return render_template("staff_search.html", active="Management",
+                               rows=pg.items, p=pg, total=len(res["rows"]), hc_bar=res["hc_bar"],
+                               gender=gender, div_f=div_f, role=role, sort=sort, q=q,
+                               u=u, uni_label=label, crest=crest,
+                               divisions=["All", "D1", "D2", "D3", "D4"],
+                               genders=[("men", "Men"), ("women", "Women"), ("all", "Both")],
+                               roles=[("both", "Head + Assistants"), ("head", "Head coaches"),
+                                      ("assistant", "Assistants")])
 
     @app.route("/coach/<coach_id>")
     def coach(coach_id):

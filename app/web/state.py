@@ -158,6 +158,7 @@ def reset_all() -> None:
     _singles_champ_cache.clear()
     _portal_cache.clear()
     _staff_cache.clear()
+    _uni_staff_cache.clear()
     awards.reset_cache()
     for c in (sm._pid_idx_cache, sm._str_cache, sm._pi_cache, sm._forced_cache, sm._prec_cache,
               sm._pline_cache, sm._plrec_cache):
@@ -1695,6 +1696,101 @@ def head_coach(division: str, gender: str, school: str) -> dict | None:
         if s["role"] == "head":
             return s if s.get("coach_id") else None    # None when the seat is vacant
     return None
+
+
+_STAFF_DIVS = ("D1", "D2", "D3", "D4")
+_uni_staff_cache: dict = {}
+
+
+def coach_overall(dev: int, rec: int, tac: int) -> int:
+    """A single 20–80 'current ability' for a coach — the mean of the three
+    surfaced pillars (development / recruiting / tactics). Simple and legible; the
+    per-pillar columns show the actual profile."""
+    return round((dev + rec + tac) / 3.0)
+
+
+def _universe_staff(division: str, gender: str) -> list[dict]:
+    """Every coach seat in one division×gender as flat rows, built with the
+    division loaded ONCE (skips the per-seat load_division that dominates a full
+    enumeration). Cached per world snapshot / registry generation."""
+    from app import coachgen
+    import app.coachreg as coachreg
+    import app.world as world
+    from app.ncaa import load_division
+    w = world.load_world()
+    yr = w["year"] if w else 0
+    salt = (w.get("salt") or "") if w else ""
+    key = (coachreg.generation(), salt, division, gender, yr)
+    cached = _uni_staff_cache.get(key)
+    if cached is not None:
+        return cached
+    try:
+        div = load_division(division, gender)
+    except FileNotFoundError:
+        _uni_staff_cache[key] = []
+        return []
+    rows: list[dict] = []
+    for prog in div.programs:
+        for role in ("head", "assoc", "asst"):
+            r = coachgen.ensure(division, gender, prog.school, role, prog=prog)
+            if r is None:                       # vacant seat — skip in the search pool
+                continue
+            dev, rec, tac = r["dev"], r["rec"], r["tac"]
+            rows.append({
+                "coach_id": r["coach_id"], "name": r["name"], "school": prog.school,
+                "division": division, "gender": gender, "role": role,
+                "title": coachgen.ROLE_TITLES[role], "archetype": r["archetype"],
+                "home_country": r.get("home_country", ""), "tenure": r["tenure"],
+                "dev": dev, "rec": rec, "tac": tac, "overall": coach_overall(dev, rec, tac),
+            })
+    _uni_staff_cache[key] = rows
+    return rows
+
+
+def staff_search(gender: str = "men", division: str = "All", role: str = "both",
+                 sort: str = "overall", q: str = "") -> dict:
+    """Football-Manager-style staff search across the world's coaching seats.
+    `role`: 'head' | 'assistant' (assoc + asst) | 'both'. Sort by overall or any
+    pillar (dev/rec/tac) or tenure. `q` matches name / school / country / archetype.
+
+    Returns {rows, hc_bar} where hc_bar is the median HEAD-coach overall in scope —
+    an assistant at/above it is flagged 'hc_ready' (ready to run a program), which
+    is the whole point: spot assistants primed for a head job.
+    """
+    divisions = _STAFF_DIVS if division == "All" else (division,)
+    genders = ("men", "women") if gender == "all" else (gender,)
+    pool: list[dict] = []
+    for d in divisions:
+        for g in genders:
+            pool.extend(_universe_staff(d, g))
+
+    # Head-coach benchmark from the FULL in-scope head pool (before the role filter),
+    # so "ready" means "as good as the median sitting head coach at this level".
+    head_ovr = sorted(r["overall"] for r in pool if r["role"] == "head")
+    hc_bar = head_ovr[len(head_ovr) // 2] if head_ovr else 0
+
+    if role == "head":
+        rows = [r for r in pool if r["role"] == "head"]
+    elif role == "assistant":
+        rows = [r for r in pool if r["role"] in ("assoc", "asst")]
+    else:
+        rows = list(pool)
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in r["name"].lower() or ql in r["school"].lower()
+                or ql in (r["home_country"] or "").lower() or ql in (r["archetype"] or "").lower()]
+    for r in rows:
+        r["hc_ready"] = r["role"] in ("assoc", "asst") and r["overall"] >= hc_bar
+
+    keys = {
+        "overall": lambda r: (r["overall"], r["dev"] + r["rec"] + r["tac"]),
+        "dev": lambda r: r["dev"], "rec": lambda r: r["rec"], "tac": lambda r: r["tac"],
+        "tenure": lambda r: r["tenure"],
+        "name": lambda r: r["name"].lower(),
+    }
+    rev = sort != "name"
+    rows.sort(key=keys.get(sort, keys["overall"]), reverse=rev)
+    return {"rows": rows, "hc_bar": hc_bar}
 
 
 def get_coach(coach_id: str) -> dict | None:
