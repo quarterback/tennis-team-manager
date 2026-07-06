@@ -1857,6 +1857,23 @@ def all_programs_by_universe():
     return out
 
 
+def coach_move_tree():
+    """Nested {gender: [{div, conf, schools:[...]}, ...]} powering the coach-move
+    cascade — pick Gender → Conference → an alphabetical school list, instead of
+    one dropdown of every program in the world. Ordered by division then
+    conference; schools sorted within a conference."""
+    out: dict[str, list] = {"men": [], "women": []}
+    for _val, division, gender, _label in UNIVERSES:
+        try:
+            groups = conference_schools(division, gender)   # [(conf, [schools sorted])]
+        except FileNotFoundError:
+            continue
+        for conf, schools in groups:
+            out.setdefault(gender, []).append(
+                {"div": division, "conf": conf, "schools": schools})
+    return out
+
+
 def active_overrides():
     from app import ncaa, overrides as ov
     moves = []

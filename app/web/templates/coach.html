@@ -125,16 +125,19 @@
             {% endfor %}
           </div>
           {% endif %}
-          <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
+          <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}" id="coach-move-form">
             <input type="hidden" name="u" value="{{ u }}">
             <div class="bl-th" style="font-size:10px;margin-bottom:6px">MOVE TO ANY PROGRAM (any division / gender)</div>
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-              <label class="bl-field"><span class="bl-field-label">Program</span>
-                <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:200px">
-                  {% for d2, g2, lbl, slist in move_universes %}<optgroup label="{{ lbl }}">
-                    {% for s in slist %}{% if not (s == c.school and d2 == c.division and g2 == c.gender) %}<option value="{{ d2 }}|{{ g2 }}|{{ s }}">{{ s }}</option>{% endif %}{% endfor %}
-                  </optgroup>{% endfor %}
+              <label class="bl-field"><span class="bl-field-label">Gender</span>
+                <span class="bl-select-wrap"><select class="bl-select" id="cm-gender" style="min-width:82px">
+                  <option value="men"{% if c.gender == 'men' %} selected{% endif %}>Men</option>
+                  <option value="women"{% if c.gender == 'women' %} selected{% endif %}>Women</option>
                 </select></span></label>
+              <label class="bl-field"><span class="bl-field-label">Conference</span>
+                <span class="bl-select-wrap"><select class="bl-select" id="cm-conf" style="min-width:190px"></select></span></label>
+              <label class="bl-field"><span class="bl-field-label">Program</span>
+                <span class="bl-select-wrap"><select class="bl-select" id="cm-school" name="dest_school" style="min-width:180px"></select></span></label>
               <label class="bl-field"><span class="bl-field-label">Seat</span>
                 <span class="bl-select-wrap"><select class="bl-select" name="dest_role">
                   <option value="head">Head Coach</option>
@@ -144,6 +147,34 @@
               <button class="bl-pill" type="submit">Move</button>
             </div>
           </form>
+          <script id="cm-tree" type="application/json">{{ move_tree|tojson }}</script>
+          <script>
+          (function () {
+            var TREE = JSON.parse(document.getElementById("cm-tree").textContent);
+            var gSel = document.getElementById("cm-gender"),
+                cSel = document.getElementById("cm-conf"),
+                sSel = document.getElementById("cm-school");
+            function opt(sel, value, text) {
+              var o = document.createElement("option");
+              o.value = value; o.textContent = text; sel.appendChild(o);
+            }
+            function fillSchools() {
+              sSel.innerHTML = "";
+              var g = gSel.value, e = (TREE[g] || [])[cSel.value];
+              if (!e) return;
+              e.schools.forEach(function (s) { opt(sSel, e.div + "|" + g + "|" + s, s); });
+            }
+            function fillConfs() {
+              cSel.innerHTML = "";
+              var g = gSel.value, entries = TREE[g] || [];
+              entries.forEach(function (e, i) { opt(cSel, i, e.conf + " · " + e.div); });
+              fillSchools();
+            }
+            gSel.addEventListener("change", fillConfs);
+            cSel.addEventListener("change", fillSchools);
+            fillConfs();
+          })();
+          </script>
           <form method="post" action="{{ url_for('coach_retire', coach_id=c.coach_id) }}" style="margin-top:10px"
                 onsubmit="return confirm('Retire {{ c.name }}? Their seat opens up; their record and honors are kept.');">
             <input type="hidden" name="u" value="{{ u }}">

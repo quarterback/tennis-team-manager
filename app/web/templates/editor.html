@@ -114,14 +114,17 @@
           <button class="bl-pill" type="submit" title="move into the {{ o.title }} seat{{ ' (vacant)' if o.vacant else ' — swap' }}">→ {{ o.title }}</button>
         </form>
         {% endfor %}
-        <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:flex;gap:6px;align-items:center;margin-left:auto">
+        <form method="post" action="{{ url_for('coach_move', coach_id=s.coach_id) }}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto">
           <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="conf" value="{{ conf }}">
           <input type="hidden" name="back" value="editor"><input type="hidden" name="ed_school" value="{{ school }}">
-          <span class="bl-select-wrap"><select class="bl-select" name="dest_school" style="min-width:200px">
-            {% for d2, g2, lbl, slist in move_universes %}<optgroup label="{{ lbl }}">
-              {% for sc in slist %}{% if not (sc == school and d2 == u.split('-')[0] and g2 == u.split('-')[1]) %}<option value="{{ d2 }}|{{ g2 }}|{{ sc }}">{{ sc }}</option>{% endif %}{% endfor %}
-            </optgroup>{% endfor %}
-          </select></span>
+          <span class="cm-cascade" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span class="bl-select-wrap"><select class="bl-select cm-g" aria-label="Gender" style="min-width:68px">
+              <option value="men"{% if u.split('-')[1] == 'men' %} selected{% endif %}>Men</option>
+              <option value="women"{% if u.split('-')[1] == 'women' %} selected{% endif %}>Women</option>
+            </select></span>
+            <span class="bl-select-wrap"><select class="bl-select cm-c" aria-label="Conference" style="min-width:160px"></select></span>
+            <span class="bl-select-wrap"><select class="bl-select cm-s" name="dest_school" aria-label="Program" style="min-width:150px"></select></span>
+          </span>
           <span class="bl-select-wrap"><select class="bl-select" name="dest_role">
             <option value="head">Head Coach</option><option value="assoc">Associate Head Coach</option><option value="asst">Assistant Coach</option>
           </select></span>
@@ -139,6 +142,35 @@
     </div>
   </div>
 </div>
+<script id="cm-tree" type="application/json">{{ move_tree|tojson }}</script>
+<script>
+(function () {
+  var el = document.getElementById("cm-tree");
+  if (!el) return;
+  var TREE = JSON.parse(el.textContent);
+  function opt(sel, value, text) {
+    var o = document.createElement("option");
+    o.value = value; o.textContent = text; sel.appendChild(o);
+  }
+  document.querySelectorAll(".cm-cascade").forEach(function (box) {
+    var g = box.querySelector(".cm-g"), c = box.querySelector(".cm-c"), s = box.querySelector(".cm-s");
+    function fillSchools() {
+      s.innerHTML = "";
+      var e = (TREE[g.value] || [])[c.value];
+      if (!e) return;
+      e.schools.forEach(function (x) { opt(s, e.div + "|" + g.value + "|" + x, x); });
+    }
+    function fillConfs() {
+      c.innerHTML = "";
+      (TREE[g.value] || []).forEach(function (e, i) { opt(c, i, e.conf + " · " + e.div); });
+      fillSchools();
+    }
+    g.addEventListener("change", fillConfs);
+    c.addEventListener("change", fillSchools);
+    fillConfs();
+  });
+})();
+</script>
 {% endif %}
 
 {% if conf_ratings %}
