@@ -29,12 +29,16 @@ of ~1,000+ schools.
 - Full loop: POSTing the produced `dest_school` moved a coach cross-universe (Duke D1-men assoc →
   Barry D2-women asst) and back — the route consumes the cascade value correctly.
 
-## 4. Not touched (follow-up)
-The **Editor** page has the same mega-dropdown in its per-staff-row move form. Left as-is (the
-owner flagged the coach page); it still works via `all_programs_by_universe`. Converting it to the
-same cascade is a straightforward follow-up (needs per-row-unique select ids sharing one tree).
+## 4. Editor page — same cascade (the screenshot was actually the Editor)
+The **Editor** staff panel had the identical mega-dropdown, repeated once per staff seat. Converted
+it too: each row's move form now carries a `.cm-cascade` group (Gender / Conference / Program), and a
+**single** shared `#cm-tree` JSON + init script wires **every** `.cm-cascade` on the page via
+`querySelectorAll(...).forEach` — so all three seat rows cascade independently off one embedded tree.
+The Editor's other program picker (`groups` school-jump `<optgroup>`) is unrelated and untouched.
+Verified an Editor move round-trips (redirects `back=editor`, moves cross-universe) and each row
+renders its own working cascade.
 
 ## 5. Files
 - `app/web/state.py` — `coach_move_tree()`.
-- `app/web/server.py` — coach route passes `move_tree`.
-- `app/web/templates/coach.html` — cascade + inline cascade script.
+- `app/web/server.py` — coach + editor routes pass `move_tree` (dropped the flat `move_universes`).
+- `app/web/templates/coach.html`, `editor.html` — cascade + inline cascade script.

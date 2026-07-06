@@ -1732,7 +1732,7 @@ def create_app() -> Flask:
                                groups=all_programs_grouped(), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
                                staff=coaching_staff(division, gender, school),
-                               move_universes=all_programs_by_universe(),
+                               move_tree=coach_move_tree(),
                                all_schools=sorted(p.school for p in div.programs),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
