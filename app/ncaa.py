@@ -501,6 +501,26 @@ SCHOOL_RECRUIT_TERRITORY = {
     "Simon Fraser": ("canada", 0.70),
 }
 
+# Programs on an island territory or a remote state recruit their OWN backyard
+# first — a local kid is far likelier to stay and play at the island/state school
+# than leave for the mainland (and mainland kids rarely go the other way). A
+# curated, heavy-but-not-exclusive LOCAL tilt: (school -> (USPS state/territory,
+# local share)). PR/USVI/Guam locals also carry the territory dual flag; PR names
+# skew Latin, Guam names Chamorro. Alaska is favored but lower — the in-state
+# junior pool is thin, so most of an Alaska roster still comes from the mainland.
+# See docs/AAR-us-state-allocation-guam.md for the territory/name plumbing.
+SCHOOL_LOCAL_TERRITORY = {
+    "Puerto Rico-Bayamón":     ("PR", 0.85),
+    "Puerto Rico-Cayey":       ("PR", 0.85),
+    "Puerto Rico-Mayagüez":    ("PR", 0.85),
+    "Puerto Rico-Río Piedras": ("PR", 0.85),
+    "Virgin Islands":          ("VI", 0.80),
+    "Guam":                    ("GU", 0.85),
+    "Alaska Anchorage":        ("AK", 0.45),
+    "Alaska Fairbanks":        ("AK", 0.45),
+}
+_TERRITORY_FLAG = {"PR", "VI", "GU"}   # US territories that carry a dual flag
+
 
 def region_proximity(region_a: str, region_b: str) -> float:
     """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
@@ -770,6 +790,17 @@ def _base_roster(p: Program):
                                gender=_pick_gender(p.gender), region_weights=_rweights)
     region_towns = towns_in_region(p.region)
     town_rng = random.Random(seed ^ 0xC17)
+    # Island/remote-state home tilt: a share of this program's roster are LOCAL kids
+    # from its own territory/state — real in-territory hometown, matching name style
+    # (Latin for PR, Chamorro for Guam, US otherwise), and the territory dual flag.
+    _local = SCHOOL_LOCAL_TERRITORY.get(p.school)
+    _local_rng = random.Random(seed ^ 0x10CA1)
+    if _local:
+        _local_abbr, _local_share = _local
+        _lregion = ({"PR": "latin_america", "GU": "guam"}.get(_local_abbr, "us"))
+        _local_name = make_name_picker(random.Random(seed ^ 0x10CA1E),
+                                       gender=_pick_gender(p.gender),
+                                       region_weights={_lregion: 1.0})
     # D1/D2 rosters are built by the recruiting budget economy — a program lands
     # the star tiers its budget + prestige can attract, so blue-chips cluster at
     # the programs that can pay. D3 has no athletic money: it stays on the
@@ -787,10 +818,16 @@ def _base_roster(p: Program):
                                                  roster_size=cap,
                                                  schol_slots=funded) if (use_budget or d3d4_gem) else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
+    from generators import roll_us_hometown, roll_high_school
     roster = []
     for i in range(cap):
-        name, country = name_fn()
         cls = CLASS_YEARS[i % len(CLASS_YEARS)]
+        # A local kid displaces the level-based nationality draw for this slot.
+        local_kid = _local is not None and _local_rng.random() < _local_share
+        if local_kid:
+            name, country = _local_name()[0], "US"
+        else:
+            name, country = name_fn()
         if use_budget:
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
@@ -799,7 +836,7 @@ def _base_roster(p: Program):
                 gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
                 talent = max(talent, gem)
         domestic = country in ("US", "USA", "United States", "")
-        town_pool = (region_towns if domestic and region_towns
+        town_pool = (region_towns if domestic and region_towns and not local_kid
                      and town_rng.random() < LOCAL_REGION_TARGET else None)
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
@@ -807,7 +844,17 @@ def _base_roster(p: Program):
                                town_pool=town_pool)
         pr.class_year = cls
         # hometown / high_school / domestic are wired by generate_prospect from
-        # the player's nation (real city pools + flags), so no synthetic override.
+        # the player's nation (real city pools + flags), so no synthetic override —
+        # EXCEPT local territory/state kids, whose in-territory home we set here.
+        if local_kid:
+            city = roll_us_hometown(_local_abbr, rng)
+            if city:
+                pr.hometown = f"{city}, {_local_abbr}"
+                pr.high_school = roll_high_school("US", rng, state=_local_abbr, home_city=city)
+            pr.region = _local_abbr
+            pr.domestic = True
+            if _local_abbr in _TERRITORY_FLAG:      # PR/USVI/Guam dual flag
+                pr.secondary_country = _local_abbr
         roster.append(pr)
     roster.sort(key=lambda pr: pr.current_overall(), reverse=True)
     # Funded headcount varies by classification (app.scholarships); the
