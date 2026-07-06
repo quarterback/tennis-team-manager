@@ -23,7 +23,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     player_career_table, player_career_records, search_players,
                     results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
-                    all_programs_by_universe,
+                    all_programs_by_universe, coach_move_tree,
                     active_overrides, reset_all, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
                     junior_tournaments, junior_tournament_detail,
@@ -972,11 +972,12 @@ def create_app() -> Flask:
         player_awards = coach_player_awards(coach_id)
         # Staff at the coach's current school — the in-staff swap targets.
         staff = coaching_staff(div, gen, c["school"]) if c.get("school") else []
-        # Move target: any program in ANY division/gender.
-        move_universes = all_programs_by_universe() if c.get("school") else []
+        # Move target: any program in ANY division/gender, as a Gender→Conference→School
+        # cascade instead of one dropdown of every program.
+        move_tree = coach_move_tree() if c.get("school") else {"men": [], "women": []}
         return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
                                career=career, player_awards=player_awards, staff=staff,
-                               move_universes=move_universes, crest=crest, u=u, uni_label=label)
+                               move_tree=move_tree, crest=crest, u=u, uni_label=label)
 
     @app.route("/coach/<coach_id>/move", methods=["POST"])
     def coach_move(coach_id):
