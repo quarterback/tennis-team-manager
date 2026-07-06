@@ -221,6 +221,7 @@
         <form method="post" action="{{ url_for('preseason_portal_approve') }}" style="display:inline">
           <input type="hidden" name="pid" value="{{ t.pid }}">
           <input type="hidden" name="gender" value="{{ t.gender }}">
+          <input type="hidden" name="fg" value="{{ pp.gender }}">
           <input type="hidden" name="page" value="{{ pp.page }}">
           <input type="hidden" name="status" value="rejected">
           <button class="bl-btn bl-btn-sm" type="submit" title="Drop this move">✕</button>

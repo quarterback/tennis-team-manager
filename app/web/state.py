@@ -1333,17 +1333,20 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
             "years": years, "year": year}
 
 
-def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
+def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1) -> dict:
     """The fall-portal slate for the review screen: each kept rider plus the player
     they'd push down the ladder, freshly RESOLVED so the cascade reflects any
-    redirects/adds the user has made. Riders carry an editable destination."""
+    redirects/adds the user has made. Riders carry an editable destination.
+    Paginated (the slate can run to hundreds of rows across both genders)."""
     import app.world as world
     from app import overrides as ov
+    from .pagination import paginate
     from .rankings_data import crest
     w = world.load_world(seed)
     if not w:
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
-                "destinations": []}
+                "destinations": [], "page": 1, "pages": 1,
+                "pager": paginate([], 1, PRESEASON_PORTAL_PER_PAGE)}
     committed = [r for r in ov.get_proposals(w["year"], status="committed")]
     resolved = world.resolve_fall_portal(seed)        # {gender: [moves]} (riders + cascades)
     recs, lines = world._ita_lookup(seed, w)
@@ -1373,11 +1376,15 @@ def fall_portal_view(seed: int = DEFAULT_SEED) -> dict:
     for pr in _pro_src:
         ta, tc = crest(pr["dest_school"]) if pr.get("dest_school") else ("", "")
         pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
+    # Paginate the full combined slate (both genders shown together); riders/n stay
+    # totals over the whole slate, proposals is just the current page.
+    pg = paginate(out, page, PRESEASON_PORTAL_PER_PAGE)
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
-            "proposals": out, "n": len(out),
+            "proposals": pg.items, "n": len(out),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": len(committed), "pros": pros_in,
             "pros_committed": bool(committed_pros),
+            "page": pg.page, "pages": pg.pages, "pager": pg,
             "destinations": world.fall_portal_destinations(seed)}
 
 

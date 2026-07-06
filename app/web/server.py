@@ -711,7 +711,20 @@ def create_app() -> Flask:
         year = w["year"] if w else 0
         if w and wd._all_in_fall_portal(DEFAULT_SEED, w) and not ov.get_proposals(year):
             wd.run_fall_portal()
-        return render_template("fall_portal.html", active="World", fp=fall_portal_view(), crest=crest)
+        try:
+            page = int(request.args.get("page", 1))
+        except (ValueError, TypeError):
+            page = 1
+        return render_template("fall_portal.html", active="World",
+                               fp=fall_portal_view(page=page), crest=crest)
+
+    def _fp_return():
+        """Redirect back to the fall portal on the SAME page an action was fired from,
+        so editing a row (redirect/drop/sign/add) doesn't throw you to the top. The
+        fall slate isn't gender-filtered, so only `page` is carried — the drop form's
+        `gender` field is the player's own (for set_status), never a view filter."""
+        p = (request.form.get("page", "") or "").strip()
+        return redirect(url_for("fall_portal", **({"page": p} if p else {})))
 
     @app.route("/fall-portal/approve", methods=["POST"])
     def fall_portal_approve():
@@ -731,6 +744,7 @@ def create_app() -> Flask:
             pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
             if pid and gender:
                 ov.set_status(year, gender, pid, request.form.get("status", "rejected"))
+            return _fp_return()          # single-row drop: stay on the current page
         return redirect(url_for("fall_portal"))
 
     @app.route("/fall-portal/redirect", methods=["POST"])
@@ -738,7 +752,7 @@ def create_app() -> Flask:
         pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
         if pid and dest:
             wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("fall_portal"))
+        return _fp_return()
 
     @app.route("/fall-portal/add", methods=["POST"])
     def fall_portal_add():
@@ -752,13 +766,16 @@ def create_app() -> Flask:
                     pid = hits[0]["pid"]
         if pid:
             wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("fall_portal"))
+        return _fp_return()
 
     @app.route("/fall-portal/pro-sign", methods=["POST"])
     def fall_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
         args = {}
+        page = (request.form.get("page", "") or "").strip()
+        if page:
+            args["page"] = page
         if pid:
             w = wd.load_world()
             cyc = f"{w['year']}-fall" if w else None
@@ -791,10 +808,14 @@ def create_app() -> Flask:
                                pp=preseason_portal_view(gender=gender, page=page), crest=crest)
 
     def _pp_return():
-        """Redirect back to the portal on the SAME page + gender the action was fired
-        from, so editing a row (redirect/sign/drop/add) doesn't bounce you to page 1."""
+        """Redirect back to the portal on the SAME page + gender FILTER the action was
+        fired from, so editing a row (redirect/sign/drop/add) doesn't bounce you to
+        page 1. Reads the explicit current-filter field `fg` in preference to `gender`:
+        the single-row drop carries `gender` as the PLAYER's own gender (ps_set_status
+        needs it), which is NOT the active filter — using it would collapse an 'All'
+        slate to one gender."""
         args = {}
-        g = (request.form.get("gender", "") or "").strip()
+        g = (request.form.get("fg") or request.form.get("gender") or "").strip()
         if g:
             args["gender"] = g
         p = (request.form.get("page", "") or "").strip()
