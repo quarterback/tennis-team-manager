@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Staff Search{% endblock %}
+{% block content %}
+
+<form method="get">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
+  <span style="font-size:13px;color:var(--text-muted)">Management › Staff Search</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Role</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="role" onchange="this.form.submit()" style="min-width:150px">
+      {% for rv, rl in roles %}<option value="{{ rv }}"{% if rv == role %} selected{% endif %}>{{ rl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Gender</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+      {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
+      {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Sort</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:110px">
+      <option value="overall"{% if sort == 'overall' %} selected{% endif %}>Overall</option>
+      <option value="dev"{% if sort == 'dev' %} selected{% endif %}>Development</option>
+      <option value="rec"{% if sort == 'rec' %} selected{% endif %}>Recruiting</option>
+      <option value="tac"{% if sort == 'tac' %} selected{% endif %}>Tactics</option>
+      <option value="tenure"{% if sort == 'tenure' %} selected{% endif %}>Tenure</option>
+      <option value="name"{% if sort == 'name' %} selected{% endif %}>Name (A–Z)</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Search</span>
+    <input class="bl-input" type="search" name="q" value="{{ q }}" placeholder="name, school, country, archetype"
+           style="min-width:180px" onsearch="this.form.submit()"></label>
+  <button class="bl-pill" type="submit">Go</button>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} coaches</div>
+  <span class="bl-entries-right">{{ uni_label }} · ratings on the 20–80 scouting scale</span>
+</div></div>
+
+<div class="bl-notes"><div class="bl-note" style="font-size:12px">
+  Scout every coaching seat in the world by ability. <strong>Overall</strong> is the mean of
+  <strong>Development</strong>, <strong>Recruiting</strong>, and <strong>Tactics</strong>. An assistant
+  whose overall clears the median sitting head coach in this scope (<strong>{{ hc_bar }}</strong>) is
+  flagged <span class="ib-divchip" style="border-color:#1a8f4c;color:#1a8f4c">▲ HC-ready</span> — the
+  ones primed to run their own program. Narrow to <em>Assistants</em> + sort by <em>Overall</em> to
+  build a head-coaching shortlist.
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table" style="--bl-grid-cols: 40px minmax(160px,1.6fr) minmax(140px,1.2fr) 54px 48px 48px 48px 52px">
+    <div class="bl-thead">
+      <span class="bl-th">#</span><span class="bl-th">COACH</span><span class="bl-th">CURRENT SEAT</span>
+      <span class="bl-th num" title="Overall — mean of Dev/Rec/Tac (20–80)">OVR</span>
+      <span class="bl-th num" title="Development — teaching / training / player growth">DEV</span>
+      <span class="bl-th num" title="Recruiting — closing, scouting, program building">REC</span>
+      <span class="bl-th num" title="Tactics — match tactics, lineup, adaptability">TAC</span>
+      <span class="bl-th num" title="Seasons in this seat">TEN</span>
+    </div>
+    {% for r in rows %}
+    {% set ab = crest(r.school) %}
+    <div class="bl-row">
+      <span class="bl-rank">{{ p.start + loop.index0 }}</span>
+      <span class="bl-school" style="gap:6px;flex-wrap:wrap">
+        <a href="{{ url_for('coach', coach_id=r.coach_id, u=r.division ~ '-' ~ r.gender) }}"><span class="player-flag" title="{{ r.home_country|country_name }}">{{ r.home_country|flags }}</span> {{ r.name }}</a>
+        <span class="ib-divchip" title="Archetype">{{ r.archetype }}</span>
+        {% if r.hc_ready %}<span class="ib-divchip" title="Overall at/above the median head coach — ready to run a program" style="border-color:#1a8f4c;color:#1a8f4c">▲ HC-ready</span>{% endif %}
+      </span>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(r.school, ab[0], ab[1], 'xs') }} <span style="overflow:hidden;text-overflow:ellipsis">{{ r.title }} · {{ r.school }}</span>
+        <span class="ib-divchip">{{ r.division }} {{ 'W' if r.gender == 'women' else 'M' }}</span></span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ r.overall }}</span></span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ r.dev }}</span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ r.rec }}</span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ r.tac }}</span>
+      <span class="bl-cell-num" style="color:var(--text-faint)">{{ r.tenure }}</span>
+    </div>
+    {% endfor %}
+    {% if not rows %}
+    <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">No coaches match — widen the role, division, or gender.</span></div>
+    {% endif %}
+  </div>
+</div>
+{{ pager(p, 'coaches') }}
+</div>
+{% endblock %}
