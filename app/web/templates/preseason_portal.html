@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — Pre-season Portal{% endblock %}
 {% block content %}
 
@@ -48,6 +49,8 @@
 {% if not pp.done %}
 <div class="bl-container" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
   <form method="post" action="{{ url_for('preseason_portal_add') }}" style="display:flex;gap:6px;align-items:end">
+    <input type="hidden" name="gender" value="{{ pp.gender }}">
+    <input type="hidden" name="page" value="{{ pp.page }}">
     <label class="bl-field"><span class="bl-field-label">Add a player</span>
       <input class="bl-select" name="player" placeholder="player name" style="min-width:160px" required></label>
     <label class="bl-field"><span class="bl-field-label">To (optional)</span>
@@ -124,6 +127,7 @@
         <form method="post" action="{{ url_for('preseason_portal_pro_sign') }}" style="display:flex;gap:5px;align-items:center">
           <input type="hidden" name="pid" value="{{ pr.pid }}">
           <input type="hidden" name="gender" value="{{ pp.gender }}">
+          <input type="hidden" name="page" value="{{ pp.page }}">
           {% if pr.signed %}<span style="color:#1a8f4c;font-weight:700" title="Signed — it will apply on Commit">✓</span>{{ crest_box(pr.dest_school, pr.to_abbr, pr.to_color, 'xs') }}{% endif %}
           <input class="bl-select" name="dest" list="pp-dests" value="{{ pr.dest_school }}"
                  placeholder="unsigned — type any program"
@@ -136,6 +140,7 @@
             <input type="hidden" name="pid" value="{{ pr.pid }}">
             <input type="hidden" name="dest" value="">
             <input type="hidden" name="gender" value="{{ pp.gender }}">
+            <input type="hidden" name="page" value="{{ pp.page }}">
             <button class="bl-btn bl-btn-sm" type="submit" title="Drop this signing (back to free agent)">✕</button>
           </form>{% endif %}
         </span>
@@ -202,6 +207,8 @@
         {% if t.is_riser and not pp.done %}
           <form method="post" action="{{ url_for('preseason_portal_redirect') }}" style="display:flex;gap:3px;align-items:center">
             <input type="hidden" name="pid" value="{{ t.pid }}">
+            <input type="hidden" name="gender" value="{{ pp.gender }}">
+            <input type="hidden" name="page" value="{{ pp.page }}">
             <input class="bl-select" name="dest" list="pp-dests" value="{{ t.dest_school }}" style="min-width:128px;height:24px;font-size:12px">
             <button class="bl-btn bl-btn-sm" type="submit" title="Send here instead"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i></button>
           </form>
@@ -214,6 +221,8 @@
         <form method="post" action="{{ url_for('preseason_portal_approve') }}" style="display:inline">
           <input type="hidden" name="pid" value="{{ t.pid }}">
           <input type="hidden" name="gender" value="{{ t.gender }}">
+          <input type="hidden" name="fg" value="{{ pp.gender }}">
+          <input type="hidden" name="page" value="{{ pp.page }}">
           <input type="hidden" name="status" value="rejected">
           <button class="bl-btn bl-btn-sm" type="submit" title="Drop this move">✕</button>
         </form>
@@ -224,11 +233,7 @@
   </div>
 </div></div>
 {% if pp.pages > 1 %}
-<div class="bl-container" style="display:flex;gap:10px;align-items:center;justify-content:center">
-  {% if pp.page > 1 %}<a class="bl-btn" href="{{ url_for('preseason_portal', gender=pp.gender, page=pp.page - 1) }}">‹ Prev</a>{% endif %}
-  <span style="font-size:13px;color:var(--text-muted)">Page {{ pp.page }} of {{ pp.pages }} · showing {{ pp.gender }}</span>
-  {% if pp.page < pp.pages %}<a class="bl-btn" href="{{ url_for('preseason_portal', gender=pp.gender, page=pp.page + 1) }}">Next ›</a>{% endif %}
-</div>
+<div class="bl-container">{{ pager(pp.pager, 'moves') }}</div>
 {% endif %}
 {% if not pp.done %}
 <div class="bl-container"><div class="bl-note" style="font-size:12px;color:var(--text-faint)">

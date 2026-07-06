@@ -711,7 +711,20 @@ def create_app() -> Flask:
         year = w["year"] if w else 0
         if w and wd._all_in_fall_portal(DEFAULT_SEED, w) and not ov.get_proposals(year):
             wd.run_fall_portal()
-        return render_template("fall_portal.html", active="World", fp=fall_portal_view(), crest=crest)
+        try:
+            page = int(request.args.get("page", 1))
+        except (ValueError, TypeError):
+            page = 1
+        return render_template("fall_portal.html", active="World",
+                               fp=fall_portal_view(page=page), crest=crest)
+
+    def _fp_return():
+        """Redirect back to the fall portal on the SAME page an action was fired from,
+        so editing a row (redirect/drop/sign/add) doesn't throw you to the top. The
+        fall slate isn't gender-filtered, so only `page` is carried — the drop form's
+        `gender` field is the player's own (for set_status), never a view filter."""
+        p = (request.form.get("page", "") or "").strip()
+        return redirect(url_for("fall_portal", **({"page": p} if p else {})))
 
     @app.route("/fall-portal/approve", methods=["POST"])
     def fall_portal_approve():
@@ -731,6 +744,7 @@ def create_app() -> Flask:
             pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
             if pid and gender:
                 ov.set_status(year, gender, pid, request.form.get("status", "rejected"))
+            return _fp_return()          # single-row drop: stay on the current page
         return redirect(url_for("fall_portal"))
 
     @app.route("/fall-portal/redirect", methods=["POST"])
@@ -738,7 +752,7 @@ def create_app() -> Flask:
         pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
         if pid and dest:
             wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("fall_portal"))
+        return _fp_return()
 
     @app.route("/fall-portal/add", methods=["POST"])
     def fall_portal_add():
@@ -752,13 +766,16 @@ def create_app() -> Flask:
                     pid = hits[0]["pid"]
         if pid:
             wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("fall_portal"))
+        return _fp_return()
 
     @app.route("/fall-portal/pro-sign", methods=["POST"])
     def fall_portal_pro_sign():
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
         args = {}
+        page = (request.form.get("page", "") or "").strip()
+        if page:
+            args["page"] = page
         if pid:
             w = wd.load_world()
             cyc = f"{w['year']}-fall" if w else None
@@ -790,6 +807,22 @@ def create_app() -> Flask:
         return render_template("preseason_portal.html", active="Preseason",
                                pp=preseason_portal_view(gender=gender, page=page), crest=crest)
 
+    def _pp_return():
+        """Redirect back to the portal on the SAME page + gender FILTER the action was
+        fired from, so editing a row (redirect/sign/drop/add) doesn't bounce you to
+        page 1. Reads the explicit current-filter field `fg` in preference to `gender`:
+        the single-row drop carries `gender` as the PLAYER's own gender (ps_set_status
+        needs it), which is NOT the active filter — using it would collapse an 'All'
+        slate to one gender."""
+        args = {}
+        g = (request.form.get("fg") or request.form.get("gender") or "").strip()
+        if g:
+            args["gender"] = g
+        p = (request.form.get("page", "") or "").strip()
+        if p:
+            args["page"] = p
+        return redirect(url_for("preseason_portal", **args))
+
     @app.route("/preseason-portal/rescan", methods=["POST"])
     def preseason_portal_rescan():
         wd.rescan_preseason_portal()
@@ -813,6 +846,9 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")           # blank -> unsign (back to free agent)
         args = {"gender": request.form.get("gender", "all")}
+        page = (request.form.get("page", "") or "").strip()
+        if page:
+            args["page"] = page
         if pid:
             r = wd.sign_pro(DEFAULT_SEED, pid, dest)
             if not r.get("ok") and dest.strip():
@@ -836,6 +872,7 @@ def create_app() -> Flask:
             pid, gender = request.form.get("pid", ""), request.form.get("gender", "")
             if pid and gender:
                 ov.ps_set_status(year, gender, pid, request.form.get("status", "rejected"))
+            return _pp_return()          # single-row drop: stay on the current page
         return redirect(url_for("preseason_portal"))
 
     @app.route("/preseason-portal/redirect", methods=["POST"])
@@ -843,7 +880,7 @@ def create_app() -> Flask:
         pid, dest = request.form.get("pid", "").strip(), request.form.get("dest", "").strip()
         if pid and dest:
             wd.redirect_preseason_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal"))
+        return _pp_return()
 
     @app.route("/preseason-portal/add", methods=["POST"])
     def preseason_portal_add():
@@ -857,7 +894,7 @@ def create_app() -> Flask:
                     pid = hits[0]["pid"]
         if pid:
             wd.add_preseason_portal_mover(DEFAULT_SEED, pid, dest)
-        return redirect(url_for("preseason_portal"))
+        return _pp_return()
 
     @app.route("/preseason-portal/commit", methods=["POST"])
     def preseason_portal_commit():
@@ -1275,25 +1312,51 @@ def create_app() -> Flask:
     def methodology():
         return render_template("methodology.html", active="Methodology")
 
+    def _dual_pick(req):
+        """Resolve (gender, home_div, away_div, home_schools, away_schools, home, away)
+        for the exhibition dual. Gender is shared; each side picks its OWN division so
+        talent can be benchmarked across levels. Falls back cleanly when a school isn't
+        in the (possibly just-switched) division on its side."""
+        divisions = list(dict.fromkeys(d for _v, d, _g, _l in UNIVERSES))   # D1..D4, in order
+        gender = req.args.get("gender", "men")
+        if gender not in ("men", "women"):
+            gender = "men"
+        home_div = req.args.get("home_div", "D1")
+        away_div = req.args.get("away_div", "D1")
+        if home_div not in divisions:
+            home_div = divisions[0]
+        if away_div not in divisions:
+            away_div = divisions[0]
+        home_schools = programs_for(home_div, gender)
+        away_schools = programs_for(away_div, gender)
+        home = req.args.get("home")
+        if home not in home_schools:
+            home = "Oregon" if "Oregon" in home_schools else home_schools[0]
+        away = req.args.get("away")
+        if away not in away_schools:
+            away = "Stanford" if "Stanford" in away_schools else away_schools[0]
+        return (gender, divisions, home_div, away_div,
+                home_schools, away_schools, home, away)
+
     @app.route("/dual")
     def dual():
-        division, gender, label, u = _universe(request)
-        schools = programs_for(division, gender)
-        ranks = {r.school: r for r in ranking_rows(division, gender)}
-        home = request.args.get("home") or ("Oregon" if "Oregon" in schools else schools[0])
-        away = request.args.get("away") or ("Stanford" if "Stanford" in schools else schools[1])
-        return render_template("dual_setup.html", active="Dual Simulator", schools=schools,
-                               home=home, away=away, crest=crest, ranks=ranks,
-                               fidelities=FIDELITIES, u=u, uni_label=label)
+        (gender, divisions, home_div, away_div,
+         home_schools, away_schools, home, away) = _dual_pick(request)
+        home_ranks = {r.school: r for r in ranking_rows(home_div, gender)}
+        away_ranks = {r.school: r for r in ranking_rows(away_div, gender)}
+        return render_template("dual_setup.html", active="Dual Simulator",
+                               home_schools=home_schools, away_schools=away_schools,
+                               home=home, away=away, crest=crest,
+                               home_ranks=home_ranks, away_ranks=away_ranks,
+                               fidelities=FIDELITIES, gender=gender, divisions=divisions,
+                               home_div=home_div, away_div=away_div)
 
     @app.route("/dual/run")
     def dual_run():
-        division, gender, label, u = _universe(request)
-        schools = programs_for(division, gender)
-        home = request.args.get("home") or schools[0]
-        away = request.args.get("away") or schools[1]
-        if home == away:
-            away = next(s for s in schools if s != home)
+        (gender, divisions, home_div, away_div,
+         home_schools, away_schools, home, away) = _dual_pick(request)
+        if home_div == away_div and home == away:
+            away = next((s for s in away_schools if s != home), away)
         try:
             seed = int(request.args.get("seed", "7"))
         except ValueError:
@@ -1301,9 +1364,11 @@ def create_app() -> Flask:
         fidelity = request.args.get("fidelity", "full")
         if fidelity not in FIDELITIES:
             fidelity = "full"
-        view = run_dual_view(division, gender, home, away, seed=seed, fidelity=fidelity)
+        view = run_dual_view(home_div, away_div, gender, home, away,
+                             seed=seed, fidelity=fidelity)
         return render_template("dual_result.html", active="Dual Simulator", v=view,
-                               home=home, away=away, u=u)
+                               home=home, away=away, gender=gender,
+                               home_div=home_div, away_div=away_div)
 
     @app.route("/teams")
     def teams():
