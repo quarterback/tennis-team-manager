@@ -3,35 +3,50 @@
 {% block title %}Play to Clinch — Dual Simulator{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <form method="get" style="display:contents">
-    <label class="bl-field"><span class="bl-field-label">Division</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
-        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+  <form method="get" action="{{ url_for('dual') }}" style="display:contents">
+    <input type="hidden" name="home_div" value="{{ home_div }}">
+    <input type="hidden" name="away_div" value="{{ away_div }}">
+    <label class="bl-field"><span class="bl-field-label">Gender</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:96px">
+        <option value="men"{% if gender == 'men' %} selected{% endif %}>Men</option>
+        <option value="women"{% if gender == 'women' %} selected{% endif %}>Women</option>
       </select></span></label>
   </form>
-  <span style="font-size:13px;color:var(--text-muted)">Simulate › new dual · {{ uni_label }} · {{ schools|length }} programs</span>
+  <span style="font-size:13px;color:var(--text-muted)">Simulate › exhibition dual · cross-division benchmark</span>
 </div></div>
 
 <form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
-  <input type="hidden" name="u" value="{{ u }}">
+  <input type="hidden" name="gender" value="{{ gender }}">
   <h1>Simulate a Dual</h1>
-  <p class="intro">Pick any two programs in {{ uni_label }}. Play to Clinch plays the doubles point and all
-    six singles from each team's real roster, then sweeps the fast model to estimate who wins.</p>
+  <p class="intro">Benchmark any two programs — <strong>across divisions</strong>. Pick a division and team for
+    each side; Play to Clinch plays the doubles point and all six singles from each team's real roster, then
+    sweeps the fast model to estimate who wins. STR is one scale across every division, so a cross-level gap
+    shows up honestly in the result. Exhibition only — nothing is recorded.</p>
 
   <div class="bl-slots">
-    {% for slot, sel in [('home', home), ('away', away)] %}
-    {% set abbr, color = crest(sel) %}
-    {% set row = ranks.get(sel) %}
+    {% set sides = [
+      {'slot': 'home', 'sel': home, 'div': home_div, 'dname': 'home_div', 'schools': home_schools, 'ranks': home_ranks},
+      {'slot': 'away', 'sel': away, 'div': away_div, 'dname': 'away_div', 'schools': away_schools, 'ranks': away_ranks}] %}
+    {% for side in sides %}
+    {% set abbr, color = crest(side.sel) %}
+    {% set row = side.ranks.get(side.sel) %}
     <div class="bl-slot">
-      <div class="bl-th" style="margin-bottom:8px">{{ 'HOME' if slot == 'home' else 'AWAY' }}</div>
+      <div class="bl-th" style="margin-bottom:8px">{{ 'HOME' if side.slot == 'home' else 'AWAY' }}</div>
       <div class="bl-slot-card">
-        {{ crest_box(sel, abbr, color, 'lg') }}
+        {{ crest_box(side.sel, abbr, color, 'lg') }}
         <div style="flex:1;min-width:0">
-          <select class="bl-select" name="{{ slot }}" onchange="this.form.action='{{ url_for('dual') }}';this.form.submit()">
-            {% for s in schools %}<option{% if s == sel %} selected{% endif %}>{{ s }}</option>{% endfor %}
-          </select>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <select class="bl-select" name="{{ side.dname }}" style="max-width:82px"
+                    onchange="this.form.action='{{ url_for('dual') }}';this.form.submit()">
+              {% for d in divisions %}<option{% if d == side.div %} selected{% endif %}>{{ d }}</option>{% endfor %}
+            </select>
+            <select class="bl-select" name="{{ side.slot }}" style="flex:1;min-width:0"
+                    onchange="this.form.action='{{ url_for('dual') }}';this.form.submit()">
+              {% for s in side.schools %}<option{% if s == side.sel %} selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
           <div class="bl-slot-meta">
-            {% if row %}<span>{{ row.conf_abbr }} · {{ row.rec }}</span>{% endif %}
+            {% if row %}<span>{{ side.div }} · {{ row.conf_abbr }} · {{ row.rec }}</span>{% else %}<span>{{ side.div }}</span>{% endif %}
           </div>
         </div>
         {% if row %}<div style="text-align:right">
@@ -40,7 +55,7 @@
         </div>{% endif %}
       </div>
     </div>
-    {% if slot == 'home' %}<div class="bl-vs">VS</div>{% endif %}
+    {% if side.slot == 'home' %}<div class="bl-vs">VS</div>{% endif %}
     {% endfor %}
   </div>
 

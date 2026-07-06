@@ -1291,25 +1291,51 @@ def create_app() -> Flask:
     def methodology():
         return render_template("methodology.html", active="Methodology")
 
+    def _dual_pick(req):
+        """Resolve (gender, home_div, away_div, home_schools, away_schools, home, away)
+        for the exhibition dual. Gender is shared; each side picks its OWN division so
+        talent can be benchmarked across levels. Falls back cleanly when a school isn't
+        in the (possibly just-switched) division on its side."""
+        divisions = list(dict.fromkeys(d for _v, d, _g, _l in UNIVERSES))   # D1..D4, in order
+        gender = req.args.get("gender", "men")
+        if gender not in ("men", "women"):
+            gender = "men"
+        home_div = req.args.get("home_div", "D1")
+        away_div = req.args.get("away_div", "D1")
+        if home_div not in divisions:
+            home_div = divisions[0]
+        if away_div not in divisions:
+            away_div = divisions[0]
+        home_schools = programs_for(home_div, gender)
+        away_schools = programs_for(away_div, gender)
+        home = req.args.get("home")
+        if home not in home_schools:
+            home = "Oregon" if "Oregon" in home_schools else home_schools[0]
+        away = req.args.get("away")
+        if away not in away_schools:
+            away = "Stanford" if "Stanford" in away_schools else away_schools[0]
+        return (gender, divisions, home_div, away_div,
+                home_schools, away_schools, home, away)
+
     @app.route("/dual")
     def dual():
-        division, gender, label, u = _universe(request)
-        schools = programs_for(division, gender)
-        ranks = {r.school: r for r in ranking_rows(division, gender)}
-        home = request.args.get("home") or ("Oregon" if "Oregon" in schools else schools[0])
-        away = request.args.get("away") or ("Stanford" if "Stanford" in schools else schools[1])
-        return render_template("dual_setup.html", active="Dual Simulator", schools=schools,
-                               home=home, away=away, crest=crest, ranks=ranks,
-                               fidelities=FIDELITIES, u=u, uni_label=label)
+        (gender, divisions, home_div, away_div,
+         home_schools, away_schools, home, away) = _dual_pick(request)
+        home_ranks = {r.school: r for r in ranking_rows(home_div, gender)}
+        away_ranks = {r.school: r for r in ranking_rows(away_div, gender)}
+        return render_template("dual_setup.html", active="Dual Simulator",
+                               home_schools=home_schools, away_schools=away_schools,
+                               home=home, away=away, crest=crest,
+                               home_ranks=home_ranks, away_ranks=away_ranks,
+                               fidelities=FIDELITIES, gender=gender, divisions=divisions,
+                               home_div=home_div, away_div=away_div)
 
     @app.route("/dual/run")
     def dual_run():
-        division, gender, label, u = _universe(request)
-        schools = programs_for(division, gender)
-        home = request.args.get("home") or schools[0]
-        away = request.args.get("away") or schools[1]
-        if home == away:
-            away = next(s for s in schools if s != home)
+        (gender, divisions, home_div, away_div,
+         home_schools, away_schools, home, away) = _dual_pick(request)
+        if home_div == away_div and home == away:
+            away = next((s for s in away_schools if s != home), away)
         try:
             seed = int(request.args.get("seed", "7"))
         except ValueError:
@@ -1317,9 +1343,11 @@ def create_app() -> Flask:
         fidelity = request.args.get("fidelity", "full")
         if fidelity not in FIDELITIES:
             fidelity = "full"
-        view = run_dual_view(division, gender, home, away, seed=seed, fidelity=fidelity)
+        view = run_dual_view(home_div, away_div, gender, home, away,
+                             seed=seed, fidelity=fidelity)
         return render_template("dual_result.html", active="Dual Simulator", v=view,
-                               home=home, away=away, u=u)
+                               home=home, away=away, gender=gender,
+                               home_div=home_div, away_div=away_div)
 
     @app.route("/teams")
     def teams():

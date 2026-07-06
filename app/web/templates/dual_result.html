@@ -27,7 +27,7 @@
   <div class="bl-scorehdr">
     <div class="team">
       {{ crest_box(v.home.school, v.home.abbr, v.home.color, 'lg') }}
-      <div><div class="tname">{{ v.home.school }}</div><div class="tsub">#{{ v.home.rk }} · {{ v.home.rec }}</div></div>
+      <div><div class="tname">{{ v.home.school }}</div><div class="tsub">{{ v.home.div }} · #{{ v.home.rk }} · {{ v.home.rec }}</div></div>
     </div>
     <div class="status">
       <div class="bl-bigscore">
@@ -38,7 +38,7 @@
       <div class="bl-th" style="justify-content:center;margin-top:6px">Final · First to 4</div>
     </div>
     <div class="team away">
-      <div style="text-align:right"><div class="tname">{{ v.away.school }}</div><div class="tsub">#{{ v.away.rk }} · {{ v.away.rec }}</div></div>
+      <div style="text-align:right"><div class="tname">{{ v.away.school }}</div><div class="tsub">{{ v.away.div }} · #{{ v.away.rk }} · {{ v.away.rec }}</div></div>
       {{ crest_box(v.away.school, v.away.abbr, v.away.color, 'lg') }}
     </div>
   </div>
@@ -90,9 +90,9 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="bl-run-big" style="margin-top:0;flex:1 1 130px;width:auto;min-width:0;text-align:center;line-height:44px;text-decoration:none"
-           href="{{ url_for('dual_run', home=home, away=away, seed=v.seed + 1, fidelity=v.fidelity, u=u) }}">Re-run</a>
+           href="{{ url_for('dual_run', home=home, away=away, home_div=home_div, away_div=away_div, gender=gender, seed=v.seed + 1, fidelity=v.fidelity) }}">Re-run</a>
         <a class="bl-pgbtn" style="height:44px;line-height:44px;flex:1 1 130px;min-width:0;text-align:center"
-           href="{{ url_for('dual', home=home, away=away, u=u) }}">Change teams</a>
+           href="{{ url_for('dual', home=home, away=away, home_div=home_div, away_div=away_div, gender=gender) }}">Change teams</a>
       </div>
     </div>
   </div>

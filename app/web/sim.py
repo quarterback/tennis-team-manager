@@ -60,10 +60,15 @@ class DualView:
     fidelity: str
 
 
-def run_dual_view(division: str, gender: str, home_school: str, away_school: str, *,
+def run_dual_view(home_div: str, away_div: str, gender: str,
+                  home_school: str, away_school: str, *,
                   seed: int, fidelity: str = "full", sims: int = 300) -> DualView:
-    progs = {p.school: p for p in load_division(division, gender).programs}
-    home, away = progs[home_school], progs[away_school]
+    # Each side is loaded from its OWN division so an exhibition can pit talent
+    # across levels (e.g. D1 vs D3) — the engine is division-blind, STR is one
+    # global scale, so the gap simply shows up in the result. Gender is shared.
+    home_progs = {p.school: p for p in load_division(home_div, gender).programs}
+    away_progs = {p.school: p for p in load_division(away_div, gender).programs}
+    home, away = home_progs[home_school], away_progs[away_school]
     hteam, ateam = build_squad(home), build_squad(away)
     res = simulate_dual(hteam, ateam, seed=seed, fidelity=fidelity)
 
@@ -94,14 +99,16 @@ def run_dual_view(division: str, gender: str, home_school: str, away_school: str
                     if simulate_dual(hteam, ateam, seed=seed + 1 + k, fidelity="fast").winner == 0)
     win_prob = round(100 * home_wins / sims) if sims else 50
 
-    ranks = {r.school: r for r in ranking_rows(division, gender)}
+    # Ranks come from each side's own division (a rank is only meaningful within it).
+    home_ranks = {r.school: r for r in ranking_rows(home_div, gender)}
+    away_ranks = {r.school: r for r in ranking_rows(away_div, gender)}
     h_abbr, h_color = crest(home_school)
     a_abbr, a_color = crest(away_school)
-    hr, ar = ranks.get(home_school), ranks.get(away_school)
+    hr, ar = home_ranks.get(home_school), away_ranks.get(away_school)
     return DualView(
-        home={"school": home_school, "abbr": h_abbr, "color": h_color,
+        home={"school": home_school, "abbr": h_abbr, "color": h_color, "div": home_div,
               "rk": hr.rk if hr else "—", "rec": hr.rec if hr else ""},
-        away={"school": away_school, "abbr": a_abbr, "color": a_color,
+        away={"school": away_school, "abbr": a_abbr, "color": a_color, "div": away_div,
               "rk": ar.rk if ar else "—", "rec": ar.rec if ar else ""},
         home_points=res.home_points, away_points=res.away_points,
         winner_name=(home_school if res.winner == 0 else away_school),
