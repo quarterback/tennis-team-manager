@@ -50,5 +50,5 @@ primary_region = 'iad'
 
 [[vm]]
   cpu_kind = 'performance'
-  cpus = 2
-  memory = '8gb'
+  cpus = 4
+  memory = '16gb'
