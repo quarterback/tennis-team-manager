@@ -1561,13 +1561,19 @@ def power_index(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key not in _pi_cache:
+    # Thread-safe: the gunicorn worker is threaded, so several requests hit this
+    # concurrently with DIFFERENT season_ids. Compute into a LOCAL and return that —
+    # never `_pi_cache[key]`, which another thread's .clear() (a different sid) can
+    # evict between store and return (KeyError → 500s → the app goes unhealthy).
+    ratings = _pi_cache.get(key)
+    if ratings is None:
         duals = _ranking_duals(conn, season_id)
+        ratings = compute_ratings(duals) if duals else {}
         _pi_cache.clear()
         _movers_cache.clear()            # movers derive from these ratings — invalidate together
-        _pi_cache[key] = compute_ratings(duals) if duals else {}
+        _pi_cache[key] = ratings
     conn.close()
-    return _pi_cache[key]
+    return ratings
 
 
 def weekly_movers(season_id: int, poll: int = 25) -> dict:
@@ -1585,9 +1591,10 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     ck = (season_id, poll, cnt)
-    if ck in _movers_cache:
+    cached = _movers_cache.get(ck)       # .get, not `in`+[]: a concurrent clear is safe
+    if cached is not None:
         conn.close()
-        return _movers_cache[ck]
+        return cached
     qs = ",".join("?" for _ in RANKING_ROUNDS)
     rows = conn.execute(
         f"SELECT week, home, away, is_conf, winner, lines_json FROM duals WHERE season_id=?"
