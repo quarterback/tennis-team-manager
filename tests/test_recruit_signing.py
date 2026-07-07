@@ -28,9 +28,28 @@ def test_unfunded_programs_take_anyone():
         assert re.program_caliber_floor(float(prog), 0.0) == 0.0
 
 
+# ---- the division radar (level floor, pure) ---------------------------------
+
+def test_program_level_floor_holds_then_keeps_residual():
+    lc = 0.65                                # a low-D1 program's level
+    floor0 = re.program_level_floor(lc, 0.0)
+    assert floor0 == lc - re._LEVEL_STANDARD_BAND
+    assert re.program_level_floor(lc, re._STANDARD_HOLD) == floor0
+    # Signing day: ramps DOWN to the residual — never to zero — so a power
+    # sops up only the best leftovers instead of stuffing sub-level recruits
+    # into its open seats.
+    assert abs(re.program_level_floor(lc, 1.0) - floor0 * re._LEVEL_RESIDUAL) < 1e-9
+    assert re.program_level_floor(lc, 1.0) > 0.0
+    # Monotonic non-increasing in progress; None (no level) gates nothing.
+    vals = [re.program_level_floor(lc, x / 20) for x in range(21)]
+    assert all(a >= b - 1e-9 for a, b in zip(vals, vals[1:]))
+    assert re.program_level_floor(None, 0.0) == 0.0
+
+
 # ---- integration: a full signing cycle signs the elites --------------------
 
 def _market(gender="men", salt="recruit_test"):
+    from app.ncaa import _talent_from_strength, roster_cap, SCHOLARSHIP_SLOTS
     progs = {}
     for divn in ("D1", "D2", "D3", "D4"):
         for p in load_division(divn, gender).programs:
@@ -38,8 +57,20 @@ def _market(gender="men", salt="recruit_test"):
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     budget = {s: re.program_budget(p, salt, 0) for s, p in progs.items()}
-    cap = {s: sum(1 for pl in build_roster(p) if _base_class(pl.class_year) == "Sr")
-           for s, p in progs.items()}
+    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.prestige, p.division, gender) - 20.0) / 60.0))
+                 for s, p in progs.items()}
+    cap = {}
+    for s, p in progs.items():
+        roster = build_roster(p)
+        grads = sum(1 for pl in roster if _base_class(pl.class_year) == "Sr")
+        if p.division == "D1":              # D1 recruits its scholarship core ONLY
+            returning = len(roster) - grads
+            ret_core = sum(1 for pl in roster if not pl.walk_on
+                           and _base_class(pl.class_year) != "Sr")
+            cap[s] = max(0, min(SCHOLARSHIP_SLOTS - ret_core,
+                                roster_cap("D1") - returning))
+        else:
+            cap[s] = grads
     coachmap = {s: coaches.program_coach(s) for s in progs}
     by_pres = sorted(progs, key=lambda s: traits[s][0])
     pres_arr = [traits[s][0] for s in by_pres]
@@ -48,6 +79,7 @@ def _market(gender="men", salt="recruit_test"):
     for s in progs:
         by_region.setdefault(traits[s][2], []).append(s)
     return {"progs": progs, "traits": traits, "cap": cap, "budget": budget,
+            "level_cal": level_cal,
             "coaches": coachmap, "by_pres": by_pres, "pres_arr": pres_arr,
             "academic_top": academic_top, "by_region": by_region}
 
@@ -100,6 +132,18 @@ def test_elite_recruits_sign():
     # under-scouted gem slides down), but everyone good still lands somewhere.
     assert rate(0.70, 9.0, recruit_caliber) >= 0.90, "true elites sign somewhere"
     assert rate(0.0, 9.0, recruit_caliber) >= 0.95, "essentially everyone signs"
+
+    # Division radar (owner rule — see docs/AAR-recruiting-division-radar.md):
+    # sub-45-STR recruits are never on a D1's board mid-cycle and ~90%+ land in
+    # D2-D4 even after the late sop-up; D3 gets real volume (it used to sign
+    # NOTHING until the year-end mop-up).
+    div_of = {s: market["traits"][s][3] for s in market["traits"]}
+    sub45 = [p for p in klass if p.str_value() <= 45.0 and p.pid in signed]
+    low = sum(1 for p in sub45 if div_of[signed[p.pid]] in ("D2", "D3", "D4"))
+    assert low / max(1, len(sub45)) >= 0.90, (
+        f"sub-45-STR recruits belong in D2-D4 (got {low}/{len(sub45)})")
+    d3 = sum(1 for sch in signed.values() if div_of[sch] == "D3")
+    assert d3 >= 100, f"D3 signs a real share of the class (got {d3})"
 
 
 def _mini_territory_market():

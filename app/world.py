@@ -97,8 +97,10 @@ PRESEASON_PORTAL_MAX_RISERS = 250
 RECRUIT_POOL = 2500     # sized to cover annual roster TURNOVER (~2,200 pool-filled
                         # slots/gender: D1 12 + D2 10 + D3/D4 core, ÷4 graduating
                         # classes), plus a realistic unsigned tail. Must exceed demand
-                        # so D1/D2 fill their cores AND walk-on depth from real recruits
-                        # — they no longer get game-generated walk-ons (only D3/D4 do).
+                        # so D2 fills core AND walk-on depth from real recruits — no
+                        # game-generated walk-ons outside D3/D4. (D1 now recruits its
+                        # scholarship core ONLY — see _openings — so pool demand fell;
+                        # the extra headroom feeds D2-D4 and the unsigned tail.)
 # The national recruit pool is drawn from the ONE talent scale (ncaa._talent_mean),
 # centred on a mid-tier (D2, median-strength) program for that gender — a dense,
 # bulb-shaped class: a high floor (only college-caliber juniors), a thick middle,
@@ -837,14 +839,29 @@ def _flat_programs(gender: str) -> dict[str, Program]:
 
 
 def _openings(base_rosters: dict, gender: str) -> dict[str, int]:
-    """Projected freshman seats per program for next year = seniors graduating
-    (rosters are otherwise full)."""
+    """Projected freshman seats per program for next year.
+
+    D2–D4: seniors graduating (rosters are otherwise full).
+
+    D1 signs into its SCHOLARSHIP CORE ONLY — a class tops the core back up to
+    `SCHOLARSHIP_SLOTS` (6) and stops. A D1 program NEVER recruits a walk-on seat:
+    with the transfer portal there's no reason to burn a signing on depth, so those
+    seats backfill from the portal or sit open. This frees D1 seats, cascades better
+    players down a level, and keeps the portal dynamic (owner rule, 2026-07)."""
     out = {}
     for (division, g), schools in base_rosters.items():
         if g != gender:
             continue
         for school, roster in schools.items():
-            out[school] = sum(1 for p in roster if _base_class(p.class_year) == "Sr")
+            grads = sum(1 for p in roster if _base_class(p.class_year) == "Sr")
+            if division == "D1":
+                returning = len(roster) - grads
+                ret_core = sum(1 for p in roster if not p.walk_on
+                               and _base_class(p.class_year) != "Sr")
+                out[school] = max(0, min(SCHOLARSHIP_SLOTS - ret_core,
+                                         roster_cap(division) - returning))
+            else:
+                out[school] = grads
     return out
 
 
@@ -864,6 +881,11 @@ def _recruit_market(world: dict, gender: str) -> dict:
     _c.close()
     budget = {s: max(0.0, recruit_economy.program_budget(p, salt, world["year"]) - _spent.get(s, 0.0))
               for s, p in progs.items()}
+    # Each program's OWN level on the recruit-caliber scale (talent mean → caliber),
+    # feeding the division radar: a program only pursues recruits near its level
+    # mid-cycle, so the class tiers itself (see recruit_economy.program_level_floor).
+    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.prestige, p.division, gender) - 20.0) / 60.0))
+                 for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     from . import coaches
     coachmap = {s: coaches.program_coach(s) for s in progs}        # per-program coach (localism, sourcing tilt, origin pipeline)
@@ -883,6 +905,7 @@ def _recruit_market(world: dict, gender: str) -> dict:
     for s, (abbr, _share) in local_terr.items():
         local_by_abbr.setdefault(abbr, []).append(s)
     return {"progs": progs, "traits": traits, "cap": cap, "budget": budget, "coaches": coachmap,
+            "level_cal": level_cal,
             "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
             "by_region": by_region, "local_terr": local_terr, "local_by_abbr": local_by_abbr}
 
@@ -898,6 +921,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     from . import recruit_economy
     traits = market["traits"]
     budget = market.get("budget", {})
+    level_cal = market.get("level_cal", {})
     coachmap = market.get("coaches", {})
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     # FOG OF WAR: the AI never sees true ability here. `cal` is the recruit's own
@@ -905,16 +929,32 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     # who they aspire to; each PROGRAM re-reads them through its own philosophy
     # below. recruit_caliber (the truth) is owner-only. See AAR-fog-of-war-recruiting.
     cal, ac = consensus_caliber(p), recruit_academic01(p)
+    # DIVISION RADAR (current-ability side): what a program SEES. `cur_cal` is the
+    # recruit's CURRENT ability (public STR, on the caliber scale) — what they ARE
+    # right now, not the projection. A program only has a sub-level recruit on its
+    # radar once the cycle's late enough (the level floor ramps open); so a sub-D1
+    # kid can still DREAM of D1 (their `cal`-driven aspiration above is untouched)
+    # but never lands on a D1's board mid-cycle, and slots to their level instead of
+    # flooding the powers. On signing day D1 programs with open seats sop up the best
+    # leftovers. Using CURRENT ability here (not the ceiling projection) is the point:
+    # a raw kid with a huge hidden ceiling still slots to their level.
+    cur_cal = max(0.0, min(1.0, (p.current_overall() - 20) / 60.0))
     budget_floor = recruit_economy.recruit_budget_floor(cal)   # perceived elites only chase funded programs
     # Division ceiling by tier: a 5★/blue-chip never drops to D3/D4; a 4★ can choose an
     # academic-elite D3/D4 (an Ivy-calibre classroom is worth the athletic step down) but
     # otherwise only rarely; a 3★ (and below) can go anywhere.
+    # The D3/D4 gate weighs current ability and the projection EVENLY — the
+    # non-scholarship tier's own philosophy (they'll take a project whose game is
+    # at their level today, whatever the service projects him to become), while a
+    # kid who's genuinely elite RIGHT NOW never drops there.
+    d34_cal = (cal + cur_cal) / 2.0
+
     def _div_ok(div, acad):
         if div not in ("D3", "D4"):
             return True
-        if cal >= ELITE_CALIBER:                         # blue-chips never drop to D3/D4
+        if d34_cal >= ELITE_CALIBER:                     # currently-elite: never drops to D3/D4
             return False
-        if cal >= FOUR_STAR:                             # 4★: open at academic-elite D3/D4
+        if d34_cal >= FOUR_STAR:                         # 4★-level: open at academic-elite D3/D4
             if acad >= ELITE_D3_ACADEMICS:
                 return True
             return random.Random(f"{getattr(p, 'pid', '')}|d3gate").random() < 0.05
@@ -925,7 +965,12 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     # Window: from a bit below their level up to well above it, so a recruit will
     # reach UP to a strong program that has an opening (a chance to play for a
     # major beats being a star at a much smaller school) — the upside isn't capped.
-    lo = bisect.bisect_left(pres_arr, cal - 0.30)
+    # The FLOOR keys on current ability, not the projection: however high a kid
+    # aspires (hi is still `cal`-driven — the D1 dream is intact), the programs at
+    # the level he plays TODAY always have him in view and compete for him. Without
+    # this a hyped project's window floats above D3/D4 all season and the bottom
+    # divisions see nobody until signing day.
+    lo = bisect.bisect_left(pres_arr, min(cal, cur_cal) - 0.30)
     hi = bisect.bisect_left(pres_arr, cal + 0.55)
     cands = set(by_pres[lo:hi]) | set(market["academic_top"])
     if hc > 0.0 and not intl:
@@ -952,12 +997,16 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
         coach = coachmap.get(s)
+        # Division radar: a recruit playing below this program's level simply isn't
+        # in its view yet (the floor ramps open late — see program_level_floor).
+        if cur_cal < recruit_economy.program_level_floor(level_cal.get(s), progress):
+            continue                                  # not on this program's radar yet (below its level)
         # THIS program's read of the recruit, through its own stars↔results
         # philosophy — so a tape-trusting staff rates a junior-circuit winner the
         # stars missed, and a stars-trusting staff holds out for the projection.
         pcal = perceived_caliber(p, coach.results_bias if coach is not None else 0.5)
         if pcal < recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress):
-            continue                                  # this program doesn't rate them enough (yet)
+            continue                                  # a funded program won't burn a premium seat on them (yet)
         prox = region_proximity(hr, reg)
         geo = hc * prox                                # the recruit's own desire to stay home
         # Coach-side localism: a program whose coach recruits its backyard pulls
@@ -997,6 +1046,7 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
                      if avail.get(s, 0) > 0
                      and (relax or _div_ok(traits[s][3], traits[s][1]))
                      and (relax or budget.get(s, 0.0) >= budget_floor)
+                     and cur_cal >= recruit_economy.program_level_floor(level_cal.get(s), progress)
                      and (relax or cal >= recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress))
                      and (not exclude or s not in exclude)), None)
     return best
