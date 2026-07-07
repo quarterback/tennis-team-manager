@@ -229,6 +229,24 @@ def _power6(prog) -> float:
     return round(sum(s) / len(s) * 2, 1) if s else 0.0
 
 
+def attach_power6(division: str, gender: str, table: list[dict]) -> list[dict]:
+    """Enrich standings rows with each team's Power 6 (top-6 STR roster strength),
+    its rank WITHIN this table, and a 0-100 bar width relative to the table's range —
+    so the standings show roster strength (and where a program stacks or needs help)
+    even for teams with no national ranking. Returns new row dicts; input untouched."""
+    from app.ncaa import load_division
+    progs = {p.school: p for p in load_division(division, gender).programs}
+    rows = [dict(r, p6=(_power6(progs[r["school"]]) if r["school"] in progs else 0.0))
+            for r in table]
+    vals = [r["p6"] for r in rows] or [0.0]
+    lo, hi = min(vals), max(vals)
+    for rank, r in enumerate(sorted(rows, key=lambda r: -r["p6"]), 1):
+        r["p6_rank"] = rank
+    for r in rows:
+        r["p6_pct"] = round(100 * (r["p6"] - lo) / (hi - lo)) if hi > lo else 100
+    return rows
+
+
 def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[LiveRow]:
     """Power Index table from the live week-by-week season. Before any results
     exist (preseason), programs are ordered by preseason ability so the page still

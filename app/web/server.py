@@ -2082,9 +2082,10 @@ def create_app() -> Flask:
         conf = request.args.get("conf")
         if conf not in standings:
             conf = conferences[0] if conferences else ""
+        from .state import attach_power6
+        table = attach_power6(division, gender, standings.get(conf, []))
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
-                               conferences=conferences, conf=conf, crest=crest,
-                               table=standings.get(conf, []))
+                               conferences=conferences, conf=conf, crest=crest, table=table)
 
     @app.route("/season/schedule")
     def season_schedule():
