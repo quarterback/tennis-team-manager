@@ -24,12 +24,11 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  # Idle handling: SUSPEND (not stop) so the machine dozes when idle but resumes in
-  # a fraction of a second with the season/roster caches still warm — no cold re-prime
-  # mid-sim. min_machines_running = 0 lets the single machine actually go idle; a
-  # request auto-starts (resumes) it. Fly's proxy only idles it after real traffic
-  # stops, so an active sim session keeps it up; a pause just suspends → instant resume.
-  auto_stop_machines = 'suspend'
+  # Idle savings: stop the single machine when there's no traffic (a request
+  # auto-starts it). min_machines_running = 0 is REQUIRED for a manual/idle stop to
+  # stick — with 1, Fly keeps one machine up and "un-stops" it. Safe now that the
+  # real outage cause (a power_index thread-race) is fixed; autostop was never it.
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']
