@@ -24,7 +24,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     all_programs_by_universe, coach_move_tree,
-                    active_overrides, reset_all, teams_by_conference, coaching_staff,
+                    active_overrides, reset_all, reset_lineup, teams_by_conference, coaching_staff,
                     junior_ranking_rows, junior_nation_boards, junior_leaders, junior_feed,
                     junior_tournaments, junior_tournament_detail,
                     recruiting_hub, signing_tracker, team_recruiting_class,
@@ -552,7 +552,7 @@ def create_app() -> Flask:
         school, division, gender = prog["school"], prog["division"], prog["gender"]
         if request.form.get("action") == "reset":
             ov.clear_lineup(school)             # back to the auto ladder
-            reset_all()
+            reset_lineup()
             return redirect(url_for("my_program"))
         p = load_division(division, gender).by_school(school)
         valid = {pr.pid for pr in build_roster(p)} if p else set()
@@ -563,7 +563,7 @@ def create_app() -> Flask:
             pids = [request.form.get(s, "").strip() for s in slots]
             if all(pid in valid for pid in pids) and len(set(pids)) == 6:
                 ov.set_lineup(school, pids)     # pinned six lead; rest fall in by ability
-                reset_all()
+                reset_lineup()
             return redirect(url_for("my_program"))
         # Legacy single-step nudge (kept for any old links / accessibility).
         pid = request.form.get("pid", "")
@@ -575,7 +575,7 @@ def create_app() -> Flask:
             if 0 <= j < len(order):
                 order[i], order[j] = order[j], order[i]
                 ov.set_lineup(school, order)
-                reset_all()
+                reset_lineup()
         return redirect(url_for("my_program"))
 
     @app.route("/my-program/doubles", methods=["POST"])
@@ -591,7 +591,7 @@ def create_app() -> Flask:
         school, division, gender = prog["school"], prog["division"], prog["gender"]
         if request.form.get("action") == "reset":
             ov.clear_doubles(school)            # back to the auto pairing
-            reset_all()
+            reset_lineup()
             return redirect(url_for("my_program"))
         slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
         pids = [request.form.get(s, "").strip() for s in slots]
@@ -599,7 +599,7 @@ def create_app() -> Flask:
         valid = {pr.pid for pr in build_roster(p)} if p else set()
         if all(pid in valid for pid in pids) and len(set(pids)) == 6:
             ov.set_doubles(school, pids)
-            reset_all()
+            reset_lineup()
         return redirect(url_for("my_program"))
 
     @app.route("/my-program/offers")
@@ -2003,7 +2003,7 @@ def create_app() -> Flask:
             if 0 <= j < len(order):
                 order[i], order[j] = order[j], order[i]
                 ov.set_lineup(school, order)
-                reset_all()
+                reset_lineup()
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/clear_move", methods=["POST"])
@@ -2022,7 +2022,7 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         if school:
             ov.clear_lineup(school)
-            reset_all()
+            reset_lineup()
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/doubles", methods=["POST"])
@@ -2038,7 +2038,7 @@ def create_app() -> Flask:
         valid = {r["pid"] for r in (rows or [])}
         if all(p in valid for p in pids) and len(set(pids)) == 6:
             ov.set_doubles(school, pids)
-            reset_all()
+            reset_lineup()
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/clear_doubles", methods=["POST"])
@@ -2047,7 +2047,7 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         if school:
             ov.clear_doubles(school)
-            reset_all()
+            reset_lineup()
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/reset", methods=["POST"])

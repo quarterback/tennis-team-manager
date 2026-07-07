@@ -161,6 +161,14 @@ dicts are read by many threads at once. Two hard rules, each learned from a site
    (the 18s renders + gunicorn write timeouts). Prune per season (`sm._prune_season`).
 When fixing this class, GREP THE WHOLE CLASS in one pass — §2 fixed one cache and left the
 siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
+3. **Invalidation scope must match EDIT scope, and never rebuild the world on the request
+   thread.** A per-team edit (a lineup pin) that calls the global `reset_all()` / `ncaa.
+   reset_caches()` nukes the base roster cache and — because `build_roster` gates on a GLOBAL
+   `overrides.any_overrides()` — flips ALL ~4k program builds onto the heavy override path, so
+   the next full-world page rebuilds everything and starves `/api/health` (site flaps
+   unhealthy). Scope invalidation to the affected entity; gate `build_roster` per-program, not
+   on "any overrides exist"; prefer a LIVE read for tiny override rows (a lineup is read live
+   in `season.coach_lineup`). See `docs/AAR-cache-invalidation-scope-lineup-stall.md`.
 
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
