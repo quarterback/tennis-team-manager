@@ -190,10 +190,18 @@ class LiveRow:
     p6: float = 0.0
     points: float = 0.0
     me: bool = False
+    move: int | None = 0        # poll movement: +up / -down / 0 steady / None = NEW to poll
 
     @property
     def rank_class(self) -> str:
         return "gold" if self.rk == 1 else "bronze" if self.rk <= 3 else ""
+
+    @property
+    def move_kind(self) -> str:
+        """Poll-movement badge kind for the template: new / up / down / flat."""
+        if self.move is None:
+            return "new"
+        return "up" if self.move > 0 else "down" if self.move < 0 else "flat"
 
     @property
     def confrk_class(self) -> str:
@@ -273,18 +281,52 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     _prog = worldconfig.user_program()
     _my_school = (_prog["school"] if _prog and _prog["division"] == division
                   and _prog["gender"] == gender else None)
+    wk_move = sm.weekly_movers(sid)          # coaches-poll week-to-week movement (top-25)
     rows: list[LiveRow] = []
     for rk, p in enumerate(ordered, 1):
         r = ratings.get(p.school)
         crk, cw, cl = cr.get(p.school, (0, 0, 0))
+        # None (key present) = NEW to the poll this week; 0 = steady or outside the poll.
+        move = wk_move.get(p.school, 0) if p.school in wk_move else 0
         rows.append(LiveRow(
             rk=rk, school=p.school, conf=p.conf, conf_abbr=p.conf_abbr,
             tier=_tier(division, p.conf_abbr, p.conf), cr=crk,
             rec=r.record if r else "0-0", crec=f"{cw}-{cl}",
             pi=r.pi if r else 0.0, apr=r.apr if r else 0.0, fqi=r.fqi if r else 0.0,
             p6=_power6(p), points=pts.get(p.school, 0.0), me=(p.school == _my_school),
+            move=move,
         ))
     return rows
+
+
+# US state → ITA-style geographic region for regional rankings (reuses the
+# scout_intel origin map so player-origin and team regions stay consistent).
+def _program_regions(division: str, gender: str) -> dict:
+    """{school: region-name} from each program's home state. Unknown/foreign → ''."""
+    from app.ncaa import load_division, location
+    from app.scout_intel import US_REGIONS
+    out = {}
+    for p in load_division(division, gender).programs:
+        st = (getattr(p, "state", "") or location(p.school)[1] or "").upper()
+        out[p.school] = US_REGIONS.get(st, "")
+    return out
+
+
+def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
+                          seed: int = DEFAULT_SEED) -> list[tuple[str, list]]:
+    """ITA-style regional rankings: the national board split into geographic regions,
+    each showing its top `per_region` teams (with national rank + poll movement carried
+    over), so mid-pack teams that never crack the national list still surface where they
+    stack regionally. Ordered by scout_intel.US_REGION_ORDER; empty regions dropped."""
+    from app.scout_intel import US_REGION_ORDER
+    region_of = _program_regions(division, gender)
+    rows = ranking_rows(division, gender, seed)
+    groups: dict[str, list] = {}
+    for r in rows:
+        reg = region_of.get(r.school, "")
+        if reg:
+            groups.setdefault(reg, []).append(r)
+    return [(reg, groups[reg][:per_region]) for reg in US_REGION_ORDER if groups.get(reg)]
 
 
 def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:

@@ -962,6 +962,14 @@ def create_app() -> Flask:
                 total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
                 tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
             )
+        if view == "regional":
+            from .state import regional_ranking_rows
+            regions = regional_ranking_rows(division, gender)
+            return render_template(
+                "rankings.html", active="Rankings", mode="regional", view="regional",
+                regions=regions, conferences=conferences_for(division, gender), tiers=["All"],
+                conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+            )
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
         limit = 50 if small else 75
