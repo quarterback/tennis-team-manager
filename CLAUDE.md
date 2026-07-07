@@ -148,6 +148,20 @@ lower division) and is **deliberately curated**, not a migration:
   two-stint + cascade); outside the window it's a plain move. See
   `docs/AAR-fall-transfer-portal.md`.
 
+## ⚠️ Module-global caches under the THREADED worker (do NOT re-break — cost 2 outages)
+Gunicorn runs ONE `gthread` worker (to keep caches warm), so module-global `_*_cache`
+dicts are read by many threads at once. Two hard rules, each learned from a site-down
+`KeyError` (`docs/AAR-perf-regression-and-power-index-thread-race.md`, §2 + §2b):
+1. **Never `return cache[key]` after a possible `clear()`.** A sibling thread (different
+   `season_id`) or a world-advance invalidation can evict `key` between your store and your
+   return → `KeyError` → 500 → health flap → "no known healthy instances." Compute into a
+   **local**, publish, `return` the local; read with `.get()`, never `key in cache`+`cache[key]`.
+2. **Never global-`clear()` a `(season_id, …)`-keyed cache.** A `/player`/career page loops a
+   player's seasons; a global clear makes each season wipe the others → quadratic recompute
+   (the 18s renders + gunicorn write timeouts). Prune per season (`sm._prune_season`).
+When fixing this class, GREP THE WHOLE CLASS in one pass — §2 fixed one cache and left the
+siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
+
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
