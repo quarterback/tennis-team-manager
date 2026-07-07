@@ -100,3 +100,65 @@ def test_elite_recruits_sign():
     # under-scouted gem slides down), but everyone good still lands somewhere.
     assert rate(0.70, 9.0, recruit_caliber) >= 0.90, "true elites sign somewhere"
     assert rate(0.0, 9.0, recruit_caliber) >= 0.95, "essentially everyone signs"
+
+
+def _mini_territory_market():
+    """A small controlled market: a Puerto Rico D2 program (a SCHOOL_LOCAL_TERRITORY
+    school), a mainland power, and a mid mainland D2 — enough to show the home pull
+    in isolation without the noise of the full national board."""
+    traits = {
+        "Puerto Rico-Bayamón": (0.35, 0.45, "", "D2", 0.4),
+        "Big State":           (0.85, 0.55, "SE", "D1", 0.8),
+        "Mid U":               (0.45, 0.50, "SE", "D2", 0.5),
+    }
+    budget = {"Puerto Rico-Bayamón": 5.0, "Big State": 20.0, "Mid U": 5.0}
+    by_pres = sorted(traits, key=lambda s: traits[s][0])
+    return {
+        "traits": traits, "budget": budget, "coaches": {s: None for s in traits},
+        "by_pres": by_pres, "pres_arr": [traits[s][0] for s in by_pres],
+        "academic_top": [], "by_region": {"": ["Puerto Rico-Bayamón"],
+                                          "SE": ["Big State", "Mid U"]},
+        "local_terr": {"Puerto Rico-Bayamón": ("PR", 0.85)},
+        "local_by_abbr": {"PR": ["Puerto Rico-Bayamón"]},
+    }
+
+
+def _pr_recruit(talent, i):
+    from app.development import generate_prospect
+    import random
+    p = generate_prospect(random.Random(500 + i), "Ana Rivera", "US",
+                          gender="women", talent=talent, pid=f"prtest{i}")
+    p.hometown = "San Juan, PR"
+    p.region = "PR"
+    p.domestic = True
+    p.homecooking = 0.5
+    return p
+
+
+def _pr_local_rate(market, talent, n=40):
+    home = 0
+    for i in range(n):
+        avail = {s: 5 for s in market["traits"]}
+        if _pick_school(_pr_recruit(talent, i), market, dict(avail),
+                        jitter_salt="sign") == "Puerto Rico-Bayamón":
+            home += 1
+    return home / n
+
+
+def test_local_territory_pull_binds_locals_but_not_elites():
+    """The home pull materially raises how often a mid/low Puerto Rico recruit signs
+    the PR program, versus the same market with no pull — while a genuine elite still
+    escapes to the mainland power (the low-budget D2 can't fund a blue-chip, so the
+    budget floor gates it regardless of the pull)."""
+    market = _mini_territory_market()
+    no_pull = dict(market, local_terr={}, local_by_abbr={})    # same board, pull off
+
+    mid_with = _pr_local_rate(market, 44.0)
+    mid_without = _pr_local_rate(no_pull, 44.0)
+    assert mid_with > mid_without + 0.20, (
+        f"home pull should lift local signing (with={mid_with}, without={mid_without})")
+    assert mid_with >= 0.5, f"a mid PR recruit signs home a solid share (got {mid_with})"
+
+    # An elite still escapes to the power even with the pull on.
+    elite_home = _pr_local_rate(market, 78.0)
+    assert elite_home < 0.35, f"elite PR recruits escape to the mainland (got {elite_home})"

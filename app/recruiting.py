@@ -35,6 +35,17 @@ FAC_WEIGHT = 0.25           # how much a program's facilities grade lifts appeal
 # same region) = this weight; it fades with region proximity and the coach's lean.
 COACH_LOCAL_WEIGHT = 0.50
 
+# Island-territory / remote-state home pull. Coarse STATE_REGION proximity is 0 for
+# PR/USVI/Guam (they aren't in the region map), so nothing binds a Puerto Rican kid
+# to a Puerto Rico school. This is a DIRECT same-territory tug that only fires for a
+# recruit whose home state/territory is one an ncaa.SCHOOL_LOCAL_TERRITORY program
+# recruits — scaled by that program's local share — so general recruiting is
+# untouched. Strong enough that in-range locals sign home; elite locals still escape
+# to the mainland (a low-prestige D2's score can't out-pull a power even ×this), and
+# the thin island pools self-limit, so those rosters end up local-heavy but not
+# hermetic. Mirrors the year-0 base-roster tilt into the ongoing sim.
+LOCAL_TERRITORY_PULL = 6.0
+
 # Academics only pull a recruit BELOW their athletic station, and only for
 # sub-elite talent. A blue-chip's ceiling commands a marquee program, so for
 # them prestige trumps academics outright (gate → 0 at/above the elite line);

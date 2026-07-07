@@ -47,7 +47,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          perceived_caliber, consensus_caliber,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
-                         COACH_LOCAL_WEIGHT)
+                         COACH_LOCAL_WEIGHT, LOCAL_TERRITORY_PULL)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker
 
@@ -873,9 +873,18 @@ def _recruit_market(world: dict, gender: str) -> dict:
     by_region: dict[str, list] = {}
     for s in progs:
         by_region.setdefault(traits[s][2], []).append(s)
+    # Island/remote-state home pull: {school -> (state/terr abbr, share)} for the
+    # programs present, plus a reverse {abbr -> [schools]} so a local recruit's own
+    # territory schools are always in reach (they'd otherwise fall outside the
+    # prestige window).
+    from .ncaa import SCHOOL_LOCAL_TERRITORY
+    local_terr = {s: SCHOOL_LOCAL_TERRITORY[s] for s in progs if s in SCHOOL_LOCAL_TERRITORY}
+    local_by_abbr: dict[str, list] = {}
+    for s, (abbr, _share) in local_terr.items():
+        local_by_abbr.setdefault(abbr, []).append(s)
     return {"progs": progs, "traits": traits, "cap": cap, "budget": budget, "coaches": coachmap,
             "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
-            "by_region": by_region}
+            "by_region": by_region, "local_terr": local_terr, "local_by_abbr": local_by_abbr}
 
 
 def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
@@ -921,6 +930,15 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     cands = set(by_pres[lo:hi]) | set(market["academic_top"])
     if hc > 0.0 and not intl:
         cands |= set(market["by_region"].get(hr, ()))
+    # Home-territory tug (PR/USVI/Guam/remote-state): a local kid's own island/state
+    # schools are always in reach, even if they sit outside the prestige window.
+    local_terr = market.get("local_terr", {})
+    home_abbr = ""
+    if not intl:
+        _ht = getattr(p, "hometown", "") or ""
+        home_abbr = _ht.rsplit(", ", 1)[-1].strip() if ", " in _ht else ""
+        if home_abbr:
+            cands |= set(market.get("local_by_abbr", {}).get(home_abbr, ()))
     if exclude:
         cands -= exclude
     best, best_score = None, -1.0
@@ -957,6 +975,9 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         score = ((0.15 + pres) * level
                  * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo + coach_geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+        lt = local_terr.get(s)
+        if lt is not None and lt[0] == home_abbr:      # home-territory pull (island/remote state)
+            score *= 1.0 + LOCAL_TERRITORY_PULL * lt[1]
         if coach is not None:
             # Coach sourcing tilt (US coaches lean domestic, foreign lean international)
             # and a foreign coach's home-country compatriot pipeline.
