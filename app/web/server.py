@@ -991,6 +991,21 @@ def create_app() -> Flask:
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
 
+    @app.route("/polls")
+    def polls_page():
+        from app import polls as pollmod
+        division, uni_gender, label, u = _universe(request)
+        gender = request.args.get("gender", uni_gender)
+        if gender not in ("men", "women"):
+            gender = "men"
+        which = request.args.get("poll", "media")
+        if which not in ("media", "coaches"):
+            which = "media"
+        p = pollmod.poll(wd.current_year_seed(), gender, which)
+        return render_template("polls.html", active="Rankings", u=u, gender=gender,
+                               which=which, poll=p, crest=crest,
+                               labels=pollmod.POLL_LABELS)
+
     @app.route("/staff-search")
     def staff_search_page():
         division, uni_gender, label, u = _universe(request)
