@@ -1001,9 +1001,11 @@ def create_app() -> Flask:
         which = request.args.get("poll", "media")
         if which not in ("media", "coaches"):
             which = "media"
-        p = pollmod.poll(wd.current_year_seed(), gender, which)
+        scope = request.args.get("scope", "national")
+        div = scope if scope in ("D1", "D2", "D3", "D4") else None
+        p = pollmod.poll(wd.current_year_seed(), gender, which, division=div)
         return render_template("polls.html", active="Rankings", u=u, gender=gender,
-                               which=which, poll=p, crest=crest,
+                               which=which, scope=(div or "national"), poll=p, crest=crest,
                                labels=pollmod.POLL_LABELS)
 
     @app.route("/staff-search")

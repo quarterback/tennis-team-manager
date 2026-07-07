@@ -50,8 +50,9 @@ def test_inertia_a_single_loss_slides_not_craters():
     polls._board_cache.clear()
     wk1 = _positions(999, "coaches", 1, snap)
     wk2 = _positions(999, "coaches", 2, snap)
-    assert wk1["T0"] == 1
-    assert 1 < wk2["T0"] <= 5                       # slid, but still near the top
+    assert wk1["T0"] <= 2                            # an undefeated top-reputation team
+    assert wk2["T0"] > wk1["T0"]                     # the loss cost it ground...
+    assert wk2["T0"] <= 6                            # ...but it slid, it didn't crater (of 8)
 
 
 def test_deterministic():

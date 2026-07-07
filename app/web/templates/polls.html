@@ -10,7 +10,7 @@
     <div class="bl-pills">
       {% for pv, plbl in labels.items() %}
       <a class="bl-pill{% if pv == which %} active{% endif %}" style="text-decoration:none"
-         href="{{ url_for('polls_page', gender=gender, poll=pv, u=u) }}">{{ plbl }}</a>
+         href="{{ url_for('polls_page', gender=gender, poll=pv, scope=scope, u=u) }}">{{ plbl }}</a>
       {% endfor %}
     </div>
   </div>
@@ -19,7 +19,16 @@
     <div class="bl-pills">
       {% for gv, glbl in [('men','Men'),('women','Women')] %}
       <a class="bl-pill{% if gv == gender %} active{% endif %}" style="text-decoration:none"
-         href="{{ url_for('polls_page', gender=gv, poll=which, u=u) }}">{{ glbl }}</a>
+         href="{{ url_for('polls_page', gender=gv, poll=which, scope=scope, u=u) }}">{{ glbl }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bl-sortpills">
+    <span class="bl-sortpills-label">Scope</span>
+    <div class="bl-pills">
+      {% for sv, slbl in [('national','National'),('D1','D1'),('D2','D2'),('D3','D3'),('D4','D4')] %}
+      <a class="bl-pill{% if sv == scope %} active{% endif %}" style="text-decoration:none"
+         href="{{ url_for('polls_page', gender=gender, poll=which, scope=sv, u=u) }}">{{ slbl }}</a>
       {% endfor %}
     </div>
   </div>
@@ -29,7 +38,7 @@
 <div class="bl-container" style="padding-top:6px">
   <div class="bl-entries">
     <div class="bl-entries-left"><strong style="color:var(--text-primary)">Play to Clinch {{ poll.label }}</strong>
-      — {{ gender|capitalize }} · Week {{ poll.week }}</div>
+      — {{ 'National' if scope == 'national' else scope }} {{ gender|capitalize }} · Week {{ poll.week }}</div>
     <span class="bl-entries-right">
       {% if which == 'media' %}51 media voters — reactive{% else %}40 coaches — conservative{% endif %} ·
       what humans believe, not the Power Index</span>

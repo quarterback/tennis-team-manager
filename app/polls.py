@@ -85,6 +85,7 @@ class Poll:
     label: str
     gender: str
     week: int
+    division: str | None         # None = national (all divisions), else 'D1'..'D4'
     board: list                  # list[BoardRow], top 25
     others: list                 # [(school, points), ...] receiving votes
     storylines: dict = field(default_factory=dict)
@@ -98,9 +99,10 @@ class Poll:
 _snap_cache: dict = {}
 
 
-def _gather(seed: int, gender: str) -> dict:
-    """{school: team dict} across D1-D4 for `gender`. Each team carries division,
-    conf, a reputation prior (prestige × division tier), and its game log
+def _gather(seed: int, gender: str, division: str | None = None) -> dict:
+    """{school: team dict} for `gender` — across D1-D4 (a national board) when
+    `division` is None, or just that division (a division board). Each team carries
+    division, conf, a reputation prior (prestige × division tier), and its game log
     [(opp, won, home, week)] from the season's ranking-corpus duals. Cached by the
     total number of finalised duals so it refreshes as the season advances."""
     import app.seasonmode as sm
@@ -108,15 +110,14 @@ def _gather(seed: int, gender: str) -> dict:
     from app.ncaa import load_division
 
     wseed = world.current_year_seed(seed)
-    sids = {}
-    for div in ("D1", "D2", "D3", "D4"):
-        sids[div] = sm.get_or_create(div, gender, seed=wseed)
+    divs = (division,) if division else ("D1", "D2", "D3", "D4")
     conn = sm._db()
     qs = ",".join("?" for _ in sm.RANKING_ROUNDS)
     total_final = 0
     logs: dict = {}
     week_now = 0
-    for div, sid in sids.items():
+    for div in divs:
+        sid = sm.get_or_create(div, gender, seed=wseed)
         s = sm.load_season(sid)
         week_now = max(week_now, (s or {}).get("current_week", 0) or 0)
         rows = conn.execute(
@@ -129,12 +130,12 @@ def _gather(seed: int, gender: str) -> dict:
             logs.setdefault(a, []).append((h, not hw, False, wk))
     conn.close()
 
-    key = (wseed, gender, total_final)
+    key = (wseed, gender, division, total_final)
     if key in _snap_cache:
         return _snap_cache[key]
 
     teams: dict = {}
-    for div in ("D1", "D2", "D3", "D4"):
+    for div in divs:
         for p in load_division(div, gender).programs:
             prestige = float(getattr(p, "prestige", 0.5))
             tier = _DIV_TIER.get(div, 0.2)
@@ -147,8 +148,7 @@ def _gather(seed: int, gender: str) -> dict:
                 "is_power": p.conf_abbr in _POWER_CONFS,
                 "games": logs.get(p.school, []),
             }
-    snap = {"teams": teams, "week": week_now, "seed": wseed}
-    _snap_cache.clear()
+    snap = {"teams": teams, "week": week_now, "seed": wseed, "division": division}
     _snap_cache[key] = snap
     return snap
 
@@ -208,9 +208,11 @@ def _candidates(teams: dict, sig: dict, prior_board: dict) -> list:
     def prelim(s):
         return (0.45 * sig["reputation"].get(s, 0) + 0.30 * sig["winpct"].get(s, 0)
                 + 0.15 * sig["sos"].get(s, 0) + 0.10 * sig["inertia"].get(s, 0))
-    ranked = sorted(teams, key=prelim, reverse=True)[:_CANDIDATES]
-    keep = set(ranked) | set(list(prior_board)[:POLL_SIZE])
-    return list(keep)
+    keep = set(sorted(teams, key=prelim, reverse=True)[:_CANDIDATES])
+    keep |= set(list(prior_board)[:POLL_SIZE])
+    # Deterministic order (school name breaks prelim ties) so ballot tie-breaks — and
+    # thus the whole poll — are stable across processes, not hash-seed dependent.
+    return sorted(keep, key=lambda s: (-prelim(s), s))
 
 
 def _archetype_roster(pool: dict, n: int) -> list:
@@ -277,7 +279,7 @@ _board_cache: dict = {}
 def _weekly_board(seed: int, gender: str, poll: str, week: int, snap: dict) -> list:
     """The full ordered tally for `poll` at `week`, computed forward from the
     preseason seed so inertia carries. Memoized."""
-    ck = (snap["seed"], gender, poll, week)
+    ck = (snap["seed"], gender, snap.get("division"), poll, week)
     if ck in _board_cache:
         return _board_cache[ck]
     teams = snap["teams"]
@@ -335,12 +337,14 @@ def _storylines(teams: dict, board: list, positions: dict, prev_pos: dict) -> di
     }
 
 
-def poll(seed: int, gender: str, which: str = "media") -> Poll:
-    """The current-week `which` ('media'|'coaches') national poll for `gender`:
-    top-25 board with movement + first-place votes, Others Receiving Votes, biggest
+def poll(seed: int, gender: str, which: str = "media",
+         division: str | None = None) -> Poll:
+    """The current-week `which` ('media'|'coaches') poll for `gender`: a national
+    board across D1-D4 when `division` is None, else a single-division board. Returns
+    the top-25 with movement + first-place votes, Others Receiving Votes, biggest
     movers and weekly storylines. Empty board only before any team has a result."""
     which = which if which in _POOLS else "media"
-    snap = _gather(seed, gender)
+    snap = _gather(seed, gender, division)
     teams = snap["teams"]
     week = snap["week"]
     cur = _weekly_board(seed, gender, which, week, snap)
@@ -364,5 +368,5 @@ def poll(seed: int, gender: str, which: str = "media") -> Poll:
     movers_up = sorted((d for d in deltas if d[1] > 0), key=lambda x: -x[1])[:5]
     movers_down = sorted((d for d in deltas if d[1] < 0), key=lambda x: x[1])[:5]
     return Poll(poll=which, label=POLL_LABELS[which], gender=gender, week=week,
-                board=board, others=others, storylines=story,
+                division=division, board=board, others=others, storylines=story,
                 movers_up=movers_up, movers_down=movers_down)
