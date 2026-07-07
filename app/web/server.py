@@ -951,8 +951,13 @@ def create_app() -> Flask:
         # National field sizes, ITA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
         small = division == "D2"
         if view in ("singles", "doubles"):
+            try:
+                minm = int(request.args.get("minm", 3))
+            except (ValueError, TypeError):
+                minm = 3
+            minm = max(1, min(30, minm))
             prows = (singles_ranking_rows if view == "singles"
-                     else doubles_ranking_rows)(division, gender)
+                     else doubles_ranking_rows)(division, gender, min_matches=minm)
             limit = ({"singles": 75, "doubles": 40} if small
                      else {"singles": 125, "doubles": 60})[view]
             prows = [r for r in prows if conf == "All" or r["conf"] == conf][:limit]
@@ -961,6 +966,7 @@ def create_app() -> Flask:
                 "rankings.html", active="Rankings", mode=view, view=view, p=p, prows=p.items,
                 total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
                 tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                minm=minm,
             )
         if view == "regional":
             from .state import regional_ranking_rows

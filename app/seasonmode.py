@@ -1748,14 +1748,18 @@ def _str_percentile(keys, str_of) -> dict:
     return q
 
 
-def ita_singles_points(season_id: int) -> dict:
-    """ITA-style singles player ranking points {pid: points}, anchored to player STR."""
+def ita_singles_points(season_id: int, min_matches: int = 3) -> dict:
+    """ITA-style singles player ranking points {pid: points}, anchored to player STR.
+    Only players who have played at least `min_matches` singles are ranked — a 1-0
+    record isn't a ranking, so the board doesn't crown someone off a single result
+    (mirrors the doubles gate)."""
     strs = season_player_str(season_id)
     if not strs:
         return {}
-    wins, losses, players, _ = _singles_results(season_id)
+    wins, losses, players, wl = _singles_results(season_id)
     qual = _str_percentile(players, lambda p: strs.get(p, (0.0,))[0])
-    return _ita_scale(_ita_score(players, wins, losses, qual))
+    eligible = {p for p in players if wl.get(p, [0, 0])[0] + wl[p][1] >= min_matches}
+    return _ita_scale(_ita_score(eligible, wins, losses, qual))
 
 
 def ita_doubles_points(season_id: int, min_matches: int = 3):

@@ -167,6 +167,11 @@ actually simmed.
   (ps_set_status needs it), which `_pp_return` was reusing as the view **filter** — dropping
   a men's move while viewing "All" collapsed the slate to Men. Fixed with a distinct `fg`
   (filter-gender) field the helper prefers.
+- **Singles/doubles min-matches gate** (`ita_singles_points`, rankings page): the singles
+  board ranked anyone with a result, so a **1-0 player topped D3 Women** — meaningless.
+  Added a `min_matches` gate to `ita_singles_points` (doubles already had one) and a **Min
+  matches** selector (1/2/3/**5**/8/10, default 3) on the singles + doubles rankings views, so
+  a single result can't crown a player and the owner can tighten the bar as a season fills in.
 - **Rutgers-Camden / Rutgers-Newark logos**: both showed a borrowed Radford mark
   (espn_id-collision substitute). Their PNGs now hold the real Rutgers art (byte-identical to
   `rutgers.png`) and `logo_source` records `sub:Rutgers Scarlet Knights`; slugs unchanged, so

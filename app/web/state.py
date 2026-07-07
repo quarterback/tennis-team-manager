@@ -329,14 +329,16 @@ def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
     return [(reg, groups[reg][:per_region]) for reg in US_REGION_ORDER if groups.get(reg)]
 
 
-def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
-    """ITA-style singles player ranking rows (newest-best first)."""
+def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
+                         min_matches: int = 3) -> list[dict]:
+    """ITA-style singles player ranking rows (newest-best first). Only players with at
+    least `min_matches` singles are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
-    pts = sm.ita_singles_points(sid)
+    pts = sm.ita_singles_points(sid, min_matches)
     pidx = sm._pid_index(division, gender)
     recs = sm.player_records(sid)
     progs = load_division(division, gender).programs
@@ -358,14 +360,16 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -
     return rows
 
 
-def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
-    """ITA-style doubles PAIR ranking rows (newest-best first)."""
+def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
+                         min_matches: int = 3) -> list[dict]:
+    """ITA-style doubles PAIR ranking rows (newest-best first). Only pairs that have
+    played together at least `min_matches` times are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
-    pts, members, wl = sm.ita_doubles_points(sid)
+    pts, members, wl = sm.ita_doubles_points(sid, min_matches)
     pidx = sm._pid_index(division, gender)
     progs = load_division(division, gender).programs
     conf_full = {p.school: p.conf for p in progs}

@@ -47,6 +47,13 @@
       </div>
     </div>
     {% endif %}
+    {% if mode in ('singles', 'doubles') %}
+    <label class="bl-field" title="A player/pair must have played at least this many matches to be ranked — so a 1-0 record doesn't top the board">
+      <span class="bl-field-label">Min matches</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="minm" onchange="this.form.submit()" style="min-width:70px">
+        {% for m in [1, 2, 3, 5, 8, 10] %}<option value="{{ m }}"{% if m == minm %} selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select></span></label>
+    {% endif %}
     <label class="bl-field"><span class="bl-field-label">Model A/B</span>
       <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
