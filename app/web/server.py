@@ -951,8 +951,13 @@ def create_app() -> Flask:
         # National field sizes, ITA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
         small = division == "D2"
         if view in ("singles", "doubles"):
+            try:
+                minm = int(request.args.get("minm", 3))
+            except (ValueError, TypeError):
+                minm = 3
+            minm = max(1, min(30, minm))
             prows = (singles_ranking_rows if view == "singles"
-                     else doubles_ranking_rows)(division, gender)
+                     else doubles_ranking_rows)(division, gender, min_matches=minm)
             limit = ({"singles": 75, "doubles": 40} if small
                      else {"singles": 125, "doubles": 60})[view]
             prows = [r for r in prows if conf == "All" or r["conf"] == conf][:limit]
@@ -961,6 +966,15 @@ def create_app() -> Flask:
                 "rankings.html", active="Rankings", mode=view, view=view, p=p, prows=p.items,
                 total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
                 tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                minm=minm,
+            )
+        if view == "regional":
+            from .state import regional_ranking_rows
+            regions = regional_ranking_rows(division, gender)
+            return render_template(
+                "rankings.html", active="Rankings", mode="regional", view="regional",
+                regions=regions, conferences=conferences_for(division, gender), tiers=["All"],
+                conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
             )
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
@@ -982,6 +996,23 @@ def create_app() -> Flask:
             total=total, matches=len(filtered), conferences=conferences_for(division, gender),
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
         )
+
+    @app.route("/polls")
+    def polls_page():
+        from app import polls as pollmod
+        division, uni_gender, label, u = _universe(request)
+        gender = request.args.get("gender", uni_gender)
+        if gender not in ("men", "women"):
+            gender = "men"
+        which = request.args.get("poll", "media")
+        if which not in ("media", "coaches"):
+            which = "media"
+        scope = request.args.get("scope", "national")
+        div = scope if scope in ("D1", "D2", "D3", "D4") else None
+        p = pollmod.poll(wd.current_year_seed(), gender, which, division=div)
+        return render_template("polls.html", active="Rankings", u=u, gender=gender,
+                               which=which, scope=(div or "national"), poll=p, crest=crest,
+                               labels=pollmod.POLL_LABELS)
 
     @app.route("/staff-search")
     def staff_search_page():
@@ -2082,9 +2113,10 @@ def create_app() -> Flask:
         conf = request.args.get("conf")
         if conf not in standings:
             conf = conferences[0] if conferences else ""
+        from .state import attach_power6
+        table = attach_power6(division, gender, standings.get(conf, []))
         return render_template("season_standings.html", active="Season", u=u, uni_label=label,
-                               conferences=conferences, conf=conf, crest=crest,
-                               table=standings.get(conf, []))
+                               conferences=conferences, conf=conf, crest=crest, table=table)
 
     @app.route("/season/schedule")
     def season_schedule():

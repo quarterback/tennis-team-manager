@@ -2,7 +2,7 @@
 {% from "_pager.html" import pager %}
 {% block title %}Play to Clinch — National Rankings{% endblock %}
 {% block content %}
-{% set grid = '38px minmax(120px,1fr) 58px 110px 62px 72px 70px 72px 90px 62px 62px' %}
+{% set grid = '38px 48px minmax(120px,1fr) 58px 110px 62px 72px 70px 72px 90px 62px 62px' %}
 {% set noun = 'players' if mode == 'singles' else 'pairs' if mode == 'doubles' else 'programs' %}
 
 <form method="get">
@@ -31,7 +31,7 @@
     <div class="bl-sortpills">
       <span class="bl-sortpills-label">View</span>
       <div class="bl-pills">
-        {% for v, lbl in [('teams','Teams'),('singles','Singles'),('doubles','Doubles')] %}
+        {% for v, lbl in [('teams','Teams'),('regional','Regional'),('singles','Singles'),('doubles','Doubles')] %}
           <a class="bl-pill{% if v == view %} active{% endif %}" style="text-decoration:none"
              href="{{ url_for('rankings', u=u, view=v) }}">{{ lbl }}</a>
         {% endfor %}
@@ -47,10 +47,18 @@
       </div>
     </div>
     {% endif %}
+    {% if mode in ('singles', 'doubles') %}
+    <label class="bl-field" title="A player/pair must have played at least this many matches to be ranked — so a 1-0 record doesn't top the board">
+      <span class="bl-field-label">Min matches</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="minm" onchange="this.form.submit()" style="min-width:70px">
+        {% for m in [1, 2, 3, 5, 8, 10] %}<option value="{{ m }}"{% if m == minm %} selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select></span></label>
+    {% endif %}
     <label class="bl-field"><span class="bl-field-label">Model A/B</span>
       <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
       </select></span></label>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('polls_page', u=u) }}">Media &amp; Coaches Polls →</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">NCAA Bracket →</a>
   </div>
 </div>
@@ -58,18 +66,24 @@
 
 <div class="bl-container">
   <div class="bl-entries">
-    <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} {{ noun }}</div>
+    <div class="bl-entries-left">
+      {% if mode == 'regional' %}Regional rankings — top 10 by geographic region
+      {% else %}Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} {{ noun }}{% endif %}
+    </div>
     <span class="bl-entries-right">{{ uni_label }} · {{ conferences|length - 1 }} conferences · simulated season</span>
   </div>
 </div>
 
 {% macro prank(rk) %}<span class="bl-rank {{ 'gold' if rk == 1 else 'bronze' if rk <= 3 else '' }}">{{ rk }}</span>{% endmacro %}
+{# poll-style movement badge: ▲n up / ▼n down / — steady / NEW to the board #}
+{% macro movement(r) %}{% if r.move_kind == 'new' %}<span class="mov new">NEW</span>{% elif r.move_kind == 'up' %}<span class="mov up">▲{{ r.move }}</span>{% elif r.move_kind == 'down' %}<span class="mov down">▼{{ -r.move }}</span>{% else %}<span class="mov flat">—</span>{% endif %}{% endmacro %}
 {% if mode == 'teams' %}
 <div class="bl-container">
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: {{ grid }}">
       <div class="bl-thead">
         <span class="bl-th">RK <span class="caret">▴▾</span></span>
+        <span class="bl-th num" title="Week-to-week movement in the top-25 poll">MOV</span>
         <span class="bl-th">SCHOOL <span class="caret">▴▾</span></span>
         <span class="bl-th">CONF RK</span>
         <span class="bl-th">CONFERENCE</span>
@@ -84,6 +98,7 @@
       {% for r in rows %}
       <div class="bl-row{% if r.me %} me{% endif %}">
         <span class="bl-rank {{ r.rank_class }}">{{ r.rk }}</span>
+        <span class="bl-cell-num">{{ movement(r) }}</span>
         <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
         <span class="bl-confrk {{ r.confrk_class }}">{{ r.cr }}</span>
         <span class="bl-conf">{{ r.conf_abbr }}</span>
@@ -99,6 +114,35 @@
     </div>
   </div>
   {{ pager(p, noun) }}
+</div>
+{% elif mode == 'regional' %}
+<div class="bl-container rk-regions">
+  {% for region, teams in regions %}
+  <div class="bl-panel rk-region">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span>
+      <span class="bl-panel-meta">Top {{ teams|length }} · {{ uni_label }}</span></div>
+    <div class="bl-tablescroll">
+      <div class="bl-table" style="--bl-grid-cols: 34px 44px minmax(120px,1fr) 52px 66px 62px 64px; min-width:0">
+        <div class="bl-thead">
+          <span class="bl-th">RGN</span><span class="bl-th num">MOV</span><span class="bl-th">SCHOOL</span>
+          <span class="bl-th num" title="National rank">NATL</span><span class="bl-th">CONF</span>
+          <span class="bl-th">REC</span><span class="bl-th num" title="ITA-style ranking points">PTS</span>
+        </div>
+        {% for r in teams %}
+        <div class="bl-row{% if r.me %} me{% endif %}">
+          <span class="bl-rank {{ 'gold' if loop.index == 1 else 'bronze' if loop.index <= 3 else '' }}">{{ loop.index }}</span>
+          <span class="bl-cell-num">{{ movement(r) }}</span>
+          <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+          <span class="bl-cell-num"><span class="bl-confrk">{{ r.rk }}</span></span>
+          <span class="bl-conf">{{ r.conf_abbr }}</span>
+          <span class="bl-rec">{{ r.rec }}</span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.points) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 {% elif mode == 'singles' %}
 <div class="bl-container">
@@ -161,4 +205,19 @@
     64-team NCAA bracket. <a href="{{ url_for('bracket', u=u) }}">View the bracket →</a>
   </div>
 </div>
+
+<style>
+/* Poll-style week-to-week movement badges (top-25). */
+.mov { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; }
+.mov.up { color: var(--pos, #1a8f4c); }
+.mov.down { color: var(--neg, #c0392b); }
+.mov.flat { color: var(--text-faint); font-weight: 500; }
+.mov.new { color: var(--brand-strong, #3b82f6); font-size: 10px; letter-spacing: .03em; }
+/* Regional rankings: two side-by-side region cards that stack on narrow screens. */
+.rk-regions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
+  padding-top: 6px; padding-bottom: 40px; }
+.rk-region .bl-tablescroll { border: none; }
+.rk-region .bl-table { min-width: 0; }
+@media (max-width: 860px) { .rk-regions { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}

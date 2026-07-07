@@ -18,7 +18,7 @@
 </div></div>
 </form>
 
-<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:1040px">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }}</span>
       <span class="bl-panel-meta">{{ uni_label }} · 2026</span></div>
@@ -31,6 +31,7 @@
           <span class="bl-th num">Pct</span>
           <span class="bl-th num">Overall</span>
           <span class="bl-th num">Pct</span>
+          <span class="bl-th num" title="Power 6 — top-6 roster strength (mean singles STR ×2). Shown for every team, ranked or not.">PWR&nbsp;6</span>
         </div>
         {% for r in table %}
         {% set abbr, color = crest(r.school) %}
@@ -41,6 +42,11 @@
           <span class="bl-cell-num std-pct">{{ pct(r.cw, r.cl) }}</span>
           <span class="bl-cell-num"><span class="bl-rec">{{ r.ow }}-{{ r.ol }}</span></span>
           <span class="bl-cell-num std-pct">{{ pct(r.ow, r.ol) }}</span>
+          <span class="std-p6" title="Power 6 {{ r.p6 }} · #{{ r.p6_rank }} in {{ conf }}">
+            <span class="std-p6-bar"><span style="width:{{ r.p6_pct }}%"></span></span>
+            <span class="std-p6-val">{{ r.p6 }}</span>
+            <span class="std-p6-rk">#{{ r.p6_rank }}</span>
+          </span>
         </a>
         {% endfor %}
       </div>
@@ -49,13 +55,22 @@
   <div class="bl-notes"><div class="bl-note">
     Teams are ordered by conference winning percentage; overall record breaks ties.
     Conference records count regular-season league duals only.
+    <strong>PWR&nbsp;6</strong> is roster strength — the mean STR of a team's top six
+    singles players (×2) — with its rank inside this conference and a bar relative to
+    the strongest roster here, so you can see where a program stacks or needs help
+    even before it's ranked nationally.
   </div></div>
 </div>
 
 <style>
-.std-table { --bl-grid-cols: 28px minmax(140px,1fr) 64px 56px 72px 56px; }
+.std-table { --bl-grid-cols: 28px minmax(130px,1fr) 60px 52px 66px 52px minmax(96px,120px); }
 .std-team { display:flex; align-items:center; gap:8px; min-width:0; }
 .std-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:var(--text-primary); }
 .std-pct { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.std-p6 { display:flex; align-items:center; gap:6px; justify-content:flex-end; min-width:0; }
+.std-p6-bar { flex:1; height:6px; border-radius:3px; background:var(--bl-track,rgba(128,128,128,.2)); overflow:hidden; min-width:20px; }
+.std-p6-bar > span { display:block; height:100%; border-radius:3px; background:var(--brand-strong,#3b82f6); }
+.std-p6-val { font-weight:700; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.std-p6-rk { font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:24px; text-align:right; }
 </style>
 {% endblock %}

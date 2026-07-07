@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — {{ poll.label }}{% endblock %}
+{% block content %}
+
+{% macro mov(m) %}{% if m is none %}<span class="mov new">NEW</span>{% elif m > 0 %}<span class="mov up">▲{{ m }}</span>{% elif m < 0 %}<span class="mov down">▼{{ -m }}</span>{% else %}<span class="mov flat">—</span>{% endif %}{% endmacro %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <div class="bl-sortpills">
+    <span class="bl-sortpills-label">Poll</span>
+    <div class="bl-pills">
+      {% for pv, plbl in labels.items() %}
+      <a class="bl-pill{% if pv == which %} active{% endif %}" style="text-decoration:none"
+         href="{{ url_for('polls_page', gender=gender, poll=pv, scope=scope, u=u) }}">{{ plbl }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bl-sortpills">
+    <span class="bl-sortpills-label">Gender</span>
+    <div class="bl-pills">
+      {% for gv, glbl in [('men','Men'),('women','Women')] %}
+      <a class="bl-pill{% if gv == gender %} active{% endif %}" style="text-decoration:none"
+         href="{{ url_for('polls_page', gender=gv, poll=which, scope=scope, u=u) }}">{{ glbl }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bl-sortpills">
+    <span class="bl-sortpills-label">Scope</span>
+    <div class="bl-pills">
+      {% for sv, slbl in [('national','National'),('D1','D1'),('D2','D2'),('D3','D3'),('D4','D4')] %}
+      <a class="bl-pill{% if sv == scope %} active{% endif %}" style="text-decoration:none"
+         href="{{ url_for('polls_page', gender=gender, poll=which, scope=sv, u=u) }}">{{ slbl }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('rankings', u=u) }}">Power rankings →</a>
+</div></div>
+
+<div class="bl-container" style="padding-top:6px">
+  <div class="bl-entries">
+    <div class="bl-entries-left"><strong style="color:var(--text-primary)">Play to Clinch {{ poll.label }}</strong>
+      — {{ 'National' if scope == 'national' else scope }} {{ gender|capitalize }} · Week {{ poll.week }}</div>
+    <span class="bl-entries-right">
+      {% if which == 'media' %}51 media voters — reactive{% else %}40 coaches — conservative{% endif %} ·
+      what humans believe, not the Power Index</span>
+  </div>
+</div>
+
+{% if not poll.board %}
+<div class="bl-container"><div class="bl-note">No poll yet — teams earn their way onto the board once the
+  season's dual matches begin.</div></div>
+{% else %}
+
+{# ---- Biggest movers: the first thing to read each week ---- #}
+{% if poll.movers_up or poll.movers_down %}
+<div class="bl-container pl-movers">
+  <div class="pl-movercard">
+    <div class="pl-moverhd up">▲ Biggest risers</div>
+    {% for s, m in poll.movers_up %}<div class="pl-moverrow"><span>{{ s }}</span><span class="mov up">▲{{ m }}</span></div>{% else %}<div class="pl-moverrow muted">— quiet week —</div>{% endfor %}
+  </div>
+  <div class="pl-movercard">
+    <div class="pl-moverhd down">▼ Biggest fallers</div>
+    {% for s, m in poll.movers_down %}<div class="pl-moverrow"><span>{{ s }}</span><span class="mov down">▼{{ -m }}</span></div>{% else %}<div class="pl-moverrow muted">— quiet week —</div>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="bl-container">
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 36px 46px minmax(150px,1fr) 44px 68px 62px 82px 74px; min-width:640px">
+      <div class="bl-thead">
+        <span class="bl-th">RK</span>
+        <span class="bl-th num">MOV</span>
+        <span class="bl-th">TEAM</span>
+        <span class="bl-th num" title="Division">DIV</span>
+        <span class="bl-th">CONF</span>
+        <span class="bl-th">REC</span>
+        <span class="bl-th num" title="Ballot points (25 for a 1st-place vote … 1 for 25th)">PTS</span>
+        <span class="bl-th num" title="First-place votes">1ST</span>
+      </div>
+      {% for r in poll.board %}
+      {% set abbr, color = crest(r.school) %}
+      <div class="bl-row">
+        <span class="bl-rank {{ 'gold' if r.rank == 1 else 'bronze' if r.rank <= 3 else '' }}">{{ r.rank }}</span>
+        <span class="bl-cell-num">{{ mov(r.move) }}</span>
+        <a class="bl-school" href="{{ url_for('teams', school=r.school, u=r.division ~ '-' ~ gender) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+        <span class="bl-cell-num"><span class="pl-div pl-div-{{ r.division|lower }}">{{ r.division }}</span></span>
+        <span class="bl-conf">{{ r.conf }}</span>
+        <span class="bl-rec">{{ r.record }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ r.points }}</span></span>
+        <span class="bl-cell-num"><span class="pl-first">{% if r.first_votes %}({{ r.first_votes }}){% endif %}</span></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ---- Others receiving votes ---- #}
+{% if poll.others %}
+<div class="bl-container">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Others Receiving Votes</span></div>
+    <div class="pl-orv">
+      {% for s, pts in poll.others %}<span class="pl-orvitem">{{ s }} <b>{{ pts }}</b></span>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ---- Weekly storylines ---- #}
+{% if poll.storylines %}
+{% set st = poll.storylines %}
+<div class="bl-container pl-stories">
+  {% if st.biggest_rise %}<div class="pl-story"><div class="pl-story-k">Biggest rise</div><div class="pl-story-v">{{ st.biggest_rise[0] }} <span class="mov up">▲{{ st.biggest_rise[1] }}</span></div></div>{% endif %}
+  {% if st.biggest_fall %}<div class="pl-story"><div class="pl-story-k">Biggest fall</div><div class="pl-story-v">{{ st.biggest_fall[0] }} <span class="mov down">▼{{ -st.biggest_fall[1] }}</span></div></div>{% endif %}
+  {% if st.new_to_poll %}<div class="pl-story"><div class="pl-story-k">New to the poll</div><div class="pl-story-v">{{ st.new_to_poll|join(', ') }}</div></div>{% endif %}
+  {% if st.dropped_out %}<div class="pl-story"><div class="pl-story-k">Dropped out</div><div class="pl-story-v">{{ st.dropped_out|join(', ') }}</div></div>{% endif %}
+  {% if st.highest_mid_major %}<div class="pl-story"><div class="pl-story-k">Highest mid-major</div><div class="pl-story-v">{{ st.highest_mid_major }}</div></div>{% endif %}
+  {% if st.highest_d2 %}<div class="pl-story"><div class="pl-story-k">Highest D2</div><div class="pl-story-v">{{ st.highest_d2 }}</div></div>{% endif %}
+  {% if st.highest_d3 %}<div class="pl-story"><div class="pl-story-k">Highest D3</div><div class="pl-story-v">{{ st.highest_d3 }}</div></div>{% endif %}
+  {% if st.highest_d4 %}<div class="pl-story"><div class="pl-story-k">Highest D4</div><div class="pl-story-v">{{ st.highest_d4 }}</div></div>{% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+<div class="bl-notes"><div class="bl-note">
+  Both polls share one scoring system — every voter submits a top-25 ballot (25 points for 1st … 1 for
+  25th), summed across the electorate; the number in <b>(parentheses)</b> is first-place votes. The
+  <strong>Media Poll</strong> (51 voters) is reactive and rewards upsets; the <strong>Coaches Poll</strong>
+  (40 voters) is conservative, leans on reputation, and moves slowly. Voters carry different weightings
+  (résumé, analytics, traditionalist, upset-chaser) and real <em>inertia</em> — a one-loss #1 slides a spot,
+  not off a cliff. Polls are subjective snapshots of belief, deliberately separate from the Power Index and
+  Power 6 (what the game actually knows).
+</div></div>
+
+<style>
+.mov { font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; }
+.mov.up { color: var(--pos, #1a8f4c); } .mov.down { color: var(--neg, #c0392b); }
+.mov.flat { color: var(--text-faint); font-weight: 500; }
+.mov.new { color: var(--brand-strong, #3b82f6); font-size: 10px; letter-spacing: .03em; }
+.pl-first { color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 700; }
+.pl-div { font-size: 10.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; color: #fff; }
+.pl-div-d1 { background: var(--gray-600, #444); } .pl-div-d2 { background: var(--rank-bronze, #a9772f); }
+.pl-div-d3 { background: var(--gray-500, #777); } .pl-div-d4 { background: var(--gray-400, #999); }
+.pl-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 10px; }
+.pl-movercard { border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px; background: var(--surface-card); }
+.pl-moverhd { font-weight: 800; font-size: 13px; margin-bottom: 8px; }
+.pl-moverhd.up { color: var(--pos, #1a8f4c); } .pl-moverhd.down { color: var(--neg, #c0392b); }
+.pl-moverrow { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; }
+.pl-moverrow.muted { color: var(--text-faint); }
+.pl-orv { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 16px; }
+.pl-orvitem { font-size: 13px; color: var(--text-secondary); }
+.pl-orvitem b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.pl-stories { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding-top: 14px; padding-bottom: 30px; }
+.pl-story { border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 13px; background: var(--surface-card); }
+.pl-story-k { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 700; }
+.pl-story-v { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-top: 3px; }
+@media (max-width: 720px) { .pl-movers { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
