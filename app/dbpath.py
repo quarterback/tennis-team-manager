@@ -57,17 +57,28 @@ def connect(path: str, *, row: bool = True, timeout: float = 5.0) -> sqlite3.Con
 
 
 def resolve_db_path() -> str:
-    """The configured DB path if its directory is writable, else a local
-    fallback. Memo-warns once if it has to fall back."""
+    """The configured DB path if its directory is writable, else a fallback.
+
+    Fallback order: a PERSISTENT per-user dir (`~/.tennis-team-manager/`) first —
+    so a local run whose repo folder isn't writable (e.g. macOS blocks writes under
+    ~/Documents) still keeps its saves — and only a temp dir as the last resort.
+    Memo-warns once, naming the path actually used and whether it persists."""
     global _warned
     configured = os.environ.get("TENNIS_DB_PATH", _DEFAULT)
     if _writable_dir(configured):
         return configured
-    fallback = os.path.join(tempfile.gettempdir(), "baseline-tennis.db")
+    home = os.path.join(os.path.expanduser("~"), ".tennis-team-manager", "tennis.db")
+    if _writable_dir(home):
+        fallback, persists = home, True
+    else:
+        fallback, persists = os.path.join(tempfile.gettempdir(), "baseline-tennis.db"), False
     if not _warned:
-        log.warning(
-            "TENNIS_DB_PATH=%r is not writable (volume not mounted?); falling back "
-            "to %r — saved seasons will NOT persist across restarts. Check the "
-            "[[mounts]] block in fly.toml.", configured, fallback)
+        note = ("Saves WILL persist there." if persists
+                else "Saves will NOT persist across restarts (temp dir).")
+        hint = (" On Fly, check the [[mounts]] block in fly.toml."
+                if str(configured).startswith("/data") else
+                " Set TENNIS_DB_PATH to choose the location.")
+        log.warning("TENNIS_DB_PATH=%r is not writable; using %r instead. %s%s",
+                    configured, fallback, note, hint)
         _warned = True
     return fallback
