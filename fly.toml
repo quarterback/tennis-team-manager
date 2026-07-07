@@ -24,12 +24,13 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  # Keep ONE machine always running. Autostop on a single --ha=false machine risks
-  # the site going dark if it suspends/stops and doesn't cleanly resume (no second
-  # machine to fall back to). Availability first; revisit autostop later.
-  auto_stop_machines = 'off'
+  # Idle savings: stop the single machine when there's no traffic (a request
+  # auto-starts it). min_machines_running = 0 is REQUIRED for a manual/idle stop to
+  # stick — with 1, Fly keeps one machine up and "un-stops" it. Safe now that the
+  # real outage cause (a power_index thread-race) is fixed; autostop was never it.
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ['app']
 
   # The app runs ONE gunicorn worker (keeps the season/roster cache warm), so a
