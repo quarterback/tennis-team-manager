@@ -1176,9 +1176,10 @@ def league_player_str(league_id):
     cnt = conn.execute("SELECT COUNT(*) c FROM gtt_duals WHERE league_id=? AND status='final'",
                        (league_id,)).fetchone()["c"]
     key = (league_id, cnt)
-    if key in _str_cache:
+    cached = _str_cache.get(key)    # .get + local return: a concurrent clear is safe
+    if cached is not None:
         conn.close()
-        return _str_cache[key]
+        return cached
     rows = conn.execute("SELECT lines_json FROM gtt_duals WHERE league_id=? AND status='final'"
                         " ORDER BY year, week, id", (league_id,)).fetchall()
     priors = {r["pid"]: _prospect(r["data"]).str_value()
@@ -1200,7 +1201,9 @@ def league_player_str(league_id):
     # pool, so the best player legitimately out-rates the field by > 2.0 and
     # UTR's blowout exclusion would discard ALL of an outlier's matches.
     res = converge_ids(corpus, priors=priors, max_diff=6.0) if corpus else {}
-    _str_cache.clear()
+    for k in list(_str_cache):          # prune this league only — see sm._prune_season
+        if k[0] == league_id:
+            _str_cache.pop(k, None)
     _str_cache[key] = res
     return res
 

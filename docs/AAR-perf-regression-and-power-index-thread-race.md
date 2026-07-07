@@ -77,6 +77,49 @@ hammering both → **0 errors** (was `KeyError`). Other `_*_cache` helpers that 
 
 ---
 
+## 2b. ‼️ IT RESURFACED — the SAME race in eight MORE caches (`/player` outage)
+
+Days later the site went down the same way, this time crashing on `/player/<id>`:
+
+```
+File "app/seasonmode.py", in player_records
+    return _prec_cache[key]
+KeyError: (2, 4126)
+```
+
+§2 fixed `power_index` but left the "latent risks" it named **unfixed**, and a `/player` page
+touches a *pile* of them — `player_records`, `season_player_stats`, `player_primary_lines`,
+`player_line_records`, `season_player_str`, `_pid_index`, `_forced_appearances`, plus GTT's
+`league_player_str`. Every one had the identical `clear()`-then-`return cache[key]` shape, so a
+career page (which loops a player's **seasons**, hitting each with a *different* `season_id`)
+raced its own concurrent requests and any world-advance invalidation → `KeyError` → 500 →
+health flap → "no known healthy instances." Same disease, new caches.
+
+**Two bugs, not one, and both are teaching moments:**
+
+1. **The race** (as §2). Fixed all eight the same way: compute into a local, publish, return the
+   local; read with `.get()`.
+2. **A perf bug hiding behind the race:** these caches invalidated with a *global* `cache.clear()`.
+   A career/`/player` page walks N seasons; each season's rebuild wiped **every other season's**
+   entry, so the next season recomputed from scratch — **quadratic** recompute over a full
+   `lines_json` scan. That was the **18-second `/player` renders and the gunicorn
+   `TimeoutError: [Errno 110]` write timeouts** in the log, which *also* tripped the health
+   check. Fix: a shared `_prune_season(cache, season_id)` helper drops only the stale entries for
+   the season being rebuilt (`(season_id, cnt)`-keyed), leaving other seasons cached.
+
+Verified: **16 threads × 8 seasons** hammering the caches — old code **15 `KeyError`s**, fixed
+code **0**.
+
+> ⚠️ **THE LESSON THIS TIME:** §2 said "other helpers with this shape are latent risks — fix
+> them if they surface." They surfaced, as a second outage. When you fix a class-of-bug, **grep
+> the whole class and fix all of it in that pass**, don't leave siblings for "later." The grep
+> that finds them:
+> `grep -rn "return _.*cache\[" app/` and `grep -n "cache.clear()" app/seasonmode.py`.
+> And a global `clear()` on a `(season_id, …)`-keyed cache is *always* a per-season-page
+> quadratic-recompute bug, independent of the race — prune per season, never `clear()`.
+
+---
+
 ## 3. Infra thrash — what was a red herring, and the real lessons
 
 Chasing the lag/outage we also churned `fly.toml`; most of it did **not** cause the outage

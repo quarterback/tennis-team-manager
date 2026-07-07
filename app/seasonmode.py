@@ -392,7 +392,8 @@ def _forced_for(conn, s, progs, school) -> dict:
     player. Keyed by dual id (a team can play two duals in a week)."""
     from .ncaa import build_roster
     key = (s["seed"], s["division"], s["gender"], school)
-    if key not in _forced_cache:
+    out = _forced_cache.get(key)    # .get + local return: world-advance clears this
+    if out is None:                 # from another thread (world.py/state.py)
         rows = conn.execute(
             "SELECT id, home, away FROM duals WHERE season_id=? AND round='REG'"
             " AND (home=? OR away=?) ORDER BY week, id",
@@ -401,8 +402,9 @@ def _forced_for(conn, s, progs, school) -> dict:
         for r in rows:
             opp = r["away"] if r["home"] == school else r["home"]
             duals.append((r["id"], getattr(progs.get(opp), "prestige", 0.5)))
-        _forced_cache[key] = forced_appearances(progs[school], build_roster(progs[school]), duals)
-    return _forced_cache[key]
+        out = forced_appearances(progs[school], build_roster(progs[school]), duals)
+        _forced_cache[key] = out
+    return out
 
 
 def _unavailable(conn, season_id, school) -> set:
@@ -1569,9 +1571,10 @@ def power_index(season_id: int) -> dict:
     if ratings is None:
         duals = _ranking_duals(conn, season_id)
         ratings = compute_ratings(duals) if duals else {}
-        _pi_cache.clear()
-        _movers_cache.clear()            # movers derive from these ratings — invalidate together
-        _pi_cache[key] = ratings
+        _prune_season(_pi_cache, season_id)      # per-season, not clear(): a career page
+        _prune_season(_movers_cache, season_id)  # loops seasons — a global clear thrashes
+        _pi_cache[key] = ratings                 # them all (movers derive from ratings —
+        # invalidate together)
     conn.close()
     return ratings
 
@@ -2083,7 +2086,8 @@ _str_cache: dict = {}
 
 def _pid_index(division: str, gender: str) -> dict:
     key = (division, gender)
-    if key not in _pid_idx_cache:
+    idx = _pid_idx_cache.get(key)   # .get + local return: world-advance clears this
+    if idx is None:                 # from another thread (world.py/state.py)
         from app import economy
         idx = {}
         for p in load_division(division, gender).programs:
@@ -2100,7 +2104,7 @@ def _pid_index(division: str, gender: str) -> dict:
                                "scholarship_label": economy.fraction_label(
                                    getattr(pr, "scholarship", 0.0))}
         _pid_idx_cache[key] = idx
-    return _pid_idx_cache[key]
+    return idx
 
 
 def player_info(season_id: int, pid: str) -> dict | None:
@@ -2178,12 +2182,27 @@ def season_player_str(season_id: int) -> dict:
     priors = {pr.pid: pr.str_value() for p in load_division(s["division"], s["gender"]).programs
               for pr in build_roster(p)}
     res = converge_ids(build_corpus(duals), priors=priors)
-    _str_cache.clear()
+    _prune_season(_str_cache, season_id)
     _str_cache[key] = res
     return res
 
 
 _prec_cache: dict = {}
+
+
+def _prune_season(cache: dict, season_id: int) -> None:
+    """Invalidate only THIS season's stale entries ((season_id, cnt)-keyed caches).
+
+    These caches used to `cache.clear()` on every rebuild, which is doubly broken
+    under the threaded worker: (1) a career page loops seasons, so each season's
+    rebuild wiped every OTHER season's entry — quadratic recompute, the slow
+    /player pages; (2) one thread's clear could evict another thread's key between
+    its store and its `return cache[key]` — the KeyError → 500 → unhealthy-instance
+    outage (same disease power_index had). Prune per-season, and callers must
+    return their LOCAL value, never re-read the shared cache."""
+    for k in list(cache):
+        if k[0] == season_id:
+            cache.pop(k, None)
 
 
 def player_records(season_id: int) -> dict:
@@ -2193,7 +2212,8 @@ def player_records(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key not in _prec_cache:
+    out = _prec_cache.get(key)          # .get + local return: concurrent prune is safe
+    if out is None:
         rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
                             (season_id,)).fetchall()
         rec: dict = {}
@@ -2204,10 +2224,11 @@ def player_records(season_id: int) -> dict:
                 hw = ln["home_won"]
                 rec.setdefault(ln["home_pid"], [0, 0])[0 if hw else 1] += 1
                 rec.setdefault(ln["away_pid"], [0, 0])[1 if hw else 0] += 1
-        _prec_cache.clear()
-        _prec_cache[key] = {k: (v[0], v[1]) for k, v in rec.items()}
+        out = {k: (v[0], v[1]) for k, v in rec.items()}
+        _prune_season(_prec_cache, season_id)
+        _prec_cache[key] = out
     conn.close()
-    return _prec_cache[key]
+    return out
 
 
 _pstats_cache: dict = {}
@@ -2236,7 +2257,8 @@ def player_season_stats(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key not in _pstats_cache:
+    cached = _pstats_cache.get(key)     # .get + local return: concurrent prune is safe
+    if cached is None:
         rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
                             (season_id,)).fetchall()
         agg: dict = {}                      # (pid, kind) -> [PlayerStats, matches]
@@ -2260,13 +2282,13 @@ def player_season_stats(season_id: int) -> dict:
                         bump(pid, "doubles", d)
                     for pid, d in zip(ln.get("away_pids", []), st["away"]):
                         bump(pid, "doubles", d)
-        out: dict = {}
+        cached = {}
         for (pid, kind), (ps, n) in agg.items():
-            out.setdefault(pid, {})[kind] = _stat_block(ps, n)
-        _pstats_cache.clear()
-        _pstats_cache[key] = out
+            cached.setdefault(pid, {})[kind] = _stat_block(ps, n)
+        _prune_season(_pstats_cache, season_id)
+        _pstats_cache[key] = cached
     conn.close()
-    return _pstats_cache[key]
+    return cached
 
 
 _pline_cache: dict = {}
@@ -2279,7 +2301,8 @@ def player_primary_lines(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key not in _pline_cache:
+    out = _pline_cache.get(key)         # .get + local return: concurrent prune is safe
+    if out is None:
         rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
                             (season_id,)).fetchall()
         tally: dict = {}
@@ -2290,10 +2313,11 @@ def player_primary_lines(season_id: int) -> dict:
                 slot = ln.get("slot")
                 for pid in (ln["home_pid"], ln["away_pid"]):
                     tally.setdefault(pid, {})[slot] = tally.setdefault(pid, {}).get(slot, 0) + 1
-        _pline_cache.clear()
-        _pline_cache[key] = {pid: max(d, key=d.get) for pid, d in tally.items() if d}
+        out = {pid: max(d, key=d.get) for pid, d in tally.items() if d}
+        _prune_season(_pline_cache, season_id)
+        _pline_cache[key] = out
     conn.close()
-    return _pline_cache[key]
+    return out
 
 
 _plrec_cache: dict = {}
@@ -2307,10 +2331,11 @@ def player_line_records(season_id: int) -> dict:
     cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
                        (season_id,)).fetchone()["c"]
     key = (season_id, cnt)
-    if key not in _plrec_cache:
+    rec = _plrec_cache.get(key)         # .get + local return: concurrent prune is safe
+    if rec is None:
         rows = conn.execute("SELECT lines_json FROM duals WHERE season_id=? AND status='final'",
                             (season_id,)).fetchall()
-        rec: dict = {}
+        rec = {}
 
         def bump(pid, kind, n, won):
             cell = rec.setdefault(pid, {"singles": {}, "doubles": {}})[kind].setdefault(n, [0, 0])
@@ -2332,10 +2357,10 @@ def player_line_records(season_id: int) -> dict:
                         bump(pid, "doubles", n, hw)
                     for pid in ln.get("away_pids", []):
                         bump(pid, "doubles", n, not hw)
-        _plrec_cache.clear()
+        _prune_season(_plrec_cache, season_id)
         _plrec_cache[key] = rec
     conn.close()
-    return _plrec_cache[key]
+    return rec
 
 
 def player_log(season_id: int, pid: str) -> list[dict]:
