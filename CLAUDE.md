@@ -65,6 +65,20 @@ blue-chip ≥ **16.5** (Blue Bloods only), 5★ ≥ **10.5** (Major+), 4★ ≥ 
 anywhere. So clustering is earned: only Blue Bloods land blue-chips; Majors top out
 at a 5★/4★ core; mid/low majors build 4★/3★; a low-major can attract no 5★.
 
+### 3b. Division radar — signing-time level gates (owner rule, do NOT relax)
+The in-season signing drip (`world._pick_school`) is level-gated by CURRENT ability
+(`recruit_economy.program_level_floor`): a program only has recruits near its own
+level on its radar, so **sub-45-STR recruits are never in a D1 program's view**
+mid-cycle (they still *dream* of D1 — aspiration is untouched). The floor ramps to a
+**residual (0.65), never zero**, so late-window D1s sop up only the best leftovers.
+D1 chases the ceiling projection (hype — its mistakes are intended); D2 reads current
+ability; D3/D4 weigh current/potential evenly (their division gate uses the even
+blend). **D1 classes top the scholarship core up to `SCHOLARSHIP_SLOTS` (6) and stop**
+(`world._openings`): a D1 NEVER signs a recruit into a walk-on seat — depth backfills
+from the portal or runs short, and rosters thinning toward ~6–8 over seasons is the
+point (portal dynamism), not a bug. Target: ~90%+ of ≤45-STR recruits land D2–D4
+(measured 97%+). See `docs/AAR-recruiting-division-radar.md`.
+
 ### 4. Aid-DISPLAY caps — a SEPARATE layer (`app/scholarships.py`)
 Distinct from the budget above. `economy.allocate_scholarships` spreads a per-division
 cap across the recruited core as full-ride/partial *display fractions* — it does NOT
@@ -78,7 +92,10 @@ reverts the rule. (I did exactly this once; it's the mistake this section preven
 ## ⚠️ Roster capacity & walk-on sourcing (`ncaa.roster_cap`, `autogen_walkons`)
 Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
 **D1 12** (8+4) · **D2 10** (6+4) · **D3/D4 16** (3+13). Walk-on sourcing:
-- **D1/D2**: walk-ons from the recruit pool ONLY — never auto-generated. Carry "up
+- **D1**: NEVER recruits walk-ons at all (owner rule 2026-07 — see §3b above): the
+  class tops the 6-seat scholarship core and stops; depth backfills from the portal
+  or runs short. Year-0 built rosters still carry the 8+4 shape; live worlds thin.
+- **D2**: walk-ons from the recruit pool ONLY — never auto-generated. Carry "up
   to" cap; if a program doesn't sign enough, it runs fewer walk-ons.
 - **D3/D4**: fill from leftover pool recruits first (`world.assign_pool_walkons` — no
   junior goes unsigned), then auto-generate only the still-empty seats

@@ -24,13 +24,20 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  # Idle savings: stop the single machine when there's no traffic (a request
-  # auto-starts it). min_machines_running = 0 is REQUIRED for a manual/idle stop to
-  # stick — with 1, Fly keeps one machine up and "un-stops" it. Safe now that the
-  # real outage cause (a power_index thread-race) is fixed; autostop was never it.
-  auto_stop_machines = 'stop'
+  # ALWAYS-ON (owner decision 2026-07-07, supersedes the brief 'stop, min=0'
+  # experiment). Even with the power_index thread-race fixed, the 07-07 morning
+  # logs show autostop itself doing damage: boot warm pegs the worker →
+  # /api/health starves → machine marked unhealthy → proxy routes nothing →
+  # autostopper reads that as "excess capacity" and KILLS the machine MID-BUILD
+  # (SIGTERM + /data EBUSY unmount = SQLite yanked mid-write, journal recovery on
+  # next boot) → cold reboot → warm restarts → repeat. And the original 'suspend'
+  # idle design silently died at the 16GB resize (Fly caps suspend at 8GB), so
+  # idle handling was always a full stop. min_machines_running = 1 keeps the one
+  # machine up through unhealthy windows so the warm always finishes and the
+  # volume is never yanked.
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   # The app runs ONE gunicorn worker (keeps the season/roster cache warm), so a
@@ -40,10 +47,13 @@ primary_region = 'iad'
   # unhealthy mid-compute and drops/recycles it, which re-primes cold on the next
   # load: the "slow + crashing on load" loop. A generous timeout/grace lets a
   # legitimate compute finish and the check pass once the worker frees the GIL.
+  # grace_period covers the FULL cold boot warm (~minutes) so the first build
+  # never flags the machine; the thread pool is sized (gunicorn --threads 32) so
+  # page requests piling up behind the warm can't starve /api/health of a thread.
   [[http_service.checks]]
     interval = '60s'
     timeout = '150s'
-    grace_period = '60s'
+    grace_period = '300s'
     method = 'GET'
     path = '/api/health'
 

@@ -18,4 +18,4 @@ EXPOSE 8080
 # killed mid-build and the class never caches, so the page spins forever. (Even
 # if a tool swaps this for `flask run`, app:create_app is now discoverable, so it
 # still boots — see app/__init__.py.)
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 8 --timeout 300 wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 32 --timeout 300 wsgi:app"]

@@ -234,6 +234,45 @@ def program_caliber_floor(budget: float, progress: float) -> float:
     return ceiling * max(0.0, (1.0 - progress) / (1.0 - _STANDARD_HOLD))
 
 
+# How far below its OWN level a program will reach during the main cycle. The
+# level floor is the mechanism that keeps the divisions from bleeding into each
+# other: a program only pursues recruits playing at (or just below) its level while
+# the cycle runs, so the class tiers itself — a D1 program never even SEES a sub-D1
+# recruit until the very end. Unlike the budget floor above, the level floor is
+# measured against the recruit's CURRENT ability (public STR), not the scouting
+# projection, so a raw kid with a huge hidden ceiling still slots to their level and
+# doesn't flood D1. It holds through `_STANDARD_HOLD` of the window, then ramps to 0
+# so D1 programs with open seats "sop up" the best leftovers on signing day.
+_LEVEL_STANDARD_BAND = 0.06
+# On signing day the level floor does NOT fully collapse — it ramps down to this
+# fraction of itself. That residual is what makes a power "sop up the BEST leftovers,
+# not much": with open seats late, a D1 still requires a recruit playing near its
+# level, so only the strongest sub-D1 leftovers reach up. Everyone else slots to
+# their division (and the power's still-empty seats fill later as pool walk-ons,
+# where a sub-level kid belongs — not as a signed scholarship recruit).
+_LEVEL_RESIDUAL = 0.65
+
+
+def program_level_floor(level_caliber: float | None, progress: float) -> float:
+    """Minimum CURRENT-ability caliber a program pursues right now, from its own
+    level (`level_caliber`, the program's talent-mean on the caliber scale). Holds
+    at `level_caliber - _LEVEL_STANDARD_BAND` through `_STANDARD_HOLD` of the window,
+    then ramps DOWN to `_LEVEL_RESIDUAL` of that by signing day — never to 0 — so a
+    power with open seats sops up only the best remaining recruits and the rest slot
+    to their level. See docs/AAR-recruiting-division-radar: lower divisions recruit
+    their level first, D1 stays off a sub-D1 kid's radar and only sops up the best
+    leftovers late."""
+    if level_caliber is None:
+        return 0.0
+    floor = level_caliber - _LEVEL_STANDARD_BAND
+    if floor <= 0.0:
+        return 0.0
+    if progress <= _STANDARD_HOLD:
+        return floor
+    t = (progress - _STANDARD_HOLD) / (1.0 - _STANDARD_HOLD)      # 0..1 across the tail
+    return floor * (1.0 - (1.0 - _LEVEL_RESIDUAL) * t)
+
+
 def tier_grade(tier_name: str, gender: str, rng: random.Random) -> float:
     """A talent grade drawn for a star tier, calibrated to the UTR ladder. Women
     sit a tier lower. Small gauss spread so same-tier players aren't identical."""
