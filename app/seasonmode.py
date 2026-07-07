@@ -1550,6 +1550,7 @@ def national_top(season_id: int, n: int = 15) -> list[dict]:
 
 
 _pi_cache: dict = {}
+_movers_cache: dict = {}
 
 
 def power_index(season_id: int) -> dict:
@@ -1563,6 +1564,7 @@ def power_index(season_id: int) -> dict:
     if key not in _pi_cache:
         duals = _ranking_duals(conn, season_id)
         _pi_cache.clear()
+        _movers_cache.clear()            # movers derive from these ratings — invalidate together
         _pi_cache[key] = compute_ratings(duals) if duals else {}
     conn.close()
     return _pi_cache[key]
@@ -1574,8 +1576,18 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
     gained (+) / lost (-) within the poll, or None if NEW to the poll this week}. Only
     poll positions are compared, so moves stay bounded and meaningful rather than the
     100-spot swings a 390-team Power Index reshuffle produces. Empty until there are at
-    least two weeks of results."""
+    least two weeks of results.
+
+    Cached by completed-dual count (like `power_index`) and reuses the already-cached
+    Power Index for the CURRENT board, so ranking_rows — which is called on many pages
+    — pays for at most ONE extra (prior-week) rating pass, not two full ones per call."""
     conn = _db()
+    cnt = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND status='final'",
+                       (season_id,)).fetchone()["c"]
+    ck = (season_id, poll, cnt)
+    if ck in _movers_cache:
+        conn.close()
+        return _movers_cache[ck]
     qs = ",".join("?" for _ in RANKING_ROUNDS)
     rows = conn.execute(
         f"SELECT week, home, away, is_conf, winner, lines_json FROM duals WHERE season_id=?"
@@ -1583,6 +1595,7 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
     conn.close()
     weeks = sorted({r["week"] for r in rows})
     if len(weeks) < 2:
+        _movers_cache[ck] = {}
         return {}
     cutoff = weeks[-1]                                  # the most recent week of results
 
@@ -1590,14 +1603,15 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
         return {"home": r["home"], "away": r["away"], "home_won": r["winner"] == 0,
                 "conf": bool(r["is_conf"]), "lines": json.loads(r["lines_json"] or "[]")}
 
-    def _poll(duals):
-        rt = compute_ratings(duals)
-        order = sorted(rt, key=lambda x: rt[x].pi, reverse=True)[:poll]
+    def _rank(ratings):
+        order = sorted(ratings, key=lambda x: ratings[x].pi, reverse=True)[:poll]
         return {s: i + 1 for i, s in enumerate(order)}
 
-    cur = _poll([_rec(r) for r in rows])
-    prior = _poll([_rec(r) for r in rows if r["week"] < cutoff])
-    return {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
+    cur = _rank(power_index(season_id))                # cached full-season ratings
+    prior = _rank(compute_ratings([_rec(r) for r in rows if r["week"] < cutoff]))
+    out = {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
+    _movers_cache[ck] = out
+    return out
 
 
 _ITA_CONF_W = 0.30     # weight on conference prestige in opponent quality (0 = results only)

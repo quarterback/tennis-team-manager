@@ -443,6 +443,9 @@ def cities_in_state(state_abbr: str) -> list[str]:
     return cities_by_state().get(state_abbr, [])
 
 
+_REGION_TOWNS_CACHE: dict = {}
+
+
 def towns_in_region(region: str) -> list[tuple[str, str]]:
     """All (city, state) home-town options whose state falls in `region` — used to
     bias a program's DOMESTIC recruits toward its own backyard. Draws from the
@@ -450,9 +453,14 @@ def towns_in_region(region: str) -> list[tuple[str, str]]:
     real towns) so a program's local players span its whole region rather than a
     handful of campus towns; the researched campus cities are merged in too. Empty
     when the region is unknown or has no city pool (caller then falls back to
-    nationwide). Order is deterministic (both sources iterate in a stable order)."""
+    nationwide). Order is deterministic (both sources iterate in a stable order).
+
+    Cached per region — it's called once per program during a full roster build
+    (`prime`), and the source pools never change within a process."""
     if not region:
         return []
+    if region in _REGION_TOWNS_CACHE:
+        return _REGION_TOWNS_CACHE[region]
     from generators.flavor import _load_us_states
     seen: set[tuple[str, str]] = set()
     out: list[tuple[str, str]] = []
@@ -465,6 +473,7 @@ def towns_in_region(region: str) -> list[tuple[str, str]]:
                 if c and pair not in seen:
                     seen.add(pair)
                     out.append(pair)
+    _REGION_TOWNS_CACHE[region] = out
     return out
 
 
