@@ -99,6 +99,34 @@ def roster_version() -> str:
     return h.hexdigest()
 
 
+def move_version() -> str:
+    """Fingerprint of only the COMPOSITION-changing overrides — transfers
+    (`move`). This is the version `world.prime()` keys on, and it deliberately
+    EXCLUDES `lineup`/`doubles` pins (which `roster_version()` includes).
+
+    A lineup or doubles pin only reorders who plays S1–S6 / which pairs take the
+    court; it is applied LIVE downstream in `ncaa.build_roster` /
+    `season.coach_lineup` and never changes the developed roster SET that
+    `prime()` caches. Folding pins into the prime stamp made every lineup save
+    invalidate the prime stamp, so the next full-world page (Analytics Bureau,
+    rankings, hub) or the background warm re-primed the entire ~170MB world on
+    the request thread → GIL held → `/api/health` starved → slow render → client
+    `[Errno 110]` write timeout. A move-only stamp still catches every
+    composition change prime must react to — editor moves and the fall-portal /
+    preseason-portal commits all land as `move` rows (`ov.set_move`). See
+    docs/AAR-cache-invalidation-scope-lineup-stall.md (§ prime re-prime)."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute(
+        "SELECT kind, key, value FROM roster_overrides"
+        " WHERE kind='move' ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
 def get_moves() -> dict:
     """pid -> destination school."""
     conn = _db()

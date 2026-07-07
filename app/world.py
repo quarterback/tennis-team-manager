@@ -542,7 +542,7 @@ def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
 # ==========================================================================
 _base_cache: dict = {}      # (world_id, year) -> year-start rosters
 _dev_cache: dict = {}       # (world_id, year, week) -> developed rosters
-_primed: dict = {}          # seed -> (world_id, year, week, roster_version) in ncaa cache
+_primed: dict = {}          # seed -> (world_id, year, week, move_version) in ncaa cache
 _prime_lock = threading.Lock()   # serialize the ~170MB cache build across gthreads
 
 
@@ -604,10 +604,17 @@ def prime(seed: int = DEFAULT_SEED) -> dict:
     the same evolving players. The one-world hinge."""
     from app import overrides as ov
     w = get_or_create(seed)
-    # Fold transfers/lineups into the stamp so a roster mutation that does not
-    # advance the week (fall-portal commit, an editor move) still forces a rebuild
-    # — keeping prime and scout_intel.scan consistent on the same live rosters.
-    stamp = (w["id"], w["year"], w["week"], ov.roster_version())
+    # Fold TRANSFERS (composition changes) into the stamp so a roster mutation
+    # that does not advance the week — a fall-portal / preseason-portal commit or
+    # an editor move, all of which land as `move` rows — still forces a rebuild.
+    # Use `move_version()`, NOT `roster_version()`: the latter also folds in
+    # lineup/doubles pins, which only reorder who plays (applied live in
+    # build_roster/coach_lineup) and never change the developed roster SET this
+    # cache holds. Keying prime on pins made every lineup save trigger a full
+    # ~170MB world re-prime on the next page's request thread — a GIL stall that
+    # starved /api/health and timed the client out with [Errno 110].
+    # See docs/AAR-cache-invalidation-scope-lineup-stall.md.
+    stamp = (w["id"], w["year"], w["week"], ov.move_version())
     if _primed.get(seed) == stamp and _roster_cache:
         return w
     # Only one thread builds the full-world cache at a time; the rest wait and
@@ -636,7 +643,7 @@ def is_primed(seed: int = DEFAULT_SEED) -> bool:
     if not exists(seed):
         return False
     w = load_world(seed)
-    stamp = (w["id"], w["year"], w["week"], ov.roster_version())
+    stamp = (w["id"], w["year"], w["week"], ov.move_version())   # MUST match prime()'s stamp
     return _primed.get(seed) == stamp and bool(_roster_cache)
 
 

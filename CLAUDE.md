@@ -169,6 +169,17 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    unhealthy). Scope invalidation to the affected entity; gate `build_roster` per-program, not
    on "any overrides exist"; prefer a LIVE read for tiny override rows (a lineup is read live
    in `season.coach_lineup`). See `docs/AAR-cache-invalidation-scope-lineup-stall.md`.
+4. **A cache is invalidated by BOTH its `reset_*()` calls AND its version STAMP — scope both.**
+   The §3 fix scoped the lineup `reset_*()` but missed that `world.prime()` stamps its ~170MB
+   roster cache on `ov.roster_version()`, which folded in `lineup`/`doubles` pins. So a lineup
+   save still bumped the stamp → the NEXT full-world page (or the background warm) re-primed the
+   whole world on the request thread → same [Errno 110] write-timeout stall. Pins are display-only
+   (applied live in `build_roster`/`coach_lineup`) and never change the developed roster SET, so
+   `prime()`/`is_primed()` now stamp on `ov.move_version()` (move rows ONLY — editor moves + the
+   portal commits, all `set_move`). `roster_version()` (move+lineup+doubles) stays for
+   `scout_intel` (it projects duals, so it must honor a pin). When you narrow one invalidation
+   edge, `grep -rn "roster_version\|move_version" app/` and check every stamp keyed on the same
+   edited table. See `docs/AAR-cache-invalidation-scope-lineup-stall.md` (the "IT RESURFACED" §).
 
 ## Other notes
 - International roster share is by division + gender + academics + a coach dice roll;
