@@ -57,7 +57,7 @@ def _market(gender="men", salt="recruit_test"):
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     budget = {s: re.program_budget(p, salt, 0) for s, p in progs.items()}
-    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.prestige, p.division, gender) - 20.0) / 60.0))
+    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.strength, p.division, gender) - 20.0) / 60.0))
                  for s, p in progs.items()}
     cap = {}
     for s, p in progs.items():

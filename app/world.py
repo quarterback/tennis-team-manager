@@ -884,7 +884,10 @@ def _recruit_market(world: dict, gender: str) -> dict:
     # Each program's OWN level on the recruit-caliber scale (talent mean → caliber),
     # feeding the division radar: a program only pursues recruits near its level
     # mid-cycle, so the class tiers itself (see recruit_economy.program_level_floor).
-    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.prestige, p.division, gender) - 20.0) / 60.0))
+    # STRENGTH, not prestige: rosters are generated from p.strength (ncaa._talent_mean),
+    # so strength is the level the lineup actually plays at — a strong low-brand
+    # program holds to its real level, not its recruiting brand.
+    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.strength, p.division, gender) - 20.0) / 60.0))
                  for s, p in progs.items()}
     cap = _openings(_base_rosters(world), gender)
     from . import coaches
