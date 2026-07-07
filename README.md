@@ -19,9 +19,29 @@ recruiting, prestige, and a pro tour.
 
 ## Run
 
+Needs **Python 3.11+**. The engine + CLI are pure standard library; the web UI
+just needs Flask.
+
 ```bash
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python3 manage.py runserver            # web app at http://localhost:5000  (PORT to override)
+python3 manage.py runserver --port 8000              # web app at http://localhost:8000
+```
+
+Then open <http://localhost:8000>. A local SQLite save is created at `./tennis.db`
+automatically (override with `TENNIS_DB_PATH=/path/to/save.db`). Runs fully
+offline once the deps are installed — great on a plane.
+
+> **macOS:** don't use the default port 5000 — it's taken by AirPlay Receiver
+> (you'll get a silent failure or a 403). Use `--port 8000` as above, or disable
+> AirPlay Receiver in System Settings. Run from the repo root so `app/`,
+> `engine/` and `generators/` import.
+
+To play your **deployed** universe locally, pull its DB down first (don't run
+both against it at once):
+
+```bash
+fly ssh sftp get /data/tennis.db ./tennis.db -a tennis-team-manager
 ```
 
 Open the app, start a league, and advance the world week by week. The CLI also
