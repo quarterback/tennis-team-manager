@@ -105,6 +105,56 @@ Verified on a warm world: the pinned team reflects the new order, other teams ar
 byte-unchanged, the base roster cache is preserved (not wiped), and the live pin
 is readable by `coach_lineup`. Override/roster/season test suites pass.
 
+## ‼️ IT RESURFACED — a SECOND re-prime path the first fix missed (`world.prime` stamp)
+
+**Date:** 2026-07-07 (same day, later). **Symptom:** the owner set a My-Program
+singles lineup to **replace an injured starter**, and the site stalled again —
+`gunicorn ... TimeoutError: [Errno 110] Connection timed out` on `sock.sendall`
+(the write-timeout signature of a request-thread stall, exactly as in
+`AAR-perf-regression...` §2b). "Custom roster change doing this again."
+
+### Root cause — the fix above scoped the CACHE reset but not the PRIME STAMP
+
+The first fix made the lineup routes call the scoped `reset_lineup()` instead of
+`reset_all()`, and gated `build_roster` per-program. But it left a **second,
+independent invalidation** untouched: `world.prime()` stamps its ~170MB
+developed-roster cache on `ov.roster_version()`, and **`roster_version()` folds in
+`lineup` and `doubles` rows**. So saving a lineup pin still bumped the prime stamp:
+
+- The *save* itself was cheap (scoped `reset_lineup()`), so the redirect looked fine.
+- But the pin left `_primed`'s stamp **stale**. The **next** call to `prime()` — from
+  any full-world page (Analytics Bureau / `scout_intel`, rankings, hub), the
+  `advance_week` tick, or the **background world-warm thread** — saw the changed stamp
+  and **re-primed the entire world** (`developed_rosters` → `reset_caches` → repopulate
+  ~170MB) on that request's thread. One GIL-bound worker → `/api/health` starves →
+  unhealthy → the render is slow enough that the client (or Fly's proxy) gives up →
+  the worker's `sendall` to the dead socket eventually `ETIMEDOUT` (errno 110).
+
+A lineup/doubles pin **never changes the developed roster SET** `prime()` caches — it
+only reorders who plays S1–S6, and that order is applied **live downstream** in
+`build_roster` / `season.coach_lineup`. Folding pins into the prime stamp was the same
+"invalidation scope > edit scope" mistake as the original, one layer deeper.
+
+### The fix
+
+New `overrides.move_version()` — a fingerprint of **only `move` rows** (the sole
+composition change; editor moves and the fall-portal / preseason-portal commits all
+land as `ov.set_move`). `world.prime()` and `is_primed()` now stamp on
+`move_version()`, so a lineup/doubles pin leaves the world **warm** (no re-prime).
+`roster_version()` (move+lineup+doubles) is unchanged and still used by
+`scout_intel._world_stamp` — the Bureau *projects duals* and so must honor a pinned
+order, and its recompute reads the now-still-warm primed rosters (cheap), not a full
+regen. Verified: after `set_lineup` / `set_doubles`, `is_primed()` stays **True**;
+after `set_move` it flips **False**. Regression test:
+`test_overrides.test_move_version_ignores_lineup_and_doubles_pins`.
+
+> ⚠️ **A cache has as many invalidation edges as it has stamps.** Fixing the
+> `reset_*()` edge is not enough if a *version stamp* keyed on the same table also
+> triggers the rebuild. When you narrow one invalidation path, grep every place the
+> edited table (`roster_overrides`) feeds a cache key — here `roster_version()` in the
+> prime stamp AND the scout stamp — and confirm each one's scope matches the edit.
+> `grep -rn "roster_version\|move_version" app/`.
+
 ## Takeaways
 
 1. Match invalidation scope to edit scope; a narrow edit that triggers a global
@@ -113,3 +163,6 @@ is readable by `coach_lineup`. Override/roster/season test suites pass.
 3. On a single GIL-bound worker, an unbounded rebuild on the request path is an
    availability incident — treat it like one.
 4. For tiny override rows, live reads beat cache+broad-invalidate.
+5. A cache is invalidated by *both* its `reset_*()` calls *and* its version stamp.
+   Fix the whole class in one pass: when you scope one edge, audit every stamp keyed
+   on the same edited table (the lineup pin had TWO edges; the first fix closed one).

@@ -58,6 +58,30 @@ def test_lineup_pin_reorders_ladder():
     assert [p.pid for p in ncaa.build_roster(prog)][0] == base[5]
 
 
+def test_move_version_ignores_lineup_and_doubles_pins():
+    """world.prime() keys on move_version(), NOT roster_version(): a lineup or
+    doubles pin only reorders who plays (applied live downstream) and must NOT
+    invalidate the ~170MB world prime, or every lineup save re-primes the whole
+    world on the request thread and stalls the worker.
+    See docs/AAR-cache-invalidation-scope-lineup-stall.md."""
+    prog = _strong_d1()
+    base = [p.pid for p in ncaa.build_roster(prog)]
+
+    v0 = ov.move_version()
+    # A lineup pin bumps roster_version() (scout_intel keys on that) but must
+    # leave move_version() — and therefore the prime stamp — untouched.
+    ov.set_lineup(prog.school, [base[5]] + base[:5] + base[6:])
+    assert ov.move_version() == v0
+    assert ov.roster_version() != v0            # sanity: the pin IS an override
+
+    ov.set_doubles(prog.school, base[:6])
+    assert ov.move_version() == v0              # doubles pin: still no re-prime
+
+    # A composition change (transfer) MUST bump move_version so prime rebuilds.
+    ov.set_move(base[0], "Amherst")
+    assert ov.move_version() != v0
+
+
 def test_clear_restores_default():
     prog = _strong_d1()
     base = [p.pid for p in ncaa.build_roster(prog)]
