@@ -24,14 +24,17 @@ primary_region = 'iad'
 [http_service]
   internal_port = 8080
   force_https = true
-  # Idle handling: SUSPEND (not stop) so the machine dozes when idle but resumes in
-  # a fraction of a second with the season/roster caches still warm — no cold re-prime
-  # mid-sim. min_machines_running = 0 lets the single machine actually go idle; a
-  # request auto-starts (resumes) it. Fly's proxy only idles it after real traffic
-  # stops, so an active sim session keeps it up; a pause just suspends → instant resume.
-  auto_stop_machines = 'suspend'
+  # ALWAYS-ON. The old 'suspend' idle design silently died with the 16GB resize —
+  # Fly can't suspend machines over 8GB, so "suspend" degraded to a full STOP. That
+  # armed a kill loop: boot warm pegs the worker → /api/health starves → machine
+  # marked unhealthy → proxy routes nothing → autostopper sees "excess capacity"
+  # and KILLS the machine mid-build (SIGTERM + /data EBUSY unmount = SQLite yanked
+  # mid-write) → cold reboot → warm restarts → repeat. min_machines_running = 1
+  # keeps the single machine up through unhealthy windows so the warm always
+  # finishes and the volume is never yanked. (Owner decision 2026-07-07.)
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   # The app runs ONE gunicorn worker (keeps the season/roster cache warm), so a
@@ -41,10 +44,13 @@ primary_region = 'iad'
   # unhealthy mid-compute and drops/recycles it, which re-primes cold on the next
   # load: the "slow + crashing on load" loop. A generous timeout/grace lets a
   # legitimate compute finish and the check pass once the worker frees the GIL.
+  # grace_period covers the FULL cold boot warm (~minutes) so the first build
+  # never flags the machine; the thread pool is sized (gunicorn --threads 32) so
+  # page requests piling up behind the warm can't starve /api/health of a thread.
   [[http_service.checks]]
     interval = '60s'
     timeout = '150s'
-    grace_period = '60s'
+    grace_period = '300s'
     method = 'GET'
     path = '/api/health'
 
