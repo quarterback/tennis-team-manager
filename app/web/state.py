@@ -166,6 +166,22 @@ def reset_all() -> None:
     ncaa.reset_caches()
 
 
+def reset_lineup() -> None:
+    """Invalidation for a LINEUP / DOUBLES pin — scoped, because a pin only reorders
+    one team's ladder. It clears the effective-roster layer (so build_roster
+    re-applies the new order, cheaply, off the intact base) and the derived staff
+    board, and NOTHING else: the base roster generation, the seasonmode result
+    caches (a pin doesn't change past duals), and the world prime all survive. The
+    pin reaches the sim via build_roster + the live read in season.coach_lineup.
+    Using the full reset_all() here forced the whole world to regenerate rosters on
+    the next page — the health-starving lineup-save stall. See
+    docs/AAR-cache-invalidation-scope-lineup-stall.md."""
+    from app import ncaa
+    _staff_cache.clear()
+    _uni_staff_cache.clear()
+    ncaa.reset_effective()
+
+
 def _tier(division: str, conf_abbr: str, conf: str) -> str:
     if division != "D1":
         return division   # D2 / D3 — flat tiers, badge shows the division

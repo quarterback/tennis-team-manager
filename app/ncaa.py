@@ -766,6 +766,18 @@ def reset_caches() -> None:
     _index_cache.clear()
 
 
+def reset_effective() -> None:
+    """Clear ONLY the override/effective layer — the base roster generation
+    (`_roster_cache`) and global pid index (`_index_cache`) survive. This is all a
+    lineup/doubles pin needs: it reorders one team's ladder (re-derived cheaply from
+    the intact base) and never changes any player, rating, or team composition.
+    Clearing the base caches instead (via `reset_caches`) forces the whole world's
+    ~8s roster REGENERATION on the next uncached access — the lineup-save stall.
+    See docs/AAR-cache-invalidation-scope-lineup-stall.md."""
+    _eff_cache.clear()
+    _squad_cache.clear()
+
+
 def _base_roster(p: Program):
     """Deterministic roster of persistent Prospects for a program (cached),
     sorted best → worst (the ladder). Talent prior tracks program strength;
@@ -901,15 +913,28 @@ def build_roster(p: Program):
     any program in any division and (b) pin a team's lineup order — so the dual
     simulator, team pages and season sims all reflect your edits."""
     from app import overrides as ov
-    if not ov.any_overrides():
-        return _base_roster(p)
+    base = _base_roster(p)
+    moves = ov.get_moves()        # pid -> destination school (tiny table)
+    lineups = ov.get_lineups()    # school -> ordered pids
+    # PER-PROGRAM gate: this program is byte-identical to its base roster unless it
+    # has a lineup pin, a player moving IN, or a player moving OUT. The old check
+    # gated on the GLOBAL `ov.any_overrides()`, so the instant ONE lineup pin — or
+    # one accumulated `prestige_dyn` row — existed, EVERY program in the world took
+    # the heavy path below (get_index, deep-copy, re-sort, re-allocate), turning a
+    # single-team edit into a whole-world rebuild that starves the worker. Gating
+    # per program keeps the cost proportional to what actually changed. (Equivalent
+    # because the heavy path's tail — sort by current_overall + allocate_scholarships
+    # — is exactly what `_base_roster` already did.) See
+    # docs/AAR-cache-invalidation-scope-lineup-stall.md.
+    if (p.school not in lineups
+            and p.school not in moves.values()
+            and not any(pr.pid in moves for pr in base)):
+        return base
     if p.key in _eff_cache:
         return _eff_cache[p.key]
-    moves = ov.get_moves()        # pid -> destination school
-    lineups = ov.get_lineups()    # school -> ordered pids
 
     # Base players minus anyone moved away to a different school.
-    roster = [pr for pr in _base_roster(p)
+    roster = [pr for pr in base
               if moves.get(pr.pid, p.school) == p.school]
     # Players moved INTO this school from elsewhere (deep-copied so we never
     # mutate the cached base roster of their origin program).

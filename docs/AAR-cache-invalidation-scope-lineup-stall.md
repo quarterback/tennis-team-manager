@@ -1,11 +1,11 @@
 # AAR — a one-team lineup edit rebuilt the whole world (cache-invalidation SCOPE)
 
 **Date:** 2026-07-07
-**Status:** root cause traced from code + confirmed; the minimal fix is a scoped
-follow-up (see "The fix should be" below — do it with profiling, not a guess).
-**Scope of the lesson:** `web.state.reset_all`, `ncaa.build_roster` /
-`ncaa.reset_caches`, `overrides.any_overrides` / `roster_version`, and the
-`my_program_lineup` / `my_program_doubles` / `editor_lineup` routes.
+**Status:** FIXED (profiled + verified). Root cause below; the two-part fix and its
+measurements are in "The fix" section.
+**Scope:** `ncaa.build_roster` (per-program gate), `ncaa.reset_effective` (new),
+`web.state.reset_lineup` (new), and the `my_program_lineup` / `my_program_doubles`
+/ `editor_lineup` / `editor_clear_lineup` / `editor_doubles` routes.
 
 ## Symptom
 
@@ -78,23 +78,32 @@ rebuild on the single GIL-bound worker:
 > needed to bake into the heavy generated-roster cache at all. Cache the expensive
 > thing (the generated roster); read the cheap override live.
 
-## The fix should be (scoped follow-up — profile first, don't guess)
+## The fix (implemented, profiled, verified)
 
-1. **Per-program override gate in `build_roster`:** replace the global
-   `any_overrides()` check with "is this program affected?" — `p.school in
+1. **Per-program override gate in `build_roster`.** Replaced the global
+   `any_overrides()` check with "is THIS program affected?" — `p.school in
    get_lineups()`, or a base-roster pid in `get_moves()`, or a move destined here.
-   Unaffected programs return `_base_roster(p)` and never touch the heavy path.
-   (Provably equivalent — safe.)
-2. **A scoped `reset_lineup()` for the lineup/doubles routes** that clears only the
-   effective/display layer (`_eff_cache`, `_squad_cache`) and NOT the base roster
-   cache or the world prime — the pin propagates to the sim via the existing
-   `roster_version()` stamp and the live `coach_lineup` read.
+   Unaffected programs return `_base_roster(p)` untouched. Provably equivalent: the
+   heavy path's tail (sort by `current_overall` + `allocate_scholarships`) is
+   exactly what `_base_roster` already produced.
+2. **Scoped `reset_lineup()` (→ `ncaa.reset_effective()`) on the lineup/doubles
+   routes.** Clears only the effective layer (`_eff_cache`, `_squad_cache`) and the
+   staff board; the base roster cache, seasonmode caches, and world prime survive.
+   The pin re-applies via `build_roster` (cheap off the intact base) and the live
+   `coach_lineup` read. MOVE edits still use the full `reset_all()` (they change
+   composition).
 
-Both must be verified on a **primed** world: confirm the edited team's ladder
-updates, other teams are untouched, the base cache survives, and a full-world
-scan after a pin stays sub-second. The risk of a careless version is **stale
-rosters that silently ignore the edit** — a worse bug than the stall, which is why
-this AAR ships ahead of the change rather than bundled with a rushed one.
+**Measured** (full-world `build_roster` sweep, 2,214 programs):
+
+| | before | after |
+|---|---|---|
+| warm sweep, no override | 0.49s | 0.49s |
+| warm sweep, ONE lineup pin present | **2.31s** | **1.10s** |
+| next-page sweep after a pin (scoped reset) | (+ base regen risk) | **1.14s** |
+
+Verified on a warm world: the pinned team reflects the new order, other teams are
+byte-unchanged, the base roster cache is preserved (not wiped), and the live pin
+is readable by `coach_lineup`. Override/roster/season test suites pass.
 
 ## Takeaways
 
