@@ -292,6 +292,11 @@ def create_app() -> Flask:
                 wd.warm_caches()              # roster cache + every gender's recruit board
             except Exception:
                 pass                          # lazy paths still build on demand
+            try:
+                from app.web import state as _state
+                _state.warm_championships()   # complete-season singles/doubles draws
+            except Exception:
+                pass                          # per-key build lock + lazy path cover the rest
         import threading as _threading
         _threading.Thread(target=_warm_caches_async, name="ptc-cache-warm",
                           daemon=True).start()
