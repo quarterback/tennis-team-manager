@@ -41,9 +41,32 @@
 <div class="bl-container"><div class="bl-note new">
   <strong><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Bracket reveal — the field is set.</strong> Conference champions are in (AQ); the rest of the
   {{ br.size }}-team field is at-large by Power Index (AL). Advance the world to start the NCAAs.
-  {% if br.regions %}<br>Four regions (S-curve balanced):
-  {% for r in br.regions %}<span class="rgn">{{ r }}</span>{% endfor %}{% endif %}
+  {% if br.field_regions %}<br>Four S-curve-balanced regions, each seeded 1–{{ br.field_regions[0].teams|length }};
+  region champions meet in the national semifinals
+  ({{ br.field_regions[0].name }} v {{ br.field_regions[1].name }} ·
+   {{ br.field_regions[2].name }} v {{ br.field_regions[3].name }}).{% endif %}
 </div></div>
+{% if br.field_regions %}
+<div class="bl-container"><div class="rs-regions">
+  {% for rg in br.field_regions %}
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ rg.name }} Region</span>
+      <span class="bl-panel-meta">seeds 1–{{ rg.teams|length }}</span></div>
+    <div class="rs-field rs-field-rgn">
+      {% for p in rg.teams %}
+      <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
+        <span class="seed">{{ p.seed }}</span>
+        {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+        <span class="nm">{{ p.school }}</span>
+        <span class="conf">{{ p.conf }}</span>
+        <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div></div>
+{% else %}
 <div class="bl-container"><div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">The Field</span>
     <span class="bl-panel-meta">{{ br.size }} teams · {{ br.n_aq }} automatic qualifiers</span></div>
@@ -60,6 +83,7 @@
     {% endfor %}
   </div>
 </div></div>
+{% endif %}
 
 {% if br.out_board %}
 <div class="bl-container"><div class="bl-panel">
@@ -79,7 +103,10 @@
 </div></div>
 {% endif %}
 <style>
+.rs-regions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 860px) { .rs-regions { grid-template-columns: 1fr; } }
 .rs-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px 14px; padding: 6px 4px; }
+.rs-field-rgn { grid-template-columns: 1fr; }
 .rs-seedrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; text-decoration: none;
   color: var(--text-primary); font-size: 13.5px; border-bottom: 1px solid var(--border-subtle); }
 .rs-seedrow:hover { background: var(--green-50); }
@@ -101,7 +128,26 @@
 {% endif %}
 
 <div class="bl-container"><div class="bl-bracket-layout2">
-  {% if br.top_seeds %}
+  {% if br.seed_regions %}
+  <aside class="bl-panel bl-panel-tight bl-seedsheet">
+    <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span>
+      <span class="bl-panel-meta">1–4 in each region</span></div>
+    {% for rg in br.seed_regions %}
+    <div class="bl-seed-rgnhead"><span class="rgn">{{ rg.name }}</span></div>
+    <div class="bl-seed-list">
+      {% for p in rg.teams %}
+      <a class="bl-seed-row" href="{{ url_for('teams', school=p.school, u=u) }}">
+        <span class="seed">{{ p.seed }}</span>
+        {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+        <span class="school">{{ p.school }}</span>
+        <span class="conf">{{ p.conf }}</span>
+        <span class="bl-bid{{ ' auto' if p.aq }}">{{ 'AQ' if p.aq else 'AL' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </aside>
+  {% elif br.top_seeds %}
   <aside class="bl-panel bl-panel-tight bl-seedsheet">
     <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span>
       <span class="bl-panel-meta">how the field was seeded</span></div>
@@ -126,7 +172,7 @@
       <div class="bl-round-body">
         {% for m in rnd.matchups %}
         <article class="bl-brk-match">
-          <div class="bl-match-topline"><span>{{ rnd.name }}</span>{% if m.score %}<span>{{ m.score }}</span>{% endif %}</div>
+          <div class="bl-match-topline"><span>{{ rnd.name }}{% if m.home.region and m.home.region == m.away.region %} · {{ m.home.region }}{% endif %}</span>{% if m.score %}<span>{{ m.score }}</span>{% endif %}</div>
           {{ team(m.home, m.score, True) }}
           {{ team(m.away, m.score, True) }}
         </article>
@@ -144,6 +190,10 @@
 <style>
 .bl-bracket-layout2 { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 16px; align-items: start; }
 .bl-seedsheet { position: sticky; top: 12px; }
+.bl-seed-rgnhead { padding: 8px 4px 2px; border-top: 1px solid var(--border-subtle); }
+.bl-seed-rgnhead:first-of-type { border-top: 0; }
+.rgn { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
+  background: var(--green-50, rgba(14,124,134,.10)); color: var(--green-700, #0e7c86); white-space: nowrap; }
 @media (max-width: 860px) { .bl-bracket-layout2 { grid-template-columns: 1fr; } .bl-seedsheet { position: static; } }
 </style>
 {% endif %}
