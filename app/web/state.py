@@ -1654,6 +1654,16 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
         names = _regions.region_names(sm.load_season(sid)["seed"])
         idx = _regions.region_index_of([p.school for p in seeded])
         return {sch: names[r] for sch, r in idx.items()}, names
+
+    def _group_by_region(entries, region_names):
+        """Four {name, teams} groups in MAIN_DRAW_ORDER (adjacent groups meet in
+        the national semifinals). Entries arrive in overall-seed order, so each
+        group lists its region seeds 1..N top to bottom."""
+        by_rgn = {nm: [] for nm in region_names}
+        for e in entries:
+            by_rgn[e["region"]].append(e)
+        return [{"name": region_names[r], "teams": by_rgn[region_names[r]]}
+                for r in _regions.MAIN_DRAW_ORDER]
     if year is not None:
         idx = year - world.BASE_YEAR
         sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
@@ -1671,14 +1681,20 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
             field = []
             for i, p in enumerate(seeded, 1):
                 ab, col = crest(p.school)
-                field.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                # Regional fields carry the REGION seed (the S-curve seed line:
+                # 1–24 in a 96 field, 1–16 in a 64) — the overall committee rank
+                # is only the input to the split, not the displayed seed.
+                rseed = (i - 1) // 4 + 1 if region_names else i
+                field.append({"seed": rseed, "school": p.school, "abbr": ab, "color": col,
                               "conf": getattr(p, "conf_abbr", ""),
                               "aq": p.key in autobids, "region": region_of.get(p.school)})
+            field_regions = _group_by_region(field, region_names) if region_names else []
             snubs = []
             for o in out_board:
                 ab, col = crest(o["school"])
                 snubs.append({**o, "abbr": ab, "color": col})
-            return {"reveal": True, "field": field, "size": len(field),
+            return {"reveal": True, "field": field, "field_regions": field_regions,
+                    "size": len(field),
                     "n_aq": len(autobids), "out_board": snubs, "regions": region_names,
                     "rounds": [], "champion": None, "complete": False}
         return None
@@ -1687,20 +1703,24 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
     # (so you can see who the seeds were and trace a seed's path round to round).
     seed_map, conf_map, aq_set = {}, {}, set()
     region_of, region_names = {}, []
-    top_seeds = []
+    top_seeds, seed_regions = [], []
     try:
         seeded, autobids, _out, _r = sm.ncaa_field(sid)
         region_of, region_names = _region_map(seeded)
         for i, p in enumerate(seeded, 1):
-            seed_map[p.school] = i
+            # Region seed (S-curve line) on regional fields; overall rank otherwise.
+            seed_map[p.school] = (i - 1) // 4 + 1 if region_names else i
             conf_map[p.school] = getattr(p, "conf_abbr", "")
             if p.key in autobids:
                 aq_set.add(p.school)
             if i <= 16:
                 ab, col = crest(p.school)
-                top_seeds.append({"seed": i, "school": p.school, "abbr": ab, "color": col,
+                top_seeds.append({"seed": seed_map[p.school], "school": p.school,
+                                  "abbr": ab, "color": col,
                                   "conf": getattr(p, "conf_abbr", ""), "aq": p.key in autobids,
                                   "region": region_of.get(p.school)})
+        if region_names:
+            seed_regions = _group_by_region(top_seeds, region_names)
     except Exception:
         pass
 
@@ -1733,6 +1753,7 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
         champion = {"school": win["school"], "abbr": win["abbr"], "color": win["color"],
                     "seed": win["seed"]}
     return {"rounds": rounds, "champion": champion, "top_seeds": top_seeds,
+            "seed_regions": seed_regions,
             "regions": region_names, "complete": champion is not None}
 
 
