@@ -120,10 +120,22 @@ def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
         return _hydrate_championship(world.latest_championship(
             seed, division, gender, "Singles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
-    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
     if s and s["phase"] == "complete":
-        ch = run_singles_championship(division, gender, seed=eff, size=clamp_field(size))
-        return _hydrate_championship(championship_to_dict(ch))
+        # Playing a 128-draw (127 engine matches) live is far too heavy to run on
+        # every request — memoize the serialized result per (season, size). The
+        # roster/field is frozen once the season is complete, so the draw is stable.
+        # Publish to a LOCAL then return it (never `return cache[key]` — a sibling
+        # thread / reset_all() can evict between store and return; read with .get()).
+        csize = clamp_field(size)
+        ckey = (division, gender, sid, csize)
+        data = _singles_champ_cache.get(ckey)
+        if data is None:
+            data = championship_to_dict(
+                run_singles_championship(division, gender, seed=eff, size=csize))
+            _singles_champ_cache[ckey] = data
+        return _hydrate_championship(data)
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
 
@@ -138,10 +150,19 @@ def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
         return _hydrate_championship(world.latest_championship(
             seed, division, gender, "Doubles", year=year - world.BASE_YEAR))
     eff = world.current_year_seed(seed)
-    s = sm.load_season(sm.get_or_create(division, gender, seed=eff))
+    sid = sm.get_or_create(division, gender, seed=eff)
+    s = sm.load_season(sid)
     if s and s["phase"] == "complete":
-        ch = run_doubles_championship(division, gender, seed=eff, size=clamp_field(size))
-        return _hydrate_championship(championship_to_dict(ch))
+        # Same memoization as singles: a 64-draw is 63 live engine matches — cache
+        # the serialized result per (season, size); publish to a local, return it.
+        csize = clamp_field(size)
+        ckey = (division, gender, sid, csize)
+        data = _doubles_champ_cache.get(ckey)
+        if data is None:
+            data = championship_to_dict(
+                run_doubles_championship(division, gender, seed=eff, size=csize))
+            _doubles_champ_cache[ckey] = data
+        return _hydrate_championship(data)
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Doubles"))
 
 
