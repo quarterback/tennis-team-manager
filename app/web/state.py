@@ -35,6 +35,26 @@ _doubles_champ_cache: dict = {}
 _singles_champ_cache: dict = {}
 _portal_cache: dict = {}
 
+# Per-key build locks for the championship draws. Playing a 128-draw singles
+# (127 engine matches) or 64-draw doubles is heavy; the memo below collapses
+# REPEAT views, but a BURST of first-views for the same complete season (a cold
+# boot's first traffic, or a reload-mash on a slow page) can still start N
+# concurrent identical builds. On the single gthread worker they all fight for
+# the GIL, starve /api/health, and Fly drops the machine. A per-key lock makes
+# the first request build while the rest block on the LOCK (which releases the
+# GIL while waiting), so the worker stays free to answer health.
+import threading as _threading
+_champ_build_locks: dict = {}
+_champ_build_guard = _threading.Lock()
+
+
+def _champ_build_lock(key):
+    with _champ_build_guard:
+        lk = _champ_build_locks.get(key)
+        if lk is None:
+            lk = _champ_build_locks[key] = _threading.Lock()
+        return lk
+
 
 def get_season(division: str, gender: str, seed: int = DEFAULT_SEED):
     # When a saved world exists, every read surface reflects its CURRENT year:
@@ -132,9 +152,12 @@ def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
         ckey = (division, gender, sid, csize)
         data = _singles_champ_cache.get(ckey)
         if data is None:
-            data = championship_to_dict(
-                run_singles_championship(division, gender, seed=eff, size=csize))
-            _singles_champ_cache[ckey] = data
+            with _champ_build_lock(("singles",) + ckey):
+                data = _singles_champ_cache.get(ckey)      # re-check under the lock
+                if data is None:
+                    data = championship_to_dict(
+                        run_singles_championship(division, gender, seed=eff, size=csize))
+                    _singles_champ_cache[ckey] = data
         return _hydrate_championship(data)
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Singles"))
 
@@ -159,11 +182,36 @@ def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
         ckey = (division, gender, sid, csize)
         data = _doubles_champ_cache.get(ckey)
         if data is None:
-            data = championship_to_dict(
-                run_doubles_championship(division, gender, seed=eff, size=csize))
-            _doubles_champ_cache[ckey] = data
+            with _champ_build_lock(("doubles",) + ckey):
+                data = _doubles_champ_cache.get(ckey)      # re-check under the lock
+                if data is None:
+                    data = championship_to_dict(
+                        run_doubles_championship(division, gender, seed=eff, size=csize))
+                    _doubles_champ_cache[ckey] = data
         return _hydrate_championship(data)
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Doubles"))
+
+
+def warm_championships(seed: int = DEFAULT_SEED) -> None:
+    """Boot-time prewarm for the individual-championship memos: for every universe
+    whose current team season is COMPLETE, build the singles + doubles draws now,
+    off the request path, so the first post-restart view doesn't run a 127-match
+    draw on the gunicorn worker's GIL (which starves /api/health → Fly drops the
+    machine). Runs during the boot warm's health grace window, before traffic.
+    Best-effort and idempotent; the per-key build lock + lazy path cover the rest."""
+    import app.world as world
+    import app.seasonmode as sm
+    if not world.exists(seed):
+        return
+    for _val, division, gender, _label in UNIVERSES:
+        try:
+            sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+            s = sm.load_season(sid)
+            if s and s["phase"] == "complete":
+                get_singles_championship(division, gender, seed)
+                get_doubles_championship(division, gender, seed)
+        except Exception:
+            pass                                  # lazy build still covers a skipped one
 
 
 def reset_all() -> None:
