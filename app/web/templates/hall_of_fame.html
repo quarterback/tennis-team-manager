@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch — Hall of Fame{% endblock %}
-{% block meta_description %}The Play to Clinch Hall of Fame — every past season's national champions, Players of the Year, and Coaches of the Year, archived year by year.{% endblock %}
+{% block meta_description %}The Play to Clinch Hall of Fame — every past season's national champions, singles and doubles champions, Players of the Year, and Coaches of the Year, archived year by year.{% endblock %}
 {% block content %}
 
 <div class="bl-container">
   <div class="bl-prose" style="padding-top:18px">
     <h1 style="margin:0"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Hall of Fame</h1>
-    <p class="lede" style="margin:6px 0 0">Season-by-season champions and national honorees. Each season is
-      archived here once its awards phase is run.</p>
+    <p class="lede" style="margin:6px 0 0">Season-by-season champions and national honorees — team, singles, and
+      doubles. Each season is archived here once its awards phase is run.</p>
   </div>
 </div>
 
@@ -41,6 +41,17 @@
           <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span>
             <a class="bl-school" href="{{ url_for('coach', coach_id=c.subject_id, u=u) }}">{{ c.name }}</a>
             <span class="bl-conf">{{ c.school }}</span></div>
+          {% endif %}
+          {% if slot.singles and slot.singles.champion %}{% set p = slot.singles.champion %}
+          <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-medal" aria-hidden="true"></i> Singles Champion</span>
+            {% if p.pid %}<a class="bl-school" href="{{ url_for('player', pid=p.pid, school=p.school, u=u) }}">{{ p.label }}</a>
+            {% else %}<span class="bl-school">{{ p.label }}</span>{% endif %}
+            <span class="bl-conf">{{ p.school }}</span></div>
+          {% endif %}
+          {% if slot.doubles and slot.doubles.champion %}{% set p = slot.doubles.champion %}
+          <div class="hof-row"><span class="hof-k"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> Doubles Champions</span>
+            <span class="bl-school">{{ p.label }}</span>
+            <span class="bl-conf">{{ p.school }}</span></div>
           {% endif %}
         </div>
         {% endfor %}

@@ -3057,6 +3057,32 @@ def championship_years(seed: int, division: str, gender: str) -> list[int]:
     return [BASE_YEAR + r["year"] for r in rows]
 
 
+def past_individual_champions(seed: int, division: str, gender: str) -> list[dict]:
+    """Year-by-year winners of the stored NCAA individual championships for a
+    universe, newest first: [{"year": calendar year, "singles": {"champion",
+    "runner_up"}, "doubles": {...}}, ...]. Champion/runner-up are the flattened
+    entry dicts from `championship_to_dict` (label / school / conf_abbr / pid /
+    seed). Only completed, snapshotted seasons appear — the current season's draw
+    joins the list at its year rollover."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT year, event, data FROM world_championship WHERE world_id=?"
+                            " AND division=? AND gender=? ORDER BY year DESC",
+                            (w["id"], division, gender)).fetchall()
+    finally:
+        conn.close()
+    by_year: dict[int, dict] = {}
+    for r in rows:
+        d = json.loads(r["data"])
+        slot = by_year.setdefault(r["year"], {"year": BASE_YEAR + r["year"]})
+        slot[r["event"].lower()] = {"champion": d.get("champion"),
+                                    "runner_up": d.get("runner_up")}
+    return [by_year[y] for y in sorted(by_year, reverse=True)]
+
+
 # Dynamic prestige momentum — how fast/far a program's prestige drifts on results.
 # Aggressive (owner choice): the cap allows multi-tier movement over many seasons.
 PRESTIGE_MOM_CAP = 0.20      # max signed drift from base prestige (≈ 2 budget tiers)

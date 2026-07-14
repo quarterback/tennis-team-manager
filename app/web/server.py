@@ -18,7 +18,8 @@ from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     conferences_for, get_bracket, get_doubles_championship,
-                    get_singles_championship, championship_years, UNIVERSES, FIELD_PRESETS,
+                    get_singles_championship, championship_years,
+                    past_individual_champions, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
                     results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
@@ -1144,8 +1145,15 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         import app.honors as honors
         uni_label = {(d, g): lbl for _v, d, g, lbl in UNIVERSES}
+        # Individual singles/doubles champions come from the world_championship
+        # snapshots (stored at each year rollover), keyed (year, division, gender).
+        indiv: dict = {}
+        for _v, d, g, _lbl in UNIVERSES:
+            for e in past_individual_champions(d, g):
+                indiv[(e["year"], d, g)] = e
+        years = sorted(set(honors.years()) | {y for y, _d, _g in indiv}, reverse=True)
         archive = []
-        for y in honors.years():
+        for y in years:
             rows = honors.winners(y, ["national_champion", "national_poty", "national_coty"])
             unis: dict = {}
             for r in rows:
@@ -1154,6 +1162,11 @@ def create_app() -> Flask:
                     slot.setdefault("champion", r["school"])
                 else:
                     slot[r["award"]] = r
+            for (yy, d, g), e in indiv.items():
+                if yy == y:
+                    slot = unis.setdefault((d, g), {})
+                    slot["singles"] = e.get("singles")
+                    slot["doubles"] = e.get("doubles")
             archive.append({
                 "year": y,
                 "universes": [(uni_label.get(k, f"{k[0]} {k[1]}"), v)
@@ -1195,6 +1208,7 @@ def create_app() -> Flask:
         return render_template("singles.html", active="Singles", u=u, uni_label=label,
                                division=division, ch=ch, champ_years=years,
                                sel_year=sel or (years[0] if years else None),
+                               past_champs=past_individual_champions(division, gender),
                                field=len(ch.entries) if ch else 0, field_presets=[32, 64, 128])
 
     @app.route("/doubles-championship")
@@ -1210,6 +1224,7 @@ def create_app() -> Flask:
         return render_template("doubles.html", active="Doubles", u=u, uni_label=label,
                                division=division, ch=ch, champ_years=years,
                                sel_year=sel or (years[0] if years else None),
+                               past_champs=past_individual_champions(division, gender),
                                field=len(ch.entries) if ch else 0, field_presets=FIELD_PRESETS)
 
     @app.route("/projection")

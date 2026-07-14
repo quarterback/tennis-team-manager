@@ -189,3 +189,43 @@ def test_transfers_respect_division_and_one_per_career():
     # the already-transferred player was not moved again — still on their old roster
     assert any(getattr(q, "pid", None) == flagged_pid
                for q in rosters[("D1", "women")][orig_school])
+
+
+def test_past_individual_champions_reads_snapshots(tmp_path):
+    """The past-winners record: year-by-year singles/doubles champions come straight
+    from the world_championship snapshots, newest first, keyed by calendar year."""
+    import json
+    prev_db, prev_ready = world.WORLD_DB, world._schema_ready_for
+    world.WORLD_DB = str(tmp_path / "w.db")
+    world._schema_ready_for = None
+    try:
+        conn = world._db()
+        conn.execute("INSERT INTO world (seed, year, week) VALUES (?,?,?)", (2026, 2, 0))
+        wid = conn.execute("SELECT id FROM world WHERE seed=2026").fetchone()["id"]
+
+        def blob(event, label):
+            return json.dumps({"event": event, "n_seeds": 16, "entries": [], "rounds": [],
+                               "champion": {"label": label, "school": "Stanford",
+                                            "conf_abbr": "ACC", "pid": "p1", "seed": 1},
+                               "runner_up": {"label": "R Up", "school": "UCLA",
+                                             "conf_abbr": "B1G", "pid": "p2", "seed": 2}})
+        for yr, name in ((0, "Alice Ace"), (1, "Beth Baseline")):
+            for event in ("Singles", "Doubles"):
+                conn.execute("INSERT INTO world_championship VALUES (?,?,?,?,?,?)",
+                             (wid, yr, "D1", "women", event, blob(event, name)))
+        conn.commit()
+        conn.close()
+
+        out = world.past_individual_champions(2026, "D1", "women")
+        # newest first, calendar-year keyed
+        assert [e["year"] for e in out] == [world.BASE_YEAR + 1, world.BASE_YEAR]
+        assert out[0]["singles"]["champion"]["label"] == "Beth Baseline"
+        assert out[0]["doubles"]["champion"]["label"] == "Beth Baseline"
+        assert out[0]["singles"]["runner_up"]["school"] == "UCLA"
+        assert out[1]["singles"]["champion"]["label"] == "Alice Ace"
+        # a universe with no snapshots (and an unknown world) return empty
+        assert world.past_individual_champions(2026, "D1", "men") == []
+        assert world.past_individual_champions(9999, "D1", "women") == []
+    finally:
+        world.WORLD_DB = prev_db
+        world._schema_ready_for = prev_ready

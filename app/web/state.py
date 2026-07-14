@@ -127,6 +127,14 @@ def championship_years(division: str, gender: str, seed: int = DEFAULT_SEED):
     return sorted(years, reverse=True)
 
 
+def past_individual_champions(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Year-by-year singles/doubles champions for a universe (newest first), read
+    straight from the `world_championship` snapshots — the past-winners record for
+    the championship pages and the Hall of Fame."""
+    import app.world as world
+    return world.past_individual_champions(seed, division, gender)
+
+
 def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
                              size: int = 128, year: int | None = None):
     """The NCAA individual singles championship, played AFTER the team tournament.
