@@ -34,12 +34,21 @@ The data model is untouched; this is a read path over the existing snapshots.
   championships, so neither source can hide the other.
 
 ## Design decisions
-- **Read from `world_championship`, don't re-stamp into `honors`.** The champion is
-  already durably stored per `(world_id, year, division, gender, event)`; a second
-  copy in `honors` would need backfill for existing saves and could drift. The
-  `honors` table remains the record for awards-phase honors only. If we ever want
-  the singles title to show on a player's own page as an award chip, THEN add an
-  `award="singles_champion"` stamp in `web/awards.py` — display here doesn't need it.
+- **The past-winners LISTS read from `world_championship`.** The champion is already
+  durably stored per `(world_id, year, division, gender, event)`, so the singles /
+  doubles / Hall of Fame archives read the snapshots directly — that works
+  retroactively on existing saves with no backfill.
+- **Player-page award chips are stamped into `honors` (owner follow-up).** Awards
+  `singles_champion` / `doubles_champion` are stamped in `web/awards.py
+  honor_records` at the awards phase, alongside POTY/All-American/team titles —
+  the doubles title credits BOTH halves of the winning pair (each player's own pid).
+  To make that possible, `championship_to_dict` entries now carry a per-player
+  `players: [{pid, name}]` list (a `players` property on `SinglesEntry` /
+  `DoublesEntry`), and `_hydrate_championship` exposes it (older snapshots without
+  the key fall back to the singles entry's `pid`/`label`; a pre-existing doubles
+  snapshot can't be split per player, so no chip is stamped from one). Like every
+  honor, chips exist from the first awards phase run AFTER this change — past
+  seasons show in the archives (snapshot-read) but aren't retro-stamped as chips.
 - **Current season joins the list at rollover.** A just-completed season's draw is
   computed live (memoized) until `_store_championships` snapshots it at finalize —
   same lifecycle the year picker already follows. The past-winners table therefore

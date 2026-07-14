@@ -97,7 +97,12 @@ def _hydrate_championship(data):
         if not d:
             return None
         ab, col = crest(d["school"])
+        # per-player {pid, name} list; older snapshots (pre-"players") can recover
+        # a singles entry from its pid/label, a doubles pair only as a whole
+        players = d.get("players") or ([{"pid": d["pid"], "name": d["label"]}]
+                                       if d.get("pid") else [])
         return SimpleNamespace(label=d["label"], pid=d.get("pid"), seed=d.get("seed"),
+                               players=players,
                                program=SimpleNamespace(school=d["school"], abbr=ab, color=col,
                                                        conf_abbr=d.get("conf_abbr", "")))
     rounds = [[SimpleNamespace(rnd=m["rnd"], hi_seed=m["hi_seed"], lo_seed=m["lo_seed"],

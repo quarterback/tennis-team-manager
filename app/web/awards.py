@@ -349,6 +349,19 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     if indoor:
         credit_roster(indoor, "ita_indoor_champion", "ITA Indoor National Champion", 108)
 
+    # NCAA individual titles — the singles champion and both halves of the winning
+    # doubles pair get their own award chip. The draws are computed (memoized) once
+    # the team season is complete, which is exactly when honors are stamped.
+    from .state import get_singles_championship, get_doubles_championship
+    for getter, award, label, sort in (
+            (get_singles_championship, "singles_champion", "NCAA Singles Champion", 106),
+            (get_doubles_championship, "doubles_champion", "NCAA Doubles Champion", 104)):
+        ch = getter(division, gender, seed)
+        winner = getattr(ch, "champion", None) if ch else None
+        for pl in (getattr(winner, "players", None) or []):
+            if pl.get("pid"):
+                add(pl["pid"], pl["name"], winner.program.school, award, label, sort)
+
     _rec_cache[key] = recs
     return recs
 

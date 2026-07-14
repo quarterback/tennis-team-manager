@@ -65,6 +65,10 @@ class SinglesEntry:
     def key(self):
         return self.player.pid
 
+    @property
+    def players(self) -> list:
+        return [self.player]
+
 
 @dataclass
 class DoublesEntry:
@@ -82,6 +86,10 @@ class DoublesEntry:
     @property
     def key(self):
         return self.program.key
+
+    @property
+    def players(self) -> list:
+        return [self.p0, self.p1]
 
 
 # --- Shared draw result shapes (used by both events) -----------------------
@@ -128,7 +136,10 @@ def championship_to_dict(ch: Championship) -> dict:
             return None
         return {"label": e.label, "school": e.program.school,
                 "conf_abbr": getattr(e.program, "conf_abbr", ""),
-                "pid": getattr(e, "pid", None), "seed": ch.seed_of(e)}
+                "pid": getattr(e, "pid", None), "seed": ch.seed_of(e),
+                # every player on the entry (two for a doubles pair) so titles can
+                # be credited per player (honors chips) and linked per player
+                "players": [{"pid": p.pid, "name": p.name} for p in e.players]}
     return {
         "event": ch.event, "n_seeds": ch.n_seeds,
         "entries": [ed(e) for e in ch.entries],
