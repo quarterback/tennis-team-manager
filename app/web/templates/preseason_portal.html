@@ -51,11 +51,21 @@
   <form method="post" action="{{ url_for('preseason_portal_add') }}" style="display:flex;gap:6px;align-items:end">
     <input type="hidden" name="gender" value="{{ pp.gender }}">
     <input type="hidden" name="page" value="{{ pp.page }}">
-    <label class="bl-field"><span class="bl-field-label">Add a player</span>
-      <input class="bl-select" name="player" placeholder="player name" style="min-width:160px" required></label>
+    <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+    <input type="hidden" name="q" value="{{ pp.q }}">
+    <label class="bl-field"><span class="bl-field-label">Add player(s) — comma-separated</span>
+      <input class="bl-select" name="player" placeholder="name, name, name…" style="min-width:200px" required></label>
     <label class="bl-field"><span class="bl-field-label">To (optional)</span>
       <input class="bl-select" name="dest" list="pp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
     <button class="bl-btn" type="submit">+ Add</button>
+  </form>
+  <form method="get" action="{{ url_for('preseason_portal') }}" style="display:flex;gap:6px;align-items:end">
+    <input type="hidden" name="gender" value="{{ pp.gender }}">
+    <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+    <label class="bl-field"><span class="bl-field-label">Filter slate</span>
+      <input class="bl-select" type="search" name="q" value="{{ pp.q }}" placeholder="player or school" style="min-width:160px"></label>
+    <button class="bl-btn" type="submit">Filter</button>
+    {% if pp.q %}<a class="bl-btn" href="{{ url_for('preseason_portal', gender=pp.gender, per=request.args.get('per') or None) }}">✕</a>{% endif %}
   </form>
   {# Carry the selected portal gender straight into the search's Gender filter
      (men / women / all → Both). #}
@@ -128,6 +138,8 @@
           <input type="hidden" name="pid" value="{{ pr.pid }}">
           <input type="hidden" name="gender" value="{{ pp.gender }}">
           <input type="hidden" name="page" value="{{ pp.page }}">
+          <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+          <input type="hidden" name="q" value="{{ pp.q }}">
           {% if pr.signed %}<span style="color:#1a8f4c;font-weight:700" title="Signed — it will apply on Commit">✓</span>{{ crest_box(pr.dest_school, pr.to_abbr, pr.to_color, 'xs') }}{% endif %}
           <input class="bl-select" name="dest" list="pp-dests" value="{{ pr.dest_school }}"
                  placeholder="unsigned — type any program"
@@ -141,6 +153,10 @@
             <input type="hidden" name="dest" value="">
             <input type="hidden" name="gender" value="{{ pp.gender }}">
             <input type="hidden" name="page" value="{{ pp.page }}">
+            <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+            <input type="hidden" name="q" value="{{ pp.q }}">
+          <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+          <input type="hidden" name="q" value="{{ pp.q }}">
             <button class="bl-btn bl-btn-sm" type="submit" title="Drop this signing (back to free agent)">✕</button>
           </form>{% endif %}
         </span>
@@ -205,36 +221,61 @@
       <span style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(t.dest_school, t.to_abbr, t.to_color, 'xs') }}
         {% if t.is_riser and not pp.done %}
-          <form method="post" action="{{ url_for('preseason_portal_redirect') }}" style="display:flex;gap:3px;align-items:center">
-            <input type="hidden" name="pid" value="{{ t.pid }}">
-            <input type="hidden" name="gender" value="{{ pp.gender }}">
-            <input type="hidden" name="page" value="{{ pp.page }}">
-            <input class="bl-select" name="dest" list="pp-dests" value="{{ t.dest_school }}" style="min-width:128px;height:24px;font-size:12px">
-            <button class="bl-btn bl-btn-sm" type="submit" title="Send here instead"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i></button>
-          </form>
+          <input type="hidden" form="ppapply" name="cur_{{ t.pid }}" value="{{ t.dest_school }}">
+          <input class="bl-select pp-dest" form="ppapply" name="dest_{{ t.pid }}" list="pp-dests"
+                 value="{{ t.dest_school }}" data-home="{{ t.dest_school }}"
+                 style="min-width:128px;height:24px;font-size:12px">
         {% else %}
           {{ t.dest_school }} <span style="color:var(--text-faint)">{{ t.dest_div }}</span>
         {% endif %}
       </span>
       <span class="bl-conf">
         {% if t.is_riser and not pp.done %}
-        <form method="post" action="{{ url_for('preseason_portal_approve') }}" style="display:inline">
-          <input type="hidden" name="pid" value="{{ t.pid }}">
-          <input type="hidden" name="gender" value="{{ t.gender }}">
-          <input type="hidden" name="fg" value="{{ pp.gender }}">
-          <input type="hidden" name="page" value="{{ pp.page }}">
-          <input type="hidden" name="status" value="rejected">
-          <button class="bl-btn bl-btn-sm" type="submit" title="Drop this move">✕</button>
-        </form>
+        <label title="Drop this move" style="display:flex;align-items:center;gap:3px;cursor:pointer">
+          <input type="checkbox" form="ppapply" class="pp-drop" name="drop_{{ t.pid }}" value="{{ t.gender }}"> ✕
+        </label>
         {% endif %}
       </span>
     </div>
     {% endfor %}
   </div>
 </div></div>
-{% if pp.pages > 1 %}
-<div class="bl-container">{{ pager(pp.pager, 'moves') }}</div>
+{% if not pp.done %}
+<div class="bl-container">
+  <form id="ppapply" method="post" action="{{ url_for('preseason_portal_apply') }}"
+        style="display:flex;gap:10px;align-items:center;margin-top:10px">
+    <input type="hidden" name="fg" value="{{ pp.gender }}">
+    <input type="hidden" name="page" value="{{ pp.page }}">
+    <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
+    <input type="hidden" name="q" value="{{ pp.q }}">
+    <button class="bl-btn bl-btn-primary" type="submit" id="ppapply-btn" disabled>Apply changes</button>
+    <span style="font-size:12px;color:var(--text-muted)">Stage new destinations and tick ✕ to drop —
+      the whole batch lands in one submit.</span>
+  </form>
+  <script>
+    (function () {
+      const btn = document.getElementById('ppapply-btn');
+      const dests = document.querySelectorAll('input.pp-dest');
+      const drops = document.querySelectorAll('input.pp-drop');
+      function refresh() {
+        let n = 0;
+        dests.forEach(i => {
+          const changed = i.value.trim() !== i.dataset.home;
+          i.style.outline = changed ? '2px solid var(--brand)' : '';
+          if (changed) n++;
+        });
+        drops.forEach(c => { if (c.checked) n++; });
+        btn.disabled = n === 0;
+        btn.textContent = n ? `Apply ${n} change${n === 1 ? '' : 's'}` : 'Apply changes';
+      }
+      dests.forEach(i => i.addEventListener('input', refresh));
+      drops.forEach(c => c.addEventListener('change', refresh));
+      refresh();
+    })();
+  </script>
+</div>
 {% endif %}
+<div class="bl-container">{{ pager(pp.pager, 'moves', sizes=(25, 50, 100, 200, 0)) }}</div>
 {% if not pp.done %}
 <div class="bl-container"><div class="bl-note" style="font-size:12px;color:var(--text-faint)">
   Dropped a move by mistake? "Keep all" brings every dropped riser back.

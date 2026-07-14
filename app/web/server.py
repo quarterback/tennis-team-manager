@@ -721,16 +721,26 @@ def create_app() -> Flask:
             page = int(request.args.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        from .pagination import per_page_arg
+        from .state import PRESEASON_PORTAL_PER_PAGE
+        per = per_page_arg(request.args.get("per"), PRESEASON_PORTAL_PER_PAGE)
+        q = (request.args.get("q", "") or "").strip()
         return render_template("fall_portal.html", active="World",
-                               fp=fall_portal_view(page=page), crest=crest)
+                               fp=fall_portal_view(page=page, per_page=per, q=q),
+                               crest=crest)
 
     def _fp_return():
-        """Redirect back to the fall portal on the SAME page an action was fired from,
-        so editing a row (redirect/drop/sign/add) doesn't throw you to the top. The
-        fall slate isn't gender-filtered, so only `page` is carried — the drop form's
-        `gender` field is the player's own (for set_status), never a view filter."""
-        p = (request.form.get("page", "") or "").strip()
-        return redirect(url_for("fall_portal", **({"page": p} if p else {})))
+        """Redirect back to the fall portal with the SAME page / page-size / search an
+        action was fired from, so editing a row (redirect/drop/sign/add) doesn't throw
+        you to the top or reset your view. The fall slate isn't gender-filtered — the
+        drop form's `gender` field is the player's own (for set_status), never a
+        view filter."""
+        args = {}
+        for k in ("page", "per", "q"):
+            v = (request.form.get(k, "") or "").strip()
+            if v:
+                args[k] = v
+        return redirect(url_for("fall_portal", **args))
 
     @app.route("/fall-portal/approve", methods=["POST"])
     def fall_portal_approve():
@@ -760,18 +770,46 @@ def create_app() -> Flask:
             wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
         return _fp_return()
 
+    def _portal_add_pids():
+        """Resolve the add form into pids: an explicit `pid`, plus every name in the
+        `player` field — comma- or newline-separated, so a whole list of players can
+        be added in ONE submit instead of one form round-trip each."""
+        pids = []
+        pid = request.form.get("pid", "").strip()
+        if pid:
+            pids.append(pid)
+        raw = request.form.get("player", "")
+        for name in (n.strip() for chunk in raw.split("\n") for n in chunk.split(",")):
+            if not name:
+                continue
+            hits = search_players(name).get("players", [])
+            if hits:
+                pids.append(hits[0]["pid"])
+        return pids
+
     @app.route("/fall-portal/add", methods=["POST"])
     def fall_portal_add():
-        pid = request.form.get("pid", "").strip()
         dest = request.form.get("dest", "").strip() or None
-        if not pid:
-            name = request.form.get("player", "").strip()
-            if name:
-                hits = search_players(name).get("players", [])
-                if hits:
-                    pid = hits[0]["pid"]
-        if pid:
+        for pid in _portal_add_pids():
             wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+        return _fp_return()
+
+    @app.route("/fall-portal/apply", methods=["POST"])
+    def fall_portal_apply():
+        # Batch-edit the slate in ONE submit: every rider row's staged destination
+        # change becomes a redirect, every checked row a drop — instead of one form
+        # round-trip per player.
+        w = wd.load_world()
+        if not w:
+            return _fp_return()
+        year = w["year"]
+        for k, v in request.form.items():
+            if k.startswith("dest_") and v.strip():
+                pid = k[5:]
+                if v.strip() != request.form.get("cur_" + pid, "").strip():
+                    wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, v.strip())
+            elif k.startswith("drop_") and v:
+                ov.set_status(year, v, k[5:], "rejected")   # value carries the gender
         return _fp_return()
 
     @app.route("/fall-portal/pro-sign", methods=["POST"])
@@ -810,23 +848,29 @@ def create_app() -> Flask:
             page = int(request.args.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        from .pagination import per_page_arg
+        from .state import PRESEASON_PORTAL_PER_PAGE
+        per = per_page_arg(request.args.get("per"), PRESEASON_PORTAL_PER_PAGE)
+        q = (request.args.get("q", "") or "").strip()
         return render_template("preseason_portal.html", active="Preseason",
-                               pp=preseason_portal_view(gender=gender, page=page), crest=crest)
+                               pp=preseason_portal_view(gender=gender, page=page,
+                                                        per_page=per, q=q), crest=crest)
 
     def _pp_return():
-        """Redirect back to the portal on the SAME page + gender FILTER the action was
-        fired from, so editing a row (redirect/sign/drop/add) doesn't bounce you to
-        page 1. Reads the explicit current-filter field `fg` in preference to `gender`:
-        the single-row drop carries `gender` as the PLAYER's own gender (ps_set_status
-        needs it), which is NOT the active filter — using it would collapse an 'All'
-        slate to one gender."""
+        """Redirect back to the portal with the SAME page / page-size / search + gender
+        FILTER the action was fired from, so editing a row (redirect/sign/drop/add)
+        doesn't bounce you to page 1. Reads the explicit current-filter field `fg` in
+        preference to `gender`: the single-row drop carries `gender` as the PLAYER's
+        own gender (ps_set_status needs it), which is NOT the active filter — using it
+        would collapse an 'All' slate to one gender."""
         args = {}
         g = (request.form.get("fg") or request.form.get("gender") or "").strip()
         if g:
             args["gender"] = g
-        p = (request.form.get("page", "") or "").strip()
-        if p:
-            args["page"] = p
+        for k in ("page", "per", "q"):
+            v = (request.form.get(k, "") or "").strip()
+            if v:
+                args[k] = v
         return redirect(url_for("preseason_portal", **args))
 
     @app.route("/preseason-portal/rescan", methods=["POST"])
@@ -890,16 +934,26 @@ def create_app() -> Flask:
 
     @app.route("/preseason-portal/add", methods=["POST"])
     def preseason_portal_add():
-        pid = request.form.get("pid", "").strip()
         dest = request.form.get("dest", "").strip() or None
-        if not pid:
-            name = request.form.get("player", "").strip()
-            if name:
-                hits = search_players(name).get("players", [])
-                if hits:
-                    pid = hits[0]["pid"]
-        if pid:
+        for pid in _portal_add_pids():
             wd.add_preseason_portal_mover(DEFAULT_SEED, pid, dest)
+        return _pp_return()
+
+    @app.route("/preseason-portal/apply", methods=["POST"])
+    def preseason_portal_apply():
+        # Batch-edit the slate in ONE submit (staged redirects + checked drops) —
+        # the pre-season mirror of /fall-portal/apply.
+        w = wd.load_world()
+        if not w:
+            return _pp_return()
+        year = w["year"]
+        for k, v in request.form.items():
+            if k.startswith("dest_") and v.strip():
+                pid = k[5:]
+                if v.strip() != request.form.get("cur_" + pid, "").strip():
+                    wd.redirect_preseason_portal_mover(DEFAULT_SEED, pid, v.strip())
+            elif k.startswith("drop_") and v:
+                ov.ps_set_status(year, v, k[5:], "rejected")
         return _pp_return()
 
     @app.route("/preseason-portal/commit", methods=["POST"])
@@ -1564,7 +1618,9 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         year = request.args.get("year", type=int)
         tp = transfer_portal_view(division, gender, year=year)
-        pg = paginate(tp["transfers"], request.args.get("page", 1), per_page=40)
+        from .pagination import per_page_arg
+        pg = paginate(tp["transfers"], request.args.get("page", 1),
+                      per_page=per_page_arg(request.args.get("per"), 40))
         return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
                                tp=tp, p=pg, sel_year=year)
 

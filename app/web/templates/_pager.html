@@ -1,18 +1,34 @@
 {# Reusable pagination control. Usage:
      {% from "_pager.html" import pager %}
      {{ pager(p, 'programs') }}
+     {{ pager(p, 'moves', sizes=(25, 50, 100, 200, 0)) }}   {# settable page size #}
    `p` is an app.web.pagination.Page. Links preserve every current query arg
-   (filters, sort, universe) and just swap ?page=. #}
+   (filters, sort, universe) and just swap ?page=. Pass `sizes` on routes that
+   read a ?per= parameter to render "Show: 25 · 50 · …" links (0 = All); size
+   links reset to page 1. #}
 
 {# Build a URL for page n: current path + current args with page overridden. #}
 {% macro _purl(n) %}{% set a = request.args.to_dict() %}{% set _ = a.update({'page': n}) %}{{ request.path }}?{{ a | urlencode }}{% endmacro %}
 
-{% macro pager(p, label='items') %}
-{% if p.total > p.per_page %}
+{# Build a URL for page size s (resets to page 1). #}
+{% macro _surl(s) %}{% set a = request.args.to_dict() %}{% set _ = a.update({'per': s, 'page': 1}) %}{{ request.path }}?{{ a | urlencode }}{% endmacro %}
+
+{% macro pager(p, label='items', sizes=None) %}
+{% if p.total > p.per_page or (sizes and p.total > (sizes | min)) %}
 <nav class="bl-pager" aria-label="Pagination">
   <div class="bl-pager-meta">
     Showing <strong>{{ p.start }}–{{ p.end }}</strong> of {{ p.total }} {{ label }}
+    {% if sizes %}
+    <span class="bl-pager-sizes" style="margin-left:10px">Show:
+      {% for s in sizes %}
+        {% set active = (s == p.per_page) or (s == 0 and p.per_page >= p.total and p.total > 0 and p.per_page not in sizes) %}
+        {% if active %}<strong>{{ s if s else 'All' }}</strong>
+        {% else %}<a href="{{ _surl(s) | trim }}">{{ s if s else 'All' }}</a>{% endif %}
+      {% endfor %}
+    </span>
+    {% endif %}
   </div>
+  {% if p.total > p.per_page %}
   <div class="bl-pager-controls">
     {% if p.has_prev %}
       <a class="bl-pager-btn" href="{{ _purl(p.prev) | trim }}" rel="prev">‹ Prev</a>
@@ -36,6 +52,7 @@
       <span class="bl-pager-btn disabled" aria-disabled="true">Next ›</span>
     {% endif %}
   </div>
+  {% endif %}
 </nav>
 {% endif %}
 {% endmacro %}

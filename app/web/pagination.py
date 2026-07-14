@@ -65,6 +65,21 @@ class Page:
         return out
 
 
+def per_page_arg(raw, default: int = DEFAULT_PER_PAGE, *, max_per: int = 100_000) -> int:
+    """Parse a ?per= page-size parameter: a positive int is that size (capped at
+    `max_per`), 0 or 'all' means show everything, junk/missing falls back to the
+    route's default. Pair with the pager macro's `sizes=` links."""
+    if raw is None or str(raw).strip() == "":
+        return default
+    if str(raw).strip().lower() == "all":
+        return max_per
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return max_per if n <= 0 else min(n, max_per)
+
+
 def paginate(items, page, per_page: int = DEFAULT_PER_PAGE) -> Page:
     """Slice `items` to `page` (1-based). Coerces junk input and clamps the page
     into range so a stale ?page= never 500s or shows a blank list."""
