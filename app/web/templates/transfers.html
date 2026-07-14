@@ -54,6 +54,6 @@
     {% endfor %}
   </div>
 </div></div>
-<div class="bl-container">{{ pager(p, 'transfers') }}</div>
+<div class="bl-container">{{ pager(p, 'transfers', sizes=(25, 40, 100, 200, 0)) }}</div>
 {% endif %}
 {% endblock %}

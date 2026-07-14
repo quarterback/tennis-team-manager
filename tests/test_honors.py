@@ -7,10 +7,16 @@ def test_honor_records_cover_all_award_types(played_season):
     recs = honor_records("D1", "men")
     awards = {r["award"] for r in recs}
     for key in ("national_poty", "conf_poty", "all_american", "all_conference",
-                "conf_champion", "national_champion"):
+                "conf_champion", "national_champion",
+                "singles_champion", "doubles_champion"):
         assert key in awards, f"missing {key}"
     # exactly one national POTY and one national champion roster's worth.
     assert sum(1 for r in recs if r["award"] == "national_poty") == 1
+    # NCAA individual titles: one singles champion; BOTH halves of the doubles pair.
+    assert sum(1 for r in recs if r["award"] == "singles_champion") == 1
+    doubles = [r for r in recs if r["award"] == "doubles_champion"]
+    assert len(doubles) == 2 and doubles[0]["subject_id"] != doubles[1]["subject_id"]
+    assert doubles[0]["school"] == doubles[1]["school"]
 
 
 def test_hall_of_fame_archives_stamped_years(played_season):

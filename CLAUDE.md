@@ -182,6 +182,11 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    edited table. See `docs/AAR-cache-invalidation-scope-lineup-stall.md` (the "IT RESURFACED" §).
 
 ## Other notes
+- **NCAA bracket is TRUE-SEEDED (owner rule 2026-07): no conference separation** —
+  the draw is never rearranged to keep same-conference teams apart, for BOTH genders
+  and every division. `_pair_penalty` deliberately has no same-conference term; do
+  not add one back. Only rematch and AQ-vs-AQ avoidance shape the draw. See
+  `docs/AAR-true-seed-no-conference-separation.md`.
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
   `docs/AAR-base-roster-nationality-by-level.md`. Tuned for playability, not 1:1 realism.

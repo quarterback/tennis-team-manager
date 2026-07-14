@@ -18,7 +18,8 @@ from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     conferences_for, get_bracket, get_doubles_championship,
-                    get_singles_championship, championship_years, UNIVERSES, FIELD_PRESETS,
+                    get_singles_championship, championship_years,
+                    past_individual_champions, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
                     results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
@@ -720,16 +721,26 @@ def create_app() -> Flask:
             page = int(request.args.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        from .pagination import per_page_arg
+        from .state import PRESEASON_PORTAL_PER_PAGE
+        per = per_page_arg(request.args.get("per"), PRESEASON_PORTAL_PER_PAGE)
+        q = (request.args.get("q", "") or "").strip()
         return render_template("fall_portal.html", active="World",
-                               fp=fall_portal_view(page=page), crest=crest)
+                               fp=fall_portal_view(page=page, per_page=per, q=q),
+                               crest=crest)
 
     def _fp_return():
-        """Redirect back to the fall portal on the SAME page an action was fired from,
-        so editing a row (redirect/drop/sign/add) doesn't throw you to the top. The
-        fall slate isn't gender-filtered, so only `page` is carried — the drop form's
-        `gender` field is the player's own (for set_status), never a view filter."""
-        p = (request.form.get("page", "") or "").strip()
-        return redirect(url_for("fall_portal", **({"page": p} if p else {})))
+        """Redirect back to the fall portal with the SAME page / page-size / search an
+        action was fired from, so editing a row (redirect/drop/sign/add) doesn't throw
+        you to the top or reset your view. The fall slate isn't gender-filtered — the
+        drop form's `gender` field is the player's own (for set_status), never a
+        view filter."""
+        args = {}
+        for k in ("page", "per", "q"):
+            v = (request.form.get(k, "") or "").strip()
+            if v:
+                args[k] = v
+        return redirect(url_for("fall_portal", **args))
 
     @app.route("/fall-portal/approve", methods=["POST"])
     def fall_portal_approve():
@@ -759,18 +770,46 @@ def create_app() -> Flask:
             wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, dest)
         return _fp_return()
 
+    def _portal_add_pids():
+        """Resolve the add form into pids: an explicit `pid`, plus every name in the
+        `player` field — comma- or newline-separated, so a whole list of players can
+        be added in ONE submit instead of one form round-trip each."""
+        pids = []
+        pid = request.form.get("pid", "").strip()
+        if pid:
+            pids.append(pid)
+        raw = request.form.get("player", "")
+        for name in (n.strip() for chunk in raw.split("\n") for n in chunk.split(",")):
+            if not name:
+                continue
+            hits = search_players(name).get("players", [])
+            if hits:
+                pids.append(hits[0]["pid"])
+        return pids
+
     @app.route("/fall-portal/add", methods=["POST"])
     def fall_portal_add():
-        pid = request.form.get("pid", "").strip()
         dest = request.form.get("dest", "").strip() or None
-        if not pid:
-            name = request.form.get("player", "").strip()
-            if name:
-                hits = search_players(name).get("players", [])
-                if hits:
-                    pid = hits[0]["pid"]
-        if pid:
+        for pid in _portal_add_pids():
             wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+        return _fp_return()
+
+    @app.route("/fall-portal/apply", methods=["POST"])
+    def fall_portal_apply():
+        # Batch-edit the slate in ONE submit: every rider row's staged destination
+        # change becomes a redirect, every checked row a drop — instead of one form
+        # round-trip per player.
+        w = wd.load_world()
+        if not w:
+            return _fp_return()
+        year = w["year"]
+        for k, v in request.form.items():
+            if k.startswith("dest_") and v.strip():
+                pid = k[5:]
+                if v.strip() != request.form.get("cur_" + pid, "").strip():
+                    wd.redirect_fall_portal_mover(DEFAULT_SEED, pid, v.strip())
+            elif k.startswith("drop_") and v:
+                ov.set_status(year, v, k[5:], "rejected")   # value carries the gender
         return _fp_return()
 
     @app.route("/fall-portal/pro-sign", methods=["POST"])
@@ -809,23 +848,29 @@ def create_app() -> Flask:
             page = int(request.args.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        from .pagination import per_page_arg
+        from .state import PRESEASON_PORTAL_PER_PAGE
+        per = per_page_arg(request.args.get("per"), PRESEASON_PORTAL_PER_PAGE)
+        q = (request.args.get("q", "") or "").strip()
         return render_template("preseason_portal.html", active="Preseason",
-                               pp=preseason_portal_view(gender=gender, page=page), crest=crest)
+                               pp=preseason_portal_view(gender=gender, page=page,
+                                                        per_page=per, q=q), crest=crest)
 
     def _pp_return():
-        """Redirect back to the portal on the SAME page + gender FILTER the action was
-        fired from, so editing a row (redirect/sign/drop/add) doesn't bounce you to
-        page 1. Reads the explicit current-filter field `fg` in preference to `gender`:
-        the single-row drop carries `gender` as the PLAYER's own gender (ps_set_status
-        needs it), which is NOT the active filter — using it would collapse an 'All'
-        slate to one gender."""
+        """Redirect back to the portal with the SAME page / page-size / search + gender
+        FILTER the action was fired from, so editing a row (redirect/sign/drop/add)
+        doesn't bounce you to page 1. Reads the explicit current-filter field `fg` in
+        preference to `gender`: the single-row drop carries `gender` as the PLAYER's
+        own gender (ps_set_status needs it), which is NOT the active filter — using it
+        would collapse an 'All' slate to one gender."""
         args = {}
         g = (request.form.get("fg") or request.form.get("gender") or "").strip()
         if g:
             args["gender"] = g
-        p = (request.form.get("page", "") or "").strip()
-        if p:
-            args["page"] = p
+        for k in ("page", "per", "q"):
+            v = (request.form.get(k, "") or "").strip()
+            if v:
+                args[k] = v
         return redirect(url_for("preseason_portal", **args))
 
     @app.route("/preseason-portal/rescan", methods=["POST"])
@@ -889,16 +934,26 @@ def create_app() -> Flask:
 
     @app.route("/preseason-portal/add", methods=["POST"])
     def preseason_portal_add():
-        pid = request.form.get("pid", "").strip()
         dest = request.form.get("dest", "").strip() or None
-        if not pid:
-            name = request.form.get("player", "").strip()
-            if name:
-                hits = search_players(name).get("players", [])
-                if hits:
-                    pid = hits[0]["pid"]
-        if pid:
+        for pid in _portal_add_pids():
             wd.add_preseason_portal_mover(DEFAULT_SEED, pid, dest)
+        return _pp_return()
+
+    @app.route("/preseason-portal/apply", methods=["POST"])
+    def preseason_portal_apply():
+        # Batch-edit the slate in ONE submit (staged redirects + checked drops) —
+        # the pre-season mirror of /fall-portal/apply.
+        w = wd.load_world()
+        if not w:
+            return _pp_return()
+        year = w["year"]
+        for k, v in request.form.items():
+            if k.startswith("dest_") and v.strip():
+                pid = k[5:]
+                if v.strip() != request.form.get("cur_" + pid, "").strip():
+                    wd.redirect_preseason_portal_mover(DEFAULT_SEED, pid, v.strip())
+            elif k.startswith("drop_") and v:
+                ov.ps_set_status(year, v, k[5:], "rejected")
         return _pp_return()
 
     @app.route("/preseason-portal/commit", methods=["POST"])
@@ -1144,8 +1199,15 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         import app.honors as honors
         uni_label = {(d, g): lbl for _v, d, g, lbl in UNIVERSES}
+        # Individual singles/doubles champions come from the world_championship
+        # snapshots (stored at each year rollover), keyed (year, division, gender).
+        indiv: dict = {}
+        for _v, d, g, _lbl in UNIVERSES:
+            for e in past_individual_champions(d, g):
+                indiv[(e["year"], d, g)] = e
+        years = sorted(set(honors.years()) | {y for y, _d, _g in indiv}, reverse=True)
         archive = []
-        for y in honors.years():
+        for y in years:
             rows = honors.winners(y, ["national_champion", "national_poty", "national_coty"])
             unis: dict = {}
             for r in rows:
@@ -1154,6 +1216,11 @@ def create_app() -> Flask:
                     slot.setdefault("champion", r["school"])
                 else:
                     slot[r["award"]] = r
+            for (yy, d, g), e in indiv.items():
+                if yy == y:
+                    slot = unis.setdefault((d, g), {})
+                    slot["singles"] = e.get("singles")
+                    slot["doubles"] = e.get("doubles")
             archive.append({
                 "year": y,
                 "universes": [(uni_label.get(k, f"{k[0]} {k[1]}"), v)
@@ -1195,6 +1262,7 @@ def create_app() -> Flask:
         return render_template("singles.html", active="Singles", u=u, uni_label=label,
                                division=division, ch=ch, champ_years=years,
                                sel_year=sel or (years[0] if years else None),
+                               past_champs=past_individual_champions(division, gender),
                                field=len(ch.entries) if ch else 0, field_presets=[32, 64, 128])
 
     @app.route("/doubles-championship")
@@ -1210,6 +1278,7 @@ def create_app() -> Flask:
         return render_template("doubles.html", active="Doubles", u=u, uni_label=label,
                                division=division, ch=ch, champ_years=years,
                                sel_year=sel or (years[0] if years else None),
+                               past_champs=past_individual_champions(division, gender),
                                field=len(ch.entries) if ch else 0, field_presets=FIELD_PRESETS)
 
     @app.route("/projection")
@@ -1473,36 +1542,61 @@ def create_app() -> Flask:
             # Maybe it's a free-agent pro not yet on any roster — render a preview (STR +
             # attributes) so they can be scouted BEFORE being signed through the portal.
             found = wd.find_pro(DEFAULT_SEED, pid)
-            if not found:
+            if found:
+                from app.web.state import scout_bars as _sb
+                from app import pros as _pros
+                pro, pg, _cyc, _dest = found
+                info = {"name": pro.name, "school": _dest or "Pros", "class": "Pro",
+                        "country": pro.country, "secondary_country": getattr(pro, "secondary_country", ""),
+                        "hometown": getattr(pro, "hometown", ""), "major": "",
+                        "overall": pro.current_overall(), "ceiling": pro.ceiling_overall(),
+                        "walk_on": False, "high_school": "", "school_city": "",
+                        "recruit_stars": 6, "is_pro": True, "free_agent": not _dest,
+                        "signed_with": _dest, "scholarship": 0.0, "scholarship_label": ""}
+                _empty_box = {"any": False, "lines": [], "rows": [], "tcells": {},
+                              "toverall": "", "tdual": ""}
+                return render_template("player.html", active="", pid=pid, info=info,
+                                       career=[], career_table=[],
+                                       records={"singles": _empty_box, "doubles": _empty_box},
+                                       strv=round(pro.str_value(), 1), rel=0.0, wins=0, losses=0,
+                                       gender=pg, honor_years=[], ranks=[], journey=[],
+                                       attrs=_sb(pro), crest=crest, u=u,
+                                       uni_label="Pro free agent")
+            # Alumni / historical fallback: graduates and moved players persist in the
+            # world store (world_signing / world_roster keeps every year) even after
+            # they leave the current season's rosters — hydrate from there so archive
+            # links (Hall of Fame, past singles/doubles champions, old honors) never
+            # 404. The career card below reads persisted history + honors, so it
+            # renders their full record; only live-season bits come back empty.
+            from app import economy
+            p = wd.find_persisted_player(pid)
+            if not p:
                 abort(404)
-            from app.web.state import scout_bars as _sb
-            from app import pros as _pros
-            pro, pg, _cyc, _dest = found
-            info = {"name": pro.name, "school": _dest or "Pros", "class": "Pro",
-                    "country": pro.country, "secondary_country": getattr(pro, "secondary_country", ""),
-                    "hometown": getattr(pro, "hometown", ""), "major": "",
-                    "overall": pro.current_overall(), "ceiling": pro.ceiling_overall(),
-                    "walk_on": False, "high_school": "", "school_city": "",
-                    "recruit_stars": 6, "is_pro": True, "free_agent": not _dest,
-                    "signed_with": _dest, "scholarship": 0.0, "scholarship_label": ""}
-            _empty_box = {"any": False, "lines": [], "rows": [], "tcells": {},
-                          "toverall": "", "tdual": ""}
-            return render_template("player.html", active="", pid=pid, info=info,
-                                   career=[], career_table=[],
-                                   records={"singles": _empty_box, "doubles": _empty_box},
-                                   strv=round(pro.str_value(), 1), rel=0.0, wins=0, losses=0,
-                                   gender=pg, honor_years=[], ranks=[], journey=[],
-                                   attrs=_sb(pro), crest=crest, u=u,
-                                   uni_label="Pro free agent")
+            school, _pdiv = wd.persisted_team(pid)
+            info = {"name": p.name, "school": school or "—",
+                    "class": getattr(p, "class_year", ""),
+                    "country": getattr(p, "country", ""),
+                    "secondary_country": getattr(p, "secondary_country", ""),
+                    "hometown": getattr(p, "hometown", ""),
+                    "major": getattr(p, "major", ""),
+                    "overall": p.current_overall(), "ceiling": p.ceiling_overall(),
+                    "walk_on": getattr(p, "walk_on", False),
+                    "high_school": getattr(p, "high_school", ""), "school_city": "",
+                    "recruit_stars": getattr(p, "recruit_stars", 0),
+                    "recruit_tier": getattr(p, "recruit_tier", ""),
+                    "scholarship": getattr(p, "scholarship", 0.0),
+                    "scholarship_label": economy.fraction_label(
+                        getattr(p, "scholarship", 0.0))}
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         from app.ncaa import player_by_pid
         from app.web.state import scout_bars
         from app import pros as _pros
         pr = player_by_pid(pid)
-        attrs = scout_bars(pr) if pr else []
         # Pros live in world_roster (portal-injected), not the base index — resolve from
-        # the persisted roster so the green PRO badge shows on their page.
+        # the persisted roster so the green PRO badge shows on their page. The same
+        # fallback serves alumni (graduated / moved players reached from the archives).
         _pp = pr or wd.find_persisted_player(pid)
+        attrs = scout_bars(_pp) if _pp else []
         info["is_pro"] = _pros.is_pro(_pp) if _pp else False
         career, (wins, losses) = player_career(division, gender, pid)
         career_table = player_career_table(division, gender, pid)
@@ -1549,7 +1643,9 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         year = request.args.get("year", type=int)
         tp = transfer_portal_view(division, gender, year=year)
-        pg = paginate(tp["transfers"], request.args.get("page", 1), per_page=40)
+        from .pagination import per_page_arg
+        pg = paginate(tp["transfers"], request.args.get("page", 1),
+                      per_page=per_page_arg(request.args.get("per"), 40))
         return render_template("transfers.html", active="Transfer Portal", u=u, uni_label=label,
                                tp=tp, p=pg, sel_year=year)
 
@@ -1973,6 +2069,24 @@ def create_app() -> Flask:
         reset_all()
         return redirect(url_for("editor", u=request.form.get("u", "D1-men")))
 
+    def _apply_editor_moves(moves: list[tuple[str, str]]):
+        """Commit editor moves — ALL of them under a single invalidation, because
+        `reset_all()` + the move-version prime stamp make the next full-world page
+        rebuild every roster; paying that once per player was the old per-row flow's
+        friction. During the fall-portal hold the moves become portal ADDs instead
+        (two-stint history + balancing cascade; they land at portal commit)."""
+        w = wd.load_world()
+        if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
+            if not ov.get_proposals(w["year"]):
+                wd.run_fall_portal()
+            for pid, dest in moves:
+                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+            return redirect(url_for("fall_portal"))
+        for pid, dest in moves:
+            ov.set_move(pid, dest)
+        reset_all()                                    # ONCE for the whole batch
+        return None
+
     @app.route("/editor/move", methods=["POST"])
     def editor_move():
         u = request.form.get("u", "D1-men")
@@ -1980,18 +2094,23 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")
         if pid and dest:
-            w = wd.load_world()
-            if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
-                # During the fall-portal window an editor move becomes a portal ADD,
-                # so it earns the two-stint history + balancing cascade instead of
-                # collapsing the season to one school. It lands when you commit the
-                # portal, not immediately — review it on the fall-portal screen.
-                if not ov.get_proposals(w["year"]):
-                    wd.run_fall_portal()
-                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
-                return redirect(url_for("fall_portal"))
-            ov.set_move(pid, dest)
-            reset_all()
+            resp = _apply_editor_moves([(pid, dest)])
+            if resp:
+                return resp
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/move_batch", methods=["POST"])
+    def editor_move_batch():
+        # One POST for the whole roster: every `dest_<pid>` field whose destination
+        # differs from the current school becomes a move; unchanged rows are ignored.
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        moves = [(k[5:], v) for k, v in request.form.items()
+                 if k.startswith("dest_") and v and v != school]
+        if moves:
+            resp = _apply_editor_moves(moves)
+            if resp:
+                return resp
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/lineup", methods=["POST"])

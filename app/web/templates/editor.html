@@ -255,25 +255,47 @@
           <span class="bl-cell-num"><span class="bl-stat power">{{ "%.1f"|format(r.str) }}</span></span>
           <span>{% if r.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
           <span>
-            <form method="post" action="{{ url_for('editor_move') }}" style="display:flex;gap:4px;align-items:center">
-              <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
-              <input type="hidden" name="pid" value="{{ r.pid }}">
-              <select class="bl-select" name="dest" style="min-width:130px;font-size:12px">
-                {% for label, slist in groups %}<optgroup label="{{ label }}">
-                  {% for s in slist %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
-                </optgroup>{% endfor %}
-              </select>
-              <button class="bl-pill" type="submit">Move</button>
-            </form>
+            <select class="bl-select mv-dest" form="massmove" name="dest_{{ r.pid }}"
+                    data-home="{{ school }}" style="min-width:130px;font-size:12px">
+              {% for label, slist in groups %}<optgroup label="{{ label }}">
+                {% for s in slist %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
+              </optgroup>{% endfor %}
+            </select>
           </span>
         </div>
         {% endfor %}
       </div>
     </div>
+    <form id="massmove" method="post" action="{{ url_for('editor_move_batch') }}"
+          style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
+      <button class="bl-pill" type="submit" id="massmove-btn" disabled>Apply moves</button>
+      <span style="font-size:12px;color:var(--text-muted)" id="massmove-note">Pick new programs in the
+        MOVE column, then apply them all at once — one rebuild for the whole batch instead of one per player.</span>
+    </form>
+    <script>
+      (function () {
+        const btn = document.getElementById('massmove-btn');
+        const sels = document.querySelectorAll('select.mv-dest');
+        function refresh() {
+          let n = 0;
+          sels.forEach(s => {
+            const changed = s.value !== s.dataset.home;
+            s.style.outline = changed ? '2px solid var(--brand)' : '';
+            if (changed) n++;
+          });
+          btn.disabled = n === 0;
+          btn.textContent = n ? `Apply ${n} move${n === 1 ? '' : 's'}` : 'Apply moves';
+        }
+        sels.forEach(s => s.addEventListener('change', refresh));
+        refresh();
+      })();
+    </script>
     <div class="bl-notes"><div class="bl-note">
-      Reorder with ▲▼ to pin a custom lineup (lines 1–6 are the singles ladder). “Move” relocates a
-      player to any program in any division — drop a great D1 player onto a D3 roster and run a dual to
-      see what happens. Edits persist and feed the dual simulator, team pages, and new season sims.</div></div>
+      Reorder with ▲▼ to pin a custom lineup (lines 1–6 are the singles ladder). To relocate players,
+      set a new program in the MOVE column for as many rows as you like — any program in any division —
+      then click <strong>Apply moves</strong> to commit the whole batch in one shot. Edits persist and
+      feed the dual simulator, team pages, and new season sims.</div></div>
 
     {% if rows and rows|length >= 6 %}
     {# ---- Doubles lineup: picked independently of singles (3 pairs). Any roster

@@ -161,4 +161,31 @@
   </section>
 </div>
 {% endif %}
+
+{% if past_champs %}
+<div class="bl-container" style="margin-top:18px">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> Past Doubles Champions</span>
+      <span class="bl-panel-meta">{{ uni_label }}</span></div>
+    <div class="bl-panel-body">
+      <table class="bl-protable" style="width:100%">
+        <thead><tr><th>Year</th><th>Champions</th><th></th><th>Runners-up</th><th></th></tr></thead>
+        <tbody>
+        {% for e in past_champs %}{% if e.doubles and e.doubles.champion %}
+          {% set c = e.doubles.champion %}{% set r = e.doubles.runner_up %}
+          <tr>
+            <td><a href="{{ url_for('doubles_championship', u=u, year=e.year) }}">{{ e.year }}</a></td>
+            <td>{% set abbr, color = crest(c.school) %}<span class="bl-crest sm" style="background:{{ color }}">{{ abbr }}</span>
+              <span class="bl-school">{{ c.label }}</span></td>
+            <td class="bl-conf">{{ c.school }}</td>
+            <td>{% if r %}<span class="bl-school">{{ r.label }}</span>{% endif %}</td>
+            <td class="bl-conf">{{ r.school if r else '' }}</td>
+          </tr>
+        {% endif %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

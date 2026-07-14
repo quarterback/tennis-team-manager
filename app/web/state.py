@@ -97,7 +97,12 @@ def _hydrate_championship(data):
         if not d:
             return None
         ab, col = crest(d["school"])
+        # per-player {pid, name} list; older snapshots (pre-"players") can recover
+        # a singles entry from its pid/label, a doubles pair only as a whole
+        players = d.get("players") or ([{"pid": d["pid"], "name": d["label"]}]
+                                       if d.get("pid") else [])
         return SimpleNamespace(label=d["label"], pid=d.get("pid"), seed=d.get("seed"),
+                               players=players,
                                program=SimpleNamespace(school=d["school"], abbr=ab, color=col,
                                                        conf_abbr=d.get("conf_abbr", "")))
     rounds = [[SimpleNamespace(rnd=m["rnd"], hi_seed=m["hi_seed"], lo_seed=m["lo_seed"],
@@ -125,6 +130,14 @@ def championship_years(division: str, gender: str, seed: int = DEFAULT_SEED):
         if s and s["phase"] == "complete":
             years.add(_cur_cal_year(world, seed))
     return sorted(years, reverse=True)
+
+
+def past_individual_champions(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[dict]:
+    """Year-by-year singles/doubles champions for a universe (newest first), read
+    straight from the `world_championship` snapshots — the past-winners record for
+    the championship pages and the Hall of Fame."""
+    import app.world as world
+    return world.past_individual_champions(seed, division, gender)
 
 
 def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEED,
@@ -1482,11 +1495,26 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
             "years": years, "year": year}
 
 
-def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1) -> dict:
+def _portal_q_filter(rows: list, q: str) -> list:
+    """Case-insensitive slate filter: keep rows whose player name, source school or
+    destination school contains `q` — so a big slate can be scanned/edited without
+    paging through it."""
+    needle = (q or "").strip().lower()
+    if not needle:
+        return rows
+    return [r for r in rows
+            if needle in (r.get("name") or "").lower()
+            or needle in (r.get("src_school") or "").lower()
+            or needle in (r.get("dest_school") or "").lower()]
+
+
+def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1,
+                     per_page: int | None = None, q: str = "") -> dict:
     """The fall-portal slate for the review screen: each kept rider plus the player
     they'd push down the ladder, freshly RESOLVED so the cascade reflects any
     redirects/adds the user has made. Riders carry an editable destination.
-    Paginated (the slate can run to hundreds of rows across both genders)."""
+    Paginated (the slate can run to hundreds of rows across both genders);
+    `per_page` overrides the default page size and `q` filters by player/school."""
     import app.world as world
     from app import overrides as ov
     from .pagination import paginate
@@ -1494,7 +1522,7 @@ def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1) -> dict:
     w = world.load_world(seed)
     if not w:
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
-                "destinations": [], "page": 1, "pages": 1,
+                "destinations": [], "page": 1, "pages": 1, "q": "",
                 "pager": paginate([], 1, PRESEASON_PORTAL_PER_PAGE)}
     committed = [r for r in ov.get_proposals(w["year"], status="committed")]
     resolved = world.resolve_fall_portal(seed)        # {gender: [moves]} (riders + cascades)
@@ -1527,9 +1555,10 @@ def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1) -> dict:
         pros_in.append({**pr, "to_abbr": ta, "to_color": tc})
     # Paginate the full combined slate (both genders shown together); riders/n stay
     # totals over the whole slate, proposals is just the current page.
-    pg = paginate(out, page, PRESEASON_PORTAL_PER_PAGE)
+    shown = _portal_q_filter(out, q)
+    pg = paginate(shown, page, per_page or PRESEASON_PORTAL_PER_PAGE)
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
-            "proposals": pg.items, "n": len(out),
+            "proposals": pg.items, "n": len(out), "q": (q or "").strip(),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": len(committed), "pros": pros_in,
             "pros_committed": bool(committed_pros),
@@ -1598,17 +1627,19 @@ def _paginate_portal(rows: list, gender: str, page: int, per_page: int) -> dict:
 
 
 def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
-                          page: int = 1) -> dict:
+                          page: int = 1, per_page: int | None = None,
+                          q: str = "") -> dict:
     """The pre-season-portal slate for the week-0 review screen: each kept rider plus
     the player they'd push down the ladder, freshly RESOLVED so the cascade reflects
     any redirects / adds. Riders carry an editable destination. Once committed, the
     rows come back with status='committed' so the screen shows what was applied.
-    Gender-filtered + paginated (the slate can run to hundreds of rows)."""
+    Gender-filtered + paginated (the slate can run to hundreds of rows); `per_page`
+    overrides the default page size and `q` filters by player/school."""
     import app.world as world
     import app.worldconfig as worldconfig
     from app import overrides as ov
     from .rankings_data import crest
-    per_page = PRESEASON_PORTAL_PER_PAGE
+    per_page = per_page or PRESEASON_PORTAL_PER_PAGE
     cap = worldconfig.preseason_portal_cap()
     pros_cycle = worldconfig.pros_per_cycle()
     w = world.load_world(seed)
@@ -1616,7 +1647,8 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
         return {"year": None, "proposals": [], "n": 0, "riders": 0, "committed": 0,
                 "destinations": [], "is_preseason": False, "cap": cap, "pros_cycle": pros_cycle,
                 "pros": [], "gender": "all", "gender_counts": {"all": 0, "men": 0, "women": 0},
-                "page": 1, "pages": 1, "pager": _paginate_portal([], "all", 1, per_page)["pager"]}
+                "q": "", "page": 1, "pages": 1,
+                "pager": _paginate_portal([], "all", 1, per_page)["pager"]}
     committed = ov.ps_get_proposals(w["year"], status="committed")
     # Pros are FREE AGENTS out of the synthetic "Pros" pool — pre-commit show the whole cohort
     # (each with an editable, initially-blank destination the user signs to any club); once the
@@ -1642,9 +1674,9 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
                 "from_abbr": fa, "from_color": fc, "to_abbr": ta, "to_color": tc,
                 "is_riser": m["cascade_from"] is None})
         out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
-        pg = _paginate_portal(out, gender, page, per_page)
+        pg = _paginate_portal(_portal_q_filter(out, q), gender, page, per_page)
         return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
-                "proposals": pg["page_rows"], "n": len(out),
+                "proposals": pg["page_rows"], "n": len(out), "q": (q or "").strip(),
                 "riders": sum(1 for r in out if r["is_riser"]),
                 "committed": len(committed), "done": True, "cap": cap, "pros_cycle": pros_cycle,
                 "is_preseason": w["week"] == 0, "pros": pros_in,
@@ -1670,9 +1702,9 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
     # When the slate is empty, surface WHY (scan counts + the per-division bar) so an
     # unexpected 0 is explainable and the user can force a re-scan.
     debug = world.preseason_portal_debug(seed) if not out else None
-    pg = _paginate_portal(out, gender, page, per_page)
+    pg = _paginate_portal(_portal_q_filter(out, q), gender, page, per_page)
     return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
-            "proposals": pg["page_rows"], "n": len(out),
+            "proposals": pg["page_rows"], "n": len(out), "q": (q or "").strip(),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": 0, "done": False, "cap": cap, "pros_cycle": pros_cycle,
             "is_preseason": w["week"] == 0, "debug": debug, "pros": pros_in,

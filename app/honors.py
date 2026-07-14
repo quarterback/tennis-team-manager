@@ -9,6 +9,8 @@ Award keys (the `award` column groups by type; `label` is the display text):
   national_coty / conf_coty            Coach of the Year  (national / conference)
   all_american / all_conference        team honors with a tier in `label`
   national_champion / conf_champion    team titles (credited to the whole roster + coach)
+  singles_champion / doubles_champion  NCAA individual titles (doubles credits BOTH
+                                       halves of the winning pair)
 """
 from __future__ import annotations
 
