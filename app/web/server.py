@@ -1542,36 +1542,61 @@ def create_app() -> Flask:
             # Maybe it's a free-agent pro not yet on any roster — render a preview (STR +
             # attributes) so they can be scouted BEFORE being signed through the portal.
             found = wd.find_pro(DEFAULT_SEED, pid)
-            if not found:
+            if found:
+                from app.web.state import scout_bars as _sb
+                from app import pros as _pros
+                pro, pg, _cyc, _dest = found
+                info = {"name": pro.name, "school": _dest or "Pros", "class": "Pro",
+                        "country": pro.country, "secondary_country": getattr(pro, "secondary_country", ""),
+                        "hometown": getattr(pro, "hometown", ""), "major": "",
+                        "overall": pro.current_overall(), "ceiling": pro.ceiling_overall(),
+                        "walk_on": False, "high_school": "", "school_city": "",
+                        "recruit_stars": 6, "is_pro": True, "free_agent": not _dest,
+                        "signed_with": _dest, "scholarship": 0.0, "scholarship_label": ""}
+                _empty_box = {"any": False, "lines": [], "rows": [], "tcells": {},
+                              "toverall": "", "tdual": ""}
+                return render_template("player.html", active="", pid=pid, info=info,
+                                       career=[], career_table=[],
+                                       records={"singles": _empty_box, "doubles": _empty_box},
+                                       strv=round(pro.str_value(), 1), rel=0.0, wins=0, losses=0,
+                                       gender=pg, honor_years=[], ranks=[], journey=[],
+                                       attrs=_sb(pro), crest=crest, u=u,
+                                       uni_label="Pro free agent")
+            # Alumni / historical fallback: graduates and moved players persist in the
+            # world store (world_signing / world_roster keeps every year) even after
+            # they leave the current season's rosters — hydrate from there so archive
+            # links (Hall of Fame, past singles/doubles champions, old honors) never
+            # 404. The career card below reads persisted history + honors, so it
+            # renders their full record; only live-season bits come back empty.
+            from app import economy
+            p = wd.find_persisted_player(pid)
+            if not p:
                 abort(404)
-            from app.web.state import scout_bars as _sb
-            from app import pros as _pros
-            pro, pg, _cyc, _dest = found
-            info = {"name": pro.name, "school": _dest or "Pros", "class": "Pro",
-                    "country": pro.country, "secondary_country": getattr(pro, "secondary_country", ""),
-                    "hometown": getattr(pro, "hometown", ""), "major": "",
-                    "overall": pro.current_overall(), "ceiling": pro.ceiling_overall(),
-                    "walk_on": False, "high_school": "", "school_city": "",
-                    "recruit_stars": 6, "is_pro": True, "free_agent": not _dest,
-                    "signed_with": _dest, "scholarship": 0.0, "scholarship_label": ""}
-            _empty_box = {"any": False, "lines": [], "rows": [], "tcells": {},
-                          "toverall": "", "tdual": ""}
-            return render_template("player.html", active="", pid=pid, info=info,
-                                   career=[], career_table=[],
-                                   records={"singles": _empty_box, "doubles": _empty_box},
-                                   strv=round(pro.str_value(), 1), rel=0.0, wins=0, losses=0,
-                                   gender=pg, honor_years=[], ranks=[], journey=[],
-                                   attrs=_sb(pro), crest=crest, u=u,
-                                   uni_label="Pro free agent")
+            school, _pdiv = wd.persisted_team(pid)
+            info = {"name": p.name, "school": school or "—",
+                    "class": getattr(p, "class_year", ""),
+                    "country": getattr(p, "country", ""),
+                    "secondary_country": getattr(p, "secondary_country", ""),
+                    "hometown": getattr(p, "hometown", ""),
+                    "major": getattr(p, "major", ""),
+                    "overall": p.current_overall(), "ceiling": p.ceiling_overall(),
+                    "walk_on": getattr(p, "walk_on", False),
+                    "high_school": getattr(p, "high_school", ""), "school_city": "",
+                    "recruit_stars": getattr(p, "recruit_stars", 0),
+                    "recruit_tier": getattr(p, "recruit_tier", ""),
+                    "scholarship": getattr(p, "scholarship", 0.0),
+                    "scholarship_label": economy.fraction_label(
+                        getattr(p, "scholarship", 0.0))}
         strv, rel = sm.season_player_str(sid).get(pid, (None, 0.0))
         from app.ncaa import player_by_pid
         from app.web.state import scout_bars
         from app import pros as _pros
         pr = player_by_pid(pid)
-        attrs = scout_bars(pr) if pr else []
         # Pros live in world_roster (portal-injected), not the base index — resolve from
-        # the persisted roster so the green PRO badge shows on their page.
+        # the persisted roster so the green PRO badge shows on their page. The same
+        # fallback serves alumni (graduated / moved players reached from the archives).
         _pp = pr or wd.find_persisted_player(pid)
+        attrs = scout_bars(_pp) if _pp else []
         info["is_pro"] = _pros.is_pro(_pp) if _pp else False
         career, (wins, losses) = player_career(division, gender, pid)
         career_table = player_career_table(division, gender, pid)

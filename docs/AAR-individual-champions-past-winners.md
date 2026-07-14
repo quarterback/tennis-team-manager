@@ -56,6 +56,18 @@ The data model is untouched; this is a read path over the existing snapshots.
 - **Empty states are silent.** No world / no snapshots → empty list → the panel and
   HOF rows simply don't render (fresh saves, standalone no-world seasons, tests).
 
+## Archive links and alumni (review fix)
+Code review caught that the new archive links could 404: past champions are often
+graduates or moved players, and `/player/<pid>` resolved only against the CURRENT
+season's rosters (plus free-agent pros) before aborting. Fixed in the player route
+with an **alumni fallback**: when a pid is absent from the live index and isn't a
+pro, hydrate from the persisted world store (`world.find_persisted_player` —
+world_signing, then world_roster which keeps every year) and render the normal
+player page. The career table, records, and honors all read persisted history /
+pid-keyed tables, so an alumni page shows the full record; only live-season fields
+come back empty. This also fixes the same latent 404 on old Hall of Fame POTY
+links. Truly unknown pids still 404.
+
 ## Tests
 - `tests/test_world.py::test_past_individual_champions_reads_snapshots` — inserts
   synthetic snapshots into a tmp world DB and checks ordering (newest first),
