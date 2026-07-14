@@ -572,6 +572,23 @@ _PEN_MEET2 = 3000          # met TWICE — a heavier rematch
 _PEN_MEET3 = 6000          # met THREE+ times — strongly avoid
 _PEN_AQ_VS_AQ = 1000       # two conference champions against each other
 
+# Women's "true seed" rule (effective the season after the 2026 NCAA change): the
+# top 16 overall are bracketed in their true ranking regardless of conference
+# affiliation, so they are never dropped or shuffled to keep a conference's teams in
+# separate regions. The men's committee still separates a conference's top four, so
+# men get no protection. Only the top-16 conference principle is dropped — rematch
+# and AQ-vs-AQ avoidance still shape the draw. See docs/AAR-womens-true-seed-top16.md.
+_TRUE_SEED_TOP = 16
+
+
+def _true_seed_protected(s, schools: list[str]) -> frozenset:
+    """The set of teams exempt from the same-conference bracketing charge: the top
+    `_TRUE_SEED_TOP` national seeds for the women's tournament, nothing for the men's.
+    `schools` is the national seed order (index 0 = overall #1)."""
+    if s["gender"] == "women":
+        return frozenset(schools[:_TRUE_SEED_TOP])
+    return frozenset()
+
 
 def _meeting_penalty(times: int) -> int:
     """Escalating penalty for rematching teams that met `times` in the regular
@@ -585,14 +602,21 @@ def _meeting_penalty(times: int) -> int:
     return 0
 
 
-def _pair_penalty(a, b, conf_of: dict, played_pairs, autobid_set: set) -> int:
+def _pair_penalty(a, b, conf_of: dict, played_pairs, autobid_set: set,
+                  protected: frozenset = frozenset()) -> int:
     """Bracketing penalty for a first-round matchup: same conference, a regular-season
     rematch (scaled by how many times they met), or two conference champions (AQs)
-    meeting in round one. `played_pairs` is a count map {frozenset(pair): meetings}."""
+    meeting in round one. `played_pairs` is a count map {frozenset(pair): meetings}.
+    `protected` names teams exempt from the same-conference charge — the women's
+    "true seed" rule: the top 16 are placed by pure ranking regardless of conference
+    affiliation, so they are never moved to dodge a same-conference opener (the men's
+    committee still separates a conference's top four, so its `protected` is empty).
+    Rematch and AQ-vs-AQ still apply — the rule only drops the conference principle."""
     if not a or not b:
         return 0
     s = 0
-    if conf_of.get(a) and conf_of.get(a) == conf_of.get(b):
+    if (conf_of.get(a) and conf_of.get(a) == conf_of.get(b)
+            and a not in protected and b not in protected):
         s += _PEN_SAME_CONF
     s += _meeting_penalty(played_pairs.get(frozenset((a, b)), 0))
     if a in autobid_set and b in autobid_set:
@@ -601,7 +625,7 @@ def _pair_penalty(a, b, conf_of: dict, played_pairs, autobid_set: set) -> int:
 
 
 def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs,
-                       autobid_set: set) -> list[tuple[str, str]]:
+                       autobid_set: set, protected: frozenset = frozenset()) -> list[tuple[str, str]]:
     """Pair a play-in field high-vs-low (seed 33 v 96, 34 v 95, …), then swap the
     low-seed opponents among games — every game stays a high-vs-low matchup — to avoid
     same-conference and rematch first-rounders. The same bracketing rule the ≤64 main
@@ -611,7 +635,7 @@ def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs,
     assign = list(range(g - 1, -1, -1))            # tops[i] meets bots[assign[i]] (reverse seed)
 
     def total():
-        return sum(_pair_penalty(tops[i], bots[assign[i]], conf_of, played_pairs, autobid_set)
+        return sum(_pair_penalty(tops[i], bots[assign[i]], conf_of, played_pairs, autobid_set, protected)
                    for i in range(g))
 
     cur = total()
@@ -631,7 +655,7 @@ def _deconflict_playin(playin: list[str], conf_of: dict, played_pairs,
 
 
 def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
-                  played_pairs) -> list[tuple[int, str, str]]:
+                  played_pairs, protected: frozenset = frozenset()) -> list[tuple[int, str, str]]:
     """National-championship first round. Place the seeded field into the standard
     bracket (1-seed band vs 16-seed band, etc.), then minimise bracketing penalties
     by swapping teams WITHIN a seed band — preserving seed integrity — to avoid
@@ -646,7 +670,7 @@ def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
     band = [(p - 1) // band_size for p in pos]     # seed band per bracket slot
 
     def total():
-        return sum(_pair_penalty(slots[2 * k], slots[2 * k + 1], conf_of, played_pairs, autobid_set)
+        return sum(_pair_penalty(slots[2 * k], slots[2 * k + 1], conf_of, played_pairs, autobid_set, protected)
                    for k in range(n // 2))
 
     cur = total()
@@ -668,7 +692,7 @@ def _seed_bracket(seeded: list[str], autobid_set: set, conf_of: dict,
 
 
 def _region_play_in(schools: list[str], conf_of: dict, played_pairs,
-                    autobid_set: set) -> list[tuple[int, str, str]]:
+                    autobid_set: set, protected: frozenset = frozenset()) -> list[tuple[int, str, str]]:
     """The 96-team regional opening round. Split the national seed list into four
     24-team regions by S-curve, then in each region pair seed lines 9v24, 10v23,
     … 16v17 (deconflicted to dodge same-conference / rematch openers). bpos is
@@ -676,14 +700,14 @@ def _region_play_in(schools: list[str], conf_of: dict, played_pairs,
     region for the main draw."""
     out = []
     for r, members in enumerate(regions.scurve_regions(schools)):
-        pairs = _deconflict_playin(members[8:24], conf_of, played_pairs, autobid_set)
+        pairs = _deconflict_playin(members[8:24], conf_of, played_pairs, autobid_set, protected)
         for g, (h, a) in enumerate(pairs):
             out.append((r * 8 + g, h, a))
     return out
 
 
 def _region_r16(byes: list[str], winners: list[str], conf_of: dict, played_pairs,
-                autobid_set: set) -> list[tuple[str, str]]:
+                autobid_set: set, protected: frozenset = frozenset()) -> list[tuple[str, str]]:
     """One region's 16-team bracket: bye seed BYE_SEQ[k] hosts the opening-round
     winner of line (17 − BYE_SEQ[k]). Every winner is lower-seeded than every bye,
     so we may swap which winner faces which bye (seed-safe) to minimise penalties."""
@@ -692,7 +716,7 @@ def _region_r16(byes: list[str], winners: list[str], conf_of: dict, played_pairs
 
     def total():
         return sum(_pair_penalty(byes[regions.BYE_SEQ[k] - 1], winners[order[k]],
-                                 conf_of, played_pairs, autobid_set) for k in range(8))
+                                 conf_of, played_pairs, autobid_set, protected) for k in range(8))
 
     cur = total()
     for _ in range(60):
@@ -711,7 +735,8 @@ def _region_r16(byes: list[str], winners: list[str], conf_of: dict, played_pairs
 
 
 def _region_main_draw(schools: list[str], winners: list[str], conf_of: dict,
-                      played_pairs, autobid_set: set) -> list[tuple[int, str, str]]:
+                      played_pairs, autobid_set: set,
+                      protected: frozenset = frozenset()) -> list[tuple[int, str, str]]:
     """The 64-team main draw after the regional play-in: each region's eight byes
     plus its eight play-in winners, laid out as four 16-brackets concatenated in
     MAIN_DRAW_ORDER so the region champions meet in the national semifinals."""
@@ -719,13 +744,13 @@ def _region_main_draw(schools: list[str], winners: list[str], conf_of: dict,
     out = []
     for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
         rw = winners[r * 8:(r + 1) * 8]            # this region's play-in winners (game order)
-        for k, (h, a) in enumerate(_region_r16(regs[r][:8], rw, conf_of, played_pairs, autobid_set)):
+        for k, (h, a) in enumerate(_region_r16(regs[r][:8], rw, conf_of, played_pairs, autobid_set, protected)):
             out.append((slot * 8 + k, h, a))
     return out
 
 
 def _region_main_draw_64(schools: list[str], conf_of: dict, played_pairs,
-                         autobid_set: set) -> list[tuple[int, str, str]]:
+                         autobid_set: set, protected: frozenset = frozenset()) -> list[tuple[int, str, str]]:
     """A 64-team field by the same regional methodology, without a play-in: split
     into four S-curve regions of 16 (no byes — all 16 play), seed each region's
     16-bracket (within-band deconfliction preserved), and concatenate the four in
@@ -733,7 +758,7 @@ def _region_main_draw_64(schools: list[str], conf_of: dict, played_pairs,
     regs = regions.scurve_regions(schools)
     out = []
     for slot, r in enumerate(regions.MAIN_DRAW_ORDER):
-        for k, h, a in _seed_bracket(regs[r], autobid_set, conf_of, played_pairs):
+        for k, h, a in _seed_bracket(regs[r], autobid_set, conf_of, played_pairs, protected):
             out.append((slot * 8 + k, h, a))
     return out
 
@@ -911,25 +936,26 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
                             (sid,)).fetchone()["c"]
     if existing == 0:                                  # select + seed the national field
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
+        protected = _true_seed_protected(s, schools)
         main = _pow2_le(len(schools))
         week = _next_post_week(conn, sid)
         if len(schools) == 96:
             # D1's 96-team field: four S-curve regions of 24. Top 8 per region get
             # byes; lines 9–24 play the regional opening round (9v24, …, 16v17).
-            for bpos, h, a in _region_play_in(schools, conf_of, played, autobid_set):
+            for bpos, h, a in _region_play_in(schools, conf_of, played, autobid_set, protected):
                 _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, bpos, h, a)
         elif len(schools) > main:
             # Other non-power-of-two field: a flat play-in (top seeds bye, 33 v 96, …).
             byes_n = 2 * main - len(schools)
             playin = schools[byes_n:]
-            for i, (h, a) in enumerate(_deconflict_playin(playin, conf_of, played, autobid_set)):
+            for i, (h, a) in enumerate(_deconflict_playin(playin, conf_of, played, autobid_set, protected)):
                 _insert_dual(conn, sid, week, "NCAA", "First Round", 0, 1, i, h, a)
         elif len(schools) == 64:
             # D2/D3/D4: four S-curve regions of 16, no play-in (all 16 play).
-            for bpos, h, a in _region_main_draw_64(schools, conf_of, played, autobid_set):
+            for bpos, h, a in _region_main_draw_64(schools, conf_of, played, autobid_set, protected):
                 _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 1, bpos, h, a)
         else:                                          # other clean power-of-two field
-            for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played):
+            for bpos, h, a in _seed_bracket(schools, autobid_set, conf_of, played, protected):
                 _insert_dual(conn, sid, week, "NCAA", _round_name(len(schools)), 0, 1, bpos, h, a)
         round_no = 1
     else:
@@ -944,19 +970,20 @@ def _advance_ncaa_round(conn, s, progs) -> dict:
     # Play-in just finished → seed the main draw from the byes + play-in winners.
     if round_no == 1:
         schools, autobid_set, conf_of, played = _ncaa_seeds(conn, s, progs, div)
+        protected = _true_seed_protected(s, schools)
         main = _pow2_le(len(schools))
         if len(schools) == 96:
             # Regional main draw: each region's byes + its play-in winners, four
             # 16-brackets laid out so the region champions meet in the semifinals.
             week = _next_post_week(conn, sid)
-            for bpos, h, a in _region_main_draw(schools, winners, conf_of, played, autobid_set):
+            for bpos, h, a in _region_main_draw(schools, winners, conf_of, played, autobid_set, protected):
                 _insert_dual(conn, sid, week, "NCAA", "Round of 64", 0, 2, bpos, h, a)
             return {"phase": "ncaa", "round": 1, "round_name": "First Round", "played": len(due)}
         if len(schools) > main:
             byes_n = 2 * main - len(schools)
             r64 = schools[:byes_n] + winners           # byes (top seeds) + play-in winners
             week = _next_post_week(conn, sid)
-            for bpos, h, a in _seed_bracket(r64, autobid_set, conf_of, played):
+            for bpos, h, a in _seed_bracket(r64, autobid_set, conf_of, played, protected):
                 _insert_dual(conn, sid, week, "NCAA", _round_name(len(r64)), 0, 2, bpos, h, a)
             return {"phase": "ncaa", "round": 1, "round_name": "First Round", "played": len(due)}
 
