@@ -1988,6 +1988,24 @@ def create_app() -> Flask:
         reset_all()
         return redirect(url_for("editor", u=request.form.get("u", "D1-men")))
 
+    def _apply_editor_moves(moves: list[tuple[str, str]]):
+        """Commit editor moves — ALL of them under a single invalidation, because
+        `reset_all()` + the move-version prime stamp make the next full-world page
+        rebuild every roster; paying that once per player was the old per-row flow's
+        friction. During the fall-portal hold the moves become portal ADDs instead
+        (two-stint history + balancing cascade; they land at portal commit)."""
+        w = wd.load_world()
+        if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
+            if not ov.get_proposals(w["year"]):
+                wd.run_fall_portal()
+            for pid, dest in moves:
+                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
+            return redirect(url_for("fall_portal"))
+        for pid, dest in moves:
+            ov.set_move(pid, dest)
+        reset_all()                                    # ONCE for the whole batch
+        return None
+
     @app.route("/editor/move", methods=["POST"])
     def editor_move():
         u = request.form.get("u", "D1-men")
@@ -1995,18 +2013,23 @@ def create_app() -> Flask:
         pid = request.form.get("pid", "")
         dest = request.form.get("dest", "")
         if pid and dest:
-            w = wd.load_world()
-            if w and sm.FALL_PORTAL_ENABLED and wd._all_in_fall_portal(DEFAULT_SEED, w):
-                # During the fall-portal window an editor move becomes a portal ADD,
-                # so it earns the two-stint history + balancing cascade instead of
-                # collapsing the season to one school. It lands when you commit the
-                # portal, not immediately — review it on the fall-portal screen.
-                if not ov.get_proposals(w["year"]):
-                    wd.run_fall_portal()
-                wd.add_fall_portal_mover(DEFAULT_SEED, pid, dest)
-                return redirect(url_for("fall_portal"))
-            ov.set_move(pid, dest)
-            reset_all()
+            resp = _apply_editor_moves([(pid, dest)])
+            if resp:
+                return resp
+        return redirect(url_for("editor", u=u, school=school))
+
+    @app.route("/editor/move_batch", methods=["POST"])
+    def editor_move_batch():
+        # One POST for the whole roster: every `dest_<pid>` field whose destination
+        # differs from the current school becomes a move; unchanged rows are ignored.
+        u = request.form.get("u", "D1-men")
+        school = request.form.get("school", "")
+        moves = [(k[5:], v) for k, v in request.form.items()
+                 if k.startswith("dest_") and v and v != school]
+        if moves:
+            resp = _apply_editor_moves(moves)
+            if resp:
+                return resp
         return redirect(url_for("editor", u=u, school=school))
 
     @app.route("/editor/lineup", methods=["POST"])
