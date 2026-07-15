@@ -60,3 +60,35 @@ def test_editor_single_move_still_works():
                                      "pid": pid, "dest": dest})
     assert r.status_code == 302
     assert ov.get_moves().get(pid) == dest
+
+
+def test_editor_move_batch_rejects_cross_gender_dest():
+    """A women's player must never move onto a men's roster. The MOVE picker is
+    gender-filtered, but a hand-crafted POST naming a men's program is dropped."""
+    dw = ncaa.load_division("D1", "women")
+    dm = ncaa.load_division("D1", "men")
+    src = sorted(p.school for p in dw.programs)[0]
+    mens_dest = sorted(p.school for p in dm.programs)[0]
+    pid = ncaa.build_roster(dw.by_school(src))[0].pid
+
+    c = create_app().test_client()
+    r = c.post("/editor/move_batch", data={"u": "D1-women", "school": src,
+                                           f"dest_{pid}": mens_dest})
+    assert r.status_code == 302
+    assert pid not in ov.get_moves()             # cross-gender move silently dropped
+
+
+def test_editor_move_batch_allows_cross_division_same_gender():
+    """Cross-DIVISION moves within a gender stay allowed (the misallocation
+    reshuffle depends on them) — a women's player can move D1→D2 women."""
+    d1 = ncaa.load_division("D1", "women")
+    d2 = ncaa.load_division("D2", "women")
+    src = sorted(p.school for p in d1.programs)[0]
+    dest = sorted(p.school for p in d2.programs)[0]
+    pid = ncaa.build_roster(d1.by_school(src))[0].pid
+
+    c = create_app().test_client()
+    r = c.post("/editor/move_batch", data={"u": "D1-women", "school": src,
+                                           f"dest_{pid}": dest})
+    assert r.status_code == 302
+    assert ov.get_moves().get(pid) == dest
