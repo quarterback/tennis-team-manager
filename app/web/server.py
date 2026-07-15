@@ -1938,7 +1938,7 @@ def create_app() -> Flask:
                                school=school, schools=schools, rows=rows, head=head,
                                doubles_pin=ov.get_doubles().get(school) or [],
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
-                               groups=all_programs_grouped(), ov=active_overrides(),
+                               groups=all_programs_grouped(gender), ov=active_overrides(),
                                scholarships=schol, prestige=prestige, academics=academics,
                                staff=coaching_staff(division, gender, school),
                                move_tree=coach_move_tree(),
@@ -2103,10 +2103,15 @@ def create_app() -> Flask:
     def editor_move_batch():
         # One POST for the whole roster: every `dest_<pid>` field whose destination
         # differs from the current school becomes a move; unchanged rows are ignored.
-        u = request.form.get("u", "D1-men")
+        _division, gender, _label, u = _universe(request)
         school = request.form.get("school", "")
         moves = [(k[5:], v) for k, v in request.form.items()
                  if k.startswith("dest_") and v and v != school]
+        # Guard: a player may only move to a program of their OWN gender. The MOVE
+        # picker is already gender-filtered, but a hand-crafted POST could still name
+        # a men's program for a women's player (or vice versa) — drop those silently.
+        same_gender = {s for _lbl, slist in all_programs_grouped(gender) for s in slist}
+        moves = [(pid, dest) for pid, dest in moves if dest in same_gender]
         if moves:
             resp = _apply_editor_moves(moves)
             if resp:

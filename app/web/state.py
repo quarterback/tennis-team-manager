@@ -2043,12 +2043,21 @@ def editor_roster(division: str, gender: str, school: str):
     return rows, {"school": school, "abbr": abbr, "color": color}
 
 
-def all_programs_grouped():
+def all_programs_grouped(gender=None):
+    """Programs grouped by universe (label, [schools]) for the editor MOVE picker.
+
+    Pass `gender` ("men"/"women") to restrict to that gender only — a women's
+    player must never be movable onto a men's roster, and vice versa. The result
+    still spans every division of that gender (cross-division moves are intended),
+    so a women's editor sees "D1 Women / D2 Women / …", never any men's program.
+    """
     from app import ncaa
     out = []
-    for val, division, gender, label in UNIVERSES:
+    for val, division, g, label in UNIVERSES:
+        if gender and g != gender:
+            continue
         try:
-            div = ncaa.load_division(division, gender)
+            div = ncaa.load_division(division, g)
         except FileNotFoundError:
             continue
         out.append((label, sorted(p.school for p in div.programs)))
