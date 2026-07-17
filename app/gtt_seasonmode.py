@@ -1485,6 +1485,57 @@ def player_detail(league_id, pid):
     teams.sort(key=lambda t: t["w"] + t["l"], reverse=True)
     multi_team = len(teams) > 1
 
+    # --- Career by season: the college years (carried on the prospect's own
+    # history, written by world._record_world_history before graduation) followed
+    # by every pro season — the same table shape as the college player card, so a
+    # graduate's four college years persist onto their pro page. ---
+    strv, str_rel = league_player_str(league_id).get(pid, (p.str_value(), 0.0))
+    career_rows = []
+    for h in (p.history or []):
+        career_rows.append({
+            "kind": "college", "cal_year": 2026 + int(h.get("year", 0)),
+            "team": h.get("school", ""), "division": h.get("division", ""),
+            "gender": h.get("gender", ""), "cls": h.get("class", ""),
+            "pos": h.get("line") or "—", "w": h.get("w"), "l": h.get("l"),
+            "str": h.get("str"), "stint": h.get("stint", 0)})
+    career_rows.sort(key=lambda r: (r["cal_year"], r["stint"]))
+    conn3 = _db()
+    for y in range(0, year + 1):
+        ww, ll = _records_for_year(conn3, league_id, y).get(pid, [0, 0])
+        if ww + ll == 0 and y != year:
+            continue                                   # not in the league that season
+        clubs = _team_records_for_year(conn3, league_id, y).get(pid, {})
+        club = " / ".join(names.get(f, str(f)) for f in clubs) or names.get(row["fid"], "")
+        career_rows.append({
+            "kind": "pro", "cal_year": BASE_YEAR + y, "team": club,
+            "division": "GTT", "gender": row["gender"],
+            "cls": f"Pro {y - (row['joined_year'] or 0) + 1}" if row["origin"] != "founder" else "Pro",
+            "pos": "—", "w": ww, "l": ll,
+            "str": round(strv, 1) if y == year else None, "stint": 0})
+    # The player's own transaction history (drafted / signed / waived), all years.
+    tx_rows = conn3.execute(
+        "SELECT year, week, fid, add_pid, drop_pid, add_str, drop_str FROM gtt_transactions"
+        " WHERE league_id=? AND (add_pid=? OR drop_pid=?) ORDER BY year DESC, week DESC, id DESC",
+        (league_id, pid, pid)).fetchall()
+    moves = []
+    for t in tx_rows:
+        added = t["add_pid"] == pid
+        kind = ("Drafted / signed" if t["week"] == 0 else "Signed off the wire") if added \
+            else ("Released" if t["week"] == 0 else "Waived")
+        moves.append({"cal_year": BASE_YEAR + t["year"], "week": t["week"],
+                      "kind": kind, "added": added,
+                      "franchise": names.get(t["fid"], str(t["fid"]))})
+    conn3.close()
+
+    # Scouting grades for the attribute panel — same 20-80 scale the college card
+    # shows, so the pro card reads like the same player sheet.
+    attributes = [(lbl, p.current_grade(a)) for lbl, a in (
+        ("Serve Power", "first_serve_power"), ("Serve Accuracy", "first_serve_accuracy"),
+        ("Return", "return_quality"), ("Forehand", "forehand_power"),
+        ("Backhand", "backhand_power"), ("Consistency", "groundstroke_consistency"),
+        ("Net Play", "net_play"), ("Speed", "speed"), ("Stamina", "stamina"),
+        ("Composure", "composure"), ("Clutch", "clutch"))]
+
     enshrined = conn2 = None
     conn2 = _db()
     enshrined = conn2.execute("SELECT 1 FROM gtt_hof WHERE league_id=? AND pid=?",
@@ -1493,7 +1544,6 @@ def player_detail(league_id, pid):
 
     import app.honors as honors
     career = honors.career_by_year(pid, "player")
-    strv, str_rel = league_player_str(league_id).get(pid, (p.str_value(), 0.0))
     return {"pid": pid, "name": p.name, "country": p.country, "gender": row["gender"],
             "age": row["age"], "origin": row["origin"], "status": row["status"],
             "fid": row["fid"], "franchise": names.get(row["fid"], "Free agent"),
@@ -1501,7 +1551,10 @@ def player_detail(league_id, pid):
             "overall": round(p.current_overall()),
             "w": w, "l": l, "honors": player_honors(league_id, pid),
             "season_teams": teams, "multi_team": multi_team,
-            "career_honors": career, "log": log, "enshrined": enshrined}
+            "career_honors": career, "log": log, "enshrined": enshrined,
+            "career_table": career_rows, "moves": moves, "attributes": attributes,
+            "college_school": next((r["team"] for r in career_rows
+                                    if r["kind"] == "college"), None)}
 
 
 # --------------------------------------------------------------------------

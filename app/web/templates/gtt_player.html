@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch — {{ p.name }}{% endblock %}
 {% block content %}
-<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:680px">
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
 
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_franchise', fid=p.fid, lg=league.id) }}">← {{ p.franchise }}</a>
 
@@ -11,7 +11,10 @@
       <span class="bl-panel-meta">{{ p.franchise }} · age {{ p.age }} · STR {{ p.str }} · {{ p.w }}-{{ p.l }} this season{% if p.status == 'retired' %} · retired{% endif %}</span>
     </div>
     {% if p.origin == 'college' %}
-    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> College graduate — career honors below span college and pro.</div>
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">
+      <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+      College graduate{% if p.college_school %} — {{ p.college_school }}{% endif %} · career below spans college and pro.
+    </div>
     {% endif %}
     <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff">{{ h }}</span>{% endfor %}
@@ -22,6 +25,36 @@
         <input type="hidden" name="lg" value="{{ league.id }}">
         <button class="bl-pill" type="submit"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Enshrine in Hall of Fame</button></form>
       {% endif %}
+    </div>
+  </div>
+
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
+      <span class="bl-panel-meta">college years, then pro · a school change is a transfer</span></div>
+    <div class="bl-tablescroll" style="border:none">
+      <div class="bl-table" style="--bl-grid-cols: 64px minmax(150px,1fr) 64px 52px 72px 56px">
+        <div class="bl-thead">
+          <span class="bl-th">SEASON</span><span class="bl-th">TEAM</span><span class="bl-th">CLASS</span>
+          <span class="bl-th">POS</span><span class="bl-th num">RECORD</span><span class="bl-th num">STR</span>
+        </div>
+        {% for s in p.career_table %}
+        <div class="bl-row">
+          <span class="bl-conf" style="white-space:nowrap">{{ s.cal_year }}</span>
+          {% if s.kind == 'college' and s.division and s.gender %}
+          <a class="bl-school" href="{{ url_for('teams', school=s.team, u=s.division ~ '-' ~ s.gender) }}">{{ s.team }}
+            <span class="bl-conf" style="font-size:11px">{{ s.division }}</span></a>
+          {% else %}
+          <span class="bl-school" style="cursor:default">{{ s.team }}
+            <span class="bl-conf" style="font-size:11px;{% if s.kind == 'pro' %}color:var(--accent){% endif %}">{{ s.division }}</span></span>
+          {% endif %}
+          <span class="bl-conf">{{ s.cls }}</span>
+          <span class="bl-conf">{{ s.pos }}</span>
+          <span class="bl-rec" style="text-align:right">{% if s.w is none %}—{% else %}{{ s.w }}-{{ s.l }}{% endif %}</span>
+          <span class="bl-cell-num"><span class="bl-stat power">{% if s.str %}{{ "%.1f"|format(s.str) }}{% else %}—{% endif %}</span></span>
+        </div>
+        {% endfor %}
+        {% if not p.career_table %}<div style="padding:14px 16px;color:var(--text-muted)">No seasons on record.</div>{% endif %}
+      </div>
     </div>
   </div>
 
@@ -59,33 +92,34 @@
   </div>
   {% endif %}
 
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Match log</span>
-      <span class="bl-panel-meta">{{ p.log|length }} lines played</span></div>
-    <div class="bl-tablescroll"><div class="bl-table {{ 'gtt-log-mt' if p.multi_team else 'gtt-log' }}">
-      <div class="bl-thead gtt-log-row">
-        <span class="bl-th num">Wk</span><span class="bl-th">Slot</span>
-        {% if p.multi_team %}<span class="bl-th">Club</span>{% endif %}
-        <span class="bl-th">Opponent</span><span class="bl-th">Res</span><span class="bl-th num">Score</span>
+  <div class="bl-board-grid">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
+        <span class="bl-panel-meta">draft, signings &amp; releases</span></div>
+      <div style="padding:8px 16px">
+        {% for m in p.moves %}
+        <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
+          <span style="font-variant-numeric:tabular-nums;color:var(--text-muted);width:48px">{{ m.cal_year }}</span>
+          <span style="font-weight:600;color:{{ 'var(--stat-good-strong)' if m.added else 'var(--text-muted)' }}">{{ m.kind }}</span>
+          <span style="color:var(--text-muted);font-size:12px;margin-left:auto">{{ m.franchise }}{% if m.week %} · wk {{ m.week }}{% endif %}</span>
+        </div>
+        {% endfor %}
+        {% if not p.moves %}<div style="padding:6px 0;color:var(--text-muted)">No moves on record.</div>{% endif %}
       </div>
-      {% for m in p.log %}
-      <div class="bl-row gtt-log-row">
-        <span class="bl-cell-num">{{ m.week }}</span>
-        <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ m.slot }}{% if m.round == 'PO' %} ·PO{% endif %}</span>
-        {% if p.multi_team %}<span class="bl-cell" style="font-size:12px"><span class="nm">{{ m.team }}</span></span>{% endif %}
-        <span class="bl-cell"><span class="nm">{{ m.opp }}</span></span>
-        <span class="bl-cell" style="font-weight:700;color:{{ 'var(--stat-good-strong)' if m.won else 'var(--text-muted)' }}">{{ 'W' if m.won else 'L' }}</span>
-        <span class="bl-cell-num" style="font-variant-numeric:tabular-nums">{{ m.scoreline or '—' }}</span>
+    </div>
+
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
+        <span class="bl-panel-meta">scouting grades · 20–80</span></div>
+      <div style="padding:8px 16px">
+        {% for lbl, val in p.attributes %}
+        <div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--border-subtle);align-items:center">
+          <span style="flex:1">{{ lbl }}</span>
+          <span class="bl-stat power" style="font-variant-numeric:tabular-nums">{{ val }}</span>
+        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
-      {% if not p.log %}<div style="padding:14px 16px;color:var(--text-muted)">No completed matches yet.</div>{% endif %}
-    </div></div>
+    </div>
   </div>
 </div>
-
-<style>
-.gtt-log { --bl-grid-cols: 36px 64px minmax(140px,1fr) 40px 120px; }
-.gtt-log-mt { --bl-grid-cols: 36px 56px minmax(110px,1fr) minmax(110px,1fr) 36px 104px; }
-.gtt-log .nm, .gtt-log-mt .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-</style>
 {% endblock %}
