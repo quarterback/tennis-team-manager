@@ -15,6 +15,7 @@ Seed-deterministic: same (division, gender, seed) ⇒ same season.
 """
 from __future__ import annotations
 
+import os
 import random
 from dataclasses import dataclass, field
 
@@ -34,6 +35,28 @@ NATIONAL_FIELD = 64
 # dual. This constant is the code default; the per-save UI switch on the world hub
 # (worldconfig.box_stats_enabled) overrides it at sim time.
 BOX_STATS = True
+
+# Dual-match fidelity for season-mode sims. "fast" (game-level Bernoulli) is the
+# default everywhere — it is the tuned production model and keeps a full world
+# responsive. "full" resolves every POINT (engine.match), which is far slower but
+# is the higher-fidelity reference; meant for offline calibration on a local
+# machine, never the request thread. The authority is the per-save switch on the
+# world hub (worldconfig.match_fidelity); the env var TTM_FIDELITY=full forces it
+# on regardless (used by scripts/postseason_validation.py --full). BOX_STATS is the
+# same shape — wrapped defensively so a config/DB hiccup degrades to "fast".
+BOX_STATS_FALLBACK_FIDELITY = "fast"
+
+
+def _fidelity() -> str:
+    """The per-save match fidelity ("fast"/"full"), read at sim time so flipping
+    the world-hub switch takes effect from the next dual on."""
+    try:
+        from app import worldconfig
+        f = worldconfig.match_fidelity()
+        return f if f in ("fast", "full") else BOX_STATS_FALLBACK_FIDELITY
+    except Exception:
+        import os
+        return "full" if os.environ.get("TTM_FIDELITY", "").strip().lower() == "full" else BOX_STATS_FALLBACK_FIDELITY
 
 
 def _box_stats_on() -> bool:
@@ -309,7 +332,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     forced = (forced_home or set()) | (forced_away or set())
     priority = {i for i in range(len(la))
                 if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
-    res = simulate_dual(sa, sb, seed=seed, fidelity="fast", priority_finish=priority,
+    res = simulate_dual(sa, sb, seed=seed, fidelity=_fidelity(), priority_finish=priority,
                         box_stats=box_stats)
     lines = []
     for ln in res.lines:
@@ -458,7 +481,7 @@ def _conf_tournament(members: list[Program], standings_order: list[Program],
             a, b = slots[i], slots[i + 1]
             if not a or not b:
                 nxt.append(a or b); continue
-            nxt.append(play_dual(a, b, seed=rng.randint(1, 10**9), fidelity="fast"))
+            nxt.append(play_dual(a, b, seed=rng.randint(1, 10**9), fidelity=_fidelity()))
         slots = nxt
     return next(s for s in slots if s)
 

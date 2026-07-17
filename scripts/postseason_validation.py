@@ -411,12 +411,18 @@ def main(argv):
             seeds = int(argv[i + 1]); i += 2; continue
         if a == "--out":
             out = argv[i + 1]; i += 2; continue
+        if a == "--full":
+            # Point-by-point engine (engine.match) instead of the fast game model.
+            # app.season._fidelity() honours TTM_FIDELITY=full. Much slower.
+            os.environ["TTM_FIDELITY"] = "full"; i += 1; continue
         if ":" in a:
             d, g = a.split(":", 1); targets.append((d, g))
         i += 1
     if not targets:
         targets = [("D1", "men"), ("D1", "women")]
     os.makedirs(out, exist_ok=True)
+    fidelity = "full" if os.environ.get("TTM_FIDELITY", "").lower() == "full" else "fast"
+    print(f"engine fidelity: {fidelity}")
 
     all_duals, all_singles, per_target = [], [], {}
     for div, gen in targets:
@@ -454,7 +460,7 @@ def main(argv):
     _write_csv(os.path.join(out, "singles.csv"), all_singles)
     with open(os.path.join(out, "summary.json"), "w") as f:
         json.dump({"targets": [f"{d}:{g}" for d, g in targets], "seeds": seeds,
-                   "analysis": per_target}, f, indent=2)
+                   "fidelity": fidelity, "analysis": per_target}, f, indent=2)
     print(f"Wrote duals.csv ({len(all_duals)}), singles.csv ({len(all_singles)}), "
           f"summary.json -> {out}")
 

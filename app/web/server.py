@@ -679,7 +679,8 @@ def create_app() -> Flask:
     def world_view():
         from app import worldconfig
         return render_template("world.html", active="World", hub=world_hub(), crest=crest,
-                               box_stats=worldconfig.box_stats_enabled())
+                               box_stats=worldconfig.box_stats_enabled(),
+                               full_engine=worldconfig.match_fidelity() == "full")
 
     @app.route("/world/boxstats", methods=["POST"])
     def world_boxstats():
@@ -687,6 +688,15 @@ def create_app() -> Flask:
         # untouched either way — off just means scoreline-only persistence).
         from app import worldconfig
         worldconfig.set_box_stats(request.form.get("on") == "1")
+        return redirect(request.referrer or url_for("world_view"))
+
+    @app.route("/world/fidelity", methods=["POST"])
+    def world_fidelity():
+        # Per-save switch for match fidelity. "full" resolves every point (slow,
+        # offline-calibration use); "fast" is the tuned production model. Read at
+        # sim time, so flipping it applies from the next dual on.
+        from app import worldconfig
+        worldconfig.set_match_fidelity(request.form.get("full") == "1")
         return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/world/advance", methods=["POST"])

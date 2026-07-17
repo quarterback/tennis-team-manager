@@ -10,6 +10,13 @@
       <i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Box stats: {{ 'On' if box_stats else 'Off' }}
     </button>
   </form>
+  <form method="post" action="{{ url_for('world_fidelity') }}">
+    <input type="hidden" name="full" value="{{ '0' if full_engine else '1' }}">
+    <button class="bl-pill" style="cursor:pointer"
+      title="Match fidelity. Fast = the tuned game-level model (default, keeps the world responsive). Full = the point-by-point engine — much slower, meant for offline calibration on a local machine. Takes effect from the next dual on; flip it back to Fast when you're done.">
+      <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Engine: {{ 'Full' if full_engine else 'Fast' }}
+    </button>
+  </form>
   {% if hub.primary.link %}
   <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:8px;padding:0 16px;font-size:13px;text-decoration:none">
     {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}

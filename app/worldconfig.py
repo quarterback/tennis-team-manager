@@ -223,6 +223,23 @@ def set_box_stats(on) -> None:
     set("box_stats", "on" if on else "off")
 
 
+def match_fidelity() -> str:
+    """Per-save dual-match fidelity. "fast" (default) is the tuned game-level model
+    that keeps a full world responsive; "full" resolves every POINT (engine.match)
+    for a higher-fidelity but much slower sim — meant for offline calibration on a
+    local machine, flipped on for the stretch you care about and back off after.
+    Read at sim time, so flipping it mid-season takes effect from the next dual on.
+    An env var TTM_FIDELITY=full forces full regardless of the stored switch."""
+    import os
+    if os.environ.get("TTM_FIDELITY", "").strip().lower() == "full":
+        return "full"
+    return "full" if get("match_fidelity") == "full" else "fast"
+
+
+def set_match_fidelity(full) -> None:
+    set("match_fidelity", "full" if full else "fast")
+
+
 DEFAULT_PRESEASON_PORTAL_CAP = 250
 
 
