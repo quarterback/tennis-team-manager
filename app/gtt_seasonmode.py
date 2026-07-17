@@ -494,6 +494,19 @@ def list_leagues():
     return [dict(r) for r in rows]
 
 
+def delete_league(league_id):
+    """Delete a league and everything it owns (franchises, players, duals,
+    seasons, transactions, Hall of Fame). Irreversible; the world it drew
+    graduates from is untouched."""
+    conn = _db()
+    for t in ("gtt_duals", "gtt_players", "gtt_franchises", "gtt_seasons",
+              "gtt_transactions", "gtt_hof"):
+        conn.execute(f"DELETE FROM {t} WHERE league_id=?", (league_id,))
+    conn.execute("DELETE FROM gtt_leagues WHERE id=?", (league_id,))
+    conn.commit()
+    conn.close()
+
+
 def franchises(league_id):
     conn = _db()
     rows = conn.execute("SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id",
@@ -819,6 +832,37 @@ def _offseason(conn, s, fidelity):
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
 
+    # --- College takeover: synthetic founders don't hold seats once the college
+    # pipeline is live (owner rule 2027-07). Each off-season, every FOUNDER still
+    # on a roster is released — weakest first, capped at the number of real
+    # graduates actually available to replace them — and the open seats are filled
+    # by the intake + draft below. A league started on founders converges to
+    # college-fed rosters, then operates naturally (no roster founders remain).
+    # Released founders retire rather than joining the wire, so they can't creep
+    # back via in-season add/drop. Every release is logged to gtt_transactions
+    # (week 0 = off-season) so the turnover is visible on the hub wire.
+    have_pids = {r["pid"] for r in conn.execute(
+        "SELECT pid FROM gtt_players WHERE league_id=?", (lid,)).fetchall()}
+    grads_avail = {"m": 0, "w": 0}
+    for gg, _pid, _data, _str in _world_graduates(conn, s["world_seed"], have_pids, 10_000):
+        grads_avail[gg] += 1
+    if grads_avail["m"] or grads_avail["w"]:
+        by_g = {"m": [], "w": []}
+        for r in conn.execute("SELECT id, pid, gender, fid, data FROM gtt_players"
+                              " WHERE league_id=? AND status='active' AND fid IS NOT NULL"
+                              " AND origin='founder'", (lid,)).fetchall():
+            by_g[r["gender"]].append((_prospect(r["data"]).str_value(), r))
+        for gg in ("m", "w"):
+            by_g[gg].sort(key=lambda x: x[0])            # weakest released first
+            for st, r in by_g[gg][:grads_avail[gg]]:
+                conn.execute("UPDATE gtt_players SET status='retired', fid=NULL"
+                             " WHERE id=?", (r["id"],))
+                conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid,"
+                             " gender, add_pid, drop_pid, add_str, drop_str)"
+                             " VALUES (?,?,?,?,?,?,?,?,?)",
+                             (lid, year, 0, r["fid"], gg, None, r["pid"],
+                              None, round(st, 1)))
+
     # Open slots per franchise drive how many graduates we need.
     fids = [f["id"] for f in _fr_rows(conn, lid)]
     need = {"m": 0, "w": 0}
@@ -849,9 +893,9 @@ def _draft(conn, lid, year, prev_year):
     pool = {"m": [], "w": []}
     for r in conn.execute("SELECT id, pid, gender, data FROM gtt_players WHERE league_id=?"
                           " AND fid IS NULL AND status='active'", (lid,)).fetchall():
-        pool[r["gender"]].append((r["id"], _prospect(r["data"]).str_value()))
+        pool[r["gender"]].append((r["id"], r["pid"], _prospect(r["data"]).str_value()))
     for g in pool:
-        pool[g].sort(key=lambda x: x[1], reverse=True)    # best available first
+        pool[g].sort(key=lambda x: x[2], reverse=True)    # best available first
 
     counts = {fid: {"m": len(_active(conn, lid, fid, "m")),
                     "w": len(_active(conn, lid, fid, "w"))} for fid in order}
@@ -863,8 +907,14 @@ def _draft(conn, lid, year, prev_year):
             for fid in seq:
                 if counts[fid][g] >= tgt or not pool[g]:
                     continue
-                pid_id, _str = pool[g].pop(0)
+                pid_id, pid, st = pool[g].pop(0)
                 conn.execute("UPDATE gtt_players SET fid=? WHERE id=?", (fid, pid_id))
+                # Week-0 log row: the draft pick, so off-season intake is visible
+                # on the hub wire (add-only — no one was dropped for a draftee).
+                conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid,"
+                             " gender, add_pid, drop_pid, add_str, drop_str)"
+                             " VALUES (?,?,?,?,?,?,?,?,?)",
+                             (lid, year, 0, fid, g, pid, None, round(st, 1), None))
                 counts[fid][g] += 1
                 picked = True
             rnd += 1
@@ -972,18 +1022,25 @@ def transactions(league_id, year=None, limit=200):
     names = _fr_names(conn, league_id)
     name_cache: dict = {}
 
-    def nm(pid):
+    def meta(pid):
+        """(name, origin) for a pid — null-safe: off-season rows are one-sided
+        (a draft pick has no drop; a founder release has no add)."""
+        if pid is None:
+            return "", ""
         if pid not in name_cache:
-            r = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+            r = conn.execute("SELECT data, origin FROM gtt_players WHERE league_id=? AND pid=?",
                              (league_id, pid)).fetchone()
-            name_cache[pid] = _prospect(r["data"]).name if r else pid
+            name_cache[pid] = (_prospect(r["data"]).name, r["origin"] or "") if r else (pid, "")
         return name_cache[pid]
 
     out = []
     for r in rows:
+        add_name, add_origin = meta(r["add_pid"])
+        drop_name, drop_origin = meta(r["drop_pid"])
         out.append({"week": r["week"], "fid": r["fid"], "franchise": names.get(r["fid"], ""),
-                    "gender": r["gender"], "add_pid": r["add_pid"], "add_name": nm(r["add_pid"]),
-                    "drop_pid": r["drop_pid"], "drop_name": nm(r["drop_pid"]),
+                    "gender": r["gender"], "add_pid": r["add_pid"], "add_name": add_name,
+                    "add_origin": add_origin, "drop_pid": r["drop_pid"],
+                    "drop_name": drop_name, "drop_origin": drop_origin,
                     "add_str": r["add_str"], "drop_str": r["drop_str"]})
     conn.close()
     return out
@@ -1428,6 +1485,57 @@ def player_detail(league_id, pid):
     teams.sort(key=lambda t: t["w"] + t["l"], reverse=True)
     multi_team = len(teams) > 1
 
+    # --- Career by season: the college years (carried on the prospect's own
+    # history, written by world._record_world_history before graduation) followed
+    # by every pro season — the same table shape as the college player card, so a
+    # graduate's four college years persist onto their pro page. ---
+    strv, str_rel = league_player_str(league_id).get(pid, (p.str_value(), 0.0))
+    career_rows = []
+    for h in (p.history or []):
+        career_rows.append({
+            "kind": "college", "cal_year": 2026 + int(h.get("year", 0)),
+            "team": h.get("school", ""), "division": h.get("division", ""),
+            "gender": h.get("gender", ""), "cls": h.get("class", ""),
+            "pos": h.get("line") or "—", "w": h.get("w"), "l": h.get("l"),
+            "str": h.get("str"), "stint": h.get("stint", 0)})
+    career_rows.sort(key=lambda r: (r["cal_year"], r["stint"]))
+    conn3 = _db()
+    for y in range(0, year + 1):
+        ww, ll = _records_for_year(conn3, league_id, y).get(pid, [0, 0])
+        if ww + ll == 0 and y != year:
+            continue                                   # not in the league that season
+        clubs = _team_records_for_year(conn3, league_id, y).get(pid, {})
+        club = " / ".join(names.get(f, str(f)) for f in clubs) or names.get(row["fid"], "")
+        career_rows.append({
+            "kind": "pro", "cal_year": BASE_YEAR + y, "team": club,
+            "division": "GTT", "gender": row["gender"],
+            "cls": f"Pro {y - (row['joined_year'] or 0) + 1}" if row["origin"] != "founder" else "Pro",
+            "pos": "—", "w": ww, "l": ll,
+            "str": round(strv, 1) if y == year else None, "stint": 0})
+    # The player's own transaction history (drafted / signed / waived), all years.
+    tx_rows = conn3.execute(
+        "SELECT year, week, fid, add_pid, drop_pid, add_str, drop_str FROM gtt_transactions"
+        " WHERE league_id=? AND (add_pid=? OR drop_pid=?) ORDER BY year DESC, week DESC, id DESC",
+        (league_id, pid, pid)).fetchall()
+    moves = []
+    for t in tx_rows:
+        added = t["add_pid"] == pid
+        kind = ("Drafted / signed" if t["week"] == 0 else "Signed off the wire") if added \
+            else ("Released" if t["week"] == 0 else "Waived")
+        moves.append({"cal_year": BASE_YEAR + t["year"], "week": t["week"],
+                      "kind": kind, "added": added,
+                      "franchise": names.get(t["fid"], str(t["fid"]))})
+    conn3.close()
+
+    # Scouting grades for the attribute panel — same 20-80 scale the college card
+    # shows, so the pro card reads like the same player sheet.
+    attributes = [(lbl, p.current_grade(a)) for lbl, a in (
+        ("Serve Power", "first_serve_power"), ("Serve Accuracy", "first_serve_accuracy"),
+        ("Return", "return_quality"), ("Forehand", "forehand_power"),
+        ("Backhand", "backhand_power"), ("Consistency", "groundstroke_consistency"),
+        ("Net Play", "net_play"), ("Speed", "speed"), ("Stamina", "stamina"),
+        ("Composure", "composure"), ("Clutch", "clutch"))]
+
     enshrined = conn2 = None
     conn2 = _db()
     enshrined = conn2.execute("SELECT 1 FROM gtt_hof WHERE league_id=? AND pid=?",
@@ -1436,7 +1544,6 @@ def player_detail(league_id, pid):
 
     import app.honors as honors
     career = honors.career_by_year(pid, "player")
-    strv, str_rel = league_player_str(league_id).get(pid, (p.str_value(), 0.0))
     return {"pid": pid, "name": p.name, "country": p.country, "gender": row["gender"],
             "age": row["age"], "origin": row["origin"], "status": row["status"],
             "fid": row["fid"], "franchise": names.get(row["fid"], "Free agent"),
@@ -1444,7 +1551,10 @@ def player_detail(league_id, pid):
             "overall": round(p.current_overall()),
             "w": w, "l": l, "honors": player_honors(league_id, pid),
             "season_teams": teams, "multi_team": multi_team,
-            "career_honors": career, "log": log, "enshrined": enshrined}
+            "career_honors": career, "log": log, "enshrined": enshrined,
+            "career_table": career_rows, "moves": moves, "attributes": attributes,
+            "college_school": next((r["team"] for r in career_rows
+                                    if r["kind"] == "college"), None)}
 
 
 # --------------------------------------------------------------------------

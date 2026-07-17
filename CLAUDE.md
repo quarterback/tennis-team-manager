@@ -182,6 +182,17 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    edited table. See `docs/AAR-cache-invalidation-scope-lineup-stall.md` (the "IT RESURFACED" §).
 
 ## Other notes
+- **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
+  score band (owner rule 2027-07)** — `coaches.development_multiplier` maps
+  development_score 35..65 → 0.70×..1.30× growth in `world.developed_rosters`.
+  Generated scores cluster ~40-65, so anchoring on the theoretical 20-80 scale
+  compresses the real spread to ~±12% and silently reverts the owner's choice —
+  don't "fix" the anchors back. Juniors and pro decline stay coach-free. See
+  `docs/AAR-coach-development-growth.md`.
+- **Postseason lineups are strict best-six (owner rule 2027-07)** — CT/NCAA duals
+  field the healthy top six by results STR, no rotation/resting/coach noise
+  (`coach_lineup best_six`); ITA events deliberately KEEP rotation (everyone
+  plays). See `docs/AAR-postseason-best-six-lineups.md`.
 - **NCAA bracket is TRUE-SEEDED (owner rule 2026-07): no conference separation** —
   the draw is never rearranged to keep same-conference teams apart, for BOTH genders
   and every division. `_pair_penalty` deliberately has no same-conference term; do

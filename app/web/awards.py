@@ -1,8 +1,10 @@
 """Postseason honors — All-American (national) and All-Conference — derived from
-the same cached season everything else renders. Selection is rating-based: a
-player's STR (live results rating) ranks them nationally for All-American and
-within their conference for All-Conference, with a minimum match count so a
-tiny-sample hot streak can't sneak onto a team.
+the same cached season everything else renders. Selection is PURELY results-based
+and position-weighted: a player is ranked by their position-weighted win total
+(1st singles wins count full, each lower line less, doubles lines a quarter to
+three-quarters — see ``_POS_W`` / ``_DBL_W``), with a minimum match count so a
+tiny-sample hot streak can't sneak onto a team. Rating (STR) plays NO part in
+selection — it is carried only for display.
 
 These are *computed* honors (a transparent proxy for the real NCAA selection),
 so they stay consistent with the rankings, box scores, and player cards."""
@@ -56,17 +58,28 @@ def _roster(division: str, gender: str, school: str):
     return build_roster(prog) if prog else []
 
 
-# Lineup-position weight for the award performance score: a win at the top of the
-# lineup (tougher opponents) is worth more than one at the bottom.
-_POS_W = {1: 1.00, 2: 0.95, 3: 0.90, 4: 0.85, 5: 0.80, 6: 0.75}
+# Award performance is position-weighted WINS ONLY — no rating (STR), no win%, no
+# team factor. A win at the top of the lineup faces far stronger opponents than one
+# at the bottom, so it is worth proportionally more; a padded record at 5th/6th
+# singles can no longer out-honor a player carrying the 1-2-3 courts. Weights are
+# owner-set (2027): each singles line is worth 0.2 less than the one above it, and
+# the three doubles lines add at 0.75 / 0.50 / 0.25. Wins count at the line they
+# were ACTUALLY won at (from the per-line box record), not the player's rank on
+# their team — so bouncing down the lineup for easy wins gains nothing. An unusually
+# strong team still places lower-line players: their teammates are elite, but they
+# personally pile up wins at a meaningful line, which is exactly what the score
+# rewards.
+_POS_W = {1: 1.00, 2: 0.80, 3: 0.60, 4: 0.40, 5: 0.20, 6: 0.10}
+_DBL_W = {1: 0.75, 2: 0.50, 3: 0.25}
 
 
 def _eligible(division: str, gender: str, seed: int) -> list[dict]:
     """Players with enough matches, tagged with school + conference, ranked by
-    SEASON PERFORMANCE — not raw rating. Honors are earned on court: the score is
-    singles wins × win% × a lineup-position weight (a top-of-lineup win counts for
-    more than a sixth-singles one). STR is only a deep tiebreaker."""
+    POSITION-WEIGHTED WINS (see ``_POS_W`` / ``_DBL_W``). Honors are earned on
+    court and only on court: rating plays no part. STR is carried on each record
+    for display only, never for selection."""
     import app.seasonmode as sm
+    from app.ncaa import conf_prestige
     sid = _sid(division, gender, seed)
     rrows = ranking_rows(division, gender, seed)
     conf = {r.school: (r.conf, r.conf_abbr) for r in rrows}
@@ -78,37 +91,59 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
             return int(w) / g if g else 0.5
         except (ValueError, AttributeError):
             return 0.5
-    team_wpct = {r.school: _wpct(r.rec) for r in rrows}
+    team_wpct = {r.school: _wpct(r.rec) for r in rrows}     # national tiebreak input
     pidx = sm._pid_index(division, gender)
-    strmap = sm.season_player_str(sid)
-    recs = sm.player_records(sid)
+    strmap = sm.season_player_str(sid)          # display only
+    recs = sm.player_records(sid)               # pid -> (w, l) singles totals (eligibility)
+    lrec = sm.player_line_records(sid)          # pid -> {'singles': {n:[w,l]}, 'doubles': {n:[w,l]}}
     out = []
-    for pid, (s, rel) in strmap.items():
-        info = pidx.get(pid)
-        if info is None or s is None:
-            continue
-        w, l = recs.get(pid, (0, 0))
+    for pid, (w, l) in recs.items():
         if w + l < MIN_MATCHES:
             continue
+        info = pidx.get(pid)
+        if info is None:
+            continue
         c, ca = conf.get(info["school"], ("Independent", "IND"))
+        lr = lrec.get(pid, {})
+        sing = lr.get("singles", {})
+        dbl = lr.get("doubles", {})
+        perf = sum(wl[0] * _POS_W.get(n, 0.10) for n, wl in sing.items())
+        perf += sum(wl[0] * _DBL_W.get(n, 0.10) for n, wl in dbl.items())
+        # Primary singles line = where they logged the most matches (display + POTY
+        # context); ties break to the higher (lower-numbered) line.
+        line = min(sing, key=lambda n: (-(sing[n][0] + sing[n][1]), n)) if sing else 7
+        s, _rel = strmap.get(pid, (None, None))
         out.append({"pid": pid, "name": info["name"], "school": info["school"],
-                    "conf": c, "conf_abbr": ca, "str": s, "w": w, "l": l})
-    # Lineup position ≈ each player's STR rank on their own team (how lineups set);
-    # used only to weight wins by the difficulty of the spot they played.
-    out.sort(key=lambda p: (p["school"], -p["str"]))
-    cur, line = None, 0
-    for p in out:
-        line = line + 1 if p["school"] == cur else 1
-        cur = p["school"]
-        g = p["w"] + p["l"]
-        wpct = p["w"] / g if g else 0.0
-        p["line"] = line
-        # Team success is a mild factor (±15%), not a gate — a standout on a weak
-        # team still earns recognition; a winning team's player gets a small bump.
-        team_factor = 0.85 + 0.30 * team_wpct.get(p["school"], 0.5)
-        p["perf"] = round(p["w"] * wpct * _POS_W.get(line, 0.70) * team_factor, 3)
-    out.sort(key=lambda p: (p["perf"], p["w"], p["str"]), reverse=True)
+                    "conf": c, "conf_abbr": ca, "str": s if s is not None else 0.0,
+                    "w": w, "l": l, "line": line, "perf": round(perf, 2),
+                    "team_wpct": round(team_wpct.get(info["school"], 0.5), 3),
+                    "conf_prestige": round(conf_prestige(ca), 3)})
+    out.sort(key=lambda p: (p["perf"], p["w"], -p["l"]), reverse=True)
     return out
+
+
+# National tiebreak. Position-weighted wins pick the field; when two players are
+# within ~NAT_BAND of each other, the tougher résumé wins the spot — team record
+# and conference prestige, equal weight. The boost tops out at NAT_BAND of a
+# player's own score, so it ONLY reorders near-ties: it can lift a player over
+# someone within 10% of them, never over a clearly greater record. Applied to the
+# NATIONAL awards only (All-American, national Player of the Year); per-conference
+# awards keep the raw position-weighted order (prestige is constant inside a
+# conference).
+NAT_BAND = 0.10
+
+
+def _resume(p: dict) -> float:
+    """Strength-of-résumé in [0,1]: team record + conference prestige, equal weight."""
+    return 0.5 * p.get("team_wpct", 0.5) + 0.5 * p.get("conf_prestige", 0.5)
+
+
+def _national_order(players: list[dict]) -> list[dict]:
+    """`players` (already position-weighted-win sorted) reordered for national
+    honors, applying the bounded near-tie résumé boost. Stable within a perfect
+    tie via the base order."""
+    return sorted(players, key=lambda p: p["perf"] * (1.0 + NAT_BAND * _resume(p)),
+                  reverse=True)
 
 
 def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
@@ -127,6 +162,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
         return _empty_awards()
 
     players = _eligible(division, gender, seed)
+    nat = _national_order(players)              # national honors: near-tie résumé boost
     by_pid: dict[str, list[str]] = {}
 
     def tag(p, label):
@@ -134,7 +170,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
 
     # ---- All-American (national) ----
     aa_first, aa_second, aa_hm = [], [], []
-    for i, p in enumerate(players):
+    for i, p in enumerate(nat):
         if i < AA_FIRST:
             aa_first.append(p); tag(p, "First Team All-American")
         elif i < AA_SECOND:
@@ -151,7 +187,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
 
     # ---- All-Conference (per conference) ----
     by_conf: dict[str, list[dict]] = {}
-    for p in players:                       # already STR-sorted
+    for p in players:                       # per-conference: raw position-weighted order
         by_conf.setdefault(p["conf"], []).append(p)
     all_conference = []
     for conf in sorted(by_conf):
@@ -170,7 +206,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
             all_conference.append((conf, teams))
 
     # Player of the Year (national + per conference) and team champions.
-    national_poty = players[0] if players else None
+    national_poty = nat[0] if nat else None
     conf_poty = sorted(({"conf": c, **ps[0]} for c, ps in by_conf.items() if ps),
                        key=lambda p: p["conf"])
     import app.seasonmode as sm
@@ -289,7 +325,8 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
     year, season_no = 2026 + yr, yr + 1
     conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
-    players = _eligible(division, gender, seed)        # STR-sorted, conf-tagged
+    players = _eligible(division, gender, seed)        # position-weighted-win sorted
+    nat = _national_order(players)                     # national honors: near-tie résumé boost
 
     recs: list[dict] = []
 
@@ -303,18 +340,18 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
         add(p["pid"], p["name"], p["school"], award, label, sort)
 
     by_conf: dict[str, list[dict]] = {}
-    for p in players:
+    for p in players:                                  # per-conference: raw perf order
         by_conf.setdefault(p["conf"], []).append(p)
 
-    # Player of the Year — national + per conference.
-    if players:
-        add_p(players[0], "national_poty", "National Player of the Year", 100)
+    # Player of the Year — national (résumé-adjusted) + per conference (raw perf).
+    if nat:
+        add_p(nat[0], "national_poty", "National Player of the Year", 100)
     for c, ps in by_conf.items():
         if ps:
             add_p(ps[0], "conf_poty", f"{c} Player of the Year", 60)
 
     # All-American (national).
-    for i, p in enumerate(players):
+    for i, p in enumerate(nat):
         if i < AA_FIRST:
             add_p(p, "all_american", "First Team All-American", 90)
         elif i < AA_SECOND:

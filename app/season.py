@@ -15,6 +15,7 @@ Seed-deterministic: same (division, gender, seed) ⇒ same season.
 """
 from __future__ import annotations
 
+import os
 import random
 from dataclasses import dataclass, field
 
@@ -34,6 +35,28 @@ NATIONAL_FIELD = 64
 # dual. This constant is the code default; the per-save UI switch on the world hub
 # (worldconfig.box_stats_enabled) overrides it at sim time.
 BOX_STATS = True
+
+# Dual-match fidelity for season-mode sims. "fast" (game-level Bernoulli) is the
+# default everywhere — it is the tuned production model and keeps a full world
+# responsive. "full" resolves every POINT (engine.match), which is far slower but
+# is the higher-fidelity reference; meant for offline calibration on a local
+# machine, never the request thread. The authority is the per-save switch on the
+# world hub (worldconfig.match_fidelity); the env var TTM_FIDELITY=full forces it
+# on regardless (used by scripts/postseason_validation.py --full). BOX_STATS is the
+# same shape — wrapped defensively so a config/DB hiccup degrades to "fast".
+BOX_STATS_FALLBACK_FIDELITY = "fast"
+
+
+def _fidelity() -> str:
+    """The per-save match fidelity ("fast"/"full"), read at sim time so flipping
+    the world-hub switch takes effect from the next dual on."""
+    try:
+        from app import worldconfig
+        f = worldconfig.match_fidelity()
+        return f if f in ("fast", "full") else BOX_STATS_FALLBACK_FIDELITY
+    except Exception:
+        import os
+        return "full" if os.environ.get("TTM_FIDELITY", "").strip().lower() == "full" else BOX_STATS_FALLBACK_FIDELITY
 
 
 def _box_stats_on() -> bool:
@@ -96,7 +119,8 @@ BASELINE_REP_CHANCE = 0.35      # chance a coach gives the bench a look even vs 
 def coach_lineup(prog: Program, roster: list, form: dict | None,
                  opp_prestige: float, lineup_seed: int, dual_seed: int = 0,
                  forced: set | None = None, unavailable: set | None = None,
-                 pinned: list | None = None, doubles_pin: list | None = None):
+                 pinned: list | None = None, doubles_pin: list | None = None,
+                 best_six: bool = False):
     """Return (engine Team, chosen Prospects) for `prog` this dual.
 
     The ladder is set by live results STR (ability before results exist) plus a
@@ -140,7 +164,9 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         base = _form_str(form, p)
         if base is None:
             base = p.str_value()
-        return base + srng.gauss(0, LINEUP_NOISE)
+        # Elimination lineups (`best_six`) are STRICTLY form/record/level — the
+        # results-based STR, ability as the fallback — no coach-discretion noise.
+        return base if best_six else base + srng.gauss(0, LINEUP_NOISE)
 
     scores = {p.pid: score(p) for p in roster}                  # one draw per player, in order
     if pinned:
@@ -160,9 +186,17 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         starters, bench = order[:6], order[6:]
         drng = random.Random(f"{prog.key}|rot|{dual_seed}")     # per-dual rotation
         gap = getattr(prog, "prestige", 0.5) - opp_prestige
-        rotate = 2 if gap > 0.18 else 1 if gap > 0.05 else 0
-        if rotate == 0 and drng.random() < BASELINE_REP_CHANCE:
-            rotate = 1
+        # `best_six` = the conference tournament / NCAA bracket: no coach rests
+        # starters or hands out bench reps when losing ends the season — the
+        # healthy top six by form always take the court. Rotation is a REGULAR-
+        # season device (bench evaluation + playing time vs weaker opponents), and
+        # the ITA events deliberately KEEP it (their point is that everyone plays).
+        if best_six:
+            rotate = 0
+        else:
+            rotate = 2 if gap > 0.18 else 1 if gap > 0.05 else 0
+            if rotate == 0 and drng.random() < BASELINE_REP_CHANCE:
+                rotate = 1
         rotate = min(rotate, len(bench))
         if rotate:
             picks = drng.sample(bench, rotate)                  # varied bench each time
@@ -309,7 +343,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     forced = (forced_home or set()) | (forced_away or set())
     priority = {i for i in range(len(la))
                 if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
-    res = simulate_dual(sa, sb, seed=seed, fidelity="fast", priority_finish=priority,
+    res = simulate_dual(sa, sb, seed=seed, fidelity=_fidelity(), priority_finish=priority,
                         box_stats=box_stats)
     lines = []
     for ln in res.lines:
@@ -377,7 +411,8 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                  form: dict | None = None, lineup_seed: int = 0,
                  forced_home: set | None = None, forced_away: set | None = None,
                  unavailable_home: set | None = None,
-                 unavailable_away: set | None = None) -> dict:
+                 unavailable_away: set | None = None,
+                 best_six: bool = False) -> dict:
     """Simulate one dual between two programs and return the record dict. Each
     coach sets a lineup from their full roster (results-driven ladder + coach
     noise, rotating bench/walk-ons in against weaker opponents), so the bottom of
@@ -390,11 +425,11 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
     sa, la, la_d = coach_lineup(a, build_roster(a), form, getattr(b, "prestige", 0.5),
                                 lineup_seed, seed, forced=forced_home,
                                 unavailable=unavailable_home, pinned=_coached_pin(a),
-                                doubles_pin=_coached_doubles(a))
+                                doubles_pin=_coached_doubles(a), best_six=best_six)
     sb, lb, lb_d = coach_lineup(b, build_roster(b), form, getattr(a, "prestige", 0.5),
                                 lineup_seed, seed, forced=forced_away,
                                 unavailable=unavailable_away, pinned=_coached_pin(b),
-                                doubles_pin=_coached_doubles(b))
+                                doubles_pin=_coached_doubles(b), best_six=best_six)
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away,
                        la_d=la_d, lb_d=lb_d, box_stats=_box_stats_on())
@@ -458,7 +493,7 @@ def _conf_tournament(members: list[Program], standings_order: list[Program],
             a, b = slots[i], slots[i + 1]
             if not a or not b:
                 nxt.append(a or b); continue
-            nxt.append(play_dual(a, b, seed=rng.randint(1, 10**9), fidelity="fast"))
+            nxt.append(play_dual(a, b, seed=rng.randint(1, 10**9), fidelity=_fidelity()))
         slots = nxt
     return next(s for s in slots if s)
 

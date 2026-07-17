@@ -568,13 +568,20 @@ def developed_rosters(world: dict) -> dict:
         return _dev_cache[key]
     rosters = {uni: {s: [copy.deepcopy(p) for p in r] for s, r in schools.items()}
                for uni, schools in _base_rosters(world).items()}
+    # Coach development multiplier: the program's head coach scales every player's
+    # growth (±30% across the 20-80 development_score band — see
+    # coaches.development_multiplier). Same coach source the recruiting sim reads.
+    from app.coaches import development_multiplier
+    dm_of = {school: development_multiplier(school)
+             for schools in rosters.values() for school in schools}
     for wk in range(world["week"]):
         for schools in rosters.values():
-            for roster in schools.values():
+            for school, roster in schools.items():
+                dm = dm_of[school]
                 for p in roster:
                     s = stagger_scale(p.pid, wk, DEV_WEEKS)
                     if s:
-                        p.develop(s)
+                        p.develop(s * dm)
     _dev_cache[key] = rosters
     return rosters
 

@@ -473,6 +473,35 @@ def program_coach(school: str, *, seed: int = 2026, base: float = 50.0) -> Coach
     return c
 
 
+# Coach development multiplier (owner rule 2027-07, "strong" setting): a program's
+# head coach scales every rostered player's year-over-year growth by up to ±30%.
+# This is the wire the coach-model foundation AAR left as future work ("connect
+# coach development_score to year-over-year player growth") — an elite developer
+# closes more of each player's gap to ceiling every season; a weak one wastes
+# talent. Applied ONLY to the college world's weekly development
+# (world.developed_rosters); juniors (pre-college) and pro decline are coach-free.
+#
+# Calibration: generated development_scores OCCUPY roughly 40-65 (they cluster
+# near 50), not the whole 20-80 grade scale — so the multiplier is anchored on
+# the band real coaches live in (35..65 → 0.70×..1.30×, 50 = 1.00×) and clamped.
+# Anchoring on 20-80 instead compresses the real-world spread to ~±12% and
+# silently downgrades the owner's "strong" choice — don't "fix" it back.
+DEV_MULT_LO, DEV_MULT_HI = 0.70, 1.30
+_DEV_SCORE_LO, _DEV_SCORE_HI = 35.0, 65.0
+
+
+def development_multiplier(school: str) -> float:
+    """Growth multiplier from the program coach's development_score — the 35..65
+    band real coaches occupy maps linearly to 0.70×..1.30× (50 = 1.00×), clamped.
+    Stable per school (cached coach); 1.0 for no school."""
+    if not school:
+        return 1.0
+    score = program_coach(school).development_score
+    m = DEV_MULT_LO + (DEV_MULT_HI - DEV_MULT_LO) * (
+        (score - _DEV_SCORE_LO) / (_DEV_SCORE_HI - _DEV_SCORE_LO))
+    return max(DEV_MULT_LO, min(DEV_MULT_HI, m))
+
+
 def program_localism(school: str) -> float:
     """The program's coach localism (0..1) — how hard it recruits its own backyard.
     Stable per school and cached; the recruiting sim reads it to bias a localist
