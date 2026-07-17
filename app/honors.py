@@ -54,13 +54,21 @@ def _conn() -> sqlite3.Connection:
     return connect()
 
 
-def stamp(records: list[dict]) -> int:
+def stamp(records: list[dict], conn=None) -> int:
     """Write honor rows (idempotent on the PK so re-stamping a season is safe).
     Each record: subject_type, subject_id, name, year, season_no, division,
-    gender, school, award, label, sort."""
+    gender, school, award, label, sort.
+
+    `conn`: write through the CALLER's open connection instead of a fresh one.
+    Required when the caller already holds a write transaction on the shared
+    SQLite file (e.g. the world rollover) — opening a second connection there
+    deadlocks ("database is locked"). The honors schema must already exist on
+    that path (it does after boot init)."""
     if not records:
         return 0
-    conn = _conn()
+    own = conn is None
+    if own:
+        conn = _conn()
     conn.executemany(
         "INSERT OR REPLACE INTO honors (subject_type, subject_id, name, year, "
         "season_no, division, gender, school, award, label, sort) "
@@ -69,9 +77,10 @@ def stamp(records: list[dict]) -> int:
         [{"season_no": None, "sort": 0, "name": None, "school": None,
           "division": None, "gender": None, **r} for r in records],
     )
-    conn.commit()
     n = len(records)
-    conn.close()
+    if own:
+        conn.commit()
+        conn.close()
     return n
 
 

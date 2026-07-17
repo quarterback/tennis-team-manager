@@ -206,6 +206,21 @@
         </div>
       </div>
       {% endif %}
+      {% if intl is defined and intl %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i> International</span>
+        <span class="bl-panel-meta">national-team cups</span></div>
+        <div class="bl-panel-body">
+          {% for r in intl %}
+          <div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline;font-size:13px">
+            <span style="font-variant-numeric:tabular-nums;color:var(--text-muted)">{{ r.year }}</span>
+            <span>{{ r.flag }} <a href="{{ url_for('world_cups', g=gender, year=r.year) }}" style="text-decoration:none;color:inherit;font-weight:600">{{ r.event }}</a></span>
+            <span style="color:var(--text-muted);font-size:12px;margin-left:auto;font-variant-numeric:tabular-nums">
+              {{ r.ties }} tie{{ 's' if r.ties != 1 }} · S {{ r.singles }} · D {{ r.doubles }}{% if r.finish %} · <b style="color:var(--text-primary)">{{ r.finish }}</b>{% endif %}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span>
         <span class="bl-panel-meta">follows the player</span></div>
         <div class="bl-panel-body">

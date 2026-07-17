@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — World Cups{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:860px">
+
+  <div class="bl-toolbar"><div class="bl-toolbar-inner">
+    <span style="font-size:13px;color:var(--text-muted)">National-team cups · every rubber is a real match · squads drawn from the whole college world</span>
+  </div></div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
+    <a class="bl-pill{% if g == 'men' %} active{% endif %}" href="{{ url_for('world_cups', g='men', year=sel_year) }}">Davis Cup (men)</a>
+    <a class="bl-pill{% if g == 'women' %} active{% endif %}" href="{{ url_for('world_cups', g='women', year=sel_year) }}">Billie Jean King Cup (women)</a>
+    {% if years|length > 1 %}
+    <span style="margin-left:auto;display:flex;gap:6px">
+      {% for y in years %}
+      <a class="bl-pill{% if (sel_year or years[0]) == y %} active{% endif %}" href="{{ url_for('world_cups', g=g, year=y) }}">{{ y }}</a>
+      {% endfor %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if not cup or not cup.rounds %}
+  <div class="bl-panel" style="padding:26px">
+    <h2 style="margin:0 0 8px">No {{ 'Davis Cup' if g == 'men' else 'Billie Jean King Cup' }} yet</h2>
+    <p class="bl-conf">The cups are an <strong>off-season</strong> event: they play once the season
+      completes and are archived at the year rollover. Advance the world to the end of the season
+      and check back.</p>
+  </div>
+  {% else %}
+
+  {% if cup.champion %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div style="padding:18px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:34px">{{ cup.champion.flag }}</span>
+      <div>
+        <div style="font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ cup.event }} Champion</div>
+        <div style="font-size:20px;font-weight:800">{{ cup.champion.name }}</div>
+        {% if cup.runner_up %}<div style="color:var(--text-muted);font-size:13px">def. {{ cup.runner_up.flag }} {{ cup.runner_up.name }} in the final</div>{% endif %}
+      </div>
+      <div style="margin-left:auto;display:flex;gap:16px">
+        <div style="text-align:center"><div style="font-weight:700;font-size:18px">{{ cup.field }}</div><div style="font-size:11px;color:var(--text-muted)">nations</div></div>
+        <div style="text-align:center"><div style="font-weight:700;font-size:18px">{{ cup.n_seeds }}</div><div style="font-size:11px;color:var(--text-muted)">seeded</div></div>
+      </div>
+    </div>
+    <div style="padding:0 20px 16px;display:flex;gap:8px;flex-wrap:wrap">
+      {% for pl in cup.champion.squad %}
+      <a class="bl-pill" style="text-decoration:none" href="{{ url_for('player', pid=pl.pid) }}">{{ pl.name }} <span style="color:var(--text-muted);font-size:11px">{{ pl.school }} · {{ pl.division }}</span></a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% for rnd in cup.rounds %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
+      <span class="bl-panel-meta">{{ rnd|length }} tie{{ 's' if rnd|length != 1 }}</span></div>
+    <div style="padding:6px 16px 12px">
+      {% for m in rnd %}
+      {% set win = m.hi if m.winner_is_hi else m.lo %}
+      {% set lose = m.lo if m.winner_is_hi else m.hi %}
+      <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">
+        <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+          <span style="font-weight:700">{{ win.flag }} {% if win.seed %}<span style="color:var(--text-muted);font-size:11px">#{{ win.seed }}</span> {% endif %}{{ win.name }}</span>
+          <span class="bl-rec" style="font-variant-numeric:tabular-nums">{{ m.score }}</span>
+          <span style="color:var(--text-muted)">{{ lose.flag }} {% if lose.seed %}<span style="font-size:11px">#{{ lose.seed }}</span> {% endif %}{{ lose.name }}</span>
+          {% if m.upset %}<span class="bl-pill" style="font-size:10px;background:#c0392b;color:#fff">UPSET</span>{% endif %}
+        </div>
+        <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums">
+          {% for rb in m.rubbers %}
+          {% set rb_home_is_hi = m.home_is_hi %}
+          <span><b style="color:var(--text-primary)">{{ rb.slot }}</b>
+            {{ rb.home|join(' / ') if rb.home_won else rb.away|join(' / ') }}
+            d. {{ rb.away|join(' / ') if rb.home_won else rb.home|join(' / ') }}
+            {{ rb.scoreline }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Squads</span>
+      <span class="bl-panel-meta">top {{ cup.nations[0].squad|length if cup.nations else 4 }} per nation by current ability, all divisions pooled</span></div>
+    <div style="padding:8px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 22px">
+      {% for n in cup.nations %}
+      <div style="padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <div style="font-weight:700">{{ n.flag }} {% if n.seed %}<span style="color:var(--text-muted);font-size:11px">#{{ n.seed }}</span> {% endif %}{{ n.name }}
+          <span style="color:var(--text-muted);font-size:11px;font-weight:400">· {{ n.rating }}</span></div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          {% for pl in n.squad %}<a href="{{ url_for('player', pid=pl.pid) }}" style="text-decoration:none;color:inherit">{{ pl.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

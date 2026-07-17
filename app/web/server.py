@@ -18,7 +18,7 @@ from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     conferences_for, get_bracket, get_doubles_championship,
-                    get_singles_championship, championship_years,
+                    get_singles_championship, championship_years, get_world_cup,
                     past_individual_champions, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
@@ -144,6 +144,7 @@ NAV_GROUPS = [
         {"id": "singles",   "label": "Singles Championship","icon": "fa-solid fa-user", "endpoint": "singles_championship", "args": {}},
         {"id": "doubles",   "label": "Doubles Championship","icon": "fa-solid fa-user-group", "endpoint": "doubles_championship", "args": {}},
         {"id": "projection","label": "Bracket Projection","icon": "fa-solid fa-wand-magic-sparkles", "endpoint": "projection",   "args": {}},
+        {"id": "worldcups", "label": "World Cups",   "icon": "fa-solid fa-earth-americas", "endpoint": "world_cups",       "args": {}},
     ]),
     ("Pro Tour", [
         {"id": "gtt",       "label": "League Hub",   "icon": "fa-solid fa-globe", "endpoint": "gtt_hub",          "args": {}},
@@ -1259,6 +1260,22 @@ def create_app() -> Flask:
         return render_template("ita.html", active="Season", u=u, uni_label=label,
                                view=sm.ita_view(sid), division=division, crest=crest)
 
+    @app.route("/world-cups")
+    def world_cups():
+        # National-team cups: Davis Cup (men) / Billie Jean King Cup (women) —
+        # derived off the same rosters as everything else, snapshotted at rollover.
+        g = request.args.get("g", "men")
+        if g not in ("men", "women"):
+            g = "men"
+        sel_year = request.args.get("year", type=int)
+        cup = get_world_cup(g, year=sel_year)
+        years = sorted({wd.BASE_YEAR + y for y in wd.world_cup_years(DEFAULT_SEED)}
+                       | ({wd.BASE_YEAR + wd.load_world()["year"]}
+                          if wd.exists() and wd.season_complete() else set()),
+                       reverse=True)
+        return render_template("world_cups.html", active="World Cups", g=g,
+                               cup=cup, years=years, sel_year=sel_year, crest=crest)
+
     @app.route("/singles-championship")
     def singles_championship():
         division, gender, label, u = _universe(request)
@@ -1624,11 +1641,12 @@ def create_app() -> Flask:
         ranks = player_ranks(division, gender, pid)
         journey = player_journey(division, gender, pid)
         season_stats = sm.player_season_stats(sid).get(pid)
+        intl = wd.player_world_cups(DEFAULT_SEED, pid)   # International record (cups)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, ranks=ranks, journey=journey,
-                               season_stats=season_stats,
+                               season_stats=season_stats, intl=intl,
                                attrs=attrs, crest=crest, u=u, uni_label=label)
 
     @app.route("/ncaa")

@@ -33,6 +33,7 @@ _season_cache: dict = {}
 _bracket_cache: dict = {}
 _doubles_champ_cache: dict = {}
 _singles_champ_cache: dict = {}
+_world_cup_cache: dict = {}
 _portal_cache: dict = {}
 
 # Per-key build locks for the championship draws. Playing a 128-draw singles
@@ -205,6 +206,31 @@ def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
     return _hydrate_championship(world.latest_championship(seed, division, gender, "Doubles"))
 
 
+def get_world_cup(gender: str, seed: int = DEFAULT_SEED, year: int | None = None):
+    """The national-team cup (Davis Cup for men, BJK Cup for women) — live once
+    the world's active seasons are all complete (memoized; the field is frozen),
+    otherwise the latest snapshot stored at a year rollover; `year` (calendar)
+    selects a specific past edition. None until a world exists."""
+    import app.world as world
+    from app.national_teams import run_world_cup
+    if not world.exists(seed):
+        return None
+    if year is not None and year != _cur_cal_year(world, seed):
+        return world.latest_world_cup(seed, gender, year=year - world.BASE_YEAR)
+    if world.season_complete(seed):
+        eff = world.current_year_seed(seed)
+        ckey = (gender, eff)
+        data = _world_cup_cache.get(ckey)   # .get + local publish (thread-safe read)
+        if data is None:
+            with _champ_build_lock(("cup", gender, eff)):
+                data = _world_cup_cache.get(ckey)
+                if data is None:
+                    data = run_world_cup(gender, seed=eff)
+                    _world_cup_cache[ckey] = data
+        return data
+    return world.latest_world_cup(seed, gender)
+
+
 def warm_championships(seed: int = DEFAULT_SEED) -> None:
     """Boot-time prewarm for the individual-championship memos: for every universe
     whose current team season is COMPLETE, build the singles + doubles draws now,
@@ -238,6 +264,7 @@ def reset_all() -> None:
     _bracket_cache.clear()
     _doubles_champ_cache.clear()
     _singles_champ_cache.clear()
+    _world_cup_cache.clear()
     _portal_cache.clear()
     _staff_cache.clear()
     _uni_staff_cache.clear()
