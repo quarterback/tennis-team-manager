@@ -474,7 +474,8 @@ def _roll_new_injuries(conn, season_id, school, played_pids, roster, week=0, tag
                 " VALUES (?,?,?,?,?,?,?,?,0)", (season_id, pid, school, name, week, tag, out, out))
 
 
-def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None):
+def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None,
+                    best_six=False):
     # Playing-time guarantee: each team has one dual per roster player where that
     # player is seated into a completing slot (weakest players land in the most
     # favorable duals, so the bench plays up in non-conference).
@@ -485,7 +486,8 @@ def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None
                        seed=_dual_seed(s["seed"], home, away, tag), conf=bool(is_conf),
                        form=form, lineup_seed=s["seed"], forced_home=fh, forced_away=fa,
                        unavailable_home=_unavailable(conn, sid, home),
-                       unavailable_away=_unavailable(conn, sid, away))
+                       unavailable_away=_unavailable(conn, sid, away),
+                       best_six=best_six)
     winner = 0 if rec["home_won"] else 1
     conn.execute("UPDATE duals SET status='final', home_points=?, away_points=?, winner=?,"
                  " lines_json=? WHERE id=?",
@@ -822,9 +824,14 @@ def _sim_round(conn, s, progs, rnd_tag, round_no, prefix):
     due = conn.execute("SELECT * FROM duals WHERE season_id=? AND round=? AND round_no=?"
                        " AND status='scheduled'", (s["id"], rnd_tag, round_no)).fetchall()
     form = season_player_str(s["id"])              # postseason lineups off full-season form
+    # Elimination stakes: the conference tournament and the NCAA bracket field the
+    # strict best six by form — no starter-resting, no bench reps, no coach noise
+    # (owner rule 2027-07). The ITA events keep the normal rotation on purpose:
+    # they're early-season tournaments where everyone is supposed to play.
+    best_six = rnd_tag in ("CT", "NCAA")
     for d in due:
         _play_and_store(conn, s, progs, d["id"], d["home"], d["away"], d["is_conf"],
-                        f"{prefix}{round_no}b{d['bpos']}", form=form)
+                        f"{prefix}{round_no}b{d['bpos']}", form=form, best_six=best_six)
     return due
 
 
