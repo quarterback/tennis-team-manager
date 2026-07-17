@@ -79,9 +79,19 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
     court and only on court: rating plays no part. STR is carried on each record
     for display only, never for selection."""
     import app.seasonmode as sm
+    from app.ncaa import conf_prestige
     sid = _sid(division, gender, seed)
     rrows = ranking_rows(division, gender, seed)
     conf = {r.school: (r.conf, r.conf_abbr) for r in rrows}
+
+    def _wpct(rec):
+        try:
+            w, l = rec.split("-")
+            g = int(w) + int(l)
+            return int(w) / g if g else 0.5
+        except (ValueError, AttributeError):
+            return 0.5
+    team_wpct = {r.school: _wpct(r.rec) for r in rrows}     # national tiebreak input
     pidx = sm._pid_index(division, gender)
     strmap = sm.season_player_str(sid)          # display only
     recs = sm.player_records(sid)               # pid -> (w, l) singles totals (eligibility)
@@ -105,9 +115,35 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
         s, _rel = strmap.get(pid, (None, None))
         out.append({"pid": pid, "name": info["name"], "school": info["school"],
                     "conf": c, "conf_abbr": ca, "str": s if s is not None else 0.0,
-                    "w": w, "l": l, "line": line, "perf": round(perf, 2)})
+                    "w": w, "l": l, "line": line, "perf": round(perf, 2),
+                    "team_wpct": round(team_wpct.get(info["school"], 0.5), 3),
+                    "conf_prestige": round(conf_prestige(ca), 3)})
     out.sort(key=lambda p: (p["perf"], p["w"], -p["l"]), reverse=True)
     return out
+
+
+# National tiebreak. Position-weighted wins pick the field; when two players are
+# within ~NAT_BAND of each other, the tougher résumé wins the spot — team record
+# and conference prestige, equal weight. The boost tops out at NAT_BAND of a
+# player's own score, so it ONLY reorders near-ties: it can lift a player over
+# someone within 10% of them, never over a clearly greater record. Applied to the
+# NATIONAL awards only (All-American, national Player of the Year); per-conference
+# awards keep the raw position-weighted order (prestige is constant inside a
+# conference).
+NAT_BAND = 0.10
+
+
+def _resume(p: dict) -> float:
+    """Strength-of-résumé in [0,1]: team record + conference prestige, equal weight."""
+    return 0.5 * p.get("team_wpct", 0.5) + 0.5 * p.get("conf_prestige", 0.5)
+
+
+def _national_order(players: list[dict]) -> list[dict]:
+    """`players` (already position-weighted-win sorted) reordered for national
+    honors, applying the bounded near-tie résumé boost. Stable within a perfect
+    tie via the base order."""
+    return sorted(players, key=lambda p: p["perf"] * (1.0 + NAT_BAND * _resume(p)),
+                  reverse=True)
 
 
 def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
@@ -126,6 +162,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
         return _empty_awards()
 
     players = _eligible(division, gender, seed)
+    nat = _national_order(players)              # national honors: near-tie résumé boost
     by_pid: dict[str, list[str]] = {}
 
     def tag(p, label):
@@ -133,7 +170,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
 
     # ---- All-American (national) ----
     aa_first, aa_second, aa_hm = [], [], []
-    for i, p in enumerate(players):
+    for i, p in enumerate(nat):
         if i < AA_FIRST:
             aa_first.append(p); tag(p, "First Team All-American")
         elif i < AA_SECOND:
@@ -150,7 +187,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
 
     # ---- All-Conference (per conference) ----
     by_conf: dict[str, list[dict]] = {}
-    for p in players:                       # already STR-sorted
+    for p in players:                       # per-conference: raw position-weighted order
         by_conf.setdefault(p["conf"], []).append(p)
     all_conference = []
     for conf in sorted(by_conf):
@@ -169,7 +206,7 @@ def season_awards(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
             all_conference.append((conf, teams))
 
     # Player of the Year (national + per conference) and team champions.
-    national_poty = players[0] if players else None
+    national_poty = nat[0] if nat else None
     conf_poty = sorted(({"conf": c, **ps[0]} for c, ps in by_conf.items() if ps),
                        key=lambda p: p["conf"])
     import app.seasonmode as sm
@@ -288,7 +325,8 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
     year, season_no = 2026 + yr, yr + 1
     conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
-    players = _eligible(division, gender, seed)        # STR-sorted, conf-tagged
+    players = _eligible(division, gender, seed)        # position-weighted-win sorted
+    nat = _national_order(players)                     # national honors: near-tie résumé boost
 
     recs: list[dict] = []
 
@@ -302,18 +340,18 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
         add(p["pid"], p["name"], p["school"], award, label, sort)
 
     by_conf: dict[str, list[dict]] = {}
-    for p in players:
+    for p in players:                                  # per-conference: raw perf order
         by_conf.setdefault(p["conf"], []).append(p)
 
-    # Player of the Year — national + per conference.
-    if players:
-        add_p(players[0], "national_poty", "National Player of the Year", 100)
+    # Player of the Year — national (résumé-adjusted) + per conference (raw perf).
+    if nat:
+        add_p(nat[0], "national_poty", "National Player of the Year", 100)
     for c, ps in by_conf.items():
         if ps:
             add_p(ps[0], "conf_poty", f"{c} Player of the Year", 60)
 
     # All-American (national).
-    for i, p in enumerate(players):
+    for i, p in enumerate(nat):
         if i < AA_FIRST:
             add_p(p, "all_american", "First Team All-American", 90)
         elif i < AA_SECOND:
