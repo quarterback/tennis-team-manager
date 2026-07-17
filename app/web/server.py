@@ -1338,6 +1338,15 @@ def create_app() -> Flask:
                 gs.advance(lid, fidelity="full")
         return redirect(url_for("gtt_hub", lg=lid))
 
+    @app.route("/gtt/delete", methods=["POST"])
+    def gtt_delete():
+        # Deleting a league is irreversible (rosters, results, honors, HoF all go);
+        # the college world it drew graduates from is untouched.
+        lid = request.form.get("lg", type=int)
+        if lid:
+            gs.delete_league(lid)
+        return redirect(url_for("gtt_hub"))
+
     @app.route("/gtt/dual/<int:dual_id>")
     def gtt_dual(dual_id):
         league, _ = _current_league()

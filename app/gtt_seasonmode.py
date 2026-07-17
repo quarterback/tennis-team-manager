@@ -494,6 +494,19 @@ def list_leagues():
     return [dict(r) for r in rows]
 
 
+def delete_league(league_id):
+    """Delete a league and everything it owns (franchises, players, duals,
+    seasons, transactions, Hall of Fame). Irreversible; the world it drew
+    graduates from is untouched."""
+    conn = _db()
+    for t in ("gtt_duals", "gtt_players", "gtt_franchises", "gtt_seasons",
+              "gtt_transactions", "gtt_hof"):
+        conn.execute(f"DELETE FROM {t} WHERE league_id=?", (league_id,))
+    conn.execute("DELETE FROM gtt_leagues WHERE id=?", (league_id,))
+    conn.commit()
+    conn.close()
+
+
 def franchises(league_id):
     conn = _db()
     rows = conn.execute("SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id",
@@ -819,6 +832,37 @@ def _offseason(conn, s, fidelity):
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
 
+    # --- College takeover: synthetic founders don't hold seats once the college
+    # pipeline is live (owner rule 2027-07). Each off-season, every FOUNDER still
+    # on a roster is released — weakest first, capped at the number of real
+    # graduates actually available to replace them — and the open seats are filled
+    # by the intake + draft below. A league started on founders converges to
+    # college-fed rosters, then operates naturally (no roster founders remain).
+    # Released founders retire rather than joining the wire, so they can't creep
+    # back via in-season add/drop. Every release is logged to gtt_transactions
+    # (week 0 = off-season) so the turnover is visible on the hub wire.
+    have_pids = {r["pid"] for r in conn.execute(
+        "SELECT pid FROM gtt_players WHERE league_id=?", (lid,)).fetchall()}
+    grads_avail = {"m": 0, "w": 0}
+    for gg, _pid, _data, _str in _world_graduates(conn, s["world_seed"], have_pids, 10_000):
+        grads_avail[gg] += 1
+    if grads_avail["m"] or grads_avail["w"]:
+        by_g = {"m": [], "w": []}
+        for r in conn.execute("SELECT id, pid, gender, fid, data FROM gtt_players"
+                              " WHERE league_id=? AND status='active' AND fid IS NOT NULL"
+                              " AND origin='founder'", (lid,)).fetchall():
+            by_g[r["gender"]].append((_prospect(r["data"]).str_value(), r))
+        for gg in ("m", "w"):
+            by_g[gg].sort(key=lambda x: x[0])            # weakest released first
+            for st, r in by_g[gg][:grads_avail[gg]]:
+                conn.execute("UPDATE gtt_players SET status='retired', fid=NULL"
+                             " WHERE id=?", (r["id"],))
+                conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid,"
+                             " gender, add_pid, drop_pid, add_str, drop_str)"
+                             " VALUES (?,?,?,?,?,?,?,?,?)",
+                             (lid, year, 0, r["fid"], gg, None, r["pid"],
+                              None, round(st, 1)))
+
     # Open slots per franchise drive how many graduates we need.
     fids = [f["id"] for f in _fr_rows(conn, lid)]
     need = {"m": 0, "w": 0}
@@ -849,9 +893,9 @@ def _draft(conn, lid, year, prev_year):
     pool = {"m": [], "w": []}
     for r in conn.execute("SELECT id, pid, gender, data FROM gtt_players WHERE league_id=?"
                           " AND fid IS NULL AND status='active'", (lid,)).fetchall():
-        pool[r["gender"]].append((r["id"], _prospect(r["data"]).str_value()))
+        pool[r["gender"]].append((r["id"], r["pid"], _prospect(r["data"]).str_value()))
     for g in pool:
-        pool[g].sort(key=lambda x: x[1], reverse=True)    # best available first
+        pool[g].sort(key=lambda x: x[2], reverse=True)    # best available first
 
     counts = {fid: {"m": len(_active(conn, lid, fid, "m")),
                     "w": len(_active(conn, lid, fid, "w"))} for fid in order}
@@ -863,8 +907,14 @@ def _draft(conn, lid, year, prev_year):
             for fid in seq:
                 if counts[fid][g] >= tgt or not pool[g]:
                     continue
-                pid_id, _str = pool[g].pop(0)
+                pid_id, pid, st = pool[g].pop(0)
                 conn.execute("UPDATE gtt_players SET fid=? WHERE id=?", (fid, pid_id))
+                # Week-0 log row: the draft pick, so off-season intake is visible
+                # on the hub wire (add-only — no one was dropped for a draftee).
+                conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid,"
+                             " gender, add_pid, drop_pid, add_str, drop_str)"
+                             " VALUES (?,?,?,?,?,?,?,?,?)",
+                             (lid, year, 0, fid, g, pid, None, round(st, 1), None))
                 counts[fid][g] += 1
                 picked = True
             rnd += 1
@@ -972,18 +1022,25 @@ def transactions(league_id, year=None, limit=200):
     names = _fr_names(conn, league_id)
     name_cache: dict = {}
 
-    def nm(pid):
+    def meta(pid):
+        """(name, origin) for a pid — null-safe: off-season rows are one-sided
+        (a draft pick has no drop; a founder release has no add)."""
+        if pid is None:
+            return "", ""
         if pid not in name_cache:
-            r = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+            r = conn.execute("SELECT data, origin FROM gtt_players WHERE league_id=? AND pid=?",
                              (league_id, pid)).fetchone()
-            name_cache[pid] = _prospect(r["data"]).name if r else pid
+            name_cache[pid] = (_prospect(r["data"]).name, r["origin"] or "") if r else (pid, "")
         return name_cache[pid]
 
     out = []
     for r in rows:
+        add_name, add_origin = meta(r["add_pid"])
+        drop_name, drop_origin = meta(r["drop_pid"])
         out.append({"week": r["week"], "fid": r["fid"], "franchise": names.get(r["fid"], ""),
-                    "gender": r["gender"], "add_pid": r["add_pid"], "add_name": nm(r["add_pid"]),
-                    "drop_pid": r["drop_pid"], "drop_name": nm(r["drop_pid"]),
+                    "gender": r["gender"], "add_pid": r["add_pid"], "add_name": add_name,
+                    "add_origin": add_origin, "drop_pid": r["drop_pid"],
+                    "drop_name": drop_name, "drop_origin": drop_origin,
                     "add_str": r["add_str"], "drop_str": r["drop_str"]})
     conn.close()
     return out

@@ -13,7 +13,7 @@
       <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
         <label class="bl-field"><span class="bl-field-label">League</span>
           <span class="bl-select-wrap"><select class="bl-select" name="lg" onchange="this.form.submit()" style="min-width:240px">
-            {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }} (seed {{ l.seed }})</option>{% endfor %}
+            {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }} (seed {{ l.world_seed }})</option>{% endfor %}
           </select></span></label>
       </form>
       {% endif %}
@@ -42,6 +42,9 @@
             <input type="hidden" name="mode" value="finish">
             <button class="bl-pill" type="submit"><i class="fa-solid fa-forward-step" aria-hidden="true"></i> Simulate to champion (fast)</button></form>
           {% endif %}
+          <form method="post" action="{{ url_for('gtt_delete') }}" onsubmit="return confirm('Delete {{ league.name }}? All rosters, results, honors and its Hall of Fame are removed. This cannot be undone.')">
+            <input type="hidden" name="lg" value="{{ league.id }}">
+            <button class="bl-pill" type="submit" style="color:var(--stat-bad-strong,#c0392b)"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete league</button></form>
         </div>
       </div>
       {% endif %}
@@ -109,8 +112,8 @@
 
   {% if transactions %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Add/drop wire</span>
-      <span class="bl-panel-meta">clubs cut a slumping reserve for a clearly better free agent — same gender, no trades</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
+      <span class="bl-panel-meta">week 0 = off-season (draft picks &amp; founder releases) · in-season = add/drop wire, same gender, no trades</span></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-tx">
       <div class="bl-thead gtt-tx-row">
         <span class="bl-th num">Wk</span><span class="bl-th">Franchise</span>
@@ -120,8 +123,8 @@
       <div class="bl-row gtt-tx-row">
         <span class="bl-cell-num">{{ t.week }}</span>
         <span class="bl-cell"><a href="{{ url_for('gtt_franchise', fid=t.fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">{{ t.franchise }}</a></span>
-        <span class="bl-cell" style="color:var(--stat-good-strong)">▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}</span></span>
-        <span class="bl-cell" style="color:var(--text-muted)">▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}</span></span>
+        <span class="bl-cell" style="color:var(--stat-good-strong)">{% if t.add_pid %}▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}{% if t.add_origin == 'college' %} · college{% elif t.add_origin == 'rookie' %} · rookie{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
+        <span class="bl-cell" style="color:var(--text-muted)">{% if t.drop_pid %}▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}{% if t.drop_origin == 'founder' %} · founder released{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
       </div>
       {% endfor %}
     </div></div>
