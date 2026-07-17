@@ -58,9 +58,9 @@ _STR_PER_UTR = 1.677
 
 # The engine's stated design target for favourite win-rate by UTR gap
 # (engine/fast.py TUNE docstring). Used as the yardstick in the report.
-DESIGN_TARGET = {  # UTR-gap bucket -> favourite win %
-    "0.0-0.5": None, "0.5-1.0": None, "1.0-1.5": 63, "1.5-2.0": 69,
-    "2.0-3.0": 77, "3.0+": 87, "overall": 65,
+DESIGN_TARGET = {  # UTR-gap bucket -> favourite win % (keys match the generated bucket labels)
+    "0-0.5": None, "0.5-1.0": None, "1.0-1.5": 63, "1.5-2.0": 69,
+    "2.0-3.0": 77, "3.0-99": 87, "overall": 65,
 }
 GAP_BUCKETS = [(0, 0.5), (0.5, 1.0), (1.0, 1.5), (1.5, 2.0), (2.0, 3.0), (3.0, 99)]
 
@@ -168,12 +168,19 @@ def run_season(division: str, gender: str, seed: int) -> dict:
         hf, af = tfeat.get(h, {}), tfeat.get(a, {})
         hseed, aseed = seed_rank.get(h, 9999), seed_rank.get(a, 9999)
         home_won = r["winner"] == 0
+        lines = json.loads(r["lines_json"] or "[]")
+        # Doubles point: the side that wins >=2 of the 3 doubles lines takes it.
+        d_home = sum(1 for ln in lines if str(ln.get("slot", "")).startswith("D")
+                     and ln.get("home_won"))
+        d_total = sum(1 for ln in lines if str(ln.get("slot", "")).startswith("D"))
+        home_won_doubles = (d_home >= 2) if d_total == 3 else None
         dual = {
             "division": division, "gender": gender, "seed": seed,
             "round_no": r["round_no"], "round": r["round_name"],
             "home": h, "away": a,
             "home_pts": r["home_points"], "away_pts": r["away_points"],
             "home_won": int(home_won),
+            "home_won_doubles": ("" if home_won_doubles is None else int(home_won_doubles)),
             "home_seed": hseed, "away_seed": aseed,
         }
         for k, v in hf.items():
@@ -182,7 +189,7 @@ def run_season(division: str, gender: str, seed: int) -> dict:
             dual["away_" + k] = v
         duals.append(dual)
 
-        for ln in json.loads(r["lines_json"] or "[]"):
+        for ln in lines:
             if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
                 continue
             hp, ap = ln.get("home_pid"), ln.get("away_pid")
@@ -213,33 +220,34 @@ def run_season(division: str, gender: str, seed: int) -> dict:
 
 
 # ---------------------------------------------------------------- analysis
-def _set_prob(p: float) -> float:
-    """Prob the favourite wins one set (race to 6, win-by-2, tiebreak at 6-6
-    decided with per-game prob p), given a serve-neutral per-game win prob p.
-    Exact closed form."""
-    from math import comb
-    P = 0.0
-    for l in range(0, 5):                       # win 6-0 .. 6-4
-        P += comb(5 + l, l) * p**6 * (1 - p)**l
-    p55 = comb(10, 5) * p**5 * (1 - p)**5       # reach 5-5
-    P += p55 * p * p                            # 7-5
-    P += p55 * (p * (1 - p) + (1 - p) * p) * p  # 6-6 then win tiebreak (~p)
-    return min(1.0, P)
+_PWIN_CACHE: dict[float, float] = {}
+_PWIN_SIMS = 6000                               # Monte-Carlo draws per distinct gap
 
 
 def _predicted_match_winprob(eng_gap: float) -> float:
-    """The engine's OWN implied match win-prob for the higher-rated player, derived
-    from engine.fast's hold logistic at the given gap in `overall`. Reproduces the
-    per-game hold edge (favourite serving / returning), collapses to a serve-neutral
-    per-game win prob, then rolls it up through a set and a best-of-3. Used only to
-    build the reliability curve (predicted vs actual)."""
-    from engine.fast import _logistic, TUNE
-    base, slope = TUNE["hold_base_logit"], TUNE["skill_slope"]
-    hf = _logistic(base + slope * eng_gap)     # favourite holds serve
-    hu = _logistic(base - slope * eng_gap)     # underdog holds serve
-    pg = 0.5 * hf + 0.5 * (1 - hu)             # favourite's serve-neutral game-win prob
-    ps = _set_prob(pg)
-    return ps**2 + 2 * ps**2 * (1 - ps)        # best-of-3: win 2-0 or 2-1
+    """The engine's OWN implied match win-prob for the higher-`overall` player at a
+    given gap in `overall`, computed by running the REAL fast model — not an
+    analytic approximation. `engine.fast` reads only `player.overall` (the mean of
+    the nine drivers) plus neutral context, so two flat players whose overalls
+    differ by `eng_gap` reproduce its exact hold/tiebreak probabilities, alternating
+    servers, 6-6 tiebreaks, and the NCAA best-of-3 (no match-tiebreak) format. Monte
+    Carlo over `_PWIN_SIMS` seeds; cached by rounded gap. Used only for the
+    reliability curve (predicted vs actual)."""
+    from engine.fast import simulate_fast
+    from engine.state import Player, ATTRS
+    from engine.format import PRESETS
+    key = round(max(0.0, eng_gap), 3)
+    if key in _PWIN_CACHE:
+        return _PWIN_CACHE[key]
+    g = min(0.98, key)
+    fav = Player(name="f", **{a: 0.5 + g / 2 for a in ATTRS})
+    dog = Player(name="d", **{a: 0.5 - g / 2 for a in ATTRS})
+    fmt = PRESETS["ncaa_dual"]
+    wins = sum(simulate_fast(fav, dog, seed=97001 + k, fmt=fmt).winner == 0
+               for k in range(_PWIN_SIMS))
+    p = wins / _PWIN_SIMS
+    _PWIN_CACHE[key] = p
+    return p
 
 
 def analyse(duals, singles) -> dict:
@@ -262,11 +270,16 @@ def analyse(duals, singles) -> dict:
                 key = f"{lo}-{hi}"
                 bins[key][0] += fav_won; bins[key][1] += 1
                 break
-        # reliability: engine's implied win prob for the favourite
+        # reliability: the ENGINE favourite (higher `overall`) vs the engine's own
+        # implied win prob. OVR and engine-overall order can disagree on a handful of
+        # near-even courts, so the reliability outcome MUST use the engine favourite,
+        # not the OVR favourite bucketed above.
         eng_gap = abs(m["home_eng"] - m["away_eng"])
+        eng_fav_home = m["home_eng"] >= m["away_eng"]
+        eng_fav_won = (m["home_won"] == 1) == eng_fav_home
         pwin = _predicted_match_winprob(eng_gap)
         dec = min(9, int(pwin * 10))
-        reliab[dec][0] += fav_won; reliab[dec][1] += 1
+        reliab[dec][0] += eng_fav_won; reliab[dec][1] += 1
         if m["n_sets"] >= 3:
             three += 1
         elif m["n_sets"] == 2:
@@ -302,10 +315,14 @@ def analyse(duals, singles) -> dict:
     hit = {mt: [0, 0] for mt in metrics}       # [correct, total] where a favourite exists
     seed_upsets_by_round = defaultdict(lambda: [0, 0])   # round -> [upsets, n]
     margin_dist = Counter()
-    dbl_leverage = [0, 0]                       # [dual won by doubles-point side, n]
+    dbl_leverage = [0, 0]                       # [dual won by doubles-point side, n with a doubles point]
     dual_upset_cases = []
     for d in duals:
         hw = d["home_won"] == 1
+        # doubles-point leverage: did the side that took the doubles point win the dual?
+        hwd = d.get("home_won_doubles")
+        if hwd not in (None, ""):
+            dbl_leverage[0] += (bool(hwd) == hw); dbl_leverage[1] += 1
         # seed: lower number = better
         for mt in metrics:
             if mt == "seed":
@@ -340,6 +357,9 @@ def analyse(duals, singles) -> dict:
     tot_up = sum(u for u, n in seed_upsets_by_round.values())
     tot_n = sum(n for u, n in seed_upsets_by_round.values())
     out["seed_upset_pct_overall"] = round(tot_up / tot_n * 100, 1) if tot_n else None
+    out["doubles_point_win_pct"] = (round(dbl_leverage[0] / dbl_leverage[1] * 100, 1)
+                                    if dbl_leverage[1] else None)
+    out["doubles_point_n"] = dbl_leverage[1]
     out["dual_margin_dist"] = dict(sorted(margin_dist.items(), reverse=True))
     dual_upset_cases.sort(key=lambda d: abs(d["home_seed"] - d["away_seed"]), reverse=True)
     out["dual_upset_cases"] = [{
@@ -369,6 +389,8 @@ def fmt_report(meta, A) -> str:
     L.append("")
     L.append("2) REALISM")
     L.append(f"   singles straight-sets {A['singles_straight_pct']}% / 3-set {A['singles_three_set_pct']}%")
+    L.append(f"   doubles-point leverage: side that won the doubles point won the dual "
+             f"{A['doubles_point_win_pct']}% ({A['doubles_point_n']} duals)")
     L.append("   dual final-score distribution (winner-loser team pts):")
     for k, v in A["dual_margin_dist"].items():
         L.append(f"     {k}  {'#' * min(40, v)} {v}")
