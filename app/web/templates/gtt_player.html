@@ -15,6 +15,11 @@
       <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
       College graduate{% if p.college_school %} — {{ p.college_school }}{% endif %} · career below spans college and pro.
     </div>
+    {% elif p.origin == 'pro' %}
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:12px">
+      <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+      Former tour pro{% if p.college_school %} — one college season at {{ p.college_school }}{% endif %} · drafted in the Pro Round.
+    </div>
     {% endif %}
     <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       {% for h in p.honors %}<span class="bl-pill" style="background:var(--accent);color:#fff">{{ h }}</span>{% endfor %}

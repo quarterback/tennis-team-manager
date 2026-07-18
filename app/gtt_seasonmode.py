@@ -263,10 +263,26 @@ def _intake(conn, league, needed_by_gender):
     pool_target = {"m": needed_by_gender["m"] + WAIVER_POOL_MEN,
                    "w": needed_by_gender["w"] + WAIVER_POOL_WOMEN}
     target = pool_target["m"] + pool_target["w"]
-    grads = _world_graduates(conn, seed, have, target)
-    pool_rows, used = {"m": [], "w": []}, set(have)
+    # Ex-pros (Gr grad transfers leaving college) enter tagged origin='pro' —
+    # they are draftable ONLY in the draft's single Pro Round (one pick per
+    # franchise), so cap the pro intake at the franchise count and never let
+    # them consume the normal graduates' pool slots. Their elite STR tops the
+    # selector's ranking, so request headroom for both groups.
+    from .pros import is_pro as _is_pro
+    n_fr = len(_fr_rows(conn, lid))
+    grads = _world_graduates(conn, seed, have, target + 2 * n_fr)
+    pool_rows, pro_rows, used = {"m": [], "w": []}, {"m": [], "w": []}, set(have)
     for g, pid, data, _str in grads:
-        if pid in used or len(pool_rows[g]) >= pool_target[g]:
+        if pid in used:
+            continue
+        if _is_pro(_prospect(data)):
+            if len(pro_rows[g]) < n_fr:
+                pro_rows[g].append({"pid": pid, "gender": g, "data": data,
+                                    "age": ENTRY_AGE, "joined_year": year,
+                                    "origin": "pro"})
+                used.add(pid)
+            continue
+        if len(pool_rows[g]) >= pool_target[g]:
             continue
         pool_rows[g].append({"pid": pid, "gender": g, "data": data, "age": ENTRY_AGE,
                              "joined_year": year, "origin": "college"})
@@ -283,7 +299,7 @@ def _intake(conn, league, needed_by_gender):
             pool_rows[g].append(row)
             used.add(row["pid"])
     for g in ("m", "w"):
-        for r in pool_rows[g]:
+        for r in pool_rows[g] + pro_rows[g]:
             conn.execute(
                 "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
                 " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
@@ -884,21 +900,51 @@ def _offseason(conn, s, fidelity):
 
 
 def _draft(conn, lid, year, prev_year):
-    """Reverse-standings snake draft of the free-agent pool into open slots."""
+    """Reverse-standings snake draft of the free-agent pool into open slots.
+    Opens with the PRO ROUND (owner rule 2027-07): one single round, worst
+    record first, where each franchise may take at most ONE ex-pro (the best
+    available of either gender that fits an open slot). Pros are draftable ONLY
+    here — every undrafted pro retires immediately, so they never sit in the
+    general pool or the waiver wire. The normal snake draft then fills the rest
+    from graduates and rookies."""
     order = [r["fid"] for r in _standings_rows(conn, lid, prev_year)]
     if not order:
         order = [f["id"] for f in _fr_rows(conn, lid)]
     order = order[::-1]                                   # worst record drafts first
 
     pool = {"m": [], "w": []}
-    for r in conn.execute("SELECT id, pid, gender, data FROM gtt_players WHERE league_id=?"
-                          " AND fid IS NULL AND status='active'", (lid,)).fetchall():
-        pool[r["gender"]].append((r["id"], r["pid"], _prospect(r["data"]).str_value()))
-    for g in pool:
+    pro_pool = {"m": [], "w": []}
+    for r in conn.execute("SELECT id, pid, gender, origin, data FROM gtt_players"
+                          " WHERE league_id=? AND fid IS NULL AND status='active'",
+                          (lid,)).fetchall():
+        dest = pro_pool if r["origin"] == "pro" else pool
+        dest[r["gender"]].append((r["id"], r["pid"], _prospect(r["data"]).str_value()))
+    for g in ("m", "w"):
         pool[g].sort(key=lambda x: x[2], reverse=True)    # best available first
+        pro_pool[g].sort(key=lambda x: x[2], reverse=True)
 
     counts = {fid: {"m": len(_active(conn, lid, fid, "m")),
                     "w": len(_active(conn, lid, fid, "w"))} for fid in order}
+
+    # --- The Pro Round: one pick per franchise, then the pros are done ---
+    targets = {"m": TARGET_MEN, "w": TARGET_WOMEN}
+    for fid in order:
+        best = max(((g, pro_pool[g][0]) for g in ("m", "w")
+                    if pro_pool[g] and counts[fid][g] < targets[g]),
+                   key=lambda t: t[1][2], default=None)
+        if best is None:
+            continue
+        g, (pid_id, pid, st) = best
+        pro_pool[g].pop(0)
+        conn.execute("UPDATE gtt_players SET fid=? WHERE id=?", (fid, pid_id))
+        conn.execute("INSERT INTO gtt_transactions (league_id, year, week, fid,"
+                     " gender, add_pid, drop_pid, add_str, drop_str)"
+                     " VALUES (?,?,?,?,?,?,?,?,?)",
+                     (lid, year, 0, fid, g, pid, None, round(st, 1), None))
+        counts[fid][g] += 1
+    for g in ("m", "w"):                                  # undrafted pros retire
+        for pid_id, _pid, _st in pro_pool[g]:
+            conn.execute("UPDATE gtt_players SET status='retired' WHERE id=?", (pid_id,))
     for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
         rnd = 0
         while pool[g]:
