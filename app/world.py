@@ -50,6 +50,7 @@ from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          COACH_LOCAL_WEIGHT, LOCAL_TERRITORY_PULL)
 from .juniors import generate_class, rank_class
 from generators import make_name_picker
+from generators.flavor import flag_emoji
 
 WORLD_DB = resolve_db_path()        # shares the file with season mode; own tables
 UNIVERSES = [("D1", "men"), ("D1", "women"), ("D2", "men"),
@@ -174,6 +175,9 @@ CREATE TABLE IF NOT EXISTS world_championship (
 CREATE TABLE IF NOT EXISTS world_graduates (
   world_id INTEGER, year INTEGER, division TEXT, gender TEXT, pid TEXT,
   str REAL, ovr REAL, data TEXT
+);
+CREATE TABLE IF NOT EXISTS world_cups (
+  world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
 CREATE TABLE IF NOT EXISTS world_pro (
   world_id INTEGER, year INTEGER, cycle TEXT, gender TEXT, division TEXT,
@@ -3003,6 +3007,95 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
                 })
 
 
+def _store_world_cups(conn, world: dict, rosters: dict) -> None:
+    """Run + persist the national-team cups (Davis / BJK) at season's end over the
+    fully-developed year rosters (pre-graduation, so seniors play their cup), and
+    stamp champion/finalist honors to the players' REAL pids — the title lands on
+    the same career page as college and GTT honors."""
+    from app import national_teams as nt
+    import app.honors as honors
+    yr = world["year"]
+    eff = year_seed(world["seed"], yr)
+    conn.execute("DELETE FROM world_cups WHERE world_id=? AND year=?", (world["id"], yr))
+    for gender in worldconfig.active_genders():
+        try:
+            cup = nt.run_world_cup(gender, seed=eff, rosters=rosters)
+            conn.execute("INSERT INTO world_cups VALUES (?,?,?,?)",
+                         (world["id"], yr, gender, json.dumps(cup)))
+            # Stamp through the CALLER's connection — a second connection here
+            # deadlocks against the open rollover transaction on the shared file.
+            honors.stamp(nt.honor_records(cup, year=2026 + yr, season_no=yr + 1),
+                         conn=conn)
+        except Exception:
+            pass
+
+
+def latest_world_cup(seed: int, gender: str, year: int | None = None) -> dict | None:
+    """A completed cup snapshot for a gender (None until one has been stored at a
+    year rollover). `year` is the world-year INDEX; default = most recent."""
+    w = load_world(seed)
+    if not w:
+        return None
+    conn = _db()
+    try:
+        if year is None:
+            r = conn.execute("SELECT data FROM world_cups WHERE world_id=? AND gender=?"
+                             " ORDER BY year DESC LIMIT 1", (w["id"], gender)).fetchone()
+        else:
+            r = conn.execute("SELECT data FROM world_cups WHERE world_id=? AND gender=?"
+                             " AND year=? LIMIT 1", (w["id"], gender, year)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r["data"]) if r else None
+
+
+def world_cup_years(seed: int) -> list[int]:
+    """World-year indexes with a stored cup, newest first (the year picker)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT DISTINCT year FROM world_cups WHERE world_id=?"
+                            " ORDER BY year DESC", (w["id"],)).fetchall()
+    finally:
+        conn.close()
+    return [r["year"] for r in rows]
+
+
+def player_world_cups(seed: int, pid: str) -> list[dict]:
+    """A player's international record across every stored cup — one row per
+    (year, event): caps + singles/doubles rubber W-L + how far the nation went.
+    Feeds the International panel on the career page."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT year, gender, data FROM world_cups WHERE world_id=?"
+                            " ORDER BY year DESC", (w["id"],)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        cup = json.loads(r["data"])
+        rec = (cup.get("players") or {}).get(pid)
+        if not rec:
+            continue
+        champ = cup.get("champion") or {}
+        finalist = cup.get("runner_up") or {}
+        finish = ("Champion" if any(p["pid"] == pid for p in champ.get("squad", []))
+                  else "Finalist" if any(p["pid"] == pid for p in finalist.get("squad", []))
+                  else "")
+        out.append({"year": 2026 + r["year"], "event": cup["event"],
+                    "country": rec["country"], "flag": flag_emoji(rec["country"]),
+                    "ties": rec["ties"],
+                    "singles": f"{rec['singles_w']}-{rec['singles_l']}",
+                    "doubles": f"{rec['doubles_w']}-{rec['doubles_l']}",
+                    "finish": finish})
+    return out
+
+
 def _store_championships(conn, world: dict) -> None:
     """Run + persist the individual singles/doubles championships for each active
     universe at season's end (rosters are still this year's), so the completed
@@ -3176,6 +3269,9 @@ def _finalize_year(seed: int, w: dict) -> dict:
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
     _save_graduates(conn, w["id"], w["year"], rosters, player_str, redshirts)
+    # National-team cups (Davis / BJK) — an offseason event over the year's fully
+    # developed rosters, BEFORE graduation removes the seniors. Snapshot + honors.
+    _store_world_cups(conn, w, rosters)
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():
