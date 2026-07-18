@@ -272,12 +272,19 @@ def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = Non
     rows = []
     player_str = player_str or {}
     redshirts = redshirts or set()
+    from app import pros as _pros
     for (d, g), schools in rosters.items():
         if not worldconfig.is_active(d, g):
             continue
         for roster in schools.values():
             for p in roster:
-                if _base_class(p.class_year) != "Sr" or p.pid in redshirts:
+                base = _base_class(p.class_year)
+                if not base and _pros.is_pro(p):
+                    base = "Gr"                       # legacy pre-rule pro (no class)
+                # Seniors AND departing pro grad transfers ("Gr") enter the
+                # graduate pool — an ex-pro can absolutely continue in the GTT
+                # (owner call 2027-07); their elite STR simply tops the draft.
+                if base not in ("Sr", "Gr") or p.pid in redshirts:
                     continue
                 rows.append((world_id, year, d, g, p.pid, float(_str_of(player_str, p)),
                              float(p.current_overall()), json.dumps(prospect_to_dict(p))))

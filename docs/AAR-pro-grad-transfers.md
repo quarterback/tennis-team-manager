@@ -18,9 +18,10 @@ their green PRO badge — deliberately NOT fitted into the Fr→Sr 4-year cycle.
 One season of eligibility; at the year rollover `graduate()` retires `Gr`
 alongside `Sr`. They're an elite, temporary distortion — never a fixture.
 
-- **No GTT intake:** `_save_graduates` stores only class-`Sr` players, so a
-  departing pro never enters the pro-league graduate pool (they were never
-  college players developing toward the pros; GTT would be re-distorted).
+- **GTT intake: YES** (owner call, reversing the first cut): departing `Gr`
+  pros — including migrated legacy pros — ARE saved to `world_graduates`, so an
+  ex-pro continues into the GTT draft pool like any graduate. Their elite STR
+  tops the draft; that's accepted. One pid still threads college → GTT.
 - **Medical redshirt edge:** a season-ending injury makes an RS-Gr who repeats
   once, consistent with the injury system. Rare and acceptable.
 - **Migration:** pros already living in pre-rule saves carry an empty class;
