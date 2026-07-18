@@ -76,6 +76,13 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
             p.potential[a] = v
         p.junior_badges = list(p.junior_badges or []) + [PRO_BADGE]
         p.recruit_stars = 6            # above the 5-star ladder
+        # Pros are GRAD TRANSFERS (owner rule 2027-07): class "Gr", one season of
+        # eligibility, gone at the year rollover like a graduating senior. They're
+        # deliberately one-and-done — an elite distortion that passes through the
+        # ecosystem, never a fixture of it. world.graduate() retires "Gr" with the
+        # seniors; they are NOT saved to world_graduates (no GTT intake — they were
+        # never college players developing toward the pros).
+        p.class_year = "Gr"
         pros.append(p)
     return pros
 

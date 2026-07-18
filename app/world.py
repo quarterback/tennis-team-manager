@@ -1259,17 +1259,23 @@ def graduate(rosters: dict, redshirts: set | None = None) -> int:
     then graduates — a 5th year of eligibility). The tag is purely cosmetic
     eligibility flavor; it never touches the match engine."""
     redshirts = redshirts or set()
+    from app import pros as _pros
     grads = 0
     for schools in rosters.values():
         for school, roster in schools.items():
             kept = []
             for p in roster:
                 base = _base_class(p.class_year)
+                # Migration: pros signed before the grad-transfer rule carry an
+                # empty class — treat them as "Gr" so they leave at this rollover
+                # instead of persisting forever (the bug the rule fixes).
+                if not base and _pros.is_pro(p):
+                    base = "Gr"
                 if p.pid in redshirts:                  # medical redshirt: repeat, tag RS-, no advance
                     p.class_year = _RS_PREFIX + base
                     kept.append(p)
                     continue
-                if base == "Sr":
+                if base in ("Sr", "Gr"):                # seniors + pro grad transfers leave
                     grads += 1
                     continue
                 nxt = _NEXT_CLASS.get(base, "So")
