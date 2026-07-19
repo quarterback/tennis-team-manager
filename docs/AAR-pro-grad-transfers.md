@@ -41,6 +41,18 @@ Unit-checked: new cohorts all generate as `Gr`; a mixed roster through
 `graduate()` removes the Sr, the new Gr pro, and a legacy empty-class pro,
 while a normal Jr advances to Sr and a non-pro empty-class player survives.
 
+## Review fix: recruiting seats (P1)
+
+The first cut taught `graduate()` about `Gr` but left `_openings()` — the
+recruiting seat planner — counting only `Sr` as departing. A program hosting a
+pro received NO recruiting seat for the pro's imminent departure: after the
+rollover the roster ran short, and on D1 the pro was counted as a returning
+scholarship player, leaving the core permanently underfilled. Departure is now
+ONE predicate — `world._departing(p)` (Sr, Gr, or legacy classless pro) — used
+by `_openings`, `graduate`, and `_save_graduates`, so the three can never
+diverge again. Verified: a roster with Sr + Gr pro + legacy pro shows 3 D1 core
+seats (and 3 D3 openings), and graduation removes exactly those 3.
+
 ## Watch-outs
 
 - Anything that buckets players by class (filters, exp maps) should treat `Gr`
