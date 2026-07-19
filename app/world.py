@@ -68,6 +68,22 @@ def _base_class(cy: str) -> str:
     """Class year with any medical-redshirt tag stripped ('RS-Jr' -> 'Jr')."""
     return cy[len(_RS_PREFIX):] if cy.startswith(_RS_PREFIX) else cy
 
+
+def _departing(p) -> bool:
+    """Whether a player leaves at THIS year's rollover: a senior, a pro grad
+    transfer ("Gr" — one-and-done, see AAR-pro-grad-transfers), or a legacy
+    pre-rule pro with no class year (migrated out at the next rollover). The ONE
+    predicate for departure — recruiting seat planning (`_openings`), graduation
+    (`graduate`), and the graduate export (`_save_graduates`) must all agree, or
+    a program that hosts a pro under-recruits and its roster runs short."""
+    base = _base_class(getattr(p, "class_year", "") or "")
+    if base in ("Sr", "Gr"):
+        return True
+    if not base:
+        from app.pros import is_pro
+        return is_pro(p)
+    return False
+
 # Development drip: a full season's growth spread across ~this many ticks.
 DEV_WEEKS = 16
 # Signings spread across roughly this many ticks; the rest sign at finalize.
@@ -277,7 +293,10 @@ def _save_graduates(conn, world_id, year, rosters, player_str: dict | None = Non
             continue
         for roster in schools.values():
             for p in roster:
-                if _base_class(p.class_year) != "Sr" or p.pid in redshirts:
+                # Everyone DEPARTING enters the graduate pool — seniors and pro
+                # grad transfers alike (an ex-pro continues into the GTT via the
+                # draft's Pro Round; owner call 2027-07). Redshirts stay.
+                if not _departing(p) or p.pid in redshirts:
                     continue
                 rows.append((world_id, year, d, g, p.pid, float(_str_of(player_str, p)),
                              float(p.current_overall()), json.dumps(prospect_to_dict(p))))
@@ -871,11 +890,14 @@ def _openings(base_rosters: dict, gender: str) -> dict[str, int]:
         if g != gender:
             continue
         for school, roster in schools.items():
-            grads = sum(1 for p in roster if _base_class(p.class_year) == "Sr")
+            # Departures include pro grad transfers ("Gr") and legacy pros —
+            # a program hosting a pro MUST recruit the replacement seat now,
+            # or the roster (and the D1 scholarship core) runs short next year.
+            grads = sum(1 for p in roster if _departing(p))
             if division == "D1":
                 returning = len(roster) - grads
                 ret_core = sum(1 for p in roster if not p.walk_on
-                               and _base_class(p.class_year) != "Sr")
+                               and not _departing(p))
                 out[school] = max(0, min(SCHOLARSHIP_SLOTS - ret_core,
                                          roster_cap(division) - returning))
             else:
@@ -1269,7 +1291,7 @@ def graduate(rosters: dict, redshirts: set | None = None) -> int:
                     p.class_year = _RS_PREFIX + base
                     kept.append(p)
                     continue
-                if base == "Sr":
+                if _departing(p):                       # seniors + pro grad transfers (incl. legacy)
                     grads += 1
                     continue
                 nxt = _NEXT_CLASS.get(base, "So")
