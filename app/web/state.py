@@ -225,7 +225,15 @@ def get_world_cup(gender: str, seed: int = DEFAULT_SEED, year: int | None = None
             with _champ_build_lock(("cup", gender, eff)):
                 data = _world_cup_cache.get(ckey)
                 if data is None:
-                    data = run_world_cup(gender, seed=eff)
+                    # Rosters MUST be scanned with the BASE world seed — the
+                    # players actually living in this save. `eff` (the derived
+                    # per-year seed) only seeds the draw. Passing eff into the
+                    # scan primes a world that doesn't exist: get_or_create then
+                    # BUILDS a parallel universe of fake players (and writes a
+                    # stray world row). scripts/cleanup_stray_worlds.py removes
+                    # any strays this created before the fix.
+                    data = run_world_cup(gender, seed=eff,
+                                         rosters=world.scan_rosters(seed))
                     _world_cup_cache[ckey] = data
         return data
     return world.latest_world_cup(seed, gender)
