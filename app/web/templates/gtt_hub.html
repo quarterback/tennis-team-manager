@@ -13,7 +13,7 @@
       <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
         <label class="bl-field"><span class="bl-field-label">League</span>
           <span class="bl-select-wrap"><select class="bl-select" name="lg" onchange="this.form.submit()" style="min-width:240px">
-            {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }} (seed {{ l.world_seed }})</option>{% endfor %}
+            {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }}</option>{% endfor %}
           </select></span></label>
       </form>
       {% endif %}
@@ -156,8 +156,6 @@
     <form method="post" action="{{ url_for('gtt_new') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px">
       <label class="bl-field"><span class="bl-field-label">Name</span>
         <input class="bl-input" name="name" value="Global Team Tennis" style="min-width:220px"></label>
-      <label class="bl-field"><span class="bl-field-label">Seed</span>
-        <input class="bl-input" name="seed" type="number" value="2026" style="width:96px"></label>
       <label class="bl-field"><span class="bl-field-label">Teams</span>
         <input class="bl-input" name="teams" type="number" value="8" min="4" max="16" style="width:80px"></label>
       <button class="bl-pill" type="submit">Create</button>

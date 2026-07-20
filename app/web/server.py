@@ -1338,10 +1338,12 @@ def create_app() -> Flask:
 
     @app.route("/gtt/new", methods=["POST"])
     def gtt_new():
+        # No seed input: a league always binds to the save's ACTIVE world (the
+        # college game being played) — the pro league is a continuation of it,
+        # never a self-contained parallel universe.
         name = (request.form.get("name") or "Global Team Tennis").strip()
-        seed = request.form.get("seed", type=int)
         teams = min(16, max(4, request.form.get("teams", type=int) or gs.DEFAULT_TEAMS))
-        lid = gs.create_league(name, seed=seed, n_teams=teams)
+        lid = gs.create_league(name, n_teams=teams)
         return redirect(url_for("gtt_hub", lg=lid))
 
     @app.route("/gtt/advance", methods=["POST"])

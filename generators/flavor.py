@@ -60,6 +60,7 @@ _COUNTRY_DISPLAY: dict[str, tuple[str, str]] = {
     "PR": ("Puerto Rico", "PUR"),    "CU": ("Cuba", "CUB"),
     "JM": ("Jamaica", "JAM"),        "TT": ("Trinidad & Tobago", "TTO"),
     "SR": ("Suriname", "SUR"),       "GY": ("Guyana", "GUY"),
+    "UY": ("Uruguay", "URU"),
     "CW": ("Curaçao", "CUW"),        "HT": ("Haiti", "HAI"),
     "AW": ("Aruba", "ABW"),          "BB": ("Barbados", "BAR"),
     "BS": ("Bahamas", "BAH"),        "BM": ("Bermuda", "BER"),

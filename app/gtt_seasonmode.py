@@ -429,11 +429,20 @@ def _build_schedule(conn, lid, year, seed):
 
 
 def _active_world_seed(conn, preferred=None):
+    """The seed of THE ACTIVE WORLD in this save — the college game actually
+    being played. There is only ever one real world per save (`world.start_new`
+    resets before creating, always at the default seed; freshness comes from the
+    salt), so this binds to the OLDEST world row. Any later row is a stray
+    artifact (a derived-seed bug once wrote them — see
+    scripts/cleanup_stray_worlds.py). `preferred` is honored only when a world
+    with that exact seed exists; a typed number that matches nothing (e.g. a
+    year typed into the old form's Seed box) never silently unbinds the league
+    from the player's game."""
     try:
         if preferred is not None and conn.execute("SELECT 1 FROM world WHERE seed=?",
                                                   (preferred,)).fetchone():
             return preferred
-        row = conn.execute("SELECT seed FROM world ORDER BY id DESC LIMIT 1").fetchone()
+        row = conn.execute("SELECT seed FROM world ORDER BY id ASC LIMIT 1").fetchone()
         if row:
             return row["seed"]
     except sqlite3.OperationalError:
@@ -830,6 +839,17 @@ def _should_retire(pid, age, year):
 def _offseason(conn, s, fidelity):
     lid, prev_year = s["id"], s["current_year"]
     year = prev_year + 1
+
+    # Self-heal the world linkage: a league whose stored world_seed matches no
+    # existing world (a number typed into the old Seed box, or a world that was
+    # reset) re-binds to the save's ACTIVE world — the college league the player
+    # is actually running — and the fix is persisted. Without this the graduate
+    # lookup silently finds nothing and the league fills with synthetic players.
+    ws = _active_world_seed(conn, s["world_seed"])
+    if ws != s["world_seed"]:
+        conn.execute("UPDATE gtt_leagues SET world_seed=? WHERE id=?", (ws, lid))
+        s = dict(s)
+        s["world_seed"] = ws
 
     # Age everyone a year; retire the veterans; decline those past their peak
     # (development run in reverse — the slide steepens with each year past peak).

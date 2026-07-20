@@ -101,7 +101,10 @@ def _pool(gender: str, *, seed: int | None = None, rosters: dict | None = None):
     (prospect, school, division) tuples. `rosters` (a
     ``{(division, gender): {school: [Prospect]}}`` map, e.g. from
     `world.developed_rosters`) takes precedence; otherwise the live world is
-    scanned (`world.scan_rosters`)."""
+    scanned (`world.scan_rosters`). ⚠ `seed` here is the BASE world seed (the
+    save's world), NEVER a derived year seed — scan_rosters primes/creates a
+    world for whatever seed it's given, so a wrong seed silently builds a
+    parallel universe of players not in the save."""
     if rosters is None:
         from app.world import scan_rosters, DEFAULT_SEED
         rosters = scan_rosters(seed if seed is not None else DEFAULT_SEED)
