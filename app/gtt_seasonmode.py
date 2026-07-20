@@ -498,25 +498,34 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
         pool[g].sort(key=lambda x: -x[2])
         pro_pool[g].sort(key=lambda x: -x[2])
     counts = {fid: {"m": 0, "w": 0} for fid in fids}
-    pro_taken: set = set()
+    # Founding PRO ROUND — same contract as the off-season draft: one standalone
+    # pass BEFORE any normal picks, each club taking its best available ex-pro
+    # (either gender) that fits an open slot, at most one per club. Running it
+    # inline with the snake (picking a pro only when they out-rated the best
+    # graduate) let a below-top-grad pro be skipped until rosters filled and
+    # then discarded — a club must get its pro-pick opportunity first.
+    targets = {"m": TARGET_MEN, "w": TARGET_WOMEN}
+    for fid in fids:
+        best = max(((g, pro_pool[g][0]) for g in ("m", "w")
+                    if pro_pool[g] and counts[fid][g] < targets[g]),
+                   key=lambda t: t[1][2], default=None)
+        if best is None:
+            continue
+        g, (pid, data, _st) = best
+        pro_pool[g].pop(0)
+        _seat(fid, g, pid, data, "pro")
+        counts[fid][g] += 1
+    # Snake rounds over the ordinary graduating class.
     rnd = 0
     while True:
         placed = False
         seq = fids if rnd % 2 == 0 else fids[::-1]
         for fid in seq:
             for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
-                if counts[fid][g] >= tgt:
+                if counts[fid][g] >= tgt or not pool[g]:
                     continue
-                if (fid not in pro_taken and pro_pool[g]
-                        and (not pool[g] or pro_pool[g][0][2] >= pool[g][0][2])):
-                    pid, data, _st = pro_pool[g].pop(0)
-                    _seat(fid, g, pid, data, "pro")
-                    pro_taken.add(fid)
-                elif pool[g]:
-                    pid, data, _st = pool[g].pop(0)
-                    _seat(fid, g, pid, data, "college")
-                else:
-                    continue
+                pid, data, _st = pool[g].pop(0)
+                _seat(fid, g, pid, data, "college")
                 counts[fid][g] += 1
                 placed = True
         rnd += 1
