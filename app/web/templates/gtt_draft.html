@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — GTT Draft{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
+
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_hub', lg=league.id) }}">← {{ league.name }}</a>
+
+  <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title"><i class="fa-solid fa-list-ol" aria-hidden="true"></i>
+        {{ board.cal_year }} {{ 'Founding Draft' if board.is_founding else 'Draft' }}</span>
+      <span class="bl-panel-meta">{{ board.total }} picks · worst record picks first, snake ·
+        graduates of the {{ board.cal_year - 1 }} college class</span>
+    </div>
+  </div>
+
+  {% if not board.total %}
+  <div class="bl-panel" style="padding:22px"><p class="bl-conf">No draft on record for this season.</p></div>
+  {% endif %}
+
+  {% if board.pro_round %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Pro Round</span>
+      <span class="bl-panel-meta">one ex-pro per club, then the pros are done — undrafted pros retire</span></div>
+    <div class="bl-tablescroll"><div class="bl-table" style="--bl-grid-cols: 44px minmax(140px,1fr) minmax(140px,1fr) 40px 56px">
+      <div class="bl-thead">
+        <span class="bl-th num">Pick</span><span class="bl-th">Franchise</span>
+        <span class="bl-th">Player</span><span class="bl-th">M/W</span><span class="bl-th num">STR</span>
+      </div>
+      {% for p in board.pro_round %}
+      <div class="bl-row">
+        <span class="bl-cell-num">P{{ p.no }}</span>
+        <span class="bl-cell"><a href="{{ url_for('gtt_franchise', fid=p.fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">{{ p.franchise }}</a></span>
+        <span class="bl-cell"><a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}" style="text-decoration:none;color:var(--stat-good-strong);font-weight:600">{{ p.name }}</a></span>
+        <span class="bl-cell" style="color:var(--text-muted)">{{ 'M' if p.gender == 'm' else 'W' }}</span>
+        <span class="bl-cell-num">{{ p.str }}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endif %}
+
+  {% for rnd in board.rounds %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Round {{ loop.index }}</span>
+      <span class="bl-panel-meta">{{ rnd|length }} picks</span></div>
+    <div class="bl-tablescroll"><div class="bl-table" style="--bl-grid-cols: 44px minmax(140px,1fr) minmax(140px,1fr) 40px 44px 56px">
+      <div class="bl-thead">
+        <span class="bl-th num">Pick</span><span class="bl-th">Franchise</span>
+        <span class="bl-th">Player</span><span class="bl-th">M/W</span><span class="bl-th">From</span><span class="bl-th num">STR</span>
+      </div>
+      {% for p in rnd %}
+      <div class="bl-row">
+        <span class="bl-cell-num">{{ p.no }}</span>
+        <span class="bl-cell"><a href="{{ url_for('gtt_franchise', fid=p.fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">{{ p.franchise }}</a></span>
+        <span class="bl-cell"><a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}" style="text-decoration:none;color:inherit;font-weight:600">{{ p.name }}</a></span>
+        <span class="bl-cell" style="color:var(--text-muted)">{{ 'M' if p.gender == 'm' else 'W' }}</span>
+        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
+        <span class="bl-cell-num">{{ p.str }}</span>
+      </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

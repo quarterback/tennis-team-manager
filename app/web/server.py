@@ -148,6 +148,9 @@ NAV_GROUPS = [
     ]),
     ("Pro Tour", [
         {"id": "gtt",       "label": "League Hub",   "icon": "fa-solid fa-globe", "endpoint": "gtt_hub",          "args": {}},
+        {"id": "gtt_sched", "label": "Schedule",     "icon": "fa-solid fa-calendar-days", "endpoint": "gtt_schedule",     "args": {}},
+        {"id": "gtt_lead",  "label": "Leaders",      "icon": "fa-solid fa-ranking-star", "endpoint": "gtt_leaders",      "args": {}},
+        {"id": "gtt_draft", "label": "Draft",        "icon": "fa-solid fa-list-ol", "endpoint": "gtt_draft",        "args": {}},
         {"id": "gtt_hall",  "label": "Hall of Fame", "icon": "fa-solid fa-building-columns", "endpoint": "gtt_hall",         "args": {}},
     ]),
     ("Tools", [
@@ -202,6 +205,9 @@ def _active_nav(req) -> str:
         return "roster" if prog and req.args.get("school") == prog["school"] else "teams"
     if p.startswith("/editor"):           return "editor"
     if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
+    if p.startswith("/gtt/schedule"):     return "gtt_sched"
+    if p.startswith("/gtt/leaders"):      return "gtt_lead"
+    if p.startswith("/gtt/draft"):        return "gtt_draft"
     if p.startswith("/gtt"):              return "gtt"
     if p.startswith("/methodology"):      return "methodology"
     return ""
@@ -1357,6 +1363,30 @@ def create_app() -> Flask:
             else:
                 gs.advance(lid, fidelity="full")
         return redirect(url_for("gtt_hub", lg=lid))
+
+    @app.route("/gtt/schedule")
+    def gtt_schedule():
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        return render_template("gtt_schedule.html", active="GTT Schedule", league=league,
+                               sched=gs.season_schedule(league["id"]))
+
+    @app.route("/gtt/leaders")
+    def gtt_leaders():
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        return render_template("gtt_leaders.html", active="GTT Leaders", league=league,
+                               leaders=gs.league_leaders(league["id"]))
+
+    @app.route("/gtt/draft")
+    def gtt_draft():
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        board = gs.draft_board(league["id"])
+        return render_template("gtt_draft.html", active="GTT", league=league, board=board)
 
     @app.route("/gtt/delete", methods=["POST"])
     def gtt_delete():

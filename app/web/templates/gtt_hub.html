@@ -29,7 +29,9 @@
             {% else %}regular season — week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
           </div>
         </div>
-        <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_schedule', lg=league.id) }}"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Schedule</a>
+          <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_leaders', lg=league.id) }}"><i class="fa-solid fa-ranking-star" aria-hidden="true"></i> Leaders</a>
           {% if league.phase == 'complete' %}
           {% if can_next %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
@@ -119,7 +121,8 @@
   {% if transactions %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
-      <span class="bl-panel-meta">week 0 = off-season (draft picks &amp; founder releases) · in-season = add/drop wire, same gender, no trades</span></div>
+      <span class="bl-panel-meta">week 0 = off-season (draft picks &amp; founder releases) · in-season = add/drop wire, same gender, no trades</span>
+      <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('gtt_draft', lg=league.id) }}"><i class="fa-solid fa-list-ol" aria-hidden="true"></i> Draft board</a></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-tx">
       <div class="bl-thead gtt-tx-row">
         <span class="bl-th num">Wk</span><span class="bl-th">Franchise</span>

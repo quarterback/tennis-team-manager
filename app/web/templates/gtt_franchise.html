@@ -20,7 +20,7 @@
       <a class="bl-row gtt-ros-row{% if p.reserve %} gtt-res{% endif %}" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
         <span class="bl-cell" style="color:{{ 'var(--text-faint)' if p.reserve else 'var(--text-muted)' }};font-weight:600">{{ p.slot }}</span>
         <span class="gtt-nm">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></span>
-        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
+        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie','pro':'Ex-pro'}.get(p.origin, p.origin) }}</span>
         <span class="bl-cell-num">{{ p.age }}</span>
         <span class="bl-cell-num">{{ p.str }}</span>
         <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span>{% if p.elsewhere %}<span style="display:block;color:var(--text-faint);font-size:9px" title="this season's matches for a previous club">+{{ p.elsewhere }} prev</span>{% endif %}</span>
@@ -42,8 +42,8 @@
       {% for t in moves %}
       <div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle);font-size:13px">
         <span style="color:var(--text-muted);min-width:38px">Wk {{ t.week }}</span>
-        <span style="flex:1;color:var(--stat-good-strong)">▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}</span></span>
-        <span style="flex:1;text-align:right;color:var(--text-muted)">▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}</span></span>
+        <span style="flex:1;color:var(--stat-good-strong)">{% if t.add_pid %}▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}{% if t.add_origin == 'college' %} · college{% elif t.add_origin == 'pro' %} · PRO ROUND{% elif t.add_origin == 'rookie' %} · rookie{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
+        <span style="flex:1;text-align:right;color:var(--text-muted)">{% if t.drop_pid %}▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}{% if t.drop_origin == 'founder' %} · founder released{% endif %}</span>{% else %}—{% endif %}</span>
       </div>
       {% endfor %}
     </div>
@@ -91,7 +91,7 @@
       <div class="bl-row gtt-fa-row">
         <span class="bl-cell" style="color:var(--text-muted);font-weight:600">{{ 'M' if p.gender == 'm' else 'W' }}</span>
         <a class="gtt-nm" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">{% if p.country %}{{ p.country|flag }} {% endif %}<span class="nm">{{ p.name }}</span></a>
-        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie'}.get(p.origin, p.origin) }}</span>
+        <span class="bl-cell" style="font-size:11px;color:{{ 'var(--stat-good-strong)' if p.origin == 'college' else 'var(--text-muted)' }}">{{ {'college':'College','founder':'Founder','rookie':'Rookie','pro':'Ex-pro'}.get(p.origin, p.origin) }}</span>
         <span class="bl-cell-num">{{ p.age }}</span>
         <span class="bl-cell-num">{{ p.str }}</span>
         <span class="bl-cell" style="text-align:right">

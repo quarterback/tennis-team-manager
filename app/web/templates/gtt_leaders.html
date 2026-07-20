@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — GTT Leaders{% endblock %}
+{% block content %}
+{% macro leader_table(rows, kind) -%}
+  <div class="bl-tablescroll"><div class="bl-table" style="--bl-grid-cols: 28px minmax(140px,1fr) minmax(110px,1fr) 64px 44px 52px">
+    <div class="bl-thead">
+      <span class="bl-th num">#</span><span class="bl-th">Player</span><span class="bl-th">Club</span>
+      <span class="bl-th num">W-L</span><span class="bl-th num">{{ 'Win%' if kind == 'wins' else 'Rel' }}</span><span class="bl-th num">STR</span>
+    </div>
+    {% for p in rows %}
+    <a class="bl-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ loop.index }}</span>
+      <span class="bl-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span>
+      <span class="bl-cell" style="color:var(--text-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.club }}</span>
+      <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span></span>
+      <span class="bl-cell-num" style="color:var(--text-muted)">{{ (p.pct ~ '%') if kind == 'wins' else p.rel }}</span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ p.str }}</span></span>
+    </a>
+    {% endfor %}
+    {% if not rows %}<div style="padding:12px 16px;color:var(--text-muted)">No results yet — play some weeks.</div>{% endif %}
+  </div></div>
+{%- endmacro %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:980px">
+
+  <div class="bl-toolbar"><div class="bl-toolbar-inner">
+    <span style="font-size:13px;color:var(--text-muted)">{{ league.name }} · {{ leaders.cal_year }} season leaders · line wins across singles &amp; mixed</span>
+    <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('gtt_hub', lg=league.id) }}">League Hub</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_schedule', lg=league.id) }}">Schedule</a>
+  </div></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-top:14px">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — men</span>
+        <span class="bl-panel-meta">completed lines only</span></div>
+      {{ leader_table(leaders.wins.m, 'wins') }}
+    </div>
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — women</span>
+        <span class="bl-panel-meta">completed lines only</span></div>
+      {{ leader_table(leaders.wins.w, 'wins') }}
+    </div>
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — men</span>
+        <span class="bl-panel-meta">live, results-based · rostered players</span></div>
+      {{ leader_table(leaders.str.m, 'str') }}
+    </div>
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — women</span>
+        <span class="bl-panel-meta">live, results-based · rostered players</span></div>
+      {{ leader_table(leaders.str.w, 'str') }}
+    </div>
+  </div>
+</div>
+{% endblock %}

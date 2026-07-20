@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — GTT Schedule{% endblock %}
+{% block content %}
+{% macro dual_row(d) -%}
+  {% if d.final %}
+  <a class="bl-row gtt-sch-row" style="text-decoration:none" href="{{ url_for('gtt_dual', dual_id=d.id, lg=league.id) }}">
+    <span class="bl-cell" style="text-align:right;{% if d.winner == 0 %}font-weight:700{% else %}color:var(--text-muted){% endif %}">
+      {{ d.home_name }} <span class="bl-conf" style="font-size:10px">{{ d.home_abbrev }}</span></span>
+    <span class="bl-cell-num" style="font-variant-numeric:tabular-nums;font-weight:700;text-align:center">{{ d.home_points }}–{{ d.away_points }}</span>
+    <span class="bl-cell" style="{% if d.winner == 1 %}font-weight:700{% else %}color:var(--text-muted){% endif %}">
+      <span class="bl-conf" style="font-size:10px">{{ d.away_abbrev }}</span> {{ d.away_name }}</span>
+  </a>
+  {% else %}
+  <div class="bl-row gtt-sch-row" style="opacity:.66">
+    <span class="bl-cell" style="text-align:right">{{ d.home_name }} <span class="bl-conf" style="font-size:10px">{{ d.home_abbrev }}</span></span>
+    <span class="bl-cell-num" style="text-align:center;color:var(--text-faint)">vs</span>
+    <span class="bl-cell"><span class="bl-conf" style="font-size:10px">{{ d.away_abbrev }}</span> {{ d.away_name }}</span>
+  </div>
+  {% endif %}
+{%- endmacro %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
+
+  <div class="bl-toolbar"><div class="bl-toolbar-inner">
+    <span style="font-size:13px;color:var(--text-muted)">{{ league.name }} · {{ sched.cal_year }} season ·
+      {% if sched.phase == 'complete' %}complete{% elif sched.phase == 'playoffs' %}playoffs{% else %}week {{ sched.current_week }}{% endif %}</span>
+    <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('gtt_hub', lg=league.id) }}">League Hub</a>
+    <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_leaders', lg=league.id) }}">Leaders</a>
+  </div></div>
+
+  {% if sched.playoffs %}
+  <div class="bl-panel" style="margin:14px 0 16px">
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Playoffs</span>
+      <span class="bl-panel-meta">single elimination · click a tie for the box score</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 18px;padding:6px 16px 12px">
+      {% for rnd in sched.playoffs %}
+      <div>
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);padding:8px 0 4px">{{ rnd.name }}</div>
+        {% for d in rnd.matches %}
+        {% if d.final %}
+        <a href="{{ url_for('gtt_dual', dual_id=d.id, lg=league.id) }}" style="display:block;text-decoration:none;color:inherit;border:1px solid var(--border-subtle);border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;{% if d.winner == 0 %}font-weight:700{% else %}color:var(--text-muted){% endif %}"><span>{{ d.home_name }}</span><span>{{ d.home_points }}</span></div>
+          <div style="display:flex;justify-content:space-between;{% if d.winner == 1 %}font-weight:700{% else %}color:var(--text-muted){% endif %}"><span>{{ d.away_name }}</span><span>{{ d.away_points }}</span></div>
+        </a>
+        {% else %}
+        <div style="border:1px dashed var(--border-subtle);border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:13px;color:var(--text-muted)">
+          <div>{{ d.home_name }}</div><div>{{ d.away_name }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% for wk in sched.weeks %}
+  <div class="bl-panel" style="margin-bottom:14px{% if sched.phase == 'regular' and wk.week == sched.current_week %};border-color:var(--accent){% endif %}">
+    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ wk.week }}</span>
+      <span class="bl-panel-meta">{% if sched.phase == 'regular' and wk.week == sched.current_week %}up next · {% endif %}{{ wk.duals|length }} duals</span></div>
+    <div class="bl-tablescroll"><div class="bl-table gtt-sch">
+      {% for d in wk.duals %}{{ dual_row(d) }}{% endfor %}
+    </div></div>
+  </div>
+  {% endfor %}
+  {% if not sched.weeks %}
+  <div class="bl-panel" style="padding:22px"><p class="bl-conf">No schedule yet.</p></div>
+  {% endif %}
+</div>
+<style>
+.gtt-sch { --bl-grid-cols: minmax(150px,1fr) 64px minmax(150px,1fr); }
+.gtt-sch-row .bl-cell { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+</style>
+{% endblock %}

@@ -456,12 +456,20 @@ def _active_world_seed(conn, preferred=None):
 
 
 def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS):
+    """Create a league BORN INTO the active world: it starts at the world's
+    CURRENT year (so its calendar runs concurrent with the college game from
+    day one) and its founding rosters draft the save's latest graduating class
+    first — real college players, real pids — with the Pro Round rule applied
+    at founding too (at most one ex-pro per club; leftover pros never enter).
+    Generated founders fill only the seats the class can't. A fresh save with
+    no graduates yet gets the classic all-founder inaugural league."""
     conn = _db()
     seed = _active_world_seed(conn, seed)
+    start_year = _world_year(conn, seed) or 0
     cur = conn.execute(
         "INSERT INTO gtt_leagues (name, world_seed, current_year, current_week,"
         " total_weeks, phase, champion) VALUES (?,?,?,?,?,?,?)",
-        (name, seed, 0, 1, 0, "regular", None))
+        (name, seed, start_year, 1, 0, "regular", None))
     lid = cur.lastrowid
 
     rng = random.Random(_h(seed, "franchises"))
@@ -475,36 +483,86 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
                          " VALUES (?,?,?,?)", (lid, fname, city, abbrev))
         fids.append(c.lastrowid)
 
-    # Founding rosters: generated pros (no college history), strength banded per club.
+    def _seat(fid, gender, pid, data, origin, age=ENTRY_AGE):
+        conn.execute(
+            "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
+            " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (lid, pid, gender, fid, "active", age, 0, start_year, origin, data))
+
+    # --- Founding draft from the latest graduating class (STR order, snake) ---
+    from .pros import is_pro as _is_pro
+    pool, pro_pool = {"m": [], "w": []}, {"m": [], "w": []}
+    for g, pid, data, st in _world_graduates(conn, seed, set(), 10_000):
+        (pro_pool if _is_pro(_prospect(data)) else pool)[g].append((pid, data, st))
+    for g in ("m", "w"):
+        pool[g].sort(key=lambda x: -x[2])
+        pro_pool[g].sort(key=lambda x: -x[2])
+    counts = {fid: {"m": 0, "w": 0} for fid in fids}
+    # Founding PRO ROUND — same contract as the off-season draft: one standalone
+    # pass BEFORE any normal picks, each club taking its best available ex-pro
+    # (either gender) that fits an open slot, at most one per club. Running it
+    # inline with the snake (picking a pro only when they out-rated the best
+    # graduate) let a below-top-grad pro be skipped until rosters filled and
+    # then discarded — a club must get its pro-pick opportunity first.
+    targets = {"m": TARGET_MEN, "w": TARGET_WOMEN}
+    for fid in fids:
+        best = max(((g, pro_pool[g][0]) for g in ("m", "w")
+                    if pro_pool[g] and counts[fid][g] < targets[g]),
+                   key=lambda t: t[1][2], default=None)
+        if best is None:
+            continue
+        g, (pid, data, _st) = best
+        pro_pool[g].pop(0)
+        _seat(fid, g, pid, data, "pro")
+        counts[fid][g] += 1
+    # Snake rounds over the ordinary graduating class.
+    rnd = 0
+    while True:
+        placed = False
+        seq = fids if rnd % 2 == 0 else fids[::-1]
+        for fid in seq:
+            for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
+                if counts[fid][g] >= tgt or not pool[g]:
+                    continue
+                pid, data, _st = pool[g].pop(0)
+                _seat(fid, g, pid, data, "college")
+                counts[fid][g] += 1
+                placed = True
+        rnd += 1
+        if not placed:
+            break
+    # Leftover pros never enter (the Pro Round is the only door, founding included).
+
+    # Seats the class couldn't fill: generated founders, banded per club.
     for fid in fids:
         base = 48 + 16 * (_h(seed, fid, "base") / 0xFFFFFFFF)
         prng = random.Random(_h(seed, fid, "founders"))
         men_fn = make_name_picker(random.Random(_h(seed, fid, "m")), gender="male")
         women_fn = make_name_picker(random.Random(_h(seed, fid, "w")), gender="female")
         for gender, name_fn, tgt in (("m", men_fn, TARGET_MEN), ("w", women_fn, TARGET_WOMEN)):
-            for _ in range(tgt):
-                r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), 0)
-                conn.execute(
-                    "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
-                    " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                    (lid, r["pid"], gender, fid, "active", r["age"], 0, 0, "founder", r["data"]))
+            while counts[fid][gender] < tgt:
+                r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), start_year)
+                _seat(fid, gender, r["pid"], r["data"], "founder", age=r["age"])
+                counts[fid][gender] += 1
 
-    # A founding free-agent pool (fid = NULL) so the in-season add/drop wire is
-    # live from the inaugural season, before the college pipeline starts feeding
-    # graduates in. Banded a touch below the club founders — genuine wire fodder
-    # that occasionally beats a club's weakest reserve.
+    # The free-agent wire: leftover real graduates first, generated fodder only
+    # to top up — so in-season add/drop signs the save's players when there are
+    # any left to sign.
     fa_rng = random.Random(_h(seed, "founding_fa"))
     fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
     fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
     for gender, name_fn, n in (("m", fa_men, WAIVER_POOL_MEN), ("w", fa_women, WAIVER_POOL_WOMEN)):
-        for _ in range(n):
-            r = _gen_player(fa_rng, name_fn, gender, fa_rng.uniform(48, 60), 0, origin="founder")
-            conn.execute(
-                "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
-                " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                (lid, r["pid"], gender, None, "active", r["age"], 0, 0, "founder", r["data"]))
+        wired = 0
+        for pid, data, _st in pool[gender][:n]:
+            _seat(None, gender, pid, data, "college")
+            wired += 1
+        while wired < n:
+            r = _gen_player(fa_rng, name_fn, gender, fa_rng.uniform(48, 60), start_year,
+                            origin="founder")
+            _seat(None, gender, r["pid"], r["data"], "founder", age=r["age"])
+            wired += 1
 
-    _build_schedule(conn, lid, 0, seed)
+    _build_schedule(conn, lid, start_year, seed)
     conn.commit()
     conn.close()
     return lid
@@ -522,6 +580,153 @@ def list_leagues():
     rows = conn.execute("SELECT * FROM gtt_leagues ORDER BY id").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+_PO_ROUND_NAMES = {2: "Final", 4: "Semifinals", 8: "Quarterfinals"}
+
+
+def season_schedule(league_id, year=None):
+    """The whole season, week by week — played results and upcoming fixtures —
+    then the playoff rounds by name. The college schedule page's shape."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    frs = {f["id"]: f for f in
+           (dict(r) for r in conn.execute("SELECT * FROM gtt_franchises WHERE league_id=?",
+                                          (league_id,)).fetchall())}
+    rows = [dict(r) for r in conn.execute(
+        "SELECT id, week, round, round_no, bpos, home, away, status, home_points,"
+        " away_points, winner FROM gtt_duals WHERE league_id=? AND year=?"
+        " ORDER BY week, round_no, bpos, id", (league_id, year)).fetchall()]
+    conn.close()
+
+    def deco(d):
+        h, a = frs.get(d["home"], {}), frs.get(d["away"], {})
+        d["home_name"], d["home_abbrev"] = h.get("name", "?"), h.get("abbrev", "?")
+        d["away_name"], d["away_abbrev"] = a.get("name", "?"), a.get("abbrev", "?")
+        d["final"] = d["status"] == "final"
+        return d
+
+    weeks: dict[int, list] = {}
+    po_rounds: dict[int, list] = {}
+    for d in rows:
+        if d["round"] == "PO":
+            po_rounds.setdefault(d["round_no"], []).append(deco(d))
+        else:
+            weeks.setdefault(d["week"], []).append(deco(d))
+    playoffs = []
+    for rn in sorted(po_rounds):
+        matches = po_rounds[rn]
+        teams = 2 * len(matches)
+        playoffs.append({"name": _PO_ROUND_NAMES.get(teams, f"Round of {teams}"),
+                         "matches": matches})
+    return {"year": year, "cal_year": BASE_YEAR + year,
+            "weeks": [{"week": w, "duals": weeks[w]} for w in sorted(weeks)],
+            "playoffs": playoffs, "phase": s["phase"],
+            "current_week": s["current_week"], "champion": s.get("champion")}
+
+
+def league_leaders(league_id, year=None, top=12):
+    """Season leaders per gender: most line wins (W-L, win%, club) and the top
+    live STR ratings — the league's statistical face, college-rankings style."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    rec = _records_for_year(conn, league_id, year)
+    names = _franchise_names(league_id)
+    players = {}
+    for r in conn.execute("SELECT pid, gender, fid, status, data FROM gtt_players"
+                          " WHERE league_id=?", (league_id,)).fetchall():
+        players[r["pid"]] = {"gender": r["gender"], "fid": r["fid"],
+                             "status": r["status"], "name": _prospect(r["data"]).name,
+                             "country": _prospect(r["data"]).country}
+    conn.close()
+    live = league_player_str(league_id)
+    wins = {"m": [], "w": []}
+    for pid, (w, l) in rec.items():
+        info = players.get(pid)
+        if not info:
+            continue
+        g = w + l
+        wins[info["gender"]].append({
+            "pid": pid, "name": info["name"], "country": info["country"],
+            "club": names.get(info["fid"], "Free agent"), "fid": info["fid"],
+            "w": w, "l": l, "pct": round(w / g * 100) if g else 0,
+            "str": round(live.get(pid, (0.0, 0.0))[0], 1)})
+    strs = {"m": [], "w": []}
+    for pid, (sv, rel) in live.items():
+        info = players.get(pid)
+        if not info or info["status"] != "active" or info["fid"] is None:
+            continue
+        w, l = rec.get(pid, (0, 0))
+        strs[info["gender"]].append({
+            "pid": pid, "name": info["name"], "country": info["country"],
+            "club": names.get(info["fid"], ""), "fid": info["fid"],
+            "str": round(sv, 1), "rel": round(rel, 2), "w": w, "l": l})
+    for g in ("m", "w"):
+        wins[g].sort(key=lambda x: (-x["w"], -x["pct"], -x["str"]))
+        strs[g].sort(key=lambda x: (-x["str"], -x["w"]))
+        wins[g] = wins[g][:top]
+        strs[g] = strs[g][:top]
+    return {"year": year, "cal_year": BASE_YEAR + year, "wins": wins, "str": strs}
+
+
+def draft_board(league_id, year=None):
+    """The year's draft as a real board: the Pro Round, then numbered snake
+    rounds of college/rookie picks. Off-season drafts read the week-0
+    transaction log; the FOUNDING draft (which seats players directly) is
+    reconstructed from seating order (gtt_players id order = pick order)."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    names = _franchise_names(league_id)
+    origin_of = {r["pid"]: r["origin"] for r in conn.execute(
+        "SELECT pid, origin FROM gtt_players WHERE league_id=?", (league_id,)).fetchall()}
+    picks = [dict(r) for r in conn.execute(
+        "SELECT fid, gender, add_pid AS pid, add_str AS str FROM gtt_transactions"
+        " WHERE league_id=? AND year=? AND week=0 AND add_pid IS NOT NULL ORDER BY id",
+        (league_id, year)).fetchall()]
+    is_founding = not picks
+    if not picks:                        # founding draft: reconstruct from seating order
+        live = league_player_str(league_id)
+        for r in conn.execute(
+                "SELECT pid, gender, fid, origin, data FROM gtt_players WHERE league_id=?"
+                " AND joined_year=? AND fid IS NOT NULL AND origin IN ('college','pro')"
+                " ORDER BY id", (league_id, year)).fetchall():
+            p = _prospect(r["data"])
+            picks.append({"fid": r["fid"], "gender": r["gender"], "pid": r["pid"],
+                          "str": round(live.get(r["pid"], (p.str_value(), 0))[0], 1)})
+    nm = {}
+    for pk in picks:
+        if pk["pid"] not in nm:
+            r = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+                             (league_id, pk["pid"])).fetchone()
+            nm[pk["pid"]] = _prospect(r["data"]).name if r else pk["pid"]
+    conn.close()
+    pro_round, rounds, taken = [], [], {}
+    n = 0
+    for pk in picks:
+        row = {"franchise": names.get(pk["fid"], str(pk["fid"])), "fid": pk["fid"],
+               "pid": pk["pid"], "name": nm[pk["pid"]], "gender": pk["gender"],
+               "str": pk["str"], "origin": origin_of.get(pk["pid"], "")}
+        if row["origin"] == "pro":
+            row["no"] = len(pro_round) + 1
+            pro_round.append(row)
+            continue
+        n += 1
+        row["no"] = n
+        rnd = taken[pk["fid"]] = taken.get(pk["fid"], 0) + 1
+        while len(rounds) < rnd:
+            rounds.append([])
+        rounds[rnd - 1].append(row)
+    return {"year": year, "cal_year": BASE_YEAR + year, "is_founding": is_founding,
+            "pro_round": pro_round, "rounds": rounds, "total": len(pro_round) + n}
 
 
 def delete_league(league_id):
