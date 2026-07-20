@@ -573,6 +573,99 @@ def list_leagues():
     return [dict(r) for r in rows]
 
 
+_PO_ROUND_NAMES = {2: "Final", 4: "Semifinals", 8: "Quarterfinals"}
+
+
+def season_schedule(league_id, year=None):
+    """The whole season, week by week — played results and upcoming fixtures —
+    then the playoff rounds by name. The college schedule page's shape."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    frs = {f["id"]: f for f in
+           (dict(r) for r in conn.execute("SELECT * FROM gtt_franchises WHERE league_id=?",
+                                          (league_id,)).fetchall())}
+    rows = [dict(r) for r in conn.execute(
+        "SELECT id, week, round, round_no, bpos, home, away, status, home_points,"
+        " away_points, winner FROM gtt_duals WHERE league_id=? AND year=?"
+        " ORDER BY week, round_no, bpos, id", (league_id, year)).fetchall()]
+    conn.close()
+
+    def deco(d):
+        h, a = frs.get(d["home"], {}), frs.get(d["away"], {})
+        d["home_name"], d["home_abbrev"] = h.get("name", "?"), h.get("abbrev", "?")
+        d["away_name"], d["away_abbrev"] = a.get("name", "?"), a.get("abbrev", "?")
+        d["final"] = d["status"] == "final"
+        return d
+
+    weeks: dict[int, list] = {}
+    po_rounds: dict[int, list] = {}
+    for d in rows:
+        if d["round"] == "PO":
+            po_rounds.setdefault(d["round_no"], []).append(deco(d))
+        else:
+            weeks.setdefault(d["week"], []).append(deco(d))
+    playoffs = []
+    for rn in sorted(po_rounds):
+        matches = po_rounds[rn]
+        teams = 2 * len(matches)
+        playoffs.append({"name": _PO_ROUND_NAMES.get(teams, f"Round of {teams}"),
+                         "matches": matches})
+    return {"year": year, "cal_year": BASE_YEAR + year,
+            "weeks": [{"week": w, "duals": weeks[w]} for w in sorted(weeks)],
+            "playoffs": playoffs, "phase": s["phase"],
+            "current_week": s["current_week"], "champion": s.get("champion")}
+
+
+def league_leaders(league_id, year=None, top=12):
+    """Season leaders per gender: most line wins (W-L, win%, club) and the top
+    live STR ratings — the league's statistical face, college-rankings style."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    rec = _records_for_year(conn, league_id, year)
+    names = _franchise_names(league_id)
+    players = {}
+    for r in conn.execute("SELECT pid, gender, fid, status, data FROM gtt_players"
+                          " WHERE league_id=?", (league_id,)).fetchall():
+        players[r["pid"]] = {"gender": r["gender"], "fid": r["fid"],
+                             "status": r["status"], "name": _prospect(r["data"]).name,
+                             "country": _prospect(r["data"]).country}
+    conn.close()
+    live = league_player_str(league_id)
+    wins = {"m": [], "w": []}
+    for pid, (w, l) in rec.items():
+        info = players.get(pid)
+        if not info:
+            continue
+        g = w + l
+        wins[info["gender"]].append({
+            "pid": pid, "name": info["name"], "country": info["country"],
+            "club": names.get(info["fid"], "Free agent"), "fid": info["fid"],
+            "w": w, "l": l, "pct": round(w / g * 100) if g else 0,
+            "str": round(live.get(pid, (0.0, 0.0))[0], 1)})
+    strs = {"m": [], "w": []}
+    for pid, (sv, rel) in live.items():
+        info = players.get(pid)
+        if not info or info["status"] != "active" or info["fid"] is None:
+            continue
+        w, l = rec.get(pid, (0, 0))
+        strs[info["gender"]].append({
+            "pid": pid, "name": info["name"], "country": info["country"],
+            "club": names.get(info["fid"], ""), "fid": info["fid"],
+            "str": round(sv, 1), "rel": round(rel, 2), "w": w, "l": l})
+    for g in ("m", "w"):
+        wins[g].sort(key=lambda x: (-x["w"], -x["pct"], -x["str"]))
+        strs[g].sort(key=lambda x: (-x["str"], -x["w"]))
+        wins[g] = wins[g][:top]
+        strs[g] = strs[g][:top]
+    return {"year": year, "cal_year": BASE_YEAR + year, "wins": wins, "str": strs}
+
+
 def draft_board(league_id, year=None):
     """The year's draft as a real board: the Pro Round, then numbered snake
     rounds of college/rookie picks. Off-season drafts read the week-0
