@@ -181,6 +181,26 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    edge, `grep -rn "roster_version\|move_version" app/` and check every stamp keyed on the same
    edited table. See `docs/AAR-cache-invalidation-scope-lineup-stall.md` (the "IT RESURFACED" §).
 
+## ⚠️ ONE WORLD PER SAVE — "seed" means three different things (cost a corrupted save)
+A save has exactly ONE real world (`world.start_new` resets before creating; the
+salt provides freshness, not the seed). "seed" is used for three DIFFERENT things:
+the **base world seed** (identifies THE world), the **derived year seed**
+(`year_seed = base + 1000×year`, keys per-year season rows and RNG), and per-dual
+RNG seeds. They are all plain ints — nothing stops you passing the wrong one.
+- **`world.prime()` / `scan_rosters()` take the BASE seed ONLY.** They call
+  `get_or_create`: pass a derived seed and they silently BUILD a parallel universe
+  of fake players and write a stray world row into the save (this happened —
+  `scripts/cleanup_stray_worlds.py` removes the debris).
+- **Cross-system consumers (GTT, cups) bind to THE world, never seed-match.**
+  `gtt._active_world_seed` resolves to the OLDEST world row; leagues self-heal a
+  dangling `world_seed`. Never resolve "the world" via `ORDER BY id DESC` or a
+  user-typed number.
+- **Don't add graceful fallbacks on world resolution.** Every layer that
+  "degrades" (fallback seed, get_or_create, swallowed exception) turns a
+  should-be-crash into plausible-looking wrong data — generated players have
+  realistic names, so nobody notices. Fail loudly instead.
+See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
+
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
   score band (owner rule 2027-07)** — `coaches.development_multiplier` maps
