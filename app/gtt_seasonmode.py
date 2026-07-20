@@ -456,12 +456,20 @@ def _active_world_seed(conn, preferred=None):
 
 
 def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS):
+    """Create a league BORN INTO the active world: it starts at the world's
+    CURRENT year (so its calendar runs concurrent with the college game from
+    day one) and its founding rosters draft the save's latest graduating class
+    first — real college players, real pids — with the Pro Round rule applied
+    at founding too (at most one ex-pro per club; leftover pros never enter).
+    Generated founders fill only the seats the class can't. A fresh save with
+    no graduates yet gets the classic all-founder inaugural league."""
     conn = _db()
     seed = _active_world_seed(conn, seed)
+    start_year = _world_year(conn, seed) or 0
     cur = conn.execute(
         "INSERT INTO gtt_leagues (name, world_seed, current_year, current_week,"
         " total_weeks, phase, champion) VALUES (?,?,?,?,?,?,?)",
-        (name, seed, 0, 1, 0, "regular", None))
+        (name, seed, start_year, 1, 0, "regular", None))
     lid = cur.lastrowid
 
     rng = random.Random(_h(seed, "franchises"))
@@ -475,36 +483,77 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
                          " VALUES (?,?,?,?)", (lid, fname, city, abbrev))
         fids.append(c.lastrowid)
 
-    # Founding rosters: generated pros (no college history), strength banded per club.
+    def _seat(fid, gender, pid, data, origin, age=ENTRY_AGE):
+        conn.execute(
+            "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
+            " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (lid, pid, gender, fid, "active", age, 0, start_year, origin, data))
+
+    # --- Founding draft from the latest graduating class (STR order, snake) ---
+    from .pros import is_pro as _is_pro
+    pool, pro_pool = {"m": [], "w": []}, {"m": [], "w": []}
+    for g, pid, data, st in _world_graduates(conn, seed, set(), 10_000):
+        (pro_pool if _is_pro(_prospect(data)) else pool)[g].append((pid, data, st))
+    for g in ("m", "w"):
+        pool[g].sort(key=lambda x: -x[2])
+        pro_pool[g].sort(key=lambda x: -x[2])
+    counts = {fid: {"m": 0, "w": 0} for fid in fids}
+    pro_taken: set = set()
+    rnd = 0
+    while True:
+        placed = False
+        seq = fids if rnd % 2 == 0 else fids[::-1]
+        for fid in seq:
+            for g, tgt in (("m", TARGET_MEN), ("w", TARGET_WOMEN)):
+                if counts[fid][g] >= tgt:
+                    continue
+                if (fid not in pro_taken and pro_pool[g]
+                        and (not pool[g] or pro_pool[g][0][2] >= pool[g][0][2])):
+                    pid, data, _st = pro_pool[g].pop(0)
+                    _seat(fid, g, pid, data, "pro")
+                    pro_taken.add(fid)
+                elif pool[g]:
+                    pid, data, _st = pool[g].pop(0)
+                    _seat(fid, g, pid, data, "college")
+                else:
+                    continue
+                counts[fid][g] += 1
+                placed = True
+        rnd += 1
+        if not placed:
+            break
+    # Leftover pros never enter (the Pro Round is the only door, founding included).
+
+    # Seats the class couldn't fill: generated founders, banded per club.
     for fid in fids:
         base = 48 + 16 * (_h(seed, fid, "base") / 0xFFFFFFFF)
         prng = random.Random(_h(seed, fid, "founders"))
         men_fn = make_name_picker(random.Random(_h(seed, fid, "m")), gender="male")
         women_fn = make_name_picker(random.Random(_h(seed, fid, "w")), gender="female")
         for gender, name_fn, tgt in (("m", men_fn, TARGET_MEN), ("w", women_fn, TARGET_WOMEN)):
-            for _ in range(tgt):
-                r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), 0)
-                conn.execute(
-                    "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
-                    " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                    (lid, r["pid"], gender, fid, "active", r["age"], 0, 0, "founder", r["data"]))
+            while counts[fid][gender] < tgt:
+                r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), start_year)
+                _seat(fid, gender, r["pid"], r["data"], "founder", age=r["age"])
+                counts[fid][gender] += 1
 
-    # A founding free-agent pool (fid = NULL) so the in-season add/drop wire is
-    # live from the inaugural season, before the college pipeline starts feeding
-    # graduates in. Banded a touch below the club founders — genuine wire fodder
-    # that occasionally beats a club's weakest reserve.
+    # The free-agent wire: leftover real graduates first, generated fodder only
+    # to top up — so in-season add/drop signs the save's players when there are
+    # any left to sign.
     fa_rng = random.Random(_h(seed, "founding_fa"))
     fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
     fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
     for gender, name_fn, n in (("m", fa_men, WAIVER_POOL_MEN), ("w", fa_women, WAIVER_POOL_WOMEN)):
-        for _ in range(n):
-            r = _gen_player(fa_rng, name_fn, gender, fa_rng.uniform(48, 60), 0, origin="founder")
-            conn.execute(
-                "INSERT INTO gtt_players (league_id, pid, gender, fid, status, age,"
-                " seasons, joined_year, origin, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                (lid, r["pid"], gender, None, "active", r["age"], 0, 0, "founder", r["data"]))
+        wired = 0
+        for pid, data, _st in pool[gender][:n]:
+            _seat(None, gender, pid, data, "college")
+            wired += 1
+        while wired < n:
+            r = _gen_player(fa_rng, name_fn, gender, fa_rng.uniform(48, 60), start_year,
+                            origin="founder")
+            _seat(None, gender, r["pid"], r["data"], "founder", age=r["age"])
+            wired += 1
 
-    _build_schedule(conn, lid, 0, seed)
+    _build_schedule(conn, lid, start_year, seed)
     conn.commit()
     conn.close()
     return lid

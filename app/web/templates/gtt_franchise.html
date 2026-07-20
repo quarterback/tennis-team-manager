@@ -42,8 +42,8 @@
       {% for t in moves %}
       <div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle);font-size:13px">
         <span style="color:var(--text-muted);min-width:38px">Wk {{ t.week }}</span>
-        <span style="flex:1;color:var(--stat-good-strong)">▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}</span></span>
-        <span style="flex:1;text-align:right;color:var(--text-muted)">▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}</span></span>
+        <span style="flex:1;color:var(--stat-good-strong)">{% if t.add_pid %}▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:11px">{{ t.add_str }}{% if t.add_origin == 'college' %} · college{% elif t.add_origin == 'pro' %} · PRO ROUND{% elif t.add_origin == 'rookie' %} · rookie{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
+        <span style="flex:1;text-align:right;color:var(--text-muted)">{% if t.drop_pid %}▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:11px">{{ t.drop_str }}{% if t.drop_origin == 'founder' %} · founder released{% endif %}</span>{% else %}—{% endif %}</span>
       </div>
       {% endfor %}
     </div>
