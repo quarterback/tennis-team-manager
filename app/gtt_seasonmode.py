@@ -62,7 +62,12 @@ ENTRY_AGE = 22              # a graduate's age on turning pro
 PEAK_AGE = 28              # decline (development in reverse) kicks in past here
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
-BASE_YEAR = 2027           # GTT calendar starts the year after the college baseline
+# GTT runs on the SAME clock as the college world (owner rule 2027-07): season
+# index i is played CONCURRENT with college calendar 2026+i, and the class that
+# graduates college year y joins the GTT for index y+1. The off-season gate in
+# `advance` + the `on_world_rollover` hook keep the two in lockstep — the pro
+# league can never sim ahead of the college game or stamp future-dated honors.
+BASE_YEAR = 2026
 GRAD_D1_SHARE = 0.95       # target share of each off-season intake from D1
 NON_D1_MIN_STR = 58.0      # small-school pro competitiveness bar
 NON_D1_MIN_OVR = 58.0
@@ -700,12 +705,64 @@ def advance(league_id, *, fidelity="full"):
         return out
 
     if s["phase"] == "complete":
+        # Lockstep with the college world: the GTT off-season (draft + intake)
+        # only runs once the college season for the SAME year has finalized —
+        # that's when the graduating class exists to be drafted. Until then the
+        # league holds ("waiting on college"), so the pro game can never sim
+        # ahead of the universe it draws from. world._finalize_year calls
+        # on_world_rollover() to run this automatically at finalize.
+        ws = _active_world_seed(conn, s["world_seed"])
+        wy = _world_year(conn, ws)
+        if wy is not None and s["current_year"] + 1 > wy:
+            conn.close()
+            return {"phase": "complete", "year": s["current_year"],
+                    "waiting_on_college": True}
         out = _offseason(conn, s, fidelity)
         conn.commit(); conn.close()
         return out
 
     conn.close()
     return {"phase": s["phase"]}
+
+
+def _world_year(conn, world_seed):
+    """The college world's current year index (None when no world exists —
+    standalone leagues keep their own clock)."""
+    try:
+        r = conn.execute("SELECT year FROM world WHERE seed=?", (world_seed,)).fetchone()
+        return int(r["year"]) if r else None
+    except sqlite3.OperationalError:
+        return None
+
+
+def can_start_next(league_id) -> bool:
+    """Whether this league's next off-season is unlocked (the college world has
+    finalized past it). Standalone leagues (no world) are always unlocked."""
+    s = load_league(league_id)
+    if not s or s["phase"] != "complete":
+        return False
+    conn = _db()
+    try:
+        wy = _world_year(conn, _active_world_seed(conn, s["world_seed"]))
+    finally:
+        conn.close()
+    return wy is None or s["current_year"] + 1 <= wy
+
+
+def on_world_rollover() -> int:
+    """Called by world._finalize_year AFTER the rollover commits: every league
+    bound to the world whose season is complete rolls its off-season now — the
+    intake reads the class that just graduated. Mid-season leagues are left
+    alone (their off-season unlocks when they finish). Returns leagues rolled."""
+    rolled = 0
+    for lg in list_leagues():
+        s = load_league(lg["id"])
+        if not s or s["phase"] != "complete":
+            continue
+        if can_start_next(lg["id"]):
+            advance(lg["id"], fidelity="fast")
+            rolled += 1
+    return rolled
 
 
 def advance_all(league_id, *, fidelity="fast"):
