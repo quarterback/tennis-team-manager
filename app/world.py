@@ -3324,5 +3324,14 @@ def _finalize_year(seed: int, w: dict) -> dict:
     _base_cache.clear(); _dev_cache.clear(); _primed.pop(seed, None)
     # Pros are FREE AGENTS signed by hand through the two interactive portals (pre-season +
     # fall) — no auto year-end intake. The new season's pre-season portal is the next window.
+    # GTT lockstep: the pro league runs on the SAME clock. Now that the rollover is
+    # committed (graduates written, world year advanced), roll the off-season of every
+    # completed GTT league so it drafts the class that just walked. AFTER the commit,
+    # own connections — never inside the rollover transaction (shared-file locks).
+    try:
+        from app import gtt_seasonmode as _gtt
+        summary["gtt_leagues_rolled"] = _gtt.on_world_rollover()
+    except Exception as e:                              # never block the college rollover
+        print(f"[world] GTT rollover sync failed: {e!r}")
     summary.update(event="finalize", year=new_year, week=0)
     return summary

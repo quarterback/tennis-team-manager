@@ -31,9 +31,15 @@
         </div>
         <div style="margin-left:auto;display:flex;gap:8px">
           {% if league.phase == 'complete' %}
+          {% if can_next %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">
             <button class="bl-pill" type="submit"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i> Start next season (draft + intake)</button></form>
+          {% else %}
+          <span class="bl-pill" style="cursor:default;opacity:.75"
+            title="The pro league runs on the same clock as the college world. Finalize the college season (World page) and the off-season — graduate intake, Pro Round, draft — runs automatically.">
+            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Waiting on the college season — finalize it to run the draft</span>
+          {% endif %}
           {% else %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">
             <input type="hidden" name="mode" value="step">

@@ -1331,6 +1331,7 @@ def create_app() -> Flask:
         lid = league["id"]
         return render_template(
             "gtt_hub.html", active="GTT", league=league, leagues=leagues,
+            can_next=gs.can_start_next(lid),
             standings=gs.standings(lid), honors=gs.honors_board(lid),
             history=gs.season_history(lid), transactions=gs.transactions(lid, limit=40),
             recent=gs.week_duals(lid, max(1, league["current_week"] - 1)),
