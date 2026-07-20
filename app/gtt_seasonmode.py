@@ -573,6 +573,60 @@ def list_leagues():
     return [dict(r) for r in rows]
 
 
+def draft_board(league_id, year=None):
+    """The year's draft as a real board: the Pro Round, then numbered snake
+    rounds of college/rookie picks. Off-season drafts read the week-0
+    transaction log; the FOUNDING draft (which seats players directly) is
+    reconstructed from seating order (gtt_players id order = pick order)."""
+    s = load_league(league_id)
+    if not s:
+        return None
+    year = year if year is not None else s["current_year"]
+    conn = _db()
+    names = _franchise_names(league_id)
+    origin_of = {r["pid"]: r["origin"] for r in conn.execute(
+        "SELECT pid, origin FROM gtt_players WHERE league_id=?", (league_id,)).fetchall()}
+    picks = [dict(r) for r in conn.execute(
+        "SELECT fid, gender, add_pid AS pid, add_str AS str FROM gtt_transactions"
+        " WHERE league_id=? AND year=? AND week=0 AND add_pid IS NOT NULL ORDER BY id",
+        (league_id, year)).fetchall()]
+    is_founding = not picks
+    if not picks:                        # founding draft: reconstruct from seating order
+        live = league_player_str(league_id)
+        for r in conn.execute(
+                "SELECT pid, gender, fid, origin, data FROM gtt_players WHERE league_id=?"
+                " AND joined_year=? AND fid IS NOT NULL AND origin IN ('college','pro')"
+                " ORDER BY id", (league_id, year)).fetchall():
+            p = _prospect(r["data"])
+            picks.append({"fid": r["fid"], "gender": r["gender"], "pid": r["pid"],
+                          "str": round(live.get(r["pid"], (p.str_value(), 0))[0], 1)})
+    nm = {}
+    for pk in picks:
+        if pk["pid"] not in nm:
+            r = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
+                             (league_id, pk["pid"])).fetchone()
+            nm[pk["pid"]] = _prospect(r["data"]).name if r else pk["pid"]
+    conn.close()
+    pro_round, rounds, taken = [], [], {}
+    n = 0
+    for pk in picks:
+        row = {"franchise": names.get(pk["fid"], str(pk["fid"])), "fid": pk["fid"],
+               "pid": pk["pid"], "name": nm[pk["pid"]], "gender": pk["gender"],
+               "str": pk["str"], "origin": origin_of.get(pk["pid"], "")}
+        if row["origin"] == "pro":
+            row["no"] = len(pro_round) + 1
+            pro_round.append(row)
+            continue
+        n += 1
+        row["no"] = n
+        rnd = taken[pk["fid"]] = taken.get(pk["fid"], 0) + 1
+        while len(rounds) < rnd:
+            rounds.append([])
+        rounds[rnd - 1].append(row)
+    return {"year": year, "cal_year": BASE_YEAR + year, "is_founding": is_founding,
+            "pro_round": pro_round, "rounds": rounds, "total": len(pro_round) + n}
+
+
 def delete_league(league_id):
     """Delete a league and everything it owns (franchises, players, duals,
     seasons, transactions, Hall of Fame). Irreversible; the world it drew

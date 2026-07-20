@@ -1358,6 +1358,14 @@ def create_app() -> Flask:
                 gs.advance(lid, fidelity="full")
         return redirect(url_for("gtt_hub", lg=lid))
 
+    @app.route("/gtt/draft")
+    def gtt_draft():
+        league, _ = _current_league()
+        if not league:
+            abort(404)
+        board = gs.draft_board(league["id"])
+        return render_template("gtt_draft.html", active="GTT", league=league, board=board)
+
     @app.route("/gtt/delete", methods=["POST"])
     def gtt_delete():
         # Deleting a league is irreversible (rosters, results, honors, HoF all go);
