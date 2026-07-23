@@ -1667,6 +1667,9 @@ def create_app() -> Flask:
         _pp = pr or wd.find_persisted_player(pid)
         attrs = scout_bars(_pp) if _pp else []
         info["is_pro"] = _pros.is_pro(_pp) if _pp else False
+        from app.recruiting import academic_sat
+        if _pp is not None and not info["is_pro"]:
+            info["sat"] = academic_sat(getattr(_pp, "academic_rating", None))
         career, (wins, losses) = player_career(division, gender, pid)
         career_table = player_career_table(division, gender, pid)
         records = player_career_records(division, gender, pid)

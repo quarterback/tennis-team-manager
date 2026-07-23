@@ -43,7 +43,8 @@ set by prestige.
 | D1 Mid-major ("mid") | 6–9 |
 | D1 Low-major ("low") | 6–7 (the floor, just above D2) |
 | D2 | 4–6 (elite D2, prestige ≥ 0.28, funds at 6) |
-| D3 / D4 | **0**, EXCEPT a thin **1–3 "gem" allocation** for the top: D4 academic-elite leagues (academics ≥ 0.85) + the **Top-20 D3 programs by prestige** (academic confs aren't tagged in D3, so it's a per-save prestige cap). Lets them sop up one undervalued recruit. |
+| **D4** | **3–8, IN the scholarship economy** (owner rule 2027-07 — see `docs/AAR-diii-d4-economy-and-recruit-realism.md`). D4 = the academic-first tier holding the REAL best non-D1 programs (NESCAC/UAA/SCIAC/NCAC); it funds a 3 floor / 6–8 top (`_D4_BAND`) and builds via the star-plan like D1/D2, but ADMITS only recruits above a per-program **academic gate** (`d4_academic_min`, ~SAT 960 floor → 1400 for MIT-tier). D2 still beats D4 ON AVERAGE (most D4 sit at 3–4) because D2 takes anybody and D4 can't admit all it can afford. Do NOT restore D4 to budget-0 or the old tiny prestige clamp. |
+| D3 | **0**, EXCEPT a thin **1–3 "gem" allocation** for the **Top-20 D3 by prestige** (`_d3d4_funded`, now D3-only) — lets them sop up one undervalued recruit. D3 is the widest-variety, lowest-floor tier (`_TALENT["D3"]`). |
 
 ### 2. Recruit cost by star — what the budget is spent on (`recruit_economy.TIERS`)
 Steep curve (deliberately): a premium core is a real investment, so only the
@@ -83,9 +84,26 @@ point (portal dynamism), not a bug. Target: ~90%+ of ≤45-STR recruits land D2�
 Distinct from the budget above. `economy.allocate_scholarships` spreads a per-division
 cap across the recruited core as full-ride/partial *display fractions* — it does NOT
 determine roster quality (the budget does). Rule `d885f31` "fully fund men to match
-women": caps are D1 **8.0**, D2 **6.0**, D3/D4 0.0, **same for men and women** (NOT
-real men's 4.5 equivalency). Do **not** lower men to 4.5 to satisfy an old test — that
-reverts the rule. (I did exactly this once; it's the mistake this section prevents.)
+women": caps are D1 **8.0**, D2 **6.0**, **D4 6.0** (owner rule 2027-07 — D4 joined the
+scholarship economy, funds like D2), D3 0.0, **same for men and women** (NOT real men's
+4.5 equivalency). Do **not** lower men to 4.5 to satisfy an old test — that reverts the
+rule. (I did exactly this once; it's the mistake this section prevents.)
+
+### 5. Recruiting realism levers (owner rule 2027-07 — `docs/AAR-diii-d4-economy-and-recruit-realism.md`)
+- **Playing time** is a recruit factor (`world.PLAY_TIME_WEIGHT` 0.35): recruits lean
+  toward programs where their OVR cracks the current top 6, and away from where they'd
+  be buried — KEY but BELOW prestige (the `(0.15+pres)` term still dominates). Shown on
+  the recruit board as a ROSTER FIT column. Don't raise it above prestige.
+- **D2 absorbs aggressively** (`_D2_REACH_BAND` 0.22): D2's division radar reaches far
+  below its level so mid-tier talent doesn't leak to D3/D4. Owner-authorized relaxation
+  of §3b for D2 only.
+- **Warm-weather / big-city** are MARGINAL tiebreaks only (`WARM_APPEAL_WEIGHT` /
+  `CITY_APPEAL_WEIGHT` 0.06); they can pull a recruit against the home-state tug.
+- **Fall portal diversifies** (`_FPPlanner.best_placement`): risers go where they'd
+  slot highest (most playing time), not to the top-prestige few every resolve.
+- **Power Index forgives losses to strong teams** (`rating.LOSS_FORGIVE` 0.55): a loss
+  to a top team barely dents APR; a loss to a weak one still stings. Wins never
+  discounted.
 
 ---
 

@@ -1321,8 +1321,35 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         region_label = "International"
 
     from app.recruiting import build_recruiting, schools_from_programs
-    schools = schools_from_programs(all_gender_programs(gender))
+    programs = all_gender_programs(gender)
+    schools = schools_from_programs(programs)
     rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
+
+    # Roster fit / playing time: for the schools on the board, show the program's
+    # current top-6 OVRs and where this recruit projects to slot — the same signal
+    # the sim's recruiting model now weighs (see world._pick_school). Only the ~handful
+    # of offer schools are built (rosters are cached), so this stays cheap.
+    from app.ncaa import build_roster
+    prog_by_name = {pr.school: pr for pr in programs}
+    recruit_ovr = p.current_overall()
+    roster_fit = {}
+    for o in rec.offers:
+        pr = prog_by_name.get(o.school)
+        if pr is None:
+            continue
+        ovrs = sorted((pl.current_overall() for pl in build_roster(pr)), reverse=True)
+        sixth = ovrs[5] if len(ovrs) >= 6 else None
+        if sixth is None or recruit_ovr >= sixth:
+            slot = "Starter"
+        elif len(ovrs) >= 8 and recruit_ovr >= ovrs[7]:
+            slot = "Rotation"
+        else:
+            slot = "Depth"
+        roster_fit[o.school] = {
+            "slot": slot,
+            "top6": [round(x) for x in ovrs[:6]],
+            "sixth": round(sixth) if sixth is not None else None,
+        }
 
     from app.junior_circuit import TIER_LABELS
     from app.juniors import recruit_grade
@@ -1355,6 +1382,7 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "dept": round(p.scouting_report("dept")),
         "projection": round(p.project(4)),
         "recruiting": rec,
+        "roster_fit": roster_fit,
         "scout_bars": scout_bars(p),
         "rating": rating,
         "composite": composite,
@@ -1606,6 +1634,7 @@ def recruit_economy_view() -> dict:
     budget floor to attract each tier, and the per-program budget bands by conference
     tier. Read straight off `recruit_economy` so the page never drifts from the sim."""
     from app import recruit_economy as re
+    from app.recruiting import academic_sat
     off = re._GRADE_OFFSET
     tiers = [{"name": n, "stars": st, "cost": c, "free": c == 0.0,
               "men_grade": round(g + off.get("men", 0.0), 1),
@@ -1626,12 +1655,15 @@ def recruit_economy_view() -> dict:
         "tiers": tiers,
         "d1_bands": d1,
         "d2_band": re._D2_BAND,
+        "d4_band": re._D4_BAND,
+        "d4_gate_lo": academic_sat(round(re.D4_MIN_FLOOR)),
+        "d4_gate_hi": academic_sat(round(re.D4_MIN_CEIL)),
         "d3d4_band": re._D3D4_BAND,
         "elite_d2_prestige": re._ELITE_D2_PRESTIGE,
         "d3_top_n": len(re._d3_top_keys("men")),  # max(30, 5% of D3)
         "elite_academics": re._ELITE_D3D4_ACADEMICS,
         "roster_caps": {"D1": "12 (8 core + 4 walk-on)", "D2": "10 (6 + 4)",
-                        "D3/D4": "16 (3 + 13)"},
+                        "D4": "16 (6 funded + walk-ons)", "D3": "16 (3 + 13)"},
         "pros": {"per_cycle": _wc.pros_per_cycle(),
                  "attr_lo": int(_pros.PRO_ATTR[0]), "attr_hi": int(_pros.PRO_ATTR[1]),
                  "cost_lo": _pros.PRO_COST_LO, "cost_hi": _pros.PRO_COST_HI},

@@ -30,6 +30,12 @@
         <div class="bl-th" style="font-size:10px">STR</div>
         <span class="bl-stat power" style="font-size:22px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
         <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
+      {% if info.sat %}
+      <div title="TEST — admissions score on the 800–1600 SAT scale (academics only; never affects match play). D4 programs gate recruiting on a minimum score.">
+        <div class="bl-th" style="font-size:10px">TEST</div>
+        <span class="bl-stat" style="font-size:22px;color:var(--text-primary)">{{ info.sat }}</span>
+        <div class="tsub">SAT · admissions</div></div>
+      {% endif %}
     </div>
   </div>
 

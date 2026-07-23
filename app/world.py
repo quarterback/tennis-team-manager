@@ -139,6 +139,18 @@ RECRUIT_INTL_SHARE = worldconfig.DEFAULT_INTL_SHARE
 # D1 tennis runs very international; lower these to dampen it.
 INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15, "D4": 0.05}
 
+# Playing time as a recruit factor (owner rule 2027-07): recruits prefer programs
+# where their OVR would crack the current top 6, so good players stop signing where
+# they'll be buried. A KEY factor but BELOW prestige — the prestige term spans a ~4×
+# range and still dominates; this is a ±PLAY_TIME_WEIGHT multiplier on top. Programs
+# still oversign and some recruits still ride the bench, but the field is more
+# competitive. PLAY_TIME_SCALE = OVR points of top-6 margin that saturate the factor.
+PLAY_TIME_WEIGHT = 0.35
+PLAY_TIME_SCALE = 8.0
+# Marginal warm-weather / big-city recruiting tiebreaks (see ncaa.program_geo_flags).
+WARM_APPEAL_WEIGHT = 0.06
+CITY_APPEAL_WEIGHT = 0.06
+
 
 def _intl_tier(division: str, academics: float) -> str:
     # D3 and the academic-first D4 both let only their academically elite reach
@@ -929,7 +941,24 @@ def _recruit_market(world: dict, gender: str) -> dict:
     # program holds to its real level, not its recruiting brand.
     level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.strength, p.division, gender) - 20.0) / 60.0))
                  for s, p in progs.items()}
-    cap = _openings(_base_rosters(world), gender)
+    # D4's per-program admissions gate: the minimum recruit test score each D4 program
+    # will admit (academic-first tier — see recruit_economy.d4_academic_min).
+    d4_min = {s: recruit_economy.d4_academic_min(p, world["year"], salt)
+              for s, p in progs.items() if p.division == "D4"}
+    br = _base_rosters(world)
+    cap = _openings(br, gender)
+    # Playing-time signal: each program's current returning roster OVRs (best→worst),
+    # so a recruit can see whether their OVR would crack the top 6 (see _pick_school).
+    roster_ovrs: dict[str, list] = {}
+    for (division, g), schools in br.items():
+        if g != gender:
+            continue
+        for school, roster in schools.items():
+            roster_ovrs[school] = sorted(
+                (pl.current_overall() for pl in roster if not _departing(pl)), reverse=True)
+    # Warm-state / big-city recruiting-appeal flags per program (marginal tiebreak).
+    from .ncaa import program_geo_flags
+    geo_flags = {s: program_geo_flags(p) for s, p in progs.items()}
     from . import coaches
     coachmap = {s: coaches.program_coach(s) for s in progs}        # per-program coach (localism, sourcing tilt, origin pipeline)
     by_pres = sorted(progs, key=lambda s: traits[s][0])
@@ -948,7 +977,8 @@ def _recruit_market(world: dict, gender: str) -> dict:
     for s, (abbr, _share) in local_terr.items():
         local_by_abbr.setdefault(abbr, []).append(s)
     return {"progs": progs, "traits": traits, "cap": cap, "budget": budget, "coaches": coachmap,
-            "level_cal": level_cal,
+            "level_cal": level_cal, "d4_min": d4_min, "roster_ovrs": roster_ovrs,
+            "geo_flags": geo_flags,
             "by_pres": by_pres, "pres_arr": pres_arr, "academic_top": academic_top,
             "by_region": by_region, "local_terr": local_terr, "local_by_abbr": local_by_abbr}
 
@@ -965,7 +995,14 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
     traits = market["traits"]
     budget = market.get("budget", {})
     level_cal = market.get("level_cal", {})
+    d4_min = market.get("d4_min", {})
+    roster_ovrs = market.get("roster_ovrs", {})
+    geo_flags = market.get("geo_flags", {})
     coachmap = market.get("coaches", {})
+    p_academic = int(getattr(p, "academic_rating", 79) or 79)
+    recruit_ovr = p.current_overall()                 # the recruit's own read of where they'd slot
+    from .recruiting import recruit_geo_prefs
+    pref_warm, pref_city = recruit_geo_prefs(p)
     by_pres, pres_arr = market["by_pres"], market["pres_arr"]
     # FOG OF WAR: the AI never sees true ability here. `cal` is the recruit's own
     # market-consensus sense of their level (balanced stars-vs-results), driving
@@ -1037,12 +1074,15 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         pres, acad, reg, div, fac = traits[s]
         if not _div_ok(div, acad):                    # tier-gated out of this division
             continue
+        if div == "D4" and p_academic < d4_min.get(s, 0.0):
+            continue                                  # below this D4 program's admissions gate
         if budget.get(s, 0.0) < budget_floor:         # program can't fund a recruit this good
             continue
         coach = coachmap.get(s)
         # Division radar: a recruit playing below this program's level simply isn't
-        # in its view yet (the floor ramps open late — see program_level_floor).
-        if cur_cal < recruit_economy.program_level_floor(level_cal.get(s), progress):
+        # in its view yet (the floor ramps open late — see program_level_floor). D2
+        # reaches much lower (aggressive absorption), so it's division-aware.
+        if cur_cal < recruit_economy.program_level_floor(level_cal.get(s), progress, div):
             continue                                  # not on this program's radar yet (below its level)
         # THIS program's read of the recruit, through its own stars↔results
         # philosophy — so a tape-trusting staff rates a junior-circuit winner the
@@ -1067,6 +1107,22 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         score = ((0.15 + pres) * level
                  * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo + coach_geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
+        # Playing time: recruits lean toward programs where their OVR would crack the
+        # current top 6 (would-start) and away from ones where they'd be buried. Key,
+        # but below prestige — the (0.15+pres) term still dominates the choice.
+        ovrs = roster_ovrs.get(s, ())
+        if len(ovrs) >= 6:
+            pt = max(-1.0, min(1.0, (recruit_ovr - ovrs[5]) / PLAY_TIME_SCALE))
+        else:
+            pt = 1.0                                   # open lineup — they'd play for sure
+        score *= 1.0 + PLAY_TIME_WEIGHT * pt
+        # Marginal geography tiebreaks — nudge toward warm-state / big-city programs for
+        # recruits who prefer them (can pull against the home-state tug above).
+        gw, gc = geo_flags.get(s, (False, False))
+        if pref_warm and gw:
+            score *= 1.0 + WARM_APPEAL_WEIGHT
+        if pref_city and gc:
+            score *= 1.0 + CITY_APPEAL_WEIGHT
         lt = local_terr.get(s)
         if lt is not None and lt[0] == home_abbr:      # home-territory pull (island/remote state)
             score *= 1.0 + LOCAL_TERRITORY_PULL * lt[1]
@@ -1088,8 +1144,11 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         best = next((s for s in reversed(by_pres)
                      if avail.get(s, 0) > 0
                      and (relax or _div_ok(traits[s][3], traits[s][1]))
+                     # the D4 academic gate is a HARD admissions bar — it never relaxes,
+                     # even on signing day (a kid below MIT's floor never gets into MIT).
+                     and (traits[s][3] != "D4" or p_academic >= d4_min.get(s, 0.0))
                      and (relax or budget.get(s, 0.0) >= budget_floor)
-                     and cur_cal >= recruit_economy.program_level_floor(level_cal.get(s), progress)
+                     and cur_cal >= recruit_economy.program_level_floor(level_cal.get(s), progress, traits[s][3])
                      and (relax or cal >= recruit_economy.program_caliber_floor(budget.get(s, 0.0), progress))
                      and (not exclude or s not in exclude)), None)
     return best
@@ -1581,6 +1640,26 @@ class _FPPlanner:
                 return d
         return None
 
+    def best_placement(self, div, val, avoid=None):
+        """Diversifying auto-destination (owner rule 2027-07): among open-seat programs
+        in `div` where the player would make the lineup (line ≤ 6), send them to the one
+        where they'd slot HIGHEST — the biggest lineup upgrade / most playing time —
+        tie-broken by prestige. This spreads risers across the programs that actually
+        NEED the talent instead of funneling them all to the top-prestige few, so
+        underutilized players land where they'll play. Scans the division (no early
+        exit), but only the ≤30 discovered risers use it, so it stays cheap."""
+        best, best_key = None, None
+        for d in self.by_div.get(div, ()):
+            if not d or (avoid and d in avoid) or not self.open_slot(d):
+                continue
+            line = self.line_of(d, val)
+            if line > 6:
+                continue
+            key = (line, -self._weight[d], d)   # lowest line first; prestige breaks ties
+            if best_key is None or key < best_key:
+                best, best_key = d, key
+        return best
+
     def _weakest_eligible(self, s, val):
         cand = [q for q in self.pool[s] if q.pid not in self.touched
                 and _career_transfers(q) == 0 and self._sv(q) < val]
@@ -1663,7 +1742,9 @@ class _FPPlanner:
             want = self.highest_fit(src, val, self.received, gated=gated)
             if want is None:
                 return None
-            open_dest = self.best_in(want, val, 6, self.received)
+            # Diversify: place the riser where they'd slot highest (most playing time),
+            # not simply at the top-prestige program with a seat — spreads the talent.
+            open_dest = self.best_placement(want, val, self.received)
             if open_dest is not None:
                 self._apply(p, src, open_dest)
                 self.moves.append(self._mk(p, src, open_dest, None))
@@ -2535,7 +2616,8 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
         leftover = [p for p in national_class(seed, year, gender) if p.pid not in signed]
         if not leftover:
             continue
-        slots: list = []                       # [strength, roster, room] for open D3/D4 seats
+        from . import recruit_economy
+        slots: list = []                       # [strength, roster, room, division, gate] open D3/D4 seats
         for (division, g), schools in rosters.items():
             if g != gender or not autogen_walkons(division):
                 continue
@@ -2544,18 +2626,35 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
             for school, roster in schools.items():
                 room = cap - len(roster)
                 if room > 0:
-                    st = progs[school].strength if school in progs else 0.5
-                    slots.append([st, roster, room])
+                    prog = progs.get(school)
+                    st = prog.strength if prog else 0.5
+                    # D4 admits only above its academic gate, even for leftover walk-ons.
+                    gate = (recruit_economy.d4_academic_min(prog, year, str(seed))
+                            if division == "D4" and prog is not None else 0.0)
+                    slots.append([st, roster, room, division, gate])
         slots.sort(key=lambda x: -x[0])        # best leftover (ranked) → strongest open programs
-        li, progressed = 0, True
-        while li < len(leftover) and progressed:
+        consumed: set = set()
+
+        def _next_for(gate, div):
+            for j, q in enumerate(leftover):
+                if j in consumed:
+                    continue
+                if div == "D4" and int(getattr(q, "academic_rating", 79) or 79) < gate:
+                    continue                   # doesn't clear this D4 program's admissions bar
+                return j
+            return None
+
+        progressed = True
+        while progressed:                      # one recruit per open slot per pass (spreads leftover)
             progressed = False
             for slot in slots:
                 if slot[2] <= 0:
                     continue
-                if li >= len(leftover):
-                    break
-                fr = copy.deepcopy(leftover[li]); li += 1
+                j = _next_for(slot[4], slot[3])
+                if j is None:
+                    continue
+                consumed.add(j)
+                fr = copy.deepcopy(leftover[j])
                 fr.class_year = "Fr"; fr.committed = True; fr.walk_on = True
                 slot[1].append(fr); slot[2] -= 1; placed += 1; progressed = True
     return placed
@@ -2566,6 +2665,7 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     the seats still empty after real pool recruits (signings + leftover sweep) are
     placed. D1/D2 are skipped: they fill their walk-on depth from the recruiting pool
     only, so a D1/D2 program that doesn't sign enough simply carries fewer walk-ons."""
+    from . import recruit_economy
     intake = 0
     for (division, gender), schools in rosters.items():
         if not autogen_walkons(division):          # D1/D2: no game-generated walk-ons
@@ -2577,6 +2677,10 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             need = cap - len(roster)
             if not prog or need <= 0:
                 continue
+            # D4 admits only above its academic gate — auto-gen walk-ons included, so a
+            # D4 roster stays academically self-consistent.
+            d4_min = (recruit_economy.d4_academic_min(prog, year, str(seed))
+                      if division == "D4" else None)
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
@@ -2588,6 +2692,8 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
                 fr = generate_prospect(prng, name, country, gender=_pick_gender(gender),
                                        talent=talent, pid=make_pid(prog.key, "wo", year, k))
                 fr.class_year = "Fr"; fr.walk_on = True
+                if d4_min is not None and fr.academic_rating < d4_min:
+                    fr.academic_rating = int(min(99, round(d4_min) + prng.randint(0, 7)))
                 roster.append(fr)
                 intake += 1
     return intake

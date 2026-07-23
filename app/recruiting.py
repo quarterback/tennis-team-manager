@@ -293,6 +293,23 @@ def recruit_academic01(p) -> float:
     return max(0.0, min(1.0, (getattr(p, "academic_rating", 79) - 59) / 40.0))
 
 
+def recruit_geo_prefs(p) -> tuple[bool, bool]:
+    """(prefers_warm, prefers_big_city) for a recruit — deterministic from their pid,
+    so no schema/persistence change. ~half prefer warmth, ~40% prefer a big city. These
+    are marginal tiebreakers in the signing model (see world._pick_school)."""
+    rng = random.Random(f"{getattr(p, 'pid', '')}|geopref")
+    return rng.random() < 0.5, rng.random() < 0.4
+
+
+def academic_sat(rating) -> int | None:
+    """The 59-99 admissions index shown on the real SAT 800-1600 scale (59→800,
+    99→1600), rounded to the nearest 10 like a real score. `None` for missing."""
+    if rating is None:
+        return None
+    r = max(59, min(99, int(rating)))
+    return int(round((800.0 + (r - 59) / 40.0 * 800.0) / 10.0) * 10)
+
+
 def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> RecruitingProfile:
     """Deterministic recruiting board for prospect `p` over `schools` (which may
     span every division — one national pool). Offers + commit favourite are
