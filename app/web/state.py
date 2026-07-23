@@ -1320,7 +1320,7 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         region_rank = next((i for i, q in enumerate(intl, 1) if q.pid == p.pid), None)
         region_label = "International"
 
-    from app.recruiting import build_recruiting, schools_from_programs
+    from app.recruiting import build_recruiting, schools_from_programs, academic_sat
     programs = all_gender_programs(gender)
     schools = schools_from_programs(programs)
     rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
@@ -1383,6 +1383,7 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "projection": round(p.project(4)),
         "recruiting": rec,
         "roster_fit": roster_fit,
+        "sat": academic_sat(getattr(p, "academic_rating", None)),
         "scout_bars": scout_bars(p),
         "rating": rating,
         "composite": composite,

@@ -286,6 +286,7 @@
             <tr><td>Shared service (consensus)</td><td class="w">{{ view.service }}</td></tr>
             <tr><td>Your department</td><td class="w">{{ view.dept }}</td></tr>
             <tr><td>4-year projection</td><td class="w">{{ view.projection }}</td></tr>
+            {% if view.sat %}<tr title="Admissions test score on the 800–1600 scale (academics only, never affects match play). D4 programs gate recruiting on a minimum."><td>Test score</td><td class="w">{{ view.sat }}</td></tr>{% endif %}
           </tbody></table>
         </div>
       </div>

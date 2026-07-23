@@ -55,8 +55,10 @@ the D4 span (`_D4_ACAD_LO/HI = 0.60..0.99`):
 Enforced in `world._pick_school` for signings (a **HARD** bar — it never relaxes, even
 on signing day) and in `ncaa.build_roster`, which lifts a below-gate generated D4
 player into `[gate, gate+7]` so a D4 roster is academically self-consistent (and its
-visible SAT scores read right). Test scores are on the real **800–1600 scale** on
-player pages (`recruiting.academic_sat`; new TEST stat block).
+visible test scores read right). The **test score** is shown on the real **800–1600
+scale** (`recruiting.academic_sat`) on the **recruit profile** (Scouting card) — it
+matters for recruiting/admissions, not for signed players, so it's not on the roster
+player page.
 
 ### Test scores track the program (`ncaa.ACADEMIC_TILT`)
 The old draw was a flat `N(79, 9)` for everyone, so a blue-blood tennis factory and an
