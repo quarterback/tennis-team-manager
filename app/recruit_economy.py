@@ -56,6 +56,39 @@ _D1_TIER_BANDS = {
     "low":   ( 6.0,  7.0),   # Low-major — 3★ core, thin; the floor sits just above D2
 }
 _D2_BAND = (4.0, 6.0)   # stabilized: D2 funds a tight 4-6, brushing D1 low-major at the top
+# D4 is academic-first but IS in the scholarship economy (owner rule 2027-07): every
+# D4 program funds a floor of 3, the top-academic programs 6-8, positioned by prestige.
+# D4 stays weaker than D2 ON AVERAGE (most D4 sit at 3-5) even though a top D4 out-funds
+# a mid D2 — because the ACADEMIC GATE below stops D4 from admitting all the talent it
+# can afford, so the open divisions (D2 especially) soak up what D4 must pass on.
+_D4_BAND = (3.0, 8.0)
+# D4 prestige spans ~0.09 (low regional academic) to ~0.40 (NESCAC/UAA/SCIAC elites,
+# lifted above the base band by the academic-conference recruiting draw). Position the
+# 3-8 budget across that span so the elite academic programs spread 6-8 by brand.
+_D4_PRES_LO, _D4_PRES_HI = 0.09, 0.40
+
+# D4 admissions gate — a recruit needs a minimum test score (academic_rating, 59-99)
+# to sign at a D4 program. The minimum is PER-PROGRAM (scaled by the program's academic
+# profile, so a Caltech/MIT-tier school always demands a high score while a lower D4
+# admits more broadly) and swings a little year to year (a lenient class admits a touch
+# lower) but never below the absolute D4 floor. This is what keeps D4 distinct: it can
+# AFFORD top talent but can't ADMIT all of it, so talent flows to the open divisions.
+D4_MIN_FLOOR = 72       # absolute admissions floor for ANY D4 program (~SAT 1060)
+D4_MIN_CEIL = 90        # a top-academic D4's strict-year minimum (~SAT 1400 — MIT never admits low)
+D4_MIN_SWING = 5        # year-to-year leniency; the min never dips below D4_MIN_FLOOR
+# D4 program academics span roughly 0.60 (regional academic) to 0.99 (MIT/Caltech);
+# normalize the gate across that so the least-selective D4 sits at the floor and the
+# most-selective at the ceiling (a real spread, not everyone bunched high).
+_D4_ACAD_LO, _D4_ACAD_HI = 0.60, 0.99
+
+
+def d4_academic_min(program, year: int = 0, salt: str = "") -> float:
+    """Minimum admissions index (59-99) a recruit needs to sign at this D4 program."""
+    acad = float(getattr(program, "academics", 0.5))
+    acad_n = max(0.0, min(1.0, (acad - _D4_ACAD_LO) / (_D4_ACAD_HI - _D4_ACAD_LO)))
+    base = D4_MIN_FLOOR + (D4_MIN_CEIL - D4_MIN_FLOOR) * acad_n
+    swing = random.Random(f"{salt}|d4acad|{program.key}|{year}").uniform(0.0, D4_MIN_SWING)
+    return max(float(D4_MIN_FLOOR), base - swing)
 
 # A program whose OWN prestige outranks its conference tier funds UP to its prestige
 # tier — so a program genuinely better than its league isn't capped by it (the
@@ -107,11 +140,9 @@ def reset_d3_top_cache() -> None:
 
 
 def _d3d4_funded(program) -> bool:
-    """Whether a D3/D4 program gets the thin gem-hunting allocation."""
-    div = program.division
-    if div == "D4":
-        return float(getattr(program, "academics", 0.0)) >= _ELITE_D3D4_ACADEMICS
-    if div == "D3":
+    """Whether a D3 program gets the thin gem-hunting allocation. D4 is now in the
+    FULL scholarship economy (see program_budget) — it never uses this thin path."""
+    if program.division == "D3":
         return program.key in _d3_top_keys(getattr(program, "gender", "men"))
     return False
 
@@ -130,16 +161,22 @@ def program_budget(program, salt: str = "", year: int = 0) -> float:
     varies funding run to run. Only the top tier (Blue Bloods) redraws season to
     season within its wide band. D2 is a single low band; D3/D4 carry none."""
     div = program.division
-    if div in ("D3", "D4"):        # non-scholarship tiers — only the funded few
+    if div == "D3":               # non-scholarship — only the top few get a thin gem allocation
         if not _d3d4_funded(program):
             return 0.0
         lo, hi = _D3D4_BAND
         pres = float(getattr(program, "prestige", 0.5))
-        frac = max(0.0, min(1.0, (pres - 0.26) / (0.42 - 0.26)))   # academic-lifted span
+        frac = max(0.0, min(1.0, (pres - 0.10) / (0.20 - 0.10)))   # within the D3 prestige band
         base = lo + frac * (hi - lo)
         jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.4, 0.4)
         return max(lo, min(hi, base + jit))
     pres = float(getattr(program, "prestige", 0.5))
+    if div == "D4":               # academic-first, but IN the scholarship economy (3 floor, 6-8 top)
+        lo, hi = _D4_BAND
+        frac = max(0.0, min(1.0, (pres - _D4_PRES_LO) / (_D4_PRES_HI - _D4_PRES_LO)))
+        base = lo + frac * (hi - lo)
+        jit = random.Random(f"{salt}|budget|{program.key}").uniform(-0.5, 0.5)
+        return max(lo, min(hi, base + jit))
     if div == "D2":
         lo, hi = _D2_BAND
         if pres >= _ELITE_D2_PRESTIGE:      # standout D2: fully funded, every year
@@ -251,20 +288,27 @@ _LEVEL_STANDARD_BAND = 0.06
 # their division (and the power's still-empty seats fill later as pool walk-ons,
 # where a sub-level kid belongs — not as a signed scholarship recruit).
 _LEVEL_RESIDUAL = 0.65
+# D2 reaches much further below its own level than the other divisions (owner rule
+# 2027-07): it aggressively ABSORBS mid-tier talent that would otherwise sink to
+# D3/D4, so it pursues recruits a wide band beneath its level from the start of the
+# cycle. This is a deliberate, owner-authorized relaxation of the strict per-level
+# radar for D2 only.
+_D2_REACH_BAND = 0.22
 
 
-def program_level_floor(level_caliber: float | None, progress: float) -> float:
+def program_level_floor(level_caliber: float | None, progress: float,
+                        division: str | None = None) -> float:
     """Minimum CURRENT-ability caliber a program pursues right now, from its own
     level (`level_caliber`, the program's talent-mean on the caliber scale). Holds
-    at `level_caliber - _LEVEL_STANDARD_BAND` through `_STANDARD_HOLD` of the window,
-    then ramps DOWN to `_LEVEL_RESIDUAL` of that by signing day — never to 0 — so a
-    power with open seats sops up only the best remaining recruits and the rest slot
-    to their level. See docs/AAR-recruiting-division-radar: lower divisions recruit
-    their level first, D1 stays off a sub-D1 kid's radar and only sops up the best
-    leftovers late."""
+    at `level_caliber - band` through `_STANDARD_HOLD` of the window, then ramps DOWN
+    to `_LEVEL_RESIDUAL` of that by signing day — never to 0 — so a power with open
+    seats sops up only the best remaining recruits and the rest slot to their level.
+    `band` is wide for D2 (`_D2_REACH_BAND`, aggressive absorption) and standard
+    (`_LEVEL_STANDARD_BAND`) otherwise. See docs/AAR-recruiting-division-radar."""
     if level_caliber is None:
         return 0.0
-    floor = level_caliber - _LEVEL_STANDARD_BAND
+    band = _D2_REACH_BAND if division == "D2" else _LEVEL_STANDARD_BAND
+    floor = level_caliber - band
     if floor <= 0.0:
         return 0.0
     if progress <= _STANDARD_HOLD:

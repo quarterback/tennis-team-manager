@@ -34,6 +34,14 @@ SOS_ITERS = 12
 # breaks near-ties toward the team that won on the road without reordering the table.
 ROAD_WIN_BONUS = 0.10
 
+# Asymmetric loss weighting (ITA-style): a loss to a STRONG opponent barely dents
+# the rating, while a loss to a weak one still stings. Each loss counts as a
+# fraction of a game in the win% denominator, discounted by the opponent's current
+# rating: a loss to a top team (rating ≈ 1) counts only (1 − LOSS_FORGIVE), a loss
+# to a bottom team (rating ≈ 0) counts full. Recomputed inside the SOS iteration
+# since opponent ratings evolve. Wins are never discounted.
+LOSS_FORGIVE = 0.55
+
 # College flight weights: #1 lines carry the most competitive weight.
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.85, "S3": 0.60, "S4": 0.45, "S5": 0.30, "S6": 0.20,
@@ -104,6 +112,13 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
         else:
             a.wins += 1; a.road_wins += 1; h.losses += 1   # away team won on the road
 
+    # Per-team game log (opponent, won, is_road) — feeds the quality-adjusted win%.
+    games: dict[str, list] = {t: [] for t in teams}
+    for d in duals:
+        h, a, hw = d["home"], d["away"], d["home_won"]
+        games[h].append((a, hw, False))
+        games[a].append((h, not hw, True))
+
     # --- APR: iterated, strength-of-schedule-aware ---
     # Classic RPI compresses (built for a single overlapping league). Here the
     # field spans real conference tiers, so we iterate: a team's rating is its
@@ -112,16 +127,25 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
     # rates far above running up an undefeated mid-major record.
     # Road-win-bonused win rate: away wins count 1.10×, denominator unchanged, so a
     # team that won on the road rates a hair above one with the same record at home.
-    wp = {}
-    for t, r in teams.items():
-        g = r.wins + r.losses
-        wp[t] = min(1.0, (r.wins + ROAD_WIN_BONUS * r.road_wins) / g) if g else 0.0
-    S = dict(wp)
+    # Loss weighting is ASYMMETRIC (see LOSS_FORGIVE): a loss to a strong opponent
+    # barely dents the win%, so it's recomputed each iteration as opponent ratings S
+    # firm up — a top team's few losses (all to other top teams) hardly hurt it.
+    win_num = {t: teams[t].wins + ROAD_WIN_BONUS * teams[t].road_wins for t in teams}
+
+    def _ewp(t: str, S: dict) -> float:
+        loss_wt = sum(1.0 - LOSS_FORGIVE * S.get(o, 0.5)
+                      for (o, won, _r) in games[t] if not won)
+        den = teams[t].wins + loss_wt
+        return min(1.0, win_num[t] / den) if den else 0.0
+
+    S = {t: (min(1.0, win_num[t] / (r.wins + r.losses)) if (r.wins + r.losses) else 0.0)
+         for t, r in teams.items()}
     for _ in range(SOS_ITERS):
+        ewp = {t: _ewp(t, S) for t in teams}
         nS = {}
         for t in teams:
             sos = (sum(S[o] for o in opps[t]) / len(opps[t])) if opps[t] else 0.5
-            nS[t] = min(1.0, max(0.0, wp[t] + K_SOS * (sos - 0.5)))
+            nS[t] = min(1.0, max(0.0, ewp[t] + K_SOS * (sos - 0.5)))
         S = nS
     for t, r in teams.items():
         r.apr = S[t]

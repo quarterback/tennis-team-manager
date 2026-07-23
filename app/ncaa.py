@@ -298,8 +298,12 @@ ACADEMIC_SCHOOLS = {
 # clear gaps — and D1 is by far the widest, so its programs span from low-major all the
 # way to blue-blood. A conference is mapped into its division's band (no multiplier), then
 # the blue-blood school bump nudges a program toward the top of the band.
+# D4's range was the lowest tiny band; widened (owner rule 2027-07) so the academic
+# school bumps (Williams/Amherst/CMS…) actually register and position D4's scholarship
+# budget (3-8). It overlaps D3 and brushes D2's floor at the top — D4 is differentiated
+# from them by the scholarship economy + academic gate, not by a lower prestige clamp.
 DIVISION_PRESTIGE_RANGE = {"D1": (0.40, 0.97), "D2": (0.20, 0.30),
-                           "D3": (0.10, 0.20), "D4": (0.04, 0.10)}
+                           "D3": (0.10, 0.20), "D4": (0.08, 0.20)}
 _CONF_PRESTIGE_REF = {"D1": (0.34, 0.84), "D2": (0.35, 0.62),
                       "D3": (0.35, 0.63), "D4": (0.40, 0.63)}
 
@@ -686,6 +690,33 @@ def autogen_walkons(division: str) -> bool:
     return division in ("D3", "D4")
 
 
+# --- Recruiting geography flavor: warm-weather + big-city appeal ------------------
+# A MARGINAL recruiting tiebreak (owner rule 2027-07): programs in warm states or big
+# metros get a small edge for recruits who prefer that — never overriding prestige,
+# just advantaging bigger/warmer places when programs are otherwise a wash. It can pull
+# a recruit AWAY from home too (a warm-preferring kid from a cold state leans south).
+WARM_STATES = {"FL", "CA", "TX", "AZ", "GA", "NC", "SC", "LA", "MS", "AL",
+               "HI", "NV", "NM", "TN"}
+# Campus cities that ARE a major US metro (largest ~35 cities). Programs literally in
+# one read as "big city"; suburban/college-town campuses do not.
+BIG_METRO_CITIES = {
+    "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia",
+    "San Antonio", "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville",
+    "Fort Worth", "Columbus", "Charlotte", "Indianapolis", "San Francisco",
+    "Seattle", "Denver", "Washington", "Boston", "Nashville", "Baltimore",
+    "Portland", "Las Vegas", "Detroit", "Memphis", "Louisville", "Milwaukee",
+    "Atlanta", "Miami", "Minneapolis", "New Orleans", "Cleveland", "Pittsburgh",
+    "Cincinnati", "Kansas City", "Sacramento", "Tampa", "St. Louis", "Oakland",
+}
+
+
+def program_geo_flags(program) -> tuple[bool, bool]:
+    """(warm_state, big_city) recruiting-appeal flags for a program."""
+    warm = (getattr(program, "state", "") or "").strip().upper() in WARM_STATES
+    big = (getattr(program, "city", "") or "").strip() in BIG_METRO_CITIES
+    return warm, big
+
+
 # --- Talent calibration (grade units, 20-80) -----------------------------------
 # Visible college ability (after class-scaled development) should land in
 # realistic UTR-equivalent STR bands per division x gender: D1 > D2 > D3, men a
@@ -718,9 +749,13 @@ def autogen_walkons(division: str) -> bool:
 _TALENT = {
     ("D1", "men"):   (60.0, 16.0), ("D1", "women"): (52.0, 14.0),
     ("D2", "men"):   (50.0, 24.0), ("D2", "women"): (43.0, 20.0),
-    ("D3", "men"):   (43.0, 20.0), ("D3", "women"): (37.0, 17.0),
-    # D4 sits just below D3 — the smallest, most regional academic-first tier.
-    ("D4", "men"):   (40.0, 18.0), ("D4", "women"): (35.0, 16.0),
+    # D3 is the widest-variety, lowest-floor tier (owner rule 2027-07): the base + spread
+    # give it the broadest range AND the weakest pool players — the leftovers after D2
+    # absorbs and D4 admits its academics. D3/D4 rosters are the ones _talent_mean drives
+    # directly; D4 is now built by the star-plan (like D1/D2), so its band only sets the
+    # radar level (level_cal), lifted between D3 and D2 so top D4 reads near a D1 walk-on.
+    ("D3", "men"):   (39.0, 27.0), ("D3", "women"): (33.0, 23.0),
+    ("D4", "men"):   (46.0, 22.0), ("D4", "women"): (40.0, 20.0),
 }
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
@@ -822,22 +857,28 @@ def _base_roster(p: Program):
         _local_name = make_name_picker(random.Random(seed ^ 0x10CA1E),
                                        gender=_pick_gender(p.gender),
                                        region_weights={_lregion: 1.0})
-    # D1/D2 rosters are built by the recruiting budget economy — a program lands
-    # the star tiers its budget + prestige can attract, so blue-chips cluster at
-    # the programs that can pay. D3 has no athletic money: it stays on the
-    # fit/academics-driven talent prior (conf strength).
+    # D1/D2/D4 rosters are built by the recruiting budget economy — a program lands
+    # the star tiers its budget + prestige can attract, so talent clusters at the
+    # programs that can pay. D4 joined the economy (owner rule 2027-07): it funds a
+    # 3-8 budget like D1/D2 but ADMITS only recruits above its per-program academic
+    # gate (below). D3 has no athletic money: it stays on the fit/academics-driven
+    # talent prior (conf strength), with a thin gem allocation for its very top.
     from . import recruit_economy
-    use_budget = p.division in ("D1", "D2")
+    use_budget = p.division in ("D1", "D2", "D4")
     cap = roster_cap(p.division)            # D1 12 · D2 10 · D3/D4 16
     funded = scholarships.slots(p)          # full funding = more funded spots to spend budget on
-    # Funded D3/D4 (top-prestige programs) get a thin 1-3 budget on top of their
+    # A funded D3 (top-prestige program) gets a thin 1-3 budget on top of its
     # conf-strength baseline — it LIFTS the few slots where it lands a real recruit
     # tier (the academic "hidden gems"), leaving the rest at baseline.
-    d3d4_gem = (not use_budget and p.division in ("D3", "D4")
-                and recruit_economy.program_budget(p, WORLD_SALT) > 0.0)
+    d3_gem = (not use_budget and p.division == "D3"
+              and recruit_economy.program_budget(p, WORLD_SALT) > 0.0)
     star_plan = recruit_economy.roster_star_plan(p, WORLD_SALT,
                                                  roster_size=cap,
-                                                 schol_slots=funded) if (use_budget or d3d4_gem) else None
+                                                 schol_slots=funded) if (use_budget or d3_gem) else None
+    # D4's admissions gate: every generated D4 player must clear the program's minimum
+    # test score, so a D4 roster is academically self-consistent (and the visible SAT
+    # scores read right). Year-0 build → year 0.
+    d4_min = recruit_economy.d4_academic_min(p, 0, WORLD_SALT) if p.division == "D4" else None
     tmean = _talent_mean(p.strength, p.division, p.gender)
     from generators import roll_us_hometown, roll_high_school
     roster = []
@@ -853,7 +894,7 @@ def _base_roster(p: Program):
             talent = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
         else:
             talent = max(24.0, min(80.0, rng.gauss(tmean, 2.5)))    # tight: dense lineups
-            if d3d4_gem:                                            # budget lifts only the gem slots
+            if d3_gem:                                              # budget lifts only the gem slots
                 gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
                 talent = max(talent, gem)
         domestic = country in ("US", "USA", "United States", "")
@@ -864,6 +905,10 @@ def _base_roster(p: Program):
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)),
                                town_pool=town_pool)
         pr.class_year = cls
+        if d4_min is not None and pr.academic_rating < d4_min:
+            # D4 admits only above its gate: lift a below-gate draw into [gate, gate+7]
+            # so the roster stays academically self-consistent with a realistic spread.
+            pr.academic_rating = int(min(99, round(d4_min) + rng.randint(0, 7)))
         # hometown / high_school / domestic are wired by generate_prospect from
         # the player's nation (real city pools + flags), so no synthetic override —
         # EXCEPT local territory/state kids, whose in-territory home we set here.

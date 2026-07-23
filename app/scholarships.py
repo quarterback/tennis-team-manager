@@ -46,9 +46,12 @@ DEFAULT_LIMITS = {
     ("D2", "women"): {"count": 6, "rate": 0.70, "cap": 6.0, "fractional": True},
     ("D3", "men"):   {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
     ("D3", "women"): {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
-    # D4 is academic-first, non-scholarship — same aid model as D3.
-    ("D4", "men"):   {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
-    ("D4", "women"): {"count": 3, "rate": 0.30, "cap": 0.0, "fractional": False},
+    # D4 joined the scholarship economy (owner rule 2027-07): academic-first, but it
+    # funds a real core like D2 (count 6) so its 3-8 recruiting budget has slots to
+    # spend on. Aid is shown like D2 (cap 6.0); the academic GATE — not a lack of
+    # money — is what keeps D4 from stacking all the talent it could afford.
+    ("D4", "men"):   {"count": 6, "rate": 0.70, "cap": 6.0, "fractional": True},
+    ("D4", "women"): {"count": 6, "rate": 0.70, "cap": 6.0, "fractional": True},
 }
 # Academically elite D3: D1-worth scholarships, but fewer of them.
 ELITE_D3_LIMITS = {"count": 4, "rate": 1.00, "cap": 0.0, "fractional": False}

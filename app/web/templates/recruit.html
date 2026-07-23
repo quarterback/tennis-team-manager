@@ -158,19 +158,24 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
         <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>
         <div class="bl-tablescroll">
-          <div class="bl-table" style="--bl-grid-cols: minmax(130px,1fr) 56px 72px 84px 96px 84px">
+          <div class="bl-table" style="--bl-grid-cols: minmax(120px,1fr) 48px 64px 78px 84px 148px 76px">
             <div class="bl-thead">
               <span class="bl-th">SCHOOL</span><span class="bl-th">OFFER</span><span class="bl-th">INTEREST</span>
-              <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span><span class="bl-th">STATUS</span>
+              <span class="bl-th">SCHOL.</span><span class="bl-th">STRIKEPRED.</span>
+              <span class="bl-th" title="Program's current top-6 by OVR, and where this recruit would slot">ROSTER FIT (TOP 6 OVR)</span>
+              <span class="bl-th">STATUS</span>
             </div>
             {% for o in rec.offers %}
             {% set is_signed = p.committed and o.school == p.commit_school %}
+            {% set fit = view.roster_fit.get(o.school) %}
             <div class="bl-row"{% if is_signed %} style="background:var(--green-50)"{% endif %}>
               <a class="bl-school" href="{{ url_for('team_recruiting', school=o.school, u=u) }}">{{ crest_box(o.school, o.abbr, o.color, 'xs') }}{{ o.school }}</a>
               <span style="color:#3a7;font-weight:700">{{ '✓' if o.offered else '' }}</span>
               <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }};font-weight:600">{{ o.interest }}</span>
               <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
               <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
+              <span>{% if fit %}<span class="bl-badge" style="background:{{ '#2e7d46' if fit.slot=='Starter' else '#c58a1a' if fit.slot=='Rotation' else 'var(--text-muted)' }};color:#fff" title="Your OVR {{ p.current_overall() }} vs their #6 ({{ fit.sixth if fit.sixth is not none else '—' }})">{{ fit.slot }}</span>
+                <span style="font-size:10px;color:var(--text-muted);margin-left:6px">{{ fit.top6|join(' ') }}</span>{% else %}—{% endif %}</span>
               <span>{% if is_signed %}<span class="bl-badge" style="background:var(--brand)">Signed</span>{% elif o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
             </div>
             {% endfor %}

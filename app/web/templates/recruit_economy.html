@@ -91,14 +91,19 @@
         <span class="bl-conf">4★/3★; elite D2 (prestige ≥ {{ econ.elite_d2_prestige }}) funds at the top</span>
       </div>
       <div class="bl-row">
-        <span class="bl-school">D3 / D4</span>
+        <span class="bl-school">D4</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%g'|format(econ.d4_band[0]) }}–{{ '%g'|format(econ.d4_band[1]) }}</span></span>
+        <span class="bl-conf">academic-first tier, IN the economy — funds like D2 (top academics 6–8), but admits only recruits above a per-program test-score gate (~SAT {{ econ.d4_gate_lo }}–{{ econ.d4_gate_hi }})</span>
+      </div>
+      <div class="bl-row">
+        <span class="bl-school">D3</span>
         <span class="bl-cell-num"><span class="bl-stat muted">0</span></span>
         <span class="bl-conf">no athletic money — except a thin gem allocation below</span>
       </div>
       <div class="bl-row">
         <span class="bl-school" style="padding-left:14px;color:var(--text-muted)">↳ gem allocation</span>
         <span class="bl-cell-num"><span class="bl-stat">{{ '%g'|format(econ.d3d4_band[0]) }}–{{ '%g'|format(econ.d3d4_band[1]) }}</span></span>
-        <span class="bl-conf">D4 academic-elite (academics ≥ {{ econ.elite_academics }}) + Top-{{ econ.d3_top_n }} D3 by prestige</span>
+        <span class="bl-conf">Top-{{ econ.d3_top_n }} D3 by prestige — sop up one undervalued recruit</span>
       </div>
     </div>
   </div></div>
