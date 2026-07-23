@@ -43,7 +43,7 @@ set by prestige.
 | D1 Mid-major ("mid") | 6–9 |
 | D1 Low-major ("low") | 6–7 (the floor, just above D2) |
 | D2 | 4–6 (elite D2, prestige ≥ 0.28, funds at 6) |
-| **D4** | **3–8, IN the scholarship economy** (owner rule 2027-07 — see `docs/AAR-diii-d4-economy-and-recruit-realism.md`). D4 = the academic-first tier holding the REAL best non-D1 programs (NESCAC/UAA/SCIAC/NCAC); it funds a 3 floor / 6–8 top (`_D4_BAND`) and builds via the star-plan like D1/D2, but ADMITS only recruits above a per-program **academic gate** (`d4_academic_min`, ~SAT 1060 floor → 1400 for MIT-tier). D2 still beats D4 ON AVERAGE (most D4 sit at 3–4) because D2 takes anybody and D4 can't admit all it can afford. Do NOT restore D4 to budget-0 or the old tiny prestige clamp. |
+| **D4** | **3–8, IN the scholarship economy** (owner rule 2027-07 — see `docs/AAR-diii-d4-economy-and-recruit-realism.md`). D4 = the academic-first tier holding the REAL best non-D1 programs (NESCAC/UAA/SCIAC/NCAC); it funds a 3 floor / 6–8 top (`_D4_BAND`) and builds via the star-plan like D1/D2, but ADMITS only recruits above a per-program **academic gate** (`d4_academic_min`, ~SAT 960 floor → 1400 for MIT-tier). D2 still beats D4 ON AVERAGE (most D4 sit at 3–4) because D2 takes anybody and D4 can't admit all it can afford. Do NOT restore D4 to budget-0 or the old tiny prestige clamp. |
 | D3 | **0**, EXCEPT a thin **1–3 "gem" allocation** for the **Top-20 D3 by prestige** (`_d3d4_funded`, now D3-only) — lets them sop up one undervalued recruit. D3 is the widest-variety, lowest-floor tier (`_TALENT["D3"]`). |
 
 ### 2. Recruit cost by star — what the budget is spent on (`recruit_economy.TIERS`)

@@ -73,7 +73,7 @@ _D4_PRES_LO, _D4_PRES_HI = 0.09, 0.40
 # admits more broadly) and swings a little year to year (a lenient class admits a touch
 # lower) but never below the absolute D4 floor. This is what keeps D4 distinct: it can
 # AFFORD top talent but can't ADMIT all of it, so talent flows to the open divisions.
-D4_MIN_FLOOR = 72       # absolute admissions floor for ANY D4 program (~SAT 1060)
+D4_MIN_FLOOR = 67       # absolute admissions floor for ANY D4 program (~SAT 960)
 D4_MIN_CEIL = 90        # a top-academic D4's strict-year minimum (~SAT 1400 — MIT never admits low)
 D4_MIN_SWING = 5        # year-to-year leniency; the min never dips below D4_MIN_FLOOR
 # D4 program academics span roughly 0.60 (regional academic) to 0.99 (MIT/Caltech);

@@ -46,7 +46,7 @@ to the open divisions.
 A recruit needs a minimum test score (`academic_rating`, 59–99) to sign at a D4
 program. It is **per-program**, scaled by the program's academics normalized across
 the D4 span (`_D4_ACAD_LO/HI = 0.60..0.99`):
-- `D4_MIN_FLOOR = 72` (~SAT 1060) — absolute floor, no D4 admits below it.
+- `D4_MIN_FLOOR = 67` (~SAT 960) — absolute floor, no D4 admits below it.
 - `D4_MIN_CEIL = 90` (~SAT 1400) — a Caltech/MIT-tier strict-year minimum. **MIT never
   admits 900s.**
 - `D4_MIN_SWING = 5` — a lenient class admits a touch lower year to year, never below
