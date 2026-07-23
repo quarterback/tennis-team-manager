@@ -763,6 +763,16 @@ _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
                    "Jr": (0.90, 0.96), "Sr": (0.93, 0.99)}
 
 
+# A roster's admissions profile tracks the PROGRAM's academics (owner rule 2027-07):
+# high-academic programs (Ivies, Stanford, MIT, elite LACs) pull their players' test
+# scores up; low-academic programs sit a bit below the ~SAT 1200 (index 79) population
+# center. Center = 79 + (academics − 0.5) × ACADEMIC_TILT, so academics 0.99 → ~index 90
+# (~SAT 1420) and 0.30 → ~index 74 (~SAT 1110). Applies to every division; the D4 gate
+# floor then layers on top.
+ACADEMIC_TILT = 22.0
+_ACADEMIC_INTL_SHIFT = 2.0     # internationals sit a touch below their US peers
+
+
 def _talent_mean(strength: float, division: str, gender: str) -> float:
     """Program strength + division + gender → a roster talent-grade mean."""
     base, spread = _TALENT.get((division, gender), (60.0, 22.0))
@@ -905,6 +915,11 @@ def _base_roster(p: Program):
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)),
                                town_pool=town_pool)
         pr.class_year = cls
+        # Test score tracks the program's academics (Ivies/top-D1/elite LACs pull up).
+        acad_center = 79.0 + (p.academics - 0.5) * ACADEMIC_TILT
+        if not domestic:
+            acad_center -= _ACADEMIC_INTL_SHIFT
+        pr.academic_rating = int(max(59, min(99, rng.gauss(acad_center, 6.5))))
         if d4_min is not None and pr.academic_rating < d4_min:
             # D4 admits only above its gate: lift a below-gate draw into [gate, gate+7]
             # so the roster stays academically self-consistent with a realistic spread.

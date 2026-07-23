@@ -58,6 +58,16 @@ player into `[gate, gate+7]` so a D4 roster is academically self-consistent (and
 visible SAT scores read right). Test scores are on the real **800–1600 scale** on
 player pages (`recruiting.academic_sat`; new TEST stat block).
 
+### Test scores track the program (`ncaa.ACADEMIC_TILT`)
+The old draw was a flat `N(79, 9)` for everyone, so a blue-blood tennis factory and an
+academic power looked identical. Now every roster's admissions center scales with the
+program's academics: `center = 79 + (academics − 0.5) × 22` (internationals a touch
+lower). Measured roster-mean SATs: **Harvard ~1410, Northwestern ~1425, Chicago ~1355,
+Stanford ~1380, Duke ~1330** vs athletic-first **Texas ~1190, Tennessee ~1170, Georgia
+~1150**. Division means: D1 ~1224, D2 ~1165, D3 ~1230, **D4 ~1349** (highest — the
+academic tier); population ~1252. Any high-academic program is covered automatically
+(no per-school wiring); the D4 gate floor layers on top.
+
 ---
 
 ## 2. D3 = widest-variety, lowest-floor tier
