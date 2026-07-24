@@ -224,6 +224,46 @@ drivers, so the specifically-doubles attributes — `net_play`, `volley_touch`,
   noise) — **pre-existing**, reproduces on the parent commit, unrelated to this
   work.
 
+## Pass 5 — playing-style profiles so doubles specialists EXIST (owner directive)
+
+After pass 4, doubles read the right attributes but `doubles_rating` still
+correlated with singles `overall` at **0.99** — not an engine fault: the
+**generator** (`development.generate_prospect`) drew all 49 attributes as
+*independent* noise around one talent mean (`gauss(talent, 6)` per attr), so
+every player was a clone of their own average — no shape, no net specialist.
+`play_style` was drawn but never used.
+
+Fix (`app/development.py`): `_apply_style_profile` shifts correlated attribute
+**clusters** (serve / return / baseline / net / movement) by the player's
+`play_style` plus a **net-specialist roll** (`NET_SPECIALIST_RATE` 0.18). The
+shifts are **weight-normalized** — a uniform offset is removed so the player's
+overall grade (Σ weight·grade) is preserved. So a player TRADES strengths (more
+net, less baseline) at the **same overall level**: their net-weighted
+`doubles_rating` rises above their all-around singles level, which is exactly a
+doubles specialist.
+
+Crucially this keeps the talent distribution intact — measured STR over 2,880
+roster players, with vs without profiles:
+
+| | mean | sd | p50 |
+|---|---|---|---|
+| baseline (no profiles) | 44.797 | 4.152 | 44.43 |
+| with profiles | 44.801 | 4.131 | 44.43 |
+
+Identical — only the *shape* moved. Realized:
+- `doubles_rating` vs singles `overall` corr **0.99 → 0.956**.
+- At roster scale, the team's **best doubles player is the singles #1 in only
+  66%** of programs (#2 23%, #3 9%, #4 1%) — meaningful reshuffle, not chaos.
+- **56% of programs** field a non-top-6-singles player in their doubles six.
+
+Deliberately not pushed to extremes (an 8th-string singles player as doubles #1
+is rare in real college tennis; the serve/return terms in `doubles_rating`
+anchor a specialist so net alone can't vault them to the very top). Levers if
+more divergence is wanted: `NET_SPECIALIST_RATE`, `_NET_SPECIALIST_BIAS`,
+`_STYLE_BIAS`. Note: this adds RNG draws in `generate_prospect`, so the world's
+player *identities* shift vs the old seed (determinism holds; the STR
+*distribution* is unchanged as shown).
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error
