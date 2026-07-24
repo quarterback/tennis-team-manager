@@ -80,6 +80,43 @@ calm default.
 The last two rows are the point of #4: identical-length matches now yield very
 different error counts depending on who's hitting.
 
+## Pass 2 — "it still feels random" (talent fingerprints)
+
+Owner follow-up: the levels were right but stats still read as luck. Root cause
+was structural: **each box stat keyed off a single driver** (aces = serve−return,
+DF = placement, winners = forehand+backhand, UE = consistency), and `stamina`
+touched the full point engine not at all. Over ~60 points a one-driver signal is
+swamped by binomial noise, and a cannon server facing a good returner posted few
+aces — which reads as random.
+
+Fix: give each stat a **basket** of drivers and raise the signal.
+
+- **Aces** now lead on *absolute* serve power, with the return only partly
+  offsetting (`ace_return_weight` 0.55, `ace_swing` 0.24→0.30) — a true cannon
+  stays an ace machine regardless of opponent.
+- **Double faults** read placement **and** composure (`second_in_nerve` 0.10,
+  `second_in_swing` 0.10→0.14) — nervy servers dump seconds in normal play, not
+  only on break points.
+- **Winners** read a shot-maker basket — weapons + court coverage + nerve
+  (`winner_power` 0.34→0.46, `winner_move` 0.24, `winner_nerve` 0.16).
+- **Unforced errors** stay consistency-led but a good mover retrieves would-be
+  errors (`unforced_move` 0.24).
+
+Correlation of each stat with the talent that should drive it (single match,
+2,400 player-lines):
+
+| Stat vs its talent | Pass 1 | Pass 2 |
+|---|---|---|
+| Ace vs raw serve_power | 0.54 | **0.67** |
+| DF vs placement | −0.41 | **−0.50** |
+| Winners vs shot-maker composite | ~0.40 | **0.53** (and 0.51 vs `overall`) |
+| UE vs defensive composite | — | **−0.72** |
+
+These are strong for one match; they rise further over a season as noise
+averages out. We deliberately stop here rather than chase r→1 — a deterministic
+box score is exactly what the owner does *not* want (talent shifts the
+distribution; it doesn't script the line).
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error
