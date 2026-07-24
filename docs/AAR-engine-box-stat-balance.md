@@ -313,6 +313,60 @@ WTA/NCAA-W pattern).
 Note: adding `forced_errors` extends the persisted stat wire format. Old saves
 lack "fe"; `from_dict` defaults it to 0, so they read back cleanly.
 
+## Pass 7 — gender difference is EMERGENT (validation, no code change)
+
+Owner supplied the StatsOnTheT ace-to-double-fault history + the r/tennis
+discussion: **ATP ace:DF ≈ 2.2 (aces exceed faults), WTA ≈ 0.8 (faults exceed
+aces)**, driven by both fewer aces AND more double faults for women. The rally
+engine has ONE gender-agnostic table; women differ only by sitting lower on the
+talent scale (below `swing_ref` 0.68). Measured, the pattern falls out on its
+own:
+
+| D1 | aces | DF | ace:DF | W / F / UE |
+|---|---|---|---|---|
+| men | 6.7% | 5.6% | **1.20** | 32 / 38 / 24 |
+| women | 5.4% | 6.5% | **0.84** | 20 / 43 / 30 |
+
+Women land at ace:DF 0.84 (real WTA ≈ 0.8) with more errors / fewer winners
+(O'Shannessy: men 30% winners, women 26%). No gender lever was added; the single
+talent scale plus one reference point reproduces the ATP/WTA divergence. This is
+the whole design thesis working end to end: get the talent distribution right and
+the stat texture emerges, rather than hand-setting per-gender dials. (College men
+at ace:DF 1.20 also match the O'Shannessy "college men serve closer to WTA-pro
+ace:DF than ATP-pro" finding — pro ATP is ~2.2, college men far below it.)
+
+## Appendix — reference data used for calibration (ground truth)
+
+Preserved verbatim so future retuning has the targets without re-finding sources.
+
+**VS Sports / Tennis Analytics — ATP vs NCAA-M serve (388k points, 2022-23):**
+- 1st serve %: college ≈ ATP (~60-64%).
+- 1st serve points won: pros 71%, **college men 66%**.
+- Aces: pros 12%, **college men 7%**.
+- Double faults: pros ~3% fewer than college; **college men ≈ 5-6%** of service points.
+- 2nd serve points won: pros 3% higher than college.
+
+**O'Shannessy / "First 4 Shots" & "Num3ers" — men's college + Grand Slam men:**
+- Rally length: **0-4 shots = 70%**, 5-8 = 20%, 9+ = 10% (points are front-loaded).
+- Point ending (GS men): **Winners 32% / Forcing errors 41% / Unforced 27%**
+  (women 29 / 37 / 34).
+- Building Blocks (AO): **men 70% errors / 30% winners; women 74% / 26%**.
+- Net vs baseline win %: baseline 46%, **net 66%**.
+- College men ace:DF ratio ≈ women's-pro range (low), not ATP-pro's high range.
+
+**Berkeley Sports Analytics (Jake Lamb) — ATP men, 300 players:**
+- **Ace-rate and DF-rate correlate at r = 0.93** (bigger serve → both rise).
+- Only ~9% of players clear above-median aces AND below-median DFs.
+- Break-points-saved % correlates with ace:DF ratio (r = 0.87).
+
+**StatsOnTheT — ace:DF ratio through time:**
+- **ATP ≈ 1.35 (1991) rising to ~2.2 (2019); WTA ≈ 0.8** and flat.
+- Top-server spread is huge (Isner ace:DF 12.5; median tour player ~2).
+
+**Engine targets locked from the above (D1 men):** aces 7%, DF ~5%, 1st serve
+62%, 1st serve won ~66%, point split 32/41/27, ace:DF > 1, ace/DF positively
+correlated. Realized: 6.7% / 5.6% / 62% / 32-38-24 / 1.20, r(ace,DF) positive.
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error
