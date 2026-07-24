@@ -374,6 +374,25 @@ matchups sit inside ~1.5 UTR, so the overall rate stays ~77% even though a real 
 gap is ~96%. The box-stat calibration (aces 7% / DF 5% / 32-41-27 split) still
 holds under the new dials — verified after the change.
 
+## Pass 8b — review fixes after the full-fidelity flip (PR #183)
+
+Two consequences of making full fidelity the default, caught in review:
+
+- **Box-stats toggle went dead.** The full engine always computes native stats,
+  and `season._dual_record` serialized them whenever `has_data`, so "Box stats:
+  Off" no longer produced scoreline-only history. Fix: gate stat serialization on
+  the `box_stats` flag in `_dual_record` (the engine still computes them; we just
+  don't persist them when the switch is off). Verified: off → 0/9 lines carry
+  stats, on → 9/9.
+- **`forced_errors` was dropped by `app.db.save_match`.** That API's `match_stats`
+  schema + insert predate the new stat, so any full-fidelity match saved through it
+  lost forced errors while keeping the rest. Fix: add the `forced_errors` column to
+  the schema, a `_migrate_match_stats` backfill for older DBs (SQLite has no ADD
+  COLUMN IF NOT EXISTS, so diff PRAGMA like `_migrate_players`), and the value to
+  the insert. Verified round-trip (native 32/41 → DB 32/41). Note: `save_match` is a
+  separate persistence path from the season `lines_json` box stats — both now carry
+  the field.
+
 ## Appendix — reference data used for calibration (ground truth)
 
 Preserved verbatim so future retuning has the targets without re-finding sources.
