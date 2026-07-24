@@ -224,16 +224,18 @@ def set_box_stats(on) -> None:
 
 
 def match_fidelity() -> str:
-    """Per-save dual-match fidelity. "fast" (default) is the tuned game-level model
-    that keeps a full world responsive; "full" resolves every POINT (engine.match)
-    for a higher-fidelity but much slower sim — meant for offline calibration on a
-    local machine, flipped on for the stretch you care about and back off after.
+    """Per-save dual-match fidelity. "full" (default) resolves every POINT through
+    the rich attribute engine (engine.match) so real serve/return/rally talent
+    decides outcomes AND produces the box stats from one consistent sim. It is also
+    faster than "fast"+box-stats, which reconstructs stats by rejection-sampling.
+    "fast" is the legacy game-level Bernoulli model (scoreline from an `overall`
+    gap, no native stats) — kept as an opt-in speed mode for stat-free bulk runs.
     Read at sim time, so flipping it mid-season takes effect from the next dual on.
-    An env var TTM_FIDELITY=full forces full regardless of the stored switch."""
+    An env var TTM_FIDELITY=fast forces the legacy model regardless of the switch."""
     import os
-    if os.environ.get("TTM_FIDELITY", "").strip().lower() == "full":
-        return "full"
-    return "full" if get("match_fidelity") == "full" else "fast"
+    if os.environ.get("TTM_FIDELITY", "").strip().lower() == "fast":
+        return "fast"
+    return "fast" if get("match_fidelity") == "fast" else "full"
 
 
 def set_match_fidelity(full) -> None:

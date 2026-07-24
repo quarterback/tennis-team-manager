@@ -264,6 +264,148 @@ more divergence is wanted: `NET_SPECIALIST_RATE`, `_NET_SPECIALIST_BIAS`,
 player *identities* shift vs the old seed (determinism holds; the STR
 *distribution* is unchanged as shown).
 
+## Pass 6 — calibrate to real NCAA data + add forced errors (owner directive)
+
+The owner pasted live box scores and three real data sources (VS Sports ATP-vs-NCAA,
+Berkeley Sports Analytics, O'Shannessy "First 4 Shots"). Measured against them the
+engine was off, badly at D1:
+
+| Stat | Engine (D1) | Real NCAA-M |
+|---|---|---|
+| Aces | 12.4% | ~7% |
+| Double faults | 1.8% | ~5% |
+| 1st serve in | 68% | ~62% |
+| Winners/match | 37 | far lower |
+| W:UE | 2.2 | — |
+
+Three fixes:
+
+1. **Serve levels to the article.** `ace_first_base` 0.135→0.085, `ace_swing`
+   0.30→0.20 (aces 12%→~7%); `first_in_base` 0.62→0.60 (68%→62%);
+   `second_in_base`/swings retuned so DFs rise to ~5% and zero-DF players fell from
+   54% to ~8%. All serve anchors moved onto `swing_ref` (the first/second serve-in
+   swings were still anchored at 0.5, which pushed strong servers' second serves
+   near 100% and killed their faults). `swing_ref` 0.60→0.68 (the real D1 center),
+   so D1 sits at baseline and lower divisions bend down.
+
+2. **Aces and double faults now positively correlate** (real pro men r≈0.93 —
+   Berkeley). Added `second_in_aggression`: the same `ace_power_first` that earns
+   aces also costs second serves, so a big server posts more of both (visible in
+   the sample box: A9/DF8), while a big *and accurate* server keeps faults down.
+
+3. **Forced errors are now their own category** (the big structural gap). The
+   engine only had winners and unforced errors, so it charged every point that
+   wasn't a winner as *unforced* — but O'Shannessy's men's college data is **~32%
+   winners / ~41% forced / ~27% unforced**, with forced the largest bucket. Added
+   `forced_errors` to `PlayerStats` (+ `STAT_KEYS` "fe", persistence, aggregation),
+   and the "server won the rally, returner missed" branch now records a **forced**
+   error instead of an unforced one. `winner_share`/`unforced_share` retuned to hit
+   the 32/41/27 split. Surfaced on the box score (`season_dual`, `gtt_dual`,
+   `player`, `render.py`) as `W · FE · UE`. Also fixed a doubles double-count (the
+   return-missed branch incremented UE both inline and via `award`).
+
+Realized D1 men: aces 6.7%, DF 5.6%, 1st serve 62%, split **W 32% / F 38% / UE
+24%**, ~18 winners/match. Lower divisions grind harder (more errors, fewer aces),
+which the data supports. Women aren't separately tuned; their lower talent scale
+places them below `swing_ref`, so they naturally land more error-heavy (the real
+WTA/NCAA-W pattern).
+
+Note: adding `forced_errors` extends the persisted stat wire format. Old saves
+lack "fe"; `from_dict` defaults it to 0, so they read back cleanly.
+
+## Pass 7 — gender difference is EMERGENT (validation, no code change)
+
+Owner supplied the StatsOnTheT ace-to-double-fault history + the r/tennis
+discussion: **ATP ace:DF ≈ 2.2 (aces exceed faults), WTA ≈ 0.8 (faults exceed
+aces)**, driven by both fewer aces AND more double faults for women. The rally
+engine has ONE gender-agnostic table; women differ only by sitting lower on the
+talent scale (below `swing_ref` 0.68). Measured, the pattern falls out on its
+own:
+
+| D1 | aces | DF | ace:DF | W / F / UE |
+|---|---|---|---|---|
+| men | 6.7% | 5.6% | **1.20** | 32 / 38 / 24 |
+| women | 5.4% | 6.5% | **0.84** | 20 / 43 / 30 |
+
+Women land at ace:DF 0.84 (real WTA ≈ 0.8) with more errors / fewer winners
+(O'Shannessy: men 30% winners, women 26%). No gender lever was added; the single
+talent scale plus one reference point reproduces the ATP/WTA divergence. This is
+the whole design thesis working end to end: get the talent distribution right and
+the stat texture emerges, rather than hand-setting per-gender dials. (College men
+at ace:DF 1.20 also match the O'Shannessy "college men serve closer to WTA-pro
+ace:DF than ATP-pro" finding — pro ATP is ~2.2, college men far below it.)
+
+## Pass 8 — outcomes now come from the rich point engine (owner directive)
+
+The prior passes all improved the box STATS, but the season still decided WHO WON
+with the fast game-level model (`engine/fast.py`) on a single `overall` gap; the
+rich point engine only ran as an overlay reconstructing stats to match the winner
+the fast model already picked. The owner: *"we did all that work so outcomes are
+based on real talent and match constants, not dice rolls… there's no reason the
+game shouldn't pit players against what they have."* The fast model was a
+speed-through scaffold from before the attribute set existed.
+
+**Change: the full point engine now decides every season dual** (`worldconfig.
+match_fidelity` default "fast" → "full"; `season.py` fallback likewise; env
+override is now `TTM_FIDELITY=fast` to opt back to legacy). Consequences:
+
+- Outcomes are driven by serve/return/rally/net talent and the rich attributes,
+  and the box stats come from the SAME sim (no more overlay reconstruction), so
+  stats and scoreline are one consistent object by construction.
+- **It's faster, not slower** (the documented fear): full = ~14 ms/dual vs
+  fast+box-stats ~36 ms/dual, because the overlay rejection-samples games to
+  rebuild stats while full simulates once. The old "never on the request thread"
+  warning applied to full *without* the overlay already running; with box stats on
+  (default) the heavy point sim was already being paid.
+
+**Competitiveness recalibrated.** The raw point engine was far chalkier than the
+fast model (favorite 88% overall vs 66%, and ~92% at a 1-1.5 UTR gap — nearly
+deterministic). The owner chose a ~75-80% target (better players win clearly more,
+upsets still live at close gaps). Lowered the outcome dials
+(`rally_slope` 3.2→0.9, `serve_plus_first` 0.55→0.36, `serve_plus_second`
+0.20→0.10). Realized full-fidelity favorite curve on real D1 rosters:
+
+| UTR gap | 0-0.5 | 0.5-1 | 1-1.5 | 1.5-2 | 2-3 | 3+ | overall |
+|---|---|---|---|---|---|---|---|
+| favorite win % | 53 | 65 | 73 | 80 | 90 | 96 | **77** |
+
+Dense talent (tight roster spread) is what keeps most duals close: the majority of
+matchups sit inside ~1.5 UTR, so the overall rate stays ~77% even though a real 3+
+gap is ~96%. The box-stat calibration (aces 7% / DF 5% / 32-41-27 split) still
+holds under the new dials — verified after the change.
+
+## Appendix — reference data used for calibration (ground truth)
+
+Preserved verbatim so future retuning has the targets without re-finding sources.
+
+**VS Sports / Tennis Analytics — ATP vs NCAA-M serve (388k points, 2022-23):**
+- 1st serve %: college ≈ ATP (~60-64%).
+- 1st serve points won: pros 71%, **college men 66%**.
+- Aces: pros 12%, **college men 7%**.
+- Double faults: pros ~3% fewer than college; **college men ≈ 5-6%** of service points.
+- 2nd serve points won: pros 3% higher than college.
+
+**O'Shannessy / "First 4 Shots" & "Num3ers" — men's college + Grand Slam men:**
+- Rally length: **0-4 shots = 70%**, 5-8 = 20%, 9+ = 10% (points are front-loaded).
+- Point ending (GS men): **Winners 32% / Forcing errors 41% / Unforced 27%**
+  (women 29 / 37 / 34).
+- Building Blocks (AO): **men 70% errors / 30% winners; women 74% / 26%**.
+- Net vs baseline win %: baseline 46%, **net 66%**.
+- College men ace:DF ratio ≈ women's-pro range (low), not ATP-pro's high range.
+
+**Berkeley Sports Analytics (Jake Lamb) — ATP men, 300 players:**
+- **Ace-rate and DF-rate correlate at r = 0.93** (bigger serve → both rise).
+- Only ~9% of players clear above-median aces AND below-median DFs.
+- Break-points-saved % correlates with ace:DF ratio (r = 0.87).
+
+**StatsOnTheT — ace:DF ratio through time:**
+- **ATP ≈ 1.35 (1991) rising to ~2.2 (2019); WTA ≈ 0.8** and flat.
+- Top-server spread is huge (Isner ace:DF 12.5; median tour player ~2).
+
+**Engine targets locked from the above (D1 men):** aces 7%, DF ~5%, 1st serve
+62%, 1st serve won ~66%, point split 32/41/27, ace:DF > 1, ace/DF positively
+correlated. Realized: 6.7% / 5.6% / 62% / 32-38-24 / 1.20, r(ace,DF) positive.
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error

@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS match_stats (
     first_serve_pct REAL, serve_points_won_pct REAL,
     break_points_faced INTEGER, break_points_saved INTEGER,
     break_points_converted INTEGER,
-    winners INTEGER, unforced_errors INTEGER, points_won INTEGER,
+    winners INTEGER, unforced_errors INTEGER, forced_errors INTEGER,
+    points_won INTEGER,
     PRIMARY KEY (match_id, side)
 );
 """
@@ -101,10 +102,19 @@ def _migrate_players(conn: sqlite3.Connection) -> None:
             conn.execute(f"ALTER TABLE players ADD COLUMN {col} {decl}")
 
 
+def _migrate_match_stats(conn: sqlite3.Connection) -> None:
+    """Backfill `forced_errors` onto a match_stats table created before the
+    forced-error box stat existed (defaults to NULL on old rows)."""
+    have = {r["name"] for r in conn.execute("PRAGMA table_info(match_stats)")}
+    if "forced_errors" not in have:
+        conn.execute("ALTER TABLE match_stats ADD COLUMN forced_errors INTEGER")
+
+
 def init_db(path: str | None = None) -> None:
     with connect(path) as conn:
         conn.executescript(SCHEMA)
         _migrate_players(conn)
+        _migrate_match_stats(conn)
         conn.commit()
 
 
@@ -211,9 +221,11 @@ def save_match(conn: sqlite3.Connection, result: MatchResult, *, seed: int,
                 "INSERT INTO match_stats (match_id, side, aces, double_faults, "
                 "first_serve_pct, serve_points_won_pct, break_points_faced, "
                 "break_points_saved, break_points_converted, winners, "
-                "unforced_errors, points_won) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "unforced_errors, forced_errors, points_won) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (match_id, side, s.aces, s.double_faults, s.first_serve_pct,
                  s.serve_points_won_pct, s.break_points_faced, s.break_points_saved,
-                 s.break_points_converted, s.winners, s.unforced_errors, s.points_won),
+                 s.break_points_converted, s.winners, s.unforced_errors,
+                 s.forced_errors, s.points_won),
             )
     return match_id

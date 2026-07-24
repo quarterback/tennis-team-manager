@@ -828,7 +828,7 @@ def _stat_summary(stats_list):
     summed in doubles) — the box score formats these into `% (made/total)`."""
     agg = {"aces": 0, "df": 0, "fs_in": 0, "sp_won": 0, "sp_total": 0,
            "rp_won": 0, "rp_total": 0, "bp_saved": 0, "bp_faced": 0, "bp_conv": 0,
-           "winners": 0, "ue": 0, "points": 0}
+           "winners": 0, "fe": 0, "ue": 0, "points": 0}
     for s in stats_list:
         agg["aces"] += s.aces; agg["df"] += s.double_faults
         agg["fs_in"] += s.first_serves_in
@@ -836,7 +836,7 @@ def _stat_summary(stats_list):
         agg["rp_won"] += s.return_points_won; agg["rp_total"] += s.return_points_total
         agg["bp_saved"] += s.break_points_saved; agg["bp_faced"] += s.break_points_faced
         agg["bp_conv"] += s.break_points_converted
-        agg["winners"] += s.winners; agg["ue"] += s.unforced_errors
+        agg["winners"] += s.winners; agg["fe"] += s.forced_errors; agg["ue"] += s.unforced_errors
         agg["points"] += s.points_won
     return agg
 

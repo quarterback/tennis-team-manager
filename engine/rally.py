@@ -20,47 +20,56 @@ from .state import MatchState, Player
 
 TUNE = {
     # First / second serve in-play rates (before talent adjustment).
-    "first_in_base": 0.62,
+    "first_in_base": 0.60,
     "first_in_swing": 0.10,
-    # Second-serve in rate. Lower base ⇒ more double faults; the wider swing
-    # rewards placement, and `second_in_nerve` lets a composed server hold the
-    # second serve together (so DFs track placement AND mental, not just luck).
-    "second_in_base": 0.835,
-    "second_in_swing": 0.14,
-    "second_in_nerve": 0.10,
-    # Ace rates given the serve landed in. `ace_swing` scales the serve edge;
-    # `ace_return_weight` is how much the returner offsets raw serve power (<1 so
-    # a genuine cannon stays an ace machine even against a good return).
-    "ace_first_base": 0.135,
-    "ace_second_base": 0.035,
-    "ace_swing": 0.30,
+    # Second-serve in rate. Lower base ⇒ more double faults; the swing rewards
+    # placement, `second_in_nerve` lets a composed server hold it together, and
+    # `second_in_aggression` couples aces and double faults the way real tennis
+    # does (pro men r≈0.93): a big serve spills more second serves too.
+    "second_in_base": 0.845,
+    "second_in_swing": 0.08,
+    "second_in_nerve": 0.06,
+    "second_in_aggression": 0.10,
+    # Ace rates given the serve landed in. Calibrated to real NCAA men (~7% of
+    # service points). `ace_swing` scales the serve edge; `ace_return_weight` is
+    # how much the returner offsets raw serve power (<1 so a genuine cannon stays
+    # an ace machine even against a good return).
+    "ace_first_base": 0.085,
+    "ace_second_base": 0.02,
+    "ace_swing": 0.20,
     "ace_return_weight": 0.55,
-    # Server's edge in a neutral rally, by serve number.
-    "serve_plus_first": 0.55,
-    "serve_plus_second": 0.20,
-    "rally_slope": 3.2,
+    # Server's edge in a neutral rally, by serve number, and how hard the rally-
+    # skill gap bites. These are the OUTCOME competitiveness dials now that the full
+    # point engine decides matches (not the fast model): calibrated so the favorite
+    # wins ~77% overall on real D1 rosters — close matchups near a coin-flip, real
+    # talent gaps decisive but never certain (0-0.5 UTR ~53%, 1-1.5 ~73%, 2-3 ~90%,
+    # 3+ ~96%). Dense talent (tight roster spread) keeps most duals competitive; the
+    # rally slope is what turns a real gap into an edge without predetermining it.
+    "serve_plus_first": 0.36,
+    "serve_plus_second": 0.10,
+    "rally_slope": 0.9,
     # Reference talent level the winner/error/ace swings are measured against.
     # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
     # swings anchor here: a player AT the reference gets the baseline rate, a
     # stronger one bends it toward winners/aces, a weaker one toward errors. This
     # is what makes the levels land right on real rosters (not just synthetic
     # base-0.5 players) AND gives sensible cross-division texture.
-    "swing_ref": 0.60,
-    # Of the points won/lost in a rally, how many are decisive shots vs errors.
-    # These are the *baseline* shares; the actual split flexes per point with the
-    # ballstriker's weapons and (for errors) the misser's consistency, so winner
-    # and unforced-error totals spread by player instead of sitting on a constant.
-    "winner_share": 0.45,
-    "unforced_share": 0.54,
-    # How far player attributes swing the winner / error split. Each stat reads a
-    # small BASKET of drivers (not one), so its total carries a distinct talent
-    # fingerprint instead of a single noisy signal.
-    "winner_power": 0.46,     # groundstroke weapons → more winners
-    "winner_move": 0.24,      # court coverage manufactures put-away chances
-    "winner_nerve": 0.16,     # willingness to go for the shot
-    "winner_steady": 0.34,    # steadier opponent gifts fewer cheap errors
-    "unforced_steady": 0.66,  # low-consistency server sprays more unforced errors
-    "unforced_move": 0.24,    # a mover retrieves would-be errors back into rallies
+    "swing_ref": 0.68,
+    # Point-outcome split. A rally the server wins is either a WINNER or the
+    # returner's FORCED error; a rally the returner wins is either the server's
+    # UNFORCED error or a returner winner. Baselines calibrated to real NCAA men
+    # (~32% winners / ~41% forced / ~27% unforced — O'Shannessy). The shares flex
+    # per point with talent, so totals spread by player instead of sitting flat.
+    "winner_share": 0.22,     # server-won rally: winner vs returner forced error
+    "unforced_share": 0.73,   # returner-won rally: server unforced error vs returner winner
+    # How far player attributes swing the split. Each stat reads a small BASKET of
+    # attributes, so its total carries a distinct talent fingerprint.
+    "winner_power": 0.28,     # groundstroke weapons → more winners
+    "winner_move": 0.14,      # court coverage manufactures put-away chances
+    "winner_nerve": 0.10,     # willingness to go for the shot
+    "winner_steady": 0.22,    # steadier opponent gifts fewer cheap errors
+    "unforced_steady": 0.50,  # low-consistency server sprays more unforced errors
+    "unforced_move": 0.18,    # a mover retrieves would-be errors back into rallies
     # Pressure / clutch.
     "clutch_logit": 1.15,
     "clutch_exp": 1.6,
@@ -105,15 +114,22 @@ def _rally_condition_bonus(state: MatchState, server: Player, returner: Player) 
 
 def _first_serve_in_prob(state: MatchState, server: Player) -> float:
     t = TUNE
-    return _clamp01(t["first_in_base"] + t["first_in_swing"] * (server.first_serve_in_skill - 0.5) * 2
+    ref = t["swing_ref"]
+    return _clamp01(t["first_in_base"] + t["first_in_swing"] * (server.first_serve_in_skill - ref) * 2
                     + _serve_condition_bonus(state, server))
 
 
 def _second_serve_in_prob(state: MatchState, server: Player) -> float:
     t = TUNE
+    ref = t["swing_ref"]
+    # Serve aggression couples aces and double faults the way real tennis does
+    # (pro men: r≈0.93): a big-serve player goes for more, so the same power that
+    # earns aces also spills more second serves. Placement/composure pull the
+    # other way, so a big AND accurate server can still keep faults down.
     return _clamp01(t["second_in_base"]
-                    + t["second_in_swing"] * (server.second_serve_in_skill - 0.5) * 2
-                    + t["second_in_nerve"] * (server.serve_composure - 0.5) * 2
+                    + t["second_in_swing"] * (server.second_serve_in_skill - ref) * 2
+                    + t["second_in_nerve"] * (server.serve_composure - ref) * 2
+                    - t["second_in_aggression"] * (server.ace_power_first - ref) * 2
                     + 0.7 * _serve_condition_bonus(state, server))
 
 
@@ -232,7 +248,7 @@ def play_point(state: MatchState) -> tuple[int, str]:
         if rng.random() < _winner_share(server, returner):
             s_stat.winners += 1
             return award(s_idx, "winner")
-        r_stat.unforced_errors += 1
+        r_stat.forced_errors += 1
         return award(s_idx, "forced_error")
     else:
         if rng.random() < _unforced_share(state, server, returner):

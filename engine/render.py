@@ -35,6 +35,7 @@ def box_score(result: MatchResult) -> str:
          f"{s1.break_points_saved}/{s1.break_points_faced}"),
         ("Breaks", s0.break_points_converted, s1.break_points_converted),
         ("Winners", s0.winners, s1.winners),
+        ("Forced errors", s0.forced_errors, s1.forced_errors),
         ("Unforced errors", s0.unforced_errors, s1.unforced_errors),
         ("Total points", s0.points_won, s1.points_won),
     ]

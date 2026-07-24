@@ -25,10 +25,24 @@ rating scale and slope are sensible), not win-rate quotas.
 Two fidelities share one match/scoring core (`engine/match.py`, formats in
 `engine/format.py`):
 
-- **Full** (`engine/rally.py`) — point by point (serve, ace, rally, error), used
-  for showcase/exhibition matches. Talent-rich; also models pressure/clutch.
+- **Full** (`engine/rally.py`) — point by point (serve, ace, rally, error). **The
+  season runs in full mode by default** (owner decision, 2026-07): real serve /
+  return / rally talent from the rich attributes decides every outcome AND yields
+  the box stats from one consistent sim. It is also *faster* than fast+box-stats
+  (~14 ms vs ~36 ms/dual) because it never rejection-samples to reconstruct stats.
+  Competitiveness is set by `rally.TUNE` `rally_slope` / `serve_plus_*`, calibrated
+  so the favorite wins **~77% overall** on real D1 rosters (see §4).
 - **Fast** (`engine/fast.py`) — game-level; each game is one Bernoulli draw on a
-  hold probability. **The season runs in fast mode** (thousands of matches/week).
+  hold probability from the `overall` gap. The legacy model, kept as an opt-in
+  speed mode (`worldconfig.match_fidelity` = "fast" / `TTM_FIDELITY=fast`) for
+  stat-free bulk runs. Produces no native box stats.
+
+> **History:** the season originally ran fast (the point engine was showcase-only)
+> because the early rich-attribute set didn't yet exist, so a single calibrated
+> `overall` gap drove a deliberately upset-prone curve. With the full 49-attribute
+> model in place (serve/return/net/rally, playing-style profiles), the owner moved
+> outcomes onto the point engine so matches are decided by what players actually
+> have, not a game-level dice roll. Fast's ~65% curve below is the legacy reference.
 
 Fast-mode hold probability (`engine/fast.py:_hold_prob`):
 
