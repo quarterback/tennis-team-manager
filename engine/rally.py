@@ -22,19 +22,28 @@ TUNE = {
     # First / second serve in-play rates (before talent adjustment).
     "first_in_base": 0.62,
     "first_in_swing": 0.10,
-    "second_in_base": 0.90,
-    "second_in_swing": 0.08,
+    # Second-serve in rate. Lower base ⇒ more double faults; the wider swing
+    # rewards placement so steady servers rarely dump one.
+    "second_in_base": 0.855,
+    "second_in_swing": 0.10,
     # Ace rates given the serve landed in.
-    "ace_first_base": 0.16,
-    "ace_second_base": 0.04,
-    "ace_swing": 0.18,
+    "ace_first_base": 0.185,
+    "ace_second_base": 0.05,
+    "ace_swing": 0.24,
     # Server's edge in a neutral rally, by serve number.
     "serve_plus_first": 0.55,
     "serve_plus_second": 0.20,
     "rally_slope": 3.2,
     # Of the points won/lost in a rally, how many are decisive shots vs errors.
-    "winner_share": 0.42,
-    "unforced_share": 0.55,
+    # These are the *baseline* shares; the actual split flexes per point with the
+    # ballstriker's weapons and (for errors) the misser's consistency, so winner
+    # and unforced-error totals spread by player instead of sitting on a constant.
+    "winner_share": 0.47,
+    "unforced_share": 0.52,
+    # How far player attributes swing the winner / error split.
+    "winner_power": 0.34,     # ballstriker's groundstroke weapon → more winners
+    "winner_steady": 0.34,    # steadier opponent gifts fewer cheap errors
+    "unforced_steady": 0.62,  # low-consistency server sprays more unforced errors
     # Pressure / clutch.
     "clutch_logit": 1.15,
     "clutch_exp": 1.6,
@@ -107,6 +116,34 @@ def _server_rally_win_prob(server: Player, returner: Player, first: bool,
     return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
 
 
+def _offense(p: Player) -> float:
+    """Groundstroke weapon — the two wings that finish points."""
+    return 0.5 * (p.forehand + p.backhand)
+
+
+def _winner_share(hitter: Player, misser: Player) -> float:
+    """Fraction of `hitter`-won rallies that end in a clean WINNER (vs the
+    opponent's forced error). Big ballstrikers finish more points outright; a
+    steadier opponent coughs up fewer cheap errors, so more points have to be
+    earned with a real winner."""
+    t = TUNE
+    swing = (t["winner_power"] * (_offense(hitter) - 0.5)
+             + t["winner_steady"] * (misser.consistency - 0.5))
+    return _clamp01(t["winner_share"] + swing)
+
+
+def _unforced_share(state: MatchState, server: Player, returner: Player) -> float:
+    """Of the rallies the returner won, how many were the server's UNFORCED
+    error (vs a returner winner). Consistency is the driver: a low-consistency
+    server sprays, a metronome rarely misses — this is what makes unforced-error
+    totals vary across players instead of clustering on a flat rate. Wind adds a
+    few more misses on top."""
+    t = TUNE
+    steady = -t["unforced_steady"] * (server.consistency - 0.5) * 2
+    wind = t["wind_error"] * state.context.wind * (1.0 - server.wind_tolerance)
+    return _clamp01(t["unforced_share"] + steady + wind)
+
+
 def _clutch(state: MatchState, server: Player, returner: Player) -> float:
     """Signed clutch term in [-1, 1]-ish: positive favours the server.
     Non-linear in pressure; scaled by mental gap and crowd comfort.
@@ -165,13 +202,13 @@ def play_point(state: MatchState) -> tuple[int, str]:
     ctx_bonus = _rally_condition_bonus(state, server, returner)
     if rng.random() < _server_rally_win_prob(server, returner, first,
                                              bonus=TUNE["clutch_logit"] * clutch + ctx_bonus):
-        if rng.random() < TUNE["winner_share"]:
+        if rng.random() < _winner_share(server, returner):
             s_stat.winners += 1
             return award(s_idx, "winner")
         r_stat.unforced_errors += 1
         return award(s_idx, "forced_error")
     else:
-        if rng.random() < _clamp01(TUNE["unforced_share"] + TUNE["wind_error"] * state.context.wind * (1.0 - server.wind_tolerance)):
+        if rng.random() < _unforced_share(state, server, returner):
             s_stat.unforced_errors += 1
             return award(r_idx, "unforced_error")
         r_stat.winners += 1
