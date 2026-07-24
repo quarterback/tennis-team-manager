@@ -69,6 +69,12 @@ class Player:
     wind_tolerance: float = 0.5
     heat_tolerance: float = 0.5
     crowd_pressure: float = 0.5
+    # The full 49 rich attributes as [0, 1] units (app.player_attributes.RICH_ATTRS
+    # → grade_to_unit). Present for real roster players (Prospect.engine_player);
+    # None for synthetic random_player()s, which fall back to the 9 drivers. The
+    # point engine reads these directly so each stat carries a specific, textured
+    # talent signal instead of a collapsed driver average.
+    rich: dict | None = None
 
     @property
     def serve_skill(self) -> float:
@@ -81,6 +87,70 @@ class Player:
     @property
     def overall(self) -> float:
         return sum(getattr(self, a) for a in ATTRS) / len(ATTRS)
+
+    # --- rich-attribute role baskets (fall back to drivers when rich is absent) --
+    # Each engine stat reads the specific attributes that produce it. When `rich`
+    # is None the basket collapses to the matching driver, so synthetic players
+    # behave exactly as before.
+    def _basket(self, names: tuple[str, ...], fallback: float) -> float:
+        r = self.rich
+        if not r:
+            return fallback
+        vals = [r[n] for n in names if n in r]
+        return sum(vals) / len(vals) if vals else fallback
+
+    @property
+    def ace_power_first(self) -> float:
+        """Unreturnable first-serve pop + placement variety."""
+        return self._basket(("first_serve_power", "serve_variety"), self.serve_power)
+
+    @property
+    def ace_power_second(self) -> float:
+        return self._basket(("second_serve_quality", "serve_variety"), self.serve_power)
+
+    @property
+    def return_solidity(self) -> float:
+        """How reliably the returner gets the serve back (offsets aces)."""
+        return self._basket(("return_quality", "return_depth"), self.return_game)
+
+    @property
+    def first_serve_in_skill(self) -> float:
+        return self._basket(("first_serve_accuracy",), self.serve_placement)
+
+    @property
+    def second_serve_in_skill(self) -> float:
+        """Second-serve placement — a dumped second serve is a double fault."""
+        return self._basket(("second_serve_quality", "serve_variety"), self.serve_placement)
+
+    @property
+    def serve_composure(self) -> float:
+        """Nerve holding the second serve together under normal play."""
+        return self._basket(("composure", "focus"), self.mental)
+
+    @property
+    def attack(self) -> float:
+        """Weapons that finish points: groundstroke pop, passing, approach, vision."""
+        return self._basket(
+            ("forehand_power", "backhand_power", "passing_precision",
+             "approach_shot", "court_vision"),
+            0.5 * (self.forehand + self.backhand))
+
+    @property
+    def steadiness(self) -> float:
+        """Error suppression: consistency, tolerance, discipline, patience."""
+        return self._basket(
+            ("groundstroke_consistency", "shot_tolerance", "discipline", "rally_patience"),
+            self.consistency)
+
+    @property
+    def court_cover(self) -> float:
+        """Getting to the ball — turns would-be errors back into rallies."""
+        return self._basket(("footwork", "speed", "agility", "balance"), self.movement)
+
+    @property
+    def go_for_it(self) -> float:
+        """Willingness to pull the trigger on a winner."""
+        return self._basket(("competitiveness", "clutch"), self.mental)
 
 
 def random_player(

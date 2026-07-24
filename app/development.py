@@ -21,11 +21,69 @@ from dataclasses import dataclass, field
 from engine import Player, ATTRS
 from app.player_attributes import (
     GRADE_MIN, GRADE_MAX, GRADE_CEIL, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
-    clamp_grade, normalize_grades,
+    clamp_grade, normalize_grades, grade_to_unit, OVERALL_WEIGHTS, _WEIGHT_TOTAL,
 )
 
 GROWTH_K = 0.12
 DECLINE_K = 0.05            # per-year erosion (the reverse of GROWTH_K), scaled by age past peak
+
+# --- Playing-style profiles -------------------------------------------------
+# Without a profile, generate_prospect draws all 49 attributes as INDEPENDENT
+# noise around one talent mean, so every player is a clone of their own average —
+# net play ≈ baseline ≈ overall, and doubles ability never diverges from singles.
+# These correlated cluster shifts give players a real SHAPE (net specialist,
+# baseliner, big server). Shifts are WEIGHT-NORMALIZED (see `_apply_style_profile`)
+# so a player's overall grade — hence STR and the whole talent distribution — is
+# preserved; only the shape moves. That's what lets a genuine "1-doubles /
+# 5-singles" specialist exist: same overall, but net-weighted doubles_rating well
+# above their all-around singles level.
+_STYLE_CLUSTERS = {
+    "serve":    ("first_serve_power", "first_serve_accuracy", "second_serve_quality", "serve_variety"),
+    "return":   ("return_quality", "return_aggression", "return_depth"),
+    "baseline": ("forehand_power", "forehand_control", "backhand_power", "backhand_control",
+                 "groundstroke_consistency", "shot_tolerance", "rally_patience", "pattern_execution"),
+    "net":      ("net_play", "volley_touch", "overhead", "poaching", "doubles_chemistry",
+                 "approach_shot", "transition_game"),
+    "movement": ("footwork", "speed", "agility", "balance"),
+}
+# Pre-normalization cluster shifts in grade points (20-80 scale).
+_STYLE_BIAS = {
+    "balanced":             {},
+    "aggressive_baseliner": {"baseline": 5, "serve": 2, "net": -4, "movement": -1},
+    "counterpuncher":       {"return": 4, "movement": 3, "baseline": 1, "serve": -3, "net": -3},
+    "all_court":            {"net": 5, "movement": 2, "return": 1, "baseline": -2},
+    "serve_first":          {"serve": 6, "net": 2, "return": -3, "movement": -2},
+}
+# A minority are pronounced net/doubles specialists regardless of style label —
+# big at the net, ordinary off the ground. This is the main source of doubles-vs-
+# singles divergence (real "doubles specialists").
+NET_SPECIALIST_RATE = 0.18
+_NET_SPECIALIST_BIAS = {"net": 11, "movement": 3, "baseline": -7, "serve": -2}
+
+
+def _apply_style_profile(potential: dict, style: str, rng: random.Random) -> None:
+    """Shift correlated attribute clusters by play-style + a net-specialist roll,
+    in place on `potential` (ceilings, so the profile persists through growth).
+    Weight-normalized: a uniform offset is removed so the OVERALL grade is
+    unchanged — specialists TRADE strengths, they don't gain overall level, which
+    keeps the STR/talent distribution intact."""
+    shifts = dict(_STYLE_BIAS.get(style, {}))
+    if rng.random() < NET_SPECIALIST_RATE:
+        for cl, d in _NET_SPECIALIST_BIAS.items():
+            shifts[cl] = shifts.get(cl, 0) + d
+    if not shifts:
+        return
+    # per-player jitter so same-style players aren't identical
+    shifts = {cl: v + rng.gauss(0, 1.2) for cl, v in shifts.items()}
+    delta = {a: 0.0 for a in RICH_ATTRS}
+    for cl, v in shifts.items():
+        for a in _STYLE_CLUSTERS[cl]:
+            delta[a] += v
+    # weight-normalize: subtract the weighted-mean shift from every attribute so
+    # the overall grade (Σ weight·grade) is preserved.
+    k = sum(OVERALL_WEIGHTS[a] * delta[a] for a in RICH_ATTRS) / _WEIGHT_TOTAL
+    for a in RICH_ATTRS:
+        potential[a] = clamp_grade(potential[a] + delta[a] - k)
 FOG_MIN, FOG_MAX = 7, 31
 MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
 STR_MIN, STR_MAX = 31.0, 57.0
@@ -237,7 +295,8 @@ class Prospect:
 
     # ---- what the engine plays: always current ability ----
     def engine_player(self) -> Player:
-        drivers = self._attrs().derive_drivers()
+        attrs = self._attrs()
+        drivers = attrs.derive_drivers()
         g = self.current
         drivers.update({
             "indoor_comfort": (g["indoor_comfort"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
@@ -246,7 +305,10 @@ class Prospect:
             "heat_tolerance": (g["heat_tolerance"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
             "crowd_pressure": (g["crowd_pressure"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
         })
-        return Player(name=self.name, country=self.country, **drivers)
+        # Carry the full rich table (as [0,1] units) so the point engine can read
+        # specific attributes, not just the 9 collapsed drivers.
+        rich = {a: grade_to_unit(attrs.grades[a]) for a in RICH_ATTRS}
+        return Player(name=self.name, country=self.country, rich=rich, **drivers)
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop(self, scale: float = 1.0) -> None:
@@ -342,7 +404,11 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     # absent from the table are neutral (shift 0), so non-major markets are
     # never penalised — they generate at tour-average with full variance.
     talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, float(GRADE_MAX))
+    traits = _draw_traits(rng)
     potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
+    # Give the player a real SHAPE (net specialist / baseliner / server) instead of
+    # a flat draw around one mean — weight-normalized so overall/STR is unchanged.
+    _apply_style_profile(potential, traits["play_style"], rng)
 
     # Elite spike: a small, investment-scaled chance the nation produced a
     # blue-chip. Floors the ceiling bands so the player reads world-class at
@@ -359,7 +425,6 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     current = {a: _clamp(potential[a] * maturity, GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
     tier, rate, mult = _draw_interest(rng)
     consensus_seed = rng.randrange(1 << 30)
-    traits = _draw_traits(rng)
     domestic = country in {"US", "USA", "United States"}
     p = Prospect(
         name=name, country=country, gender=gender,
