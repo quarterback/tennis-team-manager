@@ -38,10 +38,16 @@ TUNE = {
     "ace_second_base": 0.02,
     "ace_swing": 0.20,
     "ace_return_weight": 0.55,
-    # Server's edge in a neutral rally, by serve number.
-    "serve_plus_first": 0.55,
-    "serve_plus_second": 0.20,
-    "rally_slope": 3.2,
+    # Server's edge in a neutral rally, by serve number, and how hard the rally-
+    # skill gap bites. These are the OUTCOME competitiveness dials now that the full
+    # point engine decides matches (not the fast model): calibrated so the favorite
+    # wins ~77% overall on real D1 rosters — close matchups near a coin-flip, real
+    # talent gaps decisive but never certain (0-0.5 UTR ~53%, 1-1.5 ~73%, 2-3 ~90%,
+    # 3+ ~96%). Dense talent (tight roster spread) keeps most duals competitive; the
+    # rally slope is what turns a real gap into an edge without predetermining it.
+    "serve_plus_first": 0.36,
+    "serve_plus_second": 0.10,
+    "rally_slope": 0.9,
     # Reference talent level the winner/error/ace swings are measured against.
     # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
     # swings anchor here: a player AT the reference gets the baseline rate, a

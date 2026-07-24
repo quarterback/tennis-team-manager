@@ -36,19 +36,18 @@ NATIONAL_FIELD = 64
 # (worldconfig.box_stats_enabled) overrides it at sim time.
 BOX_STATS = True
 
-# Dual-match fidelity for season-mode sims. "fast" (game-level Bernoulli) is the
-# default everywhere — it is the tuned production model and keeps a full world
-# responsive. "full" resolves every POINT (engine.match), which is far slower but
-# is the higher-fidelity reference; meant for offline calibration on a local
-# machine, never the request thread. The authority is the per-save switch on the
-# world hub (worldconfig.match_fidelity); the env var TTM_FIDELITY=full forces it
-# on regardless (used by scripts/postseason_validation.py --full). BOX_STATS is the
-# same shape — wrapped defensively so a config/DB hiccup degrades to "fast".
-BOX_STATS_FALLBACK_FIDELITY = "fast"
+# Dual-match fidelity for season-mode sims. "full" (default) resolves every POINT
+# through the rich attribute engine (engine.match): real serve/return/rally talent
+# decides the outcome AND yields native box stats from one sim. It is also faster
+# than "fast"+box-stats (which rejection-samples to reconstruct stats). "fast" is
+# the legacy game-level Bernoulli model (outcome from an `overall` gap only), kept
+# as an opt-in speed mode. The authority is the per-save switch on the world hub
+# (worldconfig.match_fidelity); env var TTM_FIDELITY=fast forces the legacy model.
+BOX_STATS_FALLBACK_FIDELITY = "full"
 
 
 def _fidelity() -> str:
-    """The per-save match fidelity ("fast"/"full"), read at sim time so flipping
+    """The per-save match fidelity ("full"/"fast"), read at sim time so flipping
     the world-hub switch takes effect from the next dual on."""
     try:
         from app import worldconfig
@@ -56,7 +55,7 @@ def _fidelity() -> str:
         return f if f in ("fast", "full") else BOX_STATS_FALLBACK_FIDELITY
     except Exception:
         import os
-        return "full" if os.environ.get("TTM_FIDELITY", "").strip().lower() == "full" else BOX_STATS_FALLBACK_FIDELITY
+        return "fast" if os.environ.get("TTM_FIDELITY", "").strip().lower() == "fast" else BOX_STATS_FALLBACK_FIDELITY
 
 
 def _box_stats_on() -> bool:

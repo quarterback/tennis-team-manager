@@ -335,6 +335,45 @@ the stat texture emerges, rather than hand-setting per-gender dials. (College me
 at ace:DF 1.20 also match the O'Shannessy "college men serve closer to WTA-pro
 ace:DF than ATP-pro" finding — pro ATP is ~2.2, college men far below it.)
 
+## Pass 8 — outcomes now come from the rich point engine (owner directive)
+
+The prior passes all improved the box STATS, but the season still decided WHO WON
+with the fast game-level model (`engine/fast.py`) on a single `overall` gap; the
+rich point engine only ran as an overlay reconstructing stats to match the winner
+the fast model already picked. The owner: *"we did all that work so outcomes are
+based on real talent and match constants, not dice rolls… there's no reason the
+game shouldn't pit players against what they have."* The fast model was a
+speed-through scaffold from before the attribute set existed.
+
+**Change: the full point engine now decides every season dual** (`worldconfig.
+match_fidelity` default "fast" → "full"; `season.py` fallback likewise; env
+override is now `TTM_FIDELITY=fast` to opt back to legacy). Consequences:
+
+- Outcomes are driven by serve/return/rally/net talent and the rich attributes,
+  and the box stats come from the SAME sim (no more overlay reconstruction), so
+  stats and scoreline are one consistent object by construction.
+- **It's faster, not slower** (the documented fear): full = ~14 ms/dual vs
+  fast+box-stats ~36 ms/dual, because the overlay rejection-samples games to
+  rebuild stats while full simulates once. The old "never on the request thread"
+  warning applied to full *without* the overlay already running; with box stats on
+  (default) the heavy point sim was already being paid.
+
+**Competitiveness recalibrated.** The raw point engine was far chalkier than the
+fast model (favorite 88% overall vs 66%, and ~92% at a 1-1.5 UTR gap — nearly
+deterministic). The owner chose a ~75-80% target (better players win clearly more,
+upsets still live at close gaps). Lowered the outcome dials
+(`rally_slope` 3.2→0.9, `serve_plus_first` 0.55→0.36, `serve_plus_second`
+0.20→0.10). Realized full-fidelity favorite curve on real D1 rosters:
+
+| UTR gap | 0-0.5 | 0.5-1 | 1-1.5 | 1.5-2 | 2-3 | 3+ | overall |
+|---|---|---|---|---|---|---|---|
+| favorite win % | 53 | 65 | 73 | 80 | 90 | 96 | **77** |
+
+Dense talent (tight roster spread) is what keeps most duals close: the majority of
+matchups sit inside ~1.5 UTR, so the overall rate stays ~77% even though a real 3+
+gap is ~96%. The box-stat calibration (aces 7% / DF 5% / 32-41-27 split) still
+holds under the new dials — verified after the change.
+
 ## Appendix — reference data used for calibration (ground truth)
 
 Preserved verbatim so future retuning has the targets without re-finding sources.
