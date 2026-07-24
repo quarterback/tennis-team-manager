@@ -359,9 +359,12 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                "home_games": gw[0], "away_games": gw[1],
                "sets": [[h, a] for (h, a) in ln.result.set_scores]}
         rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles, la_d, lb_d))
-        st = _line_stats(ln)
-        if st:
-            rec["stats"] = st
+        # Honor the box-stats toggle: the full engine always computes native stats,
+        # but with the switch OFF we keep history scoreline-only (don't serialize).
+        if box_stats:
+            st = _line_stats(ln)
+            if st:
+                rec["stats"] = st
         lines.append(rec)
     return {
         "home": a.school, "away": b.school, "conf": conf,
