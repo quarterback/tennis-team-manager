@@ -45,7 +45,7 @@ from .state import Player, PlayerStats, MatchContext
 from .format import MatchFormat, DEFAULT
 from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
-    _rally_condition_bonus, _logistic, _clamp01,
+    _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
 
 # Tunables for the doubles point model — talent shifts these distributions, it
@@ -74,7 +74,13 @@ TUNE = {
     # Of points the serving team wins at net, how many are the partner's poach.
     "poach_share": 0.40,
     # Volley exchanges end in clean winners more often than baseline rallies.
+    # The split flexes with talent (like singles, anchored on rally swing_ref): a
+    # bigger weapon / net game finishes more outright, and a steadier losing pair
+    # coughs up fewer cheap errors so more points must be earned.
     "winner_share": 0.58,
+    "winner_power": 0.30,     # groundstroke weapon of the finisher
+    "winner_net": 0.34,       # net game of the finisher
+    "winner_steady": 0.30,    # steadier losers gift fewer errors
     # Pressure / clutch on break / set / match points (mental gap).
     "clutch_logit": 1.0,
     "clutch_exp": 1.6,
@@ -86,25 +92,63 @@ TUNE = {
 
 
 # --- Doubles skill ratings -------------------------------------------------
-# Each maps a Player's nine drivers onto the role they play in a doubles point.
-# These are the levers that make doubles a distinct skill from singles.
+# Each maps a player's talent onto the role they play in a doubles point. These
+# read the RICH attributes directly — net_play, volley_touch, poaching, overhead,
+# doubles_chemistry are the specifically-doubles attributes that never touch a
+# singles point — and fall back to the 9 drivers for synthetic random_player()s
+# (which carry no rich table), so existing tests are unchanged. Each basket is
+# centered like the driver form it replaces, so the fast-model / seeding
+# calibration (fast_skill_slope) is preserved on average while gaining texture.
+
+def _rich(p: Player, weights: dict, fallback: float) -> float:
+    r = p.rich
+    if not r:
+        return fallback
+    tot = sum(w for n, w in weights.items() if n in r)
+    if tot <= 0:
+        return fallback
+    return sum(r[n] * w for n, w in weights.items() if n in r) / tot
+
 
 def serve_rating(p: Player) -> float:
-    return 0.62 * p.serve_power + 0.38 * p.serve_placement
+    return _rich(p, {"first_serve_power": 0.40, "first_serve_accuracy": 0.25,
+                     "second_serve_quality": 0.20, "serve_variety": 0.15},
+                 0.62 * p.serve_power + 0.38 * p.serve_placement)
 
 
 def return_rating(p: Player) -> float:
-    return 0.70 * p.return_game + 0.30 * p.consistency
+    return _rich(p, {"return_quality": 0.35, "return_depth": 0.20,
+                     "return_aggression": 0.15, "passing_precision": 0.15,
+                     "groundstroke_consistency": 0.15},
+                 0.70 * p.return_game + 0.30 * p.consistency)
 
 
 def net_rating(p: Player) -> float:
     """Volleys, reflexes, positioning — the engine of doubles."""
-    return 0.45 * p.movement + 0.30 * p.forehand + 0.25 * p.mental
+    return _rich(p, {"net_play": 0.34, "volley_touch": 0.24, "overhead": 0.12,
+                     "agility": 0.16, "composure": 0.14},
+                 0.45 * p.movement + 0.30 * p.forehand + 0.25 * p.mental)
 
 
 def poach_rating(p: Player) -> float:
     """Reading the return and crossing to put it away."""
-    return 0.55 * p.movement + 0.25 * p.mental + 0.20 * p.serve_placement
+    return _rich(p, {"poaching": 0.38, "speed": 0.20, "agility": 0.15,
+                     "court_vision": 0.15, "doubles_chemistry": 0.12},
+                 0.55 * p.movement + 0.25 * p.mental + 0.20 * p.serve_placement)
+
+
+def _net_winner_share(hitter: Player, loser_a: Player, loser_b: Player) -> float:
+    """Fraction of net-exchange points the winning side ends with a clean WINNER
+    (vs the losing pair's error). Flexes with the finisher's weapon + net game
+    and the losers' steadiness — so doubles winner/error totals track talent
+    instead of a flat rate, the same way singles do."""
+    t = TUNE
+    ref = RALLY_TUNE["swing_ref"]
+    steady = 0.5 * (loser_a.steadiness + loser_b.steadiness)
+    swing = (t["winner_power"] * (hitter.attack - ref)
+             + t["winner_net"] * (net_rating(hitter) - ref)
+             + t["winner_steady"] * (steady - ref))
+    return _clamp01(t["winner_share"] + swing)
 
 
 def doubles_rating(a: Player, b: Player) -> float:
@@ -324,10 +368,13 @@ def _play_point(state: _DState) -> tuple[int, str]:
         win_side, win_slot = r_side, (rnet_slot if rng.random() < 0.5 else ret_slot)
         loser = s_side
     win_stat = state.stats[(win_side, win_slot)]
-    if rng.random() < t["winner_share"]:
+    la, lb = state.teams[loser].players
+    if rng.random() < _net_winner_share(state.teams[win_side].players[win_slot], la, lb):
         return award(win_side, win_stat, "winner")
-    # error by the losing side's net player
-    err_stat = state.stats[(loser, rng.randint(0, 1))]
+    # error by the losing side — the less-steady partner is likelier to have missed
+    p_first = _clamp01(0.5 + 0.5 * (lb.steadiness - la.steadiness))
+    err_slot = 0 if rng.random() < p_first else 1
+    err_stat = state.stats[(loser, err_slot)]
     return award(win_side, None, "winner", error_stat=err_stat)
 
 

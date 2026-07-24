@@ -189,9 +189,34 @@ a season.
   route through the shared `rally._ace_prob`** (damped by a single
   `doubles.TUNE["ace_scale"]` 0.60 for the crowded net) — previously doubles had
   its own stale ace constants on raw drivers and never called the helper it
-  imported (caught in review). Doubles ace rate ≈ 6.6% (vs singles 11.3%), now
-  reads the rich serve basket. Its net/poach *rating* logic still uses drivers —
-  a clean follow-up if desired (touch carefully: those feed doubles seeding).
+  imported (caught in review). Doubles ace rate ≈ 6.6% (vs singles 11.3%).
+
+## Pass 4 — doubles fully on rich (owner directive)
+
+Owner: *"I do want doubles fully on rich too."* The four doubles skill ratings
+(`serve_rating`, `return_rating`, `net_rating`, `poach_rating`) still read the 9
+drivers, so the specifically-doubles attributes — `net_play`, `volley_touch`,
+`poaching`, `overhead`, `doubles_chemistry` — never touched a doubles point.
+
+- **The four ratings now read rich baskets** (with driver fallback for synthetic
+  players). `net_rating` ← net_play/volley_touch/overhead/agility/composure;
+  `poach_rating` ← poaching/speed/agility/court_vision/doubles_chemistry;
+  `serve_rating` ← first-serve power+accuracy/second-serve quality/variety;
+  `return_rating` ← return quality/depth/aggression/passing/consistency. Each
+  basket is centered like the driver form it replaced, so the fast-model / seeding
+  calibration (`fast_skill_slope`) is preserved on average. These feed the point
+  model AND `doubles_rating` (seeding + fast outcomes), so doubles outcomes now
+  flow from the rich doubles attributes. `net_rating` tracks `net_play` at r=0.92.
+- **The net-exchange winner/error split now flexes with talent** (it was a flat
+  0.58, the singles pass-2 problem in miniature): `_net_winner_share` bends on the
+  finisher's weapon + net game and the losing pair's steadiness, and the error is
+  attributed to the **less-steady** partner. Doubles box winners now track a
+  net/weapon basket at r=0.48 and UE track steadiness at −0.38 (were ~0.24/~0,
+  lower than singles only because a pro set has ~⅓ the points per player).
+- Seeding/outcomes shift (intended — the rich doubles profile now matters); the
+  bracketing/ITA/honors/individuals suites stay green.
+- Still driver-based: `_net_presence`'s small back-player term (0.26 weight) —
+  immaterial, left for clarity.
 - Four divisions exist (D4 is the academic tier); it sits between D2/D3 in
   strength and falls in line without separate tuning.
 - `tests/test_doubles_lineup.py::test_pinned_doubles_uses_a_non_singles_specialist`
