@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from engine import Player, ATTRS
 from app.player_attributes import (
     GRADE_MIN, GRADE_MAX, GRADE_CEIL, RICH_ATTRS, TRAIT_DEFAULTS, PlayerAttributes,
-    clamp_grade, normalize_grades,
+    clamp_grade, normalize_grades, grade_to_unit,
 )
 
 GROWTH_K = 0.12
@@ -237,7 +237,8 @@ class Prospect:
 
     # ---- what the engine plays: always current ability ----
     def engine_player(self) -> Player:
-        drivers = self._attrs().derive_drivers()
+        attrs = self._attrs()
+        drivers = attrs.derive_drivers()
         g = self.current
         drivers.update({
             "indoor_comfort": (g["indoor_comfort"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
@@ -246,7 +247,10 @@ class Prospect:
             "heat_tolerance": (g["heat_tolerance"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
             "crowd_pressure": (g["crowd_pressure"] - GRADE_MIN) / (GRADE_MAX - GRADE_MIN),
         })
-        return Player(name=self.name, country=self.country, **drivers)
+        # Carry the full rich table (as [0,1] units) so the point engine can read
+        # specific attributes, not just the 9 collapsed drivers.
+        rich = {a: grade_to_unit(attrs.grades[a]) for a in RICH_ATTRS}
+        return Player(name=self.name, country=self.country, rich=rich, **drivers)
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop(self, scale: float = 1.0) -> None:

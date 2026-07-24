@@ -25,26 +25,33 @@ TUNE = {
     # Second-serve in rate. Lower base ⇒ more double faults; the wider swing
     # rewards placement, and `second_in_nerve` lets a composed server hold the
     # second serve together (so DFs track placement AND mental, not just luck).
-    "second_in_base": 0.855,
+    "second_in_base": 0.835,
     "second_in_swing": 0.14,
     "second_in_nerve": 0.10,
     # Ace rates given the serve landed in. `ace_swing` scales the serve edge;
     # `ace_return_weight` is how much the returner offsets raw serve power (<1 so
     # a genuine cannon stays an ace machine even against a good return).
-    "ace_first_base": 0.185,
-    "ace_second_base": 0.05,
+    "ace_first_base": 0.135,
+    "ace_second_base": 0.035,
     "ace_swing": 0.30,
     "ace_return_weight": 0.55,
     # Server's edge in a neutral rally, by serve number.
     "serve_plus_first": 0.55,
     "serve_plus_second": 0.20,
     "rally_slope": 3.2,
+    # Reference talent level the winner/error/ace swings are measured against.
+    # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
+    # swings anchor here: a player AT the reference gets the baseline rate, a
+    # stronger one bends it toward winners/aces, a weaker one toward errors. This
+    # is what makes the levels land right on real rosters (not just synthetic
+    # base-0.5 players) AND gives sensible cross-division texture.
+    "swing_ref": 0.60,
     # Of the points won/lost in a rally, how many are decisive shots vs errors.
     # These are the *baseline* shares; the actual split flexes per point with the
     # ballstriker's weapons and (for errors) the misser's consistency, so winner
     # and unforced-error totals spread by player instead of sitting on a constant.
-    "winner_share": 0.47,
-    "unforced_share": 0.52,
+    "winner_share": 0.45,
+    "unforced_share": 0.54,
     # How far player attributes swing the winner / error split. Each stat reads a
     # small BASKET of drivers (not one), so its total carries a distinct talent
     # fingerprint instead of a single noisy signal.
@@ -98,15 +105,15 @@ def _rally_condition_bonus(state: MatchState, server: Player, returner: Player) 
 
 def _first_serve_in_prob(state: MatchState, server: Player) -> float:
     t = TUNE
-    return _clamp01(t["first_in_base"] + t["first_in_swing"] * (server.serve_placement - 0.5) * 2
+    return _clamp01(t["first_in_base"] + t["first_in_swing"] * (server.first_serve_in_skill - 0.5) * 2
                     + _serve_condition_bonus(state, server))
 
 
 def _second_serve_in_prob(state: MatchState, server: Player) -> float:
     t = TUNE
     return _clamp01(t["second_in_base"]
-                    + t["second_in_swing"] * (server.serve_placement - 0.5) * 2
-                    + t["second_in_nerve"] * (server.mental - 0.5) * 2
+                    + t["second_in_swing"] * (server.second_serve_in_skill - 0.5) * 2
+                    + t["second_in_nerve"] * (server.serve_composure - 0.5) * 2
                     + 0.7 * _serve_condition_bonus(state, server))
 
 
@@ -115,7 +122,9 @@ def _ace_prob(server: Player, returner: Player, first: bool) -> float:
     base = t["ace_first_base"] if first else t["ace_second_base"]
     # Absolute serve power drives aces; the return only partly offsets it, so a
     # true cannon reads as an ace machine regardless of who's across the net.
-    edge = (server.serve_power - 0.5) - t["ace_return_weight"] * (returner.return_game - 0.5)
+    ref = t["swing_ref"]
+    power = server.ace_power_first if first else server.ace_power_second
+    edge = (power - ref) - t["ace_return_weight"] * (returner.return_solidity - ref)
     return _clamp01(base + t["ace_swing"] * edge)
 
 
@@ -130,36 +139,34 @@ def _server_rally_win_prob(server: Player, returner: Player, first: bool,
     return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
 
 
-def _offense(p: Player) -> float:
-    """Groundstroke weapon — the two wings that finish points."""
-    return 0.5 * (p.forehand + p.backhand)
-
-
 def _winner_share(hitter: Player, misser: Player) -> float:
     """Fraction of `hitter`-won rallies that end in a clean WINNER (vs the
-    opponent's forced error). Reads a basket — groundstroke weapons, court
-    coverage that manufactures put-aways, and the nerve to go for it — so a
-    shot-maker's winner count reflects the whole profile, not just a wing. A
-    steadier opponent coughs up fewer cheap errors, so more points must be
-    earned with a real winner."""
+    opponent's forced error). Reads a basket of the actual weapons — groundstroke
+    pop, passing, approach, court vision, plus the court coverage that
+    manufactures put-aways and the nerve to go for it — so a shot-maker's winner
+    count reflects the whole profile, not one collapsed number. A steadier
+    opponent coughs up fewer cheap errors, so more points must be earned with a
+    real winner."""
     t = TUNE
-    swing = (t["winner_power"] * (_offense(hitter) - 0.5)
-             + t["winner_move"] * (hitter.movement - 0.5)
-             + t["winner_nerve"] * (hitter.mental - 0.5)
-             + t["winner_steady"] * (misser.consistency - 0.5))
+    ref = t["swing_ref"]
+    swing = (t["winner_power"] * (hitter.attack - ref)
+             + t["winner_move"] * (hitter.court_cover - ref)
+             + t["winner_nerve"] * (hitter.go_for_it - ref)
+             + t["winner_steady"] * (misser.steadiness - ref))
     return _clamp01(t["winner_share"] + swing)
 
 
 def _unforced_share(state: MatchState, server: Player, returner: Player) -> float:
     """Of the rallies the returner won, how many were the server's UNFORCED
-    error (vs a returner winner). Consistency is the lead driver — a metronome
-    rarely misses, a sprayer piles them up — and movement helps too: a good mover
-    turns would-be errors back into rallies. Together they make unforced-error
-    totals vary by player instead of clustering on a flat rate. Wind adds a few
-    more misses on top."""
+    error (vs a returner winner). Steadiness leads — a disciplined, high-tolerance
+    ballstriker rarely misses, a sprayer piles them up — and court coverage helps:
+    a good mover turns would-be errors back into rallies. Together they make
+    unforced-error totals vary by player instead of clustering on a flat rate.
+    Wind adds a few more misses on top."""
     t = TUNE
-    steady = (-t["unforced_steady"] * (server.consistency - 0.5)
-              - t["unforced_move"] * (server.movement - 0.5)) * 2
+    ref = t["swing_ref"]
+    steady = (-t["unforced_steady"] * (server.steadiness - ref)
+              - t["unforced_move"] * (server.court_cover - ref)) * 2
     wind = t["wind_error"] * state.context.wind * (1.0 - server.wind_tolerance)
     return _clamp01(t["unforced_share"] + steady + wind)
 

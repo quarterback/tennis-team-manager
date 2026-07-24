@@ -117,6 +117,88 @@ averages out. We deliberately stop here rather than chase r→1 — a determinis
 box score is exactly what the owner does *not* want (talent shifts the
 distribution; it doesn't script the line).
 
+## Pass 3 — the engine now SEES the rich attributes (owner directive)
+
+Owner: *"the engine should be seeing the rich attributes!"* Correct — passes 1–2
+tuned the split but still fed on the **9 collapsed drivers**. A player's 49 rich
+attributes (`app/player_attributes.py:RICH_ATTRS`) were averaged into 9 drivers
+at `Prospect.engine_player()` and the texture was gone before a point was played.
+So a big *first* serve was invisible if `strength` dragged the `serve_power`
+driver down; `court_vision`, `passing_precision`, `discipline`, `rally_patience`
+never touched a stat.
+
+Fix — carry the rich table onto the engine and read it directly:
+
+1. **`engine.state.Player` gained `rich: dict | None`** — the 49 attrs as [0,1]
+   units. `Prospect.engine_player()` now populates it; synthetic `random_player()`
+   leaves it `None`.
+2. **Per-role baskets on `Player`** (`ace_power_first`, `return_solidity`,
+   `second_serve_in_skill`, `serve_composure`, `attack`, `steadiness`,
+   `court_cover`, `go_for_it`). Each reads the *specific* attributes that produce
+   that outcome, and **falls back to the matching driver when `rich` is None** —
+   so synthetic players (and every existing test) behave exactly as before.
+3. **`rally.py` reads the baskets** instead of drivers: aces ← first-serve
+   power + variety; DF ← second-serve quality + composure; winners ← weapons +
+   passing + approach + vision + court coverage + nerve; UE ← consistency +
+   tolerance + discipline + patience + coverage.
+
+### The distribution trap this exposed (important)
+
+Passes 1–2 were calibrated on synthetic `base=0.5` players. **Real rosters don't
+sit at 0.5** — measured basket centers: **D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42**. With
+the swings anchored at 0.5, every D1 player got a large positive winner swing and
+negative error swing → **W:UE 3.2, aces 16%, DF 2%** on real rosters. The whole
+prior calibration had been measuring the wrong population.
+
+Fix: a **`swing_ref` (0.60)** anchor — the talent level the winner/error/ace
+swings are measured against — and re-tuned bases/coeffs against **real rosters**.
+A player at the reference gets the baseline; stronger bends toward winners/aces,
+weaker toward errors. This also produces sensible **cross-division texture** for
+free.
+
+### Realized on real rosters (single match, ~1,600 duals/division)
+
+| | ace% | DF%/pt | winners | UE | W:UE | UE CV |
+|---|---|---|---|---|---|---|
+| D1 | 11.3 | 2.7 | 31.4 | 20.1 | 1.56 | 0.55 |
+| D2 | 8.3 | 6.6 | 17.9 | 32.9 | 0.54 | 0.43 |
+| D3 | 7.5 | 8.2 | 12.9 | 34.4 | 0.38 | 0.45 |
+
+D1 hits winners and aces, lower divisions grind and spray — emergent from the
+attribute distribution, not hand-set per division.
+
+### Correlation of each stat with its driving attributes (real rosters, ONE match)
+
+| Stat vs its rich basket | drivers (pass 2) | rich (pass 3) |
+|---|---|---|
+| Aces vs serve power+variety | ~0.54 | **0.60** |
+| Double faults vs 2nd-serve quality | ~−0.50 | **−0.60** |
+| Winners vs weapons basket | ~0.40 | **0.84** |
+| Unforced errors vs steadiness basket | ~−0.72 | **−0.88** |
+
+Winners and UE now track the *actual* rich profile at r≈0.85 in a **single**
+match — the strongest lever against "it feels random," and it climbs further over
+a season.
+
+### Notes
+- **Determinism / outcomes unchanged.** Reading different attribute *values* does
+  not change the rng draw sequence; the fast model still decides every scoreline,
+  the overlay is still rejection-sampled to it. Box-stat identity + determinism
+  tests pass.
+- **Doubles** serve/DF read rich via the shared serve-in helpers, and **aces now
+  route through the shared `rally._ace_prob`** (damped by a single
+  `doubles.TUNE["ace_scale"]` 0.60 for the crowded net) — previously doubles had
+  its own stale ace constants on raw drivers and never called the helper it
+  imported (caught in review). Doubles ace rate ≈ 6.6% (vs singles 11.3%), now
+  reads the rich serve basket. Its net/poach *rating* logic still uses drivers —
+  a clean follow-up if desired (touch carefully: those feed doubles seeding).
+- Four divisions exist (D4 is the academic tier); it sits between D2/D3 in
+  strength and falls in line without separate tuning.
+- `tests/test_doubles_lineup.py::test_pinned_doubles_uses_a_non_singles_specialist`
+  fails on a dense roster (the 8th player slips into the coached six under lineup
+  noise) — **pre-existing**, reproduces on the parent commit, unrelated to this
+  work.
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error

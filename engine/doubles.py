@@ -52,10 +52,11 @@ from .rally import (
 # does not script outcomes. Kept in one table so the model retunes without
 # touching logic (mirrors `rally.TUNE`).
 TUNE = {
-    # Aces are rarer than singles (a returner stands in, the net man crowds):
-    # base ace rate after the serve lands, plus how the serve/return gap swings it.
-    "ace_base": 0.085,
-    "ace_swing": 0.09,
+    # Aces are rarer than singles (a returner stands in, the net man crowds), so
+    # the shared singles ace model (rally._ace_prob — same bases/swing, and it now
+    # reads the rich serve/return attributes) is scaled DOWN by this factor. One
+    # source of truth for ace calibration; doubles just damps it.
+    "ace_scale": 0.60,
     # Return must clear the net man. Most returns come back (high base); the
     # talent term and the poacher's pressure swing it, with an easier-return
     # bump on second serves. Calibrated so ~82% of returns are in play at parity.
@@ -285,8 +286,9 @@ def _play_point(state: _DState) -> tuple[int, str]:
         first = False
 
     # --- Ace / unreturnable serve (rarer in doubles) ---
-    ace_p = _clamp01(t["ace_base"] + t["ace_swing"] * (server.serve_power - returner.return_game)
-                     + (0.0 if first else -0.05))
+    # Route through the shared singles ace model (reads rich serve/return
+    # attributes), damped for the crowded doubles net.
+    ace_p = _clamp01(t["ace_scale"] * _ace_prob(server, returner, first))
     if rng.random() < ace_p:
         s_stat.aces += 1
         return award(s_side, s_stat, "ace")
