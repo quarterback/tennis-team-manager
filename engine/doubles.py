@@ -300,11 +300,14 @@ def _play_point(state: _DState) -> tuple[int, str]:
     clutch = _clutch(state)
 
     def award(side: int, winner_stat: PlayerStats | None, kind: str,
-              error_stat: PlayerStats | None = None) -> tuple[int, str]:
+              error_stat: PlayerStats | None = None, forced: bool = False) -> tuple[int, str]:
         if winner_stat is not None and kind in ("ace", "winner"):
             winner_stat.winners += 1
         if error_stat is not None:
-            error_stat.unforced_errors += 1
+            if forced:
+                error_stat.forced_errors += 1
+            else:
+                error_stat.unforced_errors += 1
         if side == s_side:
             s_stat.serve_points_won += 1
         else:
@@ -345,10 +348,10 @@ def _play_point(state: _DState) -> tuple[int, str]:
         return_logit += t["second_serve_return"]
     if rng.random() >= _logistic(return_logit):
         # Return missed or floated up — the net man (or server) puts it away.
+        # The serve/poach pressure forced it, so it is a FORCED error, not a gift.
         if rng.random() < TUNE["poach_share"]:
             return award(s_side, snet_stat, "winner")     # poach putaway
-        r_stat.unforced_errors += 1
-        return award(s_side, None, "winner", error_stat=r_stat)
+        return award(s_side, None, "winner", error_stat=r_stat, forced=True)
 
     # --- Return in play: a chance it's an outright pass / lob winner ---
     ret_win_logit = t["ret_winner_base"] + t["ret_winner_slope"] * (return_rating(returner) - net_rating(snet))

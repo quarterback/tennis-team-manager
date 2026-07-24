@@ -264,6 +264,55 @@ more divergence is wanted: `NET_SPECIALIST_RATE`, `_NET_SPECIALIST_BIAS`,
 player *identities* shift vs the old seed (determinism holds; the STR
 *distribution* is unchanged as shown).
 
+## Pass 6 — calibrate to real NCAA data + add forced errors (owner directive)
+
+The owner pasted live box scores and three real data sources (VS Sports ATP-vs-NCAA,
+Berkeley Sports Analytics, O'Shannessy "First 4 Shots"). Measured against them the
+engine was off, badly at D1:
+
+| Stat | Engine (D1) | Real NCAA-M |
+|---|---|---|
+| Aces | 12.4% | ~7% |
+| Double faults | 1.8% | ~5% |
+| 1st serve in | 68% | ~62% |
+| Winners/match | 37 | far lower |
+| W:UE | 2.2 | — |
+
+Three fixes:
+
+1. **Serve levels to the article.** `ace_first_base` 0.135→0.085, `ace_swing`
+   0.30→0.20 (aces 12%→~7%); `first_in_base` 0.62→0.60 (68%→62%);
+   `second_in_base`/swings retuned so DFs rise to ~5% and zero-DF players fell from
+   54% to ~8%. All serve anchors moved onto `swing_ref` (the first/second serve-in
+   swings were still anchored at 0.5, which pushed strong servers' second serves
+   near 100% and killed their faults). `swing_ref` 0.60→0.68 (the real D1 center),
+   so D1 sits at baseline and lower divisions bend down.
+
+2. **Aces and double faults now positively correlate** (real pro men r≈0.93 —
+   Berkeley). Added `second_in_aggression`: the same `ace_power_first` that earns
+   aces also costs second serves, so a big server posts more of both (visible in
+   the sample box: A9/DF8), while a big *and accurate* server keeps faults down.
+
+3. **Forced errors are now their own category** (the big structural gap). The
+   engine only had winners and unforced errors, so it charged every point that
+   wasn't a winner as *unforced* — but O'Shannessy's men's college data is **~32%
+   winners / ~41% forced / ~27% unforced**, with forced the largest bucket. Added
+   `forced_errors` to `PlayerStats` (+ `STAT_KEYS` "fe", persistence, aggregation),
+   and the "server won the rally, returner missed" branch now records a **forced**
+   error instead of an unforced one. `winner_share`/`unforced_share` retuned to hit
+   the 32/41/27 split. Surfaced on the box score (`season_dual`, `gtt_dual`,
+   `player`, `render.py`) as `W · FE · UE`. Also fixed a doubles double-count (the
+   return-missed branch incremented UE both inline and via `award`).
+
+Realized D1 men: aces 6.7%, DF 5.6%, 1st serve 62%, split **W 32% / F 38% / UE
+24%**, ~18 winners/match. Lower divisions grind harder (more errors, fewer aces),
+which the data supports. Women aren't separately tuned; their lower talent scale
+places them below `swing_ref`, so they naturally land more error-heavy (the real
+WTA/NCAA-W pattern).
+
+Note: adding `forced_errors` extends the persisted stat wire format. Old saves
+lack "fe"; `from_dict` defaults it to 0, so they read back cleanly.
+
 ## Guardrails / gotchas for the next agent
 
 - **Do not push these back to flat constants.** The per-player winner/error

@@ -54,6 +54,7 @@
       {{ statrow('Break Points Saved', pct(hs.bp_saved, hs.bp_faced), pct(as.bp_saved, as.bp_faced), '%s/%s'|format(hs.bp_saved, hs.bp_faced), '%s/%s'|format(as.bp_saved, as.bp_faced)) }}
       {{ statrow('Break Points Won', pct(hs.bp_conv, as.bp_faced), pct(as.bp_conv, hs.bp_faced), '%s/%s'|format(hs.bp_conv, as.bp_faced), '%s/%s'|format(as.bp_conv, hs.bp_faced)) }}
       {{ statrow('Winners', hs.winners, as.winners) }}
+      {{ statrow('Forced Errors', hs.fe, as.fe) }}
       {{ statrow('Unforced Errors', hs.ue, as.ue) }}
       {{ statrow('Total Points Won', hs.points, as.points, pct(hs.points, hs.points + as.points), pct(as.points, hs.points + as.points)) }}
     </div>

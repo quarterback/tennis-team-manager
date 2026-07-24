@@ -199,6 +199,7 @@ class PlayerStats:
     # Rally shape
     winners: int = 0
     unforced_errors: int = 0
+    forced_errors: int = 0
     # Totals
     points_won: int = 0
 
@@ -241,7 +242,8 @@ STAT_KEYS: tuple[tuple[str, str], ...] = (
     ("rtw", "return_points_won"), ("rtt", "return_points_total"),
     ("bpf", "break_points_faced"), ("bps", "break_points_saved"),
     ("bpc", "break_points_converted"),
-    ("win", "winners"), ("ue", "unforced_errors"), ("pts", "points_won"),
+    ("win", "winners"), ("ue", "unforced_errors"), ("fe", "forced_errors"),
+    ("pts", "points_won"),
 )
 
 

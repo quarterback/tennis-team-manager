@@ -161,7 +161,7 @@
             <tr><td>1st serve in</td><td class="w">{{ (st.first_serve_pct * 100)|round|int }}%</td></tr>
             <tr><td>Serve pts won</td><td class="w">{{ (st.serve_pts_pct * 100)|round|int }}% <span class="tsub">({{ st.serve_points_won }}/{{ st.serve_points_total }})</span></td></tr>
             <tr><td>Return pts won</td><td class="w">{{ (st.return_pts_pct * 100)|round|int }}% <span class="tsub">({{ st.return_points_won }}/{{ st.return_points_total }})</span></td></tr>
-            <tr><td>Winners / UEs</td><td class="w">{{ st.winners }} / {{ st.unforced_errors }}</td></tr>
+            <tr><td>Winners / FE / UE</td><td class="w">{{ st.winners }} / {{ st.forced_errors }} / {{ st.unforced_errors }}</td></tr>
             <tr><td>BPs saved</td><td class="w">{{ st.break_points_saved }}/{{ st.break_points_faced }}</td></tr>
             <tr><td>BPs converted</td><td class="w">{{ st.break_points_converted }}</td></tr>
           </tbody></table>
