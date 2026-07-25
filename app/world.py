@@ -439,10 +439,20 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     import app.coachreg as coachreg
     honors.reset()
     coachreg.reset()
-    # Stored individual championships are keyed to the (now-deleted) world; clear
-    # them so a new save can't surface a prior league's champions.
+    # The GTT pro tour is a CONTINUATION of the college world (its founders are
+    # this save's graduates; a league binds to the active world's seed). A new
+    # save replaces that world, orphaning its old pro leagues — so wipe them, or
+    # the League Hub keeps listing prior saves full of now-stale pros.
+    import app.gtt_seasonmode as gtt
+    gtt.reset()
+    # Stored individual championships AND the national-team cups (Davis / BJK) are
+    # off-season snapshots keyed by world_id — and SQLite REUSES world_id=1 after
+    # this reset drops the world row, so the next save's get_or_create() lands on
+    # the same id. Left behind, latest_championship / latest_world_cup would serve
+    # the PRIOR league's champions and cup squads (stale players) under the new
+    # save. Clear both so each new league starts empty.
     conn = _db()
-    conn.execute("DELETE FROM world_championship")
+    conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
