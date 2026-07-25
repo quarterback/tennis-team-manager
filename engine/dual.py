@@ -113,7 +113,7 @@ def _partial_score(set_scores: list[tuple[int, int]], elapsed: float,
 def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                   context: MatchContext | None = None,
                   priority_finish: set[int] | None = None,
-                  box_stats: bool = False) -> DualResult:
+                  box_stats: bool = False, play_all: bool = False) -> DualResult:
     """Simulate an NCAA dual. `priority_finish` lists singles court indices (0-5)
     that should finish among the first matches off the court — used by season mode
     so a guaranteed-appearance player's line actually completes regardless of how
@@ -125,7 +125,14 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     line of a fast-fidelity dual (engine.boxstats conditioned replay — the fast
     model still decides every outcome; scorelines are unchanged). Abandoned lines
     stay stat-less: they're excluded from records and the stats layer alike. At
-    full fidelity stats already exist and this flag is a no-op."""
+    full fidelity stats already exist and this flag is a no-op.
+
+    `play_all=True` is the ITA Division III "play-play" format: every singles
+    match is played to completion instead of abandoning the rest once a side
+    reaches the 4-point clinch. It never changes the WINNER (the 4th point locks
+    the dual; with only 7 points on offer the loser cannot pass 3) — it only fills
+    in the final margin and gives every player a completed match on record. The
+    matches are already simulated either way, so this just stops discarding them."""
     context = context or MatchContext()
     priority_finish = priority_finish or set()
     lines: list[DualLine] = []
@@ -176,7 +183,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     clinch_at: float | None = None
     s_finish = 0                                      # running order-of-finish counter
     for i in finish_order:
-        if max(points) >= clinch:                    # dual already decided — abandon in progress
+        if not play_all and max(points) >= clinch:   # dual decided — abandon in progress
             res = results[i]
             by_slot[i] = DualLine(
                 slot=f"S{i+1}", home_won=(res.winner == 0), result=res, completed=False,

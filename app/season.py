@@ -331,7 +331,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
                  la: list, lb: list, *, seed: int, conf: bool,
                  forced_home: set | None = None, forced_away: set | None = None,
                  la_d: list | None = None, lb_d: list | None = None,
-                 box_stats: bool = False) -> dict:
+                 box_stats: bool = False, play_all: bool = False) -> dict:
     """Simulate a dual between prebuilt squads `sa`/`sb`. `la`/`lb` are the
     Prospects who played (la[i] ↔ sa.singles[i]) so every line carries the
     identity of who played that position (singles pids + names; doubles names
@@ -343,7 +343,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     priority = {i for i in range(len(la))
                 if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
     res = simulate_dual(sa, sb, seed=seed, fidelity=_fidelity(), priority_finish=priority,
-                        box_stats=box_stats)
+                        box_stats=box_stats, play_all=play_all)
     lines = []
     for ln in res.lines:
         if not ln.completed:
@@ -432,9 +432,14 @@ def dual_between(a: Program, b: Program, *, seed: int, conf: bool,
                                 lineup_seed, seed, forced=forced_away,
                                 unavailable=unavailable_away, pinned=_coached_pin(b),
                                 doubles_pin=_coached_doubles(b), best_six=best_six)
+    # ITA Division III "play-play": D3/D4 regular-season & ITA duals play every
+    # match to completion (fuller player stats for portal/move-up decisions).
+    # Postseason (CT/NCAA — the best_six duals) keeps clinch-play, as does D1/D2.
+    play_all = (a.division in ("D3", "D4") and b.division in ("D3", "D4")
+                and not best_six)
     rec = _dual_record(a, b, sa, sb, la, lb, seed=seed, conf=conf,
                        forced_home=forced_home, forced_away=forced_away,
-                       la_d=la_d, lb_d=lb_d, box_stats=_box_stats_on())
+                       la_d=la_d, lb_d=lb_d, box_stats=_box_stats_on(), play_all=play_all)
     # Everyone who took the court — singles AND doubles — so season-mode rolls fresh
     # injuries on them. A doubles-only specialist (in la_d but not la) must be counted
     # or they'd play every dual injury-free.
@@ -514,9 +519,11 @@ def run_season(division: str = "D1", gender: str = "men", *, seed: int = 2026,
               for s in rosters}
 
     games = _schedule(div, rng)
+    play_all = division in ("D3", "D4")   # ITA D3 play-play — all these are regular-season duals
     duals = [_dual_record(a, b, squads[a.school], squads[b.school],
                           ladders[a.school], ladders[b.school],
-                          seed=rng.randint(1, 10**9), conf=c) for (a, b, c) in games]
+                          seed=rng.randint(1, 10**9), conf=c, play_all=play_all)
+             for (a, b, c) in games]
 
     ratings = compute_ratings(duals)
 

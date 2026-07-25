@@ -54,3 +54,22 @@ def test_dual_order_of_finish_deterministic():
     r1 = simulate_dual(_team("H", 0.6, 1), _team("A", 0.55, 2), seed=9)
     r2 = simulate_dual(_team("H", 0.6, 1), _team("A", 0.55, 2), seed=9)
     assert [l.finish for l in r1.lines] == [l.finish for l in r2.lines]
+
+
+def test_dual_play_all_completes_every_match():
+    """ITA D3 'play-play': play_all finishes every singles match instead of
+    abandoning after the clinch. The winner and every individual outcome are
+    unchanged (the matches were already simulated) — only the margin fills in and
+    every player lands a completed match on record."""
+    home, away = _team("H", 0.80, 1), _team("A", 0.35, 2)   # lopsided → clinch would abandon some
+    clinched = simulate_dual(home, away, seed=3)
+    full = simulate_dual(home, away, seed=3, play_all=True)
+
+    assert full.winner == clinched.winner                  # play-play never flips the result
+    assert len([l for l in full.lines if l.slot[0] == "S" and l.completed]) == 6
+    # Fuller margin: no clinch cap, so total points >= the clinched total.
+    assert full.home_points + full.away_points >= clinched.home_points + clinched.away_points
+    # Wherever the clinch run completed a singles line, play-play agrees on it.
+    cwins = {l.slot: l.home_won for l in clinched.lines if l.slot[0] == "S" and l.completed}
+    fwins = {l.slot: l.home_won for l in full.lines if l.slot[0] == "S"}
+    assert all(fwins[s] == won for s, won in cwins.items())
