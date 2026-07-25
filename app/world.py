@@ -430,8 +430,11 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn.commit()
     conn.close()
     # Season-mode schedule/results live in their own tables — clear them too.
+    # `injuries` is keyed by season_id, and seasons.id is a reused INTEGER PRIMARY
+    # KEY, so leftover rows would attach to a new save's freshly-numbered seasons —
+    # wipe them with the seasons that own them.
     sconn = sm._db()
-    sconn.executescript("DELETE FROM duals; DELETE FROM seasons;")
+    sconn.executescript("DELETE FROM duals; DELETE FROM seasons; DELETE FROM injuries;")
     sconn.commit()
     sconn.close()
     # Career honors + coach identities are season-to-season state too.

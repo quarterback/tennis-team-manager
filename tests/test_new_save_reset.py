@@ -20,7 +20,8 @@ from app.web.server import create_app
 
 def _seed_prior_save():
     """Leave the DB as a completed prior save would: one world row, a stored cup
-    for it, and a GTT pro league bound to its seed."""
+    for it, a GTT pro league bound to its seed, and an injury on a season."""
+    import app.seasonmode as sm
     conn = world._db()
     wid = conn.execute("INSERT INTO world (seed, year, week, salt) VALUES (?,0,0,?)",
                        (world.DEFAULT_SEED, "prior")).lastrowid
@@ -28,6 +29,15 @@ def _seed_prior_save():
                  (wid, 0, "men", '{"event": "Davis Cup", "champion": null}'))
     conn.commit()
     conn.close()
+    sconn = sm._db()
+    sid = sconn.execute("INSERT INTO seasons (division, gender, seed, current_week,"
+                        " total_weeks, phase, champion) VALUES ('D1','men',?,1,15,'regular','')",
+                        (world.DEFAULT_SEED,)).lastrowid
+    sconn.execute("INSERT INTO injuries (season_id, pid, school, name, week, tag,"
+                  " total, duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,?)",
+                  (sid, "p1", "Duke", "Hurt Player", 3, "Wrist", 4, 4, 0))
+    sconn.commit()
+    sconn.close()
     gs.create_league("Prior Tour", n_teams=4)         # binds to the world seed
     return wid
 
@@ -49,6 +59,12 @@ def test_new_save_clears_cups_and_pro_leagues():
         conn = world._db()
         assert conn.execute("SELECT COUNT(*) c FROM world_cups").fetchone()["c"] == 0
         conn.close()
+
+        # Injury state (keyed by a reused season_id) is gone too.
+        import app.seasonmode as sm
+        sconn = sm._db()
+        assert sconn.execute("SELECT COUNT(*) c FROM injuries").fetchone()["c"] == 0
+        sconn.close()
 
         # And the crux: a fresh world REUSES the same rowid, yet finds no stale
         # cup under it (the bug was latest_world_cup serving the prior squad here).
