@@ -742,6 +742,24 @@ def delete_league(league_id):
     conn.close()
 
 
+def reset() -> None:
+    """Wipe EVERY GTT league and all it owns — the whole-tour reset a new save
+    needs. The pro tour is a continuation of the college world, so when
+    `world.reset()` replaces that world the old leagues become stale (their pros
+    were graduates of the now-gone save). Called from `world.reset()`. Also drops
+    the in-memory STR cache, whose `(league_id, …)` keys would otherwise survive
+    to collide with a fresh league that reuses a rowid."""
+    conn = _db()
+    conn.executescript(
+        "DELETE FROM gtt_duals; DELETE FROM gtt_players; DELETE FROM gtt_franchises; "
+        "DELETE FROM gtt_seasons; DELETE FROM gtt_transactions; DELETE FROM gtt_hof; "
+        "DELETE FROM gtt_leagues;"
+    )
+    conn.commit()
+    conn.close()
+    _str_cache.clear()
+
+
 def franchises(league_id):
     conn = _db()
     rows = conn.execute("SELECT * FROM gtt_franchises WHERE league_id=? ORDER BY id",
