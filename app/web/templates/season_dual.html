@@ -53,6 +53,18 @@
   </div>
 {% endmacro %}
 
+{# ITA "Order of finish": the completed lines of one discipline (D/S) listed by
+   the sequence they came off the court — reveals how the dual clinched. #}
+{% macro order_of_finish(lines, disc) %}
+  {% set fins = [] %}
+  {% for ln in lines if ln.slot[0] == disc and ln.get('finish') %}{% set _ = fins.append(ln) %}{% endfor %}
+  {% set fins = fins | sort(attribute='finish') %}
+  {% if fins %}
+  <div class="bl-foot" style="padding:7px 12px;font-size:12px;color:var(--text-muted)">
+    Order of finish: {% for ln in fins %}{{ ln.slot[1:] }}{{ ', ' if not loop.last }}{% endfor %}</div>
+  {% endif %}
+{% endmacro %}
+
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:13px;color:var(--text-muted)">
     {{ 'Teams' if active == 'Teams' else 'Season' }} › Box Score · {{ d.round }} · {{ uni_label }}</span>
@@ -81,11 +93,13 @@
       <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span>
         <span class="bl-panel-meta">win 2 of 3 → 1 team point</span></div>
       <div>{% for ln in d.lines if ln.slot[0] == 'D' %}{{ line_row(ln) }}{% endfor %}</div>
+      {{ order_of_finish(d.lines, 'D') }}
     </div>
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
         <span class="bl-panel-meta">6 courts · 1 team point each · clinch at 4</span></div>
       <div>{% for ln in d.lines if ln.slot[0] == 'S' %}{{ line_row(ln) }}{% endfor %}</div>
+      {{ order_of_finish(d.lines, 'S') }}
     </div>
   </div>
 </div>

@@ -56,6 +56,11 @@ class DualLine:
     completed: bool = True     # False when abandoned after clinch
     # Score-so-far (home-perspective set tuples) for a line abandoned mid-match.
     partial: list[tuple[int, int]] | None = None
+    # 1-based ORDER OF FINISH within this line's discipline (doubles vs singles),
+    # in the sequence the matches actually came off the court — the ITA box-score
+    # "Order of finish: 5, 6, 2, …". None for a line abandoned after the clinch
+    # (it never finished, so it carries no ordinal).
+    finish: int | None = None
 
 
 @dataclass
@@ -130,15 +135,23 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     # Each line is a real two-on-two match (engine.doubles), not an averaged pair.
     doubles_pro = PRESETS["pro_set_8"]
     d_wins = [0, 0]
+    d_res: dict[int, DoublesResult] = {}
+    d_len: dict[int, int] = {}
     for i in range(3):
         res = simulate_doubles(_pair(home, home.doubles[i]), _pair(away, away.doubles[i]),
                                seed=seed + 10 + i, fmt=doubles_pro,
                                fidelity=fidelity, context=context)
         if box_stats:
             _overlay_stats(res, seed=seed + 10 + i, fmt=doubles_pro, context=context)
-        home_won = res.winner == 0
-        d_wins[0 if home_won else 1] += 1
-        lines.append(DualLine(slot=f"D{i+1}", home_won=home_won, result=res))
+        d_wins[0 if res.winner == 0 else 1] += 1
+        d_res[i] = res
+        d_len[i] = sum(a + b for a, b in res.set_scores)   # games played = length proxy
+    # All three doubles play out in this sim, but they still finish in an order set
+    # by how long each pro set ran (shortest first; court index breaks a tie).
+    d_finish = {i: pos for pos, i in enumerate(sorted(range(3), key=lambda i: (d_len[i], i)), 1)}
+    for i in range(3):
+        lines.append(DualLine(slot=f"D{i+1}", home_won=d_res[i].winner == 0,
+                              result=d_res[i], finish=d_finish[i]))
     doubles_point = 0 if d_wins[0] >= 2 else 1
     points[doubles_point] += 1
 
@@ -161,6 +174,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
 
     by_slot: dict[int, DualLine] = {}
     clinch_at: float | None = None
+    s_finish = 0                                      # running order-of-finish counter
     for i in finish_order:
         if max(points) >= clinch:                    # dual already decided — abandon in progress
             res = results[i]
@@ -173,7 +187,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
             _overlay_stats(res, seed=seed + 100 + i, fmt=singles_fmt, context=context)
         home_won = res.winner == 0
         points[0 if home_won else 1] += 1
-        by_slot[i] = DualLine(slot=f"S{i+1}", home_won=home_won, result=res)
+        s_finish += 1
+        by_slot[i] = DualLine(slot=f"S{i+1}", home_won=home_won, result=res, finish=s_finish)
         if max(points) >= clinch and clinch_at is None:
             clinch_at = length[i]
     for i in range(6):                               # display in court order S1..S6

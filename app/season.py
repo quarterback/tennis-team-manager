@@ -356,7 +356,7 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
             continue
         gw = ln.result.games_won
         rec = {"slot": ln.slot, "completed": True, "home_won": ln.home_won,
-               "home_games": gw[0], "away_games": gw[1],
+               "home_games": gw[0], "away_games": gw[1], "finish": ln.finish,
                "sets": [[h, a] for (h, a) in ln.result.set_scores]}
         rec.update(_line_identity(ln.slot, la, lb, sa.doubles, sb.doubles, la_d, lb_d))
         # Honor the box-stats toggle: the full engine always computes native stats,
