@@ -254,18 +254,33 @@ def test_normalize_never_relocates_an_international_to_an_academy():
 
 def test_coach_carousel_followers_respect_the_academy():
     """A coach who lands an academy job brings only their American players."""
+    from app import coachreg
     r = _world4()
     present = _academies_in(r, "men")
     for (_div, _g), schools in r.items():
         for s in list(schools):
             if s in present:
                 schools[s] = schools[s][:1]             # wide-open academy seats
-    out = world.coach_carousel(r, {}, random.Random(5), "men")
-    assert out["moves"] > 0, "no coach moved — test is vacuous"
-    bad = [(p.name, p.country, s) for (_d, _g), schools in r.items()
-           for s, roster in schools.items() if s in SERVICE_ACADEMIES
-           for p in roster if not is_domestic_player(p)]
-    assert not bad, f"coach carousel dragged internationals to academies: {bad}"
+    # coach_carousel PERSISTS its swaps (coachreg.swap_head_coaches writes coach_seat),
+    # so snapshot the seats and put them back — a test must not leave the shared
+    # registry reshuffled for whatever runs after it.
+    conn = coachreg._conn()
+    seats = [tuple(s) for s in conn.execute(
+        "SELECT division,gender,school,role,coach_id,tenure FROM coach_seat")]
+    conn.close()
+    try:
+        out = world.coach_carousel(r, {}, random.Random(5), "men")
+        assert out["moves"] > 0, "no coach moved — test is vacuous"
+        bad = [(p.name, p.country, s) for (_d, _g), schools in r.items()
+               for s, roster in schools.items() if s in SERVICE_ACADEMIES
+               for p in roster if not is_domestic_player(p)]
+        assert not bad, f"coach carousel dragged internationals to academies: {bad}"
+    finally:
+        conn = coachreg._conn()
+        conn.execute("DELETE FROM coach_seat")
+        conn.executemany("INSERT INTO coach_seat VALUES (?,?,?,?,?,?)", seats)
+        conn.commit()
+        conn.close()
 
 
 # --- walk-on fill ---------------------------------------------------------
