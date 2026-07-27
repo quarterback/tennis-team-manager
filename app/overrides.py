@@ -10,10 +10,13 @@ onto a D3 roster and watch what happens.
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 
 from . import dbpath
 from .dbpath import resolve_db_path
+
+log = logging.getLogger("baseline.overrides")
 
 DB_PATH = resolve_db_path()   # volume path if writable, else a local fallback
 
@@ -339,8 +342,38 @@ def _fp_row(r) -> dict:
     return dict(zip(_FP_COLS, r))
 
 
+def dedupe_slate(rows: list[dict], table: str = "portal") -> list[dict]:
+    """One row per pid, first-seen order — the LAST line of defence for the portal
+    tables' (year, gender, pid) key.
+
+    A player transfers once, so `world._FPPlanner` already refuses a second move for
+    a pid; this makes the persistence layer agree structurally instead of trusting
+    every caller's loop. Before the planner tracked moved pids, a rider displaced as
+    another rider's cascade was placed AGAIN at their own intent, and the duplicate
+    row blew up the /fall-portal commit with an IntegrityError (a 500 mid-commit,
+    with the movers' ITA stints already stamped). A resolver bug should cost a
+    dropped duplicate and a log line, never the commit. A rider's own intent
+    (`cascade_from is None`) outranks a cascade demotion of the same player."""
+    seen: dict[str, dict] = {}
+    for r in rows:
+        pid = r["pid"]
+        prev = seen.get(pid)
+        if prev is None:
+            seen[pid] = r
+            continue
+        if prev.get("cascade_from") is not None and r.get("cascade_from") is None:
+            seen[pid] = r                     # the rider row wins over the cascade
+        keep = seen[pid]
+        log.warning("%s: duplicate slate row for pid=%s (%s→%s and %s→%s) — keeping %s→%s",
+                    table, pid, prev["src_school"], prev["dest_school"],
+                    r["src_school"], r["dest_school"], keep["src_school"],
+                    keep["dest_school"])
+    return list(seen.values())
+
+
 def set_proposals(year: int, gender: str, rows: list[dict]) -> None:
     """Replace this (year, gender) slate with a fresh set of 'proposed' rows."""
+    rows = dedupe_slate(rows, "fall_portal")
     def _do():
         conn = _db()
         try:
@@ -472,6 +505,7 @@ _PS_SELECT = ("SELECT year,gender,pid,src_school,dest_school,src_div,dest_div,"
 
 def ps_set_proposals(year: int, gender: str, rows: list[dict]) -> None:
     """Replace this (year, gender) pre-season slate with a fresh 'proposed' set."""
+    rows = dedupe_slate(rows, "preseason_portal")
     def _do():
         conn = _db()
         try:

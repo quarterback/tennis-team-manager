@@ -189,8 +189,20 @@ guard the resolvers lacked.
 early when a `(year, stint 0)` history entry exists), so the retry re-resolves a clean
 slate and commits.
 
+**Third layer, added when it was re-reported (2026-07-27).** The re-report turned out
+to be a checkout that predated the fix — `world.py:1959` / `overrides.py:348` in the
+traceback are the pre-fix line numbers, and the two guard tests fail when you run them
+against that revision. Nothing new to fix, but the near-miss showed the persistence
+layer still *trusted* the resolvers: `overrides.dedupe_slate` now collapses the slate
+to one row per pid (rider beats cascade) and logs a warning, and both resolvers return
+a deduped slate — so commit's `set_move` loop and the Portal-Rankings archive act on
+the same rows the table stores. Cost of a future resolver bug: a dropped duplicate and
+a log line, not a 500 with the ITA stints already stamped.
+
 **Tests.** `test_fall_portal.py::test_no_player_gets_two_moves_in_one_slate` builds
 exactly that A-into-B's-full-team scenario and drives the planner with BOTH the old
 and new touch sequences; `::test_planner_refuses_to_move_the_same_player_twice` pins
 the structural guard; `::test_a_rider_keeps_their_own_destination` pins that the fix
-preserves the user's pick rather than dropping it.
+preserves the user's pick rather than dropping it;
+`::test_a_duplicate_pid_never_500s_the_commit` pins the write-layer backstop for both
+portal tables.
