@@ -244,5 +244,23 @@ def test_proposal_table_roundtrip_and_status():
     ov.set_status(5, "men", "p1", "committed")
     assert ov.committed_movers(5) == {"p1"}
 
+
+def test_a_duplicate_pid_never_500s_the_commit():
+    """The write-layer backstop: the resolvers guarantee one move per player, but if
+    one ever regresses the slate must degrade to a dropped duplicate — not an
+    IntegrityError mid-commit (the crash that took /fall-portal down, with the
+    movers' ITA stints already stamped). The rider row outranks the cascade."""
+    rider = {"pid": "p1", "src_school": "A", "dest_school": "B", "src_div": "D3",
+             "dest_div": "D1", "str": 55.0, "cascade_from": None}
+    cascade = {**rider, "src_school": "B", "dest_school": "C", "src_div": "D1",
+               "dest_div": "D3", "cascade_from": "B"}
+    for rows in ([cascade, rider], [rider, cascade]):       # either order
+        ov.set_proposals(6, "men", rows)                    # must not raise
+        got = ov.get_proposals(6)
+        assert len(got) == 1
+        assert got[0]["dest_school"] == "B" and got[0]["cascade_from"] is None
+        ov.ps_set_proposals(6, "men", rows)                 # same table shape pre-season
+        assert len(ov.ps_get_proposals(6)) == 1
+
     ov.clear_year(5)
     assert ov.get_proposals(5) == []

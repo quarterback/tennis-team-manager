@@ -1942,7 +1942,10 @@ def resolve_fall_portal(seed: int = DEFAULT_SEED) -> dict:
                 continue                                       # graduated / not on a roster
             src, p = entry
             plan.place(p, src, dest=r["dest_school"], gated=False)
-        out[gender] = plan.moves
+        # Deduped HERE, not just at the write: commit walks this same list to `set_move`
+        # each mover and to archive the window, so a stray duplicate must be gone before
+        # anyone acts on it — not silently dropped by the table underneath them.
+        out[gender] = ov.dedupe_slate(plan.moves, "fall_portal")
     return out
 
 
@@ -2521,7 +2524,7 @@ def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
                 continue                                       # not on a roster
             src, p = entry
             plan.place(p, src, dest=r["dest_school"], gated=False)
-        out[gender] = plan.moves
+        out[gender] = ov.dedupe_slate(plan.moves, "preseason_portal")   # see resolve_fall_portal
     return out
 
 
