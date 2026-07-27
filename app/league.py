@@ -130,7 +130,10 @@ def _portal(league: League, rng: random.Random, base: float) -> dict:
     rosters, programs = league.rosters, league.programs
     by_school = {pr.school: pr for pr in programs}
 
-    def open_slot(school):
+    def open_slot(school, p=None):
+        # A service academy has no seat for an international mover (US citizens only).
+        if p is not None and not ncaa.admits_nationality(school, p):
+            return False
         return (len(rosters[school]) < roster_cap(league.division)
                 and _scholarship_count(rosters[school]) < SCHOLARSHIP_SLOTS)
 
@@ -156,7 +159,7 @@ def _portal(league: League, rng: random.Random, base: float) -> dict:
         cl = 1 + sum(1 for q in rosters[src] if _pstr(league, q) > s)   # current line at src
 
         if reason == "schol":
-            cand = sorted((d for d in programs if d.school != src and open_slot(d.school)
+            cand = sorted((d for d in programs if d.school != src and open_slot(d.school, p)
                            and fit_line(d.school, s) <= SCHOLARSHIP_SLOTS),
                           key=lambda d: -d.strength)
             if cand:
@@ -167,9 +170,9 @@ def _portal(league: League, rng: random.Random, base: float) -> dict:
                 rosters[src].remove(p); out["depart"] += 1
             continue
 
-        ups = sorted((d for d in programs if open_slot(d.school) and d.strength > src_prog.strength
+        ups = sorted((d for d in programs if open_slot(d.school, p) and d.strength > src_prog.strength
                       and fit_line(d.school, s) <= 6), key=lambda d: -d.strength)
-        downs = sorted((d for d in programs if open_slot(d.school) and d.strength < src_prog.strength
+        downs = sorted((d for d in programs if open_slot(d.school, p) and d.strength < src_prog.strength
                         and fit_line(d.school, s) < cl), key=lambda d: fit_line(d.school, s))
         rel = league.player_str.get(p.pid, (0, 0))[1]
         order = (["up", "down"] if cl <= 2 else ["down", "up"] if cl >= 4
@@ -200,9 +203,12 @@ def _refill(league: League, rng: random.Random) -> int:
         if need <= 0:
             continue
         prng = random.Random(f"{prog.key}|intake|{league.year}")
+        # A service academy's intake is American only (ncaa.SERVICE_ACADEMIES).
+        _rw = ({"us": 1.0} if ncaa.us_only_program(prog.school)
+               else region_preset("tennis_global"))
         name_fn = make_name_picker(random.Random(f"{prog.key}|names|{league.year}"),
                                    gender=_pick_gender(prog.gender),
-                                   region_weights=region_preset("tennis_global"))
+                                   region_weights=_rw)
         tmean = _talent_from_strength(prog.strength, prog.division, prog.gender)
         for k in range(need):
             name, country = name_fn()

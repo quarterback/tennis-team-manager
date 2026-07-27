@@ -534,6 +534,55 @@ SCHOOL_LOCAL_TERRITORY = {
 }
 _TERRITORY_FLAG = {"PR", "VI", "GU"}   # US territories that carry a dual flag
 
+# ---------------------------------------------------------------------------
+# Federal service academies — US CITIZENS ONLY (owner rule 2026-07)
+# ---------------------------------------------------------------------------
+# An appointment to a US service academy (and the USMMA) requires US citizenship,
+# so these five programs are 100% American FOREVER — no international player may
+# ever reach one, through ANY pipeline: the year-0 base roster, the recruiting
+# drip, the pre-season/fall portals, the year-end transfer portal, the coach
+# carousel, pro free agents, or walk-on fill. This is a HARD gate, not a weight:
+# do not "balance" it with a low international share.
+# NOT the state senior military colleges (The Citadel, VMI): those are ordinary
+# universities that do enroll international students, so they are deliberately
+# absent. See docs/AAR-service-academy-us-only-rosters.md.
+SERVICE_ACADEMIES = frozenset({
+    "Air Force",         # USAFA
+    "Army",              # USMA (West Point)
+    "Coast Guard",       # USCGA
+    "Merchant Marine",   # USMMA (Kings Point)
+    "Navy",              # USNA (Annapolis)
+})
+_DOMESTIC_COUNTRIES = {"US", "USA", "United States", ""}
+
+
+def us_only_program(school: str) -> bool:
+    """Whether `school` may roster US citizens ONLY (a federal service academy)."""
+    return school in SERVICE_ACADEMIES
+
+
+def is_domestic_player(player) -> bool:
+    """Whether a player counts as American. Prefers the `domestic` flag that
+    `generate_prospect` wires from the nation, falling back to the country code
+    (so a bare/partial Prospect still classifies). PR/USVI/Guam kids are domestic
+    (US citizens) even though they carry a dual-territory flag."""
+    if getattr(player, "domestic", False):
+        return True
+    return str(getattr(player, "country", "") or "") in _DOMESTIC_COUNTRIES
+
+
+def admits_nationality(school: str, player) -> bool:
+    """Whether `school` is allowed to roster `player` at all. False ONLY for a
+    non-US player at a service academy — every other program admits anyone."""
+    return not us_only_program(school) or is_domestic_player(player)
+
+
+def blocked_schools_for(player) -> frozenset:
+    """The set of programs `player` can never join on citizenship grounds — the
+    service academies for an international, empty for an American. Handy as an
+    `exclude`/`avoid` set in the placement engines (portals, normalize)."""
+    return frozenset() if is_domestic_player(player) else SERVICE_ACADEMIES
+
 
 def region_proximity(region_a: str, region_b: str) -> float:
     """0..1 closeness of two regions: same=1, adjacent=0.5, else 0."""
@@ -844,7 +893,11 @@ def _base_roster(p: Program):
     from . import coaches
     _coach_intl = coaches.program_coach(p.school).intl_lean if p.school else 1.0
     _terr = SCHOOL_RECRUIT_TERRITORY.get(p.school)
-    if _terr:
+    if us_only_program(p.school):
+        # Service academy: US citizens only, so the level-based international share
+        # never applies — the whole roster draws from the domestic name pool.
+        _rweights = {"us": 1.0}
+    elif _terr:
         # A single-nation home pipeline (e.g. Yeshiva⇄Israel, Simon Fraser⇄Canada):
         # heavy but not exclusive, the rest domestic.
         _region, _share = _terr

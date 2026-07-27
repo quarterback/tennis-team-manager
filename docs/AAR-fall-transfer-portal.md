@@ -144,3 +144,53 @@ visible. Outside the window an editor move stays a plain single-school move (the
 no clean stint boundary to split on). If the portal slate hasn't been generated yet
 (user hit the editor before visiting `/fall-portal`), the route runs the sim discovery
 first so the user's add coexists with the sim's picks.
+
+---
+
+## IT CRASHED: duplicate move rows at commit (2026-07-27)
+
+**Symptom.** `POST /fall-portal/commit` 500s with
+`sqlite3.IntegrityError: UNIQUE constraint failed: fall_portal.year,
+fall_portal.gender, fall_portal.pid`, from `commit_fall_portal` →
+`ov.set_proposals`. `set_proposals` DELETEs the whole (year, gender) slate before
+inserting, so the duplicate was never a leftover row — the resolved slate itself
+contained **the same pid twice**.
+
+**Cause.** `resolve_fall_portal` (and `resolve_preseason_portal`) protected only the
+rider it was *currently* placing:
+
+```python
+for r in riders:
+    src, p = plan.by_pid[r["pid"]]
+    plan.touched.add(p.pid)          # <-- one at a time
+    plan.place(p, src, dest=r["dest_school"], gated=False)
+```
+
+`touched` is what `_weakest_eligible` skips. So when rider **A** was sent into a FULL
+program where rider **B** was the weakest man, B — not yet read, therefore not yet
+touched — was displaced as A's cascade (move #1). The loop then reached B's own stored
+intent and placed B again (move #2). Two rows, one pid, `IntegrityError`. Any
+redirect that aims one rider at a full team holding another rider triggers it; the
+auto `discover` pass never did, because it has an `if p.pid in self.touched: continue`
+guard the resolvers lacked.
+
+**Fix, two layers.**
+1. *Root* — the resolvers now `plan.touched.update(r["pid"] for r in riders)` BEFORE
+   placing any of them. A rider has their own destination and is never anyone else's
+   cascade victim; `_weakest_eligible` steps past them to the weakest **non**-rider.
+2. *Structural* — `_FPPlanner` tracks `self.moved` (stamped in `_apply`, the single
+   choke point for every relocation) and `place`/`settle` refuse a second move for a
+   pid. One move per player per slate is now an engine invariant, not a property of
+   how carefully each caller sequences its loop — so a future edit path can't
+   reintroduce the 500.
+
+**Recovering a save that hit it.** Just re-commit. The failure happened after
+`_stamp_ita_stint` but before any `set_move`, and the stamp is idempotent (it returns
+early when a `(year, stint 0)` history entry exists), so the retry re-resolves a clean
+slate and commits.
+
+**Tests.** `test_fall_portal.py::test_no_player_gets_two_moves_in_one_slate` builds
+exactly that A-into-B's-full-team scenario and drives the planner with BOTH the old
+and new touch sequences; `::test_planner_refuses_to_move_the_same_player_twice` pins
+the structural guard; `::test_a_rider_keeps_their_own_destination` pins that the fix
+preserves the user's pick rather than dropping it.

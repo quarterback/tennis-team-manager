@@ -128,6 +128,85 @@ def test_prior_transfer_is_not_a_riser():
     assert all(m["pid"] != star.pid for m in moves)
 
 
+# --- one move per player (the commit's UNIQUE key) ------------------------
+
+def _resolve_riders(rosters, gender, riders, *, pretouch=True):
+    """Drive the planner as the resolvers do: rider intents, best first, each placed
+    at its stored destination. `pretouch=False` reproduces the pre-fix sequence, which
+    protected only the rider currently being placed."""
+    riders = sorted(riders, key=lambda r: (-r["str"], r["pid"]))
+    plan = world._FPPlanner(rosters, {}, gender)
+    if pretouch:
+        plan.touched.update(r["pid"] for r in riders)
+    for r in riders:
+        entry = plan.by_pid.get(r["pid"])
+        if not entry:
+            continue
+        src, p = entry
+        if not pretouch:
+            plan.touched.add(p.pid)
+        plan.place(p, src, dest=r["dest_school"], gated=False)
+    return plan
+
+
+def _two_riders_into_one_full_team(r):
+    """Rider A aimed at a FULL D2 program whose weakest man is himself rider B."""
+    d2 = r[("D2", "men")]
+    dest = next(iter(d2))
+    while len(d2[dest]) < roster_cap("D2"):             # make sure it's genuinely FULL
+        d2[dest].append(copy.deepcopy(d2[dest][-1]))
+        d2[dest][-1].pid += "-x"
+    d2[dest] = d2[dest][:roster_cap("D2")]
+    weakest = min(d2[dest], key=lambda q: q.str_value())
+    src_a = next(iter(r[("D3", "men")]))
+    rider_a = r[("D3", "men")][src_a][0]
+    return dest, weakest, [
+        {"pid": rider_a.pid, "str": 58.0, "dest_school": dest},          # into the full team
+        {"pid": weakest.pid, "str": weakest.str_value(),                 # ...where B lives
+         "dest_school": next(iter(r[("D1", "men")]))},
+    ]
+
+
+def test_no_player_gets_two_moves_in_one_slate():
+    """Regression for a 500 at /fall-portal commit: `UNIQUE constraint failed:
+    fall_portal.year, fall_portal.gender, fall_portal.pid`.
+
+    Rider A is sent into a FULL program where rider B is the weakest man. A displaced
+    B as its cascade, then B's own stored intent placed B a SECOND time — two rows for
+    one pid, which the (year, gender, pid) unique key rejects at commit."""
+    r = _world4()
+    _dest, _b, riders = _two_riders_into_one_full_team(r)
+    for pretouch in (False, True):                      # old sequence and new
+        plan = _resolve_riders(_world4(), "men", riders, pretouch=pretouch)
+        pids = [m["pid"] for m in plan.moves]
+        assert len(pids) == len(set(pids)), f"duplicate move rows (pretouch={pretouch}): {pids}"
+
+
+def test_a_rider_keeps_their_own_destination():
+    """The root fix: a rider is protected from every OTHER rider's cascade, so they
+    land where they were sent instead of being dragged down the ladder first."""
+    r = _world4()
+    _dest, b, riders = _two_riders_into_one_full_team(r)
+    plan = _resolve_riders(r, "men", riders)
+    b_moves = [m for m in plan.moves if m["pid"] == b.pid]
+    assert len(b_moves) == 1
+    assert b_moves[0]["dest_school"] == riders[1]["dest_school"]
+    assert b_moves[0]["cascade_from"] is None           # placed as a rider, not displaced
+
+
+def test_planner_refuses_to_move_the_same_player_twice():
+    """The structural guard behind the fix: whatever a caller asks for, one player
+    gets at most one move per slate."""
+    r = _world4()
+    plan = world._FPPlanner(r, {}, "men")
+    src = next(s for s in plan.schools if plan.div_of[s] == "D3")
+    p = plan.pool[src][0]
+    d1 = [s for s in plan.schools if plan.div_of[s] == "D1"]
+    assert plan.place(p, src, dest=d1[0]) == d1[0]
+    assert plan.place(p, d1[0], dest=d1[1]) is None      # second move refused
+    assert sum(1 for m in plan.moves if m["pid"] == p.pid) == 1
+
+
 # --- two-stint career history --------------------------------------------
 
 def test_two_stint_season_counts_as_one_transfer():
