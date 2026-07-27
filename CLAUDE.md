@@ -239,6 +239,15 @@ See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
   `docs/AAR-base-roster-nationality-by-level.md`. Tuned for playability, not 1:1 realism.
+- **Service academies are US-citizens-ONLY — a HARD gate, not a low share (owner rule
+  2026-07)** — `ncaa.SERVICE_ACADEMIES` (Army, Navy, Air Force, Coast Guard, Merchant
+  Marine) can NEVER roster an international, through ANY pipeline: base roster, recruiting
+  drip, fall/pre-season/year-end portals, `_normalize`, coach carousel, pro free agents,
+  walk-on fill. Every path calls one authority (`ncaa.admits_nationality` /
+  `blocked_schools_for`); if you add a pipeline that places a player at a program, wire it
+  too. The Citadel/VMI are state military colleges, NOT federal academies — deliberately
+  ungated, don't add them. The `/editor` move is the owner's god-mode and stays ungated.
+  See `docs/AAR-service-academy-us-only-rosters.md`.
 - Pre-existing test fragility: `test_roster` `strong > weak` is a borderline
   calibration check that can flip with RNG shifts — investigate, don't blindly edit.
 - Run the full suite with `python3 -m pytest -q` (≈10 min).

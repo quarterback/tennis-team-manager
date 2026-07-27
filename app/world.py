@@ -43,7 +43,8 @@ from .development import (Prospect, generate_prospect, make_pid, overall_to_str,
 from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_cache,
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap,
-                   autogen_walkons)
+                   autogen_walkons, admits_nationality, blocked_schools_for,
+                   is_domestic_player, us_only_program)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          perceived_caliber, consensus_caliber,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
@@ -1074,6 +1075,12 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
         home_abbr = _ht.rsplit(", ", 1)[-1].strip() if ", " in _ht else ""
         if home_abbr:
             cands |= set(market.get("local_by_abbr", {}).get(home_abbr, ()))
+    # Citizenship gate: a service academy takes US citizens only, so an international
+    # recruit is never on their board — in any window, and not on signing day either
+    # (the relax pass below honors `exclude`). See ncaa.SERVICE_ACADEMIES.
+    blocked = blocked_schools_for(p)
+    if blocked:
+        exclude = (exclude | blocked) if exclude else blocked
     if exclude:
         cands -= exclude
     best, best_score = None, -1.0
@@ -1452,12 +1459,14 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         a = strs[s]
         return 1 + (len(a) - bisect.bisect_right(a, val))
 
-    def best_in(div, val, want_line):
+    def best_in(div, val, want_line, block=()):
         """Best-prestige program IN ONE DIVISION with an open slot where the player
-        would slot at `want_line` or better (so they'd actually be in the lineup)."""
+        would slot at `want_line` or better (so they'd actually be in the lineup).
+        `block` drops programs the mover can't join (a service academy for an
+        international — see ncaa.blocked_schools_for)."""
         best, draw = None, -1.0
         for d in by_div.get(div, ()):
-            if d == "" or not open_slot(d) or line_of(d, val) > want_line:
+            if d == "" or d in block or not open_slot(d) or line_of(d, val) > want_line:
                 continue
             w = prestige[d] + 0.3 * facilities[d]
             if w > draw:
@@ -1497,14 +1506,15 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         cl = line_of(src, s)
         up_d, down_d = _UP_DIV.get(d_src), _DOWN_DIV.get(d_src)
         rel = _rel_of(player_str, p)
+        blk = blocked_schools_for(p)       # service academies, for an international
 
         if reason == "schol":              # walk-on chasing a scholarship / lineup spot
             # Their own division first; only drop ONE level if nothing at home wants
             # them in the lineup. They never leave the universe — worst case they
             # stay a walk-on.
-            dest = best_in(d_src, s, SCHOLARSHIP_SLOTS)
+            dest = best_in(d_src, s, SCHOLARSHIP_SLOTS, blk)
             if not dest and down_d:
-                dest = best_in(down_d, s, SCHOLARSHIP_SLOTS)
+                dest = best_in(down_d, s, SCHOLARSHIP_SLOTS, blk)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["schol"] += 1
@@ -1517,7 +1527,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         # UP — only a genuine #1/#2 talent, reliable and clearly above their level
         if (cl <= 2 and up_d and rel >= RELIABILITY_GATE
                 and (s - level[src]) >= UP_THRESHOLD and rng.random() < UP_SUCCESS):
-            dest = best_in(up_d, s, 6)
+            dest = best_in(up_d, s, 6, blk)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["up"] += 1
@@ -1526,7 +1536,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         # LATERAL — a better program in the SAME division that wants them in the
         # lineup (the common, realistic transfer)
         if not moved:
-            same = best_in(d_src, s, 6)
+            same = best_in(d_src, s, 6, blk)
             if same and same != src and prestige[same] > prestige[src] + 0.03 \
                     and rng.random() < UP_SUCCESS:
                 relocate(p, src, same, s, walk_on=False)
@@ -1535,7 +1545,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
                 moved = True
         # DOWN — only the buried (no lineup spot in their own division), one level
         if not moved and cl >= 5 and down_d:
-            dest = best_in(down_d, s, 4)
+            dest = best_in(down_d, s, 4, blk)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["down"] += 1
@@ -1616,6 +1626,11 @@ class _FPPlanner:
         self.moves: list[dict] = []
         self.touched: set = set()
         self.received: set = set()
+        # Pids that already have a move in this slate. ONE move per player is a hard
+        # invariant: the `fall_portal`/`preseason_portal` tables are keyed
+        # (year, gender, pid), so a second move for the same player is an
+        # IntegrityError at commit — and semantically a player transfers once.
+        self.moved: set = set()
         self.by_pid = {p.pid: (s, p) for s in schools for p in pool[s]}
 
     def _sv(self, p):
@@ -1631,6 +1646,13 @@ class _FPPlanner:
     def _dest_ok(self, division: str) -> bool:
         """Whether a division is a valid MOVE DESTINATION (active/simulated)."""
         return self.active_divs is None or division in self.active_divs
+
+    def deny(self, p) -> frozenset:
+        """Programs THIS player may never move to on citizenship grounds — the
+        service academies for an international (US citizens only). Folded into the
+        `avoid` set every destination search already honors, so a rider, a user
+        redirect and a displaced cascade player all respect it."""
+        return blocked_schools_for(p)
 
     def open_slot(self, s):
         return len(self.pool[s]) < roster_cap(self.div_of.get(s, ""))
@@ -1694,6 +1716,7 @@ class _FPPlanner:
         self.pool[dest].append(p)
         bisect.insort(self.strs[dest], sval)
         self.by_pid[p.pid] = (dest, p)
+        self.moved.add(p.pid)              # one move per player per slate (see __init__)
 
     def _mk(self, p, src, dest, cascade_from):
         return {"pid": p.pid, "name": getattr(p, "name", ""),
@@ -1725,9 +1748,13 @@ class _FPPlanner:
     def settle(self, p, from_school, prefer):
         """Place a displaced player into an open seat — preferring the seat the riser
         vacated (a clean swap-back), else the best open seat further down."""
+        if p.pid in self.moved:            # already relocated this slate — never twice
+            return False
         val = self._sv(p)
+        deny = self.deny(p)
         from_rank = _FP_DIV_ORDER.index(self.div_of[from_school])
-        if (prefer and prefer in self.pool and self._dest_ok(self.div_of[prefer])
+        if (prefer and prefer in self.pool and prefer not in deny
+                and self._dest_ok(self.div_of[prefer])
                 and self.open_slot(prefer)
                 and _FP_DIV_ORDER.index(self.div_of[prefer]) >= from_rank
                 and self.line_of(prefer, val) <= roster_cap(self.div_of[prefer])):
@@ -1735,7 +1762,7 @@ class _FPPlanner:
             self.moves.append(self._mk(p, from_school, prefer, from_school))
             return True
         for d in _FP_DIV_ORDER[from_rank + 1:]:
-            dest = self.best_in(d, val, roster_cap(d))
+            dest = self.best_in(d, val, roster_cap(d), deny)
             if dest is not None:
                 self._apply(p, from_school, dest)
                 self.moves.append(self._mk(p, from_school, dest, from_school))
@@ -1747,23 +1774,30 @@ class _FPPlanner:
         with an explicit `dest` (a user redirect/add), honor it. A full destination
         displaces its weakest, who cascades down. Returns the destination, or None if
         no fit was found for an auto placement."""
+        if p.pid in self.moved:
+            # Already relocated in this slate (e.g. dragged down as another rider's
+            # cascade before their own intent was read). A second move would write a
+            # duplicate (year, gender, pid) row and 500 the commit.
+            return None
         val = self._sv(p)
+        deny = self.deny(p)                    # citizenship gate (service academies)
         if dest is None:
-            want = self.highest_fit(src, val, self.received, gated=gated)
+            avoid = (self.received | deny) if deny else self.received
+            want = self.highest_fit(src, val, avoid, gated=gated)
             if want is None:
                 return None
             # Diversify: place the riser where they'd slot highest (most playing time),
             # not simply at the top-prestige program with a seat — spreads the talent.
-            open_dest = self.best_placement(want, val, self.received)
+            open_dest = self.best_placement(want, val, avoid)
             if open_dest is not None:
                 self._apply(p, src, open_dest)
                 self.moves.append(self._mk(p, src, open_dest, None))
                 self.received.add(open_dest)
                 return open_dest
-            dest = self.fullest_below(want, val, self.received)
+            dest = self.fullest_below(want, val, avoid)
             if dest is None:
                 return None
-        if dest not in self.pool:               # unknown school (defensive)
+        if dest not in self.pool or dest in deny:   # unknown school / can't admit them
             return None
         if self.open_slot(dest):                # open seat — straight promotion
             self._apply(p, src, dest)
@@ -1807,7 +1841,7 @@ class _FPPlanner:
         if not entry:
             return None
         src, p = entry
-        return self.highest_fit(src, self._sv(p), gated=gated)
+        return self.highest_fit(src, self._sv(p), self.deny(p), gated=gated)
 
 
 def fall_portal_proposals(rosters: dict, player_str: dict, rng: random.Random,
@@ -1895,12 +1929,18 @@ def resolve_fall_portal(seed: int = DEFAULT_SEED) -> dict:
                   and r["status"] != "rejected"]
         riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
         plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
+        # Protect EVERY rider up front, not just the one being placed: a rider has their
+        # own destination, so they must never be picked as another rider's cascade
+        # victim. Touching them one-at-a-time inside the loop let an as-yet-unread rider
+        # be dragged down as a cascade and then placed AGAIN at their own intent — two
+        # moves for one pid, which is a UNIQUE (year, gender, pid) IntegrityError at
+        # commit. `_weakest_eligible` now steps past riders to the weakest non-rider.
+        plan.touched.update(r["pid"] for r in riders)
         for r in riders:
             entry = plan.by_pid.get(r["pid"])
             if not entry:
                 continue                                       # graduated / not on a roster
             src, p = entry
-            plan.touched.add(p.pid)
             plan.place(p, src, dest=r["dest_school"], gated=False)
         out[gender] = plan.moves
     return out
@@ -1968,6 +2008,16 @@ def commit_fall_portal(seed: int = DEFAULT_SEED) -> dict:
     return {"event": "fall_portal_committed", "year": year, "moved": moved, "pros": signed}
 
 
+def _citizenship_error(p, dest_school: str) -> str:
+    """The user-facing reason a hand-picked destination is refused, or "" if it's
+    allowed. Only one rule: a service academy takes US citizens only, so an
+    international can't be sent there by the portals or signed there as a pro."""
+    if p is None or admits_nationality(dest_school, p):
+        return ""
+    return (f"{dest_school} is a US service academy — it can only roster American "
+            f"players, and {getattr(p, 'name', 'this player')} is international.")
+
+
 def _fp_find(seed: int, w: dict, rosters: dict, pid: str):
     """(gender, src_school, src_div, Prospect, planner) for a pid currently on a
     fall-held roster, or None. The planner is a throwaway snapshot for that gender."""
@@ -1995,6 +2045,9 @@ def redirect_fall_portal_mover(seed: int, pid: str, dest_school: str) -> dict:
         plan = _FPPlanner(rosters, {}, gender)
         if dest_school not in plan.div_of:
             return {"error": "unknown destination"}
+        err = _citizenship_error(plan.by_pid.get(pid, (None, None))[1], dest_school)
+        if err:
+            return {"error": err}
         ov.set_dest(w["year"], gender, pid, dest_school, plan.div_of[dest_school])
         return {"ok": True, "pid": pid, "dest": dest_school}
     return {"error": "rider not found"}
@@ -2016,6 +2069,9 @@ def add_fall_portal_mover(seed: int, pid: str, dest_school: str | None = None) -
         dest_school = plan.place(p, src, dest=None, gated=False)   # throwaway planner
     if not dest_school or dest_school not in plan.div_of:
         return {"error": "no destination found — pick a school"}
+    err = _citizenship_error(p, dest_school)
+    if err:
+        return {"error": err}
     recs, lines = _ita_lookup(seed, w)
     sd = (src_div, gender)
     ww, ll = recs.get(sd, {}).get(pid, (0, 0))
@@ -2098,7 +2154,9 @@ def inject_pros(seed: int, cycle_key: str) -> dict:
                 # ONE budget: what's left after any pros already signed this year.
                 budget = recruit_economy.program_budget(prog, salt, w["year"]) - spent.get(school, 0.0)
                 programs.append({"school": school, "budget": max(0.0, budget),
-                                 "prestige": float(getattr(prog, "prestige", 0.5))})
+                                 "prestige": float(getattr(prog, "prestige", 0.5)),
+                                 # service academy: never signs an international pro
+                                 "us_only": us_only_program(school)})
         by_pid = {p.pid: p for p in cohort}
         for a in pros.assign_pros(cohort, programs):
             p, school = by_pid[a["pid"]], a["school"]
@@ -2245,12 +2303,16 @@ def sign_pro(seed: int, pid: str, dest_school: str, cycle_key: str | None = None
     salt = active_salt(seed)
     from app import pros
     for gender in worldconfig.active_genders():
-        if any(p.pid == pid for p in pros.generate_pros(salt, gender, cycle_key)):
+        pro = next((p for p in pros.generate_pros(salt, gender, cycle_key) if p.pid == pid), None)
+        if pro is not None:
             progs = _flat_programs(gender)
             match = _resolve_program(progs, dest_school)
             if not match:
                 return {"ok": False, "error": f"No program matches “{dest_school}”. "
                         f"Pick one from the list."}
+            err = _citizenship_error(pro, match)       # service academies: US only
+            if err:
+                return {"ok": False, "error": err}
             prog = progs[match]
             ov.pro_set_sign(w["year"], cycle_key, gender, pid, match, prog.division)
             return {"ok": True, "pid": pid, "dest": match, "div": prog.division}
@@ -2452,12 +2514,12 @@ def resolve_preseason_portal(seed: int = DEFAULT_SEED) -> dict:
                   and r["status"] != "rejected"]
         riders.sort(key=lambda r: (-r["str"], r["pid"]))      # best pick fits first
         plan = _FPPlanner(rosters, {}, gender, active_divs=worldconfig.active_divisions())
+        plan.touched.update(r["pid"] for r in riders)   # a rider is never a cascade victim
         for r in riders:
             entry = plan.by_pid.get(r["pid"])
             if not entry:
                 continue                                       # not on a roster
             src, p = entry
-            plan.touched.add(p.pid)
             plan.place(p, src, dest=r["dest_school"], gated=False)
         out[gender] = plan.moves
     return out
@@ -2560,6 +2622,9 @@ def redirect_preseason_portal_mover(seed: int, pid: str, dest_school: str) -> di
         plan = _FPPlanner(rosters, {}, gender)
         if dest_school not in plan.div_of:
             return {"error": "unknown destination"}
+        err = _citizenship_error(plan.by_pid.get(pid, (None, None))[1], dest_school)
+        if err:
+            return {"error": err}
         ov.ps_set_dest(w["year"], gender, pid, dest_school, plan.div_of[dest_school])
         return {"ok": True, "pid": pid, "dest": dest_school}
     return {"error": "rider not found"}
@@ -2580,6 +2645,9 @@ def add_preseason_portal_mover(seed: int, pid: str, dest_school: str | None = No
         dest_school = plan.place(p, src, dest=None, gated=False)   # throwaway planner
     if not dest_school or dest_school not in plan.div_of:
         return {"error": "no destination found — pick a school"}
+    err = _citizenship_error(p, dest_school)
+    if err:
+        return {"error": err}
     ov.ps_upsert_proposal(w["year"], gender, {
         "pid": pid, "name": getattr(p, "name", ""), "src_school": src,
         "dest_school": dest_school, "src_div": src_div, "dest_div": plan.div_of[dest_school],
@@ -2627,7 +2695,8 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
         if not leftover:
             continue
         from . import recruit_economy
-        slots: list = []                       # [strength, roster, room, division, gate] open D3/D4 seats
+        # [strength, roster, room, division, gate, us_only] open D3/D4 seats
+        slots: list = []
         for (division, g), schools in rosters.items():
             if g != gender or not autogen_walkons(division):
                 continue
@@ -2641,16 +2710,19 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
                     # D4 admits only above its academic gate, even for leftover walk-ons.
                     gate = (recruit_economy.d4_academic_min(prog, year, str(seed))
                             if division == "D4" and prog is not None else 0.0)
-                    slots.append([st, roster, room, division, gate])
+                    slots.append([st, roster, room, division, gate,
+                                  us_only_program(school)])
         slots.sort(key=lambda x: -x[0])        # best leftover (ranked) → strongest open programs
         consumed: set = set()
 
-        def _next_for(gate, div):
+        def _next_for(gate, div, us_only):
             for j, q in enumerate(leftover):
                 if j in consumed:
                     continue
                 if div == "D4" and int(getattr(q, "academic_rating", 79) or 79) < gate:
                     continue                   # doesn't clear this D4 program's admissions bar
+                if us_only and not is_domestic_player(q):
+                    continue                   # service academy: US citizens only
                 return j
             return None
 
@@ -2660,7 +2732,7 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
             for slot in slots:
                 if slot[2] <= 0:
                     continue
-                j = _next_for(slot[4], slot[3])
+                j = _next_for(slot[4], slot[3], slot[5])
                 if j is None:
                     continue
                 consumed.add(j)
@@ -2692,9 +2764,12 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             d4_min = (recruit_economy.d4_academic_min(prog, year, str(seed))
                       if division == "D4" else None)
             prng = random.Random(f"{seed}|{prog.key}|walkon|{year}")
+            # A service academy's auto-gen depth is American too — US citizens only.
+            _rw = ({"us": 1.0} if us_only_program(school)
+                   else worldconfig.region_weights())
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
-                                       region_weights=worldconfig.region_weights())
+                                       region_weights=_rw)
             tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()
@@ -2765,10 +2840,12 @@ def _normalize(rosters: dict, protect: set | None = None) -> dict:
         surplus.sort(key=lambda t: t[0].current_overall(), reverse=True)
         for p, src_div in surplus:
             dest = None
+            blk = blocked_schools_for(p)       # service academies, for an international
             for div in (src_div, _DOWN_DIV.get(src_div), _UP_DIV.get(src_div)):
                 if not div:
                     continue
-                cands = [s for s in pool if div_of.get(s) == div and open_slot(s)]
+                cands = [s for s in pool if div_of.get(s) == div and open_slot(s)
+                         and s not in blk]
                 if cands:
                     dest = max(cands, key=lambda s: prestige.get(s, 0.0))
                     break
@@ -2833,7 +2910,10 @@ def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: 
         dr = rosters[(ddiv, gender)][dest]
         dstr = sorted((_str_of(player_str, p) for p in dr), reverse=True)
         floor = (dstr[5] if len(dstr) >= 6 else (dstr[-1] if dstr else 0.0)) - 1.0
-        eligible = [p for p in sr if _str_of(player_str, p) >= floor]
+        # A coach who lands a service-academy job brings only their American players —
+        # the academy can't admit an international follower.
+        eligible = [p for p in sr if _str_of(player_str, p) >= floor
+                    and admits_nationality(dest, p)]
         cap = min(len(sr) // 2, len(eligible))
         k = rng.randint(0, cap) if cap > 0 else 0
         for p in (rng.sample(eligible, k) if k else []):

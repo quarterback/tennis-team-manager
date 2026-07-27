@@ -317,6 +317,13 @@ def build_recruiting(p, schools: list[School], *, seed_salt: str = "") -> Recrui
     NESCAC / academy offers alongside (or above) low-major athletic options."""
     if not schools:
         return RecruitingProfile()
+    # Service academies take US citizens only, so they never appear on an
+    # international recruit's board — no offer, no dream school (ncaa.SERVICE_ACADEMIES).
+    from .ncaa import SERVICE_ACADEMIES, is_domestic_player
+    if not is_domestic_player(p):
+        schools = [s for s in schools if s.name not in SERVICE_ACADEMIES]
+        if not schools:
+            return RecruitingProfile()
     rng = random.Random(f"{getattr(p, 'pid', '')}|recruiting|{seed_salt}")
     stars = int(getattr(p, "recruit_stars", 0) or 0)
     caliber = recruit_caliber(p)

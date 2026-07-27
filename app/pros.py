@@ -89,10 +89,12 @@ def generate_pros(salt: str, gender: str, cycle_key: str, n: int | None = None) 
 
 def assign_pros(cohort: list, programs: list) -> list:
     """Decide which program signs each pro. `programs` is a list of dicts with keys
-    `school`, `budget` (recruiting-budget headroom), `prestige`. Best pro first goes to the
-    highest-prestige program that can still AFFORD them, and that program's budget is then
-    DEPLETED by the cost — so a blue-blood can stack 2-3 pros while its money lasts, then the
-    flow spills to the next-best program (a natural funnel-then-spread, not a hard 1-each cap).
+    `school`, `budget` (recruiting-budget headroom), `prestige`, and optionally
+    `us_only` (a service academy — US citizens only, so it never signs an
+    international pro). Best pro first goes to the highest-prestige program that can
+    still AFFORD them, and that program's budget is then DEPLETED by the cost — so a
+    blue-blood can stack 2-3 pros while its money lasts, then the flow spills to the
+    next-best program (a natural funnel-then-spread, not a hard 1-each cap).
 
     Budget-gated (used by the fall/transfer auto cycles; the pre-season portal signs pros by
     hand instead). A club only signs a pro it can AFFORD, and with the cost pitched high
@@ -100,13 +102,16 @@ def assign_pros(cohort: list, programs: list) -> list:
     flow SPREADS to the next-best club rather than stacking — no overspend, no funnel. Pros a
     club can't fund simply go unsigned that cycle. Returns [{pid, school, cost, str}] in
     signing order."""
+    from .ncaa import is_domestic_player
     ranked = sorted(cohort, key=lambda p: (-overall_to_str(p.current_overall()), p.pid))
     prog = {pr["school"]: pr for pr in programs}
     budget_left = {s: pr["budget"] for s, pr in prog.items()}
     out = []
     for pro in ranked:
         cost = pro_cost(pro, cohort)
-        cands = [s for s, b in budget_left.items() if b >= cost]
+        intl = not is_domestic_player(pro)
+        cands = [s for s, b in budget_left.items()
+                 if b >= cost and not (intl and prog[s].get("us_only"))]
         if not cands:                                  # nobody affluent enough left — unsigned
             continue
         dest = max(cands, key=lambda s: (prog[s]["prestige"], s))
