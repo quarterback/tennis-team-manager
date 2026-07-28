@@ -37,6 +37,46 @@ offline once the deps are installed — great on a plane.
 > AirPlay Receiver in System Settings. Run from the repo root so `app/`,
 > `engine/` and `generators/` import.
 
+### `pip install` hangs, or "installs" and Flask still isn't there
+
+The reliable fix is to throw the virtualenv away and build a fresh one — it's
+cheap (three small packages) and it clears every cause below at once:
+
+```bash
+cd ~/path/to/tennis-team-manager      # always from the repo root
+rm -rf .venv
+python3 -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+python3 manage.py runserver --port 8000
+```
+
+Sanity-check that pip is the venv's pip before blaming the install:
+
+```bash
+which python3 && pip -V     # both paths must be inside .../tennis-team-manager/.venv
+```
+
+What's usually actually wrong:
+
+- **The venv isn't active** (a new terminal tab, or the `source` scrolled away), so
+  `pip install` goes to the system Python. It succeeds, and the app still can't
+  import Flask.
+- **Installing into a distro-managed Python** — the giveaway is
+  `ERROR: Cannot uninstall blinker … RECORD file not found. Hint: The package was
+  installed by debian`. Nothing is broken; pip just refuses to touch an OS-owned
+  package. In a fresh venv it never comes up (`pip install --ignore-installed
+  blinker` forces past it if you're stuck with the system Python).
+- **A stale venv built against a Python you've since upgraded** — Homebrew moving
+  3.12 → 3.14 leaves `.venv/bin/python3` pointing at a runtime that no longer
+  exists, and pip appears to hang.
+- **A genuine hang** is nearly always the network, not pip. `pip install
+  --timeout 10 -r requirements.txt` fails fast instead of sitting there, and the
+  three deps are small enough that a slow index is obvious.
+
+Rebuilding `.venv` never touches your save — `tennis.db` lives in the repo root,
+not the virtualenv.
+
 To play your **deployed** universe locally, pull its DB down first (don't run
 both against it at once):
 
