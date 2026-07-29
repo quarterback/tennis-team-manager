@@ -83,18 +83,45 @@ def test_resync_leaves_a_fall_portal_hold_alone(tmp_path, monkeypatch):
     assert res["steps"] == 0 and res["blocked"] == ["D1 women"] and not res["in_sync"]
 
 
-def test_season_hub_advance_drives_the_whole_world(tmp_path, monkeypatch):
-    """With a world present, the Season Hub button moves the world clock (every
-    universe), not the one universe the page happens to be showing."""
+def test_advance_route_drives_the_whole_world(tmp_path, monkeypatch):
+    """With a world present, advancing moves the world clock (every universe), not
+    whichever universe the page happens to be showing."""
     sm.DB_PATH = str(tmp_path / "s.db")
     app = create_app()
     calls = {"world": 0, "solo": 0}
     monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
     monkeypatch.setattr(wd, "is_primed", lambda *a, **k: True)   # skip the warm-up hook
     monkeypatch.setattr(wd, "prime", lambda *a, **k: None)
+    monkeypatch.setattr(wd, "load_world", lambda *a, **k: {"id": 1, "year": 0, "week": 3})
     monkeypatch.setattr(wd, "season_complete", lambda *a, **k: False)
     monkeypatch.setattr(wd, "advance_week", lambda *a, **k: calls.__setitem__("world", calls["world"] + 1))
     monkeypatch.setattr(sm, "advance", lambda sid: calls.__setitem__("solo", calls["solo"] + 1))
 
-    assert app.test_client().post("/season/advance?u=D1-women").status_code in (302, 303)
+    assert app.test_client().post("/world/advance?u=D1-women").status_code in (302, 303)
     assert calls == {"world": 1, "solo": 0}
+
+
+def test_there_is_exactly_one_advance_route(tmp_path):
+    """Two advance endpoints is the bug. `world_advance` is the only route allowed
+    to move a season forward — a per-universe sibling (the old /season/advance)
+    silently forks the save into universes sitting at different weeks."""
+    sm.DB_PATH = str(tmp_path / "s.db")
+    app = create_app()
+    # /gtt/advance is the pro tour, a separate league on its own clock — not a
+    # college universe, so it isn't in scope here.
+    advancing = {r.rule for r in app.url_map.iter_rules()
+                 if "POST" in (r.methods or set()) and "advance" in r.rule
+                 and not r.rule.startswith("/gtt/")}
+    assert advancing == {"/world/advance"}
+
+
+def test_web_layer_never_steps_a_season_directly():
+    """No web route may call sm.advance — it bypasses the world driver (and with it
+    the fall portal, the recruiting drip, the cross-division slate and prime()).
+    The single exception is world_advance's no-world standalone branch."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parent.parent / "app" / "web"
+    hits = [f"{p.name}:{i}" for p in src.rglob("*.py")
+            for i, line in enumerate(p.read_text().splitlines(), 1)
+            if "sm.advance(" in line or "seasonmode.advance(" in line]
+    assert len(hits) == 1 and hits[0].startswith("server.py:"), hits

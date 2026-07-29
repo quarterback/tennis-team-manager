@@ -122,8 +122,9 @@ def test_ita_web_pages_render(tmp_path):
     c = create_app().test_client()
     assert c.get("/season?u=D1-men").status_code == 200       # creates the D1 season
     assert c.get("/season/ita?u=D1-men").status_code == 200   # pre-draw note renders
+    sid = smod.get_or_create("D1", "men", seed=2026)
     for _ in range(6):                                        # run the whole ITA opener
-        c.post("/season/advance?u=D1-men")
+        smod.advance(sid)                                     # standalone: no world driver
     page = c.get("/season/ita?u=D1-men")
     assert page.status_code == 200 and b"National Team Indoor" in page.data
     assert c.get("/season?u=D1-men").status_code == 200       # hub renders post-ITA

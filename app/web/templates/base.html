@@ -126,11 +126,22 @@
               </select>
             </span>
           </form>
+          {# THE advance control — the only one in the app. A second button (the
+             Season Hub's, which stepped one universe alone) is what forked saves
+             into universes at different weeks; see
+             docs/AAR-universe-desync-season-hub-advance.md. Its label tracks the
+             world stage so nothing was lost by removing the duplicate. #}
+          {% if game and game.stage == 'fall_portal' %}
+          <a class="fm-advance" href="{{ url_for('fall_portal', u=u) }}" style="text-decoration:none">
+            <span class="fm-advance-label">Review fall portal</span>
+            <span aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span></a>
+          {% else %}
           <form method="post" action="{{ url_for('world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit — that one takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results & rankings…"]}'>
             <button class="fm-advance" type="submit">
-              <span class="fm-advance-label">{{ 'Finalize season' if game and game.complete else 'Advance week' }}</span>
+              <span class="fm-advance-label">{{ game.action if game else 'Advance week' }}</span>
               <span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span></button>
           </form>
+          {% endif %}
         </div>
       </header>
 

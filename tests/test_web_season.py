@@ -7,7 +7,7 @@ def test_season_web_flow(tmp_path):
     c = create_app().test_client()
     assert b"Season" in c.get("/", follow_redirects=True).data   # nav (dashboard, or onboarding if no world yet)
     assert c.get("/season?u=D1-men").status_code == 200       # creates the season
-    assert c.post("/season/advance?u=D1-men").status_code in (302, 303)
+    sm.advance(sm.get_or_create("D1", "men", seed=2026))   # standalone: no world driver
     hub = c.get("/season?u=D1-men")
     assert hub.status_code == 200 and b"Power Index" in hub.data
     portal = c.get("/data?u=D1-men")
@@ -24,8 +24,9 @@ def test_data_portal_export_reflects_live_sim(tmp_path):
     sm.DB_PATH = str(tmp_path / "season.db")
     c = create_app().test_client()
     c.get("/season?u=D1-men")                          # create the D1-men season
+    sid0 = sm.get_or_create("D1", "men", seed=2026)
     for _ in range(3):                                 # play a few weeks of duals
-        c.post("/season/advance?u=D1-men")
+        sm.advance(sid0)                               # standalone: no world driver
 
     sid = sm.get_or_create("D1", "men", seed=2026)
     season = sm.load_season(sid)

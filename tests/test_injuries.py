@@ -192,8 +192,9 @@ def test_injury_pages_render(tmp_path):
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")                 # create the season
+    sid = sm.get_or_create("D1", "men", seed=2026)
     for _ in range(6):                        # play several weeks so injuries accrue
-        c.post("/season/advance?u=D1-men")
+        sm.advance(sid)                       # standalone: no world driver
     league = c.get("/injuries?u=D1-men")
     assert league.status_code == 200
     assert b"Injuries" in league.data
@@ -326,7 +327,6 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     """An injured player must remain visible on the program roster (just flagged
     out), not disappear until they return."""
     import app.seasonmode as sm
-    from app import world as wd
     from app.web.server import create_app
     from app.web.state import team_roster
     sm.DB_PATH = str(tmp_path / "inj.db")
@@ -334,9 +334,9 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")
+    sid = sm.get_or_create("D1", "men", seed=2026)
     for _ in range(6):
-        c.post("/season/advance?u=D1-men")
-    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
+        sm.advance(sid)               # standalone: no world driver
     active = [e for e in sm.injury_log(sid) if e["active"]]
     assert active, "six weeks of D1 should produce at least one active injury"
     school = active[0]["school"]
