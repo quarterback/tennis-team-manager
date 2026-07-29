@@ -2469,15 +2469,21 @@ def world_hub(seed: int = DEFAULT_SEED):
                    for (val, division, gender, label) in UNIVERSES
                    if worldconfig.is_active(division, gender)]
     divisions = []
+    progress = set()
     for val, division, gender, label in active_unis:
         sid = world.universe_sid(seed, w, division, gender)
         s = sm.load_season(sid)
         champ = s["champion"] if s["phase"] == "complete" else None
+        progress.add(sm.season_progress(sid))
         divisions.append({
             "u": val, "label": label, "phase": s["phase"],
             "week": s["current_week"], "total": s["total_weeks"],
             "top": sm.national_top(sid, 4), "champion": champ,
         })
+    # Every universe runs on the one world clock. More than one position here means
+    # the save desynced (something stepped a universe on its own), which makes the
+    # rankings compare fields that have played different numbers of duals.
+    in_sync = len(progress) <= 1
     signed = world.signed_counts(seed)
     year = world.BASE_YEAR + w["year"]
     complete = bool(divisions) and all(d["phase"] == "complete" for d in divisions)
@@ -2522,7 +2528,7 @@ def world_hub(seed: int = DEFAULT_SEED):
     return {
         "year": year, "season_no": w["year"] + 1,
         "week": w["week"], "divisions": divisions, "signed": signed,
-        "signed_total": sum(signed.values()),
+        "signed_total": sum(signed.values()), "in_sync": in_sync,
         "complete": complete, "awards_done": awards_done,
         "stage": stage, "primary": primary, "stages": stages,
     }

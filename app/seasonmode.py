@@ -366,6 +366,36 @@ def load_season(season_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+# How far through the year a season has been simulated, as an ORDERABLE key. The
+# world drives every universe in lockstep, so two universes of the same world must
+# always compare equal here; anything else is a desynced save (see
+# `world.universes_in_sync`).
+PHASE_ORDER = {"ita_kickoff": 0, "ita_indoor": 1, "fall_portal": 2, "regular": 3,
+               "conf_tournaments": 4, "selection": 5, "ncaa": 6, "complete": 7}
+# The bracket phases don't move `current_week`, so their progress is the round
+# number reached instead.
+_PHASE_ROUND = {"ita_kickoff": "ITAK", "ita_indoor": "ITAI",
+                "conf_tournaments": "CT", "ncaa": "NCAA"}
+
+
+def season_progress(season_id: int) -> tuple[int, int, int]:
+    """(phase rank, regular-season week, rounds played in the current bracket) —
+    a total order over "how far into the year is this season". Used to detect and
+    repair universes that fell out of step with the rest of the world."""
+    s = load_season(season_id)
+    if not s:
+        return (0, 0, 0)
+    tag = _PHASE_ROUND.get(s["phase"])
+    rounds = 0
+    if tag:
+        conn = _db()
+        row = conn.execute("SELECT MAX(round_no) r FROM duals WHERE season_id=? AND round=?"
+                           " AND status='final'", (season_id, tag)).fetchone()
+        conn.close()
+        rounds = row["r"] or 0
+    return (PHASE_ORDER.get(s["phase"], 0), s["current_week"] or 0, rounds)
+
+
 def list_seasons() -> list[dict]:
     conn = _db()
     rows = conn.execute("SELECT * FROM seasons ORDER BY id").fetchall()

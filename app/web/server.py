@@ -706,19 +706,32 @@ def create_app() -> Flask:
         worldconfig.set_match_fidelity(request.form.get("full") == "1")
         return redirect(request.referrer or url_for("world_view"))
 
-    @app.route("/world/advance", methods=["POST"])
-    def world_advance():
+    def _advance_world() -> None:
+        """The one way the game clock moves: every active universe together. Shared
+        by the World hub and the Season Hub so neither can step a universe alone."""
         import app.honors as honors
         # Once the active seasons are complete, hold at the awards step until honors
         # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
         # honors never stamp — that would jam a single-gender save here forever).
         if wd.season_complete():
             year = wd.BASE_YEAR + wd.load_world()["year"]
-            awards_pending = not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis())
-            if awards_pending:
-                return redirect(url_for("world_view"))
+            if not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis()):
+                return
         wd.advance_week()
+
+    @app.route("/world/advance", methods=["POST"])
+    def world_advance():
+        _advance_world()
         return redirect(url_for("world_view"))
+
+    @app.route("/world/resync", methods=["POST"])
+    def world_resync():
+        # Repair a save whose universes fell out of step (the Season Hub's advance
+        # used to step one alone): catch the laggards up to the furthest-along one.
+        # No reset_all() — like `advance_week`, this only plays more duals, and the
+        # result caches are keyed by completed-dual count, so they self-invalidate.
+        wd.resync_universes()
+        return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/world/awards", methods=["POST"])
     def world_awards():
@@ -2298,9 +2311,17 @@ def create_app() -> Flask:
 
     @app.route("/season/advance", methods=["POST"])
     def season_advance():
+        # ONE WORLD, ONE CLOCK. This button used to advance only the universe the
+        # hub was showing, leaving the world week and every other universe behind —
+        # the rankings then read a men's field 25 duals deep against a women's field
+        # that had played 12 and barely started conference play. Drive the whole
+        # world instead. Without a world (standalone season / tests) there is no
+        # other universe to desync from, so the single season advances as before.
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
-        sm.advance(sid)
+        if wd.exists():
+            _advance_world()
+        else:
+            sm.advance(sm.get_or_create(division, gender, seed=wd.current_year_seed()))
         return redirect(url_for("season_hub", u=u))
 
     @app.route("/season/standings")

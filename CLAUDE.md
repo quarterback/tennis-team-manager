@@ -219,6 +219,26 @@ RNG seeds. They are all plain ints — nothing stops you passing the wrong one.
   realistic names, so nobody notices. Fail loudly instead.
 See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
 
+## ⚠️ ONE WORLD, ONE CLOCK — `advance_week` is the only thing that may move a universe
+Every active division×gender universe advances TOGETHER under `world.advance_week`
+(which also runs the cross-division slate, the recruiting drip, and `prime()`). Never
+add a surface that calls `sm.advance(sid)` on its own when a world exists — the Season
+Hub's per-universe "Advance week" did exactly that, and a save quietly forked into
+universes sitting at DIFFERENT weeks: D1 men 25 duals deep with a full conference
+slate, D1 women 15 deep with conference play barely started, both stamped "Week 10".
+Nothing errors and every number is honest *for its own universe* — that's what makes
+it hard to spot. It also skips the fall portal (`sm.advance` passes a `fall_portal`
+season straight through — that pass-through is standalone-only). `sm.advance` direct
+is fine ONLY with no world (standalone season, tests, calibration scripts).
+Detect with `world.universes_in_sync()`; repair with `world.resync_universes()` /
+`scripts/resync_universes.py --fix` (steps laggards up to the leader; the world week
+is NOT touched). See `docs/AAR-universe-desync-season-hub-advance.md`.
+
+> Related and NOT a bug: **conference play doesn't start until schedule week 4–5.**
+> Non-conference is front-loaded (`place()` gates a team's conference duals behind its
+> OWN last non-conf week), and D1 carries 6 ITA lead weeks on top, so an early-season
+> board legitimately shows big overall records next to 0-0/2-1 conference records.
+
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
   score band (owner rule 2027-07)** — `coaches.development_multiplier` maps
