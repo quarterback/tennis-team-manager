@@ -281,6 +281,14 @@ See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
   field the healthy top six by results STR, no rotation/resting/coach noise
   (`coach_lineup best_six`); ITA events deliberately KEEP rotation (everyone
   plays). See `docs/AAR-postseason-best-six-lineups.md`.
+- **D3/D4 play "play-play" — every match finishes (owner rule 2026-07)** — D3/D4
+  **regular-season + ITA** duals play ALL singles to completion instead of
+  abandoning dead rubbers at the 4-point clinch (`simulate_dual play_all`, gated
+  in `season.dual_between` on both-D3/D4 + `not best_six`). Real ITA D3 format;
+  the point is fuller player stats for portal/move-up. It NEVER changes the winner
+  (4th point locks it; loser caps at 3) — only fills the margin, so a D3 dual
+  showing **6–2/7–0 is correct, not a bug**. D1/D2 and D3/D4 **postseason** keep
+  clinch-play. See `docs/AAR-d3-d4-play-play-format.md`.
 - **NCAA bracket is TRUE-SEEDED (owner rule 2026-07): no conference separation** —
   the draw is never rearranged to keep same-conference teams apart, for BOTH genders
   and every division. `_pair_penalty` deliberately has no same-conference term; do

@@ -6,7 +6,24 @@ from app.season import run_season, NATIONAL_FIELD
 from app.bracket import select_field, run_bracket
 
 _HAS_D1 = os.path.exists(os.path.join(os.path.dirname(__file__), "..", "data", "ncaa", "d1_women.json"))
+_HAS_D3 = os.path.exists(os.path.join(os.path.dirname(__file__), "..", "data", "ncaa", "d3_women.json"))
 pytestmark = pytest.mark.skipif(not _HAS_D1, reason="D1 conference data not present")
+
+
+def _abandoned_singles(sr):
+    return sum(1 for d in sr.duals for ln in d["lines"]
+              if ln["slot"][0] == "S" and not ln.get("completed"))
+
+
+@pytest.mark.skipif(not _HAS_D3, reason="D3 conference data not present")
+def test_d3_plays_every_match_while_d1_clinches():
+    """ITA D3 'play-play' wiring: D3 regular-season duals abandon no singles
+    (every match completes, for fuller player stats), while D1 still clinches and
+    abandons the dead rubbers. Winners are unaffected either way."""
+    d3 = run_season("D3", "women", seed=2026)
+    d1 = run_season("D1", "women", seed=2026)
+    assert _abandoned_singles(d3) == 0        # play-play: nothing left unfinished
+    assert _abandoned_singles(d1) > 0         # clinch-play: dead rubbers abandoned
 
 
 def test_season_shape():

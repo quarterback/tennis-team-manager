@@ -37,6 +37,8 @@ plus `world_championship`, seasons/duals, honors, coaches, overrides — but mis
 - The GTT wipe is deliberate: the pro tour is a *continuation* of the college world
   (its founders are the save's graduates; leagues bind to the world seed), so a new
   world orphans the old leagues.
+- The season-mode clear now also drops `injuries` (same class of latent bug — keyed
+  by a reused `season_id`), so a new save can't inherit phantom injuries.
 
 ## Verification
 `tests/test_new_save_reset.py` seeds a prior save (a `world_cups` row + a GTT
@@ -48,6 +50,5 @@ yet finds no stale cup under it (the crux of the bug).
 Any store keyed by `world_id` **or** by the world seed must be cleared by
 `world.reset()` — rowid reuse (`world_id=1`) means "keyed by the deleted world" is
 NOT self-cleaning. When adding a new cross-save table, wire its wipe into
-`world.reset()` in the same commit. (Still un-wiped and out of scope here:
-`seasonmode.injuries`, keyed by a reused `season_id` — non-deterministic and
-re-rolled, so low-impact, but the same class of latent issue.)
+`world.reset()` in the same commit — `world_cups`, the `gtt_*` tables, and
+`injuries` were all instances of the same miss.
