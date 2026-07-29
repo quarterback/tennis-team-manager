@@ -20,15 +20,13 @@
       {% elif ph == 'ncaa' %}Conference tournaments done — NCAA next
       {% else %}Season complete{% endif %}
     </span>
-    {% if ph != 'complete' %}
-    <form method="post" action="{{ url_for('season_advance', u=u) }}" style="display:inline">
-      <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:13px">
-        {% if ph == 'ita_kickoff' %}Run NIT Kickoff round →{% elif ph == 'ita_indoor' %}Run NIT Indoor round →
-        {% elif ph == 'regular' %}Advance week →{% elif ph == 'conf_tournaments' %}Run conference tournaments →
-        {% elif ph == 'ncaa' %}Run NCAA bracket →{% endif %}
-      </button>
-    </form>
-    {% endif %}
+    {# No advance button here. This page used to carry its own, which stepped ONLY
+       the universe the selector was showing — the world clock and every other
+       universe stayed behind, so the rankings ended up comparing a men's field 25
+       duals deep against a women's field 12 deep, both labelled the same week. The
+       header's button (top right, on every page) is the single advance control and
+       moves every universe together. See
+       docs/AAR-universe-desync-season-hub-advance.md. #}
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_schedule', u=u) }}">Schedule</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_ita', u=u) }}">NIT</a>

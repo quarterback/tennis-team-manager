@@ -238,8 +238,17 @@ def _game_context():
             s = sm.load_season(sm.get_or_create(d, g, seed=wd.current_year_seed()))
             phases.append(s.get("phase", "regular"))
         stage = min(phases, key=lambda p: _ORD.get(p, 0)) if phases else "regular"
+        # The header's advance button is now the ONLY advance control in the app
+        # (the Season Hub's per-universe one desynced saves — see
+        # docs/AAR-universe-desync-season-hub-advance.md), so its label has to carry
+        # what that page's button used to say about the stage.
+        _ACT = {"ita_kickoff": "Run NIT Kickoff", "ita_indoor": "Run NIT Indoor",
+                "fall_portal": "Review fall portal", "regular": "Advance week",
+                "conf_tournaments": "Run conf tournaments", "selection": "Start NCAAs",
+                "ncaa": "Advance NCAA round", "complete": "Finalize season"}
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
                 "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
+                "stage": stage, "action": _ACT.get(stage, "Advance week"),
                 "complete": stage == "complete",
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
@@ -708,17 +717,39 @@ def create_app() -> Flask:
 
     @app.route("/world/advance", methods=["POST"])
     def world_advance():
+        """THE advance control — the only route in the app that moves a season
+        forward. Every surface that offers "advance" posts here (see the rule in
+        docs/AAR-universe-desync-season-hub-advance.md): a second endpoint that
+        stepped one universe on its own is what forked a save into universes
+        sitting at different weeks. Pass `back=1` to return to the referring page
+        instead of the World hub."""
         import app.honors as honors
-        # Once the active seasons are complete, hold at the awards step until honors
-        # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
-        # honors never stamp — that would jam a single-gender save here forever).
-        if wd.season_complete():
+        if not wd.exists():
+            # No world: a standalone season (dev / tests) is self-contained — there
+            # is no other universe to fall out of step with, and no world to build.
+            division, gender, _label, _u = _universe(request)
+            sm.advance(sm.get_or_create(division, gender, seed=wd.current_year_seed()))
+        else:
+            # Once the active seasons are complete, hold at the awards step until honors
+            # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
+            # honors never stamp — that would jam a single-gender save here forever).
             year = wd.BASE_YEAR + wd.load_world()["year"]
-            awards_pending = not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis())
-            if awards_pending:
-                return redirect(url_for("world_view"))
-        wd.advance_week()
+            pending = (wd.season_complete()
+                       and not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis()))
+            if not pending:
+                wd.advance_week()
+        if request.form.get("back") or request.args.get("back"):
+            return redirect(request.referrer or url_for("world_view"))
         return redirect(url_for("world_view"))
+
+    @app.route("/world/resync", methods=["POST"])
+    def world_resync():
+        # Repair a save whose universes fell out of step (the Season Hub's advance
+        # used to step one alone): catch the laggards up to the furthest-along one.
+        # No reset_all() — like `advance_week`, this only plays more duals, and the
+        # result caches are keyed by completed-dual count, so they self-invalidate.
+        wd.resync_universes()
+        return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/world/awards", methods=["POST"])
     def world_awards():
@@ -2296,12 +2327,11 @@ def create_app() -> Flask:
                                conf_sel=conf_sel, last=last, top=sm.national_top(sid, 15), crest=crest,
                                bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
-    @app.route("/season/advance", methods=["POST"])
-    def season_advance():
-        division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
-        sm.advance(sid)
-        return redirect(url_for("season_hub", u=u))
+    # NOTE: there is deliberately NO /season/advance. The Season Hub used to carry
+    # its own advance button, which stepped only the universe the page was showing
+    # and left the world clock (and every other universe) behind — see
+    # docs/AAR-universe-desync-season-hub-advance.md. `world_advance` is the single
+    # advance route; the hub's header button is the single advance control.
 
     @app.route("/season/standings")
     def season_standings():

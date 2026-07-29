@@ -730,6 +730,72 @@ def _all_complete(seed: int, world: dict) -> bool:
                for (d, g) in _active_unis())
 
 
+# --------------------------------------------------------------------------
+# Universe sync — one world, one clock.
+#
+# Every active universe advances together under `advance_week`; nothing else may
+# step one on its own. When something does (the Season Hub's per-universe advance
+# used to), the save silently desyncs: the world clock and the untouched universes
+# stay put while one runs ahead, so the rankings compare a men's team 25 duals into
+# its year against a women's team that has played 12 and barely opened conference
+# play. The numbers are all "correct" for their own universe — they're just from
+# different weeks. See docs/AAR-universe-desync-season-hub-advance.md.
+# --------------------------------------------------------------------------
+
+def universe_progress(seed: int = DEFAULT_SEED) -> list[dict]:
+    """Each active universe with its position in the season year (`key`, from
+    `sm.season_progress`). In a healthy save every key is identical."""
+    w = get_or_create(seed)
+    out = []
+    for (d, g) in _active_unis():
+        sid = universe_sid(seed, w, d, g)
+        s = sm.load_season(sid)
+        out.append({"division": d, "gender": g, "sid": sid, "phase": s["phase"],
+                    "week": s["current_week"], "total": s["total_weeks"],
+                    "key": sm.season_progress(sid)})
+    return out
+
+
+def universes_in_sync(seed: int = DEFAULT_SEED) -> bool:
+    """True when every active universe sits at the same point in the year."""
+    return len({u["key"] for u in universe_progress(seed)}) <= 1
+
+
+def resync_universes(seed: int = DEFAULT_SEED, max_steps: int = 500) -> dict:
+    """Repair a desynced save: step every lagging universe forward until it stands
+    level with the furthest-along one. The world clock is NOT touched — the leader
+    already consumed those weeks; this only plays the duals the laggards owe.
+
+    A universe holding at the `fall_portal` barrier is left alone (only the world
+    driver may release it — `sm.advance` would pass it straight through and skip
+    the portal), so a save stuck there is reported rather than forced."""
+    prime(seed)
+    steps = 0
+    stepped: dict = {}
+    blocked: list[str] = []
+    while steps < max_steps:
+        unis = universe_progress(seed)
+        lead = max((u["key"] for u in unis), default=None)
+        behind = [u for u in unis if u["key"] < lead]
+        if not behind:
+            break
+        progressed = False
+        for u in behind:
+            if u["phase"] == "fall_portal":
+                blocked.append(f"{u['division']} {u['gender']}")
+                continue
+            sm.advance(u["sid"])
+            key = f"{u['division']} {u['gender']}"
+            stepped[key] = stepped.get(key, 0) + 1
+            steps += 1
+            progressed = True
+        if not progressed:
+            break                     # only fall_portal holds left — nothing we may do
+    _primed.pop(seed, None)
+    return {"steps": steps, "stepped": stepped,
+            "blocked": sorted(set(blocked)), "in_sync": universes_in_sync(seed)}
+
+
 # ==========================================================================
 # Recruiting — national class + the weekly signing drip.
 # ==========================================================================
