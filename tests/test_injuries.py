@@ -186,13 +186,14 @@ def test_redshirt_senior_gets_fifth_year():
 
 def test_injury_pages_render(tmp_path):
     import app.seasonmode as sm
+    from app import world as wd
     from app.web.server import create_app
     sm.DB_PATH = str(tmp_path / "inj.db")
     injuries.set_enabled(True)
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")                 # create the season
-    sid = sm.get_or_create("D1", "men", seed=2026)
+    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
     for _ in range(6):                        # play several weeks so injuries accrue
         sm.advance(sid)                       # standalone: no world driver
     league = c.get("/injuries?u=D1-men")
@@ -327,6 +328,7 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     """An injured player must remain visible on the program roster (just flagged
     out), not disappear until they return."""
     import app.seasonmode as sm
+    from app import world as wd
     from app.web.server import create_app
     from app.web.state import team_roster
     sm.DB_PATH = str(tmp_path / "inj.db")
@@ -334,7 +336,10 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")
-    sid = sm.get_or_create("D1", "men", seed=2026)
+    # Resolve the season the SAME way team_roster does. Hardcoding 2026 here made
+    # the test order-dependent: if an earlier test left a world behind, its year
+    # seed is not 2026, so team_roster read a different season and saw no injuries.
+    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
     for _ in range(6):
         sm.advance(sid)               # standalone: no world driver
     active = [e for e in sm.injury_log(sid) if e["active"]]

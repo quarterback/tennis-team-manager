@@ -72,3 +72,38 @@ def test_form_keeps_determinism():
     a = simulate_gtt_dual(_gtt_team("H", 0.6, 1), _gtt_team("A", 0.55, 2), seed=9)
     b = simulate_gtt_dual(_gtt_team("H", 0.6, 1), _gtt_team("A", 0.55, 2), seed=9)
     assert [l.home_won for l in a.lines] == [l.home_won for l in b.lines]
+
+
+def test_pros_develop_toward_their_peak():
+    """A pro used to be FROZEN at their college exit level from 22 until 29, then
+    only decline — no prime years at all. They now develop toward the ceiling they
+    graduated with, tapering to zero at PEAK_AGE, mirroring decline past it."""
+    import copy
+    import random
+    from app.development import generate_prospect, RICH_ATTRS
+    import app.gtt_seasonmode as gs
+
+    def raw(x):
+        return sum(x.current[a] for a in RICH_ATTRS)
+
+    grad = generate_prospect(random.Random(9), "Riser", "US", gender="male", talent=62)
+    for _ in range(4):                       # four college years -> a real graduate
+        grad.develop_year()
+    assert grad.ceiling_overall() > grad.current_overall(), "fixture needs headroom"
+
+    def prime(p):
+        c = copy.deepcopy(p)
+        for age in range(gs.ENTRY_AGE + 1, gs.PEAK_AGE + 1):
+            taper = max(0.0, min(1.0, (gs.PEAK_AGE - age) / (gs.PEAK_AGE - gs.ENTRY_AGE)))
+            c.develop(scale=gs.PRO_GROWTH * taper)
+        return c
+
+    peaked = prime(grad)
+    assert raw(peaked) > raw(grad), "a pro must improve across their twenties"
+    assert peaked.current_overall() > grad.current_overall(), "growth must be visible in OVR"
+    assert peaked.current_overall() <= grad.ceiling_overall(), "never past the ceiling"
+
+    # growth is spent by the peak: the last step before PEAK_AGE adds nothing
+    at_peak = copy.deepcopy(peaked)
+    at_peak.develop(scale=gs.PRO_GROWTH * 0.0)
+    assert raw(at_peak) == raw(peaked)

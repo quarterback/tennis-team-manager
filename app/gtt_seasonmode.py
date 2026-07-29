@@ -60,6 +60,14 @@ WAIVER_MARGIN = 0.40        # a free agent must clear a club's WEAKEST roster pl
 LINES_TO_CLINCH = 5
 ENTRY_AGE = 22              # a graduate's age on turning pro
 PEAK_AGE = 28              # decline (development in reverse) kicks in past here
+# How hard a pro trains toward the ceiling they graduated with. Growth tapers
+# linearly to zero at PEAK_AGE (the mirror of decline's scale growing past it) and
+# this multiplies it. Calibrated on actual GRADUATES, not raw prospects: at 1.0 a
+# whole prime was worth +1..+4 OVR (invisible); at 2.0 it is +2..+10, with the
+# spread coming from each player's own remaining gap — some break out, some
+# plateau. Raise for a league of late bloomers, lower for one where the draft is
+# destiny.
+PRO_GROWTH = 2.0
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 # GTT runs on the SAME clock as the college world (owner rule 2027-07): season
@@ -1171,9 +1179,20 @@ def _offseason(conn, s, fidelity):
                          (age, r["id"]))
             continue
         data = r["data"]
+        # Pros DEVELOP up to their peak and decline after it — the same
+        # Prospect.develop the college game uses, closing part of the gap to the
+        # ceiling they graduated with. Growth tapers to zero at PEAK_AGE, the mirror
+        # of decline's scale growing past it. Without this a pro was FROZEN at their
+        # college exit level from 22 until 29 and then only got worse: no prime, no
+        # breakout seasons, a static league.
         if age > PEAK_AGE:
             p = _prospect(data)
             p.decline(scale=age - PEAK_AGE)
+            data = json.dumps(_prospect_dict(p))
+        else:
+            p = _prospect(data)
+            taper = max(0.0, min(1.0, (PEAK_AGE - age) / (PEAK_AGE - ENTRY_AGE)))
+            p.develop(scale=PRO_GROWTH * taper)
             data = json.dumps(_prospect_dict(p))
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
