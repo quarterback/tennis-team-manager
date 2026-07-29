@@ -1,8 +1,8 @@
 # AAR — building out the pro league: injuries, development, and club playing styles
 
 **Date:** 2026-07-29
-**Status:** Injuries, development and club coaching/styles all landed. Franchise
-prestige and a coach carousel remain open (see "What's left").
+**Status:** COMPLETE. Injuries, development, club styles, the coach pool and
+carousel, the player-movement economy and the alumni view all landed.
 **Scope:** `injuries.table_schema` / `unavailable` / `recover` / `roll_new` (new — the
 shared store), `seasonmode._unavailable` / `_recover_team` / `_roll_new_injuries` (now
 delegations), `gtt_seasonmode` (`gtt_injuries` table, `_inj_scope`, `_lineup` filter,
@@ -175,13 +175,68 @@ unshaped pair **57% over 300 doubles matches**, while the same player in **singl
 47%** (noise around even). A doubles club makes doubles players. In a format where a
 third of the lines are doubles, that is a legitimate way to build a whole roster.
 
-## What's left
+## Round 3 — the movement economy (owner: *"people get released and it's unclear
+what happens to them"*)
 
-- **Coach carousel.** Staffs are deterministic per (league, franchise) and only change
-  identity when the era turns. Nobody is ever hired or fired, so a club can't be
-  rebuilt around a new style on purpose.
-- **Free agents don't read style.** A net-poacher club and a grinder club value the
-  same free agent identically, which wastes the identity system in exactly the place it
-  should bite — roster building.
-- **Franchise prestige** — matters if free agents should prefer winners over the
-  highest bidder.
+Measured first, 8 teams over 16 seasons with real rollovers:
+
+```
+yr   total  rostered  free agents  retired
+ 0      92        80           12        0
+ 8     168        80            0       88
+15     215        80            0      135
+```
+
+**The free-agent pool drained to zero by year 8 and never recovered**, so the waiver
+wire had nothing to sign and the whole add/drop economy silently stopped existing —
+which is exactly why released players felt like they vanished. Owner diagnosed the
+cause better than the measurement did: *"that's a vestige of you not bringing over
+more players from college... most drafts have a surplus of players."*
+
+Two constants caused it. `GRAD_D1_SHARE = 0.95` excluded the lower divisions from the
+pipeline by design, and `WAIVER_POOL_* = 6` sized the surplus as a fixed +6 on top of
+open roster HOLES. The generated top-up then filled only to `needed`, never to the
+pool target — so year 0 had a surplus and every year after had exactly enough bodies
+for the rosters and nothing spare.
+
+### What landed
+
+- **The draft leaves a surplus, sized per club** (`DRAFT_SURPLUS_PER_CLUB`), and the
+  top-up fills to the POOL target rather than the roster holes.
+- **Two draws, different division mixes.** The roster-filling slice stays D1-dominant;
+  the surplus that becomes the wire is mostly D2-D4 (`GRAD_D1_SHARE_SURPLUS = 0.25`) —
+  they graduate far more players than the pros can ever use.
+- **Rosters lock for the season** (`ROSTER_LOCK`). The only in-season signing covers a
+  player out for the YEAR. No week-to-week churn on form.
+- **Unsigned free agents retire** after `FA_SEASONS_BEFORE_RETIRE` seasons — counted in
+  seasons, not weeks, because a player cut in week 3 stays signable to the off-season.
+- **Coaches come from finished careers**, in a pool deliberately larger than the number
+  of clubs, with a carousel (vacancies, upgrades, and staffs nobody hires leaving). The
+  year-zero synthetic staffs retire after one season, so from year one every job belongs
+  to someone you watched play. `best_fit()` infers a coaching archetype from how they
+  played, which makes the eras causal rather than a fixed cycle.
+- **Retired players are pruned** after `RETIRED_KEEP_YEARS`, except Hall of Famers and
+  coaches, who are permanent.
+- **Alumni view** (`/gtt/alumni`) — everyone past college in one place, filtered by
+  playing / free agent / coaching / Hall of Fame / retired. Deliberately a QUERY over
+  the live tables and not an archive table: a second copy of the truth is what made the
+  cup preview disagree with the cup archive earlier in this same PR.
+
+### Measured after (12 teams, 14 seasons)
+
+```
+yr   total  rostered  free agents  retired  in-season moves
+ 0     216       120           96        0                0
+ 7     649       120           99      430                7
+13     943       120          100      723                7
+```
+
+The wire holds ~100 instead of collapsing to 0, and in-season movement is a trickle of
+7 across a decade instead of weekly churn.
+
+### A calibration miss of the same family, caught in testing
+
+Deepening the free-agent drain meant ~100 players retiring per year, and
+`COACH_INTAKE_SHARE = 0.35` of that turned the coaching pool into a second landfill
+(58 coaches for 6 clubs). Capped per club. Same lesson as the others here: a share
+that is sane against one population is absurd against another.

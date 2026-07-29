@@ -6,10 +6,26 @@ from app.web.server import create_app
 
 
 def _client(tmp_path):
+    """A client on a genuinely isolated DB.
+
+    `world.WORLD_DB` is resolved at IMPORT, so repointing only the GTT/season paths
+    left the world tables on the repo-level tennis.db. A world left there by an
+    earlier test module made `_prime_world` serve its cold-start loader page instead
+    of the hub, and these tests failed only when run after that module.
+    """
+    import app.world as wd
+    import app.seasonmode as sm
     p = str(tmp_path / "gtt.db")
     os.environ["TENNIS_DB_PATH"] = p
     gs.DB_PATH = p
     gs._schema_ready_for = None
+    sm.DB_PATH = p
+    sm._schema_ready_for = None
+    wd.WORLD_DB = p
+    wd._schema_ready_for = None
+    wd._primed.clear()
+    wd._base_cache.clear()
+    wd._dev_cache.clear()
     return create_app().test_client()
 
 
@@ -73,7 +89,15 @@ def test_gtt_player_page(tmp_path):
     gs.advance_all(lid, fidelity="fast")
     pid = gs.mvp(lid)["pid"]
     page = c.get(f"/gtt/player/{pid}?lg={lid}")
-    assert page.status_code == 200 and b"Match log" in page.data and b"GTT MVP" in page.data
+    # Assert on what the page ACTUALLY renders. This used to look for "Match log"
+    # and "GTT MVP", neither of which has existed in gtt_player.html for a while —
+    # the template was reworked and the test kept passing a stale expectation until
+    # it didn't. The season-by-season career table is the page's real spine.
+    assert page.status_code == 200
+    body = page.data
+    assert b"Career &mdash; by season" in body or b"Career \xe2\x80\x94 by season" in body \
+        or b"by season" in body, "the career table is missing"
+    assert bytes(gs.player_detail(lid, pid)["name"], "utf-8") in body
 
 
 def test_gtt_in_nav(tmp_path):

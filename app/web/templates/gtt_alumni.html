@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Alumni{% endblock %}
+{% block content %}
+<div class="bl-container" style="padding-top:18px;padding-bottom:50px">
+  <div class="bl-toolbar"><div class="bl-toolbar-inner">
+    <span style="font-size:13px;color:var(--text-muted)">
+      Everyone who persisted past college — playing, on the wire, coaching, or done.</span>
+  </div></div>
+
+  {% if not league %}
+  <div class="bl-panel" style="padding:26px"><h2 style="margin:0">No pro league yet</h2></div>
+  {% else %}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
+    {% for s in states %}
+    <a class="bl-pill{% if s == state %} active{% endif %}" style="text-decoration:none"
+       href="{{ url_for('gtt_alumni', state=s, lg=league.id) }}">
+      {{ s.replace('-', ' ')|title }}{% if counts.get(s) %} <span style="color:var(--text-muted)">{{ counts[s] }}</span>{% endif %}</a>
+    {% endfor %}
+  </div>
+
+  <div class="bl-panel">
+    <div class="bl-thead" style="grid-template-columns:1.6fr .8fr .5fr .5fr 1.2fr .6fr">
+      <span class="bl-th">Player</span><span class="bl-th">Status</span>
+      <span class="bl-th num">Age</span><span class="bl-th num">Sns</span>
+      <span class="bl-th">Club / Coaching</span><span class="bl-th num">STR</span>
+    </div>
+    {% for p in people %}
+    <div class="bl-row" style="grid-template-columns:1.6fr .8fr .5fr .5fr 1.2fr .6fr">
+      <span class="bl-cell"><a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}"
+        style="text-decoration:none;font-weight:600">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</a></span>
+      <span class="bl-cell" style="color:var(--text-muted);font-size:12px">{{ p.state.replace('-', ' ')|title }}</span>
+      <span class="bl-cell-num">{{ p.age }}</span>
+      <span class="bl-cell-num">{{ p.seasons }}</span>
+      <span class="bl-cell" style="font-size:12px">
+        {%- if p.coaching %}{{ p.coaching }} · {{ (p.archetype or '')|replace('-', ' ')|title }}
+        {%- elif p.club %}{{ p.club }}{% else %}—{% endif %}</span>
+      <span class="bl-cell-num">{{ p.str }}</span>
+    </div>
+    {% endfor %}
+    {% if not people %}<div style="padding:20px;color:var(--text-muted)">Nobody here yet.</div>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

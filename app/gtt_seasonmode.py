@@ -52,8 +52,19 @@ RESERVE_MEN = 2             # bench depth beyond the lineup — carries the add/
 RESERVE_WOMEN = 2           # churn so franchise starters are never the cut bait
 TARGET_MEN = LINEUP_MEN + RESERVE_MEN      # roster target per gender (5)
 TARGET_WOMEN = LINEUP_WOMEN + RESERVE_WOMEN
-WAIVER_POOL_MEN = 6         # surplus free agents kept on the wire for in-season
-WAIVER_POOL_WOMEN = 6       # add/drop (a fantasy-style waiver pool per gender)
+# The draft is sized to leave a SURPLUS, the way a real draft does: more players
+# come out of college than the clubs can roster, and the leftovers are the free
+# agent pool. Sized per club so a 12-team league gets a proportionally deeper wire
+# than a 4-team one — a fixed +6 drained to zero by year 8 and the whole add/drop
+# economy silently stopped existing.
+DRAFT_SURPLUS_PER_CLUB = 2.0   # extra draftees per club, per gender
+# Rosters lock for the season: the only in-season signing is to cover a player who
+# is out for the year. Set False to restore free week-to-week add/drop.
+ROSTER_LOCK = True
+# Retired players are kept so you can look up a career, but not forever and not
+# indiscriminately: anyone with an honor, a Hall of Fame place or a coaching job is
+# permanent, and the rest are pruned once they're this many years gone.
+RETIRED_KEEP_YEARS = 12
 WAIVER_MARGIN = 0.40        # a free agent must clear a club's WEAKEST roster player
                             # by this STR margin to be signed — a clear upgrade only,
                             # so churn stays low and the lineup core is never at risk
@@ -91,7 +102,11 @@ RETIRE_FROM = 30           # probabilistic retirement begins here
 # `advance` + the `on_world_rollover` hook keep the two in lockstep — the pro
 # league can never sim ahead of the college game or stamp future-dated honors.
 BASE_YEAR = 2026
-GRAD_D1_SHARE = 0.95       # target share of each off-season intake from D1
+# D1 dominates the top of the board; the lower divisions fill the tail and the
+# undrafted pool. A hard 0.95 starved the wire of anyone signable AND wasted the
+# fact that D2-D4 graduate far more players than the pros can ever use.
+GRAD_D1_SHARE = 0.95       # share of the ROSTER-FILLING intake drawn from D1
+GRAD_D1_SHARE_SURPLUS = 0.25   # ...and of the SURPLUS, which is mostly D2-D4
 NON_D1_MIN_STR = 58.0      # small-school pro competitiveness bar
 NON_D1_MIN_OVR = 58.0
 
@@ -277,7 +292,7 @@ def _active_unis_via(conn) -> set:
             for g in lst("active_genders", ["men", "women"])}
 
 
-def _world_graduates(conn, world_seed, exclude_pids, limit):
+def _world_graduates(conn, world_seed, exclude_pids, limit, d1_share=None):
     """Latest persisted college graduates for the pro intake, 95% D1 / 5% non-D1.
 
     Reads ``world_graduates`` (and active config) through the caller's transaction
@@ -314,7 +329,8 @@ def _world_graduates(conn, world_seed, exclude_pids, limit):
             non.append(item)
     d1.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
     non.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
-    non_target = max(1, round(limit * (1.0 - GRAD_D1_SHARE))) if limit >= 10 else 0
+    share = GRAD_D1_SHARE if d1_share is None else d1_share
+    non_target = max(1, round(limit * (1.0 - share))) if limit >= 10 else 0
     picked = non[:non_target] + d1[:max(0, limit - min(non_target, len(non)))]
     if len(picked) < limit:
         picked.extend(non[non_target:limit - len(picked) + non_target])
@@ -330,8 +346,10 @@ def _intake(conn, league, needed_by_gender):
     lid, seed, year = league["id"], league["world_seed"], league["current_year"]
     have = {r["pid"] for r in conn.execute("SELECT pid FROM gtt_players WHERE league_id=?",
                                            (lid,)).fetchall()}
-    pool_target = {"m": needed_by_gender["m"] + WAIVER_POOL_MEN,
-                   "w": needed_by_gender["w"] + WAIVER_POOL_WOMEN}
+    n_clubs = len(_fr_rows(conn, lid))
+    surplus = max(2, int(round(DRAFT_SURPLUS_PER_CLUB * n_clubs)))
+    pool_target = {"m": needed_by_gender["m"] + surplus,
+                   "w": needed_by_gender["w"] + surplus}
     target = pool_target["m"] + pool_target["w"]
     # Ex-pros (Gr grad transfers leaving college) enter tagged origin='pro' —
     # they are draftable ONLY in the draft's single Pro Round (one pick per
@@ -340,7 +358,15 @@ def _intake(conn, league, needed_by_gender):
     # selector's ranking, so request headroom for both groups.
     from .pros import is_pro as _is_pro
     n_fr = len(_fr_rows(conn, lid))
-    grads = _world_graduates(conn, seed, have, target + 2 * n_fr)
+    # TWO draws. The roster-filling slice stays D1-dominant (the pros want the best
+    # available); the SURPLUS that becomes the free-agent wire is mostly D2-D4 —
+    # they graduate far more players than the pros can ever use, and a wire stocked
+    # only with D1 leftovers empties in a few seasons.
+    need_total = needed_by_gender["m"] + needed_by_gender["w"]
+    grads = _world_graduates(conn, seed, have, need_total + 2 * n_fr)
+    taken = {pid for _g, pid, _d, _s in grads}
+    grads = grads + _world_graduates(conn, seed, have | taken, 2 * surplus,
+                                     d1_share=GRAD_D1_SHARE_SURPLUS)
     pool_rows, pro_rows, used = {"m": [], "w": []}, {"m": [], "w": []}, set(have)
     for g, pid, data, _str in grads:
         if pid in used:
@@ -361,7 +387,10 @@ def _intake(conn, league, needed_by_gender):
     rng = random.Random(_h(seed, lid, "rookies", year))
     for g, full in (("m", "male"), ("w", "female")):
         name_fn = make_name_picker(random.Random(_h(seed, lid, g, year)), gender=full)
-        while len(pool_rows[g]) < needed_by_gender[g]:
+        # Top up to the POOL target, not just the roster holes. Filling only the
+        # holes is why the wire drained: year 0 had a surplus, every year after had
+        # exactly enough bodies for the rosters and nothing left over.
+        while len(pool_rows[g]) < pool_target[g]:
             row = _gen_player(rng, name_fn, g, rng.uniform(46, 60), year,
                               origin="rookie", age=ENTRY_AGE)
             if row["pid"] in used:
@@ -397,6 +426,10 @@ def _active(conn, lid, fid, gender=None):
 _COACH_APTITUDE = ("leadership", "court_vision", "discipline", "competitiveness",
                    "focus", "team_culture")
 COACH_INTAKE_SHARE = 0.35      # share of each year's finished players who go into coaching
+# ...but capped per club, or the deeper free-agent drain (which retires ~100 players
+# a year in a 12-team league) turns the coaching pool into a second landfill. Only
+# the best-suited candidates get in.
+COACH_INTAKE_PER_CLUB = 1.0
 
 
 def coach_aptitude(current: dict) -> float:
@@ -509,14 +542,17 @@ def hire_coaches(conn, lid, year) -> int:
     return moves
 
 
-def intake_coaches(conn, lid, year, people) -> int:
+def intake_coaches(conn, lid, year, people, n_clubs=None) -> int:
     """Enter this year's finished careers into the coaching pool — retired pros AND
     the college graduates who never made a roster. `people` is
     [(pid, name, current_attrs, origin)]. The best-suited become coaches; the rest
     leave the game."""
     added = 0
+    if n_clubs is None:
+        n_clubs = len(_fr_rows(conn, lid))
     ranked = sorted(people, key=lambda x: coach_aptitude(x[2]), reverse=True)
-    keep = max(1, int(len(ranked) * COACH_INTAKE_SHARE)) if ranked else 0
+    cap = max(2, int(round(COACH_INTAKE_PER_CLUB * n_clubs)))
+    keep = min(cap, max(1, int(len(ranked) * COACH_INTAKE_SHARE))) if ranked else 0
     for pid, name, current, origin in ranked[:keep]:
         exists = conn.execute("SELECT 1 FROM gtt_coaches WHERE league_id=? AND pid=?",
                               (lid, pid)).fetchone()
@@ -848,7 +884,9 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     fa_rng = random.Random(_h(seed, "founding_fa"))
     fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
     fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
-    for gender, name_fn, n in (("m", fa_men, WAIVER_POOL_MEN), ("w", fa_women, WAIVER_POOL_WOMEN)):
+    _founding_surplus = max(2, int(round(DRAFT_SURPLUS_PER_CLUB * n_teams)))
+    for gender, name_fn, n in (("m", fa_men, _founding_surplus),
+                               ("w", fa_women, _founding_surplus)):
         wired = 0
         for pid, data, _st in pool[gender][:n]:
             _seat(None, gender, pid, data, "college")
@@ -1426,6 +1464,76 @@ def _flush_honors(out):
 # Off-season: age → retire → intake → keeper/snake draft → schedule
 # --------------------------------------------------------------------------
 
+def alumni(league_id, state="all", limit=400) -> list[dict]:
+    """Everyone who persisted past college, in one list — playing, on the wire,
+    retired, coaching, or enshrined. Deliberately a QUERY over the live tables and
+    not an archive table: this codebase has been bitten more than once by a second
+    copy of the truth drifting from the first (see the cup preview vs archive in
+    docs/AAR-offseason-visible-steps-cups-and-pros.md)."""
+    conn = _db()
+    try:
+        names = _fr_names(conn, league_id)
+        hof = {r["pid"] for r in conn.execute(
+            "SELECT pid FROM gtt_hof WHERE league_id=?", (league_id,)).fetchall()}
+        coaching = {r["pid"]: r for r in conn.execute(
+            "SELECT pid, archetype, fid FROM gtt_coaches WHERE league_id=?"
+            " AND pid IS NOT NULL", (league_id,)).fetchall()}
+        rows = conn.execute(
+            "SELECT pid, gender, age, status, fid, origin, seasons, joined_year, data"
+            " FROM gtt_players WHERE league_id=?", (league_id,)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        pr = _prospect(r["data"])
+        co = coaching.get(r["pid"])
+        if r["pid"] in hof:
+            st = "hall-of-fame"
+        elif co is not None:
+            st = "coaching"
+        elif r["status"] == "retired":
+            st = "retired"
+        elif r["fid"] is None:
+            st = "free-agent"
+        else:
+            st = "playing"
+        if state not in ("all", st):
+            continue
+        out.append({
+            "pid": r["pid"], "name": pr.name, "country": pr.country,
+            "gender": r["gender"], "age": r["age"], "state": st,
+            "club": names.get(r["fid"]) if r["fid"] else None,
+            "coaching": names.get(co["fid"]) if co and co["fid"] else None,
+            "archetype": co["archetype"] if co else None,
+            "seasons": r["seasons"], "origin": r["origin"],
+            "str": round(pr.str_value(), 1),
+        })
+    order = {"playing": 0, "free-agent": 1, "coaching": 2, "hall-of-fame": 3, "retired": 4}
+    out.sort(key=lambda x: (order.get(x["state"], 9), -x["str"]))
+    return out[:limit]
+
+
+ALUMNI_STATES = ("all", "playing", "free-agent", "coaching", "hall-of-fame", "retired")
+
+
+def prune_retired(conn, lid, year) -> int:
+    """Drop long-retired players nobody will ever look up. Anyone who won something,
+    made the Hall of Fame, or went into coaching is KEPT — the pro league exists to
+    follow careers, so the archive has to hold the careers worth following. This
+    only clears the anonymous tail so the table stays a record rather than a
+    landfill."""
+    cutoff = year - RETIRED_KEEP_YEARS
+    if cutoff <= 0:
+        return 0
+    cur = conn.execute(
+        "DELETE FROM gtt_players WHERE league_id=? AND status='retired'"
+        " AND COALESCE(joined_year,0) + seasons <= ?"
+        " AND pid NOT IN (SELECT pid FROM gtt_hof WHERE league_id=?)"
+        " AND pid NOT IN (SELECT COALESCE(pid,'') FROM gtt_coaches WHERE league_id=?)",
+        (lid, cutoff, lid, lid))
+    return cur.rowcount or 0
+
+
 def retire_unsigned(conn, lid) -> list:
     """Age the free-agent clock and retire anyone nobody signed. Returns the
     retirees as coaching candidates.
@@ -1446,6 +1554,24 @@ def retire_unsigned(conn, lid) -> list:
         pr = _prospect(r["data"])
         out.append((r["pid"], pr.name, dict(pr.current), "unsigned"))
     return out
+
+
+def _season_ending_out(conn, lid, year, fid, roster) -> bool:
+    """True if this club has someone out for the SEASON — the only thing that opens
+    an in-season roster spot. Rosters otherwise lock for the year: a club that could
+    swap its worst player every week for whoever is hot never has an identity, and
+    the churn is what made released players feel like they vanished."""
+    if not ROSTER_LOCK:
+        return True
+    pids = {r["pid"] for r in roster}
+    if not pids:
+        return False
+    q = ",".join("?" for _ in pids)
+    row = conn.execute(
+        f"SELECT 1 FROM gtt_injuries WHERE scope=? AND team=? AND season_ending=1"
+        f" AND pid IN ({q}) LIMIT 1",
+        (_inj_scope(lid, year), str(fid), *pids)).fetchone()
+    return bool(row)
 
 
 def _should_retire(pid, age, year):
@@ -1569,6 +1695,7 @@ def _offseason(conn, s, fidelity):
         undrafted.append((pid, pr.name, dict(pr.current), "college"))
     intake_coaches(conn, lid, year, retiring + undrafted)
     hire_coaches(conn, lid, year)
+    prune_retired(conn, lid, year)
 
     # Keepers stay on roster; a reverse-standings snake draft fills the gaps.
     _draft(conn, lid, year, prev_year)
@@ -1698,6 +1825,11 @@ def _process_waivers(league_id, year, week):
             best_str, best_pid = fas[g][0]
             if best_str < weak_str + WAIVER_MARGIN:
                 continue                              # no clear upgrade — stand pat
+            # ROSTERS LOCK FOR THE SEASON. A club may only replace a player who is
+            # OUT FOR THE YEAR — no week-to-week churn on form. Everything else
+            # waits for the off-season, which is what makes a squad a squad.
+            if not _season_ending_out(conn, league_id, year, fid, roster):
+                continue
             conn.execute("UPDATE gtt_players SET fid=NULL WHERE league_id=? AND pid=?",
                          (league_id, weak["pid"]))
             conn.execute("UPDATE gtt_players SET fid=? WHERE league_id=? AND pid=?",

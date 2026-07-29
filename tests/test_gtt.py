@@ -341,3 +341,81 @@ def test_synthetic_staffs_are_gone_after_the_first_season(tmp_path):
     conn.close()
     assert synth == 0, "synthetic seed staffs survived their first season"
     assert real > 0, "no real ex-player took a job"
+
+
+def test_draft_leaves_a_standing_free_agent_pool(tmp_path):
+    """The wire used to drain to zero by year 8 because the intake filled roster
+    HOLES and nothing more. The draft now leaves a surplus every year, sized per
+    club, so add/drop still exists in a mature league."""
+    gs, lid = _coach_league(tmp_path, name="Wire", teams=8, years=6)
+    conn = gs._db()
+    free = conn.execute("SELECT COUNT(*) c FROM gtt_players WHERE league_id=?"
+                        " AND status='active' AND fid IS NULL", (lid,)).fetchone()["c"]
+    conn.close()
+    assert free >= 8, f"only {free} free agents left — the wire drained again"
+
+
+def test_rosters_lock_except_for_season_ending_injuries(tmp_path):
+    """No week-to-week churn: a club may only sign mid-season to cover someone out
+    for the year."""
+    import app.gtt_seasonmode as gs2
+    gs, lid = _coach_league(tmp_path, name="Lock", teams=6)
+    conn = gs._db()
+    fid = conn.execute("SELECT id FROM gtt_franchises WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["id"]
+    roster = gs._active(conn, lid, fid)
+    assert roster
+    assert not gs._season_ending_out(conn, lid, 0, fid, roster), "no injury, no opening"
+    conn.execute("INSERT INTO gtt_injuries (scope, pid, team, name, week, tag, total,"
+                 " duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,1)",
+                 (gs._inj_scope(lid, 0), roster[0]["pid"], str(fid), "x", 1, "t", 0, 0))
+    conn.commit()
+    assert gs._season_ending_out(conn, lid, 0, fid, roster), "a year-ending injury must open a slot"
+    conn.close()
+
+
+def test_lower_divisions_feed_the_surplus_not_the_starting_lineups(tmp_path):
+    """D1 fills rosters; D2-D4 stock the wire. The two draws use different shares."""
+    import app.gtt_seasonmode as gs2
+    assert gs2.GRAD_D1_SHARE > gs2.GRAD_D1_SHARE_SURPLUS, \
+        "the surplus must lean on the lower divisions more than the roster draw does"
+    assert gs2.GRAD_D1_SHARE_SURPLUS < 0.5
+
+
+def test_retired_players_are_pruned_but_never_the_notable_ones(tmp_path):
+    """The archive keeps careers worth following — Hall of Famers and coaches are
+    permanent — and drops only the anonymous long-gone tail."""
+    gs, lid = _coach_league(tmp_path, name="Prune", teams=4)
+    conn = gs._db()
+    rows = conn.execute("SELECT pid FROM gtt_players WHERE league_id=? LIMIT 3",
+                        (lid,)).fetchall()
+    nobody, famous, coach_pid = [r["pid"] for r in rows]
+    for pid in (nobody, famous, coach_pid):
+        conn.execute("UPDATE gtt_players SET status='retired', fid=NULL, joined_year=0,"
+                     " seasons=1 WHERE league_id=? AND pid=?", (lid, pid))
+    conn.execute("INSERT INTO gtt_hof (league_id, pid, name, gender, year_enshrined)"
+                 " VALUES (?,?,?,?,?)", (lid, famous, "Famous", "m", 2))
+    conn.execute("INSERT INTO gtt_coaches (league_id, pid, name, archetype, strength,"
+                 " fid, origin, joined_year) VALUES (?,?,?,?,?,?,?,?)",
+                 (lid, coach_pid, "Coach", "all-court", 0.6, None, "retired-pro", 2))
+    conn.commit()
+
+    gs.prune_retired(conn, lid, gs.RETIRED_KEEP_YEARS + 5)
+    left = {r["pid"] for r in conn.execute(
+        "SELECT pid FROM gtt_players WHERE league_id=?", (lid,)).fetchall()}
+    conn.close()
+    assert nobody not in left, "the anonymous tail was never pruned"
+    assert famous in left, "a Hall of Famer was pruned"
+    assert coach_pid in left, "a coach was pruned"
+
+
+def test_alumni_lists_everyone_past_college_by_state(tmp_path):
+    gs, lid = _coach_league(tmp_path, name="Alumni", teams=4, years=3)
+    everyone = gs.alumni(lid, "all", limit=100000)
+    assert everyone
+    states = {p["state"] for p in everyone}
+    assert {"playing", "retired"} <= states
+    for s in ("playing", "free-agent", "coaching", "retired", "hall-of-fame"):
+        assert all(p["state"] == s for p in gs.alumni(lid, s, limit=100000))
+    assert sum(len(gs.alumni(lid, s, limit=100000)) for s in
+               ("playing", "free-agent", "coaching", "retired", "hall-of-fame")) == len(everyone)
