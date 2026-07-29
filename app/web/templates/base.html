@@ -86,7 +86,7 @@
         </nav>
 
         {% if game %}
-        <div class="fm-gc fm-gc-team">
+        <div class="fm-gc fm-gc-team fm-gc-year">
           <span class="fm-gc-stack">
             <span class="fm-gc-k">Season {{ game.season_no }}</span>
             <span class="fm-gc-v">{{ game.year }}</span>
@@ -113,7 +113,7 @@
           <form method="get" action="{{ url_for('search') }}" class="fm-search" role="search">
             <input type="search" name="q" placeholder="Search players…" aria-label="Search players">
           </form>
-          <a class="fm-newleague" href="{{ url_for('onboarding') }}" title="Start a new league"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> New league</a>
+          <a class="fm-newleague" href="{{ url_for('onboarding') }}" title="Start a new league"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i><span class="fm-newleague-label">New league</span></a>
           <form method="get" class="fm-uniform">
             {# Carry the current page's filters across a universe switch so the
                active league change doesn't reset what you're looking at (e.g. the
@@ -136,7 +136,9 @@
             <span class="fm-advance-label">Review fall portal</span>
             <span aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span></a>
           {% else %}
-          <form method="post" action="{{ url_for('world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit — that one takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results & rankings…"]}'>
+          {# Awards are their own step and /world/advance refuses to move past them,
+             so post to the awards action while they're pending or the button lies. #}
+          <form method="post" action="{{ url_for('world_awards' if game and game.awards_pending else 'world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit — that one takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results & rankings…"]}'>
             <button class="fm-advance" type="submit">
               <span class="fm-advance-label">{{ game.action if game else 'Advance week' }}</span>
               <span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span></button>

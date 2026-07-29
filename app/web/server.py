@@ -246,9 +246,27 @@ def _game_context():
                 "fall_portal": "Review fall portal", "regular": "Advance week",
                 "conf_tournaments": "Run conf tournaments", "selection": "Start NCAAs",
                 "ncaa": "Advance NCAA round", "complete": "Finalize season"}
+        action = _ACT.get(stage, "Advance week")
+        # The offseason runs as separate steps; the button names the one that's next.
+        # AWARDS COME FIRST: /world/advance deliberately refuses to advance while any
+        # active universe's honors are unstamped, so advertising the cup here made the
+        # button a no-op — it redirected and nothing happened, and the real next step
+        # was only reachable from the World Hub. Name (and post to) the awards step
+        # until it's done. Only computed in the offseason, so it costs nothing in-season.
+        awards_pending = False
+        if stage == "complete":
+            import app.honors as honors
+            awards_pending = not all(honors.has_season(2026 + w["year"], d, g)
+                                     for (d, g) in wd._active_unis())
+            if awards_pending:
+                action = "Run awards"
+            elif not wd.cups_done(w):
+                action = "Run Davis / BJK Cup"
+        elif w["week"] == 0 and w["year"] > 0 and not wd.pros_rolled(w):
+            action = "Run pro offseason"
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
                 "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
-                "stage": stage, "action": _ACT.get(stage, "Advance week"),
+                "stage": stage, "action": action, "awards_pending": awards_pending,
                 "complete": stage == "complete",
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
@@ -1306,9 +1324,13 @@ def create_app() -> Flask:
             g = "men"
         sel_year = request.args.get("year", type=int)
         cup = get_world_cup(g, year=sel_year)
-        years = sorted({wd.BASE_YEAR + y for y in wd.world_cup_years(DEFAULT_SEED)}
-                       | ({wd.BASE_YEAR + wd.load_world()["year"]}
-                          if wd.exists() and wd.season_complete() else set()),
+        # ARCHIVED years only. The picker used to also offer the current year as soon
+        # as the seasons completed, back when the cup was computed live at that point.
+        # It is now an explicit step, so between "seasons complete" and "cup step run"
+        # the current year has no cup — and `get_world_cup` falls through to the most
+        # recent archive, which rendered LAST year's champion and draw under a pill
+        # highlighting this year.
+        years = sorted((wd.BASE_YEAR + y for y in wd.world_cup_years(DEFAULT_SEED)),
                        reverse=True)
         return render_template("world_cups.html", active="World Cups", g=g,
                                cup=cup, years=years, sel_year=sel_year, crest=crest)
