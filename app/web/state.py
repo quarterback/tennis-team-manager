@@ -207,35 +207,20 @@ def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
 
 
 def get_world_cup(gender: str, seed: int = DEFAULT_SEED, year: int | None = None):
-    """The national-team cup (Davis Cup for men, BJK Cup for women) — live once
-    the world's active seasons are all complete (memoized; the field is frozen),
-    otherwise the latest snapshot stored at a year rollover; `year` (calendar)
-    selects a specific past edition. None until a world exists."""
+    """The national-team cup (Davis Cup for men, BJK Cup for women) — always the
+    ARCHIVED edition; `year` (calendar) selects a past one. None until a world exists.
+
+    Deliberately never computes live. The cups are their own offseason step
+    (`world.run_world_cups`), which archives the result and stamps the honors; a
+    second, live-computed view drew from a DIFFERENT roster set (`scan_rosters`,
+    which includes dormant divisions rebuilt from the generator) than the archive
+    (`developed_rosters`, active only), so the cup you looked at before finalizing
+    could crown a different nation than the one that went on the record."""
     import app.world as world
-    from app.national_teams import run_world_cup
     if not world.exists(seed):
         return None
     if year is not None and year != _cur_cal_year(world, seed):
         return world.latest_world_cup(seed, gender, year=year - world.BASE_YEAR)
-    if world.season_complete(seed):
-        eff = world.current_year_seed(seed)
-        ckey = (gender, eff)
-        data = _world_cup_cache.get(ckey)   # .get + local publish (thread-safe read)
-        if data is None:
-            with _champ_build_lock(("cup", gender, eff)):
-                data = _world_cup_cache.get(ckey)
-                if data is None:
-                    # Rosters MUST be scanned with the BASE world seed — the
-                    # players actually living in this save. `eff` (the derived
-                    # per-year seed) only seeds the draw. Passing eff into the
-                    # scan primes a world that doesn't exist: get_or_create then
-                    # BUILDS a parallel universe of fake players (and writes a
-                    # stray world row). scripts/cleanup_stray_worlds.py removes
-                    # any strays this created before the fix.
-                    data = run_world_cup(gender, seed=eff,
-                                         rosters=world.scan_rosters(seed))
-                    _world_cup_cache[ckey] = data
-        return data
     return world.latest_world_cup(seed, gender)
 
 
@@ -2493,15 +2478,25 @@ def world_hub(seed: int = DEFAULT_SEED):
     # on a dormant universe, whose honors are never stamped).
     awards_done = complete and all(honors.has_season(year, d, g)
                                    for (_v, d, g, _l) in active_unis)
+    # Offseason runs as separate, visible steps: awards → world cups → rollover →
+    # pro offseason. Each is one advance click, so nothing important happens inside
+    # another step's click.
     _ORDER = ["ita", "fall_portal", "regular", "conf_tournaments", "selection", "ncaa",
-              "awards", "offseason"]
+              "awards", "world_cups", "offseason"]
     _PH = {"ita_kickoff": -2, "ita_indoor": -1, "fall_portal": -0.5, "regular": 0,
            "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
+    pros_pending = (w["week"] == 0 and w["year"] > 0 and not world.pros_rolled(w))
     if not complete:
         raw = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
         stage = ("ita" if raw in ("ita_kickoff", "ita_indoor") else raw)
+        if pros_pending:
+            stage = "pro_offseason"
+    elif not awards_done:
+        stage = "awards"
+    elif not world.cups_done(w):
+        stage = "world_cups"
     else:
-        stage = "offseason" if awards_done else "awards"
+        stage = "offseason"
     if stage == "fall_portal":
         primary = {"endpoint": "fall_portal", "icon": "fa-solid fa-arrows-rotate", "label": "Review fall portal →", "link": True}
     elif stage == "selection":
@@ -2516,12 +2511,21 @@ def world_hub(seed: int = DEFAULT_SEED):
                                  else "Advance postseason →")}
     elif stage == "awards":
         primary = {"endpoint": "world_awards", "icon": "fa-solid fa-medal", "label": "Run awards →"}
+    elif stage == "world_cups":
+        primary = {"endpoint": "world_advance", "icon": "fa-solid fa-earth-americas",
+                   "label": "Run Davis / BJK Cup →"}
+    elif stage == "pro_offseason":
+        primary = {"endpoint": "world_advance", "icon": "fa-solid fa-trophy",
+                   "label": "Run pro league offseason →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
     _LABELS = {"ita": "Preseason NIT", "fall_portal": "Fall portal", "regular": "Regular season",
                "conf_tournaments": "Conf tournaments", "selection": "Bracket Reveal",
-               "ncaa": "NCAA championship", "awards": "Awards", "offseason": "Offseason"}
-    ci = _ORDER.index(stage)
+               "ncaa": "NCAA championship", "awards": "Awards", "world_cups": "World Cups",
+               "offseason": "Offseason"}
+    # pro_offseason sits at week 0 of the NEW year — past the stepper's season arc,
+    # so it shows as the (already-rolled-over) Offseason step still finishing up.
+    ci = _ORDER.index("offseason" if stage == "pro_offseason" else stage)
     stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
               for i, k in enumerate(_ORDER)]
 

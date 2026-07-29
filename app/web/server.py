@@ -246,9 +246,15 @@ def _game_context():
                 "fall_portal": "Review fall portal", "regular": "Advance week",
                 "conf_tournaments": "Run conf tournaments", "selection": "Start NCAAs",
                 "ncaa": "Advance NCAA round", "complete": "Finalize season"}
+        action = _ACT.get(stage, "Advance week")
+        # The offseason runs as separate steps; the button names the one that's next.
+        if stage == "complete" and not wd.cups_done(w):
+            action = "Run Davis / BJK Cup"
+        elif w["week"] == 0 and w["year"] > 0 and not wd.pros_rolled(w):
+            action = "Run pro offseason"
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
                 "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
-                "stage": stage, "action": _ACT.get(stage, "Advance week"),
+                "stage": stage, "action": action,
                 "complete": stage == "complete",
                 "signed": sum(wd.signed_counts().values())}
     except Exception:

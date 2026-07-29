@@ -742,6 +742,27 @@ def _all_complete(seed: int, world: dict) -> bool:
 # different weeks. See docs/AAR-universe-desync-season-hub-advance.md.
 # --------------------------------------------------------------------------
 
+def pros_rolled(world: dict) -> bool:
+    """True once the pro league's off-season has been rolled for the class that just
+    graduated into it (i.e. for the world year we rolled OUT of)."""
+    return worldconfig.get("pros_rolled_year") == str(world["year"])
+
+
+def run_pro_offseason(seed: int = DEFAULT_SEED, world: dict | None = None) -> dict:
+    """The pro-league step: roll the off-season of every completed GTT league so it
+    drafts the college class that just graduated. Its own visible step at week 0 of
+    the new year rather than a silent tail of the college rollover.
+
+    This only ever READS college state — the graduates table written by the rollover.
+    Nothing here writes a college roster, season or dual; running it cannot disturb
+    the college world."""
+    w = world or get_or_create(seed)
+    from app import gtt_seasonmode as _gtt
+    rolled = _gtt.on_world_rollover()
+    worldconfig.set("pros_rolled_year", str(w["year"]))
+    return {"event": "pro_offseason", "year": 2026 + w["year"], "leagues_rolled": rolled}
+
+
 def universe_progress(seed: int = DEFAULT_SEED) -> list[dict]:
     """Each active universe with its position in the season year (`key`, from
     `sm.season_progress`). In a healthy save every key is identical."""
@@ -3182,7 +3203,17 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     has finished its postseason."""
     w = get_or_create(seed)
     if _all_complete(seed, w):
+        # Offseason ladder — ONE step per advance, so each is something you watch
+        # happen instead of a silent stage inside the rollover click:
+        #   awards (held by the web layer) → WORLD CUPS → rollover → PRO OFFSEASON
+        # The cups run first because they field the year's rosters pre-graduation.
+        if not cups_done(w):
+            return run_world_cups(seed, w)
         return _finalize_year(seed, w)
+    # Fresh year, week 0: the pro league drafts the class that just graduated. Its own
+    # step, before the new college season plays a dual.
+    if w["week"] == 0 and w["year"] > 0 and not pros_rolled(w):
+        return run_pro_offseason(seed, w)
 
     # Fall transfer portal barrier: once EVERY active universe has finished its
     # ITA opener and is holding in 'fall_portal', pause the world here. First
@@ -3294,27 +3325,71 @@ def _record_world_history(seed: int, world: dict, rosters: dict) -> None:
                 })
 
 
-def _store_world_cups(conn, world: dict, rosters: dict) -> None:
-    """Run + persist the national-team cups (Davis / BJK) at season's end over the
-    fully-developed year rosters (pre-graduation, so seniors play their cup), and
-    stamp champion/finalist honors to the players' REAL pids — the title lands on
-    the same career page as college and GTT honors."""
+def cup_rosters(world: dict) -> dict:
+    """Every REAL player in the save, for the national-team cups: the ACTIVE
+    universes developed to now (the season just played), plus the DORMANT ones'
+    persisted rosters. Read from `world_roster` — never `scan_rosters`, which
+    re-derives dormant divisions from the generator instead of reading the players
+    this save actually holds."""
+    out = dict(developed_rosters(world))
+    conn = _db()
+    stored = _load_rosters(conn, world["id"], world["year"])      # unis=None -> every universe
+    conn.close()
+    for uni, schools in stored.items():
+        out.setdefault(uni, schools)                             # dormant only; active stays developed
+    return out
+
+
+def cups_done(world: dict) -> bool:
+    """True once this world-year's cups are archived (the `world_cups` rows ARE the
+    marker — no separate flag to drift)."""
+    conn = _db()
+    n = conn.execute("SELECT COUNT(*) c FROM world_cups WHERE world_id=? AND year=?",
+                     (world["id"], world["year"])).fetchone()["c"]
+    conn.close()
+    return n > 0
+
+
+def run_world_cups(seed: int = DEFAULT_SEED, world: dict | None = None) -> dict:
+    """The Davis / BJK Cup step: play the cups over this year's rosters, archive
+    them, and stamp champion/finalist honors. An explicit offseason step of its own
+    — after the college season, before the rollover starts the next one — so seniors
+    play their last cup and the result is visible before graduation moves anyone."""
+    w = world or get_or_create(seed)
+    prime(seed)
+    conn = _db()
+    try:
+        out = _store_world_cups(conn, w, cup_rosters(w))
+        conn.commit()
+    finally:
+        conn.close()
+    return out
+
+
+def _store_world_cups(conn, world: dict, rosters: dict) -> dict:
+    """Run + persist the national-team cups (Davis / BJK) over the fully-developed
+    year rosters (pre-graduation, so seniors play their cup), and stamp champion/
+    finalist honors to the players' REAL pids — the title lands on the same career
+    page as college and GTT honors.
+
+    NOT wrapped in a swallow: a cup that fails used to leave the year with no cup
+    row and no honors and say nothing, which is exactly the "graceful fallback hides
+    wrong data" trap. Let it raise."""
     from app import national_teams as nt
     import app.honors as honors
     yr = world["year"]
     eff = year_seed(world["seed"], yr)
     conn.execute("DELETE FROM world_cups WHERE world_id=? AND year=?", (world["id"], yr))
+    champions = {}
     for gender in worldconfig.active_genders():
-        try:
-            cup = nt.run_world_cup(gender, seed=eff, rosters=rosters)
-            conn.execute("INSERT INTO world_cups VALUES (?,?,?,?)",
-                         (world["id"], yr, gender, json.dumps(cup)))
-            # Stamp through the CALLER's connection — a second connection here
-            # deadlocks against the open rollover transaction on the shared file.
-            honors.stamp(nt.honor_records(cup, year=2026 + yr, season_no=yr + 1),
-                         conn=conn)
-        except Exception:
-            pass
+        cup = nt.run_world_cup(gender, seed=eff, rosters=rosters)
+        conn.execute("INSERT INTO world_cups VALUES (?,?,?,?)",
+                     (world["id"], yr, gender, json.dumps(cup)))
+        # Stamp through the CALLER's connection — a second connection here
+        # deadlocks against the open rollover transaction on the shared file.
+        honors.stamp(nt.honor_records(cup, year=2026 + yr, season_no=yr + 1), conn=conn)
+        champions[gender] = (cup.get("champion") or {}).get("name")
+    return {"event": "world_cups", "year": 2026 + yr, "champions": champions}
 
 
 def latest_world_cup(seed: int, gender: str, year: int | None = None) -> dict | None:
@@ -3556,9 +3631,9 @@ def _finalize_year(seed: int, w: dict) -> dict:
     reset_caches(); _primed.pop(seed, None)
     conn = _db()
     _save_graduates(conn, w["id"], w["year"], rosters, player_str, redshirts)
-    # National-team cups (Davis / BJK) — an offseason event over the year's fully
-    # developed rosters, BEFORE graduation removes the seniors. Snapshot + honors.
-    _store_world_cups(conn, w, rosters)
+    # The Davis / BJK cups already ran, as their own step BEFORE this rollover
+    # (`run_world_cups`), so the seniors about to graduate below played their last
+    # cup and the result was visible before anyone moved.
     signings = _load_signings(conn, w)
     # Sign anyone still unsigned before the class arrives (decision-week gate off).
     for gender in worldconfig.active_genders():
@@ -3589,14 +3664,8 @@ def _finalize_year(seed: int, w: dict) -> dict:
     _base_cache.clear(); _dev_cache.clear(); _primed.pop(seed, None)
     # Pros are FREE AGENTS signed by hand through the two interactive portals (pre-season +
     # fall) — no auto year-end intake. The new season's pre-season portal is the next window.
-    # GTT lockstep: the pro league runs on the SAME clock. Now that the rollover is
-    # committed (graduates written, world year advanced), roll the off-season of every
-    # completed GTT league so it drafts the class that just walked. AFTER the commit,
-    # own connections — never inside the rollover transaction (shared-file locks).
-    try:
-        from app import gtt_seasonmode as _gtt
-        summary["gtt_leagues_rolled"] = _gtt.on_world_rollover()
-    except Exception as e:                              # never block the college rollover
-        print(f"[world] GTT rollover sync failed: {e!r}")
+    # The GTT off-season is NOT rolled here: it is its own visible step (`run_pro_offseason`,
+    # taken at week 0 of the new year), so the pro league moving is something you watch
+    # happen rather than a silent tail of the college rollover.
     summary.update(event="finalize", year=new_year, week=0)
     return summary

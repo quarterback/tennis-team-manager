@@ -242,6 +242,27 @@ is NOT touched). See `docs/AAR-universe-desync-season-hub-advance.md`.
 > OWN last non-conf week), and D1 carries 6 ITA lead weeks on top, so an early-season
 > board legitimately shows big overall records next to 0-0/2-1 conference records.
 
+## ⚠️ The offseason is a LADDER — one advance step per event, never a bundle
+`awards → Davis/BJK cups → year rollover → pro-league offseason → preseason`. Each is
+one `/world/advance` click. The cups and the GTT off-season used to be interior lines
+of `_finalize_year` (nine things behind one button), so neither could be seen or run
+on its own — the owner stopped trusting the pro league because they couldn't tell
+whether it had touched the college world (it never does: `run_pro_offseason` only
+READS `world_graduates`). Do NOT fold a new world-changing event back into
+`_finalize_year`; add a rung to the ladder in `advance_week`, marked by state that
+already exists (the rows it writes — `world_cups` rows are the cups' done-marker)
+rather than a new flag.
+- **Cups run BEFORE the rollover** so seniors play their last cup — that ordering is
+  the requirement, previously bought by sitting above `_save_graduates`.
+- **Cup pool = `world.cup_rosters(w)`** — active universes developed to now + dormant
+  universes as persisted in `world_roster`. NEVER `scan_rosters` (it re-derives
+  dormant divisions from the generator). `state.get_world_cup` is archive-only; a
+  second live-computed view drew from a different pool than the archive, so the cup
+  you previewed could crown a different nation than the one that stamped honors.
+- Cups are a COLLEGE event (owner rule 2026-07): current rosters, all divisions,
+  pre-graduation. The pro league is the graduates-only side. Don't merge them.
+See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
+
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
   score band (owner rule 2027-07)** — `coaches.development_multiplier` maps
