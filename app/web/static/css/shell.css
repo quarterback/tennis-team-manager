@@ -125,10 +125,19 @@ body { background: var(--fm-app-bg); }
   position: sticky; top: 0; z-index: 20;
   height: var(--fm-topbar-h); flex: none;
   display: flex; align-items: center; gap: 0;
+  flex-wrap: nowrap;
   padding: 0 18px;
   background: var(--surface-card);
   border-bottom: 1px solid var(--border-subtle);
 }
+/* The bar is a FIXED-height single row: anything that wraps spills out of it
+   (the laptop-width breakage — "Analytics Bureau", "Pro Tour" and the phase label
+   each folded onto a second line and pushed the advance button off the edge).
+   Nothing in here may wrap, and the right-hand controls may never be squeezed;
+   width is bought by SHEDDING pieces in the ladder below, never by compressing. */
+.fm-topbrand, .fm-tn-btn, .fm-gc-k, .fm-gc-v, .fm-gc-sub,
+.fm-newleague, .fm-advance { white-space: nowrap; }
+.fm-topnav, .fm-gc, .fm-topbar-right, .fm-advance, .fm-newleague { flex: none; }
 .fm-hamburger {
   display: none; flex: none; cursor: pointer;
   width: 34px; height: 34px; margin-right: 6px;
@@ -170,7 +179,7 @@ body { background: var(--fm-app-bg); }
 }
 .fm-search input:focus { outline: none; border-color: var(--brand); width: 220px; }
 .fm-search input::placeholder { color: var(--text-faint); }
-@media (max-width: 900px) { .fm-search { display: none; } }
+.fm-newleague-label { margin-left: 6px; }
 .fm-advance {
   height: 34px; padding: 0 15px; cursor: pointer; white-space: nowrap;
   display: inline-flex; align-items: center; gap: 7px;
@@ -192,11 +201,38 @@ body { background: var(--fm-app-bg); }
 .fm-content { flex: 1; min-width: 0; }
 
 /* ---------------------------------------------------------- Responsive */
+/* LAPTOP LADDER — thresholds measured, not guessed.
+   Laid out in full the bar needs ~1836px (brand 128 + nav 621 + season 92 +
+   world/phase 249 + right-hand controls 710 + padding). The breakpoints used to
+   jump straight from "everything" to 820px, so EVERY laptop overflowed — a 1440
+   MacBook lands at ~1380 CSS px and was ~230px over, which squeezed the row until
+   the labels wrapped out of the bar's fixed height and pushed the advance button
+   off-screen. Each rung below drops the least load-bearing thing left, measured so
+   the remaining width always fits:
+     Class Signed → search width + "New league" text → padding → phase label →
+     search → Season year → brand → nav (hamburger) */
+@media (max-width: 1900px) { .fm-gc-next { display: none; } }
+@media (max-width: 1780px) {
+  .fm-search input { width: 132px; }
+  .fm-search input:focus { width: 180px; }
+  .fm-newleague-label { display: none; }
+  .fm-newleague { padding: 0 10px; }
+}
+@media (max-width: 1620px) {
+  .fm-tn-btn { padding: 0 9px; }
+  .fm-gc { padding: 0 11px; }
+}
+/* The phase ("· NCAA championship", "· NIT Kickoff Weekend") is the single widest
+   cell and every page states its own phase, so it goes before anything clickable. */
+@media (max-width: 1580px) { .fm-gc-sub { display: none; } }
+@media (max-width: 1430px) { .fm-search { display: none; } }
+@media (max-width: 1300px) { .fm-gc-year { display: none; } }
+@media (max-width: 1210px) { .fm-topbrand { display: none; } }
+
 /* Narrow screens: hide the dropdown bar and fall back to the hamburger drawer. */
-@media (max-width: 820px) {
-  .fm-topnav, .fm-topbrand { display: none; }
+@media (max-width: 1080px) {
+  .fm-topnav { display: none; }
   .fm-hamburger { display: inline-flex; }
-  .fm-gc-next { display: none; }
 }
 
 @media (max-width: 620px) {
