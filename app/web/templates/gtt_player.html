@@ -3,7 +3,15 @@
 {% block content %}
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:760px">
 
+  {# A player with no club carries fid=NULL — free agents AND every RETIRED player
+     (retirement nulls the fid). url_for then dropped the None and raised BuildError,
+     500-ing the page, which took out every Hall of Fame player link. Fall back to the
+     league hub so the page still has a way out. #}
+  {% if p.fid %}
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_franchise', fid=p.fid, lg=league.id) }}">← {{ p.franchise }}</a>
+  {% else %}
+  <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_hub', lg=league.id) }}">← {{ 'Retired' if p.status == 'retired' else p.franchise }}</a>
+  {% endif %}
 
   <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
     <div class="bl-panel-head">
