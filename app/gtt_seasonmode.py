@@ -766,6 +766,12 @@ def delete_league(league_id):
     for t in ("gtt_duals", "gtt_players", "gtt_franchises", "gtt_seasons",
               "gtt_transactions", "gtt_hof"):
         conn.execute(f"DELETE FROM {t} WHERE league_id=?", (league_id,))
+    # Injuries are keyed by the opaque `_inj_scope` int, not league_id — drop this
+    # league's whole scope RANGE. Left behind, SQLite's rowid reuse hands the id to
+    # the next league and its stale season-ending rows would bench players in a
+    # league that never injured them.
+    conn.execute("DELETE FROM gtt_injuries WHERE scope >= ? AND scope < ?",
+                 (_inj_scope(league_id, 0), _inj_scope(league_id + 1, 0)))
     conn.execute("DELETE FROM gtt_leagues WHERE id=?", (league_id,))
     conn.commit()
     conn.close()
@@ -782,6 +788,10 @@ def reset() -> None:
     conn.executescript(
         "DELETE FROM gtt_duals; DELETE FROM gtt_players; DELETE FROM gtt_franchises; "
         "DELETE FROM gtt_seasons; DELETE FROM gtt_transactions; DELETE FROM gtt_hof; "
+        # Injuries too: a new save reuses league/franchise ids AND the default seed,
+        # so pids and `_inj_scope` values repeat exactly. Stale rows would carry a
+        # previous save's injuries into the new one's lineups.
+        "DELETE FROM gtt_injuries; "
         "DELETE FROM gtt_leagues;"
     )
     conn.commit()

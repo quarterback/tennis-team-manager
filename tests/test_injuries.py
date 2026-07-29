@@ -430,3 +430,38 @@ def test_injured_pro_is_dropped_from_the_lineup(tmp_path):
     conn.close()
     assert starter not in men2, "injured pro still in the lineup"
     assert len(men2) == len(men), "a reserve should have been pulled up"
+
+
+def test_gtt_injuries_are_cleared_with_their_league(tmp_path):
+    """gtt_injuries is keyed by an opaque scope int, so it has to be cleared
+    explicitly. SQLite reuses league/franchise rowids and a new save reuses the
+    default seed, so pids and scopes repeat EXACTLY — stale rows would bench
+    players in a league that never injured them."""
+    import app.gtt_seasonmode as gs
+    gs.DB_PATH = str(tmp_path / "gtt.db")
+    gs._schema_ready_for = None
+    injuries.set_enabled(False)
+    lid = gs.create_league("Wipe", seed=6, n_teams=4)
+
+    def _seed_row(league_id):
+        conn = gs._db()
+        conn.execute("INSERT INTO gtt_injuries (scope, pid, team, name, week, tag,"
+                     " total, duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,1)",
+                     (gs._inj_scope(league_id, 0), "ghost", "1", "Ghost", 1, "t", 0, 0))
+        conn.commit(); conn.close()
+
+    def _rows():
+        conn = gs._db()
+        n = conn.execute("SELECT COUNT(*) c FROM gtt_injuries").fetchone()["c"]
+        conn.close()
+        return n
+
+    _seed_row(lid)
+    assert _rows() == 1
+    gs.delete_league(lid)
+    assert _rows() == 0, "deleting a league left its injury rows behind"
+
+    lid2 = gs.create_league("Wipe2", seed=6, n_teams=4)
+    _seed_row(lid2)
+    gs.reset()
+    assert _rows() == 0, "the whole-tour reset left injury rows behind"
