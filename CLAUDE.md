@@ -129,10 +129,16 @@ wanted a deterministic sim… save scumming is fine, I'm the only player") — d
 "fix" it back to a seed. Calibration (don't casually retune): `BASE_RATE=0.025`
 per-dual, durability-scaled; ~**0.5 starters hurt at any time**; **1-in-100**
 season-ending; otherwise **out 1–6 duals**.
-- **Wiring:** dice in `injuries.py`; lineup filter in `season.coach_lineup`
-  (`unavailable` pids) so depth gets pulled up; per-**save** persistence + rolling
-  in `seasonmode` (`injuries` table, keyed by season_id — NEVER store injury state
-  on `build_roster` Prospects, they're globally cached and shared across saves).
+- **Wiring:** dice AND the store (`unavailable`/`recover`/`roll_new`) live in
+  `injuries.py` — ONE implementation for every league. College passes the `injuries`
+  table keyed `(season_id, school)`; the pros pass `gtt_injuries` keyed
+  `(_inj_scope(league, year), franchise id)`. Lineup filters: `season.coach_lineup`
+  for college, `gtt_seasonmode._lineup` for the pros, both so depth gets pulled up.
+  NEVER store injury state on `build_roster` Prospects — they're globally cached and
+  shared across saves. **The pro league had NO injuries until 2026-07**: the rules
+  lived in `seasonmode`, so `gtt_seasonmode` had nothing to call and durability meant
+  nothing after graduation. Don't re-fork them — add a table + keys, not a second
+  implementation.
 - **Medical redshirt:** a season-ending injury → `world.graduate(rosters,
   redshirts)` repeats the class with an `RS-` tag that persists to graduation
   (RS-Jr → RS-Sr → grad = 5th year). The tag is cosmetic; strip it with

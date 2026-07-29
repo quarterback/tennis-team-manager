@@ -375,3 +375,53 @@ def test_recovery_grace_blocks_instant_reinjury(tmp_path):
         sm._recover_team(conn, sid, "S")
     assert "PID" not in protected()                      # fully recovered, re-injurable
     conn.close()
+
+
+# ---- pro league: the SAME durability system ---------------------------------
+
+def test_pros_get_injured_like_college(tmp_path):
+    """The pro game had no injuries at all — gtt_seasonmode never referenced this
+    module, so durability meant nothing once a player graduated. Pros now roll on
+    the same shared store: same dice, same durability scaling, same grace rules."""
+    import app.gtt_seasonmode as gs
+    p = str(tmp_path / "gtt.db")
+    gs.DB_PATH = p
+    gs._schema_ready_for = None
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(2026)
+    lid = gs.create_league("Durability", seed=3, n_teams=4)
+    gs.advance_all(lid, fidelity="fast")          # a whole pro season
+
+    conn = gs._db()
+    rows = conn.execute("SELECT pid, team, total, season_ending FROM gtt_injuries"
+                        " WHERE scope=?", (gs._inj_scope(lid, 0),)).fetchall()
+    conn.close()
+    assert rows, "a full pro season produced no injuries at all"
+    # same shape as college: out 1-6 duals, or season-ending
+    for r in rows:
+        assert r["season_ending"] == 1 or 1 <= r["total"] <= injuries.MAX_DUALS_OUT
+
+
+def test_injured_pro_is_dropped_from_the_lineup(tmp_path):
+    """An injured pro is filtered out and a reserve is pulled up — the college
+    depth behaviour, not a parallel implementation."""
+    import app.gtt_seasonmode as gs
+    p = str(tmp_path / "gtt2.db")
+    gs.DB_PATH = p
+    gs._schema_ready_for = None
+    injuries.set_enabled(False)                   # control the injury by hand
+    lid = gs.create_league("Depth", seed=4, n_teams=4)
+    conn = gs._db()
+    fid = conn.execute("SELECT id FROM gtt_franchises WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["id"]
+    scope = gs._inj_scope(lid, 0)
+    _team, men, _women = gs._lineup(conn, lid, fid, "T", scope)
+    starter = men[0]
+    conn.execute("INSERT INTO gtt_injuries (scope, pid, team, name, week, tag, total,"
+                 " duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,0)",
+                 (scope, starter, str(fid), "x", 1, "t", 3, 3))
+    conn.commit()
+    _team2, men2, _w2 = gs._lineup(conn, lid, fid, "T", scope)
+    conn.close()
+    assert starter not in men2, "injured pro still in the lineup"
+    assert len(men2) == len(men), "a reserve should have been pulled up"

@@ -437,71 +437,26 @@ def _forced_for(conn, s, progs, school) -> dict:
     return out
 
 
+# College injuries go through the SHARED store in app.injuries — the same dice,
+# durability scaling, recover/grace rules and roll logic the pro league now uses.
+# These wrappers only supply this league's table and keys: (season_id, school).
+# The rules used to live here, which is how the pros ended up with no injuries at
+# all — there was nothing for them to call.
+_INJ_TABLE = "injuries"
+_INJ_COLS = ("season_id", "school")   # this league's key columns
+
+
 def _unavailable(conn, season_id, school) -> set:
-    """Pids on `school` that are injured (out 1+ duals or season-ending) — to be
-    dropped from this dual's lineup."""
-    rows = conn.execute(
-        "SELECT pid FROM injuries WHERE season_id=? AND school=?"
-        " AND (season_ending=1 OR duals_remaining>0)", (season_id, school)).fetchall()
-    return {r["pid"] for r in rows}
+    return injuries.unavailable(conn, _INJ_TABLE, season_id, school, cols=_INJ_COLS)
 
 
 def _recover_team(conn, season_id, school) -> None:
-    """`school` just played a dual, so its injury clocks tick.
-
-    Short-term injuries count DOWN while out (duals_remaining > 0). When one would
-    reach zero the player is back — but rather than land on 0 it drops into a
-    NEGATIVE "recovery grace" window (−RETURN_GRACE_DUALS): the player is available
-    and plays, but the model treats them as freshly-returned and won't re-injure
-    them, so we don't get instant re-injury chains. The grace window then ticks UP
-    toward 0 (fully recovered). The row is kept throughout as the log entry.
-    Season-ending injuries don't tick — they're out until a medical redshirt."""
-    # 1) existing grace windows recover toward 0 (do this first so a row that drops
-    #    into grace THIS dual isn't also ticked up in the same call)
-    conn.execute(
-        "UPDATE injuries SET duals_remaining=duals_remaining+1"
-        " WHERE season_id=? AND school=? AND season_ending=0 AND duals_remaining<0",
-        (season_id, school))
-    # 2) active injuries burn a dual; one that heals drops straight into grace
-    conn.execute(
-        "UPDATE injuries SET duals_remaining = CASE WHEN duals_remaining-1<=0 THEN ?"
-        " ELSE duals_remaining-1 END"
-        " WHERE season_id=? AND school=? AND season_ending=0 AND duals_remaining>0",
-        (-injuries.RETURN_GRACE_DUALS, season_id, school))
+    injuries.recover(conn, _INJ_TABLE, season_id, school, cols=_INJ_COLS)
 
 
 def _roll_new_injuries(conn, season_id, school, played_pids, roster, week=0, tag="") -> None:
-    """After a dual, roll fresh injuries on exactly the players who competed.
-    Players with an ACTIVE injury are skipped (they were filtered out and didn't
-    play); healed log rows don't block a fresh injury. Each new injury is logged
-    with the player's name, the week/round it happened, and its length."""
-    if not injuries.is_enabled() or not played_pids:
-        return
-    by_pid = {p.pid: p for p in roster}
-    # Injury-AWARE: skip anyone currently out (duals_remaining>0), season-ending, OR
-    # in the post-return grace window (duals_remaining<0). A nonzero clock means the
-    # model already knows they're hurt or just back — never injure on top of that.
-    protected = {r["pid"] for r in conn.execute(
-        "SELECT pid FROM injuries WHERE season_id=? AND school=?"
-        " AND (season_ending=1 OR duals_remaining<>0)",
-        (season_id, school)).fetchall()}
-    for pid in played_pids:
-        if pid in protected or pid not in by_pid:
-            continue
-        out = injuries.roll_injury(by_pid[pid])
-        if out == 0:
-            continue
-        name = getattr(by_pid[pid], "name", "")
-        if out == injuries.SEASON_ENDING:
-            conn.execute(
-                "INSERT INTO injuries"
-                " (season_id, pid, school, name, week, tag, total, duals_remaining, season_ending)"
-                " VALUES (?,?,?,?,?,?,?,?,1)", (season_id, pid, school, name, week, tag, 0, 0))
-        else:
-            conn.execute(
-                "INSERT INTO injuries"
-                " (season_id, pid, school, name, week, tag, total, duals_remaining, season_ending)"
-                " VALUES (?,?,?,?,?,?,?,?,0)", (season_id, pid, school, name, week, tag, out, out))
+    injuries.roll_new(conn, _INJ_TABLE, season_id, school, played_pids, roster,
+                      week, tag, cols=_INJ_COLS)
 
 
 def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None,

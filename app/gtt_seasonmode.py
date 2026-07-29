@@ -34,7 +34,7 @@ import os
 import random
 import sqlite3
 
-from . import dbpath
+from . import dbpath, injuries
 from .dbpath import resolve_db_path
 
 from engine import simulate_gtt_dual, GTTTeam
@@ -107,6 +107,17 @@ CREATE INDEX IF NOT EXISTS idx_gtt_pl ON gtt_players(league_id, fid, status);
 CREATE INDEX IF NOT EXISTS idx_gtt_fr ON gtt_franchises(league_id);
 CREATE INDEX IF NOT EXISTS idx_gtt_tx ON gtt_transactions(league_id, year, week);
 """
+# Injuries use the SHARED store in app.injuries — same dice, same durability
+# scaling, same recover/grace rules as the college game (the pros previously had
+# no injuries at all). Own table, because league/year ids are a different id space
+# from college season ids; the RULES are not duplicated.
+_SCHEMA += injuries.table_schema("gtt_injuries")
+
+
+def _inj_scope(league_id: int, year: int) -> int:
+    """One opaque int key for a (league, year) pair — the store takes a single
+    scope id, and injuries never carry across a pro season."""
+    return league_id * 10000 + year
 
 _schema_ready_for = None
 
@@ -325,15 +336,25 @@ def _active(conn, lid, fid, gender=None):
     return [dict(r) for r in conn.execute(q, args).fetchall()]
 
 
-def _lineup(conn, lid, fid, name):
+def _lineup(conn, lid, fid, name, scope=None):
     """Top men + top women by STR → a GTTTeam, plus the ordered pid lists. The
     lineup is the top LINEUP_* of each gender; deeper roster players are reserves
     who only crack the lineup if they out-rate a starter (the engine of the
-    add/drop wire — a hot reserve plays, a cold one is cut bait)."""
+    add/drop wire — a hot reserve plays, a cold one is cut bait).
+
+    Injured players are filtered out first, so a reserve gets pulled up exactly the
+    way college depth does. A club too thin to field a healthy lineup plays its hurt
+    players rather than forfeiting — the sim needs a full card."""
+    out = injuries.unavailable(conn, "gtt_injuries", scope, str(fid)) if scope is not None else set()
+
     def top(gender, n):
         ps = _active(conn, lid, fid, gender)
         ps.sort(key=lambda r: _prospect(r["data"]).str_value(), reverse=True)
-        return ps[:n]
+        healthy = [r for r in ps if r["pid"] not in out]
+        if len(healthy) >= n:
+            return healthy[:n]
+        hurt = [r for r in ps if r["pid"] in out]      # too thin — the hurt suit up
+        return (healthy + hurt)[:n]
     men, women = top("m", LINEUP_MEN), top("w", LINEUP_WOMEN)
     team = GTTTeam(name=name,
                    men=[_prospect(r["data"]).engine_player() for r in men],
@@ -862,8 +883,9 @@ def _stat_summary(stats_list):
 def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     lid, seed = league["id"], league["world_seed"]
     names = _fr_names(conn, lid)
-    home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)))
-    away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)))
+    scope = _inj_scope(lid, league["current_year"])
+    home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)), scope)
+    away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)), scope)
     ds = _dual_seed(seed, home_fid, away_fid, tag)
     # The pro game is volatile: each player carries a fresh per-dual "form" that
     # swings their level well beyond college/junior noise, so a lesser team can
@@ -889,6 +911,14 @@ def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     conn.execute("UPDATE gtt_duals SET status='final', home_points=?, away_points=?,"
                  " winner=?, lines_json=? WHERE id=?",
                  (res.home_points, res.away_points, res.winner, json.dumps(lines), dual_id))
+    # Injury clocks tick and fresh injuries roll on exactly who competed — the same
+    # shared store the college game uses, so durability means the same thing here.
+    for fid_, pids in ((home_fid, hm + hw), (away_fid, am + aw)):
+        injuries.recover(conn, "gtt_injuries", scope, str(fid_))
+        roster = [_prospect(r["data"]) for r in _active(conn, lid, fid_)]
+        injuries.roll_new(conn, "gtt_injuries", scope, str(fid_),
+                          [p for p in pids if p], roster,
+                          week=league["current_week"], tag=tag)
     return res
 
 
