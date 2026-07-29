@@ -109,27 +109,45 @@ def test_pros_develop_toward_their_peak():
     assert raw(at_peak) == raw(peaked)
 
 
-def test_club_coaching_shapes_players_by_archetype():
+def _graduate(seed=9, talent=62):
+    import random
+    from app.development import generate_prospect
+    g = generate_prospect(random.Random(seed), "P", "US", gender="male", talent=talent)
+    for _ in range(4):
+        g.develop_year()
+    return g
+
+
+def _club_with_style(gs, lid, archetype, strength=0.8):
+    """Pin a club's staff to a known archetype — club style now comes from a real
+    coach row, so a test says which coach rather than scanning for a lucky id."""
+    conn = gs._db()
+    fid = conn.execute("SELECT id FROM gtt_franchises WHERE league_id=? ORDER BY id",
+                       (lid,)).fetchall()[0]["id"]
+    conn.execute("DELETE FROM gtt_coaches WHERE league_id=? AND fid=?", (lid, fid))
+    conn.execute("INSERT INTO gtt_coaches (league_id, pid, name, archetype, strength,"
+                 " fid, origin, joined_year) VALUES (?,?,?,?,?,?,?,0)",
+                 (lid, "test-pid", "Test Coach", archetype, strength, fid, "retired-pro"))
+    conn.commit(); conn.close()
+    return fid
+
+
+def test_club_coaching_shapes_players_by_archetype(tmp_path):
     """Clubs build the attributes their ARCHETYPE teaches, weighted — so two clubs
     turn the same free agent into genuinely different players."""
-    import copy, random
-    from app.development import generate_prospect
-    import app.gtt_seasonmode as gs
+    import copy
+    gs, lid = _coach_league(tmp_path, name="Shape", teams=4)
+    grad = _graduate()
 
-    grad = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
-    for _ in range(4):
-        grad.develop_year()
-
-    poach = next(f for f in range(1, 200) if gs.club_style(1, f, 0) == "net-poacher")
-    grind = next(f for f in range(1, 200) if gs.club_style(1, f, 0) == "topspin-grinder")
-
-    def career(fid, years=6):
+    def career(archetype, years=6):
+        fid = _club_with_style(gs, lid, archetype)
         p = copy.deepcopy(grad)
         for _ in range(years):
-            assert gs.apply_club_coaching(p, 1, fid, 0)
+            assert gs.apply_club_coaching(p, lid, fid, 0)
         return p
 
-    net, base = career(poach), career(grind)
+    net = career("net-poacher")
+    base = career("topspin-grinder")
     assert net.current["poaching"] > grad.current["poaching"]
     assert net.current["net_play"] > grad.current["net_play"]
     assert base.current["net_play"] == grad.current["net_play"]      # grinders don't volley
@@ -142,45 +160,184 @@ def test_club_coaching_shapes_players_by_archetype():
     assert net.engine_player().rich["poaching"] > grad.engine_player().rich["poaching"]
 
 
-def test_club_coaching_scales_with_staff_quality_and_coachability():
-    import copy, random
-    from app.development import generate_prospect
-    from app import coaches
-    import app.gtt_seasonmode as gs
+def test_club_coaching_scales_with_staff_quality_and_coachability(tmp_path):
+    import copy
+    gs, lid = _coach_league(tmp_path, name="Quality", teams=4)
+    grad = _graduate()
 
-    grad = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
-    for _ in range(4):
-        grad.develop_year()
-
-    same = [f for f in range(1, 300) if gs.club_style(1, f, 0) == "net-poacher"]
-    by_q = sorted(same, key=lambda f: coaches.coaching_strength(gs.franchise_coach(1, f)))
-    weak, strong = by_q[0], by_q[-1]
-
-    def gain(fid, p):
+    def gain(strength, p):
+        fid = _club_with_style(gs, lid, "net-poacher", strength=strength)
         q = copy.deepcopy(p)
-        gs.apply_club_coaching(q, 1, fid, 0)
+        gs.apply_club_coaching(q, lid, fid, 0)
         return q.current["poaching"] - p.current["poaching"]
 
-    assert gain(strong, grad) > gain(weak, grad), "a better staff must teach more"
+    assert gain(0.9, grad) > gain(0.3, grad), "a better staff must teach more"
 
     dull, keen = copy.deepcopy(grad), copy.deepcopy(grad)
     dull.current["coachability"] = 20.0
     keen.current["coachability"] = 80.0
-    assert gain(strong, keen) > gain(strong, dull)
+    assert gain(0.9, keen) > gain(0.9, dull)
 
 
-def test_club_coaching_is_additive_not_capped_by_potential():
+def test_club_coaching_is_additive_not_capped_by_potential(tmp_path):
     """Additive to CURRENT ability, not gated on remaining potential — a finished
     veteran can still be reshaped by the right club."""
-    import copy, random
-    from app.development import generate_prospect
-    import app.gtt_seasonmode as gs
-
-    p = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
+    import copy
+    gs, lid = _coach_league(tmp_path, name="Additive", teams=4)
+    p = _graduate()
     for _ in range(12):                       # run growth right out
         p.develop_year()
-    fid = next(f for f in range(1, 200) if gs.club_style(1, f, 0) == "net-poacher")
+    fid = _club_with_style(gs, lid, "net-poacher")
     before = p.current["poaching"]
     q = copy.deepcopy(p)
-    gs.apply_club_coaching(q, 1, fid, 0)
+    gs.apply_club_coaching(q, lid, fid, 0)
     assert q.current["poaching"] > before
+
+
+def _coach_league(tmp_path, name="Staff", teams=6, years=0):
+    import app.gtt_seasonmode as gs
+    import app.injuries as inj
+    gs.DB_PATH = str(tmp_path / "c.db")
+    gs._schema_ready_for = None
+    inj.set_enabled(False)
+    lid = gs.create_league(name, seed=3, n_teams=teams)
+    for _ in range(years):
+        gs.advance_seasons(lid, 1, fidelity="fast")
+    return gs, lid
+
+
+def test_coach_pool_carries_a_surplus(tmp_path):
+    """More coaches than jobs, so a club has a real choice of styles — the same
+    reason the player free-agent pool needs a surplus."""
+    gs, lid = _coach_league(tmp_path, teams=6)
+    conn = gs._db()
+    total = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=?",
+                         (lid,)).fetchone()["c"]
+    hired = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=? AND fid IS NOT NULL",
+                         (lid,)).fetchone()["c"]
+    conn.close()
+    assert hired == 6, "every club must have a staff"
+    assert total > hired, "no surplus — the pool is exactly one staff per job"
+
+
+def test_retired_players_take_over_the_coaching_jobs(tmp_path):
+    """The point of the pro league: you keep seeing people after they stop playing.
+    The year-zero synthetic staffs must give way to real finished careers."""
+    gs, lid = _coach_league(tmp_path, teams=6, years=12)
+    conn = gs._db()
+    rows = conn.execute("SELECT pid, origin FROM gtt_coaches WHERE league_id=?"
+                        " AND fid IS NOT NULL", (lid,)).fetchall()
+    ex_players = [r for r in rows if r["pid"]]
+    conn.close()
+    assert len(ex_players) >= 4, f"only {len(ex_players)}/6 jobs went to ex-players"
+    assert all(r["origin"] != "synthetic" for r in ex_players)
+
+
+def test_coach_pool_does_not_grow_without_bound(tmp_path):
+    """Unemployed staffs leave the game, so the pool stays a shortlist."""
+    gs, lid = _coach_league(tmp_path, teams=6, years=10)
+    conn = gs._db()
+    total = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=?",
+                         (lid,)).fetchone()["c"]
+    conn.close()
+    assert total < 6 + gs.COACH_SURPLUS + 6 * gs.COACH_POOL_YEARS, f"pool ballooned to {total}"
+
+
+def test_a_coach_teaches_what_they_themselves_were(tmp_path):
+    """A club's identity traces to a person: their coaching archetype is inferred
+    from how they played, so the eras become causal rather than a fixed cycle."""
+    import random
+    from app.development import generate_prospect
+    from app import playstyles
+    gs, lid = _coach_league(tmp_path, teams=4)
+
+    volleyer = generate_prospect(random.Random(5), "V", "US", gender="male", talent=60)
+    for a in ("poaching", "net_play", "volley_touch", "doubles_chemistry"):
+        volleyer.current[a] = 78.0
+    grinder = generate_prospect(random.Random(6), "G", "US", gender="male", talent=60)
+    for a in ("shot_tolerance", "groundstroke_consistency", "rally_patience", "stamina"):
+        grinder.current[a] = 78.0
+
+    assert playstyles.best_fit(volleyer.current) == "net-poacher"
+    assert playstyles.best_fit(grinder.current) == "topspin-grinder"
+
+
+def test_coach_rows_are_cleared_with_their_league(tmp_path):
+    gs, lid = _coach_league(tmp_path, teams=4)
+
+    def rows():
+        conn = gs._db()
+        n = conn.execute("SELECT COUNT(*) c FROM gtt_coaches").fetchone()["c"]
+        conn.close()
+        return n
+
+    assert rows() > 0
+    gs.delete_league(lid)
+    assert rows() == 0, "deleting a league left its coaches behind"
+    gs.create_league("Again", seed=4, n_teams=4)
+    gs.reset()
+    assert rows() == 0, "the whole-tour reset left coaches behind"
+
+
+def test_unsigned_free_agents_retire(tmp_path):
+    """A free agent nobody signs is finished — the drain that stops free agency
+    being a limbo nobody ever leaves. Tested on the rule directly: going through a
+    whole season would let the waiver wire re-sign them, which is correct behaviour
+    and not what this asserts."""
+    gs, lid = _coach_league(tmp_path, name="Drain", teams=4)
+    conn = gs._db()
+    pid = conn.execute("SELECT pid FROM gtt_players WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["pid"]
+    conn.execute("UPDATE gtt_players SET fid=NULL, status='active', fa_years=0"
+                 " WHERE league_id=? AND pid=?", (lid, pid))
+    conn.commit()
+
+    def status_and_clock():
+        r = conn.execute("SELECT status, fa_years FROM gtt_players"
+                         " WHERE league_id=? AND pid=?", (lid, pid)).fetchone()
+        return r["status"], r["fa_years"]
+
+    for season in range(1, gs.FA_SEASONS_BEFORE_RETIRE + 1):
+        retirees = gs.retire_unsigned(conn, lid)
+        st, clock = status_and_clock()
+        assert clock == season
+        if season < gs.FA_SEASONS_BEFORE_RETIRE:
+            assert st == "active", "retired too early"
+    st, _ = status_and_clock()
+    assert st == "retired", "an unsigned free agent never left the pool"
+    assert any(r[0] == pid for r in retirees), "should surface as a coaching candidate"
+    conn.close()
+
+
+def test_signing_resets_the_unsigned_clock(tmp_path):
+    gs, lid = _coach_league(tmp_path, name="Reset", teams=4)
+    conn = gs._db()
+    pid = conn.execute("SELECT pid FROM gtt_players WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["pid"]
+    fid = conn.execute("SELECT id FROM gtt_franchises WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["id"]
+    conn.execute("UPDATE gtt_players SET fid=NULL, fa_years=0 WHERE league_id=? AND pid=?",
+                 (lid, pid))
+    conn.commit()
+    gs.retire_unsigned(conn, lid)                       # one season out
+    conn.execute("UPDATE gtt_players SET fid=? WHERE league_id=? AND pid=?", (fid, lid, pid))
+    conn.commit()
+    gs.retire_unsigned(conn, lid)                       # signed -> clock resets
+    r = conn.execute("SELECT status, fa_years FROM gtt_players WHERE league_id=? AND pid=?",
+                     (lid, pid)).fetchone()
+    conn.close()
+    assert r["fa_years"] == 0 and r["status"] == "active"
+
+
+def test_synthetic_staffs_are_gone_after_the_first_season(tmp_path):
+    """The year-zero staffs are scaffolding. From year one every job belongs to a
+    real finished career."""
+    gs, lid = _coach_league(tmp_path, name="Scaffold", teams=4, years=3)
+    conn = gs._db()
+    synth = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=?"
+                         " AND origin='synthetic'", (lid,)).fetchone()["c"]
+    real = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=?"
+                        " AND fid IS NOT NULL AND pid IS NOT NULL", (lid,)).fetchone()["c"]
+    conn.close()
+    assert synth == 0, "synthetic seed staffs survived their first season"
+    assert real > 0, "no real ex-player took a job"

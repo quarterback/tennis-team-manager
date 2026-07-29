@@ -156,3 +156,53 @@ def emphasis(archetype: str, fmt: str = "gtt") -> dict[str, float]:
         return {}
     fw = FORMAT_WEIGHTS.get(fmt, {})
     return {a: w * fw.get(a, 1.0) for a, w in base.items()}
+
+
+# Measured population bias per archetype: the mean score a TYPICAL graduate gets
+# on each archetype, relative to their own attribute average. The generator does
+# not grade every attribute alike — net skills (doubles_chemistry +1.7,
+# approach_shot +1.6, poaching +1.4) sit above the average player's own mean while
+# groundstrokes (forehand_control -1.0) sit below — so an uncorrected best_fit
+# hands 27% of everyone to net-poacher and calls it a style. Subtracting these
+# makes the question "unusual FOR a player", which is what a style actually is.
+# Regenerate with scripts/measure_archetype_bias.py if the generator changes;
+# tests/test_playstyles.py fails if the distribution skews again.
+_ARCHETYPE_BIAS: dict[str, float] = {
+    "serve-and-volley": 0.91, "big-server": 0.13, "aggressive-baseliner": -0.34,
+    "topspin-grinder": -0.56, "counterpuncher": -0.11, "athletic-retriever": 0.07,
+    "all-court": 0.35, "first-strike": -0.33, "variety-junkballer": -0.36,
+    "net-poacher": 1.06,
+}
+
+
+def best_fit(current: dict, exclude: tuple = ()) -> str:
+    """The archetype a player's own attributes most resemble.
+
+    Used to turn a finished PLAYER into a coach who teaches what they were: a
+    career volleyer coaches the net, a grinder coaches shot tolerance. That makes
+    a club's identity trace back to a specific person you watched play, and it
+    makes the eras causal — the staffs of one generation are the players of the
+    last — rather than a fixed cycle.
+
+    Scored RELATIVE to the player's own average, not on raw grades. Absolute
+    scoring hands ~27% of everyone to whichever archetype happens to name
+    generally-high-graded attributes (net-poacher, as measured) — that ranks
+    players by overall quality, not by style. A style is what someone is
+    comparatively good at, so each attribute is measured as its distance from that
+    player's own mean.
+    """
+    if not current:
+        return "all-court"
+    mean = sum(current.values()) / len(current)
+    best, best_score = "", float("-inf")
+    for name, attrs in ARCHETYPES.items():
+        if name in exclude:
+            continue
+        tw = sum(attrs.values())
+        if not tw:
+            continue
+        score = (sum((current.get(a, mean) - mean) * w for a, w in attrs.items()) / tw
+                 - _ARCHETYPE_BIAS.get(name, 0.0))
+        if score > best_score:
+            best, best_score = name, score
+    return best or "all-court"

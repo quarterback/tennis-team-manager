@@ -69,10 +69,14 @@ def test_new_staffs_lean_to_the_era_but_leave_counter_trend_clubs():
     assert len(set(picks)) >= 6, "the league collapsed to a monoculture"
 
 
-def test_club_archetypes_are_stable_within_an_era_and_turn_over_across_them():
+def test_uncoached_club_falls_back_to_the_era():
+    """Club identity now comes from its COACH (see gtt_seasonmode.club_style), so a
+    club without one falls back to the prevailing era — and that fallback still
+    turns over as the eras do."""
     import app.gtt_seasonmode as gs
-    held = {gs.club_style(1, 3, y) for y in range(playstyles.ERA_LENGTH)}
-    assert len(held) == 1, "a club changed identity mid-era"
-    across = {gs.club_style(1, 3, y * playstyles.ERA_LENGTH)
+    conn = gs._db()
+    conn.execute("DELETE FROM gtt_coaches WHERE league_id=?", (-99,))
+    conn.commit(); conn.close()
+    across = {gs.club_style(-99, 3, y * playstyles.ERA_LENGTH)
               for y in range(len(playstyles.ERA_CYCLE))}
-    assert len(across) > 1, "club identity never turns over"
+    assert len(across) > 1, "the era fallback never turns over"
