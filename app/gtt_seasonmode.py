@@ -68,6 +68,21 @@ PEAK_AGE = 28              # decline (development in reverse) kicks in past here
 # plateau. Raise for a league of late bloomers, lower for one where the draft is
 # destiny.
 PRO_GROWTH = 2.0
+
+# ---- Club coaching: where a pro's game gets SHAPED ------------------------
+# Every franchise has a staff with an `offensive_style`, and each off-season it
+# adds points to exactly the attributes it teaches (`coaches.STYLE_ATTRS`). The
+# nudge is ADDITIVE to what the player already has — it isn't gated on remaining
+# potential the way develop() is, so a finished 27-year-old can still be turned
+# into a better volleyer by the right club. Over seasons a roster drifts toward
+# its staff's identity, and the same free agent is worth different things to
+# different clubs.
+#
+# Scale: COACH_BOOST is the per-season points added to an emphasis attribute by an
+# ELITE staff on a maximally coachable player; a poor staff gives ~0. Deliberately
+# below the per-dual chaos form (-17%/+20%) — the club you play for should be
+# readable across a season, not decide a night.
+COACH_BOOST = 1.6
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 # GTT runs on the SAME clock as the college world (owner rule 2027-07): season
@@ -342,6 +357,50 @@ def _active(conn, lid, fid, gender=None):
         q += " AND gender=?"
         args.append(gender)
     return [dict(r) for r in conn.execute(q, args).fetchall()]
+
+
+def franchise_coach(league_id: int, fid: int):
+    """The club's head coach — deterministic per (league, franchise), the same way
+    `coaches.coach_for_program` is stable per school. Franchises had NO coach at
+    all, so nothing in the pro game could depend on who ran the club."""
+    from app import coaches
+    import random as _r
+    key = f"gtt:{league_id}:{fid}"
+    return coaches.coach_for_program(key)
+
+
+def club_style(league_id: int, fid: int) -> str:
+    """The club's playing identity, e.g. 'serve-first' — what its staff teaches."""
+    return getattr(franchise_coach(league_id, fid), "offensive_style", "balanced")
+
+
+def apply_club_coaching(prospect, league_id: int, fid: int) -> bool:
+    """Add this club's coaching to a player, in place. Returns True if anything
+    moved. The staff's STYLE picks the attributes, its quality and the player's own
+    coachability set the size; the points are ADDITIVE to current ability rather
+    than gated on remaining potential, so even a finished veteran can be reshaped.
+    That is what makes a club's identity accumulate across a roster."""
+    from app import coaches
+    from .development import clamp_grade
+    coach = franchise_coach(league_id, fid)
+    attrs = coaches.style_emphasis(coach)
+    if not attrs:
+        return False
+    strength = coaches.coaching_strength(coach)
+    if strength <= 0:
+        return False
+    # A coachable player takes more from the same staff (0.5x .. 1.5x around the
+    # 20-80 midpoint), so who you sign matters as much as who coaches them.
+    coachability = prospect.current.get("coachability", 50.0)
+    receptivity = max(0.5, min(1.5, 0.5 + coachability / 50.0))
+    gain = COACH_BOOST * strength * receptivity
+    if gain <= 0:
+        return False
+    for a in attrs:
+        if a in prospect.current:
+            prospect.current[a] = clamp_grade(prospect.current[a] + gain)
+    prospect.recruit_stars = prospect.star_rating()
+    return True
 
 
 def _lineup(conn, lid, fid, name, scope=None):
@@ -1181,7 +1240,7 @@ def _offseason(conn, s, fidelity):
 
     # Age everyone a year; retire the veterans; decline those past their peak
     # (development run in reverse — the slide steepens with each year past peak).
-    for r in conn.execute("SELECT id, pid, age, data FROM gtt_players WHERE league_id=?"
+    for r in conn.execute("SELECT id, pid, age, data, fid FROM gtt_players WHERE league_id=?"
                           " AND status='active'", (lid,)).fetchall():
         age = (r["age"] or ENTRY_AGE) + 1
         if _should_retire(r["pid"], age, year):
@@ -1204,6 +1263,13 @@ def _offseason(conn, s, fidelity):
             taper = max(0.0, min(1.0, (PEAK_AGE - age) / (PEAK_AGE - ENTRY_AGE)))
             p.develop(scale=PRO_GROWTH * taper)
             data = json.dumps(_prospect_dict(p))
+        # Club coaching shapes the game on TOP of that, at every age — the staff's
+        # style decides which attributes, its quality and the player's coachability
+        # decide how much.
+        if r["fid"] is not None:
+            p = _prospect(data)
+            if apply_club_coaching(p, lid, r["fid"]):
+                data = json.dumps(_prospect_dict(p))
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
 

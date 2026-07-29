@@ -107,3 +107,86 @@ def test_pros_develop_toward_their_peak():
     at_peak = copy.deepcopy(peaked)
     at_peak.develop(scale=gs.PRO_GROWTH * 0.0)
     assert raw(at_peak) == raw(peaked)
+
+
+def test_club_coaching_shapes_players_by_style():
+    """Clubs have a staff with a playing style, and it builds exactly the
+    attributes it teaches. Two clubs turn the same free agent into different
+    players — that is how a roster acquires an identity."""
+    import copy, random
+    from app.development import generate_prospect
+    from app import coaches
+    import app.gtt_seasonmode as gs
+
+    grad = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
+    for _ in range(4):
+        grad.develop_year()
+
+    serve_fid = next(f for f in range(1, 40)
+                     if gs.club_style(1, f) == "serve-first")
+    base_fid = next(f for f in range(1, 40)
+                    if gs.club_style(1, f) == "baseline")
+
+    def career(fid, years=6):
+        p = copy.deepcopy(grad)
+        for _ in range(years):
+            assert gs.apply_club_coaching(p, 1, fid)
+        return p
+
+    server, baseliner = career(serve_fid), career(base_fid)
+    assert server.current["first_serve_power"] > grad.current["first_serve_power"]
+    assert baseliner.current["first_serve_power"] == grad.current["first_serve_power"]
+    assert baseliner.current["forehand_power"] > grad.current["forehand_power"]
+    assert server.current["forehand_power"] == grad.current["forehand_power"]
+
+    # the shaping reaches the ENGINE, not just the sheet
+    rich_before, rich_after = grad.engine_player().rich, server.engine_player().rich
+    assert rich_after["first_serve_power"] > rich_before["first_serve_power"]
+
+
+def test_club_coaching_scales_with_staff_quality_and_coachability():
+    import copy, random
+    from app.development import generate_prospect
+    from app import coaches
+    import app.gtt_seasonmode as gs
+
+    grad = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
+    for _ in range(4):
+        grad.develop_year()
+
+    # same style, different staff quality -> different gain
+    same_style = [f for f in range(1, 60) if gs.club_style(1, f) == "serve-first"]
+    by_q = sorted(same_style, key=lambda f: coaches.coaching_strength(gs.franchise_coach(1, f)))
+    weak, strong = by_q[0], by_q[-1]
+    assert coaches.coaching_strength(gs.franchise_coach(1, strong)) > \
+        coaches.coaching_strength(gs.franchise_coach(1, weak))
+
+    def gain(fid, p):
+        q = copy.deepcopy(p)
+        gs.apply_club_coaching(q, 1, fid)
+        return q.current["first_serve_power"] - p.current["first_serve_power"]
+
+    assert gain(strong, grad) > gain(weak, grad), "a better staff must teach more"
+
+    # a more coachable player takes more from the SAME staff
+    dull, keen = copy.deepcopy(grad), copy.deepcopy(grad)
+    dull.current["coachability"] = 20.0
+    keen.current["coachability"] = 80.0
+    assert gain(strong, keen) > gain(strong, dull)
+
+
+def test_club_coaching_is_additive_not_capped_by_potential():
+    """The boost is additive to CURRENT ability, not gated on remaining potential —
+    a finished veteran can still be reshaped by the right club."""
+    import copy, random
+    from app.development import generate_prospect
+    import app.gtt_seasonmode as gs
+
+    p = generate_prospect(random.Random(9), "P", "US", gender="male", talent=62)
+    for _ in range(12):                       # run growth right out
+        p.develop_year()
+    fid = next(f for f in range(1, 40) if gs.club_style(1, f) == "serve-first")
+    before = p.current["first_serve_power"]
+    q = copy.deepcopy(p)
+    gs.apply_club_coaching(q, 1, fid)
+    assert q.current["first_serve_power"] > before
