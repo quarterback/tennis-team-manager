@@ -446,6 +446,12 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # the League Hub keeps listing prior saves full of now-stale pros.
     import app.gtt_seasonmode as gtt
     gtt.reset()
+    # The pro-offseason step's per-save marker goes with those leagues. `reset()`
+    # drops the GTT tables but NOT world_setting (or worldconfig's in-memory cache),
+    # so a stale "pros_rolled_year" would still read as done for the SAME year number
+    # in the next save — the new league's first rollover also lands on year 1 — and
+    # its first graduating class would never be drafted. Clear the value AND the memo.
+    worldconfig.set("pros_rolled_year", "")
     # Stored individual championships AND the national-team cups (Davis / BJK) are
     # off-season snapshots keyed by world_id — and SQLite REUSES world_id=1 after
     # this reset drops the world row, so the next save's get_or_create() lands on

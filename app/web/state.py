@@ -219,7 +219,11 @@ def get_world_cup(gender: str, seed: int = DEFAULT_SEED, year: int | None = None
     import app.world as world
     if not world.exists(seed):
         return None
-    if year is not None and year != _cur_cal_year(world, seed):
+    if year is not None:
+        # An explicit year answers for THAT year or not at all. It used to fall
+        # through to "most recent archived" when the requested year was the current
+        # one, so a current year with no cup yet rendered the PRIOR year's champion
+        # and draw as if they were this year's.
         return world.latest_world_cup(seed, gender, year=year - world.BASE_YEAR)
     return world.latest_world_cup(seed, gender)
 

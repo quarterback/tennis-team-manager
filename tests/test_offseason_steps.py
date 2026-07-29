@@ -84,6 +84,63 @@ def test_cup_rosters_are_real_persisted_players(monkeypatch):
     assert out[("D3", "men")] == {"B": ["dormant"]}    # dormant: the persisted rows
 
 
+def test_new_league_clears_the_pro_roll_marker(tmp_path, monkeypatch):
+    """`reset()` drops the GTT tables but not world_setting, so a stale marker read
+    as done for the SAME year number in the next save — the new league's first
+    rollover also lands on year 1 — and its first class was never drafted."""
+    import app.seasonmode as sm
+    sm.DB_PATH = str(tmp_path / "s.db")
+    wc.set("pros_rolled_year", "1")
+    assert wd.pros_rolled(_world(year=1))
+    wd.reset()
+    assert wc.get("pros_rolled_year") == ""        # value AND the in-memory memo
+    assert not wd.pros_rolled(_world(year=1))      # the new save still owes the step
+
+
+def test_unarchived_year_returns_no_cup(monkeypatch):
+    """An explicit year answers for THAT year or not at all. It used to fall through
+    to 'most recent archived', so the interval after the seasons complete but before
+    the cup step runs rendered LAST year's champion under this year's pill."""
+    from app.web import state
+    monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
+    asked = {}
+
+    def _latest(seed, gender, year=None):
+        asked["year"] = year
+        return None if year == 1 else {"event": "Davis Cup", "year": 0}
+    monkeypatch.setattr(wd, "latest_world_cup", _latest)
+
+    assert state.get_world_cup("men", year=wd.BASE_YEAR + 1) is None   # current, unarchived
+    assert asked["year"] == 1                                          # asked for THAT year
+    assert state.get_world_cup("men", year=wd.BASE_YEAR) is not None   # archived year still works
+
+
+def test_header_offers_awards_before_the_cup(tmp_path, monkeypatch):
+    """/world/advance refuses to move while honors are unstamped, so the header must
+    not advertise the cup step yet — the button would redirect and do nothing."""
+    import app.seasonmode as sm
+    import app.honors as honors
+    from app.web import server
+    sm.DB_PATH = str(tmp_path / "s.db")
+    monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "load_world", lambda *a, **k: {"id": 1, "year": 0, "week": 20})
+    monkeypatch.setattr(wd, "_active_unis", lambda: [("D1", "men")])
+    monkeypatch.setattr(wd, "signed_counts", lambda *a, **k: {})
+    monkeypatch.setattr(wd, "current_year_seed", lambda *a, **k: 2026)
+    monkeypatch.setattr(wd, "cups_done", lambda w: False)
+    monkeypatch.setattr(sm, "get_or_create", lambda *a, **k: 1)
+    monkeypatch.setattr(sm, "load_season", lambda sid: {"phase": "complete"})
+    monkeypatch.setattr(server, "UNIVERSES", [("D1-men", "D1", "men", "D1 Men")])
+
+    monkeypatch.setattr(honors, "has_season", lambda *a, **k: False)
+    g = server._game_context()
+    assert g["awards_pending"] and g["action"] == "Run awards"
+
+    monkeypatch.setattr(honors, "has_season", lambda *a, **k: True)
+    g = server._game_context()
+    assert not g["awards_pending"] and g["action"] == "Run Davis / BJK Cup"
+
+
 def test_cup_failure_is_loud_not_swallowed(monkeypatch):
     """A cup that throws must NOT leave the year silently with no cup and no honors."""
     import app.national_teams as nt
