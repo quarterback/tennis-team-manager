@@ -107,3 +107,80 @@ def roll_injury(prospect) -> int:
     if _rng.random() < SEASON_ENDING_SHARE:
         return SEASON_ENDING
     return _rng.randint(MIN_DUALS_OUT, MAX_DUALS_OUT)
+
+
+# ---------------------------------------------------------------------------
+# Shared injury STORE. The dice above were always shared; the persistence and the
+# recover/roll rules were not — they lived only in seasonmode, which is why the pro
+# league had no injuries at all (`gtt_seasonmode` never referenced this module).
+# These are the one implementation both leagues use. `table` names the caller's
+# injuries table and `scope`/`team` are its opaque keys — (season_id, school) for
+# college, (league+year, franchise id) for the pros — so each keeps its own rows
+# while the RULES stay in one place.
+# ---------------------------------------------------------------------------
+
+def table_schema(table: str) -> str:
+    """DDL for an injuries table. Same shape for every league that uses it."""
+    return (f"CREATE TABLE IF NOT EXISTS {table} ("
+            " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " scope INTEGER, pid TEXT, team TEXT, name TEXT,"
+            " week INTEGER DEFAULT 0, tag TEXT,"
+            " total INTEGER DEFAULT 0, duals_remaining INTEGER DEFAULT 0,"
+            " season_ending INTEGER DEFAULT 0);"
+            f"CREATE INDEX IF NOT EXISTS idx_{table}_scope ON {table}(scope, team);")
+
+
+def unavailable(conn, table, scope, team, *, cols=("scope", "team")) -> set:
+    """Pids on `team` that are injured (out 1+ duals or season-ending) — dropped
+    from this dual's lineup so depth gets pulled up."""
+    rows = conn.execute(
+        f"SELECT pid FROM {table} WHERE {cols[0]}=? AND {cols[1]}=?"
+        " AND (season_ending=1 OR duals_remaining>0)", (scope, team)).fetchall()
+    return {r["pid"] for r in rows}
+
+
+def recover(conn, table, scope, team, *, cols=("scope", "team")) -> None:
+    """`team` just played, so its injury clocks tick.
+
+    Short-term injuries count DOWN while out. When one would reach zero the player
+    is back — but lands in a NEGATIVE "recovery grace" window instead of on 0: they
+    play, but the model won't re-injure them, so there are no instant re-injury
+    chains. The grace window then ticks UP toward 0. The row is kept throughout as
+    the log entry. Season-ending injuries don't tick."""
+    # grace windows first, so a row dropping into grace THIS dual isn't also ticked
+    conn.execute(
+        f"UPDATE {table} SET duals_remaining=duals_remaining+1"
+        f" WHERE {cols[0]}=? AND {cols[1]}=? AND season_ending=0 AND duals_remaining<0",
+        (scope, team))
+    conn.execute(
+        f"UPDATE {table} SET duals_remaining = CASE WHEN duals_remaining-1<=0 THEN ?"
+        " ELSE duals_remaining-1 END"
+        f" WHERE {cols[0]}=? AND {cols[1]}=? AND season_ending=0 AND duals_remaining>0",
+        (-RETURN_GRACE_DUALS, scope, team))
+
+
+def roll_new(conn, table, scope, team, played_pids, roster, week=0, tag="",
+             *, cols=("scope", "team")) -> None:
+    """After a dual, roll fresh injuries on exactly the players who competed.
+    Anyone with a nonzero clock (out, season-ending, or in the post-return grace
+    window) is skipped — the model already knows they're hurt or just back."""
+    if not is_enabled() or not played_pids:
+        return
+    by_pid = {p.pid: p for p in roster}
+    protected = {r["pid"] for r in conn.execute(
+        f"SELECT pid FROM {table} WHERE {cols[0]}=? AND {cols[1]}=?"
+        " AND (season_ending=1 OR duals_remaining<>0)", (scope, team)).fetchall()}
+    ins = (f"INSERT INTO {table}"
+           f" ({cols[0]}, pid, {cols[1]}, name, week, tag, total, duals_remaining, season_ending)"
+           " VALUES (?,?,?,?,?,?,?,?,?)")
+    for pid in played_pids:
+        if pid in protected or pid not in by_pid:
+            continue
+        out = roll_injury(by_pid[pid])
+        if out == 0:
+            continue
+        name = getattr(by_pid[pid], "name", "")
+        if out == SEASON_ENDING:
+            conn.execute(ins, (scope, pid, team, name, week, tag, 0, 0, 1))
+        else:
+            conn.execute(ins, (scope, pid, team, name, week, tag, out, out, 0))

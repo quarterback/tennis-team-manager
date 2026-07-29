@@ -186,13 +186,14 @@ def test_redshirt_senior_gets_fifth_year():
 
 def test_injury_pages_render(tmp_path):
     import app.seasonmode as sm
+    from app import world as wd
     from app.web.server import create_app
     sm.DB_PATH = str(tmp_path / "inj.db")
     injuries.set_enabled(True)
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")                 # create the season
-    sid = sm.get_or_create("D1", "men", seed=2026)
+    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
     for _ in range(6):                        # play several weeks so injuries accrue
         sm.advance(sid)                       # standalone: no world driver
     league = c.get("/injuries?u=D1-men")
@@ -327,6 +328,7 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     """An injured player must remain visible on the program roster (just flagged
     out), not disappear until they return."""
     import app.seasonmode as sm
+    from app import world as wd
     from app.web.server import create_app
     from app.web.state import team_roster
     sm.DB_PATH = str(tmp_path / "inj.db")
@@ -334,7 +336,10 @@ def test_injured_player_stays_on_roster_with_badge(tmp_path):
     injuries.seed_for_testing(2026)
     c = create_app().test_client()
     c.get("/season?u=D1-men")
-    sid = sm.get_or_create("D1", "men", seed=2026)
+    # Resolve the season the SAME way team_roster does. Hardcoding 2026 here made
+    # the test order-dependent: if an earlier test left a world behind, its year
+    # seed is not 2026, so team_roster read a different season and saw no injuries.
+    sid = sm.get_or_create("D1", "men", seed=wd.current_year_seed())
     for _ in range(6):
         sm.advance(sid)               # standalone: no world driver
     active = [e for e in sm.injury_log(sid) if e["active"]]
@@ -375,3 +380,88 @@ def test_recovery_grace_blocks_instant_reinjury(tmp_path):
         sm._recover_team(conn, sid, "S")
     assert "PID" not in protected()                      # fully recovered, re-injurable
     conn.close()
+
+
+# ---- pro league: the SAME durability system ---------------------------------
+
+def test_pros_get_injured_like_college(tmp_path):
+    """The pro game had no injuries at all — gtt_seasonmode never referenced this
+    module, so durability meant nothing once a player graduated. Pros now roll on
+    the same shared store: same dice, same durability scaling, same grace rules."""
+    import app.gtt_seasonmode as gs
+    p = str(tmp_path / "gtt.db")
+    gs.DB_PATH = p
+    gs._schema_ready_for = None
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(2026)
+    lid = gs.create_league("Durability", seed=3, n_teams=4)
+    gs.advance_all(lid, fidelity="fast")          # a whole pro season
+
+    conn = gs._db()
+    rows = conn.execute("SELECT pid, team, total, season_ending FROM gtt_injuries"
+                        " WHERE scope=?", (gs._inj_scope(lid, 0),)).fetchall()
+    conn.close()
+    assert rows, "a full pro season produced no injuries at all"
+    # same shape as college: out 1-6 duals, or season-ending
+    for r in rows:
+        assert r["season_ending"] == 1 or 1 <= r["total"] <= injuries.MAX_DUALS_OUT
+
+
+def test_injured_pro_is_dropped_from_the_lineup(tmp_path):
+    """An injured pro is filtered out and a reserve is pulled up — the college
+    depth behaviour, not a parallel implementation."""
+    import app.gtt_seasonmode as gs
+    p = str(tmp_path / "gtt2.db")
+    gs.DB_PATH = p
+    gs._schema_ready_for = None
+    injuries.set_enabled(False)                   # control the injury by hand
+    lid = gs.create_league("Depth", seed=4, n_teams=4)
+    conn = gs._db()
+    fid = conn.execute("SELECT id FROM gtt_franchises WHERE league_id=? LIMIT 1",
+                       (lid,)).fetchone()["id"]
+    scope = gs._inj_scope(lid, 0)
+    _team, men, _women = gs._lineup(conn, lid, fid, "T", scope)
+    starter = men[0]
+    conn.execute("INSERT INTO gtt_injuries (scope, pid, team, name, week, tag, total,"
+                 " duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,0)",
+                 (scope, starter, str(fid), "x", 1, "t", 3, 3))
+    conn.commit()
+    _team2, men2, _w2 = gs._lineup(conn, lid, fid, "T", scope)
+    conn.close()
+    assert starter not in men2, "injured pro still in the lineup"
+    assert len(men2) == len(men), "a reserve should have been pulled up"
+
+
+def test_gtt_injuries_are_cleared_with_their_league(tmp_path):
+    """gtt_injuries is keyed by an opaque scope int, so it has to be cleared
+    explicitly. SQLite reuses league/franchise rowids and a new save reuses the
+    default seed, so pids and scopes repeat EXACTLY — stale rows would bench
+    players in a league that never injured them."""
+    import app.gtt_seasonmode as gs
+    gs.DB_PATH = str(tmp_path / "gtt.db")
+    gs._schema_ready_for = None
+    injuries.set_enabled(False)
+    lid = gs.create_league("Wipe", seed=6, n_teams=4)
+
+    def _seed_row(league_id):
+        conn = gs._db()
+        conn.execute("INSERT INTO gtt_injuries (scope, pid, team, name, week, tag,"
+                     " total, duals_remaining, season_ending) VALUES (?,?,?,?,?,?,?,?,1)",
+                     (gs._inj_scope(league_id, 0), "ghost", "1", "Ghost", 1, "t", 0, 0))
+        conn.commit(); conn.close()
+
+    def _rows():
+        conn = gs._db()
+        n = conn.execute("SELECT COUNT(*) c FROM gtt_injuries").fetchone()["c"]
+        conn.close()
+        return n
+
+    _seed_row(lid)
+    assert _rows() == 1
+    gs.delete_league(lid)
+    assert _rows() == 0, "deleting a league left its injury rows behind"
+
+    lid2 = gs.create_league("Wipe2", seed=6, n_teams=4)
+    _seed_row(lid2)
+    gs.reset()
+    assert _rows() == 0, "the whole-tour reset left injury rows behind"

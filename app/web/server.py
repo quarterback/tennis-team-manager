@@ -152,6 +152,7 @@ NAV_GROUPS = [
         {"id": "gtt_lead",  "label": "Leaders",      "icon": "fa-solid fa-ranking-star", "endpoint": "gtt_leaders",      "args": {}},
         {"id": "gtt_draft", "label": "Draft",        "icon": "fa-solid fa-list-ol", "endpoint": "gtt_draft",        "args": {}},
         {"id": "gtt_hall",  "label": "Hall of Fame", "icon": "fa-solid fa-building-columns", "endpoint": "gtt_hall",         "args": {}},
+        {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
@@ -205,6 +206,7 @@ def _active_nav(req) -> str:
         return "roster" if prog and req.args.get("school") == prog["school"] else "teams"
     if p.startswith("/editor"):           return "editor"
     if p.startswith("/gtt/hall-of-fame"): return "gtt_hall"
+    if p.startswith("/gtt/alumni"):       return "gtt_alumni"
     if p.startswith("/gtt/schedule"):     return "gtt_sched"
     if p.startswith("/gtt/leaders"):      return "gtt_lead"
     if p.startswith("/gtt/draft"):        return "gtt_draft"
@@ -1496,6 +1498,23 @@ def create_app() -> Flask:
         # land on whichever roster the player ended up on (or stay put for a waive)
         return redirect(url_for("gtt_franchise",
                                 fid=(int(dest) if dest not in ("", "FA") else fid), lg=lid))
+
+    @app.route("/gtt/alumni")
+    def gtt_alumni():
+        # Everyone who persisted past college, in one place — a query over the live
+        # tables, deliberately not a separate archive that could drift from them.
+        league, leagues = _current_league()
+        state = request.args.get("state", "all")
+        if state not in gs.ALUMNI_STATES:
+            state = "all"
+        people = gs.alumni(league["id"], state) if league else []
+        counts = {}
+        if league:
+            for r in gs.alumni(league["id"], "all", limit=100000):
+                counts[r["state"]] = counts.get(r["state"], 0) + 1
+        return render_template("gtt_alumni.html", active="GTT", league=league,
+                               leagues=leagues, people=people, state=state,
+                               states=gs.ALUMNI_STATES, counts=counts)
 
     @app.route("/gtt/player/<pid>")
     def gtt_player(pid):

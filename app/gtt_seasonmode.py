@@ -34,7 +34,7 @@ import os
 import random
 import sqlite3
 
-from . import dbpath
+from . import dbpath, injuries
 from .dbpath import resolve_db_path
 
 from engine import simulate_gtt_dual, GTTTeam
@@ -52,14 +52,48 @@ RESERVE_MEN = 2             # bench depth beyond the lineup — carries the add/
 RESERVE_WOMEN = 2           # churn so franchise starters are never the cut bait
 TARGET_MEN = LINEUP_MEN + RESERVE_MEN      # roster target per gender (5)
 TARGET_WOMEN = LINEUP_WOMEN + RESERVE_WOMEN
-WAIVER_POOL_MEN = 6         # surplus free agents kept on the wire for in-season
-WAIVER_POOL_WOMEN = 6       # add/drop (a fantasy-style waiver pool per gender)
+# The draft is sized to leave a SURPLUS, the way a real draft does: more players
+# come out of college than the clubs can roster, and the leftovers are the free
+# agent pool. Sized per club so a 12-team league gets a proportionally deeper wire
+# than a 4-team one — a fixed +6 drained to zero by year 8 and the whole add/drop
+# economy silently stopped existing.
+DRAFT_SURPLUS_PER_CLUB = 2.0   # extra draftees per club, per gender
+# Rosters lock for the season: the only in-season signing is to cover a player who
+# is out for the year. Set False to restore free week-to-week add/drop.
+ROSTER_LOCK = True
+# Retired players are kept so you can look up a career, but not forever and not
+# indiscriminately: anyone with an honor, a Hall of Fame place or a coaching job is
+# permanent, and the rest are pruned once they're this many years gone.
+RETIRED_KEEP_YEARS = 12
 WAIVER_MARGIN = 0.40        # a free agent must clear a club's WEAKEST roster player
                             # by this STR margin to be signed — a clear upgrade only,
                             # so churn stays low and the lineup core is never at risk
 LINES_TO_CLINCH = 5
 ENTRY_AGE = 22              # a graduate's age on turning pro
 PEAK_AGE = 28              # decline (development in reverse) kicks in past here
+# How hard a pro trains toward the ceiling they graduated with. Growth tapers
+# linearly to zero at PEAK_AGE (the mirror of decline's scale growing past it) and
+# this multiplies it. Calibrated on actual GRADUATES, not raw prospects: at 1.0 a
+# whole prime was worth +1..+4 OVR (invisible); at 2.0 it is +2..+10, with the
+# spread coming from each player's own remaining gap — some break out, some
+# plateau. Raise for a league of late bloomers, lower for one where the draft is
+# destiny.
+PRO_GROWTH = 2.0
+
+# ---- Club coaching: where a pro's game gets SHAPED ------------------------
+# Every franchise has a staff with an `offensive_style`, and each off-season it
+# adds points to the attributes its ARCHETYPE teaches (`app/playstyles.py`). The
+# nudge is ADDITIVE to what the player already has — it isn't gated on remaining
+# potential the way develop() is, so a finished 27-year-old can still be turned
+# into a better volleyer by the right club. Over seasons a roster drifts toward
+# its staff's identity, and the same free agent is worth different things to
+# different clubs.
+#
+# Scale: COACH_BOOST is the per-season points added to an emphasis attribute by an
+# ELITE staff on a maximally coachable player; a poor staff gives ~0. Deliberately
+# below the per-dual chaos form (-17%/+20%) — the club you play for should be
+# readable across a season, not decide a night.
+COACH_BOOST = 1.6
 RETIRE_AGE = 34            # hard retirement age
 RETIRE_FROM = 30           # probabilistic retirement begins here
 # GTT runs on the SAME clock as the college world (owner rule 2027-07): season
@@ -68,7 +102,11 @@ RETIRE_FROM = 30           # probabilistic retirement begins here
 # `advance` + the `on_world_rollover` hook keep the two in lockstep — the pro
 # league can never sim ahead of the college game or stamp future-dated honors.
 BASE_YEAR = 2026
-GRAD_D1_SHARE = 0.95       # target share of each off-season intake from D1
+# D1 dominates the top of the board; the lower divisions fill the tail and the
+# undrafted pool. A hard 0.95 starved the wire of anyone signable AND wasted the
+# fact that D2-D4 graduate far more players than the pros can ever use.
+GRAD_D1_SHARE = 0.95       # share of the ROSTER-FILLING intake drawn from D1
+GRAD_D1_SHARE_SURPLUS = 0.25   # ...and of the SURPLUS, which is mostly D2-D4
 NON_D1_MIN_STR = 58.0      # small-school pro competitiveness bar
 NON_D1_MIN_OVR = 58.0
 
@@ -107,6 +145,43 @@ CREATE INDEX IF NOT EXISTS idx_gtt_pl ON gtt_players(league_id, fid, status);
 CREATE INDEX IF NOT EXISTS idx_gtt_fr ON gtt_franchises(league_id);
 CREATE INDEX IF NOT EXISTS idx_gtt_tx ON gtt_transactions(league_id, year, week);
 """
+# Injuries use the SHARED store in app.injuries — same dice, same durability
+# scaling, same recover/grace rules as the college game (the pros previously had
+# no injuries at all). Own table, because league/year ids are a different id space
+# from college season ids; the RULES are not duplicated.
+_SCHEMA += injuries.table_schema("gtt_injuries")
+
+# The coaching pool. Staffs are PEOPLE from this save — retired pros and the
+# college graduates who never made a roster — not synthetic names, so a club's
+# identity traces back to someone you watched play. `pid` links to that career
+# (NULL only for the synthetic staffs a brand-new league is seeded with).
+# `fid` NULL means unemployed: the pool is deliberately LARGER than the number of
+# clubs so there is a real choice of styles available, the same way the player
+# free-agent pool works.
+_SCHEMA += """
+CREATE TABLE IF NOT EXISTS gtt_coaches (
+  id INTEGER PRIMARY KEY, league_id INTEGER, pid TEXT, name TEXT,
+  archetype TEXT, strength REAL, fid INTEGER, origin TEXT, joined_year INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_gtt_coach ON gtt_coaches(league_id, fid);
+"""
+
+# Surplus coaches beyond the number of clubs, so the pool has variety rather than
+# exactly one staff per job.
+COACH_SURPLUS = 8
+COACH_POOL_YEARS = 5        # an unemployed coach leaves the game after this long
+# A free agent nobody signs is finished. Counted in SEASONS rather than weeks
+# because rosters are seasonal — a player cut in week 3 is signable all the way to
+# the next off-season, and only then has genuinely gone unwanted.
+FA_SEASONS_BEFORE_RETIRE = 2
+COACH_UPGRADE_MARGIN = 0.08  # a free coach must clear the incumbent by this to take the job
+SYNTHETIC_HANDICAP = 0.15    # ...and a real ex-player displaces a synthetic seed easily
+
+
+def _inj_scope(league_id: int, year: int) -> int:
+    """One opaque int key for a (league, year) pair — the store takes a single
+    scope id, and injuries never carry across a pro season."""
+    return league_id * 10000 + year
 
 _schema_ready_for = None
 
@@ -115,6 +190,11 @@ def init_schema() -> None:
     global _schema_ready_for
     conn = dbpath.connect(DB_PATH)
     conn.executescript(_SCHEMA)
+    for col in ("fa_years INTEGER DEFAULT 0",):
+        try:
+            conn.execute(f"ALTER TABLE gtt_players ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
     _schema_ready_for = DB_PATH
@@ -212,7 +292,7 @@ def _active_unis_via(conn) -> set:
             for g in lst("active_genders", ["men", "women"])}
 
 
-def _world_graduates(conn, world_seed, exclude_pids, limit):
+def _world_graduates(conn, world_seed, exclude_pids, limit, d1_share=None):
     """Latest persisted college graduates for the pro intake, 95% D1 / 5% non-D1.
 
     Reads ``world_graduates`` (and active config) through the caller's transaction
@@ -249,7 +329,8 @@ def _world_graduates(conn, world_seed, exclude_pids, limit):
             non.append(item)
     d1.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
     non.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
-    non_target = max(1, round(limit * (1.0 - GRAD_D1_SHARE))) if limit >= 10 else 0
+    share = GRAD_D1_SHARE if d1_share is None else d1_share
+    non_target = max(1, round(limit * (1.0 - share))) if limit >= 10 else 0
     picked = non[:non_target] + d1[:max(0, limit - min(non_target, len(non)))]
     if len(picked) < limit:
         picked.extend(non[non_target:limit - len(picked) + non_target])
@@ -265,8 +346,10 @@ def _intake(conn, league, needed_by_gender):
     lid, seed, year = league["id"], league["world_seed"], league["current_year"]
     have = {r["pid"] for r in conn.execute("SELECT pid FROM gtt_players WHERE league_id=?",
                                            (lid,)).fetchall()}
-    pool_target = {"m": needed_by_gender["m"] + WAIVER_POOL_MEN,
-                   "w": needed_by_gender["w"] + WAIVER_POOL_WOMEN}
+    n_clubs = len(_fr_rows(conn, lid))
+    surplus = max(2, int(round(DRAFT_SURPLUS_PER_CLUB * n_clubs)))
+    pool_target = {"m": needed_by_gender["m"] + surplus,
+                   "w": needed_by_gender["w"] + surplus}
     target = pool_target["m"] + pool_target["w"]
     # Ex-pros (Gr grad transfers leaving college) enter tagged origin='pro' —
     # they are draftable ONLY in the draft's single Pro Round (one pick per
@@ -275,7 +358,15 @@ def _intake(conn, league, needed_by_gender):
     # selector's ranking, so request headroom for both groups.
     from .pros import is_pro as _is_pro
     n_fr = len(_fr_rows(conn, lid))
-    grads = _world_graduates(conn, seed, have, target + 2 * n_fr)
+    # TWO draws. The roster-filling slice stays D1-dominant (the pros want the best
+    # available); the SURPLUS that becomes the free-agent wire is mostly D2-D4 —
+    # they graduate far more players than the pros can ever use, and a wire stocked
+    # only with D1 leftovers empties in a few seasons.
+    need_total = needed_by_gender["m"] + needed_by_gender["w"]
+    grads = _world_graduates(conn, seed, have, need_total + 2 * n_fr)
+    taken = {pid for _g, pid, _d, _s in grads}
+    grads = grads + _world_graduates(conn, seed, have | taken, 2 * surplus,
+                                     d1_share=GRAD_D1_SHARE_SURPLUS)
     pool_rows, pro_rows, used = {"m": [], "w": []}, {"m": [], "w": []}, set(have)
     for g, pid, data, _str in grads:
         if pid in used:
@@ -296,7 +387,10 @@ def _intake(conn, league, needed_by_gender):
     rng = random.Random(_h(seed, lid, "rookies", year))
     for g, full in (("m", "male"), ("w", "female")):
         name_fn = make_name_picker(random.Random(_h(seed, lid, g, year)), gender=full)
-        while len(pool_rows[g]) < needed_by_gender[g]:
+        # Top up to the POOL target, not just the roster holes. Filling only the
+        # holes is why the wire drained: year 0 had a surplus, every year after had
+        # exactly enough bodies for the rosters and nothing left over.
+        while len(pool_rows[g]) < pool_target[g]:
             row = _gen_player(rng, name_fn, g, rng.uniform(46, 60), year,
                               origin="rookie", age=ENTRY_AGE)
             if row["pid"] in used:
@@ -325,15 +419,254 @@ def _active(conn, lid, fid, gender=None):
     return [dict(r) for r in conn.execute(q, args).fetchall()]
 
 
-def _lineup(conn, lid, fid, name):
+# How likely a finished player is to go into coaching, and how good they are at
+# it. Playing ability is NOT the input — plenty of journeymen coach well and plenty
+# of stars don't coach at all — so this reads the attributes that actually describe
+# a teacher.
+_COACH_APTITUDE = ("leadership", "court_vision", "discipline", "competitiveness",
+                   "focus", "team_culture")
+COACH_INTAKE_SHARE = 0.35      # share of each year's finished players who go into coaching
+# ...but capped per club, or the deeper free-agent drain (which retires ~100 players
+# a year in a 12-team league) turns the coaching pool into a second landfill. Only
+# the best-suited candidates get in.
+COACH_INTAKE_PER_CLUB = 1.0
+
+
+def coach_aptitude(current: dict) -> float:
+    """0..1 — how well this person's own attributes suit coaching."""
+    if not current:
+        return 0.0
+    vals = [current.get(a, 50.0) for a in _COACH_APTITUDE]
+    return max(0.0, min(1.0, (sum(vals) / len(vals) - 30.0) / 40.0))
+
+
+def _add_coach(conn, lid, *, pid, name, current, origin, year, fid=None) -> None:
+    """Enter one person into the coaching pool, teaching what they themselves were."""
+    from app import playstyles
+    conn.execute(
+        "INSERT INTO gtt_coaches (league_id, pid, name, archetype, strength, fid,"
+        " origin, joined_year) VALUES (?,?,?,?,?,?,?,?)",
+        (lid, pid, name, playstyles.best_fit(current), coach_aptitude(current),
+         fid, origin, year))
+
+
+def seed_coach_pool(conn, lid, year, n_clubs) -> None:
+    """Give a brand-new league enough staffs to fill every club plus a surplus.
+    These are the ONLY synthetic coaches — from year one the pool is fed by real
+    finished careers."""
+    import random as _r
+    from app import coaches, playstyles
+    have = conn.execute("SELECT COUNT(*) c FROM gtt_coaches WHERE league_id=?",
+                        (lid,)).fetchone()["c"]
+    if have:
+        return
+    rng = _r.Random(f"gtt-coach-seed|{lid}")
+    for i in range(n_clubs + COACH_SURPLUS):
+        c = coaches.coach_for_program(f"gtt:{lid}:seed:{i}")
+        conn.execute(
+            "INSERT INTO gtt_coaches (league_id, pid, name, archetype, strength, fid,"
+            " origin, joined_year) VALUES (?,?,?,?,?,?,?,?)",
+            (lid, None, c.name, playstyles.pick_archetype(rng, year),
+             coaches.coaching_strength(c), i + 1 if i < n_clubs else None,
+             "synthetic", year))
+
+
+def hire_coaches(conn, lid, year) -> int:
+    """The carousel. Fills vacant jobs, then lets clearly better unemployed staffs
+    take a job off a weaker incumbent, and finally drains coaches nobody hired.
+
+    Without the turnover step the year-zero synthetic staffs kept their jobs
+    forever and every real ex-player sat unemployed — which defeats the point of
+    sourcing coaches from careers you watched. Synthetic seeds carry a handicap so
+    a real person displaces a placeholder easily."""
+    import random as _r
+    from app import playstyles
+    era = set(playstyles.era_for(year))
+    rng = _r.Random(f"gtt-hire|{lid}|{year}")
+
+    def _free():
+        return [dict(r) for r in conn.execute(
+            "SELECT id, archetype, strength, pid FROM gtt_coaches"
+            " WHERE league_id=? AND fid IS NULL ORDER BY strength DESC",
+            (lid,)).fetchall()]
+
+    def _rank(c):
+        """Effective standing for the job — a placeholder is worth less than a
+        person, and the meta is worth something."""
+        return (c["strength"]
+                - (0.0 if c.get("pid") else SYNTHETIC_HANDICAP)
+                + (0.05 if c["archetype"] in era else 0.0))
+
+    moves = 0
+    # 0) The year-zero synthetic staffs are scaffolding, not people. They are
+    #    retired after their first season so every job from year one on belongs to
+    #    a real finished career — which is the point of sourcing coaches from the
+    #    player pool. If the pool can't cover every job yet, a club simply runs
+    #    without a staff (no coaching boost) until it can.
+    if year >= 1:
+        conn.execute("DELETE FROM gtt_coaches WHERE league_id=? AND origin='synthetic'",
+                     (lid,))
+
+    # 1) vacant jobs
+    vacant = [r["id"] for r in conn.execute(
+        "SELECT f.id FROM gtt_franchises f WHERE f.league_id=? AND NOT EXISTS "
+        "(SELECT 1 FROM gtt_coaches c WHERE c.league_id=f.league_id AND c.fid=f.id)",
+        (lid,)).fetchall()]
+    free = _free()
+    for fid in vacant:
+        if not free:
+            break
+        pool = [c for c in free if c["archetype"] in era] if rng.random() < playstyles.ERA_PULL else []
+        pick = max(pool or free, key=_rank)
+        conn.execute("UPDATE gtt_coaches SET fid=? WHERE id=?", (fid, pick["id"]))
+        free.remove(pick)
+        moves += 1
+
+    # 2) upgrades — a better free staff takes the job, the incumbent joins the pool
+    for inc in [dict(r) for r in conn.execute(
+            "SELECT id, fid, archetype, strength, pid FROM gtt_coaches"
+            " WHERE league_id=? AND fid IS NOT NULL", (lid,)).fetchall()]:
+        free = _free()
+        if not free:
+            break
+        best = max(free, key=_rank)
+        if _rank(best) > _rank(inc) + COACH_UPGRADE_MARGIN:
+            conn.execute("UPDATE gtt_coaches SET fid=NULL WHERE id=?", (inc["id"],))
+            conn.execute("UPDATE gtt_coaches SET fid=? WHERE id=?", (inc["fid"], best["id"]))
+            moves += 1
+
+    # 3) drain — nobody hired them and the game moved on. Keeps the pool a real
+    #    shortlist instead of an ever-growing list of names.
+    conn.execute("DELETE FROM gtt_coaches WHERE league_id=? AND fid IS NULL"
+                 " AND joined_year <= ?", (lid, year - COACH_POOL_YEARS))
+    return moves
+
+
+def intake_coaches(conn, lid, year, people, n_clubs=None) -> int:
+    """Enter this year's finished careers into the coaching pool — retired pros AND
+    the college graduates who never made a roster. `people` is
+    [(pid, name, current_attrs, origin)]. The best-suited become coaches; the rest
+    leave the game."""
+    added = 0
+    if n_clubs is None:
+        n_clubs = len(_fr_rows(conn, lid))
+    ranked = sorted(people, key=lambda x: coach_aptitude(x[2]), reverse=True)
+    cap = max(2, int(round(COACH_INTAKE_PER_CLUB * n_clubs)))
+    keep = min(cap, max(1, int(len(ranked) * COACH_INTAKE_SHARE))) if ranked else 0
+    for pid, name, current, origin in ranked[:keep]:
+        exists = conn.execute("SELECT 1 FROM gtt_coaches WHERE league_id=? AND pid=?",
+                              (lid, pid)).fetchone()
+        if exists:
+            continue
+        _add_coach(conn, lid, pid=pid, name=name, current=current, origin=origin, year=year)
+        added += 1
+    return added
+
+
+def franchise_coach(league_id: int, fid: int, conn=None):
+    """The club's staff, as a row from the coaching pool. None if the club has no
+    coach (a league that predates the pool, until the next rollover hires one).
+
+    `conn` MUST be threaded through when calling from inside an open transaction —
+    the rollover holds a write transaction on the shared SQLite file, and opening a
+    sibling connection there is the deadlock this repo has been bitten by before
+    (see the honors.stamp note in docs/AAR-davis-bjk-cups.md)."""
+    q = ("SELECT id, pid, name, archetype, strength, origin, joined_year FROM gtt_coaches"
+         " WHERE league_id=? AND fid=? LIMIT 1")
+    if conn is not None:
+        row = conn.execute(q, (league_id, fid)).fetchone()
+        return dict(row) if row else None
+    own = _db()
+    try:
+        row = own.execute(q, (league_id, fid)).fetchone()
+    finally:
+        own.close()
+    return dict(row) if row else None
+
+
+def club_style(league_id: int, fid: int, year: int = 0, conn=None) -> str:
+    """The club's playing ARCHETYPE — its staff's, so a club's identity is a
+    PERSON's, and changes when the staff does. Falls back to the era's prevailing
+    style for a club that has no coach yet."""
+    import random as _r
+    from app import playstyles
+    c = franchise_coach(league_id, fid, conn)
+    if c and c.get("archetype") in playstyles.ARCHETYPES:
+        return c["archetype"]
+    rng = _r.Random(f"gtt-style|{league_id}|{fid}|{year // playstyles.ERA_LENGTH}")
+    return playstyles.pick_archetype(rng, year)
+
+
+def club_identity(league_id: int, fid: int, year: int = 0, conn=None) -> dict:
+    """Everything about how a club builds players, for a board or a team page."""
+    from app import playstyles
+    c = franchise_coach(league_id, fid, conn) or {}
+    arch = club_style(league_id, fid, year, conn)
+    return {"coach_name": c.get("name"), "coach_pid": c.get("pid"),
+            "origin": c.get("origin"), "archetype": arch,
+            "label": arch.replace("-", " ").title(),
+            "strength": c.get("strength", 0.0),
+            "doubles_leaning": arch in playstyles.DOUBLES_LEANING,
+            "era": playstyles.era_name(year)}
+
+
+def apply_club_coaching(prospect, league_id: int, fid: int, year: int = 0, conn=None) -> bool:
+    """Add this club's coaching to a player, in place. Returns True if anything
+    moved.
+
+    The club's ARCHETYPE picks the attributes and how hard each one is built (a
+    serve-and-volley staff works the volley harder than the overhead); the staff's
+    quality and the player's own coachability set the overall size. Points are
+    ADDITIVE to current ability rather than gated on remaining potential, so even a
+    finished veteran can be reshaped — that is what lets a club's identity
+    accumulate across a roster.
+
+    Weighted for THIS format: the pro tie is 3 of 9 lines in mixed doubles, so net
+    skills are worth more here than in a college dual where doubles is one point of
+    seven (`playstyles.FORMAT_WEIGHTS`)."""
+    from app import coaches, playstyles
+    from .development import clamp_grade
+    weights = playstyles.emphasis(club_style(league_id, fid, year, conn), fmt="gtt")
+    if not weights:
+        return False
+    c = franchise_coach(league_id, fid, conn)
+    strength = (c or {}).get("strength", 0.0) or 0.0
+    if strength <= 0:
+        return False
+    coachability = prospect.current.get("coachability", 50.0)
+    receptivity = max(0.5, min(1.5, 0.5 + coachability / 50.0))
+    gain = COACH_BOOST * strength * receptivity
+    if gain <= 0:
+        return False
+    moved = False
+    for a, w in weights.items():
+        if a in prospect.current:
+            prospect.current[a] = clamp_grade(prospect.current[a] + gain * w)
+            moved = True
+    if moved:
+        prospect.recruit_stars = prospect.star_rating()
+    return moved
+
+
+def _lineup(conn, lid, fid, name, scope=None):
     """Top men + top women by STR → a GTTTeam, plus the ordered pid lists. The
     lineup is the top LINEUP_* of each gender; deeper roster players are reserves
     who only crack the lineup if they out-rate a starter (the engine of the
-    add/drop wire — a hot reserve plays, a cold one is cut bait)."""
+    add/drop wire — a hot reserve plays, a cold one is cut bait).
+
+    Injured players are filtered out first, so a reserve gets pulled up exactly the
+    way college depth does. A club too thin to field a healthy lineup plays its hurt
+    players rather than forfeiting — the sim needs a full card."""
+    out = injuries.unavailable(conn, "gtt_injuries", scope, str(fid)) if scope is not None else set()
+
     def top(gender, n):
         ps = _active(conn, lid, fid, gender)
         ps.sort(key=lambda r: _prospect(r["data"]).str_value(), reverse=True)
-        return ps[:n]
+        healthy = [r for r in ps if r["pid"] not in out]
+        if len(healthy) >= n:
+            return healthy[:n]
+        hurt = [r for r in ps if r["pid"] in out]      # too thin — the hurt suit up
+        return (healthy + hurt)[:n]
     men, women = top("m", LINEUP_MEN), top("w", LINEUP_WOMEN)
     team = GTTTeam(name=name,
                    men=[_prospect(r["data"]).engine_player() for r in men],
@@ -551,7 +884,9 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     fa_rng = random.Random(_h(seed, "founding_fa"))
     fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
     fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
-    for gender, name_fn, n in (("m", fa_men, WAIVER_POOL_MEN), ("w", fa_women, WAIVER_POOL_WOMEN)):
+    _founding_surplus = max(2, int(round(DRAFT_SURPLUS_PER_CLUB * n_teams)))
+    for gender, name_fn, n in (("m", fa_men, _founding_surplus),
+                               ("w", fa_women, _founding_surplus)):
         wired = 0
         for pid, data, _st in pool[gender][:n]:
             _seat(None, gender, pid, data, "college")
@@ -563,6 +898,8 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
             wired += 1
 
     _build_schedule(conn, lid, start_year, seed)
+    seed_coach_pool(conn, lid, 0, n_teams)
+    hire_coaches(conn, lid, 0)
     conn.commit()
     conn.close()
     return lid
@@ -737,6 +1074,13 @@ def delete_league(league_id):
     for t in ("gtt_duals", "gtt_players", "gtt_franchises", "gtt_seasons",
               "gtt_transactions", "gtt_hof"):
         conn.execute(f"DELETE FROM {t} WHERE league_id=?", (league_id,))
+    # Injuries are keyed by the opaque `_inj_scope` int, not league_id — drop this
+    # league's whole scope RANGE. Left behind, SQLite's rowid reuse hands the id to
+    # the next league and its stale season-ending rows would bench players in a
+    # league that never injured them.
+    conn.execute("DELETE FROM gtt_injuries WHERE scope >= ? AND scope < ?",
+                 (_inj_scope(league_id, 0), _inj_scope(league_id + 1, 0)))
+    conn.execute("DELETE FROM gtt_coaches WHERE league_id=?", (league_id,))
     conn.execute("DELETE FROM gtt_leagues WHERE id=?", (league_id,))
     conn.commit()
     conn.close()
@@ -753,6 +1097,10 @@ def reset() -> None:
     conn.executescript(
         "DELETE FROM gtt_duals; DELETE FROM gtt_players; DELETE FROM gtt_franchises; "
         "DELETE FROM gtt_seasons; DELETE FROM gtt_transactions; DELETE FROM gtt_hof; "
+        # Injuries too: a new save reuses league/franchise ids AND the default seed,
+        # so pids and `_inj_scope` values repeat exactly. Stale rows would carry a
+        # previous save's injuries into the new one's lineups.
+        "DELETE FROM gtt_injuries; DELETE FROM gtt_coaches; "
         "DELETE FROM gtt_leagues;"
     )
     conn.commit()
@@ -862,8 +1210,9 @@ def _stat_summary(stats_list):
 def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     lid, seed = league["id"], league["world_seed"]
     names = _fr_names(conn, lid)
-    home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)))
-    away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)))
+    scope = _inj_scope(lid, league["current_year"])
+    home, hm, hw = _lineup(conn, lid, home_fid, names.get(home_fid, str(home_fid)), scope)
+    away, am, aw = _lineup(conn, lid, away_fid, names.get(away_fid, str(away_fid)), scope)
     ds = _dual_seed(seed, home_fid, away_fid, tag)
     # The pro game is volatile: each player carries a fresh per-dual "form" that
     # swings their level well beyond college/junior noise, so a lesser team can
@@ -889,6 +1238,14 @@ def _play_and_store(conn, league, dual_id, home_fid, away_fid, tag, fidelity):
     conn.execute("UPDATE gtt_duals SET status='final', home_points=?, away_points=?,"
                  " winner=?, lines_json=? WHERE id=?",
                  (res.home_points, res.away_points, res.winner, json.dumps(lines), dual_id))
+    # Injury clocks tick and fresh injuries roll on exactly who competed — the same
+    # shared store the college game uses, so durability means the same thing here.
+    for fid_, pids in ((home_fid, hm + hw), (away_fid, am + aw)):
+        injuries.recover(conn, "gtt_injuries", scope, str(fid_))
+        roster = [_prospect(r["data"]) for r in _active(conn, lid, fid_)]
+        injuries.roll_new(conn, "gtt_injuries", scope, str(fid_),
+                          [p for p in pids if p], roster,
+                          week=league["current_week"], tag=tag)
     return res
 
 
@@ -1107,6 +1464,116 @@ def _flush_honors(out):
 # Off-season: age → retire → intake → keeper/snake draft → schedule
 # --------------------------------------------------------------------------
 
+def alumni(league_id, state="all", limit=400) -> list[dict]:
+    """Everyone who persisted past college, in one list — playing, on the wire,
+    retired, coaching, or enshrined. Deliberately a QUERY over the live tables and
+    not an archive table: this codebase has been bitten more than once by a second
+    copy of the truth drifting from the first (see the cup preview vs archive in
+    docs/AAR-offseason-visible-steps-cups-and-pros.md)."""
+    conn = _db()
+    try:
+        names = _fr_names(conn, league_id)
+        hof = {r["pid"] for r in conn.execute(
+            "SELECT pid FROM gtt_hof WHERE league_id=?", (league_id,)).fetchall()}
+        coaching = {r["pid"]: r for r in conn.execute(
+            "SELECT pid, archetype, fid FROM gtt_coaches WHERE league_id=?"
+            " AND pid IS NOT NULL", (league_id,)).fetchall()}
+        rows = conn.execute(
+            "SELECT pid, gender, age, status, fid, origin, seasons, joined_year, data"
+            " FROM gtt_players WHERE league_id=?", (league_id,)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        pr = _prospect(r["data"])
+        co = coaching.get(r["pid"])
+        if r["pid"] in hof:
+            st = "hall-of-fame"
+        elif co is not None:
+            st = "coaching"
+        elif r["status"] == "retired":
+            st = "retired"
+        elif r["fid"] is None:
+            st = "free-agent"
+        else:
+            st = "playing"
+        if state not in ("all", st):
+            continue
+        out.append({
+            "pid": r["pid"], "name": pr.name, "country": pr.country,
+            "gender": r["gender"], "age": r["age"], "state": st,
+            "club": names.get(r["fid"]) if r["fid"] else None,
+            "coaching": names.get(co["fid"]) if co and co["fid"] else None,
+            "archetype": co["archetype"] if co else None,
+            "seasons": r["seasons"], "origin": r["origin"],
+            "str": round(pr.str_value(), 1),
+        })
+    order = {"playing": 0, "free-agent": 1, "coaching": 2, "hall-of-fame": 3, "retired": 4}
+    out.sort(key=lambda x: (order.get(x["state"], 9), -x["str"]))
+    return out[:limit]
+
+
+ALUMNI_STATES = ("all", "playing", "free-agent", "coaching", "hall-of-fame", "retired")
+
+
+def prune_retired(conn, lid, year) -> int:
+    """Drop long-retired players nobody will ever look up. Anyone who won something,
+    made the Hall of Fame, or went into coaching is KEPT — the pro league exists to
+    follow careers, so the archive has to hold the careers worth following. This
+    only clears the anonymous tail so the table stays a record rather than a
+    landfill."""
+    cutoff = year - RETIRED_KEEP_YEARS
+    if cutoff <= 0:
+        return 0
+    cur = conn.execute(
+        "DELETE FROM gtt_players WHERE league_id=? AND status='retired'"
+        " AND COALESCE(joined_year,0) + seasons <= ?"
+        " AND pid NOT IN (SELECT pid FROM gtt_hof WHERE league_id=?)"
+        " AND pid NOT IN (SELECT COALESCE(pid,'') FROM gtt_coaches WHERE league_id=?)",
+        (lid, cutoff, lid, lid))
+    return cur.rowcount or 0
+
+
+def retire_unsigned(conn, lid) -> list:
+    """Age the free-agent clock and retire anyone nobody signed. Returns the
+    retirees as coaching candidates.
+
+    This is the drain that stops free agency being a limbo nobody leaves: a player
+    is signable all the way through a season, and only if he goes
+    `FA_SEASONS_BEFORE_RETIRE` whole seasons without a club is he finished.
+    Rostered players reset the counter, so it measures CONSECUTIVE seasons out."""
+    conn.execute("UPDATE gtt_players SET fa_years=0"
+                 " WHERE league_id=? AND fid IS NOT NULL", (lid,))
+    conn.execute("UPDATE gtt_players SET fa_years=COALESCE(fa_years,0)+1"
+                 " WHERE league_id=? AND status='active' AND fid IS NULL", (lid,))
+    out = []
+    for r in conn.execute("SELECT id, pid, data FROM gtt_players WHERE league_id=?"
+                          " AND status='active' AND fid IS NULL AND fa_years>=?",
+                          (lid, FA_SEASONS_BEFORE_RETIRE)).fetchall():
+        conn.execute("UPDATE gtt_players SET status='retired' WHERE id=?", (r["id"],))
+        pr = _prospect(r["data"])
+        out.append((r["pid"], pr.name, dict(pr.current), "unsigned"))
+    return out
+
+
+def _season_ending_out(conn, lid, year, fid, roster) -> bool:
+    """True if this club has someone out for the SEASON — the only thing that opens
+    an in-season roster spot. Rosters otherwise lock for the year: a club that could
+    swap its worst player every week for whoever is hot never has an identity, and
+    the churn is what made released players feel like they vanished."""
+    if not ROSTER_LOCK:
+        return True
+    pids = {r["pid"] for r in roster}
+    if not pids:
+        return False
+    q = ",".join("?" for _ in pids)
+    row = conn.execute(
+        f"SELECT 1 FROM gtt_injuries WHERE scope=? AND team=? AND season_ending=1"
+        f" AND pid IN ({q}) LIMIT 1",
+        (_inj_scope(lid, year), str(fid), *pids)).fetchone()
+    return bool(row)
+
+
 def _should_retire(pid, age, year):
     if age >= RETIRE_AGE:
         return True
@@ -1133,20 +1600,49 @@ def _offseason(conn, s, fidelity):
 
     # Age everyone a year; retire the veterans; decline those past their peak
     # (development run in reverse — the slide steepens with each year past peak).
-    for r in conn.execute("SELECT id, pid, age, data FROM gtt_players WHERE league_id=?"
+    retiring: list = []
+    for r in conn.execute("SELECT id, pid, age, data, fid FROM gtt_players WHERE league_id=?"
                           " AND status='active'", (lid,)).fetchall():
         age = (r["age"] or ENTRY_AGE) + 1
         if _should_retire(r["pid"], age, year):
             conn.execute("UPDATE gtt_players SET age=?, status='retired', fid=NULL WHERE id=?",
                          (age, r["id"]))
+            # A finished career is a coaching CANDIDATE — this is the point of the
+            # pro league: you keep seeing people after they stop playing.
+            _p = _prospect(r["data"])
+            retiring.append((r["pid"], _p.name, dict(_p.current), "retired-pro"))
             continue
         data = r["data"]
+        # Pros DEVELOP up to their peak and decline after it — the same
+        # Prospect.develop the college game uses, closing part of the gap to the
+        # ceiling they graduated with. Growth tapers to zero at PEAK_AGE, the mirror
+        # of decline's scale growing past it. Without this a pro was FROZEN at their
+        # college exit level from 22 until 29 and then only got worse: no prime, no
+        # breakout seasons, a static league.
         if age > PEAK_AGE:
             p = _prospect(data)
             p.decline(scale=age - PEAK_AGE)
             data = json.dumps(_prospect_dict(p))
+        else:
+            p = _prospect(data)
+            taper = max(0.0, min(1.0, (PEAK_AGE - age) / (PEAK_AGE - ENTRY_AGE)))
+            p.develop(scale=PRO_GROWTH * taper)
+            data = json.dumps(_prospect_dict(p))
+        # Club coaching shapes the game on TOP of that, at every age — the staff's
+        # style decides which attributes, its quality and the player's coachability
+        # decide how much.
+        if r["fid"] is not None:
+            p = _prospect(data)
+            if apply_club_coaching(p, lid, r["fid"], year, conn):
+                data = json.dumps(_prospect_dict(p))
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
+
+    # Now that everyone has had this season's aging and decline, decide who is
+    # finished: a free agent nobody signed for FA_SEASONS_BEFORE_RETIRE seasons.
+    # Deliberately AFTER the loop above — running it first froze a retiring
+    # player's rating a season early.
+    retiring.extend(retire_unsigned(conn, lid))
 
     # --- College takeover: synthetic founders don't hold seats once the college
     # pipeline is live (owner rule 2027-07). Each off-season, every FOUNDER still
@@ -1188,6 +1684,18 @@ def _offseason(conn, s, fidelity):
             need[g] += max(0, tgt - have)
     league_row = {**s, "current_year": year}
     _intake(conn, league_row, need)
+
+    # Coaching pool: this year's finished careers enter it — retired pros, plus the
+    # college graduates (mostly D2-D4) who never made a roster. A player who never
+    # turned pro coaching a pro club is the realistic path, and it means the pool
+    # keeps a surplus of styles instead of exactly one staff per job.
+    undrafted = []
+    for gg, pid, data, _st in _world_graduates(conn, s["world_seed"], have_pids, 400):
+        pr = _prospect(data)
+        undrafted.append((pid, pr.name, dict(pr.current), "college"))
+    intake_coaches(conn, lid, year, retiring + undrafted)
+    hire_coaches(conn, lid, year)
+    prune_retired(conn, lid, year)
 
     # Keepers stay on roster; a reverse-standings snake draft fills the gaps.
     _draft(conn, lid, year, prev_year)
@@ -1317,6 +1825,11 @@ def _process_waivers(league_id, year, week):
             best_str, best_pid = fas[g][0]
             if best_str < weak_str + WAIVER_MARGIN:
                 continue                              # no clear upgrade — stand pat
+            # ROSTERS LOCK FOR THE SEASON. A club may only replace a player who is
+            # OUT FOR THE YEAR — no week-to-week churn on form. Everything else
+            # waits for the off-season, which is what makes a squad a squad.
+            if not _season_ending_out(conn, league_id, year, fid, roster):
+                continue
             conn.execute("UPDATE gtt_players SET fid=NULL WHERE league_id=? AND pid=?",
                          (league_id, weak["pid"]))
             conn.execute("UPDATE gtt_players SET fid=? WHERE league_id=? AND pid=?",

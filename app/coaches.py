@@ -507,3 +507,19 @@ def program_localism(school: str) -> float:
     Stable per school and cached; the recruiting sim reads it to bias a localist
     program toward in-region recruits beyond a recruit's own homecooking."""
     return program_coach(school).localism if school else 0.5
+
+
+# ---------------------------------------------------------------------------
+# Coaching STYLE → which parts of a player's game a staff actually builds.
+#
+# The style VOCABULARY lives in app/playstyles.py (real-tennis archetypes, weighted
+# per attribute and per format). This is only how hard a given staff teaches it.
+# ---------------------------------------------------------------------------
+
+def coaching_strength(coach) -> float:
+    """How much a staff moves the needle, from its development_score, on the same
+    OBSERVED 35..65 band `development_multiplier` is anchored to (generated scores
+    cluster there — anchoring on the theoretical 20-80 scale silently compresses
+    the real spread). 0.0 at a poor staff, 1.0 at an elite one."""
+    score = getattr(coach, "development_score", 50.0)
+    return max(0.0, min(1.0, (score - _DEV_SCORE_LO) / (_DEV_SCORE_HI - _DEV_SCORE_LO)))
