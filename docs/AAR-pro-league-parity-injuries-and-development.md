@@ -1,12 +1,15 @@
-# AAR — the pro league had no injuries and no development (and why that kept getting waved off)
+# AAR — building out the pro league: injuries, development, and club playing styles
 
 **Date:** 2026-07-29
-**Status:** FIXED for both. Coaches + franchise prestige remain open (see "What's left").
+**Status:** Injuries, development and club coaching/styles all landed. Franchise
+prestige and a coach carousel remain open (see "What's left").
 **Scope:** `injuries.table_schema` / `unavailable` / `recover` / `roll_new` (new — the
 shared store), `seasonmode._unavailable` / `_recover_team` / `_roll_new_injuries` (now
 delegations), `gtt_seasonmode` (`gtt_injuries` table, `_inj_scope`, `_lineup` filter,
-`_play_and_store` roll, `PRO_GROWTH` + the develop branch), `tests/test_injuries.py`,
-`tests/test_gtt.py`.
+`_play_and_store` roll, `PRO_GROWTH` + the develop branch, `franchise_coach` /
+`club_style` / `club_identity` / `apply_club_coaching`), `app/playstyles.py` (new),
+`coaches.coaching_strength`, `tests/test_injuries.py`, `tests/test_gtt.py`,
+`tests/test_playstyles.py`.
 
 ## Symptom
 
@@ -117,16 +120,68 @@ keys on is recycled by SQLite after a reset, and a new save reuses the default s
 so "the ids will differ" is never true here. Add the DELETE to both the per-entity
 delete and the whole-tour reset in the same change that adds the CREATE.
 
+**Weight by what the FORMAT actually uses.** The same attribute is not worth the same
+in two leagues. Doubles is 1/3 of a pro tie and 1/7 of a college dual, so net skills
+carry ~2.3x more there; a boost table copied between them is silently mis-tuned. Check
+the line composition before calibrating anything that targets specific attributes.
+
 **And calibrate on the real population.** A growth/decay curve tuned on freshly
 generated prospects will be silently near-zero on graduates, who have already spent most
 of their headroom. If a change measures as "no effect", check what population you
 measured on before concluding it isn't needed.
 
+## Round 2 — club playing styles (owner: *"can't you look at IRL player styles and
+develop revolving archetypes?"*)
+
+Adding coaches raised three complaints worth recording, because two were
+calibration errors of the same family as the development one above.
+
+**1. Net play was under-weighted for THIS format.** Owner: *"the net thing is so much
+more crucial in this version than in the college game."* Correct, and measurable: the
+pro tie is **3 men's singles + 3 women's singles + 3 mixed doubles = 9 lines, first to
+5** (`engine/gtt.py`). Doubles is **a third of every tie**, against one point of seven
+in a college dual — and `engine/doubles.py` reads `net_play` (0.34), `poaching` (0.38),
+`volley_touch`, `overhead` and `doubles_chemistry` directly. Treating net as one bucket
+among five was wrong by roughly 2.3x. `playstyles.FORMAT_WEIGHTS` now states the
+format's demands explicitly instead of pretending every attribute is worth the same
+everywhere.
+
+**2. The style vocabulary was too coarse.** The `Coach` model's existing
+`offensive_style` — balanced / serve-first / baseline / counterpunch / all-court — puts
+most of the professional game in "baseline" and a handful of specialists in
+"serve-first", so nearly every club landed in the same two buckets. Replaced by ten
+real-tennis archetypes in `app/playstyles.py`, each a WEIGHTED attribute map rather
+than a flat set (a serve-and-volley staff builds the volley harder than the overhead;
+flat sets move every emphasised attribute identically, which reads as a bulk buff, not
+a style).
+
+**3. Styles are now REVOLVING.** `era_for(year)` cycles a prevailing meta every
+`ERA_LENGTH` (6) seasons — serve-and-volley, then power baseline, then athletic
+defence, then heavy topspin, then junk/big-serve — and new staffs are pulled toward it
+at `ERA_PULL` (0.65), never locked to it. Counter-trend clubs are what seed the next
+era. A club keeps the identity it was hired with for the era's duration.
+
+### Measured
+
+Six seasons of one graduate at two different clubs:
+
+```
+net-poacher club   poaching +11.1  net_play +11.1  doubles_chemistry +11.1  shot_tolerance +0.0
+topspin-grinder    shot_tolerance +7.4  consistency +7.4  stamina +6.6  net_play +0.0
+```
+
+And the shaping is a SPECIALISM, not a buff — the net-shaped player's pair beat the
+unshaped pair **57% over 300 doubles matches**, while the same player in **singles was
+47%** (noise around even). A doubles club makes doubles players. In a format where a
+third of the lines are doubles, that is a legitimate way to build a whole roster.
+
 ## What's left
 
-- **Coaches — the real remaining hole.** Franchises have none at all, so
-  `coaches.development_multiplier` has nothing to attach to and every pro develops at
-  exactly the same rate. This is the piece that makes the development above mean
-  something per-club.
-- **Franchise prestige** — smaller; matters if free agents should prefer winners over
-  the highest bidder.
+- **Coach carousel.** Staffs are deterministic per (league, franchise) and only change
+  identity when the era turns. Nobody is ever hired or fired, so a club can't be
+  rebuilt around a new style on purpose.
+- **Free agents don't read style.** A net-poacher club and a grinder club value the
+  same free agent identically, which wastes the identity system in exactly the place it
+  should bite — roster building.
+- **Franchise prestige** — matters if free agents should prefer winners over the
+  highest bidder.

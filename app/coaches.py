@@ -512,31 +512,9 @@ def program_localism(school: str) -> float:
 # ---------------------------------------------------------------------------
 # Coaching STYLE → which parts of a player's game a staff actually builds.
 #
-# `offensive_style` already exists on every generated coach; this is what it means
-# mechanically. A club's staff nudges the attributes it teaches, so rosters drift
-# toward a recognizable identity over seasons — a serve-first club accumulates
-# servers — rather than every squad developing into the same shape.
+# The style VOCABULARY lives in app/playstyles.py (real-tennis archetypes, weighted
+# per attribute and per format). This is only how hard a given staff teaches it.
 # ---------------------------------------------------------------------------
-
-STYLE_ATTRS: dict[str, tuple[str, ...]] = {
-    "serve-first": ("first_serve_power", "first_serve_accuracy",
-                    "second_serve_quality", "serve_variety", "overhead"),
-    "baseline": ("forehand_power", "forehand_control", "backhand_power",
-                 "backhand_control", "groundstroke_consistency", "shot_tolerance"),
-    "counterpunch": ("rally_patience", "shot_tolerance", "slice_control", "footwork",
-                     "speed", "stamina", "recovery", "passing_precision"),
-    "all-court": ("approach_shot", "transition_game", "net_play", "volley_touch",
-                  "poaching", "drop_touch"),
-    # A balanced staff teaches the whole game a little instead of a specialism.
-    "balanced": ("groundstroke_consistency", "return_quality", "footwork",
-                 "composure", "focus", "court_vision"),
-}
-
-
-def style_emphasis(coach) -> tuple[str, ...]:
-    """The attributes this coach's staff builds. Empty for an unknown style."""
-    return STYLE_ATTRS.get(getattr(coach, "offensive_style", "balanced"), ())
-
 
 def coaching_strength(coach) -> float:
     """How much a staff moves the needle, from its development_score, on the same

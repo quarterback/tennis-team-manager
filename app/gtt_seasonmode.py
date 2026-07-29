@@ -71,7 +71,7 @@ PRO_GROWTH = 2.0
 
 # ---- Club coaching: where a pro's game gets SHAPED ------------------------
 # Every franchise has a staff with an `offensive_style`, and each off-season it
-# adds points to exactly the attributes it teaches (`coaches.STYLE_ATTRS`). The
+# adds points to the attributes its ARCHETYPE teaches (`app/playstyles.py`). The
 # nudge is ADDITIVE to what the player already has — it isn't gated on remaining
 # potential the way develop() is, so a finished 27-year-old can still be turned
 # into a better volleyer by the right club. Over seasons a roster drifts toward
@@ -364,43 +364,69 @@ def franchise_coach(league_id: int, fid: int):
     `coaches.coach_for_program` is stable per school. Franchises had NO coach at
     all, so nothing in the pro game could depend on who ran the club."""
     from app import coaches
+    return coaches.coach_for_program(f"gtt:{league_id}:{fid}")
+
+
+def club_style(league_id: int, fid: int, year: int = 0) -> str:
+    """The club's playing ARCHETYPE — a real-tennis style like 'serve-and-volley'
+    or 'net-poacher', not the old five-way offensive_style, which lumped most of
+    the professional game into 'baseline'. Staffs are pulled toward the prevailing
+    era (`playstyles.era_for`), so the league's texture turns over across decades
+    instead of being fixed at world creation; a club keeps the identity it was
+    hired with."""
     import random as _r
-    key = f"gtt:{league_id}:{fid}"
-    return coaches.coach_for_program(key)
+    from app import playstyles
+    rng = _r.Random(f"gtt-style|{league_id}|{fid}|{year // playstyles.ERA_LENGTH}")
+    return playstyles.pick_archetype(rng, year)
 
 
-def club_style(league_id: int, fid: int) -> str:
-    """The club's playing identity, e.g. 'serve-first' — what its staff teaches."""
-    return getattr(franchise_coach(league_id, fid), "offensive_style", "balanced")
-
-
-def apply_club_coaching(prospect, league_id: int, fid: int) -> bool:
-    """Add this club's coaching to a player, in place. Returns True if anything
-    moved. The staff's STYLE picks the attributes, its quality and the player's own
-    coachability set the size; the points are ADDITIVE to current ability rather
-    than gated on remaining potential, so even a finished veteran can be reshaped.
-    That is what makes a club's identity accumulate across a roster."""
-    from app import coaches
-    from .development import clamp_grade
+def club_identity(league_id: int, fid: int, year: int = 0) -> dict:
+    """Everything about how a club builds players, for a board or a team page."""
+    from app import coaches, playstyles
     coach = franchise_coach(league_id, fid)
-    attrs = coaches.style_emphasis(coach)
-    if not attrs:
+    arch = club_style(league_id, fid, year)
+    return {"coach": coach, "archetype": arch,
+            "label": arch.replace("-", " ").title(),
+            "strength": coaches.coaching_strength(coach),
+            "doubles_leaning": arch in playstyles.DOUBLES_LEANING,
+            "era": playstyles.era_name(year)}
+
+
+def apply_club_coaching(prospect, league_id: int, fid: int, year: int = 0) -> bool:
+    """Add this club's coaching to a player, in place. Returns True if anything
+    moved.
+
+    The club's ARCHETYPE picks the attributes and how hard each one is built (a
+    serve-and-volley staff works the volley harder than the overhead); the staff's
+    quality and the player's own coachability set the overall size. Points are
+    ADDITIVE to current ability rather than gated on remaining potential, so even a
+    finished veteran can be reshaped — that is what lets a club's identity
+    accumulate across a roster.
+
+    Weighted for THIS format: the pro tie is 3 of 9 lines in mixed doubles, so net
+    skills are worth more here than in a college dual where doubles is one point of
+    seven (`playstyles.FORMAT_WEIGHTS`)."""
+    from app import coaches, playstyles
+    from .development import clamp_grade
+    weights = playstyles.emphasis(club_style(league_id, fid, year), fmt="gtt")
+    if not weights:
         return False
-    strength = coaches.coaching_strength(coach)
+    strength = coaches.coaching_strength(franchise_coach(league_id, fid))
     if strength <= 0:
         return False
-    # A coachable player takes more from the same staff (0.5x .. 1.5x around the
-    # 20-80 midpoint), so who you sign matters as much as who coaches them.
     coachability = prospect.current.get("coachability", 50.0)
     receptivity = max(0.5, min(1.5, 0.5 + coachability / 50.0))
     gain = COACH_BOOST * strength * receptivity
     if gain <= 0:
         return False
-    for a in attrs:
+    moved = False
+    for a, w in weights.items():
         if a in prospect.current:
-            prospect.current[a] = clamp_grade(prospect.current[a] + gain)
-    prospect.recruit_stars = prospect.star_rating()
-    return True
+            prospect.current[a] = clamp_grade(prospect.current[a] + gain * w)
+            moved = True
+    if moved:
+        prospect.recruit_stars = prospect.star_rating()
+    return moved
 
 
 def _lineup(conn, lid, fid, name, scope=None):
@@ -1268,7 +1294,7 @@ def _offseason(conn, s, fidelity):
         # decide how much.
         if r["fid"] is not None:
             p = _prospect(data)
-            if apply_club_coaching(p, lid, r["fid"]):
+            if apply_club_coaching(p, lid, r["fid"], year):
                 data = json.dumps(_prospect_dict(p))
         conn.execute("UPDATE gtt_players SET age=?, seasons=seasons+1, data=? WHERE id=?",
                      (age, data, r["id"]))
