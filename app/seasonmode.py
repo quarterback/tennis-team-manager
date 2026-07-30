@@ -484,9 +484,14 @@ def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None
     _recover_team(conn, sid, home)
     _recover_team(conn, sid, away)
     retired = _mark_retirements(conn, sid, rec, home, away, progs, week, tag)
-    if retired:                                   # re-persist the relabelled lines
-        conn.execute("UPDATE duals SET lines_json=? WHERE id=?",
-                     (json.dumps(rec["lines"]), dual_id))
+    if retired:
+        # A retirement can flip a line, which can flip the DUAL — re-persist points
+        # and winner, not just the relabelled lines.
+        w = 0 if rec["home_points"] >= rec["away_points"] else 1
+        conn.execute("UPDATE duals SET lines_json=?, home_points=?, away_points=?,"
+                     " winner=? WHERE id=?",
+                     (json.dumps(rec["lines"]), rec["home_points"],
+                      rec["away_points"], w, dual_id))
     _roll_new_injuries(conn, sid, home, rec.get("home_played"), build_roster(progs[home]), week, tag)
     _roll_new_injuries(conn, sid, away, rec.get("away_played"), build_roster(progs[away]), week, tag)
     return rec
@@ -495,11 +500,14 @@ def _play_and_store(conn, s, progs, dual_id, home, away, is_conf, tag, form=None
 def _mark_retirements(conn, sid, rec, home, away, progs, week, tag) -> int:
     """Roll retirements over this dual's completed SINGLES lines.
 
-    A retirement is an injury outcome, not a concession: the player who lost the line
-    pulled out hurt, so the line is relabelled (`retired`, with the pid who retired)
-    and that player is GUARANTEED an injury rather than merely rolled for. The winner
-    and the dual result are untouched — the match was already simulated; this only
-    changes how it ended. Returns how many lines were relabelled."""
+    A retirement DOES NOT CARE WHAT THE SCORE IS. Whoever pulls out hurt loses the
+    line by retiring, even if they were ahead — that is the whole difference between a
+    retirement and a normal loss. So the retiring player is drawn independently of who
+    the sim said won, the line is relabelled (`retired`, `retired_pid`), the win goes
+    to the opponent, and the dual points are corrected when that flips a line.
+
+    They are GUARANTEED an injury rather than merely rolled for: the retirement is the
+    injury becoming visible. Returns how many lines were relabelled."""
     from .ncaa import build_roster
     if not injuries.is_enabled():
         return 0
@@ -511,14 +519,25 @@ def _mark_retirements(conn, sid, rec, home, away, progs, week, tag) -> int:
             continue
         if "home_pid" not in ln or not injuries.roll_retirement():
             continue
-        # the loser is the one who retired
-        school = away if ln.get("home_won") else home
-        pid = ln["away_pid"] if ln.get("home_won") else ln["home_pid"]
+        # Either player can be the one who pulls out — the score is irrelevant.
+        home_retires = injuries.retiring_side()
+        school = home if home_retires else away
+        pid = ln["home_pid"] if home_retires else ln["away_pid"]
         pr = rosters[school].get(pid)
         if pr is None:
             continue
         ln["retired"] = True
         ln["retired_pid"] = pid
+        # Retiring loses the line, whatever the score was when they stopped.
+        was_home_won = bool(ln.get("home_won"))
+        ln["home_won"] = not home_retires
+        if ln["home_won"] != was_home_won:            # the line flipped
+            if ln["home_won"]:
+                rec["home_points"] = rec.get("home_points", 0) + 1
+                rec["away_points"] = max(0, rec.get("away_points", 0) - 1)
+            else:
+                rec["away_points"] = rec.get("away_points", 0) + 1
+                rec["home_points"] = max(0, rec.get("home_points", 0) - 1)
         out = injuries.roll_injury(pr) or injuries.MIN_DUALS_OUT
         name = getattr(pr, "name", "")
         if out == injuries.SEASON_ENDING:

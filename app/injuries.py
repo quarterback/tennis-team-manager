@@ -105,6 +105,13 @@ def roll_retirement() -> bool:
     return is_enabled() and _rng.random() < RETIREMENT_RATE
 
 
+def retiring_side() -> bool:
+    """Which side's player pulled out — True for home. A coin flip, deliberately
+    independent of the score: a retirement is not a concession by whoever was
+    losing."""
+    return _rng.random() < 0.5
+
+
 def roll_injury(prospect) -> int:
     """Roll once (one dual) for one player who competed.
 
