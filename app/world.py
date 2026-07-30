@@ -44,7 +44,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap,
                    autogen_walkons, admits_nationality, blocked_schools_for,
-                   is_domestic_player, us_only_program)
+                   is_domestic_player, us_only_program, LINEUP_SIZE as LINEUP_FLOOR, walkon_talent)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          perceived_caliber, consensus_caliber,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
@@ -2844,18 +2844,28 @@ def assign_pool_walkons(rosters: dict, signings: dict, seed: int, year: int) -> 
 def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     """Top D3/D4 rosters back up to size with AUTO-GENERATED walk-on freshmen — only
     the seats still empty after real pool recruits (signings + leftover sweep) are
-    placed. D1/D2 are skipped: they fill their walk-on depth from the recruiting pool
-    only, so a D1/D2 program that doesn't sign enough simply carries fewer walk-ons."""
+    placed. D1/D2 get no walk-on DEPTH: they fill it from the recruiting pool only, so
+    a D1/D2 program that doesn't sign enough simply carries fewer walk-ons.
+
+    EVERY division, though, gets a hard floor of `LINEUP_FLOOR` — the six a dual
+    actually needs. D1 carrying no walk-on depth is about keeping D1 rosters SMALLER
+    than D2/D3/D4, so the portals can oversign and rebuild a roster quickly without
+    cutting a pile of players (owner rule). It was never about letting a program fall
+    below a playable lineup: under six there is no lineup at all, `Team.doubles`
+    indexes 0..5, and the engine crashed mid-bracket. The floor is enforced HERE, on the real roster
+    that gets persisted and indexed, rather than by synthesising a phantom player at
+    squad-build time (whose pid existed nowhere, so championship links 404'd)."""
     from . import recruit_economy
     intake = 0
     for (division, gender), schools in rosters.items():
-        if not autogen_walkons(division):          # D1/D2: no game-generated walk-ons
-            continue
+        depth = autogen_walkons(division)          # D1/D2: no game-generated DEPTH
         cap = roster_cap(division)
         progs = {p.school: p for p in load_division(division, gender).programs}
         for school, roster in schools.items():
             prog = progs.get(school)
-            need = cap - len(roster)
+            # D1/D2 top up only to the lineup floor; D3/D4 fill their whole cap.
+            target = cap if depth else LINEUP_FLOOR
+            need = target - len(roster)
             if not prog or need <= 0:
                 continue
             # D4 admits only above its academic gate — auto-gen walk-ons included, so a
@@ -2869,10 +2879,12 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
             name_fn = make_name_picker(random.Random(f"{seed}|{prog.key}|wn|{year}"),
                                        gender=_pick_gender(gender),
                                        region_weights=_rw)
-            tmean = max(28.0, _talent_from_strength(prog.strength, prog.division, prog.gender) - 8.0)
             for k in range(need):
                 name, country = name_fn()
-                talent = max(24.0, min(70.0, prng.gauss(tmean, 5.0)))
+                # A walk-on persona, drawn from its division x gender band
+                # (ncaa.WALKON_BAND) — a known quantity below the recruited core,
+                # never a phantom blue-chip.
+                talent = walkon_talent(division, gender, prng)
                 fr = generate_prospect(prng, name, country, gender=_pick_gender(gender),
                                        talent=talent, pid=make_pid(prog.key, "wo", year, k))
                 fr.class_year = "Fr"; fr.walk_on = True

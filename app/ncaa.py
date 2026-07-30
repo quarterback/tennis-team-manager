@@ -806,6 +806,26 @@ _TALENT = {
     ("D3", "men"):   (39.0, 27.0), ("D3", "women"): (33.0, 23.0),
     ("D4", "men"):   (46.0, 22.0), ("D4", "women"): (40.0, 20.0),
 }
+# Walk-on PERSONAS — the talent band a roster-floor filler is drawn from, per
+# division x gender. Explicit rather than derived (it used to be "the division mean
+# minus 8"), because a walk-on is a known quantity: clearly below that tier's
+# recruited core, never a phantom blue-chip, and scaled so a D1 walk-on is a
+# different animal from a D3 one. These are the players who guarantee a program can
+# always field the six a dual needs.
+WALKON_BAND = {
+    ("D1", "men"):   (40.0, 50.0), ("D1", "women"): (34.0, 44.0),
+    ("D2", "men"):   (34.0, 44.0), ("D2", "women"): (29.0, 38.0),
+    ("D3", "men"):   (26.0, 36.0), ("D3", "women"): (23.0, 31.0),
+    ("D4", "men"):   (32.0, 42.0), ("D4", "women"): (28.0, 37.0),
+}
+
+
+def walkon_talent(division: str, gender: str, rng) -> float:
+    """A walk-on persona's talent, inside its division x gender band."""
+    lo, hi = WALKON_BAND.get((division, gender), (28.0, 38.0))
+    return rng.uniform(lo, hi)
+
+
 # College players are largely developed; class year scales how much of the
 # ceiling is realized (freshmen keep headroom to grow year over year).
 _CLASS_MATURITY = {"Fr": (0.83, 0.90), "So": (0.87, 0.93),
@@ -1075,10 +1095,20 @@ def build_roster(p: Program):
     return roster
 
 
+LINEUP_SIZE = 6          # a dual fields six singles; the doubles pairs index into them
+
+
 def squad_and_ladder(p: Program) -> tuple[Team, list]:
     """(engine Team, top-6 ladder of Prospects). Team.singles[i] is exactly
-    ladder[i], so a singles line's player identity (pid) is unambiguous."""
-    ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(), reverse=True)[:6]
+    ladder[i], so a singles line's player identity (pid) is unambiguous.
+
+    A short roster is NOT patched here. Synthesising a filler at squad-build time
+    produced a player with a pid that exists in no roster, no pid index and no
+    persisted world — so a championship link or stamped honor pointed at nobody. The
+    floor belongs where rosters actually change (`world.refill_walkons`), so the six
+    are real, persisted, indexed players."""
+    ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(),
+                    reverse=True)[:LINEUP_SIZE]
     return Team(name=p.school, singles=[pr.engine_player() for pr in ladder]), ladder
 
 

@@ -42,6 +42,12 @@ SEASON_ENDING_SHARE = 0.01 # 1-in-100 injuries end the season (medical-redshirt 
 MIN_DUALS_OUT = 1          # shortest non-season-ending absence
 MAX_DUALS_OUT = 6          # longest non-season-ending absence
 SEASON_ENDING = -1         # sentinel return value from roll_injury
+# RETIREMENT: a player pulls out mid-match with an injury. In tennis the scoreline
+# reads "retired" rather than abandoned, and it happens ONLY after an injury — never
+# as a way to concede. Per COMPLETED SINGLES MATCH, so it scales with how much
+# tennis is actually played. Deliberately rare (owner rule 2026-07): 0.2% lands
+# roughly a handful per conference per season, not a weekly occurrence.
+RETIREMENT_RATE = 0.002
 RETURN_GRACE_DUALS = 3     # after returning, a player is eased back in and can't be
                            # re-injured for this many of their team's duals — the
                            # model is injury-AWARE, so no instant re-injury chains
@@ -90,6 +96,13 @@ def injury_rate(prospect) -> float:
     × (1 + SWING/2). The swing is deliberately narrow — nobody is immune."""
     d = durability(prospect)
     return BASE_RATE * (1.0 + DURABILITY_SWING * (0.5 - d))
+
+
+def roll_retirement() -> bool:
+    """Does this completed singles match end in a retirement? Draws on the same real
+    entropy as every other injury roll (see the module note): retirements are an
+    injury outcome, so they are non-deterministic by the same owner decision."""
+    return is_enabled() and _rng.random() < RETIREMENT_RATE
 
 
 def roll_injury(prospect) -> int:
