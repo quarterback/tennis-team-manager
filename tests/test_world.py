@@ -229,3 +229,78 @@ def test_past_individual_champions_reads_snapshots(tmp_path):
     finally:
         world.WORLD_DB = prev_db
         world._schema_ready_for = prev_ready
+
+
+def test_refill_enforces_a_six_player_floor_in_every_division():
+    """Rosters thin over seasons by design, but below six there is no lineup at all —
+    Team.doubles indexes 0..5 and the engine crashed mid-bracket. D1/D2 still get no
+    walk-on DEPTH; they just never drop under the six a dual needs."""
+    import copy
+    from app.ncaa import load_division, build_roster, roster_cap
+    from app import world
+
+    rosters = {}
+    for div in ("D1", "D3"):
+        prog = {p.school: p for p in load_division(div, "men").programs}
+        school = list(prog)[0]
+        rosters[(div, "men")] = {
+            school: [copy.deepcopy(q) for q in build_roster(prog[school])][:2]}
+
+    world.refill_walkons(rosters, 1, 2026)
+
+    d1 = list(rosters[("D1", "men")].values())[0]
+    d3 = list(rosters[("D3", "men")].values())[0]
+    assert len(d1) == world.LINEUP_FLOOR, "D1 must reach the lineup floor, and stop there"
+    assert len(d3) == roster_cap("D3"), "D3 still fills its whole cap"
+    assert len({p.pid for p in d1}) == len(d1), "floor filler duplicated a pid"
+
+
+def test_refill_leaves_healthy_rosters_alone():
+    import copy
+    from app.ncaa import load_division, build_roster
+    from app import world
+
+    prog = {p.school: p for p in load_division("D1", "men").programs}
+    school = list(prog)[0]
+    full = [copy.deepcopy(q) for q in build_roster(prog[school])]
+    rosters = {("D1", "men"): {school: list(full)}}
+    assert world.refill_walkons(rosters, 1, 2026) == 0
+    assert len(rosters[("D1", "men")][school]) == len(full)
+
+
+def test_walkon_personas_sit_below_their_division_core():
+    """A walk-on is a KNOWN quantity, drawn from an explicit division x gender band —
+    never a phantom blue-chip, and a D1 walk-on is a different animal from a D3 one."""
+    import random
+    from app.ncaa import WALKON_BAND, walkon_talent
+
+    rng = random.Random(3)
+    for (div, gender), (lo, hi) in WALKON_BAND.items():
+        vals = [walkon_talent(div, gender, rng) for _ in range(200)]
+        assert lo <= min(vals) and max(vals) <= hi
+    # ordering: D1 > D2 > D4 > D3 within a gender, and men's bands sit above women's
+    for g in ("men", "women"):
+        d1, d2, d3, d4 = (WALKON_BAND[(d, g)][0] for d in ("D1", "D2", "D3", "D4"))
+        assert d1 > d2 > d4 > d3, f"{g} walk-on bands are not tier-ordered"
+    for d in ("D1", "D2", "D3", "D4"):
+        assert WALKON_BAND[(d, "men")][0] > WALKON_BAND[(d, "women")][0]
+
+
+def test_floor_filler_is_a_walkon_not_a_star():
+    """The roster floor must never hand a thin program a player who decides matches."""
+    import copy
+    from app.ncaa import load_division, build_roster
+    from app import world
+
+    prog = {p.school: p for p in load_division("D1", "men").programs}
+    school = list(prog)[0]
+    full = [copy.deepcopy(q) for q in build_roster(prog[school])]
+    rosters = {("D1", "men"): {school: full[:2]}}
+    world.refill_walkons(rosters, 1, 2026)
+
+    roster = rosters[("D1", "men")][school]
+    added = [p for p in roster if getattr(p, "walk_on", False) and p not in full[:2]]
+    assert added, "no filler was added"
+    best_real = max(p.current_overall() for p in full[:2])
+    assert all(p.current_overall() <= best_real for p in added), \
+        "a floor filler outrated the real roster"

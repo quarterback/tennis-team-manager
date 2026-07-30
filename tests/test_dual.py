@@ -95,17 +95,24 @@ def test_doubles_pairing_never_indexerrors_on_a_short_side():
                 assert d.players[0] is not d.players[1], f"self-paired at n={n}"
 
 
-def test_squad_is_always_six_even_if_the_roster_thinned(monkeypatch):
-    from app.ncaa import load_division, squad_and_ladder, LINEUP_SIZE
+def test_squad_build_does_not_invent_players():
+    """A short roster must NOT be patched at squad-build time. A synthesised filler
+    has a pid that exists in no roster, no pid index and no persisted world, so a
+    championship link or a stamped honor would point at nobody. The floor lives in
+    world.refill_walkons, on real persisted players."""
+    from app.ncaa import load_division, squad_and_ladder
     import app.ncaa as ncaa
 
     prog = load_division("D1", "men").programs[0]
     real = ncaa.build_roster(prog)
-    monkeypatch.setattr(ncaa, "build_roster", lambda p: real[:3])   # thinned to three
-    ncaa._squad_cache.clear()
-    team, ladder = squad_and_ladder(prog)
-    ncaa._squad_cache.clear()
-
-    assert len(ladder) == LINEUP_SIZE
-    assert len(team.singles) == LINEUP_SIZE
-    assert len({pr.pid for pr in ladder}) == LINEUP_SIZE, "filler duplicated a pid"
+    real_pids = {pr.pid for pr in real}
+    orig = ncaa.build_roster
+    try:
+        ncaa.build_roster = lambda p: real[:3]
+        ncaa._squad_cache.clear()
+        _team, ladder = squad_and_ladder(prog)
+    finally:
+        ncaa.build_roster = orig
+        ncaa._squad_cache.clear()
+    assert len(ladder) == 3, "squad_and_ladder invented players again"
+    assert {pr.pid for pr in ladder} <= real_pids, "a ladder pid is not a real roster pid"
