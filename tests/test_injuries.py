@@ -465,3 +465,63 @@ def test_gtt_injuries_are_cleared_with_their_league(tmp_path):
     _seed_row(lid2)
     gs.reset()
     assert _rows() == 0, "the whole-tour reset left injury rows behind"
+
+
+# ---- retirements -------------------------------------------------------------
+
+def test_retirement_rate_is_rare_and_scales_with_matches():
+    """0.2% per completed singles match (owner rule): a handful per conference per
+    season, not a weekly occurrence."""
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(11)
+    n = 200_000
+    hits = sum(1 for _ in range(n) if injuries.roll_retirement())
+    rate = hits / n
+    assert 0.0015 < rate < 0.0025, f"retirement rate drifted to {rate:.4%}"
+
+
+def test_retirement_never_fires_with_injuries_off():
+    injuries.set_enabled(False)
+    assert not any(injuries.roll_retirement() for _ in range(5000))
+
+
+def test_retirement_relabels_the_line_and_injures_the_loser(tmp_path):
+    """A retirement is an INJURY outcome, not a concession: the loser pulled out hurt,
+    so the line is relabelled and that player is guaranteed an injury. The winner and
+    the dual result are untouched."""
+    import app.seasonmode as sm
+    from app.ncaa import load_division, build_roster
+    sm.DB_PATH = str(tmp_path / "ret.db")
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(5)
+
+    div = load_division("D1", "men")
+    home, away = div.programs[0], div.programs[1]
+    progs = {home.school: home, away.school: away}
+    hp = build_roster(home)[0].pid
+    ap = build_roster(away)[0].pid
+    rec = {"lines": [{"slot": "S1", "completed": True, "home_won": True,
+                      "home_pid": hp, "away_pid": ap}]}
+
+    conn = sm._db()
+    conn.execute("INSERT INTO seasons (division, gender, seed, current_week,"
+                 " total_weeks, phase) VALUES ('D1','men',1,1,10,'regular')")
+    sid = conn.execute("SELECT last_insert_rowid() r").fetchone()["r"]
+    # force the roll so the test isn't at the mercy of a 0.2% chance
+    orig, injuries.roll_retirement = injuries.roll_retirement, lambda: True
+    try:
+        n = sm._mark_retirements(conn, sid, rec, home.school, away.school, progs, 1, "t")
+    finally:
+        injuries.roll_retirement = orig
+    conn.commit()
+
+    assert n == 1
+    ln = rec["lines"][0]
+    assert ln["retired"] is True
+    assert ln["retired_pid"] == ap, "the LOSER retired, not the winner"
+    assert ln["home_won"] is True, "the result must be untouched"
+    hurt = conn.execute("SELECT pid, school FROM injuries WHERE season_id=?",
+                        (sid,)).fetchall()
+    conn.close()
+    assert [r["pid"] for r in hurt] == [ap]
+    assert hurt[0]["school"] == away.school

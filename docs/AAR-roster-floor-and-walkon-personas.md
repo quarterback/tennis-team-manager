@@ -1,11 +1,12 @@
 # AAR — a program with fewer than six players crashed the engine
 
 **Date:** 2026-07-30
-**Status:** Roster floor + walk-on personas landed. Mid-season injury walk-ons and
-match retirements are specified but NOT built (see "What's left").
+**Status:** Roster floor, walk-on personas and match RETIREMENTS landed. Mid-season
+injury walk-ons stood down by the owner ("you solved the walk-on problem").
 **Scope:** `engine.dual._pair` (guard), `ncaa.LINEUP_SIZE` / `WALKON_BAND` /
 `walkon_talent` (new), `ncaa.squad_and_ladder`, `world.refill_walkons`,
-`tests/test_dual.py`, `tests/test_world.py`.
+`injuries.RETIREMENT_RATE` / `roll_retirement`, `seasonmode._mark_retirements`,
+`tests/test_dual.py`, `tests/test_world.py`, `tests/test_injuries.py`.
 
 ## Symptom
 
@@ -25,8 +26,10 @@ page down mid-bracket.
 
 Two ways to get there, **both intended behaviour elsewhere**:
 
-* Rosters thin toward ~6–8 over seasons — D1 never signs walk-on depth, so it "runs
-  short" (owner rule 2026-07, CLAUDE.md §3b).
+* Rosters thin toward ~6–8 over seasons — D1 never signs walk-on depth (owner rule
+  2026-07, CLAUDE.md §3b). That rule exists to keep D1 rosters SMALLER than
+  D2/D3/D4, so the portals can oversign and rebuild quickly without mass cuts. It was
+  never a licence to drop below a playable lineup — but nothing enforced a floor.
 * Injuries can cut a six-man roster below six at lineup time.
 
 Measured: **a freshly generated world has zero programs under six.** That is why this
@@ -55,8 +58,14 @@ below 6 players."*
 **The floor lives where rosters actually change.** Moved out of `squad_and_ladder`
 and into `world.refill_walkons`, which runs at the rollover on the real roster that
 gets persisted and indexed. Every division now gets a hard floor of six; only D3/D4
-still get walk-on **depth** beyond it, so the D1 rule is intact — "runs short" means
-8 → 7, not a program that cannot put six on court.
+still get walk-on **depth** beyond it, so the D1 rule is intact: D1 rosters stay the
+smallest, which is the whole point of it — cheap portal rebuilds without mass cuts.
+
+The floor fills with **generated** walk-ons, never with pool or portal players — the
+point of the D1 rule is that a low-major must not absorb a body who would start
+somewhere lower down. A program that simply never gets portal help and sits at 7 is
+left alone; the floor is 6, and only a roster that literally cannot field a lineup is
+topped up.
 
 **Walk-ons are explicit personas.** `ncaa.WALKON_BAND` gives a talent range per
 division × gender, replacing the old implicit "division mean minus 8":
@@ -89,24 +98,32 @@ A synthetic player that never enters `build_roster`, the pid index or `world_ros
 will look fine everywhere except the one surface that follows its id — and that
 surface will 404 long after the code that created it is forgotten.
 
-**"Runs short" needs a floor.** Any design that deliberately lets a resource shrink
-must say where shrinking stops. Thinning to 7 was intended; thinning to 5 was never
-considered, and only the engine noticed.
+**A rule about RELATIVE size is not a licence to hit zero.** "D1 carries no walk-on
+depth" was written to keep D1 rosters smaller than the other divisions so portal
+rebuilds stay cheap. Read literally it also permits a roster of four, which nobody
+intended and only the engine noticed. When a rule constrains one end of a range,
+state the other end too.
 
-## What's left (specified, not built)
+## Match retirements
 
-Both are owner-specified and the design is settled; neither is implemented.
+A rare mid-match injury ends the match as a **retirement** — in tennis the scoreline
+reads "retired" rather than abandoned, and it happens ONLY after an injury, never as
+a way to concede.
 
-1. **Mid-season injury walk-ons.** The rollover floor guarantees six at season start,
-   but injuries can drop a team below six *during* a season — the owner's actual case.
-   Needs a mid-season write path (rosters are only persisted at rollover) plus the
-   `[WO]` tag rendered next to the name in box scores and roster views. Owner's
-   preference is explicit: these SHOULD persist, so the data and team history are
-   trackable, and they carry everything a real player has — name, class Fr–Gr, a
-   persona — differing only in the tag.
-2. **Match retirements.** A rare mid-match injury ends the match as a *retirement*:
-   the scoreline reads "retired" rather than abandoned, and ONLY following an injury.
-   Sizing needs one decision first — the owner gave "a rare 5th of 1%" and "~5 per
-   conference per year / 100–200 total", which disagree by ~8x: D1 alone plays ~9,700
-   singles matches per gender per season, so 0.2% is ~19 and 5-per-conference is ~160.
-   Build it as a tunable rate and calibrate to whichever is meant.
+* `injuries.RETIREMENT_RATE = 0.002` per **completed singles match**, so it scales
+  with how much tennis is actually played. Owner picked 0.2% from two candidate
+  sizings; on D1's ~9,700 singles matches per gender per season that is roughly 19 a
+  year, a handful per conference.
+* Rolled on the same real entropy as every other injury (CLAUDE.md: injuries are the
+  one deliberately non-deterministic system) — a retirement IS an injury outcome.
+* `seasonmode._mark_retirements` relabels the line (`retired`, `retired_pid`) and
+  GUARANTEES that player an injury rather than merely rolling for one. The **loser**
+  is the one who retired; the winner and the dual result are untouched, because the
+  match was already simulated — this only changes how it ended.
+
+## What's left
+
+**Mid-season injury walk-ons** — stood down by the owner. The rollover floor covers
+season start; a team injured below six mid-season would still need a mid-season write
+path and the `[WO]` tag through the box score. Design captured here if it is ever
+wanted.

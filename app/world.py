@@ -2848,9 +2848,11 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     a D1/D2 program that doesn't sign enough simply carries fewer walk-ons.
 
     EVERY division, though, gets a hard floor of `LINEUP_FLOOR` — the six a dual
-    actually needs. "Runs short" is meant to be 8 -> 7, not a program that cannot put
-    six on court: below six there is no lineup, and `Team.doubles` indexes 0..5, so
-    the engine crashed mid-bracket. The floor is enforced HERE, on the real roster
+    actually needs. D1 carrying no walk-on depth is about keeping D1 rosters SMALLER
+    than D2/D3/D4, so the portals can oversign and rebuild a roster quickly without
+    cutting a pile of players (owner rule). It was never about letting a program fall
+    below a playable lineup: under six there is no lineup at all, `Team.doubles`
+    indexes 0..5, and the engine crashed mid-bracket. The floor is enforced HERE, on the real roster
     that gets persisted and indexed, rather than by synthesising a phantom player at
     squad-build time (whose pid existed nowhere, so championship links 404'd)."""
     from . import recruit_economy
