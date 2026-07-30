@@ -1075,10 +1075,48 @@ def build_roster(p: Program):
     return roster
 
 
+LINEUP_SIZE = 6          # a dual fields six singles; the doubles pairs index into them
+
+
+def _emergency_walkons(p: Program, need: int) -> list:
+    """Deterministic filler so a program can always field a dual.
+
+    This is NOT walk-on DEPTH — D1 never recruits walk-ons (owner rule 2026-07) and
+    "runs short" is the intended outcome of thinning. But running short means 8 -> 7,
+    not being unable to put six on court: below six there is no lineup at all and the
+    engine cannot play the match. This tops up only to the six a dual requires."""
+    import random
+    from .development import generate_prospect, make_pid
+    from generators import make_name_picker
+    g = "male" if p.gender in ("men", "male", "m") else "female"
+    prng = random.Random(f"{p.key}|emergency-six")
+    rw = {"us": 1.0} if us_only_program(p.school) else None
+    name_fn = make_name_picker(random.Random(f"{p.key}|emergency-six|names"),
+                               gender=g, **({"region_weights": rw} if rw else {}))
+    tmean = max(26.0, _talent_from_strength(p.strength, p.division, p.gender) - 10.0)
+    out = []
+    for k in range(need):
+        name, country = name_fn()
+        fr = generate_prospect(prng, name, country, gender=g,
+                               talent=max(24.0, min(70.0, prng.gauss(tmean, 5.0))),
+                               pid=make_pid(p.key, "emg", 0, k))
+        fr.class_year = "Fr"
+        fr.walk_on = True
+        out.append(fr)
+    return out
+
+
 def squad_and_ladder(p: Program) -> tuple[Team, list]:
     """(engine Team, top-6 ladder of Prospects). Team.singles[i] is exactly
-    ladder[i], so a singles line's player identity (pid) is unambiguous."""
-    ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(), reverse=True)[:6]
+    ladder[i], so a singles line's player identity (pid) is unambiguous.
+
+    Guarantees six: a roster that has thinned below the lineup size is topped up with
+    emergency filler, because `Team.doubles` indexes positions 0..5 and anything
+    shorter crashed the engine mid-bracket."""
+    ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(),
+                    reverse=True)[:LINEUP_SIZE]
+    if len(ladder) < LINEUP_SIZE:
+        ladder = ladder + _emergency_walkons(p, LINEUP_SIZE - len(ladder))
     return Team(name=p.school, singles=[pr.engine_player() for pr in ladder]), ladder
 
 

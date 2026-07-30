@@ -78,7 +78,19 @@ def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
     """Build the two-player doubles side for a lineup pairing. The pair indexes into
     the team's separate `doubles_players` roster when set, else into `singles`."""
     pool = team.doubles_players if team.doubles_players is not None else team.singles
-    return DoublesTeam(players=(pool[pair[0]], pool[pair[1]]))
+    if not pool:
+        raise ValueError(f"{team.name} has nobody to field in doubles")
+    # NEVER IndexError on a short pool. `Team.doubles` defaults to [(0,1),(2,3),(4,5)],
+    # so a side with fewer than six available players used to blow up here and take
+    # the whole page with it — reachable both from roster thinning over seasons and
+    # from injuries cutting a six-man roster down. A degenerate side plays whoever it
+    # has rather than 500-ing; the roster floor in ncaa.squad_and_ladder keeps this
+    # from firing in the normal case.
+    n = len(pool)
+    i, j = pair[0] % n, pair[1] % n
+    if n > 1 and i == j:
+        j = (j + 1) % n
+    return DoublesTeam(players=(pool[i], pool[j]))
 
 
 def _match_length(res: MatchResult) -> int:

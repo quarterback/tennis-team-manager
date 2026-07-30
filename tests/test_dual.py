@@ -73,3 +73,39 @@ def test_dual_play_all_completes_every_match():
     cwins = {l.slot: l.home_won for l in clinched.lines if l.slot[0] == "S" and l.completed}
     fwins = {l.slot: l.home_won for l in full.lines if l.slot[0] == "S"}
     assert all(fwins[s] == won for s, won in cwins.items())
+
+
+# ---- short rosters must never crash the engine -------------------------------
+
+def test_doubles_pairing_never_indexerrors_on_a_short_side():
+    """The reported crash: `Team.doubles` defaults to [(0,1),(2,3),(4,5)], so a side
+    with fewer than six available players IndexError'd in `_pair` and took the whole
+    page down mid-bracket. Reachable from roster thinning over seasons and from
+    injuries cutting a six-man roster below six."""
+    from engine.dual import Team, _pair
+    from app.ncaa import load_division, build_squad
+
+    full = build_squad(load_division("D1", "men").programs[0])
+    for n in (5, 4, 3, 2, 1):
+        thin = Team(name="Thin", singles=list(full.singles[:n]))
+        for pair in thin.doubles:
+            d = _pair(thin, pair)                       # must not raise
+            assert len(d.players) == 2
+            if n > 1:
+                assert d.players[0] is not d.players[1], f"self-paired at n={n}"
+
+
+def test_squad_is_always_six_even_if_the_roster_thinned(monkeypatch):
+    from app.ncaa import load_division, squad_and_ladder, LINEUP_SIZE
+    import app.ncaa as ncaa
+
+    prog = load_division("D1", "men").programs[0]
+    real = ncaa.build_roster(prog)
+    monkeypatch.setattr(ncaa, "build_roster", lambda p: real[:3])   # thinned to three
+    ncaa._squad_cache.clear()
+    team, ladder = squad_and_ladder(prog)
+    ncaa._squad_cache.clear()
+
+    assert len(ladder) == LINEUP_SIZE
+    assert len(team.singles) == LINEUP_SIZE
+    assert len({pr.pid for pr in ladder}) == LINEUP_SIZE, "filler duplicated a pid"
