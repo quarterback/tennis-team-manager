@@ -485,10 +485,10 @@ def test_retirement_never_fires_with_injuries_off():
     assert not any(injuries.roll_retirement() for _ in range(5000))
 
 
-def test_retirement_relabels_the_line_and_injures_the_loser(tmp_path):
-    """A retirement is an INJURY outcome, not a concession: the loser pulled out hurt,
-    so the line is relabelled and that player is guaranteed an injury. The winner and
-    the dual result are untouched."""
+def test_retirement_ignores_the_score_and_costs_the_line(tmp_path):
+    """A retirement does NOT care what the score is: whoever pulls out hurt loses the
+    line even if they were ahead. That is the whole difference between a retirement
+    and a normal loss."""
     import app.seasonmode as sm
     from app.ncaa import load_division, build_roster
     sm.DB_PATH = str(tmp_path / "ret.db")
@@ -498,30 +498,41 @@ def test_retirement_relabels_the_line_and_injures_the_loser(tmp_path):
     div = load_division("D1", "men")
     home, away = div.programs[0], div.programs[1]
     progs = {home.school: home, away.school: away}
-    hp = build_roster(home)[0].pid
-    ap = build_roster(away)[0].pid
-    rec = {"lines": [{"slot": "S1", "completed": True, "home_won": True,
-                      "home_pid": hp, "away_pid": ap}]}
+    hp, ap = build_roster(home)[0].pid, build_roster(away)[0].pid
 
     conn = sm._db()
     conn.execute("INSERT INTO seasons (division, gender, seed, current_week,"
                  " total_weeks, phase) VALUES ('D1','men',1,1,10,'regular')")
     sid = conn.execute("SELECT last_insert_rowid() r").fetchone()["r"]
-    # force the roll so the test isn't at the mercy of a 0.2% chance
-    orig, injuries.roll_retirement = injuries.roll_retirement, lambda: True
+
+    # HOME won the line on court, but HOME is the one who retires -> home loses it.
+    rec = {"lines": [{"slot": "S1", "completed": True, "home_won": True,
+                      "home_pid": hp, "away_pid": ap}],
+           "home_points": 1, "away_points": 0}
+    orig_r, orig_s = injuries.roll_retirement, injuries.retiring_side
+    injuries.roll_retirement, injuries.retiring_side = (lambda: True), (lambda: True)
     try:
         n = sm._mark_retirements(conn, sid, rec, home.school, away.school, progs, 1, "t")
     finally:
-        injuries.roll_retirement = orig
+        injuries.roll_retirement, injuries.retiring_side = orig_r, orig_s
     conn.commit()
 
-    assert n == 1
     ln = rec["lines"][0]
-    assert ln["retired"] is True
-    assert ln["retired_pid"] == ap, "the LOSER retired, not the winner"
-    assert ln["home_won"] is True, "the result must be untouched"
+    assert n == 1 and ln["retired"] is True
+    assert ln["retired_pid"] == hp, "the retiring player must be the one drawn"
+    assert ln["home_won"] is False, "retiring loses the line regardless of the score"
+    assert (rec["home_points"], rec["away_points"]) == (0, 1), "dual points not corrected"
+
     hurt = conn.execute("SELECT pid, school FROM injuries WHERE season_id=?",
                         (sid,)).fetchall()
     conn.close()
-    assert [r["pid"] for r in hurt] == [ap]
-    assert hurt[0]["school"] == away.school
+    assert [r["pid"] for r in hurt] == [hp]
+    assert hurt[0]["school"] == home.school
+
+
+def test_retiring_side_is_a_coin_flip_not_the_loser():
+    injuries.set_enabled(True)
+    injuries.seed_for_testing(21)
+    n = 20_000
+    home = sum(1 for _ in range(n) if injuries.retiring_side())
+    assert 0.45 < home / n < 0.55, "the retiring side is biased"

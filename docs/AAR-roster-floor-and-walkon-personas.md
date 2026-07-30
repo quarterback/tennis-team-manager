@@ -116,10 +116,18 @@ a way to concede.
   year, a handful per conference.
 * Rolled on the same real entropy as every other injury (CLAUDE.md: injuries are the
   one deliberately non-deterministic system) — a retirement IS an injury outcome.
+* **A retirement does not care what the score is.** The retiring player is drawn
+  independently of who the sim said won, and retiring LOSES them the line even if they
+  were ahead — that is the whole difference between a retirement and a normal loss
+  (real ATP examples: *Murray d. Djokovic 6-4 3-0 RET*, *Guccione d. Nadal 6-5 RET*).
+  When that flips a line, the dual's points and winner are corrected too.
 * `seasonmode._mark_retirements` relabels the line (`retired`, `retired_pid`) and
-  GUARANTEES that player an injury rather than merely rolling for one. The **loser**
-  is the one who retired; the winner and the dual result are untouched, because the
-  match was already simulated — this only changes how it ended.
+  GUARANTEES that player an injury rather than merely rolling for one — the retirement
+  IS the injury becoming visible. A player retires because they have to.
+* **No walkovers, anywhere** (owner rule). A walkover is a no-show before play starts;
+  in college you just put another rostered player on court, so it does not arise —
+  and there is no reason to simulate one in the individual championships, the cups or
+  the pro league either.
 
 ## What's left
 
