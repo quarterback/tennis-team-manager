@@ -69,8 +69,12 @@ def _roster(division: str, gender: str, school: str):
 # strong team still places lower-line players: their teammates are elite, but they
 # personally pile up wins at a meaningful line, which is exactly what the score
 # rewards.
-_POS_W = {1: 1.00, 2: 0.80, 3: 0.60, 4: 0.40, 5: 0.20, 6: 0.10}
-_DBL_W = {1: 0.75, 2: 0.50, 3: 0.25}
+_POS_W = {1: 1.00, 2: 0.80, 3: 0.60, 4: 0.40, 5: 0.20, 6: 0.10,
+          # The expanded cards (D1/D4 field 10 singles, D1 five doubles) extend the
+          # owner's 1-6 weights unchanged and taper below them — a deep-card win is
+          # worth little but never nothing, and the top courts still decide honors.
+          7: 0.08, 8: 0.06, 9: 0.04, 10: 0.02}
+_DBL_W = {1: 0.75, 2: 0.50, 3: 0.25, 4: 0.15, 5: 0.10}
 
 
 def _eligible(division: str, gender: str, seed: int) -> list[dict]:
@@ -107,11 +111,11 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
         lr = lrec.get(pid, {})
         sing = lr.get("singles", {})
         dbl = lr.get("doubles", {})
-        perf = sum(wl[0] * _POS_W.get(n, 0.10) for n, wl in sing.items())
+        perf = sum(wl[0] * _POS_W.get(n, 0.02) for n, wl in sing.items())
         perf += sum(wl[0] * _DBL_W.get(n, 0.10) for n, wl in dbl.items())
         # Primary singles line = where they logged the most matches (display + POTY
         # context); ties break to the higher (lower-numbered) line.
-        line = min(sing, key=lambda n: (-(sing[n][0] + sing[n][1]), n)) if sing else 7
+        line = min(sing, key=lambda n: (-(sing[n][0] + sing[n][1]), n)) if sing else 99
         s, _rel = strmap.get(pid, (None, None))
         out.append({"pid": pid, "name": info["name"], "school": info["school"],
                     "conf": c, "conf_abbr": ca, "str": s if s is not None else 0.0,

@@ -83,8 +83,11 @@ def _seed_positions(n: int) -> list[int]:
 
 
 def play_dual(a: Program, b: Program, *, seed: int, fidelity: str = "fast") -> Program:
-    """Play one dual; higher seed (a) hosts. Returns the winning Program."""
-    res = simulate_dual(build_squad(a), build_squad(b), seed=seed, fidelity=fidelity)
+    """Play one dual in the division's format; higher seed (a) hosts. Returns the
+    winning Program."""
+    from .ncaa import dual_format
+    res = simulate_dual(build_squad(a), build_squad(b), seed=seed, fidelity=fidelity,
+                        dual_fmt=dual_format(a.division))
     return a if res.winner == 0 else b
 
 

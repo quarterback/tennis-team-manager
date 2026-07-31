@@ -21,7 +21,15 @@ Calibration targets (owner's spec):
 Prevalence math (why the numbers below): a starter draws ~`BASE_RATE` per dual;
 a non-season-ending injury sits a player a uniform 1–6 duals (mean 3.5). Steady
 state prevalence per starter ≈ BASE_RATE × 3.5. With BASE_RATE ≈ 0.025 that's
-~0.0875, and across 6 starters ≈ 0.52 hurt at any time — the target.
+~0.0875, and across 6 competitors ≈ 0.52 hurt at any time — the target.
+
+The target is PER TEAM, not per body (owner rule 2027-07): when the per-division
+dual formats grew the singles card to 8/10, more players competing per dual would
+have pushed a D1 side to ~0.9 hurt at any time. `roll_new` therefore scales each
+roll by `EXPOSURE_BASELINE / <players who competed>`, so a team's expected
+injuries per dual — and the ~0.5-starters-out feel — is unchanged whatever the
+card size. GTT clubs field ~6 a dual, so the pro league sits at the baseline and
+is untouched.
 
 Durability shifts the per-player rate a little around the base (tough, well-
 conditioned players break less; high-effort grinders a touch more), but the
@@ -37,6 +45,9 @@ import random
 
 # ---- calibration knobs -----------------------------------------------------
 BASE_RATE = 0.025          # per-dual injury chance for an average-durability starter
+EXPOSURE_BASELINE = 6      # the squad size BASE_RATE was tuned on; a dual that
+                           # fields more bodies scales each roll down by
+                           # baseline/N so the TEAM's injury volume stays put
 DURABILITY_SWING = 0.6     # how much durability tilts the rate (±, around 1.0×)
 SEASON_ENDING_SHARE = 0.01 # 1-in-100 injuries end the season (medical-redshirt path)
 MIN_DUALS_OUT = 1          # shortest non-season-ending absence
@@ -90,19 +101,25 @@ def durability(prospect) -> float:
     return max(0.0, min(1.0, base - overuse))
 
 
-def injury_rate(prospect) -> float:
+def injury_rate(prospect, exposure_scale: float = 1.0) -> float:
     """Per-dual injury probability for this player. BASE_RATE scaled by durability:
     a max-durability player sits near BASE_RATE × (1 − SWING/2); a fragile one near
-    × (1 + SWING/2). The swing is deliberately narrow — nobody is immune."""
+    × (1 + SWING/2). The swing is deliberately narrow — nobody is immune.
+    `exposure_scale` (baseline/N competitors — see EXPOSURE_BASELINE) keeps the
+    TEAM's injury volume at the owner's calibration when a format fields more than
+    the six bodies the rate was tuned on."""
     d = durability(prospect)
-    return BASE_RATE * (1.0 + DURABILITY_SWING * (0.5 - d))
+    return BASE_RATE * exposure_scale * (1.0 + DURABILITY_SWING * (0.5 - d))
 
 
-def roll_retirement() -> bool:
+def roll_retirement(exposure_scale: float = 1.0) -> bool:
     """Does this completed singles match end in a retirement? Draws on the same real
     entropy as every other injury roll (see the module note): retirements are an
-    injury outcome, so they are non-deterministic by the same owner decision."""
-    return is_enabled() and _rng.random() < RETIREMENT_RATE
+    injury outcome, so they are non-deterministic by the same owner decision.
+    `exposure_scale` (baseline/N singles in the dual) keeps the season's retirement
+    COUNT at the owner's ~handful-per-conference sizing now that the expanded cards
+    complete more singles matches per dual — same rule as `injury_rate`."""
+    return is_enabled() and _rng.random() < RETIREMENT_RATE * exposure_scale
 
 
 def retiring_side() -> bool:
@@ -112,7 +129,7 @@ def retiring_side() -> bool:
     return _rng.random() < 0.5
 
 
-def roll_injury(prospect) -> int:
+def roll_injury(prospect, exposure_scale: float = 1.0) -> int:
     """Roll once (one dual) for one player who competed.
 
     Returns:
@@ -122,7 +139,7 @@ def roll_injury(prospect) -> int:
     """
     if not _enabled:
         return 0
-    if _rng.random() >= injury_rate(prospect):
+    if _rng.random() >= injury_rate(prospect, exposure_scale):
         return 0
     if _rng.random() < SEASON_ENDING_SHARE:
         return SEASON_ENDING
@@ -186,6 +203,12 @@ def roll_new(conn, table, scope, team, played_pids, roster, week=0, tag="",
     window) is skipped — the model already knows they're hurt or just back."""
     if not is_enabled() or not played_pids:
         return
+    # Team-level calibration: BASE_RATE was tuned on six competitors a dual. The
+    # expanded formats field 8-12 (singles card + doubles specialists), which would
+    # have inflated a team's injuries by the same factor — the owner wants the OLD
+    # volume, so each roll scales down by baseline/N and the expected injuries per
+    # TEAM per dual stay exactly where they were. GTT (~6 a dual) sits at 1.0.
+    scale = min(1.0, EXPOSURE_BASELINE / len(played_pids))
     by_pid = {p.pid: p for p in roster}
     protected = {r["pid"] for r in conn.execute(
         f"SELECT pid FROM {table} WHERE {cols[0]}=? AND {cols[1]}=?"
@@ -196,7 +219,7 @@ def roll_new(conn, table, scope, team, played_pids, roster, week=0, tag="",
     for pid in played_pids:
         if pid in protected or pid not in by_pid:
             continue
-        out = roll_injury(by_pid[pid])
+        out = roll_injury(by_pid[pid], scale)
         if out == 0:
             continue
         name = getattr(by_pid[pid], "name", "")

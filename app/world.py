@@ -44,7 +44,7 @@ from .ncaa import (Program, load_division, build_roster, reset_caches, _roster_c
                    _talent_from_strength, _talent_mean, _pick_gender, region_proximity,
                    REGION_ADJACENT, ROSTER_SIZE, SCHOLARSHIP_SLOTS, roster_cap,
                    autogen_walkons, admits_nationality, blocked_schools_for,
-                   is_domestic_player, us_only_program, LINEUP_SIZE as LINEUP_FLOOR, walkon_talent)
+                   is_domestic_player, us_only_program, lineup_size, walkon_talent)
 from .recruiting import (program_appeal, recruit_caliber, recruit_academic01,
                          perceived_caliber, consensus_caliber,
                          home_region, academic_gate, GEO_WEIGHT, FAC_WEIGHT, ACA_PULL,
@@ -141,11 +141,12 @@ RECRUIT_INTL_SHARE = worldconfig.DEFAULT_INTL_SHARE
 INTL_TIER_PULL = {"D1": 1.0, "D2": 0.72, "D3_elite": 0.5, "D3": 0.15, "D4": 0.05}
 
 # Playing time as a recruit factor (owner rule 2027-07): recruits prefer programs
-# where their OVR would crack the current top 6, so good players stop signing where
-# they'll be buried. A KEY factor but BELOW prestige — the prestige term spans a ~4×
-# range and still dominates; this is a ±PLAY_TIME_WEIGHT multiplier on top. Programs
-# still oversign and some recruits still ride the bench, but the field is more
-# competitive. PLAY_TIME_SCALE = OVR points of top-6 margin that saturate the factor.
+# where their OVR would crack the current starting card (the division's lineup size —
+# ncaa.lineup_size), so good players stop signing where they'll be buried. A KEY
+# factor but BELOW prestige — the prestige term spans a ~4× range and still
+# dominates; this is a ±PLAY_TIME_WEIGHT multiplier on top. Programs still oversign
+# and some recruits still ride the bench, but the field is more competitive.
+# PLAY_TIME_SCALE = OVR points of last-starter margin that saturate the factor.
 PLAY_TIME_WEIGHT = 0.35
 PLAY_TIME_SCALE = 8.0
 # Marginal warm-weather / big-city recruiting tiebreaks (see ncaa.program_geo_flags).
@@ -1054,15 +1055,19 @@ def _recruit_market(world: dict, gender: str) -> dict:
               for s, p in progs.items() if p.division == "D4"}
     br = _base_rosters(world)
     cap = _openings(br, gender)
-    # Playing-time signal: each program's current returning roster OVRs (best→worst),
-    # so a recruit can see whether their OVR would crack the top 6 (see _pick_school).
-    roster_ovrs: dict[str, list] = {}
+    # Playing-time signal: each program's current returning roster OVRs (best→worst)
+    # plus its division's lineup size, so a recruit can see whether their OVR would
+    # crack the program's actual starting card (see _pick_school). Lineups are
+    # per-division now (D1/D4 field 10 singles, D2/D3 eight — ncaa.lineup_size).
+    roster_ovrs: dict[str, tuple] = {}
     for (division, g), schools in br.items():
         if g != gender:
             continue
+        _lu = lineup_size(division)
         for school, roster in schools.items():
-            roster_ovrs[school] = sorted(
-                (pl.current_overall() for pl in roster if not _departing(pl)), reverse=True)
+            roster_ovrs[school] = (sorted(
+                (pl.current_overall() for pl in roster if not _departing(pl)),
+                reverse=True), _lu)
     # Warm-state / big-city recruiting-appeal flags per program (marginal tiebreak).
     from .ncaa import program_geo_flags
     geo_flags = {s: program_geo_flags(p) for s, p in progs.items()}
@@ -1221,11 +1226,12 @@ def _pick_school(p, market: dict, avail: dict, *, jitter_salt: str,
                  * (1.0 + ACA_PULL * acad * ac * academic_gate(cal))
                  * (1.0 + GEO_WEIGHT * geo + coach_geo) * (1.0 + FAC_WEIGHT * fac) * (1 + jit))
         # Playing time: recruits lean toward programs where their OVR would crack the
-        # current top 6 (would-start) and away from ones where they'd be buried. Key,
-        # but below prestige — the (0.15+pres) term still dominates the choice.
-        ovrs = roster_ovrs.get(s, ())
-        if len(ovrs) >= 6:
-            pt = max(-1.0, min(1.0, (recruit_ovr - ovrs[5]) / PLAY_TIME_SCALE))
+        # current starting card (would-start) and away from ones where they'd be
+        # buried. Key, but below prestige — the (0.15+pres) term still dominates.
+        # The card is the division's lineup size (10 for D1/D4, 8 for D2/D3).
+        ovrs, _lu = roster_ovrs.get(s, ((), 6))
+        if len(ovrs) >= _lu:
+            pt = max(-1.0, min(1.0, (recruit_ovr - ovrs[_lu - 1]) / PLAY_TIME_SCALE))
         else:
             pt = 1.0                                   # open lineup — they'd play for sure
         score *= 1.0 + PLAY_TIME_WEIGHT * pt
@@ -1623,7 +1629,7 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         # UP — only a genuine #1/#2 talent, reliable and clearly above their level
         if (cl <= 2 and up_d and rel >= RELIABILITY_GATE
                 and (s - level[src]) >= UP_THRESHOLD and rng.random() < UP_SUCCESS):
-            dest = best_in(up_d, s, 6, blk)
+            dest = best_in(up_d, s, lineup_size(up_d), blk)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["up"] += 1
@@ -1632,16 +1638,18 @@ def transfer_portal(rosters: dict, player_str: dict, rng: random.Random, gender:
         # LATERAL — a better program in the SAME division that wants them in the
         # lineup (the common, realistic transfer)
         if not moved:
-            same = best_in(d_src, s, 6, blk)
+            same = best_in(d_src, s, lineup_size(d_src), blk)
             if same and same != src and prestige[same] > prestige[src] + 0.03 \
                     and rng.random() < UP_SUCCESS:
                 relocate(p, src, same, s, walk_on=False)
                 out["lateral"] += 1
                 out["sample"].append(("lateral", p.name, src, same, round(s, 1)))
                 moved = True
-        # DOWN — only the buried (no lineup spot in their own division), one level
-        if not moved and cl >= 5 and down_d:
-            dest = best_in(down_d, s, 4, blk)
+        # DOWN — only the buried (the last two lineup slots or off the card entirely,
+        # scaled to the division's singles card), one level, and only if the lower
+        # division wants them comfortably IN the lineup (not its last slots).
+        if not moved and cl >= lineup_size(d_src) - 1 and down_d:
+            dest = best_in(down_d, s, lineup_size(down_d) - 2, blk)
             if dest:
                 relocate(p, src, dest, s, walk_on=False)
                 out["down"] += 1
@@ -1770,18 +1778,20 @@ class _FPPlanner:
 
     def best_placement(self, div, val, avoid=None):
         """Diversifying auto-destination (owner rule 2027-07): among open-seat programs
-        in `div` where the player would make the lineup (line ≤ 6), send them to the one
-        where they'd slot HIGHEST — the biggest lineup upgrade / most playing time —
-        tie-broken by prestige. This spreads risers across the programs that actually
-        NEED the talent instead of funneling them all to the top-prestige few, so
+        in `div` where the player would make the lineup (line within the division's
+        singles card — ncaa.lineup_size), send them to the one where they'd slot
+        HIGHEST — the biggest lineup upgrade / most playing time — tie-broken by
+        prestige. This spreads risers across the programs that actually NEED the
+        talent instead of funneling them all to the top-prestige few, so
         underutilized players land where they'll play. Scans the division (no early
         exit), but only the ≤30 discovered risers use it, so it stays cheap."""
         best, best_key = None, None
+        _lu = lineup_size(div)
         for d in self.by_div.get(div, ()):
             if not d or (avoid and d in avoid) or not self.open_slot(d):
                 continue
             line = self.line_of(d, val)
-            if line > 6:
+            if line > _lu:
                 continue
             key = (line, -self._weight[d], d)   # lowest line first; prestige breaks ties
             if best_key is None or key < best_key:
@@ -1829,14 +1839,15 @@ class _FPPlanner:
         return None
 
     def highest_fit(self, src, val, avoid=None, *, gated=True):
-        """Highest division above the player's where they'd make the lineup (line ≤ 6).
-        With `gated`, also require clearing that division's median level (the auto
-        discovery bar); user picks pass gated=False so any climb they'd fit is allowed."""
+        """Highest division above the player's where they'd make the lineup (a line
+        within that division's singles card). With `gated`, also require clearing
+        that division's median level (the auto discovery bar); user picks pass
+        gated=False so any climb they'd fit is allowed."""
         src_rank = _FP_DIV_ORDER.index(self.div_of[src])
         for d in _FP_DIV_ORDER[:src_rank]:
             if gated and val < self.div_level.get(d, float("inf")):
                 continue
-            if (self.best_in(d, val, 6, avoid) is not None
+            if (self.best_in(d, val, lineup_size(d), avoid) is not None
                     or self.fullest_below(d, val, avoid) is not None):
                 return d
         return None
@@ -2847,24 +2858,29 @@ def refill_walkons(rosters: dict, year: int, seed: int) -> int:
     placed. D1/D2 get no walk-on DEPTH: they fill it from the recruiting pool only, so
     a D1/D2 program that doesn't sign enough simply carries fewer walk-ons.
 
-    EVERY division, though, gets a hard floor of `LINEUP_FLOOR` — the six a dual
-    actually needs. D1 carrying no walk-on depth is about keeping D1 rosters SMALLER
+    EVERY division, though, gets a hard floor of its LINEUP SIZE (`ncaa.
+    lineup_size` — the singles card its dual format actually fields: 10 for D1/D4,
+    8 for D2/D3). D1 carrying no walk-on depth is about keeping D1 rosters SMALLER
     than D2/D3/D4, so the portals can oversign and rebuild a roster quickly without
     cutting a pile of players (owner rule). It was never about letting a program fall
-    below a playable lineup: under six there is no lineup at all, `Team.doubles`
-    indexes 0..5, and the engine crashed mid-bracket. The floor is enforced HERE, on the real roster
-    that gets persisted and indexed, rather than by synthesising a phantom player at
-    squad-build time (whose pid existed nowhere, so championship links 404'd)."""
+    below a playable lineup: under the card there is no lineup at all, the engine
+    indexes every court, and it used to crash mid-bracket. The floor is enforced
+    HERE, on the real roster that gets persisted and indexed, rather than by
+    synthesising a phantom player at squad-build time (whose pid existed nowhere, so
+    championship links 404'd). Note under the 10-singles D1 format the 6-scholarship
+    core no longer covers the card, so a D1 program routinely carries floor walk-ons
+    on courts 7-10 — that's the owner's depth-matters design, not a leak."""
     from . import recruit_economy
     intake = 0
     for (division, gender), schools in rosters.items():
         depth = autogen_walkons(division)          # D1/D2: no game-generated DEPTH
         cap = roster_cap(division)
+        floor = lineup_size(division)
         progs = {p.school: p for p in load_division(division, gender).programs}
         for school, roster in schools.items():
             prog = progs.get(school)
             # D1/D2 top up only to the lineup floor; D3/D4 fill their whole cap.
-            target = cap if depth else LINEUP_FLOOR
+            target = cap if depth else floor
             need = target - len(roster)
             if not prog or need <= 0:
                 continue
@@ -3016,11 +3032,13 @@ def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: 
         used.add(src); used.add(dest); moves += 1
 
         # Followers: src's coach is now at dest. Up to half of src's roster may
-        # follow, gated to players who'd make dest's lineup (its 6th-best STR).
+        # follow, gated to players who'd make dest's lineup (its last-starter STR,
+        # sized by dest's division format).
         sr = rosters[(sdiv, gender)][src]
         dr = rosters[(ddiv, gender)][dest]
+        _lu = lineup_size(ddiv)
         dstr = sorted((_str_of(player_str, p) for p in dr), reverse=True)
-        floor = (dstr[5] if len(dstr) >= 6 else (dstr[-1] if dstr else 0.0)) - 1.0
+        floor = (dstr[_lu - 1] if len(dstr) >= _lu else (dstr[-1] if dstr else 0.0)) - 1.0
         # A coach who lands a service-academy job brings only their American players —
         # the academy can't admit an international follower.
         eligible = [p for p in sr if _str_of(player_str, p) >= floor

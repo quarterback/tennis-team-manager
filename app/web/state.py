@@ -1315,10 +1315,13 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
     rec = build_recruiting(p, schools, seed_salt=f"{grad_year}")
 
     # Roster fit / playing time: for the schools on the board, show the program's
-    # current top-6 OVRs and where this recruit projects to slot — the same signal
-    # the sim's recruiting model now weighs (see world._pick_school). Only the ~handful
-    # of offer schools are built (rosters are cached), so this stays cheap.
-    from app.ncaa import build_roster
+    # current starting-card OVRs and where this recruit projects to slot — the same
+    # signal the sim's recruiting model weighs (see world._pick_school). The card is
+    # the division's lineup size (D1/D4 field 10, D2/D3 eight). Only the ~handful
+    # of offer schools are built (rosters are cached), so this stays cheap. The
+    # `top6`/`sixth` keys are stored names the recruit page reads: the card list,
+    # and the LAST STARTER's OVR (the bar a recruit must clear to start).
+    from app.ncaa import build_roster, lineup_size
     prog_by_name = {pr.school: pr for pr in programs}
     recruit_ovr = p.current_overall()
     roster_fit = {}
@@ -1326,18 +1329,20 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         pr = prog_by_name.get(o.school)
         if pr is None:
             continue
+        _lu = lineup_size(pr.division)
         ovrs = sorted((pl.current_overall() for pl in build_roster(pr)), reverse=True)
-        sixth = ovrs[5] if len(ovrs) >= 6 else None
-        if sixth is None or recruit_ovr >= sixth:
+        last = ovrs[_lu - 1] if len(ovrs) >= _lu else None
+        if last is None or recruit_ovr >= last:
             slot = "Starter"
-        elif len(ovrs) >= 8 and recruit_ovr >= ovrs[7]:
+        elif len(ovrs) >= _lu + 2 and recruit_ovr >= ovrs[_lu + 1]:
             slot = "Rotation"
         else:
             slot = "Depth"
         roster_fit[o.school] = {
             "slot": slot,
-            "top6": [round(x) for x in ovrs[:6]],
-            "sixth": round(sixth) if sixth is not None else None,
+            "top6": [round(x) for x in ovrs[:_lu]],
+            "sixth": round(last) if last is not None else None,
+            "card": _lu,
         }
 
     from app.junior_circuit import TIER_LABELS
@@ -1433,7 +1438,14 @@ def player_career_records(division: str, gender: str, pid: str, seed: int = DEFA
                 "tcells": tcells, "toverall": f"{tov[0]}-{tov[1]}", "tdual": f"{tov[0]}-{tov[1]}",
                 "any": bool(rows)}
 
-    return {"singles": _box("singles", 6), "doubles": _box("doubles", 3)}
+    # Card width = the player's division's dual shape, widened to any line they
+    # actually played (career history can span formats — pre-change seasons and
+    # cross-division transfers both live in the same table).
+    from app.ncaa import dual_format
+    f = dual_format(division)
+    n_s = max([f.n_singles] + [max(s["singles"], default=0) for s in seasons])
+    n_d = max([f.n_doubles] + [max(s["doubles"], default=0) for s in seasons])
+    return {"singles": _box("singles", n_s), "doubles": _box("doubles", n_d)}
 
 
 def _round_phase(round_: str, conf: str):
@@ -2579,7 +2591,8 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     from app import worldconfig, overrides as ov
     import app.world as world
     import app.seasonmode as sm
-    from app.ncaa import load_division, build_roster
+    from app.ncaa import (load_division, build_roster,
+                          lineup_size as _lineup_size, dual_format as _dual_format)
     prog = worldconfig.user_program()
     if not prog:
         return None
@@ -2621,6 +2634,10 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "lineup_pinned": lineup_pinned,
         "doubles_pinned": bool(doubles_pin),
         "doubles_pin": doubles_pin,
+        # The division's dual shape, so the lineup/doubles editors render the right
+        # number of slots (D1/D4 field 10 singles; D1 fields 5 doubles pairs).
+        "n_lineup": _lineup_size(division),
+        "n_doubles": _dual_format(division).n_doubles,
         "budget": team_budget(division, gender, school),
         "incoming": team_recruiting_class(gender, school, seed),
         "next": nxt,
@@ -2876,8 +2893,10 @@ def team_roster(division: str, gender: str, school: str):
         rows.append({"p": p, "str": round(s, 1), "rel": rel, "w": w, "l": l,
                      "injury": injured.get(p.pid),
                      "schol": economy.fraction_label(getattr(p, "scholarship", 0.0))})
+    from app.ncaa import lineup_size
+    _lu = lineup_size(division)
     for i, r in enumerate(rows, 1):
-        r["line"] = i if i <= 6 else None       # top 6 are the singles lineup
+        r["line"] = i if i <= _lu else None     # the division's singles card starts
     return rows
 
 

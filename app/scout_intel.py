@@ -152,7 +152,7 @@ def scan(gender: str, seed: int | None = None) -> dict:
         return cached
 
     from app import economy
-    from app.ncaa import load_division, build_roster
+    from app.ncaa import load_division, build_roster, lineup_size
     from app.web.state import ranking_rows
 
     # Load THIS world-year's live rosters into the shared cache before reading any
@@ -190,10 +190,12 @@ def scan(gender: str, seed: int | None = None) -> dict:
             roster = build_roster(prog)
             if not roster:
                 continue
-            # The TALENT top 6 (by current overall) feed the program-level metric
-            # used for the "deserved program" ladder — a talent comparison, so it
-            # stays on OVERALL, independent of who's hot.
-            top6 = roster[:6]
+            # The TALENT starting card (by current overall — the division's lineup
+            # size, ncaa.lineup_size) feeds the program-level metric used for the
+            # "deserved program" ladder — a talent comparison, so it stays on
+            # OVERALL, independent of who's hot. The key stays `top6_cur` (a stored
+            # name, read by the fit/underplaced boards) though the card may be 8/10.
+            top6 = roster[:lineup_size(division)]
             team_level = sum(p.ceiling_overall() for p in top6) / len(top6)
             top6_cur = sorted((p.current_overall() for p in top6), reverse=True)
             budget = economy.budget_summary(roster, division, gender)
@@ -228,8 +230,9 @@ def scan(gender: str, seed: int | None = None) -> dict:
             # the coach AI sets lineups by — so the Lineup Lab mirrors who'd actually
             # play, not a static talent order.
             prog_players.sort(key=lambda r: r.live_str, reverse=True)
+            _card = lineup_size(division)
             for i, r in enumerate(prog_players, 1):
-                r.line = i if i <= 6 else None
+                r.line = i if i <= _card else None
             players.extend(prog_players)
 
     # ---- global tables (absolute ceiling → comparable across divisions) ----
@@ -524,7 +527,9 @@ def fit_targets(gender: str, pid: str, seed: int | None = None,
     return p, [ft for _, ft in out[:limit]]
 
 
-_IMPACT_SLOT = {"first": 1, "top3": 3, "top6": 6}   # how high a fit must project to show
+_IMPACT_SLOT = {"first": 1, "top3": 3}   # how high a fit must project to show;
+# the third tier ("top6", the legacy name the UI keeps) means "would crack the
+# lineup" and resolves to the user's division card size at query time.
 
 
 def targets_for_my_program(seed: int | None = None, div_filter: str = "All",
@@ -536,6 +541,7 @@ def targets_for_my_program(seed: int | None = None, div_filter: str = "All",
     meaningful ones (a Top-3 starter by default, since with compressed talent almost anyone
     clears a weak No. 6). Returns None if no program has been picked yet."""
     from app import worldconfig
+    from app.ncaa import lineup_size
     from app.web.rankings_data import crest
     up = worldconfig.user_program()
     if not up:
@@ -544,12 +550,13 @@ def targets_for_my_program(seed: int | None = None, div_filter: str = "All",
     data = scan(gender, seed)
     mine = sorted((r for r in data["players"] if r.school == my_school),
                   key=lambda r: r.cur_overall, reverse=True)
-    my_top6 = mine[:6]                                  # my current singles ladder (by ability)
+    my_top6 = mine[:lineup_size(my_div)]                # my current singles ladder (by ability)
     my_cur = [r.cur_overall for r in my_top6]
     n_start = len(my_top6)
     my_abbr, my_color = crest(my_school)
 
-    slot_cap = _IMPACT_SLOT.get(impact, 3)
+    slot_cap = (lineup_size(my_div) if impact == "top6"
+                else _IMPACT_SLOT.get(impact, 3))
     targets = []
     for r in data["players"]:
         if r.school == my_school:
@@ -634,7 +641,9 @@ def conference_lineups(division: str, gender: str, conf: str, seed: int | None =
     can toggle lens; team aggregates are provided in both. Each team:
     {school, lineup:[{line,name,pid,str,ovr,class,walk_on}], avg/top/low (STR) +
     avg_ovr/top_ovr/low_ovr}."""
+    from app.ncaa import lineup_size
     data = scan(gender, seed)
+    n_card = lineup_size(division)
     teams: dict[str, dict] = {}
     for r in data["players"]:
         if r.division != division or r.team_tier != conf or r.line is None:
@@ -645,7 +654,7 @@ def conference_lineups(division: str, gender: str, conf: str, seed: int | None =
         lineup = [{"line": ln, "name": r.name, "pid": r.pid,
                    "str": r.live_str, "ovr": r.cur_overall,
                    "class": r.class_year, "walk_on": r.walk_on}
-                  for ln in range(1, 7) if (r := slots.get(ln))]
+                  for ln in range(1, n_card + 1) if (r := slots.get(ln))]
         strs = [x["str"] for x in lineup]
         ovrs = [x["ovr"] for x in lineup]
         rows.append({

@@ -42,9 +42,11 @@ def test_roster_talent_tracks_program_strength():
 
 
 def test_squad_matches_ladder():
+    from app.ncaa import lineup_size
     reset_caches()
-    team, ladder = squad_and_ladder(_prog("Ladder U", 0.6))
-    assert len(team.singles) == len(ladder) == 6
+    prog = _prog("Ladder U", 0.6)
+    team, ladder = squad_and_ladder(prog)
+    assert len(team.singles) == len(ladder) == lineup_size(prog.division)
     for i, pr in enumerate(ladder):
         assert abs(team.singles[i].overall - pr.engine_player().overall) < 1e-9
 
@@ -54,7 +56,10 @@ def test_season_live_str_singles_only_and_in_band():
     assert sr.player_str and sr.rosters
     strs = [v[0] for v in sr.player_str.values()]
     assert min(strs) >= 31.0 and max(strs) <= 57.0
-    # only singles-ladder players get a results STR (doubles + bench excluded)
+    # only singles-ladder players get a results STR (doubles + bench excluded);
+    # the ladder is the division's singles card (D1 fields 10 — ncaa.lineup_size)
+    from app.ncaa import lineup_size
+    _n = lineup_size("D1")
     ladder_pids = {pr.pid for r in sr.rosters.values()
-                   for pr in sorted(r, key=lambda p: p.current_overall(), reverse=True)[:6]}
+                   for pr in sorted(r, key=lambda p: p.current_overall(), reverse=True)[:_n]}
     assert set(sr.player_str).issubset(ladder_pids)

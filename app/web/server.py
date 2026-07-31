@@ -598,13 +598,16 @@ def create_app() -> Flask:
             return redirect(url_for("my_program"))
         p = load_division(division, gender).by_school(school)
         valid = {pr.pid for pr in build_roster(p)} if p else set()
-        # Slot picker: six S1-S6 dropdowns set the whole singles ladder at once (any
-        # roster player into any slot — no more nudging ▲▼ one row at a time).
-        slots = ["s1", "s2", "s3", "s4", "s5", "s6"]
+        # Slot picker: one dropdown per singles court (the division's card size —
+        # ncaa.lineup_size) sets the whole ladder at once (any roster player into
+        # any slot — no more nudging ▲▼ one row at a time).
+        from app.ncaa import lineup_size
+        n = lineup_size(division)
+        slots = [f"s{i}" for i in range(1, n + 1)]
         if any(request.form.get(s) for s in slots):
             pids = [request.form.get(s, "").strip() for s in slots]
-            if all(pid in valid for pid in pids) and len(set(pids)) == 6:
-                ov.set_lineup(school, pids)     # pinned six lead; rest fall in by ability
+            if all(pid in valid for pid in pids) and len(set(pids)) == n:
+                ov.set_lineup(school, pids)     # pinned card leads; rest fall in by ability
                 reset_lineup()
             return redirect(url_for("my_program"))
         # Legacy single-step nudge (kept for any old links / accessibility).
@@ -622,11 +625,12 @@ def create_app() -> Flask:
 
     @app.route("/my-program/doubles", methods=["POST"])
     def my_program_doubles():
-        # Hand-set the coached team's INDEPENDENT doubles lineup (3 pairs). Players may
-        # be any roster member, not just singles starters — a doubles specialist. School
+        # Hand-set the coached team's INDEPENDENT doubles lineup (the division's
+        # doubles-line count — D1 fields 5 pairs, the rest 3). Players may be any
+        # roster member, not just singles starters — a doubles specialist. School
         # comes from the saved program, so this only ever edits your own team.
         from app import worldconfig
-        from app.ncaa import build_roster, load_division
+        from app.ncaa import build_roster, load_division, dual_format
         prog = worldconfig.user_program()
         if not prog:
             return redirect(url_for("onboarding"))
@@ -635,11 +639,12 @@ def create_app() -> Flask:
             ov.clear_doubles(school)            # back to the auto pairing
             reset_lineup()
             return redirect(url_for("my_program"))
-        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        n_d = dual_format(division).n_doubles
+        slots = [x for i in range(1, n_d + 1) for x in (f"d{i}a", f"d{i}b")]
         pids = [request.form.get(s, "").strip() for s in slots]
         p = load_division(division, gender).by_school(school)
         valid = {pr.pid for pr in build_roster(p)} if p else set()
-        if all(pid in valid for pid in pids) and len(set(pids)) == 6:
+        if all(pid in valid for pid in pids) and len(set(pids)) == 2 * n_d:
             ov.set_doubles(school, pids)
             reset_lineup()
         return redirect(url_for("my_program"))
@@ -1952,9 +1957,11 @@ def create_app() -> Flask:
         highlight = request.args.get("team") or None
         lineups = si.conference_lineups(div_f, gender, conf, highlight=highlight)
         strength = si.conference_strength(div_f, gender)
+        from app.ncaa import lineup_size
         return render_template("intel_lineups.html", active="Analytics Bureau",
                                gender=gender, u=u, uni_label=label, div_f=div_f, conf=conf,
                                confs=confs, lineups=lineups, strength=strength,
+                               n_card=lineup_size(div_f),
                                highlight=highlight, divisions=["D1", "D2", "D3", "D4"],
                                scale_rows=_str_scale_rows())
 
@@ -2422,8 +2429,21 @@ def create_app() -> Flask:
         d = sm.dual_detail(dual_id)
         if not d:
             abort(404)
+        # Panel captions from the dual AS RECORDED (line counts), so historical
+        # 6+3 box scores in a converted save stay labeled correctly; the scoring
+        # rule comes from the division's format when the shape matches it, else
+        # the classic consolidated rule the old duals were played under.
+        from app.ncaa import dual_format
+        from engine import CLASSIC
+        n_s = sum(1 for ln in d["lines"] if (ln.get("slot") or "").startswith("S"))
+        n_d = sum(1 for ln in d["lines"] if (ln.get("slot") or "").startswith("D"))
+        f = dual_format(division)
+        fmt = f if (n_s, n_d) == (f.n_singles, f.n_doubles) else CLASSIC
+        dbl_label = (f"win {fmt.n_doubles // 2 + 1} of {fmt.n_doubles} → 1 team point"
+                     if fmt.doubles_team_point else f"{n_d} pairs · 1 team point each")
+        sgl_label = f"{n_s} courts · 1 team point each · clinch at {fmt.clinch}"
         return render_template("season_dual.html", active="Season", u=u, uni_label=label,
-                               d=d, crest=crest)
+                               d=d, crest=crest, dbl_label=dbl_label, sgl_label=sgl_label)
 
     return app
 

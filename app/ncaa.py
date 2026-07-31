@@ -21,7 +21,7 @@ import os
 import random
 from dataclasses import dataclass, field
 
-from engine import random_player, Team
+from engine import random_player, Team, DualFormat, CLASSIC
 from . import scholarships
 
 SEASON_SEED = 2026
@@ -1095,20 +1095,50 @@ def build_roster(p: Program):
     return roster
 
 
-LINEUP_SIZE = 6          # a dual fields six singles; the doubles pairs index into them
+LINEUP_SIZE = 6          # legacy/default; real lineups are per-division (lineup_size)
+
+# Per-division dual formats (owner rule 2027-07 — docs/AAR-division-dual-formats.md).
+# Real-world college tennis runs 6+3 because of court counts and Title IX roster
+# math; this game has neither constraint, so each division picks a shape that makes
+# depth matter. D1 keeps the consolidated doubles point (its identity — doubles
+# stacking stays limited); every other division scores doubles per line, the
+# 9-point construction most real non-D1 divisions use, scaled up.
+#   D1: 10 singles + 5 doubles (consolidated)  -> 11 points, clinch 6
+#   D2: 8 singles + 3 doubles (per-line)       -> 11 points, clinch 6
+#   D3: 8 singles + 3 doubles (per-line)       -> 11 points, clinch 6
+#   D4: 10 singles + 3 doubles (per-line)      -> 13 points, clinch 7
+DUAL_FORMATS = {
+    "D1": DualFormat(n_singles=10, n_doubles=5, doubles_team_point=True),
+    "D2": DualFormat(n_singles=8, n_doubles=3, doubles_team_point=False),
+    "D3": DualFormat(n_singles=8, n_doubles=3, doubles_team_point=False),
+    "D4": DualFormat(n_singles=10, n_doubles=3, doubles_team_point=False),
+}
+
+
+def dual_format(division: str) -> DualFormat:
+    """The dual shape a division plays. Unknown/legacy divisions get the classic
+    6+3 (also what the cups and standalone engine callers use)."""
+    return DUAL_FORMATS.get(division, CLASSIC)
+
+
+def lineup_size(division: str) -> int:
+    """How many singles courts a division's dual fields — the lineup, the ladder
+    depth, and the per-division roster floor all key off this."""
+    return dual_format(division).n_singles
 
 
 def squad_and_ladder(p: Program) -> tuple[Team, list]:
-    """(engine Team, top-6 ladder of Prospects). Team.singles[i] is exactly
-    ladder[i], so a singles line's player identity (pid) is unambiguous.
+    """(engine Team, top-N ladder of Prospects — N per division's dual format).
+    Team.singles[i] is exactly ladder[i], so a singles line's player identity (pid)
+    is unambiguous.
 
     A short roster is NOT patched here. Synthesising a filler at squad-build time
     produced a player with a pid that exists in no roster, no pid index and no
     persisted world — so a championship link or stamped honor pointed at nobody. The
-    floor belongs where rosters actually change (`world.refill_walkons`), so the six
-    are real, persisted, indexed players."""
+    floor belongs where rosters actually change (`world.refill_walkons`), so the
+    lineup are real, persisted, indexed players."""
     ladder = sorted(build_roster(p), key=lambda pr: pr.current_overall(),
-                    reverse=True)[:LINEUP_SIZE]
+                    reverse=True)[:lineup_size(p.division)]
     return Team(name=p.school, singles=[pr.engine_player() for pr in ladder]), ladder
 
 

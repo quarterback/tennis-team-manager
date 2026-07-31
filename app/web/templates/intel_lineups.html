@@ -29,7 +29,7 @@
     <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:760px">
       How every team's singles lineup stacks up across the conference. The ladder follows live,
       results-based <strong>STR</strong> (form) — the same order the coach sets lineups by — at each
-      position (1–6). Hover a dot to read that school's full ladder. Toggle <strong>OVR</strong> to
+      position (the division’s singles card). Hover a dot to read that school's full ladder. Toggle <strong>OVR</strong> to
       view static talent (OVERALL) instead, or <strong>UTR</strong> for the real-world unit.
     </p>
   </div>
@@ -85,10 +85,10 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span>
         <span class="bl-panel-meta">ranked by average starter STR</span></div>
-      <div class="ll-tbl ll-depth">
+      <div class="ll-tbl ll-depth" style="--ll-ncard:{{ n_card }}">
         <div class="ll-thead">
           <span>#</span><span>Team</span><span class="n">Avg</span><span class="n">Top</span><span class="n">Low</span>
-          <span class="ll-ladhdr"><span>Ladder</span><span class="ll-lad6">{% for i in range(1,7) %}<i>{{ i }}</i>{% endfor %}</span></span>
+          <span class="ll-ladhdr"><span>Ladder</span><span class="ll-lad6">{% for i in range(1, n_card + 1) %}<i>{{ i }}</i>{% endfor %}</span></span>
         </div>
         {% for t in lineups %}
         <div class="ll-tr{% if t.highlight %} ll-row-hl{% endif %}">
@@ -152,7 +152,7 @@ a.ll-tr:hover { background:var(--surface-hover); }
 .ll-stat.top { color:var(--green-700,#0e7c86); font-weight:700; }
 .ll-stat.low { color:var(--text-muted); font-weight:500; }
 /* the 1→6 ladder: a fixed 6-col micro-grid so positions stack vertically across rows */
-.ll-lad6 { display:grid; grid-template-columns:repeat(6,1fr); gap:2px; }
+.ll-lad6 { display:grid; grid-template-columns:repeat(var(--ll-ncard,6),1fr); gap:2px; }
 .ll-lad6 > span, .ll-lad6 > i { text-align:right; font-size:11.5px; font-style:normal; color:var(--text-secondary); }
 .ll-ladhdr { display:grid; grid-template-columns:auto 1fr; align-items:center; gap:8px; }
 .ll-ladhdr .ll-lad6 > i { font-size:10px; color:var(--text-faint); font-weight:600; }
@@ -213,8 +213,9 @@ a.ll-tr:hover { background:var(--surface-hover); }
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     var plotW = W - M.l - M.r, plotH = H - M.t - M.b;
-    var colW = plotW / 6;
-    function X(pos){ return M.l + (pos - 0.5) * colW; }                 // pos 1..6 → column centre
+    var NCARD = {{ n_card }};
+    var colW = plotW / NCARD;
+    function X(pos){ return M.l + (pos - 0.5) * colW; }                 // pos 1..NCARD → column centre
 
     // y-domain from the ACTIVE metric (STR/UTR share the str value; OVR differs)
     var vals = [];
@@ -240,7 +241,7 @@ a.ll-tr:hover { background:var(--surface-hover); }
       for (var s = lo; s <= hi; s += step) gridline(s, s.toFixed(0));
     }
     // x labels
-    for (var p = 1; p <= 6; p++){
+    for (var p = 1; p <= NCARD; p++){
       var xt = el('text', {x:X(p), y:H-12, 'text-anchor':'middle', 'font-size':12, fill:'#5a6b7b', 'font-weight':600});
       xt.textContent = p; svg.appendChild(xt);
     }

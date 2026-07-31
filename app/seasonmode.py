@@ -513,11 +513,17 @@ def _mark_retirements(conn, sid, rec, home, away, progs, week, tag) -> int:
         return 0
     rosters = {home: {p.pid: p for p in build_roster(progs[home])},
                away: {p.pid: p for p in build_roster(progs[away])}}
+    # Keep the season's retirement COUNT at the owner's sizing: the rate was tuned
+    # per completed singles on six-court duals, and the expanded cards complete
+    # more singles per dual — scale each roll by baseline/N so the volume holds.
+    n_singles = sum(1 for ln in rec["lines"]
+                    if ln.get("completed") and str(ln.get("slot", "")).startswith("S"))
+    scale = min(1.0, injuries.EXPOSURE_BASELINE / n_singles) if n_singles else 1.0
     n = 0
     for ln in rec["lines"]:
         if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
             continue
-        if "home_pid" not in ln or not injuries.roll_retirement():
+        if "home_pid" not in ln or not injuries.roll_retirement(scale):
             continue
         # Either player can be the one who pulls out — the score is irrelevant.
         home_retires = injuries.retiring_side()
@@ -2429,8 +2435,10 @@ def player_line_records(season_id: int) -> dict:
 
 
 def player_log(season_id: int, pid: str) -> list[dict]:
-    """A player's match-by-match singles results across the whole season
-    (regular + conference tournament + NCAA), newest phase last."""
+    """A player's match-by-match results across the whole season (regular +
+    conference tournament + NCAA), singles AND doubles, newest phase last.
+    Doubles rows carry the partner's name and the opposing PAIR as the opponent
+    (no single opponent pid to link)."""
     s = load_season(season_id)
     idx = _pid_index(s["division"], s["gender"])
     conn = _db()
@@ -2438,6 +2446,10 @@ def player_log(season_id: int, pid: str) -> list[dict]:
                         " WHERE season_id=? AND status='final' AND lines_json LIKE ?"
                         " ORDER BY week", (season_id, f"%{pid}%")).fetchall()
     conn.close()
+
+    def _name(p):
+        return idx.get(p, {}).get("name", "—")
+
     log = []
     for r in rows:
         for ln in json.loads(r["lines_json"] or "[]"):
@@ -2445,21 +2457,43 @@ def player_log(season_id: int, pid: str) -> list[dict]:
                 continue
             raw_sets = ln.get("sets") or []
             line_stats = ln.get("stats") or {}
+            slot = str(ln.get("slot") or "")
+            partner = None
             if ln.get("home_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["home_games"], ln["away_games"],
                                                 ln["home_won"], ln.get("away_pid"), r["away"])
                 sets = [[h, a] for (h, a) in raw_sets]
                 stats = line_stats.get("home")
+                opp_name = _name(opp)
             elif ln.get("away_pid") == pid:
                 gf, ga, won, opp, opp_school = (ln["away_games"], ln["home_games"],
                                                 not ln["home_won"], ln.get("home_pid"), r["home"])
                 sets = [[a, h] for (h, a) in raw_sets]   # flip to the player's POV
                 stats = line_stats.get("away")
+                opp_name = _name(opp)
+            elif pid in (ln.get("home_pids") or []):      # doubles, home side
+                gf, ga, won, opp, opp_school = (ln.get("home_games", 0), ln.get("away_games", 0),
+                                                ln["home_won"], None, r["away"])
+                sets = [[h, a] for (h, a) in raw_sets]
+                side = line_stats.get("home") or []
+                i = ln["home_pids"].index(pid)
+                stats = side[i] if i < len(side) else None
+                partner = next((_name(q) for q in ln["home_pids"] if q != pid), None)
+                opp_name = ln.get("away_player") or "—"   # the opposing pair
+            elif pid in (ln.get("away_pids") or []):      # doubles, away side
+                gf, ga, won, opp, opp_school = (ln.get("away_games", 0), ln.get("home_games", 0),
+                                                not ln["home_won"], None, r["home"])
+                sets = [[a, h] for (h, a) in raw_sets]
+                side = line_stats.get("away") or []
+                i = ln["away_pids"].index(pid)
+                stats = side[i] if i < len(side) else None
+                partner = next((_name(q) for q in ln["away_pids"] if q != pid), None)
+                opp_name = ln.get("home_player") or "—"
             else:
                 continue
             phase = "Regular" if r["round"] == "REG" else (r["conf"] or r["round"])
-            log.append({"phase": phase, "round": r["round"], "slot": ln["slot"],
-                        "opp": idx.get(opp, {}).get("name", "—"), "opp_pid": opp,
+            log.append({"phase": phase, "round": r["round"], "slot": slot,
+                        "opp": opp_name, "opp_pid": opp, "partner": partner,
                         "opp_school": opp_school, "week": r["week"],
                         "sets": sets, "gf": gf, "ga": ga, "won": won,
                         # per-match box stats (compact engine.state.STAT_KEYS
