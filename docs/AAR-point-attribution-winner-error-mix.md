@@ -138,6 +138,17 @@ path reads the 49 rich attributes (engine.state.Player role baskets, fed by
 | Winner label | `forehand_power`, `backhand_power`, `passing_precision`, `approach_shot`, `court_vision` + `footwork`/`speed`/`agility`/`balance` + `competitiveness`/`clutch` vs the misser's `groundstroke_consistency`, `shot_tolerance`, `discipline`, `rally_patience` |
 | Conditions | per-player `wind_tolerance`, `heat_tolerance`, indoor/outdoor comfort, `crowd_pressure` |
 
+**Talent gates the RESULT nonlinearly (owner rule, measured and confirmed).**
+Level-blindness is about the labels, never the outcomes: every serve and rally
+probability is a DIFFERENCE against the opponent (ace chance = server power
+minus a weight on returner quality — the owner's "net against OVR"), so a
+modest serve is lethal against a much weaker returner, and the win curve
+steepens hard with the gap. Measured on real rostered players (150 full
+matches per cell): OVR gap 10 → favorite ~87-89%; gap 20 → ~98-100%; gap 30+
+→ 100%, zero upsets observed. "A 60 OVR playing a 30 OVR is simply never
+gonna be an upset save for injury" — and injuries are the one system outside
+this model. No change was needed; logged so the calibration isn't re-litigated.
+
 This is why the women's numbers validated with no tuning: generated women
 carry softer serve grades, so WTA-band serve stats fall out of the attributes.
 TUNE baselines are the shared physics of tennis (e.g. the first-serve
