@@ -74,6 +74,26 @@ class DualResult:
     doubles_point: int | None  # which side took the doubles point (0/1) or None if split unreached
 
 
+SINGLES_COURTS = 6        # a dual fields six singles; `Team.doubles` indexes into them
+
+
+def _court(team: Team, i: int) -> Player:
+    """The player on singles court `i` (0-based), backstopped against a short lineup.
+
+    The dual reads `singles[0..5]`, so — exactly like `_pair` below — a side with
+    fewer than six available players used to IndexError here and take the whole page
+    down mid-bracket. A short side plays its last (weakest) body on the courts it
+    can't fill: the same degenerate, forfeit-like lineup `season.coach_lineup`
+    already builds when injuries strip a roster, rather than a 500. The roster floor
+    in `world.refill_walkons` keeps this from firing in the normal case; it still
+    fires on a save that fell below six before that floor existed, since the floor
+    only applies from the next rollover.
+    """
+    if not team.singles:
+        raise ValueError(f"{team.name} has nobody to field in singles")
+    return team.singles[min(i, len(team.singles) - 1)]
+
+
 def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
     """Build the two-player doubles side for a lineup pairing. The pair indexes into
     the team's separate `doubles_players` roster when set, else into `singles`."""
@@ -84,8 +104,9 @@ def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
     # so a side with fewer than six available players used to blow up here and take
     # the whole page with it — reachable both from roster thinning over seasons and
     # from injuries cutting a six-man roster down. A degenerate side plays whoever it
-    # has rather than 500-ing; the roster floor in ncaa.squad_and_ladder keeps this
-    # from firing in the normal case.
+    # has rather than 500-ing; the roster floor in `world.refill_walkons` keeps this
+    # from firing in the normal case. Indices WRAP here (not clamp as in `_court`)
+    # because a pair needs two DIFFERENT players.
     n = len(pool)
     i, j = pair[0] % n, pair[1] % n
     if n > 1 and i == j:
@@ -179,8 +200,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     clinch = 4
     results: dict[int, MatchResult] = {}
     length: dict[int, float] = {}
-    for i in range(6):
-        res = simulate_match(home.singles[i], away.singles[i],
+    for i in range(SINGLES_COURTS):
+        res = simulate_match(_court(home, i), _court(away, i),
                              seed=seed + 100 + i, fmt=singles_fmt,
                              fidelity=fidelity, context=context)
         results[i] = res
@@ -189,7 +210,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         jit = random.Random((seed + 100 + i) ^ 0xD0A1).uniform(-0.4, 0.4)
         length[i] = _match_length(res) + jit
     # Priority courts come off first; the rest finish shortest-match-first.
-    finish_order = sorted(range(6), key=lambda i: (i not in priority_finish, length[i], i))
+    finish_order = sorted(range(SINGLES_COURTS),
+                          key=lambda i: (i not in priority_finish, length[i], i))
 
     by_slot: dict[int, DualLine] = {}
     clinch_at: float | None = None
@@ -210,7 +232,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         by_slot[i] = DualLine(slot=f"S{i+1}", home_won=home_won, result=res, finish=s_finish)
         if max(points) >= clinch and clinch_at is None:
             clinch_at = length[i]
-    for i in range(6):                               # display in court order S1..S6
+    for i in range(SINGLES_COURTS):                  # display in court order S1..S6
         lines.append(by_slot[i])
 
     winner = 0 if points[0] > points[1] else 1

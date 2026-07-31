@@ -95,6 +95,32 @@ def test_doubles_pairing_never_indexerrors_on_a_short_side():
                 assert d.players[0] is not d.players[1], f"self-paired at n={n}"
 
 
+def test_short_side_plays_a_full_dual_instead_of_crashing():
+    """The reported crash, one layer up from `_pair`: the singles loop reads
+    `singles[0..5]`, so a side below six IndexError'd in `simulate_dual` and 500'd
+    the dashboard mid-bracket (`bracket_field` → `run_bracket` → `play_dual`). A
+    short side fields its last body on the courts it can't fill; the dual still
+    resolves to a normal 7-point card with a winner."""
+    full = _team("H", 0.6, 1)
+    for n in (5, 4, 3, 2, 1):
+        thin = Team(name="Thin", singles=list(full.singles[:n]))
+        res = simulate_dual(thin, _team("A", 0.55, 2), seed=10)   # must not raise
+        assert res.winner in (0, 1)
+        assert len([ln for ln in res.lines if ln.slot.startswith("S")]) == 6
+        assert res.home_points + res.away_points <= 7
+        # and the other way round — a short AWAY side is the same read
+        res = simulate_dual(_team("A", 0.55, 2), thin, seed=10)
+        assert res.winner in (0, 1)
+
+
+def test_empty_side_fails_loudly():
+    """Nobody at all is not a lineup to degrade — it's a broken save, and a silent
+    walkover would hide it. Raise something that names the team, not an IndexError."""
+    import pytest
+    with pytest.raises(ValueError, match="Nobody"):
+        simulate_dual(Team(name="Nobody", singles=[]), _team("A", 0.55, 2), seed=10)
+
+
 def test_squad_build_does_not_invent_players():
     """A short roster must NOT be patched at squad-build time. A synthesised filler
     has a pid that exists in no roster, no pid index and no persisted world, so a

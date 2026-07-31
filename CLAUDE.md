@@ -122,6 +122,17 @@ Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
 to the old 1,000 or D1/D2 can't fill from real recruits. See
 `docs/AAR-roster-expansion-walkons-recruit-pool.md`.
 
+**Every division has a HARD FLOOR of six** (`world.LINEUP_FLOOR`, enforced at the
+rollover in `refill_walkons` on the real persisted roster). "D1 carries no walk-on
+depth" is about keeping D1 rosters SMALLER than the rest — never a licence to drop
+below a playable lineup. A dual fields six singles and `Team.doubles` indexes 0..5, so
+a short side used to 500 the page; the engine now degrades instead of crashing
+(`dual._court` clamps, `_pair` wraps, `gtt._slot` likewise) and an EMPTY side raises
+loudly. Never patch a short roster at squad-build time — `ncaa.squad_and_ladder`
+must not invent a player (a synthesised pid exists in no roster, no pid index and no
+persisted world, so honors and championship links point at nobody; a test pins this).
+See `docs/AAR-roster-floor-and-walkon-personas.md`.
+
 ## ⚠️ Injuries are the ONE non-deterministic system — by design (`app/injuries.py`)
 The engine is seed-deterministic everywhere EXCEPT injuries, which roll on **real
 entropy** (`random.SystemRandom`). This is a deliberate owner decision ("I never

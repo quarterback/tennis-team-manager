@@ -419,3 +419,17 @@ def test_alumni_lists_everyone_past_college_by_state(tmp_path):
         assert all(p["state"] == s for p in gs.alumni(lid, s, limit=100000))
     assert sum(len(gs.alumni(lid, s, limit=100000)) for s in
                ("playing", "free-agent", "coaching", "retired", "hall-of-fame")) == len(everyone)
+
+
+def test_gtt_short_club_plays_instead_of_crashing():
+    """Same class of crash as the college dual (engine.dual._court): the nine-line
+    card reads fixed lineup indices, and `gtt_seasonmode._lineup` returns fewer than
+    three when a club is genuinely that thin. A short club plays its last body in the
+    slot it can't fill rather than IndexError-ing the page."""
+    full = _gtt_team("H", 0.60, 1)
+    for n in (2, 1):
+        thin = GTTTeam(name="Thin", men=list(full.men[:n]), women=list(full.women[:n]))
+        res = simulate_gtt_dual(thin, _gtt_team("A", 0.55, 2), seed=10)   # must not raise
+        assert [l.slot for l in res.lines] == SLOTS
+        assert res.winner in (0, 1)
+        assert simulate_gtt_dual(_gtt_team("A", 0.55, 2), thin, seed=10).winner in (0, 1)

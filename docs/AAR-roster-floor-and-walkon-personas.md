@@ -86,7 +86,55 @@ themselves — as a backstop for saves that are *already* below six, since the f
 only applies from the next rollover. A crash here takes out a whole page, so it
 degrades instead.
 
+## IT RESURFACED (2026-07-31) — one court over, same crash
+
+Same live save, same 500, one frame further in:
+
+```
+File "engine/dual.py", line 183, in simulate_dual
+    res = simulate_match(home.singles[i], away.singles[i], ...)
+IndexError: list index out of range
+```
+
+`_pair` was guarded and the doubles read stopped crashing — so the dual got three
+lines further and died on the **singles** read instead. `simulate_dual` loops
+`range(6)` and indexes `singles[0..5]` directly; a five-man side never survived it.
+The first pass fixed the frame in the traceback, not the class, exactly the mistake
+CLAUDE.md already records for the cache races ("GREP THE WHOLE CLASS IN ONE PASS").
+
+The sweep this time, `grep -rn "singles\[\|\.men\[\|\.women\[\|range(6)\|range(3)"`:
+
+* `engine.dual.simulate_dual` — the reported crash. Reads go through a new
+  `_court(team, i)`, which CLAMPS to the last body (a short side plays its weakest
+  player on the courts it can't fill). `_pair` still WRAPS, because a doubles pair
+  needs two different people and a singles court needs one.
+* `engine.gtt.simulate_gtt_dual` / `_xd` — identical shape, nine lines instead of
+  seven, and `gtt_seasonmode._lineup` returns short for a thin club the same way.
+  Guarded with `_slot`. The pro league had never crashed here only because clubs
+  hadn't got thin yet.
+* `individuals._program_pair` — read `team.singles[0], [1]` for EVERY program in
+  the division to build the doubles field, so one under-two program took out the
+  whole championship. A pair can't degrade (two different people), so such a
+  program returns None and doesn't enter; `_program_singles` was already bounded.
+* `season.coach_lineup` (pads to six), `season._line_identity` (bounds-checked)
+  were already safe. `ncaa.squad_and_ladder` stays UNPADDED — inventing a player
+  there is the thing this AAR's first pass got wrong, and a test pins it.
+
+An **empty** side still raises, with the team's name in the message. Nobody at all
+isn't a lineup to degrade to; it means the roster layer is broken and a silent
+walkover would bury it.
+
+Note the floor in `world.refill_walkons` fixes this properly but only from the next
+rollover, so an already-below-six save keeps hitting the engine backstop until then
+— that is what the backstop is for.
+
 ## Rule
+
+**Fixing the frame in the traceback is not fixing the bug.** The guard went where
+the stack pointed (`_pair`) instead of everywhere the same assumption was read, so
+the save crashed again on the next click — in a function three lines below the one
+that had just been fixed. When a default encodes a size, grep every read of every
+list that default indexes into, in one pass, before shipping.
 
 **A default that encodes a size is a constraint.** `Team.doubles = [(0,1),(2,3),(4,5)]`
 silently requires six players, and nothing in the roster layer knew that. When one
