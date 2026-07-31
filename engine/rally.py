@@ -62,6 +62,14 @@ TUNE = {
     # per point with talent, so totals spread by player instead of sitting flat.
     "winner_share": 0.22,     # server-won rally: winner vs returner forced error
     "unforced_share": 0.73,   # returner-won rally: server unforced error vs returner winner
+    # Attribution floor: how the shares are CLAMPED. These shares only LABEL a
+    # point already won (winner vs error) — they never decide it — so the floor is
+    # pure box-score texture. Without it, a player far enough below `swing_ref`
+    # (the bottom of a D3/D4 card, exposed by the expanded 8/10-court formats)
+    # clamps to a literal 0% winner share and finishes matches with ZERO winners,
+    # which even the weakest college player doesn't do: everyone puts away a few
+    # short balls. Floor ≈ a handful of winners a match at the bottom of the card.
+    "share_floor": 0.06,
     # How far player attributes swing the split. Each stat reads a small BASKET of
     # attributes, so its total carries a distinct talent fingerprint.
     "winner_power": 0.28,     # groundstroke weapons → more winners
@@ -169,7 +177,8 @@ def _winner_share(hitter: Player, misser: Player) -> float:
              + t["winner_move"] * (hitter.court_cover - ref)
              + t["winner_nerve"] * (hitter.go_for_it - ref)
              + t["winner_steady"] * (misser.steadiness - ref))
-    return _clamp01(t["winner_share"] + swing)
+    f = t["share_floor"]
+    return max(f, min(1.0 - f, t["winner_share"] + swing))
 
 
 def _unforced_share(state: MatchState, server: Player, returner: Player) -> float:
@@ -184,7 +193,11 @@ def _unforced_share(state: MatchState, server: Player, returner: Player) -> floa
     steady = (-t["unforced_steady"] * (server.steadiness - ref)
               - t["unforced_move"] * (server.court_cover - ref)) * 2
     wind = t["wind_error"] * state.context.wind * (1.0 - server.wind_tolerance)
-    return _clamp01(t["unforced_share"] + steady + wind)
+    # Same floor as _winner_share, mirrored: a weak server otherwise clamps to a
+    # 100% unforced share, which erases the RETURNER's winners — the other half
+    # of the zero-winner box lines. Attribution only; outcomes are untouched.
+    f = t["share_floor"]
+    return max(f, min(1.0 - f, t["unforced_share"] + steady + wind))
 
 
 def _clutch(state: MatchState, server: Player, returner: Player) -> float:
