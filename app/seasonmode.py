@@ -513,11 +513,17 @@ def _mark_retirements(conn, sid, rec, home, away, progs, week, tag) -> int:
         return 0
     rosters = {home: {p.pid: p for p in build_roster(progs[home])},
                away: {p.pid: p for p in build_roster(progs[away])}}
+    # Keep the season's retirement COUNT at the owner's sizing: the rate was tuned
+    # per completed singles on six-court duals, and the expanded cards complete
+    # more singles per dual — scale each roll by baseline/N so the volume holds.
+    n_singles = sum(1 for ln in rec["lines"]
+                    if ln.get("completed") and str(ln.get("slot", "")).startswith("S"))
+    scale = min(1.0, injuries.EXPOSURE_BASELINE / n_singles) if n_singles else 1.0
     n = 0
     for ln in rec["lines"]:
         if not ln.get("completed") or not str(ln.get("slot", "")).startswith("S"):
             continue
-        if "home_pid" not in ln or not injuries.roll_retirement():
+        if "home_pid" not in ln or not injuries.roll_retirement(scale):
             continue
         # Either player can be the one who pulls out — the score is irrelevant.
         home_retires = injuries.retiring_side()

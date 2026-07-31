@@ -88,11 +88,14 @@ divisions (D2, NAIA, JUCO) actually use.
 
 ## Watch items (flagged, not retuned)
 
-* **Injuries:** `BASE_RATE` is calibrated per-dual per-starter; a 10-man card
-  exposes ~1.7× the bodies of a 6-man card, so "~0.5 starters hurt at any time"
-  drifts up for D1/D4 (~0.8+). The one non-deterministic system is owner-tuned
-  — deliberately NOT retuned here; revisit `BASE_RATE` if injury volume feels
-  high in play.
+* **Injuries: retuned to hold the OLD volume (owner call, same day).** The
+  calibration target is per TEAM, not per body: `roll_new` scales every roll by
+  `EXPOSURE_BASELINE(6) / <competitors this dual>`, and `_mark_retirements`
+  scales the per-match retirement roll by baseline/<completed singles>, so a
+  team's expected injuries per dual and the season's retirement count sit
+  exactly where the 6-court game had them. `BASE_RATE`/`RETIREMENT_RATE`
+  themselves are untouched; GTT fields ~6 a dual so the pro league sits at
+  scale 1.0 and is unaffected.
 * **D3/D4 play-play** now means 8–10 completed singles per dual — fuller stats,
   longer `lines_json` rows. Fine, but sim time per dual rose accordingly
   (~15 lines for a D1 dual vs 9 before): the full suite is measurably slower.
