@@ -154,6 +154,14 @@ the save crashed again on the next click — in a function three lines below the
 that had just been fixed. When a default encodes a size, grep every read of every
 list that default indexes into, in one pass, before shipping.
 
+**If you degrade the SIM, degrade the RECORD with it — through the same code.** The
+clamp put a real player on court and the recording layer said the court was empty,
+because each had its own idea of who plays a short lineup. That combination is worse
+than either alone: the dual looks fine, the score adds up, and a player quietly loses
+matches they played. Any rule about *who occupies a slot* has exactly one
+implementation (`court_index` / `pair_indices` / `slot_index`), and every layer that
+answers "who played this line" calls it rather than re-deriving it.
+
 **A default that encodes a size is a constraint.** `Team.doubles = [(0,1),(2,3),(4,5)]`
 silently requires six players, and nothing in the roster layer knew that. When one
 module hard-codes positions into another module's list, state the floor where the list
