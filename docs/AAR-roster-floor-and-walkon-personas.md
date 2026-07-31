@@ -120,6 +120,24 @@ The sweep this time, `grep -rn "singles\[\|\.men\[\|\.women\[\|range(6)\|range(3
   were already safe. `ncaa.squad_and_ladder` stays UNPADDED — inventing a player
   there is the thing this AAR's first pass got wrong, and a test pins it.
 
+### The half-fix inside the fix: degrading the SIM but not the RECORD
+
+Review caught the next link in the same chain. Clamping puts a real player on the
+clamped court — but the layers that RECORD a dual resolved identity with their own
+bounds check, so they disagreed with the engine and returned *nobody*:
+
+* `gtt_seasonmode._line_pids` → empty pid list for a slot past the lineup length.
+  The line was `completed`, so its point counted in the team score, while the player
+  who actually won it got no W-L, no STR, no MVP/Hall-of-Fame credit, no injury roll
+  and a blank name in the log.
+* `season._line_identity` → same shape (`if 0 <= i < len(la)`), same silent hole.
+
+A degraded lineup that the box score can't name is arguably worse than the crash: the
+crash is visible. So the clamp/wrap rules are now EXPORTED from the engine
+(`dual.court_index`, `dual.pair_indices`, `gtt.slot_index`) and both recording layers
+resolve through them. One copy of each rule — a second copy is exactly what created
+this hole.
+
 An **empty** side still raises, with the team's name in the message. Nobody at all
 isn't a lineup to degrade to; it means the roster layer is broken and a silent
 walkover would bury it.

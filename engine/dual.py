@@ -77,6 +77,26 @@ class DualResult:
 SINGLES_COURTS = 6        # a dual fields six singles; `Team.doubles` indexes into them
 
 
+def court_index(n: int, i: int) -> int:
+    """Which player of a lineup of `n` actually plays singles court `i` — the clamp
+    `_court` applies. Exported because the layer that RECORDS a dual has to resolve
+    the same body the engine put on court: `season._line_identity` used to
+    bounds-check instead, so a clamped court came back as a completed line with no
+    player on it — no pids, no W-L, no STR, blank in the box score. Two copies of a
+    lineup rule drift; there is one."""
+    return min(i, n - 1)
+
+
+def pair_indices(n: int, pair: tuple[int, int]) -> tuple[int, int]:
+    """Which two of a pool of `n` actually play a doubles pairing — the wrap `_pair`
+    applies (and the self-pair nudge). Same reason as `court_index`: the recording
+    layer resolves identities through this, not its own bounds check."""
+    i, j = pair[0] % n, pair[1] % n
+    if n > 1 and i == j:
+        j = (j + 1) % n
+    return i, j
+
+
 def _court(team: Team, i: int) -> Player:
     """The player on singles court `i` (0-based), backstopped against a short lineup.
 
@@ -91,7 +111,7 @@ def _court(team: Team, i: int) -> Player:
     """
     if not team.singles:
         raise ValueError(f"{team.name} has nobody to field in singles")
-    return team.singles[min(i, len(team.singles) - 1)]
+    return team.singles[court_index(len(team.singles), i)]
 
 
 def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
@@ -107,10 +127,7 @@ def _pair(team: Team, pair: tuple[int, int]) -> DoublesTeam:
     # has rather than 500-ing; the roster floor in `world.refill_walkons` keeps this
     # from firing in the normal case. Indices WRAP here (not clamp as in `_court`)
     # because a pair needs two DIFFERENT players.
-    n = len(pool)
-    i, j = pair[0] % n, pair[1] % n
-    if n > 1 and i == j:
-        j = (j + 1) % n
+    i, j = pair_indices(len(pool), pair)
     return DoublesTeam(players=(pool[i], pool[j]))
 
 

@@ -69,6 +69,17 @@ class GTTResult:
     lines: list[GTTLine]
 
 
+def slot_index(n: int, i: int) -> int:
+    """Which player of a lineup of `n` actually plays slot `i` — the clamp `_slot`
+    applies. Exported so the layer that RECORDS a dual resolves the same body the
+    engine put on court: `gtt_seasonmode._line_pids` used to bounds-check instead, so
+    a clamped slot stored a completed line with an EMPTY pid list — the point counted
+    in the team score but the player got no W-L, no STR, no MVP/Hall-of-Fame credit,
+    no injury roll and a blank name in the log. Same rule as `engine.dual
+    .court_index`; one copy of it, so the two can't drift."""
+    return min(i, n - 1)
+
+
 def _slot(pool: list[Player], i: int, team: str, what: str) -> Player:
     """The player in lineup slot `i`, backstopped against a short lineup — the club
     plays its last (weakest) body in a slot it can't fill rather than IndexError-ing
@@ -77,7 +88,7 @@ def _slot(pool: list[Player], i: int, team: str, what: str) -> Player:
     club is genuinely that thin."""
     if not pool:
         raise ValueError(f"{team} has nobody to field in {what}")
-    return pool[min(i, len(pool) - 1)]
+    return pool[slot_index(len(pool), i)]
 
 
 def _xd(team: GTTTeam, pair: tuple[int, int]) -> DoublesTeam:

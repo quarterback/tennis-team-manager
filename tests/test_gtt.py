@@ -433,3 +433,21 @@ def test_gtt_short_club_plays_instead_of_crashing():
         assert [l.slot for l in res.lines] == SLOTS
         assert res.winner in (0, 1)
         assert simulate_gtt_dual(_gtt_team("A", 0.55, 2), thin, seed=10).winner in (0, 1)
+
+
+def test_short_club_line_pids_name_who_actually_played():
+    """A clamped slot has a REAL player on it, so the stored line must carry their
+    pid. The mapping used to bounds-check independently of the engine, so the extra
+    MS/WS/XD lines came back with empty pids: the point counted in the team score
+    while the player who won it got no W-L, no STR, no MVP/HoF credit and no injury
+    roll."""
+    from app.gtt_seasonmode import _line_pids
+    from engine.gtt import slot_index
+
+    men, women = ["m1", "m2"], ["w1"]          # a club below the 3+3 lineup
+    for n in (1, 2, 3):
+        assert _line_pids(f"MS{n}", men, women) == [men[slot_index(len(men), n - 1)]]
+        assert _line_pids(f"WS{n}", men, women) == [women[slot_index(len(women), n - 1)]]
+        xd = _line_pids(f"XD{n}", men, women)
+        assert xd == [men[slot_index(len(men), n - 1)], women[slot_index(len(women), n - 1)]]
+    assert _line_pids("MS3", [], women) == []   # nobody at all stays empty
