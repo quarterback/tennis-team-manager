@@ -122,6 +122,30 @@ Also fixed: a `test_box_stats` assertion that summed a player's log aces across
 all matches — the match log now (correctly) includes doubles, so the
 singles-aggregate cross-check filters to S slots.
 
+## No magic: the attribute → stat mapping (owner audit, logged)
+
+The owner asked for confirmation that serving and the rest draw from the
+player's actual talent attributes rather than level dials. The full-fidelity
+path reads the 49 rich attributes (engine.state.Player role baskets, fed by
+`Prospect.engine_player`); the mapping, for the record:
+
+| Stat | Attributes read |
+|---|---|
+| Aces | server `first_serve_power` + `serve_variety` (2nd: `second_serve_quality`), offset by returner `return_quality` + `return_depth` |
+| 1st serve % | `first_serve_accuracy` |
+| Double faults | `second_serve_quality` + `serve_variety`, steadied by `composure`/`focus`, raised by the server's own `first_serve_power` (the real ace↔DF coupling, pro r≈0.93) |
+| Rally/point wins | `forehand`/`backhand`/`movement`/`consistency` composite vs the opponent's, plus serve advantage |
+| Winner label | `forehand_power`, `backhand_power`, `passing_precision`, `approach_shot`, `court_vision` + `footwork`/`speed`/`agility`/`balance` + `competitiveness`/`clutch` vs the misser's `groundstroke_consistency`, `shot_tolerance`, `discipline`, `rally_patience` |
+| Conditions | per-player `wind_tolerance`, `heat_tolerance`, indoor/outdoor comfort, `crowd_pressure` |
+
+This is why the women's numbers validated with no tuning: generated women
+carry softer serve grades, so WTA-band serve stats fall out of the attributes.
+TUNE baselines are the shared physics of tennis (e.g. the first-serve
+advantage); every deviation from them is earned by attributes. Two deliberate
+exceptions, both owner-sanctioned: FAST fidelity (legacy speed mode, off by
+default) collapses outcomes to `overall`, and GTT's per-night chaos form is
+the pro league's intentional randomness.
+
 ## Rules
 
 **A stat layer has a ground truth too.** The outcome model was calibrated and
