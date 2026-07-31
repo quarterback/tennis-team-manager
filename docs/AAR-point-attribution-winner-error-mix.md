@@ -1,106 +1,103 @@
 # AAR — box scores said a player hit zero winners (and another hit 47)
 
 **Date:** 2026-07-31
-**Status:** Landed (`engine/rally.py` TUNE — attribution shares recalibrated).
-**Scope:** `rally._winner_share` / `_unforced_share` coefficients + clamp band;
-no outcome, rating, or determinism change anywhere.
+**Status:** Landed in four passes; final model = symmetric, matchup-anchored,
+level-blind (owner rule 2027-07).
+**Scope:** `engine/rally.py` (`_end_shares`, `play_point`, TUNE), a stale
+`test_box_stats` assertion, `tests/test_point_attribution.py` (new invariants);
+no outcome, rating, or determinism change at any pass.
 
 ## Symptom
 
-The expanded dual formats (docs/AAR-division-dual-formats.md) put the bottom of
-D3/D4 rosters on recorded singles courts for the first time, and their box lines
-read **W 0** — whole matches, sometimes whole seasons, without a single winner.
-The owner flagged it from a D4 women's national final ("is it realistic to only
-hit 3 winners in a match? really?"). The SAME final's D1 sibling had the inverse
-absurdity hiding in plain sight: the champion's S1 line read **W 47 / UE 2** —
-forty-seven winners and two unforced errors across three sets.
+The expanded dual formats put the bottom of D3/D4 rosters on recorded singles
+courts for the first time, and their box lines read **W 0** — whole matches
+without a single winner. The owner flagged it from a D4 national final. The D1
+final had the inverse absurdity: **W 47 / UE 2** across three sets — nearly
+every rally labeled a winner, almost no unforced errors.
 
-## The mechanism (not the tennis)
+## The wrong models, in order (this took FOUR passes — read the rules below)
 
-The engine decides WHO wins each point first, then labels HOW it ended:
+The engine decides WHO wins each point, then labels HOW it ended. The labeling
+was wrong three different ways before it was right:
 
-* a server-won rally is a clean **winner** vs the returner's **forced error**,
-  split by `_winner_share`;
-* a returner-won rally is the server's **unforced error** vs a **returner
-  winner**, split by `_unforced_share`.
+1. **Floor patch.** Clamp the shares at 6% so nobody posts a literal zero.
+   Symptom treatment; the owner rejected it on sight ("3 winners instead of 0").
+2. **Gentler absolute swings.** Shrink the coefficients so the shares stop
+   saturating. Mix landed 32% winners at elite, **14% at the bottom** — still a
+   ladder from "pro" down to "bad." The owner rejected the premise, not the
+   magnitude: *a winner is relative to the opponent.* A 35-STR shot a 30-STR
+   opponent can't reach is a winner. Matched weak players produce near-normal
+   winner counts; their tennis is uglier, not winner-less.
+3. **Relative + small level drift.** Rebuilt symmetric and matchup-anchored,
+   but kept a small absolute-level term ("collegiate slightly lower"). The
+   owner's final correction: that residual term is still pro-anchoring.
+   **Every division's players are the pros of their own world.** A Challenger
+   box score is statistically indistinguishable from an ATP one (owner supplied
+   three: 51/49 and 54/46 point splits, normal ace/DF counts, 149–234 points a
+   three-setter) — the difference only shows when the levels MEET.
+4. **Final model.** Level term deleted. The matchup gap is the whole dial.
 
-Both shares swing linearly with attribute baskets anchored at `swing_ref = 0.68`
-(a real D1 level). The baskets summed **~0.74** (winner) and — via a hidden `×2`
-multiplier on the steadiness term — effectively **~1.36** (unforced). Across a
-college talent range (~0.28–0.92) that swings the shares by ±0.30 and more, so:
+## The final model (`rally._end_shares`)
 
-* a deep-card D4 player went negative on every term and the `[0,1]` clamp pinned
-  the winner share at **literal 0%** — every point they won was labeled an
-  opponent error;
-* an elite player collapsed the unforced share toward 0, so nearly every rally
-  they lost on serve was labeled the OPPONENT'S winner — winner counts ballooned
-  and UE counts vanished (the W 47 / UE 2 line).
+Every rally end is ONE three-way draw — the point-winner's clean WINNER, or the
+loser's FORCED or UNFORCED error — **on both sides symmetrically**. (The old
+code could never charge a returner an unforced error while losing a service
+point, nor a server a forced error; both are common in real tennis.) The split
+reads the hitter's attacking basket vs the misser's defensive basket:
 
-A first patch floored the shares at 6% (`share_floor`). That killed the literal
-zero but was symptom-treatment; the owner correctly rejected it and sent
-research: the swings themselves were wrong.
+* outgun your opponent → your winners and their forced errors rise;
+* get outgunned → your losses tilt unforced;
+* matched → the real-world baseline mix, at EVERY level.
 
-## What the data says (owner-supplied sources)
+Wind tilts the misser's errors unforced. The 6% clamp band survives as a
+backstop only. The label draw consumes the same single `rng.random()` the old
+two-way split did, so the RNG stream — and every outcome — is bit-identical
+(verified 40/40 mixed-level same-seed scorelines).
 
-* **Brain Game Tennis / Craig O'Shannessy** (all-Slam data): points end
-  **~32% winners / 41% forced / 27% unforced for men; 29/37/34 for women** —
-  "MEN = 70% errors / 30% winners" as the building block. The engine's own TUNE
-  comment already cited these numbers and then swung right past them.
-* **BigTime Stats / LSports (Tennis Abstract, Inpredictable)**: outcomes ride on
-  tiny points-won margins (average match 55/45; <5% of matches won with under
-  half the points) — the OUTCOME side of the engine already targets this and was
-  not touched.
+## Measured (30 matches/cell; winners incl. aces, DFs folded into UE)
 
-The key property: the winner/error mix is one of the most STABLE numbers in
-tennis. It drifts a few points softer as the level drops (more unforced, fewer
-winners); it never collapses to 0% or inflates past ~40%. Low-level tennis is an
-error festival — but a festival with winners in it.
+| Pairing | Winners | Forced | UE+DF | pts/match |
+|---|---|---|---|---|
+| real target (O'Shannessy, pro men) | ~32 | ~41 | ~27 | ~132 (ATP avg) |
+| elite matched | 31.7 | 37.2 | 31.1 | 137 |
+| mid matched | 30.0 | 36.7 | 33.3 | 139 |
+| weak matched | 28.5 | 36.2 | 35.3 | 135 |
+| big mismatch | 33.1 | 34.5 | 32.4 | 104 |
 
-## The fix
+Matched play is level-blind (the small drift is ace rates — genuine serve
+talent, attribute-indexed). Mismatches run shorter and the favorite out-hits
+the underdog on winners. A weak player posts ~27 winners in a matched
+two-setter — the owner's "a 35 playing a 30 might get 30 winners."
 
-Shrink the swings to hold the whole college spectrum inside the real band, and
-keep the clamp band `[share_floor, 1 − share_floor]` (6%) as a backstop:
+## Guardrails (tests/test_point_attribution.py)
 
-* winner basket `0.28/0.14/0.10/0.22` (sum ~0.74) → `0.10/0.05/0.03/0.08`
-  (sum ~0.26);
-* unforced basket `0.50/0.18` with the `×2` → `0.30/0.10`, multiplier removed.
+1. **Conservation** — the owner's gut check: every point is labeled exactly
+   once; a player's points won == their winners + opponent's errors +
+   opponent's DFs, asserted per match per side, and totals sit in real ranges.
+2. **Level-blind** — matched elite and matched weak mixes within 5 points.
+3. **Gap-driven** — a big favorite out-winners the underdog and the beaten
+   side's losses tilt unforced.
 
-Measured mix after (30 full matches per level, both players' points pooled;
-winners include aces, DFs folded into UE — O'Shannessy's triple):
+Also fixed: a `test_box_stats` assertion that summed a player's log aces across
+all matches — the match log now (correctly) includes doubles, so the
+singles-aggregate cross-check filters to S slots.
 
-| Level | Winners | Forced | UE+DF |
-|---|---|---|---|
-| target (pro men) | ~32 | ~41 | ~27 |
-| elite D1 | 31.9 | 36.7 | 31.4 |
-| mid D2 | 21.3 | 41.3 | 37.4 |
-| weak D3/D4 | 13.9 | 44.3 | 41.9 |
+## Rules
 
-Per-match texture: an elite line now reads ~W 22 / UE 15–29; a deep-card line
-~W 9–13 against ~25 errors. Error-dominated at the bottom, winner-capable at
-every level, no impossible lines at either end.
+**A stat layer has a ground truth too.** The outcome model was calibrated and
+test-pinned; the attribution model cited the right real-world numbers in a
+comment and violated them by 4× at both ends, because nothing measured it. If a
+model exists to make displayed numbers realistic, calibrate it against that
+realism — the mix harness is five minutes of code and now lives in the tests.
 
-## Why this was safe to retune (and how it was verified)
+**Fix the frame of reference before the coefficients.** Passes 1 and 2 tuned
+magnitudes inside a wrong frame (absolute level). The owner's correction was
+conceptual: winners are defined BY THE MATCHUP, so the model had to be relative
+before any constant could be right. When a calibration keeps missing in the
+same direction at both extremes, suspect the anchor, not the gains.
 
-The shares only LABEL points already decided — they are drawn AFTER the rally
-winner is known and consume the same RNG draw regardless of value. So the retune
-is pure box-score texture: same-seed scorelines were verified **bit-identical**
-under the old and new coefficients. No result, rating, STR, Power Index, or
-determinism moves; the calibrated favorite-win rates are untouched. The
-fast-fidelity boxstats overlay reads the same TUNE, so it inherits the fix.
-Stored `lines_json` stats from already-played duals keep their old numbers —
-only newly simmed matches use the new mix.
-
-## Rule
-
-**A stat layer has a ground truth too.** The outcome model was calibrated
-against real win rates and defended by tests; the attribution model cited the
-right real-world numbers in a comment and then violated them by 4× at both ends
-of the talent range, because nothing ever measured it. When a model exists only
-to make displayed numbers realistic, calibrate it against the realism it claims
-— a mix table per level is a five-minute harness.
-
-**A clamp hit at scale is a wrong model, not a safety net.** The `[0,1]` clamp
-pinning entire cohorts at 0% (and the mirrored cohort at ~100%) was the signal
-that the linear swing was mis-sized. Floor it and you get "3 winners instead of
-0" — the owner's eye caught it immediately. When a share saturates for a whole
-class of inputs, resize the swing; don't floor the output.
+**"Worse level" is not a stat modifier.** Every tier plays its own game at its
+own top. Level differences express through attributes meeting attributes when
+sides actually differ — never through a global discount knob. (This is the same
+owner philosophy as the division radar and talent bands: levels are worlds,
+not multipliers.)

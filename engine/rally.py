@@ -63,19 +63,17 @@ TUNE = {
     # model only ever charged UEs to the server and FEs to the returner).
     #
     # A winner is RELATIVE TO THE OPPONENT: a shot the player across the net
-    # can't return. Matched weak players therefore produce near-normal winner
-    # counts — their tennis is uglier, not winner-less — so the split is anchored
-    # on the MATCHUP GAP (your weapons vs their defense), with only a small
-    # absolute-level drift (real mix: ~32/41/27 pro men, 29/37/34 pro women,
-    # "slightly lower at collegiate levels" — the mix compresses a few points as
-    # level drops, it never collapses). The gap term is what pays for aggression:
-    # outgun your opponent and your winners and their forced errors rise; get
-    # outgunned and your losses tilt unforced.
-    "end_winner_base": 0.27,   # winner fraction of rally ends, matched at swing_ref
-    "end_winner_level": 0.08,  # small absolute drift: lower-level → slightly fewer winners
+    # can't return. There is deliberately NO absolute-level term here (owner rule
+    # 2027-07): every division's players are the pros of their own world, so a
+    # matched D4 dual reads like a matched D1 dual on the stat sheet — exactly as
+    # a Challenger box score reads like an ATP one, and the difference only shows
+    # when the levels MEET. The matchup gap is the whole dial: outgun your
+    # opponent and your winners and their forced errors rise; get outgunned and
+    # your losses tilt unforced. Do not re-add a level anchor — that was the bug
+    # (players far from the old `swing_ref` posted 0-winner and 0-UE matches).
+    "end_winner_base": 0.27,   # winner fraction of rally ends in a matched pairing
     "end_winner_gap": 0.45,    # your attack basket vs their defense basket
-    "end_forced_base": 0.57,   # of the loser's errors: forced fraction, matched at ref
-    "end_forced_level": 0.24,  # lower-level errors tilt unforced (sloppier misses)
+    "end_forced_base": 0.57,   # of the loser's errors: forced fraction, matched
     "end_forced_gap": 0.35,    # a bigger gap makes the loser's misses FORCED
     # Attribution floor: the shares are clamped into [floor, 1-floor]. They only
     # LABEL a point already won — never decide one — so this is box-score texture:
@@ -172,25 +170,22 @@ def _end_shares(state: MatchState, hitter: Player, misser: Player) -> tuple[floa
     WINNER, else the misser's error, which is FORCED with `forced_frac` and
     UNFORCED otherwise. Symmetric: called for whichever side won the rally.
 
-    Anchored on the MATCHUP, not the level: `gap` is the hitter's attacking
-    basket vs the misser's defensive basket, so a 35-STR player beating up on a
-    30 hits real winner counts and a matched pair of weak players still splits
-    points like tennis players do (their mix drifts only `end_*_level` softer).
-    Wind tilts the misser's errors unforced."""
+    Anchored on the MATCHUP only, never the level (owner rule 2027-07): `gap` is
+    the hitter's attacking basket vs the misser's defensive basket, so a 35-STR
+    player beating up on a 30 hits real winner counts, and a matched pair of weak
+    players splits points exactly like a matched pair of stars — every level is
+    the pros of its own world. Wind tilts the misser's errors unforced."""
     t = TUNE
     atk = 0.55 * hitter.attack + 0.25 * hitter.court_cover + 0.20 * hitter.go_for_it
     dfn = 0.60 * misser.steadiness + 0.40 * misser.court_cover
     gap = atk - dfn
-    lvl = (atk + dfn) / 2.0 - t["swing_ref"]
     wind = t["wind_error"] * state.context.wind * (1.0 - misser.wind_tolerance)
     f = t["share_floor"]
 
     def clamp(x: float) -> float:
         return max(f, min(1.0 - f, x))
-    winner_frac = clamp(t["end_winner_base"] + t["end_winner_gap"] * gap
-                        + t["end_winner_level"] * lvl)
-    forced_frac = clamp(t["end_forced_base"] + t["end_forced_gap"] * gap
-                        + t["end_forced_level"] * lvl - wind)
+    winner_frac = clamp(t["end_winner_base"] + t["end_winner_gap"] * gap)
+    forced_frac = clamp(t["end_forced_base"] + t["end_forced_gap"] * gap - wind)
     return winner_frac, forced_frac
 
 
