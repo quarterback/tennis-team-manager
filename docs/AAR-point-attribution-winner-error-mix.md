@@ -69,6 +69,46 @@ talent, attribute-indexed). Mismatches run shorter and the favorite out-hits
 the underdog on winners. A weak player posts ~27 winners in a matched
 two-setter — the owner's "a 35 playing a 30 might get 30 winners."
 
+## Validation against the owner's real-world reference boxes
+
+The owner supplied real box scores and season tables during this arc; they are
+the calibration record, logged here so future retunes have the same yardsticks.
+
+**Men (ATP / Challenger)** — three Challenger three-setters: 234, 149 and 170
+total points; total-points-won splits 51/49, 51/49, 54/46; serve points won
+62–70% a side; aces 3–17; DFs 2–5. Statistically indistinguishable from
+tour-level boxes — the fact that anchored the level-blind rule. Season scale:
+ATP average ≈ 131.8 points/match; tour ace leaders ~8–16/match (Fritz 580 in
+36); serve points won 62–70%, service games held ~72–93%.
+
+**Women (WTA / WTA 125 / doubles)** — a 125 two-setter at 119 points
+(serve pts won 49–60%, aces 0–5), a tour two-setter at 118 (Pegula 73.3% serve
+pts won on a dominant day), a 125 three-set semifinal at **247 points**
+(aces 10/2, DFs 8/7), a pro doubles two-setter at 91. Season tables: serve
+points won ~55–65% (Sabalenka 64.9%, Swiatek 60.6%, mid-tier upper-50s), aces
+~2–6/match a side (Rybakina 6.4), DFs ~1.5–5.6, return points won 47–52% for
+the best returners. Same lesson as the men: a 125 box reads like a tour box.
+
+**The game's women, measured against those tables** (real rosters, full
+fidelity, per side):
+
+| Metric | WTA real | Game D1 women | Game D4 women |
+|---|---|---|---|
+| Serve points won | ~55–65% | 57.8% | 53.1% |
+| Aces / match | ~2–6 | ~4.6 | ~2.8 |
+| Double faults / match | ~1.5–5.6 | ~3.7 | ~5.0 |
+| Points / match | ~118 (2 sets) – 247 (long 3) | 142 | 135 |
+| Winners incl. aces | ~29% (women's mix) | 31.8% | 29.1% |
+
+No further tuning was needed on the women's side: the softer serve attributes
+of generated women already put serve dominance in the WTA band (not the ATP
+one), D4 women differ from D1 women the way a 125 differs from tour, and the
+mix lands on the women's ~29% winners with the error tilt. Marginal watch
+item: D1 women's aces (~4.6/side for top-of-lineup players) sit at the
+Rybakina end of the real range — defensible, but if women's aces ever feel
+plentiful, that's an ACE-MODEL (outcome-relevant) knob requiring an explicit
+owner call and a recalibration pass, not an attribution tweak.
+
 ## Guardrails (tests/test_point_attribution.py)
 
 1. **Conservation** — the owner's gut check: every point is labeled exactly
