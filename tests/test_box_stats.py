@@ -230,6 +230,8 @@ def test_season_aggregation_and_log(db):
     # player_log carries the per-match stat line from the player's POV
     pid = max(manual, key=lambda p: manual[p]["n"])
     log = sm.player_log(sid, pid)
-    with_stats = [m for m in log if m.get("stats")]
+    # The log now includes DOUBLES matches too (owner feature 2027-07); this
+    # cross-check is against the SINGLES aggregate, so filter to singles slots.
+    with_stats = [m for m in log if m.get("stats") and m["slot"].startswith("S")]
     assert with_stats
     assert sum(m["stats"]["ace"] for m in with_stats) == manual[pid]["ace"]
