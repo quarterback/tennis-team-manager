@@ -104,6 +104,50 @@ divisions (D2, NAIA, JUCO) actually use.
   Rosters floored at 6 under the old rule get topped to the new card floor at
   the next rollover by `refill_walkons`.
 
+## Measured baselines (scripts/format_baseline.py — seed 424242, men, fast fidelity)
+
+One `run_season` per division per arm, classic 6+3 vs the new shapes, same seed
+and outcome model both arms so the format is the only variable. Fav win% judges
+the favorite by card-mean OVR; "dbl dec%" = duals where stripping the winner's
+doubles edge from the final score un-wins them; top-5 = mean win% of the five
+best teams (the dominance number).
+
+| Div | Arm | Duals | Fav win% | Dbl dec% | Win% spread | Top-5 win% |
+|---|---|---|---|---|---|---|
+| D1 | classic | 3,267 | 67.5 | 12.2 | .162 | **93.3** |
+| D1 | new     | 3,267 | 68.1 | 10.0 | .166 | **88.9** |
+| D2 | classic | 2,776 | 62.3 | 14.6 | .145 | 86.2 |
+| D2 | new     | 2,776 | 60.4 | **18.5** | .142 | 85.6 |
+| D3 | classic | 1,518 | 69.5 | 24.8 | .197 | 91.8 |
+| D3 | new     | 1,518 | 70.7 | 26.6 | .204 | 93.5 |
+| D4 | classic | 1,392 | 61.1 | 31.1 | .145 | 83.3 |
+| D4 | new     | 1,392 | 60.3 | 29.7 | .146 | 83.6 |
+
+Readings, agreed with the owner:
+
+* **Dominance dilution is real and lands where intended.** D1's top five drop
+  93.3% → 88.9% — roughly one extra loss per elite team per season — while the
+  overall spread barely moves: the change taxes the very top, not the middle.
+  Year-0 rosters are 12-deep and prestige-scaled, so this is the dilution's
+  FLOOR; it compounds over rollovers as courts 7-10 converge on walk-on depth.
+* **D1's consolidated doubles point KEPT its weight** (decides 1 in 10 duals,
+  barely down from 12.2%). The share-of-points framing (1 of 11) understates
+  it: the doubles winner clinches on 5 of 10 singles vs the loser's 6 — the
+  same leverage the classic point had. What changed is that winning it takes
+  3 of 5 real pairs (ten players), so a stacked super-pair buys one line, not
+  the point — no cheap points, per the owner's intent. The counterweight,
+  also owner-acknowledged: one singles court now equals the whole doubles
+  segment in points.
+* **Per-line doubles is a real axis shift in D2** (14.6% → 18.5% of duals
+  decided by doubles); D3/D4 hold roughly flat.
+* **Upset rates are statistically flat everywhere** (±1-2 pts, within noise):
+  the variance reduction from more lines and the strength reshuffle from
+  depth-weighting roughly cancel.
+
+Caveats: one seed, one season per cell, standalone `run_season` (fixed ladders,
+no coach rotation, injuries off), year-0 rosters. Re-run the script on other
+seeds before treating any single-point difference as signal.
+
 ## Rule
 
 **A format is data, not a loop bound.** The 6 and the 3 lived as `range(6)` /
