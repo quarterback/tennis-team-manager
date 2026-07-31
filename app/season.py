@@ -20,7 +20,8 @@ import random
 from dataclasses import dataclass, field
 
 from engine import simulate_dual, Team, court_index, pair_indices
-from .ncaa import Program, Division, load_division, build_squad, build_roster, squad_and_ladder
+from .ncaa import (Program, Division, load_division, build_squad, build_roster,
+                   squad_and_ladder, dual_format, lineup_size)
 from .rating import compute_ratings, RatingLine
 from .str_rating import converge_ids
 from .bracket import play_dual, _seed_positions
@@ -94,13 +95,21 @@ class SeasonResult:
 # bench / walk-ons match reps — so everyone on the roster gets evaluated rather
 # than the bottom of the bench never seeing the court.
 LINEUP_NOISE = 1.4
-# Doubles pairing permutations (index pairs into the chosen six); the coach picks
+# Doubles pairing permutations (index pairs into the chosen lineup); the coach picks
 # one per season, so pairings persist but vary program to program / year to year.
+# The five HEADS vary how the top six combine; a format with more doubles lines
+# (D1's five) extends with the natural ladder pairing below them (7/8, 9/10).
 DOUBLES_PERMS = [
     [(0, 1), (2, 3), (4, 5)], [(0, 2), (1, 3), (4, 5)],
     [(0, 1), (2, 4), (3, 5)], [(0, 3), (1, 2), (4, 5)],
     [(0, 2), (1, 4), (3, 5)],
 ]
+
+
+def doubles_perms(n_pairs: int) -> list[list[tuple[int, int]]]:
+    """The coach's pairing choices for a format fielding `n_pairs` doubles lines."""
+    tail = [(2 * i, 2 * i + 1) for i in range(3, n_pairs)]
+    return [head[:min(3, n_pairs)] + tail for head in DOUBLES_PERMS]
 
 
 def _form_str(form, p) -> float | None:
@@ -141,18 +150,21 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
     coach is forced to use depth. A guaranteed (`forced`) player who's hurt is
     dropped too (you can't play the injured).
 
-    Short-handed safety: the engine fields six singles + three doubles, so the
-    lineup MUST be six. If filtering the injured (or a thin roster) would leave
-    fewer than six healthy bodies, the least-compromised injured players are
-    pressed back into service (best STR first) — a banged-up team plays hurt
-    rather than forfeit. Only a roster with fewer than six players total can't
-    reach six; that's clamped below so the engine never indexes past the end."""
+    Short-handed safety: the engine fields the division's full singles card, so
+    the lineup MUST reach that size (`ncaa.lineup_size`). If filtering the injured
+    (or a thin roster) would leave fewer healthy bodies, the least-compromised
+    injured players are pressed back into service (best STR first) — a banged-up
+    team plays hurt rather than forfeit. Only a roster smaller than the lineup
+    itself can't reach it; that's clamped below so the engine never indexes past
+    the end."""
+    n = lineup_size(prog.division)
+    n_dbl = dual_format(prog.division).n_doubles
     if unavailable:
         healthy = [p for p in roster if p.pid not in unavailable]
-        if len(healthy) < 6 and len(roster) > len(healthy):
+        if len(healthy) < n and len(roster) > len(healthy):
             benched = sorted((p for p in roster if p.pid in unavailable),
                              key=lambda p: p.str_value(), reverse=True)
-            healthy = healthy + benched[:6 - len(healthy)]
+            healthy = healthy + benched[:n - len(healthy)]
         roster = healthy
         if forced:
             live = {p.pid for p in roster}
@@ -179,10 +191,10 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         # AI and is never disadvantaged.
         rank = {pid: i for i, pid in enumerate(pinned)}
         order = sorted(roster, key=lambda p: (rank.get(p.pid, len(pinned)), -scores[p.pid]))
-        chosen = order[:6]
+        chosen = order[:n]
     else:
         order = sorted(roster, key=lambda p: scores[p.pid], reverse=True)
-        starters, bench = order[:6], order[6:]
+        starters, bench = order[:n], order[n:]
         drng = random.Random(f"{prog.key}|rot|{dual_seed}")     # per-dual rotation
         gap = getattr(prog, "prestige", 0.5) - opp_prestige
         # `best_six` = the conference tournament / NCAA bracket: no coach rests
@@ -199,7 +211,7 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
         rotate = min(rotate, len(bench))
         if rotate:
             picks = drng.sample(bench, rotate)                  # varied bench each time
-            chosen = starters[:6 - rotate] + picks
+            chosen = starters[:n - rotate] + picks
         else:
             chosen = list(starters)
 
@@ -229,31 +241,33 @@ def coach_lineup(prog: Program, roster: list, form: dict | None,
                 tgt = comp[0] if comp else di
                 chosen[di], chosen[tgt] = chosen[tgt], chosen[di]
 
-    # Final safety: the engine indexes six singles and three doubles pairs. If a
-    # roster is so depleted it can't seat six distinct players, repeat the last
-    # available body into the empty courts so the dual still resolves (a degenerate
-    # forfeit-like lineup) instead of raising IndexError mid-season.
-    if len(chosen) < 6 and chosen:
-        chosen = chosen + [chosen[-1]] * (6 - len(chosen))
+    # Final safety: the engine indexes the division's full singles card and its
+    # doubles pairs. If a roster is so depleted it can't seat that many distinct
+    # players, repeat the last available body into the empty courts so the dual
+    # still resolves (a degenerate forfeit-like lineup) instead of raising
+    # IndexError mid-season.
+    if len(chosen) < n and chosen:
+        chosen = chosen + [chosen[-1]] * (n - len(chosen))
 
-    # Doubles is its OWN lineup. By default it's the classic auto-permutation of the
-    # singles six. If the coach pinned a doubles lineup (career mode, coached team),
-    # honor it — INDEPENDENT of singles, so a doubles specialist who isn't a singles
-    # starter can play (real college tennis: a "1 doubles / 5 singles" player). The
-    # pin is 6 pids → pairs [(0,1),(2,3),(4,5)]; it's used only if all six are on the
-    # available (healthy) roster, otherwise we fall back to the auto pairing.
+    # Doubles is its OWN lineup. By default it's the classic auto-permutation of
+    # the singles lineup. If the coach pinned a doubles lineup (career mode,
+    # coached team), honor it — INDEPENDENT of singles, so a doubles specialist who
+    # isn't a singles starter can play (real college tennis: a "1 doubles / 5
+    # singles" player). The pin is an ordered pid list → ladder pairs [(0,1),(2,3),
+    # ...]; it's used only if it covers every doubles line from the available
+    # (healthy) roster, otherwise we fall back to the auto pairing.
     dbl_players = None
     chosen_dbl = chosen
     if doubles_pin:
         avail = {p.pid: p for p in roster}
         picks = [avail[pid] for pid in doubles_pin if pid in avail]
-        if len(picks) >= 6:
-            chosen_dbl = picks[:6]
+        if len(picks) >= 2 * n_dbl:
+            chosen_dbl = picks[:2 * n_dbl]
             dbl_players = [p.engine_player() for p in chosen_dbl]
     if dbl_players is not None:
-        doubles = [(0, 1), (2, 3), (4, 5)]
+        doubles = [(2 * i, 2 * i + 1) for i in range(n_dbl)]
     else:
-        doubles = [tuple(x) for x in srng.choice(DOUBLES_PERMS)]
+        doubles = [tuple(x) for x in srng.choice(doubles_perms(n_dbl))]
     team = Team(name=prog.school, singles=[p.engine_player() for p in chosen],
                 doubles=doubles, doubles_players=dbl_players)
     return team, chosen, chosen_dbl
@@ -349,7 +363,8 @@ def _dual_record(a: Program, b: Program, sa: Team, sb: Team,
     priority = {i for i in range(len(la))
                 if (i < len(lb)) and (la[i].pid in forced or lb[i].pid in forced)} or None
     res = simulate_dual(sa, sb, seed=seed, fidelity=_fidelity(), priority_finish=priority,
-                        box_stats=box_stats, play_all=play_all)
+                        box_stats=box_stats, play_all=play_all,
+                        dual_fmt=dual_format(a.division))
     lines = []
     for ln in res.lines:
         if not ln.completed:
@@ -519,7 +534,8 @@ def run_season(division: str = "D1", gender: str = "men", *, seed: int = 2026,
     # Persistent rosters of Prospects (the League passes its own; otherwise build).
     if rosters is None:
         rosters = {p.school: build_roster(p) for p in div.programs}
-    ladders = {s: sorted(r, key=lambda pr: pr.current_overall(), reverse=True)[:6]
+    _n = lineup_size(division)
+    ladders = {s: sorted(r, key=lambda pr: pr.current_overall(), reverse=True)[:_n]
                for s, r in rosters.items()}
     squads = {s: Team(name=s, singles=[pr.engine_player() for pr in ladders[s]])
               for s in rosters}

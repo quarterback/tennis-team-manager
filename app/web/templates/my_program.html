@@ -74,10 +74,10 @@
         </tbody>
       </table>
       </div>
-      {% if ladder|length >= 6 %}
-      {% set lpin = ladder[:6]|map(attribute='p.pid')|list %}
+      {% if ladder|length >= mp.n_lineup %}
+      {% set lpin = ladder[:mp.n_lineup]|map(attribute='p.pid')|list %}
       <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
-        {% for i in range(6) %}
+        {% for i in range(mp.n_lineup) %}
         <div class="mp-dblrow">
           <span class="mp-dbl-line">S{{ i + 1 }}</span>
           <select name="s{{ i + 1 }}">{% for r in ladder %}<option value="{{ r.p.pid }}"{% if r.p.pid == lpin[i] %} selected{% endif %}>{{ r.p.name }}{% if r.injury %} (out){% endif %}</option>{% endfor %}</select>
@@ -86,40 +86,41 @@
         <button class="mp-dbl-save" type="submit">Save lineup</button>
       </form>
       {% endif %}
-      <p class="mp-note">Pick any roster player into any singles slot — set all six at once. The “—” rows below the line are your bench. Doubles is set separately below.</p>
+      <p class="mp-note">Pick any roster player into any singles slot — set the whole card at once. The “—” rows below the line are your bench. Doubles is set separately below.</p>
     </section>
 
     {% set pool = mp.starters + mp.bench %}
-    {% if pool|length >= 6 %}
-    {% set dpin = mp.doubles_pin if mp.doubles_pin|length == 6 else pool[:6]|map(attribute='p.pid')|list %}
+    {% set dslots = mp.n_doubles * 2 %}
+    {% if pool|length >= dslots %}
+    {% set dpin = mp.doubles_pin if mp.doubles_pin|length == dslots else pool[:dslots]|map(attribute='p.pid')|list %}
     <section class="mp-card mp-span2">
       <div class="mp-card-h"><h2>Doubles lineup</h2></div>
       <div class="mp-lineup-status">
         {% if mp.doubles_pinned %}
           <span class="mp-badge on">Custom pairings</span>
-          <span class="mp-note" style="margin:0;">Your three pairs are fielded every dual.</span>
+          <span class="mp-note" style="margin:0;">Your {{ mp.n_doubles }} pairs are fielded every dual.</span>
           <form method="post" action="{{ url_for('my_program_doubles') }}" style="margin-left:auto;">
             <input type="hidden" name="action" value="reset">
             <button class="mp-reset" type="submit"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to auto</button>
           </form>
         {% else %}
           <span class="mp-badge">Auto pairings</span>
-          <span class="mp-note" style="margin:0;">The AI pairs your top 6. Set your own — you can pair anyone on the roster, including depth from outside your singles six.</span>
+          <span class="mp-note" style="margin:0;">The AI pairs your top {{ dslots }}. Set your own — you can pair anyone on the roster, including depth from outside your singles card.</span>
         {% endif %}
       </div>
       <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl">
-        {% for pair in [('1','d1a','d1b'), ('2','d2a','d2b'), ('3','d3a','d3b')] %}
-        {% set base = loop.index0 * 2 %}
+        {% for i in range(mp.n_doubles) %}
+        {% set base = i * 2 %}
         <div class="mp-dblrow">
-          <span class="mp-dbl-line">D{{ pair[0] }}</span>
-          <select name="{{ pair[1] }}">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+          <span class="mp-dbl-line">D{{ i + 1 }}</span>
+          <select name="d{{ i + 1 }}a">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
           <span class="mp-amp">&amp;</span>
-          <select name="{{ pair[2] }}">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base + 1] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+          <select name="d{{ i + 1 }}b">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base + 1] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
         </div>
         {% endfor %}
         <button class="mp-dbl-save" type="submit">Save pairings</button>
       </form>
-      <p class="mp-note">Doubles is picked independently of singles, so players can play both — and you can use a depth player in doubles who isn't in that day's singles six. If a paired player is injured, that dual falls back to the auto pairing.</p>
+      <p class="mp-note">Doubles is picked independently of singles, so players can play both — and you can use a depth player in doubles who isn't in that day's singles card. If a paired player is injured, that dual falls back to the auto pairing.</p>
     </section>
     {% endif %}
 

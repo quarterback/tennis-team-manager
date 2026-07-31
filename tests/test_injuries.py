@@ -104,7 +104,8 @@ def test_lineup_drops_injured():
     team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
                                 unavailable={ace.pid})
     assert ace.pid not in {p.pid for p in chosen}
-    assert len(chosen) == 6   # a depth body pulled up
+    from app.ncaa import lineup_size
+    assert len(chosen) == lineup_size("D1")   # a depth body pulled up
 
 
 def test_dual_between_reports_who_played():
@@ -113,7 +114,8 @@ def test_dual_between_reports_who_played():
     a, b = div.programs[0], div.programs[1]
     rec = dual_between(a, b, seed=5, conf=False)
     assert rec["home_played"] and rec["away_played"]
-    assert len(rec["home_played"]) == 6
+    from app.ncaa import lineup_size
+    assert len(rec["home_played"]) >= lineup_size("D2")
 
 
 # ---- wiring: per-save persistence + medical redshirt rollover ---------------
@@ -217,29 +219,33 @@ def test_injury_pages_render(tmp_path):
 # ---- short-handed lineups + redshirt-slot protection ------------------------
 
 def test_lineup_never_short_of_six_when_depth_exists():
-    """Filtering the injured can leave <6 healthy; the engine fields six, so the
-    lineup backfills the least-hurt injured rather than building a short Team
-    (which would IndexError in simulate_dual)."""
+    """Filtering the injured can leave fewer healthy bodies than the division's
+    singles card; the lineup backfills the least-hurt injured rather than building
+    a short Team (which would degrade in simulate_dual)."""
     from app.season import coach_lineup
+    from app.ncaa import lineup_size
     prog = load_division("D1", "men").programs[0]
+    n = lineup_size("D1")
     roster = build_roster(prog)                 # D1 cap 12
-    out = {p.pid for p in roster[:8]}           # 8 injured -> 4 healthy
+    out = {p.pid for p in roster[:len(roster) - n + 2]}   # leave n-2 healthy
     team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1,
                                 unavailable=out)
-    assert len(chosen) == 6
-    assert len(team.singles) == 6
-    assert len({p.pid for p in chosen}) == 6    # six distinct bodies pressed in
+    assert len(chosen) == n
+    assert len(team.singles) == n
+    assert len({p.pid for p in chosen}) == min(n, len(roster))  # distinct bodies pressed in
 
 
 def test_lineup_clamps_a_sub_six_roster():
-    """A roster with fewer than six players total can't seat six; the lineup pads
-    to six so the dual still resolves instead of crashing."""
+    """A roster with fewer players than the singles card can't seat it; the lineup
+    pads to the card so the dual still resolves instead of crashing."""
     from app.season import coach_lineup
+    from app.ncaa import lineup_size
     prog = load_division("D1", "men").programs[0]
+    n = lineup_size("D1")
     roster = build_roster(prog)[:4]             # only four players exist
     team, chosen, _ = coach_lineup(prog, roster, None, 0.5, lineup_seed=1, dual_seed=1)
-    assert len(chosen) == 6
-    assert len(team.singles) == 6
+    assert len(chosen) == n
+    assert len(team.singles) == n
 
 
 def test_short_handed_dual_resolves_end_to_end():

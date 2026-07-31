@@ -47,12 +47,12 @@
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="bl-panel">
         <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span>
-          <span class="bl-panel-meta">Win 2 of 3 — 1 team point · {{ v.doubles_point_name }}</span></div>
+          <span class="bl-panel-meta">{{ v.doubles_label }}{% if v.doubles_point_name %} · {{ v.doubles_point_name }}{% endif %}</span></div>
         <div>{% for m in v.doubles %}{{ matchrow(m) }}{% endfor %}</div>
       </div>
       <div class="bl-panel">
         <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
-          <span class="bl-panel-meta">6 courts · 1 point each</span></div>
+          <span class="bl-panel-meta">{{ v.singles_label }}</span></div>
         <div>
           {% for m in v.singles %}{{ matchrow(m) }}{% endfor %}
         </div>

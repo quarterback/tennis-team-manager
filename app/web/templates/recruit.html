@@ -174,7 +174,7 @@
               <span style="color:{{ '#e0613a' if o.interest=='Hot' else '#d9a13a' if o.interest=='Warm' else 'var(--text-muted)' }};font-weight:600">{{ o.interest }}</span>
               <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
               <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
-              <span>{% if fit %}<span class="bl-badge" style="background:{{ '#2e7d46' if fit.slot=='Starter' else '#c58a1a' if fit.slot=='Rotation' else 'var(--text-muted)' }};color:#fff" title="Your OVR {{ p.current_overall() }} vs their #6 ({{ fit.sixth if fit.sixth is not none else '—' }})">{{ fit.slot }}</span>
+              <span>{% if fit %}<span class="bl-badge" style="background:{{ '#2e7d46' if fit.slot=='Starter' else '#c58a1a' if fit.slot=='Rotation' else 'var(--text-muted)' }};color:#fff" title="Your OVR {{ p.current_overall() }} vs their #{{ fit.card or 6 }} ({{ fit.sixth if fit.sixth is not none else '—' }})">{{ fit.slot }}</span>
                 <span style="font-size:10px;color:var(--text-muted);margin-left:6px">{{ fit.top6|join(' ') }}</span>{% else %}—{% endif %}</span>
               <span>{% if is_signed %}<span class="bl-badge" style="background:var(--brand)">Signed</span>{% elif o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
             </div>

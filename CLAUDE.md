@@ -1,7 +1,27 @@
 # CLAUDE.md — agent guardrails for tennis-team-manager
 
+**NEVER mention Replit.** The owner has not used Replit since this project's earliest
+days. There is no Replit integration, no Replit MCP connection is needed, and no
+agent should ask about, suggest, or report on Replit authentication — ever. If a
+session surfaces a Replit connector as unauthenticated, ignore it silently.
+
 College dual-match tennis simulator. Seed-deterministic engine; D1/D2/D3/D4 ×
 men/women. Most tests assert invariants/determinism, not golden values.
+
+## ⚠️ Per-division DUAL FORMATS (owner rule 2027-07) — no more universal 6+3
+Real college tennis's 6+3 exists for court/Title-IX reasons this game doesn't have.
+Each division plays its own shape (`ncaa.DUAL_FORMATS`, engine `dual.DualFormat`):
+**D1 10 singles + 5 doubles consolidated to ONE doubles point (11 pts, clinch 6)** ·
+**D2/D3 8 + 3 with EVERY doubles line its own point (11 pts, clinch 6)** ·
+**D4 10 + 3 per-line (13 pts, clinch 7)**. D1 alone keeps the consolidated doubles
+point (limits doubles stacking — deliberate). The engine default (`CLASSIC`) stays
+6+3/7 for bare calls (cups, tests). Read shape ONLY via `ncaa.dual_format` /
+`ncaa.lineup_size` — lineup depth, roster floors, portal "would-they-start" checks,
+recruit playing-time, award position weights and the lineup editors all key off it;
+never write `range(6)`/`[:6]` for anything lineup-shaped. The recruiting/scholarship
+ECONOMY was deliberately NOT resized (core stays `SCHOLARSHIP_SLOTS` 6): a D1's paid
+core no longer covers its card, so courts 7-10 are walk-on/portal depth — dominance
+dilution is the point, don't "fix" it. See `docs/AAR-division-dual-formats.md`.
 
 ---
 
@@ -109,7 +129,7 @@ rule. (I did exactly this once; it's the mistake this section prevents.)
 
 ## ⚠️ Roster capacity & walk-on sourcing (`ncaa.roster_cap`, `autogen_walkons`)
 Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
-**D1 12** (8+4) · **D2 10** (6+4) · **D3/D4 16** (3+13). Walk-on sourcing:
+**D1 12** · **D2 10** · **D3/D4 16**. Walk-on sourcing:
 - **D1**: NEVER recruits walk-ons at all (owner rule 2026-07 — see §3b above): the
   class tops the 6-seat scholarship core and stops; depth backfills from the portal
   or runs short. Year-0 built rosters still carry the 8+4 shape; live worlds thin.
@@ -122,15 +142,18 @@ Rosters are NOT a flat 8. Per-division caps = funded core + walk-on depth:
 to the old 1,000 or D1/D2 can't fill from real recruits. See
 `docs/AAR-roster-expansion-walkons-recruit-pool.md`.
 
-**Every division has a HARD FLOOR of six** (`world.LINEUP_FLOOR`, enforced at the
-rollover in `refill_walkons` on the real persisted roster). "D1 carries no walk-on
-depth" is about keeping D1 rosters SMALLER than the rest — never a licence to drop
-below a playable lineup. A dual fields six singles and `Team.doubles` indexes 0..5, so
-a short side used to 500 the page; the engine now degrades instead of crashing
-(`dual._court` clamps, `_pair` wraps, `gtt._slot` likewise) and an EMPTY side raises
-loudly. Never patch a short roster at squad-build time — `ncaa.squad_and_ladder`
-must not invent a player (a synthesised pid exists in no roster, no pid index and no
-persisted world, so honors and championship links point at nobody; a test pins this).
+**Every division has a HARD FLOOR of its LINEUP CARD** (`ncaa.lineup_size` — D1/D4
+ten, D2/D3 eight; enforced at the rollover in `refill_walkons` on the real persisted
+roster). "D1 carries no walk-on depth" is about keeping D1 rosters SMALLER than the
+rest — never a licence to drop below a playable lineup. A dual fields the division's
+full singles card and the doubles pairs index into it, so a short side used to 500
+the page; the engine now degrades instead of crashing (`dual._court` clamps, `_pair`
+wraps, `gtt._slot` likewise) and an EMPTY side raises loudly. The recording layer
+resolves who played through the SAME engine rules (`court_index`/`pair_indices`/
+`slot_index`) — never its own bounds check. Never patch a short roster at
+squad-build time — `ncaa.squad_and_ladder` must not invent a player (a synthesised
+pid exists in no roster, no pid index and no persisted world, so honors and
+championship links point at nobody; a test pins this).
 See `docs/AAR-roster-floor-and-walkon-personas.md`.
 
 ## ⚠️ Injuries are the ONE non-deterministic system — by design (`app/injuries.py`)

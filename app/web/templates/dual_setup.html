@@ -19,7 +19,7 @@
   <input type="hidden" name="gender" value="{{ gender }}">
   <h1>Simulate a Dual</h1>
   <p class="intro">Benchmark any two programs — <strong>across divisions</strong>. Pick a division and team for
-    each side; Play to Clinch plays the doubles point and all six singles from each team's real roster, then
+    each side; Play to Clinch plays the doubles and the division's full singles card from each team's real roster, then
     sweeps the fast model to estimate who wins. STR is one scale across every division, so a cross-level gap
     shows up honestly in the result. Exhibition only — nothing is recorded.</p>
 
@@ -81,6 +81,6 @@
   </div>
 
   <button class="bl-run-big" type="submit">Run Simulation →</button>
-  <div class="bl-engine-note">Engine: <code>Play to Clinch dual engine (NCAA, clinch-at-4)</code> · seed-deterministic</div>
+  <div class="bl-engine-note">Engine: <code>Play to Clinch dual engine (NCAA, per-division format — majority of points clinches)</code> · seed-deterministic</div>
 </form>
 {% endblock %}

@@ -250,7 +250,8 @@ def test_refill_enforces_a_six_player_floor_in_every_division():
 
     d1 = list(rosters[("D1", "men")].values())[0]
     d3 = list(rosters[("D3", "men")].values())[0]
-    assert len(d1) == world.LINEUP_FLOOR, "D1 must reach the lineup floor, and stop there"
+    from app.ncaa import lineup_size
+    assert len(d1) == lineup_size("D1"), "D1 must reach the lineup floor, and stop there"
     assert len(d3) == roster_cap("D3"), "D3 still fills its whole cap"
     assert len({p.pid for p in d1}) == len(d1), "floor filler duplicated a pid"
 

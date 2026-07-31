@@ -63,6 +63,37 @@ class DualLine:
     finish: int | None = None
 
 
+@dataclass(frozen=True)
+class DualFormat:
+    """The SHAPE of a dual — how many lines, and how doubles scores.
+
+    College tennis is not one format: D1 plays 6 singles + 3 doubles consolidated
+    to a single doubles point (7 points), while most other divisions (D2, NAIA,
+    JUCO, historically D3 women) score every doubles line as its own point (9).
+    This game's divisions each pick their own shape (owner rule 2027-07 — see
+    `ncaa.DUAL_FORMATS` and `docs/AAR-division-dual-formats.md`); the engine takes
+    the shape as data. The classic 6+3 consolidated format stays the default so a
+    bare `simulate_dual` call (tests, cups) is unchanged.
+
+    `doubles_team_point=True` is the consolidated rule: winning a majority of the
+    doubles lines earns ONE team point. False scores each doubles line as a point
+    of its own."""
+    n_singles: int = 6
+    n_doubles: int = 3
+    doubles_team_point: bool = True
+
+    @property
+    def total_points(self) -> int:
+        return self.n_singles + (1 if self.doubles_team_point else self.n_doubles)
+
+    @property
+    def clinch(self) -> int:
+        return self.total_points // 2 + 1
+
+
+CLASSIC = DualFormat()          # 6 singles + 3 doubles -> 7 points, clinch at 4
+
+
 @dataclass
 class DualResult:
     home: Team
@@ -71,10 +102,20 @@ class DualResult:
     away_points: int
     winner: int               # 0 = home, 1 = away
     lines: list[DualLine]
-    doubles_point: int | None  # which side took the doubles point (0/1) or None if split unreached
+    doubles_point: int | None  # consolidated formats: which side took THE doubles
+                               # point (0/1). None under a per-line doubles format
+                               # (each doubles line is its own point, nothing to
+                               # consolidate).
 
 
-SINGLES_COURTS = 6        # a dual fields six singles; `Team.doubles` indexes into them
+SINGLES_COURTS = 6        # the CLASSIC format's singles count; real duals size by DualFormat
+
+
+def _pairing(team: Team, i: int) -> tuple[int, int]:
+    """The i-th doubles pairing. `Team.doubles` defaults to three pairs; a format
+    with MORE doubles lines (D1's five) extends with the natural ladder pairing
+    (7/8, 9/10) rather than requiring every caller to re-declare the default."""
+    return team.doubles[i] if i < len(team.doubles) else (2 * i, 2 * i + 1)
 
 
 def court_index(n: int, i: int) -> int:
@@ -163,13 +204,15 @@ def _partial_score(set_scores: list[tuple[int, int]], elapsed: float,
 def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                   context: MatchContext | None = None,
                   priority_finish: set[int] | None = None,
-                  box_stats: bool = False, play_all: bool = False) -> DualResult:
-    """Simulate an NCAA dual. `priority_finish` lists singles court indices (0-5)
-    that should finish among the first matches off the court — used by season mode
-    so a guaranteed-appearance player's line actually completes regardless of how
-    long it ran. The first three singles to finish always complete (a 4-point
-    clinch needs more than doubles + two singles), so a small priority set is a
-    hard guarantee.
+                  box_stats: bool = False, play_all: bool = False,
+                  dual_fmt: DualFormat = CLASSIC) -> DualResult:
+    """Simulate an NCAA dual of shape `dual_fmt` (default: the classic 6+3 with a
+    consolidated doubles point). `priority_finish` lists singles court indices
+    (0-based) that should finish among the first matches off the court — used by
+    season mode so a guaranteed-appearance player's line actually completes
+    regardless of how long it ran. The first three singles to finish always
+    complete under every division's format (the clinch always needs more than the
+    doubles points plus two singles), so a small priority set is a hard guarantee.
 
     `box_stats=True` attaches engine-faithful per-player stats to every COMPLETED
     line of a fast-fidelity dual (engine.boxstats conditioned replay — the fast
@@ -179,23 +222,25 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
 
     `play_all=True` is the ITA Division III "play-play" format: every singles
     match is played to completion instead of abandoning the rest once a side
-    reaches the 4-point clinch. It never changes the WINNER (the 4th point locks
-    the dual; with only 7 points on offer the loser cannot pass 3) — it only fills
-    in the final margin and gives every player a completed match on record. The
-    matches are already simulated either way, so this just stops discarding them."""
+    reaches the clinch. It never changes the WINNER (the clinching point locks
+    the dual; the loser can never pass the majority) — it only fills in the final
+    margin and gives every player a completed match on record. The matches are
+    already simulated either way, so this just stops discarding them."""
     context = context or MatchContext()
     priority_finish = priority_finish or set()
     lines: list[DualLine] = []
     points = [0, 0]  # [home, away]
+    n_s, n_d = dual_fmt.n_singles, dual_fmt.n_doubles
 
-    # --- Doubles: 3 pro-set matches, 2 of 3 -> 1 team point ---
-    # Each line is a real two-on-two match (engine.doubles), not an averaged pair.
+    # --- Doubles: pro-set matches; scoring per `dual_fmt` (a consolidated
+    # majority point, or every line its own point). Each line is a real
+    # two-on-two match (engine.doubles), not an averaged pair.
     doubles_pro = PRESETS["pro_set_8"]
     d_wins = [0, 0]
     d_res: dict[int, DoublesResult] = {}
     d_len: dict[int, int] = {}
-    for i in range(3):
-        res = simulate_doubles(_pair(home, home.doubles[i]), _pair(away, away.doubles[i]),
+    for i in range(n_d):
+        res = simulate_doubles(_pair(home, _pairing(home, i)), _pair(away, _pairing(away, i)),
                                seed=seed + 10 + i, fmt=doubles_pro,
                                fidelity=fidelity, context=context)
         if box_stats:
@@ -203,21 +248,25 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         d_wins[0 if res.winner == 0 else 1] += 1
         d_res[i] = res
         d_len[i] = sum(a + b for a, b in res.set_scores)   # games played = length proxy
-    # All three doubles play out in this sim, but they still finish in an order set
+    # All the doubles play out in this sim, but they still finish in an order set
     # by how long each pro set ran (shortest first; court index breaks a tie).
-    d_finish = {i: pos for pos, i in enumerate(sorted(range(3), key=lambda i: (d_len[i], i)), 1)}
-    for i in range(3):
+    d_finish = {i: pos for pos, i in enumerate(sorted(range(n_d), key=lambda i: (d_len[i], i)), 1)}
+    for i in range(n_d):
         lines.append(DualLine(slot=f"D{i+1}", home_won=d_res[i].winner == 0,
                               result=d_res[i], finish=d_finish[i]))
-    doubles_point = 0 if d_wins[0] >= 2 else 1
-    points[doubles_point] += 1
+    if dual_fmt.doubles_team_point:
+        doubles_point = 0 if d_wins[0] * 2 > n_d else 1    # majority of the lines
+        points[doubles_point] += 1
+    else:
+        doubles_point = None                               # every line already counted
+        points[0] += d_wins[0]; points[1] += d_wins[1]
 
-    # --- Singles: all six play concurrently; resolve in finish order ---
+    # --- Singles: all courts play concurrently; resolve in finish order ---
     singles_fmt = PRESETS["ncaa_dual"]
-    clinch = 4
+    clinch = dual_fmt.clinch
     results: dict[int, MatchResult] = {}
     length: dict[int, float] = {}
-    for i in range(SINGLES_COURTS):
+    for i in range(n_s):
         res = simulate_match(_court(home, i), _court(away, i),
                              seed=seed + 100 + i, fmt=singles_fmt,
                              fidelity=fidelity, context=context)
@@ -227,7 +276,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         jit = random.Random((seed + 100 + i) ^ 0xD0A1).uniform(-0.4, 0.4)
         length[i] = _match_length(res) + jit
     # Priority courts come off first; the rest finish shortest-match-first.
-    finish_order = sorted(range(SINGLES_COURTS),
+    finish_order = sorted(range(n_s),
                           key=lambda i: (i not in priority_finish, length[i], i))
 
     by_slot: dict[int, DualLine] = {}
@@ -249,7 +298,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         by_slot[i] = DualLine(slot=f"S{i+1}", home_won=home_won, result=res, finish=s_finish)
         if max(points) >= clinch and clinch_at is None:
             clinch_at = length[i]
-    for i in range(SINGLES_COURTS):                  # display in court order S1..S6
+    for i in range(n_s):                             # display in court order S1..Sn
         lines.append(by_slot[i])
 
     winner = 0 if points[0] > points[1] else 1

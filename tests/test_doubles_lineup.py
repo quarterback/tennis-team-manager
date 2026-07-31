@@ -38,37 +38,43 @@ def test_doubles_override_roundtrip():
 # --- the lineup builder ---------------------------------------------------
 
 def test_pinned_doubles_uses_a_non_singles_specialist():
+    from app.ncaa import dual_format, lineup_size
     prog, roster = _roster()
-    # A clearly deep player (8th by ability) — not a singles starter — paired at D1.
-    specialist = sorted(roster, key=lambda p: p.str_value(), reverse=True)[7]
-    others = [p for p in roster if p.pid != specialist.pid][:5]
-    pin = [specialist.pid, others[0].pid, others[1].pid,
-           others[2].pid, others[3].pid, others[4].pid]
+    n, n_d = lineup_size(prog.division), dual_format(prog.division).n_doubles
+    # A clearly deep player (below the singles card by ability) — paired at D1.
+    by_str = sorted(roster, key=lambda p: p.str_value(), reverse=True)
+    specialist = by_str[n + 1]
+    others = [p for p in roster if p.pid != specialist.pid][:2 * n_d - 1]
+    pin = [specialist.pid] + [p.pid for p in others]
 
+    # best_six lineup = strict STR order, so with only two bench seats left on a
+    # 12-cap roster the below-card specialist stays out of singles deterministically.
     team, chosen, chosen_dbl = coach_lineup(prog, roster, None, 0.5, lineup_seed=1,
-                                            doubles_pin=pin)
+                                            doubles_pin=pin, best_six=True)
     assert [p.pid for p in chosen_dbl] == pin            # honored, in order
-    assert team.doubles_players is not None and len(team.doubles_players) == 6
-    assert team.doubles == [(0, 1), (2, 3), (4, 5)]
-    # the specialist plays DOUBLES but is NOT in the singles six
+    assert team.doubles_players is not None and len(team.doubles_players) == 2 * n_d
+    assert team.doubles == [(2 * i, 2 * i + 1) for i in range(n_d)]
+    # the specialist plays DOUBLES but is NOT in the singles card
     assert specialist.pid not in {p.pid for p in chosen}
     assert specialist.pid == chosen_dbl[0].pid
 
 
 def test_no_pin_falls_back_to_auto_singles_pairing():
+    from app.ncaa import dual_format
     prog, roster = _roster()
-    from app.season import DOUBLES_PERMS
+    from app.season import doubles_perms
+    perms = doubles_perms(dual_format(prog.division).n_doubles)
     team, chosen, chosen_dbl = coach_lineup(prog, roster, None, 0.5, lineup_seed=1)
     assert team.doubles_players is None                  # engine pairs from singles
     assert chosen_dbl is chosen
-    assert [list(p) for p in team.doubles] in [[list(x) for x in perm] for perm in DOUBLES_PERMS]
+    assert [list(p) for p in team.doubles] in [[list(x) for x in perm] for perm in perms]
 
 
 def test_invalid_pin_falls_back_to_auto():
     prog, roster = _roster()
     team, _chosen, _cd = coach_lineup(prog, roster, None, 0.5, lineup_seed=1,
                                       doubles_pin=["bogus", "x", "y", "z", "w", "v"])
-    assert team.doubles_players is None                  # not all six on roster → auto
+    assert team.doubles_players is None                  # pin doesn't cover the card → auto
 
 
 # --- the engine honors a separate doubles roster --------------------------
@@ -85,4 +91,4 @@ def test_engine_pairs_from_doubles_players_when_set():
     away = Team(name="A", singles=[p.engine_player() for p in six])
     res = simulate_dual(home, away, seed=3, fidelity="fast")
     assert res.winner in (0, 1)                          # completes, no IndexError
-    assert len(res.lines) == 9                            # 3 doubles + 6 singles
+    assert len(res.lines) == 9                            # classic default: 3 doubles + 6 singles

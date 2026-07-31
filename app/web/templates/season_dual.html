@@ -91,13 +91,13 @@
   <div style="display:flex;flex-direction:column;gap:16px">
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span>
-        <span class="bl-panel-meta">win 2 of 3 → 1 team point</span></div>
+        <span class="bl-panel-meta">{{ dbl_label }}</span></div>
       <div>{% for ln in d.lines if ln.slot[0] == 'D' %}{{ line_row(ln) }}{% endfor %}</div>
       {{ order_of_finish(d.lines, 'D') }}
     </div>
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Singles</span>
-        <span class="bl-panel-meta">6 courts · 1 team point each · clinch at 4</span></div>
+        <span class="bl-panel-meta">{{ sgl_label }}</span></div>
       <div>{% for ln in d.lines if ln.slot[0] == 'S' %}{{ line_row(ln) }}{% endfor %}</div>
       {{ order_of_finish(d.lines, 'S') }}
     </div>

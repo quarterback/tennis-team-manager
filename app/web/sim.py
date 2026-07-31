@@ -58,6 +58,9 @@ class DualView:
     seed: int
     fmt_label: str
     fidelity: str
+    # Panel captions sized to the dual's actual format (per-division shapes).
+    doubles_label: str = "Win 2 of 3 — 1 team point"
+    singles_label: str = "6 courts · 1 point each"
 
 
 def run_dual_view(home_div: str, away_div: str, gender: str,
@@ -70,7 +73,10 @@ def run_dual_view(home_div: str, away_div: str, gender: str,
     away_progs = {p.school: p for p in load_division(away_div, gender).programs}
     home, away = home_progs[home_school], away_progs[away_school]
     hteam, ateam = build_squad(home), build_squad(away)
-    res = simulate_dual(hteam, ateam, seed=seed, fidelity=fidelity)
+    # A cross-division exhibition plays the HOME side's format (the host stages it).
+    from app.ncaa import dual_format
+    fmt = dual_format(home_div)
+    res = simulate_dual(hteam, ateam, seed=seed, fidelity=fidelity, dual_fmt=fmt)
 
     doubles, singles = [], []
     for ln in res.lines:
@@ -96,7 +102,8 @@ def run_dual_view(home_div: str, away_div: str, gender: str,
         (doubles if is_d else singles).append(row)
 
     home_wins = sum(1 for k in range(sims)
-                    if simulate_dual(hteam, ateam, seed=seed + 1 + k, fidelity="fast").winner == 0)
+                    if simulate_dual(hteam, ateam, seed=seed + 1 + k, fidelity="fast",
+                                     dual_fmt=fmt).winner == 0)
     win_prob = round(100 * home_wins / sims) if sims else 50
 
     # Ranks come from each side's own division (a rank is only meaningful within it).
@@ -112,7 +119,15 @@ def run_dual_view(home_div: str, away_div: str, gender: str,
               "rk": ar.rk if ar else "—", "rec": ar.rec if ar else ""},
         home_points=res.home_points, away_points=res.away_points,
         winner_name=(home_school if res.winner == 0 else away_school),
-        doubles_point_name=(home_school if res.doubles_point == 0 else away_school),
+        # Per-line doubles formats have no consolidated point to attribute.
+        doubles_point_name=("" if res.doubles_point is None
+                            else (home_school if res.doubles_point == 0 else away_school)),
         doubles=doubles, singles=singles, win_prob=win_prob, sims=sims, seed=seed,
-        fmt_label="NCAA dual (no-ad, 8-game doubles pro set, full 3rd set)", fidelity=fidelity,
+        fmt_label=(f"{home_div} dual — {fmt.n_singles} singles + {fmt.n_doubles} doubles"
+                   f" ({'doubles point' if fmt.doubles_team_point else 'doubles per line'},"
+                   f" first to {fmt.clinch})"), fidelity=fidelity,
+        doubles_label=(f"Win {fmt.n_doubles // 2 + 1} of {fmt.n_doubles} — 1 team point"
+                       if fmt.doubles_team_point
+                       else f"{fmt.n_doubles} pairs · 1 point each"),
+        singles_label=f"{fmt.n_singles} courts · 1 point each",
     )
