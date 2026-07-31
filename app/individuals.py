@@ -216,10 +216,15 @@ def run_singles_championship(division: str, gender: str, *, seed: int,
 
 # --- Doubles ---------------------------------------------------------------
 
-def _program_pair(prog: Program) -> DoublesEntry:
+def _program_pair(prog: Program) -> DoublesEntry | None:
     """A program's #1 doubles pair — its two strongest players by the singles
-    ladder, which is exactly how the top doubles team is built in a dual."""
+    ladder, which is exactly how the top doubles team is built in a dual. None for a
+    program that can't field two players: a pair is two DIFFERENT people, so unlike
+    a dual (where a short side plays someone twice rather than 500-ing, see
+    `engine.dual._court`) there's nothing to degrade to — it just doesn't enter."""
     team, ladder = squad_and_ladder(prog)
+    if len(ladder) < 2:
+        return None
     a, b = team.singles[0], team.singles[1]
     pair = DoublesTeam(players=(a, b), name=f"{ladder[0].name} / {ladder[1].name}")
     return DoublesEntry(program=prog, p0=ladder[0], p1=ladder[1], team=pair,
@@ -229,7 +234,7 @@ def _program_pair(prog: Program) -> DoublesEntry:
 def select_doubles_field(programs: list[Program], size: int = DOUBLES_FIELD) -> list[DoublesEntry]:
     """The seeded doubles field: each program's #1 pair, the strongest `size` by
     doubles rating, ordered as seeds (ties break on school name)."""
-    entries = [_program_pair(p) for p in programs]
+    entries = [e for e in (_program_pair(p) for p in programs) if e is not None]
     entries.sort(key=lambda e: (-e.rating, e.program.school))
     return entries[:max(2, min(size, len(entries)))]
 

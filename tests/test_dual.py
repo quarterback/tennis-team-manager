@@ -95,6 +95,32 @@ def test_doubles_pairing_never_indexerrors_on_a_short_side():
                 assert d.players[0] is not d.players[1], f"self-paired at n={n}"
 
 
+def test_short_side_plays_a_full_dual_instead_of_crashing():
+    """The reported crash, one layer up from `_pair`: the singles loop reads
+    `singles[0..5]`, so a side below six IndexError'd in `simulate_dual` and 500'd
+    the dashboard mid-bracket (`bracket_field` → `run_bracket` → `play_dual`). A
+    short side fields its last body on the courts it can't fill; the dual still
+    resolves to a normal 7-point card with a winner."""
+    full = _team("H", 0.6, 1)
+    for n in (5, 4, 3, 2, 1):
+        thin = Team(name="Thin", singles=list(full.singles[:n]))
+        res = simulate_dual(thin, _team("A", 0.55, 2), seed=10)   # must not raise
+        assert res.winner in (0, 1)
+        assert len([ln for ln in res.lines if ln.slot.startswith("S")]) == 6
+        assert res.home_points + res.away_points <= 7
+        # and the other way round — a short AWAY side is the same read
+        res = simulate_dual(_team("A", 0.55, 2), thin, seed=10)
+        assert res.winner in (0, 1)
+
+
+def test_empty_side_fails_loudly():
+    """Nobody at all is not a lineup to degrade — it's a broken save, and a silent
+    walkover would hide it. Raise something that names the team, not an IndexError."""
+    import pytest
+    with pytest.raises(ValueError, match="Nobody"):
+        simulate_dual(Team(name="Nobody", singles=[]), _team("A", 0.55, 2), seed=10)
+
+
 def test_squad_build_does_not_invent_players():
     """A short roster must NOT be patched at squad-build time. A synthesised filler
     has a pid that exists in no roster, no pid index and no persisted world, so a
@@ -116,3 +142,29 @@ def test_squad_build_does_not_invent_players():
         ncaa._squad_cache.clear()
     assert len(ladder) == 3, "squad_and_ladder invented players again"
     assert {pr.pid for pr in ladder} <= real_pids, "a ladder pid is not a real roster pid"
+
+
+def test_short_lineup_box_score_names_who_actually_played():
+    """Same contract on the college side: `season._line_identity` resolves a short
+    lineup through the engine's own rules (court_index clamps, pair_indices wraps)
+    rather than bounds-checking, so a clamped court is never a completed line with
+    nobody on it — which would cost that player the W-L, the STR and the box-score
+    name for a match they played."""
+    from app.season import _line_identity
+    from engine import court_index, pair_indices
+
+    class P:
+        def __init__(self, i):
+            self.pid, self.name, self.country = f"p{i}", f"First Last{i}", "us"
+
+    la = [P(i) for i in range(5)]               # a side that thinned below six
+    lb = [P(i + 10) for i in range(6)]
+    dbl = [(0, 1), (2, 3), (4, 5)]
+    for n in range(1, 7):
+        out = _line_identity(f"S{n}", la, lb, dbl, dbl)
+        assert out["home_pid"] == la[court_index(len(la), n - 1)].pid
+        assert out["away_pid"] == lb[n - 1].pid
+    for n in range(1, 4):
+        out = _line_identity(f"D{n}", la, lb, dbl, dbl)
+        assert out["home_pids"] == [la[x].pid for x in pair_indices(len(la), dbl[n - 1])]
+        assert len(set(out["home_pids"])) == 2, "a player was paired with themselves"

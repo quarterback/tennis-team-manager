@@ -69,9 +69,32 @@ class GTTResult:
     lines: list[GTTLine]
 
 
+def slot_index(n: int, i: int) -> int:
+    """Which player of a lineup of `n` actually plays slot `i` — the clamp `_slot`
+    applies. Exported so the layer that RECORDS a dual resolves the same body the
+    engine put on court: `gtt_seasonmode._line_pids` used to bounds-check instead, so
+    a clamped slot stored a completed line with an EMPTY pid list — the point counted
+    in the team score but the player got no W-L, no STR, no MVP/Hall-of-Fame credit,
+    no injury roll and a blank name in the log. Same rule as `engine.dual
+    .court_index`; one copy of it, so the two can't drift."""
+    return min(i, n - 1)
+
+
+def _slot(pool: list[Player], i: int, team: str, what: str) -> Player:
+    """The player in lineup slot `i`, backstopped against a short lineup — the club
+    plays its last (weakest) body in a slot it can't fill rather than IndexError-ing
+    and taking the page down. Same guard as `engine.dual._court`: a nine-line card
+    reads fixed indices, and `gtt_seasonmode._lineup` returns fewer than three when a
+    club is genuinely that thin."""
+    if not pool:
+        raise ValueError(f"{team} has nobody to field in {what}")
+    return pool[slot_index(len(pool), i)]
+
+
 def _xd(team: GTTTeam, pair: tuple[int, int]) -> DoublesTeam:
     """Build a mixed-doubles side (one man + one woman) for a lineup pairing."""
-    return DoublesTeam(players=(team.men[pair[0]], team.women[pair[1]]))
+    return DoublesTeam(players=(_slot(team.men, pair[0], team.name, "men's singles"),
+                                _slot(team.women, pair[1], team.name, "women's singles")))
 
 
 def simulate_gtt_dual(home: GTTTeam, away: GTTTeam, *, seed: int,
@@ -88,12 +111,14 @@ def simulate_gtt_dual(home: GTTTeam, away: GTTTeam, *, seed: int,
         return max(points) >= LINES_TO_CLINCH
 
     def play_singles(prefix: str, home_line, away_line, seed_base: int) -> None:
+        what = "men's singles" if prefix == "MS" else "women's singles"
         for i in range(3):
             slot = f"{prefix}{i+1}"
             if clinched():
                 lines.append(GTTLine(slot, False, None, completed=False))
                 continue
-            res = simulate_match(home_line[i], away_line[i], seed=seed_base + i,
+            res = simulate_match(_slot(home_line, i, home.name, what),
+                                 _slot(away_line, i, away.name, what), seed=seed_base + i,
                                  fmt=singles_fmt, fidelity=fidelity, context=context)
             home_won = res.winner == 0
             points[0 if home_won else 1] += 1

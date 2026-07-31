@@ -19,7 +19,7 @@ import os
 import random
 from dataclasses import dataclass, field
 
-from engine import simulate_dual, Team
+from engine import simulate_dual, Team, court_index, pair_indices
 from .ncaa import Program, Division, load_division, build_squad, build_roster, squad_and_ladder
 from .rating import compute_ratings, RatingLine
 from .str_rating import converge_ids
@@ -290,22 +290,28 @@ def _line_identity(slot: str, la: list, lb: list,
     Singles carry stable pids (STR/record are singles-based); doubles use the actual
     pairing, indexing each side's DOUBLES roster (`la_d`/`lb_d`) — which may differ
     from the singles six when a coach pins an independent doubles lineup. Falls back
-    to the singles list when no separate doubles roster is supplied."""
+    to the singles list when no separate doubles roster is supplied.
+
+    A SHORT lineup resolves through the ENGINE's own rules (`court_index` clamps,
+    `pair_indices` wraps), not a bounds check of our own: the engine put a real body
+    on that court, so the line has to carry their identity. Bounds-checking here
+    instead left a completed line with nobody on it — no pid, so no W-L, no STR, no
+    honors, and a blank name in the box score."""
     la_d = la if la_d is None else la_d
     lb_d = lb if lb_d is None else lb_d
     out: dict = {}
     if slot.startswith("S"):
         i = int(slot[1:]) - 1
-        if 0 <= i < len(la) and i < len(lb):
-            hp, ap = la[i], lb[i]
+        if i >= 0 and la and lb:
+            hp, ap = la[court_index(len(la), i)], lb[court_index(len(lb), i)]
             out.update(home_pid=hp.pid, away_pid=ap.pid,
                        home_player=hp.name, away_player=ap.name,
                        home_country=hp.country, away_country=ap.country)
     else:                                        # doubles — a pair per side
         i = int(slot[1:]) - 1
-        if 0 <= i < len(ha_dbl) and i < len(aw_dbl):
-            hp = [la_d[x] for x in ha_dbl[i] if x < len(la_d)]
-            ap = [lb_d[x] for x in aw_dbl[i] if x < len(lb_d)]
+        if 0 <= i < len(ha_dbl) and i < len(aw_dbl) and la_d and lb_d:
+            hp = [la_d[x] for x in pair_indices(len(la_d), ha_dbl[i])]
+            ap = [lb_d[x] for x in pair_indices(len(lb_d), aw_dbl[i])]
             if hp and ap:
                 out.update(home_player=" / ".join(p.name.split()[-1] for p in hp),
                            away_player=" / ".join(p.name.split()[-1] for p in ap),

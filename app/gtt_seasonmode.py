@@ -37,7 +37,7 @@ import sqlite3
 from . import dbpath, injuries
 from .dbpath import resolve_db_path
 
-from engine import simulate_gtt_dual, GTTTeam
+from engine import simulate_gtt_dual, GTTTeam, slot_index
 from generators import make_name_picker, random_town
 from .development import generate_prospect
 
@@ -711,17 +711,21 @@ def _apply_form(team, rng):
 
 
 def _line_pids(slot, men_pids, women_pids):
+    """Who played a line, by pid — resolved through the ENGINE's own slot rule
+    (`engine.gtt.slot_index`), not a bounds check of our own. A club too thin for a
+    slot plays its last body there, so the line HAS a player and must carry their
+    pid; bounds-checking here instead stored a completed line with nobody in it, and
+    that point then counted in the team score while the player who actually won it
+    got no W-L, no STR, no MVP/Hall-of-Fame credit and no injury roll."""
     kind, num = slot[:2], int(slot[2:]) - 1
+
+    def one(pids):
+        return [pids[slot_index(len(pids), num)]] if pids else []
     if kind == "MS":
-        return [men_pids[num]] if num < len(men_pids) else []
+        return one(men_pids)
     if kind == "WS":
-        return [women_pids[num]] if num < len(women_pids) else []
-    out = []
-    if num < len(men_pids):
-        out.append(men_pids[num])
-    if num < len(women_pids):
-        out.append(women_pids[num])
-    return out
+        return one(women_pids)
+    return one(men_pids) + one(women_pids)
 
 
 # --------------------------------------------------------------------------
