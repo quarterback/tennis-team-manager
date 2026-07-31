@@ -55,38 +55,32 @@ TUNE = {
     # is what makes the levels land right on real rosters (not just synthetic
     # base-0.5 players) AND gives sensible cross-division texture.
     "swing_ref": 0.68,
-    # Point-outcome split. A rally the server wins is either a WINNER or the
-    # returner's FORCED error; a rally the returner wins is either the server's
-    # UNFORCED error or a returner winner. Baselines calibrated to real NCAA men
-    # (~32% winners / ~41% forced / ~27% unforced — O'Shannessy). The shares flex
-    # per point with talent, so totals spread by player instead of sitting flat.
-    "winner_share": 0.22,     # server-won rally: winner vs returner forced error
-    "unforced_share": 0.73,   # returner-won rally: server unforced error vs returner winner
-    # Attribution floor: how the shares are CLAMPED. These shares only LABEL a
-    # point already won (winner vs error) — they never decide it — so the floor is
-    # pure box-score texture. Without it, a player far enough below `swing_ref`
-    # (the bottom of a D3/D4 card, exposed by the expanded 8/10-court formats)
-    # clamps to a literal 0% winner share and finishes matches with ZERO winners,
-    # which even the weakest college player doesn't do: everyone puts away a few
-    # short balls. Floor ≈ a handful of winners a match at the bottom of the card.
+    # Point-ending attribution (owner research 2027-07 — O'Shannessy/Brain Game
+    # Tennis, Ultimate Tennis Statistics, Tennis View). Every rally end is a
+    # THREE-WAY split: the point-winner's clean WINNER, or the loser's FORCED
+    # error, or the loser's UNFORCED error — on BOTH sides symmetrically (a
+    # returner can dump an easy ball while losing the point on serve too; the old
+    # model only ever charged UEs to the server and FEs to the returner).
+    #
+    # A winner is RELATIVE TO THE OPPONENT: a shot the player across the net
+    # can't return. Matched weak players therefore produce near-normal winner
+    # counts — their tennis is uglier, not winner-less — so the split is anchored
+    # on the MATCHUP GAP (your weapons vs their defense), with only a small
+    # absolute-level drift (real mix: ~32/41/27 pro men, 29/37/34 pro women,
+    # "slightly lower at collegiate levels" — the mix compresses a few points as
+    # level drops, it never collapses). The gap term is what pays for aggression:
+    # outgun your opponent and your winners and their forced errors rise; get
+    # outgunned and your losses tilt unforced.
+    "end_winner_base": 0.27,   # winner fraction of rally ends, matched at swing_ref
+    "end_winner_level": 0.08,  # small absolute drift: lower-level → slightly fewer winners
+    "end_winner_gap": 0.45,    # your attack basket vs their defense basket
+    "end_forced_base": 0.57,   # of the loser's errors: forced fraction, matched at ref
+    "end_forced_level": 0.24,  # lower-level errors tilt unforced (sloppier misses)
+    "end_forced_gap": 0.35,    # a bigger gap makes the loser's misses FORCED
+    # Attribution floor: the shares are clamped into [floor, 1-floor]. They only
+    # LABEL a point already won — never decide one — so this is box-score texture:
+    # nobody plays a whole match with zero winners or zero unforced errors.
     "share_floor": 0.06,
-    # How far player attributes swing the split. Each stat reads a small BASKET of
-    # attributes, so its total carries a distinct talent fingerprint. The swings are
-    # deliberately GENTLE (owner research, 2027-07 — O'Shannessy/Brain Game Tennis):
-    # the winner/forced/unforced mix is one of tennis's most stable numbers, ~30%
-    # winners / ~40% forced / ~30% unforced at the pro level and only a few points
-    # softer as the level drops (women ~29/37/34; low-level play tilts toward
-    # unforced errors but never abandons winners). The old coefficients (basket sums
-    # ~0.74 and ~1.36) swung the shares by ±0.30+ across a college roster, so elite
-    # boxes read W 47 / UE 2 and deep-card boxes read ZERO winners — both impossible.
-    # These sums (~0.26 / ~0.40) hold the whole college spectrum inside the
-    # real-world band: ~32/41/27 at the top drifting to ~25/35/40 at the bottom.
-    "winner_power": 0.10,     # groundstroke weapons → more winners
-    "winner_move": 0.05,      # court coverage manufactures put-away chances
-    "winner_nerve": 0.03,     # willingness to go for the shot
-    "winner_steady": 0.08,    # steadier opponent gifts fewer cheap errors
-    "unforced_steady": 0.30,  # low-consistency server sprays more unforced errors
-    "unforced_move": 0.10,    # a mover retrieves would-be errors back into rallies
     # Pressure / clutch.
     "clutch_logit": 1.15,
     "clutch_exp": 1.6,
@@ -172,41 +166,32 @@ def _server_rally_win_prob(server: Player, returner: Player, first: bool,
     return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
 
 
-def _winner_share(hitter: Player, misser: Player) -> float:
-    """Fraction of `hitter`-won rallies that end in a clean WINNER (vs the
-    opponent's forced error). Reads a basket of the actual weapons — groundstroke
-    pop, passing, approach, court vision, plus the court coverage that
-    manufactures put-aways and the nerve to go for it — so a shot-maker's winner
-    count reflects the whole profile, not one collapsed number. A steadier
-    opponent coughs up fewer cheap errors, so more points must be earned with a
-    real winner."""
-    t = TUNE
-    ref = t["swing_ref"]
-    swing = (t["winner_power"] * (hitter.attack - ref)
-             + t["winner_move"] * (hitter.court_cover - ref)
-             + t["winner_nerve"] * (hitter.go_for_it - ref)
-             + t["winner_steady"] * (misser.steadiness - ref))
-    f = t["share_floor"]
-    return max(f, min(1.0 - f, t["winner_share"] + swing))
+def _end_shares(state: MatchState, hitter: Player, misser: Player) -> tuple[float, float]:
+    """How a rally that `hitter` just WON gets labeled, as two clamped fractions:
+    (winner_frac, forced_frac) — the chance the point ends on the hitter's clean
+    WINNER, else the misser's error, which is FORCED with `forced_frac` and
+    UNFORCED otherwise. Symmetric: called for whichever side won the rally.
 
-
-def _unforced_share(state: MatchState, server: Player, returner: Player) -> float:
-    """Of the rallies the returner won, how many were the server's UNFORCED
-    error (vs a returner winner). Steadiness leads — a disciplined, high-tolerance
-    ballstriker rarely misses, a sprayer piles them up — and court coverage helps:
-    a good mover turns would-be errors back into rallies. Together they make
-    unforced-error totals vary by player instead of clustering on a flat rate.
-    Wind adds a few more misses on top."""
+    Anchored on the MATCHUP, not the level: `gap` is the hitter's attacking
+    basket vs the misser's defensive basket, so a 35-STR player beating up on a
+    30 hits real winner counts and a matched pair of weak players still splits
+    points like tennis players do (their mix drifts only `end_*_level` softer).
+    Wind tilts the misser's errors unforced."""
     t = TUNE
-    ref = t["swing_ref"]
-    steady = (-t["unforced_steady"] * (server.steadiness - ref)
-              - t["unforced_move"] * (server.court_cover - ref))
-    wind = t["wind_error"] * state.context.wind * (1.0 - server.wind_tolerance)
-    # Same floor as _winner_share, mirrored: a weak server otherwise clamps to a
-    # 100% unforced share, which erases the RETURNER's winners — the other half
-    # of the zero-winner box lines. Attribution only; outcomes are untouched.
+    atk = 0.55 * hitter.attack + 0.25 * hitter.court_cover + 0.20 * hitter.go_for_it
+    dfn = 0.60 * misser.steadiness + 0.40 * misser.court_cover
+    gap = atk - dfn
+    lvl = (atk + dfn) / 2.0 - t["swing_ref"]
+    wind = t["wind_error"] * state.context.wind * (1.0 - misser.wind_tolerance)
     f = t["share_floor"]
-    return max(f, min(1.0 - f, t["unforced_share"] + steady + wind))
+
+    def clamp(x: float) -> float:
+        return max(f, min(1.0 - f, x))
+    winner_frac = clamp(t["end_winner_base"] + t["end_winner_gap"] * gap
+                        + t["end_winner_level"] * lvl)
+    forced_frac = clamp(t["end_forced_base"] + t["end_forced_gap"] * gap
+                        + t["end_forced_level"] * lvl - wind)
+    return winner_frac, forced_frac
 
 
 def _clutch(state: MatchState, server: Player, returner: Player) -> float:
@@ -265,16 +250,29 @@ def play_point(state: MatchState) -> tuple[int, str]:
 
     # --- Rally (clutch + hardcourt context swing the big points) ---
     ctx_bonus = _rally_condition_bonus(state, server, returner)
+    # One draw labels the end (winner / forced / unforced) whichever side won —
+    # the SAME single rng.random() the old two-way split consumed, so the stream,
+    # and with it every outcome, is bit-identical to before this model existed.
     if rng.random() < _server_rally_win_prob(server, returner, first,
                                              bonus=TUNE["clutch_logit"] * clutch + ctx_bonus):
-        if rng.random() < _winner_share(server, returner):
+        w_frac, f_frac = _end_shares(state, server, returner)
+        roll = rng.random()
+        if roll < w_frac:
             s_stat.winners += 1
             return award(s_idx, "winner")
-        r_stat.forced_errors += 1
-        return award(s_idx, "forced_error")
+        if roll < w_frac + (1.0 - w_frac) * f_frac:
+            r_stat.forced_errors += 1
+            return award(s_idx, "forced_error")
+        r_stat.unforced_errors += 1
+        return award(s_idx, "unforced_error")
     else:
-        if rng.random() < _unforced_share(state, server, returner):
-            s_stat.unforced_errors += 1
-            return award(r_idx, "unforced_error")
-        r_stat.winners += 1
-        return award(r_idx, "winner")
+        w_frac, f_frac = _end_shares(state, returner, server)
+        roll = rng.random()
+        if roll < w_frac:
+            r_stat.winners += 1
+            return award(r_idx, "winner")
+        if roll < w_frac + (1.0 - w_frac) * f_frac:
+            s_stat.forced_errors += 1
+            return award(r_idx, "forced_error")
+        s_stat.unforced_errors += 1
+        return award(r_idx, "unforced_error")
