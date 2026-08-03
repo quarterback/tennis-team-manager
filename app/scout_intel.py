@@ -785,6 +785,74 @@ def team_rosters(gender: str, schools: list[str], seed: int | None = None) -> di
     return out
 
 
+# ---- Lineup Architect: assemble whole squads from underutilized talent ------
+
+def lineup_architect(gender: str, target_division: str = "D2", seed: int | None = None,
+                     pool: str = "buried", min_ovr: int = 0, min_str: float = 0.0,
+                     n_squads: int = 3) -> dict:
+    """The scouting-department view: instead of surfacing buried players one at a
+    time, deal them into whole singles cards for a target division and rank each
+    squad against that division's real teams (by current-OVR card average).
+
+    `pool`: 'buried' (Underplaced-board qualifiers), 'below' (anyone rostered in
+    a division below the target), 'any'. `min_ovr`/`min_str` gate the pool.
+    Squads are non-overlapping, dealt best-first, so squad 1 is the strongest
+    team the pool can field, squad 2 the next, and so on."""
+    from app.ncaa import lineup_size
+    data = scan(gender, seed)
+    card = lineup_size(target_division)
+    tgt_rank = _DIVRANK[target_division]
+
+    cands = []
+    for r in data["players"]:
+        if pool == "buried":
+            if not (r.placement_gap >= UNDERPLACED_MIN_GAP
+                    and r.true_overall >= UNDERPLACED_MIN_TRUE):
+                continue
+        elif pool == "below":
+            if _DIVRANK[r.division] <= tgt_rank:
+                continue
+        if r.cur_overall < min_ovr or r.live_str < min_str:
+            continue
+        cands.append(r)
+    cands.sort(key=lambda r: (r.cur_overall, r.true_overall), reverse=True)
+
+    # The target division's real cards by the same metric (current OVR of the
+    # talent card), so "would rank #N of M" is apples to apples.
+    div_lvls = sorted((sum(t["top6_cur"]) / len(t["top6_cur"])
+                       for t in data["team_ladder"]
+                       if t["division"] == target_division and t["top6_cur"]),
+                      reverse=True)
+    n_div = len(div_lvls)
+
+    squads = []
+    for k in range(max(1, n_squads)):
+        block = cands[k * card:(k + 1) * card]
+        if len(block) < card:
+            break
+        avg_ovr = sum(r.cur_overall for r in block) / card
+        squads.append({
+            "players": [{
+                "slot": i, "pid": r.pid, "name": r.name, "country": r.country,
+                "school": r.school, "division": r.division, "gender": r.gender,
+                "class_year": r.class_year, "line": r.line,
+                "cur_overall": r.cur_overall, "true_overall": r.true_overall,
+                "live_str": r.live_str,
+            } for i, r in enumerate(block, 1)],
+            "avg_ovr": round(avg_ovr, 1),
+            "avg_ceil": round(sum(r.true_overall for r in block) / card, 1),
+            "avg_str": round(sum(r.live_str for r in block) / card, 1),
+            "rank": 1 + sum(1 for lv in div_lvls if lv > avg_ovr),
+            "n_div": n_div,
+        })
+    return {
+        "squads": squads, "pool_size": len(cands), "card": card, "n_div": n_div,
+        "div_top": round(div_lvls[0], 1) if div_lvls else 0.0,
+        "div_median": round(div_lvls[n_div // 2], 1) if div_lvls else 0.0,
+        "leftover": max(0, len(cands) - len(squads) * card),
+    }
+
+
 def conference_strength(division: str, gender: str, seed: int | None = None) -> list[dict]:
     """Relative league strength across a division: every conference ranked by the
     average STR of its starters (lineup positions 1–6), with its strongest starter,

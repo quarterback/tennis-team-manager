@@ -135,6 +135,7 @@ NAV_GROUPS = [
         {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
         {"id": "intel_search", "label": "Portal Search",    "icon": "fa-solid fa-magnifying-glass-location", "endpoint": "intel_portal_search", "args": {}},
         {"id": "intel_teams",  "label": "Team Scanner",     "icon": "fa-solid fa-table-cells", "endpoint": "intel_teams",       "args": {}},
+        {"id": "intel_arch",   "label": "Lineup Architect", "icon": "fa-solid fa-compass-drafting", "endpoint": "intel_architect",   "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
@@ -189,6 +190,7 @@ def _active_nav(req) -> str:
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
     if p.startswith("/intel/teams"):      return "intel_teams"
+    if p.startswith("/intel/architect"):  return "intel_arch"
     if p.startswith("/intel/underplaced"): return "intel_under"
     if p.startswith("/intel/scholarships"): return "intel_aid"
     if p.startswith("/intel/my-targets"): return "intel_targets"
@@ -1930,6 +1932,31 @@ def create_app() -> Flask:
                                sort=sort, direction=direction, q=q, u=u, uni_label=label,
                                divisions=["All", "D1", "D2", "D3", "D4"])
 
+    @app.route("/intel/architect")
+    def intel_architect():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_t = request.args.get("div", division)
+        if div_t not in ("D1", "D2", "D3", "D4"):
+            div_t = division
+        pool = request.args.get("pool", "buried")
+        if pool not in ("buried", "below", "any"):
+            pool = "buried"
+        def _num(name, cast, default):
+            try:
+                return cast(request.args.get(name, ""))
+            except (TypeError, ValueError):
+                return default
+        min_ovr = max(0, min(80, _num("min_ovr", int, 0)))
+        min_str = max(0.0, min(60.0, _num("min_str", float, 0.0)))
+        n_squads = max(1, min(6, _num("squads", int, 3)))
+        arch = si.lineup_architect(gender, target_division=div_t, pool=pool,
+                                   min_ovr=min_ovr, min_str=min_str, n_squads=n_squads)
+        return render_template("intel_architect.html", active="Analytics Bureau",
+                               arch=arch, gender=gender, div_t=div_t, pool=pool,
+                               min_ovr=min_ovr, min_str=min_str, n_squads=n_squads,
+                               u=u, uni_label=label, divisions=["D1", "D2", "D3", "D4"])
+
     @app.route("/intel/portal-search")
     def intel_portal_search():
         division, uni_gender, label, u = _universe(request)
@@ -2111,8 +2138,11 @@ def create_app() -> Flask:
         academics = {"value": round((prog.academics if prog else 0.5) * 100),
                      "overridden": school in ov.get_academics()}
         conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
+        from app.ncaa import dual_format, lineup_size
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
+                               n_lineup=lineup_size(division),
+                               n_doubles=dual_format(division).n_doubles,
                                doubles_pin=ov.get_doubles().get(school) or [],
                                conferences=conferences, conf=conf, conf_ratings=conf_ratings,
                                groups=all_programs_grouped(gender), ov=active_overrides(),
@@ -2333,16 +2363,19 @@ def create_app() -> Flask:
 
     @app.route("/editor/doubles", methods=["POST"])
     def editor_doubles():
-        # Pin an INDEPENDENT doubles lineup: 6 pids (d1a,d1b,d2a,d2b,d3a,d3b) → 3 pairs.
-        # Players may be ANY roster member, not just singles starters (doubles
-        # specialists). Rejected unless all six are distinct roster pids.
+        # Pin an INDEPENDENT doubles lineup: the division's doubles-line count
+        # (D1 fields 5 pairs, the rest 3) as d{i}a/d{i}b pids. Players may be ANY
+        # roster member, not just singles starters (doubles specialists).
+        # Rejected unless all pids are distinct roster members.
+        from app.ncaa import dual_format
         division, gender, label, u = _universe(request)
         school = request.form.get("school", "")
-        slots = ["d1a", "d1b", "d2a", "d2b", "d3a", "d3b"]
+        n_d = dual_format(division).n_doubles
+        slots = [x for i in range(1, n_d + 1) for x in (f"d{i}a", f"d{i}b")]
         pids = [request.form.get(s, "").strip() for s in slots]
         rows, _ = editor_roster(division, gender, school)
         valid = {r["pid"] for r in (rows or [])}
-        if all(p in valid for p in pids) and len(set(pids)) == 6:
+        if all(p in valid for p in pids) and len(set(pids)) == 2 * n_d:
             ov.set_doubles(school, pids)
             reset_lineup()
         return redirect(url_for("editor", u=u, school=school))

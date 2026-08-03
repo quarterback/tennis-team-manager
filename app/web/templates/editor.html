@@ -292,27 +292,29 @@
       })();
     </script>
     <div class="bl-notes"><div class="bl-note">
-      Reorder with ▲▼ to pin a custom lineup (lines 1–6 are the singles ladder). To relocate players,
+      Reorder with ▲▼ to pin a custom lineup (lines 1–{{ n_lineup }} are the singles ladder). To relocate players,
       set a new program in the MOVE column for as many rows as you like — any program in any division —
       then click <strong>Apply moves</strong> to commit the whole batch in one shot. Edits persist and
       feed the dual simulator, team pages, and new season sims.</div></div>
 
-    {% if rows and rows|length >= 6 %}
-    {# ---- Doubles lineup: picked independently of singles (3 pairs). Any roster
-           player can be paired — including depth outside the singles six. Players
-           play both; there's no doubles-only player type. ---- #}
-    {% set dpin = doubles_pin if doubles_pin|length == 6 else rows[:6]|map(attribute='pid')|list %}
+    {% set dslots = n_doubles * 2 %}
+    {% if rows and rows|length >= dslots %}
+    {# ---- Doubles lineup: picked independently of singles (the division's pair
+           count — D1 five, the rest three). Any roster player can be paired —
+           including depth outside the singles card. Players play both; there's
+           no doubles-only player type. ---- #}
+    {% set dpin = doubles_pin if doubles_pin|length == dslots else rows[:dslots]|map(attribute='pid')|list %}
     <div class="bl-panel" style="margin-top:16px">
       <div class="bl-panel-head"><span class="bl-panel-title">Doubles lineup</span>
-        <span class="bl-panel-meta">3 pairs — picked independently of singles; pair anyone on the roster (players play both)</span></div>
+        <span class="bl-panel-meta">{{ n_doubles }} pairs — picked independently of singles; pair anyone on the roster (players play both)</span></div>
       <form method="post" action="{{ url_for('editor_doubles') }}" class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
         <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
-        {% for pair in [('D1','d1a','d1b'), ('D2','d2a','d2b'), ('D3','d3a','d3b')] %}
-        {% set base = loop.index0 * 2 %}
+        {% for i in range(n_doubles) %}
+        {% set base = i * 2 %}
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="bl-rank" style="width:28px">{{ pair[0] }}</span>
+          <span class="bl-rank" style="width:28px">D{{ i + 1 }}</span>
           {% for si in (1, 2) %}
-          <select class="bl-select" name="{{ pair[si] }}" style="flex:1;min-width:0;font-size:12px">
+          <select class="bl-select" name="d{{ i + 1 }}{{ 'a' if si == 1 else 'b' }}" style="flex:1;min-width:0;font-size:12px">
             {% for r in rows %}<option value="{{ r.pid }}"{% if r.pid == dpin[base + si - 1] %} selected{% endif %}>{{ r.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}
           </select>
           {% if si == 1 %}<span style="color:var(--text-faint)">&amp;</span>{% endif %}
@@ -321,9 +323,9 @@
         {% endfor %}
         <div style="display:flex;gap:8px;align-items:center">
           <button class="bl-pill" type="submit" style="background:var(--brand);color:#fff">Save doubles</button>
-          {% if doubles_pin|length == 6 %}
+          {% if doubles_pin|length == dslots %}
           <span style="font-size:12px;color:var(--stat-good,var(--brand))">✓ Pinned</span>
-          {% else %}<span style="font-size:12px;color:var(--text-muted)">Auto (best pairing of the top 6)</span>{% endif %}
+          {% else %}<span style="font-size:12px;color:var(--text-muted)">Auto (best pairing of the top {{ dslots }})</span>{% endif %}
         </div>
       </form>
       <div class="bl-note" style="margin:0 12px 12px;font-size:12px;color:var(--text-faint)">

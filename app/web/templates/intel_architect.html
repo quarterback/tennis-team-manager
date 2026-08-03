@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Lineup Architect{% endblock %}
+{% block content %}
+
+<form method="get">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Lineup Architect</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Target division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:84px">
+      {% for d in divisions %}<option{% if d == div_t %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Pool</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="pool" onchange="this.form.submit()" style="min-width:130px">
+      <option value="buried"{% if pool == 'buried' %} selected{% endif %}>Buried talent</option>
+      <option value="below"{% if pool == 'below' %} selected{% endif %}>Lower divisions</option>
+      <option value="any"{% if pool == 'any' %} selected{% endif %}>Everyone</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Min OVR</span>
+    <input class="bl-input" type="number" name="min_ovr" value="{{ min_ovr or '' }}" min="0" max="80" style="width:64px"></label>
+  <label class="bl-field"><span class="bl-field-label">Min STR</span>
+    <input class="bl-input" type="number" name="min_str" value="{{ min_str or '' }}" min="0" max="60" step="0.5" style="width:64px"></label>
+  <label class="bl-field"><span class="bl-field-label">Squads</span>
+    <input class="bl-input" type="number" name="squads" value="{{ n_squads }}" min="1" max="6" style="width:56px"></label>
+  <button class="bl-pill" type="submit">Build</button>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left"><strong style="color:var(--text-primary)">{{ arch.pool_size }}</strong> in pool ·
+    card of {{ arch.card }} · {{ div_t }} top {{ arch.div_top }} / median {{ arch.div_median }} OVR</div>
+  <span class="bl-entries-right">{{ uni_label }}</span>
+</div></div>
+
+<div class="bl-container" style="padding-top:0">
+  {% if not arch.squads %}
+  <div class="bl-panel"><div style="padding:28px;text-align:center;color:var(--text-muted)">
+    Pool too small for a full card — loosen the gates.</div></div>
+  {% endif %}
+  {% for s in arch.squads %}
+  <div class="bl-panel" style="margin-bottom:16px">
+    <div class="bl-panel-head">
+      <span class="bl-panel-title">Squad {{ loop.index }}</span>
+      <span class="bl-panel-meta"><strong class="la-rk">#{{ s.rank }} of {{ s.n_div }}</strong> in {{ div_t }} ·
+        OVR {{ s.avg_ovr }} · CEIL {{ s.avg_ceil }} · STR {{ s.avg_str }}</span>
+    </div>
+    <div class="la-tbl">
+      <div class="la-thead">
+        <span class="n">#</span><span>PLAYER</span><span>FROM</span><span></span>
+        <span class="n">LN</span><span class="n">OVR</span><span class="n">CEIL</span><span class="n">STR</span>
+      </div>
+      {% for x in s.players %}
+      {% set ab = crest(x.school) %}
+      <div class="la-row">
+        <span class="la-num muted">{{ x.slot }}</span>
+        <span class="la-player"><a href="{{ url_for('player', pid=x.pid, school=x.school, u=x.division ~ '-' ~ x.gender) }}"><span class="player-flag" title="{{ x.country|country_name }}">{{ x.country|flags }}</span> {{ x.name }}</a>
+          <span class="ib-divchip">{{ x.class_year or '—' }}</span></span>
+        <span class="la-from">{{ crest_box(x.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ x.school }}</span>
+          <span class="ib-divchip">{{ x.division }}</span></span>
+        <span><a class="ib-fit" href="{{ url_for('intel_fit', pid=x.pid, u=u) }}">fit ↗</a></span>
+        <span class="la-num muted">{{ x.line or '—' }}</span>
+        <span class="la-num strong">{{ x.cur_overall }}</span>
+        <span class="la-num">{{ x.true_overall }}</span>
+        <span class="la-num muted">{{ '%.1f'|format(x.live_str) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% if arch.leftover %}
+  <div class="bl-entries"><span class="bl-entries-left">+{{ arch.leftover }} more in pool</span></div>
+  {% endif %}
+</div>
+
+<style>
+.la-tbl { font-variant-numeric:tabular-nums; }
+.la-thead, .la-row { display:grid; gap:8px; align-items:center;
+  grid-template-columns:26px minmax(170px,1.4fr) minmax(150px,1.2fr) 44px 36px 48px 48px 52px; padding:6px 14px; }
+.la-thead { background:var(--surface-th); border-bottom:1px solid var(--border-default);
+  font-size:10px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-muted); }
+.la-thead .n, .la-num { text-align:right; }
+.la-row { border-bottom:1px solid var(--border-subtle); font-size:13px; }
+.la-row:last-child { border-bottom:none; }
+.la-row:hover { background:var(--surface-hover); }
+.la-num { font-weight:600; color:var(--text-primary); }
+.la-num.strong { font-weight:800; color:var(--green-700,#0e7c86); }
+.la-num.muted { color:var(--text-muted); font-weight:500; }
+.la-rk { color:var(--green-700,#0e7c86); }
+.la-player, .la-from { display:flex; align-items:center; gap:6px; min-width:0; white-space:nowrap; overflow:hidden; }
+.la-player a { color:inherit; text-decoration:none; font-weight:600; overflow:hidden; text-overflow:ellipsis; }
+.la-player a:hover { text-decoration:underline; }
+.la-from { color:var(--text-muted); font-size:12.5px; }
+.la-from .nm { overflow:hidden; text-overflow:ellipsis; }
+@media (max-width: 760px) {
+  .la-thead, .la-row { grid-template-columns:24px minmax(130px,1.4fr) 40px 48px 48px; }
+  .la-thead > :nth-child(3), .la-row > :nth-child(3),
+  .la-thead > :nth-child(5), .la-row > :nth-child(5),
+  .la-thead > :nth-child(8), .la-row > :nth-child(8) { display:none; }
+}
+</style>
+{% endblock %}
