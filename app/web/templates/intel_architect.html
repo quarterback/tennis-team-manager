@@ -17,10 +17,16 @@
       <option value="below"{% if pool == 'below' %} selected{% endif %}>Lower divisions</option>
       <option value="any"{% if pool == 'any' %} selected{% endif %}>Everyone</option>
     </select></span></label>
-  <label class="bl-field"><span class="bl-field-label">Min OVR</span>
-    <input class="bl-input" type="number" name="min_ovr" value="{{ min_ovr or '' }}" min="0" max="80" style="width:64px"></label>
-  <label class="bl-field"><span class="bl-field-label">Min STR</span>
-    <input class="bl-input" type="number" name="min_str" value="{{ min_str or '' }}" min="0" max="60" step="0.5" style="width:64px"></label>
+  <label class="bl-field"><span class="bl-field-label">OVR</span>
+    <span style="display:flex;align-items:center;gap:4px">
+      <input class="bl-input" type="number" name="min_ovr" value="{{ min_ovr or '' }}" placeholder="min" min="0" max="80" style="width:58px">–
+      <input class="bl-input" type="number" name="max_ovr" value="{{ max_ovr if max_ovr < 80 else '' }}" placeholder="max" min="0" max="80" style="width:58px">
+    </span></label>
+  <label class="bl-field"><span class="bl-field-label">STR</span>
+    <span style="display:flex;align-items:center;gap:4px">
+      <input class="bl-input" type="number" name="min_str" value="{{ min_str or '' }}" placeholder="min" min="0" max="99" step="0.5" style="width:58px">–
+      <input class="bl-input" type="number" name="max_str" value="{{ max_str if max_str < 99 else '' }}" placeholder="max" min="0" max="99" step="0.5" style="width:58px">
+    </span></label>
   <label class="bl-field"><span class="bl-field-label">Squads</span>
     <input class="bl-input" type="number" name="squads" value="{{ n_squads }}" min="1" max="6" style="width:56px"></label>
   <button class="bl-pill" type="submit">Build</button>

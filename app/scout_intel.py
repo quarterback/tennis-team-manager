@@ -788,16 +788,18 @@ def team_rosters(gender: str, schools: list[str], seed: int | None = None) -> di
 # ---- Lineup Architect: assemble whole squads from underutilized talent ------
 
 def lineup_architect(gender: str, target_division: str = "D2", seed: int | None = None,
-                     pool: str = "buried", min_ovr: int = 0, min_str: float = 0.0,
+                     pool: str = "buried", min_ovr: int = 0, max_ovr: int = 80,
+                     min_str: float = 0.0, max_str: float = 99.0,
                      n_squads: int = 3) -> dict:
     """The scouting-department view: instead of surfacing buried players one at a
     time, deal them into whole singles cards for a target division and rank each
     squad against that division's real teams (by current-OVR card average).
 
     `pool`: 'buried' (Underplaced-board qualifiers), 'below' (anyone rostered in
-    a division below the target), 'any'. `min_ovr`/`min_str` gate the pool.
-    Squads are non-overlapping, dealt best-first, so squad 1 is the strongest
-    team the pool can field, squad 2 the next, and so on."""
+    a division below the target), 'any'. OVR and STR gates are BANDS (min AND
+    max), so mid/low tiers are searchable on their own — a max keeps the elite
+    out of the pool instead of best-first always skimming the top. Squads are
+    non-overlapping, dealt best-first within the band."""
     from app.ncaa import lineup_size
     data = scan(gender, seed)
     card = lineup_size(target_division)
@@ -812,7 +814,9 @@ def lineup_architect(gender: str, target_division: str = "D2", seed: int | None 
         elif pool == "below":
             if _DIVRANK[r.division] <= tgt_rank:
                 continue
-        if r.cur_overall < min_ovr or r.live_str < min_str:
+        if not (min_ovr <= r.cur_overall <= max_ovr):
+            continue
+        if not (min_str <= r.live_str <= max_str):
             continue
         cands.append(r)
     cands.sort(key=lambda r: (r.cur_overall, r.true_overall), reverse=True)
