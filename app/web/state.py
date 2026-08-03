@@ -2103,7 +2103,7 @@ def editor_roster(division: str, gender: str, school: str):
             "class_year": getattr(pr, "class_year", ""),
             "overall": round(pr.current_overall(), 1),
             "str": round(pr.str_value(), 1),
-            "line": i if i <= 6 else None,
+            "line": i if i <= ncaa.lineup_size(division) else None,
             "walk_on": getattr(pr, "walk_on", False),
             "moved_in": pr.pid not in base_pids,
             "hometown": getattr(pr, "hometown", ""),
