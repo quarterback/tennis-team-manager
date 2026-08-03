@@ -673,6 +673,121 @@ def conference_lineups(division: str, gender: str, conf: str, seed: int | None =
     return rows
 
 
+# ---- Team Scanner: every program in one cross-division board ----------------
+
+_TEAM_SORTS = {
+    # metric key -> row key(s); every sort tiebreaks on the talent ladder so
+    # equal-metric teams keep a stable, meaningful order.
+    "card_str":   lambda t: (t["card_str"], -t["level_rank"]),
+    "card_ovr":   lambda t: (t["card_ovr"], -t["level_rank"]),
+    "roster_ovr": lambda t: (t["roster_ovr"], -t["level_rank"]),
+    "ceiling":    lambda t: (t["ceiling"], -t["level_rank"]),
+    "upside":     lambda t: (t["upside"], t["ceiling"]),
+    "buried":     lambda t: (t["n_buried"], t["ceiling"]),
+    "best":       lambda t: (t["best_ovr"], -t["level_rank"]),
+}
+
+
+def team_board(gender: str, seed: int | None = None, division: str = "All",
+               conf: str = "All", sort: str = "card_ovr", direction: str = "desc",
+               q: str = "") -> list[dict]:
+    """Every program in one scannable board, across ALL divisions — the team-level
+    lens the player boards don't give. Per team, both rating systems side by side:
+
+      card_str   — avg live results STR of the actual starters (the division's
+                   full singles card, not a hardcoded 6)
+      card_ovr   — avg CURRENT ability (OVERALL, 20–80) of the talent top card:
+                   the honest "how good are they right now", immune to the
+                   freshman/new-player STR lag
+      roster_ovr — avg current OVERALL of the whole roster (depth included)
+      ceiling    — avg true ceiling of the top card (program's talent level, the
+                   same number the cross-division ladder ranks on)
+      upside     — ceiling − card_ovr: how much the current core has left to grow
+      n_buried   — how many rostered players qualify for the Underplaced board
+
+    `direction` flips the sort ('asc' surfaces the weakest — the god-mode "which
+    team do I want to build up" cut). `q` filters by school or conference."""
+    data = scan(gender, seed)
+    by_school: dict[str, list[Intel]] = {}
+    for r in data["players"]:
+        by_school.setdefault(r.school, []).append(r)
+
+    rows: list[dict] = []
+    for t in data["team_ladder"]:
+        roster = by_school.get(t["school"], [])
+        starters = [r.live_str for r in roster if r.line is not None]
+        card_ovrs = t["top6_cur"]            # current OVERALL of the talent top card
+        all_ovrs = [r.cur_overall for r in roster]
+        card_ovr = sum(card_ovrs) / len(card_ovrs) if card_ovrs else 0.0
+        n_buried = sum(1 for r in roster
+                       if r.placement_gap >= UNDERPLACED_MIN_GAP
+                       and r.true_overall >= UNDERPLACED_MIN_TRUE)
+        rows.append({
+            "school": t["school"], "division": t["division"], "gender": gender,
+            "conf": t["tier"], "pi_rank": t["pi_rank"], "n_teams": t["n_teams"],
+            "level_rank": t["level_rank"], "n_roster": len(roster),
+            "card_str": round(sum(starters) / len(starters), 1) if starters else 0.0,
+            "card_ovr": round(card_ovr, 1),
+            "roster_ovr": round(sum(all_ovrs) / len(all_ovrs), 1) if all_ovrs else 0.0,
+            "ceiling": round(t["team_level"], 1),
+            "upside": round(t["team_level"] - card_ovr, 1),
+            "best_ovr": max(all_ovrs) if all_ovrs else 0,
+            "n_buried": n_buried,
+        })
+
+    if division != "All":
+        rows = [t for t in rows if t["division"] == division]
+    if conf != "All":
+        rows = [t for t in rows if t["conf"] == conf]
+    if q:
+        ql = q.strip().lower()
+        rows = [t for t in rows if ql in t["school"].lower() or ql in t["conf"].lower()]
+    rows.sort(key=_TEAM_SORTS.get(sort, _TEAM_SORTS["card_ovr"]),
+              reverse=(direction != "asc"))
+    for i, t in enumerate(rows, 1):
+        t["rank"] = i
+    return rows
+
+
+def team_board_conferences(gender: str, division: str, seed: int | None = None) -> list[str]:
+    """Conference abbreviations present on the board for a division filter (empty
+    for "All" — a conference only means something inside its division)."""
+    if division == "All":
+        return []
+    return sorted({t["tier"] for t in scan(gender, seed)["team_ladder"]
+                   if t["division"] == division})
+
+
+def team_rosters(gender: str, schools: list[str], seed: int | None = None) -> dict[str, list[dict]]:
+    """Full rosters for the given schools, in singles-ladder order (live STR, the
+    order `scan` assigned lines by) — the expandable per-team view under each
+    Team Scanner row. Every player carries both lenses (STR + current/ceiling
+    OVERALL) so buried talent is visible without leaving the board."""
+    data = scan(gender, seed)
+    want = set(schools)
+    out: dict[str, list[dict]] = {s: [] for s in schools}
+    for r in data["players"]:
+        if r.school not in want:
+            continue
+        out[r.school].append(r)
+    for s, roster in out.items():
+        # Starters by their assigned line (the scan already broke STR ties when it
+        # dealt the card — re-sorting by STR alone could flip tied players), then
+        # depth by form.
+        roster.sort(key=lambda r: ((0, r.line, 0.0) if r.line is not None
+                                   else (1, 0, -r.live_str)))
+        out[s] = [{
+            "pid": r.pid, "name": r.name, "country": r.country,
+            "class_year": r.class_year, "line": r.line,
+            "live_str": r.live_str, "cur_overall": r.cur_overall,
+            "true_overall": r.true_overall, "ovr_upside": r.ovr_upside,
+            "walk_on": r.walk_on, "schol_label": r.schol_label,
+            "buried": (r.placement_gap >= UNDERPLACED_MIN_GAP
+                       and r.true_overall >= UNDERPLACED_MIN_TRUE),
+        } for r in roster]
+    return out
+
+
 def conference_strength(division: str, gender: str, seed: int | None = None) -> list[dict]:
     """Relative league strength across a division: every conference ranked by the
     average STR of its starters (lineup positions 1–6), with its strongest starter,

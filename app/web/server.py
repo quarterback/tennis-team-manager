@@ -134,6 +134,7 @@ NAV_GROUPS = [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
         {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
         {"id": "intel_search", "label": "Portal Search",    "icon": "fa-solid fa-magnifying-glass-location", "endpoint": "intel_portal_search", "args": {}},
+        {"id": "intel_teams",  "label": "Team Scanner",     "icon": "fa-solid fa-table-cells", "endpoint": "intel_teams",       "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
         {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
         {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
@@ -187,6 +188,7 @@ def _active_nav(req) -> str:
     if p.startswith("/tools/junior"):     return "junior_setup"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
+    if p.startswith("/intel/teams"):      return "intel_teams"
     if p.startswith("/intel/underplaced"): return "intel_under"
     if p.startswith("/intel/scholarships"): return "intel_aid"
     if p.startswith("/intel/my-targets"): return "intel_targets"
@@ -1901,6 +1903,32 @@ def create_app() -> Flask:
         args = {k: request.form.get(k) for k in ("sort", "div", "class", "q", "u")
                 if request.form.get(k)}
         return redirect(url_for("intel_underplaced", **args))
+
+    @app.route("/intel/teams")
+    def intel_teams():
+        division, gender, label, u = _universe(request)
+        import app.scout_intel as si
+        div_f = request.args.get("div", "All")
+        if div_f not in ("All", "D1", "D2", "D3", "D4"):
+            div_f = "All"
+        confs = si.team_board_conferences(gender, div_f)
+        conf_f = request.args.get("conf", "All")
+        if conf_f not in confs:
+            conf_f = "All"
+        sort = request.args.get("sort", "card_ovr")
+        direction = "asc" if request.args.get("dir") == "asc" else "desc"
+        q = request.args.get("q", "")
+        rows = si.team_board(gender, division=div_f, conf=conf_f, sort=sort,
+                             direction=direction, q=q)
+        pg = paginate(rows, request.args.get("page", 1))
+        # Rosters only for the page on screen — embedding all ~1k teams' rosters
+        # in one response would swamp the HTML for nothing.
+        rosters = si.team_rosters(gender, [t["school"] for t in pg.items])
+        return render_template("intel_teams.html", active="Analytics Bureau",
+                               rows=pg.items, p=pg, total=len(rows), rosters=rosters,
+                               gender=gender, div_f=div_f, conf_f=conf_f, confs=confs,
+                               sort=sort, direction=direction, q=q, u=u, uni_label=label,
+                               divisions=["All", "D1", "D2", "D3", "D4"])
 
     @app.route("/intel/portal-search")
     def intel_portal_search():

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — Team Scanner{% endblock %}
+{% block content %}
+
+<form method="get">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Team Scanner</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:170px">
+      <option value="card_ovr"{% if sort == 'card_ovr' %} selected{% endif %}>Starters — current OVR</option>
+      <option value="card_str"{% if sort == 'card_str' %} selected{% endif %}>Starters — live STR</option>
+      <option value="roster_ovr"{% if sort == 'roster_ovr' %} selected{% endif %}>Whole roster OVR</option>
+      <option value="ceiling"{% if sort == 'ceiling' %} selected{% endif %}>Talent ceiling</option>
+      <option value="upside"{% if sort == 'upside' %} selected{% endif %}>Untapped upside</option>
+      <option value="buried"{% if sort == 'buried' %} selected{% endif %}>Buried talent</option>
+      <option value="best"{% if sort == 'best' %} selected{% endif %}>Best player OVR</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Order</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="dir" onchange="this.form.submit()" style="min-width:104px">
+      <option value="desc"{% if direction == 'desc' %} selected{% endif %}>Strongest first</option>
+      <option value="asc"{% if direction == 'asc' %} selected{% endif %}>Weakest first</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.elements['conf'].value='All';this.form.submit()" style="min-width:84px">
+      {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px"{% if not confs %} disabled title="Pick a division first"{% endif %}>
+      <option value="All">All</option>
+      {% for c in confs %}<option{% if c == conf_f %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Search</span>
+    <input class="bl-input" type="search" name="q" value="{{ q }}" placeholder="school or conference"
+           style="min-width:150px" onsearch="this.form.submit()"></label>
+  <button class="bl-pill" type="submit">Go</button>
+</div></div>
+</form>
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} teams</div>
+  <span class="bl-entries-right">{{ uni_label }} · click any row to unfold its roster</span>
+</div></div>
+
+<div class="bl-container" style="padding-top:0">
+  <div class="bl-panel">
+    <div class="ts-tbl">
+      <div class="ts-thead">
+        <span></span><span>#</span><span>Team</span>
+        <span class="n" title="Power Index rank inside the team's own division">PI</span>
+        <span class="n" title="Average live results-based STR of the actual starters (the division's full singles card). Lags for freshmen and new arrivals.">STR</span>
+        <span class="n" title="Average CURRENT ability (OVERALL, 20–80) of the starting card — how good they are right now, no results lag. The honest strength number.">NOW</span>
+        <span class="n" title="Average current OVERALL of the whole roster, depth included">ROSTER</span>
+        <span class="n" title="Average true talent ceiling (OVERALL) of the top card — the program's talent level, comparable across every division">CEIL</span>
+        <span class="n" title="Ceiling minus current: how much the core still has to grow">+UP</span>
+        <span class="n" title="Rostered players who qualify for the Underplaced Talent board — talent stuck below its level">BURIED</span>
+        <span class="n" title="Roster size">SQ</span>
+      </div>
+      {% for t in rows %}
+      {% set ab = crest(t.school) %}
+      <details class="ts-team">
+        <summary class="ts-tr">
+          <span class="ts-caret">▸</span>
+          <span class="ts-rank">{{ t.rank }}</span>
+          <span class="ts-name">{{ crest_box(t.school, ab[0], ab[1], 'xs') }}<span class="nm">{{ t.school }}</span>
+            <span class="ib-divchip">{{ t.division }}</span><small>{{ t.conf }}</small></span>
+          <span class="ts-num muted">#{{ t.pi_rank }}</span>
+          <span class="ts-num">{{ '%.1f'|format(t.card_str) }}</span>
+          <span class="ts-num strong">{{ '%.1f'|format(t.card_ovr) }}</span>
+          <span class="ts-num">{{ '%.1f'|format(t.roster_ovr) }}</span>
+          <span class="ts-num">{{ '%.1f'|format(t.ceiling) }}</span>
+          <span class="ts-num up{% if t.upside <= 0 %} muted{% endif %}">{{ '+%.1f'|format(t.upside) if t.upside > 0 else '—' }}</span>
+          <span class="ts-num{% if t.n_buried %} flag{% else %} muted{% endif %}">{{ t.n_buried or '—' }}</span>
+          <span class="ts-num muted">{{ t.n_roster }}</span>
+        </summary>
+        <div class="ts-roster">
+          <div class="ts-rhead">
+            <span class="n">LN</span><span>PLAYER</span><span></span>
+            <span class="n" title="Live results-based STR (dynamic)">STR</span>
+            <span class="n" title="Current ability — OVERALL, 20–80 (static, no results lag)">NOW</span>
+            <span class="n" title="True talent ceiling — OVERALL, 20–80">CEIL</span>
+            <span class="n" title="Ceiling minus current">+UP</span>
+            <span title="Athletic aid">AID</span>
+          </div>
+          {% for x in rosters.get(t.school, []) %}
+          <div class="ts-rrow{% if x.line %} starter{% endif %}">
+            <span class="ts-num muted">{{ x.line or '—' }}</span>
+            <span class="ts-player"><a href="{{ url_for('player', pid=x.pid, school=t.school, u=t.division ~ '-' ~ t.gender) }}"><span class="player-flag" title="{{ x.country|country_name }}">{{ x.country|flags }}</span> {{ x.name }}</a>
+              <span class="ib-divchip">{{ x.class_year or '—' }}</span>
+              {% if x.walk_on %}<span class="ts-chip wo">walk-on</span>{% endif %}
+              {% if x.buried %}<span class="ts-chip buried" title="Qualifies for the Underplaced Talent board">buried</span>{% endif %}</span>
+            <span><a class="ib-fit" href="{{ url_for('intel_fit', pid=x.pid, u=u) }}" title="Fit Finder — where this talent would actually be deployed">fit ↗</a></span>
+            <span class="ts-num">{{ '%.1f'|format(x.live_str) }}</span>
+            <span class="ts-num strong">{{ x.cur_overall }}</span>
+            <span class="ts-num">{{ x.true_overall }}</span>
+            <span class="ts-num up{% if x.ovr_upside <= 0 %} muted{% endif %}">{{ '+' ~ x.ovr_upside if x.ovr_upside > 0 else '—' }}</span>
+            <span class="ts-aid">{{ x.schol_label if not x.walk_on and x.schol_label else '—' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </details>
+      {% endfor %}
+      {% if not rows %}<div style="padding:28px;text-align:center;color:var(--text-muted)">No teams match these filters.</div>{% endif %}
+    </div>
+  </div>
+{{ pager(p, 'teams') }}
+
+  <div class="bl-notes"><div class="bl-note">
+    <strong>Reading the board:</strong> <strong>STR</strong> is the live, results-based rating —
+    it lags for freshmen, transfers, and anyone short on matches. <strong>NOW</strong> is average
+    current ability (OVERALL, 20–80) of the starting card — the honest "how good is this team
+    today", and the default sort. <strong>CEIL</strong> is the same card's true talent ceiling, so
+    <strong>NOW vs CEIL</strong> separates a maxed-out veteran core from a young one still growing
+    (<strong>+UP</strong>). <strong>BURIED</strong> counts players on the roster who belong on the
+    <a href="{{ url_for('intel_underplaced', u=u) }}">Underplaced Talent board</a>. All numbers are
+    absolute-scale, so teams compare cleanly across divisions — flip the order to
+    <em>Weakest first</em> to find rebuild projects.
+  </div></div>
+</div>
+
+<style>
+.ts-tbl { font-variant-numeric:tabular-nums; }
+.ts-thead, .ts-tr { display:grid; gap:8px; align-items:center;
+  grid-template-columns:16px 34px minmax(190px,1.6fr) 48px 52px 52px 56px 52px 46px 56px 36px; }
+.ts-thead { padding:7px 14px; background:var(--surface-th); border-bottom:1px solid var(--border-default);
+  font-size:10px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-muted); }
+.ts-thead .n, .ts-num { text-align:right; }
+.ts-tr { padding:8px 14px; border-bottom:1px solid var(--border-subtle); cursor:pointer; list-style:none; }
+.ts-tr::-webkit-details-marker { display:none; }
+.ts-tr:hover { background:var(--surface-hover); }
+.ts-team[open] > .ts-tr { background:var(--surface-hover); }
+.ts-team[open] .ts-caret { transform:rotate(90deg); }
+.ts-caret { color:var(--text-faint); font-size:11px; transition:transform .12s; }
+.ts-rank { font-size:11px; font-weight:700; color:var(--text-muted); text-align:right; }
+.ts-name { display:flex; align-items:center; gap:7px; min-width:0; font-weight:600; font-size:13.5px; color:var(--text-primary); }
+.ts-name .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ts-name small { color:var(--text-muted); font-weight:500; font-size:11px; white-space:nowrap; }
+.ts-num { font-weight:600; font-size:13px; color:var(--text-primary); }
+.ts-num.strong { font-weight:800; color:var(--green-700,#0e7c86); }
+.ts-num.muted { color:var(--text-muted); font-weight:500; }
+.ts-num.up { color:#946c00; }
+.ts-num.flag { color:#b4452f; font-weight:800; }
+.ts-roster { border-bottom:1px solid var(--border-subtle); background:rgba(0,0,0,.018); padding:2px 0 8px; }
+.ts-rhead, .ts-rrow { display:grid; gap:8px; align-items:center;
+  grid-template-columns:34px minmax(200px,1.6fr) 44px 52px 52px 52px 46px 84px; padding:3px 14px 3px 40px; }
+.ts-rhead { font-size:9.5px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-faint); padding-top:8px; }
+.ts-rrow { font-size:12.5px; }
+.ts-rrow:hover { background:var(--surface-hover); }
+.ts-rrow:not(.starter) { color:var(--text-muted); }
+.ts-rrow:not(.starter) .ts-num { color:var(--text-muted); font-weight:500; }
+.ts-rrow:not(.starter) .ts-num.strong { color:var(--text-secondary); font-weight:600; }
+.ts-player { display:flex; align-items:center; gap:6px; min-width:0; white-space:nowrap; overflow:hidden; }
+.ts-player a { color:inherit; text-decoration:none; font-weight:600; overflow:hidden; text-overflow:ellipsis; }
+.ts-player a:hover { text-decoration:underline; }
+.ts-chip { font-size:9px; font-weight:700; letter-spacing:.03em; padding:1px 5px; border-radius:999px; text-transform:uppercase; }
+.ts-chip.wo { background:rgba(0,0,0,.06); color:var(--text-muted); }
+.ts-chip.buried { background:rgba(180,69,47,.14); color:#b4452f; }
+.ts-aid { font-size:11.5px; color:var(--text-muted); white-space:nowrap; }
+@media (max-width: 860px) {
+  .ts-thead, .ts-tr { grid-template-columns:14px 28px minmax(120px,1.6fr) 44px 48px 48px 48px 44px; }
+  .ts-thead > :nth-child(n+9), .ts-tr > :nth-child(n+9) { display:none; }
+  .ts-rhead, .ts-rrow { grid-template-columns:28px minmax(140px,1.6fr) 40px 48px 48px 48px; padding-left:20px; }
+  .ts-rhead > :nth-child(n+7), .ts-rrow > :nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
