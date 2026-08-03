@@ -88,11 +88,11 @@ def test_rosters_agree_with_the_scan(board):
         roster = rosters[t["school"]]
         assert len(roster) == t["n_roster"]
         card = lineup_size(t["division"])
-        # ladder order: starters first, lines 1..card, then depth
-        lines = [x["line"] for x in roster if x["line"] is not None]
-        assert lines == list(range(1, min(card, len(roster)) + 1))
-        strs = [x["live_str"] for x in roster]
-        assert strs == sorted(strs, reverse=True)
+        # talent order (current OVR), with the full STR-based card still marked
+        ovrs = [x["cur_overall"] for x in roster]
+        assert ovrs == sorted(ovrs, reverse=True)
+        lines = {x["line"] for x in roster if x["line"] is not None}
+        assert lines == set(range(1, min(card, len(roster)) + 1))
         for x in roster:
             assert x["pid"] in data["by_pid"]          # links resolve into the scan
             assert x["true_overall"] >= x["cur_overall"]

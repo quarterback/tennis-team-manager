@@ -759,10 +759,11 @@ def team_board_conferences(gender: str, division: str, seed: int | None = None) 
 
 
 def team_rosters(gender: str, schools: list[str], seed: int | None = None) -> dict[str, list[dict]]:
-    """Full rosters for the given schools, in singles-ladder order (live STR, the
-    order `scan` assigned lines by) — the expandable per-team view under each
-    Team Scanner row. Every player carries both lenses (STR + current/ceiling
-    OVERALL) so buried talent is visible without leaving the board."""
+    """Full rosters for the given schools, in TALENT order (current OVERALL — the
+    reliable lens; live STR only reflects who they happened to play) — the
+    expandable per-team view under each Team Scanner row. Each player keeps their
+    `line` (the STR-based slot the coach AI actually plays), so a high-OVR player
+    with a low/no line reads instantly as buried."""
     data = scan(gender, seed)
     want = set(schools)
     out: dict[str, list[dict]] = {s: [] for s in schools}
@@ -771,11 +772,7 @@ def team_rosters(gender: str, schools: list[str], seed: int | None = None) -> di
             continue
         out[r.school].append(r)
     for s, roster in out.items():
-        # Starters by their assigned line (the scan already broke STR ties when it
-        # dealt the card — re-sorting by STR alone could flip tied players), then
-        # depth by form.
-        roster.sort(key=lambda r: ((0, r.line, 0.0) if r.line is not None
-                                   else (1, 0, -r.live_str)))
+        roster.sort(key=lambda r: (-r.cur_overall, -r.true_overall, r.name))
         out[s] = [{
             "pid": r.pid, "name": r.name, "country": r.country,
             "class_year": r.class_year, "line": r.line,
