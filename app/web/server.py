@@ -1948,13 +1948,17 @@ def create_app() -> Flask:
             except (TypeError, ValueError):
                 return default
         min_ovr = max(0, min(80, _num("min_ovr", int, 0)))
-        min_str = max(0.0, min(60.0, _num("min_str", float, 0.0)))
+        max_ovr = max(min_ovr, min(80, _num("max_ovr", int, 80)))
+        min_str = max(0.0, min(99.0, _num("min_str", float, 0.0)))
+        max_str = max(min_str, min(99.0, _num("max_str", float, 99.0)))
         n_squads = max(1, min(6, _num("squads", int, 3)))
         arch = si.lineup_architect(gender, target_division=div_t, pool=pool,
-                                   min_ovr=min_ovr, min_str=min_str, n_squads=n_squads)
+                                   min_ovr=min_ovr, max_ovr=max_ovr,
+                                   min_str=min_str, max_str=max_str, n_squads=n_squads)
         return render_template("intel_architect.html", active="Analytics Bureau",
                                arch=arch, gender=gender, div_t=div_t, pool=pool,
-                               min_ovr=min_ovr, min_str=min_str, n_squads=n_squads,
+                               min_ovr=min_ovr, max_ovr=max_ovr,
+                               min_str=min_str, max_str=max_str, n_squads=n_squads,
                                u=u, uni_label=label, divisions=["D1", "D2", "D3", "D4"])
 
     @app.route("/intel/portal-search")

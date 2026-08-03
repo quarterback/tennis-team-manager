@@ -50,6 +50,14 @@ def test_pool_gates():
         for x in s["players"]:
             assert x["cur_overall"] >= 55 and x["live_str"] >= 40.0
 
+    # OVR band: a max keeps the elite out, so mid-tier squads are buildable
+    band = si.lineup_architect("men", target_division="D3", pool="any",
+                               min_ovr=45, max_ovr=52)
+    assert band["squads"], "mid-tier band should still field squads"
+    for s in band["squads"]:
+        for x in s["players"]:
+            assert 45 <= x["cur_overall"] <= 52
+
     impossible = si.lineup_architect("men", target_division="D2", min_ovr=80)
     assert impossible["squads"] == [] and impossible["pool_size"] == 0
 
