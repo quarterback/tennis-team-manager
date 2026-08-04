@@ -54,21 +54,32 @@ CREATE INDEX IF NOT EXISTS idx_cta_rankings_pid ON cta_rankings(pid);
 CREATE INDEX IF NOT EXISTS idx_cta_rankings_season ON cta_rankings(year, division, gender);
 """
 
-_ready = False
+_ready_for = None       # the DB path the schema was last created on
+
+
+def _db_path() -> str:
+    """The archive lives in the SAME file as the seasons it archives (sm.DB_PATH
+    — identical to app.db's path in production, but tests repoint seasonmode at
+    temp files, and the stamp fires implicitly from sm.advance: following
+    sm.DB_PATH keeps a temp season's archive in the temp file, never leaking
+    into the main save)."""
+    import app.seasonmode as sm
+    return sm.DB_PATH
 
 
 def init_schema() -> None:
-    global _ready
-    with connect() as conn:
+    global _ready_for
+    path = _db_path()
+    with connect(path) as conn:
         conn.executescript(_SCHEMA)
         conn.commit()
-    _ready = True
+    _ready_for = path
 
 
 def _conn() -> sqlite3.Connection:
-    if not _ready:
+    if _ready_for != _db_path():
         init_schema()
-    return connect()
+    return connect(_db_path())
 
 
 def _season_year() -> tuple[int, int]:
