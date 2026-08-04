@@ -116,3 +116,156 @@ def test_newcomer_scope_falls_back_outside_d1_singles(played_season):
     assert r.status_code == 200
     assert b"CTA Newcomer Rankings" not in r.data
     assert b"PAIR" in r.data
+
+
+# --- Final rankings archive (persisted at CT finish) -------------------------
+
+def test_final_rankings_stamped_when_conference_tournaments_end(played_season):
+    """Advancing through the conference tournaments stamps the season's final
+    boards into the year-over-year archive — teams, singles and doubles, capped
+    at the page's field sizes, rows carrying region + class so the archived
+    board replays every scope."""
+    from app import rankings_archive as ra
+    assert 2026 in ra.years("D1", "men")
+    teams = ra.board(2026, "D1", "men", "teams")
+    singles = ra.board(2026, "D1", "men", "singles")
+    doubles = ra.board(2026, "D1", "men", "doubles")
+    assert teams and singles and doubles
+    assert len(teams) <= ra.TEAM_CAP[False]
+    assert len(singles) <= ra.SINGLES_CAP[False]
+    assert [r["rk"] for r in teams] == list(range(1, len(teams) + 1))
+    pts = [r["points"] for r in singles]
+    assert pts == sorted(pts, reverse=True)
+    for r in singles[:10]:
+        assert r["pid"] and r["name"] and r["region"] in US_REGION_ORDER
+        assert r["cls"]
+    for r in doubles[:5]:
+        assert r["pid"] and r["pid2"] and r["name2"]
+
+
+def test_stamp_is_once_and_final(played_season):
+    """A later re-stamp is a NO-OP: the archived board is the one that stood
+    when the conference tournaments ended — the points corpus keeps growing
+    through the NCAAs, and the final board must not chase it."""
+    from app import rankings_archive as ra
+    import app.seasonmode as sm
+    sid = sm.get_or_create("D1", "men", seed=2026)
+    before = ra.board(2026, "D1", "men", "singles")
+    assert before
+    assert ra.stamp_final_rankings(sid) == 0          # already archived → no-op
+    after = ra.board(2026, "D1", "men", "singles")
+    assert [(r["pid"], r["points"]) for r in after] == [(r["pid"], r["points"]) for r in before]
+
+
+def test_player_final_ranks(played_season):
+    from app import rankings_archive as ra
+    top = ra.board(2026, "D1", "men", "singles")[0]
+    mine = ra.player_final_ranks(top["pid"])
+    assert any(fr["board"] == "singles" and fr["rk"] == 1 and fr["year"] == 2026
+               for fr in mine)
+
+
+def test_archived_rankings_route(played_season):
+    """A past season serves the frozen final board through the same page, with
+    regional and newcomer scopes derived from the stored region/class."""
+    from app import rankings_archive as ra
+    from app.web.server import create_app
+    conn = ra._conn()
+    try:
+        base = dict(year=2001, season_no=1, division="D1", gender="men",
+                    conf_abbr="AC", region="Pacific", w=20, l=2)
+        conn.execute("DELETE FROM cta_rankings WHERE year=2001")
+        conn.executemany(
+            "INSERT INTO cta_rankings (year, season_no, division, gender, board, rk,"
+            " school, conf_abbr, region, pid, name, pid2, name2, cls, w, l, points)"
+            " VALUES (:year, :season_no, :division, :gender, :board, :rk, :school,"
+            " :conf_abbr, :region, :pid, :name, :pid2, :name2, :cls, :w, :l, :points)",
+            [{**base, "board": "singles", "rk": 1, "school": "Stanford",
+              "pid": "t-arch-1", "name": "Archie Vault", "pid2": None, "name2": None,
+              "cls": "Fr", "points": 88.0},
+             {**base, "board": "singles", "rk": 2, "school": "Stanford",
+              "pid": "t-arch-2", "name": "Sen Ior", "pid2": None, "name2": None,
+              "cls": "Sr", "points": 80.0},
+             {**base, "board": "teams", "rk": 1, "school": "Stanford",
+              "pid": None, "name": None, "pid2": None, "name2": None,
+              "cls": None, "points": 70.0}])
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        c = create_app().test_client()
+        r = c.get("/rankings?u=D1-men&season=2001&view=singles")
+        assert r.status_code == 200
+        assert b"Final 2001 CTA Rankings" in r.data and b"Archie Vault" in r.data
+        r = c.get("/rankings?u=D1-men&season=2001&view=singles&scope=newcomer")
+        assert b"Archie Vault" in r.data and b"Sen Ior" not in r.data
+        r = c.get("/rankings?u=D1-men&season=2001&view=singles&scope=regional")
+        assert b"Pacific" in r.data and b"Archie Vault" in r.data
+        r = c.get("/rankings?u=D1-men&season=2001&view=teams")
+        assert b"Stanford" in r.data
+    finally:
+        conn = ra._conn()
+        conn.execute("DELETE FROM cta_rankings WHERE year=2001")
+        conn.commit()
+        conn.close()
+
+
+# --- Recruiting class archive ------------------------------------------------
+
+def test_signing_class_archive(tmp_path):
+    """world_signing keeps every year: a past year reads back as the archived
+    class, and the tracker enriches it with how each signee turned out (Active /
+    Grad / Left) from the persisted world store."""
+    import json as _json
+    import app.world as world
+    from app.ncaa import load_division, build_roster
+    from app.web.state import signing_tracker
+
+    prev = world.WORLD_DB
+    world.WORLD_DB = str(tmp_path / "w.db")
+    try:
+        world.init_schema()
+        conn = world._db()
+        conn.execute("INSERT INTO world (seed, year, week, salt) VALUES (4242, 2, 0, 's')")
+        wid = conn.execute("SELECT id FROM world WHERE seed=4242").fetchone()["id"]
+        roster = build_roster(load_division("D1", "men").programs[0])
+        a, b, c = roster[0], roster[1], roster[2]
+        for p, school in ((a, "Stanford"), (b, "Stanford"), (c, "Baylor")):
+            conn.execute(
+                "INSERT INTO world_signing (world_id, year, gender, school, pid, data)"
+                " VALUES (?, 0, 'men', ?, ?, ?)",
+                (wid, school, p.pid, _json.dumps(world.prospect_to_dict(p))))
+        # a: still rostered THIS year (transferred to Duke); b: graduated; c: gone
+        conn.execute("INSERT INTO world_roster (world_id, year, division, gender, school, pid, data)"
+                     " VALUES (?, 2, 'D1', 'men', 'Duke', ?, ?)",
+                     (wid, a.pid, _json.dumps(world.prospect_to_dict(a))))
+        conn.execute("INSERT INTO world_graduates (world_id, year, division, gender, pid, str, ovr, data)"
+                     " VALUES (?, 1, 'D1', 'men', ?, 44.0, 60.0, ?)",
+                     (wid, b.pid, _json.dumps(world.prospect_to_dict(b))))
+        conn.execute("INSERT INTO world_roster (world_id, year, division, gender, school, pid, data)"
+                     " VALUES (?, 1, 'D1', 'men', 'Baylor', ?, ?)",
+                     (wid, c.pid, _json.dumps(world.prospect_to_dict(c))))
+        conn.commit()
+        conn.close()
+
+        assert world.signing_years(seed=4242) == [0]
+        klass = world.signings(seed=4242, year=0).get("men", {})
+        assert set(klass) == {"Stanford", "Baylor"}
+        assert world.signings(seed=4242).get("men", {}) == {}     # current year: none
+
+        trk = signing_tracker("men", None, seed=4242, year=0)
+        assert trk["archive"] and trk["year"] == 0
+        assert trk["total_signed"] == 3
+        by_pid = {r["p"].pid: r for r in trk["commitments"]}
+        assert by_pid[a.pid]["out"]["status"] == "Active"
+        assert by_pid[a.pid]["out"]["school"] == "Duke"           # transfer visible
+        assert by_pid[b.pid]["out"]["status"] == "Grad"
+        assert by_pid[b.pid]["out"]["str_now"] == 44.0
+        assert by_pid[c.pid]["out"]["status"] == "Left"
+        assert by_pid[a.pid]["str_sign"] > 0
+
+        live = signing_tracker("men", None, seed=4242)            # current cycle: empty
+        assert not live["archive"] and live["total_signed"] == 0
+        assert {y["val"] for y in live["years"]} == {0, 2}
+    finally:
+        world.WORLD_DB = prev

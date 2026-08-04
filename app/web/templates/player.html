@@ -38,10 +38,11 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
         <span class="bl-panel-meta">team · class · position · record (a school change is a transfer)</span></div>
         <div class="bl-tablescroll" style="border:none">
-          <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px">
+          <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px 74px">
             <div class="bl-thead">
               <span class="bl-th">SEASON</span><span class="bl-th">TEAM</span><span class="bl-th">CLASS</span>
               <span class="bl-th">POS</span><span class="bl-th num">RECORD</span><span class="bl-th num">STR</span>
+              <span class="bl-th num" title="Final CTA ranking that season — singles (#n) and doubles (D#n)">CTA</span>
             </div>
             {% if career_table %}
             {% for s in career_table %}
@@ -56,6 +57,7 @@
               <span class="bl-conf">{{ s.pos }}</span>
               <span class="bl-rec" style="text-align:right">{% if s.w is none %}—{% else %}{{ s.w }}-{{ s.l }}{% endif %}</span>
               <span class="bl-cell-num"><span class="bl-stat power">{% if s.str %}{{ "%.1f"|format(s.str) }}{% else %}—{% endif %}</span></span>
+              <span class="bl-cell-num"><span class="bl-conf">{{ s.cta or '—' }}</span></span>
             </div>
             {% endfor %}
             {% else %}

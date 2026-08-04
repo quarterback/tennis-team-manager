@@ -10,9 +10,11 @@
 <input type="hidden" name="scope" value="{{ scope }}">
 <div class="bl-toolbar">
   <div class="bl-toolbar-inner">
-    <label class="bl-field"><span class="bl-field-label">Season</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="season" style="min-width:78px">
-        <option>2026</option></select></span></label>
+    <label class="bl-field" title="Past seasons show the FINAL rankings, stamped when that year's conference tournaments ended">
+      <span class="bl-field-label">Season</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="season" onchange="this.form.submit()" style="min-width:110px">
+        {% for y in season_opts %}<option value="{{ y }}"{% if y == season %} selected{% endif %}>{{ y }}{{ ' (live)' if loop.first else ' (final)' }}</option>{% endfor %}
+      </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Division</span>
       <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
         {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
@@ -34,7 +36,7 @@
       <div class="bl-pills">
         {% for v, lbl in [('teams','Teams'),('singles','Singles'),('doubles','Doubles')] %}
           <a class="bl-pill{% if v == view %} active{% endif %}" style="text-decoration:none"
-             href="{{ url_for('rankings', u=u, view=v, scope=scope) }}">{{ lbl }}</a>
+             href="{{ url_for('rankings', u=u, view=v, scope=scope, season=season) }}">{{ lbl }}</a>
         {% endfor %}
       </div>
     </div>
@@ -47,11 +49,11 @@
         {% if view == 'singles' and division == 'D1' %}{% set scopes = scopes + [('newcomer','Newcomer')] %}{% endif %}
         {% for s, lbl in scopes %}
           <a class="bl-pill{% if s == scope %} active{% endif %}" style="text-decoration:none"
-             href="{{ url_for('rankings', u=u, view=view, scope=s) }}">{{ lbl }}</a>
+             href="{{ url_for('rankings', u=u, view=view, scope=s, season=season) }}">{{ lbl }}</a>
         {% endfor %}
       </div>
     </div>
-    {% if mode == 'teams' %}
+    {% if mode == 'teams' and not archive %}
     <div class="bl-sortpills">
       <span class="bl-sortpills-label">Sort By</span>
       <div class="bl-pills">
@@ -61,7 +63,7 @@
       </div>
     </div>
     {% endif %}
-    {% if mode in ('singles', 'doubles') %}
+    {% if mode in ('singles', 'doubles') and not archive %}
     <label class="bl-field" title="A player/pair must have played at least this many matches to be ranked — so a 1-0 record doesn't top the board">
       <span class="bl-field-label">Min matches</span>
       <span class="bl-select-wrap"><select class="bl-select" name="minm" onchange="this.form.submit()" style="min-width:70px">
@@ -81,7 +83,8 @@
 <div class="bl-container">
   <div class="bl-entries">
     <div class="bl-entries-left">
-      {% if mode == 'regional' or scope == 'regional' %}CTA Regional Rankings — top 10 {{ noun }} per region (census divisions; AK · HI · DC &amp; territories file under Outlying)
+      {% if archive %}<strong style="color:var(--text-primary)">Final {{ season }} CTA Rankings</strong> — stamped when the conference tournaments ended{% if scope == 'regional' %} · top 10 {{ noun }} per region{% elif scope == 'newcomer' %} · D1 freshmen only{% endif %}
+      {% elif mode == 'regional' or scope == 'regional' %}CTA Regional Rankings — top 10 {{ noun }} per region (census divisions; AK · HI · DC &amp; territories file under Outlying)
       {% elif scope == 'newcomer' %}CTA Newcomer Rankings — D1 freshmen only · Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }} {{ noun }}
       {% else %}Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} {{ noun }}{% endif %}
     </div>
@@ -92,7 +95,83 @@
 {% macro prank(rk) %}<span class="bl-rank {{ 'gold' if rk == 1 else 'bronze' if rk <= 3 else '' }}">{{ rk }}</span>{% endmacro %}
 {# poll-style movement badge: ▲n up / ▼n down / — steady / NEW to the board #}
 {% macro movement(r) %}{% if r.move_kind == 'new' %}<span class="mov new">NEW</span>{% elif r.move_kind == 'up' %}<span class="mov up">▲{{ r.move }}</span>{% elif r.move_kind == 'down' %}<span class="mov down">▼{{ -r.move }}</span>{% else %}<span class="mov flat">—</span>{% endif %}{% endmacro %}
-{% if mode == 'teams' %}
+{% if archive and scope == 'regional' %}
+{# Archived final rankings, regional cut — cards from the frozen rows. #}
+<div class="bl-container rk-regions">
+  {% for region, entries in regions %}
+  <div class="bl-panel rk-region">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span>
+      <span class="bl-panel-meta">Final {{ season }} · {{ uni_label }}</span></div>
+    <div class="bl-tablescroll">
+      <div class="bl-table" style="--bl-grid-cols: 34px minmax(150px,1.5fr) {% if view != 'teams' %}minmax(100px,1fr) {% endif %}52px 58px 60px; min-width:0">
+        <div class="bl-thead">
+          <span class="bl-th">RGN</span>
+          <span class="bl-th">{{ 'SCHOOL' if view == 'teams' else 'PLAYER' if view == 'singles' else 'PAIR' }}</span>
+          {% if view != 'teams' %}<span class="bl-th">SCHOOL</span>{% endif %}
+          <span class="bl-th num" title="Final national rank">NATL</span>
+          <span class="bl-th">REC</span><span class="bl-th num" title="Final CTA points">PTS</span>
+        </div>
+        {% for r in entries %}
+        <div class="bl-row">
+          <span class="bl-rank {{ 'gold' if loop.index == 1 else 'bronze' if loop.index <= 3 else '' }}">{{ loop.index }}</span>
+          {% if view == 'teams' %}
+          <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+          {% elif view == 'singles' %}
+          <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}">{{ r.name }}</a>
+          {% else %}
+          <span class="bl-school"><a href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}">{{ r.name }}</a> <span style="color:var(--text-faint)">/</span> <a href="{{ url_for('player', pid=r.pid2, school=r.school, u=u) }}">{{ r.name2 }}</a></span>
+          {% endif %}
+          {% if view != 'teams' %}<a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>{% endif %}
+          <span class="bl-cell-num"><span class="bl-confrk">{{ r.rk }}</span></span>
+          <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
+          <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.points) }}</span></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% elif archive %}
+{# Archived final rankings, national / newcomer — the frozen board, no pagination. #}
+<div class="bl-container">
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 40px minmax(170px,1.5fr) {% if view != 'teams' %}minmax(120px,1fr) {% endif %}64px {% if view == 'singles' %}56px {% endif %}{% if scope == 'newcomer' %}56px {% endif %}66px 84px">
+      <div class="bl-thead">
+        <span class="bl-th">RK</span>
+        <span class="bl-th">{{ 'SCHOOL' if view == 'teams' else 'PLAYER' if view == 'singles' else 'PAIR' }}</span>
+        {% if view != 'teams' %}<span class="bl-th">SCHOOL</span>{% endif %}
+        <span class="bl-th">CONF</span>
+        {% if view == 'singles' %}<span class="bl-th">CLASS</span>{% endif %}
+        {% if scope == 'newcomer' %}<span class="bl-th num" title="Final national singles rank">NATL</span>{% endif %}
+        <span class="bl-th">RECORD</span>
+        <span class="bl-th num" title="Final CTA points">POINTS</span>
+      </div>
+      {% for r in arows %}
+      <div class="bl-row">
+        {{ prank(loop.index if scope == 'newcomer' else r.rk) }}
+        {% if view == 'teams' %}
+        <a class="bl-school" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>
+        {% elif view == 'singles' %}
+        <a class="bl-school" href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}">{{ r.name }}</a>
+        {% else %}
+        <span class="bl-school"><a href="{{ url_for('player', pid=r.pid, school=r.school, u=u) }}">{{ r.name }}</a> <span style="color:var(--text-faint)">/</span> <a href="{{ url_for('player', pid=r.pid2, school=r.school, u=u) }}">{{ r.name2 }}</a></span>
+        {% endif %}
+        {% if view != 'teams' %}<a class="bl-conf" style="text-decoration:none" href="{{ url_for('teams', school=r.school, u=u) }}">{{ r.school | team_logo }}{{ r.school }}</a>{% endif %}
+        <span class="bl-conf">{{ r.conf_abbr }}</span>
+        {% if view == 'singles' %}<span class="bl-conf">{{ r.cls or '' }}</span>{% endif %}
+        {% if scope == 'newcomer' %}<span class="bl-cell-num"><span class="bl-confrk">{{ r.rk }}</span></span>{% endif %}
+        <span class="bl-rec">{{ r.w }}-{{ r.l }}</span>
+        <span class="bl-cell-num"><span class="bl-stat power">{{ '%.2f'|format(r.points) }}</span></span>
+      </div>
+      {% endfor %}
+      {% if not arows %}
+      <div class="bl-row"><span class="bl-conf" style="grid-column: 1 / -1; padding: 10px 6px">No archived board for this season.</span></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% elif mode == 'teams' %}
 <div class="bl-container">
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: {{ grid }}">

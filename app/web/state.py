@@ -5,6 +5,7 @@ the Power Index table.
 """
 from __future__ import annotations
 
+import json
 import random
 from dataclasses import dataclass
 
@@ -944,12 +945,69 @@ def _class_score(recruits: list) -> float:
     return _CLASS_SCORE_SCALE * sum_str * (_RANK_SCORE_NUMERATOR / avg_rank) ** 0.5
 
 
+def _signee_outcomes(pids: list[str], seed: int = DEFAULT_SEED) -> dict:
+    """How archived signees turned out, from the persisted world store:
+    {pid: {status, school, division, cls, str_now}}. Status: 'Active' (on a
+    current-year roster — school shows a transfer), 'Grad' (in world_graduates,
+    with their final STR), 'Left' (enrolled once, no longer rostered), or None
+    (never appeared on a persisted roster)."""
+    import app.world as world
+    w = world.load_world(seed)
+    if not w or not pids:
+        return {}
+    latest: dict = {}
+    grads: dict = {}
+    conn = world._db()
+    try:
+        for i in range(0, len(pids), 400):          # stay under SQLite's variable cap
+            chunk = pids[i:i + 400]
+            marks = ",".join("?" * len(chunk))
+            for r in conn.execute(
+                    f"SELECT pid, year, division, school, data FROM world_roster"
+                    f" WHERE world_id=? AND pid IN ({marks}) ORDER BY year",
+                    [w["id"], *chunk]).fetchall():
+                latest[r["pid"]] = r                # ordered by year → last write = newest
+            for r in conn.execute(
+                    f"SELECT pid, year, division, str FROM world_graduates"
+                    f" WHERE world_id=? AND pid IN ({marks})",
+                    [w["id"], *chunk]).fetchall():
+                grads[r["pid"]] = r
+    finally:
+        conn.close()
+    out: dict = {}
+    for pid in pids:
+        if pid in grads:
+            g = grads[pid]
+            out[pid] = {"status": "Grad", "school": (latest[pid]["school"] if pid in latest else ""),
+                        "division": g["division"], "cls": "",
+                        "str_now": round(g["str"], 1) if g["str"] else None}
+            continue
+        r = latest.get(pid)
+        if not r:
+            out[pid] = None
+            continue
+        p = world.prospect_from_dict(json.loads(r["data"]))
+        out[pid] = {"status": "Active" if r["year"] == w["year"] else "Left",
+                    "school": r["school"], "division": r["division"],
+                    "cls": getattr(p, "class_year", ""),
+                    "str_now": round(p.str_value(), 1)}
+    return out
+
+
 def signing_tracker(gender: str, division: str | None = None,
-                    seed: int = DEFAULT_SEED) -> dict:
+                    seed: int = DEFAULT_SEED, year: int | None = None) -> dict:
     import app.world as world
     from app.ncaa import load_division
     from .rankings_data import crest
-    by_school = world.signings(seed).get(gender, {})
+    w = world.load_world(seed)
+    cur = w["year"] if w else 0
+    # Season picker: the current cycle (even before its first commit) + every
+    # archived class — world_signing keeps every year (recruiting-class archive).
+    years = sorted(set(world.signing_years(seed)) | {cur}, reverse=True)
+    if year is None or year not in years:
+        year = cur
+    is_archive = year != cur
+    by_school = world.signings(seed, year=year).get(gender, {})
     if division:                                    # scope to one classification (D1–D4)
         in_div = {p.school for p in load_division(division, gender).programs}
         by_school = {s: r for s, r in by_school.items() if s in in_div}
@@ -977,11 +1035,26 @@ def signing_tracker(gender: str, division: str | None = None,
     for i, c in enumerate(classes, 1):
         c["rank"] = i
     commitments.sort(key=lambda r: getattr(r["p"], "recruit_rank", 1e9))
+    # Archived class: enrich every commit with how they turned out (current/last
+    # team, status, STR at signing → STR now) so past classes answer "was this
+    # class any good, and who panned out?".
+    if is_archive:
+        outcomes = _signee_outcomes([r["p"].pid for r in commitments], seed)
+        for r in commitments:
+            r["out"] = outcomes.get(r["p"].pid)
+            r["str_sign"] = round(r["p"].str_value(), 1)
+            o = r["out"]
+            r["delta"] = (round(o["str_now"] - r["str_sign"], 1)
+                          if o and o.get("str_now") is not None else None)
     flipped_total = sum(1 for school_pl in by_school.values()
                         for p in school_pl if getattr(p, "flips", 0) > 0)
     return {"classes": classes, "commitments": commitments,
             "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes),
-            "n_flipped": flipped_total}
+            "n_flipped": flipped_total,
+            "year": year, "archive": is_archive,
+            "class_of": world.BASE_YEAR + year + 1,
+            "years": [{"val": y, "label": f"Class of {world.BASE_YEAR + y + 1}"
+                       + ("" if y != cur else " (live)")} for y in years]}
 
 
 def star_breakdown(stars: list[int]) -> list[dict]:
@@ -2374,9 +2447,18 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
     # Newest first, and within a split season the CURRENT school (higher stint) on
     # top with the school they came from below — a transfer reads top-to-bottom.
     rows.sort(key=lambda r: (-r["cal_year"], -r.get("stint", 0)))
+    # Final CTA rankings earned each year (stamped when that season's conference
+    # tournaments ended) — "#12" singles, "D#5" doubles. The current season fills
+    # in the moment its final board is stamped.
+    from app import rankings_archive
+    finals: dict[int, list[str]] = {}
+    for fr in rankings_archive.player_final_ranks(pid):
+        tag = f"#{fr['rk']}" if fr["board"] == "singles" else f"D#{fr['rk']}"
+        finals.setdefault(fr["year"], []).append(tag)
     for r in rows:
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
+        r["cta"] = " · ".join(finals.get(r["cal_year"], []))
     return rows
 
 
