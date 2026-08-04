@@ -33,36 +33,49 @@ from app.development import overall_to_str
 DIVISIONS = ("D1", "D2", "D3", "D4")
 _scan_cache: dict = {}
 
-# US regions for the Portal Search hometown filter — a recruiting-style 6-way cut
-# (finer than the 4 Census regions where tennis density warrants it: Texas/South
-# Central split out, Mountain vs West Coast split). DC files under Mid-Atlantic.
+# US regions for CTA rankings + the Portal Search hometown filter — the nine
+# Census Bureau divisions (owner rule 2027-08: census divisions, NOT the real
+# ITA's ad-hoc cut where Texas/Carolina get regions but California is lumped
+# with the PNW), plus one extra "Outlying" bucket for the non-contiguous /
+# non-state places (owner-listed: DC, AK, HI, PR, USVI, Guam; BC covers Simon
+# Fraser, the lone Canadian program). DC/AK/HI are deliberately pulled OUT of
+# their census divisions into Outlying.
 US_REGIONS: dict[str, str] = {
-    # Northeast
-    "ME": "Northeast", "NH": "Northeast", "VT": "Northeast", "MA": "Northeast",
-    "RI": "Northeast", "CT": "Northeast", "NY": "Northeast", "NJ": "Northeast",
-    "PA": "Northeast",
-    # Mid-Atlantic / Upper South
-    "DE": "Mid-Atlantic", "MD": "Mid-Atlantic", "DC": "Mid-Atlantic",
-    "VA": "Mid-Atlantic", "WV": "Mid-Atlantic",
-    # Southeast
-    "NC": "Southeast", "SC": "Southeast", "GA": "Southeast", "FL": "Southeast",
-    "TN": "Southeast", "KY": "Southeast", "AL": "Southeast", "MS": "Southeast",
-    # South Central
-    "TX": "South Central", "OK": "South Central", "AR": "South Central",
-    "LA": "South Central",
-    # Midwest
-    "OH": "Midwest", "MI": "Midwest", "IN": "Midwest", "IL": "Midwest",
-    "WI": "Midwest", "MN": "Midwest", "IA": "Midwest", "MO": "Midwest",
-    "KS": "Midwest", "NE": "Midwest", "ND": "Midwest", "SD": "Midwest",
+    # New England
+    "CT": "New England", "ME": "New England", "MA": "New England",
+    "NH": "New England", "RI": "New England", "VT": "New England",
+    # Mid-Atlantic
+    "NJ": "Mid-Atlantic", "NY": "Mid-Atlantic", "PA": "Mid-Atlantic",
+    # East North Central
+    "IL": "East North Central", "IN": "East North Central", "MI": "East North Central",
+    "OH": "East North Central", "WI": "East North Central",
+    # West North Central
+    "IA": "West North Central", "KS": "West North Central", "MN": "West North Central",
+    "MO": "West North Central", "NE": "West North Central", "ND": "West North Central",
+    "SD": "West North Central",
+    # South Atlantic (census minus DC → Outlying)
+    "DE": "South Atlantic", "FL": "South Atlantic", "GA": "South Atlantic",
+    "MD": "South Atlantic", "NC": "South Atlantic", "SC": "South Atlantic",
+    "VA": "South Atlantic", "WV": "South Atlantic",
+    # East South Central
+    "AL": "East South Central", "KY": "East South Central",
+    "MS": "East South Central", "TN": "East South Central",
+    # West South Central
+    "AR": "West South Central", "LA": "West South Central",
+    "OK": "West South Central", "TX": "West South Central",
     # Mountain
-    "CO": "Mountain", "UT": "Mountain", "NV": "Mountain", "AZ": "Mountain",
-    "NM": "Mountain", "ID": "Mountain", "MT": "Mountain", "WY": "Mountain",
-    # West Coast
-    "CA": "West Coast", "OR": "West Coast", "WA": "West Coast", "AK": "West Coast",
-    "HI": "West Coast",
+    "AZ": "Mountain", "CO": "Mountain", "ID": "Mountain", "MT": "Mountain",
+    "NV": "Mountain", "NM": "Mountain", "UT": "Mountain", "WY": "Mountain",
+    # Pacific (census minus AK/HI → Outlying)
+    "CA": "Pacific", "OR": "Pacific", "WA": "Pacific",
+    # Outlying — non-contiguous states, the capital, US territories, Canada
+    "AK": "Outlying", "HI": "Outlying", "DC": "Outlying",
+    "PR": "Outlying", "VI": "Outlying", "GU": "Outlying",
+    "AS": "Outlying", "MP": "Outlying", "BC": "Outlying",
 }
-US_REGION_ORDER = ["Northeast", "Mid-Atlantic", "Southeast", "South Central",
-                   "Midwest", "Mountain", "West Coast"]
+US_REGION_ORDER = ["New England", "Mid-Atlantic", "East North Central",
+                   "West North Central", "South Atlantic", "East South Central",
+                   "West South Central", "Mountain", "Pacific", "Outlying"]
 
 
 def home_state(r) -> str:

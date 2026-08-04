@@ -1085,7 +1085,18 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")
         view = request.args.get("view", "teams")
-        # National field sizes, ITA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
+        scope = request.args.get("scope", "national")
+        if view == "regional":       # legacy URLs from before scopes existed
+            view, scope = "teams", "regional"
+        if view not in ("teams", "singles", "doubles"):
+            view = "teams"
+        if scope not in ("national", "regional", "newcomer"):
+            scope = "national"
+        # Newcomer is a D1, SINGLES-only freshman board (owner rule — the real ITA
+        # only runs newcomer rankings for D1; ours restricts to freshmen).
+        if scope == "newcomer" and (view != "singles" or division != "D1"):
+            scope = "national"
+        # National field sizes, CTA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
         small = division == "D2"
         if view in ("singles", "doubles"):
             try:
@@ -1093,25 +1104,37 @@ def create_app() -> Flask:
             except (ValueError, TypeError):
                 minm = 3
             minm = max(1, min(30, minm))
+            common = dict(active="Rankings", mode=view, view=view, scope=scope,
+                          conferences=conferences_for(division, gender), tiers=["All"],
+                          conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                          minm=minm, division=division)
+            if scope == "regional":
+                from .state import regional_player_rows
+                regions = regional_player_rows(division, gender, view, min_matches=minm)
+                return render_template("rankings.html", regions=regions, **common)
+            if scope == "newcomer":
+                from .state import newcomer_ranking_rows
+                prows = newcomer_ranking_rows(division, gender, min_matches=minm)
+                prows = [r for r in prows if conf == "All" or r["conf"] == conf]
+                p = paginate(prows, request.args.get("page", 1))
+                return render_template("rankings.html", p=p, prows=p.items,
+                                       total=len(prows), matches=len(prows), **common)
             prows = (singles_ranking_rows if view == "singles"
                      else doubles_ranking_rows)(division, gender, min_matches=minm)
             limit = ({"singles": 75, "doubles": 40} if small
                      else {"singles": 125, "doubles": 60})[view]
             prows = [r for r in prows if conf == "All" or r["conf"] == conf][:limit]
             p = paginate(prows, request.args.get("page", 1))
-            return render_template(
-                "rankings.html", active="Rankings", mode=view, view=view, p=p, prows=p.items,
-                total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
-                tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
-                minm=minm,
-            )
-        if view == "regional":
+            return render_template("rankings.html", p=p, prows=p.items,
+                                   total=len(prows), matches=len(prows), **common)
+        if scope == "regional":
             from .state import regional_ranking_rows
             regions = regional_ranking_rows(division, gender)
             return render_template(
-                "rankings.html", active="Rankings", mode="regional", view="regional",
-                regions=regions, conferences=conferences_for(division, gender), tiers=["All"],
-                conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                "rankings.html", active="Rankings", mode="regional", view="teams",
+                scope="regional", regions=regions,
+                conferences=conferences_for(division, gender), tiers=["All"],
+                conf=conf, tier="All", sort="Rank", u=u, uni_label=label, division=division,
             )
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
@@ -1129,9 +1152,11 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.p6, reverse=True)
         p = paginate(filtered, request.args.get("page", 1))
         return render_template(
-            "rankings.html", active="Rankings", mode="teams", view="teams", p=p, rows=p.items,
+            "rankings.html", active="Rankings", mode="teams", view="teams", scope="national",
+            p=p, rows=p.items,
             total=total, matches=len(filtered), conferences=conferences_for(division, gender),
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
+            division=division,
         )
 
     @app.route("/polls")

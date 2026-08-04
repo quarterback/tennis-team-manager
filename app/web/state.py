@@ -421,8 +421,9 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     return rows
 
 
-# US state → ITA-style geographic region for regional rankings (reuses the
-# scout_intel origin map so player-origin and team regions stay consistent).
+# US state → CTA geographic region for regional rankings (reuses the
+# scout_intel census-division map so player-origin and team regions stay
+# consistent).
 def _program_regions(division: str, gender: str) -> dict:
     """{school: region-name} from each program's home state. Unknown/foreign → ''."""
     from app.ncaa import load_division, location
@@ -436,10 +437,11 @@ def _program_regions(division: str, gender: str) -> dict:
 
 def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
                           seed: int = DEFAULT_SEED) -> list[tuple[str, list]]:
-    """ITA-style regional rankings: the national board split into geographic regions,
-    each showing its top `per_region` teams (with national rank + poll movement carried
-    over), so mid-pack teams that never crack the national list still surface where they
-    stack regionally. Ordered by scout_intel.US_REGION_ORDER; empty regions dropped."""
+    """CTA regional team rankings: the national board split into geographic regions
+    (census divisions + Outlying), each showing its top `per_region` teams (with
+    national rank + poll movement carried over), so mid-pack teams that never crack
+    the national list still surface where they stack regionally. Ordered by
+    scout_intel.US_REGION_ORDER; empty regions dropped."""
     from app.scout_intel import US_REGION_ORDER
     region_of = _program_regions(division, gender)
     rows = ranking_rows(division, gender, seed)
@@ -453,11 +455,12 @@ def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
 
 def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                          min_matches: int = 3) -> list[dict]:
-    """ITA-style singles player ranking rows (newest-best first). Only players with at
+    """CTA singles player ranking rows (newest-best first). Only players with at
     least `min_matches` singles are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
+    from app.scout_intel import US_REGIONS
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     pts = sm.ita_singles_points(sid, min_matches)
@@ -466,6 +469,7 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
     progs = load_division(division, gender).programs
     conf_full = {p.school: p.conf for p in progs}
     conf_abbr = {p.school: p.conf_abbr for p in progs}
+    region_of = {p.school: US_REGIONS.get((p.state or "").upper(), "") for p in progs}
     rows = []
     for rk, pid in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         info = pidx.get(pid)
@@ -478,17 +482,19 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                      "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
                      "country": info.get("country", ""),
                      "secondary_country": info.get("secondary_country"), "class": info.get("class", ""),
+                     "region": region_of.get(sch, ""),
                      "w": w, "l": l, "points": pts[pid], "abbr": abbr, "color": color})
     return rows
 
 
 def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                          min_matches: int = 3) -> list[dict]:
-    """ITA-style doubles PAIR ranking rows (newest-best first). Only pairs that have
+    """CTA doubles PAIR ranking rows (newest-best first). Only pairs that have
     played together at least `min_matches` times are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
+    from app.scout_intel import US_REGIONS
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     pts, members, wl = sm.ita_doubles_points(sid, min_matches)
@@ -496,6 +502,7 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
     progs = load_division(division, gender).programs
     conf_full = {p.school: p.conf for p in progs}
     conf_abbr = {p.school: p.conf_abbr for p in progs}
+    region_of = {p.school: US_REGIONS.get((p.state or "").upper(), "") for p in progs}
     rows = []
     for rk, pr in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         m = members.get(pr)
@@ -510,8 +517,40 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                      "school": sch, "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
                      "c1": i1.get("country", ""), "c2": i2.get("country", ""),
                      "sc1": i1.get("secondary_country"), "sc2": i2.get("secondary_country"),
+                     "region": region_of.get(sch, ""),
                      "w": w, "l": l, "points": pts[pr], "abbr": abbr, "color": color})
     return rows
+
+
+def regional_player_rows(division: str, gender: str, view: str = "singles",
+                         per_region: int = 10, seed: int = DEFAULT_SEED,
+                         min_matches: int = 3) -> list[tuple[str, list]]:
+    """CTA regional INDIVIDUAL rankings — the national singles (players) or doubles
+    (pairs) board split by each program's home region (census divisions + Outlying),
+    each region showing its top `per_region` entries with the national rank carried
+    over. Same shape as `regional_ranking_rows` so the region-card template serves
+    both. Ordered by scout_intel.US_REGION_ORDER; empty regions dropped."""
+    from app.scout_intel import US_REGION_ORDER
+    rows = (singles_ranking_rows if view == "singles"
+            else doubles_ranking_rows)(division, gender, seed, min_matches)
+    groups: dict[str, list] = {}
+    for r in rows:
+        if r["region"]:
+            groups.setdefault(r["region"], []).append(r)
+    return [(reg, groups[reg][:per_region]) for reg in US_REGION_ORDER if groups.get(reg)]
+
+
+def newcomer_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
+                          min_matches: int = 3, limit: int = 50) -> list[dict]:
+    """CTA newcomer singles rankings — the national singles board filtered to
+    FRESHMEN (base class 'Fr', so a medical-redshirt RS-Fr counts), re-ranked among
+    themselves with the national rank kept on the row. D1-only by owner rule (the
+    real ITA runs newcomer rankings only for D1); the route enforces that scope —
+    this helper just filters whatever universe it's given."""
+    from app.world import _base_class
+    rows = [r for r in singles_ranking_rows(division, gender, seed, min_matches)
+            if _base_class(r.get("class", "") or "") == "Fr"]
+    return rows[:limit]
 
 
 def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
@@ -2312,7 +2351,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
             cal = world.BASE_YEAR + cur
             rows.append({
                 "cal_year": cal, "season_no": cur + 1, "school": info["school"],
-                "division": division, "class": info.get("class_year", ""),
+                "division": division, "class": info.get("class", ""),
                 "line": sm.player_primary_lines(sid).get(pid),
                 "w": w_, "l": l_, "str": round(strv, 1) if strv else None,
                 "accolades": hbyyear.get(cal, []), "live": True,
@@ -2326,7 +2365,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
             if origin_school and origin_school != info["school"] and not already_split:
                 rows.append({
                     "cal_year": cal, "season_no": cur + 1, "school": origin_school,
-                    "division": origin_div or division, "class": info.get("class_year", ""),
+                    "division": origin_div or division, "class": info.get("class", ""),
                     "line": None, "w": None, "l": None, "str": None,
                     "accolades": [], "live": False, "stint": 0, "phase": "transfer_out",
                     "transferred": True,
