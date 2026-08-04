@@ -5,6 +5,7 @@ the Power Index table.
 """
 from __future__ import annotations
 
+import json
 import random
 from dataclasses import dataclass
 
@@ -421,8 +422,9 @@ def ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[L
     return rows
 
 
-# US state → ITA-style geographic region for regional rankings (reuses the
-# scout_intel origin map so player-origin and team regions stay consistent).
+# US state → CTA geographic region for regional rankings (reuses the
+# scout_intel census-division map so player-origin and team regions stay
+# consistent).
 def _program_regions(division: str, gender: str) -> dict:
     """{school: region-name} from each program's home state. Unknown/foreign → ''."""
     from app.ncaa import load_division, location
@@ -436,10 +438,11 @@ def _program_regions(division: str, gender: str) -> dict:
 
 def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
                           seed: int = DEFAULT_SEED) -> list[tuple[str, list]]:
-    """ITA-style regional rankings: the national board split into geographic regions,
-    each showing its top `per_region` teams (with national rank + poll movement carried
-    over), so mid-pack teams that never crack the national list still surface where they
-    stack regionally. Ordered by scout_intel.US_REGION_ORDER; empty regions dropped."""
+    """CTA regional team rankings: the national board split into geographic regions
+    (census divisions + Outlying), each showing its top `per_region` teams (with
+    national rank + poll movement carried over), so mid-pack teams that never crack
+    the national list still surface where they stack regionally. Ordered by
+    scout_intel.US_REGION_ORDER; empty regions dropped."""
     from app.scout_intel import US_REGION_ORDER
     region_of = _program_regions(division, gender)
     rows = ranking_rows(division, gender, seed)
@@ -453,11 +456,12 @@ def regional_ranking_rows(division: str, gender: str, per_region: int = 10,
 
 def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                          min_matches: int = 3) -> list[dict]:
-    """ITA-style singles player ranking rows (newest-best first). Only players with at
+    """CTA singles player ranking rows (newest-best first). Only players with at
     least `min_matches` singles are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
+    from app.scout_intel import US_REGIONS
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     pts = sm.ita_singles_points(sid, min_matches)
@@ -466,6 +470,7 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
     progs = load_division(division, gender).programs
     conf_full = {p.school: p.conf for p in progs}
     conf_abbr = {p.school: p.conf_abbr for p in progs}
+    region_of = {p.school: US_REGIONS.get((p.state or "").upper(), "") for p in progs}
     rows = []
     for rk, pid in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         info = pidx.get(pid)
@@ -478,17 +483,19 @@ def singles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                      "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
                      "country": info.get("country", ""),
                      "secondary_country": info.get("secondary_country"), "class": info.get("class", ""),
+                     "region": region_of.get(sch, ""),
                      "w": w, "l": l, "points": pts[pid], "abbr": abbr, "color": color})
     return rows
 
 
 def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                          min_matches: int = 3) -> list[dict]:
-    """ITA-style doubles PAIR ranking rows (newest-best first). Only pairs that have
+    """CTA doubles PAIR ranking rows (newest-best first). Only pairs that have
     played together at least `min_matches` times are ranked."""
     import app.world as world
     import app.seasonmode as sm
     from app.ncaa import load_division
+    from app.scout_intel import US_REGIONS
     from .rankings_data import crest
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     pts, members, wl = sm.ita_doubles_points(sid, min_matches)
@@ -496,6 +503,7 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
     progs = load_division(division, gender).programs
     conf_full = {p.school: p.conf for p in progs}
     conf_abbr = {p.school: p.conf_abbr for p in progs}
+    region_of = {p.school: US_REGIONS.get((p.state or "").upper(), "") for p in progs}
     rows = []
     for rk, pr in enumerate(sorted(pts, key=lambda x: pts[x], reverse=True), 1):
         m = members.get(pr)
@@ -510,8 +518,40 @@ def doubles_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
                      "school": sch, "conf": conf_full.get(sch, ""), "conf_abbr": conf_abbr.get(sch, ""),
                      "c1": i1.get("country", ""), "c2": i2.get("country", ""),
                      "sc1": i1.get("secondary_country"), "sc2": i2.get("secondary_country"),
+                     "region": region_of.get(sch, ""),
                      "w": w, "l": l, "points": pts[pr], "abbr": abbr, "color": color})
     return rows
+
+
+def regional_player_rows(division: str, gender: str, view: str = "singles",
+                         per_region: int = 10, seed: int = DEFAULT_SEED,
+                         min_matches: int = 3) -> list[tuple[str, list]]:
+    """CTA regional INDIVIDUAL rankings — the national singles (players) or doubles
+    (pairs) board split by each program's home region (census divisions + Outlying),
+    each region showing its top `per_region` entries with the national rank carried
+    over. Same shape as `regional_ranking_rows` so the region-card template serves
+    both. Ordered by scout_intel.US_REGION_ORDER; empty regions dropped."""
+    from app.scout_intel import US_REGION_ORDER
+    rows = (singles_ranking_rows if view == "singles"
+            else doubles_ranking_rows)(division, gender, seed, min_matches)
+    groups: dict[str, list] = {}
+    for r in rows:
+        if r["region"]:
+            groups.setdefault(r["region"], []).append(r)
+    return [(reg, groups[reg][:per_region]) for reg in US_REGION_ORDER if groups.get(reg)]
+
+
+def newcomer_ranking_rows(division: str, gender: str, seed: int = DEFAULT_SEED,
+                          min_matches: int = 3, limit: int = 50) -> list[dict]:
+    """CTA newcomer singles rankings — the national singles board filtered to
+    FRESHMEN (base class 'Fr', so a medical-redshirt RS-Fr counts), re-ranked among
+    themselves with the national rank kept on the row. D1-only by owner rule (the
+    real ITA runs newcomer rankings only for D1); the route enforces that scope —
+    this helper just filters whatever universe it's given."""
+    from app.world import _base_class
+    rows = [r for r in singles_ranking_rows(division, gender, seed, min_matches)
+            if _base_class(r.get("class", "") or "") == "Fr"]
+    return rows[:limit]
 
 
 def dashboard_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> dict:
@@ -905,12 +945,69 @@ def _class_score(recruits: list) -> float:
     return _CLASS_SCORE_SCALE * sum_str * (_RANK_SCORE_NUMERATOR / avg_rank) ** 0.5
 
 
+def _signee_outcomes(pids: list[str], seed: int = DEFAULT_SEED) -> dict:
+    """How archived signees turned out, from the persisted world store:
+    {pid: {status, school, division, cls, str_now}}. Status: 'Active' (on a
+    current-year roster — school shows a transfer), 'Grad' (in world_graduates,
+    with their final STR), 'Left' (enrolled once, no longer rostered), or None
+    (never appeared on a persisted roster)."""
+    import app.world as world
+    w = world.load_world(seed)
+    if not w or not pids:
+        return {}
+    latest: dict = {}
+    grads: dict = {}
+    conn = world._db()
+    try:
+        for i in range(0, len(pids), 400):          # stay under SQLite's variable cap
+            chunk = pids[i:i + 400]
+            marks = ",".join("?" * len(chunk))
+            for r in conn.execute(
+                    f"SELECT pid, year, division, school, data FROM world_roster"
+                    f" WHERE world_id=? AND pid IN ({marks}) ORDER BY year",
+                    [w["id"], *chunk]).fetchall():
+                latest[r["pid"]] = r                # ordered by year → last write = newest
+            for r in conn.execute(
+                    f"SELECT pid, year, division, str FROM world_graduates"
+                    f" WHERE world_id=? AND pid IN ({marks})",
+                    [w["id"], *chunk]).fetchall():
+                grads[r["pid"]] = r
+    finally:
+        conn.close()
+    out: dict = {}
+    for pid in pids:
+        if pid in grads:
+            g = grads[pid]
+            out[pid] = {"status": "Grad", "school": (latest[pid]["school"] if pid in latest else ""),
+                        "division": g["division"], "cls": "",
+                        "str_now": round(g["str"], 1) if g["str"] else None}
+            continue
+        r = latest.get(pid)
+        if not r:
+            out[pid] = None
+            continue
+        p = world.prospect_from_dict(json.loads(r["data"]))
+        out[pid] = {"status": "Active" if r["year"] == w["year"] else "Left",
+                    "school": r["school"], "division": r["division"],
+                    "cls": getattr(p, "class_year", ""),
+                    "str_now": round(p.str_value(), 1)}
+    return out
+
+
 def signing_tracker(gender: str, division: str | None = None,
-                    seed: int = DEFAULT_SEED) -> dict:
+                    seed: int = DEFAULT_SEED, year: int | None = None) -> dict:
     import app.world as world
     from app.ncaa import load_division
     from .rankings_data import crest
-    by_school = world.signings(seed).get(gender, {})
+    w = world.load_world(seed)
+    cur = w["year"] if w else 0
+    # Season picker: the current cycle (even before its first commit) + every
+    # archived class — world_signing keeps every year (recruiting-class archive).
+    years = sorted(set(world.signing_years(seed)) | {cur}, reverse=True)
+    if year is None or year not in years:
+        year = cur
+    is_archive = year != cur
+    by_school = world.signings(seed, year=year).get(gender, {})
     if division:                                    # scope to one classification (D1–D4)
         in_div = {p.school for p in load_division(division, gender).programs}
         by_school = {s: r for s, r in by_school.items() if s in in_div}
@@ -938,11 +1035,26 @@ def signing_tracker(gender: str, division: str | None = None,
     for i, c in enumerate(classes, 1):
         c["rank"] = i
     commitments.sort(key=lambda r: getattr(r["p"], "recruit_rank", 1e9))
+    # Archived class: enrich every commit with how they turned out (current/last
+    # team, status, STR at signing → STR now) so past classes answer "was this
+    # class any good, and who panned out?".
+    if is_archive:
+        outcomes = _signee_outcomes([r["p"].pid for r in commitments], seed)
+        for r in commitments:
+            r["out"] = outcomes.get(r["p"].pid)
+            r["str_sign"] = round(r["p"].str_value(), 1)
+            o = r["out"]
+            r["delta"] = (round(o["str_now"] - r["str_sign"], 1)
+                          if o and o.get("str_now") is not None else None)
     flipped_total = sum(1 for school_pl in by_school.values()
                         for p in school_pl if getattr(p, "flips", 0) > 0)
     return {"classes": classes, "commitments": commitments,
             "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes),
-            "n_flipped": flipped_total}
+            "n_flipped": flipped_total,
+            "year": year, "archive": is_archive,
+            "class_of": world.BASE_YEAR + year + 1,
+            "years": [{"val": y, "label": f"Class of {world.BASE_YEAR + y + 1}"
+                       + ("" if y != cur else " (live)")} for y in years]}
 
 
 def star_breakdown(stars: list[int]) -> list[dict]:
@@ -2312,7 +2424,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
             cal = world.BASE_YEAR + cur
             rows.append({
                 "cal_year": cal, "season_no": cur + 1, "school": info["school"],
-                "division": division, "class": info.get("class_year", ""),
+                "division": division, "class": info.get("class", ""),
                 "line": sm.player_primary_lines(sid).get(pid),
                 "w": w_, "l": l_, "str": round(strv, 1) if strv else None,
                 "accolades": hbyyear.get(cal, []), "live": True,
@@ -2326,7 +2438,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
             if origin_school and origin_school != info["school"] and not already_split:
                 rows.append({
                     "cal_year": cal, "season_no": cur + 1, "school": origin_school,
-                    "division": origin_div or division, "class": info.get("class_year", ""),
+                    "division": origin_div or division, "class": info.get("class", ""),
                     "line": None, "w": None, "l": None, "str": None,
                     "accolades": [], "live": False, "stint": 0, "phase": "transfer_out",
                     "transferred": True,
@@ -2335,9 +2447,18 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
     # Newest first, and within a split season the CURRENT school (higher stint) on
     # top with the school they came from below — a transfer reads top-to-bottom.
     rows.sort(key=lambda r: (-r["cal_year"], -r.get("stint", 0)))
+    # Final CTA rankings earned each year (stamped when that season's conference
+    # tournaments ended) — "#12" singles, "D#5" doubles. The current season fills
+    # in the moment its final board is stamped.
+    from app import rankings_archive
+    finals: dict[int, list[str]] = {}
+    for fr in rankings_archive.player_final_ranks(pid):
+        tag = f"#{fr['rk']}" if fr["board"] == "singles" else f"D#{fr['rk']}"
+        finals.setdefault(fr["year"], []).append(tag)
     for r in rows:
         r["abbr"], r["color"] = crest(r["school"])
         r["pos"] = _pos_label(r["line"])
+        r["cta"] = " · ".join(finals.get(r["cal_year"], []))
     return rows
 
 

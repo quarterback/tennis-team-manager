@@ -854,6 +854,14 @@ def advance(season_id: int) -> dict:
     if s["phase"] == "conf_tournaments":
         out = _advance_conf_round(conn, s, progs)
         conn.commit(); conn.close()
+        if out.get("done"):
+            # The conference tournaments just finished — the season's rankings are
+            # final. Stamp them into the year-over-year archive (idempotent), AFTER
+            # the commit above: the archive shares this SQLite file, and opening a
+            # second write connection inside a held transaction deadlocks (see
+            # honors.stamp).
+            from app import rankings_archive
+            rankings_archive.stamp_final_rankings(season_id)
         return out
 
     if s["phase"] == "selection":

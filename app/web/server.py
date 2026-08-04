@@ -1080,12 +1080,61 @@ def create_app() -> Flask:
             })
         return jsonify({"universes": universes})
 
+    def _archived_rankings(season, division, gender, label, u, view, scope, season_opts):
+        """Serve a PAST season's final CTA boards from the archive (stamped when
+        that season's conference tournaments ended) through the same view/scope
+        chrome as the live page. Conference/tier/min-matches filters don't apply —
+        the final board is a frozen artifact, not a live query."""
+        from app import rankings_archive
+        from app.scout_intel import US_REGION_ORDER
+        rows = rankings_archive.board(season, division, gender, view)
+        common = dict(active="Rankings", mode=view, view=view, scope=scope,
+                      archive=True, season=season, season_opts=season_opts,
+                      conferences=["All"], tiers=["All"], conf="All", tier="All",
+                      sort="Rank", u=u, uni_label=label, division=division, minm=3)
+        if scope == "regional":
+            groups = {}
+            for r in rows:
+                if r["region"]:
+                    groups.setdefault(r["region"], []).append(r)
+            regions = [(reg, groups[reg][:10]) for reg in US_REGION_ORDER if groups.get(reg)]
+            return render_template("rankings.html", regions=regions, **common)
+        if scope == "newcomer":
+            rows = [r for r in rows if wd._base_class(r.get("cls") or "") == "Fr"][:50]
+        return render_template("rankings.html", arows=rows, **common)
+
     @app.route("/rankings")
     def rankings():
         division, gender, label, u = _universe(request)
         conf = request.args.get("conf", "All")
         view = request.args.get("view", "teams")
-        # National field sizes, ITA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
+        scope = request.args.get("scope", "national")
+        if view == "regional":       # legacy URLs from before scopes existed
+            view, scope = "teams", "regional"
+        if view not in ("teams", "singles", "doubles"):
+            view = "teams"
+        if scope not in ("national", "regional", "newcomer"):
+            scope = "national"
+        # Newcomer is a D1, SINGLES-only freshman board (owner rule — the real ITA
+        # only runs newcomer rankings for D1; ours restricts to freshmen).
+        if scope == "newcomer" and (view != "singles" or division != "D1"):
+            scope = "national"
+
+        # Season select: the current year is the LIVE board; past years serve the
+        # final rankings stamped when that season's conference tournaments ended.
+        from app import rankings_archive
+        cur_year = 2026 + (wd.load_world()["year"] if wd.exists() else 0)
+        past_years = [y for y in rankings_archive.years(division, gender) if y != cur_year]
+        season_opts = [cur_year] + past_years
+        try:
+            season = int(request.args.get("season", cur_year))
+        except (ValueError, TypeError):
+            season = cur_year
+        if season in past_years:
+            return _archived_rankings(season, division, gender, label, u, view, scope,
+                                      season_opts)
+        season = cur_year
+        # National field sizes, CTA-style: teams 75/50, singles 125/75, doubles 60/40 (D2 smaller).
         small = division == "D2"
         if view in ("singles", "doubles"):
             try:
@@ -1093,25 +1142,39 @@ def create_app() -> Flask:
             except (ValueError, TypeError):
                 minm = 3
             minm = max(1, min(30, minm))
+            common = dict(active="Rankings", mode=view, view=view, scope=scope,
+                          conferences=conferences_for(division, gender), tiers=["All"],
+                          conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                          minm=minm, division=division, archive=False,
+                          season=season, season_opts=season_opts)
+            if scope == "regional":
+                from .state import regional_player_rows
+                regions = regional_player_rows(division, gender, view, min_matches=minm)
+                return render_template("rankings.html", regions=regions, **common)
+            if scope == "newcomer":
+                from .state import newcomer_ranking_rows
+                prows = newcomer_ranking_rows(division, gender, min_matches=minm)
+                prows = [r for r in prows if conf == "All" or r["conf"] == conf]
+                p = paginate(prows, request.args.get("page", 1))
+                return render_template("rankings.html", p=p, prows=p.items,
+                                       total=len(prows), matches=len(prows), **common)
             prows = (singles_ranking_rows if view == "singles"
                      else doubles_ranking_rows)(division, gender, min_matches=minm)
             limit = ({"singles": 75, "doubles": 40} if small
                      else {"singles": 125, "doubles": 60})[view]
             prows = [r for r in prows if conf == "All" or r["conf"] == conf][:limit]
             p = paginate(prows, request.args.get("page", 1))
-            return render_template(
-                "rankings.html", active="Rankings", mode=view, view=view, p=p, prows=p.items,
-                total=len(prows), matches=len(prows), conferences=conferences_for(division, gender),
-                tiers=["All"], conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
-                minm=minm,
-            )
-        if view == "regional":
+            return render_template("rankings.html", p=p, prows=p.items,
+                                   total=len(prows), matches=len(prows), **common)
+        if scope == "regional":
             from .state import regional_ranking_rows
             regions = regional_ranking_rows(division, gender)
             return render_template(
-                "rankings.html", active="Rankings", mode="regional", view="regional",
-                regions=regions, conferences=conferences_for(division, gender), tiers=["All"],
-                conf=conf, tier="All", sort="Rank", u=u, uni_label=label,
+                "rankings.html", active="Rankings", mode="regional", view="teams",
+                scope="regional", regions=regions,
+                conferences=conferences_for(division, gender), tiers=["All"],
+                conf=conf, tier="All", sort="Rank", u=u, uni_label=label, division=division,
+                archive=False, season=season, season_opts=season_opts,
             )
         tier = request.args.get("tier", "All")
         sort = request.args.get("sort", "Rank")
@@ -1129,9 +1192,11 @@ def create_app() -> Flask:
             filtered = sorted(filtered, key=lambda r: r.p6, reverse=True)
         p = paginate(filtered, request.args.get("page", 1))
         return render_template(
-            "rankings.html", active="Rankings", mode="teams", view="teams", p=p, rows=p.items,
+            "rankings.html", active="Rankings", mode="teams", view="teams", scope="national",
+            p=p, rows=p.items,
             total=total, matches=len(filtered), conferences=conferences_for(division, gender),
             tiers=tiers, conf=conf, tier=tier, sort=sort, u=u, uni_label=label,
+            division=division, archive=False, season=season, season_opts=season_opts,
         )
 
     @app.route("/polls")
@@ -1839,9 +1904,10 @@ def create_app() -> Flask:
     @app.route("/recruiting/signings")
     def signing_tracker_page():
         division, gender, label, u = _universe(request)
+        year = request.args.get("year", type=int)   # world-year; past = archived class
         return render_template("signing_tracker.html", active="Recruiting",
-                               trk=signing_tracker(gender, division), gender=gender,
-                               u=u, uni_label=label)
+                               trk=signing_tracker(gender, division, year=year),
+                               gender=gender, u=u, uni_label=label)
 
     @app.route("/portal-rankings")
     def portal_rankings_page():

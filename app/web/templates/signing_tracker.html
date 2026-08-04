@@ -10,7 +10,12 @@
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · live commitments this recruiting year</span>
+  <label class="bl-field" title="Past classes are archived — see who signed and how they turned out">
+    <span class="bl-field-label">Class</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:150px">
+      {% for y in trk.years %}<option value="{{ y.val }}"{% if y.val == trk.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
+    </select></span></label>
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }} — the archived class and how each signee turned out{% else %}live commitments this recruiting year{% endif %}</span>
   <a class="al-feed" style="margin-left:auto" href="{{ url_for('recruiting_hub_page', u=u) }}">← Recruiting HQ</a>
 </div></div>
 </form>
@@ -30,9 +35,13 @@
 
 {% if not trk.classes %}
 <div class="bl-container"><div class="bl-note">
+  {% if trk.archive %}
+  No archived signings for this class in this division.
+  {% else %}
   No commitments yet. Signings fill in week by week as the season advances — hit
   <strong>Advance week</strong> (top right) and check back, or open the
   <a href="{{ url_for('recruiting', u=u) }}" style="color:var(--text-link)">Recruiting Board</a> to see who's available.
+  {% endif %}
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-board-grid" style="align-items:start">
@@ -54,17 +63,33 @@
         <span class="bl-cell-num"><span class="bl-conf">{{ c.n }}</span></span>
         <span>{{ spread(c.breakdown, 'sm') }}</span>
         <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          {% for p in c.commits %}<a href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=p.grad_year) }}" style="color:inherit;text-decoration:none">{{ p.name }}</a>{% if p.recruit_stars %} {{ '★'*p.recruit_stars }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+          {% for p in c.commits %}<a href="{{ url_for('player', pid=p.pid, school=c.school, u=u) if trk.archive else url_for('recruit', pid=p.pid, u=u, grad_year=p.grad_year) }}" style="color:inherit;text-decoration:none">{{ p.name }}</a>{% if p.recruit_stars %} {{ '★'*p.recruit_stars }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</span>
       </div>
       {% endfor %}
     </div></div>
   </div>
 
-  <!-- Top commitments -->
+  <!-- Top commitments (live) / how they turned out (archived class) -->
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Top Commitments</span>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ 'How They Turned Out' if trk.archive else 'Top Commitments' }}</span>
       <span class="bl-panel-meta">{{ trk.total_signed }} signed</span></div>
     <div class="bl-tablescroll">
+    {% if trk.archive %}
+    <div class="bl-table al-dense" style="--bl-grid-cols: minmax(120px,1fr) 44px minmax(90px,1fr) minmax(100px,1fr) 92px">
+      <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">★</span><span class="bl-th">SIGNED WITH</span>
+        <span class="bl-th" title="Where they are now — Active (current team), Grad (finished, final STR), Left (no longer rostered)">NOW</span>
+        <span class="bl-th num" title="STR at signing → latest STR">STR</span></div>
+      {% for r in trk.commitments[:60] %}
+      <div class="bl-row">
+        <a class="bl-school" href="{{ url_for('player', pid=r.p.pid, school=r.school, u=u) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}</a>
+        <span class="bl-cell-num">{{ r.stars if r.stars else '–' }}</span>
+        <a class="bl-conf" href="{{ url_for('team_recruiting', school=r.school, u=u) }}" style="text-decoration:none;display:flex;align-items:center;gap:5px">{{ crest_box(r.school, r.abbr, r.color, 'xs') }} {{ r.school }}</a>
+        <span class="bl-conf">{% if r.out %}{% if r.out.status == 'Active' %}{{ r.out.school }}{% if r.out.cls %} · {{ r.out.cls }}{% endif %}{% elif r.out.status == 'Grad' %}Grad{% if r.out.school %} · {{ r.out.school }}{% endif %}{% else %}Left{% endif %}{% else %}—{% endif %}</span>
+        <span class="bl-cell-num" style="white-space:nowrap">{{ r.str_sign }}{% if r.out and r.out.str_now is not none %} → {{ r.out.str_now }}{% if r.delta is not none %} <span style="font-size:10px;font-weight:700;color:{{ 'var(--pos, #1a8f4c)' if r.delta >= 0 else 'var(--neg, #c0392b)' }}">{{ '+' if r.delta >= 0 }}{{ r.delta }}</span>{% endif %}{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
     <div class="bl-table al-dense" style="--bl-grid-cols: minmax(120px,1fr) 56px minmax(90px,1fr)">
       <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">★</span><span class="bl-th">SIGNED WITH</span></div>
       {% for r in trk.commitments[:40] %}
@@ -74,7 +99,9 @@
         <a class="bl-conf" href="{{ url_for('team_recruiting', school=r.school, u=u) }}" style="text-decoration:none;display:flex;align-items:center;gap:5px">{{ crest_box(r.school, r.abbr, r.color, 'xs') }} {{ r.school }}</a>
       </div>
       {% endfor %}
-    </div></div>
+    </div>
+    {% endif %}
+    </div>
   </div>
 </div></div>
 {% endif %}

@@ -531,15 +531,33 @@ def recruiting_grad_year(seed: int = DEFAULT_SEED) -> int:
     return BASE_YEAR + (w["year"] if w else 0) + 1
 
 
-def signings(seed: int = DEFAULT_SEED) -> dict:
-    """{gender: {school: [Prospect, ...]}} for the class signed so far this world-year
-    — the live commitments the Signing Tracker reads (fills as the season advances)."""
+def signings(seed: int = DEFAULT_SEED, year: int | None = None) -> dict:
+    """{gender: {school: [Prospect, ...]}} for the class signed in `year` (default:
+    the current world-year — the live commitments the Signing Tracker reads, filling
+    as the season advances). `world_signing` rows are never deleted at the rollover,
+    so any PAST year returns that season's class exactly as it signed — the
+    recruiting-class archive."""
     w = load_world(seed)
     if not w:
         return {}
     conn = _db()
     try:
-        return _load_signings(conn, w)
+        return _load_signings(conn, w, year=year)
+    finally:
+        conn.close()
+
+
+def signing_years(seed: int = DEFAULT_SEED) -> list[int]:
+    """World-years with at least one signing on record, newest first — the
+    Signing Tracker's season picker (current cycle + every archived class)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        return [r["year"] for r in conn.execute(
+            "SELECT DISTINCT year FROM world_signing WHERE world_id=?"
+            " ORDER BY year DESC", (w["id"],)).fetchall()]
     finally:
         conn.close()
 
@@ -1412,12 +1430,14 @@ def _decommit_pass(conn, world: dict, gender: str) -> int:
     return flips
 
 
-def _load_signings(conn, world: dict) -> dict[str, dict[str, list]]:
-    """{gender: {school: [Prospect, ...]}} for the class that's signed so far.
+def _load_signings(conn, world: dict, year: int | None = None) -> dict[str, dict[str, list]]:
+    """{gender: {school: [Prospect, ...]}} for the class that's signed so far
+    (default: the current world-year; pass `year` for an archived class).
     Each prospect carries the live `flips` count (how many times they've
     decommitted) and `week_signed` of their current commit."""
     rows = conn.execute("SELECT gender, school, data, flips, week_signed FROM world_signing"
-                        " WHERE world_id=? AND year=?", (world["id"], world["year"])).fetchall()
+                        " WHERE world_id=? AND year=?",
+                        (world["id"], world["year"] if year is None else year)).fetchall()
     out: dict = {}
     for r in rows:
         p = prospect_from_dict(json.loads(r["data"]))
