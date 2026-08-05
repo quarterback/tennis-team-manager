@@ -328,6 +328,18 @@ See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
   and every division. `_pair_penalty` deliberately has no same-conference term; do
   not add one back. Only rematch and AQ-vs-AQ avoidance shape the draw. See
   `docs/AAR-true-seed-no-conference-separation.md`.
+- **The NCAA field is SELECTED ONCE AND LOCKED (`ncaa_draw`) — never re-derived** —
+  the seeds and the four S-curve regions are the same computation, so anything that
+  moves `committee_seed_score` moves teams between regions. The field used to be
+  recomputed on every read while one input (`team_form`) counted the very bracket it
+  was seeding, so the labels drifted mid-tournament: 67–80 of 96 seed positions moved,
+  most duals showed no region and some teams no seed at all (the bracket itself was
+  always correct — only the labels lied, which is why it hid for so long). Never feed
+  `committee_seed_score` anything outside `SEED_ROUNDS`, and read the field back from
+  the lock (`_load_draw`) instead of re-selecting. The bracket page is a real
+  elimination tree positioned SERVER-SIDE (`state._bracket_canvas`): cards and the SVG
+  elbows share one coordinate system, so never "fix" bracket alignment in CSS. See
+  `docs/AAR-ncaa-bracket-region-drift.md`.
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
   `docs/AAR-base-roster-nationality-by-level.md`. Tuned for playability, not 1:1 realism.

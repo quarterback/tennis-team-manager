@@ -97,6 +97,9 @@ CREATE TABLE IF NOT EXISTS injuries (
   season_ending INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_injuries_season ON injuries(season_id, school);
+CREATE TABLE IF NOT EXISTS ncaa_draw (
+  season_id INTEGER PRIMARY KEY, field_json TEXT, autobids_json TEXT
+);
 """
 
 
@@ -959,13 +962,137 @@ def _finish_conf_phase(conn, s, div, wl) -> dict:
     return {"phase": "conf_tournaments", "done": True, "champions": len(champions)}
 
 
+def _load_draw(conn, season_id: int):
+    """The LOCKED draw — (seeded schools in seed order, autobid schools) — or None
+    until the field has been drawn. Written once, when the bracket is laid out."""
+    row = conn.execute("SELECT field_json, autobids_json FROM ncaa_draw WHERE season_id=?",
+                       (season_id,)).fetchone()
+    if not row:
+        return None
+    return json.loads(row["field_json"]), set(json.loads(row["autobids_json"]))
+
+
+def _drawn_positions(conn, sid: int, size: int) -> tuple[dict, dict]:
+    """Where the BRACKET ITSELF says its teams were seeded, as
+    `(exact {school: (region, line)}, loose {school: region})`.
+
+    Bracket position is stored (`bpos`) and encodes the draw, so an in-flight
+    tournament can name its own seeding even when the seed list was never saved:
+
+      · 96 field, opening round — `bpos = region*8 + g`, home = region line 9 + g
+        (exact); the away side is one of lines 17-24 and the deconflictor permutes
+        which, so only its REGION is recoverable (loose).
+      · 96 field, Round of 64 — `bpos = slot*8 + k` over MAIN_DRAW_ORDER, home is
+        the bye of region line `BYE_SEQ[k]` (exact).
+      · 64 field — `bpos = slot*8 + k`; the region's 16-bracket sits on the canonical
+        seed positions, deconflicted only WITHIN a two-seed band, so a slot names its
+        line to within its band.
+
+    Empty for a field that was never drawn, or one with no regional shape."""
+    rows = [dict(r) for r in conn.execute(
+        "SELECT round_no, bpos, home, away FROM duals WHERE season_id=? AND round='NCAA'"
+        " ORDER BY round_no, bpos", (sid,)).fetchall()]
+    if not rows or size not in (64, 96):
+        return {}, {}
+    first = min(r["round_no"] for r in rows)
+    exact: dict = {}
+    loose: dict = {}
+    if size == 96:
+        for r in [x for x in rows if x["round_no"] == first]:
+            region, g = divmod(r["bpos"], 8)
+            if region > 3:
+                return {}, {}
+            exact.setdefault(r["home"], (region, 9 + g))
+            loose.setdefault(r["away"], region)
+        for r in [x for x in rows if x["round_no"] == first + 1 and x["bpos"] < 32]:
+            slot, k = divmod(r["bpos"], 8)
+            exact.setdefault(r["home"], (regions.MAIN_DRAW_ORDER[slot], regions.BYE_SEQ[k]))
+    else:
+        pos = _seed_positions(16)
+        for r in [x for x in rows if x["round_no"] == first and x["bpos"] < 32]:
+            slot, k = divmod(r["bpos"], 8)
+            region = regions.MAIN_DRAW_ORDER[slot]
+            exact.setdefault(r["home"], (region, pos[2 * k]))
+            exact.setdefault(r["away"], (region, pos[2 * k + 1]))
+    return exact, loose
+
+
+def _honour_drawn_field(conn, sid: int, schools: list) -> list:
+    """Make a freshly computed seed list agree with the bracket ALREADY on the board
+    — for a season whose draw was made before the field was locked.
+
+    It VALIDATES first and only rebuilds on a contradiction: a computed field that
+    already satisfies every position the bracket records is returned untouched,
+    because it is the real seed list and carries the eight lines per region the
+    bracket cannot name. Only when it disagrees is the field rebuilt around the
+    positions the bracket does know, with the leftovers filling the empty lines in
+    committee order. A no-op when nothing has been drawn yet."""
+    exact, loose = _drawn_positions(conn, sid, len(schools))
+    if not exact and not loose:
+        return schools
+    lines = len(schools) // 4
+    seeded_at = {}
+    for r, members in enumerate(regions.scurve_regions(schools)):
+        for i, school in enumerate(members):
+            seeded_at[school] = (r, i + 1)
+    if (all(seeded_at.get(s) == p for s, p in exact.items())
+            and all((seeded_at.get(s) or (None,))[0] == r for s, r in loose.items())):
+        return schools                       # the computed order IS the drawn order
+    grid: list[list] = [[None] * lines for _ in range(4)]
+    for school, (region, line) in exact.items():
+        if line <= lines and grid[region][line - 1] is None:
+            grid[region][line - 1] = school
+    # Teams the bracket places only by region go on that region's deepest open lines.
+    placed = {s for row in grid for s in row if s}
+    for school, region in loose.items():
+        if school in placed:
+            continue
+        for line in range(lines - 1, -1, -1):
+            if grid[region][line] is None:
+                grid[region][line] = school
+                placed.add(school)
+                break
+    spare = [s for s in schools if s not in placed]
+    # Empty lines get the best uncommitted teams, walking overall seed order so the
+    # S-curve still hands the strongest leftovers to the shallowest lines.
+    for line in range(lines):
+        order = range(4) if line % 2 == 0 else range(3, -1, -1)
+        for region in order:
+            if grid[region][line] is None and spare:
+                grid[region][line] = spare.pop(0)
+    out = [s for s in _uncurve(grid) if s]
+    return out if len(out) == len(schools) else schools
+
+
+def _uncurve(grid: list[list]) -> list:
+    """Inverse of `regions.scurve_regions`: fold four region seed-line columns back
+    into one national seed order."""
+    lines = len(grid[0])
+    out: list = [None] * (lines * 4)
+    for line in range(lines):
+        for region in range(4):
+            g = region if line % 2 == 0 else 3 - region
+            out[line * 4 + g] = grid[region][line]
+    return out
+
+
 def _ncaa_seeds(conn, s, progs, div):
-    """Deterministically reproduce the seeded national field + bracketing context
-    (autobids, regular-season pairings). Used to lay out the bracket and to rebuild
-    the byes when a play-in feeds the main draw. Conference affiliation is NOT part
-    of the bracketing context: the draw is true-seeded and never separates
-    same-conference teams (see the bracketing-penalties note above)."""
+    """The seeded national field + bracketing context (autobids, regular-season
+    pairings). Used to lay out the bracket and to rebuild the byes when a play-in
+    feeds the main draw. Conference affiliation is NOT part of the bracketing
+    context: the draw is true-seeded and never separates same-conference teams (see
+    the bracketing-penalties note above).
+
+    The field is selected and seeded ONCE and then LOCKED (the `ncaa_draw` row): the
+    bye rebuild that feeds the main draw, the bracket page and every later view of
+    the season read back the exact seed list the opening round was drawn from.
+    Re-deriving it per call is what let seeds and regions drift mid-tournament (see
+    docs/AAR-ncaa-bracket-region-drift.md)."""
     sid = s["id"]
+    locked = _load_draw(conn, sid)
+    if locked:
+        schools, autobid_set = locked
+        return schools, autobid_set, _reg_meetings(conn, sid)
     ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
     # Select + seed by the Committee Seed Score (strength + résumé + AQ pedigree),
@@ -973,14 +1100,25 @@ def _ncaa_seeds(conn, s, progs, div):
     seeded, autobids = select_field(div.programs, ratings, champions,
                                     size=field_for_division(s["division"]),
                                     score=committee_seed_score(sid, {c.school for c in champions}))
-    schools = [p.school for p in seeded]
-    autobid_set = {p.school for p in seeded if p.key in autobids}
+    # A bracket already on the board outranks the recomputed order: keep every team
+    # on the line it was actually drawn on (a save from before the field was locked).
+    schools = _honour_drawn_field(conn, sid, [p.school for p in seeded])
+    picked = {p.school for p in seeded if p.key in autobids} | set(conf_champions(sid))
+    autobid_set = {sc for sc in schools if sc in picked}
+    conn.execute("INSERT OR IGNORE INTO ncaa_draw (season_id, field_json, autobids_json)"
+                 " VALUES (?,?,?)",
+                 (sid, json.dumps(schools), json.dumps(sorted(autobid_set))))
+    return schools, autobid_set, _reg_meetings(conn, sid)
+
+
+def _reg_meetings(conn, sid: int) -> Counter:
+    """{frozenset(pair): meetings} over the regular season — the bracketer's
+    rematch context."""
     # COUNT regular-season meetings (not just whether they met) so the bracketer can
     # penalise a 2nd/3rd-meeting first-rounder harder than a single rematch.
-    played = Counter(frozenset((d["home"], d["away"]))
-                     for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
-                                           " AND round='REG' AND status='final'", (sid,)).fetchall())
-    return schools, autobid_set, played
+    return Counter(frozenset((d["home"], d["away"]))
+                   for d in conn.execute("SELECT home, away FROM duals WHERE season_id=?"
+                                         " AND round='REG' AND status='final'", (sid,)).fetchall())
 
 
 def _advance_ncaa_round(conn, s, progs) -> dict:
@@ -1388,7 +1526,15 @@ def committee_seed_score(season_id: int, aq_set: set) -> dict:
     Each rank is turned into a 0–100 score (#1 ≈ 100, last ≈ 0). `aq_set` is the
     schools holding automatic bids; only they earn the AQ bonus. The same score is
     used to SELECT at-large teams and to SEED the whole field, so a power-conference
-    champion can out-seed a comparable at-large without anyone hand-sorting it."""
+    champion can out-seed a comparable at-large without anyone hand-sorting it.
+
+    ⚠️ No input may read the NCAA bracket this score SEEDS (`SEED_ROUNDS` is the
+    ceiling: regular season + ITA + the conference tournaments, all of them finished
+    before selection). The score is recomputed whenever the field is asked for, so an
+    input that moves as the tournament plays drifts the seed order — and with it the
+    S-curve region split — under a bracket that has already been drawn: the page then
+    labels teams with seeds and regions they were never drawn into.
+    See docs/AAR-ncaa-bracket-region-drift.md."""
     pi = power_index(season_id)
     if not pi:
         return {}
@@ -1397,7 +1543,7 @@ def committee_seed_score(season_id: int, aq_set: set) -> dict:
     div = load_division(s["division"], s["gender"])
     conf_of = {p.school: p.conf_abbr for p in div.programs}
     tier_of = _conf_tier_map(s["division"], s["gender"])
-    form = team_form(season_id)
+    form = team_form(season_id, SEED_ROUNDS)
     schools = list(pi.keys())
     n = max(1, len(schools))
     pi_rank = {sc: i + 1 for i, sc in enumerate(
@@ -1563,12 +1709,22 @@ def field_projection(season_id: int, size: int | None = None, out_n: int = 12) -
     return proj
 
 
-def team_form(season_id: int) -> dict:
-    """Per-team current streak and last-5 form from all final duals, in play order.
-    {school: {'streak': +wins/-losses, 'last5': 'WWLWL', 'w': int, 'l': int}}."""
+def team_form(season_id: int, rounds: tuple | None = None) -> dict:
+    """Per-team current streak and last-5 form from final duals, in play order.
+    {school: {'streak': +wins/-losses, 'last5': 'WWLWL', 'w': int, 'l': int}}.
+
+    `rounds` narrows the corpus (default: every round, for the season-page form
+    column). The seeding path passes `SEED_ROUNDS` — a committee's "recent form" is
+    the body of work it seeds FROM (conference-tournament form very much included),
+    and folding in the bracket it is seeding would make the seed order drift as that
+    bracket is played."""
     conn = _db()
+    where, params = "", [season_id]
+    if rounds:
+        where = f" AND round IN ({','.join('?' for _ in rounds)})"
+        params += list(rounds)
     rows = conn.execute("SELECT home, away, winner FROM duals WHERE season_id=? AND status='final'"
-                        " ORDER BY week, round_no, id", (season_id,)).fetchall()
+                        + where + " ORDER BY week, round_no, id", params).fetchall()
     conn.close()
     seq: dict = {}
     for r in rows:
@@ -1958,15 +2114,35 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     keys, snub board, ratings), selected exactly as the tournament will use it
     (conference champions auto-in, the rest at-large by Power Index). The snub
     board is the `out_n` highest-Power-Index teams that JUST missed the field —
-    'who's out'. Available once the conference tournaments crown champions."""
+    'who's out'. Available once the conference tournaments crown champions.
+
+    Once the bracket has been drawn this READS BACK the locked draw (`ncaa_draw`)
+    rather than re-selecting, so the seeds and regions on the bracket page are the
+    ones the tournament was actually played under."""
     s = load_season(season_id)
     if size is None:
         size = field_for_division(s["division"])
     conn = _db()
     ratings = compute_ratings(_completed(conn, season_id, SEED_ROUNDS))
-    conn.close()
+    locked = _load_draw(conn, season_id)
     div = load_division(s["division"], s["gender"])
     progs = {p.school: p for p in div.programs}
+    if locked:
+        conn.close()
+        field_schools, autobid_schools = locked
+        seeded = [progs[sc] for sc in field_schools if sc in progs]
+        autobids = {progs[sc].key for sc in autobid_schools if sc in progs}
+        field_keys = {p.key for p in seeded}
+        champs = {c.school for c in
+                  [progs[v] for v in conf_champions(season_id) if v in progs and v in ratings]}
+        committee = committee_seed_score(season_id, champs)
+        out = sorted((p for p in div.programs
+                      if p.key not in field_keys and p.school in ratings),
+                     key=lambda p: committee.get(p.school, 0.0), reverse=True)[:out_n]
+        out_board = [{"school": p.school, "conf": p.conf_abbr,
+                      "pi": round(ratings[p.school].pi, 3), "rec": ratings[p.school].record}
+                     for p in out]
+        return seeded, autobids, out_board, ratings
     # Conference champions are derived from the CT results (the reliable source) —
     # NOT from season.champion, which holds the conf-champ map only during the
     # selection window and is overwritten with the NATIONAL champion's name once the
@@ -1977,7 +2153,16 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     # (`_ncaa_seeds`), so the revealed seeds/labels match the scheduled matchups.
     committee = committee_seed_score(season_id, {c.school for c in champions})
     seeded, autobids = select_field(rated, ratings, champions, size=clamp_field(size), score=committee)
+    # Nothing locked but a bracket already drawn (a save from before the lock
+    # existed): honour the positions the bracket itself records. Read-only — the
+    # draw is written on the advance path, never on a page view.
+    order = _honour_drawn_field(conn, season_id, [p.school for p in seeded])
+    conn.close()
+    by_school = {p.school: p for p in seeded}
+    seeded = [by_school.get(sc) or progs[sc] for sc in order if sc in by_school or sc in progs]
     field_keys = {p.key for p in seeded}
+    autobids = set(autobids) | {progs[sc].key for sc in conf_champions(season_id)
+                                if sc in progs and progs[sc].key in field_keys}
     out = sorted((p for p in rated if p.key not in field_keys),
                  key=lambda p: committee.get(p.school, 0.0), reverse=True)[:out_n]
     out_board = [{"school": p.school, "conf": p.conf_abbr,
@@ -2138,6 +2323,19 @@ def developmental_wins(season_id: int) -> dict:
             winner = r["home"] if ln["home_won"] else r["away"]
             out[winner] = out.get(winner, 0) + 1
     return out
+
+
+def ncaa_duals(season_id: int) -> list[dict]:
+    """Every NCAA dual in draw order — played AND still scheduled. The bracket page
+    needs the scheduled ones: an unplayed cell is exactly 'who they play next', and
+    a dual with `winner` None simply hasn't happened yet."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT id, week, round, conf, round_no, bpos, home, away, home_points, away_points,"
+        " winner, status FROM duals WHERE season_id=? AND round='NCAA'"
+        " ORDER BY round_no, bpos", (season_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def all_results(season_id: int) -> list[dict]:

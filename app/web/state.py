@@ -1953,7 +1953,9 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
             return None
     else:
         sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
-    rows = [r for r in sm.all_results(sid) if r["round"] == "NCAA"]
+    # Scheduled duals included: the round currently on the board is the answer to
+    # "who do they play if they win", so an unplayed cell belongs on the bracket.
+    rows = sm.ncaa_duals(sid)
     if not rows:
         # Bracket reveal: the field is locked but no NCAA match has been played.
         phase = sm.load_season(sid).get("phase")
@@ -2014,29 +2016,158 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
     by_round: dict = {}
     for r in rows:
         by_round.setdefault(r["round_no"], []).append(r)
+    # Region display order: the same order the main draw is laid out in, so reading
+    # the four groups top to bottom follows the halves into the national semifinals.
+    draw_order = [region_names[r] for r in _regions.MAIN_DRAW_ORDER] if region_names else []
     rounds = []
     for rno in sorted(by_round):
         matchups = []
         for r in sorted(by_round[rno], key=lambda x: x["bpos"]):
             hp, ap = r["home_points"], r["away_points"]
-            home_won = r["winner"] == 0
+            played = r["winner"] is not None
+            home_won = played and r["winner"] == 0
             ha, hc = crest(r["home"]); aa, ac = crest(r["away"])
+            home = _team(r["home"], ha, hc, home_won)
+            away = _team(r["away"], aa, ac, played and not home_won)
             matchups.append({
-                "home": _team(r["home"], ha, hc, home_won),
-                "away": _team(r["away"], aa, ac, not home_won),
-                "home_won": home_won, "winner": r["home"] if home_won else r["away"],
-                "score": f"{max(hp, ap)}-{min(hp, ap)}" if hp is not None else "",
+                "home": home, "away": away, "played": played, "bpos": r["bpos"],
+                "id": r["id"],
+                # A dual belongs to a region until the regions meet: every round
+                # through the regional final is inside one, the national semifinals
+                # and final are not (both sides carry different region labels).
+                "region": home["region"] if home["region"] == away["region"] else None,
+                "home_won": home_won,
+                "winner": (r["home"] if home_won else r["away"]) if played else None,
+                "score": f"{max(hp, ap)}-{min(hp, ap)}" if played and hp is not None else "",
             })
-        rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups})
+        # A round goes NATIONAL once the regions meet — the semifinals and the final.
+        # Every earlier round sits inside one region, and belongs to its tree.
+        rounds.append({"name": by_round[rno][0]["conf"], "matchups": matchups,
+                       "national": not (draw_order and all(m["region"] for m in matchups))})
     champion = None
-    if rounds and len(rounds[-1]["matchups"]) == 1:
+    if rounds and len(rounds[-1]["matchups"]) == 1 and rounds[-1]["matchups"][0]["played"]:
         m = rounds[-1]["matchups"][0]
         win = m["home"] if m["home_won"] else m["away"]
         champion = {"school": win["school"], "abbr": win["abbr"], "color": win["color"],
                     "seed": win["seed"]}
+    ladders = _region_ladders(rounds, draw_order)
     return {"rounds": rounds, "champion": champion, "top_seeds": top_seeds,
             "seed_regions": seed_regions,
+            "region_size": max(seed_map.values(), default=0) if region_names else 0,
+            "ladders": ladders,
+            "national": _bracket_canvas([r for r in rounds if r["national"]]) if ladders else None,
             "regions": region_names, "complete": champion is not None}
+
+
+CARD_H = 62           # matchup card height (two team rows)
+CARD_W = 216          # matchup card width
+GUTTER = 52           # horizontal space between a column and the next — the elbow gutter
+LEAF_GAP = 16         # vertical gap between two adjacent first-round cards
+PAD_Y = 8
+
+
+def _bracket_canvas(cols: list) -> dict | None:
+    """Lay a list of rounds out as an ELIMINATION TREE on one coordinate canvas.
+
+    Positions come from the tree, not from document flow: the widest full round is
+    the leaf row (evenly spaced), and every later matchup is centred on the average
+    of the two feeders it receives — so a card always sits between the two cards
+    that can send it a team. A play-in column (same width as the round it feeds,
+    one source per destination) is laid out level with its destination.
+
+    Returns the canvas the template renders: card boxes with x/y, column headers,
+    and the SVG elbow paths (source right edge → mid-gutter → target y → target
+    left edge) that make the parent-child relationship visible. Cards and paths
+    share this one coordinate system, so nothing can drift out of alignment."""
+    cols = [c for c in cols if c["matchups"]]
+    if not cols:
+        return None
+    widest = max(len(c["matchups"]) for c in cols)
+    base = max(i for i, c in enumerate(cols) if len(c["matchups"]) == widest)
+    stride = CARD_H + LEAF_GAP
+    centres: list[list[float]] = [[] for _ in cols]
+    centres[base] = [PAD_Y + i * stride + CARD_H / 2 for i in range(widest)]
+    for i in range(base + 1, len(cols)):                       # rightwards: average the feeders
+        prev, cur = centres[i - 1], cols[i]["matchups"]
+        centres[i] = [(prev[2 * k] + prev[2 * k + 1]) / 2 if 2 * k + 1 < len(prev)
+                      else prev[min(2 * k, len(prev) - 1)] for k in range(len(cur))]
+    for i in range(base - 1, -1, -1):                          # leftwards: play-in sits level
+        nxt = centres[i + 1]
+        centres[i] = [nxt[k] if k < len(nxt) else PAD_Y + k * stride + CARD_H / 2
+                      for k in range(len(cols[i]["matchups"]))]
+
+    cards, columns, links = [], [], []
+    for i, col in enumerate(cols):
+        x = i * (CARD_W + GUTTER)
+        columns.append({"name": col["name"], "x": x, "n": len(col["matchups"]),
+                        "playin": i < base})
+        for k, m in enumerate(col["matchups"]):
+            cards.append({**m, "x": x, "y": centres[i][k] - CARD_H / 2,
+                          "round": col["name"], "col": i, "slot": k, "playin": i < base})
+        if i == 0:
+            continue
+        prev_col, prev_c = cols[i - 1]["matchups"], centres[i - 1]
+        px = (i - 1) * (CARD_W + GUTTER) + CARD_W
+        mid = px + GUTTER / 2
+        # One source per destination (a play-in feeding its slot) or two (the
+        # normal halving); either way the destination is fixed by the tree.
+        pairs = ([(k, [k]) for k in range(len(col["matchups"]))]
+                 if len(prev_col) == len(col["matchups"])
+                 else [(k, [2 * k, 2 * k + 1]) for k in range(len(col["matchups"]))])
+        for k, sources in pairs:
+            for s in sources:
+                if s >= len(prev_col):
+                    continue
+                src, dst = prev_col[s], col["matchups"][k]
+                y0, y1 = prev_c[s], centres[i][k]
+                links.append({
+                    "d": f"M {px} {y0:.1f} H {mid} V {y1:.1f} H {x}",
+                    # A path is live once the feeder has produced a winner that is
+                    # standing in the destination card.
+                    "won": bool(src["winner"]) and src["winner"] in
+                           (dst["home"]["school"], dst["away"]["school"]),
+                    "school": src["winner"] or "",
+                })
+    height = max((c["y"] + CARD_H for c in cards), default=0) + PAD_Y
+    return {"cards": cards, "columns": columns, "links": links,
+            "width": len(cols) * (CARD_W + GUTTER) - GUTTER,
+            "height": height, "card_w": CARD_W, "card_h": CARD_H}
+
+
+def _region_ladders(rounds: list, draw_order: list) -> list:
+    """The played bracket as FOUR REGION LADDERS — a real bracket tree per region:
+    `[{name, rounds: [{name, matchups}, …]}]`, each round half the size of the one
+    before it, matchups ordered so match `i` of a round feeds match `i // 2` of the
+    next. Rendered as columns that halve, that reads as an actual bracket: you can
+    see who a winner meets next instead of hunting two columns over.
+
+    The one hop that ISN'T positional is the 96-field opening round into the Round
+    of 64 — the bracketer swaps which play-in winner faces which bye to dodge a
+    rematch — so that column is reordered by the game its winner actually fed."""
+    if not draw_order:
+        return []
+    ladders = []
+    for name in draw_order:
+        cols = []
+        for rnd in rounds:
+            got = [m for m in rnd["matchups"] if m["region"] == name]
+            if got:
+                cols.append({"name": rnd["name"], "matchups": got})
+        if not cols:
+            continue
+        # Opening round (same width as the round it feeds) → align by who fed whom.
+        if len(cols) > 1 and len(cols[0]["matchups"]) == len(cols[1]["matchups"]):
+            feeds = {}
+            for i, m in enumerate(cols[1]["matchups"]):
+                feeds.setdefault(m["home"]["school"], i)
+                feeds.setdefault(m["away"]["school"], i)
+            cols[0]["matchups"].sort(
+                key=lambda m: feeds.get(m["winner"], len(feeds) + m["bpos"]))
+        final = cols[-1]["matchups"][0] if len(cols[-1]["matchups"]) == 1 else None
+        ladders.append({"name": name, "rounds": cols, "canvas": _bracket_canvas(cols),
+                        "champion": (final["home"] if final["home_won"] else final["away"])
+                        if final and final["played"] else None})
+    return ladders
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
