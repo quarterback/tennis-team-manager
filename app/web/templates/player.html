@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch — {{ info.name }}{% endblock %}
 {% block content %}
+{% if linked_coach %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner"><span class="bl-pill"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Coaching career</span><a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('coach', coach_id=linked_coach.coach_id, u=u) }}">View coach page →</a></div></div>
+{% elif is_alumni %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner"><span style="font-size:13px;color:var(--text-muted)">Continue this alumnus's story with a separate, linked coaching profile.</span><form method="post" action="{{ url_for('player_become_coach', pid=pid) }}" style="display:flex;gap:8px;margin-left:auto"><input type="hidden" name="u" value="{{ u }}"><select class="bl-select" name="role"><option value="asst">Assistant Coach</option><option value="assoc">Associate Head Coach</option><option value="head">Head Coach</option></select><button class="bl-pill" type="submit">Begin coaching career</button></form></div></div>
+{% endif %}
 {% set abbr, color = crest(info.school) %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   {% if info.free_agent %}

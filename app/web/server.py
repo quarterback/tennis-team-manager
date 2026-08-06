@@ -1249,6 +1249,8 @@ def create_app() -> Flask:
         gen = c.get("gender", gender)
         honor_years = coach_career_honors(div, gen, coach_id)
         career = coach_career_table(coach_id)
+        import app.coachreg as coachreg
+        career_path = list(reversed(coachreg.assignments(coach_id)))
         player_awards = coach_player_awards(coach_id)
         # Staff at the coach's current school — the in-staff swap targets.
         staff = coaching_staff(div, gen, c["school"]) if c.get("school") else []
@@ -1257,6 +1259,7 @@ def create_app() -> Flask:
         move_tree = coach_move_tree() if c.get("school") else {"men": [], "women": []}
         return render_template("coach.html", active="Teams", c=c, honor_years=honor_years,
                                career=career, player_awards=player_awards, staff=staff,
+                               career_path=career_path,
                                move_tree=move_tree, crest=crest, u=u, uni_label=label)
 
     @app.route("/coach/<coach_id>/move", methods=["POST"])
@@ -1286,7 +1289,8 @@ def create_app() -> Flask:
         # swap if the target is occupied, just fill it if it's vacant (no demotion).
         from app import coachgen
         coachgen.ensure(d2, g2, s2, r2)
-        coachreg.move_to(coach_id, g2, d2, s2, r2)
+        move_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        coachreg.move_to(coach_id, g2, d2, s2, r2, year=move_year)
         reset_all()
         if request.form.get("back") == "editor":     # invoked from the Editor — stay there
             return redirect(url_for("editor", u=u, conf=request.form.get("conf", "All"),
@@ -1753,6 +1757,7 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
         info = sm.player_info(sid, pid)
+        is_alumni = False
         if not info:
             # Maybe it's a free-agent pro not yet on any roster — render a preview (STR +
             # attributes) so they can be scouted BEFORE being signed through the portal.
@@ -1788,6 +1793,7 @@ def create_app() -> Flask:
             if not p:
                 abort(404)
             school, _pdiv = wd.persisted_team(pid)
+            is_alumni = True
             info = {"name": p.name, "school": school or "—",
                     "class": getattr(p, "class_year", ""),
                     "country": getattr(p, "country", ""),
@@ -1821,12 +1827,39 @@ def create_app() -> Flask:
         journey = player_journey(division, gender, pid)
         season_stats = sm.player_season_stats(sid).get(pid)
         intl = wd.player_world_cups(DEFAULT_SEED, pid)   # International record (cups)
+        import app.coachreg as coachreg
+        linked_coach = coachreg.coach_for_player(pid)
         return render_template("player.html", active="Teams", pid=pid, info=info,
                                career=career, career_table=career_table, records=records,
                                strv=strv, rel=rel, wins=wins, losses=losses, gender=gender,
                                honor_years=honor_years, ranks=ranks, journey=journey,
                                season_stats=season_stats, intl=intl,
+                               linked_coach=linked_coach, is_alumni=is_alumni,
                                attrs=attrs, crest=crest, u=u, uni_label=label)
+
+    @app.route("/player/<pid>/become-coach", methods=["POST"])
+    def player_become_coach(pid):
+        """Give an alumnus a new, linked coaching identity at their alma mater."""
+        division, gender, _label, u = _universe(request)
+        p = wd.find_persisted_player(pid)
+        school, pdiv = wd.persisted_team(pid)
+        if not p or not school:
+            abort(404)
+        import app.coachreg as coachreg
+        from app import coachgen
+        role = request.form.get("role", "asst")
+        if role not in ("head", "assoc", "asst"):
+            role = "asst"
+        pdiv = pdiv or division
+        coachgen.ensure(pdiv, gender, school, role)
+        overall = float(p.current_overall())
+        c = coachreg.create_from_player(
+            pid, name=p.name, home_country=getattr(p, "country", "US"),
+            division=pdiv, gender=gender, school=school, role=role,
+            dev=max(25, min(80, overall + 4)), rec=max(25, min(80, overall - 3)),
+            tac=max(25, min(80, overall)))
+        reset_all()
+        return redirect(url_for("coach", coach_id=c["coach_id"], u=u))
 
     @app.route("/ncaa")
     def ncaa_bracket():

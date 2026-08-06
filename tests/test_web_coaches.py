@@ -94,6 +94,26 @@ def test_swap_seats_moves_a_coach_between_seats():
     assert coachreg.head_seats("D1", "men")["Stanford"] == b["coach_id"]
 
 
+def test_coach_move_preserves_both_programs_in_career_path():
+    """Moving a head or assistant records where both coaches came from instead
+    of rewriting their identity as though they had always held the new job."""
+    import app.coachreg as coachreg
+    create_app()
+    coachreg.reset()
+    a = coachreg.ensure_seat("D1", "men", "Stanford", "head", name="A",
+                             home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                             tenure=5)
+    b = coachreg.ensure_seat("D2", "men", "Barry", "asst", name="B",
+                             home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                             tenure=2)
+
+    assert coachreg.move_to(a["coach_id"], "men", "D2", "Barry", "asst", year=2028)
+    assert [(j["school"], j["role"]) for j in coachreg.assignments(a["coach_id"])] == [
+        ("Stanford", "head"), ("Barry", "asst")]
+    assert [(j["school"], j["role"]) for j in coachreg.assignments(b["coach_id"])] == [
+        ("Barry", "asst"), ("Stanford", "head")]
+
+
 def test_coach_honors_persist_and_follow_id(played_season):
     nat = next(r for r in coach_honor_records("D1", "men") if r["award"] == "national_coty")
     stamp_world_honors()

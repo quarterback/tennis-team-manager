@@ -3048,7 +3048,8 @@ def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: 
         ddiv, _ = progs[dest]
         coachgen.ensure(sdiv, gender, src, "head")             # register both seats so we can swap
         coachgen.ensure(ddiv, gender, dest, "head")
-        coachreg.swap_head_coaches(gender, sdiv, src, ddiv, dest)
+        coachreg.swap_head_coaches(gender, sdiv, src, ddiv, dest,
+                                   year=BASE_YEAR + load_world()["year"])
         used.add(src); used.add(dest); moves += 1
 
         # Followers: src's coach is now at dest. Up to half of src's roster may
