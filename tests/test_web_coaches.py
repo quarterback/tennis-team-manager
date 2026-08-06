@@ -114,6 +114,29 @@ def test_coach_move_preserves_both_programs_in_career_path():
         ("Barry", "asst"), ("Stanford", "head")]
 
 
+def test_player_coach_is_a_normal_movable_coach():
+    import app.coachreg as coachreg
+    create_app()
+    coachreg.reset()
+    coachreg.ensure_seat("D2", "women", "Barry", "asst", name="Incumbent",
+                         home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                         tenure=2)
+    converted = coachreg.create_from_player(
+        "player-1", name="Graduate", home_country="US", division="D2",
+        gender="women", school="Barry", role="asst", dev=55, rec=48, tac=52)
+    coachreg.ensure_seat("D1", "women", "Stanford", "head", name="Other Coach",
+                         home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                         tenure=4)
+
+    assert coachreg.move_to(converted["coach_id"], "women", "D1", "Stanford", "head",
+                            year=2029)
+    moved = coachreg.get(converted["coach_id"])
+    assert (moved["school"], moved["role"], moved["player_pid"]) == (
+        "Stanford", "head", "player-1")
+    assert [job["school"] for job in coachreg.assignments(converted["coach_id"])] == [
+        "Barry", "Stanford"]
+
+
 def test_coach_honors_persist_and_follow_id(played_season):
     nat = next(r for r in coach_honor_records("D1", "men") if r["award"] == "national_coty")
     stamp_world_honors()

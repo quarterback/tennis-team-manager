@@ -1835,27 +1835,36 @@ def create_app() -> Flask:
                                honor_years=honor_years, ranks=ranks, journey=journey,
                                season_stats=season_stats, intl=intl,
                                linked_coach=linked_coach, is_alumni=is_alumni,
+                               coach_move_tree=coach_move_tree() if is_alumni and not linked_coach else {},
                                attrs=attrs, crest=crest, u=u, uni_label=label)
 
     @app.route("/player/<pid>/become-coach", methods=["POST"])
     def player_become_coach(pid):
-        """Give an alumnus a new, linked coaching identity at their alma mater."""
+        """Give an alumnus a new coaching identity at the program the user picks."""
         division, gender, _label, u = _universe(request)
         p = wd.find_persisted_player(pid)
-        school, pdiv = wd.persisted_team(pid)
-        if not p or not school:
+        if not p:
             abort(404)
         import app.coachreg as coachreg
         from app import coachgen
         role = request.form.get("role", "asst")
         if role not in ("head", "assoc", "asst"):
             role = "asst"
-        pdiv = pdiv or division
-        coachgen.ensure(pdiv, gender, school, role)
+        dest = request.form.get("dest_school", "")
+        try:
+            pdiv, coach_gender, school = dest.split("|", 2)
+        except ValueError:
+            abort(400)
+        if coach_gender not in ("men", "women") or pdiv not in ("D1", "D2", "D3", "D4"):
+            abort(400)
+        # Never trust the form's program tuple: it must resolve in that universe.
+        if load_division(pdiv, coach_gender).by_school(school) is None:
+            abort(400)
+        coachgen.ensure(pdiv, coach_gender, school, role)
         overall = float(p.current_overall())
         c = coachreg.create_from_player(
             pid, name=p.name, home_country=getattr(p, "country", "US"),
-            division=pdiv, gender=gender, school=school, role=role,
+            division=pdiv, gender=coach_gender, school=school, role=role,
             dev=max(25, min(80, overall + 4)), rec=max(25, min(80, overall - 3)),
             tac=max(25, min(80, overall)))
         reset_all()
