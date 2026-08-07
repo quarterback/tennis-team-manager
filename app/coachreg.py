@@ -68,6 +68,16 @@ def init_schema() -> None:
         cols = {r[1] for r in conn.execute("PRAGMA table_info(coach)")}
         if "player_pid" not in cols:  # migrate saves created before player→coach links
             conn.execute("ALTER TABLE coach ADD COLUMN player_pid TEXT")
+        # Existing saves already have persistent people and seats. Seed their
+        # current job as the beginning of the visible path before the first move;
+        # otherwise only the post-upgrade destination would ever be recorded.
+        conn.execute("""INSERT INTO coach_assignment
+                        (coach_id, year, division, gender, school, role, event)
+                        SELECT s.coach_id, NULL, s.division, s.gender, s.school, s.role, 'existing'
+                        FROM coach_seat s
+                        WHERE s.coach_id <> '' AND NOT EXISTS (
+                          SELECT 1 FROM coach_assignment a WHERE a.coach_id=s.coach_id
+                        )""")
         conn.commit()
     _ready = True
 
