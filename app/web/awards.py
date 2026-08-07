@@ -533,10 +533,14 @@ def coach_career_table(coach_id: str, seed: int = DEFAULT_SEED) -> dict:
     ROLE = {"head": "Head Coach", "assoc": "Associate Head Coach", "asst": "Assistant Coach"}
     rows = coachreg.history(coach_id)
     cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
-    # Prepend the live current season for the coach's present seat (not yet stamped).
-    if not any(r["year"] == cur_year for r in rows):
-        c = coachreg.get(coach_id)
-        if c and c.get("school"):
+    # Prepend the live current stint for the coach's present seat. A coach can
+    # change programs during a season, so a row at the old school must not hide
+    # the new live destination.
+    c = coachreg.get(coach_id)
+    if c and c.get("school"):
+        current_key = (cur_year, c["division"], c["gender"], c["school"], c["role"])
+        if not any((r["year"], r["division"], r["gender"], r["school"], r["role"])
+                   == current_key for r in rows):
             rec = team_results(c["division"], c["gender"], c["school"], seed)
             rows.insert(0, {"coach_id": coach_id, "year": cur_year,
                             "season_no": (cur_year - 2026) + 1, "division": c["division"],

@@ -94,6 +94,49 @@ def test_swap_seats_moves_a_coach_between_seats():
     assert coachreg.head_seats("D1", "men")["Stanford"] == b["coach_id"]
 
 
+def test_coach_move_preserves_both_programs_in_career_path():
+    """Moving a head or assistant records where both coaches came from instead
+    of rewriting their identity as though they had always held the new job."""
+    import app.coachreg as coachreg
+    create_app()
+    coachreg.reset()
+    a = coachreg.ensure_seat("D1", "men", "Stanford", "head", name="A",
+                             home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                             tenure=5)
+    b = coachreg.ensure_seat("D2", "men", "Barry", "asst", name="B",
+                             home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                             tenure=2)
+
+    assert coachreg.move_to(a["coach_id"], "men", "D2", "Barry", "asst", year=2028)
+    assert [(j["school"], j["role"]) for j in coachreg.assignments(a["coach_id"])] == [
+        ("Stanford", "head"), ("Barry", "asst")]
+    assert [(j["school"], j["role"]) for j in coachreg.assignments(b["coach_id"])] == [
+        ("Barry", "asst"), ("Stanford", "head")]
+
+
+def test_player_coach_is_a_normal_movable_coach():
+    import app.coachreg as coachreg
+    create_app()
+    coachreg.reset()
+    coachreg.ensure_seat("D2", "women", "Barry", "asst", name="Incumbent",
+                         home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                         tenure=2)
+    converted = coachreg.create_from_player(
+        "player-1", name="Graduate", home_country="US", division="D2",
+        gender="women", school="Barry", role="asst", dev=55, rec=48, tac=52)
+    coachreg.ensure_seat("D1", "women", "Stanford", "head", name="Other Coach",
+                         home_country="US", archetype="x", dev=1, rec=1, tac=1,
+                         tenure=4)
+
+    assert coachreg.move_to(converted["coach_id"], "women", "D1", "Stanford", "head",
+                            year=2029)
+    moved = coachreg.get(converted["coach_id"])
+    assert (moved["school"], moved["role"], moved["player_pid"]) == (
+        "Stanford", "head", "player-1")
+    assert [job["school"] for job in coachreg.assignments(converted["coach_id"])] == [
+        "Barry", "Stanford"]
+
+
 def test_coach_honors_persist_and_follow_id(played_season):
     nat = next(r for r in coach_honor_records("D1", "men") if r["award"] == "national_coty")
     stamp_world_honors()

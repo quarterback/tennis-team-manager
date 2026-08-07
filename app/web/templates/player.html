@@ -1,6 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Play to Clinch — {{ info.name }}{% endblock %}
 {% block content %}
+{% if linked_coach %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner"><span class="bl-pill"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Coaching career</span><a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('coach', coach_id=linked_coach.coach_id, u=u) }}">View coach page →</a></div></div>
+{% elif is_alumni %}
+<div class="bl-panel" style="margin-bottom:12px"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Begin coaching career</span><span class="bl-panel-meta">creates a separate, linked coach page</span></div>
+  <div class="bl-panel-body"><form method="post" action="{{ url_for('player_become_coach', pid=pid) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+    <input type="hidden" name="u" value="{{ u }}">
+    <label class="bl-field"><span class="bl-field-label">Gender</span><span class="bl-select-wrap"><select class="bl-select" id="pc-gender"><option value="men">Men</option><option value="women">Women</option></select></span></label>
+    <label class="bl-field"><span class="bl-field-label">Conference</span><span class="bl-select-wrap"><select class="bl-select" id="pc-conf" style="min-width:190px"></select></span></label>
+    <label class="bl-field"><span class="bl-field-label">Program</span><span class="bl-select-wrap"><select class="bl-select" id="pc-school" name="dest_school" style="min-width:180px" required></select></span></label>
+    <label class="bl-field"><span class="bl-field-label">Seat</span><span class="bl-select-wrap"><select class="bl-select" name="role"><option value="asst">Assistant Coach</option><option value="assoc">Associate Head Coach</option><option value="head">Head Coach</option></select></span></label>
+    <button class="bl-pill" type="submit">Begin coaching career</button>
+  </form><p class="bl-note" style="margin-top:8px">Choose any program in any division—not only this player's alma mater. Once hired, this coach uses the normal coach movement tools and can move or change roles throughout their career.</p></div>
+</div>
+<script id="pc-tree" type="application/json">{{ coach_move_tree|tojson }}</script>
+<script>
+(function () {
+  var tree = JSON.parse(document.getElementById("pc-tree").textContent),
+      gender = document.getElementById("pc-gender"), conf = document.getElementById("pc-conf"),
+      school = document.getElementById("pc-school");
+  function add(sel, value, label) { var o = document.createElement("option"); o.value = value; o.textContent = label; sel.appendChild(o); }
+  function schools() { school.innerHTML = ""; var e = (tree[gender.value] || [])[conf.value]; if (e) e.schools.forEach(function (s) { add(school, e.div + "|" + gender.value + "|" + s, s); }); }
+  function conferences() { conf.innerHTML = ""; (tree[gender.value] || []).forEach(function (e, i) { add(conf, i, e.conf + " · " + e.div); }); schools(); }
+  gender.addEventListener("change", conferences); conf.addEventListener("change", schools); conferences();
+})();
+</script>
+{% endif %}
 {% set abbr, color = crest(info.school) %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   {% if info.free_agent %}
