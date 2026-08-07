@@ -611,6 +611,23 @@ def find_persisted_player(pid: str, seed: int = DEFAULT_SEED):
         conn.close()
 
 
+def is_graduate(pid: str, seed: int = DEFAULT_SEED) -> bool:
+    """Whether ``pid`` is in this world's authoritative graduate archive.
+
+    Persisted rosters include active players and therefore are not evidence that
+    a person is eligible to start a coaching career.
+    """
+    w = load_world(seed)
+    if not w:
+        return False
+    conn = _db()
+    try:
+        return conn.execute("SELECT 1 FROM world_graduates WHERE world_id=? AND pid=? LIMIT 1",
+                            (w["id"], pid)).fetchone() is not None
+    finally:
+        conn.close()
+
+
 # ==========================================================================
 # Rosters as-of the current week: year-start rosters + a development replay.
 # ==========================================================================
@@ -3006,7 +3023,8 @@ def _normalize(rosters: dict, protect: set | None = None) -> dict:
     return {"relocated": moved, "departed": departed}
 
 
-def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str) -> dict:
+def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: str,
+                   *, year: int | None = None) -> dict:
     """Free-agent coach movement, run BEFORE the player portal. A slice of head
     coaches move up to higher-prestige programs (a swap with the program they
     join). When a coach moves, up to half of their old roster MAY follow — but
@@ -3049,7 +3067,7 @@ def coach_carousel(rosters: dict, player_str: dict, rng: random.Random, gender: 
         coachgen.ensure(sdiv, gender, src, "head")             # register both seats so we can swap
         coachgen.ensure(ddiv, gender, dest, "head")
         coachreg.swap_head_coaches(gender, sdiv, src, ddiv, dest,
-                                   year=BASE_YEAR + load_world()["year"])
+                                   year=BASE_YEAR + year if year is not None else None)
         used.add(src); used.add(dest); moves += 1
 
         # Followers: src's coach is now at dest. Up to half of src's roster may
@@ -3085,7 +3103,7 @@ def finalize_rollover(rosters: dict, signings: dict, player_str: dict, *,
     for gender in GENDERS:
         if not any(g == gender for (_, g) in rosters):
             continue
-        cr = coach_carousel(rosters, player_str, rng, gender)
+        cr = coach_carousel(rosters, player_str, rng, gender, year=year)
         carousel["moves"] += cr["moves"]
         carousel["followers"] += cr["followers"]
         carousel["sample"].extend(cr["sample"][:3])

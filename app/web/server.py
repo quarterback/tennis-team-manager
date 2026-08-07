@@ -1793,7 +1793,9 @@ def create_app() -> Flask:
             if not p:
                 abort(404)
             school, _pdiv = wd.persisted_team(pid)
-            is_alumni = True
+            # A persisted roster row can also be a current player viewed from the
+            # wrong universe. Only the graduate archive enables coach conversion.
+            is_alumni = wd.is_graduate(pid)
             info = {"name": p.name, "school": school or "—",
                     "class": getattr(p, "class_year", ""),
                     "country": getattr(p, "country", ""),
@@ -1843,7 +1845,7 @@ def create_app() -> Flask:
         """Give an alumnus a new coaching identity at the program the user picks."""
         division, gender, _label, u = _universe(request)
         p = wd.find_persisted_player(pid)
-        if not p:
+        if not p or not wd.is_graduate(pid):
             abort(404)
         import app.coachreg as coachreg
         from app import coachgen

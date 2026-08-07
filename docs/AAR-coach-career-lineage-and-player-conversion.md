@@ -95,8 +95,11 @@ The archived player page continues to age and remains reachable from career hono
 championship archives, and historical rosters. The coach page accumulates its own
 jobs, coaching records, and coaching honors. Each page links to the other.
 
-The conversion action appears only on the historical/alumni fallback, not on an
-active roster player's page. The user chooses gender, conference, program, and seat
+The conversion action appears only when the pid is present in the authoritative
+`world_graduates` archive, not merely when a player page falls back to persisted
+history. (`world_roster` contains both active and historical players and is not
+proof of graduation.) The POST repeats this check so a forged request cannot turn
+an active player into a coach. The user chooses gender, conference, program, and seat
 (head, associate, or assistant). The POST route validates the submitted division,
 gender, and school against the actual NCAA universe rather than trusting the form.
 An existing link is idempotent: `coach_for_player` returns the already-created coach
@@ -152,6 +155,12 @@ more restrictive than the intended feature.
    biography, not a restriction on coaching employment.
 8. **An initial appointment has no source seat.** Replacing an incumbent cannot use
    the ordinary two-seat swap without inventing a phantom job for the new coach.
+9. **A persisted player is not necessarily a graduate.** Cross-universe page lookup
+   can fall back to `world_roster` for someone who is still active elsewhere. Gate
+   both UI and POST on `world_graduates`.
+10. **Rollover owns its year.** `coach_carousel` must use the `year` passed through
+    `finalize_rollover`; loading the default global world crashes standalone
+    rollovers and stamps the wrong calendar year for non-default seeds.
 
 ## Invariants and regression coverage
 

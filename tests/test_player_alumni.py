@@ -49,6 +49,12 @@ def test_player_page_hydrates_persisted_alumni(tmp_path):
         assert r.status_code == 200
         assert "Grad Champion" in body          # hydrated from the persisted store
         assert "Old State" in body              # career history renders
+        # A historical roster row alone is not proof of graduation. This player
+        # was deliberately not inserted into world_graduates, so conversion must
+        # stay hidden and a forged POST must be rejected.
+        assert "Begin coaching career" not in body
+        assert c.post(f"/player/{p.pid}/become-coach?u=D1-men",
+                      data={"dest_school": "D1|men|Stanford", "role": "asst"}).status_code == 404
         # a pid that exists nowhere still 404s
         assert c.get("/player/nope-xyz?u=D1-men").status_code == 404
     finally:
