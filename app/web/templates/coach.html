@@ -14,6 +14,7 @@
     <div><div class="tname">{% if c.home_country %}<span class="player-flag" title="{{ c.home_country|country_name }}">{{ c.home_country|flags }}</span> {% endif %}{{ c.name }}</div>
       <div class="tsub">{{ c.role_label|default('Head Coach') }}{% if c.school %} · {{ c.school }}{% endif %}
         {% if c.tenure %} · {{ c.tenure }}-yr tenure{% endif %}{% if c.archetype %} · {{ c.archetype }}{% endif %}</div>
+      {% if c.player_pid %}<div class="tsub"><a href="{{ url_for('player', pid=c.player_pid, u=u) }}">View playing career →</a></div>{% endif %}
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="text-align:right">
       {% if career and career.head_seasons %}<div class="bl-th" style="font-size:10px">CAREER (HEAD)</div>
@@ -107,6 +108,23 @@
           <tr><td>Tactics</td><td>{{ c.tac|round|int }}</td></tr>
         </tbody></table></div>
       </div>
+
+      {% if career_path %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-route" aria-hidden="true"></i> Career path</span>
+        <span class="bl-panel-meta">program lineage</span></div>
+        <div class="bl-panel-body">
+          {% for job in career_path %}
+          <div class="pl-honyear">
+            <div class="pl-honyear-head">
+              <a href="{{ url_for('teams', school=job.school, u=job.division ~ '-' ~ job.gender) }}" style="text-decoration:none">{{ job.school }}</a>
+              {% if loop.first and c.school == job.school and c.role == job.role %}<span class="pl-live">current</span>{% endif %}
+            </div>
+            <div class="tsub">{{ {'head':'Head Coach','assoc':'Associate Head Coach','asst':'Assistant Coach'}.get(job.role, 'Coach') }} · {{ job.division }} {{ job.gender }}{% if job.year %} · since {{ job.year }}{% endif %}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
       {% if c.school %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Move coach</span>
