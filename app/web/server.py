@@ -22,7 +22,8 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     past_individual_champions, UNIVERSES, FIELD_PRESETS,
                     recruit_rows, get_recruit, recruit_profile, team_roster,
                     player_career_table, player_career_records, search_players,
-                    results_by_week, ncaa_bracket_view, ncaa_bracket_years, transfer_portal_view,
+                    results_by_week, ncaa_bracket_view, ncaa_bracket_years,
+                    ita_bracket_view, ita_bracket_years, transfer_portal_view,
                     RECRUIT_GENDERS, editor_roster, all_programs_grouped,
                     all_programs_by_universe, coach_move_tree,
                     active_overrides, reset_all, reset_lineup, teams_by_conference, coaching_staff,
@@ -1390,10 +1391,17 @@ def create_app() -> Flask:
 
     @app.route("/season/ita")
     def season_ita():
+        # The Preseason NIT draws through the NCAA bracket's surface — same tree,
+        # same canvas, same viewer — so it takes the same season picker too.
         division, gender, label, u = _universe(request)
-        sid = sm.get_or_create(division, gender, seed=wd.current_year_seed())
+        years = ita_bracket_years(division, gender)
+        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        sel = request.args.get("year", type=int)
+        view_year = sel if (sel and sel != cur_year) else None
         return render_template("ita.html", active="Season", u=u, uni_label=label,
-                               view=sm.ita_view(sid), division=division, crest=crest)
+                               br=ita_bracket_view(division, gender, year=view_year),
+                               division=division, bracket_years=years,
+                               cur_year=cur_year, sel_year=sel or cur_year)
 
     @app.route("/world-cups")
     def world_cups():

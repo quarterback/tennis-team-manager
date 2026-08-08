@@ -1,0 +1,174 @@
+{# ------------------------------------------------------------------------ #}
+{# The bracket surface, shared by every elimination tree we draw (the NCAA    #}
+{# championship and the Preseason NIT).                                       #}
+{#                                                                            #}
+{# The tree is positioned SERVER-SIDE (`state._bracket_canvas`): cards and the #}
+{# SVG elbows share one coordinate system, so a card always sits between the   #}
+{# two cards that feed it. Never "fix" bracket alignment here or in CSS — the  #}
+{# geometry knobs are `_bracket_canvas`'s card_w/card_h/gutter/leaf_gap.       #}
+{# Styles live in static/css/bracket.css (`.brk-*`); the viewer behaviour is   #}
+{# `brk_script()` at the bottom of this file.                                  #}
+{# ------------------------------------------------------------------------ #}
+{% from "_crest.html" import crest_box %}
+
+{# One team row. Conference and bid live in the tooltip — a bracket card repeats
+   nothing, it carries seed, crest, name, score. A `tbd` team is a round that
+   hasn't been drawn yet: the slot is real, the team isn't there yet. #}
+{% macro brk_row(t, m, u, bids=true) %}
+{% if t.tbd %}
+<div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">TBD</span></div>
+{% else %}
+<div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}"
+     data-school="{{ t.school }}"
+     title="{{ t.school }}{% if t.conf %} · {{ t.conf }}{% if bids %} · {{ 'automatic qualifier' if t.aq else 'at-large' }}{% endif %}{% endif %}">
+  <span class="brk-seed">{{ t.seed if t.seed else '' }}</span>
+  {{ crest_box(t.school, t.abbr, t.color, 'xs') }}
+  <a class="brk-name" href="{{ url_for('teams', school=t.school, u=u) }}">{{ t.school }}</a>
+  {% if bids and t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
+  <span class="brk-score">{% if m.played %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}</span>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# One laid-out tree: column headers, the elbow paths, then the cards. #}
+{% macro brk_canvas(cv, u, bids=true) %}
+<div class="brk-scroll">
+  <div class="brk-headers" style="width:{{ cv.width }}px">
+    {% for c in cv.columns %}
+    <div class="brk-head{{ ' is-playin' if c.playin }}" style="left:{{ c.x }}px;width:{{ cv.card_w }}px">
+      {{ 'Opening Round' if c.playin else c.name }}<span class="ct">{{ c.n }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="brk-canvas" style="width:{{ cv.width }}px;height:{{ cv.height }}px">
+    <svg class="brk-links" width="{{ cv.width }}" height="{{ cv.height }}"
+         viewBox="0 0 {{ cv.width }} {{ cv.height }}" aria-hidden="true">
+      {% for l in cv.links %}
+      <path d="{{ l.d }}" class="brk-link{{ ' is-live' if l.won }}" data-school="{{ l.school }}"/>
+      {% endfor %}
+    </svg>
+    {% for m in cv.cards %}
+    <article class="brk-card{{ ' is-open' if not m.played }}{{ ' is-tbd' if m.tbd }}{{ ' is-playin' if m.playin }}"
+             {% if m.played %}data-href="{{ url_for('season_dual', dual_id=m.id, u=u) }}"{% endif %}
+             style="left:{{ m.x }}px;top:{{ m.y }}px;width:{{ cv.card_w }}px;height:{{ cv.card_h }}px"
+             aria-label="{% if m.tbd %}{{ m.round }}: to be decided{% else %}{{ m.round }}: {{ m.home.school }} v {{ m.away.school }}{% endif %}">
+      {{ brk_row(m.home, m, u, bids) }}
+      {{ brk_row(m.away, m, u, bids) }}
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{# The viewer toolbar: which sub-tree is on screen, zoom, the seed/score toggles,
+   team highlight and print. `tabs` is a list of (view-key, label) pairs; the
+   first one is the default view. #}
+{% macro brk_toolbar(tabs) %}
+<div class="brk-toolbar" id="brktools">
+  <div class="brk-tabs" role="tablist">
+    {% for key, label in tabs %}
+    <button type="button" class="brk-tab{{ ' active' if loop.first }}" data-view="{{ key }}">{{ label }}</button>
+    {% endfor %}
+  </div>
+  <div class="brk-tools">
+    <button type="button" class="brk-btn" data-step="-1" title="Previous">‹</button>
+    <button type="button" class="brk-btn" data-step="1" title="Next">›</button>
+    <span class="brk-sep"></span>
+    <button type="button" class="brk-btn" data-zoom="out" title="Zoom out">−</button>
+    <button type="button" class="brk-btn" data-zoom="fit" title="Fit to width">Fit</button>
+    <button type="button" class="brk-btn" data-zoom="in" title="Zoom in">+</button>
+    <span class="brk-sep"></span>
+    <label class="brk-check"><input type="checkbox" data-toggle="seeds" checked> Seeds</label>
+    <label class="brk-check"><input type="checkbox" data-toggle="scores" checked> Scores</label>
+    <input class="brk-find" id="brkfind" type="search" placeholder="Highlight a team…" autocomplete="off">
+    <button type="button" class="brk-btn" data-print title="Print the bracket"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro brk_script() %}
+<script>
+// The bracket is server-positioned (cards and SVG elbows share one coordinate
+// system), so this only handles viewing: which section is on screen, zoom, the
+// seed/score toggles, and highlighting one team's path through the tree.
+(function () {
+  var stage = document.getElementById('brkstage');
+  var tools = document.getElementById('brktools');
+  if (!stage || !tools) return;
+  var regions = Array.prototype.slice.call(stage.querySelectorAll('.brk-region'));
+  var tabs = Array.prototype.slice.call(tools.querySelectorAll('.brk-tab'));
+  var first = tabs.length ? tabs[0].dataset.view : 'all';
+  var zoom = 1;
+
+  function show(view) {
+    regions.forEach(function (r) { r.hidden = view !== 'all' && r.dataset.view !== view; });
+    tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.view === view); });
+    stage.dataset.view = view;
+  }
+  function applyZoom() {
+    regions.forEach(function (r) {
+      r.querySelectorAll('.brk-scroll').forEach(function (c) { c.style.zoom = zoom; });
+    });
+  }
+  tools.addEventListener('click', function (e) {
+    var tab = e.target.closest('.brk-tab');
+    if (tab) { show(tab.dataset.view); return; }
+    var z = e.target.closest('[data-zoom]');
+    if (z) {
+      var k = z.dataset.zoom;
+      if (k === 'in') zoom = Math.min(1.6, zoom + 0.1);
+      else if (k === 'out') zoom = Math.max(0.4, zoom - 0.1);
+      else {
+        var vis = regions.filter(function (r) { return !r.hidden; })[0];
+        var cv = vis && vis.querySelector('.brk-canvas');
+        var box = vis && vis.querySelector('.brk-scroll');
+        zoom = cv && box ? Math.max(0.4, Math.min(1, box.clientWidth / cv.offsetWidth)) : 1;
+      }
+      applyZoom();
+      return;
+    }
+    var step = e.target.closest('[data-step]');
+    if (step) {
+      var order = tabs.map(function (t) { return t.dataset.view; });
+      var at = Math.max(0, order.indexOf(stage.dataset.view || first));
+      show(order[(at + Number(step.dataset.step) + order.length) % order.length]);
+      return;
+    }
+    if (e.target.closest('[data-print]')) window.print();
+  });
+  tools.addEventListener('change', function (e) {
+    var t = e.target.closest('[data-toggle]');
+    if (t) stage.classList.toggle('no-' + t.dataset.toggle, !t.checked);
+  });
+
+  // Highlight one team's whole route: its cards and the paths that carried it.
+  function highlight(name) {
+    var key = (name || '').trim().toLowerCase();
+    stage.querySelectorAll('.brk-card').forEach(function (c) { c.classList.remove('is-hl'); });
+    stage.querySelectorAll('.brk-link').forEach(function (p) { p.classList.remove('is-hl'); });
+    if (!key) return;
+    stage.querySelectorAll('.brk-team[data-school]').forEach(function (t) {
+      if (t.dataset.school.toLowerCase().indexOf(key) !== -1) t.closest('.brk-card').classList.add('is-hl');
+    });
+    stage.querySelectorAll('.brk-link[data-school]').forEach(function (p) {
+      if (p.dataset.school && p.dataset.school.toLowerCase().indexOf(key) !== -1) p.classList.add('is-hl');
+    });
+  }
+  var find = document.getElementById('brkfind');
+  if (find) find.addEventListener('input', function () { highlight(find.value); });
+  stage.addEventListener('mouseover', function (e) {
+    var t = e.target.closest('.brk-team[data-school]');
+    if (t && !(find && find.value)) highlight(t.dataset.school);
+  });
+  stage.addEventListener('mouseleave', function () { if (!(find && find.value)) highlight(''); });
+
+  // A card opens its box score; a team name still goes to the team page.
+  stage.addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    var card = e.target.closest('.brk-card[data-href]');
+    if (card) window.location.href = card.dataset.href;
+  });
+  show(first);
+})();
+</script>
+{% endmacro %}

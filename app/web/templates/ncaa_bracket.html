@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_bracket.html" import brk_canvas, brk_toolbar, brk_script %}
 {% block title %}Play to Clinch — NCAA Bracket{% endblock %}
 {% block content %}
 
@@ -113,8 +114,6 @@
 .rs-seedrow .seed { width: 26px; text-align: right; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .rs-seedrow .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rs-seedrow .conf { font-size: 11px; color: var(--text-muted); }
-.rgn { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
-  background: var(--green-50, rgba(14,124,134,.10)); color: var(--green-700, #0e7c86); white-space: nowrap; }
 </style>
 
 {% else %}
@@ -131,76 +130,15 @@
 {# ------------------------------------------------------------------ #}
 {# The bracket proper: one elimination tree per region, laid out on a   #}
 {# coordinate canvas with SVG elbows, so every card sits between the    #}
-{# two cards that feed it. Cards and paths share the same geometry.     #}
+{# two cards that feed it. Cards, paths and the viewer controls are the #}
+{# shared bracket surface in `_bracket.html` (the Preseason NIT draws   #}
+{# through the very same macros).                                       #}
 {# ------------------------------------------------------------------ #}
+{% set tabs = [('all', 'Full bracket')] %}
+{% for L in br.ladders %}{% set _ = tabs.append(('r' ~ loop.index0, L.name)) %}{% endfor %}
+{% if br.national %}{% set _ = tabs.append(('ff', 'Final Four')) %}{% endif %}
 
-{# One team row. Conference and bid live in the tooltip — a bracket card repeats
-   nothing, it carries seed, crest, name, score. #}
-{% macro brk_row(t, m) %}
-<div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}"
-     data-school="{{ t.school }}"
-     title="{{ t.school }}{% if t.conf %} · {{ t.conf }} · {{ 'automatic qualifier' if t.aq else 'at-large' }}{% endif %}">
-  <span class="brk-seed">{{ t.seed if t.seed else '' }}</span>
-  {{ crest_box(t.school, t.abbr, t.color, 'xs') }}
-  <a class="brk-name" href="{{ url_for('teams', school=t.school, u=u) }}">{{ t.school }}</a>
-  {% if t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
-  <span class="brk-score">{% if m.played %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}</span>
-</div>
-{% endmacro %}
-
-{% macro canvas(cv) %}
-<div class="brk-scroll">
-  <div class="brk-headers" style="width:{{ cv.width }}px">
-    {% for c in cv.columns %}
-    <div class="brk-head{{ ' is-playin' if c.playin }}" style="left:{{ c.x }}px;width:{{ cv.card_w }}px">
-      {{ 'Opening Round' if c.playin else c.name }}<span class="ct">{{ c.n }}</span>
-    </div>
-    {% endfor %}
-  </div>
-  <div class="brk-canvas" style="width:{{ cv.width }}px;height:{{ cv.height }}px">
-    <svg class="brk-links" width="{{ cv.width }}" height="{{ cv.height }}"
-         viewBox="0 0 {{ cv.width }} {{ cv.height }}" aria-hidden="true">
-      {% for l in cv.links %}
-      <path d="{{ l.d }}" class="brk-link{{ ' is-live' if l.won }}" data-school="{{ l.school }}"/>
-      {% endfor %}
-    </svg>
-    {% for m in cv.cards %}
-    <article class="brk-card{{ ' is-open' if not m.played }}{{ ' is-playin' if m.playin }}"
-             {% if m.played %}data-href="{{ url_for('season_dual', dual_id=m.id, u=u) }}"{% endif %}
-             style="left:{{ m.x }}px;top:{{ m.y }}px;width:{{ cv.card_w }}px;height:{{ cv.card_h }}px"
-             aria-label="{{ m.round }}: {{ m.home.school }} v {{ m.away.school }}">
-      {{ brk_row(m.home, m) }}
-      {{ brk_row(m.away, m) }}
-    </article>
-    {% endfor %}
-  </div>
-</div>
-{% endmacro %}
-
-<div class="bl-container">
-  <div class="brk-toolbar" id="brktools">
-    <div class="brk-tabs" role="tablist">
-      <button type="button" class="brk-tab active" data-view="all">Full bracket</button>
-      {% for L in br.ladders %}
-      <button type="button" class="brk-tab" data-view="r{{ loop.index0 }}">{{ L.name }}</button>
-      {% endfor %}
-      {% if br.national %}<button type="button" class="brk-tab" data-view="ff">Final Four</button>{% endif %}
-    </div>
-    <div class="brk-tools">
-      <button type="button" class="brk-btn" data-step="-1" title="Previous region">‹</button>
-      <button type="button" class="brk-btn" data-step="1" title="Next region">›</button>
-      <span class="brk-sep"></span>
-      <button type="button" class="brk-btn" data-zoom="out" title="Zoom out">−</button>
-      <button type="button" class="brk-btn" data-zoom="fit" title="Fit to width">Fit</button>
-      <button type="button" class="brk-btn" data-zoom="in" title="Zoom in">+</button>
-      <span class="brk-sep"></span>
-      <label class="brk-check"><input type="checkbox" data-toggle="seeds" checked> Seeds</label>
-      <label class="brk-check"><input type="checkbox" data-toggle="scores" checked> Scores</label>
-      <input class="brk-find" id="brkfind" type="search" placeholder="Highlight a team…" autocomplete="off">
-      <button type="button" class="brk-btn" data-print title="Print the bracket"><i class="fa-solid fa-print" aria-hidden="true"></i></button>
-    </div>
-  </div>
-</div>
+<div class="bl-container">{{ brk_toolbar(tabs) }}</div>
 
 <div class="bl-container brk-stage" id="brkstage">
   {% for L in br.ladders %}
@@ -212,7 +150,7 @@
         <strong>{% if L.champion.seed %}#{{ L.champion.seed }} {% endif %}{{ L.champion.school }}</strong></span>
       {% else %}<span class="brk-region-champ">in progress</span>{% endif %}
     </div>
-    {{ canvas(L.canvas) }}
+    {{ brk_canvas(L.canvas, u) }}
   </section>
   {% endfor %}
   {% if br.national %}
@@ -221,7 +159,7 @@
       <h2>Final Four</h2>
       <span class="brk-region-champ">the four region champions</span>
     </div>
-    {{ canvas(br.national) }}
+    {{ brk_canvas(br.national, u) }}
   </section>
   {% endif %}
 </div>
@@ -304,177 +242,6 @@
   Click a card for the box score; click a team to open its page.
 </div></div>
 
-<style>
-/* ---- the bracket canvas ------------------------------------------- */
-.brk-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
-.brk-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-.brk-tab { padding: 5px 11px; font-size: 12px; font-weight: 700; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-secondary); }
-.brk-tab:hover { border-color: var(--brand, #0e7c86); }
-.brk-tab.active { background: var(--brand, #0e7c86); border-color: var(--brand, #0e7c86); color: #fff; }
-.brk-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-left: auto; }
-.brk-btn { min-width: 28px; padding: 4px 8px; font-size: 12px; font-weight: 700; cursor: pointer;
-  border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-card); color: var(--text-secondary); }
-.brk-btn:hover { border-color: var(--brand, #0e7c86); color: var(--brand, #0e7c86); }
-.brk-sep { width: 1px; height: 18px; background: var(--border-subtle); }
-.brk-check { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
-.brk-find { width: 150px; padding: 4px 8px; font-size: 12px; border-radius: 6px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); }
-
-.brk-region { margin-bottom: 18px; }
-.brk-region-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
-.brk-region-head h2 { margin: 0; font-family: var(--font-display); font-size: 17px; color: var(--text-primary); }
-.brk-region-champ { font-size: 11.5px; color: var(--text-muted); }
-.brk-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 6px;
-  border-top: 1px solid var(--border-subtle); }
-.brk-headers { position: sticky; top: 0; z-index: 4; height: 26px;
-  background: var(--surface-page, var(--surface-card)); }
-.brk-head { position: absolute; top: 0; font-size: 10px; font-weight: 800; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--text-faint); padding-top: 7px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; }
-.brk-head .ct { margin-left: 5px; opacity: .65; font-weight: 700; }
-.brk-head.is-playin { color: var(--text-muted); font-style: italic; }
-.brk-canvas { position: relative; }
-.brk-links { position: absolute; inset: 0; pointer-events: none; }
-.brk-link { fill: none; stroke: var(--border-strong, #cbd2d6); stroke-width: 1.5; }
-.brk-link.is-live { stroke: var(--brand, #0e7c86); stroke-width: 2; }
-.brk-link.is-hl { stroke: var(--brand, #0e7c86); stroke-width: 3; }
-
-.brk-card { position: absolute; display: flex; flex-direction: column; justify-content: center;
-  box-sizing: border-box; background: var(--surface-card, #fff); border: 1px solid var(--border-subtle);
-  border-radius: 7px; overflow: hidden; cursor: pointer; z-index: 1; }
-.brk-card:hover { border-color: var(--brand, #0e7c86); box-shadow: 0 2px 8px rgba(0,0,0,.10); z-index: 3; }
-.brk-card.is-open { background: var(--surface-sunken, #f7f8f9); border-style: dashed; cursor: default; }
-/* The play-in is a qualifier, not a main-draw round — lighter, and inset so the
-   Round of 64 reads as the top of the bracket proper. */
-.brk-card.is-playin { background: var(--surface-sunken, #fafbfb); border-color: var(--border-subtle);
-  opacity: .92; }
-.brk-card.is-playin .brk-name { font-size: 12px; }
-.brk-card.is-hl { border-color: var(--brand, #0e7c86); box-shadow: 0 0 0 2px rgba(14,124,134,.22); z-index: 3; }
-.brk-team { display: grid; grid-template-columns: 20px 18px minmax(0, 1fr) auto auto; align-items: center;
-  gap: 6px; padding: 3px 7px; min-width: 0; }
-.brk-team + .brk-team { border-top: 1px solid var(--border-subtle); }
-.brk-seed { font-size: 10.5px; font-weight: 800; color: var(--text-faint); text-align: right;
-  font-variant-numeric: tabular-nums; }
-.brk-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12.5px; color: var(--text-secondary); text-decoration: none; }
-.brk-name:hover { text-decoration: underline; }
-.brk-team.is-winner .brk-name { font-weight: 800; color: var(--text-primary); }
-.brk-team.is-winner .brk-score { color: var(--brand, #0e7c86); font-weight: 800; }
-.brk-team.is-out { opacity: .62; }
-.brk-bid { font-size: 8.5px; font-weight: 800; letter-spacing: .03em; padding: 0 3px; border-radius: 3px;
-  color: var(--text-faint); background: var(--gray-100, rgba(0,0,0,.05)); }
-.brk-score { font-size: 12px; font-weight: 700; color: var(--text-muted); min-width: 12px; text-align: right;
-  font-variant-numeric: tabular-nums; }
-.brk-stage.no-seeds .brk-seed, .brk-stage.no-scores .brk-score { visibility: hidden; }
-.brk-region[hidden] { display: none; }
-
-.brk-drawer { border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-card);
-  padding: 8px 12px; margin-bottom: 12px; }
-.brk-drawer > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
-.brk-drawer-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-.brk-seedsheet { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 18px; }
-.bl-seed-rgnhead { padding: 8px 4px 2px; }
-.rgn { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
-  background: var(--green-50, rgba(14,124,134,.10)); color: var(--green-700, #0e7c86); white-space: nowrap; }
-.bl-bracket-layout2 { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 16px; align-items: start; }
-.bl-seedsheet { position: sticky; top: 12px; }
-@media (max-width: 860px) {
-  .bl-bracket-layout2 { grid-template-columns: 1fr; }
-  .bl-seedsheet { position: static; }
-  .brk-tools { margin-left: 0; }
-  .brk-find { width: 120px; }
-}
-@media print {
-  .bl-toolbar, .brk-toolbar, .brk-drawer, .bl-note { display: none !important; }
-  .brk-scroll { overflow: visible; }
-  .brk-region { break-inside: avoid; page-break-after: always; }
-}
-</style>
-
-<script>
-// The bracket is server-positioned (cards and SVG elbows share one coordinate
-// system), so this only handles viewing: which region is on screen, zoom, the
-// seed/score toggles, and highlighting one team's path through the tree.
-(function () {
-  var stage = document.getElementById('brkstage');
-  var tools = document.getElementById('brktools');
-  if (!stage || !tools) return;
-  var regions = Array.prototype.slice.call(stage.querySelectorAll('.brk-region'));
-  var tabs = Array.prototype.slice.call(tools.querySelectorAll('.brk-tab'));
-  var zoom = 1;
-
-  function show(view) {
-    regions.forEach(function (r) { r.hidden = view !== 'all' && r.dataset.view !== view; });
-    tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.view === view); });
-    stage.dataset.view = view;
-  }
-  function applyZoom() {
-    regions.forEach(function (r) {
-      var c = r.querySelector('.brk-scroll');
-      if (c) { c.style.zoom = zoom; }
-    });
-  }
-  tools.addEventListener('click', function (e) {
-    var tab = e.target.closest('.brk-tab');
-    if (tab) { show(tab.dataset.view); return; }
-    var z = e.target.closest('[data-zoom]');
-    if (z) {
-      var k = z.dataset.zoom;
-      if (k === 'in') zoom = Math.min(1.6, zoom + 0.1);
-      else if (k === 'out') zoom = Math.max(0.4, zoom - 0.1);
-      else {
-        var vis = regions.filter(function (r) { return !r.hidden; })[0];
-        var cv = vis && vis.querySelector('.brk-canvas');
-        var box = vis && vis.querySelector('.brk-scroll');
-        zoom = cv && box ? Math.max(0.4, Math.min(1, box.clientWidth / cv.offsetWidth)) : 1;
-      }
-      applyZoom();
-      return;
-    }
-    var step = e.target.closest('[data-step]');
-    if (step) {
-      var order = tabs.map(function (t) { return t.dataset.view; });
-      var at = Math.max(0, order.indexOf(stage.dataset.view || 'all'));
-      show(order[(at + Number(step.dataset.step) + order.length) % order.length]);
-      return;
-    }
-    if (e.target.closest('[data-print]')) window.print();
-  });
-  tools.addEventListener('change', function (e) {
-    var t = e.target.closest('[data-toggle]');
-    if (t) stage.classList.toggle('no-' + t.dataset.toggle, !t.checked);
-  });
-
-  // Highlight one team's whole route: its cards and the paths that carried it.
-  function highlight(name) {
-    var key = (name || '').trim().toLowerCase();
-    stage.querySelectorAll('.brk-card').forEach(function (c) { c.classList.remove('is-hl'); });
-    stage.querySelectorAll('.brk-link').forEach(function (p) { p.classList.remove('is-hl'); });
-    if (!key) return;
-    stage.querySelectorAll('.brk-team[data-school]').forEach(function (t) {
-      if (t.dataset.school.toLowerCase().indexOf(key) !== -1) t.closest('.brk-card').classList.add('is-hl');
-    });
-    stage.querySelectorAll('.brk-link[data-school]').forEach(function (p) {
-      if (p.dataset.school && p.dataset.school.toLowerCase().indexOf(key) !== -1) p.classList.add('is-hl');
-    });
-  }
-  var find = document.getElementById('brkfind');
-  if (find) find.addEventListener('input', function () { highlight(find.value); });
-  stage.addEventListener('mouseover', function (e) {
-    var t = e.target.closest('.brk-team[data-school]');
-    if (t && !(find && find.value)) highlight(t.dataset.school);
-  });
-  stage.addEventListener('mouseleave', function () { if (!(find && find.value)) highlight(''); });
-
-  // A card opens its box score; a team name still goes to the team page.
-  stage.addEventListener('click', function (e) {
-    if (e.target.closest('a')) return;
-    var card = e.target.closest('.brk-card[data-href]');
-    if (card) window.location.href = card.dataset.href;
-  });
-  show('all');
-})();
-</script>
+{{ brk_script() }}
 {% endif %}
 {% endblock %}

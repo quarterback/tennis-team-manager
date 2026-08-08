@@ -2066,7 +2066,8 @@ LEAF_GAP = 16         # vertical gap between two adjacent first-round cards
 PAD_Y = 8
 
 
-def _bracket_canvas(cols: list) -> dict | None:
+def _bracket_canvas(cols: list, *, card_w: int = CARD_W, card_h: int = CARD_H,
+                    gutter: int = GUTTER, leaf_gap: int = LEAF_GAP) -> dict | None:
     """Lay a list of rounds out as an ELIMINATION TREE on one coordinate canvas.
 
     Positions come from the tree, not from document flow: the widest full round is
@@ -2078,37 +2079,42 @@ def _bracket_canvas(cols: list) -> dict | None:
     Returns the canvas the template renders: card boxes with x/y, column headers,
     and the SVG elbow paths (source right edge → mid-gutter → target y → target
     left edge) that make the parent-child relationship visible. Cards and paths
-    share this one coordinate system, so nothing can drift out of alignment."""
+    share this one coordinate system, so nothing can drift out of alignment.
+
+    The geometry is overridable so a SMALL tree can use smaller cards (the Preseason
+    NIT lays sixteen four-team Kickoff sites side by side); the defaults are the
+    NCAA bracket's. Everything scales off these four numbers, so a caller never has
+    to touch CSS to change the size — which would break the shared coordinates."""
     cols = [c for c in cols if c["matchups"]]
     if not cols:
         return None
     widest = max(len(c["matchups"]) for c in cols)
     base = max(i for i, c in enumerate(cols) if len(c["matchups"]) == widest)
-    stride = CARD_H + LEAF_GAP
+    stride = card_h + leaf_gap
     centres: list[list[float]] = [[] for _ in cols]
-    centres[base] = [PAD_Y + i * stride + CARD_H / 2 for i in range(widest)]
+    centres[base] = [PAD_Y + i * stride + card_h / 2 for i in range(widest)]
     for i in range(base + 1, len(cols)):                       # rightwards: average the feeders
         prev, cur = centres[i - 1], cols[i]["matchups"]
         centres[i] = [(prev[2 * k] + prev[2 * k + 1]) / 2 if 2 * k + 1 < len(prev)
                       else prev[min(2 * k, len(prev) - 1)] for k in range(len(cur))]
     for i in range(base - 1, -1, -1):                          # leftwards: play-in sits level
         nxt = centres[i + 1]
-        centres[i] = [nxt[k] if k < len(nxt) else PAD_Y + k * stride + CARD_H / 2
+        centres[i] = [nxt[k] if k < len(nxt) else PAD_Y + k * stride + card_h / 2
                       for k in range(len(cols[i]["matchups"]))]
 
     cards, columns, links = [], [], []
     for i, col in enumerate(cols):
-        x = i * (CARD_W + GUTTER)
+        x = i * (card_w + gutter)
         columns.append({"name": col["name"], "x": x, "n": len(col["matchups"]),
                         "playin": i < base})
         for k, m in enumerate(col["matchups"]):
-            cards.append({**m, "x": x, "y": centres[i][k] - CARD_H / 2,
+            cards.append({**m, "x": x, "y": centres[i][k] - card_h / 2,
                           "round": col["name"], "col": i, "slot": k, "playin": i < base})
         if i == 0:
             continue
         prev_col, prev_c = cols[i - 1]["matchups"], centres[i - 1]
-        px = (i - 1) * (CARD_W + GUTTER) + CARD_W
-        mid = px + GUTTER / 2
+        px = (i - 1) * (card_w + gutter) + card_w
+        mid = px + gutter / 2
         # One source per destination (a play-in feeding its slot) or two (the
         # normal halving); either way the destination is fixed by the tree.
         pairs = ([(k, [k]) for k in range(len(col["matchups"]))]
@@ -2128,10 +2134,10 @@ def _bracket_canvas(cols: list) -> dict | None:
                            (dst["home"]["school"], dst["away"]["school"]),
                     "school": src["winner"] or "",
                 })
-    height = max((c["y"] + CARD_H for c in cards), default=0) + PAD_Y
+    height = max((c["y"] + card_h for c in cards), default=0) + PAD_Y
     return {"cards": cards, "columns": columns, "links": links,
-            "width": len(cols) * (CARD_W + GUTTER) - GUTTER,
-            "height": height, "card_w": CARD_W, "card_h": CARD_H}
+            "width": len(cols) * (card_w + gutter) - gutter,
+            "height": height, "card_w": card_w, "card_h": card_h}
 
 
 def _region_ladders(rounds: list, draw_order: list) -> list:
@@ -2168,6 +2174,164 @@ def _region_ladders(rounds: list, draw_order: list) -> list:
                         "champion": (final["home"] if final["home_won"] else final["away"])
                         if final and final["played"] else None})
     return ladders
+
+
+# --------------------------------------------------------------------------
+# Preseason NIT (the ITA opener) — the SAME elimination tree as the NCAAs
+# --------------------------------------------------------------------------
+# The NIT has exactly the NCAA bracket's shape, one tier down: a four-team Kickoff
+# site is a region (a little ladder that sends one team on), and the National Team
+# Indoor is the main draw those ladders feed — so it renders through the same
+# server-positioned `_bracket_canvas`, the same cards and the same SVG elbows.
+#
+# Seeds are read back off the DRAW THAT WAS PERSISTED, never re-derived from a live
+# ranking: a site's two openers are 1v4 / 2v3 by construction, and the Indoor's
+# round-1 slots are the standard seed positions. That's the same rule that keeps the
+# NCAA bracket's labels from drifting (docs/AAR-ncaa-bracket-region-drift.md) — the
+# ITA seeding input (`_ita_ranking`) is a live Power Index that keeps moving all
+# season, so reading it again would relabel a bracket that was drawn in week 1.
+
+NIT_SITE_CARD_W = 232     # a four-team site is a small tree — two sites sit side by side
+NIT_SITE_GUTTER = 44      # (2 × card + gutter = the `.brk-grid` column min-width)
+
+
+def _nit_tbd_match(bpos: int = 0) -> dict:
+    """A placeholder card for a round that hasn't been drawn yet. The draw only
+    writes a round once its feeders have played, so without these the bracket would
+    stop dead at the round on the board — you could never see the shape of the tree
+    you're playing into. Carries the same keys as a real matchup so the canvas
+    positions it identically; `tbd` tells the template to render it empty."""
+    blank = {"school": "", "abbr": "", "color": "", "won": False, "seed": None,
+             "conf": "", "aq": False, "tbd": True}
+    return {"home": dict(blank), "away": dict(blank), "played": False, "bpos": bpos,
+            "id": None, "region": None, "home_won": False, "winner": None,
+            "score": "", "tbd": True}
+
+
+def _nit_pad(cols: list, namer) -> list:
+    """Extend a partly-drawn ladder with the rounds it still has to play, as TBD
+    cards, so the whole tree is visible from the moment the draw is made."""
+    out = list(cols)
+    while out and len(out[-1]["matchups"]) > 1:
+        alive = len(out[-1]["matchups"])         # feeders → teams alive in the next round
+        out.append({"name": namer(alive),
+                    "matchups": [_nit_tbd_match(k) for k in range(alive // 2)]})
+    return out
+
+
+def ita_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[int]:
+    """Calendar years (newest first) whose Preseason NIT has been drawn — the season
+    picker on the NIT page. Past openers reconstruct exactly from that season's saved
+    duals, seeds included (the draw itself carries the seeding)."""
+    import app.world as world
+    import app.seasonmode as sm
+    if not world.exists(seed):
+        return []
+    cur = world.load_world(seed)["year"]
+    years = []
+    for idx in range(cur + 1):
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
+        if sid is None:
+            continue
+        if sm.ita_view(sid):
+            years.append(world.BASE_YEAR + idx)
+    return sorted(years, reverse=True)
+
+
+def ita_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED,
+                     year: int | None = None):
+    """The Preseason NIT as a real bracket: the Kickoff Weekend sites as four-team
+    ladders and the National Team Indoor as the draw they feed, both laid out on the
+    NCAA bracket's coordinate canvas. None before the opener is drawn.
+
+    `year` (calendar) selects a past world-year's opener; default is this season."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app import ita as ita_fmt
+    from app.bracket import _seed_positions
+    from app.ncaa import load_division
+    from .rankings_data import crest
+
+    if year is not None:
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, year - world.BASE_YEAR))
+        if sid is None:
+            return None
+    else:
+        sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
+    view = sm.ita_view(sid)
+    if not view:
+        return None
+    conf_of = {p.school: p.conf_abbr for p in load_division(division, gender).programs}
+
+    def _team(school, won, seeds):
+        ab, col = crest(school)
+        return {"school": school, "abbr": ab, "color": col, "won": won,
+                "seed": seeds.get(school), "conf": conf_of.get(school, ""),
+                "aq": False, "tbd": False}
+
+    def _match(r, seeds):
+        hp, ap = r["home_points"], r["away_points"]
+        played = r["winner"] is not None
+        home_won = played and r["winner"] == 0
+        return {"home": _team(r["home"], home_won, seeds),
+                "away": _team(r["away"], played and not home_won, seeds),
+                "played": played, "bpos": r["bpos"], "id": r["id"], "region": None,
+                "home_won": home_won, "tbd": False,
+                "winner": (r["home"] if home_won else r["away"]) if played else None,
+                "score": f"{max(hp, ap)}-{min(hp, ap)}" if played and hp is not None else ""}
+
+    # --- Kickoff sites: a four-team ladder each, seeded 1–4 by the draw ----------
+    sites = []
+    for site in view["sites"]:
+        semis = sorted(site["semis"], key=lambda r: r["bpos"])
+        # `ita.site_pairs` draws (1 v 4) then (2 v 3), in bpos order — so the pairing
+        # IS the seed line. Read it straight off rather than re-ranking.
+        seeds = {}
+        for i, r in enumerate(semis):
+            seeds.setdefault(r["home"], 1 + i)
+            seeds.setdefault(r["away"], 4 - i)
+        cols = [{"name": "Site Semifinals", "matchups": [_match(r, seeds) for r in semis]}]
+        if site["final"]:
+            cols.append({"name": "Site Final", "matchups": [_match(site["final"], seeds)]})
+        final = site["final"]
+        champ = None
+        if final and final["winner"] is not None:
+            champ = _team(final["home"] if final["winner"] == 0 else final["away"], True, seeds)
+        sites.append({
+            "name": site["label"], "host": semis[0]["home"] if semis else "",
+            "champion": champ,
+            "teams": [_team(s, False, seeds) for s in sorted(seeds, key=seeds.get)],
+            "canvas": _bracket_canvas(_nit_pad(cols, lambda _alive: "Site Final"),
+                                      card_w=NIT_SITE_CARD_W, gutter=NIT_SITE_GUTTER),
+        })
+
+    # --- The Indoor: one seeded single-elim, the NCAA main draw in miniature -----
+    size = ita_fmt.indoor_size(division)
+    rounds = view["indoor"]
+    iseeds: dict = {}
+    if rounds:
+        r1 = sorted(rounds[0]["duals"], key=lambda r: r["bpos"])
+        pos = _seed_positions(2 * len(r1))       # slot i of the round-1 order holds seed pos[i]
+        for k, r in enumerate(r1):
+            iseeds.setdefault(r["home"], pos[2 * k])
+            iseeds.setdefault(r["away"], pos[2 * k + 1])
+    icols = [{"name": rnd["name"],
+              "matchups": [_match(r, iseeds) for r in sorted(rnd["duals"], key=lambda x: x["bpos"])]}
+             for rnd in rounds]
+    if not icols:
+        # Drawn Kickoff, no Indoor yet: show the empty draw the sites are playing for.
+        icols = [{"name": sm._round_name(size),
+                  "matchups": [_nit_tbd_match(k) for k in range(size // 2)]}]
+    indoor = _bracket_canvas(_nit_pad(icols, sm._round_name))
+
+    champion = None
+    if view["indoor_champion"]:
+        champion = _team(view["indoor_champion"], True, iseeds)
+    field = [_team(s, False, iseeds) for s in sorted(iseeds, key=iseeds.get)]
+    return {"phase": view["phase"], "champion": champion, "sites": sites,
+            "indoor": indoor, "indoor_field": field, "indoor_size": size,
+            "runs_kickoff": ita_fmt.runs_kickoff(division),
+            "complete": champion is not None}
 
 
 def teams_by_conference(division: str, gender: str, conf_filter: str = "All"):
