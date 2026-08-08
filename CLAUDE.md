@@ -338,8 +338,18 @@ See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
   `committee_seed_score` anything outside `SEED_ROUNDS`, and read the field back from
   the lock (`_load_draw`) instead of re-selecting. The bracket page is a real
   elimination tree positioned SERVER-SIDE (`state._bracket_canvas`): cards and the SVG
-  elbows share one coordinate system, so never "fix" bracket alignment in CSS. See
+  elbows share one coordinate system, so never "fix" bracket alignment in CSS — resize
+  through that function's `card_w`/`card_h`/`gutter`/`leaf_gap`. See
   `docs/AAR-ncaa-bracket-region-drift.md`.
+- **ONE bracket surface — the Preseason NIT draws on the NCAA's tree** — a Kickoff site
+  is a region ladder and the Team Indoor is the draw they feed, so `/season/ita` and
+  `/ncaa` share `_bracket_canvas`, `templates/_bracket.html` (the `brk_row`/`brk_canvas`/
+  `brk_toolbar`/`brk_script` macros) and the `.brk-*` block in `static/css/bracket.css`.
+  Don't fork the markup for a third bracket — import it. NIT seeds are read back off the
+  PERSISTED DRAW (sites pair 1v4/2v3; the Indoor uses `bracket._seed_positions`), never
+  re-derived from `_ita_ranking` — that's a live Power Index, so re-reading it would
+  relabel a week-1 bracket all season, exactly the drift above. See
+  `docs/AAR-preseason-nit-bracket.md`.
 - International roster share is by division + gender + academics + a coach dice roll;
   academics damps it (academic schools are US-heavy). See
   `docs/AAR-base-roster-nationality-by-level.md`. Tuned for playability, not 1:1 realism.

@@ -1,79 +1,148 @@
 {% extends "base.html" %}
+{% from "_crest.html" import crest_box %}
+{% from "_bracket.html" import brk_canvas, brk_toolbar, brk_script %}
 {% block title %}Play to Clinch — Preseason NIT{% endblock %}
 {% block content %}
 
-{% macro mrow(d) %}
-{% if d %}
-<a class="bl-brk-match" style="grid-template-columns:1fr auto 1fr;text-decoration:none"
-   href="{% if d.status == 'final' %}{{ url_for('season_dual', dual_id=d.id, u=u) }}{% else %}#{% endif %}">
-  <span class="bl-brk-team {{ 'bl-brk-win' if d.winner == 0 else ('bl-brk-lose' if d.winner == 1 else '') }}"><span class="nm">{{ d.home }}</span></span>
-  <span class="bl-stat">{% if d.status == 'final' %}{{ d.home_points }}–{{ d.away_points }}{% else %}vs{% endif %}</span>
-  <span class="bl-brk-team {{ 'bl-brk-win' if d.winner == 1 else ('bl-brk-lose' if d.winner == 0 else '') }}" style="justify-content:flex-end"><span class="nm">{{ d.away }}</span></span>
-</a>
-{% endif %}
-{% endmacro %}
+{# The Preseason NIT renders through the SAME bracket surface as the NCAA
+   championship: a four-team Kickoff site is a region (a little ladder that sends
+   one team on) and the National Team Indoor is the main draw those ladders feed.
+   Everything is positioned server-side by `state.ita_bracket_view`. #}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <form method="get" style="display:contents">
-    <label class="bl-field"><span class="bl-field-label">Division</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
-        {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · Preseason NIT —
+    {% if br and br.runs_kickoff %}Kickoff Weekend &amp; National Team Indoor{% else %}National Team Indoor{% endif %}</span>
+  <span class="bl-bracket-pills" style="margin-left:auto">
+    {% for val, d, g, lbl in universes %}
+      <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('season_ita', u=val, year=sel_year) }}">{{ lbl }}</a>
+    {% endfor %}
+  </span>
+  {% if bracket_years and (bracket_years|length > 1 or bracket_years[0] != cur_year) %}
+  <form method="get" style="margin-left:8px">
+    <input type="hidden" name="u" value="{{ u }}">
+    <label class="bl-field"><span class="bl-field-label">Season</span>
+      <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:96px">
+        {% for y in bracket_years %}<option value="{{ y }}"{% if y == sel_year %} selected{% endif %}>{{ y }}{% if y == cur_year %} (current){% endif %}</option>{% endfor %}
       </select></span></label>
   </form>
-  <span style="font-size:13px;color:var(--text-muted)">Preseason NIT — Kickoff Weekend &amp; National Indoor Tournament · {{ uni_label }}</span>
-  <span style="margin-left:auto"><a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_hub', u=u) }}">← Season</a></span>
+  {% endif %}
+  <span style="margin-left:8px"><a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_hub', u=u) }}">← Season</a></span>
 </div></div>
 
-{% if not view %}
-<div class="bl-container"><div class="bl-note">Advance the season into the Preseason NIT to play the opener.</div></div>
+{% if not br %}
+<div class="bl-container"><div class="bl-note">
+  This season has no Preseason NIT drawn. Once it is, the page shows the whole bracket —
+  {% if division == 'D1' %}the sixteen four-team Kickoff Weekend sites and the sixteen-team{% else %}the eight-team{% endif %}
+  National Team Indoor Championship they feed — round by round as it's played.
+</div></div>
 {% else %}
 
-{% if view.indoor_champion %}
+{% if br.champion %}
 <div class="bl-container"><div class="bl-champ">
-  <span class="bl-crest lg" style="background:{{ crest(view.indoor_champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(view.indoor_champion)[0] }}</span>
+  {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
   <div><div class="label">Preseason NIT Champion</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{{ view.indoor_champion }}</div>
-</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div>
+    <div class="sub">{{ sel_year }} {{ uni_label }} — won the National Team Indoor Championship to open the season</div></div>
 </div></div>
 {% endif %}
 
-{% if view.indoor %}
-<div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">National Team Indoor Championship</span></div>
-  <div class="bl-rounds bl-rounds-sim" style="padding:8px">
-    {% for rnd in view.indoor %}
-    <section class="bl-panel bl-round-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd.name }}</span></div>
-      <div class="bl-round-body">
-        {% for d in rnd.duals %}{{ mrow(d) }}{% endfor %}
-      </div>
-    </section>
-    {% endfor %}
-  </div>
-</div></div>
-{% endif %}
+{% set tabs = [('all', 'Full bracket')] %}
+{% if br.sites %}{% set _ = tabs.append(('ko', 'Kickoff Weekend')) %}{% endif %}
+{% set _ = tabs.append(('indoor', 'Team Indoor')) %}
 
-{% if view.sites %}
-<div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Kickoff Weekend Sites</span></div>
-  <div class="ita-sites">
-    {% for site in view.sites %}
-    <div class="ita-site">
-      <div class="ita-site-head">{{ site.label }}{% if site.semis %} · host {{ site.semis[0].home }}{% endif %}</div>
-      {% for d in site.semis %}{{ mrow(d) }}{% endfor %}
-      {% if site.final %}<div class="ita-site-final">Final</div>{{ mrow(site.final) }}{% endif %}
+<div class="bl-container">{{ brk_toolbar(tabs) }}</div>
+
+<div class="bl-container brk-stage" id="brkstage">
+  {% if br.sites %}
+  {# Kickoff Weekend: sixteen four-team ladders, seeded 1v4 / 2v3, each sending one
+     team to the Indoor. Same cards and elbows as an NCAA region, just smaller. #}
+  <section class="brk-region" data-view="ko">
+    <div class="brk-region-head">
+      <h2>Kickoff Weekend</h2>
+      <span class="brk-region-champ">{{ br.sites|length }} four-team sites · each site champion advances to the Team Indoor</span>
     </div>
-    {% endfor %}
-  </div>
-</div></div>
-{% endif %}
+    <div class="brk-grid">
+      {% for s in br.sites %}
+      <div class="brk-site">
+        <div class="brk-site-head">
+          <h3>{{ s.name }}</h3>
+          {% if s.champion %}
+          <span class="to">to the Indoor · <strong>{{ s.champion.school }}</strong></span>
+          {% elif s.host %}<span class="to">host {{ s.host }}</span>{% endif %}
+        </div>
+        {{ brk_canvas(s.canvas, u, false) }}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-<style>
-.ita-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding: 8px; }
-.ita-site { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; }
-.ita-site-head { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;
-  letter-spacing: .04em; margin-bottom: 4px; }
-.ita-site-final { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 6px 0 2px; }
-</style>
+  <section class="brk-region" data-view="indoor">
+    <div class="brk-region-head">
+      <h2>National Team Indoor Championship</h2>
+      <span class="brk-region-champ">
+        {% if br.champion %}won by {{ br.champion.school }}
+        {% elif br.sites %}the {{ br.indoor_size }} Kickoff site champions
+        {% else %}the top {{ br.indoor_size }} by last season's Power Index{% endif %}</span>
+    </div>
+    {{ brk_canvas(br.indoor, u, false) }}
+  </section>
+</div>
+
+<div class="bl-container">
+  <details class="brk-drawer">
+    <summary>Draw sheet — how the NIT field was seeded</summary>
+    <div class="brk-drawer-body">
+      <p class="brk-drawer-note">
+        {% if br.sites %}
+        The top {{ br.sites|length * 4 }} teams by last season's final Power Index (roster Power 6 in year one) are
+        snake-distributed into {{ br.sites|length }} four-team sites, so the sites carry comparable strength. Each site is
+        seeded 1–4 and plays 1v4 / 2v3, host being its top seed; the {{ br.sites|length }} site champions make up the
+        {{ br.indoor_size }}-team National Team Indoor draw, re-seeded by that same ranking.
+        {% else %}
+        This division plays no Kickoff Weekend — its National Team Indoor is simply the top {{ br.indoor_size }} teams by
+        last season's final Power Index (roster Power 6 in year one), drawn 1v{{ br.indoor_size }} down the seed line.
+        {% endif %}
+        Every NIT dual counts toward the season record and the Power Index, so the opener is a real early read on who's good.
+      </p>
+      <div class="brk-seedsheet">
+        {% if br.indoor_field %}
+        <div>
+          <div class="bl-seed-rgnhead"><span class="rgn">Team Indoor draw</span></div>
+          {% for p in br.indoor_field %}
+          <a class="bl-seed-row" href="{{ url_for('teams', school=p.school, u=u) }}">
+            <span class="seed">{{ p.seed }}</span>
+            {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+            <span class="school">{{ p.school }}</span>
+            <span class="conf">{{ p.conf }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% for s in br.sites %}
+        <div>
+          <div class="bl-seed-rgnhead"><span class="rgn">{{ s.name }}</span></div>
+          {% for p in s.teams %}
+          <a class="bl-seed-row" href="{{ url_for('teams', school=p.school, u=u) }}">
+            <span class="seed">{{ p.seed }}</span>
+            {{ crest_box(p.school, p.abbr, p.color, 'xs') }}
+            <span class="school">{{ p.school }}</span>
+            <span class="conf">{{ p.conf }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="bl-container"><div class="bl-note">
+  Follow the lines: every card sits between the two matchups that feed it, so a winner's path runs left to right
+  into the card it plays next. A dashed card is scheduled but unplayed; a faded TBD card is a round the draw hasn't
+  reached yet. Click a card for the box score; click a team to open its page.
+</div></div>
+
+{{ brk_script() }}
 {% endif %}
 {% endblock %}

@@ -131,6 +131,111 @@ def test_ita_web_pages_render(tmp_path):
     assert c.get("/season?u=D1-men").status_code == 200       # hub renders post-ITA
 
 
+# --- the NIT bracket page ---------------------------------------------------
+# The Preseason NIT draws through the NCAA bracket's surface: a four-team Kickoff
+# site is a region ladder, the Indoor is the main draw those ladders feed, and both
+# are laid out server-side on `_bracket_canvas`.
+
+@pytest.fixture
+def nit(tmp_path):
+    """A D1 season reachable by `current_year_seed` (what the page resolves)."""
+    sm.DB_PATH = str(tmp_path / "season.db")
+    sm._forced_cache.clear()
+    yield sm.get_or_create("D1", "men", seed=wd.current_year_seed())
+
+
+def _cols(canvas):
+    return [(c["name"], c["n"]) for c in canvas["columns"]]
+
+
+def test_nit_bracket_is_a_full_tree_before_a_ball_is_struck(nit):
+    """The Kickoff round-1 fixtures are drawn when the season is created, so the page
+    has a bracket from the start: real opening cards, and the rounds beyond them as
+    TBD placeholders all the way to the Indoor final."""
+    from app.web import state as wstate
+    br = wstate.ita_bracket_view("D1", "men")
+    assert br["champion"] is None and len(br["sites"]) == ita.KICKOFF_SITES
+    site = br["sites"][0]
+    assert _cols(site["canvas"]) == [("Site Semifinals", 2), ("Site Final", 1)]
+    semis = [c for c in site["canvas"]["cards"] if c["col"] == 0]
+    assert semis and not any(c["played"] or c["tbd"] for c in semis)   # drawn, unplayed
+    assert [c["tbd"] for c in site["canvas"]["cards"] if c["col"] == 1] == [True]
+    assert all(c["tbd"] for c in br["indoor"]["cards"])
+
+
+def test_nit_site_seeds_are_read_off_the_draw(nit):
+    """A site is seeded 1–4 with the host on top, and pairs 1v4 / 2v3 — the seed
+    line IS the draw, so it can never drift from the bracket that was played."""
+    from app.web import state as wstate
+    sm.advance(nit)                                   # site semifinals played
+    br = wstate.ita_bracket_view("D1", "men")
+    assert len(br["sites"]) == ita.KICKOFF_SITES
+    for site in br["sites"]:
+        assert [t["seed"] for t in site["teams"]] == [1, 2, 3, 4]
+        assert site["host"] == site["teams"][0]["school"]     # host is the top seed
+        semis = [c for c in site["canvas"]["cards"] if c["col"] == 0]
+        assert {(m["home"]["seed"], m["away"]["seed"]) for m in semis} == {(1, 4), (2, 3)}
+
+
+def test_nit_shows_the_rounds_the_draw_hasnt_reached(nit):
+    """The draw only writes a round once its feeders have played. The page pads the
+    rest with TBD cards so you can see the whole tree you're playing into."""
+    from app.web import state as wstate
+    sm.advance(nit)                                   # kickoff only — no Indoor draw yet
+    br = wstate.ita_bracket_view("D1", "men")
+    assert _cols(br["indoor"]) == [("Round of 16", 8), ("Quarterfinals", 4),
+                                   ("Semifinals", 2), ("Final", 1)]
+    assert all(c["tbd"] for c in br["indoor"]["cards"])        # nothing drawn yet
+    # every site final is on the board too (drawn, unplayed), so no site is a stub
+    assert all(_cols(s["canvas"]) == [("Site Semifinals", 2), ("Site Final", 1)]
+               for s in br["sites"])
+
+
+def test_nit_indoor_is_the_seeded_main_draw(nit):
+    from app.web import state as wstate
+    while sm.load_season(nit)["phase"].startswith("ita"):
+        sm.advance(nit)
+    br = wstate.ita_bracket_view("D1", "men")
+    assert _cols(br["indoor"]) == [("Round of 16", 8), ("Quarterfinals", 4),
+                                   ("Semifinals", 2), ("Final", 1)]
+    assert [p["seed"] for p in br["indoor_field"]] == list(range(1, ita.INDOOR_FIELD + 1))
+    # standard seed line: 1 plays 16, 2 plays 15, …
+    opens = {(m["home"]["seed"], m["away"]["seed"])
+             for m in br["indoor"]["cards"] if m["col"] == 0}
+    assert opens == {(s, ita.INDOOR_FIELD + 1 - s) for s in range(1, 9)}
+    assert br["champion"]["school"] == sm.indoor_champion(nit)
+    # every site champion is in the Indoor field — the ladders feed the main draw
+    assert ({s["champion"]["school"] for s in br["sites"]}
+            == {p["school"] for p in br["indoor_field"]})
+
+
+def test_nit_bracket_cards_and_elbows_share_one_canvas(nit):
+    """The tree is positioned server-side; cards must sit inside the canvas box the
+    template sizes the SVG to, or the elbows point at nothing."""
+    from app.web import state as wstate
+    while sm.load_season(nit)["phase"].startswith("ita"):
+        sm.advance(nit)
+    br = wstate.ita_bracket_view("D1", "men")
+    for cv in [br["indoor"]] + [s["canvas"] for s in br["sites"]]:
+        assert cv["cards"] and cv["links"]
+        for c in cv["cards"]:
+            assert 0 <= c["x"] <= cv["width"] - cv["card_w"]
+            assert 0 <= c["y"] <= cv["height"] - cv["card_h"]
+
+
+def test_nit_bracket_view_for_a_division_with_no_kickoff(tmp_path):
+    from app.web import state as wstate
+    sm.DB_PATH = str(tmp_path / "season.db")
+    sm._forced_cache.clear()
+    sid = sm.get_or_create("D3", "women", seed=wd.current_year_seed())
+    while sm.load_season(sid)["phase"].startswith("ita"):
+        sm.advance(sid)
+    br = wstate.ita_bracket_view("D3", "women")
+    assert br["sites"] == [] and br["runs_kickoff"] is False
+    assert _cols(br["indoor"]) == [("Quarterfinals", 4), ("Semifinals", 2), ("Final", 1)]
+    assert [p["seed"] for p in br["indoor_field"]] == list(range(1, ita.SMALL_INDOOR_FIELD + 1))
+
+
 def test_ita_is_deterministic(db, tmp_path):
     def run(path):
         sm.DB_PATH = path
