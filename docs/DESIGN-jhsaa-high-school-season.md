@@ -174,6 +174,19 @@ NIT already proved a third consumer can share that tree without forking the mark
 one-world-one-clock rule and doubles the desync surface
 (`docs/AAR-universe-desync-season-hub-advance.md`).
 
+**When it runs.** The ladder is `awards → Davis/BJK cups → year rollover → pro-league
+offseason → preseason`, and `_finalize_year` mops up unsigned recruits before the incoming
+class arrives. The JHSAA rung therefore sits **between the pro-league offseason and
+preseason**: last year is fully rolled over, the college season is about to start, and the
+seniors the JHSAA just graduated are precisely the class that college season will recruit
+and that enrols the year after. That is the real sequence — play your senior season, sign
+that same year, arrive the next fall.
+
+The rung does three things in one step: **age the high-school rosters** (freshmen up a
+year, seniors out), **play the season**, and **graduate the seniors into the recruit
+pool**. Mark it done by the rows it writes, the way `world_cups` rows mark the cups — not
+by a new flag, per `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
+
 Resolve the whole high-school season in **one advance step** — a single visible rung on
 the offseason ladder, marked by the rows it writes, in the style
 `docs/AAR-offseason-visible-steps-cups-and-pros.md` requires. Cheap, and it keeps
