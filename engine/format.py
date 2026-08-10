@@ -70,6 +70,13 @@ PRESETS: dict[str, MatchFormat] = {
         best_of=3, no_ad=False, set_tiebreak=False,
         final_set_tiebreak=False,
     ),
+    # High school: full best-of-3, NO-AD, tiebreak sets, deciding set a real third
+    # set. Used for BOTH singles and doubles — high-school doubles is a full match,
+    # not the college 8-game pro set. See app/jhsaa.py.
+    "high_school": MatchFormat(
+        best_of=3, no_ad=True, set_tiebreak=True,
+        final_set_tiebreak=False,
+    ),
     # 8-game pro set: one set to 8 games, win by 2, 7-point tiebreak at 8-8.
     "pro_set_8": MatchFormat(
         no_ad=True, pro_set=True, pro_set_games=8,

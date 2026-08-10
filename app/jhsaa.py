@@ -17,6 +17,11 @@ Both totals are ODD, so a dual cannot be tied and no tie-breaking exists anywher
 Every match plays to completion — there is no clinch in high school
 (`simulate_dual(play_all=True)`, as D3/D4 already do).
 
+SCORING is a separate axis from shape and is the SAME for every line, singles and
+doubles: a full best-of-3, no-ad, tiebreak sets, a real third set (`MATCH_FORMAT`).
+High-school doubles is NOT the college 8-game pro set — that is `engine.dual`'s
+default, so both formats are passed explicitly.
+
 TALENT is far below the college floor and much wider (`_TALENT`). A 7A number one may be
 a future D1 signee; a 1A number one would lose to a college walk-on. That spread inside a
 single dual is the character of the level, not a calibration bug.
@@ -33,6 +38,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from engine.dual import DualFormat, Team, simulate_dual
+from engine.format import PRESETS
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -54,6 +60,13 @@ def dual_format(phase: str) -> DualFormat:
     return FORMATS["state"] if phase == "state" else FORMATS["regular"]
 
 
+# SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
+# match — singles AND doubles — is a full best-of-3, no-ad, tiebreak sets, real third set.
+# College doubles is an 8-game pro set and `engine.dual` defaults to it, so both formats
+# are passed explicitly at every call; without them a JHSAA doubles line scores "5-8".
+MATCH_FORMAT = PRESETS["high_school"]
+
+
 def lineup_need(phase: str) -> int:
     """Players a program must dress for `phase` with nobody doubling up."""
     f = dual_format(phase)
@@ -62,12 +75,13 @@ def lineup_need(phase: str) -> int:
 
 ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and rotation
 
-# JHSAA regular-season dual limit (owner rule 2027-08), closer to baseball's than to a
-# college tennis schedule. The POSTSEASON IS EXEMT from it.
-# A district of 9-12 plays 16-22 duals in its double round-robin, which fits inside the
-# limit and leaves room for non-district crossover to top a team up. An earlier draft of
-# the design doc said "~14 duals", which no district size could satisfy.
-SEASON_MIN, SEASON_MAX = 28, 33
+# Non-district duals per team (owner rule 2027-08). The POSTSEASON IS EXEMPT.
+# This is an ALLOWANCE ON TOP of the district double round-robin, not a season total:
+# district size already sets most of the schedule (a 12-team district is 22 league duals,
+# a 6-team one is 10), so a fixed season total would force wildly different non-league
+# loads on schools of different districts. To shorten seasons, shrink the districts —
+# `MAX_DISTRICT` in `scripts/import_jhsaa.py` — not this.
+NONDISTRICT_MIN, NONDISTRICT_MAX = 4, 8
 
 # High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
 # is 6.7x the cost and is meant for the college season you actually watch; a season here
@@ -272,7 +286,7 @@ _SLOT = re.compile(r"^([SD])(\d+)$")
 # PERFORMING nine — results first, then OVR, STR last — so a hot bench player earns his
 # way in. On top of that, coaches USE the bench in the regular season: most duals a
 # reserve or two rotates into the bottom of the lineup, so nobody persisted plays zero
-# times across a 28-33 dual year (which would be absurd). The POSTSEASON is strict:
+# times across a ~26-dual year (which would be absurd). The POSTSEASON is strict:
 # your best nine, no rotation. (No injuries here — the JHSAA has no injury system.)
 _ROTATE_ONE = 0.45          # chance the 9th seat goes to a bench player, per dual
 _ROTATE_TWO = 0.15          # chance the 8th seat does too
@@ -337,7 +351,8 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
-                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase))
+                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase),
+                        singles_fmt=MATCH_FORMAT, doubles_fmt=MATCH_FORMAT)
     lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
@@ -355,8 +370,9 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     b.points_for += res.away_points
     b.points_against += res.home_points
     # DualResult.winner is an INT — 0 home, 1 away. Comparing it to "home" silently
-    # credits the away team every dual, which in a home-and-home round-robin leaves
-    # every side at exactly .500 with correct-looking point differentials. Cost an hour.
+    # credits the away team every dual; under the home-and-home schedule this used to
+    # run, that left every side at exactly .500 with correct-looking point
+    # differentials. Cost an hour.
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
                        "won": res.winner == 0, "district": district, "lines": lines})
@@ -382,10 +398,32 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
 
 def run_district(schools: list[School], year: int, *, seed: int,
                  salt: str = "") -> list[TeamSeason]:
-    """A district's regular season: double round-robin, 5S/2D, every match completed.
-    Returns its teams ordered by finish (win %, then point differential)."""
-    teams = [TeamSeason(school=s, roster=build_roster(s, year, salt)) for s in schools]
-    rng = random.Random(f"{salt}|dist|{year}|{schools[0].district if schools else ''}")
+    """A district's regular season: DOUBLE round-robin, 5S/2D, every match completed.
+    Returns its teams ordered by finish (win %, then point differential).
+
+    You play every league opponent home AND away (owner rule 2027-08); the rest of the
+    card is out-of-district, in `_crossover`. District size therefore sets the season
+    length on its own — a 12-team district is 22 league duals before a single non-league
+    one — so if seasons need to be shorter, shrink `MAX_DISTRICT` in
+    `scripts/import_jhsaa.py`, don't cut the second leg.
+
+    Split from `district_teams` so `run_season` can play the NON-district card first —
+    see `_crossover`. Standalone (tests, a single district) this still does both."""
+    teams = district_teams(schools, year, salt)
+    play_district(teams, year, salt)
+    return teams
+
+
+def district_teams(schools: list[School], year: int, salt: str = "") -> list[TeamSeason]:
+    """A district's programs with this year's rosters, before a ball is struck."""
+    return [TeamSeason(school=s, roster=build_roster(s, year, salt)) for s in schools]
+
+
+def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[TeamSeason]:
+    """Play the double round-robin and settle district place. Returns `teams`, sorted
+    by finish (district win %, then point differential)."""
+    dname = teams[0].school.district if teams else ""
+    rng = random.Random(f"{salt}|dist|{year}|{dname}")
     for i, a in enumerate(teams):
         for b in teams[i + 1:]:
             for leg in (0, 1):                      # home and away
@@ -443,26 +481,71 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
             "rounds": rounds, "field": [t.school.name for t in field]}
 
 
-def _crossover(teams: list[TeamSeason], rng: random.Random) -> None:
-    """Non-district duals, to bring every team up to the season limit.
+_GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 7A=0 … 3A-1A=4, so |i-j| = classes apart
 
-    A district double round-robin is 16-22 duals depending on its size, and the limit is
-    28-33, so the balance is played against schools from OTHER districts in the same
-    classification — which is what a real high-school schedule looks like. These count
-    toward the overall record and toward at-large selection, but NOT toward district
-    place: that is decided on district duals alone."""
-    target = SEASON_MIN + rng.randrange(SEASON_MAX - SEASON_MIN + 1)
-    need = [t for t in teams if t.wins + t.losses < target]
+# How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
+# not bus across Jefferson for a non-league dual — then talent, so a weak program isn't
+# fed to teams that beat it every week. Because talent is read off THIS year's roster,
+# the pairings re-form each season as programs rise and fall.
+GEO_WEIGHT = 8.0          # per step of distance: same county 0, same area 1, else 2
+SHORTLIST = 6             # score the candidates, then draw at random from the best few
+
+
+def _strength(ts: TeamSeason) -> float:
+    """Team talent: the mean current overall of the nine who'd dress. Read off the
+    roster, not the record, so it doesn't depend on who happens to be scheduled yet."""
+    top = sorted((p.current_overall() for p in ts.roster), reverse=True)[:9]
+    return sum(top) / len(top) if top else 0.0
+
+
+def _geo_gap(a: School, b: School) -> int:
+    return 0 if a.county == b.county else (1 if a.area == b.area else 2)
+
+
+def _crossover(teams: list[TeamSeason], rng: random.Random) -> None:
+    """The non-district half of the schedule. Run over the WHOLE gender at once.
+
+    The district double round-robin is 10-22 duals by district size; each team then adds
+    NONDISTRICT_MIN..MAX more against schools from OTHER districts. These count toward
+    the overall record and toward at-large selection, but NOT toward district place:
+    that is decided on district duals alone.
+
+    Opponents are drawn on the three things that actually decide a real non-league card:
+      1. GEOGRAPHY  — same county, then same area, then anywhere (`GEO_WEIGHT`).
+      2. TALENT     — nearest team strength, so the draw is competitive both ways.
+      3. AVAILABILITY — both schools still owe non-district duals, and haven't met.
+    Classification is a gate on top: same level or ONE level apart, never further, so a
+    7A card mixes 7A and 6A and never lands on 1A."""
+    owed = {id(t): NONDISTRICT_MIN + rng.randrange(NONDISTRICT_MAX - NONDISTRICT_MIN + 1)
+            for t in teams}
+    strength = {id(t): _strength(t) for t in teams}
+    # Who each team has already faced, so a non-district draw can't quietly recreate the
+    # home-and-home that only the district round-robin is supposed to have.
+    played: dict[int, set[str]] = {id(t): {s["opp"] for s in t.schedule} for t in teams}
+    short = lambda: [t for t in teams if owed[id(t)] > 0]          # noqa: E731
+    need = short()
     guard = 0
-    while len(need) > 1 and guard < 20000:
+    while len(need) > 1 and guard < 200000:
         guard += 1
         a = need[rng.randrange(len(need))]
-        pool = [t for t in need if t.school.district != a.school.district and t is not a]
-        if not pool:
-            break
-        b = pool[rng.randrange(len(pool))]
+        ga, sa = _GROUP_IX[a.school.group], strength[id(a)]
+        cands = [t for t in need if t is not a
+                 and (t.school.group, t.school.district)
+                 != (a.school.group, a.school.district)
+                 and t.school.name not in played[id(a)]
+                 and abs(_GROUP_IX[t.school.group] - ga) <= 1]
+        if not cands:
+            owed[id(a)] = 0            # can't be topped up; drop it, don't stall the run
+            need = short()
+            continue
+        cands.sort(key=lambda t: (GEO_WEIGHT * _geo_gap(a.school, t.school)
+                                  + abs(strength[id(t)] - sa), t.school.name))
+        b = cands[rng.randrange(min(SHORTLIST, len(cands)))]
         play_dual(a, b, seed=rng.randrange(1 << 30), phase="regular", district=False)
-        need = [t for t in teams if t.wins + t.losses < target]
+        for x, y in ((a, b), (b, a)):
+            owed[id(x)] -= 1
+            played[id(x)].add(y.school.name)
+        need = short()
 
 
 # --- awards -------------------------------------------------------------------
@@ -535,17 +618,32 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     if hit is not None:
         return hit
     out = {"year": year, "gender": gender, "groups": {}, "teams": {}, "awards": {}}
+    # Order of play, and it matters: NON-DISTRICT FIRST, then league (owner rule
+    # 2027-08) — the front-loaded non-conference schedule of real life and of the college
+    # sim, where `season.place()` gates a team's conference duals behind its own last
+    # non-conf week. So: build every roster, play ONE crossover across the whole gender
+    # (it crosses classifications, so it can't run a classification at a time), then the
+    # district round-robins. Crossover can lead because it seeds on roster strength, not
+    # on results. Awards and state selection read the finished records and come last.
+    by_group = {group: {dname: district_teams(schools, year, salt)
+                        for dname, schools in sorted(districts(gender, group).items())}
+                for group in GROUPS}
+    _crossover([t for st in by_group.values() for ts in st.values() for t in ts],
+               random.Random(f"{salt}|xover|{gender}|{year}"))
+    for st in by_group.values():
+        for teams in st.values():
+            play_district(teams, year, salt)
     for group in GROUPS:
-        standings = {}
-        for dname, schools in sorted(districts(gender, group).items()):
-            standings[dname] = run_district(schools, year, seed=seed, salt=salt)
+        standings = by_group[group]
         all_teams = [t for ts in standings.values() for t in ts]
-        _crossover(all_teams, random.Random(f"{salt}|xover|{gender}|{group}|{year}"))
         out["awards"][group] = season_awards(all_teams)
         field = qualifiers(group, standings)
         state = run_state(field, seed=seed + hash(group) % 9973)
         out["groups"][group] = {
+            # `drecord`/`place` are archived alongside the overall record so a program's
+            # year-by-year history reads like a college team's, without re-simulating.
             "standings": {d: [{"school": t.school.name, "record": t.record,
+                               "drecord": t.district_record, "place": t.district_place,
                                "pf": t.points_for, "pa": t.points_against}
                               for t in ts] for d, ts in standings.items()},
             "state": state,

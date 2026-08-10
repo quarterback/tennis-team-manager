@@ -309,9 +309,9 @@ real southern-Oregon / northern-California / northern-Nevada / western-Idaho gro
 is the **55th** entry in `juniors.US_STATES` — that list is NOT 50 states, it already
 carries DC and Puerto Rico / USVI / Guam as first-class entries (and `scout_intel.
 US_REGIONS` maps 58 codes, adding AS/MP/BC). Jefferson is an ORDINARY state here: `("Jefferson","JF")` in `juniors.US_STATES`, `STATE_REGION
-["JF"]="W"`, `scout_intel.US_REGIONS["JF"]="Pacific"`. Owner rule 2027-08: the JHSAA high
-school season is **invisible** in this sim and recruits are **generated** like any other
-state's — do not build a HS archive or import prep-network's simulated players. Traps:
+["JF"]="W"`, `scout_intel.US_REGIONS["JF"]="Pacific"`. Its recruits are **generated
+here** — prep-network supplies INSTITUTIONS only; never import that repo's players.
+Traps:
 - **The `us_states["JF"]` city pool is capped at 46 cities and MUST stay proportional.**
   It feeds `roll_us_hometown` (flat choice, so its population repeats are the weighting)
   AND `ncaa.towns_in_region("W")` (dedupes, so only the DISTINCT count counts) — the pool
@@ -352,6 +352,47 @@ state's — do not build a HS archive or import prep-network's simulated players
   in real life. Chosen over renaming Pac-16→Pac-18, whose abbr is a key in `CONF_PRESTIGE`,
   `CONF_TIER`, `state.py::_P5` and `polls.py::_POWER_CONFS`. Gonzaga is in the **Pac-16**,
   not the WCC — check the data before reasoning about it.
+
+## ⚠️ THE JHSAA — Jefferson's high-school season is SIMULATED and VISIBLE (`app/jhsaa.py`)
+Owner rule 2027-08, and it REVERSED an earlier "keep the HS season invisible" decision:
+Jefferson's ~335 girls'/~292 boys' programs play a full season **in this engine**, browsable
+at `/jhsaa`, and its graduating seniors ARE Jefferson's entries on the college recruit board.
+`prep-network` supplied the INSTITUTIONS only (`scripts/import_jhsaa.py`); no player ever
+comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons:
+`docs/AAR-jhsaa-high-school-season.md`.
+- **Two format axes, both explicit.** SHAPE (`jhsaa.dual_format`): regular **5S/2D**,
+  state tournament **1S/4D** — both odd, so a dual can never tie, and there is no
+  tie-breaking logic anywhere. SCORING (`jhsaa.MATCH_FORMAT` = `PRESETS["high_school"]`):
+  **all high-school tennis is no-ad, and DOUBLES is a full best-of-3, not the college
+  8-game pro set.** `simulate_dual` defaults to the college presets, so both `singles_fmt`
+  and `doubles_fmt` must be passed — miss `doubles_fmt` and lines silently score `5-8`.
+  Every match plays to completion; there is no clinch in high school.
+- **SCHEDULE (owner rule 2027-08): district DOUBLE round-robin + 4-8 non-district.** You
+  play every league opponent home AND away, so DISTRICT SIZE sets the season length (a
+  12-team district is 22 league duals; ~26 total). To shorten seasons shrink
+  `MAX_DISTRICT` in `scripts/import_jhsaa.py` — never cut the second league leg.
+  `NONDISTRICT_MIN/MAX` is an ALLOWANCE ON TOP, not a season total. Non-district
+  opponents are drawn on **geography** (same county → area → anywhere), then **talent**
+  (nearest strength off this year's roster, so weak teams aren't fed to teams that beat
+  them, and pairings re-form yearly), gated to the **same classification or one apart** —
+  so `_crossover` runs ONCE over the whole gender, and awards/state selection come after.
+  **Non-district is played BEFORE league** (front-loaded, as in real life and as
+  `season.place()` does for the college non-conf slate): `run_season` builds every roster
+  (`district_teams`), runs crossover, THEN the round-robins (`play_district`). Crossover
+  can lead only because it seeds on roster strength, not results — keep it that way.
+- **A program's RECORD persists year to year, not just its trophies.** `world_jhsaa`
+  archives `record`/`drecord`/`place` per school per year, and `jhsaa_school_history`
+  emits a row for EVERY archived year — a program history has to show the losing seasons
+  too. It once returned only years with a title or an honour, so a school looked like it
+  had never played in between.
+- **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
+  rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
+  recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
+- **`talent` on `generate_prospect` is the CEILING**, current is maturity-derived, so the
+  `_TALENT` bands look absurdly high next to the college ones. Don't "fix" them down.
+- **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
+- **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
+  ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED

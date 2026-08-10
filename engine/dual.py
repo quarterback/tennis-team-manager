@@ -205,7 +205,9 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                   context: MatchContext | None = None,
                   priority_finish: set[int] | None = None,
                   box_stats: bool = False, play_all: bool = False,
-                  dual_fmt: DualFormat = CLASSIC) -> DualResult:
+                  dual_fmt: DualFormat = CLASSIC,
+                  singles_fmt: "MatchFormat | None" = None,
+                  doubles_fmt: "MatchFormat | None" = None) -> DualResult:
     """Simulate an NCAA dual of shape `dual_fmt` (default: the classic 6+3 with a
     consolidated doubles point). `priority_finish` lists singles court indices
     (0-based) that should finish among the first matches off the court — used by
@@ -235,7 +237,10 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     # --- Doubles: pro-set matches; scoring per `dual_fmt` (a consolidated
     # majority point, or every line its own point). Each line is a real
     # two-on-two match (engine.doubles), not an averaged pair.
-    doubles_pro = PRESETS["pro_set_8"]
+    # College doubles is an 8-game pro set; high school plays a full best-of-3. The
+    # SHAPE of a dual (DualFormat) and the SCORING of its matches are different axes,
+    # so the caller supplies the match formats and college keeps the old defaults.
+    doubles_pro = doubles_fmt or PRESETS["pro_set_8"]
     d_wins = [0, 0]
     d_res: dict[int, DoublesResult] = {}
     d_len: dict[int, int] = {}
@@ -262,7 +267,7 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
         points[0] += d_wins[0]; points[1] += d_wins[1]
 
     # --- Singles: all courts play concurrently; resolve in finish order ---
-    singles_fmt = PRESETS["ncaa_dual"]
+    singles_fmt = singles_fmt or PRESETS["ncaa_dual"]
     clinch = dual_fmt.clinch
     results: dict[int, MatchResult] = {}
     length: dict[int, float] = {}

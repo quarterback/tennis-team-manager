@@ -26,9 +26,13 @@ This AAR records what was learned building it.
 | UI | `/jhsaa` hub, `/jhsaa/school/<name>`, `/jhsaa/champions`; High School panels on recruit + player pages |
 
 Owner rules baked in: **5S/2D** regular season, **1S/4D** state tournament, every match
-to completion, no clinch; both totals odd so a tie is structurally impossible. Season
-limit **28–33 duals**, postseason exempt. Fields 32/24/24/16/8 with 7A taking the top
-two per district. Grades 9–12 only. High school runs at `fast` fidelity.
+to completion, no clinch; both totals odd so a tie is structurally impossible. **Every
+line — singles AND doubles — is a full best-of-3, no-ad match**, never the college
+8-game pro set. District **double** round-robin plus **4–8** non-district duals (~26 a
+season), postseason exempt; non-district opponents drawn on geography, talent and
+availability, at your classification or one apart. Fields 32/24/24/16/8
+with 7A taking the top two per district. Grades 9–12 only. High school runs at `fast`
+fidelity.
 
 ## The run of it
 
@@ -107,15 +111,45 @@ draw history. (This was assumed impossible during design; it needed zero work.)
     year, indexed by school) rather than a blob on the summary row — a school's schedule
     page reads its own rows and every summary read stays light.
 
+12. **Non-district scheduling is its own design surface, and "random opponent" is not a
+    design.** The first build drew crossover partners uniformly at random from the same
+    classification. That is wrong three ways at once, and all three showed on the site:
+    a school bussed clear across Jefferson for a non-league dual; a bad team drew top
+    programs week after week; and the draw never left its own classification, though a
+    real 7A card is full of 6A opponents. Opponents are now scored on **geography**
+    (same county → same area → anywhere, `GEO_WEIGHT`), then **talent** (nearest team
+    strength, read off this year's roster so the pairings re-form as programs rise and
+    fall), with **availability** and a same-or-one-class gate as hard filters — then
+    drawn at random from the best `SHORTLIST`. The consequence for structure: because
+    non-district play crosses classifications, `_crossover` has to run ONCE over the
+    whole gender, so `run_season` builds every district first and only then does awards
+    and state selection, which read the finished records.
+
+11. **Dual SHAPE and match SCORING are two axes, and only one of them was parameterised.**
+    `DualFormat` was passed in from the start, so the JHSAA got its 5S/2D and 1S/4D — but
+    `simulate_dual` hard-wired `PRESETS["pro_set_8"]` for doubles and `PRESETS["ncaa_dual"]`
+    for singles. Singles was accidentally right; doubles played the college 8-game pro set
+    all season and nothing errored. The tell was a line score reading **`5-8`** on a school
+    page, spotted by the owner, not by any test — invariant tests check that a dual has a
+    winner and the right number of lines, and an 8-game pro set satisfies both. Fixed by
+    adding `singles_fmt`/`doubles_fmt` keywords (defaulting to the old presets, so college
+    is byte-identical) and a `"high_school"` preset that JHSAA passes for BOTH. When you
+    give a new league its own format, check every format the engine consumes, not just the
+    one you came for.
+
 ## Archives — yes, like college
 
 - **Past champions**: `/jhsaa/champions` — every archived year × classification, with
   Players of the Year. `world_jhsaa` accumulates a row per year per gender; nothing is
   overwritten.
 - **School pages**: `/jhsaa/school/<name>` — crest, roster with grades, the season match
-  by match (home/away, score, DIST/NON-DIST/STATE), and a **program history** of titles,
-  state appearances and individual honours that grows on its own as years roll
-  (`world.jhsaa_school_history`).
+  by match (home/away, score, DIST/NON-DIST/STATE), and a **program history** that grows
+  on its own as years roll (`world.jhsaa_school_history`): the **record, district record
+  and district place every season**, plus titles, state appearances and individual
+  honours. It first shipped as trophies only, and skipped any year a school didn't win
+  something — so a program you were trying to track year over year showed a couple of
+  scattered rows and looked like it hadn't played in between. `world_jhsaa` already
+  carried the standings; nothing needed re-simulating, only reading.
 - **Players**: a Jefferson recruit's page shows the four-year career; a Jefferson
   college player's Journey panel shows school, district, record, honours and state
   titles for the rest of their career.
@@ -129,7 +163,7 @@ draw history. (This was assumed impossible during design; it needed zero work.)
 - ~~The bench never plays~~ — resolved (owner rule 2027-08): the lineup is re-set match
   to match on the best-performing nine (results, then OVR, STR last), and in the regular
   season a reserve or two rotates into the bottom of most duals, so every persisted
-  player appears at least a couple of times across a 28-33 dual year. The postseason is
+  player appears at least a couple of times across a ~26 dual year. The postseason is
   strict best-nine. Measured appearances on a 29-dual team: [2, 3, 5, 20, 28, 29 ...].
 - `simulate_cross`-style interstate high-school play: out of scope, Jefferson is the
   only simulated association.
