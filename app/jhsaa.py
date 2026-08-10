@@ -79,14 +79,26 @@ AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
 # Calibrated so the top-190 graduating seniors slot into the national recruit class
 # sensibly: best ~#25 of 2500, median near the national median. See `graduating_class`.
 _TALENT = {
-    ("7A", "boys"):   (46.0, 14.0), ("7A", "girls"):   (42.0, 13.0),
-    ("6A", "boys"):   (42.0, 13.0), ("6A", "girls"):   (38.0, 12.0),
-    ("5A", "boys"):   (38.0, 12.0), ("5A", "girls"):   (35.0, 11.0),
-    ("4A", "boys"):   (35.0, 11.0), ("4A", "girls"):   (32.0, 10.0),
-    ("3A-1A", "boys"): (31.0, 10.0), ("3A-1A", "girls"): (29.0, 9.0),
+    ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.0, 14.0),
+    ("6A", "boys"):   (53.0, 14.0), ("6A", "girls"):   (48.0, 13.0),
+    ("5A", "boys"):   (48.0, 13.0), ("5A", "girls"):   (44.0, 12.0),
+    ("4A", "boys"):   (44.0, 12.0), ("4A", "girls"):   (40.0, 11.0),
+    ("3A-1A", "boys"): (39.0, 11.0), ("3A-1A", "girls"): (36.0, 10.0),
 }
 GRADE_FLOOR = 12.0        # below the 20-80 scale's nominal floor on purpose: 1A depth
-CLASS_YEARS = ("Fr", "So", "Jr", "Sr")
+
+# High school is grades 9-12 and nothing else. A player enters at 9 and leaves after 12.
+GRADES = (9, 10, 11, 12)
+PER_CLASS = 3                                  # 3 x 4 grades = ROSTER_SIZE
+
+# MATURITY is the share of a player's ceiling that is visible as current ability, and it
+# is what keeps high school looking like high school. College freshmen already sit at
+# 0.83 (`ncaa._CLASS_MATURITY`); a 9th grader shows well under half of what they will
+# become. So ceilings can be as high as the talent deserves — a future D1 star really is
+# in here — while nobody PLAYS beyond a high-school range until they leave.
+# It also is the aging model: the same player's current rises every year purely because
+# more of their ceiling has surfaced.
+_MATURITY = {9: (0.40, 0.48), 10: (0.50, 0.58), 11: (0.60, 0.68), 12: (0.70, 0.78)}
 
 
 @dataclass
@@ -161,38 +173,44 @@ def districts(gender: str, group: str) -> dict[str, list[School]]:
 
 # --- rosters -----------------------------------------------------------------
 
-def _grade(rng: random.Random, group: str, gender: str, seat: int) -> float:
-    """A player's 20-80 grade. `seat` 0 is the number one; depth falls away fast — a
-    high-school ladder is not the dense college one."""
+def _ceiling(rng: random.Random, group: str, gender: str) -> float:
+    """A player's CEILING, drawn independently per player. The ladder is not assigned —
+    it emerges from who is actually best, so a great freshman can play number one over a
+    senior, which is how high school works."""
     mean, spread = _TALENT[(group, gender)]
-    top = mean + spread * 0.9
-    g = top - (seat / max(1, ROSTER_SIZE - 1)) * spread * 1.8
-    return max(GRADE_FLOOR, min(80.0, rng.gauss(g, 2.2)))
+    return max(GRADE_FLOOR, min(80.0, rng.gauss(mean, spread)))
 
 
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
-    """A program's roster for `year`. Deterministic from (school, gender, year, salt),
-    so the same world rebuilds the same players without persisting every one of them.
+    """A program's roster for season `year` — its four classes, grades 9 through 12.
 
-    Class years are spread so a quarter graduate each season — that cohort is what
-    `graduating_class()` hands to the college recruit board."""
-    from generators import make_name_picker, roll_us_hometown, roll_high_school
-    rng = random.Random(f"{salt}|jhsaa|{school.key}|{year}")
+    A player is keyed on the year they ENTERED, not the season being played, so the
+    same person carries the same pid, name and ceiling through all four years and simply
+    matures: the junior who went 15-5 is the senior on next year's board. That is what
+    makes a high-school career real without persisting every player — the world rebuilds
+    an identical one from (school, gender, entry year, seat).
+    """
+    from generators import make_name_picker
     sex = "male" if school.gender == "boys" else "female"
-    name_of = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
-                              region_weights={"us": 1.0})
     out = []
-    for i in range(ROSTER_SIZE):
-        nm, _ = name_of()
-        cls = CLASS_YEARS[(i + rng.randrange(4)) % 4]
-        p = generate_prospect(rng, nm, "US", gender=sex,
-                              talent=_grade(rng, school.group, school.gender, i),
-                              pid=make_pid("jhsaa", school.name, school.gender, year, i))
-        p.class_year = cls
-        p.hometown = f"{school.city}, JF"
-        p.high_school = school.name
-        p.region, p.domestic = "Jefferson", True
-        out.append(p)
+    for grade in GRADES:
+        entry = year - (grade - 9)
+        for seat in range(PER_CLASS):
+            rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+            nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
+                                     region_weights={"us": 1.0})()
+            p = generate_prospect(rng, nm, "US", gender=sex,
+                                  talent=_ceiling(rng, school.group, school.gender),
+                                  maturity_range=_MATURITY[grade],
+                                  pid=make_pid("jhsaa", school.name, school.gender,
+                                               entry, seat))
+            p.class_year = str(grade)
+            p.grade = grade
+            p.entry_year = entry
+            p.hometown = f"{school.city}, JF"
+            p.high_school = school.name
+            p.region, p.domestic = "Jefferson", True
+            out.append(p)
     out.sort(key=lambda p: -p.current_overall())
     return out
 
@@ -335,7 +353,7 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     season = run_season(gender, year, seed=seed, salt=salt)
     grads = []
     for name, ts in season["teams"].items():
-        seniors = [p for p in ts.roster if p.class_year == "Sr"]
+        seniors = [p for p in ts.roster if p.grade == 12]
         for i, p in enumerate(seniors):
             p.high_school = name
             p.jhsaa = {"school": name, "district": ts.school.district,
@@ -365,12 +383,18 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
     if not slots:
         return 0
     grads = graduating_class(_GENDER[gender], grad_year, salt=salt, limit=len(slots))
+    # Rank-match: the best Jefferson senior becomes the best Jefferson recruit, and so
+    # on down. IDENTITY and RECORD transfer; ABILITY does not.
+    #
+    # Copying the graduate's grades across looked obvious and was wrong: the national
+    # class has already decided how many Jefferson recruits there are and how they
+    # spread across the talent range, and overwriting that re-calibrated the whole
+    # board — Jefferson's median recruit jumped to #278 of 2500 and the state swamped
+    # the national top 10%. The high-school bands only have to make high-school tennis
+    # look right; they are not a second opinion on the recruit curve.
     slots.sort(key=lambda p: -p.current_overall())
     for slot, grad in zip(slots, grads):
         slot.name = grad.name
-        slot.current = grad.current
-        slot.potential = grad.potential
-        slot.traits = grad.traits
         slot.hometown = grad.hometown
         slot.high_school = grad.high_school
         slot.jhsaa = grad.jhsaa
