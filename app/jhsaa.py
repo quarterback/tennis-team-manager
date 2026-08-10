@@ -1,0 +1,389 @@
+"""
+JHSAA — Jefferson's high-school tennis association.
+
+The one place a high-school season is played. Jefferson's ~335 girls' and ~292 boys'
+programs play a district schedule and a state dual-team tournament here, in this engine,
+with players generated and developed here. `prep-network` supplied the institutions only
+(see `scripts/import_jhsaa.py`); nothing about a player comes from that repo.
+
+The point is that Jefferson's entries on the college recruit board are not invented — they
+are the kids who just finished four years in this association, carrying their real records.
+`graduating_class()` is that hand-off.
+
+FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by literal:
+  * regular season  5 singles / 2 doubles  → 7 points
+  * state tournament 1 singles / 4 doubles → 5 points
+Both totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
+Every match plays to completion — there is no clinch in high school
+(`simulate_dual(play_all=True)`, as D3/D4 already do).
+
+TALENT is far below the college floor and much wider (`_TALENT`). A 7A number one may be
+a future D1 signee; a 1A number one would lose to a college walk-on. That spread inside a
+single dual is the character of the level, not a calibration bug.
+
+See docs/DESIGN-jhsaa-high-school-season.md.
+"""
+from __future__ import annotations
+
+import json
+import os
+import random
+from collections import defaultdict
+from dataclasses import dataclass, field
+
+from engine.dual import DualFormat, Team, simulate_dual
+from .development import Prospect, generate_prospect, make_pid, overall_to_str
+
+_DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "data", "jhsaa", "schools.json")
+
+GROUPS = ("7A", "6A", "5A", "4A", "3A-1A")
+GENDERS = ("girls", "boys")
+
+# --- formats ----------------------------------------------------------------
+FORMATS = {
+    "regular": DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
+    "state":   DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
+}
+
+
+def dual_format(phase: str) -> DualFormat:
+    """The dual shape for `phase` ("regular" | "district" | "state"). District
+    tournaments play the regular-season shape; only the state event switches."""
+    return FORMATS["state"] if phase == "state" else FORMATS["regular"]
+
+
+def lineup_need(phase: str) -> int:
+    """Players a program must dress for `phase` with nobody doubling up."""
+    f = dual_format(phase)
+    return f.n_singles + 2 * f.n_doubles          # 5+4 = 9 regular, 1+8 = 9 state
+
+
+ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and rotation
+
+# --- state tournament (owner-decided) ---------------------------------------
+# field size, and how many per district qualify automatically. 7A is deliberately the
+# most district-driven classification: two from every district get in on the court.
+FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A-1A": 8}
+AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
+
+# --- talent ------------------------------------------------------------------
+# (mean, spread) of the 20-80 grade per classification. Well beneath the college bands
+# (D1 men 60/16, D3 men 39/27) and far wider — a 7A roster and a 1A roster barely
+# belong to the same sport. Girls sit a little under boys, mirroring the college split.
+# NOTE these are CEILING targets, not current ability: `generate_prospect` treats
+# `talent` as the potential and derives a much lower current from maturity, so a 7A
+# number one with a ceiling of 46 still plays at a current ~30 while in school. That is
+# the whole reason the bands look high for high schoolers — do not "fix" them downward
+# by comparing them to the college _TALENT means, which ARE current.
+# Calibrated so the top-190 graduating seniors slot into the national recruit class
+# sensibly: best ~#25 of 2500, median near the national median. See `graduating_class`.
+_TALENT = {
+    ("7A", "boys"):   (46.0, 14.0), ("7A", "girls"):   (42.0, 13.0),
+    ("6A", "boys"):   (42.0, 13.0), ("6A", "girls"):   (38.0, 12.0),
+    ("5A", "boys"):   (38.0, 12.0), ("5A", "girls"):   (35.0, 11.0),
+    ("4A", "boys"):   (35.0, 11.0), ("4A", "girls"):   (32.0, 10.0),
+    ("3A-1A", "boys"): (31.0, 10.0), ("3A-1A", "girls"): (29.0, 9.0),
+}
+GRADE_FLOOR = 12.0        # below the 20-80 scale's nominal floor on purpose: 1A depth
+CLASS_YEARS = ("Fr", "So", "Jr", "Sr")
+
+
+@dataclass
+class School:
+    name: str
+    city: str
+    county: str
+    area: str
+    classification: str
+    group: str
+    enrollment: int
+    private: bool
+    mascot: str
+    colors: list
+    district: str
+    gender: str
+
+    @property
+    def key(self) -> str:
+        return f"{self.name}|{self.gender}"
+
+
+@dataclass
+class TeamSeason:
+    school: School
+    roster: list
+    wins: int = 0
+    losses: int = 0
+    points_for: float = 0.0
+    points_against: float = 0.0
+    district_place: int = 0
+
+    @property
+    def record(self) -> str:
+        return f"{self.wins}-{self.losses}"
+
+    @property
+    def win_pct(self) -> float:
+        n = self.wins + self.losses
+        return self.wins / n if n else 0.0
+
+
+_schools_cache: dict | None = None
+
+
+def load_schools(gender: str) -> list[School]:
+    """Every JHSAA program for `gender`, with its district."""
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    out = []
+    for r in _schools_cache:
+        if not r.get(gender):
+            continue
+        out.append(School(
+            name=r["name"], city=r["city"], county=r["county"], area=r["area"],
+            classification=r["classification"], group=r["group"],
+            enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
+            colors=r["colors"], district=r[f"{gender}_district"], gender=gender,
+        ))
+    return out
+
+
+def districts(gender: str, group: str) -> dict[str, list[School]]:
+    d = defaultdict(list)
+    for s in load_schools(gender):
+        if s.group == group:
+            d[s.district].append(s)
+    return dict(d)
+
+
+# --- rosters -----------------------------------------------------------------
+
+def _grade(rng: random.Random, group: str, gender: str, seat: int) -> float:
+    """A player's 20-80 grade. `seat` 0 is the number one; depth falls away fast — a
+    high-school ladder is not the dense college one."""
+    mean, spread = _TALENT[(group, gender)]
+    top = mean + spread * 0.9
+    g = top - (seat / max(1, ROSTER_SIZE - 1)) * spread * 1.8
+    return max(GRADE_FLOOR, min(80.0, rng.gauss(g, 2.2)))
+
+
+def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
+    """A program's roster for `year`. Deterministic from (school, gender, year, salt),
+    so the same world rebuilds the same players without persisting every one of them.
+
+    Class years are spread so a quarter graduate each season — that cohort is what
+    `graduating_class()` hands to the college recruit board."""
+    from generators import make_name_picker, roll_us_hometown, roll_high_school
+    rng = random.Random(f"{salt}|jhsaa|{school.key}|{year}")
+    sex = "male" if school.gender == "boys" else "female"
+    name_of = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
+                              region_weights={"us": 1.0})
+    out = []
+    for i in range(ROSTER_SIZE):
+        nm, _ = name_of()
+        cls = CLASS_YEARS[(i + rng.randrange(4)) % 4]
+        p = generate_prospect(rng, nm, "US", gender=sex,
+                              talent=_grade(rng, school.group, school.gender, i),
+                              pid=make_pid("jhsaa", school.name, school.gender, year, i))
+        p.class_year = cls
+        p.hometown = f"{school.city}, JF"
+        p.high_school = school.name
+        p.region, p.domestic = "Jefferson", True
+        out.append(p)
+    out.sort(key=lambda p: -p.current_overall())
+    return out
+
+
+def _squad(ts: TeamSeason, phase: str) -> Team:
+    """Dress a lineup for `phase`. Singles take the top of the ladder; doubles is its
+    OWN roster below them (`Team.doubles_players`), so the state format's four doubles
+    pairs are eight different players rather than the singles six re-permuted."""
+    f = dual_format(phase)
+    r = ts.roster
+    if not r:
+        raise ValueError(f"{ts.school.name} has an empty roster")
+    def at(i):
+        return r[i % len(r)]                       # degrade, never crash, on a short side
+    # Prospect -> engine Player, the same conversion ncaa.squad_and_ladder uses.
+    singles = [at(i).engine_player() for i in range(f.n_singles)]
+    dbl = [at(f.n_singles + i).engine_player() for i in range(2 * f.n_doubles)]
+    return Team(name=ts.school.name, singles=singles,
+                doubles=[(2 * i, 2 * i + 1) for i in range(f.n_doubles)],
+                doubles_players=dbl)
+
+
+def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"):
+    """One dual. Always to completion — high school has no clinch."""
+    res = simulate_dual(_squad(a, phase), _squad(b, phase), seed=seed,
+                        play_all=True, dual_fmt=dual_format(phase))
+    a.points_for += res.home_points
+    a.points_against += res.away_points
+    b.points_for += res.away_points
+    b.points_against += res.home_points
+    # DualResult.winner is an INT — 0 home, 1 away. Comparing it to "home" silently
+    # credits the away team every dual, which in a home-and-home round-robin leaves
+    # every side at exactly .500 with correct-looking point differentials. Cost an hour.
+    if res.winner == 0:
+        a.wins += 1
+        b.losses += 1
+    else:
+        b.wins += 1
+        a.losses += 1
+    return res
+
+
+# --- the season --------------------------------------------------------------
+
+def run_district(schools: list[School], year: int, *, seed: int,
+                 salt: str = "") -> list[TeamSeason]:
+    """A district's regular season: double round-robin, 5S/2D, every match completed.
+    Returns its teams ordered by finish (win %, then point differential)."""
+    teams = [TeamSeason(school=s, roster=build_roster(s, year, salt)) for s in schools]
+    rng = random.Random(f"{salt}|dist|{year}|{schools[0].district if schools else ''}")
+    for i, a in enumerate(teams):
+        for b in teams[i + 1:]:
+            for leg in (0, 1):                      # home and away
+                h, w = (a, b) if leg == 0 else (b, a)
+                play_dual(h, w, seed=rng.randrange(1 << 30), phase="regular")
+    teams.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+    for i, t in enumerate(teams, 1):
+        t.district_place = i
+    return teams
+
+
+def qualifiers(group: str, standings: dict[str, list[TeamSeason]]) -> list[TeamSeason]:
+    """The state field: automatic bids first (7A takes the top TWO from each district,
+    everyone else the champion), then at-large by record until the bracket is full."""
+    auto_n, field_n = AUTO_PER_DISTRICT[group], FIELD[group]
+    auto, rest = [], []
+    for teams in standings.values():
+        auto.extend(teams[:auto_n])
+        rest.extend(teams[auto_n:])
+    rest.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+    field = auto + rest[:max(0, field_n - len(auto))]
+    field.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+    return field[:field_n]
+
+
+def run_state(field: list[TeamSeason], *, seed: int) -> dict:
+    """The dual-team state tournament: 1S/4D, single elimination. A field that isn't a
+    power of two seeds into the next one up and the top seeds take first-round byes —
+    a 24-team field is a 32 draw with 8 byes."""
+    rng = random.Random(seed)
+    size = 1
+    while size < len(field):
+        size *= 2
+    slots: list[TeamSeason | None] = list(field) + [None] * (size - len(field))
+    rounds = []
+    while len(slots) > 1:
+        nxt, games = [], []
+        for i in range(0, len(slots), 2):
+            a, b = slots[i], slots[i + 1]
+            if a is None or b is None:              # bye
+                nxt.append(a or b)
+                continue
+            res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+            win = a if res.winner == 0 else b
+            games.append({"home": a.school.name, "away": b.school.name,
+                          "home_points": res.home_points, "away_points": res.away_points,
+                          "winner": win.school.name})
+            nxt.append(win)
+        if games:
+            rounds.append(games)
+        slots = nxt
+    return {"champion": slots[0].school.name if slots and slots[0] else None,
+            "rounds": rounds, "field": [t.school.name for t in field]}
+
+
+def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
+    """One full JHSAA season for `gender`: every district's regular season, then the
+    five state tournaments. Returns results plus the graduating seniors."""
+    out = {"year": year, "gender": gender, "groups": {}, "teams": {}}
+    for group in GROUPS:
+        standings = {}
+        for dname, schools in sorted(districts(gender, group).items()):
+            standings[dname] = run_district(schools, year, seed=seed, salt=salt)
+        field = qualifiers(group, standings)
+        state = run_state(field, seed=seed + hash(group) % 9973)
+        out["groups"][group] = {
+            "standings": {d: [{"school": t.school.name, "record": t.record,
+                               "pf": t.points_for, "pa": t.points_against}
+                              for t in ts] for d, ts in standings.items()},
+            "state": state,
+        }
+        for ts in standings.values():
+            for t in ts:
+                out["teams"][t.school.name] = t
+    return out
+
+
+# --- the hand-off to the college recruit board --------------------------------
+
+def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
+                     limit: int | None = None) -> list[Prospect]:
+    """Jefferson's entry into the college recruit rankings: this year's JHSAA seniors,
+    ranked by what they actually did, carrying their high-school record.
+
+    Roughly 780 girls and 670 boys graduate a year against ~188 board slots per gender,
+    so `limit` takes the best of them and the rest simply don't play college tennis —
+    which is what happens. Selection is on RESULTS; nothing here touches a player's
+    hidden ceiling, so who develops is still unknown.
+    """
+    season = run_season(gender, year, seed=seed, salt=salt)
+    grads = []
+    for name, ts in season["teams"].items():
+        seniors = [p for p in ts.roster if p.class_year == "Sr"]
+        for i, p in enumerate(seniors):
+            p.high_school = name
+            p.jhsaa = {"school": name, "district": ts.school.district,
+                       "group": ts.school.group, "team_record": ts.record,
+                       "ladder": i + 1, "year": year}
+            grads.append(p)
+    # best first: team strength then ladder position — a #1 at a strong 7A program
+    # outranks a #1 at a thin 3A one, which is the whole point of classifications.
+    grads.sort(key=lambda p: -p.current_overall())
+    return grads[:limit] if limit else grads
+
+
+def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
+    """Replace the Jefferson recruits in an already-generated national class with the
+    JHSAA seniors who actually just graduated. Returns how many were swapped.
+
+    Identity swap only — the class SIZE, the Jefferson slot count and the RNG stream
+    are all untouched, so `US_JUNIOR_TENNIS_ORIGIN_WEIGHTS["JF"]` still decides HOW MANY
+    Jefferson kids reach the board and this decides WHICH ones and what they have done.
+    pids are preserved too, so `world_signing` / `world_roster` lookups keyed on the
+    slot still resolve.
+
+    Ability comes across, but nothing here touches a recruit's hidden ceiling, so a
+    four-year high-school record still tells you who is good TODAY and not who grows.
+    """
+    slots = [p for p in klass.recruits if getattr(p, "region", "") == "Jefferson"]
+    if not slots:
+        return 0
+    grads = graduating_class(_GENDER[gender], grad_year, salt=salt, limit=len(slots))
+    slots.sort(key=lambda p: -p.current_overall())
+    for slot, grad in zip(slots, grads):
+        slot.name = grad.name
+        slot.current = grad.current
+        slot.potential = grad.potential
+        slot.traits = grad.traits
+        slot.hometown = grad.hometown
+        slot.high_school = grad.high_school
+        slot.jhsaa = grad.jhsaa
+    return min(len(slots), len(grads))
+
+
+_GENDER = {"men": "boys", "male": "boys", "boys": "boys",
+           "women": "girls", "female": "girls", "girls": "girls"}
+
+
+def mark(school: School, size: int = 72) -> str:
+    """The school's athletic crest as inline SVG (see app/jhsaa_marks.py). The ported
+    generator takes prep-network's raw record shape, so adapt rather than fork it."""
+    from .jhsaa_marks import school_mark
+    return school_mark({"name": school.name, "mascot": school.mascot,
+                        "colors": school.colors}, size)
