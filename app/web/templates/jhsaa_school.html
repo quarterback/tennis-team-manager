@@ -70,11 +70,16 @@
     {% if view.history %}
     <div class="bl-panel"><div class="bl-panel-head">
       <span class="bl-panel-title">Program History</span>
-      <span class="bl-panel-meta">titles &amp; honours</span></div>
+      <span class="bl-panel-meta">year by year</span></div>
       <div class="bl-panel-body">
         {% for h in view.history %}
         <div style="padding:5px 0;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-          <div style="font-weight:700;font-size:12px">Year {{ h.year }}
+          <div style="display:flex;align-items:baseline;gap:8px;font-size:12px">
+            <span style="font-weight:700">Year {{ h.year }}</span>
+            {% if h.record %}<span style="font-weight:700">{{ h.record }}</span>{% endif %}
+            {% if h.district_record %}<span class="tsub" style="font-size:11px">{{ h.district_record }} district{% if h.place %} &middot; {{ h.place }}{{ 'st' if h.place == 1 else 'nd' if h.place == 2 else 'rd' if h.place == 3 else 'th' }}{% endif %}</span>{% endif %}
+          </div>
+          <div>
             {% for t in h.titles %}<span class="bl-badge tier-IVY" style="font-size:9px">{{ t }} STATE CHAMPION</span>{% endfor %}
             {% if h.made_state and not h.titles %}<span class="bl-badge tier-D3" style="font-size:9px">STATE TOURNAMENT</span>{% endif %}
           </div>

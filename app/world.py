@@ -3564,15 +3564,32 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
 
 
 def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:
-    """A school's year-by-year JHSAA record: title, state field, and any of its players
-    who took an individual honour. Built from the accumulated archive, so it grows on
-    its own as the years roll."""
+    """A school's year-by-year JHSAA history: its RECORD every season, plus titles,
+    state appearances and individual honours. Built from the accumulated archive, so it
+    grows on its own as the years roll.
+
+    Every archived year produces a row, trophy or not — a program history is how a
+    program did year over year, so a run of losing seasons has to show. Earlier this
+    returned only the years with something to celebrate, which made a school look like it
+    had never played in between."""
     out = []
     for year in jhsaa_years(world_id, gender):
         arc = get_jhsaa(world_id, year, gender)
         if not arc:
             continue
-        row = {"year": year, "titles": [], "made_state": [], "honors": []}
+        row = {"year": year, "titles": [], "made_state": [], "honors": [],
+               "record": "", "district_record": "", "place": 0,
+               "group": "", "district": ""}
+        # The season's standings carry the record. `drecord`/`place` post-date the first
+        # archives, so read them defensively — an old save has neither.
+        for grp, dists in (arc.get("standings") or {}).items():
+            for dname, rows in (dists or {}).items():
+                for r in rows:
+                    if r.get("school") != school:
+                        continue
+                    row.update(record=r.get("record", ""),
+                               district_record=r.get("drecord", ""),
+                               place=r.get("place", 0), group=grp, district=dname)
         for grp, champ in (arc.get("champions") or {}).items():
             if champ == school:
                 row["titles"].append(grp)
@@ -3586,7 +3603,7 @@ def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:
             for r in aw.get("all_state", ()):
                 if r.get("school") == school:
                     row["honors"].append(f"All-State ({grp}) — {r['name']}")
-        if row["titles"] or row["made_state"] or row["honors"]:
+        if row["record"] or row["titles"] or row["made_state"] or row["honors"]:
             out.append(row)
     return out
 

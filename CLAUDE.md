@@ -367,6 +367,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   8-game pro set.** `simulate_dual` defaults to the college presets, so both `singles_fmt`
   and `doubles_fmt` must be passed — miss `doubles_fmt` and lines silently score `5-8`.
   Every match plays to completion; there is no clinch in high school.
+- **SCHEDULE (owner rule 2027-08): district DOUBLE round-robin + 4-8 non-district.** You
+  play every league opponent home AND away, so DISTRICT SIZE sets the season length (a
+  12-team district is 22 league duals; ~26 total). To shorten seasons shrink
+  `MAX_DISTRICT` in `scripts/import_jhsaa.py` — never cut the second league leg.
+  `NONDISTRICT_MIN/MAX` is an ALLOWANCE ON TOP, not a season total. Non-district
+  opponents are drawn on **geography** (same county → area → anywhere), then **talent**
+  (nearest strength off this year's roster, so weak teams aren't fed to teams that beat
+  them, and pairings re-form yearly), gated to the **same classification or one apart** —
+  so `_crossover` runs ONCE over the whole gender, and awards/state selection come after.
+  **Non-district is played BEFORE league** (front-loaded, as in real life and as
+  `season.place()` does for the college non-conf slate): `run_season` builds every roster
+  (`district_teams`), runs crossover, THEN the round-robins (`play_district`). Crossover
+  can lead only because it seeds on roster strength, not results — keep it that way.
+- **A program's RECORD persists year to year, not just its trophies.** `world_jhsaa`
+  archives `record`/`drecord`/`place` per school per year, and `jhsaa_school_history`
+  emits a row for EVERY archived year — a program history has to show the losing seasons
+  too. It once returned only years with a title or an honour, so a school looked like it
+  had never played in between.
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.

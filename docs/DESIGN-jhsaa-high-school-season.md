@@ -167,21 +167,46 @@ bands scaled — the shape is different, not just the level.
 ## 5. Season shape and the state tournament
 
 ```
-district double round-robin (16-22 duals by district size, 5S/2D)
-  + non-district crossover, up to the season limit
+district DOUBLE round-robin (10-22 duals by district size, 5S/2D)
+  + 4-8 non-district duals per team
   -> state dual-team tournament, 1S/4D, one bracket per classification group
 ```
 
-**The regular-season dual limit is 28-33 (owner rule 2027-08)** — closer to baseball's
-than to a college tennis schedule — and the **postseason is exempt from it**. An earlier
-draft said "~14 duals", which no district size can satisfy: a 9-12 team district is 16-22
-duals in a double round-robin on its own. The balance is played as non-district crossover
-against schools in other districts of the same classification, which is what a real
-high-school schedule looks like.
+**You play every district opponent home and away (owner rule 2027-08)**, and the
+**postseason is exempt** from the count. District size therefore sets most of the
+schedule on its own — a 12-team district is 22 league duals before a single non-league
+one, a 6-team district only 10 — so the non-district figure is an **allowance on top**
+(`NONDISTRICT_MIN..MAX`, 4-8) rather than a season total. A fixed season total would
+force wildly uneven non-league loads on schools from different-sized districts. Measured:
+**~26 regular-season duals** per team. **To shorten seasons, shrink the districts**
+(`MAX_DISTRICT` in `scripts/import_jhsaa.py`) — do not cut the second league leg.
+
+### How a non-district opponent is picked (owner rule 2027-08)
+
+Randomized, but on the three things that decide a real non-league card:
+
+1. **Geography** — same county, then same area, then anywhere (`GEO_WEIGHT`). You don't
+   bus across Jefferson for a non-league dual.
+2. **Talent** — nearest team strength, so a weak program isn't fed to teams that beat it
+   every week. Strength is read off **this year's roster**, so the pairings re-form each
+   season as programs rise and fall.
+3. **Availability** — both schools still owe non-district duals and haven't already met.
+
+**Classification is a gate on top: same level or one level apart, never further**, so a
+7A card mixes 7A and 6A and never lands on 1A.
+
+**Non-district is played BEFORE league play** — front-loaded, as in real life and as the
+college sim does it (`season.place()` gates a team's conference duals behind its own last
+non-conference week). Because non-district play also crosses classifications,
+`_crossover` runs **once over the whole gender**, so `run_season` goes: build every
+roster (`district_teams`) → one crossover pass → the district round-robins
+(`play_district`) → awards and state selection, which read the finished records.
+Crossover can run first only because it seeds on **roster strength**, not on results —
+keep that property if you touch the draw.
 
 District place is decided on **district duals only** (`TeamSeason.district_record`);
-crossover counts toward the overall record and therefore toward at-large selection. Both
-are tracked separately for exactly this reason.
+non-district duals count toward the overall record and therefore toward at-large
+selection. Both are tracked separately for exactly this reason.
 
 **Field sizes and qualification (owner-decided, 2027-08).** 7A takes the **top two from
 each district**; every other classification takes the **district champion**. At-large by
