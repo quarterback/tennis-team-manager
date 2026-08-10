@@ -516,7 +516,9 @@ def test_retirement_ignores_the_score_and_costs_the_line(tmp_path):
                       "home_pid": hp, "away_pid": ap}],
            "home_points": 1, "away_points": 0}
     orig_r, orig_s = injuries.roll_retirement, injuries.retiring_side
-    injuries.roll_retirement, injuries.retiring_side = (lambda: True), (lambda: True)
+    # roll_retirement takes an exposure_scale (added with the expanded singles cards),
+    # so the stub must accept it — a zero-arg lambda TypeErrors inside _mark_retirements.
+    injuries.roll_retirement, injuries.retiring_side = (lambda *a: True), (lambda: True)
     try:
         n = sm._mark_retirements(conn, sid, rec, home.school, away.school, progs, 1, "t")
     finally:

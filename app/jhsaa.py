@@ -17,6 +17,11 @@ Both totals are ODD, so a dual cannot be tied and no tie-breaking exists anywher
 Every match plays to completion — there is no clinch in high school
 (`simulate_dual(play_all=True)`, as D3/D4 already do).
 
+SCORING is a separate axis from shape and is the SAME for every line, singles and
+doubles: a full best-of-3, no-ad, tiebreak sets, a real third set (`MATCH_FORMAT`).
+High-school doubles is NOT the college 8-game pro set — that is `engine.dual`'s
+default, so both formats are passed explicitly.
+
 TALENT is far below the college floor and much wider (`_TALENT`). A 7A number one may be
 a future D1 signee; a 1A number one would lose to a college walk-on. That spread inside a
 single dual is the character of the level, not a calibration bug.
@@ -33,6 +38,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from engine.dual import DualFormat, Team, simulate_dual
+from engine.format import PRESETS
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -52,6 +58,13 @@ def dual_format(phase: str) -> DualFormat:
     """The dual shape for `phase` ("regular" | "district" | "state"). District
     tournaments play the regular-season shape; only the state event switches."""
     return FORMATS["state"] if phase == "state" else FORMATS["regular"]
+
+
+# SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
+# match — singles AND doubles — is a full best-of-3, no-ad, tiebreak sets, real third set.
+# College doubles is an 8-game pro set and `engine.dual` defaults to it, so both formats
+# are passed explicitly at every call; without them a JHSAA doubles line scores "5-8".
+MATCH_FORMAT = PRESETS["high_school"]
 
 
 def lineup_need(phase: str) -> int:
@@ -337,7 +350,8 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
-                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase))
+                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase),
+                        singles_fmt=MATCH_FORMAT, doubles_fmt=MATCH_FORMAT)
     lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)

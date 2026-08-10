@@ -26,9 +26,11 @@ This AAR records what was learned building it.
 | UI | `/jhsaa` hub, `/jhsaa/school/<name>`, `/jhsaa/champions`; High School panels on recruit + player pages |
 
 Owner rules baked in: **5S/2D** regular season, **1S/4D** state tournament, every match
-to completion, no clinch; both totals odd so a tie is structurally impossible. Season
-limit **28–33 duals**, postseason exempt. Fields 32/24/24/16/8 with 7A taking the top
-two per district. Grades 9–12 only. High school runs at `fast` fidelity.
+to completion, no clinch; both totals odd so a tie is structurally impossible. **Every
+line — singles AND doubles — is a full best-of-3, no-ad match**, never the college
+8-game pro set. Season limit **28–33 duals**, postseason exempt. Fields 32/24/24/16/8
+with 7A taking the top two per district. Grades 9–12 only. High school runs at `fast`
+fidelity.
 
 ## The run of it
 
@@ -106,6 +108,18 @@ draw history. (This was assumed impossible during design; it needed zero work.)
 10. **Match-by-match belongs in its own table.** `world_jhsaa_dual` (~10k rows/gender/
     year, indexed by school) rather than a blob on the summary row — a school's schedule
     page reads its own rows and every summary read stays light.
+
+11. **Dual SHAPE and match SCORING are two axes, and only one of them was parameterised.**
+    `DualFormat` was passed in from the start, so the JHSAA got its 5S/2D and 1S/4D — but
+    `simulate_dual` hard-wired `PRESETS["pro_set_8"]` for doubles and `PRESETS["ncaa_dual"]`
+    for singles. Singles was accidentally right; doubles played the college 8-game pro set
+    all season and nothing errored. The tell was a line score reading **`5-8`** on a school
+    page, spotted by the owner, not by any test — invariant tests check that a dual has a
+    winner and the right number of lines, and an 8-game pro set satisfies both. Fixed by
+    adding `singles_fmt`/`doubles_fmt` keywords (defaulting to the old presets, so college
+    is byte-identical) and a `"high_school"` preset that JHSAA passes for BOTH. When you
+    give a new league its own format, check every format the engine consumes, not just the
+    one you came for.
 
 ## Archives — yes, like college
 

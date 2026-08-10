@@ -71,6 +71,23 @@ JHSAA_FORMATS = {
 Read the shape through a helper, never by literal — the same rule `ncaa.dual_format` /
 `ncaa.lineup_size` enforce on the college side.
 
+### Scoring — a separate axis from shape (owner rule 2027-08)
+
+`DualFormat` says how many lines a dual has; `MatchFormat` says how each line is scored.
+They are independent, and high school differs from college on the second one:
+
+| | Singles | Doubles |
+|---|---|---|
+| College | best-of-3, no-ad, real third set | **8-game pro set** |
+| **High school** | best-of-3, no-ad, real third set | **best-of-3, no-ad, real third set** |
+
+**All high-school tennis is no-ad, and high-school doubles is a full best-of-3 match —
+not the college pro set.** `engine.dual.simulate_dual` used to hard-wire both formats
+(`PRESETS["pro_set_8"]` for doubles, `PRESETS["ncaa_dual"]` for singles), so a JHSAA
+doubles line scored `5-8`. It now takes `singles_fmt` / `doubles_fmt`, defaulting to the
+old presets so college is unchanged, and `jhsaa.MATCH_FORMAT` (`PRESETS["high_school"]`)
+is passed for both at every JHSAA call.
+
 **Roster floor is 9** with no player doubling up (5+4 regular, 1+8 postseason). Carry
 10–12 — and the bench plays: the lineup is re-set match to match on the best-performing
 nine (results, then OVR, STR last), with a reserve or two rotating into the bottom of
