@@ -198,10 +198,15 @@ NIT already proved a third consumer can share that tree without forking the mark
 
 ## 5b. Cost, and where the season actually runs
 
-**Known deviation from §6.** The season is NOT yet a rung on `advance_week`. It runs
-lazily inside the first `world.recruit_class` build for a (salt, gender, grad_year),
-because that is what needs the graduates. It is memoized per (salt, gender, year, seed),
-so it happens once per world-year and never again.
+**Resolved.** The season is now its own rung on `advance_week` (`world.run_jhsaa`),
+marked done by the `world_jhsaa` rows it writes rather than by a flag — the same way the
+cups mark themselves. It fires at **week 0, before anything college happens**, and is
+deliberately NOT gated on `year > 0` the way the pro rung is, so a brand-new save plays
+the high-school season before its first college dual. Seniors are therefore on the recruit
+board before recruiting opens, every year.
+
+The season is also memoized per (salt, gender, year, seed), so a later `recruit_class`
+build reuses it instead of re-simulating.
 
 That cost is real and was nearly an outage: at the engine's default `full` fidelity a
 season is ~5,100 duals per gender and added **103 seconds** to the first recruit-class
@@ -210,9 +215,16 @@ High school now runs at **`fast` fidelity** (`jhsaa.FIDELITY`), which is 6.7x ch
 changes no winner, score or individual record — only per-point box detail, which nobody
 is reading for a 9th-grade dual. Measured after: **19 seconds** for both genders, once.
 
-Moving it onto the ladder as its own visible rung is still the right end state, and would
-take the cost off the recruit path entirely. Until then, do not raise `FIDELITY` back to
-`full` without re-measuring that number.
+The 19 seconds is now paid at the advance click that runs the rung, which is where a
+world-changing step belongs. Do not raise `FIDELITY` back to `full` without re-measuring
+that number.
+
+**Jefferson recruits play BOTH.** A worry during design was that a kid could have a
+high-school season or a junior-circuit résumé but not both. They have both, and it needed
+no extra work: `apply_to_class` swaps identity only, so a Jefferson recruit stays an
+ordinary member of the national class and `board_class` enriches them with junior
+tournaments like anyone else. Measured: 134 of 202 Jefferson recruits carry both a JHSAA
+record and a junior draw history, and get recruited on the combination.
 
 ## 6. The clock
 

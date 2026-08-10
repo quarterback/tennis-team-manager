@@ -206,6 +206,9 @@ CREATE TABLE IF NOT EXISTS world_graduates (
   world_id INTEGER, year INTEGER, division TEXT, gender TEXT, pid TEXT,
   str REAL, ovr REAL, data TEXT
 );
+CREATE TABLE IF NOT EXISTS world_jhsaa (
+  world_id INTEGER, year INTEGER, gender TEXT, data TEXT
+);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -463,7 +466,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # the PRIOR league's champions and cup squads (stale players) under the new
     # save. Clear both so each new league starts empty.
     conn = _db()
-    conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;")
+    conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
+                       " DELETE FROM world_jhsaa;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3297,6 +3301,14 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
         if not cups_done(w):
             return run_world_cups(seed, w)
         return _finalize_year(seed, w)
+    # Week 0, BEFORE anything college happens: Jefferson's high schools play their
+    # season. Its seniors are the state's entries on this year's recruit board, so they
+    # have to have finished playing before the board is read — and on a NEW SAVE that
+    # means before the first college season, which is why this is not gated on year > 0
+    # the way the pro rung below is.
+    if w["week"] == 0 and not jhsaa_done(w):
+        return run_jhsaa(seed, w)
+
     # Fresh year, week 0: the pro league drafts the class that just graduated. Its own
     # step, before the new college season plays a dual.
     if w["week"] == 0 and w["year"] > 0 and not pros_rolled(w):
@@ -3425,6 +3437,62 @@ def cup_rosters(world: dict) -> dict:
     for uni, schools in stored.items():
         out.setdefault(uni, schools)                             # dormant only; active stays developed
     return out
+
+
+def jhsaa_done(world: dict) -> bool:
+    """True once this world-year's JHSAA season is archived. The `world_jhsaa` rows ARE
+    the marker — no separate flag to drift, same as the cups above."""
+    conn = _db()
+    n = conn.execute("SELECT COUNT(*) c FROM world_jhsaa WHERE world_id=? AND year=?",
+                     (world["id"], world["year"])).fetchone()["c"]
+    conn.close()
+    return n > 0
+
+
+def run_jhsaa(seed: int, world: dict) -> dict:
+    """One rung of the ladder: play Jefferson's high-school season for both genders and
+    archive it. Runs BEFORE the college year, so the seniors it graduates are on the
+    board when recruiting opens.
+
+    Only the summary is stored — champions, awards and district standings. The players
+    themselves are deterministic from (school, gender, entry year, seat), so a career
+    is rebuilt on demand rather than persisted (`jhsaa.career`)."""
+    from . import jhsaa
+    salt = active_salt(seed)          # the per-save salt recruit_class also uses
+    year = world["year"]
+    conn = _db()
+    champs = {}
+    try:
+        for gender in ("girls", "boys"):
+            season = jhsaa.run_season(gender, year, seed=seed, salt=salt)
+            summary = {
+                "year": year, "gender": gender,
+                "champions": {g: season["groups"][g]["state"]["champion"]
+                              for g in jhsaa.GROUPS},
+                "awards": {g: {"poy": season["awards"][g].get("poy"),
+                               "all_state": season["awards"][g].get("all_state", [])}
+                           for g in jhsaa.GROUPS},
+                "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+            }
+            champs[gender] = summary["champions"]
+            conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                         " VALUES (?,?,?,?)",
+                         (world["id"], year, gender, json.dumps(summary)))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"event": "jhsaa", "year": year, "champions": champs}
+
+
+def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
+    """The archived JHSAA season for a world-year, or None."""
+    conn = _db()
+    try:
+        r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                         " AND gender=?", (world_id, year, gender)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r["data"]) if r else None
 
 
 def cups_done(world: dict) -> bool:
