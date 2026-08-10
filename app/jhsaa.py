@@ -69,6 +69,13 @@ ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and ro
 # the design doc said "~14 duals", which no district size could satisfy.
 SEASON_MIN, SEASON_MAX = 28, 33
 
+# High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
+# is 6.7x the cost and is meant for the college season you actually watch; a season here
+# is ~5,100 duals per gender and at full fidelity it added ~100s to the first recruit
+# class build — on the request thread, which is the outage class CLAUDE.md warns about.
+# Winners, scores and individual records are all unaffected; only per-point box detail is.
+FIDELITY = "fast"
+
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
@@ -287,7 +294,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     """One dual. Always to completion — high school has no clinch. `district` marks it
     as counting toward district place as well as the overall record."""
     res = simulate_dual(_squad(a, phase), _squad(b, phase), seed=seed,
-                        play_all=True, dual_fmt=dual_format(phase))
+                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase))
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
         if hw is None:
@@ -457,9 +464,21 @@ def honors_for(pid: str, awards: dict, group: str) -> list[str]:
     return out
 
 
+_season_cache: dict = {}
+
+
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
-    """One full JHSAA season for `gender`: every district's regular season, then the
-    five state tournaments. Returns results plus the graduating seniors."""
+    """One full JHSAA season for `gender`: every district's regular season, the
+    crossover schedule, the awards, and the five state tournaments.
+
+    Memoized per (salt, gender, year, seed) — a season is deterministic, and both the
+    recruit hand-off and any page that wants standings would otherwise re-simulate
+    thousands of duals. Computed into a local and published, never returned out of the
+    dict, per the threaded-worker rule in CLAUDE.md."""
+    ck = (salt, gender, year, seed)
+    hit = _season_cache.get(ck)
+    if hit is not None:
+        return hit
     out = {"year": year, "gender": gender, "groups": {}, "teams": {}, "awards": {}}
     for group in GROUPS:
         standings = {}
@@ -479,6 +498,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         for ts in standings.values():
             for t in ts:
                 out["teams"][t.school.name] = t
+    _season_cache[ck] = out
     return out
 
 

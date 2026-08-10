@@ -196,6 +196,24 @@ Reuses `bracket.py`, `state._bracket_canvas` and `templates/_bracket.html` — t
 NIT already proved a third consumer can share that tree without forking the markup
 (`docs/AAR-preseason-nit-bracket.md`).
 
+## 5b. Cost, and where the season actually runs
+
+**Known deviation from §6.** The season is NOT yet a rung on `advance_week`. It runs
+lazily inside the first `world.recruit_class` build for a (salt, gender, grad_year),
+because that is what needs the graduates. It is memoized per (salt, gender, year, seed),
+so it happens once per world-year and never again.
+
+That cost is real and was nearly an outage: at the engine's default `full` fidelity a
+season is ~5,100 duals per gender and added **103 seconds** to the first recruit-class
+build — on the request thread, which is precisely the failure CLAUDE.md documents twice.
+High school now runs at **`fast` fidelity** (`jhsaa.FIDELITY`), which is 6.7x cheaper and
+changes no winner, score or individual record — only per-point box detail, which nobody
+is reading for a 9th-grade dual. Measured after: **19 seconds** for both genders, once.
+
+Moving it onto the ladder as its own visible rung is still the right end state, and would
+take the cost off the recruit path entirely. Until then, do not raise `FIDELITY` back to
+`full` without re-measuring that number.
+
 ## 6. The clock
 
 **Do not make the JHSAA a week-by-week universe under `advance_week`.** That fights the
