@@ -134,17 +134,33 @@ overlapping the bottom of the college recruit pool and the bottom of 1A far bene
 Calibrate against `scripts/eval_realism.py` once it exists. Do **not** reuse the college
 bands scaled — the shape is different, not just the level.
 
-## 5. Season shape
+## 5. Season shape and the state tournament
 
 ```
-league schedule (double round-robin, ~14 duals, 5S/2D)
-  -> league tournament
+district schedule (double round-robin, ~14 duals, 5S/2D)
+  -> district tournament
   -> state dual-team tournament, 1S/4D, one bracket per classification group
-     (7A · 6A · 5A · 4A · 3A-1A)
 ```
 
-Five brackets per gender, ten in all. Field sizes fall out of the sponsorship table: 7A
-88–101 teams supports a 32-team draw, 3A-1A at 20–23 a 16-team draw with play-ins.
+**Field sizes (owner-decided, 2027-08).** Qualification is every district champion,
+then at-large by record to fill the bracket:
+
+| Class | Field | Girls teams | qual % | Boys teams | qual % | Districts (G/B) | Champs + at-large (G) |
+|---|---:|---:|---:|---:|---:|:---:|---|
+| 7A | **32** | 99 | 32% | 86 | 37% | 9 / 8 | 9 + 23 |
+| 6A | **24** | 87 | 28% | 77 | 31% | 8 / 7 | 8 + 16 |
+| 5A | **24** | 69 | 35% | 61 | 39% | 6 / 6 | 6 + 18 |
+| 4A | **16** | 53 | 30% | 48 | 33% | 5 / 4 | 5 + 11 |
+| 3A-1A | **8** | 32 | 25% | 25 | 32% | 3 / 3 | 3 + 5 |
+
+Ten brackets in all, five per gender. The 24-team fields are seeded into a 32 draw with
+**first-round byes for the top 8** — normal for high school and already supported by
+`bracket.build_bracket` / `Matchup.bye`.
+
+Note the at-large share is large by design (7A takes 9 champions and 23 at-large), so a
+district title is a guarantee of entry rather than the main route in. If district races
+should matter more, the alternative is top-3-per-district first (27 at 7A) with at-large
+filling only the remainder — a selection-rule change, not a structural one.
 
 Reuses `bracket.py`, `state._bracket_canvas` and `templates/_bracket.html` — the Preseason
 NIT already proved a third consumer can share that tree without forking the markup
@@ -194,12 +210,25 @@ recruits/gender) becomes a *consequence* of how many seniors graduate rather tha
 `season.dual_between(a, b, seed=…)` takes two `Program` objects, so if JHSAA schools are
 Program-shaped most of the season machinery runs unmodified. This is mostly assembly.
 
-## 9. Open
+## 9. Resolved (owner, 2027-08)
 
-- Does the HS pipeline **set** Jefferson's recruit volume, or does the origin weight stay
-  a cap on it?
-- Do JHSAA players persist across world years (real four-year careers) or regenerate per
-  season? Careers are the immersive answer and cost ~5,100 persisted players per year.
-- School marks: port `prep-network/site/marks.py` (generated inline SVG from mascot + the
-  two colours already on each school record) and get 526 crests with no image files, or
-  reuse the college badge pipeline.
+**The JHSAA senior class is Jefferson's entry into the college recruit rankings.** Not a
+parallel invention — the players on the national board from Jefferson *are* the kids who
+just finished four years in the JHSAA, carrying their real records. At ~10 per roster that
+is ~780 girls and ~670 boys graduating a year, against ~188 board slots per gender at the
+current origin weight, so roughly a quarter of each senior class surfaces nationally and
+the rest simply don't play college tennis — which is realistic. Selection is by high-school
+results. The origin weight therefore sets *how many* Jefferson kids appear; the JHSAA sets
+*which ones* and what they've done.
+
+**Careers persist.** JHSAA players are stored across world years, so a senior has three
+prior seasons behind them rather than a generated backstory — ~5,800 persisted players at
+a 10-man roster, ~7,000 at 12. This needs a **high-school tab on the player page**
+showing per-season results, alongside the existing college career view.
+
+**School marks are ported, not drawn.** `prep-network/site/marks.py` generates identity as
+inline SVG from a school's mascot plus the two hex colours already on its record — shield,
+roundel, banner or hex badge picked deterministically from the name, with a mascot glyph
+overlaid. Porting it gives all ~340 schools crests with **no image files at all**, which
+is a better fit than the college PNG/badge pipeline. Mascots, names and colours all come
+across from `records/orgs/schools.json`.
