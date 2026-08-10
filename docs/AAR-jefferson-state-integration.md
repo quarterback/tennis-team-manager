@@ -1,4 +1,4 @@
-# AAR — Jefferson: a fictional 51st state, its juniors and its colleges
+# AAR — Jefferson: a fictional US state, its juniors and its colleges
 
 ## Context
 
@@ -9,8 +9,11 @@ northern Nevada and western Idaho. It has 272 cities, 840 high schools under its
 sanctioning body (the JHSAA), and a simulated boys'/girls' tennis season. This sim knew
 nothing about it.
 
-This pass makes Jefferson an ordinary US state here: its juniors appear on the recruit
-board with Jefferson hometowns and Jefferson high schools, and it has a college
+This pass makes Jefferson an ordinary US state here — the **55th** entry in
+`juniors.US_STATES`, which is not a list of 50: it already carries DC and Puerto Rico /
+USVI / Guam as first-class entries, and `scout_intel.US_REGIONS` maps 58 codes in all
+(adding American Samoa, the Northern Marianas and BC for Simon Fraser). Its juniors
+appear on the recruit board with Jefferson hometowns and Jefferson high schools, and it has a college
 footprint sized like a state of that population.
 
 ### Owner decisions that set the scope (2027-08)

@@ -303,10 +303,12 @@ rather than a new flag.
   pre-graduation. The pro league is the graduates-only side. Don't merge them.
 See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
 
-## ⚠️ JEFFERSON — a fictional 51st state (`JF`), imported from `prep-network`
+## ⚠️ JEFFERSON — a fictional US state (`JF`), imported from `prep-network`
 Jefferson is an alternate-history West Coast state (~17.6M) whose 20 counties stand on
 real southern-Oregon / northern-California / northern-Nevada / western-Idaho ground. It
-is an ORDINARY state here: `("Jefferson","JF")` in `juniors.US_STATES`, `STATE_REGION
+is the **55th** entry in `juniors.US_STATES` — that list is NOT 50 states, it already
+carries DC and Puerto Rico / USVI / Guam as first-class entries (and `scout_intel.
+US_REGIONS` maps 58 codes, adding AS/MP/BC). Jefferson is an ORDINARY state here: `("Jefferson","JF")` in `juniors.US_STATES`, `STATE_REGION
 ["JF"]="W"`, `scout_intel.US_REGIONS["JF"]="Pacific"`. Owner rule 2027-08: the JHSAA high
 school season is **invisible** in this sim and recruits are **generated** like any other
 state's — do not build a HS archive or import prep-network's simulated players. Traps:
