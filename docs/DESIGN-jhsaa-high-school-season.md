@@ -142,25 +142,27 @@ district schedule (double round-robin, ~14 duals, 5S/2D)
   -> state dual-team tournament, 1S/4D, one bracket per classification group
 ```
 
-**Field sizes (owner-decided, 2027-08).** Qualification is every district champion,
-then at-large by record to fill the bracket:
+**Field sizes and qualification (owner-decided, 2027-08).** 7A takes the **top two from
+each district**; every other classification takes the **district champion**. At-large by
+record fills the remainder in all five.
 
-| Class | Field | Girls teams | qual % | Boys teams | qual % | Districts (G/B) | Champs + at-large (G) |
-|---|---:|---:|---:|---:|---:|:---:|---|
-| 7A | **32** | 99 | 32% | 86 | 37% | 9 / 8 | 9 + 23 |
-| 6A | **24** | 87 | 28% | 77 | 31% | 8 / 7 | 8 + 16 |
-| 5A | **24** | 69 | 35% | 61 | 39% | 6 / 6 | 6 + 18 |
-| 4A | **16** | 53 | 30% | 48 | 33% | 5 / 4 | 5 + 11 |
-| 3A-1A | **8** | 32 | 25% | 25 | 32% | 3 / 3 | 3 + 5 |
+| Class | Field | Auto bid | Girls teams | qual % | Boys teams | qual % | Districts (G/B) | Auto + at-large (G/B) |
+|---|---:|---|---:|---:|---:|---:|:---:|---|
+| 7A | **32** | top 2 per district | 99 | 32% | 86 | 37% | 9 / 8 | 18+14 / 16+16 |
+| 6A | **24** | district champion | 87 | 28% | 77 | 31% | 8 / 7 | 8+16 / 7+17 |
+| 5A | **24** | district champion | 69 | 35% | 61 | 39% | 6 / 6 | 6+18 / 6+18 |
+| 4A | **16** | district champion | 53 | 30% | 48 | 33% | 5 / 4 | 5+11 / 4+12 |
+| 3A-1A | **8** | district champion | 32 | 25% | 25 | 32% | 3 / 3 | 3+5 / 3+5 |
 
 Ten brackets in all, five per gender. The 24-team fields are seeded into a 32 draw with
 **first-round byes for the top 8** — normal for high school and already supported by
 `bracket.build_bracket` / `Matchup.bye`.
 
-Note the at-large share is large by design (7A takes 9 champions and 23 at-large), so a
-district title is a guarantee of entry rather than the main route in. If district races
-should matter more, the alternative is top-3-per-district first (27 at 7A) with at-large
-filling only the remainder — a selection-rule change, not a structural one.
+7A is deliberately the most district-driven classification: 18 of its 32 girls' berths
+(16 of 32 for boys) are won on the court in a district, and finishing second in a strong
+district is worth as much as winning a weak one. The other four classifications lean the
+other way — one automatic bid each, the rest selected on record — so a strong team in a
+deep district is never squeezed out.
 
 Reuses `bracket.py`, `state._bracket_canvas` and `templates/_bracket.html` — the Preseason
 NIT already proved a third consumer can share that tree without forking the markup
