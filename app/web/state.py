@@ -3383,3 +3383,51 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
         "rounds": rounds,
         "field": br.get("field", []),
     }
+
+
+def jhsaa_school_view(seed: int, gender: str, school: str) -> dict:
+    """One JHSAA school: crest, current-year roster and schedule, and its year-by-year
+    history of titles, state appearances and individual honours. All reads — the roster
+    rebuilds deterministically and everything else comes off the archive."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    sc = next((s for s in jh.load_schools(g) if s.name == school), None)
+    if sc is None:
+        return {"found": False, "school": school, "gender": g}
+    salt = world.active_salt(seed)
+    roster = jh.build_roster(sc, w["year"], salt)
+    sched = world.jhsaa_schedule(w["id"], w["year"], g, school)
+    dw = sum(1 for d in sched if d["won"] and d["district"])
+    dl = sum(1 for d in sched if not d["won"] and d["district"])
+    return {
+        "found": True, "school": school, "gender": g, "year": w["year"],
+        "mark": jh.mark(sc, 64), "city": sc.city, "county": sc.county,
+        "classification": sc.classification, "group": sc.group,
+        "district": sc.district, "mascot": sc.mascot, "enrollment": sc.enrollment,
+        "record": f"{sum(1 for d in sched if d['won'])}-{sum(1 for d in sched if not d['won'])}",
+        "district_record": f"{dw}-{dl}",
+        "schedule": sched,
+        "roster": [{"name": p.name, "grade": p.grade, "ovr": round(p.current_overall(), 1)}
+                   for p in roster],
+        "history": world.jhsaa_school_history(w["id"], g, school),
+    }
+
+
+def jhsaa_past_winners(seed: int, gender: str) -> dict:
+    """Champions and Players of the Year for every archived JHSAA year — the
+    high-school analogue of the college past-winners boards."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    years = []
+    for year in world.jhsaa_years(w["id"], g):
+        arc = world.get_jhsaa(w["id"], year, g)
+        if arc:
+            years.append({"year": year,
+                          "champions": arc.get("champions", {}),
+                          "poy": {grp: (aw.get("poy") or {})
+                                  for grp, aw in (arc.get("awards") or {}).items()}})
+    return {"gender": g, "groups": list(jh.GROUPS), "years": years}

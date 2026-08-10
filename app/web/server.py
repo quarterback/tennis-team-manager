@@ -37,7 +37,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import jhsaa_view
+from .state import jhsaa_view, jhsaa_school_view, jhsaa_past_winners
 from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from .state import staff_search
@@ -1967,6 +1967,24 @@ def create_app() -> Flask:
         g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
         view = jhsaa_view(DEFAULT_SEED, g, request.args.get("group"))
         return render_template("jhsaa.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/school/<school>")
+    def jhsaa_school(school):
+        division, gender, label, u = _universe(request)
+        g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
+        view = jhsaa_school_view(DEFAULT_SEED, g, school)
+        if not view.get("found"):
+            abort(404)
+        return render_template("jhsaa_school.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/champions")
+    def jhsaa_champions():
+        division, gender, label, u = _universe(request)
+        g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
+        view = jhsaa_past_winners(DEFAULT_SEED, g)
+        return render_template("jhsaa_champions.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/recruiting/team/<school>")

@@ -209,6 +209,11 @@ CREATE TABLE IF NOT EXISTS world_graduates (
 CREATE TABLE IF NOT EXISTS world_jhsaa (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
+CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, opp TEXT,
+  home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -467,7 +472,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # save. Clear both so each new league starts empty.
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
-                       " DELETE FROM world_jhsaa;")
+                       " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3481,6 +3486,15 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
                          " VALUES (?,?,?,?)",
                          (world["id"], year, gender, json.dumps(summary)))
+            # Match by match, so a school's season reads like a college schedule
+            # without replaying it. Its own table, not a blob on the summary row:
+            # ~10k duals a year per gender would make every summary read heavy.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+                " home, phase, pf, pa, won, district) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
+                  d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]))
+                 for t in season["teams"].values() for d in t.schedule])
         conn.commit()
     finally:
         conn.close()
@@ -3496,6 +3510,59 @@ def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
     finally:
         conn.close()
     return json.loads(r["data"]) if r else None
+
+
+def jhsaa_years(world_id: int, gender: str) -> list[int]:
+    """Every world-year with an archived JHSAA season, newest first."""
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT DISTINCT year FROM world_jhsaa WHERE world_id=?"
+                            " AND gender=? ORDER BY year DESC",
+                            (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    return [r["year"] for r in rows]
+
+
+def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[dict]:
+    """One school's season, match by match, in the order it was played."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT opp, home, phase, pf, pa, won, district FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
+            (world_id, year, gender, school)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:
+    """A school's year-by-year JHSAA record: title, state field, and any of its players
+    who took an individual honour. Built from the accumulated archive, so it grows on
+    its own as the years roll."""
+    out = []
+    for year in jhsaa_years(world_id, gender):
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        row = {"year": year, "titles": [], "made_state": [], "honors": []}
+        for grp, champ in (arc.get("champions") or {}).items():
+            if champ == school:
+                row["titles"].append(grp)
+            br = (arc.get("brackets", {}) or {}).get(grp) or {}
+            if school in (br.get("field") or ()):
+                row["made_state"].append(grp)
+        for grp, aw in (arc.get("awards") or {}).items():
+            poy = aw.get("poy")
+            if poy and poy.get("school") == school:
+                row["honors"].append(f"{grp} Player of the Year — {poy['name']}")
+            for r in aw.get("all_state", ()):
+                if r.get("school") == school:
+                    row["honors"].append(f"All-State ({grp}) — {r['name']}")
+        if row["titles"] or row["made_state"] or row["honors"]:
+            out.append(row)
+    return out
 
 
 def cups_done(world: dict) -> bool:

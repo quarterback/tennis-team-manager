@@ -24,6 +24,8 @@
        href="{{ url_for('jhsaa_page', u=u, g=g, group=view.group) }}">{{ g|upper }}</a>
     {% endfor %}
   </div>
+  <a class="bl-badge tier-D3" style="text-decoration:none;padding:5px 12px;margin-left:auto"
+     href="{{ url_for('jhsaa_champions', u=u, g=view.gender) }}">PAST CHAMPIONS</a>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     {% for gp in view.groups %}
     <a class="bl-badge {{ 'tier-D2' if view.group == gp else 'tier-D4' }}"
@@ -84,7 +86,8 @@
             {% for r in rows %}
             <div class="bl-row">
               <span>{{ r.mark|safe }}</span>
-              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">
+                <a class="bl-school" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}">{{ r.name }}</a></span>
               <span>{{ r.record }}</span>
               <span class="tsub">{{ r.pf|int }}–{{ r.pa|int }}</span>
             </div>

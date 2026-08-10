@@ -150,6 +150,9 @@ class TeamSeason:
     # pid -> [wins, losses] at any line. Awards are individual, so they need this.
     records: dict = field(default_factory=dict)
     by_pid: dict = field(default_factory=dict)
+    # Every dual this team played, in order. Kept so a school's season can be read
+    # match by match without replaying it — the college side's schedule view.
+    schedule: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -308,6 +311,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # DualResult.winner is an INT — 0 home, 1 away. Comparing it to "home" silently
     # credits the away team every dual, which in a home-and-home round-robin leaves
     # every side at exactly .500 with correct-looking point differentials. Cost an hour.
+    a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
+                       "pf": res.home_points, "pa": res.away_points,
+                       "won": res.winner == 0, "district": district})
+    b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
+                       "pf": res.away_points, "pa": res.home_points,
+                       "won": res.winner == 1, "district": district})
     if res.winner == 0:
         a.wins += 1
         b.losses += 1
