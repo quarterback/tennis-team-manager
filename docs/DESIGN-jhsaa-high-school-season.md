@@ -72,7 +72,9 @@ Read the shape through a helper, never by literal — the same rule `ncaa.dual_f
 `ncaa.lineup_size` enforce on the college side.
 
 **Roster floor is 9** with no player doubling up (5+4 regular, 1+8 postseason). Carry
-10–12 for depth and injuries.
+10–12 — and the bench plays: the lineup is re-set match to match on the best-performing
+nine (results, then OVR, STR last), with a reserve or two rotating into the bottom of
+most regular-season duals. Postseason is strict best-nine, no rotation.
 
 ## 2. Which schools sponsor tennis
 
@@ -196,6 +198,36 @@ Reuses `bracket.py`, `state._bracket_canvas` and `templates/_bracket.html` — t
 NIT already proved a third consumer can share that tree without forking the markup
 (`docs/AAR-preseason-nit-bracket.md`).
 
+## 5b. Cost, and where the season actually runs
+
+**Resolved.** The season is now its own rung on `advance_week` (`world.run_jhsaa`),
+marked done by the `world_jhsaa` rows it writes rather than by a flag — the same way the
+cups mark themselves. It fires at **week 0, before anything college happens**, and is
+deliberately NOT gated on `year > 0` the way the pro rung is, so a brand-new save plays
+the high-school season before its first college dual. Seniors are therefore on the recruit
+board before recruiting opens, every year.
+
+The season is also memoized per (salt, gender, year, seed), so a later `recruit_class`
+build reuses it instead of re-simulating.
+
+That cost is real and was nearly an outage: at the engine's default `full` fidelity a
+season is ~5,100 duals per gender and added **103 seconds** to the first recruit-class
+build — on the request thread, which is precisely the failure CLAUDE.md documents twice.
+High school now runs at **`fast` fidelity** (`jhsaa.FIDELITY`), which is 6.7x cheaper and
+changes no winner, score or individual record — only per-point box detail, which nobody
+is reading for a 9th-grade dual. Measured after: **19 seconds** for both genders, once.
+
+The 19 seconds is now paid at the advance click that runs the rung, which is where a
+world-changing step belongs. Do not raise `FIDELITY` back to `full` without re-measuring
+that number.
+
+**Jefferson recruits play BOTH.** A worry during design was that a kid could have a
+high-school season or a junior-circuit résumé but not both. They have both, and it needed
+no extra work: `apply_to_class` swaps identity only, so a Jefferson recruit stays an
+ordinary member of the national class and `board_class` enriches them with junior
+tournaments like anyone else. Measured: 134 of 202 Jefferson recruits carry both a JHSAA
+record and a junior draw history, and get recruited on the combination.
+
 ## 6. The clock
 
 **Do not make the JHSAA a week-by-week universe under `advance_week`.** That fights the
@@ -277,6 +309,17 @@ won a state title all ride on `Prospect.jhsaa`, a **real dataclass field**. That
 moment a recruit signed, taking their whole high-school past with them. It survives
 signing, JSON round-trip and `world_roster`, so a fifth-year senior still shows where they
 came from.
+
+## 8c. The High School tab
+
+`/jhsaa`, in the Management group beside Junior Rankings. Reads the archive the rung
+wrote — **never re-simulates**, because a season is ~5,100 duals and must not touch a
+request thread.
+
+Per gender and classification: the state champion with its generated crest, the full
+state tournament round by round, every district's standings, Player of the Year,
+All-State, All-District, and a champions board across all five classifications. Before
+the rung has run for a world-year the page says so rather than showing an empty shell.
 
 ## 9. Resolved (owner, 2027-08)
 

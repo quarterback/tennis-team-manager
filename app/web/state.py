@@ -3332,3 +3332,105 @@ def team_budget(division: str, gender: str, school: str) -> dict:
     prog = load_division(division, gender).by_school(school)
     roster = build_roster(prog) if prog else []
     return economy.budget_summary(roster, division, gender)
+
+
+# ---------------------------------------------------------------------------
+# JHSAA — Jefferson's high-school association
+# ---------------------------------------------------------------------------
+
+def jhsaa_view(seed: int, gender: str, group: str | None = None,
+               year: int | None = None) -> dict:
+    """The archived JHSAA season for a world-year: champions, awards, district
+    standings and the state bracket, for one classification group.
+
+    Reads the archive `world.run_jhsaa` wrote (`world_jhsaa`) rather than
+    re-simulating — a season is ~5,100 duals and must never be replayed on a request
+    thread. Empty (`{"ready": False}`) until the rung has run for that year."""
+    import app.jhsaa as jh
+    import app.world as world          # local, matching the rest of this module
+    w = world.get_or_create(seed)
+    yr = w["year"] if year is None else year
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    arc = world.get_jhsaa(w["id"], yr, g)
+    if not arc:
+        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.GROUPS)}
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    schools = {s.name: s for s in jh.load_schools(g)}
+
+    def deco(name: str) -> dict:
+        s = schools.get(name)
+        return {"name": name,
+                "mark": jh.mark(s, 34) if s else "",
+                "city": s.city if s else "", "district": s.district if s else ""}
+
+    standings = {d: [{**deco(r["school"]), "record": r["record"],
+                      "pf": r["pf"], "pa": r["pa"]} for r in rows]
+                 for d, rows in (arc["standings"].get(grp) or {}).items()}
+    br = arc.get("brackets", {}).get(grp) or {}
+    rounds = []
+    for i, games in enumerate(br.get("rounds", [])):
+        rounds.append({"name": f"Round {i + 1}" if i < len(br.get('rounds', [])) - 1
+                       else "Final", "games": games})
+    return {
+        "ready": True, "gender": g, "year": yr,
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)), "group": grp,
+        "groups": list(jh.GROUPS),
+        "champion": deco(arc["champions"].get(grp)) if arc["champions"].get(grp) else None,
+        "champions": arc["champions"],
+        "poy": (arc.get("awards", {}).get(grp) or {}).get("poy"),
+        "all_state": (arc.get("awards", {}).get(grp) or {}).get("all_state", []),
+        "all_district": (arc.get("all_district", {}) or {}).get(grp, {}),
+        "standings": dict(sorted(standings.items())),
+        "rounds": rounds,
+        "field": br.get("field", []),
+    }
+
+
+def jhsaa_school_view(seed: int, gender: str, school: str) -> dict:
+    """One JHSAA school: crest, current-year roster and schedule, and its year-by-year
+    history of titles, state appearances and individual honours. All reads — the roster
+    rebuilds deterministically and everything else comes off the archive."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    sc = next((s for s in jh.load_schools(g) if s.name == school), None)
+    if sc is None:
+        return {"found": False, "school": school, "gender": g}
+    salt = world.active_salt(seed)
+    # Roster identity keys on the SEASON year (the grad year the hand-off uses), not
+    # the world index — the same mismatch the archive had. See world.run_jhsaa.
+    roster = jh.build_roster(sc, world.jhsaa_season_year(w), salt)
+    sched = world.jhsaa_schedule(w["id"], w["year"], g, school)
+    dw = sum(1 for d in sched if d["won"] and d["district"])
+    dl = sum(1 for d in sched if not d["won"] and d["district"])
+    return {
+        "found": True, "school": school, "gender": g, "year": w["year"],
+        "mark": jh.mark(sc, 64), "city": sc.city, "county": sc.county,
+        "classification": sc.classification, "group": sc.group,
+        "district": sc.district, "mascot": sc.mascot, "enrollment": sc.enrollment,
+        "record": f"{sum(1 for d in sched if d['won'])}-{sum(1 for d in sched if not d['won'])}",
+        "district_record": f"{dw}-{dl}",
+        "schedule": sched,
+        "roster": [{"name": p.name, "grade": p.grade, "ovr": round(p.current_overall(), 1)}
+                   for p in roster],
+        "history": world.jhsaa_school_history(w["id"], g, school),
+    }
+
+
+def jhsaa_past_winners(seed: int, gender: str) -> dict:
+    """Champions and Players of the Year for every archived JHSAA year — the
+    high-school analogue of the college past-winners boards."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    years = []
+    for year in world.jhsaa_years(w["id"], g):
+        arc = world.get_jhsaa(w["id"], year, g)
+        if arc:
+            years.append({"year": year,
+                          "champions": arc.get("champions", {}),
+                          "poy": {grp: (aw.get("poy") or {})
+                                  for grp, aw in (arc.get("awards") or {}).items()}})
+    return {"gender": g, "groups": list(jh.GROUPS), "years": years}

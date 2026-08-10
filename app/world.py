@@ -206,6 +206,15 @@ CREATE TABLE IF NOT EXISTS world_graduates (
   world_id INTEGER, year INTEGER, division TEXT, gender TEXT, pid TEXT,
   str REAL, ovr REAL, data TEXT
 );
+CREATE TABLE IF NOT EXISTS world_jhsaa (
+  world_id INTEGER, year INTEGER, gender TEXT, data TEXT
+);
+CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, opp TEXT,
+  home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER,
+  lines TEXT DEFAULT '[]'
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -463,7 +472,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # the PRIOR league's champions and cup squads (stale players) under the new
     # save. Clear both so each new league starts empty.
     conn = _db()
-    conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;")
+    conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
+                       " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3297,6 +3307,14 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
         if not cups_done(w):
             return run_world_cups(seed, w)
         return _finalize_year(seed, w)
+    # Week 0, BEFORE anything college happens: Jefferson's high schools play their
+    # season. Its seniors are the state's entries on this year's recruit board, so they
+    # have to have finished playing before the board is read — and on a NEW SAVE that
+    # means before the first college season, which is why this is not gated on year > 0
+    # the way the pro rung below is.
+    if w["week"] == 0 and not jhsaa_done(w):
+        return run_jhsaa(seed, w)
+
     # Fresh year, week 0: the pro league drafts the class that just graduated. Its own
     # step, before the new college season plays a dual.
     if w["week"] == 0 and w["year"] > 0 and not pros_rolled(w):
@@ -3424,6 +3442,152 @@ def cup_rosters(world: dict) -> dict:
     conn.close()
     for uni, schools in stored.items():
         out.setdefault(uni, schools)                             # dormant only; active stays developed
+    return out
+
+
+def jhsaa_season_year(world: dict) -> int:
+    """The calendar year of the JHSAA season for this world-year — IDENTICAL to
+    `recruiting_grad_year` (BASE_YEAR + year + 1), because the season's seniors ARE
+    that recruiting class. The zero-based world index is only ever the DB key."""
+    return BASE_YEAR + world["year"] + 1
+
+
+def jhsaa_done(world: dict) -> bool:
+    """True once this world-year's JHSAA season is archived. The `world_jhsaa` rows ARE
+    the marker — no separate flag to drift, same as the cups above."""
+    conn = _db()
+    n = conn.execute("SELECT COUNT(*) c FROM world_jhsaa WHERE world_id=? AND year=?",
+                     (world["id"], world["year"])).fetchone()["c"]
+    conn.close()
+    return n > 0
+
+
+def run_jhsaa(seed: int, world: dict) -> dict:
+    """One rung of the ladder: play Jefferson's high-school season for both genders and
+    archive it. Runs BEFORE the college year, so the seniors it graduates are on the
+    board when recruiting opens.
+
+    Only the summary is stored — champions, awards and district standings. The players
+    themselves are deterministic from (school, gender, entry year, seat), so a career
+    is rebuilt on demand rather than persisted (`jhsaa.career`)."""
+    from . import jhsaa
+    salt = active_salt(seed)          # the per-save salt recruit_class also uses
+    year = world["year"]              # DB key ONLY — never a season parameter
+    # THE season parameters, exactly as the recruit hand-off uses them:
+    # `apply_to_class` calls `graduating_class(gender, grad_year, salt=salt)`, which
+    # runs (year=grad_year, seed=0). Archiving anything else simulates a DIFFERENT
+    # season — different entry years mean different students entirely — so the page
+    # would show a league whose seniors are not the ones on the recruiting board.
+    # Matching parameters also means the memoized season is shared: the hand-off
+    # reuses this sim instead of playing a second one.
+    season_year = jhsaa_season_year(world)
+    conn = _db()
+    champs = {}
+    try:
+        for gender in ("girls", "boys"):
+            season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
+            summary = {
+                "year": year, "season_year": season_year, "gender": gender,
+                "champions": {g: season["groups"][g]["state"]["champion"]
+                              for g in jhsaa.GROUPS},
+                "awards": {g: {"poy": season["awards"][g].get("poy"),
+                               "all_state": season["awards"][g].get("all_state", [])}
+                           for g in jhsaa.GROUPS},
+                "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+                "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
+                "all_district": {g: season["awards"][g].get("all_district", {})
+                                 for g in jhsaa.GROUPS},
+            }
+            champs[gender] = summary["champions"]
+            conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                         " VALUES (?,?,?,?)",
+                         (world["id"], year, gender, json.dumps(summary)))
+            # Match by match, so a school's season reads like a college schedule
+            # without replaying it. Its own table, not a blob on the summary row:
+            # ~10k duals a year per gender would make every summary read heavy.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+                " home, phase, pf, pa, won, district, lines)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
+                  d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
+                  json.dumps(d.get("lines", [])))
+                 for t in season["teams"].values() for d in t.schedule])
+        conn.commit()
+    finally:
+        conn.close()
+    return {"event": "jhsaa", "year": year, "champions": champs}
+
+
+def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
+    """The archived JHSAA season for a world-year, or None."""
+    conn = _db()
+    try:
+        r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                         " AND gender=?", (world_id, year, gender)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r["data"]) if r else None
+
+
+def jhsaa_years(world_id: int, gender: str) -> list[int]:
+    """Every world-year with an archived JHSAA season, newest first."""
+    conn = _db()
+    try:
+        rows = conn.execute("SELECT DISTINCT year FROM world_jhsaa WHERE world_id=?"
+                            " AND gender=? ORDER BY year DESC",
+                            (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    return [r["year"] for r in rows]
+
+
+def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[dict]:
+    """One school's season, match by match, in the order it was played."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
+            (world_id, year, gender, school)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["lines"] = json.loads(d.get("lines") or "[]")
+        except ValueError:
+            d["lines"] = []
+        out.append(d)
+    return out
+
+
+def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:
+    """A school's year-by-year JHSAA record: title, state field, and any of its players
+    who took an individual honour. Built from the accumulated archive, so it grows on
+    its own as the years roll."""
+    out = []
+    for year in jhsaa_years(world_id, gender):
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        row = {"year": year, "titles": [], "made_state": [], "honors": []}
+        for grp, champ in (arc.get("champions") or {}).items():
+            if champ == school:
+                row["titles"].append(grp)
+            br = (arc.get("brackets", {}) or {}).get(grp) or {}
+            if school in (br.get("field") or ()):
+                row["made_state"].append(grp)
+        for grp, aw in (arc.get("awards") or {}).items():
+            poy = aw.get("poy")
+            if poy and poy.get("school") == school:
+                row["honors"].append(f"{grp} Player of the Year — {poy['name']}")
+            for r in aw.get("all_state", ()):
+                if r.get("school") == school:
+                    row["honors"].append(f"All-State ({grp}) — {r['name']}")
+        if row["titles"] or row["made_state"] or row["honors"]:
+            out.append(row)
     return out
 
 

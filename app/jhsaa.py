@@ -69,6 +69,13 @@ ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and ro
 # the design doc said "~14 duals", which no district size could satisfy.
 SEASON_MIN, SEASON_MAX = 28, 33
 
+# High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
+# is 6.7x the cost and is meant for the college season you actually watch; a season here
+# is ~5,100 duals per gender and at full fidelity it added ~100s to the first recruit
+# class build — on the request thread, which is the outage class CLAUDE.md warns about.
+# Winners, scores and individual records are all unaffected; only per-point box detail is.
+FIDELITY = "fast"
+
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
@@ -143,6 +150,9 @@ class TeamSeason:
     # pid -> [wins, losses] at any line. Awards are individual, so they need this.
     records: dict = field(default_factory=dict)
     by_pid: dict = field(default_factory=dict)
+    # Every dual this team played, in order. Kept so a school's season can be read
+    # match by match without replaying it — the college side's schedule view.
+    schedule: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -237,12 +247,13 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     return out
 
 
-def _squad(ts: TeamSeason, phase: str) -> Team:
-    """Dress a lineup for `phase`. Singles take the top of the ladder; doubles is its
-    OWN roster below them (`Team.doubles_players`), so the state format's four doubles
-    pairs are eight different players rather than the singles six re-permuted."""
+def _squad(ts: TeamSeason, phase: str, lineup: list | None = None) -> Team:
+    """Dress `lineup` (or the current best nine) for `phase`. Singles take the top;
+    doubles is its OWN roster below them (`Team.doubles_players`), so the state
+    format's four doubles pairs are eight different players rather than the singles
+    re-permuted."""
     f = dual_format(phase)
-    r = ts.roster
+    r = lineup if lineup is not None else _order(ts)[:lineup_need(phase)]
     if not r:
         raise ValueError(f"{ts.school.name} has an empty roster")
     def at(i):
@@ -257,43 +268,88 @@ def _squad(ts: TeamSeason, phase: str) -> Team:
 
 _SLOT = re.compile(r"^([SD])(\d+)$")
 
+# Bench rotation (owner rule 2027-08): the lineup is re-set match to match on the BEST
+# PERFORMING nine — results first, then OVR, STR last — so a hot bench player earns his
+# way in. On top of that, coaches USE the bench in the regular season: most duals a
+# reserve or two rotates into the bottom of the lineup, so nobody persisted plays zero
+# times across a 28-33 dual year (which would be absurd). The POSTSEASON is strict:
+# your best nine, no rotation. (No injuries here — the JHSAA has no injury system.)
+_ROTATE_ONE = 0.45          # chance the 9th seat goes to a bench player, per dual
+_ROTATE_TWO = 0.15          # chance the 8th seat does too
 
-def _line_players(ts: TeamSeason, phase: str, slot: str) -> list:
-    """The players who played `slot` ("S3", "D2") for `ts`, by the SAME indexing
-    `_squad` dressed them with — never a second opinion on who was on court."""
+
+def _order(ts: TeamSeason) -> list:
+    """The ladder as the coach reads it: results, then ability, then STR."""
+    def key(p):
+        w, l = ts.records.get(p.pid, [0, 0])
+        pct = w / (w + l) if (w + l) else 0.0
+        return (-w, -pct, -p.current_overall(), -p.str_value())
+    return sorted(ts.roster, key=key)
+
+
+def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
+    """The nine who dress for THIS dual."""
+    order = _order(ts)
+    need = lineup_need(phase)
+    nine, bench = order[:need], order[need:]
+    if phase != "state" and bench:                 # playoffs: strict best nine
+        if rng.random() < _ROTATE_ONE:
+            nine[-1] = bench[rng.randrange(len(bench))]
+        if len(bench) > 1 and rng.random() < _ROTATE_TWO:
+            pick = bench[rng.randrange(len(bench))]
+            if pick is not nine[-1]:
+                nine[-2] = pick
+    return nine
+
+
+def _slot_players(lineup: list, phase: str, slot: str) -> list:
+    """The players who played `slot` ("S3", "D2"), by the SAME indexing the squad was
+    dressed with — never a second opinion on who was on court."""
     m = _SLOT.match(slot or "")
-    if not m:
+    if not m or not lineup:
         return []
     kind, i = m.group(1), int(m.group(2))
-    f, r = dual_format(phase), ts.roster
-    if not r:
-        return []
-    at = lambda k: r[k % len(r)]                                  # noqa: E731
+    f = dual_format(phase)
+    at = lambda k: lineup[k % len(lineup)]                        # noqa: E731
     if kind == "S":
         return [at(i - 1)]
     base = f.n_singles + 2 * (i - 1)
     return [at(base), at(base + 1)]
 
 
-def _credit(ts: TeamSeason, phase: str, slot: str, won: bool) -> None:
-    for p in _line_players(ts, phase, slot):
+def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool) -> None:
+    for p in _slot_players(lineup, phase, slot):
         rec = ts.records.setdefault(p.pid, [0, 0])
         rec[0 if won else 1] += 1
         ts.by_pid.setdefault(p.pid, p)
+
+
+def _score_str(ln) -> str:
+    res = getattr(ln, "result", None)
+    sets = getattr(res, "set_scores", None) or []
+    return ", ".join(f"{h}-{w}" for h, w in sets)
 
 
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
               district: bool = False):
     """One dual. Always to completion — high school has no clinch. `district` marks it
     as counting toward district place as well as the overall record."""
-    res = simulate_dual(_squad(a, phase), _squad(b, phase), seed=seed,
-                        play_all=True, dual_fmt=dual_format(phase))
+    lrng = random.Random(f"lineup|{seed}")
+    la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
+    res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
+                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase))
+    lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
         if hw is None:
             continue
-        _credit(a, phase, getattr(ln, "slot", ""), bool(hw))
-        _credit(b, phase, getattr(ln, "slot", ""), not hw)
+        slot = getattr(ln, "slot", "")
+        _credit(a, la, phase, slot, bool(hw))
+        _credit(b, lb, phase, slot, not hw)
+        lines.append({"slot": slot,
+                      "home": [x.name for x in _slot_players(la, phase, slot)],
+                      "away": [x.name for x in _slot_players(lb, phase, slot)],
+                      "score": _score_str(ln), "home_won": bool(hw)})
     a.points_for += res.home_points
     a.points_against += res.away_points
     b.points_for += res.away_points
@@ -301,6 +357,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # DualResult.winner is an INT — 0 home, 1 away. Comparing it to "home" silently
     # credits the away team every dual, which in a home-and-home round-robin leaves
     # every side at exactly .500 with correct-looking point differentials. Cost an hour.
+    a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
+                       "pf": res.home_points, "pa": res.away_points,
+                       "won": res.winner == 0, "district": district, "lines": lines})
+    b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
+                       "pf": res.away_points, "pa": res.home_points,
+                       "won": res.winner == 1, "district": district, "lines": lines})
     if res.winner == 0:
         a.wins += 1
         b.losses += 1
@@ -457,9 +519,21 @@ def honors_for(pid: str, awards: dict, group: str) -> list[str]:
     return out
 
 
+_season_cache: dict = {}
+
+
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
-    """One full JHSAA season for `gender`: every district's regular season, then the
-    five state tournaments. Returns results plus the graduating seniors."""
+    """One full JHSAA season for `gender`: every district's regular season, the
+    crossover schedule, the awards, and the five state tournaments.
+
+    Memoized per (salt, gender, year, seed) — a season is deterministic, and both the
+    recruit hand-off and any page that wants standings would otherwise re-simulate
+    thousands of duals. Computed into a local and published, never returned out of the
+    dict, per the threaded-worker rule in CLAUDE.md."""
+    ck = (salt, gender, year, seed)
+    hit = _season_cache.get(ck)
+    if hit is not None:
+        return hit
     out = {"year": year, "gender": gender, "groups": {}, "teams": {}, "awards": {}}
     for group in GROUPS:
         standings = {}
@@ -479,6 +553,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         for ts in standings.values():
             for t in ts:
                 out["teams"][t.school.name] = t
+    _season_cache[ck] = out
     return out
 
 
