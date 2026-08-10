@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -60,6 +61,13 @@ def lineup_need(phase: str) -> int:
 
 
 ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and rotation
+
+# JHSAA regular-season dual limit (owner rule 2027-08), closer to baseball's than to a
+# college tennis schedule. The POSTSEASON IS EXEMT from it.
+# A district of 9-12 plays 16-22 duals in its double round-robin, which fits inside the
+# limit and leaves room for non-district crossover to top a team up. An earlier draft of
+# the design doc said "~14 duals", which no district size could satisfy.
+SEASON_MIN, SEASON_MAX = 28, 33
 
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
@@ -125,20 +133,34 @@ class School:
 class TeamSeason:
     school: School
     roster: list
-    wins: int = 0
+    wins: int = 0                       # overall, district + crossover
     losses: int = 0
+    dwins: int = 0                      # DISTRICT only — what decides district place
+    dlosses: int = 0
     points_for: float = 0.0
     points_against: float = 0.0
     district_place: int = 0
+    # pid -> [wins, losses] at any line. Awards are individual, so they need this.
+    records: dict = field(default_factory=dict)
+    by_pid: dict = field(default_factory=dict)
 
     @property
     def record(self) -> str:
         return f"{self.wins}-{self.losses}"
 
     @property
+    def district_record(self) -> str:
+        return f"{self.dwins}-{self.dlosses}"
+
+    @property
     def win_pct(self) -> float:
         n = self.wins + self.losses
         return self.wins / n if n else 0.0
+
+    @property
+    def district_pct(self) -> float:
+        n = self.dwins + self.dlosses
+        return self.dwins / n if n else 0.0
 
 
 _schools_cache: dict | None = None
@@ -233,10 +255,45 @@ def _squad(ts: TeamSeason, phase: str) -> Team:
                 doubles_players=dbl)
 
 
-def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"):
-    """One dual. Always to completion — high school has no clinch."""
+_SLOT = re.compile(r"^([SD])(\d+)$")
+
+
+def _line_players(ts: TeamSeason, phase: str, slot: str) -> list:
+    """The players who played `slot` ("S3", "D2") for `ts`, by the SAME indexing
+    `_squad` dressed them with — never a second opinion on who was on court."""
+    m = _SLOT.match(slot or "")
+    if not m:
+        return []
+    kind, i = m.group(1), int(m.group(2))
+    f, r = dual_format(phase), ts.roster
+    if not r:
+        return []
+    at = lambda k: r[k % len(r)]                                  # noqa: E731
+    if kind == "S":
+        return [at(i - 1)]
+    base = f.n_singles + 2 * (i - 1)
+    return [at(base), at(base + 1)]
+
+
+def _credit(ts: TeamSeason, phase: str, slot: str, won: bool) -> None:
+    for p in _line_players(ts, phase, slot):
+        rec = ts.records.setdefault(p.pid, [0, 0])
+        rec[0 if won else 1] += 1
+        ts.by_pid.setdefault(p.pid, p)
+
+
+def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
+              district: bool = False):
+    """One dual. Always to completion — high school has no clinch. `district` marks it
+    as counting toward district place as well as the overall record."""
     res = simulate_dual(_squad(a, phase), _squad(b, phase), seed=seed,
                         play_all=True, dual_fmt=dual_format(phase))
+    for ln in res.lines:                       # individual records, for awards
+        hw = getattr(ln, "home_won", None)
+        if hw is None:
+            continue
+        _credit(a, phase, getattr(ln, "slot", ""), bool(hw))
+        _credit(b, phase, getattr(ln, "slot", ""), not hw)
     a.points_for += res.home_points
     a.points_against += res.away_points
     b.points_for += res.away_points
@@ -247,9 +304,15 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     if res.winner == 0:
         a.wins += 1
         b.losses += 1
+        if district:
+            a.dwins += 1
+            b.dlosses += 1
     else:
         b.wins += 1
         a.losses += 1
+        if district:
+            b.dwins += 1
+            a.dlosses += 1
     return res
 
 
@@ -265,8 +328,10 @@ def run_district(schools: list[School], year: int, *, seed: int,
         for b in teams[i + 1:]:
             for leg in (0, 1):                      # home and away
                 h, w = (a, b) if leg == 0 else (b, a)
-                play_dual(h, w, seed=rng.randrange(1 << 30), phase="regular")
-    teams.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+                play_dual(h, w, seed=rng.randrange(1 << 30), phase="regular",
+                          district=True)
+    teams.sort(key=lambda t: (-t.district_pct, -(t.points_for - t.points_against),
+                              t.school.name))
     for i, t in enumerate(teams, 1):
         t.district_place = i
     return teams
@@ -316,14 +381,93 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
             "rounds": rounds, "field": [t.school.name for t in field]}
 
 
+def _crossover(teams: list[TeamSeason], rng: random.Random) -> None:
+    """Non-district duals, to bring every team up to the season limit.
+
+    A district double round-robin is 16-22 duals depending on its size, and the limit is
+    28-33, so the balance is played against schools from OTHER districts in the same
+    classification — which is what a real high-school schedule looks like. These count
+    toward the overall record and toward at-large selection, but NOT toward district
+    place: that is decided on district duals alone."""
+    target = SEASON_MIN + rng.randrange(SEASON_MAX - SEASON_MIN + 1)
+    need = [t for t in teams if t.wins + t.losses < target]
+    guard = 0
+    while len(need) > 1 and guard < 20000:
+        guard += 1
+        a = need[rng.randrange(len(need))]
+        pool = [t for t in need if t.school.district != a.school.district and t is not a]
+        if not pool:
+            break
+        b = pool[rng.randrange(len(pool))]
+        play_dual(a, b, seed=rng.randrange(1 << 30), phase="regular", district=False)
+        need = [t for t in teams if t.wins + t.losses < target]
+
+
+# --- awards -------------------------------------------------------------------
+ALL_DISTRICT_N = 6            # per district, per gender
+ALL_STATE_N = 6               # per classification group
+
+
+def _player_rows(teams: list[TeamSeason]) -> list[dict]:
+    rows = []
+    for t in teams:
+        for pid, (w, l) in t.records.items():
+            p = t.by_pid.get(pid)
+            if p is None:
+                continue
+            rows.append({"pid": pid, "name": p.name, "grade": p.grade,
+                         "school": t.school.name, "district": t.school.district,
+                         "group": t.school.group, "wins": w, "losses": l,
+                         "pct": w / (w + l) if (w + l) else 0.0,
+                         "ovr": p.current_overall()})
+    return rows
+
+
+def _rank(rows: list[dict]) -> list[dict]:
+    return sorted(rows, key=lambda r: (-r["wins"], -r["pct"], -r["ovr"], r["name"]))
+
+
+def season_awards(teams: list[TeamSeason]) -> dict:
+    """All-District, All-State and Player of the Year for one classification group.
+
+    Individual honours off individual records — wins first, then win rate, then ability
+    as the tiebreak. Jefferson is the only association with a simulated high-school
+    season, so it is the only state whose recruits arrive with honours attached."""
+    rows = _player_rows(teams)
+    by_district: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        by_district[r["district"]].append(r)
+    all_district = {d: _rank(rs)[:ALL_DISTRICT_N] for d, rs in by_district.items()}
+    all_state = _rank(rows)[:ALL_STATE_N]
+    return {"all_district": all_district, "all_state": all_state,
+            "poy": all_state[0] if all_state else None}
+
+
+def honors_for(pid: str, awards: dict, group: str) -> list[str]:
+    """The honours one player earned, newest-sounding first."""
+    out = []
+    if awards.get("poy") and awards["poy"]["pid"] == pid:
+        out.append(f"{group} Player of the Year")
+    if any(r["pid"] == pid for r in awards.get("all_state", ())):
+        out.append(f"All-State ({group})")
+    for dname, rs in awards.get("all_district", {}).items():
+        if any(r["pid"] == pid for r in rs):
+            out.append(f"All-District ({dname})")
+            break
+    return out
+
+
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
     """One full JHSAA season for `gender`: every district's regular season, then the
     five state tournaments. Returns results plus the graduating seniors."""
-    out = {"year": year, "gender": gender, "groups": {}, "teams": {}}
+    out = {"year": year, "gender": gender, "groups": {}, "teams": {}, "awards": {}}
     for group in GROUPS:
         standings = {}
         for dname, schools in sorted(districts(gender, group).items()):
             standings[dname] = run_district(schools, year, seed=seed, salt=salt)
+        all_teams = [t for ts in standings.values() for t in ts]
+        _crossover(all_teams, random.Random(f"{salt}|xover|{gender}|{group}|{year}"))
+        out["awards"][group] = season_awards(all_teams)
         field = qualifiers(group, standings)
         state = run_state(field, seed=seed + hash(group) % 9973)
         out["groups"][group] = {
@@ -353,12 +497,20 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     season = run_season(gender, year, seed=seed, salt=salt)
     grads = []
     for name, ts in season["teams"].items():
-        seniors = [p for p in ts.roster if p.grade == 12]
-        for i, p in enumerate(seniors):
+        awards = season["awards"].get(ts.school.group, {})
+        ladder = {p.pid: i + 1 for i, p in enumerate(ts.roster)}
+        for p in [x for x in ts.roster if x.grade == 12]:
+            w, l = ts.records.get(p.pid, [0, 0])
             p.high_school = name
-            p.jhsaa = {"school": name, "district": ts.school.district,
-                       "group": ts.school.group, "team_record": ts.record,
-                       "ladder": i + 1, "year": year}
+            p.jhsaa = {
+                "school": name, "district": ts.school.district,
+                "group": ts.school.group, "classification": ts.school.classification,
+                "team_record": ts.record, "district_record": ts.district_record,
+                "ladder": ladder.get(p.pid, 0), "year": year,
+                "record": f"{w}-{l}", "wins": w, "losses": l,
+                "honors": honors_for(p.pid, awards, ts.school.group),
+                "state_champion": season["groups"][ts.school.group]["state"]["champion"] == name,
+            }
             grads.append(p)
     # best first: team strength then ladder position — a #1 at a strong 7A program
     # outranks a #1 at a thin 3A one, which is the whole point of classifications.
@@ -397,7 +549,7 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
         slot.name = grad.name
         slot.hometown = grad.hometown
         slot.high_school = grad.high_school
-        slot.jhsaa = grad.jhsaa
+        slot.jhsaa = grad.jhsaa          # a real Prospect field, so it survives signing
     return min(len(slots), len(grads))
 
 

@@ -88,16 +88,20 @@ feeding a host school's team) are **not modelled** — single schools only, co-o
 
 Rate by classification, applied once per school for girls, then a second roll for boys:
 
-| Class | Girls rate | Schools | Girls teams | Boys teams |
-|---|---:|---:|---:|---:|
-| 7A | 85% | 119 | 101 | 88 |
-| 6A | 70% | 118 | 75 | 65 |
-| 5A | 55% | 123 | 70 | 57 |
-| 4A | 35% | 141 | 44 | 39 |
-| 3A-1A | 18/8/2% | 339 | 23 | 20 |
-| **Total** | | **840** | **313** | **269** |
+**These are the AUTHORITATIVE numbers — as built, from `data/jhsaa/schools.json`.**
+Earlier drafts of this doc quoted 313/269 and 340/297 from separate modelling runs;
+regenerate any downstream table from the committed data, never from a prose figure.
 
-44 girls-only schools, zero boys-only. ~37% of schools sponsor tennis, which is right for
+| Class | Girls rate | Schools | Girls teams | Boys teams | G districts | B districts |
+|---|---:|---:|---:|---:|---:|---:|
+| 7A | 85% | 119 | 102 | 90 | 9 | 8 |
+| 6A | 70% | 118 | 80 | 65 | 7 | 6 |
+| 5A | 55% | 123 | 69 | 62 | 6 | 6 |
+| 4A | 35% | 141 | 52 | 48 | 5 | 4 |
+| 3A-1A | 18/8/2% | 339 | 32 | 27 | 3 | 3 |
+| **Total** | | **840** | **335** | **292** | **30** | **27** |
+
+43 girls-only schools, zero boys-only. ~37% of schools sponsor tennis, which is right for
 a mid-participation sport, and 1A stays near 2% because a school with a median enrollment
 of 192 cannot field nine tennis players.
 
@@ -120,15 +124,10 @@ contiguous), then chunk into the fewest districts of ≤12 and balance. Name eac
 dominant **area**, falling through to its dominant **county** when that area name is
 already used in the same classification.
 
-Girls, at the sponsorship rates above — 31 districts of 9–12:
-
-| Class | Teams | Districts | Names |
-|---|---:|---:|---|
-| 7A | 99 | 9 | Cascade Divide · Gold Valley · Halbrook Basin · Halbrook · Vance · Bidwell · Harborline · Sage Plains · South Coast |
-| 6A | 87 | 8 | Ashbury Metro · Marlow · Gold Valley · Halbrook Basin · Halbrook · Vance · Harborline · Sage Plains |
-| 5A | 69 | 6 | Ashbury Metro · Gold Valley · Halbrook Basin · Vance · Harborline · South Coast |
-| 4A | 53 | 5 | Ashbury Metro · Gold Valley · Halbrook Basin · Vance · South Coast |
-| 3A-1A | 32 | 3 | Gold Valley · Juniper Highlands · Sage Plains |
+Districts as built — 30 girls, 27 boys, every one 6-12 teams. Names come from the
+committed data (`girls_district` / `boys_district`); a district is keyed by
+(group, gender, name), since the same place name recurs across classifications the way
+6A-1 and 5A-1 PIL would in Oregon.
 
 Boys mirrors the same draw at ~86% of the teams. A district of 9–12 supports a double
 round-robin inside a ~14-dual season, and the top N from each district advance to the
@@ -149,26 +148,43 @@ bands scaled — the shape is different, not just the level.
 ## 5. Season shape and the state tournament
 
 ```
-district schedule (double round-robin, ~14 duals, 5S/2D)
-  -> district tournament
+district double round-robin (16-22 duals by district size, 5S/2D)
+  + non-district crossover, up to the season limit
   -> state dual-team tournament, 1S/4D, one bracket per classification group
 ```
+
+**The regular-season dual limit is 28-33 (owner rule 2027-08)** — closer to baseball's
+than to a college tennis schedule — and the **postseason is exempt from it**. An earlier
+draft said "~14 duals", which no district size can satisfy: a 9-12 team district is 16-22
+duals in a double round-robin on its own. The balance is played as non-district crossover
+against schools in other districts of the same classification, which is what a real
+high-school schedule looks like.
+
+District place is decided on **district duals only** (`TeamSeason.district_record`);
+crossover counts toward the overall record and therefore toward at-large selection. Both
+are tracked separately for exactly this reason.
 
 **Field sizes and qualification (owner-decided, 2027-08).** 7A takes the **top two from
 each district**; every other classification takes the **district champion**. At-large by
 record fills the remainder in all five.
 
-| Class | Field | Auto bid | Girls teams | qual % | Boys teams | qual % | Districts (G/B) | Auto + at-large (G/B) |
-|---|---:|---|---:|---:|---:|---:|:---:|---|
-| 7A | **32** | top 2 per district | 99 | 32% | 86 | 37% | 9 / 8 | 18+14 / 16+16 |
-| 6A | **24** | district champion | 87 | 28% | 77 | 31% | 8 / 7 | 8+16 / 7+17 |
-| 5A | **24** | district champion | 69 | 35% | 61 | 39% | 6 / 6 | 6+18 / 6+18 |
-| 4A | **16** | district champion | 53 | 30% | 48 | 33% | 5 / 4 | 5+11 / 4+12 |
-| 3A-1A | **8** | district champion | 32 | 25% | 25 | 32% | 3 / 3 | 3+5 / 3+5 |
+| Class | Field | Auto bid | Girls teams | Boys teams | Districts (G/B) |
+|---|---:|---|---:|---:|:---:|
+| 7A | **32** | top 2 per district | 102 | 90 | 9 / 8 |
+| 6A | **24** | district champion | 80 | 65 | 7 / 6 |
+| 5A | **24** | district champion | 69 | 62 | 6 / 6 |
+| 4A | **16** | district champion | 52 | 48 | 5 / 4 |
+| 3A-1A | **8** | district champion | 32 | 27 | 3 / 3 |
 
-Ten brackets in all, five per gender. The 24-team fields are seeded into a 32 draw with
-**first-round byes for the top 8** — normal for high school and already supported by
-`bracket.build_bracket` / `Matchup.bye`.
+Ten brackets in all, five per gender. A field that isn't a power of two seeds into the
+next one up and the top seeds take first-round byes, so a 24-team field is a 32 draw with
+8 byes.
+
+`app/bracket.py` does NOT support this: it has no `build_bracket` and its `Matchup` has no
+`bye` field — its team API is `run_bracket`, which keeps byes as implicit empty draw
+slots. `jhsaa.run_state` therefore runs its own single-elimination draw, where a bye is a
+`None` slot that advances the paired team. Do not "reuse" bracket.py here without
+checking what it actually exposes.
 
 7A is deliberately the most district-driven classification: 18 of its 32 girls' berths
 (16 of 32 for boys) are won on the court in a district, and finishing second in a strong
@@ -228,14 +244,39 @@ recruits/gender) becomes a *consequence* of how many seniors graduate rather tha
 | Reuse unchanged | Build new |
 |---|---|
 | `engine/dual.py` — `DualFormat`, `simulate_dual(play_all=…)` | `app/jhsaa.py` — schools, leagues, schedule, postseason |
-| `app/season.py` — `dual_between`, `_schedule`, `_conf_tournament`, standings | sponsorship + league derivation at import |
+| ~~`app/season.py`~~ — see note below | sponsorship + league derivation at import |
 | `app/bracket.py`, `state._bracket_canvas`, `templates/_bracket.html` | per-classification talent bands |
 | `app/development.py` — growth curves, `Prospect` | graduation hand-off into `juniors` |
 | `app/injuries.py` — keyed `(scope, team)` | one rung in `advance_week` + one route tree |
 | `data/jhsaa/schools.json` from prep-network's `records/orgs/` | |
 
-`season.dual_between(a, b, seed=…)` takes two `Program` objects, so if JHSAA schools are
-Program-shaped most of the season machinery runs unmodified. This is mostly assembly.
+**`season.dual_between` is NOT reusable** — this was wrong in the original plan.
+`season._dual_record` hard-wires `dual_fmt=ncaa.dual_format(a.division)`, so an unknown
+high-school division silently falls back to the classic 6S/3D, and `dual_between` only
+enables `play_all` for D3/D4 — so JHSAA duals would play the wrong courts AND abandon
+matches at the clinch. `jhsaa.play_dual` calls `engine.dual.simulate_dual` directly with
+an explicit `dual_fmt=dual_format(phase)` and `play_all=True`. The engine is the reusable
+layer; the college season helpers are not.
+
+## 8b. Awards
+
+Individual honours, off individual records — every line of every dual is attributed back
+to the players who played it, by the same indexing that dressed the lineup.
+
+* **All-District** — top 6 per district, per gender.
+* **All-State** — top 6 per classification group.
+* **Player of the Year** — one per classification group.
+
+Ranked on wins, then win rate, then ability as the tiebreak. Jefferson is the only
+association with a simulated high-school season, so it is the only state whose recruits
+arrive carrying honours — which is the asymmetry the owner already accepted as the point.
+
+Honours, individual record, ladder position, district, team record and whether the school
+won a state title all ride on `Prospect.jhsaa`, a **real dataclass field**. That matters:
+`world.prospect_to_dict` is `asdict()`, so an ad-hoc attribute would have been dropped the
+moment a recruit signed, taking their whole high-school past with them. It survives
+signing, JSON round-trip and `world_roster`, so a fifth-year senior still shows where they
+came from.
 
 ## 9. Resolved (owner, 2027-08)
 
