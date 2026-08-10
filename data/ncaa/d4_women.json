@@ -213,17 +213,19 @@
       "abbr": "NWC",
       "autobid": true,
       "teams": [
+        "Ashbury College",
+        "Aurelia College",
         "Cal Lutheran",
+        "College of Jefferson",
         "George Fox",
         "La Verne",
+        "New Leiden College",
         "Pacific (OR)",
         "Pacific Lutheran",
         "Puget Sound",
+        "Simon Fraser",
         "Whitworth",
-        "Willamette",
-        "College of Idaho",
-        "Carroll (MT)",
-        "Simon Fraser"
+        "Willamette"
       ]
     },
     {

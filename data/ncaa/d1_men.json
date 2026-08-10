@@ -105,7 +105,6 @@
         "Boise State",
         "Cal",
         "Colorado",
-        "Colorado State",
         "Gonzaga",
         "Oregon",
         "Oregon State",
@@ -113,6 +112,7 @@
         "Stanford",
         "UCLA",
         "USC",
+        "University of Jefferson",
         "Utah",
         "Washington",
         "Washington State"
@@ -409,7 +409,9 @@
       "autobid": true,
       "teams": [
         "Air Force",
+        "Colorado State",
         "Fresno State",
+        "Galena University",
         "Hawaii",
         "Nevada",
         "New Mexico",
@@ -604,6 +606,23 @@
         "San Francisco",
         "Santa Clara",
         "Seattle U"
+      ]
+    },
+    {
+      "name": "Jefferson Valley Conference",
+      "abbr": "JVC",
+      "autobid": true,
+      "teams": [
+        "Belmonte State University",
+        "Belyakov State University",
+        "Harriman State University",
+        "Jefferson A&M University",
+        "Jefferson State University",
+        "Port Veles University",
+        "San Borondón State University",
+        "Santa Michaela State University",
+        "University of Southern Jefferson",
+        "Valderra University"
       ]
     }
   ]

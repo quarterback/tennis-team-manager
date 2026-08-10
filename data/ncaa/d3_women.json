@@ -404,8 +404,7 @@
         "Dana College",
         "MacMurray College",
         "California Wesleyan",
-        "Judson (NV)",
-        "Fontbonne"
+        "Judson (NV)"
       ]
     },
     {
@@ -415,14 +414,27 @@
       "teams": [
         "Cal State Antelope Valley",
         "Cal State Napa Valley",
-        "Cal State Redwood Coast",
-        "Cal State Sierra",
         "Cal State Tahoe",
         "Cal State Yuba Valley",
         "Cal State Imperial Valley",
         "Cal State Ventura County",
-        "Cal State Coachella",
-        "Cal State High Desert"
+        "Cal State Coachella"
+      ]
+    },
+    {
+      "name": "Jefferson Athletic Association",
+      "abbr": "JAA",
+      "autobid": true,
+      "teams": [
+        "Altamonte College",
+        "Averill College",
+        "Copper Lake College",
+        "Fort Meriwether College",
+        "Los Robles College",
+        "Madrigal College",
+        "Santa Laura College",
+        "Serrano College",
+        "St. Varian College"
       ]
     }
   ]

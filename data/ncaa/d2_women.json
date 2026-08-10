@@ -262,7 +262,6 @@
       "abbr": "CCAA",
       "autobid": true,
       "teams": [
-        "Cal Poly Humboldt",
         "Cal Poly Pomona",
         "Cal State Dominguez Hills",
         "Cal State East Bay",
@@ -270,7 +269,6 @@
         "Cal State Monterey Bay",
         "Cal State San Bernardino",
         "Cal State San Marcos",
-        "Chico State",
         "San Francisco State",
         "Stanislaus State",
         "UC Merced"
@@ -409,9 +407,7 @@
         "Seattle Pacific",
         "Western Oregon",
         "Western Washington",
-        "Southern Oregon",
         "Eastern Oregon",
-        "Oregon Tech",
         "Lewis-Clark State",
         "Valley Forge",
         "Cairn",
@@ -475,6 +471,27 @@
         "Puerto Rico-Cayey",
         "Puerto Rico-Mayagüez",
         "Puerto Rico-Río Piedras"
+      ]
+    },
+    {
+      "name": "Jefferson Collegiate Conference",
+      "abbr": "JCC",
+      "autobid": true,
+      "teams": [
+        "Bidwell State University",
+        "Cascade Polytechnic University",
+        "Cedarport State University",
+        "Cortland State University",
+        "Humboldt Polytechnic University",
+        "Jefferson Maritime University",
+        "Montelago State University",
+        "Moriarty State University",
+        "Newark River University",
+        "Orellana State University",
+        "Redfork State University",
+        "Siskiyou University",
+        "University of the High Desert",
+        "Wales City University"
       ]
     }
   ]
