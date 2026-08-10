@@ -227,6 +227,10 @@
     "espn_id": "2043",
     "slug": "augustana-sd"
   },
+  "Aurelia College": {
+    "logo_source": "rename:Carroll (MT)",
+    "slug": "carroll-mt"
+  },
   "Aurora": {
     "espn_id": "2044",
     "slug": "aurora"
@@ -612,10 +616,6 @@
   "Carnegie Mellon": {
     "espn_id": "2102",
     "slug": "carnegie-mellon"
-  },
-  "Carroll (MT)": {
-    "logo_source": "sub:Carroll (WI) Pioneers",
-    "slug": "carroll-mt"
   },
   "Carroll (WI)": {
     "espn_id": "32",
@@ -1290,10 +1290,6 @@
     "logo_source": "wiki",
     "slug": "florida-tech"
   },
-  "Fontbonne": {
-    "logo_source": "any:Findlay Oilers",
-    "slug": "fontbonne"
-  },
   "Fordham": {
     "espn_id": "2230",
     "slug": "fordham"
@@ -1355,8 +1351,8 @@
     "slug": "furman"
   },
   "Galena University": {
-    "logo_source": "rename:Nevada",
-    "slug": "nevada"
+    "badge": true,
+    "slug": "galena-university"
   },
   "Gallaudet": {
     "espn_id": "417",
@@ -2546,6 +2542,10 @@
     "badge": true,
     "slug": "neumann"
   },
+  "Nevada": {
+    "espn_id": "2440",
+    "slug": "nevada"
+  },
   "New England": {
     "espn_id": "111675",
     "slug": "new-england"
@@ -3437,6 +3437,10 @@
   "Santa Clara": {
     "espn_id": "2541",
     "slug": "santa-clara"
+  },
+  "Santa Laura College": {
+    "logo_source": "rename:Fontbonne",
+    "slug": "fontbonne"
   },
   "Santa Michaela State University": {
     "badge": true,

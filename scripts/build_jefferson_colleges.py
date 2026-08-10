@@ -73,8 +73,13 @@ PROGRAMS: list[dict] = [
     # ---- D1 (12) -----------------------------------------------------------
     # Eleven form the new Jefferson Valley Conference; Galena renames Nevada
     # inside the Mountain West, so no existing league changes size.
+    # The flagship sits in the PAC-16, at `top` tier — a 17.6M state's flagship
+    # funds like a blue blood. Owner decision: rather than rename the conference or
+    # subsume anybody, Colorado State moves out to the Mountain West (where it
+    # actually plays in real life, so the swap reads as a correction) and the Pac
+    # stays at exactly 16. See MOVES below.
     {"school": "University of Jefferson", "city": "Ashbury", "div": "D1",
-     "conf": "JVC", "origin": {"reuse": "Jacksonville"}, "meta": ("JU", "#1b3a6b")},
+     "conf": "Pac-16", "origin": {"reuse": "Jacksonville"}, "meta": ("JU", "#1b3a6b")},
     {"school": "Jefferson State University", "city": "Mercer City", "div": "D1",
      "conf": "JVC", "origin": {"reuse": "Jacksonville State"}, "meta": ("JSU", "#7a1f2b")},
     {"school": "University of Southern Jefferson", "city": "San Borondón", "div": "D1",
@@ -90,9 +95,13 @@ PROGRAMS: list[dict] = [
     {"school": "Harriman State University", "city": "Harriman", "div": "D1", "conf": "JVC"},
     {"school": "Jefferson A&M University", "city": "Rostova Junction", "div": "D1",
      "conf": "JVC"},
-    # Reno sits in Washoe County = Jefferson's Galena County. Stays in the MW.
-    {"school": "Galena University", "city": "Galena", "div": "D1", "conf": "MW",
-     "origin": {"rename": "Nevada"}},
+    # Galena is NET-NEW and joins the MW, giving Jefferson one major-tier program.
+    # It was briefly written as a rename of Nevada — Galena County is Washoe County,
+    # so absorbing UNR looked geographically tidy. OWNER RULE, do not redo it: a real
+    # FLAGSHIP is never subsumed. Jefferson may take the ground and it may take the
+    # regional publics, but UNR keeps existing. Galena and Reno are simply two towns
+    # on the same ground in different fictions.
+    {"school": "Galena University", "city": "Galena", "div": "D1", "conf": "MW"},
 
     # ---- D2 (14) — the new Jefferson Collegiate Conference ------------------
     {"school": "Cascade Polytechnic University", "city": "Redfork", "div": "D2",
@@ -128,6 +137,11 @@ PROGRAMS: list[dict] = [
     {"school": "Altamonte College", "city": "Altamonte", "div": "D3", "conf": "JAA"},
     {"school": "Serrano College", "city": "Serrano", "div": "D3", "conf": "JAA"},
     {"school": "Los Robles College", "city": "Los Robles", "div": "D3", "conf": "JAA"},
+    # Fontbonne was a Pacific Frontier relocation to Jackson WY; the owner took it
+    # for Jefferson. Wyoming keeps Dean (D3, Cheyenne), so the state stays on the
+    # D3 map. Fontbonne is a Sisters-of-St-Joseph college, hence a saint-named town.
+    {"school": "Santa Laura College", "city": "Santa Laura", "div": "D3", "conf": "JAA",
+     "origin": {"rename": "Fontbonne"}},
 
     # ---- D4 (3) — Jefferson's academic tier, joining the NWC ----------------
     # Caldwell ID sits in Canyon County = Jefferson's Halbrook County. "College of
@@ -137,10 +151,25 @@ PROGRAMS: list[dict] = [
      "origin": {"rename": "College of Idaho"}},
     {"school": "Ashbury College", "city": "Ashbury", "div": "D4", "conf": "NWC"},
     {"school": "New Leiden College", "city": "New Leiden", "div": "D4", "conf": "NWC"},
+    # Carroll (MT), taken for Jefferson by owner decision. Note the cost, which is
+    # real: Montana had exactly one D4 program and now has none. Carroll is a
+    # Catholic liberal-arts college, so it keeps that character here.
+    {"school": "Aurelia College", "city": "Aurelia", "div": "D4", "conf": "NWC",
+     "origin": {"rename": "Carroll (MT)"}},
 ]
 
 STATE = "JF"
 _GENDERS = ("men", "women")
+
+# --- Conference moves for EXISTING programs (no rename, no relocation) --------
+# Jefferson's flagship joins the Pac-16 at `top` tier, and rather than rename the
+# conference (its abbr is a key in CONF_PRESTIGE, CONF_TIER, web/state.py::_P5 and
+# polls.py::_POWER_CONFS) or delete anybody, one member steps out so the Pac stays
+# at 16. Colorado State to the Mountain West is where it plays in real life, so
+# this reads as a correction rather than a demotion.
+MOVES = [
+    {"school": "Colorado State", "div": "D1", "from": "Pac-16", "to": "MW"},
+]
 
 
 def _slug(school: str) -> str:
@@ -198,6 +227,8 @@ def _drop_team(div_data: dict, school: str) -> str | None:
 def plan() -> list[str]:
     """Human-readable summary, also the dry-run output."""
     out, by_div = [], {}
+    for mv in MOVES:
+        out.append(f"\nmove  {mv['school']} ({mv['div']}) {mv['from']} -> {mv['to']}")
     for p in PROGRAMS:
         by_div.setdefault(p["div"], []).append(p)
     for div in ("D1", "D2", "D3", "D4"):
@@ -221,6 +252,23 @@ def apply_changes(dry: bool) -> None:
     divisions = {(d, g): _load(f"{d.lower()}_{g}.json")
                  for d in ("d1", "d2", "d3", "d4") for g in _GENDERS}
     notes: list[str] = []
+
+    # Conference moves first, so a vacated seat exists before the Jefferson program
+    # that replaces it is inserted.
+    for mv in MOVES:
+        for g in _GENDERS:
+            data = divisions[(mv["div"].lower(), g)]
+            dest = _conf_of(data, mv["to"])
+            if dest is None:
+                notes.append(f"  ! {mv['to']} missing in {mv['div']} {g}")
+                continue
+            if mv["school"] in dest["teams"]:
+                continue                              # already moved (re-run)
+            if _drop_team(data, mv["school"]) is None:
+                notes.append(f"  ! {mv['school']} not found in {mv['div']} {g}")
+                continue
+            dest["teams"].append(mv["school"])
+            dest["teams"].sort()
 
     for p in PROGRAMS:
         school, div, conf = p["school"], p["div"], p["conf"]

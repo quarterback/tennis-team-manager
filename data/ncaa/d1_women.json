@@ -105,7 +105,6 @@
         "Boise State",
         "Cal",
         "Colorado",
-        "Colorado State",
         "Gonzaga",
         "Oregon",
         "Oregon State",
@@ -113,6 +112,7 @@
         "Stanford",
         "UCLA",
         "USC",
+        "University of Jefferson",
         "Utah",
         "Washington",
         "Washington State"
@@ -409,9 +409,11 @@
       "autobid": true,
       "teams": [
         "Air Force",
+        "Colorado State",
         "Fresno State",
         "Galena University",
         "Hawaii",
+        "Nevada",
         "New Mexico",
         "San Jose State",
         "Texas State",
@@ -619,7 +621,6 @@
         "Port Veles University",
         "San Borondón State University",
         "Santa Michaela State University",
-        "University of Jefferson",
         "University of Southern Jefferson",
         "Valderra University"
       ]

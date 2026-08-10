@@ -19,7 +19,7 @@ footprint sized like a state of that population.
 |---|---|
 | Should the JHSAA season be visible in the sim? | **No.** Jefferson is a state like Texas — no HS season UI, no archive, no HS simulation. |
 | Where do Jefferson recruits come from? | **Generated**, by this sim's own engine, drawing hometowns and high schools from Jefferson pools. No import of prep-network's simulated players. |
-| How big a tennis state? | **Top-5** — 4th on the domestic board, behind CA/FL/TX and ahead of NY. |
+| How big a tennis state? | **Biggest** — Jefferson edges California as a talent source, AND its own league funds at major tier, so it DRAWS as well as develops (like TX/CA/FL). |
 | College footprint | Absorb the real programs standing on Jefferson's ground, relocate part of the extra California cadre, add the owner's named flagships. |
 | Division coverage | At least one Jefferson program in **every** division D1–D4; at least two in D1. |
 
@@ -53,7 +53,7 @@ Wiring, all of it ordinary-state plumbing:
 
 ### Phase 2 — the college footprint
 
-`scripts/build_jefferson_colleges.py` applies a declarative table of **37 programs** to
+`scripts/build_jefferson_colleges.py` applies a declarative table of **39 programs** to
 the eight division files plus `locations.json` and `logos.json`. It is idempotent and
 has a `--dry-run`. It deliberately does **not** write the curated Python rating tables
 in `app/ncaa.py` — it prints the lines to paste, because those tables carry comments a
@@ -61,12 +61,12 @@ machine rewrite would destroy.
 
 | Division | Jefferson | Conference |
 |---|---:|---|
-| D1 | 12 | **Jefferson Valley Conference (`JVC`)**, 11 — plus Galena in the MW |
+| D1 | 12 | **Jefferson Valley Conference (`JVC`)** 10, plus the flagship in the Pac-16 and Galena in the MW |
 | D2 | 14 | **Jefferson Collegiate Conference (`JCC`)** |
-| D3 | 8 | **Jefferson Athletic Association (`JAA`)** |
-| D4 | 3 | joined the existing NWC (11 → 14) |
+| D3 | 9 | **Jefferson Athletic Association (`JAA`)** |
+| D4 | 4 | joined the existing NWC |
 
-37 programs is **2.1 per million**, matching California's 2.0 — the right comparator for
+39 programs is **2.2 per million**, matching California's 2.0 — the right comparator for
 a large West Coast state.
 
 ---
@@ -75,22 +75,28 @@ a large West Coast state.
 
 ### 1. The origin-weight table no longer sums to 1.0
 
-It sums to ~1.064. The file already says these are *relative* weights and `rng.choices`
-renormalizes. Jefferson enters at 0.0700 and the four states whose real counties it
+It sums to ~1.134. The file already says these are *relative* weights and `rng.choices`
+renormalizes. Jefferson enters at 0.1400 and the four states whose real counties it
 stands on are shaved by the population share it actually takes from them — OR ~17% (nine
 counties), NV ~16% (Washoe, Humboldt), ID ~12% (Canyon, Owyhee), CA ~1.8% (seven
 far-northern counties). The rest of Jefferson's weight is its invented population.
 **Do not "fix" this by rescaling all 55 numbers** — the diff would be unreviewable and
 the behavior identical.
 
-Measured over six 2,500-recruit classes (~1,627 domestic each, the rest international):
+Measured over three 2,500-recruit classes (~1,627 domestic each, the rest international):
 
 ```
-CA 193 · FL 170 · TX 130 · JF 98 · NY 85 · WA 61
+JF 188 · CA 186 · FL 166 · TX 113 · NY 82 · WA 59
 ```
 
-A single class is noisy enough to swap JF and NY (one seed put JF at 87 against NY 95).
-**Average several classes before concluding the weight is wrong.**
+A single class is noisy enough to reorder the top two. **Average several classes before
+concluding the weight is wrong.**
+
+Producing talent and attracting it are separate levers here. The weight above is only
+the first; the second is `CONF_TIER["JVC"] = "major"`, which funds Jefferson's ten
+JVC programs at 12–13 scholarships (the major band is 9–16) — past the 10.5 floor
+needed to attract a 5★, so they can outbid for out-of-state recruits the way a real
+destination does. Owner rule 2027-08: Jefferson develops AND draws, like TX/CA/FL.
 
 ### 2. The Jefferson city pool is capped at 46, not all 272
 
@@ -130,27 +136,52 @@ either.
 
 It draws at the default weight 1 in `generators/cities.py`. Its city list is *already*
 population-repeated at export, so weight 1 alone puts it at **8.7%** of the nationwide
-birthplace pool — between Texas and Florida, consistent with its ~6.6% share of the
-recruit board. Giving it a hotbed heat would multiply an existing weighting and blow it
+birthplace pool. Giving it a hotbed heat would multiply an existing weighting and blow it
 past California.
 
 ### 6. Absorbed programs keep their own logos
 
-Five real programs stood on Jefferson's ground and were **renamed, not replaced** —
-so each keeps its own mark. That is how Galena keeps the Wolf Pack lineage honestly
-rather than borrowing someone's art:
+Real programs standing on Jefferson's ground were **renamed, not replaced** — so each
+keeps its own mark, which is how they carry their real lineage honestly rather than
+borrowing someone's art:
 
 | Was | Campus | Real county | Is now |
 |---|---|---|---|
-| Nevada | Reno, NV | Washoe → Galena | **Galena University** (D1, stays in the MW) |
 | Oregon Tech | Klamath Falls, OR | Klamath → Tamarack | **Cascade Polytechnic University** (Redfork) |
 | Southern Oregon | Ashland, OR | Jackson → Marlow | **Siskiyou University** (Boyerstown) |
 | Cal Poly Humboldt | Arcata, CA | Humboldt CA → San Marcos | **Humboldt Polytechnic University** |
 | Chico State | Chico, CA | *outside the footprint* — owner-optional | **Bidwell State University** |
+| Fontbonne | Jackson, WY | — owner decision | **Santa Laura College** (D3) |
 | College of Idaho | Caldwell, ID | Canyon → Halbrook | **College of Jefferson** (D4) |
+| Carroll (MT) | Helena, MT | — owner decision | **Aurelia College** (D4) |
 
 `logo_source` records the origin as `rename:<Old>`, and the old `espn_id` is dropped —
 that id belongs to the old identity.
+
+> ### ‼️ A FLAGSHIP IS NEVER SUBSUMED (owner rule 2027-08)
+> Galena University was first written as a rename of **Nevada** — Galena County *is*
+> Washoe County, so absorbing UNR looked geographically tidy. That was wrong and has
+> been reverted. Jefferson may take the ground and it may take the regional publics,
+> but a real flagship keeps existing: **UNR cannot be eliminated.** Galena is now
+> net-new, wears its own badge, and sits beside Nevada in the Mountain West. Galena
+> and Reno are two towns on the same ground in different fictions, and that is fine.
+>
+> The cost of the two owner-directed takes is real and should not be discovered later:
+> **Montana now has no D4 program at all** (Carroll was its only one), and Wyoming
+> keeps a D3 presence only because Dean (Cheyenne) still stands alongside the departed
+> Fontbonne.
+
+### 6b. The flagship is in the Pac-16, and Colorado State moved to make room
+
+A 17.6M state's flagship should fund like a blue blood, and `CONF_TIER["Pac-16"]` is
+`top` (a 16–33.5 budget) against the JVC's `mid` (6–9). Rather than rename the
+conference — its abbr is a key in `CONF_PRESTIGE`, `CONF_TIER`, `web/state.py::_P5`
+and `polls.py::_POWER_CONFS` — **University of Jefferson joins the Pac-16 and Colorado
+State steps out to the Mountain West**, which is where it plays in real life, so the
+swap reads as a correction rather than a demotion. The Pac stays at exactly 16, nobody
+is deleted, and Gonzaga is untouched. The mechanism is the `MOVES` table in
+`scripts/build_jefferson_colleges.py`: a conference move for an existing program, with
+no rename and no relocation. MW goes to 14 (Colorado State + Nevada + Galena).
 
 ### 7. Only THREE Golden State campuses moved, not ten
 
@@ -159,11 +190,10 @@ The GSAA was built to fill a D3 California hole (CA went 5 → 20 in
 moved — the ones with generic western names; the seven that stayed carry unmistakably
 Southern-California place names. **D3 California went 20 → 17**, not 20 → 11.
 
-The small-state seeds from that same pass are **never** touched — Dean (WY), Elms (NV),
-Lasell (AK), Talladega (VI), Judson NV, Voorhees (GU), Fontbonne (WY) exist to keep
-those states on the map. A test in the verify block pins this. Note Reno and Winnemucca
-are geographically inside Jefferson but keep their Nevada programs for exactly this
-reason; Nevada retains UNLV (D1), Rosemont (D2), Elms and Judson (D3).
+The other relocations from that pass (Dean WY, Elms NV, Lasell AK, Talladega VI, Judson
+NV, Voorhees GU) were left alone simply because they are what keeps those states on the
+D3 map — worth checking before moving one, not a rule. Fontbonne (WY) was taken by owner
+decision and Wyoming still has Dean.
 
 ### 8. Borrowed marks are COPIED to a new slug, never shared
 

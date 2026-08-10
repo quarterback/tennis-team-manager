@@ -317,28 +317,39 @@ state's — do not build a HS archive or import prep-network's simulated players
   0.70. All 272 cities made Jefferson **64%** of that pool: every CA/OR/WA roster fills
   with Jefferson kids and NOTHING ERRORS. 46 ≈ its 23% population share.
   `scripts/import_jefferson.py` prints the share and warns above 30%.
-- **`US_JUNIOR_TENNIS_ORIGIN_WEIGHTS` no longer sums to 1.0** (~1.064) — deliberate, they
-  are relative and `rng.choices` renormalizes. JF 0.0700, with OR/NV/ID/CA shaved by the
-  county share Jefferson takes. Measured: CA 193 · FL 170 · TX 130 · **JF 98** · NY 85.
-  One class is noisy enough to swap JF and NY — average several before retuning.
+- **`US_JUNIOR_TENNIS_ORIGIN_WEIGHTS` no longer sums to 1.0** (~1.134) — deliberate, they
+  are relative and `rng.choices` renormalizes. JF 0.1400, with OR/NV/ID/CA shaved by the
+  county share Jefferson takes. Measured: **JF 188** · CA 186 · FL 166 · TX 113 · NY 82.
+  One class is noisy enough to reorder the top two — average several before retuning.
+- **Jefferson DEVELOPS and DRAWS (owner rule 2027-08), like TX/CA/FL.** Two separate
+  levers: the origin weight above (produce), and `CONF_TIER["JVC"] = "major"` (draw) —
+  which funds its ten JVC programs at 12–13, past the 10.5 floor for a 5★. Don't demote
+  the JVC back to `mid`. Jefferson's GEOGRAPHY is otherwise ordinary: it is region "W"
+  and gets no special pull table. Out-of-region signees are fine and expected; the
+  regional preference is soft realism, not a gate.
 - **JF is NOT in `SCHOOL_LOCAL_TERRITORY`** (it has a real `STATE_REGION`, so the normal
   geo tug already applies; adding it stacks `LOCAL_TERRITORY_PULL` 6.0 on top), **NOT in
   `WARM_STATES`** (it's the PNW), and **NOT in `cities._STATE_HEAT`** (its list is already
   population-repeated; heat would multiply an existing weighting).
-- 37 colleges across D1–D4 (~2.1/million, matching CA). Five were ABSORBED — real programs
-  standing on Jefferson ground, RENAMED so each keeps its own logo (Nevada→**Galena**
-  keeps the Wolf Pack mark, Oregon Tech→Cascade Polytechnic, Southern Oregon→Siskiyou,
-  Cal Poly Humboldt→Humboldt Polytechnic, College of Idaho→College of Jefferson). Only
-  **three** Golden State campuses relocated (D3 CA 20→17, not 20→11 — the GSAA exists to
-  fill a D3 California hole). The small-state seeds (Dean WY, Elms NV, Lasell AK,
-  Talladega VI, Judson NV, Voorhees GU, Fontbonne WY) are NEVER touched.
-- Borrowed marks (JU←Jacksonville, JSU←Jacksonville State, USJ←Saint Joseph (CT)) are
-  **copied to a new slug, never shared, and never carry the donor's `espn_id`** — the
-  collision pass groups by that id and would drop the real owner from its own match.
-- Rebuild: `scripts/import_jefferson.py` then `scripts/build_jefferson_colleges.py` then
-  `scripts/make_badges.py`. Both are idempotent; the college script PRINTS the curated
-  `ncaa.py` table lines rather than writing them. See
-  `docs/AAR-jefferson-state-integration.md`.
+- **‼️ A FLAGSHIP IS NEVER SUBSUMED (owner rule 2027-08).** Galena University was once
+  written as a rename of **Nevada** — Galena County IS Washoe County, so absorbing UNR
+  looked tidy. It was WRONG and was reverted; do not redo it. Jefferson may take the
+  ground and the regional publics, but a real flagship keeps existing. Galena is net-new,
+  badge-marked, and sits BESIDE Nevada in the MW.
+- 39 colleges across D1–D4 (~2.2/million, matching CA). Several were ABSORBED — real
+  programs standing on Jefferson ground, RENAMED so each keeps its own logo (Oregon Tech→
+  Cascade Polytechnic, Southern Oregon→Siskiyou, Cal Poly Humboldt→Humboldt Polytechnic,
+  Chico State→Bidwell State, College of Idaho→College of Jefferson). Only **three** Golden
+  State campuses relocated (D3 CA 20→17, not 20→11 — the GSAA exists to fill a D3
+  California hole). Dean (WY), Elms (NV), Lasell (AK), Talladega (VI), Judson (NV) and
+  Voorhees (GU) were left in place because they are what keeps those states on the D3
+  map — worth a look before moving one. Fontbonne (WY) and Carroll (MT) were taken by
+  owner decision; Montana now has NO D4 program.
+- **The flagship is in the Pac-16 (`top`, 16–33.5 budget) and Colorado State moved out to
+  the MW** to keep it at 16 — a correction, not a demotion, since that is where CSU plays
+  in real life. Chosen over renaming Pac-16→Pac-18, whose abbr is a key in `CONF_PRESTIGE`,
+  `CONF_TIER`, `state.py::_P5` and `polls.py::_POWER_CONFS`. Gonzaga is in the **Pac-16**,
+  not the WCC — check the data before reasoning about it.
 
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED

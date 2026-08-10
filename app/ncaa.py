@@ -65,15 +65,16 @@ CONF_PRESTIGE = {
     # --- Blue Blood (top) ---
     "Pac-16": 0.84, "SEC": 0.84, "ACC": 0.83, "Big 12": 0.82, "Big Ten": 0.81, "Yankee": 0.80,
     # --- Major / High-major ---
-    "Ivy": 0.74, "WCC": 0.72, "MW": 0.69, "Big East": 0.68, "UAA": 0.67, "Heritage": 0.66,
+    "Ivy": 0.74, "WCC": 0.72, "MW": 0.69, "Big East": 0.68, "UAA": 0.67,
+    # JVC = the Jefferson Valley Conference, Jefferson's own D1 league (10 programs;
+    # the flagship is in the Pac-16 and Galena in the MW). MAJOR, not mid (owner rule
+    # 2027-08): Jefferson is meant to DRAW recruits as well as produce them, and in
+    # this engine that is bought with prestige — a 9-16 budget band lets its programs
+    # outbid for out-of-state kids the way a real destination state does.
+    "JVC": 0.665, "Heritage": 0.66,
     # --- Mid-Major ---
-    # JVC = the Jefferson Valley Conference, the new state's own D1 league (11 of
-    # its 12 D1 programs; Galena is in the MW). Deliberately MID, not Major: it is
-    # Jefferson's Big West — a geographically tight league of big-state publics —
-    # and a brand-new conference should not be gifted a Major budget band on day
-    # one. Dynamic prestige momentum is the intended path up.
-    "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "JVC": 0.565,
-    "ASUN": 0.56, "MAC": 0.55, "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
+    "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "ASUN": 0.56,
+    "MAC": 0.55, "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
     # --- Low-Major (everyone else) ---
     "CUSA": 0.49, "SoCon": 0.47, "Southland": 0.46, "Meridian": 0.45, "Big Sky": 0.44, "MVC": 0.43,
     "Summit": 0.43, "Big South": 0.42, "Horizon": 0.42, "America East": 0.41, "OVC": 0.40,
@@ -87,10 +88,10 @@ CONF_PRESTIGE = {
 # budget, on-court strength, and seeding all follow one hierarchy.
 CONF_TIER = {
     "Pac-16": "top", "SEC": "top", "ACC": "top", "Big 12": "top", "Big Ten": "top", "Yankee": "top",
-    "Ivy": "major", "WCC": "major", "MW": "major", "Big East": "major",
+    "Ivy": "major", "WCC": "major", "JVC": "major", "MW": "major", "Big East": "major",
     "UAA": "major", "Heritage": "major",
     "Big West": "mid", "CIC": "mid", "Sun Belt": "mid", "A-10": "mid", "ASUN": "mid",
-    "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid", "JVC": "mid",
+    "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid",
     "CUSA": "low", "SoCon": "low", "Southland": "low", "Meridian": "low", "Big Sky": "low",
     "MVC": "low", "Summit": "low", "Big South": "low", "Horizon": "low", "America East": "low",
     "OVC": "low", "MAAC": "low", "NEC": "low",
@@ -571,6 +572,7 @@ SCHOOL_LOCAL_TERRITORY = {
     "Alaska Fairbanks":        ("AK", 0.45),
 }
 _TERRITORY_FLAG = {"PR", "VI", "GU"}   # US territories that carry a dual flag
+
 
 # ---------------------------------------------------------------------------
 # Federal service academies — US CITIZENS ONLY (owner rule 2026-07)

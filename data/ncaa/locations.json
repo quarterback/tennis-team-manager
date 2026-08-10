@@ -229,6 +229,10 @@
       "city": "Sioux Falls",
       "state": "SD"
     },
+    "Aurelia College": {
+      "city": "Aurelia",
+      "state": "JF"
+    },
     "Aurora": {
       "city": "Aurora",
       "state": "IL"
@@ -2413,10 +2417,6 @@
       "city": "Mount Olive",
       "state": "NC"
     },
-    "Carroll (MT)": {
-      "city": "Helena",
-      "state": "MT"
-    },
     "Mount Saint Vincent": {
       "city": "Bronx",
       "state": "NY"
@@ -2480,6 +2480,10 @@
     "Neumann": {
       "city": "Aston",
       "state": "PA"
+    },
+    "Nevada": {
+      "city": "Reno",
+      "state": "NV"
     },
     "New England": {
       "city": "Biddeford",
@@ -3320,6 +3324,10 @@
     "Santa Clara": {
       "city": "Santa Clara",
       "state": "CA"
+    },
+    "Santa Laura College": {
+      "city": "Santa Laura",
+      "state": "JF"
     },
     "Santa Michaela State University": {
       "city": "Santa Michaela",
@@ -4580,10 +4588,6 @@
     "Judson (NV)": {
       "city": "Winnemucca",
       "state": "NV"
-    },
-    "Fontbonne": {
-      "city": "Jackson",
-      "state": "WY"
     },
     "Cal State Antelope Valley": {
       "city": "Lancaster",

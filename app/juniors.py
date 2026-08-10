@@ -58,12 +58,9 @@ US_STATES = [
 # guaranteed per-state floor in generate_class, that every state generates yearly.
 # Relative weights (need not sum to 1); rng.choices renormalizes.
 #
-# JEFFERSON (JF) is a deliberate 4th-largest share (owner rule 2027-08): the state
-# is ~17.6M and a tennis hotbed, so it lands behind CA/FL/TX and ahead of NY at
-# ~6.6% of the domestic board. Measured over six 2500-recruit classes (~1,627 of
-# which are domestic, the rest international): CA 193, FL 170, TX 130, JF 98,
-# NY 85, WA 61. A single class is noisy enough to swap JF and NY — average
-# several before concluding the weight is wrong. The four states
+# JEFFERSON (JF) is deliberately the LARGEST share (owner rule 2027-08): the state
+# is ~17.6M and is meant to both DEVELOP and DRAW like Texas/California/Florida, so
+# it edges California as a talent source. The four states
 # whose real counties Jefferson stands on are shaved by the population share it
 # actually takes from them — OR ~17% (nine counties), NV ~16% (Washoe, Humboldt),
 # ID ~12% (Canyon, Owyhee), CA ~1.8% (seven far-northern counties) — and the rest
@@ -74,7 +71,7 @@ US_JUNIOR_TENNIS_ORIGIN_WEIGHTS = {
     "AK": 0.0011, "AL": 0.0102, "AR": 0.0064, "AZ": 0.0166, "CA": 0.1317,
     "CO": 0.0214, "CT": 0.0122, "DC": 0.0010, "DE": 0.0020, "FL": 0.1126,
     "GA": 0.0354, "GU": 0.0005, "HI": 0.0038, "IA": 0.0120, "ID": 0.0050,
-    "IL": 0.0325, "IN": 0.0185, "JF": 0.0700, "KS": 0.0122, "KY": 0.0115,
+    "IL": 0.0325, "IN": 0.0185, "JF": 0.1400, "KS": 0.0122, "KY": 0.0115,
     "LA": 0.0076, "MA": 0.0231, "MD": 0.0130, "ME": 0.0038, "MI": 0.0334,
     "MN": 0.0195, "MO": 0.0144, "MS": 0.0074, "MT": 0.0038, "NC": 0.0276,
     "ND": 0.0024, "NE": 0.0066, "NH": 0.0034, "NJ": 0.0424, "NM": 0.0033,
