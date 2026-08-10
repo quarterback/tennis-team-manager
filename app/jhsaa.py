@@ -411,3 +411,31 @@ def mark(school: School, size: int = 72) -> str:
     from .jhsaa_marks import school_mark
     return school_mark({"name": school.name, "mascot": school.mascot,
                         "colors": school.colors}, size)
+
+
+def career(school_name: str, gender: str, name: str, grad_year: int,
+           salt: str = "") -> list[dict]:
+    """A player's four high-school seasons, grade 9 through 12.
+
+    Rebuilt on demand rather than stored: a career is deterministic from (school,
+    gender, entry year, seat), so replaying it costs a roster build per year — no duals,
+    no persistence, milliseconds. Returns [] if the player can't be resolved (the school
+    no longer sponsors, or the name isn't on those rosters).
+    """
+    g = _GENDER.get(gender, gender)
+    school = next((s for s in load_schools(g) if s.name == school_name), None)
+    if school is None:
+        return []
+    out = []
+    for grade in GRADES:
+        year = grad_year - (12 - grade)
+        roster = build_roster(school, year, salt)
+        for i, p in enumerate(roster, 1):
+            if p.name == name:
+                out.append({"year": year, "grade": grade, "ladder": i,
+                            "ovr": round(p.current_overall(), 1),
+                            "str": p.str_value(), "school": school_name,
+                            "classification": school.classification,
+                            "district": school.district})
+                break
+    return out

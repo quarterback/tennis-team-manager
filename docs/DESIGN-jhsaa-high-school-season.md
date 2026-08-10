@@ -1,8 +1,20 @@
 # DESIGN — Simulating the JHSAA high school season
 
-Status: **proposed, not built.** Written against the Jefferson integration
-(`docs/AAR-jefferson-state-integration.md`), which put the state's juniors and colleges
-in the sim but generates its recruits from nothing.
+Status: **BUILT.** `scripts/import_jhsaa.py`, `app/jhsaa.py`, `app/jhsaa_marks.py`,
+`data/jhsaa/schools.json`, the swap in `world.recruit_class`, and the High School panel on
+the recruit page. This doc is now the design record rather than a proposal; where the
+build diverged from it, the code and the notes below are what happened.
+
+Two things the build changed:
+  * **Careers are grades 9-12 and persist by construction.** A player is keyed on the year
+    they ENTERED, not the season played, so the same person keeps one pid, name and
+    ceiling for four years and matures into it. Nothing is stored — the world rebuilds an
+    identical career, which is also how `jhsaa.career()` renders four seasons on a recruit
+    page in ~16ms.
+  * **The hand-off swaps IDENTITY ONLY, not ability.** Copying a graduate's grades onto
+    their recruit slot re-calibrated the national board (Jefferson's median recruit hit
+    #278 of 2500). The national class decides how many Jefferson recruits exist and how
+    they spread; the JHSAA decides who they are and what they did.
 
 ## Why
 

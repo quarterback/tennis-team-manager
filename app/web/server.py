@@ -1943,7 +1943,17 @@ def create_app() -> Flask:
         if p is None:
             abort(404)
         view = recruit_profile(p, division, gender, grad_year)
-        return render_template("recruit.html", active="Recruiting", p=p, view=view,
+        # A Jefferson recruit came out of the JHSAA, so their four high-school seasons
+        # can be replayed on demand (deterministic; a roster build per year, no duals).
+        hs = []
+        if getattr(p, "jhsaa", None):
+            try:
+                from app import jhsaa as _jh
+                hs = _jh.career(p.jhsaa["school"], gender, p.name, grad_year,
+                                salt=wd.active_salt())
+            except Exception:
+                hs = []
+        return render_template("recruit.html", active="Recruiting", p=p, view=view, hs=hs,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
     @app.route("/recruiting/team/<school>")
