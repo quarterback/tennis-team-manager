@@ -3332,3 +3332,54 @@ def team_budget(division: str, gender: str, school: str) -> dict:
     prog = load_division(division, gender).by_school(school)
     roster = build_roster(prog) if prog else []
     return economy.budget_summary(roster, division, gender)
+
+
+# ---------------------------------------------------------------------------
+# JHSAA — Jefferson's high-school association
+# ---------------------------------------------------------------------------
+
+def jhsaa_view(seed: int, gender: str, group: str | None = None,
+               year: int | None = None) -> dict:
+    """The archived JHSAA season for a world-year: champions, awards, district
+    standings and the state bracket, for one classification group.
+
+    Reads the archive `world.run_jhsaa` wrote (`world_jhsaa`) rather than
+    re-simulating — a season is ~5,100 duals and must never be replayed on a request
+    thread. Empty (`{"ready": False}`) until the rung has run for that year."""
+    import app.jhsaa as jh
+    import app.world as world          # local, matching the rest of this module
+    w = world.get_or_create(seed)
+    yr = w["year"] if year is None else year
+    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    arc = world.get_jhsaa(w["id"], yr, g)
+    if not arc:
+        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.GROUPS)}
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    schools = {s.name: s for s in jh.load_schools(g)}
+
+    def deco(name: str) -> dict:
+        s = schools.get(name)
+        return {"name": name,
+                "mark": jh.mark(s, 34) if s else "",
+                "city": s.city if s else "", "district": s.district if s else ""}
+
+    standings = {d: [{**deco(r["school"]), "record": r["record"],
+                      "pf": r["pf"], "pa": r["pa"]} for r in rows]
+                 for d, rows in (arc["standings"].get(grp) or {}).items()}
+    br = arc.get("brackets", {}).get(grp) or {}
+    rounds = []
+    for i, games in enumerate(br.get("rounds", [])):
+        rounds.append({"name": f"Round {i + 1}" if i < len(br.get('rounds', [])) - 1
+                       else "Final", "games": games})
+    return {
+        "ready": True, "gender": g, "year": yr, "group": grp,
+        "groups": list(jh.GROUPS),
+        "champion": deco(arc["champions"].get(grp)) if arc["champions"].get(grp) else None,
+        "champions": arc["champions"],
+        "poy": (arc.get("awards", {}).get(grp) or {}).get("poy"),
+        "all_state": (arc.get("awards", {}).get(grp) or {}).get("all_state", []),
+        "all_district": (arc.get("all_district", {}) or {}).get(grp, {}),
+        "standings": dict(sorted(standings.items())),
+        "rounds": rounds,
+        "field": br.get("field", []),
+    }

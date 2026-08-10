@@ -3473,6 +3473,9 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                "all_state": season["awards"][g].get("all_state", [])}
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+                "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
+                "all_district": {g: season["awards"][g].get("all_district", {})
+                                 for g in jhsaa.GROUPS},
             }
             champs[gender] = summary["champions"]
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"

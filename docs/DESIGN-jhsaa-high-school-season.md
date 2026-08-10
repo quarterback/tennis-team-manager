@@ -308,6 +308,17 @@ moment a recruit signed, taking their whole high-school past with them. It survi
 signing, JSON round-trip and `world_roster`, so a fifth-year senior still shows where they
 came from.
 
+## 8c. The High School tab
+
+`/jhsaa`, in the Management group beside Junior Rankings. Reads the archive the rung
+wrote — **never re-simulates**, because a season is ~5,100 duals and must not touch a
+request thread.
+
+Per gender and classification: the state champion with its generated crest, the full
+state tournament round by round, every district's standings, Player of the Year,
+All-State, All-District, and a champions board across all five classifications. Before
+the rung has run for a world-year the page says so rather than showing an empty shell.
+
 ## 9. Resolved (owner, 2027-08)
 
 **The JHSAA senior class is Jefferson's entry into the college recruit rankings.** Not a

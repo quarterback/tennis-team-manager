@@ -37,6 +37,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
+from .state import jhsaa_view
 from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from .state import staff_search
@@ -126,6 +127,7 @@ NAV_GROUPS = [
         {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
         {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "jhsaa",     "label": "High School",  "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
         {"id": "staff",     "label": "Staff Search",  "icon": "fa-solid fa-user-tie", "endpoint": "staff_search_page","args": {}},
@@ -1955,6 +1957,17 @@ def create_app() -> Flask:
                 hs = []
         return render_template("recruit.html", active="Recruiting", p=p, view=view, hs=hs,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
+
+    @app.route("/jhsaa")
+    def jhsaa_page():
+        """Jefferson's high-school association — the only simulated high-school layer
+        in the game. Reads the archive the JHSAA rung wrote at week 0; never
+        re-simulates."""
+        division, gender, label, u = _universe(request)
+        g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
+        view = jhsaa_view(DEFAULT_SEED, g, request.args.get("group"))
+        return render_template("jhsaa.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
 
     @app.route("/recruiting/team/<school>")
     def team_recruiting(school):
