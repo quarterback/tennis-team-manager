@@ -33,6 +33,11 @@ US_STATES = [
     ("California", "CA"), ("Colorado", "CO"), ("Connecticut", "CT"), ("Delaware", "DE"),
     ("District of Columbia", "DC"), ("Florida", "FL"), ("Georgia", "GA"), ("Hawaii", "HI"),
     ("Idaho", "ID"), ("Illinois", "IL"), ("Indiana", "IN"), ("Iowa", "IA"),
+    # Jefferson: the fictional West Coast state imported from `prep-network` — its
+    # 20 counties stand on real southern-Oregon / northern-California / northern-
+    # Nevada / western-Idaho ground. Ordinary state in every respect here.
+    # See docs/AAR-jefferson-state-integration.md.
+    ("Jefferson", "JF"),
     ("Kansas", "KS"), ("Kentucky", "KY"), ("Louisiana", "LA"), ("Maine", "ME"),
     ("Maryland", "MD"), ("Massachusetts", "MA"), ("Michigan", "MI"), ("Minnesota", "MN"),
     ("Mississippi", "MS"), ("Missouri", "MO"), ("Montana", "MT"), ("Nebraska", "NE"),
@@ -52,18 +57,31 @@ US_STATES = [
 # states supply more recruits on average (hotbeds CA/FL/TX/NY heavy) AND, with the
 # guaranteed per-state floor in generate_class, that every state generates yearly.
 # Relative weights (need not sum to 1); rng.choices renormalizes.
+#
+# JEFFERSON (JF) is a deliberate 4th-largest share (owner rule 2027-08): the state
+# is ~17.6M and a tennis hotbed, so it lands behind CA/FL/TX and ahead of NY at
+# ~6.6% of the domestic board. Measured over six 2500-recruit classes (~1,627 of
+# which are domestic, the rest international): CA 193, FL 170, TX 130, JF 98,
+# NY 85, WA 61. A single class is noisy enough to swap JF and NY — average
+# several before concluding the weight is wrong. The four states
+# whose real counties Jefferson stands on are shaved by the population share it
+# actually takes from them — OR ~17% (nine counties), NV ~16% (Washoe, Humboldt),
+# ID ~12% (Canyon, Owyhee), CA ~1.8% (seven far-northern counties) — and the rest
+# of Jefferson's weight is its invented population. That leaves the table summing
+# to ~1.064 rather than 1.0, which is fine and is why the note above exists: these
+# are RELATIVE weights. Do not "fix" it by rescaling all 55 numbers.
 US_JUNIOR_TENNIS_ORIGIN_WEIGHTS = {
-    "AK": 0.0011, "AL": 0.0102, "AR": 0.0064, "AZ": 0.0166, "CA": 0.1341,
+    "AK": 0.0011, "AL": 0.0102, "AR": 0.0064, "AZ": 0.0166, "CA": 0.1317,
     "CO": 0.0214, "CT": 0.0122, "DC": 0.0010, "DE": 0.0020, "FL": 0.1126,
-    "GA": 0.0354, "GU": 0.0005, "HI": 0.0038, "IA": 0.0120, "ID": 0.0057,
-    "IL": 0.0325, "IN": 0.0185, "KS": 0.0122, "KY": 0.0115, "LA": 0.0076,
-    "MA": 0.0231, "MD": 0.0130, "ME": 0.0038, "MI": 0.0334, "MN": 0.0195,
-    "MO": 0.0144, "MS": 0.0074, "MT": 0.0038, "NC": 0.0276, "ND": 0.0024,
-    "NE": 0.0066, "NH": 0.0034, "NJ": 0.0424, "NM": 0.0033, "NV": 0.0053,
-    "NY": 0.0545, "OH": 0.0240, "OK": 0.0074, "OR": 0.0111, "PA": 0.0160,
-    "PR": 0.0061, "RI": 0.0033, "SC": 0.0111, "SD": 0.0017, "TN": 0.0161,
-    "TX": 0.0886, "UT": 0.0100, "VA": 0.0202, "VI": 0.0006, "VT": 0.0003,
-    "WA": 0.0420, "WI": 0.0156, "WV": 0.0030, "WY": 0.0017,
+    "GA": 0.0354, "GU": 0.0005, "HI": 0.0038, "IA": 0.0120, "ID": 0.0050,
+    "IL": 0.0325, "IN": 0.0185, "JF": 0.0700, "KS": 0.0122, "KY": 0.0115,
+    "LA": 0.0076, "MA": 0.0231, "MD": 0.0130, "ME": 0.0038, "MI": 0.0334,
+    "MN": 0.0195, "MO": 0.0144, "MS": 0.0074, "MT": 0.0038, "NC": 0.0276,
+    "ND": 0.0024, "NE": 0.0066, "NH": 0.0034, "NJ": 0.0424, "NM": 0.0033,
+    "NV": 0.0045, "NY": 0.0545, "OH": 0.0240, "OK": 0.0074, "OR": 0.0092,
+    "PA": 0.0160, "PR": 0.0061, "RI": 0.0033, "SC": 0.0111, "SD": 0.0017,
+    "TN": 0.0161, "TX": 0.0886, "UT": 0.0100, "VA": 0.0202, "VI": 0.0006,
+    "VT": 0.0003, "WA": 0.0420, "WI": 0.0156, "WV": 0.0030, "WY": 0.0017,
 }
 _DEFAULT_STATE_WEIGHT = 0.0005      # any abbr missing from the table above
 _US_TERRITORIES = {"PR", "VI", "GU"}   # country = US, secondary = the territory (dual flag)

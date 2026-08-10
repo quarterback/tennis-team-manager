@@ -99,6 +99,12 @@ _STATE_HEAT: dict[str, int] = {
     "PA": 3, "VA": 3, "NJ": 3, "AZ": 3, "TN": 2, "SC": 2, "MI": 2, "MA": 2,
     "MD": 2, "WA": 2, "CO": 2, "IN": 2, "MO": 2, "AL": 2, "LA": 2, "UT": 2,
     "OR": 2, "MN": 2, "WI": 2, "KY": 2, "OK": 2, "NV": 2,
+    # ⚠️ "JF" (Jefferson) is DELIBERATELY ABSENT — it draws at the default 1 and
+    # must stay there. Its city list is already population-repeated at export
+    # (scripts/import_jefferson.py), so weight 1 alone puts it at ~8.7% of this
+    # pool — between Texas and Florida, matching its ~6.6% share of the recruit
+    # board. Giving it a hotbed heat here would multiply an existing weighting and
+    # blow it past California.
 }
 
 # Valid US birthplace codes: 50 states + DC + the territories that carry US
@@ -110,6 +116,7 @@ _US_CODES = frozenset({
     "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH",
     "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA",
     "WV", "WI", "WY", "PR", "VI", "GU", "AS",
+    "JF",   # Jefferson — a full state, so its towns belong in the generic pool too
 })
 
 _US_TOWNS: tuple[tuple[str, str], ...] | None = None

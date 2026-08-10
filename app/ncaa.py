@@ -45,6 +45,13 @@ SCHOOL_META = {
     "Harvard": ("HARV", "#a51c30"), "South Florida": ("USF", "#006747"), "Princeton": ("PRIN", "#ff6600"),
     "UCLA": ("UCLA", "#2d68c4"), "Georgia": ("UGA", "#ba0c2f"),
     "North Carolina": ("UNC", "#4b9cd3"), "Duke": ("DUKE", "#003087"), "Notre Dame": ("ND", "#0c2340"),
+    # Jefferson's flagships. Pinned because the crest fallback takes the first
+    # letter of up to four words: "University of Southern Jefferson" would come out
+    # "UOSJ" rather than the western-convention USJ the owner wants (JU/JSU/USJ,
+    # after Kansas University / Colorado University).
+    "University of Jefferson": ("JU", "#1b3a6b"),
+    "Jefferson State University": ("JSU", "#7a1f2b"),
+    "University of Southern Jefferson": ("USJ", "#0e5a4a"),
 }
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
@@ -60,8 +67,13 @@ CONF_PRESTIGE = {
     # --- Major / High-major ---
     "Ivy": 0.74, "WCC": 0.72, "MW": 0.69, "Big East": 0.68, "UAA": 0.67, "Heritage": 0.66,
     # --- Mid-Major ---
-    "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "ASUN": 0.56, "MAC": 0.55,
-    "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
+    # JVC = the Jefferson Valley Conference, the new state's own D1 league (11 of
+    # its 12 D1 programs; Galena is in the MW). Deliberately MID, not Major: it is
+    # Jefferson's Big West — a geographically tight league of big-state publics —
+    # and a brand-new conference should not be gifted a Major budget band on day
+    # one. Dynamic prestige momentum is the intended path up.
+    "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "JVC": 0.565,
+    "ASUN": 0.56, "MAC": 0.55, "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
     # --- Low-Major (everyone else) ---
     "CUSA": 0.49, "SoCon": 0.47, "Southland": 0.46, "Meridian": 0.45, "Big Sky": 0.44, "MVC": 0.43,
     "Summit": 0.43, "Big South": 0.42, "Horizon": 0.42, "America East": 0.41, "OVC": 0.40,
@@ -78,7 +90,7 @@ CONF_TIER = {
     "Ivy": "major", "WCC": "major", "MW": "major", "Big East": "major",
     "UAA": "major", "Heritage": "major",
     "Big West": "mid", "CIC": "mid", "Sun Belt": "mid", "A-10": "mid", "ASUN": "mid",
-    "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid",
+    "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid", "JVC": "mid",
     "CUSA": "low", "SoCon": "low", "Southland": "low", "Meridian": "low", "Big Sky": "low",
     "MVC": "low", "Summit": "low", "Big South": "low", "Horizon": "low", "America East": "low",
     "OVC": "low", "MAAC": "low", "NEC": "low",
@@ -97,6 +109,11 @@ CONF_PRESTIGE_D2 = {
     "Great Northwest Athletic": 0.44, "Mountain East": 0.44, "Northern Sun": 0.43,
     "Central Atlantic": 0.42, "D2 Independent": 0.40, "Southern Intercollegiate Athletic": 0.36,
     "Central Intercollegiate Athletic": 0.35,
+    # Jefferson's D2 league — the state's regional publics, four of them absorbed
+    # from programs that stood on Jefferson ground (Oregon Tech, Southern Oregon,
+    # Cal Poly Humboldt, Chico State). Priced just above the Great Northwest and
+    # California Collegiate leagues those four came from.
+    "Jefferson Collegiate Conference": 0.48,
 }
 CONF_PRESTIGE_D2_ALIASES = {
     "SSC": "Sunshine State", "PBC": "Peach Belt", "GSC": "Gulf South", "LSC": "Lone Star",
@@ -107,6 +124,7 @@ CONF_PRESTIGE_D2_ALIASES = {
     "ECC": "East Coast", "GAC": "Great American", "GNAC-D2": "Great Northwest Athletic",
     "MEC": "Mountain East", "NSIC": "Northern Sun", "CACC": "Central Atlantic",
     "SIAC": "Southern Intercollegiate Athletic", "CIAA": "Central Intercollegiate Athletic",
+    "JCC": "Jefferson Collegiate Conference",
 }
 CONF_PRESTIGE_D3 = {
     "University Athletic Association": 0.65, "NESCAC": 0.63, "SCIAC": 0.61, "Centennial": 0.58,
@@ -138,6 +156,11 @@ CONF_PRESTIGE_D3 = {
     # small colleges. Normal mid-pack D3 priors.
     "Golden State Athletic Association": 0.44,
     "Pacific Frontier Conference": 0.42,
+    # Jefferson's D3 league — three relocated Golden State campuses plus five
+    # net-new small colleges. Inherits the GSAA's 0.44 (they are literally the
+    # same campuses), which sits deliberately BELOW the 0.60 gem line so the new
+    # state doesn't collect a hidden-gem bump it hasn't earned.
+    "Jefferson Athletic Association": 0.44,
 }
 CONF_PRESTIGE_D3_ALIASES = {
     "CCS": "Collegiate Conference of the South", "MWC": "Midwest Conference",
@@ -149,7 +172,7 @@ CONF_PRESTIGE_D3_ALIASES = {
     "CNE": "Conference of New England", "HCAC": "Heartland Collegiate", "PAC": "Presidents' Athletic",
     "SLIAC": "St. Louis Intercollegiate", "LEC": "Little East", "NACC": "Northern Athletics Collegiate",
     "AMCC": "Allegheny Mountain Collegiate", "GNAC-D3": "Great Northeast Athletic", "NAC": "North Atlantic",
-    "UMAC": "Upper Midwest Athletic",
+    "UMAC": "Upper Midwest Athletic", "JAA": "Jefferson Athletic Association",
     # MAC Commonwealth / MAC Freedom data abbrs carry spaces and match by name.
 }
 
@@ -251,6 +274,10 @@ PRESTIGE_SCHOOLS = {
     "Babson": 0.06, "Vassar": 0.05, "Whitman": 0.05,
     # Elite HBCU flagships — a clear brand bump so they sit atop their D4 band.
     "Morehouse": 0.15, "Spelman": 0.15,
+    # --- Jefferson: the state flagship and its land-grant HBCU. Modest bumps —
+    # these are new programs in a mid-tier league, meant to climb on dynamic
+    # prestige momentum rather than arrive pre-made.
+    "University of Jefferson": 0.12, "Jefferson A&M University": 0.13,
 }
 
 # Per-conference academic prior (default by division below). Academic leagues
@@ -291,6 +318,11 @@ ACADEMIC_SCHOOLS = {
     # allocation (recruit_economy._d3d4_funded) and recruit above their level,
     # regardless of which conference they sit in.
     "Morehouse": 0.88, "Spelman": 0.88,
+    # Jefferson's D4 academic tier. These MUST be set: recruit_economy.
+    # d4_academic_min derives each D4 program's admissions gate from its academic
+    # rating, so an unset D4 falls to the 0.50 default and admits nearly anyone —
+    # which would make Jefferson's liberal-arts colleges the softest in the tier.
+    "College of Jefferson": 0.80, "Ashbury College": 0.86, "New Leiden College": 0.83,
 }
 
 
@@ -389,8 +421,14 @@ STATE_REGION = {
     # Mountain / West
     "CO": "MTN", "UT": "MTN", "NV": "MTN", "AZ": "MTN", "NM": "MTN",
     "MT": "MTN", "ID": "MTN", "WY": "MTN",
-    # Pacific
-    "CA": "W", "OR": "W", "WA": "W", "AK": "W", "HI": "W", "BC": "W",
+    # Pacific ("JF" = Jefferson, the fictional state between Oregon and California —
+    # putting it in a real region is what gives its recruits the ordinary
+    # homecooking pull toward western programs, and lets `towns_in_region("W")`
+    # offer Jefferson towns to any western program's base roster. It deliberately
+    # gets NO entry in SCHOOL_LOCAL_TERRITORY below: that table is a substitute for
+    # programs whose state has no region at all, and stacking it here would let
+    # Jefferson colleges hoard their own state.)
+    "CA": "W", "OR": "W", "WA": "W", "AK": "W", "HI": "W", "BC": "W", "JF": "W",
 }
 # Adjacent regions (share a meaningful border) → a mid proximity bump.
 REGION_ADJACENT = {
@@ -756,6 +794,10 @@ BIG_METRO_CITIES = {
     "Portland", "Las Vegas", "Detroit", "Memphis", "Louisville", "Milwaukee",
     "Atlanta", "Miami", "Minneapolis", "New Orleans", "Cleveland", "Pittsburgh",
     "Cincinnati", "Kansas City", "Sacramento", "Tampa", "St. Louis", "Oakland",
+    # Jefferson's metros. The list's real floor is ~Oakland (440k); these clear it
+    # on the state's own gazetteer (Port Veles 1.2M, Belmonte 1.1M, Belyakov 950k,
+    # San Borondón 850k, Ashbury 470k and the state capital).
+    "Port Veles", "Belmonte", "Belyakov", "San Borondón", "Ashbury",
 }
 
 

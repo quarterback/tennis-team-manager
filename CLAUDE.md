@@ -303,6 +303,43 @@ rather than a new flag.
   pre-graduation. The pro league is the graduates-only side. Don't merge them.
 See `docs/AAR-offseason-visible-steps-cups-and-pros.md`.
 
+## ⚠️ JEFFERSON — a fictional 51st state (`JF`), imported from `prep-network`
+Jefferson is an alternate-history West Coast state (~17.6M) whose 20 counties stand on
+real southern-Oregon / northern-California / northern-Nevada / western-Idaho ground. It
+is an ORDINARY state here: `("Jefferson","JF")` in `juniors.US_STATES`, `STATE_REGION
+["JF"]="W"`, `scout_intel.US_REGIONS["JF"]="Pacific"`. Owner rule 2027-08: the JHSAA high
+school season is **invisible** in this sim and recruits are **generated** like any other
+state's — do not build a HS archive or import prep-network's simulated players. Traps:
+- **The `us_states["JF"]` city pool is capped at 46 cities and MUST stay proportional.**
+  It feeds `roll_us_hometown` (flat choice, so its population repeats are the weighting)
+  AND `ncaa.towns_in_region("W")` (dedupes, so only the DISTINCT count counts) — the pool
+  every western program draws local base-roster players from at `LOCAL_REGION_TARGET`
+  0.70. All 272 cities made Jefferson **64%** of that pool: every CA/OR/WA roster fills
+  with Jefferson kids and NOTHING ERRORS. 46 ≈ its 23% population share.
+  `scripts/import_jefferson.py` prints the share and warns above 30%.
+- **`US_JUNIOR_TENNIS_ORIGIN_WEIGHTS` no longer sums to 1.0** (~1.064) — deliberate, they
+  are relative and `rng.choices` renormalizes. JF 0.0700, with OR/NV/ID/CA shaved by the
+  county share Jefferson takes. Measured: CA 193 · FL 170 · TX 130 · **JF 98** · NY 85.
+  One class is noisy enough to swap JF and NY — average several before retuning.
+- **JF is NOT in `SCHOOL_LOCAL_TERRITORY`** (it has a real `STATE_REGION`, so the normal
+  geo tug already applies; adding it stacks `LOCAL_TERRITORY_PULL` 6.0 on top), **NOT in
+  `WARM_STATES`** (it's the PNW), and **NOT in `cities._STATE_HEAT`** (its list is already
+  population-repeated; heat would multiply an existing weighting).
+- 37 colleges across D1–D4 (~2.1/million, matching CA). Five were ABSORBED — real programs
+  standing on Jefferson ground, RENAMED so each keeps its own logo (Nevada→**Galena**
+  keeps the Wolf Pack mark, Oregon Tech→Cascade Polytechnic, Southern Oregon→Siskiyou,
+  Cal Poly Humboldt→Humboldt Polytechnic, College of Idaho→College of Jefferson). Only
+  **three** Golden State campuses relocated (D3 CA 20→17, not 20→11 — the GSAA exists to
+  fill a D3 California hole). The small-state seeds (Dean WY, Elms NV, Lasell AK,
+  Talladega VI, Judson NV, Voorhees GU, Fontbonne WY) are NEVER touched.
+- Borrowed marks (JU←Jacksonville, JSU←Jacksonville State, USJ←Saint Joseph (CT)) are
+  **copied to a new slug, never shared, and never carry the donor's `espn_id`** — the
+  collision pass groups by that id and would drop the real owner from its own match.
+- Rebuild: `scripts/import_jefferson.py` then `scripts/build_jefferson_colleges.py` then
+  `scripts/make_badges.py`. Both are idempotent; the college script PRINTS the curated
+  `ncaa.py` table lines rather than writing them. See
+  `docs/AAR-jefferson-state-integration.md`.
+
 ## Other notes
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
   score band (owner rule 2027-07)** — `coaches.development_multiplier` maps

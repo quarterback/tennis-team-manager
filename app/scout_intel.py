@@ -66,8 +66,13 @@ US_REGIONS: dict[str, str] = {
     # Mountain
     "AZ": "Mountain", "CO": "Mountain", "ID": "Mountain", "MT": "Mountain",
     "NV": "Mountain", "NM": "Mountain", "UT": "Mountain", "WY": "Mountain",
-    # Pacific (census minus AK/HI → Outlying)
-    "CA": "Pacific", "OR": "Pacific", "WA": "Pacific",
+    # Pacific (census minus AK/HI → Outlying). "JF" is Jefferson, the fictional
+    # state wedged between Oregon and California — a contiguous Pacific state, so
+    # it belongs here and NOT in Outlying. Required, not cosmetic: `home_state()`
+    # returns "" for any code missing from this map, which would make every
+    # Jefferson-born player invisible to the Intel Bureau's state filter, the
+    # regional rankings and `portal_search_states()`.
+    "CA": "Pacific", "OR": "Pacific", "WA": "Pacific", "JF": "Pacific",
     # Outlying — non-contiguous states, the capital, US territories, Canada
     "AK": "Outlying", "HI": "Outlying", "DC": "Outlying",
     "PR": "Outlying", "VI": "Outlying", "GU": "Outlying",

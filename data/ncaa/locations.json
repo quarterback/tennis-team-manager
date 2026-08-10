@@ -105,6 +105,10 @@
       "city": "Alma",
       "state": "MI"
     },
+    "Altamonte College": {
+      "city": "Altamonte",
+      "state": "JF"
+    },
     "Alvernia": {
       "city": "Reading",
       "state": "PA"
@@ -189,6 +193,10 @@
       "city": "Wilmore",
       "state": "KY"
     },
+    "Ashbury College": {
+      "city": "Ashbury",
+      "state": "JF"
+    },
     "Ashland": {
       "city": "Ashland",
       "state": "OH"
@@ -236,6 +244,10 @@
     "Averett": {
       "city": "Danville",
       "state": "VA"
+    },
+    "Averill College": {
+      "city": "Averill",
+      "state": "JF"
     },
     "Azusa Pacific": {
       "city": "Azusa",
@@ -297,9 +309,17 @@
       "city": "Belmont",
       "state": "NC"
     },
+    "Belmonte State University": {
+      "city": "Belmonte",
+      "state": "JF"
+    },
     "Beloit": {
       "city": "Beloit",
       "state": "WI"
+    },
+    "Belyakov State University": {
+      "city": "Belyakov",
+      "state": "JF"
     },
     "Bemidji State": {
       "city": "Bemidji",
@@ -340,6 +360,10 @@
     "Bethune-Cookman": {
       "city": "Daytona Beach",
       "state": "FL"
+    },
+    "Bidwell State University": {
+      "city": "Lake Esperanza",
+      "state": "JF"
     },
     "Binghamton": {
       "city": "Binghamton",
@@ -477,10 +501,6 @@
       "city": "San Luis Obispo",
       "state": "CA"
     },
-    "Cal Poly Humboldt": {
-      "city": "Arcata",
-      "state": "CA"
-    },
     "Cal Poly Pomona": {
       "city": "Pomona",
       "state": "CA"
@@ -573,6 +593,10 @@
       "city": "Kenosha",
       "state": "WI"
     },
+    "Cascade Polytechnic University": {
+      "city": "Redfork",
+      "state": "JF"
+    },
     "Case Western Reserve": {
       "city": "Cleveland",
       "state": "OH"
@@ -592,6 +616,10 @@
     "Cedar Crest": {
       "city": "Allentown",
       "state": "PA"
+    },
+    "Cedarport State University": {
+      "city": "Cedarport",
+      "state": "JF"
     },
     "Cedarville": {
       "city": "Cedarville",
@@ -685,10 +713,6 @@
       "city": "Chicago",
       "state": "IL"
     },
-    "Chico State": {
-      "city": "Chico",
-      "state": "CA"
-    },
     "Chowan": {
       "city": "Murfreesboro",
       "state": "NC"
@@ -765,6 +789,10 @@
       "city": "Hamilton",
       "state": "NY"
     },
+    "College of Jefferson": {
+      "city": "Halbrook",
+      "state": "JF"
+    },
     "Colorado": {
       "city": "Boulder",
       "state": "CO"
@@ -805,13 +833,69 @@
       "city": "Athens",
       "state": "WV"
     },
-    "College of Idaho": {
-      "city": "Caldwell",
-      "state": "ID"
-    },
     "Concordia Irvine": {
       "city": "Irvine",
       "state": "CA"
+    },
+    "Copper Lake College": {
+      "city": "Copper Lake",
+      "state": "JF"
+    },
+    "Cortland State University": {
+      "city": "Cortland",
+      "state": "JF"
+    },
+    "Fort Meriwether College": {
+      "city": "Fort Meriwether",
+      "state": "JF"
+    },
+    "Galena University": {
+      "city": "Galena",
+      "state": "JF"
+    },
+    "Harriman State University": {
+      "city": "Harriman",
+      "state": "JF"
+    },
+    "Humboldt Polytechnic University": {
+      "city": "Puerto de los Reyes",
+      "state": "JF"
+    },
+    "Jefferson A&M University": {
+      "city": "Rostova Junction",
+      "state": "JF"
+    },
+    "Jefferson Maritime University": {
+      "city": "Port Meridian",
+      "state": "JF"
+    },
+    "Jefferson State University": {
+      "city": "Mercer City",
+      "state": "JF"
+    },
+    "Los Robles College": {
+      "city": "Los Robles",
+      "state": "JF"
+    },
+    "Madrigal College": {
+      "city": "Madrigal",
+      "state": "JF"
+    },
+    "Montelago State University": {
+      "city": "Montelago",
+      "state": "JF"
+    },
+    "Moriarty State University": {
+      "city": "Moriarty",
+      "state": "JF"
+    },
+    "New Leiden College": {
+      "city": "New Leiden",
+      "state": "JF"
+    },
+    "Newark River University": {
+      "city": "Newark River",
+      "state": "JF"
     },
     "Northern New Mexico": {
       "city": "Española",
@@ -2397,10 +2481,6 @@
       "city": "Aston",
       "state": "PA"
     },
-    "Nevada": {
-      "city": "Reno",
-      "state": "NV"
-    },
     "New England": {
       "city": "Biddeford",
       "state": "ME"
@@ -2685,6 +2765,10 @@
       "city": "Corvallis",
       "state": "OR"
     },
+    "Orellana State University": {
+      "city": "Orellana",
+      "state": "JF"
+    },
     "Otterbein": {
       "city": "Westerville",
       "state": "OH"
@@ -2813,6 +2897,10 @@
       "city": "Claremont",
       "state": "CA"
     },
+    "Port Veles University": {
+      "city": "Port Veles",
+      "state": "JF"
+    },
     "Portland": {
       "city": "Portland",
       "state": "OR"
@@ -2908,6 +2996,10 @@
     "Randolph-Macon": {
       "city": "Ashland",
       "state": "VA"
+    },
+    "Redfork State University": {
+      "city": "Redfork",
+      "state": "JF"
     },
     "Redlands": {
       "city": "Redlands",
@@ -3201,6 +3293,10 @@
       "city": "Birmingham",
       "state": "AL"
     },
+    "San Borondón State University": {
+      "city": "San Borondón",
+      "state": "JF"
+    },
     "San Diego": {
       "city": "San Diego",
       "state": "CA"
@@ -3225,6 +3321,10 @@
       "city": "Santa Clara",
       "state": "CA"
     },
+    "Santa Michaela State University": {
+      "city": "Santa Michaela",
+      "state": "JF"
+    },
     "Sarah Lawrence": {
       "city": "Bronxville",
       "state": "NY"
@@ -3248,6 +3348,10 @@
     "Seattle U": {
       "city": "Seattle",
       "state": "WA"
+    },
+    "Serrano College": {
+      "city": "Serrano",
+      "state": "JF"
     },
     "Seton Hall": {
       "city": "South Orange",
@@ -3300,6 +3404,10 @@
     "Sioux Falls": {
       "city": "Sioux Falls",
       "state": "SD"
+    },
+    "Siskiyou University": {
+      "city": "Boyerstown",
+      "state": "JF"
     },
     "Skidmore": {
       "city": "Saratoga Springs",
@@ -3496,6 +3604,10 @@
     "St. Thomas Aquinas": {
       "city": "Sparkill",
       "state": "NY"
+    },
+    "St. Varian College": {
+      "city": "St. Varian",
+      "state": "JF"
     },
     "Stanford": {
       "city": "Stanford",
@@ -3897,6 +4009,18 @@
       "city": "Jackson",
       "state": "TN"
     },
+    "University of Jefferson": {
+      "city": "Ashbury",
+      "state": "JF"
+    },
+    "University of Southern Jefferson": {
+      "city": "San Borondón",
+      "state": "JF"
+    },
+    "University of the High Desert": {
+      "city": "Millport",
+      "state": "JF"
+    },
     "Upper Iowa": {
       "city": "Fayette",
       "state": "IA"
@@ -3936,6 +4060,10 @@
     "VMI": {
       "city": "Lexington",
       "state": "VA"
+    },
+    "Valderra University": {
+      "city": "Valderra",
+      "state": "JF"
     },
     "Valdosta State": {
       "city": "Valdosta",
@@ -4004,6 +4132,10 @@
     "Wake Forest": {
       "city": "Winston-Salem",
       "state": "NC"
+    },
+    "Wales City University": {
+      "city": "Wales City",
+      "state": "JF"
     },
     "Walsh": {
       "city": "North Canton",
@@ -4333,16 +4465,8 @@
       "city": "Portland",
       "state": "OR"
     },
-    "Southern Oregon": {
-      "city": "Ashland",
-      "state": "OR"
-    },
     "Eastern Oregon": {
       "city": "La Grande",
-      "state": "OR"
-    },
-    "Oregon Tech": {
-      "city": "Klamath Falls",
       "state": "OR"
     },
     "Virgin Islands": {
@@ -4469,14 +4593,6 @@
       "city": "Napa",
       "state": "CA"
     },
-    "Cal State Redwood Coast": {
-      "city": "Eureka",
-      "state": "CA"
-    },
-    "Cal State Sierra": {
-      "city": "Sonora",
-      "state": "CA"
-    },
     "Cal State Tahoe": {
       "city": "Tahoe City",
       "state": "CA"
@@ -4495,10 +4611,6 @@
     },
     "Cal State Coachella": {
       "city": "Palm Desert",
-      "state": "CA"
-    },
-    "Cal State High Desert": {
-      "city": "Victorville",
       "state": "CA"
     }
   }

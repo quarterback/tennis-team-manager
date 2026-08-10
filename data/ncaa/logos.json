@@ -99,6 +99,10 @@
     "espn_id": "2800",
     "slug": "alma"
   },
+  "Altamonte College": {
+    "badge": true,
+    "slug": "altamonte-college"
+  },
   "Alvernia": {
     "espn_id": "111674",
     "slug": "alvernia"
@@ -187,6 +191,10 @@
     "logo_source": "sub:Alabama State Hornets",
     "slug": "asbury"
   },
+  "Ashbury College": {
+    "badge": true,
+    "slug": "ashbury-college"
+  },
   "Ashland": {
     "espn_id": "308",
     "slug": "ashland"
@@ -234,6 +242,11 @@
   "Averett": {
     "espn_id": "2047",
     "slug": "averett"
+  },
+  "Averill College": {
+    "badge": true,
+    "logo_source": "rename:Cal State High Desert",
+    "slug": "cal-state-high-desert"
   },
   "Azusa Pacific": {
     "badge": true,
@@ -295,9 +308,17 @@
     "logo_source": "sub:Berry Vikings",
     "slug": "belmont-abbey"
   },
+  "Belmonte State University": {
+    "badge": true,
+    "slug": "belmonte-state-university"
+  },
   "Beloit": {
     "espn_id": "266",
     "slug": "beloit"
+  },
+  "Belyakov State University": {
+    "badge": true,
+    "slug": "belyakov-state-university"
   },
   "Bemidji State": {
     "espn_id": "132",
@@ -338,6 +359,10 @@
   "Bethune-Cookman": {
     "espn_id": "2065",
     "slug": "bethune-cookman"
+  },
+  "Bidwell State University": {
+    "logo_source": "rename:Chico State",
+    "slug": "chico-state"
   },
   "Binghamton": {
     "espn_id": "2066",
@@ -475,10 +500,6 @@
     "espn_id": "13",
     "slug": "cal-poly"
   },
-  "Cal Poly Humboldt": {
-    "logo_source": "wiki",
-    "slug": "cal-poly-humboldt"
-  },
   "Cal Poly Pomona": {
     "badge": true,
     "slug": "cal-poly-pomona"
@@ -507,10 +528,6 @@
     "espn_id": "2239",
     "slug": "cal-state-fullerton"
   },
-  "Cal State High Desert": {
-    "badge": true,
-    "slug": "cal-state-high-desert"
-  },
   "Cal State Imperial Valley": {
     "badge": true,
     "slug": "cal-state-imperial-valley"
@@ -531,10 +548,6 @@
     "espn_id": "2463",
     "slug": "cal-state-northridge"
   },
-  "Cal State Redwood Coast": {
-    "badge": true,
-    "slug": "cal-state-redwood-coast"
-  },
   "Cal State San Bernardino": {
     "logo_source": "sub:Concordia (WI) Falcons",
     "slug": "cal-state-san-bernardino"
@@ -542,10 +555,6 @@
   "Cal State San Marcos": {
     "logo_source": "wikidata",
     "slug": "cal-state-san-marcos"
-  },
-  "Cal State Sierra": {
-    "badge": true,
-    "slug": "cal-state-sierra"
   },
   "Cal State Tahoe": {
     "badge": true,
@@ -620,6 +629,10 @@
     "espn_id": "2106",
     "slug": "carthage"
   },
+  "Cascade Polytechnic University": {
+    "logo_source": "rename:Oregon Tech",
+    "slug": "oregon-tech"
+  },
   "Case Western Reserve": {
     "espn_id": "2963",
     "slug": "case-western-reserve"
@@ -639,6 +652,10 @@
   "Cedar Crest": {
     "logo_source": "sub:Cornell (IA) Rams",
     "slug": "cedar-crest"
+  },
+  "Cedarport State University": {
+    "badge": true,
+    "slug": "cedarport-state-university"
   },
   "Cedarville": {
     "logo_source": "sub:Creighton Bluejays",
@@ -732,10 +749,6 @@
     "espn_id": "2130",
     "slug": "chicago-state"
   },
-  "Chico State": {
-    "logo_source": "wikidata",
-    "slug": "chico-state"
-  },
   "Chowan": {
     "espn_id": "2804",
     "slug": "chowan"
@@ -812,8 +825,8 @@
     "espn_id": "2142",
     "slug": "colgate"
   },
-  "College of Idaho": {
-    "logo_source": "wiki",
+  "College of Jefferson": {
+    "logo_source": "rename:College of Idaho",
     "slug": "college-of-idaho"
   },
   "Colorado": {
@@ -880,6 +893,11 @@
     "logo_source": "wiki",
     "slug": "converse"
   },
+  "Copper Lake College": {
+    "badge": true,
+    "logo_source": "rename:Cal State Redwood Coast",
+    "slug": "cal-state-redwood-coast"
+  },
   "Coppin State": {
     "espn_id": "2154",
     "slug": "coppin-state"
@@ -891,6 +909,10 @@
   "Cornell College": {
     "logo_source": "sub:Cornell (IA) Rams",
     "slug": "cornell-college"
+  },
+  "Cortland State University": {
+    "badge": true,
+    "slug": "cortland-state-university"
   },
   "Covenant": {
     "logo_source": "wiki",
@@ -1284,6 +1306,10 @@
     "espn_id": "2237",
     "slug": "fort-lewis"
   },
+  "Fort Meriwether College": {
+    "badge": true,
+    "slug": "fort-meriwether-college"
+  },
   "Fort Valley State": {
     "espn_id": "2232",
     "slug": "fort-valley-state"
@@ -1327,6 +1353,10 @@
   "Furman": {
     "espn_id": "231",
     "slug": "furman"
+  },
+  "Galena University": {
+    "logo_source": "rename:Nevada",
+    "slug": "nevada"
   },
   "Gallaudet": {
     "espn_id": "417",
@@ -1488,6 +1518,10 @@
     "espn_id": "2264",
     "slug": "harding"
   },
+  "Harriman State University": {
+    "badge": true,
+    "slug": "harriman-state-university"
+  },
   "Hartford": {
     "logo_source": "sub:Hobart College Statesmen",
     "slug": "hartford"
@@ -1591,6 +1625,10 @@
   "Howard Payne": {
     "espn_id": "2758",
     "slug": "howard-payne"
+  },
+  "Humboldt Polytechnic University": {
+    "logo_source": "rename:Cal Poly Humboldt",
+    "slug": "cal-poly-humboldt"
   },
   "Hunter": {
     "logo_source": "wiki",
@@ -1699,6 +1737,18 @@
   "Jamestown": {
     "badge": true,
     "slug": "jamestown"
+  },
+  "Jefferson A&M University": {
+    "badge": true,
+    "slug": "jefferson-a-m-university"
+  },
+  "Jefferson Maritime University": {
+    "badge": true,
+    "slug": "jefferson-maritime-university"
+  },
+  "Jefferson State University": {
+    "logo_source": "reuse:Jacksonville State",
+    "slug": "jefferson-state-university"
   },
   "Jessup": {
     "logo_source": "sub:Juniata Eagles",
@@ -1980,6 +2030,10 @@
     "espn_id": "263",
     "slug": "loras"
   },
+  "Los Robles College": {
+    "badge": true,
+    "slug": "los-robles-college"
+  },
   "Louisiana": {
     "espn_id": "309",
     "slug": "louisiana"
@@ -2051,6 +2105,10 @@
   "Macalester": {
     "espn_id": "2359",
     "slug": "macalester"
+  },
+  "Madrigal College": {
+    "badge": true,
+    "slug": "madrigal-college"
   },
   "Maine": {
     "espn_id": "311",
@@ -2380,6 +2438,10 @@
     "espn_id": "2818",
     "slug": "montclair-state"
   },
+  "Montelago State University": {
+    "badge": true,
+    "slug": "montelago-state-university"
+  },
   "Montevallo": {
     "logo_source": "sub:Middle Tennessee Blue Raiders",
     "slug": "montevallo"
@@ -2399,6 +2461,10 @@
   "Morgan State": {
     "espn_id": "2415",
     "slug": "morgan-state"
+  },
+  "Moriarty State University": {
+    "badge": true,
+    "slug": "moriarty-state-university"
   },
   "Mount Aloysius": {
     "logo_source": "sub:Marist Red Foxes",
@@ -2480,10 +2546,6 @@
     "badge": true,
     "slug": "neumann"
   },
-  "Nevada": {
-    "espn_id": "2440",
-    "slug": "nevada"
-  },
   "New England": {
     "espn_id": "111675",
     "slug": "new-england"
@@ -2504,6 +2566,10 @@
     "logo_source": "sub:The College of New Jersey Lions",
     "slug": "new-jersey-city"
   },
+  "New Leiden College": {
+    "badge": true,
+    "slug": "new-leiden-college"
+  },
   "New Mexico": {
     "espn_id": "167",
     "slug": "new-mexico"
@@ -2519,6 +2585,10 @@
   "New Orleans": {
     "espn_id": "2443",
     "slug": "new-orleans"
+  },
+  "Newark River University": {
+    "badge": true,
+    "slug": "newark-river-university"
   },
   "Newberry": {
     "espn_id": "2444",
@@ -2780,9 +2850,9 @@
     "espn_id": "204",
     "slug": "oregon-state"
   },
-  "Oregon Tech": {
-    "logo_source": "sub:Oregon State Beavers",
-    "slug": "oregon-tech"
+  "Orellana State University": {
+    "badge": true,
+    "slug": "orellana-state-university"
   },
   "Otterbein": {
     "espn_id": "359",
@@ -2920,6 +2990,10 @@
     "espn_id": "2923",
     "slug": "pomona-pitzer"
   },
+  "Port Veles University": {
+    "badge": true,
+    "slug": "port-veles-university"
+  },
   "Portland": {
     "espn_id": "2501",
     "slug": "portland"
@@ -3031,6 +3105,10 @@
   "Randolph-Macon": {
     "espn_id": "2516",
     "slug": "randolph-macon"
+  },
+  "Redfork State University": {
+    "badge": true,
+    "slug": "redfork-state-university"
   },
   "Redlands": {
     "espn_id": "29",
@@ -3332,6 +3410,10 @@
     "espn_id": "2535",
     "slug": "samford"
   },
+  "San Borond\u00f3n State University": {
+    "badge": true,
+    "slug": "san-borond-n-state-university"
+  },
   "San Diego": {
     "espn_id": "301",
     "slug": "san-diego"
@@ -3356,6 +3438,10 @@
     "espn_id": "2541",
     "slug": "santa-clara"
   },
+  "Santa Michaela State University": {
+    "badge": true,
+    "slug": "santa-michaela-state-university"
+  },
   "Sarah Lawrence": {
     "logo_source": "sub:St. Lawrence Saints",
     "slug": "sarah-lawrence"
@@ -3379,6 +3465,10 @@
   "Seattle U": {
     "espn_id": "2547",
     "slug": "seattle-u"
+  },
+  "Serrano College": {
+    "badge": true,
+    "slug": "serrano-college"
   },
   "Seton Hall": {
     "espn_id": "2550",
@@ -3431,6 +3521,10 @@
   "Sioux Falls": {
     "espn_id": "2894",
     "slug": "sioux-falls"
+  },
+  "Siskiyou University": {
+    "logo_source": "rename:Southern Oregon",
+    "slug": "southern-oregon"
   },
   "Skidmore": {
     "logo_source": "sub:South Florida Bulls",
@@ -3523,10 +3617,6 @@
   "Southern New Orleans": {
     "logo_source": "sub:Southern Oregon Raiders",
     "slug": "southern-new-orleans"
-  },
-  "Southern Oregon": {
-    "espn_id": "2584",
-    "slug": "southern-oregon"
   },
   "Southern Utah": {
     "espn_id": "253",
@@ -3635,6 +3725,11 @@
   "St. Thomas Aquinas": {
     "logo_source": "sub:St. Thomas-Minnesota Tommies",
     "slug": "st-thomas-aquinas"
+  },
+  "St. Varian College": {
+    "badge": true,
+    "logo_source": "rename:Cal State Sierra",
+    "slug": "cal-state-sierra"
   },
   "Stanford": {
     "espn_id": "24",
@@ -4048,9 +4143,21 @@
     "badge": true,
     "slug": "union-tn"
   },
+  "University of Jefferson": {
+    "logo_source": "reuse:Jacksonville",
+    "slug": "university-of-jefferson"
+  },
   "University of Oregon-Portland": {
     "logo_source": "reuse:Oregon",
     "slug": "oregon"
+  },
+  "University of Southern Jefferson": {
+    "logo_source": "reuse:Saint Joseph (CT)",
+    "slug": "university-of-southern-jefferson"
+  },
+  "University of the High Desert": {
+    "badge": true,
+    "slug": "university-of-the-high-desert"
   },
   "Upper Iowa": {
     "espn_id": "389",
@@ -4091,6 +4198,10 @@
   "VMI": {
     "espn_id": "2678",
     "slug": "vmi"
+  },
+  "Valderra University": {
+    "badge": true,
+    "slug": "valderra-university"
   },
   "Valdosta State": {
     "espn_id": "2673",
@@ -4167,6 +4278,10 @@
   "Wake Forest": {
     "espn_id": "154",
     "slug": "wake-forest"
+  },
+  "Wales City University": {
+    "badge": true,
+    "slug": "wales-city-university"
   },
   "Walsh": {
     "espn_id": "2682",
