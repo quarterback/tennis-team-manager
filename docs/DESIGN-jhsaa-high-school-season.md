@@ -72,7 +72,9 @@ Read the shape through a helper, never by literal — the same rule `ncaa.dual_f
 `ncaa.lineup_size` enforce on the college side.
 
 **Roster floor is 9** with no player doubling up (5+4 regular, 1+8 postseason). Carry
-10–12 for depth and injuries.
+10–12 — and the bench plays: the lineup is re-set match to match on the best-performing
+nine (results, then OVR, STR last), with a reserve or two rotating into the bottom of
+most regular-season duals. Postseason is strict best-nine, no rotation.
 
 ## 2. Which schools sponsor tennis
 

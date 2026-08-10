@@ -271,6 +271,12 @@ def _game_context():
                 action = "Run awards"
             elif not wd.cups_done(w):
                 action = "Run Davis / BJK Cup"
+        elif w["week"] == 0 and not wd.jhsaa_done(w):
+            # The JHSAA rung runs FIRST at week 0 (before the pros, before any college
+            # dual — see advance_week), so the button must advertise it first or it
+            # reads "Run NIT Kickoff" / "Run pro offseason" and then visibly does
+            # neither, costing an unexplained extra click.
+            action = "Play JHSAA season"
         elif w["week"] == 0 and w["year"] > 0 and not wd.pros_rolled(w):
             action = "Run pro offseason"
         return {"year": 2026 + w["year"], "season_no": w["year"] + 1,

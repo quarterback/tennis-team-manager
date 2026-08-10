@@ -211,7 +211,8 @@ CREATE TABLE IF NOT EXISTS world_jhsaa (
 );
 CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, opp TEXT,
-  home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER
+  home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER,
+  lines TEXT DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
@@ -3444,6 +3445,13 @@ def cup_rosters(world: dict) -> dict:
     return out
 
 
+def jhsaa_season_year(world: dict) -> int:
+    """The calendar year of the JHSAA season for this world-year — IDENTICAL to
+    `recruiting_grad_year` (BASE_YEAR + year + 1), because the season's seniors ARE
+    that recruiting class. The zero-based world index is only ever the DB key."""
+    return BASE_YEAR + world["year"] + 1
+
+
 def jhsaa_done(world: dict) -> bool:
     """True once this world-year's JHSAA season is archived. The `world_jhsaa` rows ARE
     the marker — no separate flag to drift, same as the cups above."""
@@ -3464,14 +3472,22 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     is rebuilt on demand rather than persisted (`jhsaa.career`)."""
     from . import jhsaa
     salt = active_salt(seed)          # the per-save salt recruit_class also uses
-    year = world["year"]
+    year = world["year"]              # DB key ONLY — never a season parameter
+    # THE season parameters, exactly as the recruit hand-off uses them:
+    # `apply_to_class` calls `graduating_class(gender, grad_year, salt=salt)`, which
+    # runs (year=grad_year, seed=0). Archiving anything else simulates a DIFFERENT
+    # season — different entry years mean different students entirely — so the page
+    # would show a league whose seniors are not the ones on the recruiting board.
+    # Matching parameters also means the memoized season is shared: the hand-off
+    # reuses this sim instead of playing a second one.
+    season_year = jhsaa_season_year(world)
     conn = _db()
     champs = {}
     try:
         for gender in ("girls", "boys"):
-            season = jhsaa.run_season(gender, year, seed=seed, salt=salt)
+            season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
             summary = {
-                "year": year, "gender": gender,
+                "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
                               for g in jhsaa.GROUPS},
                 "awards": {g: {"poy": season["awards"][g].get("poy"),
@@ -3491,9 +3507,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # ~10k duals a year per gender would make every summary read heavy.
             conn.executemany(
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
-                " home, phase, pf, pa, won, district) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                " home, phase, pf, pa, won, district, lines)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
-                  d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]))
+                  d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
+                  json.dumps(d.get("lines", [])))
                  for t in season["teams"].values() for d in t.schedule])
         conn.commit()
     finally:
@@ -3529,12 +3547,20 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT opp, home, phase, pf, pa, won, district FROM world_jhsaa_dual"
+            "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
             " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
             (world_id, year, gender, school)).fetchall()
     finally:
         conn.close()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["lines"] = json.loads(d.get("lines") or "[]")
+        except ValueError:
+            d["lines"] = []
+        out.append(d)
+    return out
 
 
 def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:

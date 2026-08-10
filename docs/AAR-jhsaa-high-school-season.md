@@ -93,6 +93,16 @@ draw history. (This was assumed impossible during design; it needed zero work.)
    opinion. That record is what All-District / All-State / POY rank on, and what a
    recruit's `record` field carries to college.
 
+10a. **The rung must simulate the SAME season the hand-off does.** The archive first ran
+    (year=world index, seed=world seed) while `graduating_class` ran (year=grad_year,
+    seed=0) — different entry years mean entirely different students, so the JHSAA page
+    showed a league whose seniors were not the ones on the recruiting board. The world
+    index is only ever the DB key; `world.jhsaa_season_year` (= `recruiting_grad_year`)
+    and seed 0 are the season parameters, shared with the hand-off so the memoized
+    season is simulated once. The header's advance button also advertises the rung
+    ("Play JHSAA season") before the pro-offseason check, or it promises one action and
+    visibly performs another.
+
 10. **Match-by-match belongs in its own table.** `world_jhsaa_dual` (~10k rows/gender/
     year, indexed by school) rather than a blob on the summary row — a school's schedule
     page reads its own rows and every summary read stays light.
@@ -116,6 +126,10 @@ draw history. (This was assumed impossible during design; it needed zero work.)
   district play and state is a small addition to `run_district`).
 - JHSAA honours are not in the college Hall of Fame or awards archive — they live on
   player pages and the JHSAA pages only.
-- The bench (seats 10–12) never plays; no rotation, so no award can reach them.
+- ~~The bench never plays~~ — resolved (owner rule 2027-08): the lineup is re-set match
+  to match on the best-performing nine (results, then OVR, STR last), and in the regular
+  season a reserve or two rotates into the bottom of most duals, so every persisted
+  player appears at least a couple of times across a 28-33 dual year. The postseason is
+  strict best-nine. Measured appearances on a 29-dual team: [2, 3, 5, 20, 28, 29 ...].
 - `simulate_cross`-style interstate high-school play: out of scope, Jefferson is the
   only simulated association.

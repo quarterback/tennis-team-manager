@@ -22,20 +22,32 @@
       <span class="bl-panel-meta">{{ view.schedule|length }} duals · this season</span></div>
       <div class="bl-panel-body">
         {% if view.schedule %}
-        <div class="bl-table" style="--bl-grid-cols: 34px 1fr 64px 70px 70px">
-          <div class="bl-thead"><span class="bl-th"></span><span class="bl-th">OPPONENT</span>
-            <span class="bl-th">RESULT</span><span class="bl-th">SCORE</span><span class="bl-th">TYPE</span></div>
-          {% for d in view.schedule %}
-          <div class="bl-row">
+        {% for d in view.schedule %}
+        <details style="border-bottom:1px solid var(--border)">
+          <summary style="display:grid;grid-template-columns:34px 1fr 64px 70px 70px;gap:8px;align-items:center;padding:6px 0;cursor:pointer;list-style:none">
             <span class="tsub">{{ 'vs' if d.home else 'at' }}</span>
-            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">
-              <a class="bl-school" href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender) }}">{{ d.opp }}</a></span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ d.opp }}</span>
             <span style="font-weight:700;color:{{ '#2f8f4f' if d.won else '#c0392b' }}">{{ 'W' if d.won else 'L' }}</span>
             <span>{{ d.pf|int }}–{{ d.pa|int }}</span>
             <span class="tsub" style="font-size:10px">{{ 'STATE' if d.phase == 'state' else 'DIST' if d.district else 'NON-DIST' }}</span>
+          </summary>
+          <div style="padding:4px 0 10px 34px">
+            <div class="tsub" style="font-size:10px;margin-bottom:4px">
+              <a class="bl-school" href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender) }}">{{ d.opp }} →</a></div>
+            {% for ln in d.lines %}
+            {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+            {% set we_won = ln.home_won if d.home else not ln.home_won %}
+            <div style="display:grid;grid-template-columns:34px 1fr 16px 1fr 110px;gap:8px;font-size:11px;padding:2px 0">
+              <span class="tsub">{{ ln.slot }}</span>
+              <span style="{% if we_won %}font-weight:700{% endif %};min-width:0;overflow:hidden;text-overflow:ellipsis">{{ us|join(' / ') }}</span>
+              <span class="tsub">{{ 'd.' if we_won else 'l.' }}</span>
+              <span style="{% if not we_won %}font-weight:700{% endif %};min-width:0;overflow:hidden;text-overflow:ellipsis">{{ them|join(' / ') }}</span>
+              <span class="tsub">{{ ln.score }}</span>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
+        </details>
+        {% endfor %}
         {% else %}<p class="tsub">Season not played yet this world year.</p>{% endif %}
       </div>
     </div>

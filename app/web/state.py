@@ -3372,7 +3372,8 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
         rounds.append({"name": f"Round {i + 1}" if i < len(br.get('rounds', [])) - 1
                        else "Final", "games": games})
     return {
-        "ready": True, "gender": g, "year": yr, "group": grp,
+        "ready": True, "gender": g, "year": yr,
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)), "group": grp,
         "groups": list(jh.GROUPS),
         "champion": deco(arc["champions"].get(grp)) if arc["champions"].get(grp) else None,
         "champions": arc["champions"],
@@ -3397,7 +3398,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str) -> dict:
     if sc is None:
         return {"found": False, "school": school, "gender": g}
     salt = world.active_salt(seed)
-    roster = jh.build_roster(sc, w["year"], salt)
+    # Roster identity keys on the SEASON year (the grad year the hand-off uses), not
+    # the world index — the same mismatch the archive had. See world.run_jhsaa.
+    roster = jh.build_roster(sc, world.jhsaa_season_year(w), salt)
     sched = world.jhsaa_schedule(w["id"], w["year"], g, school)
     dw = sum(1 for d in sched if d["won"] and d["district"])
     dl = sum(1 for d in sched if not d["won"] and d["district"])
