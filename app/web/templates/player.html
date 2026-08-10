@@ -227,6 +227,14 @@
                 {% if st.division %}<span class="bl-conf" style="font-size:11px">{{ st.division }}</span>{% endif %}
               </div>
               <div class="tsub" style="font-size:11px">{{ st.years }}{% if st.stars %} · <span style="color:#e8a13a">{% for _ in range(st.stars) %}★{% endfor %}</span>{% endif %}</div>
+              {% if st.hs_record %}
+              <div class="tsub" style="font-size:11px">{{ st.hs_district }} · played #{{ st.hs_ladder }} · {{ st.hs_record }}{% if st.hs_champion %} · <span style="color:#e8a13a">state champion</span>{% endif %}</div>
+              {% endif %}
+              {% if st.hs_honors %}
+              <div style="font-size:10px;margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">
+                {% for h in st.hs_honors %}<span class="bl-badge tier-D2" style="font-size:9px">{{ h }}</span>{% endfor %}
+              </div>
+              {% endif %}
             </div>
             <span class="bl-badge {{ badge_class[st.badge] }}" style="font-size:9px">{{ badge_label[st.badge] }}</span>
           </div>

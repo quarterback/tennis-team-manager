@@ -898,6 +898,15 @@ def recruit_class(gender: str, grad_year: int, salt: str):
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
                                talent_sd=RECRUIT_TALENT_SD, intl_share=worldconfig.intl_share(),
                                intl_weights=worldconfig.region_weights())
+        # Jefferson's slots are not invented: swap in the JHSAA seniors who just
+        # graduated, carrying their real high-school records. Identity and ability
+        # only — the slot count still comes from the origin weight, and the pids are
+        # preserved. Silent no-op if the JHSAA data isn't present.
+        try:
+            from . import jhsaa
+            jhsaa.apply_to_class(klass, gender, grad_year, salt)
+        except (OSError, ValueError, KeyError):
+            pass
         rank_class(klass)                          # national rank + star ladder
         _class_cache[key] = klass
     return _class_cache[key]

@@ -154,6 +154,32 @@
 <div class="bl-board">
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
+      {% if p.jhsaa %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">High School</span>
+        <span class="bl-panel-meta">JHSAA · {{ p.jhsaa.group }} · {{ p.jhsaa.district }}</span></div>
+        <div class="bl-panel-body">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700">{{ p.jhsaa.school }}</div>
+              <div class="tsub" style="font-size:11px">Senior year {{ p.jhsaa.team_record }} · played #{{ p.jhsaa.ladder }}</div>
+            </div>
+            <span class="bl-badge tier-D4" style="font-size:9px">{{ p.jhsaa.group }}</span>
+          </div>
+          {% if hs %}
+          <div class="bl-table" style="--bl-grid-cols: 62px 58px 62px 1fr;margin-top:8px">
+            <div class="bl-thead"><span class="bl-th">SEASON</span><span class="bl-th">GRADE</span>
+              <span class="bl-th">LADDER</span><span class="bl-th">OVR</span></div>
+            {% for y in hs %}
+            <div class="bl-row">
+              <span>{{ y.year }}</span><span>{{ y.grade }}th</span>
+              <span>#{{ y.ladder }}</span><span>{{ y.ovr }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
       {% if rec.offers %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
         <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>

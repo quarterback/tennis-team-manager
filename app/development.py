@@ -241,6 +241,11 @@ class Prospect:
     junior_matches: list = field(default_factory=list)   # [{date, tournament, round, opponent, score, won}]
     ranking_history: list = field(default_factory=list)  # [{date, primary*, secondary*, str}]
     junior_badges: list = field(default_factory=list)    # permanent profile labels
+    # High-school career, for players who came through a simulated association (today
+    # only Jefferson's JHSAA). A real dataclass FIELD, not an ad-hoc attribute, because
+    # `world.prospect_to_dict` is `asdict()` — anything not declared here vanishes the
+    # moment a recruit signs, taking their whole high-school past with them.
+    jhsaa: dict = field(default_factory=dict)
     # Junior-circuit performance counters the board/almanac read. Fields (not bare
     # dynamic attrs) with zero defaults so EVERY recruit has them — the circuit only
     # runs over the recruited cadre (world.CIRCUIT_FIELD), and the walk-on tail must

@@ -2377,6 +2377,7 @@ def _pid_index(division: str, gender: str) -> dict:
                                "school_city": p.location,
                                "recruit_stars": getattr(pr, "recruit_stars", 0),
                                "recruit_tier": getattr(pr, "recruit_tier", ""),
+                               "jhsaa": getattr(pr, "jhsaa", None) or None,
                                "scholarship": getattr(pr, "scholarship", 0.0),
                                "scholarship_label": economy.fraction_label(
                                    getattr(pr, "scholarship", 0.0))}

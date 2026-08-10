@@ -2820,10 +2820,20 @@ def player_journey(division: str, gender: str, pid: str, seed: int = DEFAULT_SEE
     sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
     info = sm.player_info(sid, pid)
     if info and (info.get("high_school") or info.get("hometown")):
-        out.append({"school": info.get("high_school") or "High school",
-                    "division": "", "badge": "high_school",
-                    "years": info.get("hometown", ""), "abbr": "HS", "color": "#888",
-                    "stars": info.get("recruit_stars", 0), "tier": info.get("recruit_tier", "")})
+        # A Jefferson player came through the JHSAA, so their high-school stop carries
+        # the real thing: classification, district, individual record and any honours.
+        jh = info.get("jhsaa") or {}
+        stop = {"school": info.get("high_school") or "High school",
+                "division": jh.get("group", ""), "badge": "high_school",
+                "years": info.get("hometown", ""), "abbr": "HS", "color": "#888",
+                "stars": info.get("recruit_stars", 0), "tier": info.get("recruit_tier", "")}
+        if jh:
+            stop["hs_record"] = jh.get("record", "")
+            stop["hs_ladder"] = jh.get("ladder", 0)
+            stop["hs_district"] = jh.get("district", "")
+            stop["hs_honors"] = jh.get("honors", [])
+            stop["hs_champion"] = jh.get("state_champion", False)
+        out.append(stop)
     return out
 
 
