@@ -31,7 +31,7 @@ from . import dbpath
 from .ncaa import load_division
 from .season import dual_between, build_corpus, forced_appearances
 from . import injuries
-from .rating import compute_ratings
+from .rating import compute_ratings, weights_for
 from .str_rating import converge_ids
 from .bracket import (select_field, run_bracket, _seed_positions, ROUND_NAMES,
                       clamp_field, field_for_division)
@@ -907,7 +907,8 @@ def _advance_conf_round(conn, s, progs) -> dict:
     sid = s["id"]
     div = load_division(s["division"], s["gender"])
     wl = _conf_standings(_completed(conn, sid, ("REG",)), div)   # conference record: regular only
-    ratings = compute_ratings(_ranking_duals(conn, sid))         # Power Index: regular + ITA
+    ratings = compute_ratings(_ranking_duals(conn, sid),         # Power Index: regular + ITA
+                              weights=weights_for(s["division"]))
     existing = conn.execute("SELECT COUNT(*) c FROM duals WHERE season_id=? AND round='CT'",
                             (sid,)).fetchone()["c"]
     if existing == 0:                                  # seed round 1 for every conference
@@ -1093,7 +1094,8 @@ def _ncaa_seeds(conn, s, progs, div):
     if locked:
         schools, autobid_set = locked
         return schools, autobid_set, _reg_meetings(conn, sid)
-    ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS))
+    ratings = compute_ratings(_completed(conn, sid, SEED_ROUNDS),
+                              weights=weights_for(s["division"]))
     champions = [progs[v] for v in conf_champions(sid) if v in progs and v in ratings]
     # Select + seed by the Committee Seed Score (strength + résumé + AQ pedigree),
     # so power-conference champions are seeded above comparable at-large teams.
@@ -1209,7 +1211,8 @@ def _ita_ranking(s) -> list[str]:
         prior = load_season(prior_sid)
         if prior and prior["phase"] == "complete":
             conn = _db()
-            ratings = compute_ratings(_completed(conn, prior_sid, SEED_ROUNDS))
+            ratings = compute_ratings(_completed(conn, prior_sid, SEED_ROUNDS),
+                                      weights=weights_for(s["division"]))
             conn.close()
             rated = [p for p in div.programs if p.school in ratings]
             if rated:
@@ -1778,7 +1781,7 @@ def national_top(season_id: int, n: int = 15) -> list[dict]:
     conn.close()
     if not duals:
         return []
-    ratings = compute_ratings(duals)
+    ratings = compute_ratings(duals, weights=weights_for(s["division"]))
     ranked = sorted((p for p in div.programs if p.school in ratings),
                     key=lambda p: ratings[p.school].pi, reverse=True)
     return [{"rk": i, "school": p.school, "conf": p.conf_abbr,
@@ -1805,7 +1808,8 @@ def power_index(season_id: int) -> dict:
     ratings = _pi_cache.get(key)
     if ratings is None:
         duals = _ranking_duals(conn, season_id)
-        ratings = compute_ratings(duals) if duals else {}
+        div = load_season(season_id)["division"]
+        ratings = compute_ratings(duals, weights=weights_for(div)) if duals else {}
         _prune_season(_pi_cache, season_id)      # per-season, not clear(): a career page
         _prune_season(_movers_cache, season_id)  # loops seasons — a global clear thrashes
         _pi_cache[key] = ratings                 # them all (movers derive from ratings —
@@ -1853,7 +1857,8 @@ def weekly_movers(season_id: int, poll: int = 25) -> dict:
         return {s: i + 1 for i, s in enumerate(order)}
 
     cur = _rank(power_index(season_id))                # cached full-season ratings
-    prior = _rank(compute_ratings([_rec(r) for r in rows if r["week"] < cutoff]))
+    prior = _rank(compute_ratings([_rec(r) for r in rows if r["week"] < cutoff],
+                                  weights=weights_for(load_season(season_id)["division"])))
     out = {s: (prior[s] - r if s in prior else None) for s, r in cur.items()}
     _movers_cache[ck] = out
     return out
@@ -2123,7 +2128,8 @@ def ncaa_field(season_id: int, size: int | None = None, out_n: int = 8):
     if size is None:
         size = field_for_division(s["division"])
     conn = _db()
-    ratings = compute_ratings(_completed(conn, season_id, SEED_ROUNDS))
+    ratings = compute_ratings(_completed(conn, season_id, SEED_ROUNDS),
+                              weights=weights_for(s["division"]))
     locked = _load_draw(conn, season_id)
     div = load_division(s["division"], s["gender"])
     progs = {p.school: p for p in div.programs}

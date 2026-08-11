@@ -161,6 +161,10 @@ class TeamSeason:
     points_for: float = 0.0
     points_against: float = 0.0
     district_place: int = 0
+    # TOSS Power Index (raw, pre-display-normalisation), set once the regular season
+    # is complete. It is what at-large selection and state seeding sort on, so it is
+    # archived with the season rather than recomputed on read — see world.run_jhsaa.
+    power: float = 0.0
     # pid -> [wins, losses] at any line. Awards are individual, so they need this.
     records: dict = field(default_factory=dict)
     by_pid: dict = field(default_factory=dict)
@@ -437,17 +441,116 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
     return teams
 
 
-def qualifiers(group: str, standings: dict[str, list[TeamSeason]]) -> list[TeamSeason]:
+# --- the Power Index (TOSS) ------------------------------------------------------
+# At-large selection and seed order run on the POWER INDEX, not on raw win-loss.
+# The model is TOSS — the Tennis Opponent-Strength System, oregontennis.org's
+# three-part composite for rating high school programs statewide, and the same one
+# `app.rating` already runs for the college league:
+#
+#     Power Index = 0.40 APR + 0.40 FQI + 0.20 oGS
+#
+#   APR  strength of schedule (RPI: 25% win% + 50% opponents' + 25% opponents'-opponents')
+#   FQI  flight-weighted share of lines won, scaled by opponent APR / league median
+#   oGS  share of GAMES won, scaled by the same opponent multiplier
+#
+# So beating a strong card across every flight rates above running up a record on a
+# weak one, and a 4-3 win where you took the premier flights rates above a 4-3 win
+# where you took the bottom of the lineup.
+#
+# Flight weights for the JHSAA's 5 singles / 2 doubles dual (owner rule 2027-08).
+# #1 singles and #1 doubles carry EQUAL top weight, and the tail is deliberately steep:
+# a team that wins the two premier flights has done most of the work, while depth at
+# #4/#5 singles moves the number very little. They sum to a max of 3.70 per dual, which
+# is the denominator of a fully contested match.
+#
+# These are the association's own numbers, not the college table (flatter across
+# singles, doubles below #1 singles) and not Oregon's (a 4S/4D format that does not
+# map). They are the only flight numbers in the pipeline — nothing else hard-codes one.
+FLIGHT_WEIGHTS = {
+    "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
+    "D1": 1.00, "D2": 0.50,
+}
+MAX_FLIGHT_WEIGHT = 3.70          # sum of the above; a fully contested dual
+
+
+def _games(score: str) -> tuple[int, int]:
+    """Games won by each side, parsed out of a line's score string ("6-4, 3-6, 7-5").
+
+    Read back from the STRING rather than persisted alongside it: the archive already
+    holds the score, so the opponent-weighted game share works on seasons that were
+    played before the Power Index existed, and `world_jhsaa_dual` doesn't grow a column
+    that would only ever restate what is already there."""
+    h = a = 0
+    for st in (score or "").split(","):
+        bits = st.strip().split("-")
+        if len(bits) != 2:
+            continue
+        try:
+            h += int(bits[0]); a += int(bits[1])
+        except ValueError:
+            continue
+    return h, a
+
+
+def rating_duals(teams) -> list[dict]:
+    """Every REGULAR-SEASON dual once, in the shape `rating.compute_ratings` consumes.
+
+    A dual sits on BOTH sides' schedules, so only the home side's copy is taken —
+    counting each meeting twice would flatten strength of schedule toward .500.
+
+    State duals are excluded on purpose. TOSS is the SEEDING input, so it has to be
+    the regular season only; it would also drag the 1S/4D format's #3 and #4 doubles
+    into a weight table that stops at #2, where they would silently take the fallback
+    weight instead of a number anybody chose."""
+    out = []
+    for t in teams:
+        for d in t.schedule:
+            if not d.get("home") or d.get("phase") == "state":
+                continue
+            lines = []
+            for ln in d.get("lines") or ():
+                hg, ag = _games(ln.get("score", ""))
+                lines.append({"slot": ln.get("slot", ""), "home_won": ln.get("home_won"),
+                              "home_games": hg, "away_games": ag})
+            out.append({"home": t.school.name, "away": d["opp"], "home_won": d["won"],
+                        "home_points": d["pf"], "away_points": d["pa"], "lines": lines})
+    return out
+
+
+def power_index(teams) -> dict:
+    """Power Index for every program in a gender, keyed by school name.
+
+    Run over the WHOLE gender rather than a classification at a time: non-district
+    play crosses classifications, so a 7A team's schedule strength depends on the 6A
+    teams it played, and rating each class in isolation would cut those edges out of
+    the results graph."""
+    from .rating import compute_ratings
+    return compute_ratings(rating_duals(teams), weights=FLIGHT_WEIGHTS)
+
+
+def qualifiers(group: str, standings: dict[str, list[TeamSeason]],
+               power: dict | None = None) -> list[TeamSeason]:
     """The state field: automatic bids first (7A takes the top TWO from each district,
-    everyone else the champion), then at-large by record until the bracket is full."""
+    everyone else the champion), then at-large until the bracket is full.
+
+    At-large order and SEED order are the Power Index (`power`, from `power_index`);
+    without one — a caller running a district in isolation — it falls back to win rate.
+    An automatic bid still buys entry rather than a seed: a district champion with a
+    thin index seeds below at-larges out of stronger districts."""
     auto_n, field_n = AUTO_PER_DISTRICT[group], FIELD[group]
+
+    def key(t: TeamSeason):
+        if power is not None and t.school.name in power:
+            return (-power[t.school.name].pi_raw, t.school.name)
+        return (-t.win_pct, -(t.points_for - t.points_against), t.school.name)
+
     auto, rest = [], []
     for teams in standings.values():
         auto.extend(teams[:auto_n])
         rest.extend(teams[auto_n:])
-    rest.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+    rest.sort(key=key)
     field = auto + rest[:max(0, field_n - len(auto))]
-    field.sort(key=lambda t: (-t.win_pct, -(t.points_for - t.points_against), t.school.name))
+    field.sort(key=key)
     return field[:field_n]
 
 
@@ -655,18 +758,43 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     for st in by_group.values():
         for teams in st.values():
             play_district(teams, year, salt)
+    # TOSS over the whole gender, once, on the finished regular season — before any
+    # state tournament is played, since it is the seeding input. Computed across all
+    # classifications together because non-district play crosses them: rating a class
+    # in isolation would cut those edges out of the results graph.
+    every_team = [t for st in by_group.values() for ts in st.values() for t in ts]
+    power = power_index(every_team)
+    for t in every_team:
+        r = power.get(t.school.name)
+        if r is not None:
+            t.power = r.pi_raw
+    out["power"] = power
     for group in GROUPS:
         standings = by_group[group]
         all_teams = [t for ts in standings.values() for t in ts]
         out["awards"][group] = season_awards(all_teams)
-        field = qualifiers(group, standings)
+        field = qualifiers(group, standings, power)
         state = run_state(field, seed=seed + hash(group) % 9973)
         out["groups"][group] = {
             # `drecord`/`place` are archived alongside the overall record so a program's
             # year-by-year history reads like a college team's, without re-simulating.
+            # `pi` is the TOSS Power Index the season was SEEDED on — archived, never
+            # recomputed on read. The rating is a function of the whole gender's results
+            # graph, so a later read could only reproduce it by chance, and a ranking
+            # that drifts away from the seeds it produced is the NCAA bracket's
+            # region-drift bug in a new league.
+            #
+            # Stored at FULL precision, deliberately. It was rounded to 6dp once, which
+            # looks harmless — nothing displays more than 3 — but `qualifiers` seeds on
+            # `pi_raw` while `world.jhsaa_group_ranking` re-sorts these stored values and
+            # breaks ties by school name. Two teams inside 1e-6 of each other (measured
+            # gaps get to 1.0e-06) collapse to the same stored number and the ranking
+            # then contradicts the seeds it is supposed to explain. Round for the eye,
+            # in the template; never in the archive.
             "standings": {d: [{"school": t.school.name, "record": t.record,
                                "drecord": t.district_record, "place": t.district_place,
-                               "pf": t.points_for, "pa": t.points_against}
+                               "pf": t.points_for, "pa": t.points_against,
+                               "pi": t.power}
                               for t in ts] for d, ts in standings.items()},
             "state": state,
         }

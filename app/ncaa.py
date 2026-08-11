@@ -48,10 +48,15 @@ SCHOOL_META = {
     # Jefferson's flagships. Pinned because the crest fallback takes the first
     # letter of up to four words: "University of Southern Jefferson" would come out
     # "UOSJ" rather than the western-convention USJ the owner wants (JU/JSU/USJ,
-    # after Kansas University / Colorado University).
-    "University of Jefferson": ("JU", "#1b3a6b"),
-    "Jefferson State University": ("JSU", "#7a1f2b"),
-    "University of Southern Jefferson": ("USJ", "#0e5a4a"),
+    # after Kansas University / Colorado University), and "Jefferson A&M University"
+    # would come out "JAU" rather than JAMU, which is the form Texas A&M already
+    # uses in this table. The colours are read off the OWNER-SUPPLIED marks
+    # (scripts/import_owner_logos.py), so the crest accent agrees with the logo
+    # beside it; USJ has no art yet and keeps its chosen navy.
+    "University of Jefferson": ("JU", "#043e7c"),
+    "Jefferson State University": ("JSU", "#003167"),
+    "University of Southern Jefferson": ("USJ", "#1d2b53"),
+    "Jefferson A&M University": ("JAMU", "#fcc624"),
 }
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.
@@ -66,12 +71,14 @@ CONF_PRESTIGE = {
     "Pac-16": 0.84, "SEC": 0.84, "ACC": 0.83, "Big 12": 0.82, "Big Ten": 0.81, "Yankee": 0.80,
     # --- Major / High-major ---
     "Ivy": 0.74, "WCC": 0.72, "MW": 0.69, "Big East": 0.68, "UAA": 0.67,
-    # JVC = the Jefferson Valley Conference, Jefferson's own D1 league (10 programs;
-    # the flagship is in the Pac-16 and Galena in the MW). MAJOR, not mid (owner rule
-    # 2027-08): Jefferson is meant to DRAW recruits as well as produce them, and in
-    # this engine that is bought with prestige — a 9-16 budget band lets its programs
-    # outbid for out-of-state kids the way a real destination state does.
-    "JVC": 0.665, "Heritage": 0.66,
+    # There is NO Jefferson conference in D1. The state's four D1 programs sit in
+    # existing leagues — the flagship in the Pac-16, Jefferson State in the WAC,
+    # Southern Jefferson in the Big West, Jefferson A&M in CUSA — and the Jefferson
+    # Valley Conference is a D2 league (`CONF_PRESTIGE_D2`). Jefferson produces a lot
+    # of players and most of them leave to play elsewhere, which is what happens to
+    # California, Texas and Florida too; "a good tennis state" was never meant to
+    # mean "a state that keeps its own kids".
+    "Heritage": 0.66,
     # --- Mid-Major ---
     "Big West": 0.60, "CIC": 0.59, "Sun Belt": 0.58, "A-10": 0.57, "ASUN": 0.56,
     "MAC": 0.55, "WAC": 0.54, "CAA": 0.53, "Patriot": 0.52,
@@ -88,7 +95,7 @@ CONF_PRESTIGE = {
 # budget, on-court strength, and seeding all follow one hierarchy.
 CONF_TIER = {
     "Pac-16": "top", "SEC": "top", "ACC": "top", "Big 12": "top", "Big Ten": "top", "Yankee": "top",
-    "Ivy": "major", "WCC": "major", "JVC": "major", "MW": "major", "Big East": "major",
+    "Ivy": "major", "WCC": "major", "MW": "major", "Big East": "major",
     "UAA": "major", "Heritage": "major",
     "Big West": "mid", "CIC": "mid", "Sun Belt": "mid", "A-10": "mid", "ASUN": "mid",
     "MAC": "mid", "WAC": "mid", "CAA": "mid", "Patriot": "mid",
@@ -105,6 +112,7 @@ CONF_PRESTIGE_D2 = {
     "Sunshine State": 0.62, "Peach Belt": 0.61, "Gulf South": 0.59, "Lone Star": 0.57,
     "Mid-America Intercollegiate": 0.56, "Pacific West": 0.55, "Great Lakes Intercollegiate": 0.54,
     "Great Lakes Valley": 0.53, "South Atlantic": 0.52, "Conference Carolinas": 0.51,
+    "Jefferson Valley Conference": 0.54,
     "California Collegiate": 0.50, "Great Midwest": 0.49, "Pennsylvania State Athletic": 0.48,
     "Rocky Mountain Athletic": 0.47, "Northeast-10": 0.46, "East Coast": 0.45, "Great American": 0.45,
     "Great Northwest Athletic": 0.44, "Mountain East": 0.44, "Northern Sun": 0.43,
@@ -120,6 +128,7 @@ CONF_PRESTIGE_D2_ALIASES = {
     "SSC": "Sunshine State", "PBC": "Peach Belt", "GSC": "Gulf South", "LSC": "Lone Star",
     "MIAA": "Mid-America Intercollegiate", "PacWest": "Pacific West",
     "GLIAC": "Great Lakes Intercollegiate", "GLVC": "Great Lakes Valley", "SAC": "South Atlantic",
+    "JVC": "Jefferson Valley Conference",
     "CC": "Conference Carolinas", "CCAA": "California Collegiate", "G-MAC": "Great Midwest",
     "PSAC": "Pennsylvania State Athletic", "RMAC": "Rocky Mountain Athletic", "NE10": "Northeast-10",
     "ECC": "East Coast", "GAC": "Great American", "GNAC-D2": "Great Northwest Athletic",

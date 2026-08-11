@@ -58,7 +58,7 @@ _LOGO_DIR = os.path.join(_REPO, "app", "web", "static", "logos")
 # --- Conferences -------------------------------------------------------------
 # abbr -> (division, display name). Abbrs must be unique across ALL divisions.
 CONFS = {
-    "JVC": ("D1", "Jefferson Valley Conference"),
+    "JVC": ("D2", "Jefferson Valley Conference"),
     "JCC": ("D2", "Jefferson Collegiate Conference"),
     "JAA": ("D3", "Jefferson Athletic Association"),
 }
@@ -79,29 +79,30 @@ PROGRAMS: list[dict] = [
     # actually plays in real life, so the swap reads as a correction) and the Pac
     # stays at exactly 16. See MOVES below.
     {"school": "University of Jefferson", "city": "Ashbury", "div": "D1",
-     "conf": "Pac-16", "origin": {"reuse": "Jacksonville"}, "meta": ("JU", "#1b3a6b")},
+     "conf": "Pac-16", "meta": ("JU", "#043e7c")},
     {"school": "Jefferson State University", "city": "Mercer City", "div": "D1",
-     "conf": "JVC", "origin": {"reuse": "Jacksonville State"}, "meta": ("JSU", "#7a1f2b")},
+     "conf": "WAC", "meta": ("JSU", "#003167")},
     {"school": "University of Southern Jefferson", "city": "San Borondón", "div": "D1",
-     "conf": "JVC", "origin": {"reuse": "Saint Joseph (CT)"}, "meta": ("USJ", "#0e5a4a")},
-    {"school": "Port Veles University", "city": "Port Veles", "div": "D1", "conf": "JVC"},
-    {"school": "Belmonte State University", "city": "Belmonte", "div": "D1", "conf": "JVC"},
-    {"school": "San Borondón State University", "city": "San Borondón", "div": "D1",
-     "conf": "JVC"},
-    {"school": "Valderra University", "city": "Valderra", "div": "D1", "conf": "JVC"},
-    {"school": "Santa Michaela State University", "city": "Santa Michaela", "div": "D1",
-     "conf": "JVC"},
-    {"school": "Belyakov State University", "city": "Belyakov", "div": "D1", "conf": "JVC"},
-    {"school": "Harriman State University", "city": "Harriman", "div": "D1", "conf": "JVC"},
+     "conf": "Big West", "meta": ("USJ", "#1d2b53")},
     {"school": "Jefferson A&M University", "city": "Rostova Junction", "div": "D1",
+     "conf": "CUSA", "meta": ("JAMU", "#fcc624")},
+    # ---- D2: the Jefferson Valley Conference (8) ---------------------------
+    {"school": "Port Veles University", "city": "Port Veles", "div": "D2", "conf": "JVC"},
+    {"school": "Belmonte State University", "city": "Belmonte", "div": "D2", "conf": "JVC"},
+    {"school": "San Borondón State University", "city": "San Borondón", "div": "D2",
      "conf": "JVC"},
+    {"school": "Valderra University", "city": "Valderra", "div": "D2", "conf": "JVC"},
+    {"school": "Santa Michaela State University", "city": "Santa Michaela", "div": "D2",
+     "conf": "JVC"},
+    {"school": "Belyakov State University", "city": "Belyakov", "div": "D2", "conf": "JVC"},
+    {"school": "Harriman State University", "city": "Harriman", "div": "D2", "conf": "JVC"},
     # Galena is NET-NEW and joins the MW, giving Jefferson one major-tier program.
     # It was briefly written as a rename of Nevada — Galena County is Washoe County,
     # so absorbing UNR looked geographically tidy. OWNER RULE, do not redo it: a real
     # FLAGSHIP is never subsumed. Jefferson may take the ground and it may take the
     # regional publics, but UNR keeps existing. Galena and Reno are simply two towns
     # on the same ground in different fictions.
-    {"school": "Galena University", "city": "Galena", "div": "D1", "conf": "MW"},
+    {"school": "Galena University", "city": "Galena", "div": "D2", "conf": "JVC"},
 
     # ---- D2 (14) — the new Jefferson Collegiate Conference ------------------
     {"school": "Cascade Polytechnic University", "city": "Redfork", "div": "D2",
@@ -275,6 +276,20 @@ def apply_changes(dry: bool) -> None:
         origin = p.get("origin") or {}
         old = origin.get("rename")
         donor = origin.get("reuse")
+
+        # RELOCATE, don't duplicate. This table is the source of truth for where a
+        # Jefferson program plays, and it gets edited — the JVC moved D1 -> D2 and
+        # Galena swapped down into it. Without dropping the school from wherever it
+        # currently sits first, a re-run would ADD it to its new conference and leave
+        # the old copy behind, so the program would exist in two divisions at once.
+        # "Idempotent" has to mean "converges on the table", not "only ever inserts".
+        for g in _GENDERS:
+            for (d, gg), data in divisions.items():
+                if gg != g or (d == div.lower() and _conf_of(data, conf)
+                               and school in (_conf_of(data, conf) or {}).get("teams", ())):
+                    continue
+                if _drop_team(data, school) is not None:
+                    notes.append(f"  ~ moved {school} out of {d.upper()} {g}")
 
         for g in _GENDERS:
             data = divisions[(div.lower(), g)]

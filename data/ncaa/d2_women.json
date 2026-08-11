@@ -493,6 +493,21 @@
         "University of the High Desert",
         "Wales City University"
       ]
+    },
+    {
+      "name": "Jefferson Valley Conference",
+      "abbr": "JVC",
+      "autobid": true,
+      "teams": [
+        "Belmonte State University",
+        "Belyakov State University",
+        "Galena University",
+        "Harriman State University",
+        "Port Veles University",
+        "San Borondón State University",
+        "Santa Michaela State University",
+        "Valderra University"
+      ]
     }
   ]
 }

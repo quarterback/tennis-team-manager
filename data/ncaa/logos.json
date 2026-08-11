@@ -1735,7 +1735,7 @@
     "slug": "jamestown"
   },
   "Jefferson A&M University": {
-    "badge": true,
+    "logo_source": "owner:jefferson-yellow.gif",
     "slug": "jefferson-a-m-university"
   },
   "Jefferson Maritime University": {
@@ -1743,7 +1743,7 @@
     "slug": "jefferson-maritime-university"
   },
   "Jefferson State University": {
-    "logo_source": "reuse:Jacksonville State",
+    "logo_source": "owner:jefferson-state.gif",
     "slug": "jefferson-state-university"
   },
   "Jessup": {
@@ -4148,7 +4148,7 @@
     "slug": "union-tn"
   },
   "University of Jefferson": {
-    "logo_source": "reuse:Jacksonville",
+    "logo_source": "owner:jefferson-university.gif",
     "slug": "university-of-jefferson"
   },
   "University of Oregon-Portland": {
