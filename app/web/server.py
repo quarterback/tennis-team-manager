@@ -40,7 +40,8 @@ from .state import preseason_view as preseason_view_data
 from .state import (jhsaa_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_player_view)
-from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
+from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
+                    wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from .state import staff_search
 from app import world as wd
@@ -128,6 +129,7 @@ NAV_GROUPS = [
         {"id": "recruiting","label": "Recruiting Board","icon": "fa-solid fa-graduation-cap","endpoint": "recruiting",       "args": {}},
         {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
         {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
+        {"id": "wire",      "label": "The Wire",      "icon": "fa-solid fa-tower-broadcast", "endpoint": "wire_page",           "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jhsaa",     "label": "High School",  "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
@@ -205,6 +207,7 @@ def _active_nav(req) -> str:
     if p.startswith("/recruiting/team"):  return "signings"
     if p.startswith("/recruiting/signings"): return "signings"
     if p.startswith("/portal-rankings"):  return "portal_rk"
+    if p.startswith("/wire"):             return "wire"
     if p.startswith("/transfers"):        return "transfers"
     if p.startswith("/recruiting/hub"):   return "rec_hub"
     if p.startswith("/juniors"):          return "juniors"
@@ -2073,6 +2076,27 @@ def create_app() -> Flask:
         return render_template("portal_rankings.html", active="World", u=u, uni_label=label,
                                pr=pr, divisions=["All", "D1", "D2", "D3", "D4"],
                                genders=["all", "men", "women"])
+
+    @app.route("/wire")
+    def wire_page():
+        """The Wire — every archived transfer, every season, filterable.
+
+        Paginated in the route (the archive runs to thousands of moves over a decade),
+        but the VIEW is computed unpaginated so the KPI strip and the season/conference
+        dropdowns describe the whole filtered set rather than the page you're looking at."""
+        _division, _g, label, u = _universe(request)
+        v = wire_view(gender=request.args.get("gender", "all"),
+                      division=request.args.get("div", "All"),
+                      conf=request.args.get("conf", "All"),
+                      kind=request.args.get("kind", "All"),
+                      year=request.args.get("year", "all"),
+                      sort=request.args.get("sort", "recent"),
+                      q=request.args.get("q", ""))
+        pg = paginate(v["rows"], request.args.get("page", 1))
+        v = {**v, "rows": pg.items}
+        return render_template("wire.html", active="World", u=u, uni_label=label,
+                               v=v, p=pg, base_year=wd.BASE_YEAR,
+                               divisions=["All", "D1", "D2", "D3", "D4"])
 
     @app.route("/recruiting/hub")
     def recruiting_hub_page():

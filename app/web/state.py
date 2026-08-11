@@ -1083,6 +1083,176 @@ def team_recruiting_class(gender: str, school: str, seed: int = DEFAULT_SEED) ->
     }
 
 
+# ---- The Wire (every transfer, every year) ------------------------------------
+#
+# Portal Rankings grades ONE transfer class: which programs got better this window.
+# The Wire answers the other question — where has this player been — so it reads the
+# whole `world_portal_move` archive at once and puts a career on every row. No new
+# table: the archive already stores year, cycle, gender, kind, pid, name, STR and both
+# school+division ends of every committed move.
+#
+# ⚠️ Division is ARCHIVED per move; conference is looked up LIVE, and that asymmetry is
+# deliberate. `src_div`/`dest_div` are what the programs were at the time and must stay
+# that way — a 2027 dual really was played in D1 even if the program sits in D2 now. A
+# conference, though, is how you FIND a program ("show me everything into the SEC"), and
+# you search by the league it plays in today, not the one it left. So the lookup indexes
+# a school across ALL FOUR division files rather than the division the row recorded: read
+# it out of `dest_div` and a realigned program (the JVC went D1 -> D2) would be looked up
+# in a file it is no longer in and come back unaffiliated.
+_WIRE_KINDS = {
+    "riser": ("Rise", "a player moving UP — the portal's whole point"),
+    "cascade": ("Depth", "displaced by an incoming riser, cascading down"),
+    "pro": ("Pro", "an ex-tour player entering college through the portal"),
+}
+_DIV_RANK = {"D1": 0, "D2": 1, "D3": 2, "D4": 3, "PRO": -1}
+_CYCLE_LABEL = {"preseason": "Preseason", "fall": "Fall"}
+
+_wire_prog_cache: dict = {}
+
+
+def _wire_programs(gender: str) -> dict:
+    """school -> {div, conf, conf_name} across all four divisions, as they stand TODAY.
+
+    Cached for the process: the division JSON is static at runtime (rebuilding it is a
+    deploy), and `ncaa.load_division` parses the file and derives prestige on every call,
+    which is far too heavy for a page that touches every school in a 10-year archive.
+    Computed into a LOCAL and published — never read back out of the dict it just wrote
+    (the gthread worker rule; see CLAUDE.md)."""
+    from app.ncaa import load_division
+    hit = _wire_prog_cache.get(gender)
+    if hit is not None:
+        return hit
+    out: dict = {}
+    for division in ("D1", "D2", "D3", "D4"):
+        try:
+            div = load_division(division, gender)
+        except FileNotFoundError:
+            continue
+        for p in div.programs:
+            out[p.school] = {"div": p.division, "conf": p.conf_abbr, "conf_name": p.conf}
+    _wire_prog_cache[gender] = out
+    return out
+
+
+def _wire_end(school: str, div: str, progs: dict) -> dict:
+    """One end of a move: the school, the division it was in AT THE TIME, and the
+    conference it plays in NOW. `Pros` is the synthetic pool ex-tour players arrive
+    from — not a program, so it has no conference and never gets a crest link."""
+    from .rankings_data import crest
+    meta = progs.get(school) or {}
+    abbr, color = crest(school) if school and school != "Pros" else ("PRO", "#2f6f4f")
+    return {"school": school, "div": div, "abbr": abbr, "color": color,
+            "conf": meta.get("conf", ""), "conf_name": meta.get("conf_name", ""),
+            "real": bool(school) and school != "Pros"}
+
+
+def wire_view(seed: int = DEFAULT_SEED, gender: str = "all", division: str = "All",
+              conf: str = "All", kind: str = "All", year="all", sort: str = "recent",
+              q: str = "") -> dict:
+    """The Wire: every archived portal move in the world's history, filterable.
+
+    Filters match EITHER end of a move. "Show me D1" means D1 departures as well as D1
+    arrivals — a wire that only matched the destination would hide exactly the story a
+    coach is looking for, which is who left.
+
+    Every row carries the player's WHOLE trajectory, and the chain is built from the
+    UNFILTERED archive on purpose: narrowing to one conference must not truncate the
+    career it is showing you. That is the point of the page — a player who went
+    Jefferson State -> UNLV -> Pros reads as one line without opening their profile."""
+    import app.world as world
+    g = gender if gender in ("men", "women") else "all"
+    moves = world.all_portal_moves(seed, g if g != "all" else None)
+    if not moves:
+        return {"rows": [], "years": [], "confs": [], "kinds": list(_WIRE_KINDS),
+                "gender": g, "division": division, "conf": conf, "kind": kind,
+                "year": year, "sort": sort, "q": q, "kpis": {}, "total": 0}
+
+    progs = {gg: _wire_programs(gg) for gg in ({"men", "women"} if g == "all" else {g})}
+
+    # --- trajectories, over the FULL archive (before any filter) ---
+    chains: dict = {}
+    for m in moves:                                   # already chronological
+        chains.setdefault(m["pid"], []).append(m)
+
+    def journey(pid: str) -> list[str]:
+        hops = chains[pid]
+        return [hops[0]["src_school"]] + [h["dest_school"] for h in hops]
+
+    # Where THIS move sits in that player's career. A chain of n moves visits n+1
+    # schools, so hop i runs journey[i] -> journey[i+1]; the row lights those two so a
+    # middle transfer reads as a middle transfer rather than as the whole career.
+    # Counted while walking `moves` in the same chronological order the chains were
+    # built in, rather than keyed on the dicts themselves.
+    hop_no: dict = {}
+
+    rows = []
+    for m in moves:
+        hop = hop_no.get(m["pid"], 0)
+        hop_no[m["pid"]] = hop + 1
+        p = progs.get(m["gender"], {})
+        src = _wire_end(m["src_school"], m["src_div"], p)
+        dst = _wire_end(m["dest_school"], m["dest_div"], p)
+        label, why = _WIRE_KINDS.get(m["kind"], (m["kind"].title(), ""))
+        d_src, d_dst = _DIV_RANK.get(m["src_div"], 9), _DIV_RANK.get(m["dest_div"], 9)
+        rows.append({
+            "year": m["year"], "year_label": world.BASE_YEAR + m["year"],
+            "cycle": m["cycle"], "cycle_label": _CYCLE_LABEL.get(m["cycle"], m["cycle"].title()),
+            "gender": m["gender"], "pid": m["pid"], "name": m["name"],
+            "str": round(m["str"], 1), "kind": m["kind"], "kind_label": label, "why": why,
+            # negative = moved UP a division (D2 -> D1), positive = down, 0 = lateral
+            "step": d_dst - d_src,
+            "src": src, "dest": dst,
+            "journey": journey(m["pid"]), "hops": len(chains[m["pid"]]),
+            "hop": hop,
+        })
+
+    # --- the dropdowns describe THIS archive, not the whole league. A conference
+    # nobody has ever transferred into is noise in the filter. (Same rule as
+    # scout_intel.portal_search_states.) ---
+    years = sorted({r["year"] for r in rows}, reverse=True)
+    confs = sorted({c for r in rows for c in (r["src"]["conf"], r["dest"]["conf"]) if c})
+
+    try:
+        yr = int(year)
+    except (TypeError, ValueError):
+        yr = None
+    if yr is not None:
+        rows = [r for r in rows if r["year"] == yr]
+    if division != "All":
+        rows = [r for r in rows if division in (r["src"]["div"], r["dest"]["div"])]
+    if conf != "All":
+        rows = [r for r in rows if conf in (r["src"]["conf"], r["dest"]["conf"])]
+    if kind != "All":
+        rows = [r for r in rows if r["kind"] == kind]
+    if q:
+        needle = q.strip().lower()
+        rows = [r for r in rows if needle in r["name"].lower()
+                or needle in r["src"]["school"].lower()
+                or needle in r["dest"]["school"].lower()]
+
+    order = {
+        "recent": lambda r: (-r["year"], -world._CYCLE_ORDER.get(r["cycle"], 9), r["name"]),
+        "oldest": lambda r: (r["year"], world._CYCLE_ORDER.get(r["cycle"], 9), r["name"]),
+        "str": lambda r: (-r["str"], r["name"]),
+        "name": lambda r: (r["name"], r["year"]),
+        "journey": lambda r: (-r["hops"], r["name"], r["year"]),
+    }
+    rows.sort(key=order.get(sort, order["recent"]))
+
+    ups = sum(1 for r in rows if r["step"] < 0)
+    kpis = {
+        "moves": len(rows), "players": len({r["pid"] for r in rows}),
+        "up": ups, "down": sum(1 for r in rows if r["step"] > 0),
+        "lateral": len(rows) - ups - sum(1 for r in rows if r["step"] > 0),
+        "avg_str": round(sum(r["str"] for r in rows) / len(rows), 1) if rows else 0.0,
+        "seasons": len(years),
+        "multi": len({r["pid"] for r in rows if r["hops"] > 1}),
+    }
+    return {"rows": rows, "years": years, "confs": confs, "kinds": list(_WIRE_KINDS),
+            "gender": g, "division": division, "conf": conf, "kind": kind,
+            "year": year, "sort": sort, "q": q, "kpis": kpis, "total": len(rows)}
+
+
 # ---- Portal Rankings (transfer-class board, On3/247 style) ---------------------
 _PORTAL_SCORE_SCALE = 0.1   # top-3 STR sum × this → a readable "points" number (~15-18 strong)
 
