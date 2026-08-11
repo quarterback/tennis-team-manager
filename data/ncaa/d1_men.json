@@ -271,7 +271,8 @@
         "UC Irvine",
         "UC Riverside",
         "UC San Diego",
-        "UC Santa Barbara"
+        "UC Santa Barbara",
+        "University of Southern Jefferson"
       ]
     },
     {
@@ -298,12 +299,13 @@
         "FIU",
         "George Mason",
         "Jacksonville State",
+        "Jefferson A&M University",
         "Kennesaw State",
         "Liberty",
         "Middle Tennessee",
         "Missouri State",
-        "Sam Houston",
-        "Rice"
+        "Rice",
+        "Sam Houston"
       ]
     },
     {
@@ -411,7 +413,6 @@
         "Air Force",
         "Colorado State",
         "Fresno State",
-        "Galena University",
         "Hawaii",
         "Nevada",
         "New Mexico",
@@ -581,6 +582,7 @@
         "Abilene Christian",
         "Alaska Anchorage",
         "Grand Canyon",
+        "Jefferson State University",
         "New Mexico State",
         "Sacramento State",
         "Southern Utah",
@@ -606,23 +608,6 @@
         "San Francisco",
         "Santa Clara",
         "Seattle U"
-      ]
-    },
-    {
-      "name": "Jefferson Valley Conference",
-      "abbr": "JVC",
-      "autobid": true,
-      "teams": [
-        "Belmonte State University",
-        "Belyakov State University",
-        "Harriman State University",
-        "Jefferson A&M University",
-        "Jefferson State University",
-        "Port Veles University",
-        "San Borondón State University",
-        "Santa Michaela State University",
-        "University of Southern Jefferson",
-        "Valderra University"
       ]
     }
   ]

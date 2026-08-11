@@ -323,12 +323,17 @@ Traps:
   are relative and `rng.choices` renormalizes. JF 0.1400, with OR/NV/ID/CA shaved by the
   county share Jefferson takes. Measured: **JF 188** · CA 186 · FL 166 · TX 113 · NY 82.
   One class is noisy enough to reorder the top two — average several before retuning.
-- **Jefferson DEVELOPS and DRAWS (owner rule 2027-08), like TX/CA/FL.** Two separate
-  levers: the origin weight above (produce), and `CONF_TIER["JVC"] = "major"` (draw) —
-  which funds its ten JVC programs at 12–13, past the 10.5 floor for a 5★. Don't demote
-  the JVC back to `mid`. Jefferson's GEOGRAPHY is otherwise ordinary: it is region "W"
-  and gets no special pull table. Out-of-region signees are fine and expected; the
-  regional preference is soft realism, not a gate.
+- **Jefferson DEVELOPS; its kids LEAVE, and that is the point.** Jefferson produces
+  talent at a top-tier rate (the origin weight above, ~188 a class, second only to CA)
+  and most of it goes elsewhere to play — exactly as it does for California, Texas and
+  Florida. "A good tennis state" has never meant "a state that keeps its own kids", and
+  a big in-state D1 footprint is NOT how the state's quality is expressed. Jefferson has
+  **four D1 programs**, all in existing leagues: the flagship (University of Jefferson)
+  in the Pac-16, **Jefferson State in the WAC**, **Southern Jefferson in the Big West**,
+  **Jefferson A&M in CUSA**. The **Jefferson Valley Conference is D2** (8 programs,
+  including Galena) — do not put it back in D1. Jefferson's GEOGRAPHY is otherwise
+  ordinary: it is region "W" and gets no special pull table. Out-of-region signees are
+  fine and expected; the regional preference is soft realism, not a gate.
 - **JF is NOT in `SCHOOL_LOCAL_TERRITORY`** (it has a real `STATE_REGION`, so the normal
   geo tug already applies; adding it stacks `LOCAL_TERRITORY_PULL` 6.0 on top), **NOT in
   `WARM_STATES`** (it's the PNW), and **NOT in `cities._STATE_HEAT`** (its list is already
@@ -338,7 +343,8 @@ Traps:
   looked tidy. It was WRONG and was reverted; do not redo it. Jefferson may take the
   ground and the regional publics, but a real flagship keeps existing. Galena is net-new,
   badge-marked, and sits BESIDE Nevada in the MW.
-- 39 colleges across D1–D4 (~2.2/million, matching CA). Several were ABSORBED — real
+- 39 colleges across D1–D4 (~2.2/million, matching CA), but only FOUR in D1 — a
+  17.6M state with a dozen D1 programs broke immersion. Several were ABSORBED — real
   programs standing on Jefferson ground, RENAMED so each keeps its own logo (Oregon Tech→
   Cascade Polytechnic, Southern Oregon→Siskiyou, Cal Poly Humboldt→Humboldt Polytechnic,
   Chico State→Bidwell State, College of Idaho→College of Jefferson). Only **three** Golden
@@ -349,7 +355,7 @@ Traps:
   owner decision; Montana now has NO D4 program.
 - **The flagship is in the Pac-16 (`top`, 16–33.5 budget) and Colorado State moved out to
   the MW** to keep it at 16 — a correction, not a demotion, since that is where CSU plays
-  in real life. Chosen over renaming Pac-16→Pac-18, whose abbr is a key in `CONF_PRESTIGE`,
+  in real life. Galena is **D2** (in the JVC); Jefferson A&M took the D1 seat, in CUSA. Chosen over renaming Pac-16→Pac-18, whose abbr is a key in `CONF_PRESTIGE`,
   `CONF_TIER`, `state.py::_P5` and `polls.py::_POWER_CONFS`. Gonzaga is in the **Pac-16**,
   not the WCC — check the data before reasoning about it.
 
