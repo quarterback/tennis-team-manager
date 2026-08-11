@@ -111,8 +111,10 @@ league. That ordering is `district_place`.
 
 **2. Who qualifies** (`qualifiers`). Automatic bids first — `AUTO_PER_DISTRICT`, which is
 the top **two** per district in 7A and the champion everywhere else — then the rest of
-the association pooled and taken by **overall win % → point differential → name** until
-`FIELD` is full.
+the association pooled and taken by **TOSS Power Index** until `FIELD` is full. (This
+sorted on overall win % in the first cut; TOSS replaced it a few commits later —
+`docs/BLOG-toss-in-a-third-format.md`. Win % survives only as the fallback for a caller
+that runs a district in isolation, and for archives written before TOSS.)
 
 | | Field | Auto | Districts (girls / boys) | Draw | Byes |
 |---|---|---|---|---|---|
@@ -123,15 +125,26 @@ the association pooled and taken by **overall win % → point differential → n
 | 3A-1A | 8 | champion | 3 / 3 | 8 | 0 |
 
 **3. Seed number** (`qualifiers`, final sort). The whole field — autos and at-larges
-together — is re-sorted on **overall win % → point differential → name**, and a
-program's index in that list *is* its seed. Two consequences worth stating out loud
-because they look like bugs and aren't:
+together — is re-sorted on the **Power Index**, and a program's index in that list *is*
+its seed. Three consequences worth stating out loud because they look like bugs and
+aren't:
 
-* an automatic bid buys entry, **not** a seed. A district champion with a thin overall
-  record is seeded below at-larges from stronger districts.
-* the seed key is the **overall** record while district place is **district-only**, so a
-  program can win its district and still be seeded under a team that finished second in
-  another one.
+* an automatic bid buys entry, **not** a seed. A district champion with a thin index is
+  seeded below at-larges from stronger districts.
+* the seed key is an **association-wide** rating while district place is
+  **district-only**, so a program can win its district and still be seeded under a team
+  that finished second in another one.
+* a **better record can seed lower**. That is the whole point of a strength model: 22-4
+  out of a weak district rates under 19-7 out of a brutal one. It is the single most
+  likely thing to be reported as a bug.
+
+The index is computed **once**, over the whole gender, on the regular season only, and
+then **archived on the standings rows** — never recomputed on read. And it is archived
+at **full precision**: `round(pi, 6)` looks free because nothing on screen shows more
+than three decimals, but the seeding sorts the raw value while the ranking page re-sorts
+the stored one and breaks ties by school name, so any two teams inside 1e-6 collapse and
+the ranking starts contradicting its own seeds. Rounding is a property of a view. It
+does not belong in a store whose job is to reproduce a decision.
 
 **4. The draw** (`run_state` → `engine.tournament.seeded_draw(n_real, n, n_seeds, rng)`).
 `n_real` is the field, **`n` is the bracket size — the field padded up to the next power
