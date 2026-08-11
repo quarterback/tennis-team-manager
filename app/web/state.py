@@ -3460,9 +3460,15 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
     Byes are materialised as pass-through cards (`_jh_bye_card`) so every team's route
     through the tree is drawn. Which teams byed is DERIVED from the archive rather than
     assumed: a team alive going into a round that does not appear in any of that
-    round's games advanced without playing. `run_state` builds the next round in slot
-    order and the padding sits at the end of the draw, so a round's winners always
-    precede its byes — which is the order the cards go in.
+    round's games advanced without playing.
+
+    The cards are then ORDERED BY THEIR REAL FEEDERS, which is what makes the shared
+    canvas correct. `_bracket_canvas` links positionally — cards `2k` and `2k+1` feed
+    card `k` — and the archive gives no such order: the draw seeds byes onto the top
+    seeds' anchors, so they sit INTERLEAVED through the opening round, not conveniently
+    at its end. Walking back from the final and placing each card next to its sibling
+    (the previous column's card whose winner is standing in this one) makes the
+    positional rule true by construction, for any draw shape.
 
     `keep` trims to the last N rounds — the hub shows the business end of the draw and
     links to the full tree, rather than putting a 32-card ladder above the standings."""
@@ -3486,7 +3492,34 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
         ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
         alive = [gm.get("winner") for gm in rd["games"]] + byes
         cols.append({"name": rd["name"], "matchups": ms})
+    _order_by_feeders(cols)
     return cols[-keep:] if keep else cols
+
+
+def _order_by_feeders(cols: list) -> list:
+    """Reorder each column so card `2k` and card `2k+1` are the two that feed card `k`.
+
+    `_bracket_canvas` reads the parent-child relationship off POSITION, so the caller
+    owes it a positionally-correct list. Walking right to left, each card in column `i`
+    claims the cards in column `i-1` whose winners are standing in it; anything
+    unclaimed keeps its relative order at the end (a defensive tail — with a complete
+    archive there is nothing left over)."""
+    for i in range(len(cols) - 1, 0, -1):
+        prev = cols[i - 1]["matchups"]
+        by_winner = {}
+        for m in prev:
+            if m.get("winner"):
+                by_winner.setdefault(m["winner"], m)
+        ordered, claimed = [], set()
+        for m in cols[i]["matchups"]:
+            for side in ("home", "away"):
+                f = by_winner.get(m[side].get("school"))
+                if f is not None and id(f) not in claimed:
+                    ordered.append(f)
+                    claimed.add(id(f))
+        ordered += [m for m in prev if id(m) not in claimed]
+        cols[i - 1]["matchups"] = ordered
+    return cols
 
 
 def _jh_final_four(bracket: dict, schools: dict) -> dict:

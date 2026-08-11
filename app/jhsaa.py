@@ -452,14 +452,36 @@ def qualifiers(group: str, standings: dict[str, list[TeamSeason]]) -> list[TeamS
 
 
 def run_state(field: list[TeamSeason], *, seed: int) -> dict:
-    """The dual-team state tournament: 1S/4D, single elimination. A field that isn't a
-    power of two seeds into the next one up and the top seeds take first-round byes —
-    a 24-team field is a 32 draw with 8 byes."""
+    """The dual-team state tournament: 1S/4D, single elimination.
+
+    The draw is SEEDED (`engine.tournament.seeded_draw`, the same helper the college
+    championship uses): entrants go to the standard bracket anchors so the top seeds
+    can only meet late, and a field that isn't a power of two seeds into the next size
+    up with the **byes going to the top seeds**. A 12-team field is a 16 draw where
+    seeds 1-4 sit out the opening round and seeds 5-12 play into an eight-team
+    quarterfinal; a 24-team field is a 32 draw where the top eight sit out.
+
+    The bracket is then FIXED — no reseeding between rounds (owner rule 2027-08; most
+    states don't reseed either). Within a seed tier the anchors are shuffled, which is
+    what `seeded_draw` does for the college championship too, so the pairings vary by
+    seed while the tiers never do.
+
+    It used to pad the field with `None` at the END of the slot list, which is not a
+    draw at all: the Nones paired off with each other and vanished, nobody got a bye,
+    and — because slot order was just finishing order — **the first round paired seed 1
+    against seed 2**, seed 3 against seed 4, and so on. Every state tournament in the
+    association was decided by a ladder that put its two best teams against each other
+    first."""
     rng = random.Random(seed)
     size = 1
     while size < len(field):
         size *= 2
-    slots: list[TeamSeason | None] = list(field) + [None] * (size - len(field))
+    # `n_seeds = len(field)`: the whole field is ranked (`qualifiers` orders it), so
+    # every entrant is placed on its own anchor rather than drawn at random.
+    from engine.tournament import seeded_draw
+    slots: list[TeamSeason | None] = [None if r is None else field[r]
+                                      for r in seeded_draw(len(field), size,
+                                                           len(field), rng)]
     rounds = []
     while len(slots) > 1:
         nxt, games = [], []

@@ -74,6 +74,31 @@ still alive when the program went out*: 1 champion, 2 runner-up, 3-4 semifinalis
 The champion is read off `bracket["champion"]`, not inferred from "won its last game",
 because a bye lets a program sit out a round without being out of the tournament.
 
+### The draw itself was never seeded — and I looked straight at the evidence
+
+The round math above is right, but it was describing a broken tournament. `run_state`
+built its slots as `list(field) + [None] * (size - len(field))` — the field in finishing
+order, padded at the end — which is not a draw:
+
+* the `None`s **paired off with each other** and vanished, so the byes a
+  non-power-of-two field is supposed to hand its top seeds went to nobody, and
+* because slot order was just finishing order, **the first round paired seed 1 against
+  seed 2**, seed 3 against seed 4, and so on, at every field size. Every state
+  tournament in the association was decided by a ladder that put its two best teams
+  against each other first.
+
+The function's own docstring claimed the opposite ("the top seeds take first-round
+byes"), and the first 7A bracket screenshot in this pass has `1 Ruby Stokes` against
+`2 Petra Weiss` in the round of 32, in the middle of the frame. I reviewed that
+screenshot for layout and never read the tree. **Rendering something faithfully is not
+the same as checking it is right** — a chart of wrong numbers looks exactly like a chart.
+
+The fix is `engine.tournament.seeded_draw`, the helper the college championship already
+uses: entrants go to standard bracket anchors, and the byes go to the top seeds. A
+12-team field is now a 16 draw where seeds 1-4 sit out and 5-12 play into an eight-team
+quarterfinal; a 24-team field is a 32 draw where the top eight sit out. The bracket is
+FIXED after that — no reseeding between rounds (owner rule: most states don't reseed).
+
 **The same assumption was hiding in the drawing code, and it bit twice.**
 `_bracket_canvas` connects a column to the one before it *positionally*: equal widths
 mean one feeder each, anything else means the standard halving (`2k`, `2k+1`). Handing
@@ -82,13 +107,24 @@ it links the first two quarterfinal winners into the final and draws nothing at 
 the third, who byed straight through. The card showed the right teams, so the tree
 looked plausible while one program's whole route to the final was missing.
 
-The fix is not a smarter canvas. It is to stop lying to it: a bye is materialised as an
-explicit **pass-through card** in the column it happens in, which turns 3 → 1 into
-3 → 2 → 1 — a shape the halving rule already draws correctly, on shared geometry
-nothing had to touch. Which teams byed is derived from the archive (a team alive going
-into a round that appears in none of its games), so it works for any field size; the
-power-of-two draws produce no bye cards and render byte-identically to before. The empty
-side reads **BYE**, not TBD: the slot is not undecided, there is genuinely no opponent.
+The fix is not a smarter canvas. It is to stop lying to it, in two steps:
+
+1. A bye is materialised as an explicit **pass-through card** in the column it happens
+   in, so the column counts describe a real tree. The empty side reads **BYE**, not TBD:
+   the slot is not undecided, there is genuinely no opponent.
+2. The cards are **ordered by their real feeders** — walking right to left, each card
+   claims the previous column's cards whose winners are standing in it. That makes the
+   positional rule true by construction whatever the draw does.
+
+Step 2 matters more than it first looked. With the draw properly seeded, byes land on
+the *top seeds' anchors* and are therefore **interleaved through the opening round**,
+not conveniently at its end — so "append the byes after the games" (which happened to
+be right while the field was padded at the end) would have been wrong again. Deriving
+the order from the winners is the version that does not depend on how the draw is built.
+
+Which teams byed is derived from the archive too (a team alive going into a round that
+appears in none of its games), so all of this holds for any field size, including the
+archives written before the seeding fix.
 
 > When a helper assumes a shape, the bug is usually the input, not the helper. Feed it
 > the real shape rather than teaching it a special case.

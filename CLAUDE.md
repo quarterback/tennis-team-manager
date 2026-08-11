@@ -394,14 +394,23 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   indexed read of ~26 rows per season), and a second store would be a second source of
   truth for numbers the archive already determines. Before persisting, check whether the
   thing is a PROJECTION of a layer you already have.
-- **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** `run_state` pads
-  a field to the next power of two and the byes collapse UNEVENLY: a 24-team field plays
-  rounds of **24 → 12 → 6 → 3 → 2**, and a semifinal round really can hold three teams.
-  `jhsaa_state_rounds` counts `alive(n+1) = alive(n) - games(n)` (every game eliminates
-  exactly one); `state_place` is 1 champion / 2 runner-up / 3-4 semifinalist, so "made
-  the semis" is `place <= 4`, a NUMBER, never a string compared to a label. The champion
-  is read off the archived bracket, not inferred from "won its last game" — a bye lets a
-  program miss a round without being out.
+- **The state draw is SEEDED, with byes to the top seeds, and then FIXED.** `run_state`
+  places entrants via `engine.tournament.seeded_draw` (the college championship's
+  helper), so a 12-team field is a 16 draw where **seeds 1-4 sit out and 5-12 play into
+  an eight-team quarterfinal**, and a 24-team field is a 32 draw where the top eight sit
+  out. **No reseeding between rounds** (owner rule 2027-08 — most states don't). It used
+  to pad the field with `None` at the END, which meant the byes paired off with each
+  other and went to nobody, and slot order was finishing order — so **round one paired
+  seed 1 against seed 2** at every field size. Don't reintroduce positional padding.
+- **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** A field that
+  isn't a power of two doesn't halve out of the gate: a 24-team draw plays
+  **24 → 16 → 8 → 4 → 2** (eight byes), and saves archived BEFORE the seeding fix hold
+  odder shapes still (24 → 12 → 6 → 3 → 2, with a three-team semifinal round), which
+  must keep rendering. `jhsaa_state_rounds` counts `alive(n+1) = alive(n) - games(n)`
+  (every game eliminates exactly one); `state_place` is 1 champion / 2 runner-up / 3-4
+  semifinalist, so "made the semis" is `place <= 4`, a NUMBER, never a string compared
+  to a label. The champion is read off the archived bracket, not inferred from "won its
+  last game" — a bye lets a program miss a round without being out.
 - **‼️ A DISTRICT IS `(CLASSIFICATION, name)`, never the name alone.** The JHSAA reuses
   its geographic district names at every level — "Halbrook Basin District" is FIVE
   leagues — which is why the archive is keyed `standings[group][district]`. A route or
