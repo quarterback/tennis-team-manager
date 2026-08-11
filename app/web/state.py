@@ -1178,6 +1178,22 @@ def wire_view(seed: int = DEFAULT_SEED, gender: str = "all", division: str = "Al
         hops = chains[pid]
         return [hops[0]["src_school"]] + [h["dest_school"] for h in hops]
 
+    def now_at(pid: str, gender: str) -> str:
+        """The division to open a player's profile in — their CURRENT program's, never
+        this row's.
+
+        `/player` resolves the live season from the universe in the URL, so an old row
+        built from its own `dest_div` sends a transferred player to a universe they left.
+        A 2027 D1 -> D3 row would open the D3 season for someone who has since gone back
+        up, dropping them onto the persisted-player fallback with none of their current
+        records, ranking or stats. Every row of a career therefore points at the same
+        place: the last destination in the chain, resolved through TODAY'S division for
+        that school (the same live lookup the conference column uses, so a realigned
+        program still lands in the universe it actually plays in)."""
+        last = chains[pid][-1]
+        meta = progs.get(gender, {}).get(last["dest_school"]) or {}
+        return meta.get("div") or last["dest_div"]
+
     # Where THIS move sits in that player's career. A chain of n moves visits n+1
     # schools, so hop i runs journey[i] -> journey[i+1]; the row lights those two so a
     # middle transfer reads as a middle transfer rather than as the whole career.
@@ -1203,7 +1219,7 @@ def wire_view(seed: int = DEFAULT_SEED, gender: str = "all", division: str = "Al
             "step": d_dst - d_src,
             "src": src, "dest": dst,
             "journey": journey(m["pid"]), "hops": len(chains[m["pid"]]),
-            "hop": hop,
+            "hop": hop, "now_div": now_at(m["pid"], m["gender"]),
         })
 
     # --- the dropdowns describe THIS archive, not the whole league. A conference
@@ -1240,12 +1256,16 @@ def wire_view(seed: int = DEFAULT_SEED, gender: str = "all", division: str = "Al
     rows.sort(key=order.get(sort, order["recent"]))
 
     ups = sum(1 for r in rows if r["step"] < 0)
+    # Every KPI counts the ROWS ON SCREEN. `years` is the unfiltered archive because the
+    # dropdown has to keep offering seasons you have filtered away — reusing it here read
+    # "10 seasons archived" beside a single season's move count, which is two different
+    # populations in one sentence.
     kpis = {
         "moves": len(rows), "players": len({r["pid"] for r in rows}),
         "up": ups, "down": sum(1 for r in rows if r["step"] > 0),
         "lateral": len(rows) - ups - sum(1 for r in rows if r["step"] > 0),
         "avg_str": round(sum(r["str"] for r in rows) / len(rows), 1) if rows else 0.0,
-        "seasons": len(years),
+        "seasons": len({r["year"] for r in rows}),
         "multi": len({r["pid"] for r in rows if r["hops"] > 1}),
     }
     return {"rows": rows, "years": years, "confs": confs, "kinds": list(_WIRE_KINDS),
