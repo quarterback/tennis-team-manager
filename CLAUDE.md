@@ -416,7 +416,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   per season (`pi` on the standings rows) and read back, never recomputed** — a rating
   is a function of the whole results graph, so a re-read would only match by chance, and
   a ranking that drifts from the seeds it produced is the NCAA region-drift bug again.
-  `jhsaa_group_ranking` falls back to win% for seasons archived before TOSS.
+  `jhsaa_group_ranking` falls back to win% for seasons archived before TOSS. **Archive it
+  at FULL precision and round only in the template** — it was stored `round(pi, 6)` once,
+  which looks free because nothing shows more than 3 decimals, but `qualifiers` seeds on
+  the raw value while `jhsaa_group_ranking` re-sorts the stored one and breaks ties by
+  school name, so any two teams inside 1e-6 collapse and the displayed ranking
+  contradicts its own seeds. Rounding is a display concern; it does not belong in a
+  store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **The state draw is SEEDED, with byes to the top seeds, and then FIXED.** `run_state`
   places entrants via `engine.tournament.seeded_draw` (the college championship's

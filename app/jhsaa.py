@@ -783,10 +783,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             # graph, so a later read could only reproduce it by chance, and a ranking
             # that drifts away from the seeds it produced is the NCAA bracket's
             # region-drift bug in a new league.
+            #
+            # Stored at FULL precision, deliberately. It was rounded to 6dp once, which
+            # looks harmless — nothing displays more than 3 — but `qualifiers` seeds on
+            # `pi_raw` while `world.jhsaa_group_ranking` re-sorts these stored values and
+            # breaks ties by school name. Two teams inside 1e-6 of each other (measured
+            # gaps get to 1.0e-06) collapse to the same stored number and the ranking
+            # then contradicts the seeds it is supposed to explain. Round for the eye,
+            # in the template; never in the archive.
             "standings": {d: [{"school": t.school.name, "record": t.record,
                                "drecord": t.district_record, "place": t.district_place,
                                "pf": t.points_for, "pa": t.points_against,
-                               "pi": round(t.power, 6)}
+                               "pi": t.power}
                               for t in ts] for d, ts in standings.items()},
             "state": state,
         }
