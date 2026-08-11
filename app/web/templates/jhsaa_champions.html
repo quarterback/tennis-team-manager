@@ -1,36 +1,45 @@
 {% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_player %}
 {% block title %}JHSAA Past Champions{% endblock %}
 {% block content %}
-<div class="bl-pagehead">
-  <h1 class="bl-pagetitle">JHSAA Past Champions</h1>
-  <p class="bl-pagesub">State titles and Players of the Year, every archived season</p>
-</div>
-<div style="display:flex;gap:6px;margin-bottom:12px">
-  {% for g in ['girls','boys'] %}
-  <a class="bl-badge {{ 'tier-IVY' if view.gender == g else 'tier-D3' }}"
-     style="text-decoration:none;padding:5px 12px"
-     href="{{ url_for('jhsaa_champions', u=u, g=g) }}">{{ g|upper }}</a>
-  {% endfor %}
-</div>
+
+{{ jh_header(view.scope, u, 'history', 'JHSAA History',
+             'State champions and Players of the Year, every archived season.',
+             [('Seasons', view.years|length)]) }}
+
+<div class="jh-shell">
 {% if not view.years %}
-<div class="bl-panel"><div class="bl-panel-body"><p>No seasons archived yet.</p></div></div>
+<div class="bl-panel"><div class="jh-empty">No seasons archived yet.</div></div>
 {% else %}
-<div class="bl-panel"><div class="bl-tablescroll">
-  <div class="bl-table" style="--bl-grid-cols: 56px repeat({{ view.groups|length }}, 1fr)">
-    <div class="bl-thead"><span class="bl-th">YEAR</span>
-      {% for gp in view.groups %}<span class="bl-th">{{ gp }}</span>{% endfor %}</div>
-    {% for y in view.years %}
-    <div class="bl-row">
-      <span style="font-weight:700">{{ y.year }}</span>
-      {% for gp in view.groups %}
-      <span style="min-width:0">
-        <a class="bl-school" href="{{ url_for('jhsaa_school', school=y.champions.get(gp,''), u=u, g=view.gender) }}">{{ y.champions.get(gp, '—') }}</a>
-        {% if y.poy.get(gp) and y.poy[gp].get('name') %}<div class="tsub" style="font-size:10px">POY {{ y.poy[gp].name }}</div>{% endif %}
-      </span>
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">State champions</span>
+    <span class="bl-panel-meta">every classification, newest first</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger">
+      <tr><th style="width:64px">Season</th>
+        {% for gp in view.groups %}<th>{{ gp }}</th>{% endfor %}</tr>
+      {% for y in view.years %}
+      <tr>
+        <td class="yr"><a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year }}</a></td>
+        {% for gp in view.groups %}
+        {% set ch = y.champions.get(gp) %}
+        <td style="font-variant-numeric:normal">
+          {% if ch %}
+          <span class="jh-schoolcell">{{ ch.mark|safe }}
+            <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender) }}">{{ ch.name }}</a></span>
+          {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
+          {% set poy = y.poy.get(gp) %}
+          {% if poy and poy.get('name') %}
+          <div style="font-size:10.5px;color:var(--text-muted);padding-left:28px">
+            POY {{ jh_player(poy.name, poy.school, poy.pid, u, view.gender) }}</div>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
       {% endfor %}
-    </div>
-    {% endfor %}
+    </table>
   </div>
-</div></div>
+</div>
 {% endif %}
+</div>
 {% endblock %}

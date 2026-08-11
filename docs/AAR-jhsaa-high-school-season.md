@@ -150,6 +150,10 @@ draw history. (This was assumed impossible during design; it needed zero work.)
   something — so a program you were trying to track year over year showed a couple of
   scattered rows and looked like it hadn't played in between. `world_jhsaa` already
   carried the standings; nothing needed re-simulating, only reading.
+  A later pass took that further and made the SEASON LEDGER the history — `totals`
+  (career) plus `seasons` (a row per year with the postseason record, courts, state seed
+  and state finish), all still derived from the same archive, with the whole section
+  rebuilt around it. See `docs/AAR-jhsaa-program-history-and-design-pass.md`.
 - **Players**: a Jefferson recruit's page shows the four-year career; a Jefferson
   college player's Journey panel shows school, district, record, honours and state
   titles for the rest of their career.

@@ -3542,16 +3542,13 @@ def jhsaa_years(world_id: int, gender: str) -> list[int]:
     return [r["year"] for r in rows]
 
 
-def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[dict]:
-    """One school's season, match by match, in the order it was played."""
-    conn = _db()
-    try:
-        rows = conn.execute(
-            "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
-            (world_id, year, gender, school)).fetchall()
-    finally:
-        conn.close()
+def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> list[dict]:
+    """One school's duals for a year, in the order they were played, on an OPEN
+    connection — so a caller walking many seasons opens one, not one per year."""
+    rows = conn.execute(
+        "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
+        " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
+        (world_id, year, gender, school)).fetchall()
     out = []
     for r in rows:
         d = dict(r)
@@ -3563,49 +3560,284 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
     return out
 
 
-def jhsaa_school_history(world_id: int, gender: str, school: str) -> list[dict]:
-    """A school's year-by-year JHSAA history: its RECORD every season, plus titles,
-    state appearances and individual honours. Built from the accumulated archive, so it
-    grows on its own as the years roll.
+def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[dict]:
+    """One school's season, match by match, in the order it was played."""
+    conn = _db()
+    try:
+        return _schedule_rows(conn, world_id, year, gender, school)
+    finally:
+        conn.close()
 
-    Every archived year produces a row, trophy or not — a program history is how a
-    program did year over year, so a run of losing seasons has to show. Earlier this
-    returned only the years with something to celebrate, which made a school look like it
-    had never played in between."""
+
+# --- reading the archive back: a program's SEASON LEDGER ----------------------
+# A JHSAA program's history is a ledger of SEASONS. Honours annotate a season; they are
+# not the history — "was this program ever good", "when was the last title", "are they
+# improving" are all questions about the season rows, and a list of All-State names
+# answers none of them.
+#
+# Everything below is DERIVED from the accumulated archive — `world_jhsaa`'s per-school
+# record/drecord/place, its state brackets and award lists, plus that school's own rows
+# in `world_jhsaa_dual` — and never re-simulated. The archive is append-only (one row
+# per world-year × gender), so year N's numbers cannot move when year N+1 is played;
+# that is the whole persistence guarantee, and `tests/test_jhsaa_history.py` pins it.
+
+def _finish_label(alive: int) -> str:
+    """A finish, named by how many teams were still in the draw. Banded rather than
+    keyed exactly, because a JHSAA draw is NOT a clean power of two: a 24-team field
+    pads to 32 with byes that collapse unevenly, so the rounds run 24 → 12 → 6 → 3 → 2
+    and a semifinal round can legitimately have three teams in it."""
+    if alive <= 0:
+        return ""
+    if alive == 1:
+        return "Champion"
+    if alive == 2:
+        return "Runner-up"
+    if alive <= 4:
+        return "Semifinalist"
+    if alive <= 8:
+        return "Quarterfinalist"
+    return f"Round of {alive}"
+
+
+def _round_label(alive: int) -> str:
+    """The same bands, named as the ROUND rather than as one team's finish."""
+    if alive <= 2:
+        return "Championship"
+    if alive <= 4:
+        return "Semifinals"
+    if alive <= 8:
+        return "Quarterfinals"
+    return f"Round of {alive}"
+
+
+def jhsaa_state_rounds(bracket: dict) -> list[dict]:
+    """An archived state tournament as named rounds, each with the number of teams
+    still alive going into it.
+
+    `alive` is counted DOWN from the field — every game eliminates exactly one team —
+    rather than assumed to halve. The draw pads to the next power of two and the byes
+    land unevenly, so a 24-team field really does play rounds of 24, 12, 6, 3 and 2."""
+    br = bracket or {}
+    alive = len(br.get("field") or ())
     out = []
-    for year in jhsaa_years(world_id, gender):
-        arc = get_jhsaa(world_id, year, gender)
-        if not arc:
-            continue
-        row = {"year": year, "titles": [], "made_state": [], "honors": [],
-               "record": "", "district_record": "", "place": 0,
-               "group": "", "district": ""}
-        # The season's standings carry the record. `drecord`/`place` post-date the first
-        # archives, so read them defensively — an old save has neither.
-        for grp, dists in (arc.get("standings") or {}).items():
-            for dname, rows in (dists or {}).items():
-                for r in rows:
-                    if r.get("school") != school:
-                        continue
-                    row.update(record=r.get("record", ""),
-                               district_record=r.get("drecord", ""),
-                               place=r.get("place", 0), group=grp, district=dname)
-        for grp, champ in (arc.get("champions") or {}).items():
-            if champ == school:
-                row["titles"].append(grp)
-            br = (arc.get("brackets", {}) or {}).get(grp) or {}
-            if school in (br.get("field") or ()):
-                row["made_state"].append(grp)
-        for grp, aw in (arc.get("awards") or {}).items():
-            poy = aw.get("poy")
-            if poy and poy.get("school") == school:
-                row["honors"].append(f"{grp} Player of the Year — {poy['name']}")
-            for r in aw.get("all_state", ()):
-                if r.get("school") == school:
-                    row["honors"].append(f"All-State ({grp}) — {r['name']}")
-        if row["record"] or row["titles"] or row["made_state"] or row["honors"]:
-            out.append(row)
+    for games in br.get("rounds") or ():
+        out.append({"name": _round_label(alive), "alive": alive, "games": list(games)})
+        alive -= len(games)
     return out
+
+
+def jhsaa_state_result(bracket: dict, school: str) -> dict:
+    """How far `school` went in one archived state tournament.
+
+    `place` is the number of teams STILL ALIVE when it was eliminated — 1 champion,
+    2 runner-up, 3-4 semifinalist — so "reached the semis" is `place <= 4`, a number,
+    never a string comparison against a label. `seed` is the program's position in the
+    field that was actually drawn (`jhsaa.qualifiers` order), read back off the
+    persisted bracket rather than recomputed from a live ranking — the same rule that
+    keeps the NCAA bracket's labels from drifting."""
+    br = bracket or {}
+    field = list(br.get("field") or ())
+    out = {"made_state": False, "seed": 0, "place": 0, "finish": "", "champion": False}
+    if school not in field:
+        return out
+    champion = br.get("champion") == school
+    rounds = jhsaa_state_rounds(br)
+    last = None
+    for rd in rounds:
+        if any(school in (gm.get("home"), gm.get("away")) for gm in rd["games"]):
+            last = rd
+    # The champion is read off the archive, not inferred from "won its last game" —
+    # a bye means a program can sit out a round without being out of the tournament.
+    place = 1 if champion else (last["alive"] if last else len(field))
+    out.update(made_state=True, seed=field.index(school) + 1, place=place,
+               finish=_finish_label(place), champion=champion)
+    return out
+
+
+def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
+    """Every program in one classification, ordered the way the JHSAA itself orders
+    them for an at-large bid — win rate, then point differential, then name
+    (`jhsaa.qualifiers`). That ordering IS the state ranking; nothing else computes
+    one, so the hub and the school pages both read it from here rather than inventing
+    a second, differently-sorted "power" number."""
+    rows = []
+    for dname, teams in (((arc or {}).get("standings") or {}).get(group) or {}).items():
+        for r in teams:
+            w, l = _wl(r.get("record"))
+            rows.append({"school": r.get("school", ""), "district": dname,
+                         "wins": w, "losses": l, "record": r.get("record", ""),
+                         "drecord": r.get("drecord", ""), "place": r.get("place", 0),
+                         "pct": w / (w + l) if (w + l) else 0.0,
+                         "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
+    rows.sort(key=lambda r: (-r["pct"], -(r["pf"] - r["pa"]), r["school"]))
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+    return rows
+
+
+def _wl(record: str | None) -> tuple[int, int]:
+    """"25-6" -> (25, 6). Blank/malformed reads as 0-0 rather than raising: an archive
+    written before a field existed must degrade, not 500 a program page."""
+    w, _, l = (record or "").partition("-")
+    try:
+        return int(w or 0), int(l or 0)
+    except ValueError:
+        return 0, 0
+
+
+def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
+    """One archived season as this program lived it. `None` if the program has no
+    standings row that year (it didn't sponsor the sport, or the archive predates
+    per-school records)."""
+    # `group` is the classification AS THE ARCHIVE RECORDED IT that season — the one
+    # thing that makes "have they moved up a class?" answerable. A school's current
+    # classification is a property of the school, not of the season, so it is not
+    # copied in here where it would silently rewrite history.
+    row = {"year": year, "season_year": arc.get("season_year"), "group": "",
+           "district": "", "record": "", "wins": 0, "losses": 0,
+           "district_record": "", "dwins": 0, "dlosses": 0, "place": 0,
+           "post_record": "0-0", "pwins": 0, "plosses": 0,
+           "courts_won": 0, "courts_lost": 0, "pf": 0.0, "pa": 0.0,
+           "state_rank": 0, "made_state": False, "seed": 0, "state_place": 0,
+           "state_finish": "", "champion": False, "district_title": False,
+           "poy": [], "all_state": [], "all_district": [], "honors": []}
+    for grp, dists in (arc.get("standings") or {}).items():
+        for dname, rows in (dists or {}).items():
+            for r in rows:
+                if r.get("school") != school:
+                    continue
+                w, l = _wl(r.get("record"))
+                dw, dl = _wl(r.get("drecord"))
+                row.update(group=grp, district=dname, record=r.get("record", ""),
+                           wins=w, losses=l, district_record=r.get("drecord", ""),
+                           dwins=dw, dlosses=dl, place=r.get("place", 0),
+                           pf=r.get("pf") or 0.0, pa=r.get("pa") or 0.0,
+                           district_title=r.get("place", 0) == 1)
+    if not row["group"]:
+        return None
+    st = jhsaa_state_result((arc.get("brackets") or {}).get(row["group"]) or {}, school)
+    row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
+               state_finish=st["finish"], champion=st["champion"])
+    for i, r in enumerate(jhsaa_group_ranking(arc, row["group"]), 1):
+        if r["school"] == school:
+            row["state_rank"] = r["rank"]
+            break
+    # The postseason record and the individual courts come off the school's own duals —
+    # the match-level archive is the source for drilling into a season, exactly as it is
+    # for the schedule view. Cheap: one indexed read of ~26 rows for the year.
+    for d in sched:
+        for ln in d.get("lines") or ():
+            ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
+            row["courts_won" if ours else "courts_lost"] += 1
+        if d.get("phase") == "state":
+            row["pwins" if d.get("won") else "plosses"] += 1
+    row["post_record"] = f"{row['pwins']}-{row['plosses']}"
+    aw = (arc.get("awards") or {}).get(row["group"]) or {}
+    poy = aw.get("poy")
+    if poy and poy.get("school") == school:
+        row["poy"].append(poy)
+        row["honors"].append(f"{row['group']} Player of the Year — {poy['name']}")
+    for r in aw.get("all_state", ()):
+        if r.get("school") == school:
+            row["all_state"].append(r)
+            row["honors"].append(f"All-State ({row['group']}) — {r['name']}")
+    for dname, rs in ((arc.get("all_district") or {}).get(row["group"]) or {}).items():
+        if dname != row["district"]:
+            continue
+        for r in rs:
+            if r.get("school") == school:
+                row["all_district"].append(r)
+                row["honors"].append(f"All-District ({dname}) — {r['name']}")
+    return row
+
+
+def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
+    """A program's season ledger, newest first — one row per archived world-year.
+
+    EVERY archived year produces a row, trophy or not: a program history is how a
+    program did year over year, so the losing seasons have to show. (It once returned
+    only the years carrying a title or an honour, which made a school look like it had
+    never played in between.)"""
+    conn = _db()
+    try:
+        years = [r["year"] for r in conn.execute(
+            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?"
+            " ORDER BY year DESC", (world_id, gender)).fetchall()]
+        out = []
+        for year in years:
+            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                             " AND gender=?", (world_id, year, gender)).fetchone()
+            if not r:
+                continue
+            row = _season_row(json.loads(r["data"]), year, school,
+                              _schedule_rows(conn, world_id, year, gender, school))
+            if row:
+                out.append(row)
+    finally:
+        conn.close()
+    return out
+
+
+def jhsaa_program_totals(seasons: list[dict]) -> dict:
+    """The career side of a program's history: what the ledger ADDS UP TO.
+
+    Every number here is a fold over the season rows — all-time W-L is literally their
+    sum — so the two halves of a program page can never disagree, and a new season
+    changes the totals only by being appended."""
+    played = [s for s in seasons if s["wins"] or s["losses"]]
+    asc = sorted(seasons, key=lambda s: s["year"])            # oldest first, for streaks
+    wins = sum(s["wins"] for s in seasons)
+    losses = sum(s["losses"] for s in seasons)
+    titles = [s for s in seasons if s["champion"]]
+    states = [s for s in seasons if s["made_state"]]
+    streak = best_streak = 0
+    for s in asc:
+        streak = streak + 1 if s["made_state"] else 0
+        best_streak = max(best_streak, streak)
+    by_pct = sorted(played, key=lambda s: (s["wins"] / (s["wins"] + s["losses"]),
+                                           s["wins"]))
+    groups = [s["group"] for s in asc if s["group"]]
+    return {
+        "seasons": len(seasons), "wins": wins, "losses": losses,
+        "record": f"{wins}-{losses}",
+        "pct": wins / (wins + losses) if (wins + losses) else 0.0,
+        "post_wins": sum(s["pwins"] for s in seasons),
+        "post_losses": sum(s["plosses"] for s in seasons),
+        "courts_won": sum(s["courts_won"] for s in seasons),
+        "courts_lost": sum(s["courts_lost"] for s in seasons),
+        "district_titles": sum(1 for s in seasons if s["district_title"]),
+        "state_appearances": len(states),
+        "state_quarters": sum(1 for s in seasons if s["state_place"] and s["state_place"] <= 8),
+        "state_semis": sum(1 for s in seasons if s["state_place"] and s["state_place"] <= 4),
+        "state_finals": sum(1 for s in seasons if s["state_place"] and s["state_place"] <= 2),
+        "state_titles": len(titles),
+        "poy": sum(len(s["poy"]) for s in seasons),
+        "all_state": sum(len(s["all_state"]) for s in seasons),
+        "all_district": sum(len(s["all_district"]) for s in seasons),
+        "last_title": titles[0] if titles else None,           # seasons are newest-first
+        "last_state": states[0] if states else None,
+        "state_streak": streak, "longest_state_streak": best_streak,
+        "best": by_pct[-1] if by_pct else None,
+        "worst": by_pct[0] if by_pct else None,
+        # Classifications the program has played in, oldest first — a program that has
+        # moved up or down shows more than one, which is the question the ledger exists
+        # to answer ("have they changed class?").
+        "classifications": list(dict.fromkeys(groups)),
+    }
+
+
+def jhsaa_school_history(world_id: int, gender: str, school: str) -> dict:
+    """A program's whole history, as the two DISTINCT things it is:
+
+      * `totals`  — the career: seasons played, all-time record, district titles, state
+                    appearances / semifinals / finals / championships, POY and All-State
+                    counts, the last title, the best and worst seasons.
+      * `seasons` — the ledger: one row per archived season, newest first.
+
+    Honours ride along on the season they were won in. They annotate the history; the
+    season rows ARE the history."""
+    seasons = jhsaa_school_seasons(world_id, gender, school)
+    return {"totals": jhsaa_program_totals(seasons), "seasons": seasons}
 
 
 def cups_done(world: dict) -> bool:

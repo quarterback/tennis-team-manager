@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}{{ view.name }} — {{ view.school }} — JHSAA{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'state', view.name,
+             view.school ~ ' · ' ~ view.city ~ ', Jefferson',
+             [('Career', view.record), ('Class of', view.grad_year or '—')]) }}
+
+<div class="jh-shell">
+<div class="jh-crumb">
+  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.scope.year) }}">{{ view.group }}</a>
+  <span class="sep">›</span>
+  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender) }}">{{ view.district }}</a>
+  <span class="sep">›</span>
+  <a href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">{{ view.school }}</a>
+  <span class="sep">›</span><span>{{ view.name }}</span>
+</div>
+
+<div class="jh-ident" style="margin-bottom:14px">
+  <span class="crest">{{ view.mark|safe }}</span>
+  <div class="jh-ident-body">
+    <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
+    <h1>{{ view.name }}</h1>
+    <div class="mascot">
+      <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">{{ view.school }}</a>
+      · grade {{ view.grade }}</div>
+    <div class="where">{{ view.hometown }} · {{ view.district }}</div>
+    <div class="now">
+      <span class="rec">{{ view.record }}</span>
+      <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>
+      {% for h in view.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}">{{ h }}</span>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="jh-layout wide">
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">High school career</span>
+        <span class="bl-panel-meta">grades 9–12, one row per archived season</span></div>
+      <div class="tbl-scroll">
+        <table class="jh-ledger">
+          <tr><th style="width:66px">Season</th><th style="width:88px">Class</th><th style="width:58px">Ladder</th>
+            <th style="width:64px">Singles</th><th style="width:66px">Doubles</th><th style="width:58px">Total</th>
+            <th style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
+          {% for s in view.seasons %}
+          <tr>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
+            <td style="font-variant-numeric:normal">{{ s.class }}</td>
+            <td>{{ s.ladder }}</td>
+            <td>{{ s.singles }}</td>
+            <td>{{ s.doubles }}</td>
+            <td><b>{{ s.record }}</b></td>
+            <td>{{ s.ovr }}</td>
+            <td>{{ s.team.record if s.team else '—' }}</td>
+            <td style="font-variant-numeric:normal;font-size:11.5px;color:var(--text-secondary)">
+              {% if s.team and s.team.champion %}<span class="jh-chip gold">{{ s.team.group }} CHAMPION</span> {% endif %}
+              {{ s.honors|join(' · ') }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      <div class="bl-panel-body" style="padding:10px 14px;font-size:12px;color:var(--text-muted)">
+        A career is rebuilt from (school, gender, entry year, seat) rather than stored, so the same
+        person carries the same identity through all four years and simply matures — the junior who
+        went 15–5 is the senior on next year's board. Records come from the archived duals, so the
+        season above and this school's season are the one simulated season.
+      </div>
+    </div>
+  </div>
+
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">What comes next</span></div>
+      <div class="bl-panel-body" style="padding:12px">
+        <div class="jh-cols3">
+          <div class="jh-metric"><span class="k">Career</span><span class="v">{{ view.record }}</span>
+            <span class="s">all lines</span></div>
+          <div class="jh-metric"><span class="k">Class of</span><span class="v">{{ view.grad_year or '—' }}</span>
+            <span class="s">grade {{ view.grade }} now</span></div>
+          <div class="jh-metric"><span class="k">Honours</span><span class="v">{{ view.honors|length }}</span>
+            <span class="s">across the career</span></div>
+        </div>
+        <p style="margin:12px 0 0;font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+          Jefferson's entries on the college recruit board are the seniors who just finished four
+          years here, carrying these records with them. Once this class graduates, look for
+          {{ view.name }} on the
+          <a href="{{ url_for('recruiting', u=u) }}">recruiting board</a>.
+        </p>
+      </div>
+    </div>
+
+    <div class="bl-panel jh-mod">
+      <div class="bl-panel-head"><span class="bl-panel-title">Program</span></div>
+      <div class="bl-panel-body">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">
+          {{ view.mark|safe }}
+          <span class="bd"><span class="n">{{ view.school }}</span>
+            <span class="s">{{ view.group }} · {{ view.district }}</span></span>
+        </a>
+        <a class="jh-modrow" href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender) }}">
+          <span class="bd"><span class="n">{{ view.district }}</span><span class="s">district standings</span></span>
+        </a>
+        <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group) }}">
+          <span class="bd"><span class="n">{{ view.group }}</span><span class="s">classification home</span></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

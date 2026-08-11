@@ -88,6 +88,25 @@ doubles line scored `5-8`. It now takes `singles_fmt` / `doubles_fmt`, defaultin
 old presets so college is unchanged, and `jhsaa.MATCH_FORMAT` (`PRESETS["high_school"]`)
 is passed for both at every JHSAA call.
 
+### The section's shape (design pass)
+
+High school browses the way college does, one layer down — **state → classification →
+district → school → player**, with the same scope (gender · class · season) carried on
+every page:
+
+| College | High school | Surface |
+|---|---|---|
+| Division / conference home | Classification home | `/jhsaa` |
+| NCAA bracket | State tournament | `/jhsaa/bracket` |
+| Conference | District | `/jhsaa/districts`, `/jhsaa/district/<class>/<name>` |
+| Program page | Program page + season ledger | `/jhsaa/school/<name>[/<year>]` |
+| Player page | High-school career | `/jhsaa/player/<school>/<pid>` |
+
+The state tournament is the dominant object on the hub; awards are compact panels
+beside it, not the page. A program page leads with identity and this season, and its
+**season ledger** — one row per archived year — is the history; honours annotate it.
+See `docs/AAR-jhsaa-program-history-and-design-pass.md`.
+
 **Roster floor is 9** with no player doubling up (5+4 regular, 1+8 postseason). Carry
 10–12 — and the bench plays: the lineup is re-set match to match on the best-performing
 nine (results, then OVR, STR last), with a reserve or two rotating into the bottom of

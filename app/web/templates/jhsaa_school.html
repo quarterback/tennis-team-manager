@@ -1,94 +1,263 @@
 {% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_player %}
 {% block title %}{{ view.school }} — JHSAA{% endblock %}
 {% block content %}
-<div class="bl-pagehead" style="display:flex;gap:14px;align-items:center">
-  <span>{{ view.mark|safe }}</span>
-  <div>
-    <h1 class="bl-pagetitle">{{ view.school }} {{ view.mascot }}</h1>
-    <p class="bl-pagesub">{{ view.city }}, Jefferson · {{ view.county }} County ·
-      {{ view.classification }} · {{ view.district }} · enrollment {{ view.enrollment }}</p>
-  </div>
-  <div style="margin-left:auto;text-align:right">
-    <div style="font-weight:800;font-size:22px">{{ view.record }}</div>
-    <div class="tsub" style="font-size:11px">{{ view.district_record }} district</div>
+{% set t = view.history.totals %}
+
+{{ jh_header(view.scope, u, 'state', view.school,
+             view.mascot ~ ' · ' ~ view.city ~ ', Jefferson',
+             [('Season', view.season_year), ('Class', view.group)]) }}
+
+<div class="jh-shell">
+<div class="jh-crumb">
+  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.year) }}">{{ view.group }}</a>
+  <span class="sep">›</span>
+  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.year) }}">{{ view.district }}</a>
+  <span class="sep">›</span>
+  <span>{{ view.school }}</span>
+  {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year }} SEASON</span>{% endif %}
+</div>
+
+<!-- ============ Identity: who they are and how this season went ============ -->
+<div class="jh-ident" style="margin-bottom:12px">
+  <span class="crest">{{ view.mark|safe }}</span>
+  <div class="jh-ident-body">
+    <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
+    {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
+    <h1>{{ view.school }}</h1>
+    <div class="mascot">{{ view.mascot }}</div>
+    <div class="where">{{ view.city }}, Jefferson · {{ view.county }} County ·
+      <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.year) }}">{{ view.district }}</a>
+      · {{ "{:,}".format(view.enrollment) }} students</div>
+    <div class="now">
+      <span class="rec">{{ view.record }}</span>
+      <span class="bit"><b>{{ view.district_record }}</b> district{% if view.place %} · {{ view.place }}{{ 'st' if view.place == 1 else 'nd' if view.place == 2 else 'rd' if view.place == 3 else 'th' }}{% endif %}</span>
+      {% if view.state_rank %}<span class="bit">No.&nbsp;<b>{{ view.state_rank }}</b> {{ view.group }}</span>{% endif %}
+      {% if view.state_seed %}<span class="bit">state seed <b>{{ view.state_seed }}</b></span>{% endif %}
+      {% if view.state_finish %}<span class="jh-chip {{ 'gold' if view.state_finish == 'Champion' }}">{{ view.state_finish|upper }}</span>{% endif %}
+    </div>
   </div>
 </div>
-<p style="margin:0 0 12px"><a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group) }}">&larr; JHSAA {{ view.group }}</a></p>
 
-<div class="bl-board"><div class="bl-board-grid">
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="bl-panel"><div class="bl-panel-head">
-      <span class="bl-panel-title">Schedule</span>
-      <span class="bl-panel-meta">{{ view.schedule|length }} duals · this season</span></div>
-      <div class="bl-panel-body">
+<!-- ============ Program summary: this season next to the whole history ============ -->
+<div class="jh-metrics" style="margin-bottom:14px">
+  <div class="jh-metric hot"><span class="k">{{ view.season_year }}</span>
+    <span class="v">{{ view.record }}</span><span class="s">overall</span></div>
+  <div class="jh-metric"><span class="k">District</span>
+    <span class="v">{{ view.district_record }}</span>
+    <span class="s">{{ view.district }}</span></div>
+  <div class="jh-metric"><span class="k">Postseason</span>
+    <span class="v">{{ view.season.post_record if view.season else '0-0' }}</span>
+    <span class="s">{{ view.state_finish or 'did not qualify' }}</span></div>
+  <div class="jh-metric"><span class="k">Last title</span>
+    <span class="v {{ 'sm' if not t.last_title }}">{{ t.last_title.season_year if t.last_title else '—' }}</span>
+    <span class="s">{{ t.state_titles }} all-time</span></div>
+  <div class="jh-metric"><span class="k">All-time</span>
+    <span class="v">{{ t.record }}</span>
+    <span class="s">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }} · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
+  <div class="jh-metric"><span class="k">State trips</span>
+    <span class="v">{{ t.state_appearances }}</span>
+    <span class="s">{% if t.state_streak > 1 %}{{ t.state_streak }} in a row{% else %}{{ t.state_semis }} semifinal{{ '' if t.state_semis == 1 else 's' }}{% endif %}</span></div>
+</div>
+
+<div class="jh-layout wide">
+  <!-- ============ LEFT: the season, match by match ============ -->
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head">
+        <span class="bl-panel-title">{{ view.season_year }} Schedule</span>
+        <span class="bl-panel-meta">{{ view.schedule|length }} duals · 5 singles / 2 doubles, 1S/4D at state</span>
+      </div>
+      <div class="tbl-scroll">
         {% if view.schedule %}
-        {% for d in view.schedule %}
-        <details style="border-bottom:1px solid var(--border)">
-          <summary style="display:grid;grid-template-columns:34px 1fr 64px 70px 70px;gap:8px;align-items:center;padding:6px 0;cursor:pointer;list-style:none">
-            <span class="tsub">{{ 'vs' if d.home else 'at' }}</span>
-            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ d.opp }}</span>
-            <span style="font-weight:700;color:{{ '#2f8f4f' if d.won else '#c0392b' }}">{{ 'W' if d.won else 'L' }}</span>
-            <span>{{ d.pf|int }}–{{ d.pa|int }}</span>
-            <span class="tsub" style="font-size:10px">{{ 'STATE' if d.phase == 'state' else 'DIST' if d.district else 'NON-DIST' }}</span>
-          </summary>
-          <div style="padding:4px 0 10px 34px">
-            <div class="tsub" style="font-size:10px;margin-bottom:4px">
-              <a class="bl-school" href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender) }}">{{ d.opp }} →</a></div>
-            {% for ln in d.lines %}
-            {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
-            {% set we_won = ln.home_won if d.home else not ln.home_won %}
-            <div style="display:grid;grid-template-columns:34px 1fr 16px 1fr 110px;gap:8px;font-size:11px;padding:2px 0">
-              <span class="tsub">{{ ln.slot }}</span>
-              <span style="{% if we_won %}font-weight:700{% endif %};min-width:0;overflow:hidden;text-overflow:ellipsis">{{ us|join(' / ') }}</span>
-              <span class="tsub">{{ 'd.' if we_won else 'l.' }}</span>
-              <span style="{% if not we_won %}font-weight:700{% endif %};min-width:0;overflow:hidden;text-overflow:ellipsis">{{ them|join(' / ') }}</span>
-              <span class="tsub">{{ ln.score }}</span>
+        <table class="jh-sched">
+          <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
+            <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Type</th></tr>
+          {% set ns = namespace(seg='') %}
+          {% for d in view.schedule %}
+          {% if d.kind != ns.seg %}{% set ns.seg = d.kind %}
+          <tr class="seg"><td colspan="6">{{ {'NON-DIST': 'Non-district', 'DIST': view.district ~ ' — district play', 'STATE': view.group ~ ' state tournament'}[d.kind] }}</td></tr>
+          {% endif %}
+          {# The dual ROW is the toggle for its line scores. An always-visible
+             "line scores" row under every dual doubled the length of a 35-match
+             schedule and made it unscannable, which is the thing this page was
+             redesigned to stop being. #}
+          <tr class="{{ 'state' if d.kind == 'STATE' }}{{ ' has-lines' if d.lines }}"
+              {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
+            <td class="dt">{{ d.date }}</td>
+            <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
+            <td class="op">
+              <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender) }}">{{ d.opp }}</a>
+                {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
+            </td>
+            <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
+            <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+            <td><span class="jh-tag {{ 'state' if d.kind == 'STATE' else 'dist' if d.kind == 'DIST' }}">{{ d.kind }}</span>
+              {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
+          </tr>
+          {% if d.lines %}
+          <tr class="jh-linerow" data-for="{{ loop.index }}" hidden><td colspan="6" style="padding:0">
+            <div class="jh-lines">
+              {% for ln in d.lines %}
+              {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+              {% set we = ln.home_won if d.home else not ln.home_won %}
+              <div class="jh-line">
+                <span class="sl">{{ ln.slot }}</span>
+                <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+                <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+                <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+                <span class="st">{{ ln.score }}</span>
+              </div>
+              {% endfor %}
             </div>
-            {% endfor %}
-          </div>
-        </details>
-        {% endfor %}
-        {% else %}<p class="tsub">Season not played yet this world year.</p>{% endif %}
+          </td></tr>
+          {% endif %}
+          {% endfor %}
+        </table>
+        <script>
+        (function () {
+          var tbl = document.currentScript.previousElementSibling;
+          if (!tbl) return;
+          tbl.addEventListener('click', function (e) {
+            if (e.target.closest('a')) return;              // a school link is still a link
+            var row = e.target.closest('tr[data-lines]');
+            if (!row) return;
+            var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
+            if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
+          });
+        })();
+        </script>
+        {% else %}
+        <p class="jh-empty">Season not played yet this world year.</p>
+        {% endif %}
       </div>
     </div>
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="bl-panel"><div class="bl-panel-head">
-      <span class="bl-panel-title">Roster</span>
-      <span class="bl-panel-meta">grades 9–12</span></div>
-      <div class="bl-panel-body">
-        <div class="bl-table" style="--bl-grid-cols: 1fr 58px 54px">
-          <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">GRADE</span><span class="bl-th">OVR</span></div>
+  <!-- ============ RIGHT: roster, then the program at a glance ============ -->
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
+        <span class="bl-panel-meta">grades 9–12</span></div>
+      <div class="tbl-scroll">
+        <table class="jh-roster">
+          <tr><th>Player</th><th style="width:44px">Gr</th><th class="num" style="width:56px">Singles</th>
+            <th class="num" style="width:56px">Doubles</th><th class="num" style="width:42px">OVR</th></tr>
           {% for p in view.roster %}
-          <div class="bl-row"><span>{{ p.name }}</span><span>{{ p.grade }}th</span><span>{{ p.ovr }}</span></div>
+          <tr>
+            <td class="pl">
+              <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+              {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+            </td>
+            <td>{{ p.grade }}th</td>
+            <td class="num">{{ p.singles }}</td>
+            <td class="num">{{ p.doubles }}</td>
+            <td class="num">{{ p.ovr }}</td>
+          </tr>
           {% endfor %}
-        </div>
+        </table>
       </div>
     </div>
 
-    {% if view.history %}
-    <div class="bl-panel"><div class="bl-panel-head">
-      <span class="bl-panel-title">Program History</span>
-      <span class="bl-panel-meta">year by year</span></div>
-      <div class="bl-panel-body">
-        {% for h in view.history %}
-        <div style="padding:5px 0;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
-          <div style="display:flex;align-items:baseline;gap:8px;font-size:12px">
-            <span style="font-weight:700">Year {{ h.year }}</span>
-            {% if h.record %}<span style="font-weight:700">{{ h.record }}</span>{% endif %}
-            {% if h.district_record %}<span class="tsub" style="font-size:11px">{{ h.district_record }} district{% if h.place %} &middot; {{ h.place }}{{ 'st' if h.place == 1 else 'nd' if h.place == 2 else 'rd' if h.place == 3 else 'th' }}{% endif %}</span>{% endif %}
-          </div>
-          <div>
-            {% for t in h.titles %}<span class="bl-badge tier-IVY" style="font-size:9px">{{ t }} STATE CHAMPION</span>{% endfor %}
-            {% if h.made_state and not h.titles %}<span class="bl-badge tier-D3" style="font-size:9px">STATE TOURNAMENT</span>{% endif %}
-          </div>
-          {% for hn in h.honors %}<div class="tsub" style="font-size:11px">{{ hn }}</div>{% endfor %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Program</span>
+        <span class="bl-panel-meta">all-time</span></div>
+      <div class="bl-panel-body" style="padding:12px">
+        <div class="jh-cols3">
+          <div class="jh-metric"><span class="k">All-time</span><span class="v">{{ t.record }}</span>
+            <span class="s">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }}</span></div>
+          <div class="jh-metric"><span class="k">State titles</span><span class="v">{{ t.state_titles }}</span>
+            <span class="s">{% if t.last_title %}last {{ t.last_title.season_year }}{% else %}none yet{% endif %}</span></div>
+          <div class="jh-metric"><span class="k">State trips</span><span class="v">{{ t.state_appearances }}</span>
+            <span class="s">{{ t.state_finals }} final{{ '' if t.state_finals == 1 else 's' }} · {{ t.state_semis }} semi{{ '' if t.state_semis == 1 else 's' }}</span></div>
+          <div class="jh-metric"><span class="k">District titles</span><span class="v">{{ t.district_titles }}</span>
+            <span class="s">of {{ t.seasons }}</span></div>
+          <div class="jh-metric"><span class="k">Postseason</span><span class="v">{{ t.post_wins }}–{{ t.post_losses }}</span>
+            <span class="s">state duals</span></div>
+          <div class="jh-metric"><span class="k">Courts</span><span class="v sm">{{ t.courts_won }}–{{ t.courts_lost }}</span>
+            <span class="s">individual lines</span></div>
+          <div class="jh-metric"><span class="k">Best season</span>
+            <span class="v sm">{{ t.best.record if t.best else '—' }}</span>
+            <span class="s">{{ t.best.season_year if t.best else '' }}{% if t.best and t.best.state_finish %} · {{ t.best.state_finish }}{% endif %}</span></div>
+          <div class="jh-metric"><span class="k">Worst season</span>
+            <span class="v sm">{{ t.worst.record if t.worst else '—' }}</span>
+            <span class="s">{{ t.worst.season_year if t.worst else '' }}</span></div>
+          <div class="jh-metric"><span class="k">Honours</span>
+            <span class="v sm">{{ t.poy }} POY · {{ t.all_state }} A-S</span>
+            <span class="s">{{ t.all_district }} all-district</span></div>
         </div>
-        {% endfor %}
+        {% if t.classifications|length > 1 %}
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-secondary)">
+          Has played in {{ t.classifications|join(', ') }} — the classification has changed since the first archived season.</p>
+        {% endif %}
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============ Program history: the ledger, at full width ============ -->
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">Program History</span>
+    <span class="bl-panel-meta">{{ t.seasons }} archived season{{ '' if t.seasons == 1 else 's' }} ·
+      {{ t.record }} all-time · {{ t.state_titles }} state title{{ '' if t.state_titles == 1 else 's' }} ·
+      {{ t.state_appearances }} state appearance{{ '' if t.state_appearances == 1 else 's' }} ·
+      {{ t.district_titles }} district title{{ '' if t.district_titles == 1 else 's' }}</span>
+  </div>
+  <div class="tbl-scroll">
+    {% if view.history.seasons %}
+    <table class="jh-ledger nowrap">
+      <tr>
+        <th style="width:66px">Season</th><th style="width:46px">Class</th><th style="width:66px">Record</th>
+        <th style="width:66px">District</th><th style="width:62px">Place</th><th style="width:64px">Post</th>
+        <th style="width:48px">Seed</th><th style="width:130px">State finish</th>
+        <th style="width:48px">Rank</th><th>Honours</th>
+      </tr>
+      {% for s in view.history.seasons %}
+      <tr class="{{ 'title' if s.champion }}">
+        <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
+        <td>{{ s.group }}</td>
+        <td><b>{{ s.record }}</b></td>
+        <td>{{ s.district_record or '—' }}</td>
+        <td>{{ s.place or '—' }}{% if s.district_title %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>
+        <td>{{ s.post_record }}</td>
+        <td>{{ s.seed or '—' }}</td>
+        <td class="fin">{% if s.champion %}<span class="jh-chip gold">{{ s.group }} CHAMPION</span>
+          {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}</td>
+        <td>{{ s.state_rank or '—' }}</td>
+        <td style="font-variant-numeric:normal;font-size:11.5px;color:var(--text-secondary)">
+          {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_player(r.name, view.school, r.pid, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
+          {% for r in s.all_state %}All-State {{ jh_player(r.name, view.school, r.pid, u, view.gender) }}{% if not loop.last %} · {% endif %}{% endfor %}
+          {% if not s.poy and not s.all_state and s.all_district %}{{ s.all_district|length }} all-district{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="jh-empty">No archived seasons yet — the JHSAA rung writes one each world year.</p>
     {% endif %}
   </div>
-</div></div>
+</div>
+
+<!-- Honours annotate the history; they do not replace it, so they sit under it. -->
+{% set honor_years = view.history.seasons | selectattr('honors') | list %}
+{% if honor_years %}
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Honours</span>
+    <span class="bl-panel-meta">individual awards, by season</span></div>
+  <div class="bl-panel-body" style="padding:0">
+    {% for s in honor_years %}
+    {% if s.champion %}
+    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
+      <span><span class="jh-chip gold">{{ s.group }} STATE CHAMPION</span></span></div>
+    {% endif %}
+    {% for h in s.honors %}
+    <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+</div>
 {% endblock %}

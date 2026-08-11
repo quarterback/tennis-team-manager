@@ -1,0 +1,341 @@
+/* ============================================================
+   JHSAA — Jefferson's high-school association.
+
+   Another layer of the same world, not a separate site: this file adds only the
+   vocabulary high school needs that the college surfaces don't (a scope bar, a
+   classification pill, a champion hero, a season ledger). Everything else —
+   containers, panels, tables, badges, the bracket — is the shared `.bl-*` /
+   `.brk-*` system, and the colours are the same tokens. The classification pills
+   deliberately reuse --cat-6a / --cat-5a / --cat-sm, which the palette has always
+   carried as HIGH-SCHOOL classification colours.
+   ============================================================ */
+
+/* ---- Section header ---- */
+.jh-head { background: var(--surface-th); border-bottom: 1px solid var(--border-subtle); }
+.jh-head-inner { max-width: 1320px; margin: 0 auto; padding: 20px 20px 0; }
+.jh-eyebrow {
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-muted);
+}
+.jh-titlerow { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.jh-title {
+  margin: 4px 0 0; font-family: var(--font-display); font-size: 30px; line-height: 1.08;
+  letter-spacing: -0.02em; color: var(--text-primary);
+}
+.jh-sub { margin: 5px 0 0; font-size: 13.5px; color: var(--text-secondary); }
+.jh-headmeta { display: flex; gap: 18px; align-items: flex-end; }
+.jh-headmeta .k { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jh-headmeta .v { display: block; font-family: var(--font-display); font-size: 19px; line-height: 1.1; color: var(--text-primary); }
+
+/* ---- The persistent scope bar: gender, classification, season ----
+   Not "tiny pills floating at the top-right": it is a full-width band under the
+   title that every JHSAA page carries, so the class you picked stays picked as you
+   move state → classification → district → school → player. */
+.jh-scope { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; padding: 12px 0 0; }
+.jh-scope-group { display: flex; align-items: center; gap: 6px; }
+.jh-scope-label { font-size: 10.5px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-seg { display: inline-flex; border: 1px solid var(--border-default); border-radius: 7px; overflow: hidden; background: var(--surface-card); }
+.jh-seg a {
+  padding: 5px 13px; font-size: 12.5px; font-weight: 700; text-decoration: none;
+  color: var(--text-secondary); border-right: 1px solid var(--border-subtle);
+}
+.jh-seg a:last-child { border-right: 0; }
+.jh-seg a:hover { background: var(--surface-hover); }
+.jh-seg a.on { background: var(--brand); color: #fff; }
+
+.jh-class { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+.jh-class a {
+  min-width: 46px; text-align: center; padding: 5px 11px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 800; text-decoration: none; letter-spacing: .01em;
+  border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary);
+}
+.jh-class a:hover { border-color: var(--brand); }
+.jh-class a.on { color: #fff; border-color: transparent; }
+.jh-class a.on.c-7A { background: var(--cat-6a); }
+.jh-class a.on.c-6A { background: var(--cat-5a); }
+.jh-class a.on.c-5A { background: var(--brand); }
+.jh-class a.on.c-4A { background: var(--rank-bronze); }
+.jh-class a.on.c-3A-1A { background: var(--gray-600); }
+
+.jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+.jh-tabs a {
+  padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  text-decoration: none; color: var(--text-secondary); border: 1px solid var(--border-default);
+  background: var(--surface-card);
+}
+.jh-tabs a:hover { border-color: var(--brand); color: var(--brand-strong); }
+.jh-tabs a.on { background: var(--gray-800); border-color: var(--gray-800); color: #fff; }
+
+/* ---- Page shell + layout ---- */
+.jh-shell { max-width: 1320px; margin: 0 auto; padding: 18px 20px 52px; }
+.jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 322px; gap: 16px; align-items: start; }
+.jh-layout.wide { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+.jh-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.jh-cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; min-width: 0; }
+.jh-cols2 > * { min-width: 0; }
+.jh-cols3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 1000px) {
+  .jh-layout, .jh-layout.wide { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Champion hero: the state title, as a result rather than a card of text ---- */
+.jh-champ {
+  display: flex; align-items: center; gap: 18px; padding: 20px 22px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 62%, var(--green-700) 100%);
+  color: #fff; box-shadow: 0 10px 26px rgba(9, 40, 28, .16); min-width: 0;
+}
+.jh-champ .mark { flex: 0 0 auto; display: flex; }
+.jh-champ .lbl { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.jh-champ .nm {
+  display: block; margin-top: 3px; font-family: var(--font-display); font-size: clamp(22px, 3.2vw, 34px);
+  line-height: 1.04; letter-spacing: -0.02em; color: #fff; text-decoration: none;
+}
+.jh-champ .nm:hover { text-decoration: underline; }
+.jh-champ .sub { margin-top: 6px; font-size: 12.5px; color: rgba(255,255,255,.84); }
+.jh-champ .sc { margin-left: auto; text-align: right; flex: 0 0 auto; }
+.jh-champ .sc .n { font-family: var(--font-display); font-size: 30px; line-height: 1; }
+.jh-champ .sc .o { font-size: 11.5px; color: rgba(255,255,255,.8); margin-top: 4px; }
+.jh-champ.pending { background: var(--surface-subtle); color: var(--text-primary); box-shadow: none; border: 1px solid var(--border-subtle); }
+.jh-champ.pending .lbl, .jh-champ.pending .sub { color: var(--text-muted); }
+.jh-champ.pending .nm { color: var(--text-primary); }
+
+/* Beaten finalist + semifinalists, under the hero */
+.jh-podium { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.jh-pod {
+  display: flex; align-items: center; gap: 9px; padding: 9px 12px; min-width: 0;
+  border: 1px solid var(--border-subtle); border-radius: 9px; background: var(--surface-card);
+  text-decoration: none; color: inherit;
+}
+.jh-pod:hover { border-color: var(--brand); }
+.jh-pod .k { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.jh-pod .n { display: block; font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Metric strip: the program summary row ---- */
+.jh-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 9px; }
+.jh-metric {
+  min-width: 0; padding: 10px 12px; border: 1px solid var(--border-subtle);
+  border-radius: 9px; background: var(--surface-card);
+}
+.jh-metric .k { display: block; font-size: 10px; font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jh-metric .v {
+  display: block; margin-top: 3px; font-family: var(--font-display); font-size: 21px; line-height: 1.08;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.jh-metric .v.sm { font-size: 15px; font-weight: 700; font-family: var(--font-text); }
+.jh-metric .s { display: block; margin-top: 3px; font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-metric.hot { box-shadow: inset 3px 0 0 var(--brand); }
+
+/* ---- School identity block ---- */
+.jh-ident {
+  display: flex; gap: 16px; align-items: center; padding: 16px 18px; min-width: 0;
+  border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-card);
+}
+.jh-ident .crest { flex: 0 0 auto; display: flex; }
+.jh-ident-body { min-width: 0; flex: 1; }
+.jh-ident h1 {
+  margin: 2px 0 0; font-family: var(--font-display); font-size: clamp(21px, 2.6vw, 30px);
+  line-height: 1.05; letter-spacing: -0.02em; color: var(--text-primary);
+}
+.jh-ident .mascot { font-size: 13.5px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
+.jh-ident .where { margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+.jh-ident .where a { color: var(--text-link); text-decoration: none; }
+.jh-ident .where a:hover { text-decoration: underline; }
+/* The record lives IN the identity block, not floated off at the viewport edge. */
+.jh-ident .now { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 9px; }
+.jh-ident .now .rec { font-family: var(--font-display); font-size: 24px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-ident .now .bit { font-size: 12.5px; color: var(--text-secondary); }
+.jh-ident .now .bit b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.jh-chip {
+  display: inline-flex; align-items: center; height: 19px; padding: 0 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .03em; color: #fff; background: var(--gray-600);
+  white-space: nowrap;
+}
+.jh-chip.c-7A { background: var(--cat-6a); }
+.jh-chip.c-6A { background: var(--cat-5a); }
+.jh-chip.c-5A { background: var(--brand); }
+.jh-chip.c-4A { background: var(--rank-bronze); }
+.jh-chip.c-3A-1A { background: var(--gray-600); }
+.jh-chip.gold { background: var(--rank-gold); }
+.jh-chip.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
+
+/* ---- Schedule ---- */
+.jh-sched { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.jh-sched th {
+  text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
+}
+.jh-sched td { padding: 6px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+.jh-sched tr.seg td {
+  background: var(--surface-subtle); font-size: 10px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-secondary); padding: 5px 10px;
+}
+.jh-sched tr.state td { background: var(--green-50); }
+.jh-sched tr.state td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.jh-sched .dt { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.jh-sched .ha { color: var(--text-faint); font-size: 11px; }
+.jh-sched .op { min-width: 0; }
+.jh-sched .op a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
+.jh-sched .op a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-sched .sc { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jh-sched .W { color: var(--stat-good-strong); font-weight: 800; }
+.jh-sched .L { color: var(--tint-loss-fg); font-weight: 800; }
+.jh-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 800;
+  letter-spacing: .04em; text-transform: uppercase; background: var(--gray-200); color: var(--text-secondary);
+}
+.jh-tag.dist { background: var(--stat-power-bg); color: var(--stat-power); }
+.jh-tag.state { background: var(--brand); color: #fff; }
+.jh-sched tr.has-lines { cursor: pointer; }
+.jh-sched tr.has-lines:hover td { background: var(--surface-hover); }
+.jh-caret { float: right; color: var(--text-faint); font-weight: 800; transition: transform .12s; display: inline-block; }
+.jh-sched tr.open .jh-caret { transform: rotate(90deg); }
+.jh-lines { padding: 6px 10px 10px 34px; background: var(--surface-subtle); }
+.jh-line { display: grid; grid-template-columns: 30px minmax(0,1fr) 18px minmax(0,1fr) 118px; gap: 8px; font-size: 11.5px; padding: 2px 0; }
+.jh-line .sl { color: var(--text-muted); font-weight: 700; }
+.jh-line .won { font-weight: 700; color: var(--text-primary); }
+.jh-line .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-line .st { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ---- Season ledger (program history) ----
+   `table-layout: fixed` is load-bearing, not a tidy-up: without it a long school
+   name sets its column's width from content and the neighbouring numeric columns
+   are pushed into each other. The <th> widths below are then the real widths. */
+.jh-ledger { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+.jh-ledger th {
+  text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
+}
+.jh-ledger td { padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; overflow: hidden; }
+.jh-ledger tr:hover td { background: var(--surface-hover); }
+/* `table-layout: fixed` honours the column widths but does NOT clip a header, so a
+   long <th> label overruns its neighbour. Both have to be told. */
+.jh-ledger th { overflow: hidden; }
+.jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
+.jh-ledger .fin, .jh-sched td:last-child { white-space: nowrap; }
+.jh-ledger .yr a { font-weight: 800; color: var(--text-primary); text-decoration: none; }
+.jh-ledger .yr a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-ledger tr.title td { background: var(--green-50); }
+.jh-ledger tr.title .yr a { color: var(--brand-strong); }
+.jh-ledger .fin { white-space: nowrap; }
+
+/* ---- Head-to-head grid: a district's whole double round-robin at a glance ---- */
+.jh-grid { width: 100%; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.jh-grid th {
+  padding: 6px 4px; font-size: 10px; font-weight: 700; color: var(--text-muted);
+  background: var(--surface-th); border-bottom: 1px solid var(--border-default); text-align: center;
+}
+.jh-grid th.nm { text-align: left; padding-left: 10px; min-width: 190px; }
+.jh-grid td { padding: 5px 4px; text-align: center; border-bottom: 1px solid var(--border-subtle); }
+.jh-grid td.nm {
+  text-align: left; padding-left: 10px; font-variant-numeric: normal;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;
+}
+.jh-grid td.nm a { color: var(--text-primary); font-weight: 600; text-decoration: none; margin-left: 7px; }
+.jh-grid td.nm a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-grid td.self { background: var(--gray-150); color: var(--text-faint); }
+.jh-grid td.swept { background: var(--tint-win-bg); color: var(--tint-win-fg); font-weight: 700; }
+.jh-grid td.lost { background: var(--tint-loss-bg); color: var(--tint-loss-fg); }
+.jh-grid td.split { background: var(--tint-even-bg); color: var(--tint-even-fg); }
+.jh-grid td.tot { font-weight: 800; color: var(--text-primary); }
+.jh-grid tr:hover td:not(.self) { box-shadow: inset 0 -2px 0 var(--brand); }
+
+/* ---- Compact award / leader modules ---- */
+.jh-mod .bl-panel-body { padding: 0; }
+.jh-modrow {
+  display: flex; align-items: center; gap: 9px; padding: 7px 13px; min-width: 0;
+  border-bottom: 1px solid var(--border-subtle); text-decoration: none; color: inherit;
+}
+.jh-modrow:last-child { border-bottom: 0; }
+.jh-modrow:hover { background: var(--surface-hover); }
+.jh-modrow .rk { flex: 0 0 auto; width: 17px; font-size: 11px; font-weight: 800; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+/* `.bd` wraps two SPANS, so they need display:block or the name and its subtitle
+   run together on one line ("Ruby StokesCascade Divide District"). */
+.jh-modrow .bd { min-width: 0; flex: 1 1 auto; overflow: hidden; }
+.jh-modrow .n { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-modrow .s { display: block; font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-modrow .v { flex: 0 0 auto; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jh-modrow > svg, .jh-modrow > span > svg { flex: 0 0 auto; }
+/* A long side panel (All-District is six players across every district) collapses
+   rather than running the rail past the bottom of the page it sits beside. */
+.jh-fold > summary {
+  padding: 7px 13px; font-size: 11.5px; font-weight: 700; color: var(--text-secondary);
+  cursor: pointer; border-bottom: 1px solid var(--border-subtle);
+}
+.jh-fold > summary:hover { background: var(--surface-hover); color: var(--brand-strong); }
+.jh-fold[open] > summary { color: var(--text-primary); }
+.jh-modsplit { padding: 8px 13px 4px; font-size: 9.5px; font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-poy { display: flex; gap: 11px; align-items: center; padding: 12px 13px; text-decoration: none; color: inherit; }
+.jh-poy:hover { background: var(--surface-hover); }
+.jh-poy .n { font-family: var(--font-display); font-size: 19px; line-height: 1.1; color: var(--text-primary); }
+.jh-poy .s { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+.jh-poy .v { margin-left: auto; font-family: var(--font-display); font-size: 20px; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+
+/* ---- Roster ---- */
+.jh-roster { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.jh-roster th {
+  text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-th); border-bottom: 1px solid var(--border-default);
+}
+.jh-roster td { padding: 6px 10px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
+.jh-roster tr:hover td { background: var(--surface-hover); }
+.jh-roster .pl { font-variant-numeric: normal; }
+.jh-roster .pl a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
+.jh-roster .pl a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-roster .num { text-align: right; }
+
+/* ---- Bracket: the shared canvas, plus a mobile round-tab fallback ---- */
+.jh-brk-mobile { display: none; }
+.jh-rdtabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.jh-rdtabs button {
+  padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary);
+}
+.jh-rdtabs button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.jh-rdlist > div[hidden] { display: none; }
+.jh-mgame {
+  display: grid; grid-template-columns: 20px minmax(0,1fr) 26px; gap: 8px; align-items: center;
+  padding: 6px 10px; border: 1px solid var(--border-subtle); border-radius: 8px;
+  background: var(--surface-card); margin-bottom: 6px; font-size: 12.5px;
+}
+.jh-mgame + .jh-mgame { margin-top: -2px; }
+.jh-mside { display: contents; }
+.jh-mgame .sd { font-size: 10px; font-weight: 800; color: var(--text-faint); text-align: right; }
+.jh-mgame .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-mgame .nm a { color: inherit; text-decoration: none; }
+.jh-mgame .pt { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.jh-mgame .win .nm { font-weight: 800; color: var(--text-primary); }
+.jh-mgame .win .pt { color: var(--brand-strong); font-weight: 800; }
+.jh-mgame .out .nm, .jh-mgame .out .pt { color: var(--text-muted); }
+@media (max-width: 880px) {
+  .jh-brk-desktop { display: none; }
+  .jh-brk-mobile { display: block; }
+}
+
+/* A school mark inside a bracket card, where college draws a crest. */
+.brk-mark { flex: 0 0 auto; display: inline-flex; align-items: center; width: 18px; height: 18px; }
+.brk-mark svg { width: 100%; height: 100%; }
+
+/* ---- Small shared bits ---- */
+.jh-crumb { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.jh-crumb a { color: var(--text-link); text-decoration: none; }
+.jh-crumb a:hover { text-decoration: underline; }
+.jh-crumb .sep { color: var(--text-faint); }
+.jh-schoolcell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.jh-schoolcell .mk { flex: 0 0 auto; display: inline-flex; }
+.jh-schoolcell a { min-width: 0; color: var(--text-primary); font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-schoolcell a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-empty { padding: 18px; font-size: 13px; color: var(--text-muted); }
+.jh-honor { font-size: 12px; color: var(--text-secondary); padding: 5px 13px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 9px; }
+.jh-honor:last-child { border-bottom: 0; }
+.jh-honor .y { font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 34px; }
+
+@media (max-width: 700px) {
+  .jh-head-inner, .jh-shell { padding-left: 14px; padding-right: 14px; }
+  .jh-title { font-size: 24px; }
+  .jh-tabs { margin-left: 0; width: 100%; }
+}

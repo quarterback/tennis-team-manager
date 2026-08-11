@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA {{ view.group }} Districts{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'districts', view.group ~ ' Districts',
+             "High school's conferences: a double round-robin decides each one, and its champion carries an automatic state bid.",
+             [('Season', view.season_year), ('Districts', view.districts|length)]) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">This season hasn't been played yet.</div></div>
+{% else %}
+<div class="jh-cols2">
+  {% for d in view.districts %}
+  <div class="bl-panel jh-mod">
+    <div class="bl-panel-head">
+      <a class="bl-panel-title" style="text-decoration:none"
+         href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.year) }}">{{ d.district }} →</a>
+      <span class="bl-panel-meta">{{ d.members }} schools · {{ d.qualifiers|length }} to state</span>
+    </div>
+    <div class="bl-panel-body">
+      {% if d.champion %}
+      <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=d.champion.name, u=u, g=view.gender) }}">
+        <span class="rk"><i class="fa-solid fa-crown" style="color:var(--rank-gold)" aria-hidden="true"></i></span>
+        {{ d.champion.mark|safe }}
+        <span class="bd"><span class="n">{{ d.champion.name }}</span>
+          <span class="s">district champion · {{ d.champion.city }}</span></span>
+        <span class="v">{{ d.drecord or d.record }}</span>
+      </a>
+      {% endif %}
+      {% if d.qualifiers %}
+      <div class="jh-modsplit">State qualifiers</div>
+      {% for q in d.qualifiers %}
+      <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=q.name, u=u, g=view.gender) }}">
+        <span class="rk">{{ q.seed }}</span>
+        {{ q.mark|safe }}
+        <span class="bd"><span class="n">{{ q.name }}</span></span>
+      </a>
+      {% endfor %}
+      {% else %}
+      <div class="jh-empty" style="padding:10px 13px">No state qualifiers from this district.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

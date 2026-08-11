@@ -3337,84 +3337,541 @@ def team_budget(division: str, gender: str, school: str) -> dict:
 # ---------------------------------------------------------------------------
 # JHSAA — Jefferson's high-school association
 # ---------------------------------------------------------------------------
+# Another layer of the same sports world, so it is shaped like the college one:
+# a program has a page, a district is its conference, a classification is the scope
+# you browse in, and the state tournament is the postseason everything points at.
+#
+# EVERY view here READS the archive `world.run_jhsaa` wrote — a season is ~5,100 duals
+# per gender and must never be replayed on a request thread. The only thing rebuilt
+# live is a ROSTER, which is deterministic from (school, gender, entry year, seat) and
+# costs twelve prospect builds; that is also what lets an archived season show the
+# players who actually played it.
+
+import datetime as _dt
+
+
+def _jh_g(gender: str) -> str:
+    return "girls" if gender in ("women", "female", "girls") else "boys"
+
+
+def _jh_schools(gender: str) -> dict:
+    import app.jhsaa as jh
+    return {s.name: s for s in jh.load_schools(gender)}
+
+
+def _jh_deco(schools: dict, name: str, size: int = 34) -> dict:
+    """A school as it appears anywhere it is referenced: mark, where it is, what
+    class it plays in. Every JHSAA surface renders a school through this, so a school
+    looks the same on the hub, in a bracket and in a district table."""
+    import app.jhsaa as jh
+    s = schools.get(name)
+    if s is None:
+        return {"name": name, "mark": "", "city": "", "county": "", "district": "",
+                "group": "", "classification": "", "mascot": "", "found": False}
+    return {"name": name, "mark": jh.mark(s, size), "city": s.city, "county": s.county,
+            "district": s.district, "group": s.group, "classification": s.classification,
+            "mascot": s.mascot, "enrollment": s.enrollment, "private": s.private,
+            "found": True}
+
+
+def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
+    """A DISPLAY calendar for one season's card.
+
+    The simulation has no clock inside a JHSAA season — the whole association runs in
+    one rung at world week 0 — so there is no date to read. What IS real and persisted
+    is the ORDER the duals were played in (non-district, then the district double
+    round-robin, then the state tournament), and these lay that order on a spring
+    high-school calendar at three duals a week, so a ~26-dual card runs March to
+    mid-May and the state tournament follows it. Presentation only: nothing reads them
+    back, and no simulation decision has ever depended on one.
+    """
+    if not season_year:
+        return ["" for _ in sched]
+    open_day = _dt.date(season_year, 3, 1)
+    open_day += _dt.timedelta(days=-open_day.weekday() % 7)           # first Monday
+    _DAY = (0, 2, 4)                                                  # Mon / Wed / Fri
+    out, n, k, last = [], 0, 0, open_day
+    for d in sched:
+        if d.get("phase") == "state":
+            day = last + _dt.timedelta(days=5 + 3 * k)                # the state fortnight
+            k += 1
+        else:
+            day = open_day + _dt.timedelta(days=_DAY[n % 3], weeks=n // 3)
+            n += 1
+            last = day
+        out.append(day)
+    return [f"{d:%b} {d.day}" for d in out]
+
+
+def _jh_line_records(sched: list[dict]) -> dict:
+    """Every player's singles and doubles record for a season, off the match-level archive.
+
+    Keyed by NAME because that is what a line carries. A season's individual records
+    therefore come from the same duals the team record does — a senior shown at 27-4
+    and the school's season are the one simulated season, never two computations."""
+    rec: dict = {}
+    for d in sched:
+        side = "home" if d.get("home") else "away"
+        for ln in d.get("lines") or ():
+            we_won = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
+            kind = "s" if (ln.get("slot") or "").startswith("S") else "d"
+            for nm in ln.get(side) or ():
+                r = rec.setdefault(nm, {"s": [0, 0], "d": [0, 0]})
+                r[kind][0 if we_won else 1] += 1
+    return rec
+
+
+def _jh_seeds(bracket: dict) -> dict:
+    return {nm: i + 1 for i, nm in enumerate((bracket or {}).get("field") or ())}
+
+
+def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
+    """One side of a bracket card, in the shape `_bracket.html` already renders."""
+    return {"school": name, "abbr": "", "color": "var(--gray-400)", "won": won,
+            "seed": seeds.get(name, ""), "conf": (schools.get(name).district
+                                                  if schools.get(name) else ""),
+            "aq": False, "tbd": False, "mark": _jh_deco(schools, name, 18)["mark"]}
+
+
+def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
+    """The state tournament as bracket COLUMNS for the shared canvas.
+
+    `keep` trims to the last N rounds — the hub shows the business end of the draw and
+    links to the full tree, rather than putting a 32-card ladder above the standings."""
+    import app.world as world
+    seeds = _jh_seeds(bracket)
+    rounds = world.jhsaa_state_rounds(bracket)
+    if keep:
+        rounds = rounds[-keep:]
+    cols = []
+    for rd in rounds:
+        ms = []
+        for gm in rd["games"]:
+            hw = gm.get("winner") == gm.get("home")
+            ms.append({"home": _jh_brk_team(gm.get("home", ""), hw, seeds, schools),
+                       "away": _jh_brk_team(gm.get("away", ""), not hw, seeds, schools),
+                       "played": True, "id": None, "tbd": False, "region": None,
+                       "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
+                       "score": f"{int(gm.get('home_points', 0))}-{int(gm.get('away_points', 0))}"})
+        cols.append({"name": rd["name"], "matchups": ms})
+    return cols
+
+
+def _jh_final_four(bracket: dict, schools: dict) -> dict:
+    """Champion, runner-up and the beaten semifinalists of an archived draw — the
+    result, as a result reads, rather than as the last two rows of a list of games."""
+    import app.world as world
+    rounds = world.jhsaa_state_rounds(bracket)
+    out = {"champion": None, "runner_up": None, "semifinalists": [], "final": None}
+    if not rounds:
+        return out
+    final = rounds[-1]["games"][-1] if rounds[-1]["games"] else None
+    if final:
+        win, lose = final["winner"], (final["away"] if final["winner"] == final["home"]
+                                      else final["home"])
+        out["champion"] = _jh_deco(schools, win, 64)
+        out["runner_up"] = _jh_deco(schools, lose, 30)
+        out["final"] = {**final,
+                        "score": f"{int(final['home_points'])}-{int(final['away_points'])}"}
+    if len(rounds) > 1:
+        for gm in rounds[-2]["games"]:
+            beaten = gm["away"] if gm["winner"] == gm["home"] else gm["home"]
+            out["semifinalists"].append(_jh_deco(schools, beaten, 24))
+    return out
+
+
+def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
+              season_year: int | None, arc: dict | None = None) -> dict:
+    """The persistent scope the whole section is browsed in: gender, classification,
+    season. Every JHSAA page carries the same one so a class stays selected as you move
+    state → classification → district → school → player and back.
+
+    `season_years` labels each world-year with its calendar year — the season a world
+    index stands for is `jhsaa_season_year`, and a page must never print the bare index
+    (a program history reading "Year 0, Year 1, Year 2" is what made the old one
+    unreadable)."""
+    import app.world as world
+    return {"gender": gender, "group": group, "groups": groups, "year": year,
+            "years": years,
+            "season_year": season_year or (world.BASE_YEAR + (year or 0) + 1),
+            "season_years": {y: world.BASE_YEAR + y + 1 for y in years}}
+
 
 def jhsaa_view(seed: int, gender: str, group: str | None = None,
                year: int | None = None) -> dict:
-    """The archived JHSAA season for a world-year: champions, awards, district
-    standings and the state bracket, for one classification group.
+    """The JHSAA hub — the state high-school home, organised around the season being
+    played rather than around the trophies it handed out.
 
-    Reads the archive `world.run_jhsaa` wrote (`world_jhsaa`) rather than
-    re-simulating — a season is ~5,100 duals and must never be replayed on a request
-    thread. Empty (`{"ready": False}`) until the rung has run for that year."""
+    The dominant object is the selected classification's STATE TOURNAMENT; the awards
+    are compact panels beside it; standings, districts and the program ranking sit
+    below. Empty (`{"ready": False}`) until the rung has run for that year."""
     import app.jhsaa as jh
     import app.world as world          # local, matching the rest of this module
     w = world.get_or_create(seed)
-    yr = w["year"] if year is None else year
-    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
     if not arc:
-        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.GROUPS)}
+        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.GROUPS),
+                "group": group if group in jh.GROUPS else jh.GROUPS[0],
+                "years": years,
+                "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                                   list(jh.GROUPS), yr, years, None, None)}
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    schools = {s.name: s for s in jh.load_schools(g)}
+    schools = _jh_schools(g)
+    br = (arc.get("brackets") or {}).get(grp) or {}
+    ranking = world.jhsaa_group_ranking(arc, grp)
+    seeds = _jh_seeds(br)
 
-    def deco(name: str) -> dict:
-        s = schools.get(name)
-        return {"name": name,
-                "mark": jh.mark(s, 34) if s else "",
-                "city": s.city if s else "", "district": s.district if s else ""}
+    standings = {}
+    district_champs = []
+    for d, rows in sorted(((arc.get("standings") or {}).get(grp) or {}).items()):
+        standings[d] = [{**_jh_deco(schools, r["school"], 26), "record": r.get("record", ""),
+                         "drecord": r.get("drecord", ""), "place": r.get("place", 0),
+                         "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0,
+                         "seed": seeds.get(r["school"], 0)} for r in rows]
+        if standings[d]:
+            district_champs.append({**standings[d][0], "district": d})
 
-    standings = {d: [{**deco(r["school"]), "record": r["record"],
-                      "pf": r["pf"], "pa": r["pa"]} for r in rows]
-                 for d, rows in (arc["standings"].get(grp) or {}).items()}
-    br = arc.get("brackets", {}).get(grp) or {}
-    rounds = []
-    for i, games in enumerate(br.get("rounds", [])):
-        rounds.append({"name": f"Round {i + 1}" if i < len(br.get('rounds', [])) - 1
-                       else "Final", "games": games})
+    rank_by = {r["school"]: r["rank"] for r in ranking}
     return {
-        "ready": True, "gender": g, "year": yr,
-        "season_year": arc.get("season_year", world.jhsaa_season_year(w)), "group": grp,
-        "groups": list(jh.GROUPS),
-        "champion": deco(arc["champions"].get(grp)) if arc["champions"].get(grp) else None,
-        "champions": arc["champions"],
+        "ready": True, "gender": g, "year": yr, "years": years,
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
+        "group": grp, "groups": list(jh.GROUPS),
+        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                           arc.get("season_year"), arc),
+        # --- the state tournament, the page's dominant object ---
+        "state": {**_jh_final_four(br, schools),
+                  "field": br.get("field", []), "field_n": len(br.get("field") or ()),
+                  "rounds": [{**rd, "games": [
+                      {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+                       "away_deco": _jh_deco(schools, gm["away"], 20),
+                       "home_seed": seeds.get(gm["home"], 0),
+                       "away_seed": seeds.get(gm["away"], 0)}
+                      for gm in rd["games"]]}
+                      for rd in world.jhsaa_state_rounds(br)],
+                  "canvas": _bracket_canvas(_jh_bracket_cols(br, schools, keep=3),
+                                            card_w=196, card_h=54, gutter=40,
+                                            leaf_gap=12)},
+        # --- awards, as short scannable panels beside it ---
         "poy": (arc.get("awards", {}).get(grp) or {}).get("poy"),
         "all_state": (arc.get("awards", {}).get(grp) or {}).get("all_state", []),
         "all_district": (arc.get("all_district", {}) or {}).get(grp, {}),
-        "standings": dict(sorted(standings.items())),
-        "rounds": rounds,
-        "field": br.get("field", []),
+        "district_champs": district_champs,
+        "top": [{**_jh_deco(schools, r["school"], 24), **r} for r in ranking[:12]],
+        "standings": standings,
+        "rank_by": rank_by,
+        "champions": {gp: _jh_deco(schools, nm, 22)
+                      for gp, nm in (arc.get("champions") or {}).items() if nm},
     }
 
 
-def jhsaa_school_view(seed: int, gender: str, school: str) -> dict:
-    """One JHSAA school: crest, current-year roster and schedule, and its year-by-year
-    history of titles, state appearances and individual honours. All reads — the roster
-    rebuilds deterministically and everything else comes off the archive."""
+def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
+                       year: int | None = None) -> dict:
+    """The full state draw on its own surface — the same server-positioned tree the
+    NCAA bracket and the Preseason NIT use (`_bracket_canvas` + `templates/_bracket.html`),
+    never a third bracket implementation."""
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
-    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    if not arc:
+        return {"ready": False, "gender": g, "year": yr, "group": grp,
+                "groups": list(jh.GROUPS), "years": years,
+                "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+    schools = _jh_schools(g)
+    br = (arc.get("brackets") or {}).get(grp) or {}
+    seeds = _jh_seeds(br)
+    return {
+        "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
+        "groups": list(jh.GROUPS),
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
+        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, arc.get("season_year"), arc),
+        **_jh_final_four(br, schools),
+        "field": [{**_jh_deco(schools, nm, 22), "seed": seeds[nm]}
+                  for nm in (br.get("field") or ())],
+        "field_n": len(br.get("field") or ()),
+        "canvas": _bracket_canvas(_jh_bracket_cols(br, schools),
+                                  card_w=206, card_h=56, gutter=44, leaf_gap=12),
+        "rounds": [{**rd, "games": [
+            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+             "away_deco": _jh_deco(schools, gm["away"], 20),
+             "home_seed": seeds.get(gm["home"], 0), "away_seed": seeds.get(gm["away"], 0)}
+            for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(br)],
+    }
+
+
+def jhsaa_school_view(seed: int, gender: str, school: str,
+                      year: int | None = None) -> dict:
+    """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
+    card match by match, the roster that played it, and the season ledger underneath.
+
+    `year` selects an archived season; without it you get the latest one. Either way
+    the roster is rebuilt for THAT season's year, so an archived page shows the team
+    that actually played it rather than today's."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    sc = next((s for s in jh.load_schools(g) if s.name == school), None)
+    if sc is None:
+        return {"found": False, "school": school, "gender": g}
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    salt = world.active_salt(seed)
+    schools = _jh_schools(g)
+    hist = world.jhsaa_school_history(w["id"], g, school)
+    season = next((s for s in hist["seasons"] if s["year"] == yr), None)
+    # The season's own year drives the roster identity — the grad year the hand-off
+    # uses, never the world index. See world.run_jhsaa.
+    season_year = ((arc or {}).get("season_year")
+                   or (season or {}).get("season_year") or world.jhsaa_season_year(w))
+    sched = world.jhsaa_schedule(w["id"], yr, g, school)
+    dates = _jh_dates(sched, season_year)
+    lines = _jh_line_records(sched)
+    roster = jh.build_roster(sc, season_year, salt)
+    br = (arc or {}).get("brackets", {}).get(sc.group) or {}
+    seeds = _jh_seeds(br)
+
+    awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
+    honor_pids = {}
+    poy = awards.get("poy")
+    if poy and poy.get("school") == school:
+        honor_pids.setdefault(poy["pid"], []).append(f"{sc.group} Player of the Year")
+    for r in awards.get("all_state", ()):
+        if r.get("school") == school:
+            honor_pids.setdefault(r["pid"], []).append("All-State")
+    for dname, rs in (((arc or {}).get("all_district") or {}).get(sc.group) or {}).items():
+        for r in rs:
+            if r.get("school") == school:
+                honor_pids.setdefault(r["pid"], []).append("All-District")
+
+    return {
+        "found": True, "school": school, "gender": g, "year": yr, "years": years,
+        "season_year": season_year, "is_current": bool(years) and yr == years[0],
+        "scope": _jh_scope(g, sc.group, list(jh.GROUPS), yr, years, season_year, arc),
+        # --- identity ---
+        "mark": jh.mark(sc, 76), "city": sc.city, "county": sc.county, "area": sc.area,
+        "classification": sc.classification, "group": sc.group, "district": sc.district,
+        "mascot": sc.mascot, "enrollment": sc.enrollment, "private": sc.private,
+        "colors": sc.colors,
+        # --- this season ---
+        "season": season,
+        "record": (season or {}).get("record") or "0-0",
+        "district_record": (season or {}).get("district_record") or "0-0",
+        "place": (season or {}).get("place", 0),
+        "state_rank": (season or {}).get("state_rank", 0),
+        "state_seed": seeds.get(school, 0),
+        "state_finish": (season or {}).get("state_finish", ""),
+        "schedule": [{**d, "date": dates[i],
+                      "kind": ("STATE" if d["phase"] == "state"
+                               else "DIST" if d["district"] else "NON-DIST"),
+                      "opp_deco": _jh_deco(schools, d["opp"], 22),
+                      "opp_seed": seeds.get(d["opp"], 0) if d["phase"] == "state" else 0}
+                     for i, d in enumerate(sched)],
+        "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
+                    "ovr": round(p.current_overall(), 1),
+                    "str": p.str_value(),
+                    "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
+                    "doubles": "{}-{}".format(*lines.get(p.name, {}).get("d", (0, 0))),
+                    "honors": honor_pids.get(p.pid, [])}
+                   for p in roster],
+        "honors": (season or {}).get("honors", []),
+        "history": hist,
+    }
+
+
+def jhsaa_district_view(seed: int, gender: str, group: str, district: str,
+                        year: int | None = None) -> dict:
+    """A district — high school's conference. Member schools with their standing, the
+    league's own results, its champion, its All-District team, and the way through to
+    every program in it.
+
+    A district is identified by (CLASSIFICATION, name) and never by name alone: the
+    JHSAA reuses its geographic district names at every level, so "Halbrook Basin
+    District" is five different leagues in five different classes. The archive is keyed
+    `standings[group][district]` for exactly that reason — key it the same way here or
+    a 7A page quietly serves the 3A-1A league of the same name."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    grp = group
+    members = [s for s in jh.load_schools(g)
+               if s.district == district and s.group == grp]
+    if not members:
+        return {"found": False, "district": district, "group": grp, "gender": g}
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    schools = _jh_schools(g)
+    br = ((arc or {}).get("brackets") or {}).get(grp) or {}
+    seeds = _jh_seeds(br)
+    rows = (((arc or {}).get("standings") or {}).get(grp) or {}).get(district) or []
+    ranking = {r["school"]: r["rank"] for r in world.jhsaa_group_ranking(arc or {}, grp)}
+    names = {s.name for s in members}
+
+    standings = [{**_jh_deco(schools, r["school"], 26), "record": r.get("record", ""),
+                  "drecord": r.get("drecord", ""), "place": r.get("place", 0),
+                  "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0,
+                  "rank": ranking.get(r["school"], 0), "seed": seeds.get(r["school"], 0),
+                  "state_finish": world.jhsaa_state_result(br, r["school"])["finish"]}
+                 for r in rows]
+    # League results: read each member's card once and keep the duals played INSIDE the
+    # district, de-duplicated by taking only the home side's copy of each meeting.
+    results = []
+    for s in members:
+        for i, d in enumerate(world.jhsaa_schedule(w["id"], yr, g, s.name)):
+            if d.get("district") and d.get("home") and d["opp"] in names:
+                results.append({"home": s.name, "away": d["opp"], "pf": d["pf"],
+                                "pa": d["pa"], "won": d["won"],
+                                "home_deco": _jh_deco(schools, s.name, 20),
+                                "away_deco": _jh_deco(schools, d["opp"], 20),
+                                "order": i})
+    results.sort(key=lambda r: (r["order"], r["home"]))
+    # A 12-team double round-robin is 132 duals — as a flat list that is the longest,
+    # least readable thing on the page. The league's shape is a HEAD-TO-HEAD GRID:
+    # every team against every other, the season series in the cell. Columns are the
+    # standings positions, so the header stays narrow however long the names are.
+    series: dict = {}
+    for r in results:
+        a, b = r["home"], r["away"]
+        series.setdefault((a, b), [0, 0])[0 if r["won"] else 1] += 1
+        series.setdefault((b, a), [0, 0])[1 if r["won"] else 0] += 1
+    order = [r["name"] for r in standings]
+    grid = []
+    for row in standings:
+        cells = []
+        for i, opp in enumerate(order, 1):
+            w, l = series.get((row["name"], opp), (0, 0))
+            cells.append({"pos": i, "opp": opp, "self": opp == row["name"],
+                          "record": f"{w}-{l}" if (w or l) else "",
+                          "swept": bool(w and not l), "lost": bool(l and not w)})
+        grid.append({"team": row, "cells": cells})
+    return {
+        "found": True, "district": district, "gender": g, "group": grp, "year": yr,
+        "years": years, "season_year": (arc or {}).get("season_year"),
+        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                           (arc or {}).get("season_year"), arc),
+        "ready": bool(arc), "standings": standings,
+        "champion": standings[0] if standings else None,
+        "results": results, "grid": grid,
+        "all_district": (((arc or {}).get("all_district") or {}).get(grp) or {}).get(district, []),
+        "members": [_jh_deco(schools, s.name, 26) for s in sorted(members, key=lambda s: s.name)],
+        "qualifiers": [r for r in standings if r["seed"]],
+        "peers": sorted({s.district for s in jh.load_schools(g) if s.group == grp}),
+    }
+
+
+def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
+                         year: int | None = None) -> dict:
+    """Every district in one classification — the way into the league layer, so high
+    school has the browse structure the college side gets from its conferences."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    schools = _jh_schools(g)
+    br = ((arc or {}).get("brackets") or {}).get(grp) or {}
+    seeds = _jh_seeds(br)
+    rows = []
+    for dname, members in sorted(jh.districts(g, grp).items()):
+        table = (((arc or {}).get("standings") or {}).get(grp) or {}).get(dname) or []
+        champ = table[0] if table else None
+        rows.append({
+            "district": dname, "members": len(members),
+            "champion": _jh_deco(schools, champ["school"], 24) if champ else None,
+            "record": (champ or {}).get("record", ""),
+            "drecord": (champ or {}).get("drecord", ""),
+            "qualifiers": [{**_jh_deco(schools, r["school"], 20), "seed": seeds[r["school"]]}
+                           for r in table if r["school"] in seeds],
+        })
+    return {"ready": bool(arc), "gender": g, "group": grp, "groups": list(jh.GROUPS),
+            "year": yr, "years": years,
+            "season_year": (arc or {}).get("season_year", world.jhsaa_season_year(w)),
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                               (arc or {}).get("season_year")),
+            "districts": rows}
+
+
+def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
+    """One high-school player's whole career at a program: four seasons, what they
+    did in each, and the honours that came with them.
+
+    Resolved by PID, not by name — a pid is stable across all four years (it keys on
+    the year the player entered and their seat), so it survives two players sharing a
+    name and it matches the award rows straight off. Careers are rebuilt rather than
+    stored, which is why an archived season can show the team that played it."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
     sc = next((s for s in jh.load_schools(g) if s.name == school), None)
     if sc is None:
         return {"found": False, "school": school, "gender": g}
     salt = world.active_salt(seed)
-    # Roster identity keys on the SEASON year (the grad year the hand-off uses), not
-    # the world index — the same mismatch the archive had. See world.run_jhsaa.
-    roster = jh.build_roster(sc, world.jhsaa_season_year(w), salt)
-    sched = world.jhsaa_schedule(w["id"], w["year"], g, school)
-    dw = sum(1 for d in sched if d["won"] and d["district"])
-    dl = sum(1 for d in sched if not d["won"] and d["district"])
+    years = world.jhsaa_years(w["id"], g)
+    # The school's ledger is read ONCE and indexed by year. Reading it inside the loop
+    # made the page quadratic in seasons — every year re-walking every year's archive.
+    team_by_year = {r["year"]: r
+                    for r in world.jhsaa_school_seasons(w["id"], g, school)}
+    seasons, player = [], None
+    for yr in years:
+        arc = world.get_jhsaa(w["id"], yr, g)
+        if not arc:
+            continue
+        season_year = arc.get("season_year") or world.jhsaa_season_year(w)
+        roster = jh.build_roster(sc, season_year, salt)
+        hit = next((p for p in roster if p.pid == pid), None)
+        if hit is None:
+            continue                       # not enrolled that year (pre-9th, or graduated)
+        player = player or hit
+        sched = world.jhsaa_schedule(w["id"], yr, g, school)
+        rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
+        aw = (arc.get("awards") or {}).get(sc.group) or {}
+        honors = jh.honors_for(pid, {**aw, "all_district":
+                                     (arc.get("all_district") or {}).get(sc.group, {})},
+                               sc.group)
+        team = team_by_year.get(yr)
+        w_, l_ = rec["s"][0] + rec["d"][0], rec["s"][1] + rec["d"][1]
+        seasons.append({
+            "year": yr, "season_year": season_year, "grade": hit.grade,
+            "class": {9: "Freshman", 10: "Sophomore", 11: "Junior", 12: "Senior"}
+                     .get(hit.grade, str(hit.grade)),
+            "ladder": next((i for i, p in enumerate(roster, 1) if p.pid == pid), 0),
+            "ovr": round(hit.current_overall(), 1), "str": hit.str_value(),
+            "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
+            "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
+            "honors": honors, "team": team,
+        })
+    if player is None:
+        return {"found": False, "school": school, "gender": g, "pid": pid}
+    seasons.sort(key=lambda s: -s["year"])
+    wins = sum(s["wins"] for s in seasons)
+    losses = sum(s["losses"] for s in seasons)
     return {
-        "found": True, "school": school, "gender": g, "year": w["year"],
-        "mark": jh.mark(sc, 64), "city": sc.city, "county": sc.county,
-        "classification": sc.classification, "group": sc.group,
-        "district": sc.district, "mascot": sc.mascot, "enrollment": sc.enrollment,
-        "record": f"{sum(1 for d in sched if d['won'])}-{sum(1 for d in sched if not d['won'])}",
-        "district_record": f"{dw}-{dl}",
-        "schedule": sched,
-        "roster": [{"name": p.name, "grade": p.grade, "ovr": round(p.current_overall(), 1)}
-                   for p in roster],
-        "history": world.jhsaa_school_history(w["id"], g, school),
+        "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
+        "hometown": player.hometown, "grade": player.grade,
+        "mark": jh.mark(sc, 44), "group": sc.group, "district": sc.district,
+        "classification": sc.classification, "city": sc.city,
+        "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
+                           years[0] if years else 0, years, None, None),
+        "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
+        "honors": [h for s in seasons for h in s["honors"]],
+        # The grad year is what the college recruit board keys a Jefferson signee on,
+        # so it is the hand-off between this career and the rest of the game.
+        "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])
+                      if seasons else None),
     }
 
 
@@ -3424,13 +3881,19 @@ def jhsaa_past_winners(seed: int, gender: str) -> dict:
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
-    g = "girls" if gender in ("women", "female", "girls") else "boys"
+    g = _jh_g(gender)
+    schools = _jh_schools(g)
     years = []
     for year in world.jhsaa_years(w["id"], g):
         arc = world.get_jhsaa(w["id"], year, g)
         if arc:
-            years.append({"year": year,
-                          "champions": arc.get("champions", {}),
+            years.append({"year": year, "season_year": arc.get("season_year"),
+                          "champions": {gp: _jh_deco(schools, nm, 20)
+                                        for gp, nm in (arc.get("champions") or {}).items()
+                                        if nm},
                           "poy": {grp: (aw.get("poy") or {})
                                   for grp, aw in (arc.get("awards") or {}).items()}})
-    return {"gender": g, "groups": list(jh.GROUPS), "years": years}
+    return {"gender": g, "groups": list(jh.GROUPS), "years": years,
+            "scope": _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS),
+                               years[0]["year"] if years else 0,
+                               [y["year"] for y in years], None, None)}

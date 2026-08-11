@@ -385,6 +385,40 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   emits a row for EVERY archived year — a program history has to show the losing seasons
   too. It once returned only years with a title or an honour, so a school looked like it
   had never played in between.
+- **‼️ HONOURS ANNOTATE SEASONS; the SEASONS are the history.** `jhsaa_school_history`
+  returns TWO things — `totals` (the career) and `seasons` (one row per archived year) —
+  and every number in `totals` is a FOLD OVER `seasons`, so the two halves of a program
+  page cannot disagree and a new season moves the totals only by being appended. Do NOT
+  add a `world_jhsaa_school_season` table: the postseason record, courts won/lost, state
+  seed and state finish are all DERIVED from `world_jhsaa` + `world_jhsaa_dual` (one
+  indexed read of ~26 rows per season), and a second store would be a second source of
+  truth for numbers the archive already determines. Before persisting, check whether the
+  thing is a PROJECTION of a layer you already have.
+- **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** `run_state` pads
+  a field to the next power of two and the byes collapse UNEVENLY: a 24-team field plays
+  rounds of **24 → 12 → 6 → 3 → 2**, and a semifinal round really can hold three teams.
+  `jhsaa_state_rounds` counts `alive(n+1) = alive(n) - games(n)` (every game eliminates
+  exactly one); `state_place` is 1 champion / 2 runner-up / 3-4 semifinalist, so "made
+  the semis" is `place <= 4`, a NUMBER, never a string compared to a label. The champion
+  is read off the archived bracket, not inferred from "won its last game" — a bye lets a
+  program miss a round without being out.
+- **‼️ A DISTRICT IS `(CLASSIFICATION, name)`, never the name alone.** The JHSAA reuses
+  its geographic district names at every level — "Halbrook Basin District" is FIVE
+  leagues — which is why the archive is keyed `standings[group][district]`. A route or
+  lookup keyed on the name alone silently serves the 3A-1A league under a 7A heading,
+  with all the right data and all the wrong league. Route: `/jhsaa/district/<group>/<district>`.
+- **The state draw uses the SHARED bracket tree** (`state._bracket_canvas` +
+  `templates/_bracket.html`), like the NCAA bracket and the Preseason NIT — the macros
+  take `ep`/`epq` for the link endpoint and honour a team's own `mark`. Don't fork a
+  fourth bracket; small screens get round TABS (`jh_round_tabs`), a second presentation
+  of the same rounds. Every roster / All-State / POY / bracket name links to
+  `/jhsaa/player/<school>/<pid>` — **by PID, not name**: a pid keys on (school, gender,
+  entry year, seat), so it is stable across all four years and matches the award rows.
+- **Schedule dates are a DISPLAY calendar (`state._jh_dates`), not sim state.** There is
+  no clock inside a JHSAA season — it all runs in one rung at week 0 — so the dates are
+  derived from the persisted ORDER of play (non-district → district round-robin → state)
+  laid on a spring calendar at three duals a week. Nothing reads them back.
+  See `docs/AAR-jhsaa-program-history-and-design-pass.md`.
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
