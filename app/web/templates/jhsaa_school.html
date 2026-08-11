@@ -32,7 +32,7 @@
     <div class="now">
       <span class="rec">{{ view.record }}</span>
       <span class="bit"><b>{{ view.district_record }}</b> district{% if view.place %} · {{ view.place }}{{ 'st' if view.place == 1 else 'nd' if view.place == 2 else 'rd' if view.place == 3 else 'th' }}{% endif %}</span>
-      {% if view.state_rank %}<span class="bit">No.&nbsp;<b>{{ view.state_rank }}</b> {{ view.group }}</span>{% endif %}
+      {% if view.state_rank %}<span class="bit" title="TOSS Power Index rank in {{ view.group }}">No.&nbsp;<b>{{ view.state_rank }}</b> {{ view.group }}{% if view.season and view.season.pi is not none %} · TOSS {{ '%.3f'|format(view.season.pi) }}{% endif %}</span>{% endif %}
       {% if view.state_seed %}<span class="bit">state seed <b>{{ view.state_seed }}</b></span>{% endif %}
       {% if view.state_finish %}<span class="jh-chip {{ 'gold' if view.state_finish == 'Champion' }}">{{ view.state_finish|upper }}</span>{% endif %}
     </div>
@@ -212,7 +212,7 @@
         <th style="width:66px">Season</th><th style="width:46px">Class</th><th style="width:66px">Record</th>
         <th style="width:66px">District</th><th style="width:62px">Place</th><th style="width:64px">Post</th>
         <th style="width:48px">Seed</th><th style="width:130px">State finish</th>
-        <th style="width:48px">Rank</th><th>Honours</th>
+        <th style="width:48px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
       </tr>
       {% for s in view.history.seasons %}
       <tr class="{{ 'title' if s.champion }}">

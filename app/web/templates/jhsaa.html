@@ -121,7 +121,7 @@
 
     <div class="bl-panel jh-mod">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Rankings</span>
-        <span class="bl-panel-meta">end of season</span></div>
+        <span class="bl-panel-meta">TOSS Power Index</span></div>
       <div class="bl-panel-body">
         {% for r in view.top %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">
@@ -129,9 +129,13 @@
           {{ r.mark|safe }}
           <span class="bd"><span class="n">{{ r.name }}</span>
             <span class="s">{{ r.district }}{% if r.place %} · {{ r.place }}{{ 'st' if r.place == 1 else 'nd' if r.place == 2 else 'rd' if r.place == 3 else 'th' }} in district{% endif %}</span></span>
-          <span class="v">{{ r.record }}</span>
+          <span class="v">{{ '%.3f'|format(r.pi) if r.pi is not none else r.record }}</span>
         </a>
         {% endfor %}
+      </div>
+      <div class="bl-panel-body" style="padding:8px 13px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
+        TOSS — 40% strength of schedule, 40% flight-weighted results, 20% game share.
+        At-large bids and state seeds are drawn from this, not from the raw record.
       </div>
     </div>
 

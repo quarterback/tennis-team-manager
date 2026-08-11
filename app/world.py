@@ -3656,20 +3656,29 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
 
 def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
     """Every program in one classification, ordered the way the JHSAA itself orders
-    them for an at-large bid — win rate, then point differential, then name
-    (`jhsaa.qualifiers`). That ordering IS the state ranking; nothing else computes
-    one, so the hub and the school pages both read it from here rather than inventing
-    a second, differently-sorted "power" number."""
-    rows = []
+    them — by the TOSS Power Index the season was seeded on (`jhsaa.power_index`).
+
+    The index is read back off the ARCHIVE, never recomputed: it is exactly the number
+    at-large selection and the state seeds were drawn from, so the ranking a program
+    page shows and the seed it carries into the bracket cannot disagree. Seasons
+    archived before TOSS existed carry no `pi`, and fall back to the win rate and point
+    differential they were actually ordered on at the time."""
+    rows, rated = [], True
     for dname, teams in (((arc or {}).get("standings") or {}).get(group) or {}).items():
         for r in teams:
             w, l = _wl(r.get("record"))
+            if r.get("pi") is None:
+                rated = False
             rows.append({"school": r.get("school", ""), "district": dname,
                          "wins": w, "losses": l, "record": r.get("record", ""),
                          "drecord": r.get("drecord", ""), "place": r.get("place", 0),
                          "pct": w / (w + l) if (w + l) else 0.0,
+                         "pi": r.get("pi"),
                          "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
-    rows.sort(key=lambda r: (-r["pct"], -(r["pf"] - r["pa"]), r["school"]))
+    if rated:
+        rows.sort(key=lambda r: (-(r["pi"] or 0.0), r["school"]))
+    else:
+        rows.sort(key=lambda r: (-r["pct"], -(r["pf"] - r["pa"]), r["school"]))
     for i, r in enumerate(rows, 1):
         r["rank"] = i
     return rows
@@ -3698,7 +3707,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "district_record": "", "dwins": 0, "dlosses": 0, "place": 0,
            "post_record": "0-0", "pwins": 0, "plosses": 0,
            "courts_won": 0, "courts_lost": 0, "pf": 0.0, "pa": 0.0,
-           "state_rank": 0, "made_state": False, "seed": 0, "state_place": 0,
+           "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
@@ -3718,9 +3727,10 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     st = jhsaa_state_result((arc.get("brackets") or {}).get(row["group"]) or {}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
-    for i, r in enumerate(jhsaa_group_ranking(arc, row["group"]), 1):
+    for r in jhsaa_group_ranking(arc, row["group"]):
         if r["school"] == school:
             row["state_rank"] = r["rank"]
+            row["pi"] = r.get("pi")
             break
     # The postseason record and the individual courts come off the school's own duals —
     # the match-level archive is the source for drilling into a season, exactly as it is

@@ -394,6 +394,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   indexed read of ~26 rows per season), and a second store would be a second source of
   truth for numbers the archive already determines. Before persisting, check whether the
   thing is a PROJECTION of a layer you already have.
+- **Seeding runs on TOSS, not on win-loss** (`jhsaa.power_index` → `app.rating`). TOSS is
+  oregontennis.org's Tennis Opponent-Strength System, the same composite the college
+  league uses: **0.40 APR + 0.40 FQI + 0.20 oGS**. `qualifiers` sorts at-large bids AND
+  seed order on it, so an automatic bid buys entry rather than a seed. Rules:
+  **`jhsaa.FLIGHT_WEIGHTS` is the association's own table** (S1 1.00, S2 0.75, S3 0.25,
+  S4/S5 0.10, D1 1.00, D2 0.50 — max 3.70/dual, owner's numbers); it is NOT the college
+  table and NOT Oregon's 4S/4D one, and it is the only place a flight is weighted.
+  It is computed over the **whole gender at once** (non-district play crosses
+  classifications, so rating a class alone cuts those edges out of the graph) and over
+  the **regular season only** (`rating_duals` drops `phase == "state"` — it is the
+  seeding input, and state's 1S/4D would drag D3/D4 into a table that stops at D2).
+  Game share is parsed back out of the archived score strings (`jhsaa._games`), so no
+  column was added and pre-TOSS seasons still rate. **The index is ARCHIVED per school
+  per season (`pi` on the standings rows) and read back, never recomputed** — a rating
+  is a function of the whole results graph, so a re-read would only match by chance, and
+  a ranking that drifts from the seeds it produced is the NCAA region-drift bug again.
+  `jhsaa_group_ranking` falls back to win% for seasons archived before TOSS.
+  See `docs/BLOG-toss-in-a-third-format.md`.
 - **The state draw is SEEDED, with byes to the top seeds, and then FIXED.** `run_state`
   places entrants via `engine.tournament.seeded_draw` (the college championship's
   helper), so a 12-team field is a 16 draw where **seeds 1-4 sit out and 5-12 play into

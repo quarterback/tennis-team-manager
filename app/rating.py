@@ -71,11 +71,17 @@ class RatingLine:
         return self.wins / n if n else 0.0
 
 
-def _flight_score(lines: list[dict], side: str) -> float | None:
-    """Flight-weighted share of lines won by `side` ('home'/'away')."""
+def _flight_score(lines: list[dict], side: str, weights: dict | None = None) -> float | None:
+    """Flight-weighted share of lines won by `side` ('home'/'away').
+
+    The weight table is a parameter because a league's flights are its own: college
+    duals are 6-10 singles and 3-5 doubles, high school is 5 singles and 2 doubles
+    (1 and 4 in the state format). Only the total contested weight is used as the
+    denominator, so a short or forfeited dual is scored on what was actually played."""
     earned = total = 0.0
+    w_table = FLIGHT_WEIGHTS if weights is None else weights
     for ln in lines:
-        w = FLIGHT_WEIGHTS.get(ln["slot"], 0.3)
+        w = w_table.get(ln["slot"], 0.3)
         total += w
         won = ln["home_won"] if side == "home" else not ln["home_won"]
         if won:
@@ -92,7 +98,11 @@ def _game_share(lines: list[dict], side: str) -> float | None:
     return gw / gp if gp else None
 
 
-def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
+def compute_ratings(duals: list[dict], *,
+                    weights: dict | None = None) -> dict[str, RatingLine]:
+    """Power Index over a list of dual dicts. `weights` overrides the flight table
+    for a league whose dual isn't shaped like a college one (the JHSAA's 5S/2D and
+    1S/4D); omitted, college is unchanged."""
     teams: dict[str, RatingLine] = {}
     opps: dict[str, list[str]] = {}
 
@@ -165,7 +175,7 @@ def compute_ratings(duals: list[dict]) -> dict[str, RatingLine]:
         mh = teams[a].apr / median_apr   # home's opponent multiplier
         ma = teams[h].apr / median_apr
         for side, t, m in (("home", h, mh), ("away", a, ma)):
-            fs = _flight_score(lines, side)
+            fs = _flight_score(lines, side, weights)
             gs = _game_share(lines, side)
             if fs is not None:
                 fqi_acc[t].append(fs * m)

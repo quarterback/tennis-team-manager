@@ -67,7 +67,7 @@
           <table class="jh-ledger nowrap">
             <tr><th style="width:30px"></th><th>School</th><th style="width:66px">District</th>
               <th style="width:66px">Overall</th><th style="width:76px">Pts</th>
-              <th style="width:52px">{{ view.group }} rk</th><th style="width:48px">Seed</th>
+              <th style="width:52px" title="TOSS Power Index rank in {{ view.group }}">{{ view.group }} rk</th><th style="width:48px">Seed</th>
               <th style="width:124px">State</th></tr>
             {% for r in view.standings %}
             <tr class="{{ 'title' if r.place == 1 }}">
