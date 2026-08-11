@@ -3433,28 +3433,60 @@ def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
             "aq": False, "tbd": False, "mark": _jh_deco(schools, name, 18)["mark"]}
 
 
+def _jh_bye_card(name: str, seeds: dict, schools: dict) -> dict:
+    """A team advancing WITHOUT playing, as a card of its own.
+
+    `_bracket_canvas` connects a column to the one before it positionally: same width
+    means one feeder each, anything else means the standard halving (`2k`, `2k+1`). A
+    JHSAA draw pads to the next power of two and the byes collapse unevenly, so a
+    24-team field plays rounds of 12 → 6 → 3 → 1 → 1 — and at 3 → 1 the halving rule
+    links only the first two winners. The THIRD winner byes straight into the final, so
+    its route through the tree was simply missing.
+
+    Making the bye an explicit card restores it without touching the shared geometry:
+    the column becomes 3 → 2 → 1, which is exactly what the halving rule already draws
+    correctly. The empty side renders as BYE rather than TBD — the slot is not
+    undecided, there is genuinely no opponent."""
+    return {"home": _jh_brk_team(name, True, seeds, schools),
+            "away": {"school": "", "abbr": "", "color": "", "won": False, "seed": None,
+                     "conf": "", "aq": False, "tbd": True, "label": "BYE"},
+            "played": False, "id": None, "tbd": False, "region": None, "bpos": 0,
+            "home_won": True, "winner": name, "score": "", "bye": True}
+
+
 def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
     """The state tournament as bracket COLUMNS for the shared canvas.
+
+    Byes are materialised as pass-through cards (`_jh_bye_card`) so every team's route
+    through the tree is drawn. Which teams byed is DERIVED from the archive rather than
+    assumed: a team alive going into a round that does not appear in any of that
+    round's games advanced without playing. `run_state` builds the next round in slot
+    order and the padding sits at the end of the draw, so a round's winners always
+    precede its byes — which is the order the cards go in.
 
     `keep` trims to the last N rounds — the hub shows the business end of the draw and
     links to the full tree, rather than putting a 32-card ladder above the standings."""
     import app.world as world
     seeds = _jh_seeds(bracket)
     rounds = world.jhsaa_state_rounds(bracket)
-    if keep:
-        rounds = rounds[-keep:]
+    alive = list((bracket or {}).get("field") or ())
     cols = []
     for rd in rounds:
         ms = []
+        playing = set()
         for gm in rd["games"]:
             hw = gm.get("winner") == gm.get("home")
+            playing.update((gm.get("home"), gm.get("away")))
             ms.append({"home": _jh_brk_team(gm.get("home", ""), hw, seeds, schools),
                        "away": _jh_brk_team(gm.get("away", ""), not hw, seeds, schools),
                        "played": True, "id": None, "tbd": False, "region": None,
                        "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
                        "score": f"{int(gm.get('home_points', 0))}-{int(gm.get('away_points', 0))}"})
+        byes = [t for t in alive if t not in playing]
+        ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
+        alive = [gm.get("winner") for gm in rd["games"]] + byes
         cols.append({"name": rd["name"], "matchups": ms})
-    return cols
+    return cols[-keep:] if keep else cols
 
 
 def _jh_final_four(bracket: dict, schools: dict) -> dict:
@@ -3493,6 +3525,12 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
     import app.world as world
     return {"gender": gender, "group": group, "groups": groups, "year": year,
             "years": years,
+            # `pin` is the year a link must CARRY to keep the reader where they are.
+            # Browsing the latest season it is None, so URLs stay clean and follow the
+            # world forward as it advances; browsing an ARCHIVED season it is that year,
+            # so drilling into a program shows the roster, schedule, record and finish
+            # of the season on screen instead of silently falling back to the newest.
+            "pin": year if (years and year != years[0]) else None,
             "season_year": season_year or (world.BASE_YEAR + (year or 0) + 1),
             "season_years": {y: world.BASE_YEAR + y + 1 for y in years}}
 

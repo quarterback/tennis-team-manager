@@ -20,8 +20,10 @@
    forking a third bracket; a team carrying its own `mark` (inline SVG) renders that
    where college renders a crest. #}
 {% macro brk_row(t, m, u, bids=true, ep='teams', epq={}) %}
+{# `label` names an empty slot that ISN'T undecided — a bye has no opponent to
+   name, and calling it TBD reads as "this round hasn't been played". #}
 {% if t.tbd %}
-<div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">TBD</span></div>
+<div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">{{ t.label or 'TBD' }}</span></div>
 {% else %}
 <div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}"
      data-school="{{ t.school }}"

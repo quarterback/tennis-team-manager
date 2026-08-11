@@ -28,7 +28,7 @@
       <span class="mark">{{ st.champion.mark|safe }}</span>
       <div style="min-width:0">
         <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
-        <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender) }}">{{ st.champion.name }}</a>
+        <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ st.champion.name }}</a>
         <div class="sub">{{ st.champion.mascot }} · {{ st.champion.city }}, Jefferson ·
           {{ st.champion.district }}{% if view.rank_by.get(st.champion.name) %} · No.&nbsp;{{ view.rank_by[st.champion.name] }} in {{ view.group }}{% endif %}</div>
       </div>
@@ -42,12 +42,12 @@
 
     <div class="jh-podium">
       {% if st.runner_up %}
-      <a class="jh-pod" href="{{ url_for('jhsaa_school', school=st.runner_up.name, u=u, g=view.gender) }}">
+      <a class="jh-pod" href="{{ url_for('jhsaa_school', school=st.runner_up.name, u=u, g=view.gender, year=view.scope.pin) }}">
         {{ st.runner_up.mark|safe }}
         <span style="min-width:0"><span class="k">Runner-up</span><span class="n">{{ st.runner_up.name }}</span></span></a>
       {% endif %}
       {% for s in st.semifinalists %}
-      <a class="jh-pod" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender) }}">
+      <a class="jh-pod" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">
         {{ s.mark|safe }}
         <span style="min-width:0"><span class="k">Semifinalist</span><span class="n">{{ s.name }}</span></span></a>
       {% endfor %}
@@ -67,12 +67,12 @@
         <span class="bl-panel-title">State Tournament</span>
         <span class="bl-panel-meta">{{ st.field_n }}-team field · 1 singles / 4 doubles</span>
         <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
-           href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.year) }}">FULL BRACKET →</a>
+           href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">FULL BRACKET →</a>
       </div>
       <div class="bl-panel-body" style="padding:12px">
         {% if st.canvas %}
-        <div class="jh-brk-desktop brk-stage">{{ brk_canvas(st.canvas, u, false, 'jhsaa_school', {'g': view.gender}) }}</div>
-        {{ jh_round_tabs(st.rounds[-3:], u, view.gender, 'jhhubrd') }}
+        <div class="jh-brk-desktop brk-stage">{{ brk_canvas(st.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}</div>
+        {{ jh_round_tabs(st.rounds[-3:], u, view.gender, 'jhhubrd', view.scope.pin) }}
         {% else %}
         <p class="jh-empty">No draw archived for this classification.</p>
         {% endif %}
@@ -87,7 +87,7 @@
         <span class="bl-panel-title">Districts</span>
         <span class="bl-panel-meta">{{ view.districts|length }} leagues · champion carries an automatic bid</span>
         <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
-           href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.year) }}">ALL DISTRICTS →</a>
+           href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">ALL DISTRICTS →</a>
       </div>
       <div class="tbl-scroll">
         <table class="jh-ledger nowrap">
@@ -98,12 +98,12 @@
           <tr>
             <td style="font-variant-numeric:normal">
               <a style="font-weight:700;color:var(--text-primary);text-decoration:none"
-                 href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.year) }}">{{ d.district }}</a>
+                 href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.district }}</a>
               <div style="font-size:10.5px;color:var(--text-muted)">{{ d.members }} schools</div>
             </td>
             <td style="font-variant-numeric:normal">
               <span class="jh-schoolcell">{{ d.champion.mark|safe }}
-                <a href="{{ url_for('jhsaa_school', school=d.champion.name, u=u, g=view.gender) }}">{{ d.champion.name }}</a>
+                <a href="{{ url_for('jhsaa_school', school=d.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.champion.name }}</a>
                 {% if d.champion.seed %}<span class="jh-chip ghost" title="state tournament seed">#{{ d.champion.seed }}</span>{% endif %}</span>
             </td>
             <td><b>{{ d.champion.drecord or '—' }}</b></td>
@@ -124,7 +124,7 @@
         <span class="bl-panel-meta">end of season</span></div>
       <div class="bl-panel-body">
         {% for r in view.top %}
-        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">
           <span class="rk">{{ r.rank }}</span>
           {{ r.mark|safe }}
           <span class="bd"><span class="n">{{ r.name }}</span>

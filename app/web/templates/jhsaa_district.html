@@ -9,9 +9,9 @@
 
 <div class="jh-shell">
 <div class="jh-crumb">
-  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.year) }}">{{ view.group }}</a>
+  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">{{ view.group }}</a>
   <span class="sep">›</span>
-  <a href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.year) }}">Districts</a>
+  <a href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">Districts</a>
   <span class="sep">›</span><span>{{ view.district }}</span>
 </div>
 
@@ -21,14 +21,14 @@
   <label><span class="k">District</span>
     <select onchange="if(this.value)window.location=this.value">
       {% for d in view.peers %}
-      <option value="{{ url_for('jhsaa_district', group=view.group, district=d, u=u, g=view.gender, year=view.year) }}"
+      <option value="{{ url_for('jhsaa_district', group=view.group, district=d, u=u, g=view.gender, year=view.scope.pin) }}"
               {{ 'selected' if d == view.district }}>{{ d }}</option>
       {% endfor %}
     </select></label>
   <label><span class="k">Class</span>
     <select onchange="if(this.value)window.location=this.value">
       {% for gp in view.scope.groups %}
-      <option value="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=gp, year=view.year) }}"
+      <option value="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>
       {% endfor %}
     </select></label>
@@ -74,7 +74,7 @@
               <td style="color:var(--text-faint);font-weight:800">{{ r.place or loop.index }}</td>
               <td style="font-variant-numeric:normal">
                 <span class="jh-schoolcell">{{ r.mark|safe }}
-                  <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}"
+                  <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}"
                      title="{{ r.name }}">{{ r.name }}</a></span>
                 <div style="font-size:10.5px;color:var(--text-muted);padding-left:34px">{{ r.city }}</div>
               </td>
@@ -106,7 +106,7 @@
             {% for row in view.grid %}
             <tr>
               <td class="nm"><span style="color:var(--text-faint);font-weight:800">{{ loop.index }}</span>
-                <a href="{{ url_for('jhsaa_school', school=row.team.name, u=u, g=view.gender) }}">{{ row.team.name }}</a></td>
+                <a href="{{ url_for('jhsaa_school', school=row.team.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ row.team.name }}</a></td>
               {% for c in row.cells %}
               <td class="{{ 'self' if c.self else 'swept' if c.swept else 'lost' if c.lost else 'split' if c.record }}"
                   title="{{ row.team.name }} vs {{ c.opp }}">{{ '—' if c.self else c.record }}</td>
@@ -127,12 +127,12 @@
           <div class="jh-mgame">
             <div class="jh-mside {{ 'win' if r.won else 'out' }}">
               <span class="sd"></span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=r.home, u=u, g=view.gender) }}">{{ r.home }}</a></span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=r.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.home }}</a></span>
               <span class="pt">{{ r.pf|int }}</span>
             </div>
             <div class="jh-mside {{ 'out' if r.won else 'win' }}">
               <span class="sd"></span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=r.away, u=u, g=view.gender) }}">{{ r.away }}</a></span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=r.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.away }}</a></span>
               <span class="pt">{{ r.pa|int }}</span>
             </div>
           </div>
@@ -170,14 +170,14 @@
         <span class="bl-panel-meta">{{ view.qualifiers|length }} of {{ view.members|length }} qualified</span></div>
       <div class="bl-panel-body">
         {% for r in view.qualifiers %}
-        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">
           <span class="rk">{{ r.seed }}</span>
           {{ r.mark|safe }}
           <span class="bd"><span class="n">{{ r.name }}</span>
             <span class="s">{{ r.state_finish or 'in the field' }}</span></span>
         </a>
         {% endfor %}
-        <a class="jh-modrow" href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.year) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">
           <span class="bd"><span class="n" style="color:var(--text-link)">{{ view.group }} state bracket →</span></span>
         </a>
       </div>

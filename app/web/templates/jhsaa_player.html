@@ -11,9 +11,9 @@
 <div class="jh-crumb">
   <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.scope.year) }}">{{ view.group }}</a>
   <span class="sep">›</span>
-  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender) }}">{{ view.district }}</a>
+  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
   <span class="sep">›</span>
-  <a href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">{{ view.school }}</a>
+  <a href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.school }}</a>
   <span class="sep">›</span><span>{{ view.name }}</span>
 </div>
 
@@ -23,7 +23,7 @@
     <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
     <h1>{{ view.name }}</h1>
     <div class="mascot">
-      <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">{{ view.school }}</a>
+      <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.school }}</a>
       · grade {{ view.grade }}</div>
     <div class="where">{{ view.hometown }} · {{ view.district }}</div>
     <div class="now">
@@ -94,15 +94,15 @@
     <div class="bl-panel jh-mod">
       <div class="bl-panel-head"><span class="bl-panel-title">Program</span></div>
       <div class="bl-panel-body">
-        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">
           {{ view.mark|safe }}
           <span class="bd"><span class="n">{{ view.school }}</span>
             <span class="s">{{ view.group }} · {{ view.district }}</span></span>
         </a>
-        <a class="jh-modrow" href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">
           <span class="bd"><span class="n">{{ view.district }}</span><span class="s">district standings</span></span>
         </a>
-        <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group) }}">
+        <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">
           <span class="bd"><span class="n">{{ view.group }}</span><span class="s">classification home</span></span>
         </a>
       </div>

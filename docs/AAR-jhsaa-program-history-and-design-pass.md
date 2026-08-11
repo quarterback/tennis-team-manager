@@ -74,6 +74,25 @@ still alive when the program went out*: 1 champion, 2 runner-up, 3-4 semifinalis
 The champion is read off `bracket["champion"]`, not inferred from "won its last game",
 because a bye lets a program sit out a round without being out of the tournament.
 
+**The same assumption was hiding in the drawing code, and it bit twice.**
+`_bracket_canvas` connects a column to the one before it *positionally*: equal widths
+mean one feeder each, anything else means the standard halving (`2k`, `2k+1`). Handing
+it the raw round sizes — 12 → 6 → 3 → 1 → 1 — is therefore invalid at the 3 → 1 step:
+it links the first two quarterfinal winners into the final and draws nothing at all for
+the third, who byed straight through. The card showed the right teams, so the tree
+looked plausible while one program's whole route to the final was missing.
+
+The fix is not a smarter canvas. It is to stop lying to it: a bye is materialised as an
+explicit **pass-through card** in the column it happens in, which turns 3 → 1 into
+3 → 2 → 1 — a shape the halving rule already draws correctly, on shared geometry
+nothing had to touch. Which teams byed is derived from the archive (a team alive going
+into a round that appears in none of its games), so it works for any field size; the
+power-of-two draws produce no bye cards and render byte-identically to before. The empty
+side reads **BYE**, not TBD: the slot is not undecided, there is genuinely no opponent.
+
+> When a helper assumes a shape, the bug is usually the input, not the helper. Feed it
+> the real shape rather than teaching it a special case.
+
 ## 4. A district is (CLASSIFICATION, name) — never the name alone
 
 `/jhsaa/district/<district>` shipped in the first draft and served the wrong league.

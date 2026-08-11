@@ -25,8 +25,10 @@
         {% set ch = y.champions.get(gp) %}
         <td style="font-variant-numeric:normal">
           {% if ch %}
+          {# Each row is a DIFFERENT season, so a champion links to the season it won,
+             not to whatever the newest archived one happens to be. #}
           <span class="jh-schoolcell">{{ ch.mark|safe }}
-            <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender) }}">{{ ch.name }}</a></span>
+            <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender, year=y.year) }}">{{ ch.name }}</a></span>
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
           {% set poy = y.poy.get(gp) %}
           {% if poy and poy.get('name') %}

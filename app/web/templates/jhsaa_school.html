@@ -10,9 +10,9 @@
 
 <div class="jh-shell">
 <div class="jh-crumb">
-  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.year) }}">{{ view.group }}</a>
+  <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">{{ view.group }}</a>
   <span class="sep">›</span>
-  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.year) }}">{{ view.district }}</a>
+  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
   <span class="sep">›</span>
   <span>{{ view.school }}</span>
   {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year }} SEASON</span>{% endif %}
@@ -27,7 +27,7 @@
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
     <div class="where">{{ view.city }}, Jefferson · {{ view.county }} County ·
-      <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.year) }}">{{ view.district }}</a>
+      <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
       · {{ "{:,}".format(view.enrollment) }} students</div>
     <div class="now">
       <span class="rec">{{ view.record }}</span>
@@ -88,7 +88,7 @@
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
             <td class="op">
               <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
-                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender) }}">{{ d.opp }}</a>
+                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
                 {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
             </td>
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>

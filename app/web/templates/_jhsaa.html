@@ -10,10 +10,10 @@
 {# ------------------------------------------------------------------------ #}
 
 {# A school, wherever one is referenced: mark + link to its program page. #}
-{% macro jh_school(s, u, gender, size='') -%}
+{% macro jh_school(s, u, gender, size='', pin=none) -%}
 <span class="jh-schoolcell">
   {% if s.mark %}<span class="mk" style="{{ size }}">{{ s.mark|safe }}</span>{% endif %}
-  <a href="{{ url_for('jhsaa_school', school=s.name, u=u, g=gender) }}">{{ s.name }}</a>
+  <a href="{{ url_for('jhsaa_school', school=s.name, u=u, g=gender, year=pin) }}">{{ s.name }}</a>
 </span>
 {%- endmacro %}
 
@@ -53,7 +53,7 @@
       <span class="jh-seg">
         {% for g in ['boys','girls'] %}
         <a class="{{ 'on' if scope.gender == g }}"
-           href="{{ url_for('jhsaa_page', u=u, g=g, group=scope.group, year=scope.year) }}">{{ g|capitalize }}</a>
+           href="{{ url_for('jhsaa_page', u=u, g=g, group=scope.group, year=scope.pin) }}">{{ g|capitalize }}</a>
         {% endfor %}
       </span>
     </div>
@@ -62,7 +62,7 @@
       <span class="jh-class">
         {% for gp in scope.groups %}
         <a class="{{ 'on c-' ~ gp if scope.group == gp }}"
-           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=gp, year=scope.year) }}">{{ gp }}</a>
+           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=gp, year=scope.pin) }}">{{ gp }}</a>
         {% endfor %}
       </span>
     </div>
@@ -79,11 +79,11 @@
     {% endif %}
     <div class="jh-tabs">
       <a class="{{ 'on' if tab == 'state' }}"
-         href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.year) }}">State</a>
+         href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">State</a>
       <a class="{{ 'on' if tab == 'bracket' }}"
-         href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.year) }}">Bracket</a>
+         href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Bracket</a>
       <a class="{{ 'on' if tab == 'districts' }}"
-         href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.year) }}">Districts</a>
+         href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Districts</a>
       <a class="{{ 'on' if tab == 'history' }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
     </div>
@@ -141,16 +141,16 @@
 {# One matchup, for the mobile round list — the bracket canvas is a desktop
    surface, so small screens get the same rounds one at a time instead of a
    crushed tree. #}
-{% macro jh_mgame(gm, u, gender) %}
+{% macro jh_mgame(gm, u, gender, pin=none) %}
 <div class="jh-mgame">
   <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
     <span class="sd">{{ gm.home_seed or '' }}</span>
-    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=gender) }}">{{ gm.home }}</a></span>
+    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=gender, year=pin) }}">{{ gm.home }}</a></span>
     <span class="pt">{{ gm.home_points|int }}</span>
   </div>
   <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
     <span class="sd">{{ gm.away_seed or '' }}</span>
-    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=gender) }}">{{ gm.away }}</a></span>
+    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=gender, year=pin) }}">{{ gm.away }}</a></span>
     <span class="pt">{{ gm.away_points|int }}</span>
   </div>
 </div>
@@ -158,7 +158,7 @@
 
 {# Round tabs + one round at a time. Paired with `.jh-brk-desktop` (the canvas),
    which CSS swaps for this below 880px. #}
-{% macro jh_round_tabs(rounds, u, gender, id='jhrd') %}
+{% macro jh_round_tabs(rounds, u, gender, id='jhrd', pin=none) %}
 <div class="jh-brk-mobile" id="{{ id }}">
   <div class="jh-rdtabs">
     {% for rd in rounds %}
@@ -168,7 +168,7 @@
   <div class="jh-rdlist">
     {% for rd in rounds %}
     <div data-rd="{{ loop.index0 }}"{{ ' hidden' if not loop.last }}>
-      {% for gm in rd.games %}{{ jh_mgame(gm, u, gender) }}{% endfor %}
+      {% for gm in rd.games %}{{ jh_mgame(gm, u, gender, pin) }}{% endfor %}
     </div>
     {% endfor %}
   </div>

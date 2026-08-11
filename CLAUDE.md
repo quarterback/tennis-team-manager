@@ -411,7 +411,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `templates/_bracket.html`), like the NCAA bracket and the Preseason NIT — the macros
   take `ep`/`epq` for the link endpoint and honour a team's own `mark`. Don't fork a
   fourth bracket; small screens get round TABS (`jh_round_tabs`), a second presentation
-  of the same rounds. Every roster / All-State / POY / bracket name links to
+  of the same rounds. **`_bracket_canvas` connects columns POSITIONALLY** (equal width →
+  one feeder each, otherwise the `2k`/`2k+1` halving), so raw JHSAA round sizes
+  (12→6→3→1→1) are an invalid input: at 3→1 it draws nothing for the third winner, who
+  byed into the final. `_jh_bracket_cols` materialises each bye as an explicit
+  pass-through card (`_jh_bye_card`), making it 3→2→1 — a shape the halving rule already
+  draws right. Feed the helper the real shape; don't teach it special cases.
+- **A cross-link carries `scope.pin`, never `scope.year`.** `pin` is the year ONLY while
+  browsing an archived season (None on the latest), so drilling from the 2027 hub into a
+  program shows 2027's roster/schedule/record/finish, while links taken on the live
+  season stay clean and follow the world forward. Omit it and `jhsaa_school` silently
+  falls back to the newest archived year. The season buttons in `jh_header` stay explicit
+  (`year=y`) — that is how you pick a season; everything else pins. Every roster / All-State / POY / bracket name links to
   `/jhsaa/player/<school>/<pid>` — **by PID, not name**: a pid keys on (school, gender,
   entry year, seat), so it is stable across all four years and matches the award rows.
 - **Layout rules the JHSAA surfaces are built on (they were each a long scroll first):**
