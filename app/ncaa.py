@@ -48,10 +48,15 @@ SCHOOL_META = {
     # Jefferson's flagships. Pinned because the crest fallback takes the first
     # letter of up to four words: "University of Southern Jefferson" would come out
     # "UOSJ" rather than the western-convention USJ the owner wants (JU/JSU/USJ,
-    # after Kansas University / Colorado University).
-    "University of Jefferson": ("JU", "#1b3a6b"),
-    "Jefferson State University": ("JSU", "#7a1f2b"),
+    # after Kansas University / Colorado University), and "Jefferson A&M University"
+    # would come out "JAU" rather than JAMU, which is the form Texas A&M already
+    # uses in this table. The colours are read off the OWNER-SUPPLIED marks
+    # (scripts/import_owner_logos.py), so the crest accent agrees with the logo
+    # beside it; USJ has no art yet and keeps its chosen navy.
+    "University of Jefferson": ("JU", "#043e7c"),
+    "Jefferson State University": ("JSU", "#003167"),
     "University of Southern Jefferson": ("USJ", "#1d2b53"),
+    "Jefferson A&M University": ("JAMU", "#fcc624"),
 }
 
 # Per-conference tennis prestige prior (mean latent strength). Default 0.50.

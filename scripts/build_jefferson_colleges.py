@@ -79,13 +79,13 @@ PROGRAMS: list[dict] = [
     # actually plays in real life, so the swap reads as a correction) and the Pac
     # stays at exactly 16. See MOVES below.
     {"school": "University of Jefferson", "city": "Ashbury", "div": "D1",
-     "conf": "Pac-16", "origin": {"reuse": "Jacksonville"}, "meta": ("JU", "#1b3a6b")},
+     "conf": "Pac-16", "meta": ("JU", "#043e7c")},
     {"school": "Jefferson State University", "city": "Mercer City", "div": "D1",
-     "conf": "WAC", "meta": ("JSU", "#7a1f2b")},
+     "conf": "WAC", "meta": ("JSU", "#003167")},
     {"school": "University of Southern Jefferson", "city": "San Borondón", "div": "D1",
      "conf": "Big West", "meta": ("USJ", "#1d2b53")},
     {"school": "Jefferson A&M University", "city": "Rostova Junction", "div": "D1",
-     "conf": "CUSA"},
+     "conf": "CUSA", "meta": ("JAMU", "#fcc624")},
     # ---- D2: the Jefferson Valley Conference (8) ---------------------------
     {"school": "Port Veles University", "city": "Port Veles", "div": "D2", "conf": "JVC"},
     {"school": "Belmonte State University", "city": "Belmonte", "div": "D2", "conf": "JVC"},

@@ -1735,7 +1735,7 @@
     "slug": "jamestown"
   },
   "Jefferson A&M University": {
-    "badge": true,
+    "logo_source": "owner:jefferson-yellow.gif",
     "slug": "jefferson-a-m-university"
   },
   "Jefferson Maritime University": {
@@ -1743,7 +1743,7 @@
     "slug": "jefferson-maritime-university"
   },
   "Jefferson State University": {
-    "logo_source": "reuse:Jacksonville State",
+    "logo_source": "owner:jefferson-state.gif",
     "slug": "jefferson-state-university"
   },
   "Jessup": {
@@ -3030,7 +3030,7 @@
     "espn_id": "2507",
     "slug": "providence"
   },
-  "Puerto Rico-Bayamón": {
+  "Puerto Rico-Bayam\u00f3n": {
     "logo_source": "sub:Portland Pilots",
     "slug": "puerto-rico-bayamon"
   },
@@ -3038,11 +3038,11 @@
     "logo_source": "sub:Pacific (OR) Boxers",
     "slug": "puerto-rico-cayey"
   },
-  "Puerto Rico-Mayagüez": {
+  "Puerto Rico-Mayag\u00fcez": {
     "logo_source": "sub:Pikeville Bears",
     "slug": "puerto-rico-mayaguez"
   },
-  "Puerto Rico-Río Piedras": {
+  "Puerto Rico-R\u00edo Piedras": {
     "logo_source": "sub:Purdue Fort Wayne Mastodons",
     "slug": "puerto-rico-rio-piedras"
   },
@@ -3410,7 +3410,7 @@
     "espn_id": "2535",
     "slug": "samford"
   },
-  "San Borondón State University": {
+  "San Borond\u00f3n State University": {
     "badge": true,
     "slug": "san-borond-n-state-university"
   },
@@ -4148,7 +4148,7 @@
     "slug": "union-tn"
   },
   "University of Jefferson": {
-    "logo_source": "reuse:Jacksonville",
+    "logo_source": "owner:jefferson-university.gif",
     "slug": "university-of-jefferson"
   },
   "University of Oregon-Portland": {
