@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from engine import simulate_dual, Team, court_index, pair_indices
 from .ncaa import (Program, Division, load_division, build_squad, build_roster,
                    squad_and_ladder, dual_format, lineup_size)
-from .rating import compute_ratings, RatingLine
+from .rating import compute_ratings, weights_for, RatingLine
 from .str_rating import converge_ids
 from .bracket import play_dual, _seed_positions
 
@@ -547,7 +547,7 @@ def run_season(division: str = "D1", gender: str = "men", *, seed: int = 2026,
                           seed=rng.randint(1, 10**9), conf=c, play_all=play_all)
              for (a, b, c) in games]
 
-    ratings = compute_ratings(duals)
+    ratings = compute_ratings(duals, weights=weights_for(division))
 
     # conference standings (conference duals only)
     conf_wl: dict[str, dict[str, list[int]]] = {}

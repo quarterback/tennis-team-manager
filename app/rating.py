@@ -42,11 +42,63 @@ ROAD_WIN_BONUS = 0.10
 # since opponent ratings evolve. Wins are never discounted.
 LOSS_FORGIVE = 0.55
 
-# College flight weights: #1 lines carry the most competitive weight.
+# ⚠️ FLIGHT WEIGHTS ARE PER-DIVISION, because the DUAL is per-division.
+#
+# This table is the engine's CLASSIC 6+3 — cups, tests, and any bare call. It is NOT
+# what D1-D4 play. When the per-division dual formats landed (owner rule 2027-07) the
+# rating kept this table, and every court past #6 singles fell through to a hard-coded
+# 0.30 default: 26% of a D1 dual's flight weight, and — because #6 singles is weighted
+# 0.20 — a D1 #10 singles court counted 1.5x a #6. The flight-weighted index ran
+# BACKWARDS across the bottom half of every D1 lineup. There is no fallback any more;
+# an unrecognised flight raises (see `_flight_score`).
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.85, "S3": 0.60, "S4": 0.45, "S5": 0.30, "S6": 0.20,
     "D1": 0.80, "D2": 0.50, "D3": 0.30,
 }
+
+# D1 — 10 singles / 5 doubles, and the five doubles courts CONSOLIDATE into a single
+# team point. Doubles weight is suppressed to match: winning all five doubles is worth
+# one point of eleven, so it cannot carry the same weight as five singles courts do.
+_W_D1 = {
+    "S1": 1.00, "S2": 0.85, "S3": 0.70, "S4": 0.55, "S5": 0.40,
+    "S6": 0.25, "S7": 0.18, "S8": 0.12, "S9": 0.08, "S10": 0.05,
+    "D1": 0.40, "D2": 0.25, "D3": 0.15, "D4": 0.08, "D5": 0.05,
+}
+
+# D2 / D3 — 8 singles / 3 doubles, every doubles line its OWN point, so doubles carries
+# full un-suppressed weight.
+_W_D2_D3 = {
+    "S1": 1.00, "S2": 0.85, "S3": 0.65, "S4": 0.45, "S5": 0.30,
+    "S6": 0.20, "S7": 0.14, "S8": 0.10,
+    "D1": 0.80, "D2": 0.50, "D3": 0.25,
+}
+
+# D4 — 10 singles / 3 doubles, per-line doubles points, so full doubles weight over the
+# longer singles card.
+_W_D4 = {
+    "S1": 1.00, "S2": 0.85, "S3": 0.70, "S4": 0.55, "S5": 0.40,
+    "S6": 0.28, "S7": 0.18, "S8": 0.12, "S9": 0.08, "S10": 0.05,
+    "D1": 0.80, "D2": 0.50, "D3": 0.25,
+}
+
+DIVISION_WEIGHTS = {"D1": _W_D1, "D2": _W_D2_D3, "D3": _W_D2_D3, "D4": _W_D4}
+
+
+def weights_for(division: str | None) -> dict:
+    """The flight table for a division's dual. `None` is the CLASSIC 6+3 default.
+
+    Raises on a division nobody has weighted — the whole point of this module knowing
+    about divisions is that a new format must not quietly inherit another's judgement
+    about what a #7 singles court is worth."""
+    if division is None:
+        return FLIGHT_WEIGHTS
+    try:
+        return DIVISION_WEIGHTS[division]
+    except KeyError:
+        raise ValueError(
+            f"no TOSS flight weights for division {division!r}; add a table to "
+            f"rating.DIVISION_WEIGHTS rather than letting its courts take another "
+            f"division's weights") from None
 
 
 @dataclass
@@ -77,11 +129,22 @@ def _flight_score(lines: list[dict], side: str, weights: dict | None = None) -> 
     The weight table is a parameter because a league's flights are its own: college
     duals are 6-10 singles and 3-5 doubles, high school is 5 singles and 2 doubles
     (1 and 4 in the state format). Only the total contested weight is used as the
-    denominator, so a short or forfeited dual is scored on what was actually played."""
+    denominator, so a short or forfeited dual is scored on what was actually played.
+
+    An unrecognised flight RAISES. There used to be a 0.30 fallback, and it is what let
+    the per-division formats go unweighted for a release: nothing errored while a D1
+    #10 singles court out-weighted its #6. A missing weight is a missing decision, and
+    it should stop the caller rather than quietly become 0.30."""
     earned = total = 0.0
     w_table = FLIGHT_WEIGHTS if weights is None else weights
     for ln in lines:
-        w = w_table.get(ln["slot"], 0.3)
+        try:
+            w = w_table[ln["slot"]]
+        except KeyError:
+            raise ValueError(
+                f"flight {ln['slot']!r} has no weight in the table supplied "
+                f"({sorted(w_table)}) — weight it explicitly; there is no default"
+            ) from None
         total += w
         won = ln["home_won"] if side == "home" else not ln["home_won"]
         if won:
