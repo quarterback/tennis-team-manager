@@ -2736,6 +2736,39 @@ def portal_moves(seed: int, year: int, gender: str | None = None) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+_CYCLE_ORDER = {"preseason": 0, "fall": 1}   # chronological order WITHIN a season year
+
+
+def all_portal_moves(seed: int = DEFAULT_SEED,
+                     gender: str | None = None) -> list[dict]:
+    """EVERY archived portal move in the world's history, oldest first.
+
+    `portal_moves` is scoped to one year because the Portal Rankings board grades one
+    transfer class at a time. The Wire is the other question — where has this player
+    been — so it reads the whole archive and orders it chronologically: by year, then
+    preseason before fall (preseason runs at week 0, the fall portal after the ITA
+    opener). A move's `src_div`/`dest_div` are the divisions AT THE TIME and are kept
+    as archived; a program that has since changed division must not have its old rows
+    rewritten (the JVC went D1 -> D2, and those seasons really were played in D1)."""
+    w = load_world(seed)
+    if not w:
+        return []
+    conn = _db()
+    try:
+        q = ("SELECT year,cycle,gender,kind,pid,name,str,"
+             "src_school,src_div,dest_school,dest_div"
+             " FROM world_portal_move WHERE world_id=?")
+        args: list = [w["id"]]
+        if gender in ("men", "women"):
+            q += " AND gender=?"
+            args.append(gender)
+        rows = [dict(r) for r in conn.execute(q, args).fetchall()]
+    finally:
+        conn.close()
+    rows.sort(key=lambda m: (m["year"], _CYCLE_ORDER.get(m["cycle"], 9), m["name"]))
+    return rows
+
+
 def portal_years(seed: int = DEFAULT_SEED) -> list[int]:
     """Years with archived portal data, newest first (for the board's year dropdown)."""
     w = load_world(seed)

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% from "_pager.html" import pager %}
+{% from "_crest.html" import crest_box %}
+{% block title %}Play to Clinch — The Wire{% endblock %}
+{% block content %}
+
+<form method="get">
+<input type="hidden" name="u" value="{{ u }}">
+<div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
+  <span style="font-size:13px;color:var(--text-muted)">The Wire</span>
+  <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Season</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
+      <option value="all"{% if v.year == 'all' %} selected{% endif %}>All seasons</option>
+      {% for y in v.years %}<option value="{{ y }}"{% if v.year|string == y|string %} selected{% endif %}>{{ base_year + y }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Gender</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+      <option value="all"{% if v.gender == 'all' %} selected{% endif %}>Both</option>
+      <option value="men"{% if v.gender == 'men' %} selected{% endif %}>Men</option>
+      <option value="women"{% if v.gender == 'women' %} selected{% endif %}>Women</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Division</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
+      {% for d in divisions %}<option{% if d == v.division %} selected{% endif %}>{{ d }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Conference</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px">
+      <option{% if v.conf == 'All' %} selected{% endif %}>All</option>
+      {% for c in v.confs %}<option{% if c == v.conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Type</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="kind" onchange="this.form.submit()" style="min-width:88px">
+      <option value="All"{% if v.kind == 'All' %} selected{% endif %}>All moves</option>
+      <option value="riser"{% if v.kind == 'riser' %} selected{% endif %}>Rises</option>
+      <option value="cascade"{% if v.kind == 'cascade' %} selected{% endif %}>Depth</option>
+      <option value="pro"{% if v.kind == 'pro' %} selected{% endif %}>Pros in</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Sort</span>
+    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:126px">
+      <option value="recent"{% if v.sort == 'recent' %} selected{% endif %}>Newest first</option>
+      <option value="oldest"{% if v.sort == 'oldest' %} selected{% endif %}>Oldest first</option>
+      <option value="str"{% if v.sort == 'str' %} selected{% endif %}>Highest STR</option>
+      <option value="journey"{% if v.sort == 'journey' %} selected{% endif %}>Most-travelled</option>
+      <option value="name"{% if v.sort == 'name' %} selected{% endif %}>Name (A–Z)</option>
+    </select></span></label>
+  <label class="bl-field"><span class="bl-field-label">Search</span>
+    <input class="bl-input" type="search" name="q" value="{{ v.q }}" placeholder="player or school"
+           style="min-width:170px" onsearch="this.form.submit()"></label>
+  <button class="bl-pill" type="submit">Go</button>
+</div></div>
+</form>
+
+{% if v.kpis %}
+<div class="bl-container"><div class="al-kpis">
+  <div class="al-kpi"><div class="al-kpi-k">Moves</div><div class="al-kpi-v">{{ v.kpis.moves }}</div>
+    <div class="al-kpi-sub">{{ v.kpis.players }} players · {{ v.kpis.seasons }} season{{ '' if v.kpis.seasons == 1 else 's' }} archived</div></div>
+  <div class="al-kpi"><div class="al-kpi-k">Moved up</div><div class="al-kpi-v">{{ v.kpis.up }}</div>
+    <div class="al-kpi-sub">to a higher division</div></div>
+  <div class="al-kpi"><div class="al-kpi-k">Moved down</div><div class="al-kpi-v">{{ v.kpis.down }}</div>
+    <div class="al-kpi-sub">displaced, or found a seat</div></div>
+  <div class="al-kpi"><div class="al-kpi-k">Transferred twice+</div><div class="al-kpi-v">{{ v.kpis.multi }}</div>
+    <div class="al-kpi-sub">avg STR {{ '%.1f'|format(v.kpis.avg_str) }} across these moves</div></div>
+</div></div>
+{% endif %}
+
+<div class="bl-container"><div class="bl-entries">
+  <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ v.total }} moves</div>
+  <span class="bl-entries-right">every committed transfer, every season — not just the headline ones</span>
+</div></div>
+
+<div class="bl-notes"><div class="bl-note" style="font-size:12px">
+  The transaction log. <strong>Division</strong> is the division a program was in <em>at the time</em>;
+  <strong>conference</strong> is where that program plays <em>now</em>, so you can find a ten-year-old move
+  by the league you know the school by today. Filters match <em>either end</em> of a move — picking a
+  conference shows its departures as well as its arrivals. The
+  <a href="{{ url_for('portal_rankings_page', u=u) }}">Portal Rankings</a> board grades one class at a
+  time; this is the career view.
+</div></div>
+
+<div class="bl-container"><div class="bl-tablescroll">
+  <div class="bl-table" style="--bl-grid-cols: 70px minmax(190px,1.15fr) 48px minmax(180px,1.35fr) 24px minmax(180px,1.35fr) 58px">
+    <div class="bl-thead">
+      <span class="bl-th">SEASON</span>
+      <span class="bl-th">PLAYER</span>
+      <span class="bl-th num" title="Results-based STR at the time of the move">STR</span>
+      <span class="bl-th">FROM</span>
+      <span class="bl-th"></span>
+      <span class="bl-th">TO</span>
+      <span class="bl-th">TYPE</span>
+    </div>
+    {% for r in v.rows %}
+    <div class="bl-row">
+      <span class="bl-conf" style="white-space:nowrap">{{ r.year_label }}
+        <span class="ib-divchip" title="{{ r.cycle_label }} portal">{{ r.cycle_label[:4] }}</span></span>
+      <span class="bl-school wire-player">
+        <a href="{{ url_for('player', pid=r.pid, u=(r.dest.div ~ '-' ~ r.gender)) }}">{{ r.name }}</a>
+        {% if v.gender == 'all' %}<span class="ib-divchip">{{ 'M' if r.gender == 'men' else 'W' }}</span>{% endif %}
+        {% if r.hops > 1 %}
+        {# The trajectory, inline — the reason this page exists. Built from the whole
+           archive, so a conference filter narrows the LIST without truncating a career.
+           The two stops THIS row moves between are lit, so a middle transfer reads as a
+           middle transfer instead of as the whole career. #}
+        <span class="wire-journey" title="{{ r.hops }} career moves">
+          {%- for s in r.journey -%}
+          {%- if not loop.first %}<span class="wire-arrow">›</span>{% endif -%}
+          <span class="wire-stop{% if loop.index0 in (r.hop, r.hop + 1) %} is-now{% endif %}">{{ s }}</span>
+          {%- endfor -%}
+        </span>
+        {% endif %}
+      </span>
+      <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(r.str) }}</span></span>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(r.src.school, r.src.abbr, r.src.color, 'xs') }}
+        <span style="overflow:hidden;text-overflow:ellipsis">{{ r.src.school }}</span>
+        <span class="ib-divchip">{{ r.src.div }}</span>
+        {% if r.src.conf %}<span class="ib-divchip wire-conf" title="{{ r.src.conf_name }} (today)">{{ r.src.conf }}</span>{% endif %}</span>
+      <span class="bl-conf wire-step {{ 'up' if r.step < 0 else ('down' if r.step > 0 else 'flat') }}"
+            title="{{ 'moved up a division' if r.step < 0 else ('moved down a division' if r.step > 0 else 'same division') }}">
+        {{ '↑' if r.step < 0 else ('↓' if r.step > 0 else '→') }}</span>
+      <span class="bl-conf" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
+        {{ crest_box(r.dest.school, r.dest.abbr, r.dest.color, 'xs') }}
+        <span style="overflow:hidden;text-overflow:ellipsis">{{ r.dest.school }}</span>
+        <span class="ib-divchip">{{ r.dest.div }}</span>
+        {% if r.dest.conf %}<span class="ib-divchip wire-conf" title="{{ r.dest.conf_name }} (today)">{{ r.dest.conf }}</span>{% endif %}</span>
+      <span class="bl-conf"><span class="wire-kind k-{{ r.kind }}" title="{{ r.why }}">{{ r.kind_label }}</span></span>
+    </div>
+    {% endfor %}
+    {% if not v.rows %}
+    <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">
+      {% if v.years %}No moves match these filters — widen the season, division or conference.
+      {% else %}Nothing on the wire yet. Moves are archived when a pre-season or fall portal is committed.{% endif %}
+    </span></div>
+    {% endif %}
+  </div>
+</div>
+{{ pager(p, 'moves') }}
+</div>
+
+<style>
+/* .bl-school is nowrap + overflow:hidden so a long school name ellipses in every other
+   table. Here the second line IS the content, so the cell has to wrap instead of clip —
+   a truncated career ("San Diego > Fort Valley State > Penn College > Montela...") is
+   the one thing this page must never show. */
+.wire-player{white-space:normal;overflow:visible;text-overflow:clip;flex-wrap:wrap;gap:6px;
+  align-items:baseline;padding:2px 0}
+/* The journey chain: a second line under the name, deliberately quiet — it is
+   context for the move on this row, not a competing headline. */
+.wire-journey{display:block;width:100%;font-size:11px;line-height:1.55;color:var(--text-faint);
+  white-space:normal;font-weight:500}
+.wire-stop{white-space:nowrap}
+.wire-stop.is-now{color:var(--text-secondary);font-weight:700}
+.wire-arrow{margin:0 4px;opacity:.55}
+.wire-step{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.wire-step.up{color:var(--green-600,#2f6f4f)}
+.wire-step.down{color:var(--text-faint)}
+.wire-step.flat{color:var(--text-faint)}
+.wire-kind{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;
+  font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.wire-kind.k-riser{background:rgba(47,111,79,.13);color:#2f6f4f}
+.wire-kind.k-cascade{background:var(--surface-subtle);color:var(--text-muted)}
+.wire-kind.k-pro{background:rgba(45,106,159,.14);color:#2d6a9f}
+/* A few leagues carry no abbreviation, so their "abbr" is the full name. Cap the chip
+   rather than let one row's conference squeeze the school name out of every other. */
+.wire-conf{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  display:inline-block;vertical-align:bottom}
+</style>
+{% endblock %}
