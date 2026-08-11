@@ -382,7 +382,14 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     is played under the ordinary 5S/2D regular-season rules and counts everywhere a
     non-district dual counts (overall record, TOSS, at-large selection). Making it a
     `phase` would have quietly changed its dual format and dropped it out of the rating,
-    which is the opposite of why it exists."""
+    which is the opposite of why it exists.
+
+    It is deliberately IN-MEMORY ONLY and is not archived to `world_jhsaa_dual`: the
+    owner does not want the challenge distinguished on a card, so after persistence it
+    reads as the ordinary non-district dual it is. The flag exists so the scheduler can
+    keep the window's one paired-on-results dual apart from the window's ordinary ones,
+    and so the tests can assert it never reaches a district record. If a view ever needs
+    to mark it, the column comes first — do not infer it from position in the card."""
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
@@ -625,25 +632,117 @@ def district_rounds(teams: list[TeamSeason], year: int, salt: str = "") -> list[
 
 
 def play_rounds(rounds: list[list[tuple]], year: int, salt: str, tag: str = "") -> None:
-    """Play a list of rounds in order. Seeded per dual off the round/seat position, so a
-    district's results don't change when the caller interleaves other play between
-    passes — the mid-season window must not move a single league result."""
-    for r, date in enumerate(rounds):
-        for i, (h, a) in enumerate(date):
+    """Play a list of rounds in order.
+
+    ⚠️ The dual seed is derived from the PAIRING, never from its position in the list.
+    A double round robin plays each unordered pair twice with the venue reversed, so the
+    ORDERED pair (home, away) already identifies a dual uniquely — no round or seat index
+    is needed, and including one would be a bug rather than extra entropy. The caller
+    slices this list: `play_regular_season` plays `rounds[:half]`, runs the mid-season
+    window, then plays `rounds[half:]`, and a local `enumerate` restarts at zero on the
+    second call. Every second-pass dual would then be seeded differently from the same
+    district played straight through by `play_district`, so a standalone run or a
+    calibration script would produce different results for identical inputs. Keying on
+    the pairing also makes a result independent of which rotation the season drew, which
+    is the property you actually want: who wins depends on who is playing."""
+    for date in rounds:
+        for h, a in date:
             seed = int(hashlib.blake2s(
-                f"{salt}|d|{year}|{tag}|{h.school.key}|{a.school.key}|{r}|{i}".encode(),
+                f"{salt}|d|{year}|{tag}|{h.school.key}|{a.school.key}".encode(),
                 digest_size=4).hexdigest(), 16)
             play_dual(h, a, seed=seed, phase="regular", district=True)
 
 
-def settle_district(teams: list[TeamSeason]) -> list[TeamSeason]:
-    """Sort by finish (district win %, then point differential) and stamp
-    `district_place`. Split out of `play_district` so `run_season` can settle AFTER the
-    second pass while having ranked provisionally at the mid-season break."""
-    teams.sort(key=lambda t: (-t.district_pct, -(t.points_for - t.points_against),
-                              t.school.name))
-    for i, t in enumerate(teams, 1):
-        t.district_place = i
+# --- district standings ------------------------------------------------------
+#
+# Place is district win %, and the TIEBREAK LADDER is the association's (owner rule
+# 2027-08), in order:
+#
+#   1. HEAD-TO-HEAD record among the tied teams — a mini-league, so it settles a
+#      three-way tie the same way it settles a two-way one.
+#   2. If they split, the AGGREGATE of those meetings — courts won minus courts lost
+#      across the season series, so a 6-1 / 3-4 split beats a 4-3 / 1-6 one.
+#   3. Overall season record — the whole card, non-district included, deliberately.
+#   4. Power Index (TOSS).
+#   5. OOWP — opponents' opponents' win %, the deepest strength-of-schedule term.
+#
+# ⚠️ Every LEAGUE figure here is read off the district schedule entries, never off
+# `points_for`/`points_against`. Those two fields accumulate over EVERY dual a team
+# plays, non-district included, so using them to break a league tie lets a blowout in
+# the early non-district window decide a district title. They are the right numbers for
+# an overall margin and the wrong ones for anything labelled "district".
+
+def _district_duals(t: TeamSeason, against: set[str] | None = None) -> list[dict]:
+    """A team's league duals, optionally only those against a given set of schools."""
+    return [x for x in t.schedule
+            if x.get("district") and x.get("phase") == "regular"
+            and (against is None or x["opp"] in against)]
+
+
+def district_oowp(teams: list[TeamSeason]) -> dict[str, float]:
+    """{school: opponents' opponents' win %} over the pool given.
+
+    The last rung of the ladder, and the one that only ever matters when four teams have
+    matched each other on everything else. Computed on overall win %, which is what OOWP
+    means — the depth of a schedule is not a league-only property."""
+    by = {t.school.name: t for t in teams}
+    opps = {t.school.name: [x["opp"] for x in t.schedule if x.get("phase") == "regular"]
+            for t in teams}
+
+    def owp(name: str) -> float:
+        seen = [by[o].win_pct for o in opps.get(name, ()) if o in by]
+        return sum(seen) / len(seen) if seen else 0.0
+
+    cache = {n: owp(n) for n in by}
+    out = {}
+    for name in by:
+        seen = [cache[o] for o in opps.get(name, ()) if o in cache]
+        out[name] = sum(seen) / len(seen) if seen else 0.0
+    return out
+
+
+def _tiebreak(group: list[TeamSeason], oowp: dict[str, float]) -> list[TeamSeason]:
+    """Order teams that finished level on district win %, by the ladder above."""
+    names = {t.school.name for t in group}
+    h2h: dict[str, tuple[float, int]] = {}
+    for t in group:
+        met = _district_duals(t, names - {t.school.name})
+        wins = sum(1 for x in met if x["won"])
+        margin = sum(x["pf"] - x["pa"] for x in met)
+        h2h[t.school.name] = (wins / len(met) if met else 0.0, margin)
+    return sorted(group, key=lambda t: (
+        -h2h[t.school.name][0],            # 1. head-to-head record
+        -h2h[t.school.name][1],            # 2. aggregate of those meetings
+        -t.win_pct,                        # 3. overall season record
+        -t.power,                          # 4. Power Index (0.0 before it is computed)
+        -oowp.get(t.school.name, 0.0),     # 5. OOWP
+        t.school.name))
+
+
+def settle_district(teams: list[TeamSeason],
+                    oowp: dict[str, float] | None = None) -> list[TeamSeason]:
+    """Sort by district win % with the tiebreak ladder, and stamp `district_place`.
+
+    Split out of `play_district` so `run_season` can settle AFTER the Power Index exists
+    — rung 4 of the ladder reads `t.power`, which is only stamped once the whole gender's
+    regular season is finished. Settling earlier is not wrong, it just resolves that one
+    rung as a tie and falls through to OOWP.
+
+    A tie is resolved as a GROUP, not pairwise: head-to-head among three level teams is a
+    mini-league, and a pairwise comparator on it would not even be transitive."""
+    oowp = district_oowp(teams) if oowp is None else oowp
+    teams.sort(key=lambda t: -t.district_pct)
+    out: list[TeamSeason] = []
+    i = 0
+    while i < len(teams):
+        j = i
+        while j < len(teams) and teams[j].district_pct == teams[i].district_pct:
+            j += 1
+        out += _tiebreak(teams[i:j], oowp) if j - i > 1 else teams[i:j]
+        i = j
+    teams[:] = out
+    for k, t in enumerate(teams, 1):
+        t.district_place = k
     return teams
 
 
@@ -653,6 +752,11 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
     passes itself so it can put the mid-season window between them."""
     play_rounds(district_rounds(teams, year, salt), year, salt,
                 teams[0].school.district if teams else "")
+    power = power_index(teams)
+    for t in teams:
+        r = power.get(t.school.name)
+        if r is not None:
+            t.power = r.pi_raw
     return settle_district(teams)
 
 
@@ -945,10 +1049,20 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     owed = {id(t): max(0, quota[id(t)] - spent[id(t)]) for t in every_team}
     _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
 
+    # Power Index BEFORE settling: rung 4 of the tiebreak ladder reads `t.power`, and it
+    # is a function of the whole pool's results graph, so it cannot exist until every
+    # regular-season dual is played. Computed once here and handed back, so `run_season`
+    # does not recompute a ~5,000-dual rating it already has.
+    power = power_index(every_team)
+    for t in every_team:
+        r = power.get(t.school.name)
+        if r is not None:
+            t.power = r.pi_raw
+    oowp = district_oowp(every_team)
     for st in by_group.values():
         for teams in st.values():
-            settle_district(teams)
-    return every_team
+            settle_district(teams, oowp)
+    return every_team, power
 
 
 def _challenge_pairs(by_group: dict, year: int, salt: str,
@@ -971,11 +1085,17 @@ def _challenge_pairs(by_group: dict, year: int, salt: str,
     slate: list[tuple] = []
     for group, dists in by_group.items():
         # Provisional standing INSIDE each district, on league results only.
+        # LEAGUE results only, and the margin comes off the district duals — not
+        # `points_for`/`points_against`, which accumulate over the early non-district
+        # window too. Reading those here would let a February blowout against another
+        # district decide who a program draws in the challenge, in a pairing whose whole
+        # premise is "how the LEAGUE season has gone".
         ranked: list[tuple[int, TeamSeason]] = []
         for teams in dists.values():
-            order = sorted(teams, key=lambda t: (-t.district_pct,
-                                                 -(t.points_for - t.points_against),
-                                                 t.school.name))
+            order = sorted(teams, key=lambda t: (
+                -t.district_pct,
+                -sum(x["pf"] - x["pa"] for x in _district_duals(t)),
+                t.school.name))
             ranked += [(i, t) for i, t in enumerate(order, 1)]
         pool = sorted(ranked, key=lambda r: (r[0], r[1].school.name))
         taken: set[int] = set()
@@ -1103,16 +1223,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     by_group = {group: {dname: district_teams(schools, year, salt)
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
-    every_team = play_regular_season(by_group, year, gender, salt)
-    # TOSS over the whole gender, once, on the finished regular season — before any
-    # state tournament is played, since it is the seeding input. Computed across all
-    # classifications together because non-district play crosses them: rating a class
-    # in isolation would cut those edges out of the results graph.
-    power = power_index(every_team)
-    for t in every_team:
-        r = power.get(t.school.name)
-        if r is not None:
-            t.power = r.pi_raw
+    every_team, power = play_regular_season(by_group, year, gender, salt)
+    # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
+    # finished regular season, before any state tournament, since it is both the seeding
+    # input and rung 4 of the district tiebreak. Across all classifications together
+    # because non-district play crosses them: rating a class in isolation would cut those
+    # edges out of the results graph.
     out["power"] = power
     for group in GROUPS:
         standings = by_group[group]

@@ -144,6 +144,43 @@ consecutive dates, separation as a share of the card, venue balance and run leng
 windows surviving, the challenge never reaching district records, and seed
 reproducibility.
 
+## 7. Two follow-ups the review caught, and they are the same shape as §3
+
+**The seed carried a position.** `play_rounds` hashed the local round and seat index into
+the dual seed. Harmless while the list was played straight through — and the whole point
+of this change is that it no longer is. `play_regular_season` plays `rounds[:half]`, runs
+the window, then `rounds[half:]`, and the second call's `enumerate` restarts at zero, so
+every second-pass dual seeded differently from the same district played through by
+`play_district`. Identical inputs, different results, in a sim whose contract is that a
+save seed reproduces a season. The ordered `(home, away)` pair is already unique in a
+double round robin — each unordered pair meets twice with the venue reversed — so the
+index was never carrying information, only coupling.
+
+**The margin carried the wrong duals.** `points_for`/`points_against` accumulate over
+EVERY dual, non-district included. Both the old district tiebreak and the challenge's
+provisional rank used that difference while being documented as league-only, so a
+February blowout against another district could decide a district title. Fixed at the
+source: every league figure is now read off the district schedule entries.
+
+> Both are the §3 failure again — a value that is correct in one context silently reused
+> in another where it means something else. A round index means nothing once the list is
+> sliced; a season margin means nothing once it is labelled "district".
+
+## 8. The tiebreak ladder
+
+Place is district win %, then (owner rule 2027-08): head-to-head among the tied teams →
+the aggregate of those meetings → overall season record → Power Index → OOWP.
+
+Two implementation notes worth keeping. A tie is resolved as a **group**, not pairwise:
+head-to-head among three level teams is a mini-league, and a pairwise comparator on a
+rock-paper-scissors tie is not transitive, so the answer would depend on the input order.
+And settling had to move **after** the Power Index is computed, because rung 4 reads it —
+`play_regular_season` now computes TOSS over the whole gender as its last act and hands
+it back, so `run_season` does not recompute a ~5,000-dual rating it already has.
+
+On a real season, 88 teams across 30 districts needed the ladder — it is not a
+theoretical rung.
+
 ## What did NOT change
 
 Season length, district sizes, the non-district allowance, opponent selection (geography

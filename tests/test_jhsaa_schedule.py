@@ -40,7 +40,8 @@ def played():
         d = jhsaa.districts("girls", group)
         by_group[group] = {name: jhsaa.district_teams(d[name], 2030)
                            for name in sorted(d)[:2]}
-    return jhsaa.play_regular_season(by_group, 2030, "girls")
+    teams, _power = jhsaa.play_regular_season(by_group, 2030, "girls")
+    return teams
 
 
 def _regular(t):
@@ -313,3 +314,129 @@ def test_every_round_robin_size_is_a_complete_round_robin():
         for rnd in rounds:
             teams = [t for p in rnd for t in p]
             assert len(teams) == len(set(teams)), (n, rnd)
+
+
+# --- seeding and standings ----------------------------------------------------
+
+def test_the_dual_seed_does_not_depend_on_how_the_rounds_are_sliced():
+    """`play_regular_season` plays `rounds[:half]`, breaks, then `rounds[half:]`, while
+    `play_district` plays the same list straight through. Seeding off a local
+    `enumerate` made every second-pass dual differ between the two paths, so a
+    standalone run or a calibration script produced different results for identical
+    inputs. The seed comes off the PAIRING, which is unique per dual in a double round
+    robin, so both orders now agree exactly."""
+    d = jhsaa.districts("girls", "7A")
+    name = sorted(d)[0]
+
+    def play(sliced):
+        teams = jhsaa.district_teams(d[name], 2030, "seed-test")
+        rounds = jhsaa.district_rounds(teams, 2030, "seed-test")
+        if sliced:
+            half = len(rounds) // 2
+            jhsaa.play_rounds(rounds[:half], 2030, "seed-test", name)
+            jhsaa.play_rounds(rounds[half:], 2030, "seed-test", name)
+        else:
+            jhsaa.play_rounds(rounds, 2030, "seed-test", name)
+        return {t.school.name: [(x["opp"], x["home"], x["pf"], x["pa"], x["won"])
+                                for x in t.schedule] for t in teams}
+
+    assert play(False) == play(True)
+
+
+def _fake(school, gender="girls"):
+    return jhsaa.TeamSeason(school=school, roster=[])
+
+
+def _add(t, opp, *, won, pf, pa, district=True):
+    t.schedule.append({"opp": opp, "home": True, "phase": "regular",
+                       "pf": pf, "pa": pa, "won": won, "district": district,
+                       "challenge": False, "lines": []})
+    if district:
+        if won:
+            t.dwins += 1
+        else:
+            t.dlosses += 1
+    if won:
+        t.wins += 1
+    else:
+        t.losses += 1
+    t.points_for += pf
+    t.points_against += pa
+
+
+@pytest.fixture(scope="module")
+def schools():
+    d = jhsaa.districts("girls", "7A")
+    return d[sorted(d)[0]][:4]
+
+
+def test_a_district_tie_is_broken_by_head_to_head_first(schools):
+    """Level on district win %; A beat B twice. A finishes ahead however the rest of
+    the card fell."""
+    a, b = _fake(schools[0]), _fake(schools[1])
+    _add(a, b.school.name, won=True, pf=4, pa=3)
+    _add(a, b.school.name, won=True, pf=4, pa=3)
+    _add(b, a.school.name, won=False, pf=3, pa=4)
+    _add(b, a.school.name, won=False, pf=3, pa=4)
+    # level the DISTRICT records, or there is no tie to break and the test proves nothing
+    _add(a, "Filler", won=False, pf=0, pa=7)
+    _add(a, "Filler", won=False, pf=0, pa=7)
+    _add(b, "Filler", won=True, pf=7, pa=0)
+    _add(b, "Filler", won=True, pf=7, pa=0)
+    assert a.district_pct == b.district_pct == 0.5
+    assert (b.points_for - b.points_against) > (a.points_for - a.points_against)
+    order = jhsaa.settle_district([b, a], {})
+    assert [t.school.name for t in order] == [a.school.name, b.school.name]
+
+
+def test_a_split_series_is_broken_by_the_aggregate_of_those_meetings(schools):
+    """1-1 head to head, so the ladder falls to courts won ACROSS the series: 6-1 then
+    3-4 beats 4-3 then 1-6."""
+    a, b = _fake(schools[0]), _fake(schools[1])
+    _add(a, b.school.name, won=True, pf=6, pa=1)
+    _add(a, b.school.name, won=False, pf=3, pa=4)
+    _add(b, a.school.name, won=False, pf=1, pa=6)
+    _add(b, a.school.name, won=True, pf=4, pa=3)
+    order = jhsaa.settle_district([b, a], {})
+    assert [t.school.name for t in order] == [a.school.name, b.school.name]
+
+
+def test_a_district_tie_ignores_non_district_margin(schools):
+    """`points_for`/`points_against` accumulate over EVERY dual, so reading them to
+    break a league tie lets a blowout against another district decide a district title.
+    Every league figure comes off the district schedule entries."""
+    a, b = _fake(schools[0]), _fake(schools[1])
+    _add(a, b.school.name, won=True, pf=4, pa=3)
+    _add(a, b.school.name, won=False, pf=3, pa=4)
+    _add(b, a.school.name, won=False, pf=3, pa=4)
+    _add(b, a.school.name, won=True, pf=4, pa=3)
+    # Non-district play, arranged so both finish 2-2 overall — rung 3 is level too — but
+    # B's margin is hugely better purely on games outside the league.
+    _add(b, "Somebody Else", won=True, pf=7, pa=0, district=False)
+    _add(b, "Somebody Else", won=False, pf=3, pa=4, district=False)
+    _add(a, "Someone Else", won=False, pf=0, pa=7, district=False)
+    _add(a, "Someone Else", won=True, pf=4, pa=3, district=False)
+    assert a.district_pct == b.district_pct and a.win_pct == b.win_pct
+    assert (b.points_for - b.points_against) > (a.points_for - a.points_against)
+    # The only rung left is OOWP, supplied here so the result is a decision and not a
+    # fall-through to the alphabet. The old key put B first on that margin alone.
+    order = jhsaa.settle_district([b, a], {a.school.name: 0.9, b.school.name: 0.1})
+    assert [t.school.name for t in order] == [a.school.name, b.school.name]
+
+
+def test_a_three_way_tie_is_resolved_as_a_mini_league(schools):
+    """Head-to-head among three level teams is a group, not a chain of pairwise
+    comparisons — a pairwise comparator on a rock-paper-scissors tie is not even
+    transitive, so the sort would depend on input order."""
+    a, b, c = _fake(schools[0]), _fake(schools[1]), _fake(schools[2])
+    # A 2-0 in the group, B 1-1, C 0-2
+    for opp in (b, c):
+        _add(a, opp.school.name, won=True, pf=5, pa=2)
+        _add(opp, a.school.name, won=False, pf=2, pa=5)
+    _add(b, c.school.name, won=True, pf=5, pa=2)
+    _add(c, b.school.name, won=False, pf=2, pa=5)
+    for t in (a, b, c):                                  # level on district win %
+        while t.dwins + t.dlosses < 4:
+            _add(t, "Filler", won=t.dwins < 2, pf=4, pa=3)
+    names = [t.school.name for t in jhsaa.settle_district([c, b, a], {})]
+    assert names == [a.school.name, b.school.name, c.school.name]
