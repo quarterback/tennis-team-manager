@@ -93,7 +93,7 @@
       <span class="bl-conf" style="white-space:nowrap">{{ r.year_label }}
         <span class="ib-divchip" title="{{ r.cycle_label }} portal">{{ r.cycle_label[:4] }}</span></span>
       <span class="bl-school wire-player">
-        <a href="{{ url_for('player', pid=r.pid, u=(r.dest.div ~ '-' ~ r.gender)) }}">{{ r.name }}</a>
+        <a href="{{ url_for('player', pid=r.pid, u=(r.now_div ~ '-' ~ r.gender)) }}">{{ r.name }}</a>
         {% if v.gender == 'all' %}<span class="ib-divchip">{{ 'M' if r.gender == 'men' else 'W' }}</span>{% endif %}
         {% if r.hops > 1 %}
         {# The trajectory, inline — the reason this page exists. Built from the whole

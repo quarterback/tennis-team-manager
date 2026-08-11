@@ -30,6 +30,7 @@ See docs/DESIGN-jhsaa-high-school-season.md.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import random
@@ -82,6 +83,30 @@ ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and ro
 # loads on schools of different districts. To shorten seasons, shrink the districts —
 # `MAX_DISTRICT` in `scripts/import_jhsaa.py` — not this.
 NONDISTRICT_MIN, NONDISTRICT_MAX = 4, 8
+
+# How that allowance is spread across the season (owner rule 2027-08). A high-school
+# card is not "all the non-league games, then all the league ones" — it opens
+# non-district, runs the league, breaks for a mid-season window, runs the league back
+# the other way, and has room for a tune-up before districts. USTA's model treats
+# district, non-district and tournament play as separate schedule TYPES rather than one
+# undifferentiated block, and this is where that shows up in the order of play.
+EARLY_SHARE = 0.55        # of the non-challenge non-district card, played before league
+MID_NONDISTRICT = 1       # non-district duals in the mid-season window, besides the challenge
+
+# --- the mid-season challenge (owner rule 2027-08) ---------------------------
+# One cross-district dual in the mid-season window, paired AFTER the first league pass
+# on how the season has actually gone — the scheduling idea behind college basketball's
+# old BracketBusters: hold a date open, then match comparable programs from different
+# leagues once you know who is comparable. So the #3 team in one district draws the #3
+# in another, not whoever geography threw up in February.
+#
+# It is NON-DISTRICT and can never touch district place; it is an ordinary result
+# everywhere else (overall record, TOSS, at-large selection), which is the point of
+# playing it. Hosting alternates on a hash of the pairing and the year, so no program
+# is systematically at home for it.
+CHALLENGE_ENABLED = True
+CHALLENGE_PLACE_SLACK = 1     # pair a #3 with a #2-#4; never a #1 with a #8
+CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level right
 
 # High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
 # is 6.7x the cost and is meant for the college season you actually watch; a season here
@@ -349,9 +374,22 @@ def _score_str(ln) -> str:
 
 
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
-              district: bool = False):
+              district: bool = False, challenge: bool = False):
     """One dual. Always to completion — high school has no clinch. `district` marks it
-    as counting toward district place as well as the overall record."""
+    as counting toward district place as well as the overall record.
+
+    `challenge` is a LABEL on a non-district dual, not a phase: the mid-season challenge
+    is played under the ordinary 5S/2D regular-season rules and counts everywhere a
+    non-district dual counts (overall record, TOSS, at-large selection). Making it a
+    `phase` would have quietly changed its dual format and dropped it out of the rating,
+    which is the opposite of why it exists.
+
+    It is deliberately IN-MEMORY ONLY and is not archived to `world_jhsaa_dual`: the
+    owner does not want the challenge distinguished on a card, so after persistence it
+    reads as the ordinary non-district dual it is. The flag exists so the scheduler can
+    keep the window's one paired-on-results dual apart from the window's ordinary ones,
+    and so the tests can assert it never reaches a district record. If a view ever needs
+    to mark it, the column comes first — do not infer it from position in the card."""
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
@@ -379,10 +417,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # differentials. Cost an hour.
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
-                       "won": res.winner == 0, "district": district, "lines": lines})
+                       "won": res.winner == 0, "district": district,
+                       "challenge": challenge, "lines": lines})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
-                       "won": res.winner == 1, "district": district, "lines": lines})
+                       "won": res.winner == 1, "district": district,
+                       "challenge": challenge, "lines": lines})
     if res.winner == 0:
         a.wins += 1
         b.losses += 1
@@ -423,22 +463,301 @@ def district_teams(schools: list[School], year: int, salt: str = "") -> list[Tea
     return [TeamSeason(school=s, roster=build_roster(s, year, salt)) for s in schools]
 
 
-def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[TeamSeason]:
-    """Play the double round-robin and settle district place. Returns `teams`, sorted
-    by finish (district win %, then point differential)."""
-    dname = teams[0].school.district if teams else ""
-    rng = random.Random(f"{salt}|dist|{year}|{dname}")
-    for i, a in enumerate(teams):
-        for b in teams[i + 1:]:
-            for leg in (0, 1):                      # home and away
-                h, w = (a, b) if leg == 0 else (b, a)
-                play_dual(h, w, seed=rng.randrange(1 << 30), phase="regular",
-                          district=True)
-    teams.sort(key=lambda t: (-t.district_pct, -(t.points_for - t.points_against),
-                              t.school.name))
-    for i, t in enumerate(teams, 1):
-        t.district_place = i
+# --- the district round robin ------------------------------------------------
+#
+# ⚠️ A DOUBLE round robin is TWO SEPARATED PASSES, not a home-and-home series.
+#
+# This used to be `for a: for b: for leg in (0, 1)` — which plays a program's two
+# meetings with an opponent on consecutive dates, all season long:
+#
+#     Mar 10  at Alder Landing        Mar 15  at Altamonte
+#     Mar 12  vs Alder Landing        Mar 17  vs Altamonte
+#
+# Every card in the association read like that. It is a correct double round robin and
+# a schedule no high school has ever played. The fix is structural, not cosmetic: the
+# league is generated as ROUNDS (the circle method — every team plays exactly once per
+# round), the first pass runs the rounds forward, the mid-season window goes in the
+# middle, and the second pass runs them back the other way with the venue flipped. So a
+# team meets its opponents A → B → … → G, breaks, then G → … → B → A, and the return
+# match falls most of a season after the first one.
+#
+# `_rr_rounds` returns unordered pairs and `_orient` decides venue SEPARATELY, because
+# the two are different constraints: the rounds fix WHO plays WHEN, the orientation bit
+# fixes WHERE. One bit per pairing serves both meetings (pass 2 is its inverse), so
+# "the return match reverses venue" holds by construction and cannot be broken by the
+# home/away balancing, which only ever flips that one bit.
+
+def _rr_rounds(n: int) -> list[list[tuple[int, int]]]:
+    """Single round robin over 0..n-1 as ROUNDS, by the circle method.
+
+    Every team appears at most once per round, so no program plays the same opponent on
+    consecutive dates. An odd `n` gets a phantom entry whose pairing is dropped, which
+    is the bye — that team simply has one fewer league date in the pass."""
+    ix = list(range(n)) + ([None] if n % 2 else [])
+    m = len(ix)
+    rounds = []
+    for _ in range(max(0, m - 1)):
+        pairs = [(ix[i], ix[m - 1 - i]) for i in range(m // 2)]
+        rounds.append([(min(a, b), max(a, b)) for a, b in pairs
+                       if a is not None and b is not None])
+        ix = [ix[0], ix[-1]] + ix[1:-1]           # rotate all but the fixed first seat
+    return rounds
+
+
+def _mirror_orders(n_rounds: int) -> list[list[int]]:
+    """Candidate round orders for the SECOND pass, best separation first.
+
+    ⚠️ A plain reverse is the obvious mirror and it is wrong at the fold. If pass 2 runs
+    the rounds backwards, the LAST opponent of pass 1 is the FIRST of pass 2 — the two
+    meetings land on consecutive league dates, which is the exact back-to-back pairing
+    this whole rewrite exists to remove. It is invisible in a per-team card until you
+    measure the gaps: eleven opponents beautifully spread, and one played twice in a row.
+
+    So the second pass is a ROTATED mirror, and the rotation is chosen by measuring. A
+    pair met in round `i` of pass 1 and round `j` of pass 2 (`order[j] == i`) is
+    separated by `R + j - i` league dates. Every rotation of both families is scored by
+    its WORST pair, and everything clearing HALF A PASS is kept:
+
+      * serpentine  `rev`: pass 2 runs backwards, rotated — G → F → … → A
+      * mirrored    `fwd`: pass 2 runs forwards, rotated  — A → B → … → G
+
+    Un-rotated `fwd` is the textbook mirrored double round robin and scores a flat `R`,
+    the maximum; the best serpentine reaches about `R/2`, which is still a return match
+    half a season plus the whole mid-season window after the first meeting. Both clear
+    the floor, so `district_rounds` draws from the band on the season seed and a
+    program's opponent order genuinely differs year to year — which is the ask, since
+    the second pass "does not need to be a perfect reverse every season". What does not
+    vary is the floor."""
+    R = n_rounds
+    if R <= 1:
+        return [list(range(R))]
+    floor = (R + 1) // 2
+    cands, seen = [], set()
+    for family in ("rev", "fwd"):                 # serpentine first: it is the house shape
+        for k in range(R):
+            order = ([(R - 1 - j + k) % R for j in range(R)] if family == "rev"
+                     else [(j + k) % R for j in range(R)])
+            pos = {r: j for j, r in enumerate(order)}
+            if min(R + pos[i] - i for i in range(R)) < floor:
+                continue
+            key = tuple(order)
+            if key not in seen:                   # several k collapse at small R
+                seen.add(key)
+                cands.append(order)
+    return cands or [list(range(R))]
+
+
+def _venue_cost(seq: list[bool]) -> int:
+    """How bad one team's home/away sequence is. Runs longer than two are penalised
+    quadratically (three straight road dates is a real complaint; six is a different
+    kind of complaint), plus a linear penalty for an unbalanced card. Round-robin
+    scheduling treats both as first-class constraints rather than as an afterthought."""
+    cost = run = 0
+    for prev, cur in zip(seq, seq[1:]):
+        run = run + 1 if prev == cur else 0
+        if run >= 2:                               # a run of 3+ dates
+            cost += (run - 1) ** 2
+    return cost + abs(2 * sum(seq) - len(seq))
+
+
+def _orient(order: list[list[tuple[int, int]]], mirror: list[int], n: int,
+            rng: random.Random) -> dict[tuple[int, int], bool]:
+    """Choose, per PAIRING, which meeting is at home — one bit that serves both passes.
+
+    Seeded from the round/seat parity (a decent first cut), then greedily improved: flip
+    any single bit that lowers the total venue cost, sweeping until nothing helps. Small
+    districts make this trivial and a 12-team district has 66 bits, so a handful of
+    sweeps is nothing next to simulating the duals themselves."""
+    flip = {p: bool((r + i) % 2) for r, rnd in enumerate(order) for i, p in enumerate(rnd)}
+
+    def sequences() -> dict[int, list[bool]]:
+        seq: dict[int, list[bool]] = {t: [] for t in range(n)}
+        for pass_no in (0, 1):
+            rounds = order if pass_no == 0 else [order[i] for i in mirror]
+            for rnd in rounds:
+                for a, b in rnd:
+                    home_is_a = flip[(a, b)] if pass_no == 0 else not flip[(a, b)]
+                    seq[a].append(home_is_a)
+                    seq[b].append(not home_is_a)
+        return seq
+
+    def total() -> int:
+        return sum(_venue_cost(s) for s in sequences().values())
+
+    pairs = [p for rnd in order for p in rnd]
+    rng.shuffle(pairs)                             # deterministic, but not index-ordered
+    best = total()
+    for _ in range(4):
+        improved = False
+        for p in pairs:
+            flip[p] = not flip[p]
+            cost = total()
+            if cost < best:
+                best, improved = cost, True
+            else:
+                flip[p] = not flip[p]
+        if not improved:
+            break
+    return flip
+
+
+def district_rounds(teams: list[TeamSeason], year: int, salt: str = "") -> list[list[tuple]]:
+    """The district's league card as an ordered list of ROUNDS of (home, away) teams —
+    the first pass, then the second pass mirrored with venues reversed.
+
+    The caller decides what goes BETWEEN the two passes (`run_season` puts the
+    mid-season window there); playing the list straight through is a plain double round
+    robin. The pass-2 rotation varies by season so a program's opponent order is not the
+    same every year, and every variant is reproducible from the save seed."""
+    n = len(teams)
+    if n < 2:
+        return []
+    dname = teams[0].school.district
+    rng = random.Random(f"{salt}|rr|{year}|{teams[0].school.gender}|{dname}")
+    order = _rr_rounds(n)
+    rng.shuffle(order)                    # which round leads varies by season
+    variants = _mirror_orders(len(order))
+    mirror = variants[rng.randrange(len(variants))]
+    flip = _orient(order, mirror, n, rng)
+    passes = [order, [order[i] for i in mirror]]
+    out = []
+    for pass_no, rounds in enumerate(passes):
+        for rnd in rounds:
+            date = []
+            for a, b in rnd:
+                home_is_a = flip[(a, b)] if pass_no == 0 else not flip[(a, b)]
+                date.append((teams[a], teams[b]) if home_is_a else (teams[b], teams[a]))
+            out.append(date)
+    return out
+
+
+def play_rounds(rounds: list[list[tuple]], year: int, salt: str, tag: str = "") -> None:
+    """Play a list of rounds in order.
+
+    ⚠️ The dual seed is derived from the PAIRING, never from its position in the list.
+    A double round robin plays each unordered pair twice with the venue reversed, so the
+    ORDERED pair (home, away) already identifies a dual uniquely — no round or seat index
+    is needed, and including one would be a bug rather than extra entropy. The caller
+    slices this list: `play_regular_season` plays `rounds[:half]`, runs the mid-season
+    window, then plays `rounds[half:]`, and a local `enumerate` restarts at zero on the
+    second call. Every second-pass dual would then be seeded differently from the same
+    district played straight through by `play_district`, so a standalone run or a
+    calibration script would produce different results for identical inputs. Keying on
+    the pairing also makes a result independent of which rotation the season drew, which
+    is the property you actually want: who wins depends on who is playing."""
+    for date in rounds:
+        for h, a in date:
+            seed = int(hashlib.blake2s(
+                f"{salt}|d|{year}|{tag}|{h.school.key}|{a.school.key}".encode(),
+                digest_size=4).hexdigest(), 16)
+            play_dual(h, a, seed=seed, phase="regular", district=True)
+
+
+# --- district standings ------------------------------------------------------
+#
+# Place is district win %, and the TIEBREAK LADDER is the association's (owner rule
+# 2027-08), in order:
+#
+#   1. HEAD-TO-HEAD record among the tied teams — a mini-league, so it settles a
+#      three-way tie the same way it settles a two-way one.
+#   2. If they split, the AGGREGATE of those meetings — courts won minus courts lost
+#      across the season series, so a 6-1 / 3-4 split beats a 4-3 / 1-6 one.
+#   3. Overall season record — the whole card, non-district included, deliberately.
+#   4. Power Index (TOSS).
+#   5. OOWP — opponents' opponents' win %, the deepest strength-of-schedule term.
+#
+# ⚠️ Every LEAGUE figure here is read off the district schedule entries, never off
+# `points_for`/`points_against`. Those two fields accumulate over EVERY dual a team
+# plays, non-district included, so using them to break a league tie lets a blowout in
+# the early non-district window decide a district title. They are the right numbers for
+# an overall margin and the wrong ones for anything labelled "district".
+
+def _district_duals(t: TeamSeason, against: set[str] | None = None) -> list[dict]:
+    """A team's league duals, optionally only those against a given set of schools."""
+    return [x for x in t.schedule
+            if x.get("district") and x.get("phase") == "regular"
+            and (against is None or x["opp"] in against)]
+
+
+def district_oowp(teams: list[TeamSeason]) -> dict[str, float]:
+    """{school: opponents' opponents' win %} over the pool given.
+
+    The last rung of the ladder, and the one that only ever matters when four teams have
+    matched each other on everything else. Computed on overall win %, which is what OOWP
+    means — the depth of a schedule is not a league-only property."""
+    by = {t.school.name: t for t in teams}
+    opps = {t.school.name: [x["opp"] for x in t.schedule if x.get("phase") == "regular"]
+            for t in teams}
+
+    def owp(name: str) -> float:
+        seen = [by[o].win_pct for o in opps.get(name, ()) if o in by]
+        return sum(seen) / len(seen) if seen else 0.0
+
+    cache = {n: owp(n) for n in by}
+    out = {}
+    for name in by:
+        seen = [cache[o] for o in opps.get(name, ()) if o in cache]
+        out[name] = sum(seen) / len(seen) if seen else 0.0
+    return out
+
+
+def _tiebreak(group: list[TeamSeason], oowp: dict[str, float]) -> list[TeamSeason]:
+    """Order teams that finished level on district win %, by the ladder above."""
+    names = {t.school.name for t in group}
+    h2h: dict[str, tuple[float, int]] = {}
+    for t in group:
+        met = _district_duals(t, names - {t.school.name})
+        wins = sum(1 for x in met if x["won"])
+        margin = sum(x["pf"] - x["pa"] for x in met)
+        h2h[t.school.name] = (wins / len(met) if met else 0.0, margin)
+    return sorted(group, key=lambda t: (
+        -h2h[t.school.name][0],            # 1. head-to-head record
+        -h2h[t.school.name][1],            # 2. aggregate of those meetings
+        -t.win_pct,                        # 3. overall season record
+        -t.power,                          # 4. Power Index (0.0 before it is computed)
+        -oowp.get(t.school.name, 0.0),     # 5. OOWP
+        t.school.name))
+
+
+def settle_district(teams: list[TeamSeason],
+                    oowp: dict[str, float] | None = None) -> list[TeamSeason]:
+    """Sort by district win % with the tiebreak ladder, and stamp `district_place`.
+
+    Split out of `play_district` so `run_season` can settle AFTER the Power Index exists
+    — rung 4 of the ladder reads `t.power`, which is only stamped once the whole gender's
+    regular season is finished. Settling earlier is not wrong, it just resolves that one
+    rung as a tie and falls through to OOWP.
+
+    A tie is resolved as a GROUP, not pairwise: head-to-head among three level teams is a
+    mini-league, and a pairwise comparator on it would not even be transitive."""
+    oowp = district_oowp(teams) if oowp is None else oowp
+    teams.sort(key=lambda t: -t.district_pct)
+    out: list[TeamSeason] = []
+    i = 0
+    while i < len(teams):
+        j = i
+        while j < len(teams) and teams[j].district_pct == teams[i].district_pct:
+            j += 1
+        out += _tiebreak(teams[i:j], oowp) if j - i > 1 else teams[i:j]
+        i = j
+    teams[:] = out
+    for k, t in enumerate(teams, 1):
+        t.district_place = k
     return teams
+
+
+def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[TeamSeason]:
+    """Play the double round-robin straight through and settle district place. The
+    standalone path (a single district, tests, calibration); `run_season` drives the two
+    passes itself so it can put the mid-season window between them."""
+    play_rounds(district_rounds(teams, year, salt), year, salt,
+                teams[0].school.district if teams else "")
+    power = power_index(teams)
+    for t in teams:
+        r = power.get(t.school.name)
+        if r is not None:
+            t.power = r.pi_raw
+    return settle_district(teams)
 
 
 # --- the Power Index (TOSS) ------------------------------------------------------
@@ -627,27 +946,28 @@ def _geo_gap(a: School, b: School) -> int:
     return 0 if a.county == b.county else (1 if a.area == b.area else 2)
 
 
-def _crossover(teams: list[TeamSeason], rng: random.Random) -> None:
-    """The non-district half of the schedule. Run over the WHOLE gender at once.
+def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
+                       owed: dict[int, int], played: dict[int, set[str]]) -> list[tuple]:
+    """PAIR the non-district card — it does not play it.
 
-    The district double round-robin is 10-22 duals by district size; each team then adds
-    NONDISTRICT_MIN..MAX more against schools from OTHER districts. These count toward
-    the overall record and toward at-large selection, but NOT toward district place:
-    that is decided on district duals alone.
+    Pairing and playing are separate because the season is no longer "all the
+    non-district duals, then all the league ones". A card opens non-district, runs the
+    league, breaks for a mid-season window and runs the league back; the same matcher
+    fills each of those windows, so it has to be able to hand back pairs and let the
+    caller decide when they happen.
 
     Opponents are drawn on the three things that actually decide a real non-league card:
       1. GEOGRAPHY  — same county, then same area, then anywhere (`GEO_WEIGHT`).
       2. TALENT     — nearest team strength, so the draw is competitive both ways.
-      3. AVAILABILITY — both schools still owe non-district duals, and haven't met.
+      3. AVAILABILITY — both schools still owe duals this window, and haven't met.
     Classification is a gate on top: same level or ONE level apart, never further, so a
-    7A card mixes 7A and 6A and never lands on 1A."""
-    owed = {id(t): NONDISTRICT_MIN + rng.randrange(NONDISTRICT_MAX - NONDISTRICT_MIN + 1)
-            for t in teams}
+    7A card mixes 7A and 6A and never lands on 1A.
+
+    `owed` and `played` are the CALLER'S dicts and are mutated in place, so quotas and
+    the no-rematch rule carry across windows instead of each window rediscovering them."""
     strength = {id(t): _strength(t) for t in teams}
-    # Who each team has already faced, so a non-district draw can't quietly recreate the
-    # home-and-home that only the district round-robin is supposed to have.
-    played: dict[int, set[str]] = {id(t): {s["opp"] for s in t.schedule} for t in teams}
-    short = lambda: [t for t in teams if owed[id(t)] > 0]          # noqa: E731
+    short = lambda: [t for t in teams if owed.get(id(t), 0) > 0]          # noqa: E731
+    pairs: list[tuple] = []
     need = short()
     guard = 0
     while len(need) > 1 and guard < 200000:
@@ -666,11 +986,148 @@ def _crossover(teams: list[TeamSeason], rng: random.Random) -> None:
         cands.sort(key=lambda t: (GEO_WEIGHT * _geo_gap(a.school, t.school)
                                   + abs(strength[id(t)] - sa), t.school.name))
         b = cands[rng.randrange(min(SHORTLIST, len(cands)))]
-        play_dual(a, b, seed=rng.randrange(1 << 30), phase="regular", district=False)
+        pairs.append((a, b))
         for x, y in ((a, b), (b, a)):
             owed[id(x)] -= 1
             played[id(x)].add(y.school.name)
         need = short()
+    return pairs
+
+
+def _play_pairs(pairs: list[tuple], rng: random.Random, *, challenge: bool = False) -> None:
+    """Play a window's non-district pairs. Never district, so district place is
+    untouched whatever else these results feed."""
+    for a, b in pairs:
+        play_dual(a, b, seed=rng.randrange(1 << 30), phase="regular",
+                  district=False, challenge=challenge)
+
+
+def play_regular_season(by_group: dict, year: int, gender: str,
+                        salt: str = "") -> list[TeamSeason]:
+    """Play a whole gender's regular season IN CALENDAR ORDER, and settle district place.
+
+        early non-district → district pass 1 → mid-season window → district pass 2
+                           → late non-district tune-up
+
+    A dual's position in `schedule` is the only clock this association has — there is no
+    date in the sim — so playing in this order IS the schedule. Every phase runs across
+    the WHOLE gender before the next begins, which is what keeps one program's card in
+    step with another's.
+
+    `by_group` is {group: {district: [TeamSeason]}}. Takes a subset happily, which is how
+    the schedule tests exercise this path rather than a re-implementation of it."""
+    every_team = [t for st in by_group.values() for ts in st.values() for t in ts]
+    xrng = random.Random(f"{salt}|xover|{gender}|{year}")
+
+    # The non-district ALLOWANCE, split into windows up front. `owed`/`played` are shared
+    # across every window, so a program's total card is the allowance it drew and no
+    # pairing can quietly recreate a home-and-home that only the league is meant to have.
+    quota = {id(t): NONDISTRICT_MIN + xrng.randrange(NONDISTRICT_MAX - NONDISTRICT_MIN + 1)
+             for t in every_team}
+    played: dict[int, set[str]] = {id(t): set() for t in every_team}
+    reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
+    owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
+    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+
+    rounds = {(g, d): district_rounds(teams, year, salt)
+              for g, st in by_group.items() for d, teams in st.items()}
+    half = {k: len(v) // 2 for k, v in rounds.items()}
+    for key, rr in rounds.items():
+        play_rounds(rr[:half[key]], year, salt, key[1])
+
+    # --- the mid-season window: a non-district date, then the challenge ---
+    owed = {id(t): MID_NONDISTRICT for t in every_team}
+    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+    if CHALLENGE_ENABLED:
+        _play_pairs(_challenge_pairs(by_group, year, salt, played), xrng, challenge=True)
+
+    for key, rr in rounds.items():
+        play_rounds(rr[half[key]:], year, salt, key[1])
+
+    # --- the late tune-up: whatever the allowance has left ---
+    spent = {id(t): sum(1 for s in t.schedule if not s["district"]) for t in every_team}
+    owed = {id(t): max(0, quota[id(t)] - spent[id(t)]) for t in every_team}
+    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+
+    # Power Index BEFORE settling: rung 4 of the tiebreak ladder reads `t.power`, and it
+    # is a function of the whole pool's results graph, so it cannot exist until every
+    # regular-season dual is played. Computed once here and handed back, so `run_season`
+    # does not recompute a ~5,000-dual rating it already has.
+    power = power_index(every_team)
+    for t in every_team:
+        r = power.get(t.school.name)
+        if r is not None:
+            t.power = r.pi_raw
+    oowp = district_oowp(every_team)
+    for st in by_group.values():
+        for teams in st.values():
+            settle_district(teams, oowp)
+    return every_team, power
+
+
+def _challenge_pairs(by_group: dict, year: int, salt: str,
+                     played: dict[int, set[str]]) -> list[tuple]:
+    """The mid-season challenge slate, paired on how the season has actually gone.
+
+    Run at the break, AFTER the first league pass, which is the whole idea: rank each
+    district by its league record so far and match a #3 against another district's #3.
+    That is a useful dual; the same programs paired in February on roster strength would
+    have been another arbitrary non-league date.
+
+    The early non-district card cannot work this way and must not be changed to — it is
+    seeded on roster strength precisely so it can run BEFORE any results exist. This
+    window is the one place in the season where a pairing reads results, and it can only
+    exist because it sits after a pass.
+
+    Pairing is greedy over (place gap, travel, level gap), gated to the same
+    classification or one apart and never a rematch. Hosting alternates on a stable hash
+    of the two school names and the year, so a program is not systematically at home."""
+    slate: list[tuple] = []
+    for group, dists in by_group.items():
+        # Provisional standing INSIDE each district, on league results only.
+        # LEAGUE results only, and the margin comes off the district duals — not
+        # `points_for`/`points_against`, which accumulate over the early non-district
+        # window too. Reading those here would let a February blowout against another
+        # district decide who a program draws in the challenge, in a pairing whose whole
+        # premise is "how the LEAGUE season has gone".
+        ranked: list[tuple[int, TeamSeason]] = []
+        for teams in dists.values():
+            order = sorted(teams, key=lambda t: (
+                -t.district_pct,
+                -sum(x["pf"] - x["pa"] for x in _district_duals(t)),
+                t.school.name))
+            ranked += [(i, t) for i, t in enumerate(order, 1)]
+        pool = sorted(ranked, key=lambda r: (r[0], r[1].school.name))
+        taken: set[int] = set()
+        for place, a in pool:
+            if id(a) in taken:
+                continue
+            best = None
+            for pl, b in pool:
+                if id(b) in taken or b is a:
+                    continue
+                if b.school.district == a.school.district:
+                    continue
+                if abs(pl - place) > CHALLENGE_PLACE_SLACK:
+                    continue
+                if b.school.name in played[id(a)]:
+                    continue
+                score = (abs(pl - place) * 10.0
+                         + CHALLENGE_GEO_WEIGHT * _geo_gap(a.school, b.school))
+                if best is None or score < best[0]:
+                    best = (score, b)
+            if best is None:
+                continue
+            b = best[1]
+            taken.add(id(a)); taken.add(id(b))
+            # Host alternates on the pairing + the year, not on who was listed first.
+            key = "|".join(sorted((a.school.name, b.school.name)))
+            h = int(hashlib.blake2s(f"{salt}|chal|{year}|{group}|{key}".encode(),
+                                    digest_size=4).hexdigest(), 16)
+            slate.append((a, b) if h % 2 == 0 else (b, a))
+            for x, y in ((a, b), (b, a)):
+                played[id(x)].add(y.school.name)
+    return slate
 
 
 # --- awards -------------------------------------------------------------------
@@ -743,31 +1200,35 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     if hit is not None:
         return hit
     out = {"year": year, "gender": gender, "groups": {}, "teams": {}, "awards": {}}
-    # Order of play, and it matters: NON-DISTRICT FIRST, then league (owner rule
-    # 2027-08) — the front-loaded non-conference schedule of real life and of the college
-    # sim, where `season.place()` gates a team's conference duals behind its own last
-    # non-conf week. So: build every roster, play ONE crossover across the whole gender
-    # (it crosses classifications, so it can't run a classification at a time), then the
-    # district round-robins. Crossover can lead because it seeds on roster strength, not
-    # on results. Awards and state selection read the finished records and come last.
+    # ORDER OF PLAY, and it is the shape of the season (owner rule 2027-08):
+    #
+    #   early non-district → district pass 1 → MID-SEASON WINDOW → district pass 2
+    #                      → late non-district → district/state postseason
+    #
+    # It used to be "all the non-district duals, then the whole double round-robin", and
+    # inside that round-robin every opponent was played home-and-away on back-to-back
+    # dates. Both halves of that were wrong for a high-school card, and the second half
+    # was the visible one. The league is now two SEPARATED passes (`district_rounds`)
+    # with the non-district card spread around and through them.
+    #
+    # A dual's ORDER IN `schedule` is the only clock this association has — there is no
+    # date in the sim, and `state._jh_dates` lays the persisted order on a spring
+    # calendar — so playing in this order IS the schedule. Everything here plays a whole
+    # phase across the WHOLE gender before moving on, which is what keeps every
+    # program's card in step with every other one's.
+    #
+    # Non-district pairing still seeds on ROSTER STRENGTH, not results, so the early
+    # window can lead. The one exception is the mid-season challenge, which is paired at
+    # the break precisely because by then there are results worth pairing on.
     by_group = {group: {dname: district_teams(schools, year, salt)
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
-    _crossover([t for st in by_group.values() for ts in st.values() for t in ts],
-               random.Random(f"{salt}|xover|{gender}|{year}"))
-    for st in by_group.values():
-        for teams in st.values():
-            play_district(teams, year, salt)
-    # TOSS over the whole gender, once, on the finished regular season — before any
-    # state tournament is played, since it is the seeding input. Computed across all
-    # classifications together because non-district play crosses them: rating a class
-    # in isolation would cut those edges out of the results graph.
-    every_team = [t for st in by_group.values() for ts in st.values() for t in ts]
-    power = power_index(every_team)
-    for t in every_team:
-        r = power.get(t.school.name)
-        if r is not None:
-            t.power = r.pi_raw
+    every_team, power = play_regular_season(by_group, year, gender, salt)
+    # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
+    # finished regular season, before any state tournament, since it is both the seeding
+    # input and rung 4 of the district tiebreak. Across all classifications together
+    # because non-district play crosses them: rating a class in isolation would cut those
+    # edges out of the results graph.
     out["power"] = power
     for group in GROUPS:
         standings = by_group[group]

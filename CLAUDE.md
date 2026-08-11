@@ -381,11 +381,50 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   opponents are drawn on **geography** (same county → area → anywhere), then **talent**
   (nearest strength off this year's roster, so weak teams aren't fed to teams that beat
   them, and pairings re-form yearly), gated to the **same classification or one apart** —
-  so `_crossover` runs ONCE over the whole gender, and awards/state selection come after.
-  **Non-district is played BEFORE league** (front-loaded, as in real life and as
-  `season.place()` does for the college non-conf slate): `run_season` builds every roster
-  (`district_teams`), runs crossover, THEN the round-robins (`play_district`). Crossover
-  can lead only because it seeds on roster strength, not results — keep it that way.
+  so non-district pairing runs over the WHOLE gender at once, and awards/state selection
+  come after.
+- **‼️ A DOUBLE ROUND ROBIN IS TWO SEPARATED PASSES, NOT A HOME-AND-HOME SERIES.** The
+  order of play is the schedule — there is no clock inside a JHSAA season, so a dual's
+  POSITION in `schedule` is all the calendar there is (`state._jh_dates` just lays that
+  order on a spring calendar). `play_regular_season` runs, across the whole gender:
+  **early non-district → district pass 1 → mid-season window → district pass 2 → late
+  tune-up**. The league is generated as ROUNDS (`_rr_rounds`, circle method — every team
+  plays once per round), never `for a: for b: for leg in (0,1)`, which is a correct
+  double round robin and a schedule no high school has played: it put both meetings with
+  every opponent on consecutive dates all season.
+  - **A plain `reversed()` is NOT the mirror** — it makes the last opponent of pass 1 the
+    first of pass 2, recreating the back-to-back pairing for one opponent per team while
+    the other ten look perfect. `_mirror_orders` scores every rotation of both families
+    (serpentine and straight mirror) by its worst pair and keeps those clearing HALF A
+    PASS; `district_rounds` draws one per season, so the rotation varies by year and the
+    separation floor does not.
+  - **Venue is ONE BIT PER PAIRING**, not per meeting — pass 2 is its inverse. "The return
+    match reverses venue" therefore holds by construction, and `_orient`'s home/away
+    balancing (which only flips that bit) cannot break it.
+  - **The dual SEED comes off the PAIRING, never its position** (`play_rounds`). The
+    caller SLICES the round list around the mid-season window, so a local `enumerate`
+    restarts at zero on the second pass and every second-pass dual gets a different seed
+    from the same district played straight through by `play_district` — identical inputs,
+    different results. The ordered (home, away) pair is already unique in a double round
+    robin, so no index is needed.
+  - **District place is district win %, then the association's TIEBREAK LADDER** (owner
+    rule 2027-08, `_tiebreak`): **1.** head-to-head among the tied teams · **2.** the
+    aggregate of those meetings (courts won − lost across the series) · **3.** overall
+    season record · **4.** Power Index · **5.** OOWP. A tie is resolved as a GROUP, not
+    pairwise — three-way head-to-head is a mini-league and a pairwise comparator on it
+    isn't transitive. ⚠️ Every LEAGUE figure is read off the district schedule entries,
+    NEVER off `points_for`/`points_against`: those accumulate over every dual a team
+    plays, so using them lets a blowout in the non-district window decide a district
+    title (the same trap in `_challenge_pairs`'s provisional mid-season rank). Settling
+    happens AFTER the Power Index exists, since rung 4 reads `t.power`.
+  - Non-district pairing still seeds on ROSTER STRENGTH, not results, so the early window
+    can lead. The ONE exception is the mid-season **challenge** (`_challenge_pairs`),
+    paired after pass 1 on district record so a #3 draws another district's #3 — it only
+    exists because it sits after a pass. It is a `challenge` LABEL on a non-district dual,
+    never a phase (a phase would change its dual format and drop it out of TOSS), and it
+    can never touch district place. The label is IN-MEMORY ONLY and deliberately not
+    archived — the owner does not want it distinguished on a card.
+  See `docs/AAR-jhsaa-district-schedule-passes.md`.
 - **A program's RECORD persists year to year, not just its trophies.** `world_jhsaa`
   archives `record`/`drecord`/`place` per school per year, and `jhsaa_school_history`
   emits a row for EVERY archived year — a program history has to show the losing seasons
