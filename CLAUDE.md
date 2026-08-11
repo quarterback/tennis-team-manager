@@ -487,6 +487,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 
 ## Other notes
+- **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
+  the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one
+  per format and `weights_for(division)` raises on a division nobody has weighted. The
+  module-level `FLIGHT_WEIGHTS` is the engine's CLASSIC 6+3 (cups, tests, bare calls) —
+  **not** what D1-D4 play; never let a division fall back to it. `_flight_score` raises on
+  an unrecognised flight for the same reason: a missing weight is a missing DECISION, and
+  the caller must stop rather than be served a number nobody chose. This is not
+  hypothetical — a `.get(slot, 0.3)` default was **26% of a D1 dual's flight weight** for a
+  release, with #10 singles counting **1.5× #6**, so the index ran backwards across the
+  bottom half of every D1 lineup while nothing errored. If you add a division or change a
+  dual's shape, add its table. See `docs/AAR-toss-per-division-flight-weights.md` (and
+  `docs/BLOG-toss-in-a-third-format.md`). **Validate a rating change on the SEEDS, not the
+  cutline**: `committee_seed_score` is only 45% Power Index rank, so that inversion moved
+  92% of D1 programs and 61% of the field's seeds while changing tournament membership by
+  exactly one team — checking who made the field would have called it a rounding error.
 - **Coach development multiplier is STRONG (±30%) and anchored on the OBSERVED
   score band (owner rule 2027-07)** — `coaches.development_multiplier` maps
   development_score 35..65 → 0.70×..1.30× growth in `world.developed_rosters`.
