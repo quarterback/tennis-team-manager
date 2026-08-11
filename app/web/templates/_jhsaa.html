@@ -91,6 +91,53 @@
 </div></div>
 {% endmacro %}
 
+{# A tabbed panel. `panes` is a list of (key, label, count) — the caller then emits
+   one `<div class="jh-pane" data-pane="key">` per tab inside the same panel.
+
+   Parallel views of the same teams belong in tabs, not stacked: three tables of
+   twelve schools end to end is three screens of scrolling to compare two numbers
+   that should sit beside each other. #}
+{% macro jh_tabs(panes, id, note='') %}
+<div class="jh-tabbar" data-tabs="{{ id }}">
+  {% for key, label, n in panes %}
+  <button type="button" class="{{ 'on' if loop.first }}" data-pane="{{ key }}">{{ label }}{% if n %}<span class="ct">{{ n }}</span>{% endif %}</button>
+  {% endfor %}
+  {% if note %}<span class="note">{{ note }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro jh_tabs_script(id) %}
+<script>
+(function () {
+  var bar = document.querySelector('[data-tabs="{{ id }}"]');
+  if (!bar) return;
+  var panel = bar.parentElement;
+  function show(key) {
+    bar.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.pane === key); });
+    panel.querySelectorAll('.jh-pane').forEach(function (p) { p.hidden = p.dataset.pane !== key; });
+  }
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-pane]');
+    if (b) show(b.dataset.pane);
+  });
+  show(bar.querySelector('button').dataset.pane);
+})();
+</script>
+{% endmacro %}
+
+{# A jump control — switch sibling (district, classification) without walking back
+   up a level. Mirrors the college standings page's Conference select. #}
+{% macro jh_jump(label, name, options, current, endpoint, args) %}
+<label>
+  <span class="k">{{ label }}</span>
+  <select onchange="if(this.value)window.location=this.value">
+    {% for value, text in options %}
+    <option value="{{ value }}"{{ ' selected' if text == current }}>{{ text }}</option>
+    {% endfor %}
+  </select>
+</label>
+{% endmacro %}
+
 {# One matchup, for the mobile round list — the bracket canvas is a desktop
    surface, so small screens get the same rounds one at a time instead of a
    crushed tree. #}

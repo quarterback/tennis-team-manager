@@ -3524,15 +3524,22 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
     ranking = world.jhsaa_group_ranking(arc, grp)
     seeds = _jh_seeds(br)
 
-    standings = {}
-    district_champs = []
+    # The hub carries a district INDEX, not nine stacked standings tables. Full
+    # standings for ~110 schools is the longest thing on the page and none of it is
+    # what the hub is for; it lives one click away on the district's own page, where
+    # it sits behind a tab beside the head-to-head grid.
+    districts = []
     for d, rows in sorted(((arc.get("standings") or {}).get(grp) or {}).items()):
-        standings[d] = [{**_jh_deco(schools, r["school"], 26), "record": r.get("record", ""),
-                         "drecord": r.get("drecord", ""), "place": r.get("place", 0),
-                         "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0,
-                         "seed": seeds.get(r["school"], 0)} for r in rows]
-        if standings[d]:
-            district_champs.append({**standings[d][0], "district": d})
+        table = [{**_jh_deco(schools, r["school"], 26), "record": r.get("record", ""),
+                  "drecord": r.get("drecord", ""), "place": r.get("place", 0),
+                  "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0,
+                  "seed": seeds.get(r["school"], 0)} for r in rows]
+        if not table:
+            continue
+        districts.append({"district": d, "members": len(table),
+                          "champion": table[0],
+                          "qualifiers": [r for r in table if r["seed"]],
+                          "runner_up": table[1] if len(table) > 1 else None})
 
     rank_by = {r["school"]: r["rank"] for r in ranking}
     return {
@@ -3558,9 +3565,8 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
         "poy": (arc.get("awards", {}).get(grp) or {}).get("poy"),
         "all_state": (arc.get("awards", {}).get(grp) or {}).get("all_state", []),
         "all_district": (arc.get("all_district", {}) or {}).get(grp, {}),
-        "district_champs": district_champs,
         "top": [{**_jh_deco(schools, r["school"], 24), **r} for r in ranking[:12]],
-        "standings": standings,
+        "districts": districts,
         "rank_by": rank_by,
         "champions": {gp: _jh_deco(schools, nm, 22)
                       for gp, nm in (arc.get("champions") or {}).items() if nm},

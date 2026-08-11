@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header, jh_school, jh_player, jh_round_tabs %}
+{% from "_jhsaa.html" import jh_header, jh_school, jh_player, jh_round_tabs, jh_tabs, jh_tabs_script %}
 {% from "_bracket.html" import brk_canvas %}
 {% block title %}JHSAA {{ view.group }} — High School{% endblock %}
 {% block content %}
@@ -79,39 +79,39 @@
       </div>
     </div>
 
-    <!-- District standings: the class's leagues, side by side rather than stacked. -->
+    <!-- The class's leagues, as an INDEX. Full standings for ~110 schools is the
+         longest thing that could sit here and none of it is what a hub is for; each
+         district's own page carries them, behind a tab next to its head-to-head grid. -->
     <div class="bl-panel">
       <div class="bl-panel-head">
-        <span class="bl-panel-title">District Standings</span>
-        <span class="bl-panel-meta">{{ view.standings|length }} districts · district duals only</span>
+        <span class="bl-panel-title">Districts</span>
+        <span class="bl-panel-meta">{{ view.districts|length }} leagues · champion carries an automatic bid</span>
+        <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
+           href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.year) }}">ALL DISTRICTS →</a>
       </div>
-      <div class="bl-panel-body" style="padding:12px">
-        <div class="jh-cols2">
-          {% for dname, rows in view.standings.items() %}
-          <div>
-            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:5px">
-              <a style="font-weight:800;font-size:12.5px;color:var(--text-primary);text-decoration:none"
-                 href="{{ url_for('jhsaa_district', group=view.group, district=dname, u=u, g=view.gender, year=view.year) }}">{{ dname }} →</a>
-              <span style="font-size:10.5px;color:var(--text-muted)">{{ rows|length }} schools</span>
-            </div>
-            <table class="jh-ledger nowrap">
-              <tr><th style="width:30px"></th><th>School</th><th style="width:62px">Dist</th><th style="width:68px">Overall</th></tr>
-              {% for r in rows %}
-              <tr>
-                <td style="color:var(--text-faint);font-weight:700">{{ r.place or loop.index }}</td>
-                <td style="font-variant-numeric:normal">
-                  <span class="jh-schoolcell">{{ r.mark|safe }}
-                    <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}">{{ r.name }}</a>
-                    {% if r.seed %}<span class="jh-chip ghost" title="state tournament seed">#{{ r.seed }}</span>{% endif %}</span>
-                </td>
-                <td>{{ r.drecord or '—' }}</td>
-                <td style="color:var(--text-muted)">{{ r.record }}</td>
-              </tr>
-              {% endfor %}
-            </table>
-          </div>
+      <div class="tbl-scroll">
+        <table class="jh-ledger nowrap">
+          <tr><th>District</th><th style="width:44%">Champion</th>
+            <th style="width:66px">District</th><th style="width:66px">Overall</th>
+            <th style="width:74px">To state</th></tr>
+          {% for d in view.districts %}
+          <tr>
+            <td style="font-variant-numeric:normal">
+              <a style="font-weight:700;color:var(--text-primary);text-decoration:none"
+                 href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.year) }}">{{ d.district }}</a>
+              <div style="font-size:10.5px;color:var(--text-muted)">{{ d.members }} schools</div>
+            </td>
+            <td style="font-variant-numeric:normal">
+              <span class="jh-schoolcell">{{ d.champion.mark|safe }}
+                <a href="{{ url_for('jhsaa_school', school=d.champion.name, u=u, g=view.gender) }}">{{ d.champion.name }}</a>
+                {% if d.champion.seed %}<span class="jh-chip ghost" title="state tournament seed">#{{ d.champion.seed }}</span>{% endif %}</span>
+            </td>
+            <td><b>{{ d.champion.drecord or '—' }}</b></td>
+            <td style="color:var(--text-muted)">{{ d.champion.record }}</td>
+            <td>{{ d.qualifiers|length }}</td>
+          </tr>
           {% endfor %}
-        </div>
+        </table>
       </div>
     </div>
   </div>
@@ -135,11 +135,18 @@
       </div>
     </div>
 
-    {% if view.poy %}
+    {# One honours panel, three views — Player of the Year, All-State and
+       All-District were three stacked panels running the rail past the bottom of the
+       page beside it. District Champions was a fourth, and was the Districts table's
+       champion column with the numbers moved around. #}
+    {% if view.poy or view.all_state or view.all_district %}
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">Player of the Year</span>
-        <span class="bl-panel-meta">{{ view.group }}</span></div>
-      <div class="bl-panel-body">
+      {{ jh_tabs([('poy', 'POY', 0),
+                  ('state', 'All-State', view.all_state|length),
+                  ('district', 'All-District', 0)], 'jhhon') }}
+
+      <div class="jh-pane" data-pane="poy">
+        {% if view.poy %}
         <a class="jh-poy" href="{{ url_for('jhsaa_player', school=view.poy.school, pid=view.poy.pid, u=u, g=view.gender) }}">
           <div style="min-width:0">
             <div class="n">{{ view.poy.name }}</div>
@@ -147,15 +154,10 @@
           </div>
           <span class="v">{{ view.poy.wins }}–{{ view.poy.losses }}</span>
         </a>
+        {% else %}<p class="jh-empty">No Player of the Year archived.</p>{% endif %}
       </div>
-    </div>
-    {% endif %}
 
-    {% if view.all_state %}
-    <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">All-State</span>
-        <span class="bl-panel-meta">{{ view.group }}</span></div>
-      <div class="bl-panel-body">
+      <div class="jh-pane" data-pane="state" hidden>
         {% for r in view.all_state %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
           <span class="rk">{{ loop.index }}</span>
@@ -165,23 +167,22 @@
         </a>
         {% endfor %}
       </div>
-    </div>
-    {% endif %}
 
-    {% if view.district_champs %}
-    <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">District Champions</span>
-        <span class="bl-panel-meta">{{ view.group }}</span></div>
-      <div class="bl-panel-body">
-        {% for d in view.district_champs %}
-        <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=d.name, u=u, g=view.gender) }}">
-          {{ d.mark|safe }}
-          <span class="bd"><span class="n">{{ d.name }}</span><span class="s">{{ d.district }}</span></span>
-          <span class="v">{{ d.drecord or d.record }}</span>
-        </a>
+      <div class="jh-pane" data-pane="district" hidden>
+        {% for dname, rows in view.all_district.items() %}
+        <details class="jh-fold">
+          <summary>{{ dname }}</summary>
+          {% for r in rows %}
+          <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
+            <span class="bd"><span class="n">{{ r.name }}</span><span class="s">{{ r.school }}</span></span>
+            <span class="v">{{ r.wins }}–{{ r.losses }}</span>
+          </a>
+          {% endfor %}
+        </details>
         {% endfor %}
       </div>
     </div>
+    {{ jh_tabs_script('jhhon') }}
     {% endif %}
 
     <div class="bl-panel jh-mod">
@@ -197,29 +198,6 @@
         {% endfor %}
       </div>
     </div>
-
-    {# All-District is six players in every district — a flat list runs the rail well
-       past the bottom of the page beside it, so each district folds. The full team
-       is on that district's own page. #}
-    {% if view.all_district %}
-    <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">All-District</span>
-        <span class="bl-panel-meta">top 6 per district</span></div>
-      <div class="bl-panel-body">
-        {% for dname, rows in view.all_district.items() %}
-        <details class="jh-fold">
-          <summary>{{ dname }}</summary>
-          {% for r in rows %}
-          <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
-            <span class="bd"><span class="n">{{ r.name }}</span><span class="s">{{ r.school }}</span></span>
-            <span class="v">{{ r.wins }}–{{ r.losses }}</span>
-          </a>
-          {% endfor %}
-        </details>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endif %}

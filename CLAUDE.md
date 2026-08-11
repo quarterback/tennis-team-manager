@@ -414,6 +414,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   of the same rounds. Every roster / All-State / POY / bracket name links to
   `/jhsaa/player/<school>/<pid>` — **by PID, not name**: a pid keys on (school, gender,
   entry year, seat), so it is stable across all four years and matches the award rows.
+- **Layout rules the JHSAA surfaces are built on (they were each a long scroll first):**
+  parallel views of ONE set of teams are **tabs**, not a stack (`_jhsaa.html::jh_tabs` —
+  a district's standings / head-to-head / results); a parent page gets an **index** of
+  its children, not their contents (the hub lists districts + champions, the standings
+  live on the district page); sibling pages get a **`<select>` switcher** rather than a
+  trip back to the index (the pattern `season_standings.html` already uses for
+  conferences); and if two panels answer the same question, delete one — "District
+  Champions" in the rail *was* the district index's champion column.
 - **Schedule dates are a DISPLAY calendar (`state._jh_dates`), not sim state.** There is
   no clock inside a JHSAA season — it all runs in one rung at week 0 — so the dates are
   derived from the persisted ORDER of play (non-district → district round-robin → state)

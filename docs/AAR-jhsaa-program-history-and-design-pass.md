@@ -112,21 +112,48 @@ is exactly the sort of thing that gets mistaken for sim state later.
 
 ## 7. Density is a bug class, and it has a shape
 
-Three surfaces were rebuilt twice because the first version was *correct and unusable*:
+Several surfaces were rebuilt because the first version was *correct and unusable*:
 
 * **A 12-team district plays 132 duals.** As a flat list it was the longest thing on the
   page and told you nothing. It is now a **head-to-head grid** — every team against every
   other, the season series in the cell, columns numbered by standings position so the
-  header stays narrow however long the school names are. The full list is still there,
-  folded. The page went from 6,250px to 1,730px.
-* **All-District is six players in every district** — nine districts is 54 rows in a
-  320px rail, running it well past the bottom of the page beside it. Each district now
-  folds.
+  header stays narrow however long the school names are.
 * **A "line scores" row under every dual** doubled a 35-match schedule. The dual row is
   now its own toggle.
 
 The pattern: a list whose length is a *product* (teams × teams, districts × players,
 duals × lines) needs a shape, not a scroll.
+
+## 7b. Parallel views are TABS; sibling pages get a SWITCHER
+
+The first fix shortened the lists and still left both the hub and the district page a
+long scroll, because the real problem was structural rather than per-list:
+
+**Stacking parallel views of the same set.** A district page showed standings, then a
+head-to-head grid, then results, then a member list — four views of the same twelve
+schools, laid end to end, so comparing two numbers meant scrolling between them. They
+are now one panel with **tabs**, and the member list is gone: it was the standings table
+with the numbers taken off. 1,730px → 1,208px.
+
+**Putting a child page's whole contents on its parent.** The hub carried full standings
+for all nine districts — ~110 schools of tables that a hub is not for. It now carries a
+district **index** (one row per league: champion, its records, how many it sent to
+state), and the standings live one click away on the district's own page. The rail then
+became the longest column on its own — Player of the Year, All-State, District Champions
+and All-District as four stacked panels — so the honours are one tabbed panel, and
+District Champions was deleted outright: it was the district index's champion column
+rearranged. 3,709px → 1,371px, with the two columns finally the same height.
+
+**Navigating siblings should not mean going back up.** Switching districts meant walking
+to the index and back. The district page now has a **`<select>` switcher** for district
+and class, which is what `season_standings.html` has done for conferences all along —
+the pattern already existed in the app and high school just wasn't using it.
+
+Three rules worth keeping:
+
+> Parallel views of one set are tabs, not a stack.
+> A parent page gets an index of its children, not their contents.
+> If two panels answer the same question, one of them is decoration — delete it.
 
 ## 8. Two CSS bugs worth naming
 

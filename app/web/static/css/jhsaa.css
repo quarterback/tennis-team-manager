@@ -222,6 +222,38 @@
 .jh-ledger tr.title .yr a { color: var(--brand-strong); }
 .jh-ledger .fin { white-space: nowrap; }
 
+/* ---- Tabbed panel ----
+   Parallel views of the SAME set of teams (standings, head-to-head, results) are
+   tabs, not a stack. Three tables of twelve schools laid end to end is three
+   screens of scrolling to compare two numbers that should sit side by side. */
+.jh-tabbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-th); }
+.jh-tabbar button {
+  padding: 5px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  border: 1px solid transparent; background: transparent; color: var(--text-secondary);
+}
+.jh-tabbar button:hover { background: var(--surface-card); color: var(--brand-strong); }
+.jh-tabbar button.on { background: var(--surface-card); border-color: var(--border-default); color: var(--text-primary); }
+.jh-tabbar .ct { margin-left: 5px; font-size: 10.5px; font-weight: 700; color: var(--text-faint); }
+.jh-tabbar .note { margin-left: auto; font-size: 11.5px; color: var(--text-muted); }
+.jh-pane[hidden] { display: none; }
+
+/* ---- Jump control: switch district/class without going back up a level ---- */
+.jh-jump { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.jh-jump label { display: flex; align-items: center; gap: 6px; }
+.jh-jump .k { font-size: 10.5px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-jump select {
+  height: 30px; padding: 0 26px 0 9px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface-card);
+  color: var(--text-primary); max-width: 280px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 13px, calc(100% - 9px) 13px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.jh-jump select:hover { border-color: var(--brand); }
+
 /* ---- Head-to-head grid: a district's whole double round-robin at a glance ---- */
 .jh-grid { width: 100%; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
 .jh-grid th {
