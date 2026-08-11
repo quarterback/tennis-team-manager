@@ -1,0 +1,188 @@
+{# ------------------------------------------------------------------------ #}
+{# The JHSAA's shared furniture: the section header, the persistent scope bar  #}
+{# (gender · classification · season), and the two link shapes every high      #}
+{# school surface repeats — a school and a player.                             #}
+{#                                                                             #}
+{# Every JHSAA page carries the SAME header and scope bar, so a classification #}
+{# stays selected as you move state → classification → district → school →     #}
+{# player and back. That is the whole point of the scope being a band rather   #}
+{# than a handful of pills in a corner.                                        #}
+{# ------------------------------------------------------------------------ #}
+
+{# A school, wherever one is referenced: mark + link to its program page. #}
+{% macro jh_school(s, u, gender, size='', pin=none) -%}
+<span class="jh-schoolcell">
+  {% if s.mark %}<span class="mk" style="{{ size }}">{{ s.mark|safe }}</span>{% endif %}
+  <a href="{{ url_for('jhsaa_school', school=s.name, u=u, g=gender, year=pin) }}">{{ s.name }}</a>
+</span>
+{%- endmacro %}
+
+{# A player, wherever one is referenced. Linked by PID at their school, which is
+   stable across all four of their high-school years — the continuity the whole
+   section exists for: freshman → senior → recruit → college player. #}
+{% macro jh_player(name, school, pid, u, gender) -%}
+{%- if pid and school -%}
+<a href="{{ url_for('jhsaa_player', school=school, pid=pid, u=u, g=gender) }}">{{ name }}</a>
+{%- else -%}{{ name }}{%- endif -%}
+{%- endmacro %}
+
+{% macro jh_class_chip(group) -%}
+<span class="jh-chip c-{{ group }}">{{ group }}</span>
+{%- endmacro %}
+
+{# The section header + scope bar. `tab` marks which JHSAA surface is on screen. #}
+{% macro jh_header(scope, u, tab='state', title='JHSAA', sub='', meta=[]) %}
+<div class="jh-head"><div class="jh-head-inner">
+  <div class="jh-titlerow">
+    <div style="min-width:0">
+      <div class="jh-eyebrow"><i class="fa-solid fa-school-flag" aria-hidden="true"></i>
+        Jefferson High School Activities Association</div>
+      <h1 class="jh-title">{{ title }}</h1>
+      {% if sub %}<p class="jh-sub">{{ sub }}</p>{% endif %}
+    </div>
+    {% if meta %}
+    <div class="jh-headmeta">
+      {% for m in meta %}<div><span class="k">{{ m[0] }}</span><span class="v">{{ m[1] }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="jh-scope">
+    <div class="jh-scope-group">
+      <span class="jh-scope-label">Sport</span>
+      <span class="jh-seg">
+        {% for g in ['boys','girls'] %}
+        <a class="{{ 'on' if scope.gender == g }}"
+           href="{{ url_for('jhsaa_page', u=u, g=g, group=scope.group, year=scope.pin) }}">{{ g|capitalize }}</a>
+        {% endfor %}
+      </span>
+    </div>
+    <div class="jh-scope-group">
+      <span class="jh-scope-label">Class</span>
+      <span class="jh-class">
+        {% for gp in scope.groups %}
+        <a class="{{ 'on c-' ~ gp if scope.group == gp }}"
+           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=gp, year=scope.pin) }}">{{ gp }}</a>
+        {% endfor %}
+      </span>
+    </div>
+    {% if scope.years and scope.years|length > 1 %}
+    <div class="jh-scope-group">
+      <span class="jh-scope-label">Season</span>
+      <span class="jh-seg">
+        {% for y in scope.years %}
+        <a class="{{ 'on' if scope.year == y }}"
+           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=y) }}">{{ scope.season_years[y] }}</a>
+        {% endfor %}
+      </span>
+    </div>
+    {% endif %}
+    <div class="jh-tabs">
+      <a class="{{ 'on' if tab == 'state' }}"
+         href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">State</a>
+      <a class="{{ 'on' if tab == 'bracket' }}"
+         href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Bracket</a>
+      <a class="{{ 'on' if tab == 'districts' }}"
+         href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Districts</a>
+      <a class="{{ 'on' if tab == 'history' }}"
+         href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
+    </div>
+  </div>
+</div></div>
+{% endmacro %}
+
+{# A tabbed panel. `panes` is a list of (key, label, count) — the caller then emits
+   one `<div class="jh-pane" data-pane="key">` per tab inside the same panel.
+
+   Parallel views of the same teams belong in tabs, not stacked: three tables of
+   twelve schools end to end is three screens of scrolling to compare two numbers
+   that should sit beside each other. #}
+{% macro jh_tabs(panes, id, note='') %}
+<div class="jh-tabbar" data-tabs="{{ id }}">
+  {% for key, label, n in panes %}
+  <button type="button" class="{{ 'on' if loop.first }}" data-pane="{{ key }}">{{ label }}{% if n %}<span class="ct">{{ n }}</span>{% endif %}</button>
+  {% endfor %}
+  {% if note %}<span class="note">{{ note }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro jh_tabs_script(id) %}
+<script>
+(function () {
+  var bar = document.querySelector('[data-tabs="{{ id }}"]');
+  if (!bar) return;
+  var panel = bar.parentElement;
+  function show(key) {
+    bar.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.pane === key); });
+    panel.querySelectorAll('.jh-pane').forEach(function (p) { p.hidden = p.dataset.pane !== key; });
+  }
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-pane]');
+    if (b) show(b.dataset.pane);
+  });
+  show(bar.querySelector('button').dataset.pane);
+})();
+</script>
+{% endmacro %}
+
+{# A jump control — switch sibling (district, classification) without walking back
+   up a level. Mirrors the college standings page's Conference select. #}
+{% macro jh_jump(label, name, options, current, endpoint, args) %}
+<label>
+  <span class="k">{{ label }}</span>
+  <select onchange="if(this.value)window.location=this.value">
+    {% for value, text in options %}
+    <option value="{{ value }}"{{ ' selected' if text == current }}>{{ text }}</option>
+    {% endfor %}
+  </select>
+</label>
+{% endmacro %}
+
+{# One matchup, for the mobile round list — the bracket canvas is a desktop
+   surface, so small screens get the same rounds one at a time instead of a
+   crushed tree. #}
+{% macro jh_mgame(gm, u, gender, pin=none) %}
+<div class="jh-mgame">
+  <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+    <span class="sd">{{ gm.home_seed or '' }}</span>
+    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=gender, year=pin) }}">{{ gm.home }}</a></span>
+    <span class="pt">{{ gm.home_points|int }}</span>
+  </div>
+  <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+    <span class="sd">{{ gm.away_seed or '' }}</span>
+    <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=gender, year=pin) }}">{{ gm.away }}</a></span>
+    <span class="pt">{{ gm.away_points|int }}</span>
+  </div>
+</div>
+{% endmacro %}
+
+{# Round tabs + one round at a time. Paired with `.jh-brk-desktop` (the canvas),
+   which CSS swaps for this below 880px. #}
+{% macro jh_round_tabs(rounds, u, gender, id='jhrd', pin=none) %}
+<div class="jh-brk-mobile" id="{{ id }}">
+  <div class="jh-rdtabs">
+    {% for rd in rounds %}
+    <button type="button" class="{{ 'on' if loop.last }}" data-rd="{{ loop.index0 }}">{{ rd.name }}</button>
+    {% endfor %}
+  </div>
+  <div class="jh-rdlist">
+    {% for rd in rounds %}
+    <div data-rd="{{ loop.index0 }}"{{ ' hidden' if not loop.last }}>
+      {% for gm in rd.games %}{{ jh_mgame(gm, u, gender, pin) }}{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('{{ id }}');
+  if (!box) return;
+  box.querySelector('.jh-rdtabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-rd]');
+    if (!b) return;
+    box.querySelectorAll('.jh-rdtabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    box.querySelectorAll('.jh-rdlist > div').forEach(function (d) { d.hidden = d.dataset.rd !== b.dataset.rd; });
+  });
+})();
+</script>
+{% endmacro %}

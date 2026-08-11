@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_round_tabs %}
+{% from "_bracket.html" import brk_canvas, brk_toolbar, brk_script %}
+{% block title %}JHSAA {{ view.group }} State Tournament{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'bracket',
+             view.group ~ ' State Tournament',
+             'Single elimination, 1 singles / 4 doubles — five points, every match played out.',
+             [('Season', view.season_year), ('Field', view.field_n)] if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No state tournament archived for this season yet.</div></div>
+{% else %}
+
+{% if view.champion %}
+<div class="jh-champ" style="margin-bottom:12px">
+  <span class="mark">{{ view.champion.mark|safe }}</span>
+  <div style="min-width:0">
+    <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
+    <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
+    <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, Jefferson · {{ view.champion.district }}</div>
+  </div>
+  {% if view.final %}
+  <div class="sc"><div class="n">{{ view.final.home_points|int }}–{{ view.final.away_points|int }}</div>
+    <div class="o">final · def. {{ view.runner_up.name }}</div></div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# The SAME server-positioned tree the NCAA bracket and the Preseason NIT draw on —
+   cards and SVG elbows share one coordinate system (`state._bracket_canvas`), so
+   bracket alignment is never a CSS problem here either. #}
+<div class="jh-brk-desktop">
+  {{ brk_toolbar([('all', view.group ~ ' Draw')]) }}
+  <div class="brk-stage" id="brkstage">
+    <section class="brk-region" data-view="all">
+      <div class="brk-region-head">
+        <h2>{{ view.season_year }} {{ view.group }} · {{ view.field_n }}-team field</h2>
+        <span class="brk-region-champ">
+          {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
+      </div>
+      {{ brk_canvas(view.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
+    </section>
+  </div>
+</div>
+
+<div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhbrkrd', view.scope.pin) }}</div>
+
+<div class="jh-layout" style="margin-top:14px">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
+      <span class="bl-panel-meta">every dual in the draw</span></div>
+    <div class="bl-panel-body" style="padding:12px">
+      <div class="jh-cols2">
+        {% for rd in view.rounds %}
+        <div>
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} alive</div>
+          {% for gm in rd.games %}
+          <div class="jh-mgame">
+            <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+              <span class="sd">{{ gm.home_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
+              <span class="pt">{{ gm.home_points|int }}</span>
+            </div>
+            <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+              <span class="sd">{{ gm.away_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
+              <span class="pt">{{ gm.away_points|int }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="bl-panel jh-mod">
+    <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
+      <span class="bl-panel-meta">{{ view.field_n }} teams, seeded</span></div>
+    <div class="bl-panel-body">
+      {% for s in view.field %}
+      <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">
+        <span class="rk">{{ s.seed }}</span>
+        {{ s.mark|safe }}
+        <span class="bd"><span class="n">{{ s.name }}</span><span class="s">{{ s.district }}</span></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>
+{{ brk_script() }}
+{% endblock %}

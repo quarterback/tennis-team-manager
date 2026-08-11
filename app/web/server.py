@@ -37,7 +37,9 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import jhsaa_view, jhsaa_school_view, jhsaa_past_winners
+from .state import (jhsaa_view, jhsaa_school_view, jhsaa_past_winners,
+                    jhsaa_bracket_view, jhsaa_district_view, jhsaa_districts_view,
+                    jhsaa_player_view)
 from .state import preseason_portal_view, recruit_economy_view, portal_class_rankings
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
 from .state import staff_search
@@ -1964,31 +1966,85 @@ def create_app() -> Flask:
         return render_template("recruit.html", active="Recruiting", p=p, view=view, hs=hs,
                                gender=gender, grad_year=grad_year, u=u, uni_label=label)
 
-    @app.route("/jhsaa")
-    def jhsaa_page():
-        """Jefferson's high-school association — the only simulated high-school layer
-        in the game. Reads the archive the JHSAA rung wrote at week 0; never
-        re-simulates."""
+    # ---- JHSAA: state → classification → district → school → player -----------
+    # Another layer of the same world, so it browses like the college one. Every
+    # route carries the SAME scope in the query string (`g` gender, `group`
+    # classification, `year` season), which is what keeps a selected class selected
+    # as you move down and back up. All of them READ the archive the rung wrote at
+    # week 0 — a JHSAA season is ~5,100 duals and is never re-simulated on a request.
+
+    def _jh_scope_args():
+        """The scope every JHSAA page is browsed in, off the query string."""
         division, gender, label, u = _universe(request)
         g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
-        view = jhsaa_view(DEFAULT_SEED, g, request.args.get("group"))
+        year = request.args.get("year", type=int)
+        return gender, label, u, g, request.args.get("group"), year
+
+    @app.route("/jhsaa")
+    def jhsaa_page():
+        """The state high-school home: the selected classification's state tournament
+        as the dominant object, its awards beside it, its districts below."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/bracket")
+    def jhsaa_bracket():
+        """The full state draw, on the SAME server-positioned tree the NCAA bracket
+        and the Preseason NIT use — never a third bracket implementation."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_bracket_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_bracket.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/districts")
+    def jhsaa_districts():
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_districts_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_districts.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/district/<group>/<district>")
+    def jhsaa_district(group, district):
+        """A district is keyed by (CLASSIFICATION, name): the JHSAA reuses its
+        geographic district names at every level, so "Halbrook Basin District" is five
+        different leagues. Keying on the name alone serves the wrong one."""
+        gender, label, u, g, _grp, year = _jh_scope_args()
+        view = jhsaa_district_view(DEFAULT_SEED, g, group, district, year)
+        if not view.get("found"):
+            abort(404)
+        return render_template("jhsaa_district.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/school/<school>")
-    def jhsaa_school(school):
-        division, gender, label, u = _universe(request)
-        g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
-        view = jhsaa_school_view(DEFAULT_SEED, g, school)
+    @app.route("/jhsaa/school/<school>/<int:year>")
+    def jhsaa_school(school, year=None):
+        """A program page. With `year` it is that ARCHIVED season — the schedule, the
+        roster that played it and the standing it finished in — so a season row in the
+        program history is a link into the season itself."""
+        gender, label, u, g, _group, qyear = _jh_scope_args()
+        view = jhsaa_school_view(DEFAULT_SEED, g, school,
+                                 year if year is not None else qyear)
         if not view.get("found"):
             abort(404)
         return render_template("jhsaa_school.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/player/<school>/<pid>")
+    def jhsaa_player(school, pid):
+        """One player's four high-school years. Keyed by pid at their school, which is
+        stable across all of them — the continuity the section exists for."""
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        view = jhsaa_player_view(DEFAULT_SEED, g, school, pid)
+        if not view.get("found"):
+            abort(404)
+        return render_template("jhsaa_player.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/champions")
     def jhsaa_champions():
-        division, gender, label, u = _universe(request)
-        g = request.args.get("g") or ("girls" if gender in ("women", "female") else "boys")
+        gender, label, u, g, _group, _year = _jh_scope_args()
         view = jhsaa_past_winners(DEFAULT_SEED, g)
         return render_template("jhsaa_champions.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)

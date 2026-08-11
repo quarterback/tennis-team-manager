@@ -13,17 +13,24 @@
 
 {# One team row. Conference and bid live in the tooltip — a bracket card repeats
    nothing, it carries seed, crest, name, score. A `tbd` team is a round that
-   hasn't been drawn yet: the slot is real, the team isn't there yet. #}
-{% macro brk_row(t, m, u, bids=true) %}
+   hasn't been drawn yet: the slot is real, the team isn't there yet.
+
+   `ep`/`epq` are the endpoint a team name links to and any extra query args, so a
+   league that isn't the college one (the JHSAA) draws on THIS tree instead of
+   forking a third bracket; a team carrying its own `mark` (inline SVG) renders that
+   where college renders a crest. #}
+{% macro brk_row(t, m, u, bids=true, ep='teams', epq={}) %}
+{# `label` names an empty slot that ISN'T undecided — a bye has no opponent to
+   name, and calling it TBD reads as "this round hasn't been played". #}
 {% if t.tbd %}
-<div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">TBD</span></div>
+<div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">{{ t.label or 'TBD' }}</span></div>
 {% else %}
 <div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}"
      data-school="{{ t.school }}"
      title="{{ t.school }}{% if t.conf %} · {{ t.conf }}{% if bids %} · {{ 'automatic qualifier' if t.aq else 'at-large' }}{% endif %}{% endif %}">
   <span class="brk-seed">{{ t.seed if t.seed else '' }}</span>
-  {{ crest_box(t.school, t.abbr, t.color, 'xs') }}
-  <a class="brk-name" href="{{ url_for('teams', school=t.school, u=u) }}">{{ t.school }}</a>
+  {% if t.mark %}<span class="brk-mark">{{ t.mark|safe }}</span>{% else %}{{ crest_box(t.school, t.abbr, t.color, 'xs') }}{% endif %}
+  <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **epq) }}">{{ t.school }}</a>
   {% if bids and t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
   <span class="brk-score">{% if m.played %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}</span>
 </div>
@@ -31,7 +38,7 @@
 {% endmacro %}
 
 {# One laid-out tree: column headers, the elbow paths, then the cards. #}
-{% macro brk_canvas(cv, u, bids=true) %}
+{% macro brk_canvas(cv, u, bids=true, ep='teams', epq={}) %}
 <div class="brk-scroll">
   <div class="brk-headers" style="width:{{ cv.width }}px">
     {% for c in cv.columns %}
@@ -48,12 +55,15 @@
       {% endfor %}
     </svg>
     {% for m in cv.cards %}
+    {# A card opens its box score where one exists. A league without a per-dual page
+       (the JHSAA) simply carries no id, and the card stays a card — its two team
+       names are still links. #}
     <article class="brk-card{{ ' is-open' if not m.played }}{{ ' is-tbd' if m.tbd }}{{ ' is-playin' if m.playin }}"
-             {% if m.played %}data-href="{{ url_for('season_dual', dual_id=m.id, u=u) }}"{% endif %}
+             {% if m.played and m.id %}data-href="{{ url_for('season_dual', dual_id=m.id, u=u) }}"{% endif %}
              style="left:{{ m.x }}px;top:{{ m.y }}px;width:{{ cv.card_w }}px;height:{{ cv.card_h }}px"
              aria-label="{% if m.tbd %}{{ m.round }}: to be decided{% else %}{{ m.round }}: {{ m.home.school }} v {{ m.away.school }}{% endif %}">
-      {{ brk_row(m.home, m, u, bids) }}
-      {{ brk_row(m.away, m, u, bids) }}
+      {{ brk_row(m.home, m, u, bids, ep, epq) }}
+      {{ brk_row(m.away, m, u, bids, ep, epq) }}
     </article>
     {% endfor %}
   </div>
