@@ -261,7 +261,10 @@
 </div>
 
 <!-- Honours annotate the history; they do not replace it, so they sit under it. -->
-{% set honor_years = view.history.seasons | selectattr('honors') | list %}
+{# `honoured`, not `honors`: a team title is drawn as a banner below and carries no
+   entry in the individual-awards list, so filtering on that list alone hid the very
+   seasons this panel exists for. #}
+{% set honor_years = view.history.seasons | selectattr('honoured') | list %}
 {% if honor_years %}
 <div class="bl-panel" style="margin-top:14px">
   <div class="bl-panel-head"><span class="bl-panel-title">Honours</span>

@@ -3777,7 +3777,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False,
+           "toc_champion": False, "honoured": False,
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
@@ -3845,6 +3845,14 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
             if r.get("school") == school:
                 row["all_district"].append(r)
                 row["honors"].append(f"All-District ({dname}) — {r['name']}")
+    # ‼️ `honors` is the INDIVIDUAL awards, and the TEAM titles are rendered from
+    # `champion` / `toc_champion` as banners of their own. So "did this season carry an
+    # honour?" is not `bool(honors)` — a program that won its classification and the
+    # Tournament of Champions without a single All-District player has an empty
+    # `honors` list, and a panel selecting on that drops the season before it can draw
+    # either banner. Deriving the answer here rather than in the template keeps the two
+    # halves — what the panel filters on and what it renders — from disagreeing.
+    row["honoured"] = bool(row["honors"]) or row["champion"] or row["toc_champion"]
     return row
 
 
