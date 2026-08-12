@@ -221,12 +221,18 @@
    long <th> label overruns its neighbour. Both have to be told. */
 .jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
-.jh-ledger .fin, .jh-sched td:last-child { white-space: nowrap; }
+.jh-sched td:last-child { white-space: nowrap; }
+/* The finish cell can carry TWO chips — a classification title and a TOC finish — and
+   the table is `table-layout: fixed; overflow: hidden`, so nowrap here doesn't shrink
+   the column, it CLIPS the second chip mid-word. Let it wrap onto a second line.
+   Note the selector: `.jh-ledger.nowrap td` is (0,2,1), so a plain `.jh-ledger .fin`
+   (0,2,0) loses to it however far down the file it sits. */
+.jh-ledger td.fin, .jh-ledger.nowrap td.fin { white-space: normal; }
+.jh-ledger td.fin .jh-chip { margin: 1px 0; }
 .jh-ledger .yr a { font-weight: 800; color: var(--text-primary); text-decoration: none; }
 .jh-ledger .yr a:hover { color: var(--brand-strong); text-decoration: underline; }
 .jh-ledger tr.title td { background: var(--green-50); }
 .jh-ledger tr.title .yr a { color: var(--brand-strong); }
-.jh-ledger .fin { white-space: nowrap; }
 
 /* ---- Tabbed panel ----
    Parallel views of the SAME set of teams (standings, head-to-head, results) are

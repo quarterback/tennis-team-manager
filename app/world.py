@@ -3822,7 +3822,10 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
         for ln in d.get("lines") or ():
             ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
             row["courts_won" if ours else "courts_lost"] += 1
-    if row["made_toc"]:
+    # The TOC CHAMPION gets a gold chip of its own in the honours panel, exactly as the
+    # state champion does — so the text line here is for the programs that MADE the
+    # field without winning it. Emitting both listed the title twice, one row apart.
+    if row["made_toc"] and not row["toc_champion"]:
         row["honors"].append(
             f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
             f" (No. {row['toc_seed']} seed)")

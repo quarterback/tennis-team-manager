@@ -17,13 +17,13 @@ So this runs a season, archives it the way the world rung does, and asserts on t
 rendered HTML. The association is cut to two districts per classification to keep it
 to a few seconds; every code path is the real one.
 """
-import json
 import sqlite3
 
 import pytest
 
 from app import jhsaa as jh
 from app import world as wd
+from app.web import state as st
 from app.web.server import create_app
 
 
@@ -180,6 +180,23 @@ def test_no_program_publishes_a_postseason_record(archived):
     assert ">Post<" not in html
 
 
+def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
+    """It appeared twice, one row apart: a gold banner from the template and a text
+    line from the season row. The champion gets the banner — the same treatment the
+    state title gets — and the text line is for programs that made the field."""
+    w = archived["world"]
+    champ = archived["arc"]["toc"]["champion"]
+    row = wd.jhsaa_school_history(w["id"], "girls", champ)["seasons"][0]
+    assert not [h for h in row["honors"] if "Tournament of Champions" in h]
+    html = archived["client"].get(
+        f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+    assert html.count("TOURNAMENT OF CHAMPIONS") == 1
+    # A beaten entrant has no banner, so it keeps the text line.
+    other = next(n for n in archived["arc"]["toc"]["field"] if n != champ)
+    beaten = wd.jhsaa_school_history(w["id"], "girls", other)["seasons"][0]
+    assert [h for h in beaten["honors"] if h.startswith("Tournament of Champions")]
+
+
 def test_a_program_that_missed_the_toc_carries_nothing(archived):
     w = archived["world"]
     outside = next(s.name for s in jh.load_schools("girls")
@@ -211,6 +228,21 @@ def test_the_toc_page_lists_every_round(archived):
         assert name in html, name
     for nm in archived["arc"]["toc"]["field"]:
         assert nm in html, nm
+
+
+def test_the_schedule_labels_the_toc_duals_as_toc(archived):
+    """A TOC dual is not a state dual and must not read as one — the champion's card
+    showed three green STATE rows where the last two were the Tournament of Champions.
+    The label comes off the PHASE, which is why the phase exists."""
+    champ = archived["arc"]["toc"]["champion"]
+    view = st.jhsaa_school_view(wd.DEFAULT_SEED, "girls", champ)
+    kinds = [d["kind"] for d in view["schedule"]]
+    assert kinds.count("TOC") == sum(
+        1 for games in archived["arc"]["toc"]["rounds"]
+        for gm in games if champ in (gm["home"], gm["away"]))
+    assert kinds[-1] == "TOC"                     # the last thing played all year
+    for d in view["schedule"]:
+        assert (d["kind"] == "TOC") == (d["phase"] == "toc"), d
 
 
 def test_a_toc_program_page_shows_the_run(archived):

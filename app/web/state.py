@@ -4071,6 +4071,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # seed there while carrying the No. 1 seed in its classification — so a TOC dual's
     # opponent seed has to come off the TOC field, never off the state bracket's.
     toc_seeds = _jh_seeds((arc or {}).get("toc") or {})
+    kinds = ["TOC" if d["phase"] == "toc" else "STATE" if d["phase"] == "state"
+             else "DIST" if d["district"] else "NON-DIST" for d in sched]
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
     honor_pids = {}
@@ -4106,13 +4108,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "toc_seed": (season or {}).get("toc_seed", 0),
         "toc_finish": (season or {}).get("toc_finish", ""),
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
-                      "kind": ("TOC" if d["phase"] == "toc"
-                               else "STATE" if d["phase"] == "state"
-                               else "DIST" if d["district"] else "NON-DIST"),
-                      "opp_deco": _jh_deco(schools, d["opp"], 22),
-                      "opp_seed": (toc_seeds if d["phase"] == "toc" else seeds)
-                      .get(d["opp"], 0) if d["phase"] in jh.POSTSEASON else 0}
-                     for i, d in enumerate(sched)],
+                      "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
+                      "opp_seed": (toc_seeds if k == "TOC" else seeds).get(d["opp"], 0)
+                      if k in ("TOC", "STATE") else 0}
+                     for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
                     "str": p.str_value(),
