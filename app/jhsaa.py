@@ -118,7 +118,12 @@ FIDELITY = "fast"
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
-FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A": 12, "2A-1A": 24}
+# 2A-1A is the BIGGEST classification (151 girls / 136 boys across 13 districts), so
+# it gets the biggest bracket alongside 7A. At 24 it was the hardest class in the
+# association to qualify from -- 13 automatic bids left only 11 at-large places for
+# 138 other programs -- which is exactly backwards for the level that is supposed to
+# be the sprawling, everybody-plays one.
+FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A": 12, "2A-1A": 32}
 AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 # --- talent ------------------------------------------------------------------
