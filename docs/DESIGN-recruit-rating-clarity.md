@@ -7,6 +7,31 @@ This is a saveable reference for a design conversation in progress, not a spec.
 `app/development.py`, `app/juniors.py`, `app/recruiting.py`, `app/world.py`,
 `app/junior_circuit.py`, `app/web/state.py`, `app/web/templates/recruit.html`.
 
+## Where this landed (read this first; history below in order)
+
+Fast-moving conversation, several revisions. This is the shape as of the last
+message — everything below this section is the reasoning trail that got here,
+kept because the *why* matters as much as the *what*.
+
+- **Hero:** `CUR` (renamed from OVR — true current ability) · `POT` (renamed from
+  ceiling — true potential) · `STR` (results). All three unfogged truth/results;
+  CUR and POT shown together always, not one-or-the-other.
+- **Board card** (name TBD — still called "OVR" below, but it no longer shows a raw
+  OVR digit): **stars + tier label only, no headline number and no letter grade** —
+  built from current ability + results, lightly fogged. Rank cells (NATL/region/
+  points-rank) unchanged. Supersedes the earlier "switch to a letter grade" answer —
+  see "Board grade collapses to stars only" below for why.
+- **Composite card:** cut.
+- **Scouting panel:** fog rows ("Shared service," "Your department") cut. TEST stays.
+  JHSAA HS results stay.
+- **TennisEye card:** results-based stars/rank/tier unchanged. Grid becomes
+  `TE RANK / POT / STR` (points swapped out for POT). 4-year projection: recommended
+  cut, not yet finalized. Open question whether TennisEye's own headline "5★" glyph
+  also collapses to stars-only, for the same reason as the board card.
+- Rankings/rank-lists (`recruit_rank`, `points_rankings`, `tenniseye_rank`,
+  `ranking_history`) unchanged everywhere — this whole exercise is about rendering,
+  never about the underlying ranking math.
+
 ## Why this doc exists
 
 Triggered by a live screenshot of Raegan Bahr (Class of 2027, D1 Women) that put four
@@ -172,16 +197,108 @@ split by *role* rather than by weighting:
   deliberate, legible home for the hidden ceiling — not leaked unmarked in the hero
   next to two fogged guesses at itself.
 
-## Still open (owner deciding)
+## Decided (continued — the three remaining gaps, closed)
 
-1. The hero banner currently repeats `ceiling` in its sub-line. Now that TennisEye is
-   ceiling's deliberate home, does the hero drop it (one home only), or keep it as an
-   above-the-fold glance?
-2. `4-year projection` (`project(4)` — ground truth, no fog) loses its home once
-   Composite and most of the Scouting panel go. Cut entirely, added as a fourth
-   TennisEye cell, or placed somewhere else?
-3. OVR's visual format (0–100 number + stars + rank-cell row) — confirmed staying as
-   today, or does the earlier letter-grade (A–F) idea replace it?
+1. **Hero keeps all three** (`OVR` / `ceiling` / `STR`), unchanged. Ceiling appears in
+   both the hero (above-the-fold glance) and TennisEye (detail) — decided as
+   *intentional* repetition, not redundancy: the objection was always to
+   **contradictory** numbers wearing the same label, never to a summary stat also
+   appearing in a detail panel.
+2. **`4-year projection` moves into TennisEye as a fourth cell.** TennisEye's grid is
+   now **TE RANK / CEILING / 4-YR / STR** — all four either results (real) or ground
+   truth (unfogged), nothing projected-with-noise anywhere on the card.
+3. **OVR switches from a 0–100 number to a letter grade (A–F or A–D).** Formula
+   unchanged from the earlier decision (current ability + results, lightly fogged) —
+   only the display scale changes, mapped onto letters instead of a percentile-shaped
+   0–100 curve.
+
+## One more open thread
+
+A letter grade is already an ordinal tier — the same job the star icons and the
+"Blue Chip"-style tier chip were doing under the old 0–100 display. Rendering a letter
+**and** stars **and** a named tier for one grade risks re-introducing the "three
+things doing the same job" complaint this whole redesign is trying to kill. Options,
+not yet decided:
+- The letter *replaces* stars and the named tier outright (`A+` alone communicates
+  what `★★★★★ Blue Chip` used to).
+- The letter replaces the stars, but a named tier survives as flavor on top of the
+  letter (`A+ · Blue Chip`) — since "Blue Chip" is real recruiting slang with color a
+  bare letter doesn't carry.
+- Something else.
+
+## Terminology update
+
+The owner now calls the hidden-potential number **POT** (previously "ceiling"
+throughout this doc — same value, `ceiling_overall()`, same rule: true, unfogged,
+owner-only). Used interchangeably below; POT is the name going forward.
+
+## OVR's one job, restated tighter
+
+*"I only want OVR to exist to tell me how good a kid is right now. POT tells me their
+ceiling. There should be no other OVR categories or else it's confusing."* Reconfirms
+the earlier decision (current ability + results, lightly fogged) — the new part is the
+hard line against a THIRD partial-ability number existing anywhere. Directly implicates
+4-year projection (below).
+
+## 4-year projection: recommend cut (supersedes the earlier "add as 4th cell" answer)
+
+Immediately after agreeing to add `project(4)` as a fourth TennisEye cell, the owner
+asked what it actually communicates — itself a sign the number doesn't self-explain,
+which fails the "no more microcopy" bar the same way the old Composite/Scouting fog
+numbers did. Mechanism, precisely: each year closes a **fraction of the gap remaining**
+to POT (not a fixed amount, so growth front-loads and slows — never a straight line
+to the ceiling), where the fraction is `interest_rate × GROWTH_K(0.12) × tier_mult`
+(`app/development.py:27, 319-332, 366-370`) — three factors invisible from the number
+alone. It also never accounts for a coach's `development_multiplier` — it's computed
+pre-signing, before any school is known, so it's a generic "if nothing special
+happens" baseline, not a real forecast. Its only honest reading is relational
+(`POT − 4yr` ≈ how much upside won't self-realize without a coach's help), which needs
+the mechanism explained to land — the exact thing this redesign exists to avoid
+needing. **Recommendation: cut it.** If the "needs the right coach" story is missed
+later, revisit as a qualitative tag, not a third number. Not yet finalized — the owner
+is confirming.
+
+## POT placement (resolved)
+
+Confirmed via the earlier hero-ceiling question: POT is a peer field to OVR everywhere
+OVR appears (hero banner) **and** lives inside TennisEye's grid — both, not one or the
+other. Not a redundancy by the standard this doc uses throughout: a summary stat
+repeating in a detail panel is fine; two *contradictory* numbers under one label is
+the thing being removed.
+
+## A second live example: the failure mode in the other direction
+
+Elina Vesnina (Class of 2027, RUS): hero `CUR 72 / POT 76 / STR 51.7` — elite current
+ability, near the top of the STR band. TennisEye: `TE RANK #1` of 2,500, `9,485`
+points, `5★ Blue Chip`. The old board card: `OVR 86`, but only **2★**, `NATL #899`.
+A player who is unambiguously, currently excellent — and has the results receipts to
+prove it, #1 in the entire class — gets buried as a "2-star" by the ceiling-fogged
+board number. This is the mirror image of Bahr (hype outrunning results): here,
+results and current ability are both outrunning the board's fogged-ceiling read.
+Confirms the diagnosis applies in both directions, not just the one screenshot that
+started this conversation.
+
+## Board grade collapses to stars only (supersedes "switch to a letter grade")
+
+*"If we're using OVR to tell me how good a recruit is, stars suffice for that, I
+don't need stars AND an OVR."* The old board card showed a number (`86`), star icons
+(`★★☆☆☆`), *and* a text tier (`2-Star`) — three renderings of one ordinal fact. A
+letter grade (the previous answer) would still have been a second rendering next to
+the stars; dropping to **stars + tier label only, no digit and no letter**, removes
+the redundancy outright rather than trading one flavor of it for another.
+
+This also answers the standalone question *"what's the purpose of the OVR number
+sitting above the NATL/state/# ranking cells?"* — plainly: none beyond what the rank
+cells already say. `recruit_grade()`'s number is a percentile curve computed **from**
+`recruit_rank` (`app/juniors.py:113-127`), which is the very number displayed one row
+below it as `NATL #—`. It was always circular — a second view of the same rank,
+formatted as a grade instead of a position — which is exactly the kind of thing this
+whole pass is removing.
+
+**Open, symmetric question:** TennisEye's card has the identical pattern today — a
+big `5★` glyph, star icons, *and* a text tier (`Blue Chip`) for one fact. If stars
+suffice for the board card, the same logic likely drops TennisEye to stars + tier
+label too (no big glyph), for consistency. Not yet confirmed.
 
 ## Sources
 
