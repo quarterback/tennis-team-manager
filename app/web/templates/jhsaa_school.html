@@ -35,6 +35,10 @@
       {% if view.state_rank %}<span class="bit" title="TOSS Power Index rank in {{ view.group }}">No.&nbsp;<b>{{ view.state_rank }}</b> {{ view.group }}{% if view.season and view.season.pi is not none %} · TOSS {{ '%.3f'|format(view.season.pi) }}{% endif %}</span>{% endif %}
       {% if view.state_seed %}<span class="bit">state seed <b>{{ view.state_seed }}</b></span>{% endif %}
       {% if view.state_finish %}<span class="jh-chip {{ 'gold' if view.state_finish == 'Champion' }}">{{ view.state_finish|upper }}</span>{% endif %}
+      {# Only a classification champion is ever in the TOC field, so making it belongs
+         beside the state finish rather than buried in the ledger. #}
+      {% if view.made_toc %}<a class="jh-chip {{ 'gold' if view.toc_finish == 'TOC Champion' }}"
+         href="{{ url_for('jhsaa_toc', u=u, g=view.gender, year=view.scope.pin) }}">{{ view.toc_finish|upper }}</a>{% endif %}
     </div>
   </div>
 </div>
@@ -58,6 +62,13 @@
   <div class="jh-metric"><span class="k">State trips</span>
     <span class="v">{{ t.state_appearances }}</span>
     <span class="s">{% if t.state_streak > 1 %}{{ t.state_streak }} in a row{% else %}{{ t.state_semis }} semifinal{{ '' if t.state_semis == 1 else 's' }}{% endif %}</span></div>
+  {# A TOC appearance is rare enough that the tile only earns its place once a program
+     has one — six of ~335 programs a season reach it. #}
+  {% if t.toc_appearances %}
+  <div class="jh-metric {{ 'hot' if t.toc_titles }}"><span class="k">TOC</span>
+    <span class="v">{{ t.toc_titles }}</span>
+    <span class="s">{{ t.toc_appearances }} appearance{{ '' if t.toc_appearances == 1 else 's' }}{% if t.last_toc %} · last {{ t.last_toc.season_year }}{% endif %}</span></div>
+  {% endif %}
 </div>
 
 <div class="jh-layout wide">
@@ -66,7 +77,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">{{ view.season_year }} Schedule</span>
-        <span class="bl-panel-meta">{{ view.schedule|length }} duals · 5 singles / 2 doubles, 1S/4D at state</span>
+        <span class="bl-panel-meta">{{ view.schedule|length }} duals · 5 singles / 2 doubles, 1S/4D in the postseason</span>
       </div>
       <div class="tbl-scroll">
         {% if view.schedule %}
@@ -76,13 +87,18 @@
           {% set ns = namespace(seg='') %}
           {% for d in view.schedule %}
           {% if d.kind != ns.seg %}{% set ns.seg = d.kind %}
-          <tr class="seg"><td colspan="6">{{ {'NON-DIST': 'Non-district', 'DIST': view.district ~ ' — district play', 'STATE': view.group ~ ' state tournament'}[d.kind] }}</td></tr>
+          {# Keyed lookup, so a phase nobody labelled raises here rather than printing
+             a blank band over a block of duals. #}
+          <tr class="seg"><td colspan="6">{{ {'NON-DIST': 'Non-district',
+                'DIST': view.district ~ ' — district play',
+                'STATE': view.group ~ ' state tournament',
+                'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
           {% endif %}
           {# The dual ROW is the toggle for its line scores. An always-visible
              "line scores" row under every dual doubled the length of a 35-match
              schedule and made it unscannable, which is the thing this page was
              redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind == 'STATE' }}{{ ' has-lines' if d.lines }}"
+          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') }}{{ ' has-lines' if d.lines }}"
               {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
@@ -93,7 +109,7 @@
             </td>
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            <td><span class="jh-tag {{ 'state' if d.kind == 'STATE' else 'dist' if d.kind == 'DIST' }}">{{ d.kind }}</span>
+            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind == 'STATE' else 'dist' if d.kind == 'DIST' }}">{{ d.kind }}</span>
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}
@@ -175,6 +191,10 @@
             <span class="s">of {{ t.seasons }}</span></div>
           <div class="jh-metric"><span class="k">Postseason</span><span class="v">{{ t.post_wins }}–{{ t.post_losses }}</span>
             <span class="s">state duals</span></div>
+          <div class="jh-metric"><span class="k">Tournament of Champions</span>
+            <span class="v">{{ t.toc_titles }}</span>
+            <span class="s">{{ t.toc_appearances }} field{{ '' if t.toc_appearances == 1 else 's' }} ·
+              {{ t.toc_wins }}–{{ t.toc_losses }}{% if t.toc_finals %} · {{ t.toc_finals }} final{{ '' if t.toc_finals == 1 else 's' }}{% endif %}</span></div>
           <div class="jh-metric"><span class="k">Courts</span><span class="v sm">{{ t.courts_won }}–{{ t.courts_lost }}</span>
             <span class="s">individual lines</span></div>
           <div class="jh-metric"><span class="k">Best season</span>
@@ -224,7 +244,8 @@
         <td>{{ s.post_record }}</td>
         <td>{{ s.seed or '—' }}</td>
         <td class="fin">{% if s.champion %}<span class="jh-chip gold">{{ s.group }} CHAMPION</span>
-          {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}</td>
+          {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
+          {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>
         <td style="font-variant-numeric:normal;font-size:11.5px;color:var(--text-secondary)">
           {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_player(r.name, view.school, r.pid, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
@@ -251,6 +272,10 @@
     {% if s.champion %}
     <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
       <span><span class="jh-chip gold">{{ s.group }} STATE CHAMPION</span></span></div>
+    {% endif %}
+    {% if s.toc_champion %}
+    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
+      <span><span class="jh-chip gold">TOURNAMENT OF CHAMPIONS</span></span></div>
     {% endif %}
     {% for h in s.honors %}
     <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>

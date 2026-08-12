@@ -190,6 +190,10 @@
 }
 .jh-tag.dist { background: var(--stat-power-bg); color: var(--stat-power); }
 .jh-tag.state { background: var(--brand); color: #fff; }
+/* The Tournament of Champions is a rung ABOVE the state tournament, and only a
+   classification champion ever plays one — so it reads gold, like the title chips,
+   rather than sharing the state event's green. */
+.jh-tag.toc { background: var(--rank-gold); color: #fff; }
 .jh-sched tr.has-lines { cursor: pointer; }
 .jh-sched tr.has-lines:hover td { background: var(--surface-hover); }
 .jh-caret { float: right; color: var(--text-faint); font-weight: 800; transition: transform .12s; display: inline-block; }

@@ -5,15 +5,16 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'toc', 'Tournament of Champions',
-             'The five classification champions, seeded on the TOSS Power Index — not on
-              classification. The two lowest-rated play into a four-team semifinal.',
-             [('Season', view.season_year), ('Field', view.field|length)] if view.ready else []) }}
+             'Every classification champion in one draw, seeded on the TOSS Power Index
+              rather than on the size of the school — the bottom four play in, and the
+              winner is the overall champion of Jefferson.',
+             [('Season', view.season_year), ('Field', view.field_n)] if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  No Tournament of Champions archived for this season yet — it is played after the five
-  state tournaments that feed it.</div></div>
+  No Tournament of Champions archived for this season yet — it is played after the
+  classification state tournaments that feed it.</div></div>
 {% else %}
 
 {% if view.champion %}
@@ -25,32 +26,87 @@
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, Jefferson
       {%- if view.champion_group %} · {{ view.champion_group }} champion{% endif %}</div>
   </div>
+  {% if view.final %}
+  <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}</div>
+    <div class="o">final · def. {{ view.runner_up.name }}</div></div>
+  {% endif %}
 </div>
 {% endif %}
 
-{# The field, so the SEEDING is legible — the point of the event is that these are
-   ordered by rating rather than by the size of the school. #}
-<div class="bl-panel" style="margin-bottom:12px">
-  <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
-  <div class="bl-panel-body" style="padding:10px 12px">
-    <div class="jh-cols2">
+{# The SAME server-positioned tree the state draw, the NCAA bracket and the Preseason
+   NIT draw on. `brk_canvas` takes a `_bracket_canvas` RESULT, never a column list —
+   handed the raw columns it resolves cv.width/cards/links to Undefined and silently
+   renders an empty box, which is exactly how this page shipped without a bracket. #}
+<div class="jh-brk-desktop">
+  {{ brk_toolbar([('all', 'Tournament of Champions')]) }}
+  <div class="brk-stage" id="brkstage">
+    <section class="brk-region" data-view="all">
+      <div class="brk-region-head">
+        <h2>{{ view.season_year }} TOC · {{ view.field_n }} state champions</h2>
+        <span class="brk-region-champ">
+          {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
+      </div>
+      {{ brk_canvas(view.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
+    </section>
+  </div>
+</div>
+
+<div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhtocrd', view.scope.pin) }}</div>
+
+<div class="jh-layout" style="margin-top:14px">
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
+      <span class="bl-panel-meta">every dual in the draw · 1 singles / 4 doubles</span></div>
+    <div class="bl-panel-body" style="padding:12px">
+      <div class="jh-cols2">
+        {% for rd in view.rounds %}
+        <div>
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} alive</div>
+          {% for gm in rd.games %}
+          <div class="jh-mgame">
+            <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+              <span class="sd">{{ gm.home_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a>
+                {% if gm.home_group %}<span class="jh-chip c-{{ gm.home_group }}">{{ gm.home_group }}</span>{% endif %}</span>
+              <span class="pt">{{ gm.home_points|int }}</span>
+            </div>
+            <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+              <span class="sd">{{ gm.away_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a>
+                {% if gm.away_group %}<span class="jh-chip c-{{ gm.away_group }}">{{ gm.away_group }}</span>{% endif %}</span>
+              <span class="pt">{{ gm.away_points|int }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# The field, so the SEEDING is legible — the point of the event is that these are
+     ordered by rating rather than by the size of the school. #}
+  <div class="bl-panel jh-mod">
+    <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
+      <span class="bl-panel-meta">{{ view.field_n }} champions, seeded on TOSS</span></div>
+    <div class="bl-panel-body">
       {% for t in view.field %}
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=t.name, u=u, g=view.gender, year=view.scope.pin) }}">
-        <span class="jh-chip ghost">#{{ t.seed }}</span>
-        <span class="mark" style="width:22px;display:inline-block">{{ t.mark|safe }}</span>
-        <span class="nm">{{ t.name }}</span>
+        <span class="rk">{{ t.seed }}</span>
+        {{ t.mark|safe }}
+        <span class="bd"><span class="n">{{ t.name }}</span><span class="s">{{ t.district }}</span></span>
         {% if t.group %}<span class="jh-chip c-{{ t.group }}">{{ t.group }}</span>{% endif %}
       </a>
       {% endfor %}
     </div>
+    <div class="bl-panel-body" style="padding:8px 13px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
+      Seeded on the Power Index each champion finished the regular season with, so a 4A
+      champion that rated above the 6A one is the higher seed. The bottom four play in;
+      the top two sit out the opening round.
+    </div>
   </div>
 </div>
-
-{# The SAME server-positioned tree every other bracket in the app draws on. #}
-{{ brk_toolbar() }}
-{{ brk_canvas(view.cols, u, ep='jhsaa_school', epq={'g': view.gender, 'year': view.scope.pin}) }}
-{{ jh_round_tabs(view.rounds, u, view.gender, view.scope.pin) }}
-{{ brk_script() }}
 {% endif %}
 </div>
+{{ brk_script() }}
 {% endblock %}

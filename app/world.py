@@ -3691,6 +3691,37 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     return out
 
 
+def _toc_finish_label(alive: int) -> str:
+    """A Tournament of Champions finish.
+
+    Same arithmetic as `_finish_label` — place is teams still alive — but its own
+    labels, because the events are different shapes and the shared bands lie about
+    this one. `_finish_label` bands 5-8 as "Quarterfinalist"; a six-team meta-event
+    has no quarterfinal, so a program that lost its opening dual would be credited
+    with a round it never played."""
+    if alive <= 0:
+        return ""
+    if alive == 1:
+        return "TOC Champion"
+    if alive == 2:
+        return "TOC Runner-up"
+    if alive <= 4:
+        return "TOC Semifinalist"
+    return "TOC Opening Round"
+
+
+def jhsaa_toc_result(toc: dict, school: str) -> dict:
+    """How far `school` went in one archived Tournament of Champions.
+
+    The TOC is archived in exactly the shape `run_state` writes, which is why this
+    reuses the state draw's arithmetic wholesale rather than walking the rounds a
+    second time. Only the labels are the event's own."""
+    st = jhsaa_state_result(toc, school)
+    return {"made_toc": st["made_state"], "toc_seed": st["seed"],
+            "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
+            "toc_champion": st["champion"]}
+
+
 def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
     """Every program in one classification, ordered the way the JHSAA itself orders
     them — by the TOSS Power Index the season was seeded on (`jhsaa.power_index`).
@@ -3746,6 +3777,8 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "courts_won": 0, "courts_lost": 0, "pf": 0.0, "pa": 0.0,
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
+           "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
+           "toc_champion": False, "toc_wins": 0, "toc_losses": 0,
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
@@ -3764,6 +3797,10 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     st = jhsaa_state_result((arc.get("brackets") or {}).get(row["group"]) or {}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
+    # The Tournament of Champions is a SEPARATE event with a separate finish, not a
+    # deeper run at state: only a classification champion is in it, so making it is
+    # itself the honour and it has to be readable off the ledger row.
+    row.update(jhsaa_toc_result(arc.get("toc") or {}, school))
     for r in jhsaa_group_ranking(arc, row["group"]):
         if r["school"] == school:
             row["state_rank"] = r["rank"]
@@ -3776,9 +3813,20 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
         for ln in d.get("lines") or ():
             ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
             row["courts_won" if ours else "courts_lost"] += 1
+        # The two postseason events are counted apart. "Post" is the state tournament
+        # the program was seeded into; the TOC is the meta-event a handful of state
+        # champions play afterwards, and folding it into the same record would make a
+        # champion's state run look one or two duals longer than it was.
         if d.get("phase") == "state":
             row["pwins" if d.get("won") else "plosses"] += 1
+        elif d.get("phase") == "toc":
+            row["toc_wins" if d.get("won") else "toc_losses"] += 1
     row["post_record"] = f"{row['pwins']}-{row['plosses']}"
+    row["toc_record"] = f"{row['toc_wins']}-{row['toc_losses']}"
+    if row["made_toc"]:
+        row["honors"].append(
+            f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
+            f" (No. {row['toc_seed']} seed)")
     aw = (arc.get("awards") or {}).get(row["group"]) or {}
     poy = aw.get("poy")
     if poy and poy.get("school") == school:
@@ -3837,6 +3885,8 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
     losses = sum(s["losses"] for s in seasons)
     titles = [s for s in seasons if s["champion"]]
     states = [s for s in seasons if s["made_state"]]
+    tocs = [s for s in seasons if s.get("made_toc")]
+    toc_titles = [s for s in seasons if s.get("toc_champion")]
     streak = best_streak = 0
     for s in asc:
         streak = streak + 1 if s["made_state"] else 0
@@ -3858,6 +3908,17 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
         "state_semis": sum(1 for s in seasons if s["state_place"] and s["state_place"] <= 4),
         "state_finals": sum(1 for s in seasons if s["state_place"] and s["state_place"] <= 2),
         "state_titles": len(titles),
+        # The Tournament of Champions, folded the same way — appearances, how far, and
+        # the last one. Only a classification champion is ever in the field, so
+        # `toc_appearances` is a count of a program's very best seasons.
+        "toc_appearances": len(tocs),
+        "toc_semis": sum(1 for s in seasons if s.get("toc_place") and s["toc_place"] <= 4),
+        "toc_finals": sum(1 for s in seasons if s.get("toc_place") and s["toc_place"] <= 2),
+        "toc_titles": len(toc_titles),
+        "toc_wins": sum(s.get("toc_wins", 0) for s in seasons),
+        "toc_losses": sum(s.get("toc_losses", 0) for s in seasons),
+        "last_toc": tocs[0] if tocs else None,                 # seasons are newest-first
+        "last_toc_title": toc_titles[0] if toc_titles else None,
         "poy": sum(len(s["poy"]) for s in seasons),
         "all_state": sum(len(s["all_state"]) for s in seasons),
         "all_district": sum(len(s["all_district"]) for s in seasons),

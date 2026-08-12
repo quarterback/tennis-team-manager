@@ -55,10 +55,19 @@ FORMATS = {
 }
 
 
+# The two POSTSEASON phases. They share everything that matters — the 1S/4D shape, the
+# strict best-nine lineup, and exclusion from the TOSS rating — and differ only in which
+# event they belong to. The TOC carries its own phase rather than borrowing "state"
+# because the archive is the only place the two can be told apart afterwards: written as
+# "state" its duals landed on a program's state-tournament record, and a program that
+# reached the Tournament of Champions had no way to say so.
+POSTSEASON = ("state", "toc")
+
+
 def dual_format(phase: str) -> DualFormat:
-    """The dual shape for `phase` ("regular" | "district" | "state"). District
-    tournaments play the regular-season shape; only the state event switches."""
-    return FORMATS["state"] if phase == "state" else FORMATS["regular"]
+    """The dual shape for `phase` ("regular" | "district" | "state" | "toc"). District
+    tournaments play the regular-season shape; the postseason events switch."""
+    return FORMATS["state"] if phase in POSTSEASON else FORMATS["regular"]
 
 
 # SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
@@ -591,13 +600,43 @@ _ROTATE_ONE = 0.45          # chance the 9th seat goes to a bench player, per du
 _ROTATE_TWO = 0.15          # chance the 8th seat does too
 
 
+# ‼️ A CHALLENGE LADDER IS SEEDED ON ABILITY AND MOVED BY RESULTS — never ranked on a
+# win COUNT. This sorted on cumulative wins first (`-w`), with ability third, and that
+# is a ratchet rather than a ladder: a win total measures OPPORTUNITY, so dressing earns
+# wins, wins earn the next start, and a player who dropped his first two duals — or who
+# was ninth in week one and never got a start — can never climb back, because every
+# team-mate who kept playing sits above him on a number he is not being allowed to add
+# to. Ability was in the key but was unreachable behind it. It also ranked 5-15 above
+# 4-0, and doubles credits BOTH partners, so a rotation player racked up wins faster
+# than a number one playing the hardest opponent on the card.
+#
+# Measured over a full boys' season before the fix: on 55 of 400 rosters a top-four
+# player finished outside the nine, 21 of them under seven matches all year — a 51-OVR
+# senior sitting behind a 28-OVR team-mate on the same team.
+#
+# So the coach seeds on ability and lets the season move you: `LADDER_SWING` is what a
+# perfect record is worth against a winless one, in OVR points, and `LADDER_PRIOR` is
+# how much evidence it takes before a record carries about half its weight — which is
+# what stops a 1-2 opening week from outranking a whole season, and what leaves a player
+# who has not played AT HIS SEED instead of at the bottom.
+LADDER_SWING = 14.0         # a season-long perfect record ≈ +7 OVR, winless ≈ -7
+LADDER_PRIOR = 8.0          # matches before results carry ~half their weight
+
+
+def ladder_score(p, record: list[int] | None) -> float:
+    """Where the coach ranks `p` — ability, adjusted by what he has actually done."""
+    w, l = record or (0, 0)
+    n = w + l
+    if not n:
+        return p.current_overall()
+    return p.current_overall() + LADDER_SWING * (w / n - 0.5) * n / (n + LADDER_PRIOR)
+
+
 def _order(ts: TeamSeason) -> list:
-    """The ladder as the coach reads it: results, then ability, then STR."""
-    def key(p):
-        w, l = ts.records.get(p.pid, [0, 0])
-        pct = w / (w + l) if (w + l) else 0.0
-        return (-w, -pct, -p.current_overall(), -p.str_value())
-    return sorted(ts.roster, key=key)
+    """The ladder as the coach reads it: ability, moved by results, then STR."""
+    return sorted(ts.roster,
+                  key=lambda p: (-ladder_score(p, ts.records.get(p.pid)),
+                                 -p.str_value()))
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
@@ -605,7 +644,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
     order = _order(ts)
     need = lineup_need(phase)
     nine, bench = order[:need], order[need:]
-    if phase != "state" and bench:                 # playoffs: strict best nine
+    if phase not in POSTSEASON and bench:          # playoffs: strict best nine
         if rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
         if len(bench) > 1 and rng.random() < _ROTATE_TWO:
@@ -1087,14 +1126,15 @@ def rating_duals(teams) -> list[dict]:
     A dual sits on BOTH sides' schedules, so only the home side's copy is taken —
     counting each meeting twice would flatten strength of schedule toward .500.
 
-    State duals are excluded on purpose. TOSS is the SEEDING input, so it has to be
-    the regular season only; it would also drag the 1S/4D format's #3 and #4 doubles
-    into a weight table that stops at #2, where they would silently take the fallback
-    weight instead of a number anybody chose."""
+    Postseason duals — state AND the Tournament of Champions — are excluded on purpose.
+    TOSS is the SEEDING input, so it has to be the regular season only; it would also
+    drag the 1S/4D format's #3 and #4 doubles into a weight table that stops at #2,
+    where they would silently take the fallback weight instead of a number anybody
+    chose."""
     out = []
     for t in teams:
         for d in t.schedule:
-            if not d.get("home") or d.get("phase") == "state":
+            if not d.get("home") or d.get("phase") in POSTSEASON:
                 continue
             lines = []
             for ln in d.get("lines") or ():
@@ -1222,7 +1262,10 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     rng = random.Random(seed)
 
     def play(a: TeamSeason, b: TeamSeason) -> tuple[TeamSeason, dict]:
-        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+        # phase "toc", not "state": the shape and the lineup rules are the state
+        # event's, but the dual has to be TELLABLE APART in `world_jhsaa_dual`, which
+        # is all a program page has to read a TOC appearance back off.
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="toc")
         win = a if res.winner == 0 else b
         return win, {"home": a.school.name, "away": b.school.name,
                      "home_points": res.home_points, "away_points": res.away_points,
