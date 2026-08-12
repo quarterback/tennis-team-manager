@@ -17,6 +17,7 @@ So this runs a season, archives it the way the world rung does, and asserts on t
 rendered HTML. The association is cut to two districts per classification to keep it
 to a few seconds; every code path is the real one.
 """
+import json
 import sqlite3
 
 import pytest
@@ -178,6 +179,51 @@ def test_no_program_publishes_a_postseason_record(archived):
     html = archived["client"].get(
         f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
     assert ">Post<" not in html
+
+
+def test_a_title_survives_a_season_with_no_individual_awards(archived):
+    """‼️ The Honours panel selects the seasons it will draw, and the TEAM titles are
+    banners rendered from `champion` / `toc_champion` rather than entries in `honors`.
+    So a program that won its classification and the TOC without a single All-District
+    player has an empty `honors` list, and a panel filtering on that list drops the
+    season BEFORE either banner can render — the titles vanish from the one panel that
+    exists to show them. (True of the state title before the TOC existed, too.)"""
+    w, champ = archived["world"], archived["arc"]["toc"]["champion"]
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=? AND"
+                       " gender='girls'", (w["id"], w["year"])).fetchone()
+    original = row["data"]
+    arc = json.loads(original)
+    grp = next(g for g, nm in arc["champions"].items() if nm == champ)
+    arc["awards"][grp] = {"poy": None, "all_state": []}      # strip every award...
+    arc["all_district"][grp] = {}                            # ...this program could win
+    try:
+        conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
+                     " gender='girls'", (json.dumps(arc), w["id"], w["year"]))
+        conn.commit()
+        season = wd.jhsaa_school_history(w["id"], "girls", champ)["seasons"][0]
+        assert season["honors"] == [] and season["champion"] and season["toc_champion"]
+        assert season["honoured"], "a title IS an honour, however bare the season"
+        html = archived["client"].get(
+            f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+        assert "TOURNAMENT OF CHAMPIONS" in html
+        assert f"{grp} STATE CHAMPION" in html
+    finally:
+        conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
+                     " gender='girls'", (original, w["id"], w["year"]))
+        conn.commit()
+        conn.close()
+
+
+def test_a_titleless_season_is_not_listed_as_an_honour(archived):
+    """The other half: `honoured` must not simply be true for everyone, or the panel
+    becomes the ledger a second time."""
+    w = archived["world"]
+    plain = next(s.name for s in jh.load_schools("girls")
+                 if s.name not in archived["arc"]["toc"]["field"])
+    row = wd.jhsaa_school_history(w["id"], "girls", plain)["seasons"][0]
+    assert row["honoured"] == bool(row["honors"] or row["champion"])
 
 
 def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
