@@ -549,6 +549,38 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the #1→#9 drop RISES as schools shrink. Real high-school tennis routinely puts the
   smallest classification in a state top ten (Oregon 2026 boys: Oregon Episcopal No. 9,
   four of the top eight 5A). Pinned by `tests/test_jhsaa_talent_shape.py`.
+- **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
+  `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
+  community participation, coaching tradition, reputation — NOT current strength, and
+  NEVER derived from classification or public/private (those may inform who gets seeded
+  onto the list; the property belongs to the school). Stored in an EDITABLE override
+  table (`overrides.set_jhsaa_archetype`, `/editor/jhsaa-archetype`), never branched on a
+  school name in generation code.
+  - **blue_blood** generates better and CLUSTERS (`BLUE_BLOOD_REDRAW` keeps the better of
+    two draws per seat, which lifts the middle of a lineup far more than a flat mean
+    shift). It shows on day one — ninth-graders in the low 30s where an ordinary
+    program's are mid-20s — and it beats a development program ON BALANCE. That is what
+    makes it a blue blood.
+  - **development** has ORDINARY freshmen and the best seniors in the association:
+    `mean` is 0, the gain is potential plus a maturity bonus that starts at ZERO for
+    ninth-graders (`(grade - 9)`) and compounds. It CAN beat a blue blood outright — that
+    is the point, it levels a field facilities tilt — but it earns it over four years.
+    Arrive good vs leave great.
+  - **doubles** generates completely normally; the edge is an EPHEMERAL per-match lift
+    (+5..+11 on the 20-80 grade scale) applied to a COPY on the way into the engine —
+    `build_roster` caches Prospects globally and shares them across saves. It lands only
+    on `Team.doubles_players`, the separate doubles lineup `_squad` already builds, so it
+    is structurally incapable of reaching a singles court. (Nothing existed to reuse:
+    `coaches.development_multiplier` is a growth RATE at the rollover, a different thing.)
+  - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
+    program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
+    salt and expiring by itself — deliberately NOT storable, since a stored tag would make
+    it permanent. ⚠️ The draw runs over the WHOLE pool and skips tagged schools AT
+    APPLICATION: filtering the pool made the table non-local, so tagging one school
+    changed which OTHERS drew an upstart.
+  A blue-blood small school SHOULD beat an average big one — that is the talent model's
+  thesis, not a bug. What must survive is the class ladder INSIDE each tag.
+  Pinned by `tests/test_jhsaa_archetypes.py`.
 - **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
