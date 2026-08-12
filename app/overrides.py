@@ -223,6 +223,56 @@ def clear_prestige(school: str) -> None:
     conn.commit(); conn.close()
 
 
+# --- JHSAA program archetype (durable program conditions) ---------------------
+# A per-PROGRAM tag — blue_blood / development / doubles — describing facilities, feeder
+# networks, community participation, coaching tradition and reputation. NOT current team
+# strength, and NOT derived from classification or public/private: those may inform who
+# gets seeded onto the list, but the property belongs to the individual school and is
+# editable, so the owner can promote and demote programs as Jefferson's history develops.
+#
+# Keyed on SCHOOL NAME alone. A school's courts, coaching and feeder programme serve its
+# boys' and girls' teams alike, so the tag covers both.
+#
+# `upstart` deliberately does NOT live here: it is a temporary multi-year run, rolled per
+# world from the season seed and expiring on its own (`jhsaa.upstarts`). A stored tag
+# would make it permanent, which is the one thing it must not be.
+
+def get_jhsaa_archetypes() -> dict:
+    """{school: archetype} for every tagged JHSAA program."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_arch'").fetchall()
+    conn.close()
+    return {k: v for k, v in rows if v}
+
+
+def set_jhsaa_archetype(school: str, archetype: str) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_arch',?,?)", (school, archetype))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_archetype(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_arch' AND key=?", (school,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_archetype_version() -> str:
+    """Fingerprint of the archetype table — rosters are generated from it, so the JHSAA
+    season cache has to fall when it changes."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_arch'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
 # --- Dynamic prestige momentum (YoY drift from on-court overperformance) ------
 # A SIGNED per-(school, gender) delta, distinct from the absolute editor override
 # above. The world rollover recomputes it each year; load_division adds it to the

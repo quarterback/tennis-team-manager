@@ -2429,6 +2429,24 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-archetype", methods=["POST"])
+    def editor_jhsaa_archetype():
+        """Promote or demote a JHSAA program's archetype.
+
+        Stored per SCHOOL NAME (a school's courts and coaching serve both its teams), so
+        the owner can rewrite Jefferson's high-school pecking order as its history
+        develops without touching generation code. `upstart` is deliberately absent: it
+        is a temporary run the world rolls and expires by itself."""
+        school = request.form.get("school", "")
+        kind = request.form.get("archetype", "")
+        if school:
+            if kind in ("blue_blood", "development", "doubles"):
+                ov.set_jhsaa_archetype(school, kind)
+            else:
+                ov.clear_jhsaa_archetype(school)
+            reset_all()
+        return _editor_redirect()
+
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():
         school = request.form.get("school", "")
