@@ -43,7 +43,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Cascade Divide District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Academy of Arts and Communication",
@@ -251,8 +251,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Alderfield",
@@ -289,26 +289,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
-    },
-    {
-      "name": "Alejandro Salcedo",
-      "city": "Punta del Águila",
-      "county": "San Marcos",
-      "area": "South Coast",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 763,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -335,8 +316,8 @@
       "city": "Rilland",
       "county": "Emigrant",
       "area": "Sage Plains",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 655,
       "private": false,
       "mascot": "Falcons",
@@ -346,8 +327,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "girls_district": "Timber Valley District",
+      "boys_district": "North Range District"
     },
     {
       "name": "Altamonte School of Commerce",
@@ -367,25 +348,6 @@
       "boys": true,
       "girls_district": "Juniper Highlands District",
       "boys_district": "Juniper Highlands District"
-    },
-    {
-      "name": "Althea Freeman",
-      "city": "Los Alisos",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 799,
-      "private": false,
-      "mascot": "Ibex",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Amaia Aramburu",
@@ -594,15 +556,15 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Annie Springs Crater View",
       "city": "Annie Springs",
       "county": "Cinder",
       "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 879,
       "private": false,
       "mascot": "Warriors",
@@ -631,7 +593,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -840,8 +802,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Ashstead",
@@ -859,8 +821,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "girls_district": "Cascade Divide District",
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Aspen Harbor",
@@ -878,8 +840,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "Juniper Highlands District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "North Range District"
     },
     {
       "name": "Aspen Meadows",
@@ -992,8 +954,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Bahía Leal",
@@ -1069,7 +1031,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Beacon Hill",
@@ -1125,8 +1087,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "girls_district": "Cascade Divide District",
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Bellacosta University Prep",
@@ -1145,7 +1107,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Belmonte",
@@ -1505,7 +1467,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -1513,8 +1475,8 @@
       "city": "Berrio",
       "county": "Halbrook",
       "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 720,
       "private": false,
       "mascot": "Panthers",
@@ -1524,8 +1486,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
-      "boys_district": "Halbrook Basin District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Bidwell",
@@ -1544,7 +1506,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Timber Valley District",
-      "boys_district": "Timber Valley District"
+      "boys_district": "South Coast District"
     },
     {
       "name": "Bidwell County",
@@ -1559,25 +1521,6 @@
       "colors": [
         "#6d1a36",
         "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Timber Valley District",
-      "boys_district": "Timber Valley District"
-    },
-    {
-      "name": "Black Springs Classical Academy",
-      "city": "Black Springs",
-      "county": "Antler",
-      "area": "Timber Valley",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 797,
-      "private": false,
-      "mascot": "Mustangs",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
       ],
       "girls": true,
       "boys": true,
@@ -1623,25 +1566,6 @@
       "boys_district": "Sage Plains District"
     },
     {
-      "name": "Cabo Esperanza Technical Arts Academy",
-      "city": "Cabo Esperanza",
-      "county": "Weller",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 680,
-      "private": false,
-      "mascot": "Gophers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Calder Aviation and Engineering Academy",
       "city": "Calder",
       "county": "Rimrock",
@@ -1658,7 +1582,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Calderwood School",
@@ -1718,44 +1642,6 @@
       "boys_district": ""
     },
     {
-      "name": "Carmina",
-      "city": "Carmina",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 720,
-      "private": false,
-      "mascot": "Huskies",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Carroway",
-      "city": "Carroway",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 969,
-      "private": false,
-      "mascot": "Rams",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": ""
-    },
-    {
       "name": "Carverstead",
       "city": "Carverstead",
       "county": "Sablewood",
@@ -1791,7 +1677,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Timber Valley District",
-      "boys_district": "Timber Valley District"
+      "boys_district": "South Coast District"
     },
     {
       "name": "Caswell",
@@ -1999,7 +1885,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -2057,7 +1943,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Copper Lake Academy of Music and Media",
@@ -2094,7 +1980,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
     },
     {
@@ -2121,8 +2007,8 @@
       "city": "Cordero Wells",
       "county": "Stagewater",
       "area": "Sage Plains",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 939,
       "private": false,
       "mascot": "Panthers",
@@ -2132,8 +2018,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "Timber Valley District",
+      "boys_district": "South Coast District"
     },
     {
       "name": "Cortland",
@@ -2246,8 +2132,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "North Range District"
     },
     {
       "name": "César Mendoza",
@@ -2266,7 +2152,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "César Peralta",
@@ -2286,44 +2172,6 @@
       "boys": true,
       "girls_district": "Harborline District",
       "boys_district": "Vance District"
-    },
-    {
-      "name": "Dahlberg",
-      "city": "Dahlberg",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 914,
-      "private": false,
-      "mascot": "Crevasse",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide District",
-      "boys_district": "Cascade Divide District"
-    },
-    {
-      "name": "Dahlberg School of Science and Industry",
-      "city": "Dahlberg",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 931,
-      "private": false,
-      "mascot": "Lions",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide District",
-      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Daniel Gaines",
@@ -2398,7 +2246,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Stagewater District",
+      "girls_district": "Sage Plains District",
       "boys_district": ""
     },
     {
@@ -2436,8 +2284,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "girls_district": "Cascade Divide District",
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Drayfield",
@@ -2475,7 +2323,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Eagleton",
@@ -2664,8 +2512,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Eleanor Tillman",
@@ -2683,7 +2531,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Ashbury Metro District",
+      "girls_district": "Gold Valley District",
       "boys_district": ""
     },
     {
@@ -2740,8 +2588,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "North Range District"
     },
     {
       "name": "Elk Crossing",
@@ -2759,7 +2607,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
+      "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
     },
     {
@@ -2779,7 +2627,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "South Coast District",
-      "boys_district": "Stagewater District"
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Ella Baker",
@@ -2855,7 +2703,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Fellows Mill",
@@ -2874,15 +2722,15 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Fellows Mill International School",
       "city": "Fellows Mill",
       "county": "Sablewood",
       "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 971,
       "private": false,
       "mascot": "White Cougars",
@@ -2892,7 +2740,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Sablewood District",
+      "girls_district": "Gold Valley District",
       "boys_district": ""
     },
     {
@@ -2912,7 +2760,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Fort Carden",
@@ -2969,7 +2817,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Fort Salish",
@@ -2987,27 +2835,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
-    },
-    {
-      "name": "Fort Salish Independent School",
-      "city": "Fort Salish",
-      "county": "Weller",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 846,
-      "private": true,
-      "mascot": "Trollers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Fort Valois",
@@ -3140,7 +2969,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Galena",
@@ -3216,7 +3045,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Garazi Mendizabal",
@@ -3234,7 +3063,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Juniper Highlands District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -3311,7 +3140,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Golden Gate",
@@ -3349,7 +3178,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Granite Basin",
@@ -3368,7 +3197,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Timber Valley District",
-      "boys_district": "Timber Valley District"
+      "boys_district": "South Coast District"
     },
     {
       "name": "Graymont",
@@ -3387,7 +3216,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Greaves Junction",
@@ -3405,7 +3234,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -3424,7 +3253,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -3558,7 +3387,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "South Coast District",
-      "boys_district": "Stagewater District"
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Harbor Gate",
@@ -3747,8 +3576,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "girls_district": "Cascade Divide District",
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Hawk Lake Central",
@@ -3812,8 +3641,8 @@
       "city": "Los Maderos",
       "county": "Bidwell",
       "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 793,
       "private": false,
       "mascot": "Cobras",
@@ -3823,8 +3652,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Hetfield",
@@ -3842,8 +3671,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "girls_district": "North Range District",
+      "boys_district": "North Range District"
     },
     {
       "name": "High Bar",
@@ -3899,8 +3728,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "girls_district": "North Range District",
+      "boys_district": "North Range District"
     },
     {
       "name": "Homecroft",
@@ -3920,25 +3749,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Homecroft Manufacturing and Technology Academy",
-      "city": "Homecroft",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 967,
-      "private": false,
-      "mascot": "Roadrunners",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Vance District"
     },
     {
       "name": "Homestead",
@@ -4071,7 +3881,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Isaiah Price",
@@ -4135,8 +3945,8 @@
       "city": "Netherwood",
       "county": "Antler",
       "area": "Timber Valley",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 793,
       "private": false,
       "mascot": "Green Warriors",
@@ -4147,7 +3957,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Timber Valley District",
-      "boys_district": "Timber Valley District"
+      "boys_district": "South Coast District"
     },
     {
       "name": "Janice Davenport",
@@ -4337,26 +4147,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Katherine Johnson",
-      "city": "Haverly",
-      "county": "Camas",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 665,
-      "private": false,
-      "mascot": "Kingfishers",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": ""
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Katherine Whitaker",
@@ -4431,8 +4222,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Kelford Northwest",
@@ -4470,7 +4261,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Kendricks Landing",
@@ -4488,8 +4279,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Klara Marchand",
@@ -4872,31 +4663,12 @@
       "boys_district": "Halbrook Basin District"
     },
     {
-      "name": "Los Alisos",
-      "city": "Los Alisos",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 908,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
-    },
-    {
       "name": "Los Maderos",
       "city": "Los Maderos",
       "county": "Bidwell",
       "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 824,
       "private": false,
       "mascot": "Blue Vikings",
@@ -4906,8 +4678,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Los Remolinos",
@@ -5001,8 +4773,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Mabryville",
@@ -5021,7 +4793,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Madrigal",
@@ -5134,8 +4906,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Marian Cross",
@@ -5192,7 +4964,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Marshall",
@@ -5248,7 +5020,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Gold Valley District"
     },
     {
@@ -5325,7 +5097,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Vance District"
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Meridian Regional",
@@ -5344,7 +5116,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Mesa Dorada",
@@ -5362,7 +5134,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -5420,7 +5192,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Mikhail Sidorov",
@@ -5446,8 +5218,8 @@
       "city": "Tamarack Flat",
       "county": "Antler",
       "area": "Timber Valley",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 725,
       "private": false,
       "mascot": "Kokanee",
@@ -5457,7 +5229,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Antler District",
+      "girls_district": "Timber Valley District",
       "boys_district": ""
     },
     {
@@ -5476,8 +5248,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Millport",
@@ -5515,7 +5287,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Miren Elorriaga",
@@ -5535,25 +5307,6 @@
       "boys": false,
       "girls_district": "Halbrook Basin District",
       "boys_district": ""
-    },
-    {
-      "name": "Miren Garmendia",
-      "city": "Homecroft",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 997,
-      "private": false,
-      "mascot": "Goliath Beetles",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Vance District"
     },
     {
       "name": "Mission Bay",
@@ -5611,25 +5364,6 @@
       "boys": true,
       "girls_district": "Marlow District",
       "boys_district": "Marlow District"
-    },
-    {
-      "name": "Monte Blanco",
-      "city": "Monte Blanco",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 937,
-      "private": false,
-      "mascot": "Wolves",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley District",
-      "boys_district": "Gold Valley District"
     },
     {
       "name": "Montelago",
@@ -5724,7 +5458,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Nadia Chernov",
@@ -5800,7 +5534,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Naomi Price",
@@ -5857,7 +5591,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Cascade Divide District",
-      "boys_district": "Ashbury Metro District"
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Naylors Landing",
@@ -5875,8 +5609,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Nerea Urrutia",
@@ -5913,7 +5647,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -5934,25 +5668,6 @@
       "boys": true,
       "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
-    },
-    {
-      "name": "New Leiden Classical Academy",
-      "city": "New Leiden",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 858,
-      "private": false,
-      "mascot": "Tigers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Cascade Divide District",
-      "boys_district": ""
     },
     {
       "name": "Newark River North",
@@ -6066,7 +5781,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Norstead",
@@ -6103,7 +5818,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -6141,7 +5856,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Juniper Highlands District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -6217,7 +5932,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Gold Valley District"
     },
     {
@@ -6389,7 +6104,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Oscar Micheaux",
@@ -6487,25 +6202,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Pasquale",
-      "city": "Pasquale",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 720,
-      "private": false,
-      "mascot": "Titan Beetles",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sablewood District",
-      "boys_district": "Gold Valley District"
-    },
-    {
       "name": "Paul Robeson",
       "city": "Emerson",
       "county": "Halbrook",
@@ -6559,7 +6255,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley District",
+      "girls_district": "Antler District",
       "boys_district": "Timber Valley District"
     },
     {
@@ -6675,44 +6371,6 @@
       "boys": true,
       "girls_district": "South Coast District",
       "boys_district": "South Coast District"
-    },
-    {
-      "name": "Pomar",
-      "city": "Pomar",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 890,
-      "private": false,
-      "mascot": "Vikings",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Port Ainsley",
-      "city": "Port Ainsley",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 717,
-      "private": false,
-      "mascot": "Gerenuk",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
     },
     {
       "name": "Port Meridian",
@@ -6848,25 +6506,6 @@
       "boys_district": "Bidwell District"
     },
     {
-      "name": "Port Veles International Academy",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 973,
-      "private": true,
-      "mascot": "Whalers",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
-    },
-    {
       "name": "Port Veles Maritime Academy",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -6884,25 +6523,6 @@
       "boys": true,
       "girls_district": "Stagewater District",
       "boys_district": "Harborline District"
-    },
-    {
-      "name": "Porterfield",
-      "city": "Porterfield",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 720,
-      "private": false,
-      "mascot": "Cardinals",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sablewood District",
-      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Providence Academy",
@@ -6958,7 +6578,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -6979,25 +6599,6 @@
       "boys": true,
       "girls_district": "Rimrock District",
       "boys_district": "Rimrock District"
-    },
-    {
-      "name": "Puerto Gallego School of Science and Industry",
-      "city": "Puerto Gallego",
-      "county": "San Marcos",
-      "area": "South Coast",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 951,
-      "private": false,
-      "mascot": "Breakers",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
     },
     {
       "name": "Puerto de los Reyes Civic Leadership Academy",
@@ -7129,7 +6730,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -7148,8 +6749,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "girls_district": "Cascade Divide District",
+      "boys_district": "Cascade Divide District"
     },
     {
       "name": "Rafael Escobedo",
@@ -7243,7 +6844,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -7263,7 +6864,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Antler District",
-      "boys_district": "Antler District"
+      "boys_district": "Timber Valley District"
     },
     {
       "name": "Redfork West",
@@ -7338,8 +6939,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Rilland",
@@ -7358,7 +6959,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Rimrock Valley",
@@ -7376,7 +6977,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Harborline District",
+      "girls_district": "Juniper Highlands District",
       "boys_district": ""
     },
     {
@@ -7548,7 +7149,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Ryken",
@@ -7586,7 +7187,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Antler District",
-      "boys_district": "Antler District"
+      "boys_district": "Timber Valley District"
     },
     {
       "name": "Sadie Freeman",
@@ -7624,7 +7225,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Sage Spur",
@@ -7700,7 +7301,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Antler District",
-      "boys_district": "Antler District"
+      "boys_district": "Timber Valley District"
     },
     {
       "name": "Salvador Montalvo",
@@ -7737,7 +7338,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": "South Coast District"
     },
     {
@@ -7890,25 +7491,6 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Gold Valley District"
-    },
-    {
-      "name": "San Lorenzo",
-      "city": "San Lorenzo",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 720,
-      "private": false,
-      "mascot": "Cowboys",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
       "boys_district": "Ashbury Metro District"
     },
     {
@@ -7928,15 +7510,15 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "San Vito",
       "city": "San Vito",
       "county": "Emigrant",
       "area": "Sage Plains",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 720,
       "private": false,
       "mascot": "Iron Flames",
@@ -7946,8 +7528,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "girls_district": "Timber Valley District",
+      "boys_district": "North Range District"
     },
     {
       "name": "Santa Cruz del Norte",
@@ -8064,25 +7646,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Selbyville Manufacturing and Technology Academy",
-      "city": "Selbyville",
-      "county": "Camas",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 950,
-      "private": false,
-      "mascot": "Beavers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
-    },
-    {
       "name": "Sergei Belov",
       "city": "San Borondón",
       "county": "San Marcos",
@@ -8100,25 +7663,6 @@
       "boys": true,
       "girls_district": "South Coast District",
       "boys_district": "South Coast District"
-    },
-    {
-      "name": "Sergei Petrenko",
-      "city": "Weissburg",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 993,
-      "private": false,
-      "mascot": "Crimson Tigers",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Serrano",
@@ -8213,7 +7757,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Silvale",
@@ -8232,7 +7776,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Silver Glen",
@@ -8270,7 +7814,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Sisters of Mercy",
@@ -8307,8 +7851,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "Snowline",
@@ -8391,8 +7935,8 @@
       "city": "Novak",
       "county": "Tamarack",
       "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 718,
       "private": false,
       "mascot": "Eagles",
@@ -8402,8 +7946,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cascade Divide District",
-      "boys_district": "Cascade Divide District"
+      "girls_district": "Ashbury Metro District",
+      "boys_district": "Ashbury Metro District"
     },
     {
       "name": "Southern Jefferson Christian",
@@ -8421,7 +7965,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Stagewater District",
+      "girls_district": "South Coast District",
       "boys_district": ""
     },
     {
@@ -8479,7 +8023,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "St. Basil School",
@@ -8554,27 +8098,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "St. Dominic Academy",
-      "city": "Millport",
-      "county": "Windrow",
-      "area": "North Range",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 686,
-      "private": true,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "St. Elian",
@@ -8611,8 +8136,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "St. Francis Xavier College Prep",
@@ -8672,25 +8197,6 @@
       "boys_district": "Juniper Highlands District"
     },
     {
-      "name": "St. Helena School",
-      "city": "Aspen Meadows",
-      "county": "Antler",
-      "area": "Timber Valley",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 669,
-      "private": true,
-      "mascot": "Tie Hackers",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Timber Valley District",
-      "boys_district": "South Coast District"
-    },
-    {
       "name": "St. Isidore",
       "city": "Averill",
       "county": "Sablewood",
@@ -8725,8 +8231,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
-      "boys_district": "Stagewater District"
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District"
     },
     {
       "name": "St. Jerome Academy",
@@ -8746,25 +8252,6 @@
       "boys": true,
       "girls_district": "South Coast District",
       "boys_district": "South Coast District"
-    },
-    {
-      "name": "St. Jerome High School",
-      "city": "Tolland",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 987,
-      "private": true,
-      "mascot": "Tigers",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
     },
     {
       "name": "St. Lucia Academy",
@@ -8790,8 +8277,8 @@
       "city": "Northrup",
       "county": "Vance",
       "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 695,
       "private": true,
       "mascot": "Lions",
@@ -8802,7 +8289,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Vance District"
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "St. Martin Preparatory",
@@ -8820,7 +8307,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gold Valley District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
     },
     {
@@ -8919,25 +8406,6 @@
       "boys_district": "Ferris District"
     },
     {
-      "name": "St. Raphael Preparatory",
-      "city": "Echevarria",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 953,
-      "private": true,
-      "mascot": "Currawongs",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
       "name": "St. Sebastian Prep",
       "city": "Ashbury",
       "county": "Marlow",
@@ -8955,25 +8423,6 @@
       "boys": true,
       "girls_district": "Ashbury Metro District",
       "boys_district": "Ashbury Metro District"
-    },
-    {
-      "name": "St. Sophia School",
-      "city": "Klamoya",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 731,
-      "private": true,
-      "mascot": "Black Spartans",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide District",
-      "boys_district": "Cascade Divide District"
     },
     {
       "name": "St. Vincent School",
@@ -9011,26 +8460,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Vance District"
-    },
-    {
-      "name": "Starlake Canal View",
-      "city": "Starlake",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 768,
-      "private": false,
-      "mascot": "Caracals",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Harborline District",
-      "boys_district": ""
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Steelbridge",
@@ -9185,25 +8615,6 @@
       "boys_district": "Juniper Highlands District"
     },
     {
-      "name": "Tamarack Harbor Civic Leadership Academy",
-      "city": "Tamarack Harbor",
-      "county": "Weller",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 751,
-      "private": false,
-      "mascot": "Huskies",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Tamarack Springs",
       "city": "Tamarack Springs",
       "county": "Tamarack",
@@ -9265,8 +8676,8 @@
       "city": "Telfair",
       "county": "Rimrock",
       "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 885,
       "private": true,
       "mascot": "Chukars",
@@ -9276,8 +8687,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Thelma Moss",
@@ -9372,7 +8783,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Harborline District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Three Saints",
@@ -9391,7 +8802,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Thurgood Marshall",
@@ -9485,7 +8896,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": "Gold Valley District"
     },
     {
@@ -9505,7 +8916,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Treasure Valley",
@@ -9562,7 +8973,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "Juniper Highlands District"
     },
     {
       "name": "Tubman",
@@ -9582,25 +8993,6 @@
       "boys": true,
       "girls_district": "Marlow District",
       "boys_district": "Marlow District"
-    },
-    {
-      "name": "Tule Admiralty High",
-      "city": "Tule",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 668,
-      "private": false,
-      "mascot": "Kudu",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Vance District"
     },
     {
       "name": "Valderra",
@@ -9736,25 +9128,6 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "Vesper Polytechnic Institute",
-      "city": "Vesper",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 989,
-      "private": false,
-      "mascot": "Grizzlies",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "North Range District",
-      "boys_district": "North Range District"
-    },
-    {
       "name": "Viktor Antonov",
       "city": "Belyakov",
       "county": "Vance",
@@ -9873,8 +9246,8 @@
       "city": "Tolland",
       "county": "Vance",
       "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A-1A",
+      "classification": "3A",
+      "group": "3A",
       "enrollment": 952,
       "private": false,
       "mascot": "Maroon Stallions",
@@ -9884,7 +9257,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Harborline District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": ""
     },
     {
@@ -9903,7 +9276,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Sablewood District",
+      "girls_district": "Halbrook Basin District",
       "boys_district": ""
     },
     {
@@ -9942,7 +9315,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "North Range District"
     },
     {
       "name": "Westover",
@@ -10018,26 +9391,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Antler District",
-      "boys_district": "Antler District"
-    },
-    {
-      "name": "Willa Brown",
-      "city": "Purcell",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 721,
-      "private": false,
-      "mascot": "Green Jaguars",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "boys_district": "Timber Valley District"
     },
     {
       "name": "Windrow",
@@ -10112,7 +9466,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "South Coast District",
+      "girls_district": "Timber Valley District",
       "boys_district": ""
     },
     {
@@ -10132,7 +9486,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Cascade Divide District"
+      "boys_district": "Gold Valley District"
     },
     {
       "name": "Zubieta",
