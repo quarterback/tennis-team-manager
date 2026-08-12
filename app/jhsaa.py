@@ -123,7 +123,12 @@ FIDELITY = "fast"
 # association to qualify from -- 13 automatic bids left only 11 at-large places for
 # 138 other programs -- which is exactly backwards for the level that is supposed to
 # be the sprawling, everybody-plays one.
-FIELD = {"7A": 32, "6A": 32, "5A": 32, "4A": 24, "3A": 24, "2A-1A": 32}
+# 24 into a 32-team draw is deliberate, not a rounding-down (owner rule 2027-08): the
+# top eight seeds bye and seeds 9-24 play in, so nobody reaches the number one seed
+# without having won a dual. A full 32 gives a 1 v 32 opener, which is a bye with
+# extra steps. It also keeps the girls' and boys' cutlines close where a
+# classification is lopsided by gender.
+FIELD = {"7A": 32, "6A": 32, "5A": 24, "4A": 24, "3A": 24, "2A-1A": 32}
 AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 # --- talent ------------------------------------------------------------------
