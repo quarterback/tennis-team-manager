@@ -82,6 +82,9 @@
          href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">State</a>
       <a class="{{ 'on' if tab == 'bracket' }}"
          href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Bracket</a>
+      {# The TOC is its own event, not a classification's, so it carries no `group`. #}
+      <a class="{{ 'on' if tab == 'toc' }}" title="Tournament of Champions"
+         href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, year=scope.pin) }}">TOC</a>
       <a class="{{ 'on' if tab == 'districts' }}"
          href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Districts</a>
       <a class="{{ 'on' if tab == 'history' }}"

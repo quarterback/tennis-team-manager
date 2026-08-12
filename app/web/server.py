@@ -38,7 +38,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
 from .state import (jhsaa_view, jhsaa_school_view, jhsaa_past_winners,
-                    jhsaa_bracket_view, jhsaa_district_view, jhsaa_districts_view,
+                    jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_player_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
@@ -2001,6 +2001,13 @@ def create_app() -> Flask:
         return render_template("jhsaa_bracket.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/toc")
+    def jhsaa_toc():
+        """The Tournament of Champions — its own bracket, per gender."""
+        g, group, year, u = _jh_scope_args()
+        return render_template("jhsaa_toc.html", active="High School",
+                               view=jhsaa_toc_view(DEFAULT_SEED, g, year), u=u)
+
     @app.route("/jhsaa/districts")
     def jhsaa_districts():
         gender, label, u, g, group, year = _jh_scope_args()
@@ -2426,6 +2433,28 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         if school:
             ov.clear_prestige(school)
+            reset_all()
+        return _editor_redirect()
+
+    @app.route("/editor/jhsaa-archetype", methods=["POST"])
+    def editor_jhsaa_archetype():
+        """Promote or demote a JHSAA program's archetype.
+
+        Stored per SCHOOL NAME (a school's courts and coaching serve both its teams), so
+        the owner can rewrite Jefferson's high-school pecking order as its history
+        develops without touching generation code. `upstart` is deliberately absent: it
+        is a temporary run the world rolls and expires by itself."""
+        school = request.form.get("school", "")
+        kind = request.form.get("archetype", "")
+        if school:
+            # "none" DEMOTES a seeded program (a stored override that says "not one of
+            # these"); anything else clears the override entirely, reverting the school to
+            # whatever `data/jhsaa/archetypes.json` says it is. Two different intentions,
+            # and a single "clear" could only express one of them.
+            if kind in ("blue_blood", "development", "doubles", "none"):
+                ov.set_jhsaa_archetype(school, kind)
+            else:
+                ov.clear_jhsaa_archetype(school)
             reset_all()
         return _editor_redirect()
 

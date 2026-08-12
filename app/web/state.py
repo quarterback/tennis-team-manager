@@ -3593,6 +3593,43 @@ def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
     return [f"{d:%b} {d.day}" for d in out]
 
 
+def _jh_reported_lines(d: dict) -> list[dict]:
+    """A dual's lines with every set score WINNER-FIRST — how tennis is actually reported.
+
+    A tennis score is written from the winner's side, always: "6-4, 3-6, 7-5" belongs to
+    whoever won the match, and the loser's name appears beside it rather than the loser's
+    games. It is NOT a per-viewer perspective, which is the mistake this replaces — an
+    earlier pass flipped the numbers for the away team's card, which fixed the visible
+    symptom (a pair shown winning with 3-6, 3-6 beside them) by inventing a second wrong
+    convention: the home team's card then read the loser's games first on every line the
+    away side won.
+
+    The engine already had this right: `MatchResult.scoreline` is documented "from the
+    winner's perspective", and the college league stores THAT and un-flips it with
+    `home_won` when it needs directional games (`gtt_seasonmode._parse_games`). The JHSAA
+    reimplemented the string instead of using it, and reimplemented it home-first.
+
+    ⚠️ The STORED JHSAA string stays home-first, and that divergence is now deliberate
+    rather than accidental: seasons are ALREADY ARCHIVED that way, and re-reading them
+    under a new convention would silently misreport every line the away side won — the
+    same bug, moved into the past where it cannot be seen. `jhsaa._games` also wants the
+    directional split for oGS. So storage keeps the record and the report is normalised
+    here. Which side is being viewed decides the name order and the d./l. marker; it never
+    decides the numbers."""
+    out = []
+    for ln in d.get("lines") or ():
+        if ln.get("home_won"):
+            out.append(ln)                       # home won: home-first IS winner-first
+            continue
+        sets = [x.strip() for x in (ln.get("score") or "").split(",") if x.strip()]
+        flipped = []
+        for st in sets:
+            a, _, b = st.partition("-")
+            flipped.append(f"{b}-{a}" if b else st)
+        out.append({**ln, "score": ", ".join(flipped)})
+    return out
+
+
 def _jh_line_records(sched: list[dict]) -> dict:
     """Every player's singles and doubles record for a season, off the match-level archive.
 
@@ -3613,6 +3650,17 @@ def _jh_line_records(sched: list[dict]) -> dict:
 
 def _jh_seeds(bracket: dict) -> dict:
     return {nm: i + 1 for i, nm in enumerate((bracket or {}).get("field") or ())}
+
+
+def _jh_score(gm: dict) -> str:
+    """A state game's score, WINNER-FIRST — the contract `_bracket.html` renders under.
+
+    `brk_row` picks its half of the string by which side WON, so a home-first score is
+    swapped on every card the away team won. It looks right on the cards the home team
+    won, which is exactly why it survived a design pass and a merge: half the bracket
+    was correct, and the wrong half read as a plausible upset."""
+    hp, ap = int(gm.get("home_points", 0)), int(gm.get("away_points", 0))
+    return f"{max(hp, ap)}-{min(hp, ap)}"
 
 
 def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
@@ -3642,6 +3690,42 @@ def _jh_bye_card(name: str, seeds: dict, schools: dict) -> dict:
                      "conf": "", "aq": False, "tbd": True, "label": "BYE"},
             "played": False, "id": None, "tbd": False, "region": None, "bpos": 0,
             "home_won": True, "winner": name, "score": "", "bye": True}
+
+
+def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
+    """The Tournament of Champions bracket — its own event, not a classification's.
+
+    Five champions seeded on the TOSS Power Index rather than on classification, so a 4A
+    champion that rated above the 6A one is the higher seed. That is the whole reason the
+    event is worth playing, and it is why the seeds are read off the archive rather than
+    reconstructed from the group order. Renders on the SAME tree as every other bracket
+    in the app."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    scope = _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS), yr, years, None, None)
+    if not arc or not (arc.get("toc") or {}).get("rounds"):
+        return {"ready": False, "gender": g, "year": yr, "years": years, "scope": scope}
+    toc = arc["toc"]
+    schools = _jh_schools(g)
+    champ_of = {br.get("champion"): grp
+                for grp, br in (arc.get("brackets") or {}).items() if br.get("champion")}
+    seeds = toc.get("seeds") or {n: i + 1 for i, n in enumerate(toc.get("field") or ())}
+    return {
+        "ready": True, "gender": g, "year": yr, "years": years, "scope": scope,
+        "season_year": arc.get("season_year"),
+        "field": [{**_jh_deco(schools, n, 26), "seed": seeds.get(n, i + 1),
+                   "group": champ_of.get(n, "")}
+                  for i, n in enumerate(toc.get("field") or ())],
+        "rounds": world.jhsaa_state_rounds(toc),
+        "cols": _jh_bracket_cols(toc, schools),
+        "champion": _jh_deco(schools, toc["champion"], 64) if toc.get("champion") else None,
+        "champion_group": champ_of.get(toc.get("champion"), ""),
+    }
 
 
 def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
@@ -3677,7 +3761,9 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
                        "away": _jh_brk_team(gm.get("away", ""), not hw, seeds, schools),
                        "played": True, "id": None, "tbd": False, "region": None,
                        "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
-                       "score": f"{int(gm.get('home_points', 0))}-{int(gm.get('away_points', 0))}"})
+                       # WINNER-FIRST: `brk_row` picks its half of this string by which
+                       # side won, not by which side is home (see _bracket.html).
+                       "score": _jh_score(gm)})
         byes = [t for t in alive if t not in playing]
         ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
         alive = [gm.get("winner") for gm in rd["games"]] + byes
@@ -3726,8 +3812,14 @@ def _jh_final_four(bracket: dict, schools: dict) -> dict:
                                       else final["home"])
         out["champion"] = _jh_deco(schools, win, 64)
         out["runner_up"] = _jh_deco(schools, lose, 30)
-        out["final"] = {**final,
-                        "score": f"{int(final['home_points'])}-{int(final['away_points'])}"}
+        # `win_points`/`lose_points` because the summary reads "N-M · final · def.
+        # <runner-up>": a home-first pair prints the LOSER's number first whenever the
+        # away side won the final, which is the same bug as the bracket card in the one
+        # place it is stated in words. `score` stays for the shared card macro.
+        wp, lp = max(final["home_points"], final["away_points"]), \
+            min(final["home_points"], final["away_points"])
+        out["final"] = {**final, "score": _jh_score(final),
+                        "win_points": int(wp), "lose_points": int(lp)}
     if len(rounds) > 1:
         for gm in rounds[-2]["games"]:
             beaten = gm["away"] if gm["winner"] == gm["home"] else gm["home"]
@@ -3936,7 +4028,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state_rank": (season or {}).get("state_rank", 0),
         "state_seed": seeds.get(school, 0),
         "state_finish": (season or {}).get("state_finish", ""),
-        "schedule": [{**d, "date": dates[i],
+        "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": ("STATE" if d["phase"] == "state"
                                else "DIST" if d["district"] else "NON-DIST"),
                       "opp_deco": _jh_deco(schools, d["opp"], 22),

@@ -3528,6 +3528,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
+                # The Tournament of Champions — the five classification champions, one
+                # winner. Archived beside the brackets it is drawn from, in the same
+                # shape, so it reads back through the same helpers.
+                "toc": season.get("toc") or {},
                 "all_district": {g: season["awards"][g].get("all_district", {})
                                  for g in jhsaa.GROUPS},
             }

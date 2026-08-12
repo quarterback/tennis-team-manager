@@ -55,7 +55,8 @@
 .jh-class a.on.c-6A { background: var(--cat-5a); }
 .jh-class a.on.c-5A { background: var(--brand); }
 .jh-class a.on.c-4A { background: var(--rank-bronze); }
-.jh-class a.on.c-3A-1A { background: var(--gray-600); }
+.jh-class a.on.c-3A { background: var(--gray-500); }
+.jh-class a.on.c-2A-1A { background: var(--gray-600); }
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
@@ -156,7 +157,8 @@
 .jh-chip.c-6A { background: var(--cat-5a); }
 .jh-chip.c-5A { background: var(--brand); }
 .jh-chip.c-4A { background: var(--rank-bronze); }
-.jh-chip.c-3A-1A { background: var(--gray-600); }
+.jh-chip.c-3A { background: var(--gray-500); }
+.jh-chip.c-2A-1A { background: var(--gray-600); }
 .jh-chip.gold { background: var(--rank-gold); }
 .jh-chip.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
 

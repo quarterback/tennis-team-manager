@@ -485,6 +485,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   leagues — which is why the archive is keyed `standings[group][district]`. A route or
   lookup keyed on the name alone silently serves the 3A-1A league under a 7A heading,
   with all the right data and all the wrong league. Route: `/jhsaa/district/<group>/<district>`.
+- **‼️ `m.score` on a shared bracket card is WINNER-FIRST, never home-first.**
+  `_bracket.html`'s `brk_row` splits the string and picks its half by which side WON, so
+  a `f"{home_points}-{away_points}"` string swaps the two numbers on every card the AWAY
+  team won — and is correct on every card the home team won, which is what hid it through
+  a design pass, a review and a merge (the wrong half reads as upsets). Build it
+  `max-min`. Same family, and worse: **a tennis SET score is ALWAYS written from the
+  WINNER's side** — a domain convention, not a perspective, so both teams' cards show the
+  identical string and only the names and the d./l. marker differ. The engine already has
+  this (`MatchResult.scoreline`, "from the winner's perspective"; the college league
+  stores it and un-flips with `home_won`), but `jhsaa._score_str` reimplemented it
+  HOME-first. Normalise at the render — `state._jh_reported_lines`, keyed on `home_won`,
+  and it COPIES (`play_dual` appends the SAME `lines` list to both teams). Flipping "for
+  the away card" is NOT the fix; that just moves the error onto the home card. The stored
+  JHSAA string stays home-first because seasons are already archived that way and
+  `jhsaa._games` wants the directional split for oGS.
+  See `docs/AAR-jhsaa-bracket-score-sides.md`.
 - **The state draw uses the SHARED bracket tree** (`state._bracket_canvas` +
   `templates/_bracket.html`), like the NCAA bracket and the Preseason NIT — the macros
   take `ep`/`epq` for the link endpoint and honour a team's own `mark`. Don't fork a
@@ -521,6 +537,50 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
 - **`talent` on `generate_prospect` is the CEILING**, current is maturity-derived, so the
   `_TALENT` bands look absurdly high next to the college ones. Don't "fix" them down.
+- **‼️ SMALLER CLASSIFICATIONS ARE THINNER, NOT CAPPED (owner rule 2027-08).** Tennis is
+  not a sport where the big school simply has better players — good players turn up
+  everywhere, and enrollment buys DEPTH. So `_TALENT` varies the MEAN while the SPREAD
+  WIDENS as the mean falls: 7A/6A are near-indistinguishable at the top, the real steps
+  come below, and every classification can still produce an elite number one. Do NOT
+  "tidy" it back into an even ladder with shrinking spreads — that was the old shape and
+  it got the sport backwards in a way only a position-by-position measurement shows: the
+  #1s were 12.4 apart and the #9s only 8.3, so the TOP fell faster than the depth, and a
+  3A-1A program could never produce a 60 at all. Now: top-end gap 4.5, depth gap 8.3, and
+  the #1→#9 drop RISES as schools shrink. Real high-school tennis routinely puts the
+  smallest classification in a state top ten (Oregon 2026 boys: Oregon Episcopal No. 9,
+  four of the top eight 5A). Pinned by `tests/test_jhsaa_talent_shape.py`.
+- **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
+  `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
+  community participation, coaching tradition, reputation — NOT current strength, and
+  NEVER derived from classification or public/private (those may inform who gets seeded
+  onto the list; the property belongs to the school). Stored in an EDITABLE override
+  table (`overrides.set_jhsaa_archetype`, `/editor/jhsaa-archetype`), never branched on a
+  school name in generation code.
+  - **blue_blood** generates better and CLUSTERS (`BLUE_BLOOD_REDRAW` keeps the better of
+    two draws per seat, which lifts the middle of a lineup far more than a flat mean
+    shift). It shows on day one — ninth-graders in the low 30s where an ordinary
+    program's are mid-20s — and it beats a development program ON BALANCE. That is what
+    makes it a blue blood.
+  - **development** has ORDINARY freshmen and the best seniors in the association:
+    `mean` is 0, the gain is potential plus a maturity bonus that starts at ZERO for
+    ninth-graders (`(grade - 9)`) and compounds. It CAN beat a blue blood outright — that
+    is the point, it levels a field facilities tilt — but it earns it over four years.
+    Arrive good vs leave great.
+  - **doubles** generates completely normally; the edge is an EPHEMERAL per-match lift
+    (+5..+11 on the 20-80 grade scale) applied to a COPY on the way into the engine —
+    `build_roster` caches Prospects globally and shares them across saves. It lands only
+    on `Team.doubles_players`, the separate doubles lineup `_squad` already builds, so it
+    is structurally incapable of reaching a singles court. (Nothing existed to reuse:
+    `coaches.development_multiplier` is a growth RATE at the rollover, a different thing.)
+  - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
+    program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
+    salt and expiring by itself — deliberately NOT storable, since a stored tag would make
+    it permanent. ⚠️ The draw runs over the WHOLE pool and skips tagged schools AT
+    APPLICATION: filtering the pool made the table non-local, so tagging one school
+    changed which OTHERS drew an upstart.
+  A blue-blood small school SHOULD beat an average big one — that is the talent model's
+  thesis, not a bug. What must survive is the class ladder INSIDE each tag.
+  Pinned by `tests/test_jhsaa_archetypes.py`.
 - **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.

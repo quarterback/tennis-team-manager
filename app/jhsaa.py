@@ -45,7 +45,7 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A-1A")
+GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -118,8 +118,13 @@ FIDELITY = "fast"
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
-FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A-1A": 8}
-AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
+# 2A-1A is the BIGGEST classification (151 girls / 136 boys across 13 districts), so
+# it gets the biggest bracket alongside 7A. At 24 it was the hardest class in the
+# association to qualify from -- 13 automatic bids left only 11 at-large places for
+# 138 other programs -- which is exactly backwards for the level that is supposed to
+# be the sprawling, everybody-plays one.
+FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A": 12, "2A-1A": 32}
+AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 # --- talent ------------------------------------------------------------------
 # (mean, spread) of the 20-80 grade per classification. Well beneath the college bands
@@ -130,15 +135,197 @@ AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
 # number one with a ceiling of 46 still plays at a current ~30 while in school. That is
 # the whole reason the bands look high for high schoolers — do not "fix" them downward
 # by comparing them to the college _TALENT means, which ARE current.
-# Calibrated so the top-190 graduating seniors slot into the national recruit class
-# sensibly: best ~#25 of 2500, median near the national median. See `graduating_class`.
+# The top-190 graduating seniors are Jefferson's entry on the national recruit board.
+# MEASURED, not asserted: best ~#227 of 2500, median ~#483, i.e. the hand-off sits in the
+# top fifth of the class rather than astride its median. (The comment here used to claim
+# "best ~#25, median near the national median"; it was ~#274/#527 before this rebalance
+# too, so it was describing an intention rather than the numbers. Re-measure before
+# quoting it — `graduating_class` against `world.board_class`.)
+# ⚠️ SMALLER SCHOOLS ARE THINNER, NOT CAPPED (owner rule 2027-08). Tennis is not a
+# sport where the big school simply has better players — good players turn up
+# everywhere, and what enrollment actually buys you is DEPTH. So the classifications
+# differ in the BULK of the distribution (the mean) while the upper tail stays broadly
+# common (the spread WIDENS as the mean falls), and 7A/6A are near-indistinguishable at
+# the top with the real steps coming below.
+#
+# The previous ladder was a flat -5/-4 shift per class with the spread NARROWING as the
+# mean fell, which gets the sport backwards in a way that only shows if you measure the
+# lineup position by position. Measured on the old numbers (boys, mean current OVR):
+#
+#            #1     #9   drop   best #1 seen
+#   7A     54.4   31.1   23.2     60.0
+#   3A-1A  42.0   22.8   19.2     51.0
+#
+# The #1s were 12.4 apart and the #9s only 8.3 — the TOP fell faster than the depth, and
+# the drop from #1 to #9 was FLATTER at a small school than a big one. A 3A-1A program
+# could not produce a 60 at all, so it could never be the small school sitting top-10 in
+# the state, which is a completely ordinary thing in real high-school tennis (in Oregon's
+# 2026 boys table, Oregon Episcopal — the smallest classification — finished No. 9
+# statewide, and four of the top eight were 5A).
+#
+# Widening the spread as the mean falls does both jobs at once, because 12 ceilings are
+# drawn and the best 9 dress: a wide draw lifts the number one a long way and drags the
+# number nine down. Do NOT "tidy" these back into an even ladder with shrinking spreads.
 _TALENT = {
     ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.0, 14.0),
-    ("6A", "boys"):   (53.0, 14.0), ("6A", "girls"):   (48.0, 13.0),
-    ("5A", "boys"):   (48.0, 13.0), ("5A", "girls"):   (44.0, 12.0),
-    ("4A", "boys"):   (44.0, 12.0), ("4A", "girls"):   (40.0, 11.0),
-    ("3A-1A", "boys"): (39.0, 11.0), ("3A-1A", "girls"): (36.0, 10.0),
+    ("6A", "boys"):   (56.5, 15.5), ("6A", "girls"):   (51.5, 14.5),
+    ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
+    ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
+    ("3A", "boys"):    (43.5, 20.0), ("3A", "girls"):    (38.0, 19.0),
+    ("2A-1A", "boys"): (38.5, 22.0), ("2A-1A", "girls"): (34.5, 21.0),
 }
+# --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
+#
+# A school-level modifier ON TOP of the classification bands above, never a replacement
+# for them: a blue-blood 3A-1A program is a strong SMALL-SCHOOL program, not a 7A one.
+# It describes DURABLE PROGRAM CONDITIONS — facilities, feeder networks, community
+# participation, coaching tradition, reputation — not current team strength, and it is
+# deliberately NOT derived from classification or public/private. Those may inform who
+# gets seeded onto the list; the property belongs to the individual school and is
+# editable (`/editor`, `overrides.set_jhsaa_archetype`) so the owner can promote and
+# demote programs as Jefferson's history develops.
+#
+#   blue_blood   generates better, and CLUSTERS — several strong players in one roster
+#   development  generates normal CURRENT ability but high POTENTIAL, and develops it
+#                faster, so the effect shows over a four-year career rather than on
+#                arrival
+#   doubles      generates normally; the edge is in DOUBLES ONLY, as a per-match boost
+#   upstart      a TEMPORARY multi-year run, rolled per world — see `upstarts()`
+#   (untagged)   normal
+#
+# `mean` shifts the classification band's centre; `spread` scales its width; `pot` is a
+# ceiling-only bonus (potential without present ability); `mature` accelerates how much
+# of that ceiling has surfaced by each grade.
+ARCHETYPES = {
+    # BETTER ON BALANCE than a development programme (owner rule 2027-08) — that is what
+    # makes it a blue blood — and it shows on ARRIVAL: its ninth-graders are already in
+    # the low thirties, where an ordinary program's are mid-twenties. A development
+    # program can still beat one in a given season; it just has to earn it over four
+    # years rather than have it on day one.
+    "blue_blood":  {"mean": +15.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Blue blood"},
+    # A development programme SHOULD be able to beat a blue blood outright (owner rule
+    # 2027-08) — that is the point of it, and it is how coaching levels a playing field
+    # that facilities and reputation tilt. What separates them is the SHAPE, not the
+    # ceiling: `mean` is 0 and the maturity bonus starts at ZERO for freshmen and
+    # compounds by grade, so this program's ninth-graders look ordinary and its seniors
+    # are the best in the association. Arrive good vs leave great.
+    "development": {"mean":  0.0, "spread": 1.05, "pot": +6.0, "mature": 0.038,
+                    "label": "Development program"},
+    "doubles":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Doubles school"},
+    "upstart":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Upstart"},
+}
+
+# A blue blood does not just draw higher, it draws TOGETHER: a share of its seats are
+# re-rolled and the better draw kept, which is what "several strong players in the same
+# roster" means. Applied per seat, so it lifts the top of the lineup much more than the
+# bottom — the same best-of-n effect the classification spread uses.
+BLUE_BLOOD_REDRAW = 0.70
+
+# UPSTART — a temporary run, not a promotion. ~10 programs statewide at any time, each
+# for a few seasons, rolled deterministically from the world salt so a save reproduces
+# its own history and the run EXPIRES on its own.
+UPSTART_N = 10
+UPSTART_RUN = (2, 4)              # seasons a run lasts
+UPSTART_LIFT = (0.15, 0.30)       # 15-30% stronger than the program's own baseline
+
+# DOUBLES SCHOOLS — the edge is ephemeral and per-match, not a better roster. There was
+# no existing per-match boost to reuse (`coaches.development_multiplier` is a growth
+# rate, not a match modifier), so this is the first: `_squad` already builds doubles as
+# its OWN lineup (`Team.doubles_players`), so a boosted copy of those players is confined
+# to doubles by construction and cannot leak into a singles court.
+DOUBLES_BOOST = (5.0, 11.0)
+
+
+# TWO LAYERS, as the owner specified: the SEED list ships with the repo as school data
+# (`data/jhsaa/archetypes.json`), and the override table is the editable layer on top, so
+# a save can promote or demote a program without editing the file — and clearing an
+# override reverts that program to whatever the seed says. An override of "none"
+# explicitly DEMOTES a seeded program, which is different from having no override at all.
+_ARCH_SEED_PATH = os.path.join(os.path.dirname(_DATA), "archetypes.json")
+_arch_cache: dict = {}
+
+
+def _arch_seed() -> dict:
+    try:
+        with open(_ARCH_SEED_PATH, encoding="utf-8") as fh:
+            return {k: v for k, v in json.load(fh).get("programs", {}).items() if v}
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+def archetype(school: str) -> str:
+    """A program's archetype tag, or "" — the seed list with the editable table on top."""
+    from app import overrides as ov
+    return _arch_map(ov.jhsaa_archetype_version()).get(school, "")
+
+
+def _arch_map(version: str) -> dict:
+    """{school: archetype}, memoised on the override table's fingerprint. Computed into a
+    LOCAL and published (the gthread rule); never read back out of the dict it wrote."""
+    hit = _arch_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    out = _arch_seed()
+    for school, kind in ov.get_jhsaa_archetypes().items():
+        if kind == "none":
+            out.pop(school, None)           # an explicit demotion of a seeded program
+        else:
+            out[school] = kind
+    _arch_cache.clear()                     # one entry: only the current version matters
+    _arch_cache[version] = out
+    return out
+
+
+def upstarts(year: int, salt: str = "") -> dict[str, float]:
+    """{school: lift} for the programs currently on an upstart run.
+
+    Rolled per world rather than stored, because an upstart is a RUN and a stored tag
+    would make it permanent. Each candidate's run start and length are derived from the
+    salt, so the same save always tells the same story and a run ends by itself.
+
+    Already-tagged programs are skipped — an upstart is a school having a moment, not a
+    blue blood having a slightly better one — but they are skipped AT APPLICATION, never
+    removed from the pool the draw runs over. Filtering the pool made the archetype table
+    non-local: tagging one school changed which OTHER schools drew an upstart that
+    season, because it changed what `rng.sample` was sampling from. A tag must only ever
+    affect the school it is on."""
+    tagged = set(_arch_map(__import__("app.overrides", fromlist=["x"]).jhsaa_archetype_version()))
+    pool = sorted({s.name for s in load_schools("girls")} | {s.name for s in load_schools("boys")})
+    if not pool:
+        return {}
+    out: dict[str, float] = {}
+    # Walk a window of seasons so runs overlap and roughly UPSTART_N are live at once.
+    lo, hi = UPSTART_RUN
+    for start in range(year - hi + 1, year + 1):
+        rng = random.Random(f"{salt}|jhsaa-upstart|{start}")
+        per_season = max(1, round(UPSTART_N / ((lo + hi) / 2)))
+        for n in rng.sample(pool, min(per_season, len(pool))):
+            run = rng.randint(lo, hi)
+            lift = round(rng.uniform(*UPSTART_LIFT), 3)
+            if start <= year < start + run and n not in tagged:
+                out[n] = lift
+    return out
+
+
+def _program_mod(school: School, year: int, salt: str) -> dict:
+    """The combined school-level modifier for one program-season."""
+    a = ARCHETYPES.get(archetype(school.name), {})
+    mod = {"mean": a.get("mean", 0.0), "spread": a.get("spread", 1.0),
+           "pot": a.get("pot", 0.0), "mature": a.get("mature", 0.0),
+           "kind": archetype(school.name)}
+    lift = upstarts(year, salt).get(school.name)
+    if lift:
+        # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
+        mean, _spread = _TALENT[(school.group, school.gender)]
+        mod["mean"] += mean * lift
+        mod["kind"] = mod["kind"] or "upstart"
+    return mod
+
+
 GRADE_FLOOR = 12.0        # below the 20-80 scale's nominal floor on purpose: 1A depth
 
 # High school is grades 9-12 and nothing else. A player enters at 9 and leaves after 12.
@@ -153,6 +340,23 @@ PER_CLASS = 3                                  # 3 x 4 grades = ROSTER_SIZE
 # It also is the aging model: the same player's current rises every year purely because
 # more of their ceiling has surfaced.
 _MATURITY = {9: (0.40, 0.48), 10: (0.50, 0.58), 11: (0.60, 0.68), 12: (0.70, 0.78)}
+
+# ⚠️ A FEW FRESHMEN ARRIVE FINISHED (owner rule 2027-08). Roughly 1 in 100 shows up with
+# most of their ceiling already accessible — the kid who has been playing juniors since
+# they were eight and walks straight into the number one spot. This is NOT a potential
+# bonus: a prodigy can be an ordinary 45 ceiling who simply arrives at 40 instead of 20.
+#
+# It is a maturity FLOOR, and it persists for all four years, which is the whole point.
+# The normal band rises with each grade, so a one-off ninth-grade boost would quietly
+# un-mature them as a sophomore. Carrying the floor instead means they start near their
+# ceiling and then barely grow — the early bloomer their classmates catch, which is what
+# actually happens.
+#
+# Rolled on its OWN rng stream, not the roster one. Drawing it from the main sequence
+# would shift every subsequent draw and regenerate every player in the association;
+# keyed separately, the only rosters that change are the ones that gain a prodigy.
+PRODIGY_RATE = 0.01
+PRODIGY_MATURITY = (0.84, 0.93)
 
 
 @dataclass
@@ -248,12 +452,26 @@ def districts(gender: str, group: str) -> dict[str, list[School]]:
 
 # --- rosters -----------------------------------------------------------------
 
-def _ceiling(rng: random.Random, group: str, gender: str) -> float:
+def _ceiling(rng: random.Random, group: str, gender: str,
+             mod: dict | None = None) -> float:
     """A player's CEILING, drawn independently per player. The ladder is not assigned —
     it emerges from who is actually best, so a great freshman can play number one over a
-    senior, which is how high school works."""
+    senior, which is how high school works.
+
+    `mod` is the program-level modifier (`_program_mod`) applied ON TOP of the
+    classification band — it shifts and scales that band, it never replaces it, so a
+    blue-blood 3A-1A remains a strong SMALL-SCHOOL program."""
     mean, spread = _TALENT[(group, gender)]
-    return max(GRADE_FLOOR, min(80.0, rng.gauss(mean, spread)))
+    if mod:
+        mean += mod.get("mean", 0.0)
+        spread *= mod.get("spread", 1.0)
+    draw = rng.gauss(mean, spread)
+    if mod and mod.get("kind") == "blue_blood" and rng.random() < BLUE_BLOOD_REDRAW:
+        # Draw twice, keep the better — clustering, not just a higher mean. Best-of-two
+        # lifts the top of a roster far more than the bottom, which is what a programme
+        # with the courts and the feeder network actually produces.
+        draw = max(draw, rng.gauss(mean, spread))
+    return max(GRADE_FLOOR, min(80.0, draw))
 
 
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
@@ -267,16 +485,36 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     """
     from generators import make_name_picker
     sex = "male" if school.gender == "boys" else "female"
+    mod = _program_mod(school, year, salt)
     out = []
     for grade in GRADES:
         entry = year - (grade - 9)
+        # A DEVELOPMENT program's edge compounds with time in the programme: the same
+        # ceiling surfaces faster every year, so a freshman arrives looking ordinary and
+        # a senior does not. `mature` is per grade, so it is worth four times as much to
+        # a senior as to a freshman — which is the point.
+        lo, hi = _MATURITY[grade]
+        # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
+        # years. Keyed off 8 it would land on ninth-graders too, and a development
+        # program's whole character is that you cannot spot it in its freshmen.
+        step = mod.get("mature", 0.0) * (grade - 9)
+        maturity = (min(1.0, lo + step), min(1.0, hi + step))
         for seat in range(PER_CLASS):
             rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+            # Keyed on (school, entry, seat) — the same identity the pid is built from —
+            # so a prodigy is the SAME person every one of their four seasons rather than
+            # a fresh dice roll each year.
+            prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
+            if prng.random() < PRODIGY_RATE:
+                lo2, hi2 = PRODIGY_MATURITY
+                maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
             nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
                                      region_weights={"us": 1.0})()
             p = generate_prospect(rng, nm, "US", gender=sex,
-                                  talent=_ceiling(rng, school.group, school.gender),
-                                  maturity_range=_MATURITY[grade],
+                                  talent=min(80.0, _ceiling(rng, school.group,
+                                                            school.gender, mod)
+                                             + mod.get("pot", 0.0)),
+                                  maturity_range=maturity,
                                   pid=make_pid("jhsaa", school.name, school.gender,
                                                entry, seat))
             p.class_year = str(grade)
@@ -304,9 +542,36 @@ def _squad(ts: TeamSeason, phase: str, lineup: list | None = None) -> Team:
     # Prospect -> engine Player, the same conversion ncaa.squad_and_ladder uses.
     singles = [at(i).engine_player() for i in range(f.n_singles)]
     dbl = [at(f.n_singles + i).engine_player() for i in range(2 * f.n_doubles)]
+    if archetype(ts.school.name) == "doubles":
+        dbl = [_doubles_lift(at(f.n_singles + i), ts.school.name, i)
+               for i in range(2 * f.n_doubles)]
     return Team(name=ts.school.name, singles=singles,
                 doubles=[(2 * i, 2 * i + 1) for i in range(f.n_doubles)],
                 doubles_players=dbl)
+
+
+def _doubles_lift(prospect, school: str, seat: int):
+    """A doubles-school player, lifted on the 20-80 GRADE scale for this match only.
+
+    A doubles program generates normally — the roster is not better, the doubles is. So
+    the lift is ephemeral: it is applied to a COPY of the player's current grades on the
+    way into the engine, never to the Prospect, which `build_roster` caches globally and
+    shares across every save. Mutating that would make a temporary edge permanent and
+    leak it into every other league reading the same object.
+
+    It also lands only on `Team.doubles_players` — the separate doubles lineup `_squad`
+    already builds — so it is structurally incapable of reaching a singles court, rather
+    than merely intended not to.
+
+    (There was no existing per-match modifier to reuse: `coaches.development_multiplier`
+    is a growth RATE applied at the rollover, a different thing entirely.)"""
+    import copy
+    lo, hi = DOUBLES_BOOST
+    rng = random.Random(f"{school}|dbl|{prospect.pid}|{seat}")
+    lift = rng.uniform(lo, hi)
+    clone = copy.copy(prospect)
+    clone.current = {a: min(80.0, v + lift) for a, v in prospect.current.items()}
+    return clone.engine_player()
 
 
 _SLOT = re.compile(r"^([SD])(\d+)$")
@@ -925,6 +1190,65 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
             "rounds": rounds, "field": [t.school.name for t in field]}
 
 
+def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
+    """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
+
+    The five classification champions, seeded on the TOSS Power Index they finished the
+    regular season with (`t.power`, already stamped by `play_regular_season`), NOT on
+    classification: a 4A champion that rated above the 6A one is the higher seed, which
+    is the whole reason the event is interesting.
+
+    Five into a four-team semifinal, so the two LOWEST-rated champions meet in a play-in
+    and the top three sit it out. Then 1 v (play-in winner) and 2 v 3, then the final.
+    Played under the state format (1S/4D) like the events that fed it.
+
+    Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
+    with no new geometry."""
+    field = sorted(champions, key=lambda t: (-t.power, t.school.name))
+    if len(field) < 2:
+        return {"champion": field[0].school.name if field else None,
+                "rounds": [], "field": [t.school.name for t in field]}
+    rng = random.Random(seed)
+
+    def play(a: TeamSeason, b: TeamSeason) -> tuple[TeamSeason, dict]:
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+        win = a if res.winner == 0 else b
+        return win, {"home": a.school.name, "away": b.school.name,
+                     "home_points": res.home_points, "away_points": res.away_points,
+                     "winner": win.school.name}
+
+    rounds: list[list[dict]] = []
+    alive = list(field)
+    if len(alive) > 4:                              # the play-in: lowest two seeds
+        lo = alive[-2:]
+        win, gm = play(*lo)
+        rounds.append([gm])
+        alive = alive[:-2] + [win]
+    semis = []
+    pairs = [(0, len(alive) - 1), (1, len(alive) - 2)] if len(alive) == 4 else \
+            [(i, len(alive) - 1 - i) for i in range(len(alive) // 2)]
+    nxt = []
+    for i, j in pairs:
+        win, gm = play(alive[i], alive[j])
+        semis.append(gm)
+        nxt.append(win)
+    if semis:
+        rounds.append(semis)
+    while len(nxt) > 1:
+        games, step = [], []
+        for i in range(0, len(nxt) - 1, 2):
+            win, gm = play(nxt[i], nxt[i + 1])
+            games.append(gm)
+            step.append(win)
+        if len(nxt) % 2:
+            step.append(nxt[-1])
+        rounds.append(games)
+        nxt = step
+    return {"champion": nxt[0].school.name if nxt else None,
+            "rounds": rounds, "field": [t.school.name for t in field],
+            "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
+
+
 _GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 7A=0 … 3A-1A=4, so |i-j| = classes apart
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
@@ -1195,7 +1519,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     recruit hand-off and any page that wants standings would otherwise re-simulate
     thousands of duals. Computed into a local and published, never returned out of the
     dict, per the threaded-worker rule in CLAUDE.md."""
-    ck = (salt, gender, year, seed)
+    from app import overrides as _ov
+    ck = (salt, gender, year, seed, _ov.jhsaa_archetype_version())
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
@@ -1259,9 +1584,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                               for t in ts] for d, ts in standings.items()},
             "state": state,
         }
+        out.setdefault("_champ_teams", {})[group] = next(
+            (t for ts in standings.values() for t in ts
+             if t.school.name == state["champion"]), None)
         for ts in standings.values():
             for t in ts:
                 out["teams"][t.school.name] = t
+    # The Tournament of Champions, last: it needs all five classification champions and
+    # the Power Index they finished the regular season on.
+    champs = [t for t in out.pop("_champ_teams", {}).values() if t is not None]
+    out["toc"] = run_toc(champs, seed=seed + 7717)
     _season_cache[ck] = out
     return out
 

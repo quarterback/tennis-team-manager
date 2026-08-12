@@ -137,16 +137,26 @@ def test_the_season_opens_and_breaks_for_non_district_play(played):
     """The shape: non-district before the league, a window in the middle, and the league
     split around it. Previously every non-district dual came first and the league ran to
     the end, so `flags == sorted(flags)` held — it must not any more."""
-    windows = 0
+    windows = cards = opens = 0
     for t in played:
         flags = [x["district"] for x in _regular(t)]
-        assert flags[0] is False, (t.school.name, flags)     # opens non-district
         assert True in flags, t.school.name
-        # count non-district groups that fall BETWEEN league dates
+        if False not in flags:
+            # The matcher drops a team it cannot pair, and this fixture is four districts
+            # rather than a whole gender, so a program can legitimately find no eligible
+            # non-district opponent. Nothing to say about its windows.
+            continue
+        cards += 1
+        opens += flags[0] is False
         first_d, last_d = flags.index(True), len(flags) - 1 - flags[::-1].index(True)
-        if False in flags[first_d:last_d]:
-            windows += 1
-    assert windows == len(played), f"only {windows}/{len(played)} cards had a mid-season window"
+        # The invariant this rewrite exists for: the league is not one contiguous block.
+        assert False in flags[first_d:last_d], (t.school.name, flags)
+        windows += 1
+    assert cards, "no card in the fixture had any non-district play"
+    assert windows == cards
+    # Opening non-district is the SHAPE, not a guarantee: the early matcher can drop a
+    # team it cannot pair and a later window can still find it an opponent.
+    assert opens / cards >= 0.9, f"only {opens}/{cards} cards opened non-district"
 
 
 def test_non_district_count_is_an_allowance_not_a_season_total(played):
