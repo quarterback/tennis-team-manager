@@ -110,6 +110,18 @@ def tier_for_rank(rank: int, class_size: int = 400) -> tuple[str, int]:
     return "Unrated", 0
 
 
+# Letter-grade rendering of the SAME TIER_CUTOFFS pyramid, for surfaces that want
+# a lettered read instead of stars (TennisEye's card) — no separate computation,
+# just a different alphabet for the identical percentile bands, so the two rating
+# systems are never visually confusable at a glance.
+_GRADE_LETTERS = {"Blue Chip": "A+", "5-Star": "A", "4-Star": "B",
+                  "3-Star": "C", "2-Star": "D", "1-Star": "F"}
+
+
+def grade_letter(tier: str) -> str:
+    return _GRADE_LETTERS.get(tier, "—")
+
+
 def recruit_grade(rank: int, class_size: int = 400) -> tuple[int, float]:
     """Industry-style numeric grade for a board-ranked recruit, returned as
     ``(rating, composite)``. The composite (0.7400–0.9999) decays from the very
@@ -136,12 +148,15 @@ class RecruitClass:
 
 
 def _recruiting_score(p: Prospect) -> float:
-    """The recruiting service's published ranking signal — a NOISY projection of
-    the recruit's ceiling (the scouting 'feel'), deliberately NOT the hidden truth
-    and NOT performance. Stars derive from this; junior points/STR (performance)
-    are a separate axis, so the board and the results ledger diverge — the gem
-    signal. See docs/AAR-fog-of-war-recruiting.md."""
-    return p.scouting_report("service")
+    """The board's published ranking signal — a LIGHTLY fogged read of what a
+    recruit IS TODAY (current ability blended with demonstrated junior-circuit
+    results), not a guess at her invisible ceiling. Stars/rank derive from this,
+    so a recruit whose current level and results both read as ordinary can never
+    rank as a Blue Chip the way the old ceiling-fogged read could — see
+    docs/DESIGN-recruit-rating-clarity.md (supersedes the ceiling-based version
+    this docstring described before 2026-08-12; see docs/AAR-fog-of-war-
+    recruiting.md for that history)."""
+    return p.scouted_read("service")
 
 
 def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,

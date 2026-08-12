@@ -1648,9 +1648,7 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         }
 
     from app.junior_circuit import TIER_LABELS
-    from app.juniors import recruit_grade
-    class_size = len(klass.recruits)
-    rating, composite = recruit_grade(p.recruit_rank or 1, class_size)
+    from app.juniors import grade_letter
 
     # Confidence in the commit favourite: a function of how far the StrikePred.
     # leader is clear of the field (HIGH / MED / LOW), mirroring a crystal ball.
@@ -1673,17 +1671,15 @@ def recruit_profile(p, division: str, gender: str, grad_year: int):
         "tournaments_played": getattr(p, "tournaments_played", 0),
         "junior_str": getattr(p, "junior_str", None),
         "junior_tier_label": TIER_LABELS.get(p.junior_tier, ""),
-        # OVR grades (20–80), NOT ability-derived STR — STR is match-based only.
-        "service": round(p.scouting_report("service")),
-        "dept": round(p.scouting_report("dept")),
-        "projection": round(p.project(4)),
         "recruiting": rec,
         "roster_fit": roster_fit,
         "sat": academic_sat(getattr(p, "academic_rating", None)),
         "scout_bars": scout_bars(p),
-        "rating": rating,
-        "composite": composite,
-        "class_size": class_size,
+        # TennisEye's results-based tier, lettered instead of starred so it's
+        # never visually confusable with the board's fogged stars — same
+        # TIER_CUTOFFS pyramid, just a different alphabet. See
+        # docs/DESIGN-recruit-rating-clarity.md.
+        "te_grade": grade_letter(getattr(p, "tenniseye_tier", "")),
         "confidence": confidence,
     }
 

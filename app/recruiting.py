@@ -248,11 +248,12 @@ def recruit_caliber(p) -> float:
 # real ones; the owner alone sees the truth (recruit_caliber / scout_intel).
 # ---------------------------------------------------------------------------
 def talent_caliber(p) -> float:
-    """The recruiting service's STAR read: a NOISY projection of the recruit's
-    ceiling (scouting_report's jittered 'feel'), on the 0..1 caliber scale.
-    Sometimes dead-on, sometimes badly off — that's the point. Stars are built on
-    this; performance (below) is a separate axis."""
-    return max(0.0, min(1.0, (p.scouting_report("service") - 20) / 60.0))
+    """The board's read, on the 0..1 caliber scale — the SAME fogged number that
+    sets stars/rank (juniors._recruiting_score), so the AI perceives exactly what
+    the human board displays. Updated 2026-08-12: fogs current ability + results
+    (Prospect.scouted_read), not the hidden ceiling — see
+    docs/DESIGN-recruit-rating-clarity.md."""
+    return max(0.0, min(1.0, (p.scouted_read("service") - 20) / 60.0))
 
 
 def perf_caliber(p) -> float:

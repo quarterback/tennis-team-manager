@@ -939,13 +939,25 @@ def board_class(gender: str, grad_year: int, salt: str):
     klass = recruit_class(gender, grad_year, salt)
     if not getattr(klass, "circuit_done", False):
         from app.junior_circuit import run_junior_circuit
-        from app.juniors import points_rankings, tenniseye_rankings, _recruiting_score, RecruitClass
+        from app.juniors import (points_rankings, tenniseye_rankings, rank_class,
+                                 _recruiting_score, RecruitClass)
         # Field = the recruited cadre (top by the service's talent read); the
         # objects are shared, so the circuit freezes its résumé onto the real
         # prospects. The tail keeps junior defaults (perf_caliber → 0).
         field = sorted(klass.recruits, key=_recruiting_score, reverse=True)[:CIRCUIT_FIELD]
         sub = RecruitClass(grad_year=klass.grad_year, gender=klass.gender, recruits=field)
         run_junior_circuit(sub, seed=salt)         # junior results/STR for the cadre
+        # `_recruiting_score` reads junior_str/junior_str_reliability (current
+        # ability + results — docs/DESIGN-recruit-rating-clarity.md), which the
+        # circuit just populated for the cadre. `recruit_class`'s rank_class() ran
+        # BEFORE the circuit (current-ability-only — no junior record existed yet),
+        # so recruit_rank/recruit_tier/recruit_stars are stale until re-run here —
+        # matching the re-rank `prime_recruit_classes`'s parallel path already does
+        # after its own circuit call. Without this, direct board_class() consumers
+        # (recruiting_hub, recruit profile pages) show pre-circuit ranks while
+        # national_class()'s extra rank_class() wrap and the parallel path both show
+        # correct post-circuit ones — three paths, two different answers.
+        rank_class(klass)                          # re-rank the FULL pool, now with results
         points_rankings(klass)                     # rank the FULL pool; tail = 0 points
         tenniseye_rankings(klass)                  # results-based TennisEye star rating
         klass.circuit_done = True

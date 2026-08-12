@@ -146,6 +146,32 @@ def test_elite_recruits_sign():
     assert d3 >= 100, f"D3 signs a real share of the class (got {d3})"
 
 
+def test_board_class_reranks_after_junior_circuit(monkeypatch):
+    """board_class() must re-rank AFTER the junior circuit populates results.
+    recruit_class() ranks BEFORE any junior_str exists (current-ability-only,
+    since _recruiting_score now reads results too — see
+    docs/DESIGN-recruit-rating-clarity.md), so without a second rank_class() call
+    post-circuit, recruit_rank/tier/stars go stale exactly where DIRECT
+    board_class() consumers (recruiting_hub, the recruit profile page) read them —
+    while national_class()'s extra rank_class() wrap and the parallel
+    prime_recruit_classes() path both already re-rank and would disagree with the
+    stale serial-path values. Regression for a case where 42/80 ranks in a
+    representative class were wrong until re-derived."""
+    import app.world as world
+    from app.juniors import _recruiting_score
+    monkeypatch.setattr(world, "RECRUIT_POOL", 40)
+    monkeypatch.setattr(world, "CIRCUIT_FIELD", 30)
+    klass = world.board_class("men", 2099, "rerank-regression-salt")
+    assert klass.circuit_done
+    assert any(p.junior_str for p in klass.recruits), "the circuit should have run"
+    ranked = sorted(klass.recruits, key=_recruiting_score, reverse=True)
+    for i, p in enumerate(ranked, 1):
+        assert p.recruit_rank == i, (
+            f"{p.name} carries recruit_rank #{p.recruit_rank} but sorts to #{i} on "
+            "the post-circuit score — recruit_rank was computed before the junior "
+            "circuit ran and never refreshed")
+
+
 def _mini_territory_market():
     """A small controlled market: a Puerto Rico D2 program (a SCHOOL_LOCAL_TERRITORY
     school), a mainland power, and a mid mainland D2 — enough to show the home pull
@@ -167,11 +193,12 @@ def _mini_territory_market():
     }
 
 
-def _pr_recruit(talent, i):
+def _pr_recruit(talent, i, maturity_range=None):
     from app.development import generate_prospect
     import random
     p = generate_prospect(random.Random(500 + i), "Ana Rivera", "US",
-                          gender="women", talent=talent, pid=f"prtest{i}")
+                          gender="women", talent=talent, pid=f"prtest{i}",
+                          maturity_range=maturity_range)
     p.hometown = "San Juan, PR"
     p.region = "PR"
     p.domestic = True
@@ -179,11 +206,11 @@ def _pr_recruit(talent, i):
     return p
 
 
-def _pr_local_rate(market, talent, n=40):
+def _pr_local_rate(market, talent, n=40, maturity_range=None):
     home = 0
     for i in range(n):
         avail = {s: 5 for s in market["traits"]}
-        if _pick_school(_pr_recruit(talent, i), market, dict(avail),
+        if _pick_school(_pr_recruit(talent, i, maturity_range), market, dict(avail),
                         jitter_salt="sign") == "Puerto Rico-Bayamón":
             home += 1
     return home / n
@@ -191,9 +218,16 @@ def _pr_local_rate(market, talent, n=40):
 
 def test_local_territory_pull_binds_locals_but_not_elites():
     """The home pull materially raises how often a mid/low Puerto Rico recruit signs
-    the PR program, versus the same market with no pull — while a genuine elite still
-    escapes to the mainland power (the low-budget D2 can't fund a blue-chip, so the
-    budget floor gates it regardless of the pull)."""
+    the PR program, versus the same market with no pull — while a recruit who
+    currently READS elite still escapes to the mainland power (the low-budget D2
+    can't fund a blue-chip, so the budget floor gates it regardless of the pull).
+
+    "Reads elite" means high CURRENT ability, not just a high hidden ceiling: since
+    the redesign (docs/DESIGN-recruit-rating-clarity.md), the board/AI perceive
+    today's level, never the invisible ceiling, so a raw high-talent/low-maturity
+    recruit is exactly the obscured-gem case this test used to (wrongly) expect to
+    escape home — give her a high maturity_range so her current ability actually
+    sits near her talent ceiling, the scenario the budget floor is meant to gate."""
     market = _mini_territory_market()
     no_pull = dict(market, local_terr={}, local_by_abbr={})    # same board, pull off
 
@@ -203,6 +237,7 @@ def test_local_territory_pull_binds_locals_but_not_elites():
         f"home pull should lift local signing (with={mid_with}, without={mid_without})")
     assert mid_with >= 0.5, f"a mid PR recruit signs home a solid share (got {mid_with})"
 
-    # An elite still escapes to the power even with the pull on.
-    elite_home = _pr_local_rate(market, 78.0)
+    # A recruit who currently reads elite still escapes to the power even with the
+    # pull on.
+    elite_home = _pr_local_rate(market, 78.0, maturity_range=(0.90, 0.95))
     assert elite_home < 0.35, f"elite PR recruits escape to the mainland (got {elite_home})"
