@@ -2004,7 +2004,7 @@ def create_app() -> Flask:
     @app.route("/jhsaa/toc")
     def jhsaa_toc():
         """The Tournament of Champions — its own bracket, per gender."""
-        g, group, year, u = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         return render_template("jhsaa_toc.html", active="High School",
                                view=jhsaa_toc_view(DEFAULT_SEED, g, year), u=u)
 

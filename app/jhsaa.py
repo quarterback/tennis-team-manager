@@ -123,7 +123,12 @@ FIDELITY = "fast"
 # association to qualify from -- 13 automatic bids left only 11 at-large places for
 # 138 other programs -- which is exactly backwards for the level that is supposed to
 # be the sprawling, everybody-plays one.
-FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A": 12, "2A-1A": 32}
+# 24 into a 32-team draw is deliberate, not a rounding-down (owner rule 2027-08): the
+# top eight seeds bye and seeds 9-24 play in, so nobody reaches the number one seed
+# without having won a dual. A full 32 gives a 1 v 32 opener, which is a bye with
+# extra steps. It also keeps the girls' and boys' cutlines close where a
+# classification is lopsided by gender.
+FIELD = {"7A": 32, "6A": 32, "5A": 24, "4A": 24, "3A": 24, "2A-1A": 32}
 AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 # --- talent ------------------------------------------------------------------
@@ -1193,14 +1198,20 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    The five classification champions, seeded on the TOSS Power Index they finished the
-    regular season with (`t.power`, already stamped by `play_regular_season`), NOT on
-    classification: a 4A champion that rated above the 6A one is the higher seed, which
-    is the whole reason the event is interesting.
+    ONE champion per classification and nobody else — six teams now that 3A and 2A-1A
+    crown separately. The field is not a `FIELD` size and never has been: it is exactly
+    `len(GROUPS)`, and it grows or shrinks only when the association adds or merges a
+    championship. (`FIELD` is the STATE tournament's bracket size per classification and
+    has nothing to do with this event.)
 
-    Five into a four-team semifinal, so the two LOWEST-rated champions meet in a play-in
-    and the top three sit it out. Then 1 v (play-in winner) and 2 v 3, then the final.
-    Played under the state format (1S/4D) like the events that fed it.
+    Seeded on the TOSS Power Index they finished the regular season with (`t.power`,
+    already stamped by `play_regular_season`), NOT on classification: a 4A champion that
+    rated above the 6A one is the higher seed, which is the whole reason the event is
+    interesting.
+
+    Six into a four-team semifinal, so the two lowest-rated pairs play in and the top two
+    sit out; five would give one play-in and three byes. Then the semifinals and the
+    final, under the state format (1S/4D) like the events that fed it.
 
     Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
     with no new geometry."""
@@ -1217,33 +1228,34 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
+    # Cut to four in ONE round, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The
+    # play-in takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
+    # six the top two sit out while 3v6 and 4v5 play, and at five only 4v5 does. Playing
+    # a single play-in regardless left five teams standing and produced a 6 -> 5 -> 3 -> 1
+    # ladder — a three-team "semifinal" and a bye nobody earned.
     rounds: list[list[dict]] = []
     alive = list(field)
-    if len(alive) > 4:                              # the play-in: lowest two seeds
-        lo = alive[-2:]
-        win, gm = play(*lo)
-        rounds.append([gm])
-        alive = alive[:-2] + [win]
-    semis = []
-    pairs = [(0, len(alive) - 1), (1, len(alive) - 2)] if len(alive) == 4 else \
-            [(i, len(alive) - 1 - i) for i in range(len(alive) // 2)]
-    nxt = []
-    for i, j in pairs:
-        win, gm = play(alive[i], alive[j])
-        semis.append(gm)
-        nxt.append(win)
-    if semis:
-        rounds.append(semis)
-    while len(nxt) > 1:
-        games, step = [], []
-        for i in range(0, len(nxt) - 1, 2):
-            win, gm = play(nxt[i], nxt[i + 1])
+    if len(alive) > 4:
+        n_in = 2 * (len(alive) - 4)
+        block, byes = alive[-n_in:], alive[:-n_in]
+        games, won = [], []
+        for i in range(n_in // 2):
+            w, gm = play(block[i], block[n_in - 1 - i])
             games.append(gm)
-            step.append(win)
-        if len(nxt) % 2:
-            step.append(nxt[-1])
+            won.append(w)
         rounds.append(games)
-        nxt = step
+        alive = byes + won
+    while len(alive) > 1:
+        games, nxt = [], []
+        for i in range(len(alive) // 2):
+            w, gm = play(alive[i], alive[len(alive) - 1 - i])   # 1 v lowest, 2 v next
+            games.append(gm)
+            nxt.append(w)
+        if len(alive) % 2:
+            nxt.append(alive[len(alive) // 2])
+        rounds.append(games)
+        alive = nxt
+    nxt = alive
     return {"champion": nxt[0].school.name if nxt else None,
             "rounds": rounds, "field": [t.school.name for t in field],
             "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}

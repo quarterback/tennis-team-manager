@@ -162,6 +162,26 @@ ALWAYS_EXTRA = [
 # enrollment gap across the old 3A-1A group was the widest in the association — medians
 # of 1,043 / 385 / 199 — so a 1,370-student school and a 108-student one were competing
 # for the same trophy.
+# ⚠️ RECLASSIFICATION (owner rule 2027-08). prep-network's 2A holds 88 schools and its
+# 1A 111, so a combined 2A-1A dwarfed 3A's 140 — 151 tennis sponsors against 46. States
+# readjust their enrollment cutoffs all the time, and this is that: the largest 2A schools
+# move up to 3A, which balances the two smallest championships without splitting 2A from
+# 1A (the owner does not want separate 2A and 1A tennis).
+#
+# By ENROLLMENT, because that is what a classification IS. Nothing here looks at who
+# sponsors tennis or at how good anybody is.
+PROMOTE_2A_ABOVE = 430          # 2A schools at or above this enrollment become 3A
+
+
+def reclassify(schools: list[dict]) -> int:
+    moved = 0
+    for s in schools:
+        if s["classification"] == "2A" and s.get("enrollment", 0) >= PROMOTE_2A_ABOVE:
+            s["classification"] = "3A"
+            moved += 1
+    return moved
+
+
 def champ_group(classification: str) -> str:
     return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
 
@@ -265,6 +285,7 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
 
 
 def build(schools: list[dict], cities: dict) -> list[dict]:
+    moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}
     dist = {"girls": {}, "boys": {}}
