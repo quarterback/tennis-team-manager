@@ -32,6 +32,10 @@
   {% if t.mark %}<span class="brk-mark">{{ t.mark|safe }}</span>{% else %}{{ crest_box(t.school, t.abbr, t.color, 'xs') }}{% endif %}
   <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **epq) }}">{{ t.school }}</a>
   {% if bids and t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
+  {# ⚠️ `m.score` is WINNER-FIRST, not home-first — this picks the half by who WON, so a
+     home-first string silently swaps the two numbers on every card the away side won
+     (and looks perfectly correct on the ones the home side won, which is what hid it).
+     Build it as `max-min`, or winner then loser; never `home-away`. #}
   <span class="brk-score">{% if m.played %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}</span>
 </div>
 {% endif %}

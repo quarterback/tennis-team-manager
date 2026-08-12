@@ -3593,6 +3593,27 @@ def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
     return [f"{d:%b} {d.day}" for d in out]
 
 
+def _jh_side_lines(d: dict) -> list[dict]:
+    """A dual's lines from the VIEWING team's side.
+
+    `jhsaa._score_str` writes set scores home-first ("4-6, 6-4, 4-6" is the HOME side's
+    games), so an away team's card flipped the names and the won/lost marker while
+    leaving the numbers alone — "Batt / Oluwaseyi d. Blanco / Slater  3-6, 3-6", a pair
+    shown winning a match they are shown losing. Flip the numbers with everything else."""
+    out = []
+    for ln in d.get("lines") or ():
+        if d.get("home"):
+            out.append(ln)
+            continue
+        sets = [x.strip() for x in (ln.get("score") or "").split(",") if x.strip()]
+        flipped = []
+        for st in sets:
+            a, _, b = st.partition("-")
+            flipped.append(f"{b}-{a}" if b else st)
+        out.append({**ln, "score": ", ".join(flipped)})
+    return out
+
+
 def _jh_line_records(sched: list[dict]) -> dict:
     """Every player's singles and doubles record for a season, off the match-level archive.
 
@@ -3613,6 +3634,17 @@ def _jh_line_records(sched: list[dict]) -> dict:
 
 def _jh_seeds(bracket: dict) -> dict:
     return {nm: i + 1 for i, nm in enumerate((bracket or {}).get("field") or ())}
+
+
+def _jh_score(gm: dict) -> str:
+    """A state game's score, WINNER-FIRST — the contract `_bracket.html` renders under.
+
+    `brk_row` picks its half of the string by which side WON, so a home-first score is
+    swapped on every card the away team won. It looks right on the cards the home team
+    won, which is exactly why it survived a design pass and a merge: half the bracket
+    was correct, and the wrong half read as a plausible upset."""
+    hp, ap = int(gm.get("home_points", 0)), int(gm.get("away_points", 0))
+    return f"{max(hp, ap)}-{min(hp, ap)}"
 
 
 def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
@@ -3677,7 +3709,9 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
                        "away": _jh_brk_team(gm.get("away", ""), not hw, seeds, schools),
                        "played": True, "id": None, "tbd": False, "region": None,
                        "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
-                       "score": f"{int(gm.get('home_points', 0))}-{int(gm.get('away_points', 0))}"})
+                       # WINNER-FIRST: `brk_row` picks its half of this string by which
+                       # side won, not by which side is home (see _bracket.html).
+                       "score": _jh_score(gm)})
         byes = [t for t in alive if t not in playing]
         ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
         alive = [gm.get("winner") for gm in rd["games"]] + byes
@@ -3726,8 +3760,7 @@ def _jh_final_four(bracket: dict, schools: dict) -> dict:
                                       else final["home"])
         out["champion"] = _jh_deco(schools, win, 64)
         out["runner_up"] = _jh_deco(schools, lose, 30)
-        out["final"] = {**final,
-                        "score": f"{int(final['home_points'])}-{int(final['away_points'])}"}
+        out["final"] = {**final, "score": _jh_score(final)}
     if len(rounds) > 1:
         for gm in rounds[-2]["games"]:
             beaten = gm["away"] if gm["winner"] == gm["home"] else gm["home"]
@@ -3936,7 +3969,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state_rank": (season or {}).get("state_rank", 0),
         "state_seed": seeds.get(school, 0),
         "state_finish": (season or {}).get("state_finish", ""),
-        "schedule": [{**d, "date": dates[i],
+        "schedule": [{**d, "date": dates[i], "lines": _jh_side_lines(d),
                       "kind": ("STATE" if d["phase"] == "state"
                                else "DIST" if d["district"] else "NON-DIST"),
                       "opp_deco": _jh_deco(schools, d["opp"], 22),

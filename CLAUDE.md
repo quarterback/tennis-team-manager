@@ -485,6 +485,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   leagues — which is why the archive is keyed `standings[group][district]`. A route or
   lookup keyed on the name alone silently serves the 3A-1A league under a 7A heading,
   with all the right data and all the wrong league. Route: `/jhsaa/district/<group>/<district>`.
+- **‼️ `m.score` on a shared bracket card is WINNER-FIRST, never home-first.**
+  `_bracket.html`'s `brk_row` splits the string and picks its half by which side WON, so
+  a `f"{home_points}-{away_points}"` string swaps the two numbers on every card the AWAY
+  team won — and is correct on every card the home team won, which is what hid it through
+  a design pass, a review and a merge (the wrong half reads as upsets). Build it
+  `max-min`. Same family: `jhsaa._score_str` writes SET scores home-first, so a view
+  showing an away team must flip the numbers along with the names and the d./l. marker
+  (`state._jh_side_lines`, which copies — `play_dual` appends the SAME `lines` list to
+  both teams). When a view flips perspective, flip every field that carries one.
+  See `docs/AAR-jhsaa-bracket-score-sides.md`.
 - **The state draw uses the SHARED bracket tree** (`state._bracket_canvas` +
   `templates/_bracket.html`), like the NCAA bracket and the Preseason NIT — the macros
   take `ep`/`epq` for the link endpoint and honour a team's own `mark`. Don't fork a
