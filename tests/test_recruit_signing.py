@@ -146,6 +146,32 @@ def test_elite_recruits_sign():
     assert d3 >= 100, f"D3 signs a real share of the class (got {d3})"
 
 
+def test_board_class_reranks_after_junior_circuit(monkeypatch):
+    """board_class() must re-rank AFTER the junior circuit populates results.
+    recruit_class() ranks BEFORE any junior_str exists (current-ability-only,
+    since _recruiting_score now reads results too — see
+    docs/DESIGN-recruit-rating-clarity.md), so without a second rank_class() call
+    post-circuit, recruit_rank/tier/stars go stale exactly where DIRECT
+    board_class() consumers (recruiting_hub, the recruit profile page) read them —
+    while national_class()'s extra rank_class() wrap and the parallel
+    prime_recruit_classes() path both already re-rank and would disagree with the
+    stale serial-path values. Regression for a case where 42/80 ranks in a
+    representative class were wrong until re-derived."""
+    import app.world as world
+    from app.juniors import _recruiting_score
+    monkeypatch.setattr(world, "RECRUIT_POOL", 40)
+    monkeypatch.setattr(world, "CIRCUIT_FIELD", 30)
+    klass = world.board_class("men", 2099, "rerank-regression-salt")
+    assert klass.circuit_done
+    assert any(p.junior_str for p in klass.recruits), "the circuit should have run"
+    ranked = sorted(klass.recruits, key=_recruiting_score, reverse=True)
+    for i, p in enumerate(ranked, 1):
+        assert p.recruit_rank == i, (
+            f"{p.name} carries recruit_rank #{p.recruit_rank} but sorts to #{i} on "
+            "the post-circuit score — recruit_rank was computed before the junior "
+            "circuit ran and never refreshed")
+
+
 def _mini_territory_market():
     """A small controlled market: a Puerto Rico D2 program (a SCHOOL_LOCAL_TERRITORY
     school), a mainland power, and a mid mainland D2 — enough to show the home pull

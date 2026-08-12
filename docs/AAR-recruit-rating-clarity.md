@@ -125,6 +125,41 @@ removes. `test_elite_recruits_sign` (the broader "no genuinely good player vanis
 invariant) held with no changes — this was narrowly about ceiling-based elite
 *recognition*, not the signing system generally.
 
+## Follow-up fix: `board_class()` wasn't re-ranking after the circuit (P2)
+
+Caught after the initial merge: `_recruiting_score` now depends on
+`junior_str`/`junior_str_reliability`, but `recruit_class()` calls `rank_class()`
+**before** the junior circuit ever runs (`app/world.py:920`) — at that point every
+recruit's junior fields are still zero-default, so the rank/tier/stars it assigns
+are current-ability-only. `board_class()` then runs the circuit
+(`run_junior_circuit`, `:948`) and populates real results, but never re-ranked
+afterward, so those pre-circuit ranks went stale everywhere they're read.
+
+This wasn't uniform breakage — three call paths, two different answers:
+- **Stale:** `state.get_recruits()` → `world.board_class()` directly — the
+  recruiting board, `recruiting_hub`, and the recruit profile page itself.
+- **Correct by accident:** `world.national_class()` wraps its `board_class()` call
+  in an extra `rank_class(...)`, so the signing pool (and everything
+  `test_elite_recruits_sign` measured) was never affected.
+- **Correct by accident:** `prime_recruit_classes()`'s parallel-build path already
+  re-ranks its reconstructed class post-circuit (`app/world.py:1003`), so it also
+  disagreed with the stale serial path.
+
+Measured on a representative 80-player class: 42 ranks changed once actually
+recomputed post-circuit.
+
+**Fix:** `board_class()` now calls `rank_class(klass)` itself, right after
+`run_junior_circuit`, before `points_rankings`/`tenniseye_rankings` — so every path
+converges on the same post-circuit answer at the source, and callers no longer need
+to remember an extra wrap. `national_class()`'s outer `rank_class(...)` is now
+redundant but harmless (left as-is; not worth the diff to remove for a no-op).
+
+Regression test: `tests/test_recruit_signing.py::test_board_class_reranks_after_junior_circuit`
+— calls `board_class()` directly (monkeypatching `RECRUIT_POOL`/`CIRCUIT_FIELD`
+down for speed) and asserts every `recruit_rank` matches a fresh sort by
+`_recruiting_score`. Verified it fails without the fix (confirmed by reverting the
+one-line change and re-running) and passes with it.
+
 ## Notes for the next agent
 - If you add a new place that needs "how good is this recruit," call
   `scouted_read`/`talent_caliber`, never `scouting_report`/the old ceiling read —
