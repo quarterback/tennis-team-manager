@@ -21,6 +21,9 @@ from app import overrides as ov
 
 @pytest.fixture(autouse=True)
 def _clean():
+    """Clears the OVERRIDE layer only. The seed list in `data/jhsaa/archetypes.json` is
+    real data and stays — which is why `_peers` skips schools that are on it, rather than
+    these tests pretending the association is untagged."""
     ov.init_schema()
     for s in jhsaa.load_schools("boys"):
         ov.clear_jhsaa_archetype(s.name)
@@ -37,7 +40,7 @@ def _peers(group="5A", n=10):
     Tagging a school removes its own upstart lift (a blue blood is not also an upstart),
     which is correct behaviour and would otherwise make "tagging changes nothing" false
     for a school that happened to be having a moment."""
-    live = set(jhsaa.upstarts(2029, ""))
+    live = set(jhsaa.upstarts(2029, "")) | set(jhsaa._arch_seed())
     return [s for s in jhsaa.load_schools("boys")
             if s.group == group and s.name not in live][:n]
 
@@ -81,8 +84,7 @@ def test_the_modifier_does_not_flatten_the_classification_model():
     model (Oregon 2026: Oregon Episcopal, smallest classification, No. 9 statewide), and
     an earlier version of this test had it backwards."""
     for tag in ("", "blue_blood", "development"):
-        rung = [_profile([s for s in jhsaa.load_schools("boys") if s.group == g][:10], tag)["top9"]
-                for g in ("7A", "5A", "3A-1A")]
+        rung = [_profile(_peers(g, 10), tag)["top9"] for g in ("7A", "5A", "3A-1A")]
         assert rung == sorted(rung, reverse=True), (tag, rung)
 
 
@@ -204,4 +206,39 @@ def test_upstart_is_not_a_storable_tag():
     from app.web import server                        # ...but not an editable one
     import inspect
     src = inspect.getsource(server)
-    assert '("blue_blood", "development", "doubles")' in src
+    import re
+    body = src.split("def editor_jhsaa_archetype")[1][:1500]
+    accepted = re.search(r"if kind in \(([^)]*)\)", body).group(1)
+    assert "upstart" not in accepted, accepted
+    assert "blue_blood" in accepted and "development" in accepted and "doubles" in accepted
+
+
+# --- the two layers -----------------------------------------------------------
+
+def test_the_seed_list_reaches_generation():
+    """`data/jhsaa/archetypes.json` is real data, not documentation: a seeded program
+    must generate as its archetype with no override row present at all."""
+    seed = jhsaa._arch_seed()
+    assert seed, "no seeded programs"
+    assert set(seed.values()) <= {"blue_blood", "development", "doubles"}
+    school = next(iter(seed))
+    assert jhsaa.archetype(school) == seed[school]
+
+
+def test_an_override_promotes_demotes_and_reverts():
+    """Three distinct intentions, and a single clear could only express two: set a tag,
+    DEMOTE a seeded program ("none"), or drop the override and revert to the file."""
+    seeded = next(iter(jhsaa._arch_seed()))
+    base = jhsaa._arch_seed()[seeded]
+
+    ov.set_jhsaa_archetype(seeded, "doubles")
+    jhsaa._arch_cache.clear()
+    assert jhsaa.archetype(seeded) == "doubles"
+
+    ov.set_jhsaa_archetype(seeded, "none")
+    jhsaa._arch_cache.clear()
+    assert jhsaa.archetype(seeded) == ""          # demoted despite the seed
+
+    ov.clear_jhsaa_archetype(seeded)
+    jhsaa._arch_cache.clear()
+    assert jhsaa.archetype(seeded) == base        # reverted to the file

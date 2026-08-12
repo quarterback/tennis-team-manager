@@ -233,13 +233,27 @@ UPSTART_LIFT = (0.15, 0.30)       # 15-30% stronger than the program's own basel
 DOUBLES_BOOST = (5.0, 11.0)
 
 
+# TWO LAYERS, as the owner specified: the SEED list ships with the repo as school data
+# (`data/jhsaa/archetypes.json`), and the override table is the editable layer on top, so
+# a save can promote or demote a program without editing the file — and clearing an
+# override reverts that program to whatever the seed says. An override of "none"
+# explicitly DEMOTES a seeded program, which is different from having no override at all.
+_ARCH_SEED_PATH = os.path.join(os.path.dirname(_DATA), "archetypes.json")
+_arch_cache: dict = {}
+
+
+def _arch_seed() -> dict:
+    try:
+        with open(_ARCH_SEED_PATH, encoding="utf-8") as fh:
+            return {k: v for k, v in json.load(fh).get("programs", {}).items() if v}
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
 def archetype(school: str) -> str:
-    """A program's archetype tag, or "" — the editable table, live."""
+    """A program's archetype tag, or "" — the seed list with the editable table on top."""
     from app import overrides as ov
     return _arch_map(ov.jhsaa_archetype_version()).get(school, "")
-
-
-_arch_cache: dict = {}
 
 
 def _arch_map(version: str) -> dict:
@@ -249,7 +263,12 @@ def _arch_map(version: str) -> dict:
     if hit is not None:
         return hit
     from app import overrides as ov
-    out = dict(ov.get_jhsaa_archetypes())
+    out = _arch_seed()
+    for school, kind in ov.get_jhsaa_archetypes().items():
+        if kind == "none":
+            out.pop(school, None)           # an explicit demotion of a seeded program
+        else:
+            out[school] = kind
     _arch_cache.clear()                     # one entry: only the current version matters
     _arch_cache[version] = out
     return out

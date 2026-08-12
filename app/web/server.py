@@ -2447,7 +2447,11 @@ def create_app() -> Flask:
         school = request.form.get("school", "")
         kind = request.form.get("archetype", "")
         if school:
-            if kind in ("blue_blood", "development", "doubles"):
+            # "none" DEMOTES a seeded program (a stored override that says "not one of
+            # these"); anything else clears the override entirely, reverting the school to
+            # whatever `data/jhsaa/archetypes.json` says it is. Two different intentions,
+            # and a single "clear" could only express one of them.
+            if kind in ("blue_blood", "development", "doubles", "none"):
                 ov.set_jhsaa_archetype(school, kind)
             else:
                 ov.clear_jhsaa_archetype(school)
