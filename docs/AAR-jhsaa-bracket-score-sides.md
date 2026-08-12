@@ -63,15 +63,32 @@ D1  Chauncey Batt / Beals Oluwaseyi   d.   Rafael Blanco / MaliVai Slater   3-6,
 A pair marked as having won, with a score saying they lost both sets.
 
 `jhsaa._score_str` writes set scores home-first. The school page correctly flips the
-names, the `d.`/`l.` marker and the dual score for an away card (`mine = home_points if
-is_home else away_points`) — and left the set scores alone. `_jh_side_lines` now flips
-them with everything else, copying rather than editing, because `play_dual` appends the
-**same** `lines` list to both teams' schedules and an in-place flip would corrupt the
-opponent's card.
+names, the `d.`/`l.` marker and the dual score for an away card — and left the set scores
+alone.
 
-> When a view flips perspective, flip EVERY field that carries one. Three of the four
-> were flipped here, and the fourth was the only one made of numbers rather than names —
-> the one where being wrong is hardest to notice.
+**And my first fix for this was also wrong.** I flipped the numbers *for the away card*,
+which makes the away card read correctly and the home card read the loser's games first
+on every line the away side won. It passed its test because the test encoded the same
+misunderstanding.
+
+A tennis score is not a perspective. **It is always written from the winner's side** —
+"6-4, 3-6, 7-5" belongs to whoever won, and the loser is named beside it, not counted in
+it. Both teams' cards show the identical string; only the name order and the `d.`/`l.`
+marker differ. `_jh_reported_lines` normalises on `home_won`, not on who is looking.
+
+The engine had this right the whole time. `MatchResult.scoreline` is documented *"from
+the winner's perspective"*, and the college league stores that and un-flips it with
+`home_won` where it needs directional games. The JHSAA reimplemented the string rather
+than using it, and reimplemented it wrong.
+
+The stored JHSAA string stays home-first, and that divergence is now deliberate: seasons
+are already archived that way, and re-reading them under a new convention would silently
+misreport every away-won line — the same bug, moved into the past where nobody can see
+it. Storage keeps the record; the report is normalised at the render.
+
+> A domain convention is not a display preference. "Which side is this written from" had
+> an answer in the sport before it had one in the code, and the engine already encoded it
+> — the bug was reimplementing a value that existed rather than looking for it.
 
 ## 3. Why the tests did not catch either
 
@@ -81,8 +98,9 @@ right sets, and it always did. Nothing asserted *which team a number is printed 
 
 The regression tests are therefore built on a draw where the away side wins twice and the
 home side wins once, so a fix that merely moves the swap to the other half still fails,
-and on the pure perspective flip in both directions. Cheap — 0.2s, no simulation, a
-hand-written four-team bracket.
+and — after the second mistake — on the line score being IDENTICAL from both cards rather
+than merely correct from one. Cheap: 0.4s, no simulation, a hand-written four-team
+bracket.
 
 One of them pins the contract from the college side (`max-min` must stay in
 `state.py`), because the failure mode is not "the JHSAA is wrong" — it is "the two
@@ -93,11 +111,11 @@ callers disagree", and either one drifting reintroduces it.
 * 198 archived state games across both genders and all five classifications: every card's
   displayed number equals that team's own points. Previously wrong on every game the away
   side won.
-* 456 archived lines: the set scores agree with the side shown winning, from both
-  perspectives.
+* 4,111 archived lines across both genders and all five classifications: every reported
+  set score leads with the winner's games, and the two teams' cards agree exactly.
 
 ## Files
 
 * `app/web/templates/_bracket.html` — the winner-first contract, stated at the macro
-* `app/web/state.py` — `_jh_score`, `_jh_side_lines`
+* `app/web/state.py` — `_jh_score`, `_jh_reported_lines`
 * `tests/test_jhsaa_bracket_scores.py`

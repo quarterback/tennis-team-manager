@@ -9,9 +9,12 @@ survived a design pass, a review and a merge:
   with 0. Cards the home team won were correct, so the bracket read as a plausible run
   of upsets rather than as a bug.
 
-* `jhsaa._score_str` writes set scores home-first. An away team's card flipped the
-  names and the won/lost marker and left the numbers alone, so a pair was shown winning
-  a match the score says they lost.
+* `jhsaa._score_str` writes set scores home-first, and a tennis score is ALWAYS reported
+  from the winner's side. The away team's card flipped the names and the won/lost marker
+  and left the numbers alone, so a pair was shown winning a match the score says they
+  lost. Flipping "for the away card" is not the fix either — that just invents a second
+  wrong convention, where the home card reads the loser's games first. Winner-first is
+  not a perspective; it is how the score is written.
 """
 import pytest
 
@@ -84,36 +87,36 @@ def _line(score, home_won=True):
             "home_won": home_won}
 
 
-def test_a_home_card_keeps_the_line_score_as_written():
-    d = {"home": True, "lines": [_line("6-4, 3-6, 6-2")]}
-    assert st._jh_side_lines(d)[0]["score"] == "6-4, 3-6, 6-2"
-
-
-def test_an_away_card_flips_the_line_score():
-    d = {"home": False, "lines": [_line("6-4, 3-6, 6-2")]}
-    assert st._jh_side_lines(d)[0]["score"] == "4-6, 6-3, 2-6"
+@pytest.mark.parametrize("home", [True, False])
+def test_a_line_score_is_winner_first_from_either_side(home):
+    """The stored string is home-first. Reported, it is the WINNER's — and identically so
+    on both teams' cards, because a tennis score is not a perspective."""
+    d = {"home": home, "lines": [_line("6-4, 3-6, 6-2", home_won=True),
+                                 _line("4-6, 6-7", home_won=False)]}
+    out = st._jh_reported_lines(d)
+    assert out[0]["score"] == "6-4, 3-6, 6-2"        # home won, already winner-first
+    assert out[1]["score"] == "6-4, 7-6"             # away won, so the away games lead
 
 
 @pytest.mark.parametrize("home", [True, False])
 def test_the_sets_always_agree_with_who_is_shown_winning(home):
     """The invariant the screenshot broke: whoever the card marks as having won the
-    line must be the side with the winning set scores."""
+    line must be the side holding the winning set scores."""
     d = {"home": home, "lines": [_line("6-4, 3-6, 6-2", home_won=True),
                                  _line("4-6, 6-7", home_won=False)]}
-    for ln in st._jh_side_lines(d):
-        we = ln["home_won"] if home else not ln["home_won"]
+    for ln in st._jh_reported_lines(d):
         sets = [s.strip().split("-") for s in ln["score"].split(",")]
         won = sum(1 for a, b in sets if int(a) > int(b))
-        assert (won > len(sets) / 2) is we, (ln, home)
+        assert won > len(sets) / 2, (ln, home)       # the leading games always win
 
 
-def test_a_flip_does_not_mutate_the_archived_line():
-    """`play_dual` appends the SAME `lines` list to both teams' schedules, so a
-    perspective flip must copy rather than edit in place."""
-    ln = _line("6-4, 3-6, 6-2")
-    out = st._jh_side_lines({"home": False, "lines": [ln]})
+def test_the_stored_line_is_never_mutated():
+    """`play_dual` appends the SAME `lines` list to both teams' schedules, so rewriting a
+    score must copy — and the stored string stays home-first for `jhsaa._games`/oGS."""
+    ln = _line("6-4, 3-6, 6-2", home_won=False)
+    out = st._jh_reported_lines({"home": False, "lines": [ln]})
     assert ln["score"] == "6-4, 3-6, 6-2"
-    assert out[0] is not ln
+    assert out[0] is not ln and out[0]["score"] == "4-6, 6-3, 2-6"
 
 
 def test_the_college_bracket_still_builds_winner_first():

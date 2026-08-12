@@ -3593,17 +3593,33 @@ def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
     return [f"{d:%b} {d.day}" for d in out]
 
 
-def _jh_side_lines(d: dict) -> list[dict]:
-    """A dual's lines from the VIEWING team's side.
+def _jh_reported_lines(d: dict) -> list[dict]:
+    """A dual's lines with every set score WINNER-FIRST — how tennis is actually reported.
 
-    `jhsaa._score_str` writes set scores home-first ("4-6, 6-4, 4-6" is the HOME side's
-    games), so an away team's card flipped the names and the won/lost marker while
-    leaving the numbers alone — "Batt / Oluwaseyi d. Blanco / Slater  3-6, 3-6", a pair
-    shown winning a match they are shown losing. Flip the numbers with everything else."""
+    A tennis score is written from the winner's side, always: "6-4, 3-6, 7-5" belongs to
+    whoever won the match, and the loser's name appears beside it rather than the loser's
+    games. It is NOT a per-viewer perspective, which is the mistake this replaces — an
+    earlier pass flipped the numbers for the away team's card, which fixed the visible
+    symptom (a pair shown winning with 3-6, 3-6 beside them) by inventing a second wrong
+    convention: the home team's card then read the loser's games first on every line the
+    away side won.
+
+    The engine already had this right: `MatchResult.scoreline` is documented "from the
+    winner's perspective", and the college league stores THAT and un-flips it with
+    `home_won` when it needs directional games (`gtt_seasonmode._parse_games`). The JHSAA
+    reimplemented the string instead of using it, and reimplemented it home-first.
+
+    ⚠️ The STORED JHSAA string stays home-first, and that divergence is now deliberate
+    rather than accidental: seasons are ALREADY ARCHIVED that way, and re-reading them
+    under a new convention would silently misreport every line the away side won — the
+    same bug, moved into the past where it cannot be seen. `jhsaa._games` also wants the
+    directional split for oGS. So storage keeps the record and the report is normalised
+    here. Which side is being viewed decides the name order and the d./l. marker; it never
+    decides the numbers."""
     out = []
     for ln in d.get("lines") or ():
-        if d.get("home"):
-            out.append(ln)
+        if ln.get("home_won"):
+            out.append(ln)                       # home won: home-first IS winner-first
             continue
         sets = [x.strip() for x in (ln.get("score") or "").split(",") if x.strip()]
         flipped = []
@@ -3969,7 +3985,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state_rank": (season or {}).get("state_rank", 0),
         "state_seed": seeds.get(school, 0),
         "state_finish": (season or {}).get("state_finish", ""),
-        "schedule": [{**d, "date": dates[i], "lines": _jh_side_lines(d),
+        "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": ("STATE" if d["phase"] == "state"
                                else "DIST" if d["district"] else "NON-DIST"),
                       "opp_deco": _jh_deco(schools, d["opp"], 22),

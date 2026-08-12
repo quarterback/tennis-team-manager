@@ -490,10 +490,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   a `f"{home_points}-{away_points}"` string swaps the two numbers on every card the AWAY
   team won — and is correct on every card the home team won, which is what hid it through
   a design pass, a review and a merge (the wrong half reads as upsets). Build it
-  `max-min`. Same family: `jhsaa._score_str` writes SET scores home-first, so a view
-  showing an away team must flip the numbers along with the names and the d./l. marker
-  (`state._jh_side_lines`, which copies — `play_dual` appends the SAME `lines` list to
-  both teams). When a view flips perspective, flip every field that carries one.
+  `max-min`. Same family, and worse: **a tennis SET score is ALWAYS written from the
+  WINNER's side** — a domain convention, not a perspective, so both teams' cards show the
+  identical string and only the names and the d./l. marker differ. The engine already has
+  this (`MatchResult.scoreline`, "from the winner's perspective"; the college league
+  stores it and un-flips with `home_won`), but `jhsaa._score_str` reimplemented it
+  HOME-first. Normalise at the render — `state._jh_reported_lines`, keyed on `home_won`,
+  and it COPIES (`play_dual` appends the SAME `lines` list to both teams). Flipping "for
+  the away card" is NOT the fix; that just moves the error onto the home card. The stored
+  JHSAA string stays home-first because seasons are already archived that way and
+  `jhsaa._games` wants the directional split for oGS.
   See `docs/AAR-jhsaa-bracket-score-sides.md`.
 - **The state draw uses the SHARED bracket tree** (`state._bracket_canvas` +
   `templates/_bracket.html`), like the NCAA bracket and the Preseason NIT — the macros
