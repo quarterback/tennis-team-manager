@@ -127,3 +127,21 @@ def test_the_college_bracket_still_builds_winner_first():
         text = fh.read()
     assert 'f"{max(hp, ap)}-{min(hp, ap)}"' in text
     assert 'f"{int(gm.get(\'home_points\', 0))}-{int(gm.get(\'away_points\', 0))}"' not in text
+
+
+def test_the_final_summary_reads_winner_first():
+    """The hub and the bracket page print "N-M · final · def. <runner-up>", so the pair
+    has to be the WINNER's then the loser's — a home-first pair states the loser's number
+    first in the one place the result is spelled out in words."""
+    view = st._jh_final_four(_bracket(), {})       # Delta wins the final from AWAY
+    assert (view["final"]["win_points"], view["final"]["lose_points"]) == (3, 2)
+    assert view["champion"]["name"] == "Delta" and view["runner_up"]["name"] == "Bravo"
+
+
+def test_the_round_list_still_shows_each_side_its_own_points():
+    """The opposite rule, one panel over: the round-by-round list prints a number beside
+    EACH team, so those stay directional (`home_points` by home). Winner-first applies to
+    a single shared score, not to a per-side column."""
+    br = _bracket()
+    gm = br["rounds"][0][0]
+    assert (gm["home_points"], gm["away_points"]) == (1, 4)

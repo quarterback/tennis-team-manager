@@ -23,7 +23,7 @@
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, Jefferson · {{ view.champion.district }}</div>
   </div>
   {% if view.final %}
-  <div class="sc"><div class="n">{{ view.final.home_points|int }}–{{ view.final.away_points|int }}</div>
+  <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}</div>
     <div class="o">final · def. {{ view.runner_up.name }}</div></div>
   {% endif %}
 </div>

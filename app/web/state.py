@@ -3776,7 +3776,14 @@ def _jh_final_four(bracket: dict, schools: dict) -> dict:
                                       else final["home"])
         out["champion"] = _jh_deco(schools, win, 64)
         out["runner_up"] = _jh_deco(schools, lose, 30)
-        out["final"] = {**final, "score": _jh_score(final)}
+        # `win_points`/`lose_points` because the summary reads "N-M · final · def.
+        # <runner-up>": a home-first pair prints the LOSER's number first whenever the
+        # away side won the final, which is the same bug as the bracket card in the one
+        # place it is stated in words. `score` stays for the shared card macro.
+        wp, lp = max(final["home_points"], final["away_points"]), \
+            min(final["home_points"], final["away_points"])
+        out["final"] = {**final, "score": _jh_score(final),
+                        "win_points": int(wp), "lose_points": int(lp)}
     if len(rounds) > 1:
         for gm in rounds[-2]["games"]:
             beaten = gm["away"] if gm["winner"] == gm["home"] else gm["home"]
