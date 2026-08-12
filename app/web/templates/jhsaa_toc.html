@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_round_tabs %}
+{% from "_bracket.html" import brk_canvas, brk_toolbar, brk_script %}
+{% block title %}JHSAA Tournament of Champions{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'toc', 'Tournament of Champions',
+             'The five classification champions, seeded on the TOSS Power Index — not on
+              classification. The two lowest-rated play into a four-team semifinal.',
+             [('Season', view.season_year), ('Field', view.field|length)] if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">
+  No Tournament of Champions archived for this season yet — it is played after the five
+  state tournaments that feed it.</div></div>
+{% else %}
+
+{% if view.champion %}
+<div class="jh-champ" style="margin-bottom:12px">
+  <span class="mark">{{ view.champion.mark|safe }}</span>
+  <div style="min-width:0">
+    <span class="lbl">{{ view.season_year }} JHSAA Tournament of Champions</span>
+    <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
+    <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, Jefferson
+      {%- if view.champion_group %} · {{ view.champion_group }} champion{% endif %}</div>
+  </div>
+</div>
+{% endif %}
+
+{# The field, so the SEEDING is legible — the point of the event is that these are
+   ordered by rating rather than by the size of the school. #}
+<div class="bl-panel" style="margin-bottom:12px">
+  <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
+  <div class="bl-panel-body" style="padding:10px 12px">
+    <div class="jh-cols2">
+      {% for t in view.field %}
+      <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=t.name, u=u, g=view.gender, year=view.scope.pin) }}">
+        <span class="jh-chip ghost">#{{ t.seed }}</span>
+        <span class="mark" style="width:22px;display:inline-block">{{ t.mark|safe }}</span>
+        <span class="nm">{{ t.name }}</span>
+        {% if t.group %}<span class="jh-chip c-{{ t.group }}">{{ t.group }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# The SAME server-positioned tree every other bracket in the app draws on. #}
+{{ brk_toolbar() }}
+{{ brk_canvas(view.cols, u, ep='jhsaa_school', epq={'g': view.gender, 'year': view.scope.pin}) }}
+{{ jh_round_tabs(view.rounds, u, view.gender, view.scope.pin) }}
+{{ brk_script() }}
+{% endif %}
+</div>
+{% endblock %}

@@ -316,6 +316,23 @@ PER_CLASS = 3                                  # 3 x 4 grades = ROSTER_SIZE
 # more of their ceiling has surfaced.
 _MATURITY = {9: (0.40, 0.48), 10: (0.50, 0.58), 11: (0.60, 0.68), 12: (0.70, 0.78)}
 
+# ⚠️ A FEW FRESHMEN ARRIVE FINISHED (owner rule 2027-08). Roughly 1 in 100 shows up with
+# most of their ceiling already accessible — the kid who has been playing juniors since
+# they were eight and walks straight into the number one spot. This is NOT a potential
+# bonus: a prodigy can be an ordinary 45 ceiling who simply arrives at 40 instead of 20.
+#
+# It is a maturity FLOOR, and it persists for all four years, which is the whole point.
+# The normal band rises with each grade, so a one-off ninth-grade boost would quietly
+# un-mature them as a sophomore. Carrying the floor instead means they start near their
+# ceiling and then barely grow — the early bloomer their classmates catch, which is what
+# actually happens.
+#
+# Rolled on its OWN rng stream, not the roster one. Drawing it from the main sequence
+# would shift every subsequent draw and regenerate every player in the association;
+# keyed separately, the only rosters that change are the ones that gain a prodigy.
+PRODIGY_RATE = 0.01
+PRODIGY_MATURITY = (0.84, 0.93)
+
 
 @dataclass
 class School:
@@ -459,6 +476,13 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         maturity = (min(1.0, lo + step), min(1.0, hi + step))
         for seat in range(PER_CLASS):
             rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+            # Keyed on (school, entry, seat) — the same identity the pid is built from —
+            # so a prodigy is the SAME person every one of their four seasons rather than
+            # a fresh dice roll each year.
+            prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
+            if prng.random() < PRODIGY_RATE:
+                lo2, hi2 = PRODIGY_MATURITY
+                maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
             nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
                                      region_weights={"us": 1.0})()
             p = generate_prospect(rng, nm, "US", gender=sex,
@@ -1141,6 +1165,65 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
             "rounds": rounds, "field": [t.school.name for t in field]}
 
 
+def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
+    """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
+
+    The five classification champions, seeded on the TOSS Power Index they finished the
+    regular season with (`t.power`, already stamped by `play_regular_season`), NOT on
+    classification: a 4A champion that rated above the 6A one is the higher seed, which
+    is the whole reason the event is interesting.
+
+    Five into a four-team semifinal, so the two LOWEST-rated champions meet in a play-in
+    and the top three sit it out. Then 1 v (play-in winner) and 2 v 3, then the final.
+    Played under the state format (1S/4D) like the events that fed it.
+
+    Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
+    with no new geometry."""
+    field = sorted(champions, key=lambda t: (-t.power, t.school.name))
+    if len(field) < 2:
+        return {"champion": field[0].school.name if field else None,
+                "rounds": [], "field": [t.school.name for t in field]}
+    rng = random.Random(seed)
+
+    def play(a: TeamSeason, b: TeamSeason) -> tuple[TeamSeason, dict]:
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+        win = a if res.winner == 0 else b
+        return win, {"home": a.school.name, "away": b.school.name,
+                     "home_points": res.home_points, "away_points": res.away_points,
+                     "winner": win.school.name}
+
+    rounds: list[list[dict]] = []
+    alive = list(field)
+    if len(alive) > 4:                              # the play-in: lowest two seeds
+        lo = alive[-2:]
+        win, gm = play(*lo)
+        rounds.append([gm])
+        alive = alive[:-2] + [win]
+    semis = []
+    pairs = [(0, len(alive) - 1), (1, len(alive) - 2)] if len(alive) == 4 else \
+            [(i, len(alive) - 1 - i) for i in range(len(alive) // 2)]
+    nxt = []
+    for i, j in pairs:
+        win, gm = play(alive[i], alive[j])
+        semis.append(gm)
+        nxt.append(win)
+    if semis:
+        rounds.append(semis)
+    while len(nxt) > 1:
+        games, step = [], []
+        for i in range(0, len(nxt) - 1, 2):
+            win, gm = play(nxt[i], nxt[i + 1])
+            games.append(gm)
+            step.append(win)
+        if len(nxt) % 2:
+            step.append(nxt[-1])
+        rounds.append(games)
+        nxt = step
+    return {"champion": nxt[0].school.name if nxt else None,
+            "rounds": rounds, "field": [t.school.name for t in field],
+            "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
+
+
 _GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 7A=0 … 3A-1A=4, so |i-j| = classes apart
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
@@ -1476,9 +1559,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                               for t in ts] for d, ts in standings.items()},
             "state": state,
         }
+        out.setdefault("_champ_teams", {})[group] = next(
+            (t for ts in standings.values() for t in ts
+             if t.school.name == state["champion"]), None)
         for ts in standings.values():
             for t in ts:
                 out["teams"][t.school.name] = t
+    # The Tournament of Champions, last: it needs all five classification champions and
+    # the Power Index they finished the regular season on.
+    champs = [t for t in out.pop("_champ_teams", {}).values() if t is not None]
+    out["toc"] = run_toc(champs, seed=seed + 7717)
     _season_cache[ck] = out
     return out
 

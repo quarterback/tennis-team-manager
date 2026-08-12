@@ -3692,6 +3692,42 @@ def _jh_bye_card(name: str, seeds: dict, schools: dict) -> dict:
             "home_won": True, "winner": name, "score": "", "bye": True}
 
 
+def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
+    """The Tournament of Champions bracket — its own event, not a classification's.
+
+    Five champions seeded on the TOSS Power Index rather than on classification, so a 4A
+    champion that rated above the 6A one is the higher seed. That is the whole reason the
+    event is worth playing, and it is why the seeds are read off the archive rather than
+    reconstructed from the group order. Renders on the SAME tree as every other bracket
+    in the app."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    scope = _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS), yr, years, None, None)
+    if not arc or not (arc.get("toc") or {}).get("rounds"):
+        return {"ready": False, "gender": g, "year": yr, "years": years, "scope": scope}
+    toc = arc["toc"]
+    schools = _jh_schools(g)
+    champ_of = {br.get("champion"): grp
+                for grp, br in (arc.get("brackets") or {}).items() if br.get("champion")}
+    seeds = toc.get("seeds") or {n: i + 1 for i, n in enumerate(toc.get("field") or ())}
+    return {
+        "ready": True, "gender": g, "year": yr, "years": years, "scope": scope,
+        "season_year": arc.get("season_year"),
+        "field": [{**_jh_deco(schools, n, 26), "seed": seeds.get(n, i + 1),
+                   "group": champ_of.get(n, "")}
+                  for i, n in enumerate(toc.get("field") or ())],
+        "rounds": world.jhsaa_state_rounds(toc),
+        "cols": _jh_bracket_cols(toc, schools),
+        "champion": _jh_deco(schools, toc["champion"], 64) if toc.get("champion") else None,
+        "champion_group": champ_of.get(toc.get("champion"), ""),
+    }
+
+
 def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
     """The state tournament as bracket COLUMNS for the shared canvas.
 
