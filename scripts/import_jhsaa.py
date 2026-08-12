@@ -37,7 +37,9 @@ import argparse
 import json
 import os
 import random
+import re
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +54,102 @@ MAX_DISTRICT = 12
 GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
               "3A": 0.18, "2A": 0.08, "1A": 0.02}
 BOYS_OF_GIRLS = 0.88
+
+# Schools the owner wants in the association without giving them an archetype. The
+# archetype seed list is folded in automatically — see `always_sponsor`.
+ALWAYS_EXTRA = [
+    "Abbey Prep",
+    "Annie Springs",
+    "Arrieta Treasure Valley",
+    "Aurelia",
+    "Bahía Leal",
+    "Baptist HS",
+    "Beacon Hill",
+    "Breakwater",
+    "Calderwood School",
+    "Caswell Depot High",
+    "Central Christian",
+    "Chaminade",
+    "Commonwealth",
+    "Condotti Vanguard Academy",
+    "Cortland",
+    "Crown Hill",
+    "Dolores Huerta",
+    "Dry Lake",
+    "Eastmont Christian",
+    "Echevarria Foundry High",
+    "Elk Bluff",
+    "Elk Crossing",
+    "Emerson",
+    "Ferris Union",
+    "Fort Valois",
+    "Gagarin School of Public Service",
+    "Galena",
+    "George Washington Carver",
+    "Gold Junction",
+    "Golden Gate",
+    "Gwendolyn Brooks",
+    "Halfway House",
+    "Harlan Cole",
+    "Hazel Bennett",
+    "High Prairie",
+    "Homestead",
+    "Jean Lindgren",
+    "Keldale",
+    "Las Palmas",
+    "Lorraine Calder",
+    "Mabryville",
+    "Marlow County",
+    "Mesa Dorada",
+    "Montelago",
+    "Netherwood",
+    "New Leiden",
+    "Newark River North",
+    "North Valley Christian",
+    "Pacific Friends School",
+    "Paul Robeson",
+    "Pinecrest School",
+    "Port Meridian Polytechnic",
+    "Port Meridian West",
+    "Providence Academy",
+    "Puerto Gallego",
+    "Ransom Spur",
+    "Redwood Coast",
+    "Romero-Finniski",
+    "Saint Francis",
+    "San Borondón",
+    "San Cordero",
+    "San Tomás",
+    "Santa Cruz del Norte",
+    "Santa Laura",
+    "Santa Laura North",
+    "Seafarer High",
+    "Selbyville",
+    "Silver Glen",
+    "Sisters of Mercy",
+    "Snowline",
+    "St. Agnes Academy",
+    "St. Basil Academy",
+    "St. Gabriel Preparatory",
+    "St. Isidore",
+    "St. Norbert Abbey",
+    "St. Perpetua",
+    "St. Sebastian Prep",
+    "St. Vincent School",
+    "Steelbridge",
+    "Summervale Northwest",
+    "Svenja Ekström",
+    "Telfair Country Day School",
+    "Three Saints",
+    "Timberline",
+    "Treasure Valley",
+    "Trinity Catholic",
+    "Valderra",
+    "Valley Christian",
+    "Westover",
+    "Westside Christian",
+    "Winifred Booker",
+]
 
 # Championship groups — 3A/2A/1A combine, as prep-network's own tennis brackets do.
 def champ_group(classification: str) -> str:
@@ -75,14 +173,52 @@ def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:
     return schools, {c["name"]: c for c in cities}
 
 
+def always_sponsor() -> set[str]:
+    """Schools that sponsor tennis because the OWNER says they do.
+
+    ⚠️ Sponsorship below is a seeded coin flip per school against a per-classification
+    rate — a reasonable way to pick ~335 tennis programs out of Jefferson's 840 schools,
+    and a terrible way to decide whether a school the owner has named as a blue blood
+    exists. Forty of the first seventy-eight archetype nominations landed outside the
+    roll, which reads as "your list is wrong" when the truth is that a dice roll had
+    already voted on it.
+
+    So a named school is always in. Sourced from `data/jhsaa/archetypes.json` (the
+    archetype seed list) plus `ALWAYS_EXTRA` for schools the owner wants in the
+    association without tagging them. Names are matched accent- and punctuation-
+    insensitively against prep-network, which is the source of truth for what exists."""
+    out = set(ALWAYS_EXTRA)
+    arch = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "data", "jhsaa", "archetypes.json")
+    try:
+        with open(arch, encoding="utf-8") as fh:
+            out |= set(json.load(fh).get("programs", {}))
+    except (FileNotFoundError, ValueError):
+        pass
+    return out
+
+
+def _key(name: str) -> str:
+    n = unicodedata.normalize("NFKD", name)
+    n = "".join(c for c in n if not unicodedata.combining(c)).lower()
+    return re.sub(r"[^a-z0-9]+", " ", n).strip()
+
+
 def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
-    """(girls, boys) school names. One roll for girls; boys drawn from that set."""
+    """(girls, boys) school names. One roll for girls; boys drawn from that set — except
+    that owner-named schools are in regardless, for both genders."""
     rng = random.Random(SEED)
+    forced = {_key(n) for n in always_sponsor()}
     girls, boys = set(), set()
     for s in sorted(schools, key=lambda s: s["name"]):        # stable order = stable draw
-        if rng.random() < GIRLS_RATE[s["classification"]]:
+        hit = rng.random() < GIRLS_RATE[s["classification"]]  # drawn either way, so the
+        sub = rng.random() < BOYS_OF_GIRLS                    # roll stays reproducible
+        if _key(s["name"]) in forced:
             girls.add(s["name"])
-            if rng.random() < BOYS_OF_GIRLS:
+            boys.add(s["name"])
+        elif hit:
+            girls.add(s["name"])
+            if sub:
                 boys.add(s["name"])
     return girls, boys
 
