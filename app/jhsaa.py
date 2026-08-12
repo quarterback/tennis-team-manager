@@ -130,14 +130,43 @@ AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
 # number one with a ceiling of 46 still plays at a current ~30 while in school. That is
 # the whole reason the bands look high for high schoolers — do not "fix" them downward
 # by comparing them to the college _TALENT means, which ARE current.
-# Calibrated so the top-190 graduating seniors slot into the national recruit class
-# sensibly: best ~#25 of 2500, median near the national median. See `graduating_class`.
+# The top-190 graduating seniors are Jefferson's entry on the national recruit board.
+# MEASURED, not asserted: best ~#227 of 2500, median ~#483, i.e. the hand-off sits in the
+# top fifth of the class rather than astride its median. (The comment here used to claim
+# "best ~#25, median near the national median"; it was ~#274/#527 before this rebalance
+# too, so it was describing an intention rather than the numbers. Re-measure before
+# quoting it — `graduating_class` against `world.board_class`.)
+# ⚠️ SMALLER SCHOOLS ARE THINNER, NOT CAPPED (owner rule 2027-08). Tennis is not a
+# sport where the big school simply has better players — good players turn up
+# everywhere, and what enrollment actually buys you is DEPTH. So the classifications
+# differ in the BULK of the distribution (the mean) while the upper tail stays broadly
+# common (the spread WIDENS as the mean falls), and 7A/6A are near-indistinguishable at
+# the top with the real steps coming below.
+#
+# The previous ladder was a flat -5/-4 shift per class with the spread NARROWING as the
+# mean fell, which gets the sport backwards in a way that only shows if you measure the
+# lineup position by position. Measured on the old numbers (boys, mean current OVR):
+#
+#            #1     #9   drop   best #1 seen
+#   7A     54.4   31.1   23.2     60.0
+#   3A-1A  42.0   22.8   19.2     51.0
+#
+# The #1s were 12.4 apart and the #9s only 8.3 — the TOP fell faster than the depth, and
+# the drop from #1 to #9 was FLATTER at a small school than a big one. A 3A-1A program
+# could not produce a 60 at all, so it could never be the small school sitting top-10 in
+# the state, which is a completely ordinary thing in real high-school tennis (in Oregon's
+# 2026 boys table, Oregon Episcopal — the smallest classification — finished No. 9
+# statewide, and four of the top eight were 5A).
+#
+# Widening the spread as the mean falls does both jobs at once, because 12 ceilings are
+# drawn and the best 9 dress: a wide draw lifts the number one a long way and drags the
+# number nine down. Do NOT "tidy" these back into an even ladder with shrinking spreads.
 _TALENT = {
     ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.0, 14.0),
-    ("6A", "boys"):   (53.0, 14.0), ("6A", "girls"):   (48.0, 13.0),
-    ("5A", "boys"):   (48.0, 13.0), ("5A", "girls"):   (44.0, 12.0),
-    ("4A", "boys"):   (44.0, 12.0), ("4A", "girls"):   (40.0, 11.0),
-    ("3A-1A", "boys"): (39.0, 11.0), ("3A-1A", "girls"): (36.0, 10.0),
+    ("6A", "boys"):   (56.5, 15.5), ("6A", "girls"):   (51.5, 14.5),
+    ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
+    ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
+    ("3A-1A", "boys"): (41.0, 21.0), ("3A-1A", "girls"): (37.0, 20.0),
 }
 GRADE_FLOOR = 12.0        # below the 20-80 scale's nominal floor on purpose: 1A depth
 

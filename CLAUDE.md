@@ -537,6 +537,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
 - **`talent` on `generate_prospect` is the CEILING**, current is maturity-derived, so the
   `_TALENT` bands look absurdly high next to the college ones. Don't "fix" them down.
+- **‼️ SMALLER CLASSIFICATIONS ARE THINNER, NOT CAPPED (owner rule 2027-08).** Tennis is
+  not a sport where the big school simply has better players — good players turn up
+  everywhere, and enrollment buys DEPTH. So `_TALENT` varies the MEAN while the SPREAD
+  WIDENS as the mean falls: 7A/6A are near-indistinguishable at the top, the real steps
+  come below, and every classification can still produce an elite number one. Do NOT
+  "tidy" it back into an even ladder with shrinking spreads — that was the old shape and
+  it got the sport backwards in a way only a position-by-position measurement shows: the
+  #1s were 12.4 apart and the #9s only 8.3, so the TOP fell faster than the depth, and a
+  3A-1A program could never produce a 60 at all. Now: top-end gap 4.5, depth gap 8.3, and
+  the #1→#9 drop RISES as schools shrink. Real high-school tennis routinely puts the
+  smallest classification in a state top ten (Oregon 2026 boys: Oregon Episcopal No. 9,
+  four of the top eight 5A). Pinned by `tests/test_jhsaa_talent_shape.py`.
 - **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
