@@ -51,8 +51,15 @@ SEED = 11
 MAX_DISTRICT = 12
 
 # Girls sponsorship rate by classification; boys is a subset of the girls sponsors.
+# 2A and 1A are deliberately well above a realistic sponsorship rate (owner rule
+# 2027-08). Splitting 3A-1A into two championships left 2A-1A with 18 programs and an
+# 8-team state field — 44% of the classification making state, which is not a
+# tournament. The fix the owner chose is more programs rather than a smaller field —
+# and then MORE again: 2A/1A sponsor at rates no real state would post, because a
+# huge, ragged small-school classification is the fun of it. The talent bands say
+# what the level is; the roster count says how much of it there is to watch.
 GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
-              "3A": 0.18, "2A": 0.08, "1A": 0.02}
+              "3A": 0.26, "2A": 0.78, "1A": 0.62}
 BOYS_OF_GIRLS = 0.88
 
 # Schools the owner wants in the association without giving them an archetype. The
@@ -151,12 +158,15 @@ ALWAYS_EXTRA = [
     "Winifred Booker",
 ]
 
-# Championship groups — 3A/2A/1A combine, as prep-network's own tennis brackets do.
+# Championship groups. 3A stands ALONE and 2A/1A combine (owner rule 2027-08): the
+# enrollment gap across the old 3A-1A group was the widest in the association — medians
+# of 1,043 / 385 / 199 — so a 1,370-student school and a 108-student one were competing
+# for the same trophy.
 def champ_group(classification: str) -> str:
-    return classification if classification in ("7A", "6A", "5A", "4A") else "3A-1A"
+    return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
 
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A-1A")
+GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:

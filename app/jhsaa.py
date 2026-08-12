@@ -45,7 +45,7 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A-1A")
+GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -118,8 +118,8 @@ FIDELITY = "fast"
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
-FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A-1A": 8}
-AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A-1A": 1}
+FIELD = {"7A": 32, "6A": 24, "5A": 24, "4A": 16, "3A": 12, "2A-1A": 24}
+AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 # --- talent ------------------------------------------------------------------
 # (mean, spread) of the 20-80 grade per classification. Well beneath the college bands
@@ -166,7 +166,8 @@ _TALENT = {
     ("6A", "boys"):   (56.5, 15.5), ("6A", "girls"):   (51.5, 14.5),
     ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
     ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
-    ("3A-1A", "boys"): (41.0, 21.0), ("3A-1A", "girls"): (37.0, 20.0),
+    ("3A", "boys"):    (43.5, 20.0), ("3A", "girls"):    (38.0, 19.0),
+    ("2A-1A", "boys"): (38.5, 22.0), ("2A-1A", "girls"): (34.5, 21.0),
 }
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
