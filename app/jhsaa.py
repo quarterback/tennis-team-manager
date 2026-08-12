@@ -1610,12 +1610,33 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # because non-district play crosses them: rating a class in isolation would cut those
     # edges out of the results graph.
     out["power"] = power
+    # THE POSTSEASON IS PLAYED OUT BEFORE ANY RECORD IS WRITTEN DOWN. A record is a
+    # record — the NCAA and the NFHS both carry the postseason in the season total, and
+    # nobody publishes a program's regular season as though it were the year. So every
+    # classification's state tournament runs, then the Tournament of Champions runs, and
+    # only THEN is `t.record` snapshotted into the standings.
+    #
+    # This used to snapshot inside the same loop that played each state draw, which was
+    # right for state (that group's duals were done) and silently wrong for the TOC —
+    # it needs every group's champion, so it cannot run until the loop is over, and the
+    # six programs in it therefore had their last one or two duals archived on their
+    # SCHEDULE but missing from their RECORD. Measured: 131 of 137 programs archived
+    # every dual they played, and the six that did not were exactly the TOC field.
+    states = {}
     for group in GROUPS:
         standings = by_group[group]
-        all_teams = [t for ts in standings.values() for t in ts]
-        out["awards"][group] = season_awards(all_teams)
-        field = qualifiers(group, standings, power)
-        state = run_state(field, seed=seed + hash(group) % 9973)
+        out["awards"][group] = season_awards(
+            [t for ts in standings.values() for t in ts])
+        states[group] = run_state(qualifiers(group, standings, power),
+                                  seed=seed + hash(group) % 9973)
+    champs = [t for group, st in states.items()
+              for ts in by_group[group].values() for t in ts
+              if t.school.name == st["champion"]]
+    out["toc"] = run_toc(champs, seed=seed + 7717)
+
+    for group in GROUPS:
+        standings = by_group[group]
+        state = states[group]
         out["groups"][group] = {
             # `drecord`/`place` are archived alongside the overall record so a program's
             # year-by-year history reads like a college team's, without re-simulating.
@@ -1639,16 +1660,9 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                               for t in ts] for d, ts in standings.items()},
             "state": state,
         }
-        out.setdefault("_champ_teams", {})[group] = next(
-            (t for ts in standings.values() for t in ts
-             if t.school.name == state["champion"]), None)
         for ts in standings.values():
             for t in ts:
                 out["teams"][t.school.name] = t
-    # The Tournament of Champions, last: it needs all five classification champions and
-    # the Power Index they finished the regular season on.
-    champs = [t for t in out.pop("_champ_teams", {}).values() if t is not None]
-    out["toc"] = run_toc(champs, seed=seed + 7717)
     _season_cache[ck] = out
     return out
 

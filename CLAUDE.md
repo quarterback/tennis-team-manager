@@ -425,6 +425,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     can never touch district place. The label is IN-MEMORY ONLY and deliberately not
     archived — the owner does not want it distinguished on a card.
   See `docs/AAR-jhsaa-district-schedule-passes.md`.
+- **‼️ THERE IS NO SEPARATE POSTSEASON RECORD (owner rule 2027-08).** A record is a
+  record: the NCAA and the NFHS both carry the postseason INSIDE the season total, and
+  neither publishes a regular-season record beside it as though the year had two halves.
+  So `run_season` plays every state draw AND the TOC and only THEN snapshots `t.record`
+  into the standings, and the school page shows ONE record with a FINISH beside it
+  (`state_finish` / `toc_finish`) — never a "Post 6-1" tile, which invited the owner to
+  add 27-4 and 6-1 into 33-5 when the 27-4 already contained the six. The snapshot used
+  to sit inside the loop that ran each classification's state draw, which was right for
+  state (that group was done) and silently wrong for the TOC, since the TOC needs every
+  group's champion and so cannot run until the loop is over: the six programs in it
+  archived their last duals on their SCHEDULE and left them off their RECORD. 131 of 137
+  balanced and the six that didn't were exactly the TOC field — the shape a spot check
+  misses. Pinned by `test_every_archived_record_covers_every_dual_played`.
 - **A program's RECORD persists year to year, not just its trophies.** `world_jhsaa`
   archives `record`/`drecord`/`place` per school per year, and `jhsaa_school_history`
   emits a row for EVERY archived year — a program history has to show the losing seasons

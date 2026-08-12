@@ -250,6 +250,45 @@ owner asked for — was never the problem and is untouched.
 > had described that order in its own docstring as "results, then ability, then STR"
 > without noticing that a raw count makes the second and third terms dead code.
 
+## 9. A record is a record
+
+Owner, on the same program page: *"sports don't track a separate post-season record, you
+simply add it to the overall record for a final record at the end of the year — the NCAA
+and NFHS both do it this way."* With a worked example: *"Baptist was 33-5 not 27-4, with
+a 6-1 dual record in the post-season."*
+
+The arithmetic in the example doesn't hold — 27-4 already contained the state tournament,
+so adding the 6-1 counts those duals twice — but that is the point being made, not a
+mistake in it. **I put a number on the page that a reader has to be told not to add.** The
+fix is not to explain the tile; it is to delete it. A postseason leaves a FINISH behind,
+not a second record.
+
+And underneath it there *was* a real leak, in the direction the owner suspected. The
+standings snapshot sat inside the loop that ran each classification's state draw:
+
+```python
+for group in GROUPS:
+    state = run_state(...)                       # this group's postseason: done
+    out["groups"][group] = {"standings": [... t.record ...]}
+champs = [...]                                   # every group's champion
+out["toc"] = run_toc(champs, ...)                # ← played AFTER every record was written
+```
+
+Correct for state and silently wrong for the TOC, which by definition cannot run until
+the loop is over. So the six programs whose seasons matter most archived their final one
+or two duals on their SCHEDULE and left them off their RECORD. **131 of 137 programs
+balanced.** The six that didn't were exactly the TOC field — which is why nothing looked
+wrong: any sample that isn't the whole association is overwhelmingly likely to miss them,
+and the six that are broken are the six with a champion's page nobody reads sceptically.
+
+> A per-item loop that also produces a cross-item event has to be split. The snapshot
+> belongs after the last thing that can change what it records, and "the last thing" is
+> not always inside the same iteration.
+
+Now: all state draws → the TOC → then the records. Pinned over the whole association
+rather than on a champion, because the failure was a six-row minority inside a
+green-looking majority.
+
 ## Files
 
 * `app/jhsaa.py` — `_TALENT`, `ARCHETYPES`, `_program_mod`, `upstarts`, `_doubles_lift`,

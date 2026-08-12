@@ -3773,12 +3773,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     row = {"year": year, "season_year": arc.get("season_year"), "group": "",
            "district": "", "record": "", "wins": 0, "losses": 0,
            "district_record": "", "dwins": 0, "dlosses": 0, "place": 0,
-           "post_record": "0-0", "pwins": 0, "plosses": 0,
            "courts_won": 0, "courts_lost": 0, "pf": 0.0, "pa": 0.0,
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False, "toc_wins": 0, "toc_losses": 0,
+           "toc_champion": False,
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
@@ -3806,23 +3805,23 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
             row["state_rank"] = r["rank"]
             row["pi"] = r.get("pi")
             break
-    # The postseason record and the individual courts come off the school's own duals —
-    # the match-level archive is the source for drilling into a season, exactly as it is
-    # for the schedule view. Cheap: one indexed read of ~26 rows for the year.
+    # ‼️ THERE IS NO SEPARATE POSTSEASON RECORD (owner rule 2027-08). A program's record
+    # is its record: the NCAA and the NFHS both carry the postseason inside the season
+    # total, and neither publishes a regular-season record beside it as though the year
+    # had two halves. `record` is archived AFTER the state tournament and the TOC are
+    # played (`jhsaa.run_season`), so it already includes them; a "Post 6-1" tile next
+    # to it invited exactly the double count the owner did by hand — 27-4 plus 6-1
+    # reading as 33-5, when the 27-4 already contained the six. What a postseason leaves
+    # behind is a FINISH, not a second record, and the finishes are `state_finish` /
+    # `toc_finish` below.
+    #
+    # The individual courts still come off the school's own duals — the match-level
+    # archive is the source for drilling into a season, exactly as it is for the
+    # schedule view. Cheap: one indexed read of ~26 rows for the year.
     for d in sched:
         for ln in d.get("lines") or ():
             ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
             row["courts_won" if ours else "courts_lost"] += 1
-        # The two postseason events are counted apart. "Post" is the state tournament
-        # the program was seeded into; the TOC is the meta-event a handful of state
-        # champions play afterwards, and folding it into the same record would make a
-        # champion's state run look one or two duals longer than it was.
-        if d.get("phase") == "state":
-            row["pwins" if d.get("won") else "plosses"] += 1
-        elif d.get("phase") == "toc":
-            row["toc_wins" if d.get("won") else "toc_losses"] += 1
-    row["post_record"] = f"{row['pwins']}-{row['plosses']}"
-    row["toc_record"] = f"{row['toc_wins']}-{row['toc_losses']}"
     if row["made_toc"]:
         row["honors"].append(
             f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
@@ -3898,8 +3897,8 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
         "seasons": len(seasons), "wins": wins, "losses": losses,
         "record": f"{wins}-{losses}",
         "pct": wins / (wins + losses) if (wins + losses) else 0.0,
-        "post_wins": sum(s["pwins"] for s in seasons),
-        "post_losses": sum(s["plosses"] for s in seasons),
+        # No `post_wins`/`post_losses`: a postseason record is not a thing programs
+        # carry, and `wins`/`losses` above already contain those duals. See `_season_row`.
         "courts_won": sum(s["courts_won"] for s in seasons),
         "courts_lost": sum(s["courts_lost"] for s in seasons),
         "district_titles": sum(1 for s in seasons if s["district_title"]),
@@ -3915,8 +3914,6 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
         "toc_semis": sum(1 for s in seasons if s.get("toc_place") and s["toc_place"] <= 4),
         "toc_finals": sum(1 for s in seasons if s.get("toc_place") and s["toc_place"] <= 2),
         "toc_titles": len(toc_titles),
-        "toc_wins": sum(s.get("toc_wins", 0) for s in seasons),
-        "toc_losses": sum(s.get("toc_losses", 0) for s in seasons),
         "last_toc": tocs[0] if tocs else None,                 # seasons are newest-first
         "last_toc_title": toc_titles[0] if toc_titles else None,
         "poy": sum(len(s["poy"]) for s in seasons),
