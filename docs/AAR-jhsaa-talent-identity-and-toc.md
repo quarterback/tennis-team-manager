@@ -175,10 +175,89 @@ of the lineup edged 4A's — which `test_the_bulk_still_indexes_downward` caught
 than a person. The Tournament of Champions is six champions now: two play-ins into a
 four-team semifinal, a cleaner bracket than five.
 
+## 7. Then it shipped without a bracket, and the tests said everything was fine
+
+The owner opened it: *"why didn't you make a real bracket for TOC like every other state
+tournament? Why can't I see round by round results like everything else? why aren't team
+pages populating their TOC matches or placement — it's a big honor to make it."*
+
+Four faults, and they are four instances of one habit.
+
+**The page handed `brk_canvas` the wrong object.** `brk_canvas(cv, …)` reads `cv.width`,
+`cv.columns`, `cv.cards`, `cv.links` — it wants a `_bracket_canvas` RESULT. I passed the
+column list that goes INTO `_bracket_canvas`. Jinja resolves every missing attribute on a
+list to Undefined and prints the empty string, so the page rendered a `<div>` of width
+`px`, no cards, no elbows, no error and no log line. The columns themselves were correct
+the whole time; `_jh_bracket_cols` handled the 6→4→2→1 shape and materialised both byes.
+I had built the data and never connected it.
+
+> Jinja's Undefined is silent by design, so a template is the one place in this codebase
+> where passing the wrong type produces a page instead of a traceback. Anything a
+> template dereferences by attribute has to be checked by RENDERING it, not by reading
+> the view function and agreeing with yourself.
+
+**`jh_round_tabs(rounds, u, gender, pin)`** — the signature is `(rounds, u, gender,
+id='jhrd', pin=none)`. The year went into the DOM `id` slot. Positional arguments past
+the third on a five-parameter macro; the state bracket page passes both and I copied the
+call without its `id`.
+
+**The duals were played `phase="state"`.** Shape and lineup rules are the state event's,
+so borrowing the phase looked like reuse. But phase is also the only thing that
+distinguishes the two events once they are rows in `world_jhsaa_dual` — so a TOC dual
+counted toward a program's *state tournament* record, and "did this program reach the
+Tournament of Champions?" had no answer to read. A phase is not a format selector; it is
+the archive's identity for the event.
+
+**And the honour appeared nowhere.** Six programs of ~335 reach the field. Nothing on the
+program page said so, because the ledger row is derived from `world_jhsaa` +
+`world_jhsaa_dual` and I had added the TOC to neither derivation.
+
+The through-line: I verified each piece against the layer I had just written and never
+end to end. `test_jhsaa_routes` renders every JHSAA page with **nothing archived** — it
+was written after the last route bug and it proves the empty state works, which is why it
+was green through all four of these. `tests/test_jhsaa_toc.py` now runs a real season
+(two districts per classification, ~10s a gender), archives it through `run_jhsaa`, and
+asserts on the HTML: a card per game plus the byes, every round named, the TOC chip on
+the champion's page.
+
+> An empty-state test proves the wiring. Only a test with data in it can see the page.
+
+## 8. The lineup ladder was a ratchet
+
+Reported in the same breath: *"this team has a kid that's a 50 OVR and they didn't use
+him all year."* `_order` sorted on `(-wins, -pct, -ovr, -str)` — cumulative wins first.
+
+A win total measures OPPORTUNITY. Dressing earns wins, wins earn the next start, and a
+player who lost his opening two duals — or who was tenth in week one — can never climb,
+because every team-mate who kept playing is above him on a number he is not being allowed
+to add to. Ability was in the key, third, where it was unreachable. It also ranked 5-15
+above 4-0, and doubles credits both partners, so a rotation player banked wins faster
+than a number one drawing the toughest opponent on the card.
+
+Measured over a boys' season: a top-four player finished outside the nine on **55 of 400
+rosters**, 21 of them under seven matches all year. The report was a 51-OVR senior with
+six matches beside a 28-OVR team-mate with twenty-seven.
+
+The ladder now seeds on ability and lets results move it — `ovr + LADDER_SWING ×
+(pct − ½) × n/(n + LADDER_PRIOR)`. A perfect record is worth +7 OVR and a winless one −7,
+weighted by how much evidence there is, so **a player who has not played sits at his
+seed** rather than at the bottom. After: 0 of 400 rosters bench a top-four player, the
+top three play a median 27 matches to the bottom three's 5, and 28% of players still
+finish somewhere other than their ability seed. The bench rotation — the variation the
+owner asked for — was never the problem and is untouched.
+
+> The bug was not in the rotation I added. It was in the ORDER the rotation sorted, and I
+> had described that order in its own docstring as "results, then ability, then STR"
+> without noticing that a raw count makes the second and third terms dead code.
+
 ## Files
 
 * `app/jhsaa.py` — `_TALENT`, `ARCHETYPES`, `_program_mod`, `upstarts`, `_doubles_lift`,
-  `PRODIGY_RATE`, `run_toc`
+  `PRODIGY_RATE`, `run_toc`, `POSTSEASON`, `ladder_score`/`_order`
 * `app/overrides.py` — the editable archetype table
-* `app/web/state.py`, `app/web/server.py`, `templates/jhsaa_toc.html`
-* `tests/test_jhsaa_talent_shape.py`, `tests/test_jhsaa_archetypes.py`
+* `app/world.py` — `jhsaa_toc_result`, `_toc_finish_label`, the TOC columns on
+  `_season_row` / `jhsaa_program_totals`
+* `app/web/state.py`, `app/web/server.py`, `templates/jhsaa_toc.html`,
+  `templates/jhsaa_rankings.html`, `templates/jhsaa_school.html`
+* `tests/test_jhsaa_talent_shape.py`, `tests/test_jhsaa_archetypes.py`,
+  `tests/test_jhsaa_toc.py`, `tests/test_jhsaa_lineup.py`

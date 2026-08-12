@@ -3570,11 +3570,12 @@ def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
     The simulation has no clock inside a JHSAA season — the whole association runs in
     one rung at world week 0 — so there is no date to read. What IS real and persisted
     is the ORDER the duals were played in (non-district, then the district double
-    round-robin, then the state tournament), and these lay that order on a spring
-    high-school calendar at three duals a week, so a ~26-dual card runs March to
-    mid-May and the state tournament follows it. Presentation only: nothing reads them
-    back, and no simulation decision has ever depended on one.
+    round-robin, then the state tournament and the Tournament of Champions after it),
+    and these lay that order on a spring high-school calendar at three duals a week, so
+    a ~26-dual card runs March to mid-May and the postseason follows it. Presentation
+    only: nothing reads them back, and no simulation decision has ever depended on one.
     """
+    import app.jhsaa as jh
     if not season_year:
         return ["" for _ in sched]
     open_day = _dt.date(season_year, 3, 1)
@@ -3582,8 +3583,8 @@ def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
     _DAY = (0, 2, 4)                                                  # Mon / Wed / Fri
     out, n, k, last = [], 0, 0, open_day
     for d in sched:
-        if d.get("phase") == "state":
-            day = last + _dt.timedelta(days=5 + 3 * k)                # the state fortnight
+        if d.get("phase") in jh.POSTSEASON:
+            day = last + _dt.timedelta(days=5 + 3 * k)                # the postseason run
             k += 1
         else:
             day = open_day + _dt.timedelta(days=_DAY[n % 3], weeks=n // 3)
@@ -3695,11 +3696,17 @@ def _jh_bye_card(name: str, seeds: dict, schools: dict) -> dict:
 def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
     """The Tournament of Champions bracket — its own event, not a classification's.
 
-    Five champions seeded on the TOSS Power Index rather than on classification, so a 4A
-    champion that rated above the 6A one is the higher seed. That is the whole reason the
-    event is worth playing, and it is why the seeds are read off the archive rather than
-    reconstructed from the group order. Renders on the SAME tree as every other bracket
-    in the app."""
+    One champion per classification, seeded on the TOSS Power Index rather than on
+    classification, so a 4A champion that rated above the 6A one is the higher seed.
+    That is the whole reason the event is worth playing, and it is why the seeds are
+    read off the archive rather than reconstructed from the group order.
+
+    Renders on the SAME tree as every other bracket in the app — which means handing
+    the template a `_bracket_canvas` result, not the raw columns. `brk_canvas` reads
+    `cv.width` / `cv.columns` / `cv.cards` / `cv.links`; give it a plain list and Jinja
+    resolves every one of them to Undefined, so the page draws a zero-size canvas with
+    no cards and no elbows and says nothing about it. That is what shipped: a toolbar,
+    a champion and a field list above an empty box."""
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
@@ -3721,9 +3728,25 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
         "field": [{**_jh_deco(schools, n, 26), "seed": seeds.get(n, i + 1),
                    "group": champ_of.get(n, "")}
                   for i, n in enumerate(toc.get("field") or ())],
-        "rounds": world.jhsaa_state_rounds(toc),
-        "cols": _jh_bracket_cols(toc, schools),
-        "champion": _jh_deco(schools, toc["champion"], 64) if toc.get("champion") else None,
+        "field_n": len(toc.get("field") or ()),
+        # Every round, decorated the way the state bracket's are, so the page can show
+        # the draw round by round like every other bracket in the app instead of only
+        # naming the winner.
+        "rounds": [{**rd, "games": [
+            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+             "away_deco": _jh_deco(schools, gm["away"], 20),
+             "home_seed": seeds.get(gm["home"], 0), "away_seed": seeds.get(gm["away"], 0),
+             "home_group": champ_of.get(gm["home"], ""),
+             "away_group": champ_of.get(gm["away"], ""),
+             "win_points": max(gm["home_points"], gm["away_points"]),
+             "lose_points": min(gm["home_points"], gm["away_points"])}
+            for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(toc)],
+        # A six-team tree is a third the width of a 32-team state draw, so it gets the
+        # roomier cards the Preseason NIT's small sites use rather than the NCAA
+        # defaults — the geometry is a parameter precisely so this never becomes CSS.
+        "canvas": _bracket_canvas(_jh_bracket_cols(toc, schools),
+                                  card_w=232, card_h=60, gutter=56, leaf_gap=18),
+        **_jh_final_four(toc, schools),
         "champion_group": champ_of.get(toc.get("champion"), ""),
     }
 
@@ -3926,6 +3949,53 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
+                        year: int | None = None) -> dict:
+    """The whole classification, ranked — the association's own order, top to bottom.
+
+    `jhsaa_group_ranking` already returns EVERY program in the class; the hub simply
+    showed the first twelve of it beside the bracket, which is the right length for a
+    rail panel and the wrong one for the question "where does my 3-19 program actually
+    sit?". Same computation, no cut, on a page of its own — the college league's
+    rankings surface, and the one oregontennis.org publishes.
+
+    The index is read back off the archive, never recomputed, so this ranking and the
+    seeds drawn from it cannot disagree (`world.jhsaa_group_ranking`)."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    if not arc:
+        return {"ready": False, "gender": g, "year": yr, "years": years,
+                "group": grp, "groups": list(jh.GROUPS), "scope": scope}
+    schools = _jh_schools(g)
+    br = (arc.get("brackets") or {}).get(grp) or {}
+    seeds = _jh_seeds(br)
+    toc_field = set((arc.get("toc") or {}).get("field") or ())
+    rows = world.jhsaa_group_ranking(arc, grp)
+    return {
+        "ready": True, "gender": g, "year": yr, "years": years,
+        "group": grp, "groups": list(jh.GROUPS), "scope": scope,
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
+        # `rated` says whether the order is the archived TOSS index or the pre-TOSS
+        # win-rate fallback, so the page can label the column it is actually sorting on
+        # instead of printing a blank where a number belongs.
+        "rated": all(r.get("pi") is not None for r in rows) if rows else False,
+        "qualified": sum(1 for r in rows if seeds.get(r["school"])),
+        "rows": [{**_jh_deco(schools, r["school"], 24), **r,
+                  "seed": seeds.get(r["school"], 0),
+                  "state_finish": world.jhsaa_state_result(br, r["school"])["finish"],
+                  "toc": r["school"] in toc_field}
+                 for r in rows],
+    }
+
+
 def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                        year: int | None = None) -> dict:
     """The full state draw on its own surface — the same server-positioned tree the
@@ -3997,6 +4067,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}
     seeds = _jh_seeds(br)
+    # The TOC is its own draw with its own seeding — a 4A champion can be the No. 2
+    # seed there while carrying the No. 1 seed in its classification — so a TOC dual's
+    # opponent seed has to come off the TOC field, never off the state bracket's.
+    toc_seeds = _jh_seeds((arc or {}).get("toc") or {})
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
     honor_pids = {}
@@ -4028,11 +4102,16 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state_rank": (season or {}).get("state_rank", 0),
         "state_seed": seeds.get(school, 0),
         "state_finish": (season or {}).get("state_finish", ""),
+        "made_toc": (season or {}).get("made_toc", False),
+        "toc_seed": (season or {}).get("toc_seed", 0),
+        "toc_finish": (season or {}).get("toc_finish", ""),
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
-                      "kind": ("STATE" if d["phase"] == "state"
+                      "kind": ("TOC" if d["phase"] == "toc"
+                               else "STATE" if d["phase"] == "state"
                                else "DIST" if d["district"] else "NON-DIST"),
                       "opp_deco": _jh_deco(schools, d["opp"], 22),
-                      "opp_seed": seeds.get(d["opp"], 0) if d["phase"] == "state" else 0}
+                      "opp_seed": (toc_seeds if d["phase"] == "toc" else seeds)
+                      .get(d["opp"], 0) if d["phase"] in jh.POSTSEASON else 0}
                      for i, d in enumerate(sched)],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),

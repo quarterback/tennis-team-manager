@@ -121,7 +121,7 @@
 
     <div class="bl-panel jh-mod">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Rankings</span>
-        <span class="bl-panel-meta">TOSS Power Index</span></div>
+        <a class="bl-panel-meta" href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">all {{ view.rank_by|length }} →</a></div>
       <div class="bl-panel-body">
         {% for r in view.top %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">

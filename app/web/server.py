@@ -39,7 +39,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
 from .state import preseason_view as preseason_view_data
 from .state import (jhsaa_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
-                    jhsaa_player_view)
+                    jhsaa_rankings_view, jhsaa_player_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2007,6 +2007,15 @@ def create_app() -> Flask:
         gender, label, u, g, group, year = _jh_scope_args()
         return render_template("jhsaa_toc.html", active="High School",
                                view=jhsaa_toc_view(DEFAULT_SEED, g, year), u=u)
+
+    @app.route("/jhsaa/rankings")
+    def jhsaa_rankings():
+        """A whole classification, ranked on TOSS — the hub's rail panel showed the
+        first twelve of a list that already runs to every program in the class."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_rankings_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_rankings.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/districts")
     def jhsaa_districts():

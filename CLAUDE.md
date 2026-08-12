@@ -511,6 +511,30 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   byed into the final. `_jh_bracket_cols` materialises each bye as an explicit
   pass-through card (`_jh_bye_card`), making it 3→2→1 — a shape the halving rule already
   draws right. Feed the helper the real shape; don't teach it special cases.
+  - **‼️ `brk_canvas` takes a `_bracket_canvas` RESULT, never the column list that goes
+    INTO it.** It dereferences `cv.width` / `cv.columns` / `cv.cards` / `cv.links`, and
+    Jinja resolves a missing attribute on a list to Undefined and prints nothing — so the
+    TOC page shipped as a toolbar and a champion above a zero-size empty box, with no
+    error, no log line and correct columns sitting one function call away. A template is
+    the one place here where the wrong TYPE renders a page instead of raising: anything a
+    template dereferences by attribute must be checked by RENDERING it. Same family:
+    `jh_round_tabs(rounds, u, gender, id='jhrd', pin=none)` — the fourth positional is the
+    DOM id, and passing `scope.pin` there silently un-keys the round list from its script.
+- **‼️ THE TOURNAMENT OF CHAMPIONS IS ITS OWN EVENT, with its own PHASE** (`jhsaa.
+  POSTSEASON = ("state", "toc")`). It borrows the state event's 1S/4D shape and its strict
+  best-nine lineup, but `run_toc` plays `phase="toc"`, because the phase is the ONLY thing
+  that tells the two apart once they are rows in `world_jhsaa_dual`: written as `"state"`
+  its duals landed on a program's state-tournament record and "did they reach the TOC?"
+  had no answer to read. A phase is the archive's identity for an event, not a format
+  selector. Both are excluded from TOSS (`rating_duals`). `world.jhsaa_toc_result` reuses
+  the state draw's arithmetic with its OWN labels — `_finish_label` bands 5-8 as
+  "Quarterfinalist" and a six-team meta-event has no quarterfinal. The finish rides on the
+  ledger row, the totals, the honours panel and a GOLD `jh-tag toc` on the schedule (never
+  the state event's green — the TOC is the rung above it).
+- **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
+  `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
+  class; the hub shows the first twelve of it beside the bracket and links to the rest.
+  Same archived index, no second computation.
 - **A cross-link carries `scope.pin`, never `scope.year`.** `pin` is the year ONLY while
   browsing an archived season (None on the latest), so drilling from the 2027 hub into a
   program shows 2027's roster/schedule/record/finish, while links taken on the live
@@ -581,6 +605,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   A blue-blood small school SHOULD beat an average big one — that is the talent model's
   thesis, not a bug. What must survive is the class ladder INSIDE each tag.
   Pinned by `tests/test_jhsaa_archetypes.py`.
+- **‼️ THE LINEUP LADDER IS SEEDED ON ABILITY AND MOVED BY RESULTS** (`jhsaa.
+  ladder_score` / `_order`) — never ranked on a win COUNT. It sorted `(-wins, -pct, -ovr,
+  -str)` for a release, which is a ratchet, not a ladder: a win total measures
+  OPPORTUNITY, so dressing earns wins, wins earn the next start, and a player who dropped
+  his opening duals — or who was tenth in week one — could never climb back past
+  team-mates whose only edge was having been picked first. Ability sat third and was
+  unreachable. It also ranked 5-15 above 4-0, and doubles credits BOTH partners, so a
+  rotation player banked wins faster than a number one drawing the toughest opponent.
+  Measured: a top-four player finished outside the nine on **55 of 400 rosters**, 21 under
+  seven matches all year (the report was a 51-OVR senior on six matches beside a 28-OVR
+  team-mate on twenty-seven). Now `ovr + LADDER_SWING × (pct − ½) × n/(n + LADDER_PRIOR)`
+  — a perfect record is worth ±7 OVR weighted by evidence, so **a player who has not
+  played sits at his SEED, not at the bottom**, and a 1-2 opening week cannot outrank a
+  season. The bench ROTATION (`_ROTATE_ONE`/`_ROTATE_TWO`) is the variation the owner
+  asked for and was never the bug — it must move the ninth seat around the BEST nine.
+  Pinned by `tests/test_jhsaa_lineup.py`.
+- **An empty-state route test cannot see a page.** `tests/test_jhsaa_routes.py` renders
+  every JHSAA surface with nothing archived and stayed green through four faults that only
+  exist once there is data. `tests/test_jhsaa_toc.py` runs a REAL season (two districts per
+  classification via a `load_schools` patch, ~10s a gender), archives it through
+  `run_jhsaa`, and asserts on the HTML. Add data-bearing coverage there, not another
+  empty-state route.
 - **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
