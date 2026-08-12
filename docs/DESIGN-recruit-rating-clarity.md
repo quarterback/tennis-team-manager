@@ -295,10 +295,20 @@ below it as `NATL #—`. It was always circular — a second view of the same ra
 formatted as a grade instead of a position — which is exactly the kind of thing this
 whole pass is removing.
 
-**Open, symmetric question:** TennisEye's card has the identical pattern today — a
-big `5★` glyph, star icons, *and* a text tier (`Blue Chip`) for one fact. If stars
-suffice for the board card, the same logic likely drops TennisEye to stars + tier
-label too (no big glyph), for consistency. Not yet confirmed.
+**Symmetric question, resolved by default:** TennisEye's card has the identical
+pattern today — a big `5★` glyph, star icons, *and* a text tier (`Blue Chip`) for one
+fact. Applying the owner's own rule consistently, TennisEye drops to stars + tier
+label too (no big glyph) by default — easy to override if a results-based number
+feels like it earns its keep where a fogged one didn't.
+
+## Next: build, then AAR
+
+Owner has signaled this should convert to an AAR once it's actually built, matching
+the house pattern everywhere else in `docs/` (`DESIGN-*.md` = explored, not built;
+`AAR-*.md` = shipped, with a `## Changes` / `## Files` section). This doc stays as
+the pre-build record; the AAR that follows should supersede the "Where this landed"
+summary at the top with what actually shipped, and can drop the revision-by-revision
+history below it to a "Notes for the next agent" style pointer back here if useful.
 
 ## Sources
 
