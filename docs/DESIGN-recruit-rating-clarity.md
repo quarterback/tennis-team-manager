@@ -143,11 +143,45 @@ more than they currently do in the *public* signal (today, results only drive
 TennisEye — a side rating nothing else reads — while the AI's actual signing math
 already blends results in via `perceived_caliber`).
 
-## Not yet decided
+## Decision (same session, continued)
 
-Which of A–D (or a variant), letters vs. numbers, how many public panels survive, and
-the results-vs-eye weighting. The owner is deciding this personally — this doc is the
-reference for that decision, not a recommendation.
+Converged past the A–D menu above onto a concrete shape — closest to A/C's spirit, but
+split by *role* rather than by weighting:
+
+- **OVR stays** — card shell, position, "national board" framing, star tier, and the
+  NATL/region/points-rank cells are all unchanged — but the grade it displays stops
+  being `scouting_report("service")` (ceiling + noise) and becomes **current ability +
+  results, lightly fogged**. This is the in-universe, imperfect, *public* verdict: what
+  a scout believes about her today, allowed to be a little wrong, but never decoupled
+  from what she's actually shown. The rank-based cells (`recruit_rank`,
+  `state_rankings`, `points_rankings`) are untouched — this changes the grade's input,
+  not any ranking list.
+- **Composite is cut.** It was `recruit_grade()`'s own `rating` reformatted as a
+  decimal — a second card for one number. Gone.
+- **The Scouting panel loses its fog rows** — "Shared service," "Your department," and
+  likely "4-year projection" (see open item below) were the same two random ceiling
+  guesses as the old Composite card, one level down. **TEST stays** (real, unfogged,
+  gates D4 admissions). **JHSAA high-school results stay** (a real record, not a
+  rating).
+- **TennisEye's role flips from "a second public rating" to "the truth panel."** Its
+  rank/star/tier computation is untouched (results-based, same pyramid,
+  `tenniseye_rankings()`) — results were always real, never fogged, so branding this
+  card "the truth" needed no fog removed, only reframing. What changes is its grid:
+  **junior points ("mean nothing to me") is replaced by `ceiling_overall()`** — a
+  straight swap, still three cells (TE RANK / CEILING / STR). This becomes the one
+  deliberate, legible home for the hidden ceiling — not leaked unmarked in the hero
+  next to two fogged guesses at itself.
+
+## Still open (owner deciding)
+
+1. The hero banner currently repeats `ceiling` in its sub-line. Now that TennisEye is
+   ceiling's deliberate home, does the hero drop it (one home only), or keep it as an
+   above-the-fold glance?
+2. `4-year projection` (`project(4)` — ground truth, no fog) loses its home once
+   Composite and most of the Scouting panel go. Cut entirely, added as a fourth
+   TennisEye cell, or placed somewhere else?
+3. OVR's visual format (0–100 number + stars + rank-cell row) — confirmed staying as
+   today, or does the earlier letter-grade (A–F) idea replace it?
 
 ## Sources
 
