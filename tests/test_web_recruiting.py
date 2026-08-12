@@ -40,7 +40,7 @@ def test_recruit_profile_and_404(client):
     pid = national_rankings(get_recruits("male", ACTIVE_GY))[0].pid
     r = client.get(f"/recruit/{pid}?u=D1-men")
     assert r.status_code == 200
-    assert b"Scouting" in r.data and b"projection" in r.data
+    assert b"TennisEye" in r.data and b"Academics" in r.data
     assert client.get("/recruit/NOPE?u=D1-men").status_code == 404
 
 

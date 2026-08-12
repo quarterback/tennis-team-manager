@@ -89,6 +89,21 @@ MATURITY_MIN, MATURITY_MAX = 0.45, 0.95
 STR_MIN, STR_MAX = 31.0, 57.0
 ACADEMIC_MIN, ACADEMIC_MAX = 59, 99
 
+# The PUBLIC board/AI-facing signal (docs/DESIGN-recruit-rating-clarity.md,
+# 2026-08-12): a light, honest-ish fog over TODAY (current ability + results),
+# not over the invisible ceiling. Replaces scouting_report() as what the
+# recruiting board displays and what recruiting.talent_caliber feeds the AI's
+# perceived_caliber, so a recruit whose current level and results both read as
+# ordinary can never randomly land a top grade the way a ceiling-fogged read
+# could. scouting_report() itself is untouched — this is a second, separate read.
+TODAY_RESULTS_W = 0.4                      # how far results can move the read
+                                            # beyond current ability alone — up
+                                            # from 0% pre-redesign, per owner:
+                                            # "performance should dictate more"
+TODAY_FOG_MIN, TODAY_FOG_MAX = 4.0, 10.0   # far lighter than FOG_MIN/FOG_MAX —
+                                            # an honest read of TODAY should
+                                            # rarely be wildly off
+
 # Staggered development: a league doesn't develop all at once. Each player develops
 # inside a window of `STAGGER_BLOCK_FRAC` of the season's ticks, phase-shifted by a
 # stable per-player key (senate-style staggered terms). By the final tick everyone
@@ -373,6 +388,35 @@ class Prospect:
     def scouting_report(self, source: str) -> int:
         rng = random.Random(f"{self.consensus_seed}:{source}")
         blurred = self.ceiling_overall() + rng.uniform(-self.fog, self.fog)
+        return int(_clamp(round(blurred), GRADE_MIN, GRADE_MAX))
+
+    # ---- the public board read: current ability + results, TRUTH-anchored ----
+    def today_grade(self) -> float:
+        """Current ability blended with demonstrated junior-circuit results, both
+        real, both on the 20-80 grade scale — the honest 'how good are they right
+        now' read, as opposed to ceiling_overall()'s 'how good could they become'.
+        Results pull the read by up to TODAY_RESULTS_W, scaled by how much junior
+        evidence actually exists (junior_str_reliability) — a thin or absent
+        résumé is judged on current ability alone, same reliability-gating idea as
+        recruiting.perceived_caliber."""
+        cur = self.current_overall()
+        rel = float(self.junior_str_reliability or 0.0)
+        if not self.junior_str or rel <= 0:
+            return float(cur)
+        results_grade = GRADE_MIN + (self.junior_str - STR_MIN) / (STR_MAX - STR_MIN) * (GRADE_MAX - GRADE_MIN)
+        results_grade = _clamp(results_grade, GRADE_MIN, GRADE_MAX)
+        w = TODAY_RESULTS_W * min(1.0, rel)
+        return (1 - w) * cur + w * results_grade
+
+    def scouted_read(self, source: str) -> int:
+        """The ONE public, fogged signal the recruiting board displays and every
+        program's AI actually recruits on (juniors._recruiting_score,
+        recruiting.talent_caliber both call this) — today_grade() blurred by a
+        light, per-recruit-fixed offset, deterministic per `source` so it's
+        stable across page loads. See docs/DESIGN-recruit-rating-clarity.md."""
+        fog = random.Random(f"{self.consensus_seed}:todayfog").uniform(TODAY_FOG_MIN, TODAY_FOG_MAX)
+        rng = random.Random(f"{self.consensus_seed}:today:{source}")
+        blurred = self.today_grade() + rng.uniform(-fog, fog)
         return int(_clamp(round(blurred), GRADE_MIN, GRADE_MAX))
 
     # ---- public prospect signal: a star rating off the VISIBLE current level ----

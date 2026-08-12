@@ -35,10 +35,10 @@
         <span class="rc-hero-tier">{{ p.recruit_tier or 'Unrated' }}</span>
       </div>
     </div>
-    <div class="rc-hero-side" title="OVR — static talent rating (20–80). STR is the match-based junior-circuit results rating.">
-      <div class="rc-hero-str-k">OVR</div>
+    <div class="rc-hero-side" title="CUR — current ability (20–80), true. POT — hidden ceiling (20–80), true, owner-only. STR — junior-circuit results rating.">
+      <div class="rc-hero-str-k">CUR</div>
       <div class="rc-hero-str">{{ p.current_overall() }}</div>
-      <div class="rc-hero-str-sub">ceiling {{ p.ceiling_overall() }}{% if view.junior_str %} · STR {{ "%.1f"|format(view.junior_str) }}{% endif %}</div>
+      <div class="rc-hero-str-sub">POT {{ p.ceiling_overall() }}{% if view.junior_str %} · STR {{ "%.1f"|format(view.junior_str) }}{% endif %}</div>
     </div>
   </div>
   {% if p.committed %}
@@ -53,7 +53,7 @@
   {% endif %}
 </div>
 
-{# ============ Rating cards (dual: proprietary + composite) ============ #}
+{# ============ Rating cards: the board's opinion + the results truth ============ #}
 <div class="rc-ratings">
   <div class="rc-ratecard primary">
     <div class="rc-rate-head">
@@ -61,7 +61,6 @@
       <span class="rc-rate-info">national board</span>
     </div>
     <div class="rc-rate-body">
-      <span class="rc-rate-grade">{{ view.rating }}</span>
       <span class="rc-rate-stars">{{ stars(p.recruit_stars) }}
         <span class="rc-rate-tier">{{ p.recruit_tier or 'Unrated' }}</span></span>
     </div>
@@ -69,24 +68,8 @@
       <div class="rc-rankcell"><div class="k">NATL</div><div class="v">#{{ view.national_rank }}</div></div>
       <div class="rc-rankcell" title="{{ view.region_label }}"><div class="k">{{ reg_key }}</div>
         <div class="v{{ '' if view.region_rank else ' muted' }}">{% if view.region_rank %}#{{ view.region_rank }}{% else %}—{% endif %}</div></div>
-      <div class="rc-rankcell"><div class="k">POINTS</div>
+      <div class="rc-rankcell"><div class="k">POINTS RANK</div>
         <div class="v{{ '' if view.points_rank else ' muted' }}">{% if view.points_rank %}<a href="{{ url_for('junior_rankings', u=u, grad_year=grad_year) }}">#{{ view.points_rank }}</a>{% else %}—{% endif %}</div></div>
-    </div>
-  </div>
-
-  <div class="rc-ratecard">
-    <div class="rc-rate-head">
-      <span class="rc-rate-svc">COMPOSITE</span>
-      <span class="rc-rate-info">of {{ view.class_size }} in class</span>
-    </div>
-    <div class="rc-rate-body">
-      <span class="rc-rate-grade composite">{{ "%.4f"|format(view.composite) }}</span>
-      <span class="rc-rate-stars">{{ stars(p.recruit_stars) }}</span>
-    </div>
-    <div class="rc-rankrow">
-      <div class="rc-rankcell" title="Current ability — OVERALL, 20–80"><div class="k">CURRENT</div><div class="v">{{ view.service }}</div></div>
-      <div class="rc-rankcell" title="Scouted depth/potential — OVERALL"><div class="k">DEPTH</div><div class="v">{{ view.dept }}</div></div>
-      <div class="rc-rankcell" title="4-year projection — OVERALL"><div class="k">4-YR</div><div class="v">{{ view.projection }}</div></div>
     </div>
   </div>
 
@@ -96,14 +79,13 @@
       <span class="rc-rate-info">results based</span>
     </div>
     <div class="rc-rate-body">
-      <span class="rc-rate-grade te">{% if p.tenniseye_stars %}{{ p.tenniseye_stars }}★{% else %}–{% endif %}</span>
-      <span class="rc-rate-stars">{{ stars(p.tenniseye_stars, 'te') }}
-        <span class="rc-rate-tier">{{ p.tenniseye_tier or 'Unrated' }}</span></span>
+      <span class="rc-rate-grade te">{{ view.te_grade }}</span>
+      <span class="rc-rate-tier">{{ p.tenniseye_tier or 'Unrated' }}</span>
     </div>
     <div class="rc-rankrow">
       <div class="rc-rankcell"><div class="k">TE RANK</div>
         <div class="v{{ '' if p.tenniseye_rank else ' muted' }}">{% if p.tenniseye_rank %}#{{ p.tenniseye_rank }}{% else %}—{% endif %}</div></div>
-      <div class="rc-rankcell"><div class="k">POINTS</div><div class="v">{{ "{:,}".format(p.junior_points) }}</div></div>
+      <div class="rc-rankcell"><div class="k">POT</div><div class="v">{{ p.ceiling_overall() }}</div></div>
       <div class="rc-rankcell"><div class="k">STR</div>
         <div class="v">{{ "%.1f"|format(p.junior_str) if p.junior_str else '—' }}</div></div>
     </div>
@@ -305,17 +287,16 @@
     </div>
 
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Scouting</span>
+      {% if view.sat %}
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Academics</span>
         </div>
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
-            <tr><td>Shared service (consensus)</td><td class="w">{{ view.service }}</td></tr>
-            <tr><td>Your department</td><td class="w">{{ view.dept }}</td></tr>
-            <tr><td>4-year projection</td><td class="w">{{ view.projection }}</td></tr>
-            {% if view.sat %}<tr title="Admissions test score on the 800–1600 scale (academics only, never affects match play). D4 programs gate recruiting on a minimum."><td>TEST</td><td class="w">{{ view.sat }}</td></tr>{% endif %}
+            <tr title="Admissions test score on the 800–1600 scale (academics only, never affects match play). D4 programs gate recruiting on a minimum."><td>TEST</td><td class="w">{{ view.sat }}</td></tr>
           </tbody></table>
         </div>
       </div>
+      {% endif %}
 
       {% if p.ranking_history %}
       {% set rh0 = p.ranking_history[0] %}
