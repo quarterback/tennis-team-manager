@@ -122,16 +122,62 @@ def test_the_toc_stays_out_of_the_toss_rating(archived):
                     and d["home_points"] + d["away_points"] == 5)
 
 
-def test_a_toc_run_does_not_inflate_the_state_record(archived):
-    """"Post" is the state tournament the program was seeded into. Folding the TOC in
-    made a champion's state run read one or two duals longer than it was."""
+def test_a_toc_run_lands_on_the_season_record(archived):
+    """‼️ There is no separate postseason record. The NCAA and the NFHS both carry the
+    postseason inside the season total, so `record` has to cover EVERY dual a program
+    played — and the TOC is the last thing played, by the six programs whose record
+    matters most. It used to be snapshotted inside the loop that ran each state draw,
+    which cannot have seen a TOC that needs every group's champion, so those six
+    archived their final duals on the schedule and left them off the record."""
+    w = archived["world"]
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    try:
+        for school in archived["arc"]["toc"]["field"]:
+            row = wd.jhsaa_school_history(w["id"], "girls", school)["seasons"][0]
+            n = conn.execute("SELECT COUNT(*) c FROM world_jhsaa_dual WHERE world_id=?"
+                             " AND year=? AND gender='girls' AND school=?",
+                             (w["id"], w["year"], school)).fetchone()["c"]
+            assert row["wins"] + row["losses"] == n, (school, row["record"], n)
+            assert row["made_toc"]
+    finally:
+        conn.close()
+
+
+def test_every_archived_record_covers_every_dual_played(archived):
+    """The same rule over the whole association, not just the six: a record is the
+    record. Before the fix 131 of 137 programs balanced and the six that did not were
+    exactly the TOC field, which is the shape a sampled check would have missed."""
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    w, off = archived["world"], []
+    try:
+        played = {r["school"]: r["n"] for r in conn.execute(
+            "SELECT school, COUNT(*) n FROM world_jhsaa_dual WHERE world_id=? AND"
+            " year=? AND gender='girls' GROUP BY school", (w["id"], w["year"]))}
+    finally:
+        conn.close()
+    for grp, dists in (archived["arc"]["standings"] or {}).items():
+        for rows in dists.values():
+            for r in rows:
+                got = sum(int(x) for x in r["record"].split("-"))
+                if got != played.get(r["school"], 0):
+                    off.append((r["school"], r["record"], played.get(r["school"])))
+    assert not off, off[:5]
+
+
+def test_no_program_publishes_a_postseason_record(archived):
+    """The tile the owner read 27-4 and 6-1 off and added together. A postseason leaves
+    a FINISH behind, not a second record — the record already contains it."""
     w, champ = archived["world"], archived["arc"]["toc"]["champion"]
-    row = wd.jhsaa_school_history(w["id"], "girls", champ)["seasons"][0]
-    assert row["made_toc"] and row["toc_champion"]
-    assert row["toc_wins"] >= 1 and row["toc_record"] != "0-0"
-    assert row["pwins"] + row["plosses"] < row["toc_wins"] + row["toc_losses"] + 12
-    # The state finish is the CLASSIFICATION title, unchanged by what came after it.
-    assert row["champion"] and row["state_finish"] == "Champion"
+    hist = wd.jhsaa_school_history(w["id"], "girls", champ)
+    for key in ("post_record", "pwins", "plosses", "toc_wins", "toc_losses"):
+        assert key not in hist["seasons"][0], key
+        assert key not in hist["totals"], key
+    assert hist["seasons"][0]["toc_finish"] == "TOC Champion"
+    html = archived["client"].get(
+        f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+    assert ">Post<" not in html
 
 
 def test_a_program_that_missed_the_toc_carries_nothing(archived):
@@ -140,7 +186,6 @@ def test_a_program_that_missed_the_toc_carries_nothing(archived):
                    if s.name not in archived["arc"]["toc"]["field"])
     row = wd.jhsaa_school_history(w["id"], "girls", outside)["seasons"][0]
     assert not row["made_toc"] and row["toc_finish"] == ""
-    assert row["toc_wins"] == row["toc_losses"] == 0
 
 
 # --- the pages -------------------------------------------------------------------

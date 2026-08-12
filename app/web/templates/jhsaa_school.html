@@ -50,9 +50,11 @@
   <div class="jh-metric"><span class="k">District</span>
     <span class="v">{{ view.district_record }}</span>
     <span class="s">{{ view.district }}</span></div>
+  {# A finish, not a second record: `view.record` above already contains the state
+     duals and the TOC ones, the way every level of the sport counts a season. #}
   <div class="jh-metric"><span class="k">Postseason</span>
-    <span class="v">{{ view.season.post_record if view.season else '0-0' }}</span>
-    <span class="s">{{ view.state_finish or 'did not qualify' }}</span></div>
+    <span class="v sm">{{ view.toc_finish or view.state_finish or '—' }}</span>
+    <span class="s">{% if view.state_finish %}{{ view.group }} state{% if view.state_seed %} · seed {{ view.state_seed }}{% endif %}{% else %}did not qualify{% endif %}</span></div>
   <div class="jh-metric"><span class="k">Last title</span>
     <span class="v {{ 'sm' if not t.last_title }}">{{ t.last_title.season_year if t.last_title else '—' }}</span>
     <span class="s">{{ t.state_titles }} all-time</span></div>
@@ -189,12 +191,9 @@
             <span class="s">{{ t.state_finals }} final{{ '' if t.state_finals == 1 else 's' }} · {{ t.state_semis }} semi{{ '' if t.state_semis == 1 else 's' }}</span></div>
           <div class="jh-metric"><span class="k">District titles</span><span class="v">{{ t.district_titles }}</span>
             <span class="s">of {{ t.seasons }}</span></div>
-          <div class="jh-metric"><span class="k">Postseason</span><span class="v">{{ t.post_wins }}–{{ t.post_losses }}</span>
-            <span class="s">state duals</span></div>
           <div class="jh-metric"><span class="k">Tournament of Champions</span>
             <span class="v">{{ t.toc_titles }}</span>
-            <span class="s">{{ t.toc_appearances }} field{{ '' if t.toc_appearances == 1 else 's' }} ·
-              {{ t.toc_wins }}–{{ t.toc_losses }}{% if t.toc_finals %} · {{ t.toc_finals }} final{{ '' if t.toc_finals == 1 else 's' }}{% endif %}</span></div>
+            <span class="s">{{ t.toc_appearances }} appearance{{ '' if t.toc_appearances == 1 else 's' }}{% if t.toc_finals %} · {{ t.toc_finals }} final{{ '' if t.toc_finals == 1 else 's' }}{% endif %}</span></div>
           <div class="jh-metric"><span class="k">Courts</span><span class="v sm">{{ t.courts_won }}–{{ t.courts_lost }}</span>
             <span class="s">individual lines</span></div>
           <div class="jh-metric"><span class="k">Best season</span>
@@ -229,9 +228,10 @@
     {% if view.history.seasons %}
     <table class="jh-ledger nowrap">
       <tr>
-        <th style="width:66px">Season</th><th style="width:46px">Class</th><th style="width:66px">Record</th>
-        <th style="width:66px">District</th><th style="width:62px">Place</th><th style="width:64px">Post</th>
-        <th style="width:48px">Seed</th><th style="width:130px">State finish</th>
+        <th style="width:66px">Season</th><th style="width:46px">Class</th>
+        <th style="width:66px" title="The full season, postseason included">Record</th>
+        <th style="width:66px">District</th><th style="width:62px">Place</th>
+        <th style="width:48px">Seed</th><th style="width:150px">State finish</th>
         <th style="width:48px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
       </tr>
       {% for s in view.history.seasons %}
@@ -241,7 +241,6 @@
         <td><b>{{ s.record }}</b></td>
         <td>{{ s.district_record or '—' }}</td>
         <td>{{ s.place or '—' }}{% if s.district_title %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>
-        <td>{{ s.post_record }}</td>
         <td>{{ s.seed or '—' }}</td>
         <td class="fin">{% if s.champion %}<span class="jh-chip gold">{{ s.group }} CHAMPION</span>
           {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
