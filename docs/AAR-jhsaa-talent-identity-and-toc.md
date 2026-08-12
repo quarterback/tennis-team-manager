@@ -121,6 +121,60 @@ The first archived running has the boys' 4A champion seeded No. 2 and winning it
 girls' 4A champion seeded No. 2 behind a 7A. Which is the entire point of the event, and
 would have been impossible three commits earlier.
 
+## 6. A dice roll had already voted on the owner's list
+
+The archetype list arrived — 78 programs. Thirty-eight resolved against
+`data/jhsaa/schools.json`; I reported the other forty back as near-misses and "nothing
+close", with a tidy table of suggested alternatives.
+
+Every one of the forty existed. `scripts/import_jhsaa.py` decides which of Jefferson's
+840 schools sponsor tennis with a **seeded coin flip per school** against a
+per-classification rate, and the owner's nominations had lost that flip. The file I was
+checking against was not a list of Jefferson's schools; it was a list of the ones a
+random number generator had let in. prep-network was cloned in the same working tree the
+whole time.
+
+> When a human's data disagrees with your file, establish which one is authoritative
+> BEFORE reporting theirs as wrong. I had a filtered artifact and treated it as the
+> territory — and the filter was one I had written.
+
+The fix is a rule, not a list: **a school the owner names sponsors tennis.**
+`always_sponsor()` forces named schools in for both genders, sourced from the archetype
+seed file plus an explicit extras list, matched accent- and punctuation-insensitively
+(Bahía Leal and San Borondón differed from the owner's spelling by accents alone). The
+roll is still drawn for every school either way, so unforced sponsorship is byte-identical
+and reproducible.
+
+The archetypes themselves are two layers, as specified: `data/jhsaa/archetypes.json` ships
+the seed list as school data, and the override table layers on top. That distinguishes
+three intentions a single "clear" cannot — promote, demote a seeded program ("none"), or
+drop the override and revert to the file.
+
+## 7. Splitting 3A-1A, and getting the cutline backwards
+
+The old 3A-1A group held the widest enrollment spread in the association — medians of
+1,043 / 385 / 199 — so a 1,370-student school and a 108-student one played for the same
+trophy. Six championships now.
+
+The split alone left 2A-1A with 18 programs and an 8-team field: 44% of the class making
+state. The owner's fix was more programs rather than a smaller field, and then more again
+— 2A and 1A sponsor at 0.78 and 0.62, rates no real state would post, because a huge
+ragged small-school classification is the point of having one. 18 → 151 girls / 136 boys.
+
+Then I sized its bracket at 24 and called it the least selective class in the
+association. It was the **most**: 13 districts × 1 automatic bid left eleven at-large
+places for 138 programs — a 21% cutline against 24-32% everywhere else, and I had the
+comparison inverted in the direction that made my own number look fine.
+
+> A field size is not a number, it is a ratio, and the ratio has two terms. I had checked
+> the field against the other fields and never against the pool it selects from.
+
+Six groups, and the depth ladder survives the split intact (#9 mean current OVR: 31.9 →
+22.1 boys, 29.7 → 21.4 girls, monotonic). Girls 3A needed one nudge — at 39.5 its middle
+of the lineup edged 4A's — which `test_the_bulk_still_indexes_downward` caught rather
+than a person. The Tournament of Champions is six champions now: two play-ins into a
+four-team semifinal, a cleaner bracket than five.
+
 ## Files
 
 * `app/jhsaa.py` — `_TALENT`, `ARCHETYPES`, `_program_mod`, `upstarts`, `_doubles_lift`,
