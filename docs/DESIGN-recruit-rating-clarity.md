@@ -1,7 +1,7 @@
 # DESIGN — Recruit rating clarity: what the fog should hide (and what it shouldn't)
 
-**Status:** exploration only — nothing in this doc is built, and no direction has been chosen.
-This is a saveable reference for a design conversation in progress, not a spec.
+**Status: BUILT.** See `docs/AAR-recruit-rating-clarity.md` for what actually
+shipped (condensed) — this doc is kept as the full reasoning trail behind it.
 **Date:** 2026-08-12
 **Scope:** `/recruit/<pid>` profile page and the recruiting-rating pipeline —
 `app/development.py`, `app/juniors.py`, `app/recruiting.py`, `app/world.py`,

@@ -167,11 +167,12 @@ def _mini_territory_market():
     }
 
 
-def _pr_recruit(talent, i):
+def _pr_recruit(talent, i, maturity_range=None):
     from app.development import generate_prospect
     import random
     p = generate_prospect(random.Random(500 + i), "Ana Rivera", "US",
-                          gender="women", talent=talent, pid=f"prtest{i}")
+                          gender="women", talent=talent, pid=f"prtest{i}",
+                          maturity_range=maturity_range)
     p.hometown = "San Juan, PR"
     p.region = "PR"
     p.domestic = True
@@ -179,11 +180,11 @@ def _pr_recruit(talent, i):
     return p
 
 
-def _pr_local_rate(market, talent, n=40):
+def _pr_local_rate(market, talent, n=40, maturity_range=None):
     home = 0
     for i in range(n):
         avail = {s: 5 for s in market["traits"]}
-        if _pick_school(_pr_recruit(talent, i), market, dict(avail),
+        if _pick_school(_pr_recruit(talent, i, maturity_range), market, dict(avail),
                         jitter_salt="sign") == "Puerto Rico-Bayamón":
             home += 1
     return home / n
@@ -191,9 +192,16 @@ def _pr_local_rate(market, talent, n=40):
 
 def test_local_territory_pull_binds_locals_but_not_elites():
     """The home pull materially raises how often a mid/low Puerto Rico recruit signs
-    the PR program, versus the same market with no pull — while a genuine elite still
-    escapes to the mainland power (the low-budget D2 can't fund a blue-chip, so the
-    budget floor gates it regardless of the pull)."""
+    the PR program, versus the same market with no pull — while a recruit who
+    currently READS elite still escapes to the mainland power (the low-budget D2
+    can't fund a blue-chip, so the budget floor gates it regardless of the pull).
+
+    "Reads elite" means high CURRENT ability, not just a high hidden ceiling: since
+    the redesign (docs/DESIGN-recruit-rating-clarity.md), the board/AI perceive
+    today's level, never the invisible ceiling, so a raw high-talent/low-maturity
+    recruit is exactly the obscured-gem case this test used to (wrongly) expect to
+    escape home — give her a high maturity_range so her current ability actually
+    sits near her talent ceiling, the scenario the budget floor is meant to gate."""
     market = _mini_territory_market()
     no_pull = dict(market, local_terr={}, local_by_abbr={})    # same board, pull off
 
@@ -203,6 +211,7 @@ def test_local_territory_pull_binds_locals_but_not_elites():
         f"home pull should lift local signing (with={mid_with}, without={mid_without})")
     assert mid_with >= 0.5, f"a mid PR recruit signs home a solid share (got {mid_with})"
 
-    # An elite still escapes to the power even with the pull on.
-    elite_home = _pr_local_rate(market, 78.0)
+    # A recruit who currently reads elite still escapes to the power even with the
+    # pull on.
+    elite_home = _pr_local_rate(market, 78.0, maturity_range=(0.90, 0.95))
     assert elite_home < 0.35, f"elite PR recruits escape to the mainland (got {elite_home})"
