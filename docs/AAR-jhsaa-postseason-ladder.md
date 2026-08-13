@@ -19,7 +19,8 @@ here is cascading any one of their numbers through the others:
 enters. The shape is flexible per classification (byes and play-in rounds as
 needed); the only fixed requirement is the output: exactly 32 teams for Wards.
 48 entrants → 16 byes, 16 matches, 32 out. 57 → 7 byes, 25 matches, 32 out.
-83 (7A boys, measured) → two rounds, 83 → 42 → 32.
+83 (7A boys, measured) → two rounds, 83 → 42 → 32. A multi-round Sectionals
+opens with AREAS — the last round is always the one named Sectionals.
 
 **2. The pre-state ladder — fixed for every classification and both genders:**
 

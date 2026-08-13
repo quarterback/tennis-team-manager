@@ -1240,6 +1240,10 @@ def run_sectional(entrants: list[TeamSeason], target: int, *, seed: int
     16 byes, 16 matches, 32 out; 57 → 7 byes, 25 matches, 32 out. This is the only
     stage where byes exist.
 
+    When the stage needs more than one round, the rounds before the last are
+    called AREAS (owner rule) — the final round is always the one named
+    Sectionals.
+
     Returns (archive_dict, survivors): the JSON-safe `{field, rounds, survivors,
     round_names}` for the archive, and the live `TeamSeason` list for Wards."""
     rng = random.Random(seed)
@@ -1250,9 +1254,10 @@ def run_sectional(entrants: list[TeamSeason], target: int, *, seed: int
         byes = size % 2 if size // 2 >= target else 2 * target - size
         cur, games = _elim_round(cur, byes, rng=rng, phase="sectional")
         rounds.append(games)
+    names = ["Areas"] * (len(rounds) - 1) + ["Sectionals"] if rounds else []
     return ({"field": [t.school.name for t in entrants], "rounds": rounds,
             "survivors": [t.school.name for t in cur],
-            "round_names": ["Sectionals"] * len(rounds)}, cur)
+            "round_names": names}, cur)
 
 
 _STAGE_NAMES = {"ward": "Wards", "regional": "Regionals", "zonal": "Zonals"}

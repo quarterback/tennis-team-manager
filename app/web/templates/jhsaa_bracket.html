@@ -63,7 +63,7 @@
         <div class="bd">
           {% for rd in st.rounds %}
           {% if st.rounds|length > 1 %}
-          <div class="jh-modsplit" style="padding-left:0">Round {{ loop.index }}</div>
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }}</div>
           {% endif %}
           <div class="jh-cols2">
             {% for col in rd.games|batch((rd.games|length / 2)|round(0, 'ceil')|int, none) %}

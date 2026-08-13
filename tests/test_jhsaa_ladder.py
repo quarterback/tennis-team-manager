@@ -140,7 +140,12 @@ def test_prestate_dicts_carry_their_own_round_names(archived):
         sec, ward, pre, state, protected, wc = _stages(archived, g)
         assert ward["round_names"] == ["Wards"]
         assert pre["round_names"] == ["Regionals", "Zonals"]
-        assert all(n == "Sectionals" for n in sec["round_names"])
+        # A multi-round Sectionals opens with Areas; the last round is always the
+        # one named Sectionals (owner rule).
+        names = sec["round_names"]
+        if names:
+            assert names[-1] == "Sectionals"
+            assert all(n == "Areas" for n in names[:-1])
         rounds = wd.jhsaa_state_rounds(pre)
         assert [r["name"] for r in rounds] == ["Regionals", "Zonals"]
 

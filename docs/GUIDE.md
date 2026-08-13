@@ -673,7 +673,7 @@ start of the offseason ladder — before the recruit board needs its output.
   (postseason results don't feed back into the seeding that produced them).
 - **State qualification is a ladder**, the same shape for every classification
   and both genders: **Sectionals** (every non-protected team; byes/play-ins as
-  needed; cuts to 32) → **Wards** (32→16) → **Regionals** (the 16 Ward
+  needed; cuts to 32 — a multi-round Sectionals opens with **Areas**) → **Wards** (32→16) → **Regionals** (the 16 Ward
   champions + 16 protected entrants — district champions first, then best
   cutoff TOSS) → **Zonals** (16→8). The eight Zonal champions qualify for
   State automatically; TOSS is then **recomputed over all pre-state results**
