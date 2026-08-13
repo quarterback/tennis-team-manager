@@ -33,7 +33,42 @@ TUNE = {
     "skill_slope": 1.5,         # how hard the overall gap bites, per game
     "tb_slope": 1.13,           # tiebreaks a touch more volatile than a set
     "context_slope": 0.18,      # venue / wind / heat / crowd comfort
+    # HINGED gap response (owner rule 2027-08 — JHSAA upset recalibration). A
+    # single logistic slope cannot keep near-equals a coin flip AND make a huge
+    # underdog rare — the 2026 flattening (2.2 -> 1.5) accepted that trade for
+    # college, where the talent band is dense and big gaps are rare. High school
+    # (and juniors) routinely play across gaps 3-5x the college spread, and there
+    # the flat slope let a materially weaker team win far too often — measured on
+    # the JHSAA postseason (1S/4D): 12.7% upsets at a 0.10-0.15 overall gap, with
+    # 4-1 / 5-0 underdog wins, and back-to-back bracket runs by bottom-quartile
+    # teams. So the gap the model plays on is hinged: below `gap_knee` (a margin
+    # of error — ~3.6 OVR points, ~1 UTR) NOTHING changes and near-equal matches
+    # stay as upset-prone as ever; beyond it every extra point of real gap counts
+    # (1 + gap_accel) times, so upset odds fall away sharply as the mismatch
+    # grows and a huge underdog's win is rare, usually narrow, and compounding
+    # rounds of it vanishingly so. One transform, shared by hold, tiebreak and
+    # the doubles fast model (engine.doubles), so all three curves steepen
+    # together. Calibrated with scripts/jhsaa_upset_calibration.py; see
+    # docs/AAR-jhsaa-upset-variance-recalibration.md before retuning.
+    # Measured on the JHSAA state format (underdog dual-win % by per-line-avg
+    # gap, before -> after): 0.05-0.075 28% -> 18%, 0.075-0.10 20% -> 8%,
+    # 0.10-0.15 13% -> 4.6% (upset wins almost all 3-2), 0.15-0.20 5% -> 0.3%,
+    # 0.20+ 1% -> <0.15%; the 0-0.05 bands keep 30-40%. 1.8 is the gentlest
+    # accel that reaches that shape — sweep 1.6/1.8/2.2 moved the big-gap rows
+    # by under half a point, so resist "just a bit more".
+    "gap_knee": 0.06,           # overall-units of gap that stay "even match"
+    "gap_accel": 1.8,           # extra bite per unit of gap beyond the knee
 }
+
+
+def effective_gap(gap: float) -> float:
+    """The gap the fast models PLAY ON: real gap below the knee, accelerated
+    beyond it. Sign-symmetric and continuous; identity for |gap| <= knee."""
+    knee = TUNE["gap_knee"]
+    extra = abs(gap) - knee
+    if extra <= 0:
+        return gap
+    return gap + (extra if gap > 0 else -extra) * TUNE["gap_accel"]
 
 
 def _logistic(x: float) -> float:
@@ -51,13 +86,13 @@ def _context_edge(server: Player, returner: Player, context: MatchContext) -> fl
 def _hold_prob(server: Player, returner: Player, context: MatchContext) -> float:
     return _logistic(
         TUNE["hold_base_logit"]
-        + TUNE["skill_slope"] * (server.overall - returner.overall)
+        + TUNE["skill_slope"] * effective_gap(server.overall - returner.overall)
         + TUNE["context_slope"] * _context_edge(server, returner, context))
 
 
 def _tb_prob(p0: Player, p1: Player, context: MatchContext) -> float:
     return _logistic(
-        TUNE["tb_slope"] * (p0.overall - p1.overall)
+        TUNE["tb_slope"] * effective_gap(p0.overall - p1.overall)
         + TUNE["context_slope"] * _context_edge(p0, p1, context))
 
 

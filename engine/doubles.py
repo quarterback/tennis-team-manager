@@ -47,6 +47,7 @@ from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
     _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
+from .fast import effective_gap
 
 # Tunables for the doubles point model — talent shifts these distributions, it
 # does not script outcomes. Kept in one table so the model retunes without
@@ -537,13 +538,17 @@ def _result(state: _DState, teams, fidelity: str,
 # --- Fast (bulk) model -----------------------------------------------------
 
 def _fast_hold(state: _DState) -> float:
+    # The pair-rating gap is hinged exactly like the singles fast model's
+    # (engine.fast.effective_gap): near-equal pairs keep their volatility, a
+    # real mismatch bites super-linearly. One shared transform, so the singles
+    # and doubles curves of a dual steepen together.
     s, r = state.server, state.returner
-    gap = state.teams[s].rating - state.teams[r].rating
+    gap = effective_gap(state.teams[s].rating - state.teams[r].rating)
     return _logistic(TUNE["fast_hold_logit"] + TUNE["fast_skill_slope"] * gap)
 
 
 def _fast_tb(state: _DState, s0: int = 0) -> int:
-    gap = state.teams[0].rating - state.teams[1].rating
+    gap = effective_gap(state.teams[0].rating - state.teams[1].rating)
     return 0 if state.rng.random() < _logistic(TUNE["fast_tb_slope"] * gap) else 1
 
 
