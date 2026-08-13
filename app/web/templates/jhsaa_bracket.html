@@ -49,14 +49,19 @@
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhbrkrd', view.scope.pin) }}</div>
 
 <div class="jh-layout" style="margin-top:14px">
+  {% if view.prestate_rounds %}
+  {# The road to State — the pre-state ladder's duals, which the bracket tree above
+     does NOT draw (it only holds the 16-team State field). The State bracket's own
+     results are exactly what the tree shows, so they are deliberately not repeated
+     here as a list. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
-      <span class="bl-panel-meta">every dual in the draw</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">The road to State</span>
+      <span class="bl-panel-meta">Sectionals → Wards → Regionals → Zonals</span></div>
     <div class="bl-panel-body" style="padding:12px">
       <div class="jh-cols2">
-        {% for rd in view.rounds %}
+        {% for rd in view.prestate_rounds %}
         <div>
-          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} alive</div>
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} teams</div>
           {% for gm in rd.games %}
           <div class="jh-mgame">
             <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
@@ -76,6 +81,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
   <div class="bl-panel jh-mod">
     <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
