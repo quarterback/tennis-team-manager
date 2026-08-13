@@ -3539,8 +3539,15 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                "all_state": season["awards"][g].get("all_state", [])}
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+                # "brackets" is the byes-free ladder from Wards through the Final
+                # (`jhsaa.run_state`'s output); "sectionals" is the broad-access opening
+                # stage that feeds it (`jhsaa.run_sectional`) — two different shapes
+                # (one champion vs. many survivors), so two different keys rather than
+                # folding Sectionals' rounds into the same bracket dict. See
+                # `jhsaa_state_result` / `jhsaa_sectional_result` / `jhsaa_postseason_result`.
                 "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
-                # The Tournament of Champions — the five classification champions, one
+                "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
+                # The Tournament of Champions — the SIX classification champions, one
                 # winner. Archived beside the brackets it is drawn from, in the same
                 # shape, so it reads back through the same helpers.
                 "toc": season.get("toc") or {},
@@ -3630,11 +3637,31 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
 # per world-year × gender), so year N's numbers cannot move when year N+1 is played;
 # that is the whole persistence guarantee, and `tests/test_jhsaa_history.py` pins it.
 
+# The ladder's own stage names (owner rule, ladder expansion) for the rounds ABOVE the
+# 8-team State bracket, keyed by how many teams ENTER that round — Regionals and Zonals
+# are exact (the ladder always funnels through a round-of-32 and a round-of-16; see
+# `jhsaa.ladder_entry`), "Wards" covers anything bigger (64 for the classifications big
+# enough to have one at all; nothing bigger has occurred yet, but the name shouldn't
+# silently revert to "Round of N" if the association ever grows into one). Below 16 the
+# existing bands (Quarterfinalist/Semifinalist/Runner-up/Champion) already read right
+# and are untouched — those didn't change just because more rounds now lead into them.
+_LADDER_STAGE = {32: "Regionals", 16: "Zonals"}
+
+
+def _ladder_stage(alive: int) -> str | None:
+    if alive in _LADDER_STAGE:
+        return _LADDER_STAGE[alive]
+    if alive > 32:
+        return "Wards"
+    return None
+
+
 def _finish_label(alive: int) -> str:
     """A finish, named by how many teams were still in the draw. Banded rather than
-    keyed exactly, because a JHSAA draw is NOT a clean power of two: a 24-team field
-    pads to 32 with byes that collapse unevenly, so the rounds run 24 → 12 → 6 → 3 → 2
-    and a semifinal round can legitimately have three teams in it."""
+    keyed exactly below the Regionals cutline, because a non-power-of-two field (a
+    caller running one classification standalone, outside the normal ladder) pads
+    with byes that collapse unevenly, so a "semifinal" round can legitimately have
+    three teams in it."""
     if alive <= 0:
         return ""
     if alive == 1:
@@ -3645,6 +3672,9 @@ def _finish_label(alive: int) -> str:
         return "Semifinalist"
     if alive <= 8:
         return "Quarterfinalist"
+    stage = _ladder_stage(alive)
+    if stage:
+        return f"{stage} (eliminated)"
     return f"Round of {alive}"
 
 
@@ -3656,7 +3686,7 @@ def _round_label(alive: int) -> str:
         return "Semifinals"
     if alive <= 8:
         return "Quarterfinals"
-    return f"Round of {alive}"
+    return _ladder_stage(alive) or f"Round of {alive}"
 
 
 def jhsaa_state_rounds(bracket: dict) -> list[dict]:
@@ -3664,8 +3694,13 @@ def jhsaa_state_rounds(bracket: dict) -> list[dict]:
     still alive going into it.
 
     `alive` is counted DOWN from the field — every game eliminates exactly one team —
-    rather than assumed to halve. The draw pads to the next power of two and the byes
-    land unevenly, so a 24-team field really does play rounds of 24, 12, 6, 3 and 2."""
+    rather than assumed to halve. In normal play (`jhsaa.run_state` fed the
+    recombined, `ladder_entry`-sized field) that field is already a clean power of
+    two and every round halves it exactly: Wards/Regionals/Zonals/Quarterfinals/
+    Semifinals/Championship. A caller running `run_state` on a non-power-of-two field
+    directly (standalone, outside the ladder) still pads to the next size up and the
+    byes land unevenly, so THAT bracket can show odd alive-counts like 3 in a
+    semifinal round — this function doesn't assume either shape, just counts down."""
     br = bracket or {}
     alive = len(br.get("field") or ())
     out = []
@@ -3676,12 +3711,15 @@ def jhsaa_state_rounds(bracket: dict) -> list[dict]:
 
 
 def jhsaa_state_result(bracket: dict, school: str) -> dict:
-    """How far `school` went in one archived state tournament.
+    """How far `school` went on the byes-free ladder (Wards through the Final) — a
+    program eliminated in Sectionals never reaches this field at all; see
+    `jhsaa_sectional_result` / `jhsaa_postseason_result` for that half.
 
     `place` is the number of teams STILL ALIVE when it was eliminated — 1 champion,
     2 runner-up, 3-4 semifinalist — so "reached the semis" is `place <= 4`, a number,
     never a string comparison against a label. `seed` is the program's position in the
-    field that was actually drawn (`jhsaa.qualifiers` order), read back off the
+    field that was actually drawn (`jhsaa.sectional_field` + `jhsaa.run_sectional`
+    order, recombined and reseeded before `jhsaa.run_state`), read back off the
     persisted bracket rather than recomputed from a live ranking — the same rule that
     keeps the NCAA bracket's labels from drifting."""
     br = bracket or {}
@@ -3701,6 +3739,46 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     out.update(made_state=True, seed=field.index(school) + 1, place=place,
                finish=_finish_label(place), champion=champion)
     return out
+
+
+def jhsaa_sectional_result(sectional: dict, school: str) -> dict:
+    """Whether `school` played Sectionals, and whether it survived into the ladder
+    proper. Only meaningful for a program NOT found in the combined state field's
+    `field` list — a protected district auto-bid never appears in `sectional`'s
+    `field` at all (it skipped Sectionals entirely), so this correctly reports
+    `played_sectional=False` for it rather than a false "eliminated in Sectionals".
+
+    Unlike the ladder, Sectionals doesn't band a finish by round — `run_sectional`
+    can be one round or several depending on classification size, and the archived
+    stage is meant to read as ONE stage either way (the association calls the whole
+    thing "Sectionals", not "Sectionals round 2")."""
+    sec = sectional or {}
+    field = list(sec.get("field") or ())
+    if school not in field:
+        return {"played_sectional": False, "advanced": False, "finish": ""}
+    advanced = school in (sec.get("survivors") or ())
+    return {"played_sectional": True, "advanced": advanced,
+            "finish": "Advanced to Wards" if advanced else "Sectionals"}
+
+
+def jhsaa_postseason_result(sectional: dict, state: dict, school: str) -> dict:
+    """The furthest `school`'s postseason run reached, across BOTH archived halves of
+    a group's ladder (`season["groups"][group]["sectional"]` and `["state"]`) — the
+    single call a program page or season-ledger row wants instead of juggling the two
+    directly. A program that made the state field (Wards or later) always takes
+    priority; `jhsaa_state_result` already handles "wasn't in this field at all" by
+    returning `made_state=False`, so falling through to the Sectionals result is safe
+    even for a school that didn't play JHSAA tennis that season at all (both halves
+    report empty and the caller sees an empty finish, not a crash)."""
+    st = jhsaa_state_result(state, school)
+    if st["made_state"]:
+        # A PROTECTED team (a district auto bid) never entered `sectional["field"]`
+        # at all — it skipped straight to Wards — so "did this team play Sectionals"
+        # still has to check membership, not just assume `made_state` implies it.
+        played = school in ((sectional or {}).get("field") or ())
+        return {**st, "played_sectional": played}
+    sec = jhsaa_sectional_result(sectional, school)
+    return {"made_state": False, "seed": 0, "place": 0, "champion": False, **sec}
 
 
 def _toc_finish_label(alive: int) -> str:
@@ -3805,7 +3883,14 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
                            district_title=r.get("place", 0) == 1)
     if not row["group"]:
         return None
-    st = jhsaa_state_result((arc.get("brackets") or {}).get(row["group"]) or {}, school)
+    # `jhsaa_postseason_result` falls back to the Sectionals half (see there) when a
+    # program didn't make the state field at all, so `state_finish` on the ledger row
+    # says "Sectionals" for a team that didn't survive it, not a blank — the same
+    # promise `toc_finish` already makes for a team that missed the Tournament of
+    # Champions.
+    st = jhsaa_postseason_result((arc.get("sectionals") or {}).get(row["group"]) or {},
+                                  (arc.get("brackets") or {}).get(row["group"]) or {},
+                                  school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a

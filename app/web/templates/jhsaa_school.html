@@ -93,14 +93,15 @@
              a blank band over a block of duals. #}
           <tr class="seg"><td colspan="6">{{ {'NON-DIST': 'Non-district',
                 'DIST': view.district ~ ' — district play',
-                'STATE': view.group ~ ' state tournament',
+                'SECTIONAL': view.group ~ ' Sectionals',
+                'STATE': view.group ~ ' postseason ladder (Wards → State)',
                 'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
           {% endif %}
           {# The dual ROW is the toggle for its line scores. An always-visible
              "line scores" row under every dual doubled the length of a 35-match
              schedule and made it unscannable, which is the thing this page was
              redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') }}{{ ' has-lines' if d.lines }}"
+          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC', 'SECTIONAL') }}{{ ' has-lines' if d.lines }}"
               {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
@@ -111,7 +112,7 @@
             </td>
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind == 'STATE' else 'dist' if d.kind == 'DIST' }}">{{ d.kind }}</span>
+            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind in ('STATE', 'SECTIONAL') else 'dist' if d.kind == 'DIST' }}">{{ d.kind }}</span>
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}
