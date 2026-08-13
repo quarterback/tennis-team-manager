@@ -752,6 +752,56 @@ def _arrange_state(nine: list) -> list:
     return out
 
 
+# --- regular-season lineup PHILOSOPHY (owner rule 2027-08) --------------------
+#
+# League play is free — "regular season can do what it wants" — and because the
+# postseason format is so doubles-forward (1S/4D), programs genuinely differ in
+# how they spend their talent during the league year. Two shapes exist:
+#
+#   singles-first    S1-S5 = #1-#5, doubles the tail — the classic card, and the
+#                    only shape the generator used to produce.
+#   doubles-forward  S1 = #1 · D1 = two of #2-#4 (S2 the third) · D2 = any two
+#                    of #5-#9 · the remaining three at S3-S5 in ladder order —
+#                    the owner's permutation table. S3 lands in #5-#7 by
+#                    construction (D2 removes two of the five).
+#
+# The philosophy is a durable PROGRAM trait (hashed off the school key, like a
+# coaching tradition — not per-dual dice, so a program's card is recognisable
+# all season), with a small per-dual flip so a coach occasionally tries the
+# other shape. Doubles-forward pairs are picked on real `doubles_rating`, so a
+# doubles-school archetype's D1 is its actual best pairing.
+_DOUBLES_FORWARD_SHARE = 0.5   # share of programs whose league card leans doubles
+_PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries the other shape
+
+
+def _doubles_forward(school_key: str) -> bool:
+    h = int(hashlib.blake2s(f"jh-philosophy|{school_key}".encode(),
+                            digest_size=4).hexdigest(), 16)
+    return (h % 1000) / 1000.0 < _DOUBLES_FORWARD_SHARE
+
+
+def _arrange_regular(nine: list) -> list:
+    """The doubles-forward 5S/2D card, in SLOT ORDER
+    [S1, S2, S3, S4, S5, D1a, D1b, D2a, D2b] — same contract as
+    `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
+    back identically. Short sides play the plain order."""
+    if len(nine) < 9:
+        return nine
+    from engine.doubles import doubles_rating
+    eng = {p.pid: p.engine_player() for p in nine}
+
+    def best_pair(pool):
+        pairs = [(pool[i], pool[j]) for i in range(len(pool))
+                 for j in range(i + 1, len(pool))]
+        return max(pairs, key=lambda pr: doubles_rating(eng[pr[0].pid],
+                                                        eng[pr[1].pid]))
+    d1 = best_pair(nine[1:4])                       # two of #2-#4
+    s2 = next(p for p in nine[1:4] if p not in d1)  # the third plays S2
+    d2 = best_pair(nine[4:9])                       # any two of #5-#9
+    rest = [p for p in nine[4:9] if p not in d2]    # S3-S5, ladder order
+    return [nine[0], s2] + rest + list(d1) + list(d2)
+
+
 def _postseason_nine(ts: TeamSeason) -> list:
     """The frozen Order of Ability's top nine, freezing it on first use — the
     association establishes it before a program's first postseason dual and it
@@ -778,6 +828,11 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
             pick = bench[rng.randrange(len(bench))]
             if pick is not nine[-1]:
                 nine[-2] = pick
+    # League policy: the program's philosophy decides the card's shape (the
+    # per-dual flip draw runs either way, so the rng stream stays aligned).
+    flip = rng.random() < _PHILOSOPHY_FLIP
+    if _doubles_forward(ts.school.key) != flip:
+        return _arrange_regular(nine)
     return nine
 
 

@@ -208,3 +208,32 @@ def test_the_regular_season_still_runs_on_the_live_ladder():
     ts = _real_ts(5)
     jh._lineup(ts, "regular", _random.Random(4))
     assert not ts.order_of_ability
+
+
+# --- regular-season philosophy (owner rule 2027-08) ----------------------------------
+#
+# League play is free: some programs run the classic singles-first card, others the
+# doubles-forward shape (S1=#1, D1 = two of #2-#4, S2 the third, D2 = any two of
+# #5-#9, remainder at S3-S5 in ladder order). The philosophy is a durable program
+# trait; the postseason Order of Ability is untouched by it.
+
+def test_both_regular_season_philosophies_exist():
+    keys = [s.key for s in jh.load_schools("boys")]
+    leans = {jh._doubles_forward(k) for k in keys}
+    assert leans == {True, False}
+
+
+def test_the_doubles_forward_card_matches_the_owner_permutation_table():
+    ts = next(_real_ts(i) for i in range(60)
+              if jh._doubles_forward(_real_ts(i).school.key))
+    order = jh._order(ts)[:9]
+    rank = {p.pid: k + 1 for k, p in enumerate(order)}
+    lu = jh._arrange_regular(order)
+    assert {p.pid for p in lu} == {p.pid for p in order}
+    assert rank[lu[0].pid] == 1                               # S1 = top player
+    assert rank[lu[1].pid] in (2, 3, 4)                       # S2 from 2-4
+    assert {rank[lu[5].pid], rank[lu[6].pid]} <= {2, 3, 4}    # D1 = two of 2-4
+    assert rank[lu[2].pid] in (5, 6, 7)                       # S3 from 5-7
+    assert {rank[lu[7].pid], rank[lu[8].pid]} <= {5, 6, 7, 8, 9}   # D2 from 5-9
+    s345 = [rank[lu[k].pid] for k in (2, 3, 4)]
+    assert s345 == sorted(s345)                               # S3-S5 in ladder order

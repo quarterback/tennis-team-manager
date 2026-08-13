@@ -644,8 +644,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   of the top three plays singles and pairs #4-#9 for chemistry (`_arrange_state`, in
   SLOT order so `_squad`/`_slot_players` keep one indexing rule). The rank sum is not
   a sort key and `doubles_rating` is not the boundary — both halves are load-bearing.
-  The REGULAR season stays league policy (live ladder + rotation, no freeze). Pinned
-  by `tests/test_jhsaa_lineup.py`; see `docs/AAR-jhsaa-order-of-ability.md`.
+  The REGULAR season stays league policy (live ladder + rotation, no freeze), and it
+  is VARIED by design: each program has a durable lineup PHILOSOPHY
+  (`_doubles_forward`, hashed off the school key) — roughly half play the classic
+  singles-first card, half the owner's doubles-forward permutation (S1=#1, D1 = two
+  of #2-#4, S2 the third, D2 = any two of #5-#9, rest at S3-S5 in order) via
+  `_arrange_regular`, with a 0.15 per-dual flip. Do not "simplify" the league back to
+  one shape. Pinned by `tests/test_jhsaa_lineup.py`; see
+  `docs/AAR-jhsaa-order-of-ability.md`.
 - **An empty-state route test cannot see a page.** `tests/test_jhsaa_routes.py` renders
   every JHSAA surface with nothing archived and stayed green through four faults that only
   exist once there is data. `tests/test_jhsaa_toc.py` runs a REAL season (two districts per

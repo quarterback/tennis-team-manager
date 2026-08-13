@@ -80,6 +80,47 @@ anti-stacking constraint. What actually violated the NFHS model:
   match what actually takes the court. The upset-by-gap tables re-measured in
   the target shape (0.10+ gaps ~1%, 3-2 only; near-equal bands unchanged).
 
+## Follow-up (same session): regular-season lineup philosophy
+
+The owner then clarified the OTHER half of the rule — "regular season can do
+what it wants" — and specified the permutation space a league card may take,
+precisely because the postseason format is so doubles-forward that programs
+have a real reason to spend top talent on doubles reps during the league year:
+
+    S1  top player          D1  anywhere #2-#4
+    S2  the rest of #2-#4   D2  anywhere #5-#9
+    S3  #5-#7 · S4/S5 the remainder in ladder order
+
+The owner believed the generator already produced this variability. **It did
+not** — the regular-season card was ALWAYS strict singles-first (S1-S5 =
+#1-#5, D1 = #6+#7, D2 = #8+#9); no program ever played its #2-#4 talent in
+doubles during league play. Implemented as a PROGRAM PHILOSOPHY
+(`_doubles_forward` — hashed off the school key, a durable coaching-tradition
+trait like the archetypes, never per-dual dice, so a program's card is
+recognisable all season):
+
+- **singles-first** (~half the association): the classic card, unchanged.
+- **doubles-forward** (~half): `_arrange_regular` — S1 = #1; D1 = the best
+  `doubles_rating` pair of #2-#4, the third plays S2; D2 = the best pair of
+  #5-#9; the remaining three play S3-S5 in ladder order. S3 lands in #5-#7 by
+  construction (D2 removes two of the five), so the owner's whole table holds
+  without a single positional special case.
+- A small per-dual flip (`_PHILOSOPHY_FLIP` 0.15) lets a coach occasionally
+  try the other shape; the flip draw runs on the existing per-dual lineup rng
+  either way, so the rng stream (and the bench rotation behind it) stays
+  aligned whichever branch is taken.
+- Same slot-order contract as `_arrange_state`, so `_squad`/`_slot_players`
+  keep the one indexing rule; the bench rotation still swaps who DRESSES
+  before the arrangement decides where they stand.
+- The postseason Order of Ability is untouched by philosophy — championship
+  legality binds identically for both kinds of program.
+
+Note for TOSS readers: a doubles-forward program's D1 carries flight weight
+1.00 (equal to S1) with its #2/#3 playing there, so its FQI reads its real
+strength — the flight table needed no change. Pinned by
+`tests/test_jhsaa_lineup.py` (both philosophies exist statewide; the
+doubles-forward card matches the permutation table exactly).
+
 ## Traps for later
 
 - **Do not "fix" the freeze by re-deriving the order per round** — that is the

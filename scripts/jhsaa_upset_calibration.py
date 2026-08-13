@@ -55,11 +55,15 @@ def eff(ts, phase: str) -> float:
     4/5 of the state format but only 2/7 of the regular one), so binning
     regular duals by state strength would group them by the wrong inputs."""
     f = jhsaa.dual_format(phase)
-    # The postseason fields the ARRANGED Order-of-Ability lineup (who actually
-    # stands on which line); the regular season is measured on the plain ladder.
-    lu = (jhsaa._arrange_state(jhsaa._postseason_nine(ts))
-          if phase in jhsaa.POSTSEASON
-          else jhsaa._order(ts)[:jhsaa.lineup_need(phase)])
+    # The postseason fields the ARRANGED Order-of-Ability lineup; the regular
+    # season follows the program's own philosophy (no rotation, no flip — the
+    # estimate wants the typical card, not one dual's variation).
+    if phase in jhsaa.POSTSEASON:
+        lu = jhsaa._arrange_state(jhsaa._postseason_nine(ts))
+    else:
+        lu = jhsaa._order(ts)[:jhsaa.lineup_need(phase)]
+        if jhsaa._doubles_forward(ts.school.key):
+            lu = jhsaa._arrange_regular(lu)
     sq = jhsaa._squad(ts, phase, lu)
     ss = [sq.singles[i].overall for i in range(f.n_singles)]
     ds = [doubles_rating(sq.doubles_players[2 * i], sq.doubles_players[2 * i + 1])
