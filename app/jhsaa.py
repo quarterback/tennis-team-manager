@@ -1240,6 +1240,10 @@ def run_sectional(entrants: list[TeamSeason], target: int, *, seed: int
     16 byes, 16 matches, 32 out; 57 → 7 byes, 25 matches, 32 out. This is the only
     stage where byes exist.
 
+    When the stage needs more than one round, the rounds before the last are
+    called AREAS (owner rule) — the final round is always the one named
+    Sectionals.
+
     Returns (archive_dict, survivors): the JSON-safe `{field, rounds, survivors,
     round_names}` for the archive, and the live `TeamSeason` list for Wards."""
     rng = random.Random(seed)
@@ -1250,9 +1254,17 @@ def run_sectional(entrants: list[TeamSeason], target: int, *, seed: int
         byes = size % 2 if size // 2 >= target else 2 * target - size
         cur, games = _elim_round(cur, byes, rng=rng, phase="sectional")
         rounds.append(games)
+    names = ["Areas"] * (len(rounds) - 1) + ["Sectionals"] if rounds else []
+    # Every dual is a numbered UNIT within its class and gender (owner rule) —
+    # "7A Boys Area 1", "Section 1" — restarting at 1 for each classification,
+    # never numbered across the state, so each one can be identified.
+    for i, games in enumerate(rounds):
+        prefix = "Area" if i < len(rounds) - 1 else "Section"
+        for j, gm in enumerate(games):
+            gm["unit"] = f"{prefix} {j + 1}"
     return ({"field": [t.school.name for t in entrants], "rounds": rounds,
             "survivors": [t.school.name for t in cur],
-            "round_names": ["Sectionals"] * len(rounds)}, cur)
+            "round_names": names}, cur)
 
 
 _STAGE_NAMES = {"ward": "Wards", "regional": "Regionals", "zonal": "Zonals"}
@@ -1284,9 +1296,14 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
                 continue
             res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
             win = a if res.winner == 0 else b
+            # The numbered UNIT within its class and gender (owner rule): Wards
+            # and Regionals count from 1, Zonals letter A, B, C…
+            n = len(games)
+            unit = (f"Zonal {chr(65 + n)}" if phase == "zonal"
+                    else f"{_STAGE_NAMES[phase][:-1]} {n + 1}")
             games.append({"home": a.school.name, "away": b.school.name,
                           "home_points": res.home_points, "away_points": res.away_points,
-                          "winner": win.school.name})
+                          "winner": win.school.name, "unit": unit})
             nxt.append(win)
         rounds.append(games)
         slots = nxt

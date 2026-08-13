@@ -140,9 +140,33 @@ def test_prestate_dicts_carry_their_own_round_names(archived):
         sec, ward, pre, state, protected, wc = _stages(archived, g)
         assert ward["round_names"] == ["Wards"]
         assert pre["round_names"] == ["Regionals", "Zonals"]
-        assert all(n == "Sectionals" for n in sec["round_names"])
+        # A multi-round Sectionals opens with Areas; the last round is always the
+        # one named Sectionals (owner rule).
+        names = sec["round_names"]
+        if names:
+            assert names[-1] == "Sectionals"
+            assert all(n == "Areas" for n in names[:-1])
         rounds = wd.jhsaa_state_rounds(pre)
         assert [r["name"] for r in rounds] == ["Regionals", "Zonals"]
+
+
+def test_every_prestate_dual_is_a_numbered_unit(archived):
+    """Owner rule: every pre-state dual is a numbered unit within its class and
+    gender — Area 1, Section 1, Ward 1, Regional 1, restarting at 1 per stage per
+    classification; Zonals letter A, B, C…"""
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        for i, games in enumerate(sec["rounds"]):
+            prefix = "Area" if i < len(sec["rounds"]) - 1 else "Section"
+            assert [gm["unit"] for gm in games] \
+                == [f"{prefix} {j + 1}" for j in range(len(games))]
+        for games in ward["rounds"]:
+            assert [gm["unit"] for gm in games] \
+                == [f"Ward {j + 1}" for j in range(len(games))]
+        assert [gm["unit"] for gm in pre["rounds"][0]] \
+            == [f"Regional {j + 1}" for j in range(len(pre["rounds"][0]))]
+        assert [gm["unit"] for gm in pre["rounds"][1]] \
+            == [f"Zonal {chr(65 + j)}" for j in range(len(pre["rounds"][1]))]
 
 
 # --- postseason results across every stage ------------------------------------------

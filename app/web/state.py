@@ -4021,17 +4021,29 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
              "away_seed": sseeds.get(gm["away"], 0)}
             for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(d)]
 
-    # The road to State: every pre-state dual, in the order the ladder played them.
-    # These are visible NOWHERE else — the bracket tree only draws the 16-team State
-    # field — while the State bracket's own results are exactly what the tree already
-    # shows, so the round list carries the pre-state stages instead. Seeds come off
-    # each stage's OWN field (a team's Sectional, Ward and Regionals seeds are three
-    # different numbers). Empty on archives from before the ladder existed.
-    prestate_rounds = []
-    for key in ("sectionals", "wards", "prestate"):
-        d = (arc.get(key) or {}).get(grp) or {}
-        if d.get("rounds"):
-            prestate_rounds += _deco_rounds(d, _jh_seeds(d))
+    # Road to State: one collapsed fold per pre-state stage, Zonals first (closest
+    # to State) down to Sectionals. These duals are visible NOWHERE else — the
+    # bracket tree only draws the 16-team State field — while the State bracket's
+    # own results are exactly what the tree already shows, so this section carries
+    # the pre-state stages instead of repeating them. Seeds come off each stage's
+    # OWN field (a team's Sectional, Ward and Regionals seeds are three different
+    # numbers). Empty on archives from before the ladder existed.
+    stages = []
+    pre = (arc.get("prestate") or {}).get(grp) or {}
+    if pre.get("rounds"):
+        for rd in reversed(_deco_rounds(pre, _jh_seeds(pre))):
+            stages.append({"name": rd["name"], "rounds": [rd]})
+    ward = (arc.get("wards") or {}).get(grp) or {}
+    if ward.get("rounds"):
+        stages.append({"name": "Wards", "rounds": _deco_rounds(ward, _jh_seeds(ward))})
+    sec = (arc.get("sectionals") or {}).get(grp) or {}
+    if sec.get("rounds"):
+        # Sectionals and Areas are separate folds — the last archived round is the
+        # one named Sectionals, anything before it is Areas (`jhsaa.run_sectional`).
+        deco = _deco_rounds(sec, _jh_seeds(sec))
+        stages.append({"name": "Sectionals", "rounds": deco[-1:]})
+        if len(deco) > 1:
+            stages.append({"name": "Areas", "rounds": deco[:-1]})
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
         "groups": list(jh.GROUPS),
@@ -4044,7 +4056,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
         "canvas": _bracket_canvas(_jh_bracket_cols(br, schools),
                                   card_w=206, card_h=56, gutter=44, leaf_gap=12),
         "rounds": _deco_rounds(br, seeds),
-        "prestate_rounds": prestate_rounds,
+        "stages": stages,
     }
 
 
