@@ -149,3 +149,62 @@ def test_the_bench_still_gets_matches(season):
             w, l = t.records.get(p.pid, [0, 0])
             dressed += (w + l) > 0
     assert dressed > 0
+
+
+# --- the ORDER OF ABILITY (owner rule 2027-08) — postseason anti-stacking ------------
+#
+# NFHS-model legality: before a program's first postseason dual its Order of Ability
+# is established from the ladder and FROZEN; the nine who dress are its top nine; S1
+# and D1 must consume ranks #1-#3; the remaining pairs are ordered on combined ladder
+# rank as the anti-stacking BOUNDARY, with the engine's real doubles ability deciding
+# only within PAIR_SUM_TOL. See docs/AAR-jhsaa-order-of-ability.md.
+
+import random as _random
+
+
+def _real_ts(i=0, gender="boys", year=2031):
+    # `i` wraps: the module-scoped `season` fixture above patches load_schools to a
+    # tenth-size association and tears down at module end, after these tests run.
+    pool = jh.load_schools(gender)
+    sc = pool[i % len(pool)]
+    return jh.TeamSeason(school=sc, roster=jh.build_roster(sc, year))
+
+
+def test_postseason_lineup_is_legal_under_the_order_of_ability():
+    for i in (0, 7, 40, 120, 300):
+        ts = _real_ts(i)
+        lu = jh._lineup(ts, "sectional", _random.Random(1))
+        oo = ts.order_of_ability
+        assert oo, "the Order of Ability freezes on first postseason use"
+        rank = {pid: k + 1 for k, pid in enumerate(oo)}
+        # the nine who dress are the frozen order's top nine
+        assert {p.pid for p in lu} == set(oo[:9])
+        # S1 + D1 consume ranks #1-#3; nobody top-three appears at D2-D4
+        assert {rank[p.pid] for p in lu[:3]} == {1, 2, 3}
+        assert all(rank[p.pid] > 3 for p in lu[3:])
+        # D2-D4 rank sums respect the anti-stacking boundary
+        sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (3, 5, 7)]
+        for hi, lo in zip(sums, sums[1:]):
+            assert hi <= lo + jh.PAIR_SUM_TOL, (i, sums)
+
+
+def test_the_order_of_ability_freezes_for_the_whole_postseason():
+    """A mid-bracket hot streak cannot re-rank the roster between rounds: the live
+    ladder would move, the frozen postseason lineup must not."""
+    ts = _real_ts(3)
+    first = [p.pid for p in jh._lineup(ts, "sectional", _random.Random(1))]
+    # swing two adjacent dressed players' records as hard as records can swing
+    ts.records[ts.order_of_ability[8]] = [30, 0]
+    ts.records[ts.order_of_ability[7]] = [0, 30]
+    live = [p.pid for p in jh._order(ts)]
+    assert live != ts.order_of_ability            # the live ladder DID move...
+    again = [p.pid for p in jh._lineup(ts, "zonal", _random.Random(2))]
+    assert again == first                          # ...and the lineup did not
+
+
+def test_the_regular_season_still_runs_on_the_live_ladder():
+    """League play is league policy: no freeze, rotation intact — the Order of
+    Ability binds championship competition only."""
+    ts = _real_ts(5)
+    jh._lineup(ts, "regular", _random.Random(4))
+    assert not ts.order_of_ability

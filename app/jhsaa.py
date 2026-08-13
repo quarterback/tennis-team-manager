@@ -431,6 +431,10 @@ class TeamSeason:
     # Every dual this team played, in order. Kept so a school's season can be read
     # match by match without replaying it — the college side's schedule view.
     schedule: list = field(default_factory=list)
+    # The Order of Ability (pids, best first) — established before the program's
+    # first postseason dual and FROZEN for the rest of the season. Empty until
+    # then; the regular season runs on the live ladder. See `_postseason_nine`.
+    order_of_ability: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -656,12 +660,118 @@ def _order(ts: TeamSeason) -> list:
                                  -p.str_value()))
 
 
+# --- the ORDER OF ABILITY (owner rule 2027-08, docs/AAR-jhsaa-order-of-ability.md) ---
+#
+# NFHS-style anti-stacking, the association's own hybrid of real state models
+# (North Carolina / Kentucky assessed-ability, West Alameda ladder arithmetic,
+# Texas round-to-round movement limits):
+#
+#   * The association does NOT tell leagues how to build a regular-season lineup —
+#     league play keeps the live ladder and the bench rotation. The Order of
+#     Ability becomes BINDING for JHSAA championship competition.
+#   * Before a program's first postseason dual its Order of Ability is
+#     ESTABLISHED from the ladder as it stands (ability seeded, season results
+#     stabilising it — `ladder_score`) and then FROZEN for the whole postseason:
+#     a mid-bracket hot streak cannot re-rank the roster between rounds (Texas's
+#     movement rule, taken to its simplest form).
+#   * The nine who dress are the frozen order's top nine, S1 and D1 must consume
+#     ranks #1-#3 (no top-three player may appear at D2-D4), and the remaining
+#     pairs are ordered on COMBINED LADDER RANK — the anti-stacking boundary.
+#   * Two-stage legality, deliberately: the rank sum is the BOUNDARY, not the
+#     final sporting judgment. Doubles ability is not singles rank (Iowa's
+#     point), so within `PAIR_SUM_TOL` of each other, pairs order on the
+#     engine's real `doubles_rating`; beyond it, ladder arithmetic wins no
+#     matter the chemistry. #5+#8 outplaying #4+#7 is a lineup; #2 hiding at D4
+#     is stacking.
+#
+# The coach USES the freedom the rule leaves: which of the top three plays
+# singles (the other two are D1), and how #4-#9 partner up, are chosen to
+# maximise the team the rule allows — so the postseason Flip is solved with the
+# roster, never by burying it.
+PAIR_SUM_TOL = 2            # rank-sum gap within which real doubles ability decides
+
+
+def _arrange_state(nine: list) -> list:
+    """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
+    [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
+    and `_slot_players` reads it back the same way, so this list IS the lineup.
+    Anything short of nine (a degraded side) plays the plain order."""
+    if len(nine) < 9:
+        return nine
+    from engine.doubles import doubles_rating
+    eng = {p.pid: p.engine_player() for p in nine}
+    rank = {p.pid: i + 1 for i, p in enumerate(nine)}          # frozen OoA rank
+
+    def pair_rating(a, b):
+        return doubles_rating(eng[a.pid], eng[b.pid])
+
+    # S1 + D1 consume ranks #1-#3: the coach picks which of the three plays
+    # singles by what it does for the two points those players cover.
+    top3, rest = nine[:3], nine[3:]
+    def cfg_score(i):
+        s = top3[i]
+        d = [p for j, p in enumerate(top3) if j != i]
+        return eng[s.pid].overall + pair_rating(d[0], d[1])
+    s_i = max(range(3), key=lambda i: (cfg_score(i), -i))      # tie: higher rank plays S1
+    s1 = top3[s_i]
+    d1 = [p for j, p in enumerate(top3) if j != s_i]
+
+    # D2-D4: every partition of #4-#9 into three pairs (15 of them), best total
+    # doubles ability wins; ties break toward ladder-natural pairing.
+    def partitions(pool):
+        if not pool:
+            yield []
+            return
+        a = pool[0]
+        for k in range(1, len(pool)):
+            b = pool[k]
+            for tail in partitions(pool[1:k] + pool[k + 1:]):
+                yield [(a, b)] + tail
+    def part_key(part):
+        return (-sum(pair_rating(a, b) for a, b in part),
+                [rank[a.pid] + rank[b.pid] for a, b in part])
+    pairs = min(partitions(rest), key=part_key)
+
+    # Order the pairs: real doubles ability first, then the anti-stacking
+    # boundary — a pair whose rank sum beats the one above it by more than
+    # PAIR_SUM_TOL moves up, chemistry or not.
+    pairs.sort(key=lambda pr: -pair_rating(*pr))
+    changed = True
+    while changed:
+        changed = False
+        for i in range(len(pairs) - 1):
+            hi, lo = pairs[i], pairs[i + 1]
+            if (rank[hi[0].pid] + rank[hi[1].pid]
+                    > rank[lo[0].pid] + rank[lo[1].pid] + PAIR_SUM_TOL):
+                pairs[i], pairs[i + 1] = lo, hi
+                changed = True
+
+    out = [s1] + list(d1)
+    for a, b in pairs:
+        out += [a, b]
+    return out
+
+
+def _postseason_nine(ts: TeamSeason) -> list:
+    """The frozen Order of Ability's top nine, freezing it on first use — the
+    association establishes it before a program's first postseason dual and it
+    binds until the season ends. Stored as pids on the TeamSeason (the archive
+    never sees it; lineups are recorded per dual as always)."""
+    if not ts.order_of_ability:
+        ts.order_of_ability = [p.pid for p in _order(ts)]
+    by_pid = {p.pid: p for p in ts.roster}
+    ranked = [by_pid[pid] for pid in ts.order_of_ability if pid in by_pid]
+    return ranked[:lineup_need("state")]
+
+
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
-    """The nine who dress for THIS dual."""
+    """The nine who dress for THIS dual, in slot order."""
+    if phase in POSTSEASON:                        # strict, frozen, arranged
+        return _arrange_state(_postseason_nine(ts))
     order = _order(ts)
     need = lineup_need(phase)
     nine, bench = order[:need], order[need:]
-    if phase not in POSTSEASON and bench:          # playoffs: strict best nine
+    if bench:
         if rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
         if len(bench) > 1 and rng.random() < _ROTATE_TWO:
