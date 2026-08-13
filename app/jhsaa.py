@@ -157,16 +157,23 @@ FIDELITY = "fast"
 AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
 
 
-def ladder_entry(n_teams: int) -> int:
-    """How big the byes-free ladder (Wards/Regionals onward) should be for a
-    classification with `n_teams` total programs: the largest power of two that
-    doesn't ask Sectionals to produce more survivors than it has entrants, floored
-    at 8 (the State bracket's own minimum shape) so the ladder always has at least
-    a Regionals-or-later stage. Computed from the real roster, not a hardcoded
-    per-classification table — the association's classifications have drifted in
-    size before (reclassification, ALWAYS_EXTRA growth) and will again."""
+def ladder_entry(group: str) -> int:
+    """How big the byes-free ladder (Wards/Regionals onward) is for `group` — SHARED
+    by both genders, the largest power of two that doesn't ask either gender's
+    Sectionals to produce more survivors than it has entrants. Real state
+    associations play the same bracket format for a classification's boys' and
+    girls' tournaments; they don't size one bigger than the other because that
+    gender happens to have a few more programs. So this is keyed on the group
+    alone and decided by the SMALLER gender's program count — the binding
+    constraint, since a chosen size only works if BOTH genders can reach it
+    (Sectionals can never be asked to produce more survivors than entrants).
+    Floored at 8 (the State bracket's own minimum shape), so the ladder always has
+    at least a Regionals-or-later stage. Computed from the real roster, not a
+    hardcoded per-classification table — the association's classifications have
+    drifted in size before (reclassification, ALWAYS_EXTRA growth) and will again."""
+    n = min(sum(1 for s in load_schools(g) if s.group == group) for g in GENDERS)
     size = 8
-    while size * 2 <= n_teams:
+    while size * 2 <= n:
         size *= 2
     return size
 
@@ -1735,8 +1742,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # combined, now-power-of-two field down to a champion. See `ladder_entry`,
         # `sectional_field`, `run_sectional` for exactly how the sizes are chosen.
         protected, unprotected = sectional_field(group, standings, power)
-        n_teams = len(protected) + len(unprotected)
-        entry = ladder_entry(n_teams)
+        entry = ladder_entry(group)
         target = max(0, entry - len(protected))
         sec_seed = seed + hash(group) % 9973
         sectionals[group], survivors = run_sectional(unprotected, target,

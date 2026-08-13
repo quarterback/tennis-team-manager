@@ -53,7 +53,8 @@ def archived(tmp_path_factory):
         wd.is_primed = lambda *a, **k: True
         wd.prime = lambda *a, **k: None
         yield {"db": db, "world": w,
-               "arc": wd.get_jhsaa(w["id"], w["year"], "girls")}
+               "arc": wd.get_jhsaa(w["id"], w["year"], "girls"),
+               "arc_boys": wd.get_jhsaa(w["id"], w["year"], "boys")}
     finally:
         jh.load_schools = real_load
         jh._season_cache.clear()
@@ -85,7 +86,19 @@ def test_the_state_field_is_always_a_power_of_two(archived):
     for g, sec, state in _groups(archived):
         n = len(state["field"])
         assert n & (n - 1) == 0, (g, n)
-        assert n == jh.ladder_entry(len(sec["field"]) + n - len(sec["survivors"]))
+        assert n == jh.ladder_entry(g)
+
+
+def test_boys_and_girls_play_the_same_bracket_format(archived):
+    """A real state association doesn't size its boys' 4A bracket differently from
+    its girls' 4A bracket just because one gender happens to have a few more
+    programs — the classification's format is ONE decision, not two. `ladder_entry`
+    is keyed on the group alone (not group+gender) for exactly this reason."""
+    girls_state = archived["arc"]["brackets"]
+    boys_state = archived["arc_boys"]["brackets"]
+    for g in jh.GROUPS:
+        assert len(girls_state[g]["field"]) == len(boys_state[g]["field"]) \
+            == jh.ladder_entry(g)
 
 
 # --- protection: skip Sectionals only, never more ---------------------------------
