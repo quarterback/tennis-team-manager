@@ -164,6 +164,7 @@ NAV_GROUPS = [
         {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
+        {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-sliders", "endpoint": "junior_setup",    "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "fa-solid fa-ruler-combined", "endpoint": "methodology",      "args": {}},
@@ -224,6 +225,7 @@ def _active_nav(req) -> str:
     if p.startswith("/gtt/draft"):        return "gtt_draft"
     if p.startswith("/gtt"):              return "gtt"
     if p.startswith("/methodology"):      return "methodology"
+    if p.startswith("/guide"):            return "guide"
     return ""
 
 
@@ -1656,6 +1658,17 @@ def create_app() -> Flask:
     @app.route("/methodology")
     def methodology():
         return render_template("methodology.html", active="Methodology")
+
+    @app.route("/guide")
+    def guide():
+        # The definitive, sectioned game manual — the same reference material as
+        # docs/GUIDE.md (which is the canonical source: point an LLM sidecar at
+        # that file for the full text plus the AAR changelog appendix). This page
+        # is the in-app, player-facing rendering of it; keep the two in sync when
+        # a system changes rather than letting one drift stale.
+        from .guide_data import APPENDIX_CATEGORIES
+        return render_template("guide.html", active="Guide",
+                               appendix_cats=APPENDIX_CATEGORIES)
 
     def _dual_pick(req):
         """Resolve (gender, home_div, away_div, home_schools, away_schools, home, away)
