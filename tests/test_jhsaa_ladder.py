@@ -150,6 +150,25 @@ def test_prestate_dicts_carry_their_own_round_names(archived):
         assert [r["name"] for r in rounds] == ["Regionals", "Zonals"]
 
 
+def test_every_prestate_dual_is_a_numbered_unit(archived):
+    """Owner rule: every pre-state dual is a numbered unit within its class and
+    gender — Area 1, Section 1, Ward 1, Regional 1, restarting at 1 per stage per
+    classification; Zonals letter A, B, C…"""
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        for i, games in enumerate(sec["rounds"]):
+            prefix = "Area" if i < len(sec["rounds"]) - 1 else "Section"
+            assert [gm["unit"] for gm in games] \
+                == [f"{prefix} {j + 1}" for j in range(len(games))]
+        for games in ward["rounds"]:
+            assert [gm["unit"] for gm in games] \
+                == [f"Ward {j + 1}" for j in range(len(games))]
+        assert [gm["unit"] for gm in pre["rounds"][0]] \
+            == [f"Regional {j + 1}" for j in range(len(pre["rounds"][0]))]
+        assert [gm["unit"] for gm in pre["rounds"][1]] \
+            == [f"Zonal {chr(65 + j)}" for j in range(len(pre["rounds"][1]))]
+
+
 # --- postseason results across every stage ------------------------------------------
 
 def test_finishes_name_the_stage_a_run_ended_at(archived):

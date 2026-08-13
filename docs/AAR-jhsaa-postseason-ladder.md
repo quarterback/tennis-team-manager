@@ -20,7 +20,11 @@ enters. The shape is flexible per classification (byes and play-in rounds as
 needed); the only fixed requirement is the output: exactly 32 teams for Wards.
 48 entrants → 16 byes, 16 matches, 32 out. 57 → 7 byes, 25 matches, 32 out.
 83 (7A boys, measured) → two rounds, 83 → 42 → 32. A multi-round Sectionals
-opens with AREAS — the last round is always the one named Sectionals.
+opens with AREAS — the last round is always the one named Sectionals. Every
+pre-state dual is a numbered UNIT within its class and gender — Area 1,
+Section 1, Ward 1, Regional 1, restarting at 1 per classification, Zonals
+lettered A–H — stamped on the archived game (`unit`), so each one can be
+identified. Pinned by `test_every_prestate_dual_is_a_numbered_unit`.
 
 **2. The pre-state ladder — fixed for every classification and both genders:**
 

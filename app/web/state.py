@@ -4033,10 +4033,17 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     if pre.get("rounds"):
         for rd in reversed(_deco_rounds(pre, _jh_seeds(pre))):
             stages.append({"name": rd["name"], "rounds": [rd]})
-    for key, name in (("wards", "Wards"), ("sectionals", "Sectionals")):
-        d = (arc.get(key) or {}).get(grp) or {}
-        if d.get("rounds"):
-            stages.append({"name": name, "rounds": _deco_rounds(d, _jh_seeds(d))})
+    ward = (arc.get("wards") or {}).get(grp) or {}
+    if ward.get("rounds"):
+        stages.append({"name": "Wards", "rounds": _deco_rounds(ward, _jh_seeds(ward))})
+    sec = (arc.get("sectionals") or {}).get(grp) or {}
+    if sec.get("rounds"):
+        # Sectionals and Areas are separate folds — the last archived round is the
+        # one named Sectionals, anything before it is Areas (`jhsaa.run_sectional`).
+        deco = _deco_rounds(sec, _jh_seeds(sec))
+        stages.append({"name": "Sectionals", "rounds": deco[-1:]})
+        if len(deco) > 1:
+            stages.append({"name": "Areas", "rounds": deco[:-1]})
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
         "groups": list(jh.GROUPS),

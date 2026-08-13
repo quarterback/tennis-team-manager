@@ -397,3 +397,5 @@
 .jh-stagefold > summary .nm { font-weight: 800; font-size: 13px; color: var(--text-primary); }
 .jh-stagefold > summary:hover .nm { color: var(--brand-strong); }
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
+.jh-mgame .cap { grid-column: 1 / -1; font-size: 9px; font-weight: 800;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
