@@ -3789,6 +3789,25 @@
       "boys_district": "Sage Plains District"
     },
     {
+      "name": "Housatonic HS",
+      "city": "Bahía Leal",
+      "county": "San Marcos",
+      "area": "South Coast",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 2403,
+      "private": false,
+      "mascot": "Warthogs",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Stagewater District",
+      "boys_district": "South Coast District"
+    },
+    {
       "name": "Igor Chernov",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -3956,7 +3975,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Stagewater District",
+      "girls_district": "South Coast District",
       "boys_district": "South Coast District"
     },
     {

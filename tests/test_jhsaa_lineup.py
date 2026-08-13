@@ -149,3 +149,107 @@ def test_the_bench_still_gets_matches(season):
             w, l = t.records.get(p.pid, [0, 0])
             dressed += (w + l) > 0
     assert dressed > 0
+
+
+# --- the ORDER OF ABILITY (owner rule 2027-08) — postseason anti-stacking ------------
+#
+# NFHS-model legality: before a program's first postseason dual its Order of Ability
+# is established from the ladder and FROZEN; the nine who dress are its top nine; S1
+# and D1 must consume ranks #1-#3; the remaining pairs are ordered on combined ladder
+# rank as the anti-stacking BOUNDARY, with the engine's real doubles ability deciding
+# only within PAIR_SUM_TOL. See docs/AAR-jhsaa-order-of-ability.md.
+
+import random as _random
+
+
+def _real_ts(i=0, gender="boys", year=2031):
+    # `i` wraps: the module-scoped `season` fixture above patches load_schools to a
+    # tenth-size association and tears down at module end, after these tests run.
+    pool = jh.load_schools(gender)
+    sc = pool[i % len(pool)]
+    return jh.TeamSeason(school=sc, roster=jh.build_roster(sc, year))
+
+
+def test_postseason_lineup_is_legal_under_the_order_of_ability():
+    for i in (0, 7, 40, 120, 300):
+        ts = _real_ts(i)
+        lu = jh._lineup(ts, "sectional", _random.Random(1))
+        oo = ts.order_of_ability
+        assert oo, "the Order of Ability freezes on first postseason use"
+        rank = {pid: k + 1 for k, pid in enumerate(oo)}
+        # the nine who dress are the frozen order's top nine
+        assert {p.pid for p in lu} == set(oo[:9])
+        # S1 + D1 consume ranks #1-#3; nobody top-three appears at D2-D4
+        assert {rank[p.pid] for p in lu[:3]} == {1, 2, 3}
+        assert all(rank[p.pid] > 3 for p in lu[3:])
+        # D2-D4 rank sums respect the anti-stacking boundary
+        sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (3, 5, 7)]
+        for hi, lo in zip(sums, sums[1:]):
+            assert hi <= lo + jh.PAIR_SUM_TOL, (i, sums)
+
+
+def test_the_order_of_ability_freezes_for_the_whole_postseason():
+    """A mid-bracket hot streak cannot re-rank the roster between rounds: the live
+    ladder would move, the frozen postseason lineup must not."""
+    ts = _real_ts(3)
+    first = [p.pid for p in jh._lineup(ts, "sectional", _random.Random(1))]
+    # swing two adjacent dressed players' records as hard as records can swing
+    ts.records[ts.order_of_ability[8]] = [30, 0]
+    ts.records[ts.order_of_ability[7]] = [0, 30]
+    live = [p.pid for p in jh._order(ts)]
+    assert live != ts.order_of_ability            # the live ladder DID move...
+    again = [p.pid for p in jh._lineup(ts, "zonal", _random.Random(2))]
+    assert again == first                          # ...and the lineup did not
+
+
+def test_the_regular_season_still_runs_on_the_live_ladder():
+    """League play is league policy: no freeze, rotation intact — the Order of
+    Ability binds championship competition only."""
+    ts = _real_ts(5)
+    jh._lineup(ts, "regular", _random.Random(4))
+    assert not ts.order_of_ability
+
+
+# --- regular-season philosophy (owner rule 2027-08) ----------------------------------
+#
+# League play is free: some programs run the classic singles-first card, others the
+# doubles-forward shape (S1=#1, D1 = two of #2-#4, S2 the third, D2 = any two of
+# #5-#9, remainder at S3-S5 in ladder order). The philosophy is a durable program
+# trait; the postseason Order of Ability is untouched by it.
+
+def test_both_regular_season_philosophies_exist():
+    keys = [s.key for s in jh.load_schools("boys")]
+    leans = {jh._doubles_forward(k) for k in keys}
+    assert leans == {True, False}
+
+
+def test_the_doubles_forward_card_matches_the_owner_permutation_table():
+    ts = next(_real_ts(i) for i in range(60)
+              if jh._doubles_forward(_real_ts(i).school.key))
+    order = jh._order(ts)[:9]
+    rank = {p.pid: k + 1 for k, p in enumerate(order)}
+    lu = jh._arrange_regular(order)
+    assert {p.pid for p in lu} == {p.pid for p in order}
+    assert rank[lu[0].pid] == 1                               # S1 = top player
+    assert rank[lu[1].pid] in (2, 3, 4)                       # S2 from 2-4
+    assert {rank[lu[5].pid], rank[lu[6].pid]} <= {2, 3, 4}    # D1 = two of 2-4
+    assert rank[lu[2].pid] in (5, 6, 7)                       # S3 from 5-7
+    assert {rank[lu[7].pid], rank[lu[8].pid]} <= {5, 6, 7, 8, 9}   # D2 from 5-9
+    s345 = [rank[lu[k].pid] for k in (2, 3, 4)]
+    assert s345 == sorted(s345)                               # S3-S5 in ladder order
+
+
+def test_the_pair_boundary_is_adjacent_only_and_tolerance_may_chain():
+    """Owner ruling (2027-08): a review proposed enforcing the rank-sum boundary
+    across every earlier/later pair, which would outlaw a 15/13/11 chemistry order
+    (each step exactly PAIR_SUM_TOL apart, ends 4 apart). The owner kept the chain —
+    "chemistry matters to me more than policing pairings at that fidelity" — so the
+    boundary binds NEIGHBOURS only. If this test starts failing, someone globalised
+    the check; that is a reverted owner decision, not a bug fix."""
+    a, b, c = ("hi",), ("mid",), ("lo",)
+    sums = {a: 15, b: 13, c: 11}
+    rating = {a: 0.9, b: 0.8, c: 0.7}          # chemistry wants 15, 13, 11
+    assert jh._order_pairs([c, b, a], sums, rating) == [a, b, c]
+    # ...but a NEIGHBOUR gap beyond the tolerance still swaps, chemistry or not
+    sums2 = {a: 15, b: 9, c: 11}
+    assert jh._order_pairs([c, b, a], sums2, rating)[0] == b

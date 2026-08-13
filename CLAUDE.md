@@ -634,6 +634,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   season. The bench ROTATION (`_ROTATE_ONE`/`_ROTATE_TWO`) is the variation the owner
   asked for and was never the bug — it must move the ninth seat around the BEST nine.
   Pinned by `tests/test_jhsaa_lineup.py`.
+- **‼️ THE POSTSEASON PLAYS THE ORDER OF ABILITY (owner rule 2027-08, NFHS
+  anti-stacking).** Before a program's first postseason dual the ladder is FROZEN as
+  its Order of Ability (`TeamSeason.order_of_ability`) and binds all postseason —
+  never re-sort it between rounds; a live re-rank mid-bracket is the violation the
+  rule exists to stop. The 1S/4D card then must have S1+D1 consume ranks #1-#3 (no
+  top-three player at D2-D4) and D2-D4 ordered on combined ladder rank as a BOUNDARY
+  (`PAIR_SUM_TOL` 2): within it, real `doubles_rating` decides — the coach picks which
+  of the top three plays singles and pairs #4-#9 for chemistry (`_arrange_state`, in
+  SLOT order so `_squad`/`_slot_players` keep one indexing rule). The rank sum is not
+  a sort key and `doubles_rating` is not the boundary — both halves are load-bearing.
+  The REGULAR season stays league policy (live ladder + rotation, no freeze), and it
+  is VARIED by design: each program has a durable lineup PHILOSOPHY
+  (`_doubles_forward`, hashed off the school key) — roughly half play the classic
+  singles-first card, half the owner's doubles-forward permutation (S1=#1, D1 = two
+  of #2-#4, S2 the third, D2 = any two of #5-#9, rest at S3-S5 in order) via
+  `_arrange_regular`, with a 0.15 per-dual flip. Do not "simplify" the league back to
+  one shape. Pinned by `tests/test_jhsaa_lineup.py`; see
+  `docs/AAR-jhsaa-order-of-ability.md`.
 - **An empty-state route test cannot see a page.** `tests/test_jhsaa_routes.py` renders
   every JHSAA surface with nothing archived and stayed green through four faults that only
   exist once there is data. `tests/test_jhsaa_toc.py` runs a REAL season (two districts per

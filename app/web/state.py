@@ -4096,15 +4096,33 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # Ward seed, Regionals seed, State seed and TOC seed are five different numbers —
     # so each dual's opponent seed comes off the field of the stage it was played in.
     toc_seeds = _jh_seeds((arc or {}).get("toc") or {})
-    sec_seeds = _jh_seeds((arc or {}).get("sectionals", {}).get(sc.group) or {})
+    sec_arc = (arc or {}).get("sectionals", {}).get(sc.group) or {}
+    sec_seeds = _jh_seeds(sec_arc)
     ward_seeds = _jh_seeds((arc or {}).get("wards", {}).get(sc.group) or {})
     pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(sc.group) or {})
     _KIND = {"toc": "TOC", "state": "STATE", "zonal": "ZONAL",
              "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
-    kinds = [_KIND.get(d["phase"], "DIST" if d["district"] else "NON-DIST")
-             for d in sched]
+    # The sectional PHASE holds every cut round, but a multi-round Sectionals
+    # OPENS WITH AREAS (owner rule — jhsaa.run_sectional): only the last round is
+    # the one named Sectionals. The archive's round_names carry the split, so an
+    # Area dual is recognised by its pairing sitting in an "Areas" round — never
+    # by position in the schedule. Old archives (round_names all "Sectionals")
+    # have no Areas rounds and keep the SECTIONAL tag everywhere.
+    sec_names = sec_arc.get("round_names") or ()
+    area_pairs = {frozenset((gm.get("home"), gm.get("away")))
+                  for i, games in enumerate(sec_arc.get("rounds") or ())
+                  if i < len(sec_names) and sec_names[i] == "Areas"
+                  for gm in games}
+
+    def _kind(d):
+        k = _KIND.get(d["phase"], "DIST" if d["district"] else "NON-DIST")
+        if k == "SECTIONAL" and frozenset((school, d["opp"])) in area_pairs:
+            k = "AREA"
+        return k
+    kinds = [_kind(d) for d in sched]
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "ZONAL": pre_seeds,
-              "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds}
+              "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds,
+              "AREA": sec_seeds}
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
     honor_pids = {}

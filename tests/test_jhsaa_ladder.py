@@ -178,8 +178,13 @@ def test_finishes_name_the_stage_a_run_ended_at(archived):
                "state": state, "wildcards": wc}
         sec_out = set(sec["field"]) - set(sec["survivors"])
         for name in sec_out:
+            # A multi-round Sectionals opens with AREAS (owner rule): the finish
+            # names the round the run actually ended in, so an Area-round exit
+            # says "Areas", never the final round's "Sectionals".
+            last = max(i for i, games in enumerate(sec["rounds"])
+                       if any(name in (gm["home"], gm["away"]) for gm in games))
             r = wd.jhsaa_postseason_result(grp, name)
-            assert (r["finish"], r["made_state"]) == ("Sectionals", False)
+            assert (r["finish"], r["made_state"]) == (sec["round_names"][last], False)
         ward_out = set(ward["field"]) - set(ward["survivors"])
         for name in ward_out:
             r = wd.jhsaa_postseason_result(grp, name)

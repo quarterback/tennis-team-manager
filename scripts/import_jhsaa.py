@@ -80,6 +80,7 @@ ALWAYS_EXTRA = [
     "Arrieta Treasure Valley",
     "Aurelia",
     "Bahía Leal",
+    "Bahía Leal Costa Verde",    # → "Housatonic HS" in this association (RENAMES)
     "Baptist HS",
     "Beacon Hill",
     "Breakwater",
@@ -176,6 +177,22 @@ ALWAYS_EXTRA = [
     "Westside Christian",
     "Winifred Booker",
 ]
+
+# ABSORPTION-STYLE RENAMES (owner rule 2027-08) — the same pattern the college
+# import uses for programs standing on Jefferson ground (Oregon Tech → Cascade
+# Polytechnic): the INSTITUTION comes from prep-network, which stays untouched
+# (its published record — seasons, titles, editorial — keeps the source name);
+# the tennis association knows the school by the owner's name.
+#
+# ⚠️ Keyed by SOURCE name and applied ONLY when a row is emitted, never at load:
+# the sponsorship dice in `sponsors()` are drawn positionally over the
+# name-sorted school list, so renaming before the draw would shift every school
+# between the two alphabetical positions onto its neighbour's roll and reshuffle
+# a chunk of the association. Everything internal — forcing, dice, district
+# drawing — runs on the source name; only the written row carries the new one.
+RENAMES = {
+    "Bahía Leal Costa Verde": "Housatonic HS",   # keeps its Warthogs
+}
 
 # Championship groups. 3A stands ALONE and 2A/1A combine (owner rule 2027-08): the
 # enrollment gap across the old 3A-1A group was the widest in the association — medians
@@ -330,7 +347,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
         s = by_name[name]
         city = cities.get(s["city"], {})
         out.append({
-            "name": name,
+            "name": RENAMES.get(name, name),
             "city": s["city"],
             "county": city.get("county", ""),
             "area": s["area"],
@@ -345,6 +362,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "girls_district": dist["girls"].get(name, ""),
             "boys_district": dist["boys"].get(name, ""),
         })
+    out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
     return out
 
 
