@@ -1668,7 +1668,8 @@ def create_app() -> Flask:
         # a system changes rather than letting one drift stale.
         from .guide_data import APPENDIX_CATEGORIES
         return render_template("guide.html", active="Guide",
-                               appendix_cats=APPENDIX_CATEGORIES)
+                               appendix_cats=APPENDIX_CATEGORIES,
+                               scale_rows=_str_scale_rows())
 
     def _dual_pick(req):
         """Resolve (gender, home_div, away_div, home_schools, away_schools, home, away)
