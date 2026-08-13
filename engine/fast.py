@@ -58,6 +58,42 @@ TUNE = {
     # by under half a point, so resist "just a bit more".
     "gap_knee": 0.06,           # overall-units of gap that stay "even match"
     "gap_accel": 1.8,           # extra bite per unit of gap beyond the knee
+    # ABILITY SHAPE, not just ability size (owner rule 2027-08). `overall` alone
+    # made two players with the same mean indistinguishable — a serve-first
+    # player and a counterpuncher rolled the same dice. A service game is now
+    # decided by a per-SITUATION composite instead: the server's serve and
+    # rally game against the returner's return and rally game, with small
+    # always-on mental/stamina lanes. The lane weights are chosen so that (a)
+    # two flat players reproduce the overall gap EXACTLY — the wide-gap
+    # calibration above is untouched — and (b) averaged over a player's
+    # serving and returning games every driver keeps ~its share of `overall`
+    # (role-averaged lane weights land within ±0.02 of the uniform 1/9), so no
+    # play style is systematically over- or under-priced; what changes is WHO
+    # a given shape works against. A big server holds past his overall and an
+    # elite returner breaks past hers — and against each other they cancel.
+    # Tiebreaks add the mental deviation (big points belong to the clutch
+    # player), and the DECIDING set adds the stamina deviation (the fitter
+    # player grows as the match goes long); both are deviations from the
+    # player's own overall, so they are zero for a flat player and zero-mean
+    # over a league. The drivers are themselves rich-attribute baskets
+    # (app.player_attributes.derive_drivers), so first_serve_power,
+    # return_quality, composure, recovery etc. all reach the outcome — the
+    # same signal chain the full engine reads, collapsed per situation
+    # instead of per point.
+    # Lane weights sum to 1 (flat-player equivalence); with the composite
+    # mixes in `_edges` the role-averaged per-driver weights all land within
+    # 0.009 of the uniform 1/9 — re-derive that check before retuning any of
+    # the four, or one play style quietly becomes over- or under-priced.
+    "hold_serve": 0.44,         # server's serve vs the returner's return game
+    "hold_rally": 0.32,         # both players' groundstroke/movement game
+    "hold_mental": 0.12,        # always-on composure lane
+    "hold_stamina": 0.12,       # always-on fitness lane
+    # Situational extras are DEVIATIONS from the player's own overall, priced
+    # so mental/stamina end up worth roughly the same win-equity as any other
+    # driver despite landing on the match's biggest moments — raise these and
+    # clutch/fitness quietly become the best stats in the game.
+    "edge_clutch": 0.35,        # mental deviation on tiebreak points
+    "edge_stamina": 0.25,       # stamina deviation once the match goes the distance
 }
 
 
@@ -83,28 +119,71 @@ def _context_edge(server: Player, returner: Player, context: MatchContext) -> fl
     return venue + wind + heat + crowd
 
 
-def _hold_prob(server: Player, returner: Player, context: MatchContext) -> float:
+def _edges(p: Player) -> dict:
+    """A player's situational profile, computed once per match. `serve`, `ret`
+    and `rally` are role composites; `m_dev`/`s_dev` are zero-mean deviations
+    from the player's own overall (exactly zero for a flat player, so the
+    pre-shape calibration is reproduced)."""
+    o = p.overall
+    return {
+        "serve": 0.5 * p.serve_power + 0.5 * p.serve_placement,
+        "ret": 0.5 * p.return_game + 0.25 * p.movement + 0.25 * p.consistency,
+        "rally": 0.35 * p.forehand + 0.35 * p.backhand
+                 + 0.15 * p.movement + 0.15 * p.consistency,
+        "mental": p.mental,
+        "stamina": p.stamina,
+        "overall": o,
+        "m_dev": p.mental - o,
+        "s_dev": p.stamina - o,
+    }
+
+
+def _hold_prob(server: Player, returner: Player, context: MatchContext,
+               es: dict, er: dict, decider: bool) -> float:
+    """One service game, decided by the situational composite: the server's
+    serve against the returner's return game, both players' rally games, and
+    the always-on mental/stamina lanes (`es`/`er` are the two players' profile
+    dicts, server's first). Two flat players reproduce the overall gap
+    exactly. In the deciding set the stamina deviation joins in."""
+    gap = (TUNE["hold_serve"] * (es["serve"] - er["ret"])
+           + TUNE["hold_rally"] * (es["rally"] - er["rally"])
+           + TUNE["hold_mental"] * (es["mental"] - er["mental"])
+           + TUNE["hold_stamina"] * (es["stamina"] - er["stamina"]))
+    if decider:
+        gap += TUNE["edge_stamina"] * (es["s_dev"] - er["s_dev"])
     return _logistic(
         TUNE["hold_base_logit"]
-        + TUNE["skill_slope"] * effective_gap(server.overall - returner.overall)
+        + TUNE["skill_slope"] * effective_gap(gap)
         + TUNE["context_slope"] * _context_edge(server, returner, context))
 
 
-def _tb_prob(p0: Player, p1: Player, context: MatchContext) -> float:
+def _tb_prob(p0: Player, p1: Player, context: MatchContext,
+             e0: dict, e1: dict, decider: bool) -> float:
+    """A tiebreak is big points: the mental deviation counts beyond the talent
+    gap, and in a deciding set so does the stamina deviation."""
+    gap = (p0.overall - p1.overall
+           + TUNE["edge_clutch"] * (e0["m_dev"] - e1["m_dev"]))
+    if decider:
+        gap += TUNE["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
     return _logistic(
-        TUNE["tb_slope"] * effective_gap(p0.overall - p1.overall)
+        TUNE["tb_slope"] * effective_gap(gap)
         + TUNE["context_slope"] * _context_edge(p0, p1, context))
 
 
-def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int, context: MatchContext):
+def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
+              context: MatchContext, edges, decider: bool = False):
     """Returns (winner, (g0,g1), next_server, flow).
+
+    `edges` is the pair of per-player shape dicts (`_edges`), computed once per
+    match; `decider` marks the match-deciding set, where the stamina gap counts.
 
     `flow` records what happened, game by game — [server, winner] pairs plus
     tiebreak [first_server, winner] — WITHOUT consuming any extra rng draws, so
     scorelines are bit-identical to the pre-recording model. engine.boxstats
     replays this flow at point level to attach real stats to a fast match."""
     if final_tb:
-        win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
+        win = 0 if rng.random() < _tb_prob(players[0], players[1], context,
+                                           edges[0], edges[1], decider) else 1
         flow = {"games": [], "tb": [server, win], "mtb": True}
         return win, ((1, 0) if win == 0 else (0, 1)), 1 - server, flow
 
@@ -114,7 +193,8 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int, cont
     while True:
         r = players[1 - server]
         s = players[server]
-        if rng.random() < _hold_prob(s, r, context):
+        if rng.random() < _hold_prob(s, r, context,
+                                     edges[server], edges[1 - server], decider):
             games[server] += 1
             flow_games.append([server, server])
         else:
@@ -123,7 +203,8 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int, cont
         server = 1 - server
 
         if fmt.set_tiebreak and games[0] == tg and games[1] == tg:
-            win = 0 if rng.random() < _tb_prob(players[0], players[1], context) else 1
+            win = 0 if rng.random() < _tb_prob(players[0], players[1], context,
+                                               edges[0], edges[1], decider) else 1
             games[win] += 1
             flow = {"games": flow_games, "tb": [server, win], "mtb": False}
             return win, (games[0], games[1]), 1 - server, flow
@@ -153,8 +234,11 @@ def simulate_fast(
 
     flows: list[dict] = []
 
+    edges = (_edges(p0), _edges(p1))
+
     if fmt.pro_set:
-        win, score, server, flow = _play_set(rng, players, server, fmt, False, fmt.pro_set_games, context)
+        win, score, server, flow = _play_set(rng, players, server, fmt, False,
+                                             fmt.pro_set_games, context, edges)
         sets[win] += 1
         set_scores.append(score)
         flows.append(flow)
@@ -173,6 +257,7 @@ def simulate_fast(
         win, score, server, flow = _play_set(
             rng, players, server, fmt,
             is_final and fmt.final_set_tiebreak, fmt.set_games, context,
+            edges, decider=is_final,
         )
         sets[win] += 1
         set_scores.append(score)
