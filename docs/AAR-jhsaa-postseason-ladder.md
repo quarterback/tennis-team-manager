@@ -107,3 +107,56 @@ fixture, not any real classification.
 - Full-size run archived through the real world rung; every `/jhsaa*` page
   renders; school pages segment the card by stage (Sectionals / Wards /
   Regionals / Zonals / State Tournament / TOC) with per-stage opponent seeds.
+
+## How the design conversation went — and what it cost
+
+This feature shipped twice. The first build (an interim "protected + ladder_entry"
+design) was implemented off a verbal sketch and clarifying questions, landed green,
+and was then entirely superseded when the owner's real spec arrived — every line of
+the interim qualification logic was rewritten. The rebuild was the cheap part; the
+expensive part was the spec conversation itself, which took several rounds longer
+than it needed to because of four agent mistakes worth pinning:
+
+1. **Invented vocabulary.** The interim build introduced "ladder entry" for a number
+   the owner had no name for, then explained the system back in those terms. The
+   owner's verdict — "i don't really understand your categories it seems like you
+   muddled my format" — was correct: the format had districts, protected teams, and
+   Sectional entrants, and the explanation should have been written in exactly those
+   words. A made-up term in a design conversation isn't a neutral shorthand; it makes
+   the owner translate their own design back out of the agent's dialect. Use the
+   owner's nouns, verbatim, even when they don't yet cover every number the code
+   needs — and when a number genuinely has no name, ask for one rather than coining
+   it.
+
+2. **Cascading what was decoupled.** Asked "why can't you draw a field of 4 zonal
+   champs and top 12 TOSS?", the agent walked the wild-card split backward through
+   Zonals, Regionals, Wards and the protected pool, shrinking the whole ladder — and
+   presented that as arithmetic necessity. It wasn't: the owner's design held the
+   pre-state ladder FIXED and selected wild cards afterward, two mechanisms with no
+   shared parameter. The habit at fault treats every number in a system as derived
+   from every other; real formats are frequently a few independent decisions bolted
+   together, and "these are separate systems" (the owner's words) is a design
+   statement to be believed, not an inconsistency to be reconciled away.
+
+3. **Per-gender format divergence.** `ladder_entry` sized the bracket per
+   (classification, gender), so 4A boys drew a 32 ladder while 4A girls drew 64. No
+   real association formats a classification's boys and girls differently, and the
+   owner had to point it out. A format is one decision per classification; counts
+   that differ by gender pick the binding constraint (the smaller), they don't fork
+   the format.
+
+4. **An inherited rule outliving its premise.** 7A's top-two-per-district protection
+   was ported into the interim ladder unchanged because it was an existing,
+   documented owner rule. But that rule was calibrated for a world where an auto bid
+   meant direct entry into a small exclusive field — the exact thing the redesign
+   abolished. The final spec's "district champions first, then best TOSS" replaced
+   it properly. A redesign re-opens every inherited rule whose premise it changes;
+   "it was already there" is provenance, not justification.
+
+What worked, for contrast: when the owner's sketch contained a genuine arithmetic
+impossibility (48 teams, "just 8 matches", feeding a 32-team Wards), the useful move
+was not another guess but showing the collision in two sentences and asking which
+number was authoritative — that single exchange produced the corrected table, and
+the wild-card timing distinction (cutoff TOSS vs post-Zonal TOSS) fell out of the
+same round. Questions that display the contradiction beat questions that offer
+menus.
