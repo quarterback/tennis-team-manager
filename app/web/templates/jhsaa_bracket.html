@@ -49,36 +49,48 @@
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhbrkrd', view.scope.pin) }}</div>
 
 <div class="jh-layout" style="margin-top:14px">
-  {% if view.prestate_rounds %}
-  {# The road to State — the pre-state ladder's duals, which the bracket tree above
-     does NOT draw (it only holds the 16-team State field). The State bracket's own
-     results are exactly what the tree shows, so they are deliberately not repeated
-     here as a list. #}
+  {% if view.stages %}
+  {# Road to State — one collapsed fold per pre-state stage, Zonals down to
+     Sectionals. These duals are drawn nowhere else; the State bracket's own
+     results are exactly what the tree above shows, so they are deliberately not
+     repeated here. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">The road to State</span>
-      <span class="bl-panel-meta">Sectionals → Wards → Regionals → Zonals</span></div>
-    <div class="bl-panel-body" style="padding:12px">
-      <div class="jh-cols2">
-        {% for rd in view.prestate_rounds %}
-        <div>
-          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} teams</div>
-          {% for gm in rd.games %}
-          <div class="jh-mgame">
-            <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
-              <span class="sd">{{ gm.home_seed or '' }}</span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
-              <span class="pt">{{ gm.home_points|int }}</span>
+    <div class="bl-panel-head"><span class="bl-panel-title">Road to State</span>
+      <span class="bl-panel-meta">{{ view.stages|map(attribute='name')|join(' · ') }}</span></div>
+    <div class="bl-panel-body">
+      {% for st in view.stages %}
+      <details class="jh-stagefold">
+        <summary><span class="cr">›</span><span class="nm">{{ st.name }}</span>
+          <span class="ct">{{ st.meta }}</span></summary>
+        <div class="bd">
+          {% for rd in st.rounds %}
+          {% if st.rounds|length > 1 %}
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.alive }} → {{ rd.alive - rd.games|length }}</div>
+          {% endif %}
+          <div class="jh-cols2">
+            {% for col in rd.games|batch((rd.games|length / 2)|round(0, 'ceil')|int, none) %}
+            <div>
+              {% for gm in col if gm %}
+              <div class="jh-mgame">
+                <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+                  <span class="sd">{{ gm.home_seed or '' }}</span>
+                  <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
+                  <span class="pt">{{ gm.home_points|int }}</span>
+                </div>
+                <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+                  <span class="sd">{{ gm.away_seed or '' }}</span>
+                  <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
+                  <span class="pt">{{ gm.away_points|int }}</span>
+                </div>
+              </div>
+              {% endfor %}
             </div>
-            <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
-              <span class="sd">{{ gm.away_seed or '' }}</span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
-              <span class="pt">{{ gm.away_points|int }}</span>
-            </div>
+            {% endfor %}
           </div>
           {% endfor %}
         </div>
-        {% endfor %}
-      </div>
+      </details>
+      {% endfor %}
     </div>
   </div>
   {% endif %}
