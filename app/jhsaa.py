@@ -55,18 +55,15 @@ FORMATS = {
 }
 
 
-# The two POSTSEASON phases. They share everything that matters — the 1S/4D shape, the
-# strict best-nine lineup, and exclusion from the TOSS rating — and differ only in which
-# event they belong to. The TOC carries its own phase rather than borrowing "state"
-# because the archive is the only place the two can be told apart afterwards: written as
-# "state" its duals landed on a program's state-tournament record, and a program that
-# reached the Tournament of Champions had no way to say so.
-POSTSEASON = ("state", "toc")
+# The POSTSEASON phases — one per stage, because the archive (`world_jhsaa_dual.phase`)
+# is the only place the stages can be told apart afterwards. All of them share the
+# 1S/4D shape, the strict best-nine lineup, and exclusion from the cutoff TOSS.
+POSTSEASON = ("sectional", "ward", "regional", "zonal", "state", "toc")
 
 
 def dual_format(phase: str) -> DualFormat:
-    """The dual shape for `phase` ("regular" | "district" | "state" | "toc"). District
-    tournaments play the regular-season shape; the postseason events switch."""
+    """The dual shape for `phase` ("regular" | "district" | one of `POSTSEASON`).
+    District tournaments play the regular-season shape; the postseason switches."""
     return FORMATS["state"] if phase in POSTSEASON else FORMATS["regular"]
 
 
@@ -124,21 +121,41 @@ CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level 
 # Winners, scores and individual records are all unaffected; only per-point box detail is.
 FIDELITY = "fast"
 
-# --- state tournament (owner-decided) ---------------------------------------
-# field size, and how many per district qualify automatically. 7A is deliberately the
-# most district-driven classification: two from every district get in on the court.
-# 2A-1A is the BIGGEST classification (151 girls / 136 boys across 13 districts), so
-# it gets the biggest bracket alongside 7A. At 24 it was the hardest class in the
-# association to qualify from -- 13 automatic bids left only 11 at-large places for
-# 138 other programs -- which is exactly backwards for the level that is supposed to
-# be the sprawling, everybody-plays one.
-# 24 into a 32-team draw is deliberate, not a rounding-down (owner rule 2027-08): the
-# top eight seeds bye and seeds 9-24 play in, so nobody reaches the number one seed
-# without having won a dual. A full 32 gives a 1 v 32 opener, which is a bye with
-# extra steps. It also keeps the girls' and boys' cutlines close where a
-# classification is lopsided by gender.
-FIELD = {"7A": 32, "6A": 32, "5A": 24, "4A": 24, "3A": 24, "2A-1A": 32}
-AUTO_PER_DISTRICT = {"7A": 2, "6A": 1, "5A": 1, "4A": 1, "3A": 1, "2A-1A": 1}
+# --- the postseason (owner spec) ---------------------------------------------
+#
+# Three separate mechanisms, deliberately decoupled:
+#
+#   1. SECTIONALS — broad access and field reduction. Every non-protected team
+#      enters; the shape is flexible per classification (byes/play-ins as needed);
+#      the ONLY fixed requirement is the output: exactly `WARD_FIELD` teams.
+#   2. The pre-state ladder — fixed for every classification and both genders:
+#         Wards      32 -> 16
+#         Regionals  32 -> 16   (16 Ward champions + 16 protected)
+#         Zonals     16 -> 8    (Zonal champions qualify for State)
+#      The protected 16 enter at Regionals: district champions first, then the
+#      best remaining cutoff TOSS until the seats are filled.
+#   3. Wild cards — selected AFTER Zonals, from a TOSS recomputed over every
+#      completed pre-state match (`power_index(..., prestate=True)`): the top
+#      `WILDCARDS` teams that did not win a Zonal. They join the Zonal champions
+#      in a fresh 16-team State draw (R16 -> QF -> SF -> Final). The wild-card
+#      split never resizes anything upstream.
+#
+# `ladder_scale` shrinks every number together (powers of two, same shape) when a
+# classification is too small for the full size. Every real classification fits
+# the full size today; the scale exists for small pools, not as a format fork.
+PROTECTED = 16
+WARD_FIELD = 32
+WILDCARDS = 8
+
+
+def ladder_scale(group: str) -> int:
+    """One divisor for all of `group`'s postseason numbers, shared by both genders
+    (a classification plays ONE format) and sized by the smaller gender's count."""
+    n = min(sum(1 for s in load_schools(g) if s.group == group) for g in GENDERS)
+    k = 1
+    while k < 8 and (PROTECTED + WARD_FIELD) // k > n:
+        k *= 2
+    return k
 
 # --- talent ------------------------------------------------------------------
 # (mean, spread) of the 20-80 grade per classification. Well beneath the college bands
@@ -1097,8 +1114,12 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
     "D1": 1.00, "D2": 0.50,
+    # D3/D4 exist only in the postseason's 1S/4D duals, so they are rated only by
+    # the post-Zonal wild-card recompute (`power_index(prestate=True)`); the cutoff
+    # TOSS never sees them. Same decay as the doubles column above.
+    "D3": 0.25, "D4": 0.10,
 }
-MAX_FLIGHT_WEIGHT = 3.70          # sum of the above; a fully contested dual
+MAX_FLIGHT_WEIGHT = 3.70          # regular-season sum (S1..S5 + D1/D2)
 
 
 def _games(score: str) -> tuple[int, int]:
@@ -1120,21 +1141,21 @@ def _games(score: str) -> tuple[int, int]:
     return h, a
 
 
-def rating_duals(teams) -> list[dict]:
-    """Every REGULAR-SEASON dual once, in the shape `rating.compute_ratings` consumes.
+def rating_duals(teams, prestate: bool = False) -> list[dict]:
+    """Every ratable dual once, in the shape `rating.compute_ratings` consumes.
 
     A dual sits on BOTH sides' schedules, so only the home side's copy is taken —
     counting each meeting twice would flatten strength of schedule toward .500.
 
-    Postseason duals — state AND the Tournament of Champions — are excluded on purpose.
-    TOSS is the SEEDING input, so it has to be the regular season only; it would also
-    drag the 1S/4D format's #3 and #4 doubles into a weight table that stops at #2,
-    where they would silently take the fallback weight instead of a number anybody
-    chose."""
+    Default (the CUTOFF TOSS — seeding, district tiebreak, protection): the regular
+    season only, every postseason phase excluded. `prestate=True` (the post-Zonal
+    wild-card recompute) additionally includes the completed pre-state stages —
+    sectional/ward/regional/zonal — and still excludes state and the TOC."""
+    drop = ("state", "toc") if prestate else POSTSEASON
     out = []
     for t in teams:
         for d in t.schedule:
-            if not d.get("home") or d.get("phase") in POSTSEASON:
+            if not d.get("home") or d.get("phase") in drop:
                 continue
             lines = []
             for ln in d.get("lines") or ():
@@ -1146,57 +1167,145 @@ def rating_duals(teams) -> list[dict]:
     return out
 
 
-def power_index(teams) -> dict:
+def power_index(teams, *, prestate: bool = False) -> dict:
     """Power Index for every program in a gender, keyed by school name.
 
     Run over the WHOLE gender rather than a classification at a time: non-district
     play crosses classifications, so a 7A team's schedule strength depends on the 6A
     teams it played, and rating each class in isolation would cut those edges out of
-    the results graph."""
+    the results graph. `prestate=True` is the post-Zonal wild-card recompute — same
+    graph plus every completed pre-state match (see `rating_duals`)."""
     from .rating import compute_ratings
-    return compute_ratings(rating_duals(teams), weights=FLIGHT_WEIGHTS)
+    return compute_ratings(rating_duals(teams, prestate=prestate),
+                           weights=FLIGHT_WEIGHTS)
 
 
-def qualifiers(group: str, standings: dict[str, list[TeamSeason]],
-               power: dict | None = None) -> list[TeamSeason]:
-    """The state field: automatic bids first (7A takes the top TWO from each district,
-    everyone else the champion), then at-large until the bracket is full.
-
-    At-large order and SEED order are the Power Index (`power`, from `power_index`);
-    without one — a caller running a district in isolation — it falls back to win rate.
-    An automatic bid still buys entry rather than a seed: a district champion with a
-    thin index seeds below at-larges out of stronger districts."""
-    auto_n, field_n = AUTO_PER_DISTRICT[group], FIELD[group]
-
+def _power_key(power: dict | None):
+    """Sort key factory: Power Index order when we have one (`power`, from
+    `power_index`), win rate for a caller running a district in isolation. Shared by
+    every postseason-field function so protected/unprotected/seed order all agree."""
     def key(t: TeamSeason):
         if power is not None and t.school.name in power:
             return (-power[t.school.name].pi_raw, t.school.name)
         return (-t.win_pct, -(t.points_for - t.points_against), t.school.name)
+    return key
 
-    auto, rest = [], []
-    for teams in standings.values():
-        auto.extend(teams[:auto_n])
-        rest.extend(teams[auto_n:])
-    rest.sort(key=key)
-    field = auto + rest[:max(0, field_n - len(auto))]
-    field.sort(key=key)
-    return field[:field_n]
+
+def sectional_field(group: str, standings: dict[str, list[TeamSeason]],
+                     power: dict | None = None, scale: int = 1
+                     ) -> tuple[list[TeamSeason], list[TeamSeason]]:
+    """(protected, entrants) for `group` — every program in the classification.
+
+    Protected (`PROTECTED // scale` seats, enter at Regionals): district champions
+    first, then the best remaining cutoff TOSS until the seats are filled. Everyone
+    else enters Sectionals. Both lists come back cutoff-TOSS ordered."""
+    key = _power_key(power)
+    champs = sorted((ts[0] for ts in standings.values() if ts), key=key)
+    rest = sorted((t for ts in standings.values() for t in ts[1:]), key=key)
+    fill = max(0, PROTECTED // scale - len(champs))
+    protected = sorted(champs + rest[:fill], key=key)
+    return protected, rest[fill:]
+
+
+def _elim_round(pool: list[TeamSeason], byes: int, *, rng: random.Random,
+                 phase: str) -> tuple[list[TeamSeason], list[dict]]:
+    """One round of single elimination over `pool` (already strength-ordered,
+    strongest first, e.g. by `_power_key`): the top `byes` entries advance without
+    playing, and the rest pair strongest-vs-weakest among THEMSELVES and every match
+    is actually played. Returns (survivors, games) — survivors strength-ordered
+    (byes first, then winners in the order their matches were seeded), ready to feed
+    the next round or seed the next stage."""
+    protected, playing = pool[:byes], pool[byes:]
+    games, winners = [], []
+    n = len(playing)
+    for i in range(n // 2):
+        a, b = playing[i], playing[n - 1 - i]
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
+        win = a if res.winner == 0 else b
+        games.append({"home": a.school.name, "away": b.school.name,
+                      "home_points": res.home_points, "away_points": res.away_points,
+                      "winner": win.school.name})
+        winners.append(win)
+    return protected + winners, games
+
+
+def run_sectional(entrants: list[TeamSeason], target: int, *, seed: int
+                  ) -> tuple[dict, list[TeamSeason]]:
+    """Reduce `entrants` (cutoff-TOSS ordered) to EXACTLY `target` survivors — the
+    Ward field — via real single-elimination duals (phase "sectional").
+
+    Flexible by design: ordinary rounds halve the field (a bye only to fix an odd
+    remainder); once halving would overshoot below `target`, the final round trims
+    precisely (`byes = 2*target - size`, byes to the top seeds). 48 entrants →
+    16 byes, 16 matches, 32 out; 57 → 7 byes, 25 matches, 32 out. This is the only
+    stage where byes exist.
+
+    Returns (archive_dict, survivors): the JSON-safe `{field, rounds, survivors,
+    round_names}` for the archive, and the live `TeamSeason` list for Wards."""
+    rng = random.Random(seed)
+    cur = list(entrants)
+    rounds = []
+    while len(cur) > target:
+        size = len(cur)
+        byes = size % 2 if size // 2 >= target else 2 * target - size
+        cur, games = _elim_round(cur, byes, rng=rng, phase="sectional")
+        rounds.append(games)
+    return ({"field": [t.school.name for t in entrants], "rounds": rounds,
+            "survivors": [t.school.name for t in cur],
+            "round_names": ["Sectionals"] * len(rounds)}, cur)
+
+
+_STAGE_NAMES = {"ward": "Wards", "regional": "Regionals", "zonal": "Zonals"}
+
+
+def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
+               ) -> tuple[dict, list[TeamSeason]]:
+    """A seeded draw played for `len(phases)` rounds — one phase per round,
+    positional between rounds (no reseeding). `field` is a power of two in normal
+    play, so every round halves it exactly and nobody gets a bye. Used for Wards
+    (one round) and Regionals+Zonals (two rounds of one 32-draw).
+
+    Returns (archive_dict, survivors) like `run_sectional`."""
+    rng = random.Random(seed)
+    size = 1
+    while size < len(field):
+        size *= 2
+    from engine.tournament import seeded_draw
+    slots: list[TeamSeason | None] = [None if r is None else field[r]
+                                      for r in seeded_draw(len(field), size,
+                                                           len(field), rng)]
+    rounds = []
+    for phase in phases:
+        nxt, games = [], []
+        for i in range(0, len(slots), 2):
+            a, b = slots[i], slots[i + 1]
+            if a is None or b is None:
+                nxt.append(a or b)
+                continue
+            res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
+            win = a if res.winner == 0 else b
+            games.append({"home": a.school.name, "away": b.school.name,
+                          "home_points": res.home_points, "away_points": res.away_points,
+                          "winner": win.school.name})
+            nxt.append(win)
+        rounds.append(games)
+        slots = nxt
+    survivors = [t for t in slots if t is not None]
+    return ({"field": [t.school.name for t in field], "rounds": rounds,
+             "survivors": [t.school.name for t in survivors],
+             "round_names": [_STAGE_NAMES[p] for p in phases]}, survivors)
 
 
 def run_state(field: list[TeamSeason], *, seed: int) -> dict:
-    """The dual-team state tournament: 1S/4D, single elimination.
+    """The State Tournament: a fresh 16-team draw (Zonal champions + wild cards,
+    post-Zonal-TOSS ordered) played to a champion — R16, QF, SF, Final.
 
-    The draw is SEEDED (`engine.tournament.seeded_draw`, the same helper the college
-    championship uses): entrants go to the standard bracket anchors so the top seeds
-    can only meet late, and a field that isn't a power of two seeds into the next size
-    up with the **byes going to the top seeds**. A 12-team field is a 16 draw where
-    seeds 1-4 sit out the opening round and seeds 5-12 play into an eight-team
-    quarterfinal; a 24-team field is a 32 draw where the top eight sit out.
-
-    The bracket is then FIXED — no reseeding between rounds (owner rule 2027-08; most
-    states don't reseed either). Within a seed tier the anchors are shuffled, which is
-    what `seeded_draw` does for the college championship too, so the pairings vary by
-    seed while the tiers never do.
+    The draw is SEEDED (`engine.tournament.seeded_draw`): entrants go to the
+    standard bracket anchors so the top seeds can only meet late, then the bracket
+    is FIXED — no reseeding between rounds (owner rule 2027-08). Within a seed tier
+    the anchors are shuffled, so pairings vary by seed while the tiers never do.
+    A non-power-of-two field (a standalone caller) pads up with byes to the top
+    seeds, same as the college championship.
 
     It used to pad the field with `None` at the END of the slot list, which is not a
     draw at all: the Nones paired off with each other and vanished, nobody got a bye,
@@ -1208,8 +1317,8 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
     size = 1
     while size < len(field):
         size *= 2
-    # `n_seeds = len(field)`: the whole field is ranked (`qualifiers` orders it), so
-    # every entrant is placed on its own anchor rather than drawn at random.
+    # `n_seeds = len(field)`: the whole field is ranked, so every entrant is placed
+    # on its own anchor rather than drawn at random.
     from engine.tournament import seeded_draw
     slots: list[TeamSeason | None] = [None if r is None else field[r]
                                       for r in seeded_draw(len(field), size,
@@ -1568,7 +1677,9 @@ _season_cache: dict = {}
 
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
     """One full JHSAA season for `gender`: every district's regular season, the
-    crossover schedule, the awards, and the five state tournaments.
+    crossover schedule, the awards, and each classification's postseason ladder
+    (Sectionals → Wards → Regionals → Zonals → wild cards → State — see the
+    postseason constants above `ladder_scale`).
 
     Memoized per (salt, gender, year, seed) — a season is deterministic, and both the
     recruit hand-off and any page that wants standings would otherwise re-simulate
@@ -1622,13 +1733,39 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # six programs in it therefore had their last one or two duals archived on their
     # SCHEDULE but missing from their RECORD. Measured: 131 of 137 programs archived
     # every dual they played, and the six that did not were exactly the TOC field.
-    states = {}
+    # The pre-state ladder, every group, before any State bracket: the wild cards
+    # are selected on a TOSS recomputed over ALL completed pre-state matches, and
+    # TOSS runs over the whole gender at once, so every group's Zonals must be
+    # done before any group's wild cards can be picked.
+    sectionals, wards, prestates, protecteds, zonal_champs = {}, {}, {}, {}, {}
     for group in GROUPS:
         standings = by_group[group]
         out["awards"][group] = season_awards(
             [t for ts in standings.values() for t in ts])
-        states[group] = run_state(qualifiers(group, standings, power),
-                                  seed=seed + hash(group) % 9973)
+        k = ladder_scale(group)
+        protected, entrants = sectional_field(group, standings, power, scale=k)
+        protecteds[group] = [t.school.name for t in protected]
+        gseed = seed + hash(group) % 9973
+        sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD // k,
+                                                       seed=gseed)
+        ward_field = sorted(ward_field, key=_power_key(power))
+        wards[group], ward_champs = run_rounds(ward_field, ("ward",),
+                                               seed=gseed + 4111)
+        reg_field = sorted(protected + ward_champs, key=_power_key(power))
+        prestates[group], zonal_champs[group] = run_rounds(
+            reg_field, ("regional", "zonal"), seed=gseed + 8219)
+    post_power = power_index(every_team, prestate=True)
+    states, wildcards = {}, {}
+    for group in GROUPS:
+        k = ladder_scale(group)
+        zc = zonal_champs[group]
+        zc_names = {t.school.name for t in zc}
+        pool = sorted((t for ts in by_group[group].values() for t in ts
+                       if t.school.name not in zc_names), key=_power_key(post_power))
+        wc = pool[:WILDCARDS // k]
+        wildcards[group] = [t.school.name for t in wc]
+        field = sorted(zc + wc, key=_power_key(post_power))
+        states[group] = run_state(field, seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
@@ -1647,17 +1784,22 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             # region-drift bug in a new league.
             #
             # Stored at FULL precision, deliberately. It was rounded to 6dp once, which
-            # looks harmless — nothing displays more than 3 — but `qualifiers` seeds on
-            # `pi_raw` while `world.jhsaa_group_ranking` re-sorts these stored values and
-            # breaks ties by school name. Two teams inside 1e-6 of each other (measured
-            # gaps get to 1.0e-06) collapse to the same stored number and the ranking
-            # then contradicts the seeds it is supposed to explain. Round for the eye,
-            # in the template; never in the archive.
+            # looks harmless — nothing displays more than 3 — but `sectional_field`
+            # seeds on `pi_raw` while `world.jhsaa_group_ranking` re-sorts these stored
+            # values and breaks ties by school name. Two teams inside 1e-6 of each
+            # other (measured gaps get to 1.0e-06) collapse to the same stored number
+            # and the ranking then contradicts the seeds it is supposed to explain.
+            # Round for the eye, in the template; never in the archive.
             "standings": {d: [{"school": t.school.name, "record": t.record,
                                "drecord": t.district_record, "place": t.district_place,
                                "pf": t.points_for, "pa": t.points_against,
                                "pi": t.power}
                               for t in ts] for d, ts in standings.items()},
+            "protected": protecteds[group],
+            "sectional": sectionals[group],
+            "ward": wards[group],
+            "prestate": prestates[group],
+            "wildcards": wildcards[group],
             "state": state,
         }
         for ts in standings.values():

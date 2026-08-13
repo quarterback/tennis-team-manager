@@ -3539,8 +3539,17 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                "all_state": season["awards"][g].get("all_state", [])}
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+                # One dict per postseason stage, all in `run_state`'s archive shape:
+                # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed
+                # "brackets" (the State bracket). "protected" and "wildcards" record
+                # the two selections. See `jhsaa_postseason_result`.
                 "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
-                # The Tournament of Champions — the five classification champions, one
+                "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
+                "wards": {g: season["groups"][g]["ward"] for g in jhsaa.GROUPS},
+                "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
+                "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},
+                "wildcards": {g: season["groups"][g]["wildcards"] for g in jhsaa.GROUPS},
+                # The Tournament of Champions — the SIX classification champions, one
                 # winner. Archived beside the brackets it is drawn from, in the same
                 # shape, so it reads back through the same helpers.
                 "toc": season.get("toc") or {},
@@ -3632,9 +3641,10 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
 
 def _finish_label(alive: int) -> str:
     """A finish, named by how many teams were still in the draw. Banded rather than
-    keyed exactly, because a JHSAA draw is NOT a clean power of two: a 24-team field
-    pads to 32 with byes that collapse unevenly, so the rounds run 24 → 12 → 6 → 3 → 2
-    and a semifinal round can legitimately have three teams in it."""
+    keyed exactly, because a standalone non-power-of-two field pads with byes that
+    collapse unevenly, so a "semifinal" round can legitimately hold three teams.
+    Pre-state stage finishes (Sectionals/Wards/Regionals/Zonals) come off their own
+    archived dicts (`jhsaa_postseason_result`), never from a team count."""
     if alive <= 0:
         return ""
     if alive == 1:
@@ -3645,6 +3655,8 @@ def _finish_label(alive: int) -> str:
         return "Semifinalist"
     if alive <= 8:
         return "Quarterfinalist"
+    if alive <= 16:
+        return "Octofinalist"
     return f"Round of {alive}"
 
 
@@ -3656,34 +3668,42 @@ def _round_label(alive: int) -> str:
         return "Semifinals"
     if alive <= 8:
         return "Quarterfinals"
+    if alive <= 16:
+        return "Octofinals"
     return f"Round of {alive}"
 
 
 def jhsaa_state_rounds(bracket: dict) -> list[dict]:
-    """An archived state tournament as named rounds, each with the number of teams
-    still alive going into it.
+    """An archived bracket as named rounds, each with the number of teams still
+    alive going into it.
 
-    `alive` is counted DOWN from the field — every game eliminates exactly one team —
-    rather than assumed to halve. The draw pads to the next power of two and the byes
-    land unevenly, so a 24-team field really does play rounds of 24, 12, 6, 3 and 2."""
+    `alive` is counted DOWN from the field — every game eliminates exactly one
+    team — rather than assumed to halve, so odd shapes (old archives, standalone
+    non-power-of-two fields) still read. A dict carrying its own `round_names`
+    (the pre-state stages — Sectionals/Wards/Regionals/Zonals) names its rounds
+    itself; otherwise the name is banded off the team count (the State bracket,
+    old archives)."""
     br = bracket or {}
     alive = len(br.get("field") or ())
+    names = br.get("round_names") or ()
     out = []
-    for games in br.get("rounds") or ():
-        out.append({"name": _round_label(alive), "alive": alive, "games": list(games)})
+    for i, games in enumerate(br.get("rounds") or ()):
+        name = names[i] if i < len(names) else _round_label(alive)
+        out.append({"name": name, "alive": alive, "games": list(games)})
         alive -= len(games)
     return out
 
 
 def jhsaa_state_result(bracket: dict, school: str) -> dict:
-    """How far `school` went in one archived state tournament.
+    """How far `school` went in one archived State bracket — pre-state stages are
+    `jhsaa_postseason_result`'s job.
 
     `place` is the number of teams STILL ALIVE when it was eliminated — 1 champion,
-    2 runner-up, 3-4 semifinalist — so "reached the semis" is `place <= 4`, a number,
-    never a string comparison against a label. `seed` is the program's position in the
-    field that was actually drawn (`jhsaa.qualifiers` order), read back off the
-    persisted bracket rather than recomputed from a live ranking — the same rule that
-    keeps the NCAA bracket's labels from drifting."""
+    2 runner-up, 3-4 semifinalist, 9-16 octofinalist — so "reached the semis" is
+    `place <= 4`, a number, never a string comparison against a label. `seed` is the
+    program's position in the field that was actually drawn (post-Zonal TOSS order),
+    read back off the persisted bracket rather than recomputed from a live ranking —
+    the same rule that keeps the NCAA bracket's labels from drifting."""
     br = bracket or {}
     field = list(br.get("field") or ())
     out = {"made_state": False, "seed": 0, "place": 0, "finish": "", "champion": False}
@@ -3700,6 +3720,43 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     place = 1 if champion else (last["alive"] if last else len(field))
     out.update(made_state=True, seed=field.index(school) + 1, place=place,
                finish=_finish_label(place), champion=champion)
+    return out
+
+
+def jhsaa_postseason_result(grp: dict, school: str) -> dict:
+    """The furthest `school`'s postseason reached, across every archived stage of a
+    group's postseason (`{"sectional", "ward", "prestate", "state", "wildcards"}` —
+    the keys `run_season` writes per group). One call for a program page or ledger
+    row; a State entrant (Zonal champion or wild card) takes priority, then the
+    stages walk backward. `finish` for a pre-state exit is the stage's own name —
+    "Sectionals" / "Wards" / "Regionals" / "Zonals" — never a team-count band.
+    Old single-bracket archives carry only `state`, and fall through unchanged."""
+    grp = grp or {}
+    sec_field = (grp.get("sectional") or {}).get("field") or ()
+    st = jhsaa_state_result(grp.get("state") or {}, school)
+    if st["made_state"]:
+        return {**st, "played_sectional": school in sec_field,
+                "wildcard": school in (grp.get("wildcards") or ())}
+    out = {"made_state": False, "seed": 0, "place": 0, "finish": "",
+           "champion": False, "played_sectional": school in sec_field,
+           "wildcard": False}
+    pre = grp.get("prestate") or {}
+    if school in (pre.get("field") or ()):
+        # Eliminated at Regionals (round 0) or Zonals (round 1): the last round
+        # the school appears in names its finish.
+        names = pre.get("round_names") or ("Regionals", "Zonals")
+        last = 0
+        for i, games in enumerate(pre.get("rounds") or ()):
+            if any(school in (gm.get("home"), gm.get("away")) for gm in games):
+                last = i
+        out["finish"] = names[min(last, len(names) - 1)]
+        return out
+    if school in ((grp.get("ward") or {}).get("field") or ()):
+        out["finish"] = "Wards"
+        return out
+    if school in sec_field:
+        out["finish"] = "Sectionals"
+        return out
     return out
 
 
@@ -3805,7 +3862,17 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
                            district_title=r.get("place", 0) == 1)
     if not row["group"]:
         return None
-    st = jhsaa_state_result((arc.get("brackets") or {}).get(row["group"]) or {}, school)
+    # `jhsaa_postseason_result` walks every archived stage, so `state_finish` on the
+    # ledger row names the stage a run ended at — "Sectionals" / "Wards" /
+    # "Regionals" / "Zonals" — instead of going blank for a team that never reached
+    # the State bracket.
+    g = row["group"]
+    st = jhsaa_postseason_result(
+        {"sectional": (arc.get("sectionals") or {}).get(g),
+         "ward": (arc.get("wards") or {}).get(g),
+         "prestate": (arc.get("prestate") or {}).get(g),
+         "state": (arc.get("brackets") or {}).get(g),
+         "wildcards": (arc.get("wildcards") or {}).get(g)}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a

@@ -62,6 +62,16 @@ GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
               "3A": 0.26, "2A": 0.78, "1A": 0.62}
 BOYS_OF_GIRLS = 0.88
 
+# Forced-in schools that field GIRLS tennis only. `always_sponsor()` puts a named
+# school in for BOTH genders, which is right for nearly all of them; this is the
+# exception list for the rare one that doesn't field a boys team (own-source fact,
+# not a random draw the way an unforced girls-only program is). Girls-sponsoring
+# being the superset (see the sponsorship note above) means there's no equivalent
+# ALWAYS_BOYS_ONLY case to mirror.
+ALWAYS_GIRLS_ONLY = {
+    "St. Agnes Preparatory",
+}
+
 # Schools the owner wants in the association without giving them an archetype. The
 # archetype seed list is folded in automatically — see `always_sponsor`.
 ALWAYS_EXTRA = [
@@ -93,17 +103,21 @@ ALWAYS_EXTRA = [
     "Gagarin School of Public Service",
     "Galena",
     "George Washington Carver",
+    "Gold Hollow",
     "Gold Junction",
     "Golden Gate",
     "Gwendolyn Brooks",
     "Halfway House",
     "Harlan Cole",
+    "Harrow",
     "Hazel Bennett",
     "High Prairie",
     "Homestead",
     "Jean Lindgren",
     "Keldale",
+    "Las Norias",
     "Las Palmas",
+    "Latgaway",
     "Lorraine Calder",
     "Mabryville",
     "Marlow County",
@@ -113,6 +127,7 @@ ALWAYS_EXTRA = [
     "New Leiden",
     "Newark River North",
     "North Valley Christian",
+    "Owl Canyon",
     "Pacific Friends School",
     "Paul Robeson",
     "Pinecrest School",
@@ -123,6 +138,7 @@ ALWAYS_EXTRA = [
     "Ransom Spur",
     "Redwood Coast",
     "Romero-Finniski",
+    "Sage Point",
     "Saint Francis",
     "San Borondón",
     "San Cordero",
@@ -146,13 +162,16 @@ ALWAYS_EXTRA = [
     "Steelbridge",
     "Summervale Northwest",
     "Svenja Ekström",
+    "Telfair",
     "Telfair Country Day School",
     "Three Saints",
     "Timberline",
     "Treasure Valley",
     "Trinity Catholic",
+    "Twin Rivers",
     "Valderra",
     "Valley Christian",
+    "Wales City",
     "Westover",
     "Westside Christian",
     "Winifred Booker",
@@ -168,9 +187,19 @@ ALWAYS_EXTRA = [
 # move up to 3A, which balances the two smallest championships without splitting 2A from
 # 1A (the owner does not want separate 2A and 1A tennis).
 #
+# ⚠️ RECLASSIFICATION, ROUND 2 (owner rule, follow-up to 2027-08). 430 turned out to be
+# above every 2A school's enrollment in the current pool (max 397) — the promotion never
+# actually fired, so 3A stayed the association's smallest classification (60 sponsors)
+# while 2A-1A stayed nearly as big as 7A (103 vs 105). Same fix, lower bar: pulling the
+# line down to 300 promotes the top 15 of 2A's 31 schools, landing 3A at 75 (tied with
+# 5A) and 2A-1A at 88 — no longer an outlier, now roughly level with 6A (89). Move the
+# threshold again before reaching for a second lever (like sponsoring MORE 3A schools) —
+# thinning 2A is the cheaper knob and it isn't tapped out yet (16 2A schools remain,
+# enrollment 225-283).
+#
 # By ENROLLMENT, because that is what a classification IS. Nothing here looks at who
 # sponsors tennis or at how good anybody is.
-PROMOTE_2A_ABOVE = 430          # 2A schools at or above this enrollment become 3A
+PROMOTE_2A_ABOVE = 300          # 2A schools at or above this enrollment become 3A
 
 
 def reclassify(schools: list[dict]) -> int:
@@ -239,13 +268,15 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     that owner-named schools are in regardless, for both genders."""
     rng = random.Random(SEED)
     forced = {_key(n) for n in always_sponsor()}
+    girls_only = {_key(n) for n in ALWAYS_GIRLS_ONLY}
     girls, boys = set(), set()
     for s in sorted(schools, key=lambda s: s["name"]):        # stable order = stable draw
         hit = rng.random() < GIRLS_RATE[s["classification"]]  # drawn either way, so the
         sub = rng.random() < BOYS_OF_GIRLS                    # roll stays reproducible
         if _key(s["name"]) in forced:
             girls.add(s["name"])
-            boys.add(s["name"])
+            if _key(s["name"]) not in girls_only:
+                boys.add(s["name"])
         elif hit:
             girls.add(s["name"])
             if sub:
