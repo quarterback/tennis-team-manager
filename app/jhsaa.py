@@ -127,11 +127,14 @@ FIDELITY = "fast"
 # --- state tournament (owner-decided) ---------------------------------------
 # field size, and how many per district qualify automatically. 7A is deliberately the
 # most district-driven classification: two from every district get in on the court.
-# 2A-1A is the BIGGEST classification (151 girls / 136 boys across 13 districts), so
-# it gets the biggest bracket alongside 7A. At 24 it was the hardest class in the
-# association to qualify from -- 13 automatic bids left only 11 at-large places for
-# 138 other programs -- which is exactly backwards for the level that is supposed to
-# be the sprawling, everybody-plays one.
+# 2A-1A was ONCE the biggest classification outright; after the round-2 reclassification
+# (scripts/import_jhsaa.py PROMOTE_2A_ABOVE) thinned it, it now sits at 88 girls / 81
+# boys across 9 districts -- essentially level with 6A (89) and clearly behind 7A (105),
+# not the outlier it was. It still gets the same 32-team bracket as 7A/6A, which was
+# already right for a classification this size and is now a BETTER fit than before: at
+# 24 it was the hardest class in the association to qualify from -- a handful of
+# automatic bids left too few at-large places for a field that size -- which was exactly
+# backwards for the level that is supposed to be the sprawling, everybody-plays one.
 # 24 into a 32-team draw is deliberate, not a rounding-down (owner rule 2027-08): the
 # top eight seeds bye and seeds 9-24 play in, so nobody reaches the number one seed
 # without having won a dual. A full 32 gives a 1 v 32 opener, which is a bye with
