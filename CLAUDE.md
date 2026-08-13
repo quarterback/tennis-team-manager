@@ -641,6 +641,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `run_jhsaa`, and asserts on the HTML. Add data-bearing coverage there, not another
   empty-state route.
 - **`FIDELITY = "fast"`, always.** Full point-by-point put 103s on the request thread.
+- **‼️ UPSETS FALL AWAY SHARPLY PAST A MARGIN-OF-ERROR GAP (owner rule 2027-08,
+  `engine.fast.effective_gap`).** The fast model plays on a HINGED gap: identical below
+  `gap_knee` 0.06 overall-units (~1 UTR — near-equal matches keep their 2026-rule
+  volatility, 3-2 upsets stay common), accelerated ×2.8 beyond it, shared by singles
+  hold/tiebreak AND the doubles fast model so a dual's curves steepen together. Fix for
+  a materially weaker team ripping consecutive 5-0/4-1 postseason upsets (state 1S/4D
+  underdog rate at a 0.10-0.15 gap 12.7%→4.6%, 0.15+ ≈0 and 3-2 only). Do NOT delete
+  the hinge to "restore upsets" (sub-knee never changed) and do NOT raise `gap_accel`
+  past 1.8 (it already saturates). Seeds/TOSS still never touch a match — TOSS rank ≠
+  strength (corr ~0.76), so diagnose "upsets" on eff gaps via
+  `scripts/jhsaa_upset_calibration.py` first. See
+  `docs/AAR-jhsaa-upset-variance-recalibration.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 
