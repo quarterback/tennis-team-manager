@@ -40,7 +40,10 @@ getting a flat multiplier.) Regionals+Zonals are two rounds of one seeded
 recomputed over every completed pre-state match (`power_index(prestate=True)`);
 the top 8 teams that did not win a Zonal join the 8 Zonal champions in a fresh
 16-team State draw: R16 → QF → SF → Final. Only those rounds are formally the
-State Tournament.
+State Tournament. **All 16 are seeded 1–16 on the recomputed TOSS together** —
+a Zonal title buys entry, never a seed; a wild card with the better résumé
+seeds above a champion (measured: wild cards at #6–#9 over champions at #10,
+#13, #16). Pinned by `test_state_seeds_are_pure_post_zonal_toss`.
 
 The pre-state rounds therefore do two jobs at once: direct qualification by
 winning a Zonal, and résumé-building for the wild-card spots. A team can lose

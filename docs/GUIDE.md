@@ -678,8 +678,10 @@ start of the offseason ladder — before the recruit board needs its output.
   cutoff TOSS) → **Zonals** (16→8). The eight Zonal champions qualify for
   State automatically; TOSS is then **recomputed over all pre-state results**
   and the top eight non-champions enter as wild cards, making a fresh 16-team
-  **State bracket** (R16 → QF → SF → Final, no reseeding between rounds). A
-  team can lose its Zonal and still reach State on its postseason résumé.
+  **State bracket** (R16 → QF → SF → Final, no reseeding between rounds). All
+  16 are seeded together on the recomputed TOSS — a Zonal title buys entry,
+  never a seed — and a team can lose its Zonal and still reach State on its
+  postseason résumé.
   The **Tournament of Champions** is its own event on top of State, reserved
   for the six classification champions.
 - **A program's record is one continuous number**, not split into "regular"

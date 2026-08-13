@@ -201,6 +201,18 @@ def test_prestate_stages_stay_out_of_the_cutoff_toss(archived):
     assert len(cutoff) == n_regular
 
 
+def test_state_seeds_are_pure_post_zonal_toss(archived):
+    """Seeds 1-16 are post-Zonal TOSS order across the WHOLE field — a Zonal
+    champion gets no seeding guarantee, and a wild card with the better résumé
+    seeds above it."""
+    season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
+                           salt=wd.active_salt(wd.DEFAULT_SEED))
+    post = jh.power_index(list(season["teams"].values()), prestate=True)
+    for g in jh.GROUPS:
+        field = archived["arc"]["brackets"][g]["field"]
+        assert field == sorted(field, key=lambda n: (-post[n].pi_raw, n))
+
+
 def test_the_wildcard_recompute_sees_prestate_duals(archived):
     season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
                            salt=wd.active_salt(wd.DEFAULT_SEED))
