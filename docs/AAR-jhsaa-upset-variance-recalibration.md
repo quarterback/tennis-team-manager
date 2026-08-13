@@ -116,6 +116,55 @@ convert that noise into blowout bracket runs).
 Line-level after: singles favorite 83% / doubles 92% at a 0.10-0.15 gap
 (69/74 before); both unchanged below the knee.
 
+## Follow-up (same session): outcomes read ability SHAPE, not just the mean
+
+The owner's underlying worry wasn't only variance size — it was that fast
+results should be "based on something besides vibes": the players carry 49
+rich attributes and the singles fast model collapsed them to one flat mean,
+so a big server and a counterpuncher with equal OVR were indistinguishable.
+(Doubles fast never had this problem — `doubles_rating` already reads the
+rich net/serve/return/poach baskets, which is how doubles specialists exist.)
+
+Singles fast now decides each situation on the abilities that decide it:
+
+- **A service game** — the server's serve composite vs the returner's return
+  composite, both players' rally games, and small always-on mental/stamina
+  lanes (`_edges` / the `hold_*` TUNE weights). Drivers are themselves
+  rich-attribute baskets (`derive_drivers`), so `first_serve_power`,
+  `return_quality`, `composure`, `recovery` etc. all reach the outcome — the
+  full engine's signal chain, collapsed per situation instead of per point.
+- **A tiebreak** — adds `edge_clutch` × the mental deviation from the
+  player's own overall.
+- **The deciding set** — adds `edge_stamina` × the stamina deviation.
+
+Two invariants, both engineered and verified, both load-bearing:
+
+1. **Flat-player equivalence.** The hold lane weights sum to 1, and the
+   tiebreak/decider extras are deviations from the player's own overall — so
+   two players with flat driver profiles reproduce the plain overall gap
+   EXACTLY, and the hinge calibration above is untouched (the state-format
+   upset table re-measured bin-for-bin identical within MC noise).
+2. **No style is secretly the best build.** Averaged over a player's serving
+   and returning games, every driver's effective weight lands within 0.009 of
+   its uniform 1/9 share of `overall` (the check is derivable from the lane
+   weights × composite mixes — re-derive it before retuning either). The
+   first two drafts failed this in opposite directions: deviation-only edges
+   under-priced rally-heavy players (drivers with no lane counted only via
+   the mean, big-server +4.5% at equal OVR), and the first lane weighting
+   over-priced them (big-server −5%). The extras were then halved
+   (`edge_clutch` 0.7→0.35, `edge_stamina` 0.5→0.25) because they land on
+   the match's biggest moments — at full size, mental/stamina were worth
+   2-3× any other driver in win-equity (+7.6% at equal OVR for a fitness
+   build). Residual style effects at equal overall are ±2% for EXTREME
+   (±10-grade-point) shapes, and they are matchup stories, not rankings: the
+   counterpuncher feasts on the baseliner's weak serve (52.3%), big serve vs
+   elite return cancels, the iron-lungs build edges the three-setters.
+
+Determinism and cost are unchanged (same rng draw count; profiles computed
+once per match), `game_flow`/boxstats are unaffected, and team boosts (the
+doubles-school lift) already flow through real grades, so they land inside
+these composites automatically.
+
 ## Blast radius
 
 `engine.fast` is shared by every fast-fidelity consumer: the JHSAA, the
