@@ -55,17 +55,15 @@
      results are exactly what the tree above shows, so they are deliberately not
      repeated here. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Road to State</span>
-      <span class="bl-panel-meta">{{ view.stages|map(attribute='name')|join(' · ') }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Road to State</span></div>
     <div class="bl-panel-body">
       {% for st in view.stages %}
       <details class="jh-stagefold">
-        <summary><span class="cr">›</span><span class="nm">{{ st.name }}</span>
-          <span class="ct">{{ st.meta }}</span></summary>
+        <summary><span class="cr">›</span><span class="nm">{{ st.name }}</span></summary>
         <div class="bd">
           {% for rd in st.rounds %}
           {% if st.rounds|length > 1 %}
-          <div class="jh-modsplit" style="padding-left:0">{{ rd.alive }} → {{ rd.alive - rd.games|length }}</div>
+          <div class="jh-modsplit" style="padding-left:0">Round {{ loop.index }}</div>
           {% endif %}
           <div class="jh-cols2">
             {% for col in rd.games|batch((rd.games|length / 2)|round(0, 'ceil')|int, none) %}

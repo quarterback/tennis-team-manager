@@ -4032,16 +4032,11 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     pre = (arc.get("prestate") or {}).get(grp) or {}
     if pre.get("rounds"):
         for rd in reversed(_deco_rounds(pre, _jh_seeds(pre))):
-            stages.append({"name": rd["name"],
-                           "meta": f"{rd['alive']} → {rd['alive'] - len(rd['games'])}",
-                           "rounds": [rd]})
+            stages.append({"name": rd["name"], "rounds": [rd]})
     for key, name in (("wards", "Wards"), ("sectionals", "Sectionals")):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds"):
-            stages.append({"name": name,
-                           "meta": f"{len(d.get('field') or ())} → "
-                                   f"{len(d.get('survivors') or ())}",
-                           "rounds": _deco_rounds(d, _jh_seeds(d))})
+            stages.append({"name": name, "rounds": _deco_rounds(d, _jh_seeds(d))})
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
         "groups": list(jh.GROUPS),

@@ -395,6 +395,5 @@
 .jh-stagefold > summary .cr { color: var(--text-faint); font-weight: 800; transition: transform .12s; }
 .jh-stagefold[open] > summary .cr { transform: rotate(90deg); }
 .jh-stagefold > summary .nm { font-weight: 800; font-size: 13px; color: var(--text-primary); }
-.jh-stagefold > summary .ct { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .jh-stagefold > summary:hover .nm { color: var(--brand-strong); }
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
