@@ -282,6 +282,23 @@
   </ul>
   <p>Pros (the one tier generated above the normal 80-grade ceiling, into a 100-grade headroom) read measurably
     better than any college player on both scales.</p>
+  <p><strong>STR ↔ UTR ↔ WTN conversion.</strong> UTR (1.00–16.50) is the upward-facing real-world comparison;
+    WTN runs the other way (40 beginner → 1 elite pro). <code>UTR = 1 + (STR − 31)/26 × 15.5</code> ·
+    <code>WTN = 40 − (STR − 31)/26 × 39</code>. Endpoints are exact; off-anchor values are approximate. Also on
+    Analytics Bureau → Lineup Lab as a collapsed fold. OVR has no conversion — it's the separate static 20–80
+    scouting scale, not a rating.</p>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+    {% for col in scale_rows|batch(9) %}
+    <table class="bl-protable" style="flex:0 1 auto">
+      <thead><tr><th>STR</th><th>UTR</th><th>WTN</th></tr></thead>
+      <tbody>
+        {% for r in col %}
+        <tr><td class="w">{{ r.str }}</td><td>{{ '%.2f'|format(r.utr) }}</td><td>{{ '%.1f'|format(r.wtn) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
   <p><strong>Playstyles</strong> are weighted archetype profiles, so a serve-and-volleyer's volley moves further
     than their overhead, and the league's prevailing "meta" rotates by era — the game's texture shifts across
     decades the way real tennis has moved through serve-and-volley, power baseline, and athletic-defense periods.</p>

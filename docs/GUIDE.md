@@ -388,6 +388,27 @@ Pros (the one tier generated above the normal 80-grade ceiling, into a
 100-grade headroom) read measurably better than any college player on both
 scales — that headroom is exclusive to the pro tier.
 
+**STR ↔ UTR ↔ WTN conversion.** UTR (1.00–16.50) is the upward-facing
+real-world comparison; WTN runs the other way (40 beginner → 1 elite pro).
+`UTR = 1 + (STR − 31)/26 × 15.5` · `WTN = 40 − (STR − 31)/26 × 39`.
+Endpoints are exact; off-anchor values are approximate. (Also in-app:
+Analytics Bureau → Lineup Lab, the collapsed "STR ↔ UTR ↔ WTN scale" fold.)
+
+| STR | UTR | WTN | | STR | UTR | WTN | | STR | UTR | WTN |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 31 | 1.00 | 40.0 | | 40 | 6.37 | 26.5 | | 49 | 11.73 | 13.0 |
+| 32 | 1.60 | 38.5 | | 41 | 6.96 | 25.0 | | 50 | 12.33 | 11.5 |
+| 33 | 2.19 | 37.0 | | 42 | 7.56 | 23.5 | | 51 | 12.92 | 10.0 |
+| 34 | 2.79 | 35.5 | | 43 | 8.15 | 22.0 | | 52 | 13.52 | 8.5 |
+| 35 | 3.38 | 34.0 | | 44 | 8.75 | 20.5 | | 53 | 14.12 | 7.0 |
+| 36 | 3.98 | 32.5 | | 45 | 9.35 | 19.0 | | 54 | 14.71 | 5.5 |
+| 37 | 4.58 | 31.0 | | 46 | 9.94 | 17.5 | | 55 | 15.31 | 4.0 |
+| 38 | 5.17 | 29.5 | | 47 | 10.54 | 16.0 | | 56 | 15.90 | 2.5 |
+| 39 | 5.77 | 28.0 | | 48 | 11.13 | 14.5 | | 57 | 16.50 | 1.0 |
+
+OVR has no conversion — it's the separate static 20–80 scouting scale, not a
+rating.
+
 **Playstyles** are weighted archetype profiles (not flat attribute buckets),
 so a serve-and-volleyer's volley moves further than their overhead, and the
 league's prevailing "meta" rotates by era — the game's texture shifts across
