@@ -173,6 +173,12 @@ Most tests assert **invariants and determinism**.
 
 ## Docs
 
+- [`docs/GUIDE.md`](docs/GUIDE.md) — **the game guide.** A complete, sectioned
+  manual to how the game actually plays: divisions and dual formats, the
+  recruiting/scholarship economy, injuries, the transfer portal, rankings,
+  championships, Jefferson, the JHSAA, the pro tour — with an appendix
+  indexing every AAR by topic. Also rendered in-app under **Tools → Guide**.
+  Point an LLM sidecar here for "how does this game work" questions.
 - [`CLAUDE.md`](CLAUDE.md) — the design invariants (the budget economy, walk-on
   sourcing, injuries, dynamic prestige). Read it before changing numbers.
 - [`docs/`](docs/) — an AAR (after-action report) per change documents how each
