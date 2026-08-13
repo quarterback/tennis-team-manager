@@ -9506,6 +9506,253 @@
       "boys": true,
       "girls_district": "Juniper Highlands District",
       "boys_district": "Halbrook Basin District"
+    },
+    {
+      "name": "Wales City",
+      "city": "Wales City",
+      "county": "Weller",
+      "area": "Harborline",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 720,
+      "private": false,
+      "mascot": "Mariners",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District"
+    },
+    {
+      "name": "Telfair",
+      "city": "Telfair",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 640,
+      "private": false,
+      "mascot": "Falcons",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Juniper Highlands District"
+    },
+    {
+      "name": "St. Agnes Preparatory",
+      "city": "Montelago",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 510,
+      "private": true,
+      "mascot": "Saints",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Gold Valley District",
+      "boys_district": ""
+    },
+    {
+      "name": "St. Francis Xavier Preparatory",
+      "city": "Rostova Junction",
+      "county": "Emigrant",
+      "area": "Sage Plains",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 480,
+      "private": true,
+      "mascot": "Crusaders",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Rimrock District",
+      "boys_district": "Rimrock District"
+    },
+    {
+      "name": "Gagarin",
+      "city": "Gagarin",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 690,
+      "private": false,
+      "mascot": "Cosmonauts",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley District",
+      "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Gold Hollow",
+      "city": "Gold Hollow",
+      "county": "Antler",
+      "area": "Timber Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 560,
+      "private": false,
+      "mascot": "Prospectors",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Timber Valley District",
+      "boys_district": "Timber Valley District"
+    },
+    {
+      "name": "Harrow",
+      "city": "Harrow",
+      "county": "Emigrant",
+      "area": "Sage Plains",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 610,
+      "private": false,
+      "mascot": "Ravens",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Rimrock District",
+      "boys_district": "Rimrock District"
+    },
+    {
+      "name": "Las Norias",
+      "city": "Las Norias",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 730,
+      "private": false,
+      "mascot": "Windmills",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley District",
+      "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Latgaway",
+      "city": "Latgaway",
+      "county": "Stagewater",
+      "area": "Sage Plains",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 470,
+      "private": false,
+      "mascot": "Timberwolves",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District"
+    },
+    {
+      "name": "Juniper Ridge",
+      "city": "Navrang",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 655,
+      "private": false,
+      "mascot": "Ridgerunners",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Juniper Highlands District"
+    },
+    {
+      "name": "Sage Point",
+      "city": "Sage Point",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 590,
+      "private": false,
+      "mascot": "Pronghorns",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Juniper Highlands District"
+    },
+    {
+      "name": "Twin Rivers",
+      "city": "Ulery Junction",
+      "county": "Emigrant",
+      "area": "Sage Plains",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 705,
+      "private": false,
+      "mascot": "Otters",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District"
+    },
+    {
+      "name": "Owl Canyon",
+      "city": "Clear Springs",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 620,
+      "private": false,
+      "mascot": "Owls",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Juniper Highlands District"
     }
   ]
 }
