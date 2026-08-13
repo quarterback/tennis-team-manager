@@ -129,8 +129,9 @@ FIDELITY = "fast"
 # most district-driven classification: two from every district get in on the court.
 # 2A-1A was ONCE the biggest classification outright; after the round-2 reclassification
 # (scripts/import_jhsaa.py PROMOTE_2A_ABOVE) thinned it, it now sits at 88 girls / 81
-# boys across 9 districts -- essentially level with 6A (89) and clearly behind 7A (105),
-# not the outlier it was. It still gets the same 32-team bracket as 7A/6A, which was
+# boys across 8 districts -- essentially level with 6A (89) and clearly behind 7A (105)
+# and, since a further round of ALWAYS_EXTRA additions, 3A itself (80) -- not the
+# outlier it was. It still gets the same 32-team bracket as 7A/6A, which was
 # already right for a classification this size and is now a BETTER fit than before: at
 # 24 it was the hardest class in the association to qualify from -- a handful of
 # automatic bids left too few at-large places for a field that size -- which was exactly

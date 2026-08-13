@@ -62,6 +62,16 @@ GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
               "3A": 0.26, "2A": 0.78, "1A": 0.62}
 BOYS_OF_GIRLS = 0.88
 
+# Forced-in schools that field GIRLS tennis only. `always_sponsor()` puts a named
+# school in for BOTH genders, which is right for nearly all of them; this is the
+# exception list for the rare one that doesn't field a boys team (own-source fact,
+# not a random draw the way an unforced girls-only program is). Girls-sponsoring
+# being the superset (see the sponsorship note above) means there's no equivalent
+# ALWAYS_BOYS_ONLY case to mirror.
+ALWAYS_GIRLS_ONLY = {
+    "St. Agnes Preparatory",
+}
+
 # Schools the owner wants in the association without giving them an archetype. The
 # archetype seed list is folded in automatically — see `always_sponsor`.
 ALWAYS_EXTRA = [
@@ -93,17 +103,21 @@ ALWAYS_EXTRA = [
     "Gagarin School of Public Service",
     "Galena",
     "George Washington Carver",
+    "Gold Hollow",
     "Gold Junction",
     "Golden Gate",
     "Gwendolyn Brooks",
     "Halfway House",
     "Harlan Cole",
+    "Harrow",
     "Hazel Bennett",
     "High Prairie",
     "Homestead",
     "Jean Lindgren",
     "Keldale",
+    "Las Norias",
     "Las Palmas",
+    "Latgaway",
     "Lorraine Calder",
     "Mabryville",
     "Marlow County",
@@ -113,6 +127,7 @@ ALWAYS_EXTRA = [
     "New Leiden",
     "Newark River North",
     "North Valley Christian",
+    "Owl Canyon",
     "Pacific Friends School",
     "Paul Robeson",
     "Pinecrest School",
@@ -123,6 +138,7 @@ ALWAYS_EXTRA = [
     "Ransom Spur",
     "Redwood Coast",
     "Romero-Finniski",
+    "Sage Point",
     "Saint Francis",
     "San Borondón",
     "San Cordero",
@@ -146,13 +162,16 @@ ALWAYS_EXTRA = [
     "Steelbridge",
     "Summervale Northwest",
     "Svenja Ekström",
+    "Telfair",
     "Telfair Country Day School",
     "Three Saints",
     "Timberline",
     "Treasure Valley",
     "Trinity Catholic",
+    "Twin Rivers",
     "Valderra",
     "Valley Christian",
+    "Wales City",
     "Westover",
     "Westside Christian",
     "Winifred Booker",
@@ -249,13 +268,15 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     that owner-named schools are in regardless, for both genders."""
     rng = random.Random(SEED)
     forced = {_key(n) for n in always_sponsor()}
+    girls_only = {_key(n) for n in ALWAYS_GIRLS_ONLY}
     girls, boys = set(), set()
     for s in sorted(schools, key=lambda s: s["name"]):        # stable order = stable draw
         hit = rng.random() < GIRLS_RATE[s["classification"]]  # drawn either way, so the
         sub = rng.random() < BOYS_OF_GIRLS                    # roll stays reproducible
         if _key(s["name"]) in forced:
             girls.add(s["name"])
-            boys.add(s["name"])
+            if _key(s["name"]) not in girls_only:
+                boys.add(s["name"])
         elif hit:
             girls.add(s["name"])
             if sub:
