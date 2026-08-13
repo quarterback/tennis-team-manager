@@ -47,33 +47,43 @@ PAIRS_PER_BIN = 14
 SEEDS_PER_PAIR = 50
 
 
-def eff_state(ts) -> float:
-    """Per-line-averaged effective strength for the postseason 1S/4D dual: the
-    exact numbers the fast model's hold curves read."""
-    lu = jhsaa._order(ts)[:jhsaa.lineup_need("state")]
-    sq = jhsaa._squad(ts, "state", lu)
+def eff(ts, phase: str) -> float:
+    """Per-line-averaged effective strength for `phase`'s dual shape: the
+    exact numbers the fast model's hold curves read, off the lineup that
+    format actually dresses. Phase-matched on purpose — the two formats put
+    different players on singles vs doubles (a doubles-archetype lift covers
+    4/5 of the state format but only 2/7 of the regular one), so binning
+    regular duals by state strength would group them by the wrong inputs."""
+    f = jhsaa.dual_format(phase)
+    lu = jhsaa._order(ts)[:jhsaa.lineup_need(phase)]
+    sq = jhsaa._squad(ts, phase, lu)
+    ss = [sq.singles[i].overall for i in range(f.n_singles)]
     ds = [doubles_rating(sq.doubles_players[2 * i], sq.doubles_players[2 * i + 1])
-          for i in range(4)]
-    return (sq.singles[0].overall + sum(ds)) / 5
+          for i in range(f.n_doubles)]
+    return (sum(ss) + sum(ds)) / (f.n_singles + f.n_doubles)
 
 
-def build_teams(gender: str, year: int, salt: str):
+def eff_state(ts) -> float:
+    return eff(ts, "state")
+
+
+def build_teams(gender: str, year: int, salt: str, phase: str = "state"):
     teams = [jhsaa.TeamSeason(school=s, roster=jhsaa.build_roster(s, year, salt))
              for s in jhsaa.load_schools(gender)]
-    return sorted(teams, key=lambda t: -eff_state(t))
+    return sorted(teams, key=lambda t: -eff(t, phase))
 
 
-def sample_pairs(teams, rng):
-    """Real team pairs per gap bin (favorite first)."""
-    eff = {id(t): eff_state(t) for t in teams}
+def sample_pairs(teams, rng, phase: str):
+    """Real team pairs per gap bin (favorite first), by `phase`-format strength."""
+    eff_by = {id(t): eff(t, phase) for t in teams}
     by_bin = defaultdict(list)
     idx = list(range(len(teams)))
     for _ in range(60000):
         i, j = rng.sample(idx, 2)
         a, b = teams[i], teams[j]
-        if eff[id(a)] < eff[id(b)]:
+        if eff_by[id(a)] < eff_by[id(b)]:
             a, b = b, a
-        gap = eff[id(a)] - eff[id(b)]
+        gap = eff_by[id(a)] - eff_by[id(b)]
         for k, (lo, hi) in enumerate(GAP_BINS):
             if lo <= gap < hi and len(by_bin[k]) < PAIRS_PER_BIN:
                 by_bin[k].append((a, b, gap))
@@ -93,8 +103,8 @@ def play(a, b, phase, seed):
 
 
 def grid(gender: str, year: int, salt: str, phase: str) -> None:
-    teams = build_teams(gender, year, salt)
-    by_bin = sample_pairs(teams, random.Random(20270813))
+    teams = build_teams(gender, year, salt, phase)
+    by_bin = sample_pairs(teams, random.Random(20270813), phase)
     total = jhsaa.dual_format(phase).total_points
     print(f"\n=== {phase} format ({jhsaa.dual_format(phase).n_singles}S/"
           f"{jhsaa.dual_format(phase).n_doubles}D, {total} pts) — {gender} {year} ===")

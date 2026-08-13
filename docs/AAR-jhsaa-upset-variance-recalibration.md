@@ -107,8 +107,12 @@ and common 3-2s (the knee guarantees the *line-level* model is bit-identical
 below 0.06); a modest underdog stays believable (18% / 8%); a large underdog
 is occasional and almost always 3-2; a huge underdog is rare, 3-2 when it
 happens, and 4-1/5-0 huge upsets did not occur in 1,400 trials. The regular
-5S/2D format moves in proportion (12.7% → 6.1% at 0.10-0.15; 0.15+ ≈ 0), so
-records — and therefore TOSS — track strength better too (rank correlation
+5S/2D format moves in proportion (12.4% → 2.0% at 0.10-0.15, 6.9% → 0.3% at
+0.15-0.20, both measured with the harness binning by REGULAR-format strength —
+a Codex review caught the harness originally binning regular duals by their
+postseason 1S/4D strength, which are different lineups and, for a doubles
+archetype, very different numbers; eff is phase-matched now), so records —
+and therefore TOSS — track strength better too (rank correlation
 0.739 → 0.759 on the same world; most residual rank noise is schedule-graph,
 which a 26-dual season cannot rate away, but a #98-ranked team can no longer
 convert that noise into blowout bracket runs).
