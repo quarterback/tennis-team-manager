@@ -3729,7 +3729,8 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     the keys `run_season` writes per group). One call for a program page or ledger
     row; a State entrant (Zonal champion or wild card) takes priority, then the
     stages walk backward. `finish` for a pre-state exit is the stage's own name —
-    "Sectionals" / "Wards" / "Regionals" / "Zonals" — never a team-count band.
+    "Areas" / "Sectionals" / "Wards" / "Regionals" / "Zonals" — never a
+    team-count band.
     Old single-bracket archives carry only `state`, and fall through unchanged."""
     grp = grp or {}
     sec_field = (grp.get("sectional") or {}).get("field") or ()
@@ -3755,7 +3756,18 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
         out["finish"] = "Wards"
         return out
     if school in sec_field:
-        out["finish"] = "Sectionals"
+        # A multi-round Sectionals OPENS WITH AREAS (owner rule —
+        # jhsaa.run_sectional): the last round is the one named Sectionals, so a
+        # run that ended in an earlier round ended at Areas and the ledger says
+        # so. The archived round_names carry the split; old archives (all rounds
+        # named "Sectionals") fall through unchanged.
+        sec = grp.get("sectional") or {}
+        names = sec.get("round_names") or ()
+        last = 0
+        for i, games in enumerate(sec.get("rounds") or ()):
+            if any(school in (gm.get("home"), gm.get("away")) for gm in games):
+                last = i
+        out["finish"] = names[last] if last < len(names) else "Sectionals"
         return out
     return out
 
@@ -3863,9 +3875,9 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     if not row["group"]:
         return None
     # `jhsaa_postseason_result` walks every archived stage, so `state_finish` on the
-    # ledger row names the stage a run ended at — "Sectionals" / "Wards" /
-    # "Regionals" / "Zonals" — instead of going blank for a team that never reached
-    # the State bracket.
+    # ledger row names the stage a run ended at — "Areas" / "Sectionals" / "Wards"
+    # / "Regionals" / "Zonals" — instead of going blank for a team that never
+    # reached the State bracket.
     g = row["group"]
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
