@@ -4012,6 +4012,26 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     seeds = _jh_seeds(br)
+
+    def _deco_rounds(d, sseeds):
+        return [{**rd, "games": [
+            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+             "away_deco": _jh_deco(schools, gm["away"], 20),
+             "home_seed": sseeds.get(gm["home"], 0),
+             "away_seed": sseeds.get(gm["away"], 0)}
+            for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(d)]
+
+    # The road to State: every pre-state dual, in the order the ladder played them.
+    # These are visible NOWHERE else — the bracket tree only draws the 16-team State
+    # field — while the State bracket's own results are exactly what the tree already
+    # shows, so the round list carries the pre-state stages instead. Seeds come off
+    # each stage's OWN field (a team's Sectional, Ward and Regionals seeds are three
+    # different numbers). Empty on archives from before the ladder existed.
+    prestate_rounds = []
+    for key in ("sectionals", "wards", "prestate"):
+        d = (arc.get(key) or {}).get(grp) or {}
+        if d.get("rounds"):
+            prestate_rounds += _deco_rounds(d, _jh_seeds(d))
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
         "groups": list(jh.GROUPS),
@@ -4023,11 +4043,8 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
         "field_n": len(br.get("field") or ()),
         "canvas": _bracket_canvas(_jh_bracket_cols(br, schools),
                                   card_w=206, card_h=56, gutter=44, leaf_gap=12),
-        "rounds": [{**rd, "games": [
-            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
-             "away_deco": _jh_deco(schools, gm["away"], 20),
-             "home_seed": seeds.get(gm["home"], 0), "away_seed": seeds.get(gm["away"], 0)}
-            for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(br)],
+        "rounds": _deco_rounds(br, seeds),
+        "prestate_rounds": prestate_rounds,
     }
 
 
