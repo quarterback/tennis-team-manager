@@ -130,5 +130,18 @@ doubles-forward card matches the permutation table exactly).
   sum deletes the doubles-chemistry freedom the owner explicitly wanted;
   sorting purely by `doubles_rating` deletes the anti-stacking rule. Both
   halves are load-bearing; `PAIR_SUM_TOL` is the dial between them.
+- **‼️ The boundary is ADJACENT-SEAT ONLY — an owner RULING, not an oversight.**
+  A P1 review finding (correctly) observed that the tolerance can chain: pair
+  sums 15 / 13 / 11 each clear their neighbour check by exactly the tolerance
+  while D2 sits four rank-points above D4, and proposed enforcing the boundary
+  across every earlier/later pair. The owner rejected the globalisation:
+  "chemistry matters to me more than policing pairings at that fidelity" —
+  11-vs-15 across the card does not feel like stacking the way #2+#4 hiding at
+  D2 does. So a step-by-step-defensible ladder is legal even when its ends
+  drift, and what the rule polices is a pair leapfrogging its NEIGHBOUR.
+  `_order_pairs` carries the ruling in its docstring and
+  `test_the_pair_boundary_is_adjacent_only_and_tolerance_may_chain` pins the
+  chained case as legal — if that test fails, someone re-applied the review
+  finding, which is a reverted owner decision, not a bug fix.
 - Pinned by `tests/test_jhsaa_lineup.py` (legality of every constraint, the
   freeze, and the regular season staying free).

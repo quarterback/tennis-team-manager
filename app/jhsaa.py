@@ -732,24 +732,47 @@ def _arrange_state(nine: list) -> list:
                 [rank[a.pid] + rank[b.pid] for a, b in part])
     pairs = min(partitions(rest), key=part_key)
 
-    # Order the pairs: real doubles ability first, then the anti-stacking
-    # boundary — a pair whose rank sum beats the one above it by more than
-    # PAIR_SUM_TOL moves up, chemistry or not.
-    pairs.sort(key=lambda pr: -pair_rating(*pr))
-    changed = True
-    while changed:
-        changed = False
-        for i in range(len(pairs) - 1):
-            hi, lo = pairs[i], pairs[i + 1]
-            if (rank[hi[0].pid] + rank[hi[1].pid]
-                    > rank[lo[0].pid] + rank[lo[1].pid] + PAIR_SUM_TOL):
-                pairs[i], pairs[i + 1] = lo, hi
-                changed = True
-
+    pairs = _order_pairs(pairs,
+                         {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
+                         {_pk(pr): pair_rating(*pr) for pr in pairs})
     out = [s1] + list(d1)
     for a, b in pairs:
         out += [a, b]
     return out
+
+
+def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
+    """Order the D2-D4 pairs: real doubles ability first, then the
+    anti-stacking boundary — a pair whose rank sum beats the ONE ABOVE IT by
+    more than `PAIR_SUM_TOL` moves up, chemistry or not.
+
+    ‼️ The boundary is ADJACENT-SEAT ONLY, by owner ruling (2027-08). A review
+    flagged that the tolerance can CHAIN — sums 15 / 13 / 11 each clear their
+    neighbour check by exactly the tolerance while D2 sits four rank-points
+    above D4 — and proposed enforcing the boundary across every earlier/later
+    pairing. The owner kept the chain deliberately: "chemistry matters to me
+    more than policing pairings at that fidelity." A step-by-step-defensible
+    ladder is legal even when its ends drift apart; what the rule stops is one
+    pair leapfrogging its NEIGHBOUR. Do not globalise this check — a test pins
+    the chained case as legal.
+
+    `rank_sum` and `rating` are keyed by `_pk(pair)` (Prospects are unhashable
+    dataclasses, so the pair itself cannot key a dict)."""
+    pairs = sorted(pairs, key=lambda pr: -rating[_pk(pr)])
+    changed = True
+    while changed:
+        changed = False
+        for i in range(len(pairs) - 1):
+            if rank_sum[_pk(pairs[i])] > rank_sum[_pk(pairs[i + 1])] + PAIR_SUM_TOL:
+                pairs[i], pairs[i + 1] = pairs[i + 1], pairs[i]
+                changed = True
+    return pairs
+
+
+def _pk(pair) -> tuple:
+    """A hashable key for a doubles pair — the pids (or the members themselves
+    for plain-value test stubs)."""
+    return tuple(getattr(p, "pid", p) for p in pair)
 
 
 # --- regular-season lineup PHILOSOPHY (owner rule 2027-08) --------------------

@@ -237,3 +237,19 @@ def test_the_doubles_forward_card_matches_the_owner_permutation_table():
     assert {rank[lu[7].pid], rank[lu[8].pid]} <= {5, 6, 7, 8, 9}   # D2 from 5-9
     s345 = [rank[lu[k].pid] for k in (2, 3, 4)]
     assert s345 == sorted(s345)                               # S3-S5 in ladder order
+
+
+def test_the_pair_boundary_is_adjacent_only_and_tolerance_may_chain():
+    """Owner ruling (2027-08): a review proposed enforcing the rank-sum boundary
+    across every earlier/later pair, which would outlaw a 15/13/11 chemistry order
+    (each step exactly PAIR_SUM_TOL apart, ends 4 apart). The owner kept the chain —
+    "chemistry matters to me more than policing pairings at that fidelity" — so the
+    boundary binds NEIGHBOURS only. If this test starts failing, someone globalised
+    the check; that is a reverted owner decision, not a bug fix."""
+    a, b, c = ("hi",), ("mid",), ("lo",)
+    sums = {a: 15, b: 13, c: 11}
+    rating = {a: 0.9, b: 0.8, c: 0.7}          # chemistry wants 15, 13, 11
+    assert jh._order_pairs([c, b, a], sums, rating) == [a, b, c]
+    # ...but a NEIGHBOUR gap beyond the tolerance still swaps, chemistry or not
+    sums2 = {a: 15, b: 9, c: 11}
+    assert jh._order_pairs([c, b, a], sums2, rating)[0] == b
