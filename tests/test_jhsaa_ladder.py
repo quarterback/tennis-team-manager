@@ -1,23 +1,24 @@
-"""The postseason LADDER, end to end — over a REAL archived season.
+"""The postseason, end to end — over a REAL archived season.
 
-Sectionals -> Wards -> Regionals -> Zonals -> State (owner rule, ladder expansion)
-replaced the old model of picking a fixed 24/32-team field straight off district
-standings. The design invariants that model was built to satisfy:
+Three decoupled mechanisms (owner spec):
 
-  * EVERY team not protected plays into Sectionals — no pre-cut field.
-  * Protection (a district automatic bid) skips Sectionals ONLY — a protected team
-    still has to win Regionals and Zonals like anyone else; nothing shortcuts past
-    them on a district title.
-  * From the combined field on (Wards/Regionals/Zonals/State), the bracket is an
-    EXACT power of two and every round is byes-free: every survivor won a dual to
-    get there.
-  * Regionals is always the round where 32 teams enter, Zonals always 16 -- the
-    downstream shape doesn't vary by classification size, only how many rounds of
-    Sectionals (and whether there's a Wards round at all) lead into it.
+  1. Sectionals — broad access and field reduction. Every non-protected team
+     enters; byes/play-ins as needed; the only fixed requirement is the output,
+     exactly the Ward field.
+  2. The pre-state ladder — fixed shape for every classification, both genders:
+     Wards 32→16, Regionals 32→16 (Ward champions + protected), Zonals 16→8.
+     Protected entrants (district champions first, then best cutoff TOSS) enter
+     at Regionals. Zonal champions qualify for State automatically.
+  3. Wild cards — after Zonals, TOSS is recomputed over all pre-state results;
+     the top non-champions join the Zonal champions in a fresh 16-team State
+     draw (R16 → QF → SF → Final).
 
-`test_jhsaa_toc.py` covers the Tournament of Champions this same way; this file is
-the ladder's own counterpart, reusing its fixture pattern (two districts per
-classification, so a full run stays a few seconds).
+`ladder_scale` shrinks every number together for pools too small for the full
+shape — the two-district fixture here exercises exactly that; the full-size
+arithmetic is asserted proportionally, not as absolute 16/32s.
+
+Fixture pattern shared with `test_jhsaa_toc.py` (two districts per
+classification, so a run stays a few seconds).
 """
 import sqlite3
 
@@ -62,142 +63,156 @@ def archived(tmp_path_factory):
         wd.is_primed, wd.prime = real_primed, real_prime
 
 
-def _groups(archived):
-    """(group, sectional, state) for every classification, from the real archive."""
+def _stages(archived, g):
     arc = archived["arc"]
+    return (arc["sectionals"][g], arc["wards"][g], arc["prestate"][g],
+            arc["brackets"][g], arc["protected"][g], arc["wildcards"][g])
+
+
+# --- the fixed shape, per classification -------------------------------------------
+
+def test_the_ladder_shape_is_fixed_and_proportional(archived):
+    """Sectionals feeds Wards exactly; Wards halves; Regionals = Ward champions +
+    protected and halves twice down to the Zonal champions."""
     for g in jh.GROUPS:
-        yield g, arc["sectionals"][g], arc["brackets"][g]
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        k = jh.ladder_scale(g)
+        assert len(ward["field"]) == jh.WARD_FIELD // k
+        assert len(sec["survivors"]) == len(ward["field"])
+        assert len(ward["survivors"]) == len(ward["field"]) // 2
+        assert len(pre["field"]) == len(ward["survivors"]) + len(protected)
+        assert len(pre["field"]) == jh.WARD_FIELD // k          # Regionals re-fills to 32
+        assert len(pre["survivors"]) == len(pre["field"]) // 4  # two rounds: 32 -> 8
+        assert set(pre["field"]) == set(ward["survivors"]) | set(protected)
 
 
-# --- the byes-free promise -------------------------------------------------------
-
-def test_the_ladder_from_wards_on_is_byes_free(archived):
-    """Every round from the combined field through the Final: games*2 == alive, no
-    exceptions — nobody advances on the ladder without winning a dual."""
-    for g, sec, state in _groups(archived):
-        alive = len(state["field"])
-        for games in state["rounds"]:
-            assert len(games) * 2 == alive, (g, alive, len(games))
-            alive -= len(games)
-        assert alive == 1
-
-
-def test_the_state_field_is_always_a_power_of_two(archived):
-    for g, sec, state in _groups(archived):
-        n = len(state["field"])
-        assert n & (n - 1) == 0, (g, n)
-        assert n == jh.ladder_entry(g)
-
-
-def test_boys_and_girls_play_the_same_bracket_format(archived):
-    """A real state association doesn't size its boys' 4A bracket differently from
-    its girls' 4A bracket just because one gender happens to have a few more
-    programs — the classification's format is ONE decision, not two. `ladder_entry`
-    is keyed on the group alone (not group+gender) for exactly this reason."""
-    girls_state = archived["arc"]["brackets"]
-    boys_state = archived["arc_boys"]["brackets"]
+def test_the_state_field_is_zonal_champions_plus_wildcards(archived):
     for g in jh.GROUPS:
-        assert len(girls_state[g]["field"]) == len(boys_state[g]["field"]) \
-            == jh.ladder_entry(g)
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        k = jh.ladder_scale(g)
+        zonal_champs = set(pre["survivors"])
+        assert len(wc) == jh.WILDCARDS // k
+        assert zonal_champs.isdisjoint(wc)
+        assert set(state["field"]) == zonal_champs | set(wc)
 
 
-# --- protection: skip Sectionals only, never more ---------------------------------
-
-def test_protected_teams_never_appear_in_the_sectional_field(archived):
-    """A district's automatic bids join the ladder at Wards/Regionals — they never
-    play a Sectional dual at all."""
-    for g, sec, state in _groups(archived):
-        protected = set(state["field"]) - set(sec["survivors"])
-        assert protected.isdisjoint(sec["field"]), g
+def test_boys_and_girls_play_the_same_format(archived):
+    for g in jh.GROUPS:
+        for key in ("brackets", "wards", "prestate"):
+            assert len(archived["arc"][key][g]["field"]) \
+                == len(archived["arc_boys"][key][g]["field"]), (key, g)
 
 
-def test_sectional_survivors_plus_protected_equal_the_state_field(archived):
-    """Nobody is invented or dropped recombining the two halves of the ladder."""
-    for g, sec, state in _groups(archived):
-        protected = set(state["field"]) - set(sec["survivors"])
-        assert protected | set(sec["survivors"]) == set(state["field"])
-        assert len(protected) + len(sec["survivors"]) == len(state["field"])
+# --- protection: district champions first, enter at Regionals, nothing more --------
+
+def test_protected_is_district_champions_first_then_toss(archived):
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        champs = {rows[0]["school"]
+                  for rows in archived["arc"]["standings"][g].values() if rows}
+        assert champs <= set(protected)
 
 
-# --- ladder stage names (world.py) -------------------------------------------------
-
-def test_regionals_and_zonals_are_named_rounds(archived):
-    assert wd._round_label(32) == "Regionals"
-    assert wd._round_label(16) == "Zonals"
-    assert wd._round_label(8) == "Quarterfinals"
-    assert wd._round_label(64) == "Wards"
-
-
-def test_jhsaa_state_rounds_uses_the_ladder_names(archived):
-    for g, sec, state in _groups(archived):
-        rounds = wd.jhsaa_state_rounds(state)
-        names = {r["alive"]: r["name"] for r in rounds}
-        if 32 in names:
-            assert names[32] == "Regionals"
-        if 16 in names:
-            assert names[16] == "Zonals"
+def test_protected_teams_skip_sectionals_and_wards_only(archived):
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        assert set(protected).isdisjoint(sec["field"])
+        assert set(protected).isdisjoint(ward["field"])
+        assert set(protected) <= set(pre["field"])   # they DO play Regionals
 
 
-# --- postseason results, both halves of the ladder ---------------------------------
+# --- byes only in Sectionals --------------------------------------------------------
 
-def test_sectional_eliminated_teams_get_a_sectionals_finish(archived):
-    found_one = False
-    for g, sec, state in _groups(archived):
-        eliminated = set(sec["field"]) - set(sec["survivors"])
-        for name in eliminated:
-            r = wd.jhsaa_postseason_result(sec, state, name)
-            assert r == {"made_state": False, "seed": 0, "place": 0, "champion": False,
-                        "played_sectional": True, "advanced": False,
-                        "finish": "Sectionals"}
-            found_one = True
-    assert found_one
+def test_wards_regionals_zonals_and_state_are_byes_free(archived):
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        for br in (ward, pre, state):
+            alive = len(br["field"])
+            for games in br["rounds"]:
+                assert len(games) * 2 == alive, (g, alive, len(games))
+                alive -= len(games)
 
 
-def test_protected_teams_report_played_sectional_false(archived):
-    found_one = False
-    for g, sec, state in _groups(archived):
-        protected = set(state["field"]) - set(sec["survivors"])
-        for name in protected:
-            r = wd.jhsaa_postseason_result(sec, state, name)
-            assert r["made_state"] is True
-            assert r["played_sectional"] is False
-            found_one = True
-    assert found_one
+# --- stage names ride the archive ---------------------------------------------------
+
+def test_prestate_dicts_carry_their_own_round_names(archived):
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        assert ward["round_names"] == ["Wards"]
+        assert pre["round_names"] == ["Regionals", "Zonals"]
+        assert all(n == "Sectionals" for n in sec["round_names"])
+        rounds = wd.jhsaa_state_rounds(pre)
+        assert [r["name"] for r in rounds] == ["Regionals", "Zonals"]
 
 
-def test_the_champion_reads_champion_true(archived):
-    for g, sec, state in _groups(archived):
-        r = wd.jhsaa_postseason_result(sec, state, state["champion"])
-        assert r["champion"] is True
-        assert r["finish"] == "Champion"
+# --- postseason results across every stage ------------------------------------------
+
+def test_finishes_name_the_stage_a_run_ended_at(archived):
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, wc = _stages(archived, g)
+        grp = {"sectional": sec, "ward": ward, "prestate": pre,
+               "state": state, "wildcards": wc}
+        sec_out = set(sec["field"]) - set(sec["survivors"])
+        for name in sec_out:
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert (r["finish"], r["made_state"]) == ("Sectionals", False)
+        ward_out = set(ward["field"]) - set(ward["survivors"])
+        for name in ward_out:
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert (r["finish"], r["made_state"]) == ("Wards", False)
+        for name in set(pre["field"]) - set(pre["survivors"]) - set(state["field"]):
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert r["finish"] in ("Regionals", "Zonals")
+            assert not r["made_state"]
+        for name in wc:
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert r["made_state"] and r["wildcard"]
+        champ = wd.jhsaa_postseason_result(grp, state["champion"])
+        assert champ["champion"] and champ["finish"] == "Champion"
 
 
-# --- the duals are TELLABLE APART in the archive, same promise the TOC makes -------
+# --- the archive keeps the stages apart ---------------------------------------------
 
-def test_sectional_duals_are_archived_under_their_own_phase(archived):
+def test_each_stage_is_archived_under_its_own_phase(archived):
     conn = sqlite3.connect(archived["db"])
     conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT school, opp, won FROM world_jhsaa_dual"
-                        " WHERE phase='sectional' AND gender='girls'").fetchall()
+    for phase, key in (("ward", "wards"), ("sectional", "sectionals")):
+        rows = conn.execute("SELECT COUNT(*) c FROM world_jhsaa_dual"
+                            " WHERE phase=? AND gender='girls'", (phase,)).fetchone()
+        played = sum(len(r) for d in archived["arc"][key].values()
+                     for r in d["rounds"])
+        assert rows["c"] == 2 * played, phase       # a dual sits on both sides' cards
+    for phase, rd in (("regional", 0), ("zonal", 1)):
+        rows = conn.execute("SELECT COUNT(*) c FROM world_jhsaa_dual"
+                            " WHERE phase=? AND gender='girls'", (phase,)).fetchone()
+        played = sum(len(d["rounds"][rd]) for d in archived["arc"]["prestate"].values()
+                     if len(d["rounds"]) > rd)
+        assert rows["c"] == 2 * played, phase
     conn.close()
-    arc = archived["arc"]
-    played = sum(len(r) for sec in arc["sectionals"].values() for r in sec["rounds"])
-    assert len(rows) == 2 * played           # a dual sits on both sides' cards
 
 
-def test_sectionals_stay_out_of_the_toss_rating(archived):
+def test_prestate_stages_stay_out_of_the_cutoff_toss(archived):
     season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
                            salt=wd.active_salt(wd.DEFAULT_SEED))
-    rated = jh.rating_duals(list(season["teams"].values()))
-    assert not any(d.get("phase") == "sectional" for d in rated)
+    teams = list(season["teams"].values())
+    cutoff = jh.rating_duals(teams)
+    n_regular = sum(1 for t in teams for d in t.schedule
+                    if d["home"] and d["phase"] not in jh.POSTSEASON)
+    assert len(cutoff) == n_regular
 
 
-def test_every_dual_a_sectional_survivor_played_is_on_its_record(archived):
-    """The historically-buggy invariant (131/137 balanced, `docs/AAR-jhsaa-...`):
-    every dual archived on a program's SCHEDULE must also be reflected in its
-    RECORD. The ladder adds a whole new postseason stage in front of the old one —
-    if Sectionals duals ever landed on the schedule after the record snapshot, this
-    would silently reproduce that bug for every classification at once."""
+def test_the_wildcard_recompute_sees_prestate_duals(archived):
+    season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
+                           salt=wd.active_salt(wd.DEFAULT_SEED))
+    teams = list(season["teams"].values())
+    cutoff = jh.rating_duals(teams)
+    post = jh.rating_duals(teams, prestate=True)
+    assert len(post) > len(cutoff)
+
+
+def test_every_archived_record_covers_every_dual_played(archived):
+    """The historically-buggy invariant: every dual on a program's schedule is
+    reflected in its record — now with four new stages in front of State."""
     conn = sqlite3.connect(archived["db"])
     conn.row_factory = sqlite3.Row
     for gender in ("girls", "boys"):

@@ -1,154 +1,109 @@
-# AAR — the JHSAA postseason ladder: Sectionals → Wards → Regionals → Zonals → State
+# AAR — the JHSAA postseason: Sectionals → Wards → Regionals → Zonals → wild cards → State
 
 **Date:** 2026-08-13
-**Status:** Landed. Owner rule, ladder expansion.
-**Scope:** `app/jhsaa.py` (`POSTSEASON`, `AUTO_PER_DISTRICT`, `ladder_entry`,
-`sectional_field` — replaces `qualifiers` — `_power_key`, `_elim_round`,
-`run_sectional`, `run_state` (docstring only), `run_season`), `app/world.py`
-(`_round_label` / `_finish_label` / `_ladder_stage`, `jhsaa_state_rounds`,
-`jhsaa_state_result`, `jhsaa_sectional_result` (new), `jhsaa_postseason_result`
-(new), `run_jhsaa`, `_season_row`), `app/web/state.py` (`jhsaa_school_view`'s
-`kinds`/`opp_seed`), `templates/jhsaa_school.html`, `tests/test_jhsaa_ladder.py`
-(new).
+**Status:** Landed. Owner spec (playoff-run research; other states' formats).
+**Scope:** `app/jhsaa.py` (`POSTSEASON`, `PROTECTED`/`WARD_FIELD`/`WILDCARDS`,
+`ladder_scale`, `sectional_field`, `run_sectional`, `run_rounds` (new),
+`run_state`, `rating_duals(prestate=)`, `power_index(prestate=)`,
+`FLIGHT_WEIGHTS` +D3/D4, `run_season`), `app/world.py` (`_finish_label` /
+`_round_label`, `jhsaa_state_rounds` round_names, `jhsaa_postseason_result`,
+`run_jhsaa`, `_season_row`), `app/web/state.py` (`jhsaa_school_view`),
+`templates/jhsaa_school.html`, `tests/test_jhsaa_ladder.py`.
 
-## The owner's decision
+## The owner's spec
 
-Real state associations don't cut straight from district standings to a fixed
-24/32-team bracket the way the old model did — most run a real ladder: district →
-regional/sectional → state, with the early rounds open to nearly everyone and the
-field narrowing as it goes. The old model also had a specific, measured problem:
-2A-1A, the association's biggest classification, was also its hardest to qualify
-from — a handful of automatic bids left too few at-large spots for a field that
-size, which is backwards for the level that's supposed to be the sprawling,
-everybody-plays one (`docs/AAR-jhsaa-high-school-season.md` already flagged this
-once; reclassification and sponsorship growth since then made the shape worse, not
-better).
+Three separate mechanisms, deliberately decoupled — the design error to avoid
+here is cascading any one of their numbers through the others:
 
-The fix is five stages instead of one:
+**1. Sectionals — broad access and field reduction.** Every non-protected team
+enters. The shape is flexible per classification (byes and play-in rounds as
+needed); the only fixed requirement is the output: exactly 32 teams for Wards.
+48 entrants → 16 byes, 16 matches, 32 out. 57 → 7 byes, 25 matches, 32 out.
+83 (7A boys, measured) → two rounds, 83 → 42 → 32.
 
-| Stage | What it is |
-|---|---|
-| **Sectionals** | Broad access. Everyone not protected plays in — not a pre-cut subset, the whole rest of the classification. |
-| **Wards** | Only exists for classifications big enough to need it. Protected teams join the Sectional survivors here. |
-| **Regionals** | The round where 32 teams enter, always. |
-| **Zonals** | The round where 16 teams enter, always. |
-| **State** | Round of 8 → Quarterfinal → Semifinal → Final. The only rounds formally called the state tournament. |
+**2. The pre-state ladder — fixed for every classification and both genders:**
 
-**Protection is narrow and stays narrow.** A district's automatic bids (7A: top
-two per district; everyone else, the champion — unchanged from the old model) are
-PROTECTED, meaning they skip Sectionals. That is the entire extent of it — nobody
-skips Regionals or Zonals on a district title, and from Wards on the bracket is
-byes-free straight single elimination, so a protected team is exactly as exposed
-as anyone else the moment it enters the ladder. `AUTO_PER_DISTRICT` (unchanged)
-still decides who's protected; nothing upstream of Sectionals changed.
+| Stage | Field | Result |
+|---|---|---|
+| Wards | 32 Sectional survivors | 16 Ward champions |
+| Regionals | 16 Ward champions + 16 protected | 16 Regional champions |
+| Zonals | 16 | 8 Zonal champions — automatic State qualifiers |
 
-## Why byes-free was the actual design constraint
+The protected 16 enter at Regionals: district champions first, then the best
+remaining cutoff TOSS until the seats are filled. (This retired
+`AUTO_PER_DISTRICT` and with it 7A's old top-two-per-district rule — a strong
+district now earns extra protected seats through TOSS instead of every district
+getting a flat multiplier.) Regionals+Zonals are two rounds of one seeded
+32-draw — no reseeding between them, the association's standing rule.
 
-The build started from a fixed spec (pod-based Regionals/Zonals, hand-picked field
-sizes per classification) and simplified twice during design, both times toward
-less machinery: pods turned out to reduce to nothing more than "a normal
-single-elimination bracket, labeled by round size" once you actually work out what
-they do, so they're gone — Regionals/Zonals/State are just rounds of ONE bracket,
-not a separate pod concept. And the field-size table got replaced with
-`ladder_entry(n_teams)`, computed from the real roster instead of hardcoded, because
-the association's classification sizes have already drifted twice this cycle
-(reclassification, `ALWAYS_EXTRA` growth) and a hardcoded table would be stale again
-by the next one.
+**3. Wild cards — selected after Zonals, resizing nothing upstream.** TOSS is
+recomputed over every completed pre-state match (`power_index(prestate=True)`);
+the top 8 teams that did not win a Zonal join the 8 Zonal champions in a fresh
+16-team State draw: R16 → QF → SF → Final. Only those rounds are formally the
+State Tournament.
 
-What didn't simplify away: **byes only happen in Sectionals.** That was the one
-hard requirement — "make everyone earn their way in" — and it's the actual reason
-the architecture looks the way it does:
+The pre-state rounds therefore do two jobs at once: direct qualification by
+winning a Zonal, and résumé-building for the wild-card spots. A team can lose
+its Zonal and still play into State on its full postseason body of work —
+verified live: a protected team that lost at Zonals wild-carded into State and
+finished Octofinalist.
 
-- `ladder_entry(n_teams)` picks the largest power of two ≤ `n_teams` (floored at 8).
-  Since it's a power of two, the field from Wards/Regionals on halves EXACTLY every
-  round — no odd remainders, no byes, ever. This is the whole trick: push all the
-  "real team counts aren't powers of two" awkwardness into the ONE stage that's
-  supposed to have it.
-- `sectional_field` splits the classification into (protected, unprotected).
-  `run_sectional` trims the unprotected pool down to exactly `ladder_entry(n) -
-  len(protected)` survivors, so `protected + survivors` recombines to precisely
-  `ladder_entry(n)` teams. Ordinary rounds inside Sectionals halve the field (a bye
-  only to fix an odd remainder — nearly everyone plays); the LAST round trims
-  precisely via the same "byes to the top seeds" idea `run_state` already used for
-  a non-power-of-two field, just aimed at an arbitrary target instead of the next
-  power of two up.
-- The recombined field then goes straight into `run_state` **completely
-  unchanged** — no new code, no special-casing. Since the field is already exactly
-  a power of two, `run_state`'s own "pad to the next power of two with byes"
-  branch never actually fires in normal play; it's only still there because a
-  caller running one classification standalone (tests, calibration) might hand it
-  a field that isn't. That's not new logic invented for this — it's the same
-  reasoning `engine.tournament.seeded_draw` already gives the college championship.
+## Numbers on the real association
 
-Measured on the real 513-school association (not the test fixture): every
-classification's Wards-through-Final rounds play at **zero byes**, confirmed for
-all six groups × both genders. 4A boys (the smallest classification, 63 boys
-programs) is the one case where `ladder_entry` lands on 32 rather than 64 — no
-separate Wards round, Sectionals feeds straight into Regionals — which is the
-intended degenerate case, not a special case that needed its own code path.
+Every classification fits the full-size spec — protected 16 + Sectional
+entrants ≥ 32 holds even for the smallest (4A boys, 63 programs: 16 + 47).
+Measured, boys, one seeded run:
 
-## Two archived halves, not one bracket dict
+| Group | Sectional entrants | Sectional shape | Ward | Regionals | Zonal champs | WC | State |
+|---|---|---|---|---|---|---|---|
+| 7A | 83 | 83 → 42 → 32 | 32 | 32 | 8 | 8 | 16 |
+| 6A | 58 | 58 → 32 | 32 | 32 | 8 | 8 | 16 |
+| 5A | 55 | 55 → 32 | 32 | 32 | 8 | 8 | 16 |
+| 4A | 47 | 47 → 32 | 32 | 32 | 8 | 8 | 16 |
+| 3A | 54 | 54 → 32 | 32 | 32 | 8 | 8 | 16 |
+| 2A-1A | 65 | 65 → 33 → 32 | 32 | 32 | 8 | 8 | 16 |
 
-`run_state`'s `{field, rounds, champion}` shape is unchanged and still flows
-through every existing reader (`jhsaa_state_rounds`, `_jh_bracket_cols`,
-`_bracket_canvas`, the bracket templates, `jhsaa_state_result`) with **zero
-changes to any of them** — the whole ladder redesign turned out not to need the
-downstream stack rewritten, because `jhsaa_state_rounds`'s `alive`-countdown
-already handles any number of rounds generically. What's new is a SECOND archived
-dict per classification, `season["groups"][g]["sectional"]`
-(`{field, rounds, survivors}` — no single champion, since Sectionals produces many
-survivors, not one), stored beside `"state"` under a `"sectionals"` key in
-`world_jhsaa.data` alongside the existing `"brackets"` key.
+Byes exist only in Sectionals; Wards through the Final is exact halving.
+`ladder_scale` shrinks every number together (powers of two, same shape, shared
+by both genders) for pools too small for the full size — the two-district test
+fixture, not any real classification.
 
-Two dicts because they're genuinely different shapes with a different question
-each answers — "how far did this team get on the byes-free ladder" vs. "did this
-team survive Sectionals at all" — and a program eliminated in Sectionals never
-appears in the `"state"` dict's field, which is correct: it didn't reach the
-ladder proper. `jhsaa_state_result` (unchanged) answers the first;
-`jhsaa_sectional_result` (new) the second; `jhsaa_postseason_result` (new) is the
-one call a program page or season-ledger row actually wants — state result if the
-team made it, Sectionals result if not, so `state_finish` on a season ledger row
-now reads "Sectionals" for a team that lost there instead of going blank, the same
-promise `toc_finish` already made for a team that missed the Tournament of
-Champions.
+## Mechanics worth knowing
 
-**Round names above the existing Quarterfinalist/Semifinalist/Runner-up/Champion
-bands** (`world._ladder_stage`): keyed on how many teams ENTER a round —
-alive==32 is always "Regionals", alive==16 always "Zonals" (the ladder always
-funnels through both), anything above 32 is "Wards" (covers 64 today; the name
-shouldn't silently revert to "Round of N" if the association ever grows into a
-bigger one). Below 16 the existing bands were already right and are untouched —
-they didn't change just because more rounds now lead into them.
-
-## What this did NOT touch
-
-`run_toc`'s assumption — six classification champions feed the Tournament of
-Champions — is still exactly true, because State still funnels down to one
-champion per classification the same way it always did; the ladder only changed
-how a team GETS to be in the state field, not what State itself produces.
-`run_state`, `_jh_bracket_cols`, `_bracket_canvas`, every bracket template, and
-every TOSS/`dual_format`/lineup-strictness rule keyed on `POSTSEASON` needed no
-code changes — "sectional" was simply added to that tuple, which pulled Sectionals
-into the same 1S/4D shape, strict-best-nine lineup, and TOSS exclusion the rest of
-the postseason already had, for free.
+- **One phase per stage** (`POSTSEASON = ("sectional", "ward", "regional",
+  "zonal", "state", "toc")`) — the archive is the only place stages can be told
+  apart afterwards, and each new phase inherited the 1S/4D shape, strict
+  best-nine lineup, and cutoff-TOSS exclusion for free by joining the tuple.
+- **Two TOSS computations.** The cutoff TOSS (seeding, district tiebreak,
+  protection) is the regular season only, unchanged. The post-Zonal recompute
+  adds the completed pre-state stages. That required D3/D4 flight weights
+  (postseason 1S/4D lines) in `jhsaa.FLIGHT_WEIGHTS` — same decay as the
+  existing doubles column; the cutoff TOSS never reaches them.
+- **Stage dicts carry their own `round_names`** — `jhsaa_state_rounds` reads
+  them back instead of guessing from team counts, since Wards and Regionals
+  both enter at 32. The State bracket stays count-banded (Octofinals /
+  Quarterfinals / Semifinals / Championship), which also covers old
+  single-bracket archives.
+- **`jhsaa_postseason_result(grp, school)`** walks state → prestate → ward →
+  sectional and names the stage a run ended at; ledger rows read "Sectionals" /
+  "Wards" / "Regionals" / "Zonals" instead of a blank, plus a `wildcard` flag
+  for State entrants who didn't win a Zonal.
+- **Order inside `run_season`:** every group's ladder runs through Zonals
+  BEFORE any group's wild cards are picked — the recompute is gender-wide (the
+  results graph crosses classifications), so it can only run once all Zonals
+  are done. Records still snapshot after the whole postseason (the 131/137
+  invariant), now with four more stages in front of the old boundary.
+- **`run_toc` unchanged** — six classification champions, and State still
+  produces exactly one each.
 
 ## Verification
 
-- 97 pre-existing JHSAA tests pass unmodified — the shared bracket-dict contract
-  meant nothing downstream needed to change to keep working.
-- `tests/test_jhsaa_ladder.py` (new, 12 tests): the ladder is byes-free from Wards
-  on; the state field is always a power of two and matches `ladder_entry`;
-  protected teams never appear in the Sectional field; survivors + protected
-  recombine to exactly the state field; Regionals/Zonals/Wards name the right
-  rounds; both halves of `jhsaa_postseason_result` read correctly; Sectional duals
-  are archived under their own phase and stay out of TOSS; and the
-  historically-buggy invariant (`docs/AAR-jhsaa-district-schedule-passes.md`'s
-  131/137 bug class) still holds with a whole new postseason stage in front of the
-  old one — every dual on a program's schedule is reflected in its record.
-- Measured directly against the real 513-school association (not the test
-  fixture): zero byes across all Wards/Regionals/Zonals/State rounds, every
-  classification; 4A boys correctly skips the Wards round; a district champion who
-  lost in its very first ladder game (Regionals) confirmed protection doesn't
-  extend past Sectionals; every `/jhsaa*` route renders against a real archived
-  season, including the school page's new "Sectionals" and "postseason ladder"
-  schedule segments.
+- 109 JHSAA tests pass: 79 pre-existing + 18 TOC + 12 rewritten ladder tests
+  (fixed shape and proportionality, protected = champions + TOSS fill and skip
+  exactly Sectionals+Wards, byes-free from Wards on, state field = Zonal
+  champions ∪ wild cards, per-stage phases in `world_jhsaa_dual`, stage-named
+  finishes, cutoff TOSS excludes all postseason, the wild-card recompute sees
+  more duals than the cutoff, records cover every dual).
+- Full-size run archived through the real world rung; every `/jhsaa*` page
+  renders; school pages segment the card by stage (Sectionals / Wards /
+  Regionals / Zonals / State Tournament / TOC) with per-stage opponent seeds.

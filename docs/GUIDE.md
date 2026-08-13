@@ -671,10 +671,17 @@ start of the offseason ladder — before the recruit board needs its output.
   uses, computed over the whole gender at once (crossing classification
   lines, since non-district play does too) and over the regular season only
   (postseason results don't feed back into the seeding that produced them).
-- **State tournaments are seeded brackets with byes for the top seeds**, not
-  reseeded between rounds — the way most real state tournaments actually run
-  — and the **Tournament of Champions** is its own event on top of state,
-  reserved for classification champions.
+- **State qualification is a ladder**, the same shape for every classification
+  and both genders: **Sectionals** (every non-protected team; byes/play-ins as
+  needed; cuts to 32) → **Wards** (32→16) → **Regionals** (the 16 Ward
+  champions + 16 protected entrants — district champions first, then best
+  cutoff TOSS) → **Zonals** (16→8). The eight Zonal champions qualify for
+  State automatically; TOSS is then **recomputed over all pre-state results**
+  and the top eight non-champions enter as wild cards, making a fresh 16-team
+  **State bracket** (R16 → QF → SF → Final, no reseeding between rounds). A
+  team can lose its Zonal and still reach State on its postseason résumé.
+  The **Tournament of Champions** is its own event on top of State, reserved
+  for the six classification champions.
 - **A program's record is one continuous number**, not split into "regular"
   and "postseason" halves that could double-count games — the postseason is
   folded into the same season total real high-school and NCAA records use,

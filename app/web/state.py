@@ -4063,19 +4063,19 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}
     seeds = _jh_seeds(br)
-    # The TOC is its own draw with its own seeding — a 4A champion can be the No. 2
-    # seed there while carrying the No. 1 seed in its classification — so a TOC dual's
-    # opponent seed has to come off the TOC field, never off the state bracket's.
+    # Every stage is its own draw with its own seed order — a team's Sectional seed,
+    # Ward seed, Regionals seed, State seed and TOC seed are five different numbers —
+    # so each dual's opponent seed comes off the field of the stage it was played in.
     toc_seeds = _jh_seeds((arc or {}).get("toc") or {})
-    # Sectionals is its OWN field (`jhsaa.run_sectional`'s output, not `run_state`'s),
-    # so its seed order is its own too — a program can be seeded very differently
-    # inside its Sectional draw than a protected team is once it joins the ladder at
-    # Wards, and mixing the two would just be wrong for both sides of that game.
-    sec_br = (arc or {}).get("sectionals", {}).get(sc.group) or {}
-    sec_seeds = _jh_seeds(sec_br)
-    kinds = ["TOC" if d["phase"] == "toc" else "STATE" if d["phase"] == "state"
-             else "SECTIONAL" if d["phase"] == "sectional"
-             else "DIST" if d["district"] else "NON-DIST" for d in sched]
+    sec_seeds = _jh_seeds((arc or {}).get("sectionals", {}).get(sc.group) or {})
+    ward_seeds = _jh_seeds((arc or {}).get("wards", {}).get(sc.group) or {})
+    pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(sc.group) or {})
+    _KIND = {"toc": "TOC", "state": "STATE", "zonal": "ZONAL",
+             "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
+    kinds = [_KIND.get(d["phase"], "DIST" if d["district"] else "NON-DIST")
+             for d in sched]
+    _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "ZONAL": pre_seeds,
+              "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds}
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
     honor_pids = {}
@@ -4112,8 +4112,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "toc_finish": (season or {}).get("toc_finish", ""),
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
-                      "opp_seed": {"TOC": toc_seeds, "STATE": seeds,
-                                   "SECTIONAL": sec_seeds}.get(k, {}).get(d["opp"], 0)}
+                      "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0)}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
