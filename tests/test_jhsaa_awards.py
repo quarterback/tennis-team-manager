@@ -99,3 +99,22 @@ def test_every_district_gets_a_player_of_the_year(season):
         a = season["awards"][g]
         assert set(a["district_poy"]) == set(a["all_district"]), g
         assert a["poy"] is not None
+
+
+def test_award_rows_name_the_PLAYER_not_the_school(season):
+    """‼️ The awards shipped rendering a list of SCHOOLS. `_jh_deco` describes a
+    school and its dict is keyed `name`, so splatting it over an award row
+    overwrote every selection's player name — All-State read "Beacon Hill",
+    "Belmonte West", "Serrano". The selections were individuals the whole time;
+    only the display was wrong, which is the worst way for this to break because
+    the data underneath looks fine."""
+    schools = {s.name for s in jh.load_schools("boys")}
+    for g in jh.GROUPS:
+        a = season["awards"][g]
+        rows = ([r for t in a["teams"] for r in t["players"]]
+                + a["honorable_mention"]
+                + [r for rs in a["all_district"].values() for r in rs]
+                + [a["poy"]] + list(a["district_poy"].values()))
+        for r in rows:
+            assert r["name"] not in schools, (g, r["name"], r["school"])
+            assert r["name"] != r["school"], (g, r["name"])

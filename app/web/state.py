@@ -4021,7 +4021,13 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     ad = (arc.get("all_district") or {}).get(grp) or {}
 
     def deco(r):
-        return {**r, **_jh_deco(schools, r.get("school", ""), 20)}
+        # ‼️ Take the CREST ONLY, never the whole deco. `_jh_deco` describes a
+        # SCHOOL and its dict is keyed `name` — splatting it over an award row
+        # overwrote every selection's player name with the school's, so the
+        # All-State teams rendered as a list of schools. Every other caller
+        # splats a deco over a row that IS a school, where `name` colliding is
+        # correct; this is the one place the row is a PERSON.
+        return {**r, "mark": _jh_deco(schools, r.get("school", ""), 20)["mark"]}
 
     # Pre-SOP seasons archived a flat six-name `all_state` and no tiers; show it
     # as a single unnamed team rather than an empty page.
