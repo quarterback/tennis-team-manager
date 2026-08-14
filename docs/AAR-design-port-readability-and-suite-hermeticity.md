@@ -1,4 +1,4 @@
-# AAR — porting the Varsity Apex design into Play to Clinch, and the test suite that was deleting the save
+# AAR — porting the Varsity Apex design into Play to Clinch, the type scale, and a test suite that was not hermetic
 
 Three requests in one session — bring the Apex look across, make the text
 readable, fix a failing test — and the third turned out to be the biggest thing
@@ -92,11 +92,22 @@ the second.
 
 ---
 
-## 3. ‼️ THE TEST SUITE WAS DELETING THE OWNER'S SAVE
+## 3. The suite shared a database with the app
 
-The headline. `test_season_awards_structure` had been failing, and I had
-correctly established it was pre-existing (it fails identically at the commit
-before this work). What I nearly did was stop there.
+`test_season_awards_structure` had been failing, and I had correctly established
+it was pre-existing (it fails identically at the commit before this work). What
+I nearly did was stop there.
+
+> **Correction, from the owner, after I wrote this up as data loss:** *"i never
+> keep the same tennis.db so that's not important it never is."* They rebuild the
+> sim from scratch on every reload. I had found a real bug and then rated it on a
+> cost the owner does not pay — the dramatic framing ("the suite is deleting your
+> save") was wrong, and worse, I put it in `CLAUDE.md` where it would have set a
+> false priority for every later agent. **The severity of a bug is a fact about
+> the user's workflow, not about how alarming the mechanism sounds.** Ask, or say
+> plainly what you do and don't know about the cost.
+
+The bug is real and the fix stands; the reason is HERMETICITY, not preservation.
 
 The chain:
 
@@ -108,10 +119,11 @@ The chain:
    `DELETE FROM world`.
 4. `./tennis.db` was a real 218 MB save sitting in the repo root, gitignored.
 
-**So every run of the suite wiped the world.** Not a hypothetical: it is why
-the awards test failed. The reset removed the world while leaving the played
-SEASON rows behind, so the season's ~4,600 player pids referred to people the
-roster generator no longer produces.
+**So every run of the suite read and wrote whatever was in that file.** Its
+results depended on the developer's disk rather than on the code — which is
+exactly why the awards test failed: a world reset with the played SEASON rows
+left behind means the season's ~4,600 player pids refer to people the roster
+generator no longer produces.
 
 Measured to be sure, rather than reasoned about:
 
@@ -128,7 +140,7 @@ and every All-American tier came back empty **on a fully played season**.
 Two fixes, because there were two faults:
 
 - **The suite gets its own database**, set in the root `conftest.py` before any
-  `app` import. A test suite must never be able to touch a save.
+  `app` import — so a run is a statement about the code and not about leftovers.
 - **`_eligible` stopped degrading silently.** Every pid failing to resolve is a
   FAULT, not a result. It now says so in the log instead of rendering a clean,
   plausible, completely wrong "nobody was honored".
@@ -138,8 +150,8 @@ Two fixes, because there were two faults:
 - **"Pre-existing" is a statement about WHEN, not about WHETHER IT MATTERS.** I
   established the failure predated my work and was ready to hand it back
   labelled. The owner said "that's a big problem" and was right: the test was
-  the only visible symptom of a bug that was destroying data on every run.
-  Bisecting to "not mine" is the start of a diagnosis, not the end of one.
+  the only visible symptom of a suite that wasn't hermetic. Bisecting to "not
+  mine" is the start of a diagnosis, not the end of one.
 - **When a failure makes no sense, measure the two things that disagree.** The
   awards code was correct. Comparing the two pid sets — same size, zero overlap
   — pointed at the world in one step, where reading `_eligible` more carefully
@@ -148,9 +160,12 @@ Two fixes, because there were two faults:
   wired to no alarm.** This codebase already has a rule about graceful
   fallbacks turning a should-be-crash into plausible-looking wrong data
   (`CLAUDE.md`, world resolution). Same shape, different module.
-- **Anything that resolves to a default path can resolve to a real one.** The
-  fallback in `dbpath` exists so the app never fails to boot — a good rule —
-  but the same call in a test process points the suite at production data.
+- **Anything that resolves to a default path can resolve to a shared one.** The
+  fallback in `dbpath` exists so the app never fails to boot — a good rule — but
+  the same call in a test process silently joins the suite to the app's state.
+- **Do not inflate a bug's severity to match how alarming its mechanism is.**
+  See the correction above; I wrote a real hermeticity bug up as data loss, and
+  put that framing somewhere durable.
 
 ---
 
@@ -217,8 +232,9 @@ in one of them.
   exist, reports nothing, and falls back to Helvetica.
 - **Crests, rank pips and any other fixed-size box are exempt from the type
   scale** and must clip.
-- **Never let a test process resolve to the default DB path.** The root
-  `conftest.py` guard is load-bearing; deleting it re-arms the save-eater.
+- **Never let a test process resolve to the app's DB path.** The root
+  `conftest.py` guard is load-bearing; without it a test result is a statement
+  about the developer's disk rather than about the code.
 - If a season's awards are empty, check the log for the unresolved-pid error
   before looking at the selection code. It is almost certainly a world/season
   mismatch, not a selector bug.
