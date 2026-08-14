@@ -14,9 +14,13 @@ completed season):
   * State Player of the Year
   * All-State First / Second / Third team — plus a FOURTH in 7A, whose talent
     pool is substantially larger — then Honorable Mention
-  * one All-Region team per geographic region (10 singles + 8 doubles)
   * District Player of the Year, for every district
   * one All-District team per district (not first/second/third)
+
+and ONCE PER GENDER, across every classification together (`region_awards`):
+
+  * one All-Region team per geographic region — there is no 7A All-Region team,
+    there is a Gold Valley All-Region team
 
 The geographic honours OVERLAP on purpose — nobody is dropped from a lower team
 for having won a higher one, so a State POY is normally also All-State,
@@ -95,12 +99,10 @@ AD_SINGLES, AD_DOUBLES = TEAM_SINGLES, TEAM_DOUBLES
 # districts are named after — never a second awards-only map. One team per
 # region, no first/second/third, and deliberately no Region Player of the Year.
 #
-# ⚠️ A region needs enough PROGRAMS for the honour to be a selection rather than
-# a roster. Nine of 52 class-regions per gender hold fewer than four schools —
-# 7A boys has one with a single school — and an 18-selection team drawn from one
-# or two rosters honours everybody who dressed. Those regions crown no team;
-# their players remain fully eligible for All-District and All-State, which is
-# where a thin region's best seasons belong anyway.
+# ‼️ AND IT IS CLASS-BLIND — there is no 7A All-Region team, only a Gold Valley
+# All-Region team (owner rule 2027-08, and how it works in real life). See
+# `region_awards`; the guard below is now nearly vacant, since a region taken
+# whole holds ~40 programs rather than the four or five a class-region did.
 MIN_REGION_PROGRAMS = 4
 AS_TIERS = {"7A": 4}           # numbered teams; everyone else gets three
 AS_TIERS_DEFAULT = 3
@@ -594,33 +596,28 @@ def _flight_report(rows, scope: str) -> dict:
                             "record": f"{r['wins']}-{r['losses']}"} for r in below]}
 
 
-def season_awards(teams, postseason=None) -> dict:
-    """Every postseason award for ONE classification, in ONE pass.
+def build_pool(teams, postseason=None) -> dict:
+    """The candidate pool for a WHOLE GENDER, rated once.
 
-    State, region and district are separate QUESTIONS asked of the same evidence
-    (see `FLIGHT_ALPHA` / `FLIGHT_FLOOR`), not one ranking sliced three ways —
-    and the geographic honours OVERLAP by design: nobody is removed from a lower
-    team for having won a higher one, so a State POY is normally also All-State,
-    All-Region and All-District."""
+    Built over every classification together, deliberately, for the same reason
+    `jhsaa.power_index` is: **non-district play crosses classifications**, so a
+    7A player's schedule is full of 6A and 5A opponents. Rating each class in
+    isolation cut those edges out of the graph and silently defaulted every
+    cross-class opponent to an average 0.5.
+
+    It is also what makes an All-Region team possible at all — that honour is
+    region-wide and class-blind (see `region_awards`), so it needs one ranking
+    that spans the association."""
     from .jhsaa import POSTSEASON
     postseason = POSTSEASON if postseason is None else postseason
-    empty = {"poy": None, "all_state": [], "teams": [], "honorable_mention": [],
-             "all_region": {}, "all_district": {}, "district_poy": {},
-             "flight_check": {}}
     players = _collect(teams)
-    if not players:
-        return empty
-
     for rec in players.values():
         sl, dl = _split(rec)
         rec["primary"] = _primary_discipline(rec)
         rec["s_n"], rec["s_w"] = len(sl), sum(1 for m in sl if m[1])
         rec["s_flight"] = _flight_seat(rec, "s")
-    flight_of = {pid: rec["s_flight"] for pid, rec in players.items()}
-
     pairs = _pairs(players)
-    bs, bp = _base_singles(players), _base_pairs(pairs)
-    qs, qp = _q_singles(bs), _q_pairs(bp)
+    qs, qp = _q_singles(_base_singles(players)), _q_pairs(_base_pairs(pairs))
     for rec in players.values():
         sl = [m for m in rec["log"] if _is_singles(m[0])]
         for scope, alpha in FLIGHT_ALPHA.items():
@@ -632,22 +629,101 @@ def season_awards(teams, postseason=None) -> dict:
         for scope, alpha in FLIGHT_ALPHA.items():
             pr[f"d:{scope}"] = _resume(pr["log"], qp, postseason, alpha)
         pr["d"] = pr["d:state"]
+    return {"players": players, "pairs": pairs,
+            "flight_of": {pid: r["s_flight"] for pid, r in players.items()}}
 
-    group = next(iter(players.values()))["group"]
-    everyone = set(players)
-    s_rank = _rank_singles(players, everyone, "state", flight_of)
-    d_rank = _rank_pairs(pairs, everyone, "state")
+
+def _build_team(pool, pids, n_s, n_d, scope, breadth):
+    """One honours team of `n_s` singles + `n_d` DOUBLES PAIRS, drawn from `pids`.
+
+    ‼️ No athlete may hold two slots on one team, in either direction: the `used`
+    set carries across both halves, and the primary-discipline rule
+    (`_primary_discipline`) already keeps a singles player out of the doubles pool
+    entirely. What `used` catches is the case that rule cannot — a player with two
+    strong partnerships, whose weaker pairing must not take a place another pair
+    earned."""
+    rs = _rank_singles(pool["players"], pids, scope, pool["flight_of"])
+    rd = _rank_pairs(pool["pairs"], pids, scope)
+    used: set[str] = set()
+    s_picks = _take(rs, n_s, f"s:{scope}", breadth, used)
+    d_picks = _take(rd, n_d, f"d:{scope}", breadth, used)
+    return ([_row(r, "s", r[f"s:{scope}"]) for r in s_picks]
+            + [_row(r, "d", r[f"d:{scope}"]) for r in d_picks])
+
+
+def region_awards(pool) -> dict:
+    """‼️ ALL-REGION IS REGION-WIDE AND CLASS-BLIND (owner rule 2027-08).
+
+    There is no 7A All-Region team — there is a **Gold Valley All-Region team**,
+    and it is drawn from every program in Gold Valley whatever its enrollment.
+    That is how it works in real life, and it is the fix for the association's
+    three geographies blurring into each other: a region team selected per
+    classification is a district by another name, because a class-region holds
+    four or five schools.
+
+    The size of the change is the point. Per classification it produced ten
+    regions × six classes × 18 selections ≈ **1,080** region honours a gender, on
+    an association of ~300 programs — every school placed somebody. Region-wide it
+    is **180**, drawn from ~40 programs each, so a place on one is a genuinely
+    competitive statewide-by-geography honour sitting between All-State and
+    All-District rather than a second All-District.
+
+    Regions below `MIN_REGION_PROGRAMS` crown nothing; class-blind, essentially
+    none are."""
+    players = pool["players"]
+    by_region, programs = defaultdict(set), defaultdict(set)
+    for pid, rec in players.items():
+        by_region[rec["region"]].add(pid)
+        programs[rec["region"]].add(rec["school"])
+    teams = {}
+    for rname, pids in by_region.items():
+        if len(programs[rname]) < MIN_REGION_PROGRAMS:
+            continue
+        # Breadth here is school + CLASSIFICATION: when candidates are genuinely
+        # tied, a selector spreads across the region's schools and its class
+        # ladder alike. Still a near-tie reorder, never a quota — a region whose
+        # best ten singles seasons are all 7A gets all ten.
+        picks = _build_team(pool, pids, AR_SINGLES, AR_DOUBLES,
+                            "region", ("school", "group"))
+        if picks:
+            teams[rname] = picks
+    flat = [r for rows in teams.values() for r in rows]
+    return {"teams": teams, "flight_check": _flight_report(flat, "region")}
+
+
+def season_awards(teams, postseason=None, pool=None) -> dict:
+    """Every postseason award for ONE classification, in ONE pass.
+
+    ⚠️ All-Region is NOT here — it is region-wide and class-blind, selected once
+    per gender by `region_awards`. What is per-classification is State (the class
+    is the field) and District (a district IS `(classification, name)`).
+
+    State and district are separate QUESTIONS asked of the same evidence (see
+    `FLIGHT_ALPHA` / `FLIGHT_FLOOR`), not one ranking sliced twice — and the
+    geographic honours OVERLAP by design: nobody is removed from a lower team for
+    having won a higher one, so a State POY is normally also All-Region and
+    All-District.
+
+    `pool` is the gender-wide rating pass (`build_pool`); passing it is how the
+    opponent graph keeps its cross-classification edges. Without one this rates
+    the class in isolation, which is only right when the class IS the association
+    (tests, a single-group call)."""
+    empty = {"poy": None, "all_state": [], "teams": [], "honorable_mention": [],
+             "all_district": {}, "district_poy": {}, "flight_check": {}}
+    mine = {pid for t in teams for pid in t.matches}
+    if pool is None:
+        pool = build_pool(teams, postseason)
+    players = pool["players"]
+    mine &= set(players)
+    if not mine:
+        return empty
+    pairs = pool["pairs"]
+
+    group = players[next(iter(mine))]["group"]
+    s_rank = _rank_singles(players, mine, "state", pool["flight_of"])
+    d_rank = _rank_pairs(pairs, mine, "state")
 
     def build(ranked_s, ranked_d, n_s, n_d, scope, breadth):
-        """One team of `n_s` singles + `n_d` DOUBLES PAIRS, breadth-aware at the
-        margins.
-
-        ‼️ No athlete may hold two slots on one team, in either direction: the
-        `used` set carries across both halves, and the primary-discipline rule
-        (`_primary_discipline`) already keeps a singles player out of the doubles
-        pool entirely. What `used` catches is the case that rule cannot — a
-        player with two strong partnerships, whose weaker pairing must not take a
-        place another pair earned."""
         used: set[str] = set()
         s_picks = _take(ranked_s, n_s, f"s:{scope}", breadth, used)
         d_picks = _take(ranked_d, n_d, f"d:{scope}", breadth, used)
@@ -679,33 +755,19 @@ def season_awards(teams, postseason=None) -> dict:
         sc, rec, key = max(cands, key=lambda kv: (kv[0], kv[1]["name"]))
         poy = _row(rec, key, sc)
 
-    # --- All-Region: one team per region, re-ranked INSIDE the region ---------
-    # Not "the next 18 who missed All-State" — the comparison is recomputed in
-    # regional scope, so an All-State player is normally on it too.
-    by_region, programs = defaultdict(set), defaultdict(set)
-    for pid, rec in players.items():
-        by_region[rec["region"]].add(pid)
-        programs[rec["region"]].add(rec["school"])
-    all_region = {}
-    for rname, pool in by_region.items():
-        if len(programs[rname]) < MIN_REGION_PROGRAMS:
-            continue                       # too thin to be a selection — see the constant
-        rs = _rank_singles(players, pool, "region", flight_of)
-        rd = _rank_pairs(pairs, pool, "region")
-        picks = build(rs, rd, AR_SINGLES, AR_DOUBLES, "region", ("school", "district"))
-        if picks:
-            all_region[rname] = picks
-
     # --- the districts, from the same evidence, at district scope -------------
+    # A DISTRICT IS `(CLASSIFICATION, name)` — the association reuses its
+    # geographic names at every level — so this genuinely belongs per class, in a
+    # way All-Region does not.
     by_district = defaultdict(set)
-    for pid, rec in players.items():
-        by_district[rec["district"]].add(pid)
+    for pid in mine:
+        by_district[players[pid]["district"]].add(pid)
     all_district, district_poy = {}, {}
-    for dname, pool in by_district.items():
-        ds = _rank_singles(players, pool, "district", flight_of)
-        dd = _rank_pairs(pairs, pool, "district")
-        all_district[dname] = build(ds, dd, AD_SINGLES, AD_DOUBLES,
-                                    "district", ("school",))
+    for dname, pids in by_district.items():
+        all_district[dname] = _build_team(pool, pids, AD_SINGLES, AD_DOUBLES,
+                                          "district", ("school",))
+        ds = _rank_singles(players, pids, "district", pool["flight_of"])
+        dd = _rank_pairs(pairs, pids, "district")
         dc = ([(r["d:district"], r, "d") for r in dd[:3]]
               + [(r["s:district"], r, "s") for r in ds[:3]])
         if dc:
@@ -714,14 +776,11 @@ def season_awards(teams, postseason=None) -> dict:
 
     flat = [p for tier in tiers for p in tier["players"]]
     check = {"state": _flight_report(flat + hm, "state")}
-    if all_region:
-        check["region"] = _flight_report(
-            [r for rows in all_region.values() for r in rows], "region")
     if all_district:
         check["district"] = _flight_report(
             [r for rows in all_district.values() for r in rows], "district")
     return {"poy": poy, "all_state": flat, "teams": tiers,
-            "honorable_mention": hm, "all_region": all_region,
+            "honorable_mention": hm,
             "all_district": all_district, "district_poy": district_poy,
             "flight_check": check}
 
@@ -746,6 +805,8 @@ def honors_for(pid: str, awards: dict, group: str) -> list[str]:
     else:
         if any(pid in row_pids(r) for r in awards.get("honorable_mention") or ()):
             out.append(f"All-State Honorable Mention ({group})")
+    # ⚠️ All-Region is GENDER-WIDE, not part of a classification's slate, so the
+    # caller has to merge it in — the same shape `all_district` already needs.
     for rname, rs in (awards.get("all_region") or {}).items():
         if any(pid in row_pids(r) for r in rs):
             out.append(f"All-Region ({rname})")

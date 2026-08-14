@@ -459,3 +459,15 @@
   .jh-award { grid-template-columns: 22px 20px 1fr 60px; }
   .jh-award .sch, .jh-award .jh-chip { display: none; }
 }
+
+/* ‼️ All-Region is CLASS-BLIND — the one view on a per-classification page that
+   the classification dropdown does not change. Saying so is load-bearing: the
+   whole reason the honour was rebuilt is that a region team selected per class
+   was a district by another name, and an unlabelled tab under a class heading
+   reproduces exactly that confusion. */
+.jh-regionnote {
+  margin: 10px 14px 0; padding: 9px 12px; border-radius: 7px;
+  border: 1px solid var(--border-subtle); background: var(--surface-sunken, transparent);
+  font-size: 12px; line-height: 1.55; color: var(--text-secondary);
+}
+.jh-regionnote strong { color: var(--text-primary); }

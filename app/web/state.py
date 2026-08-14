@@ -4044,14 +4044,24 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         # the record of what the selector produced, so re-deriving it from a
         # later code version would be a second source of truth for a decision
         # the season already made.
-        "flight_check": aw.get("flight_check") or {},
+        # The state/district halves are the class's own; the REGION half hangs off
+        # the season, because All-Region is class-blind.
+        "flight_check": {**(aw.get("flight_check") or {}),
+                         **({"region": arc["all_region_flight_check"]}
+                            if arc.get("all_region_flight_check") else {})},
         "poy": deco(aw["poy"]) if aw.get("poy") else None,
         "teams": [{"name": t["name"], "players": [deco(r) for r in t["players"]]}
                   for t in tiers],
         "honorable_mention": [deco(r) for r in aw.get("honorable_mention") or ()],
+        # ‼️ ONE TEAM PER REGION, ACROSS EVERY CLASSIFICATION (owner rule
+        # 2027-08) — there is no 7A All-Region team, there is a Gold Valley
+        # All-Region team. So it is read off the SEASON and is the same whichever
+        # classification is on screen; `aw` is the fallback for seasons archived
+        # while it still lived inside a class's slate.
         "regions": sorted(
             ({"region": rn, "players": [deco(r) for r in rows]}
-             for rn, rows in (aw.get("all_region") or {}).items()),
+             for rn, rows in (arc.get("all_region")
+                              or aw.get("all_region") or {}).items()),
             key=lambda x: x["region"]),
         "districts": sorted(
             ({"district": d,
@@ -4220,7 +4230,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     badge(awards.get("poy"), f"{sc.group} Player of the Year")
     for r in awards.get("all_state", ()):
         badge(r, "All-State")
-    for _rn, rs in (awards.get("all_region") or {}).items():
+    for _rn, rs in ((arc or {}).get("all_region")
+                    or awards.get("all_region") or {}).items():
         for r in rs:
             badge(r, "All-Region")
     for dname, rs in (((arc or {}).get("all_district") or {}).get(sc.group) or {}).items():
@@ -4415,9 +4426,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         sched = world.jhsaa_schedule(w["id"], yr, g, school)
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
         aw = (arc.get("awards") or {}).get(sc.group) or {}
-        honors = jh.honors_for(pid, {**aw, "all_district":
-                                     (arc.get("all_district") or {}).get(sc.group, {})},
-                               sc.group)
+        # Both `all_district` and `all_region` live on the SEASON rather than in a
+        # class's slate — the district because it is keyed (class, name), the
+        # region because it is class-blind — so both are merged in here.
+        honors = jh.honors_for(pid, {
+            **aw,
+            "all_district": (arc.get("all_district") or {}).get(sc.group, {}),
+            "all_region": arc.get("all_region") or aw.get("all_region") or {},
+        }, sc.group)
         team = team_by_year.get(yr)
         w_, l_ = rec["s"][0] + rec["d"][0], rec["s"][1] + rec["d"][1]
         seasons.append({

@@ -585,13 +585,31 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   weight. Nothing reads OVR/talent/class year/last year. Per classification: State
   POY, All-State First/Second/Third (+**Fourth in 7A**) each **10 singles + 8
   doubles — the same size as an All-District team**, then Honorable Mention, plus a
-  District POY, one **All-Region** team per region (`School.area`, ten statewide;
-  regions under `MIN_REGION_PROGRAMS` crown none) and one All-District team per
-  district. **HM is a THRESHOLD, not a team**: no slot count, size varies by how
+  District POY and one All-District team per district. **HM is a THRESHOLD, not a
+  team**: no slot count, size varies by how
   deep the class actually was (measured boys 7A 30 vs 5A 7), and **max 2 per school
   — a cap that applies to HM ALONE**; the numbered teams stack a school as high as
   its résumés earn (4 seen). If every class shows the same HM count, a slot count
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
+  - **‼️ ALL-REGION IS REGION-WIDE AND CLASS-BLIND** (owner rule 2027-08). There is
+    no 7A All-Region team — there is a **Gold Valley All-Region team**, drawn from
+    every program in Gold Valley whatever its enrollment, exactly as in real life.
+    It is therefore selected ONCE PER GENDER (`jhsaa_awards.region_awards`, off the
+    gender-wide `build_pool`), archived at the SEASON level beside `all_district`
+    (NOT in `awards[group]`), and every reader merges it in — `honors_for` takes it
+    via `{**aw, "all_region": arc["all_region"]}`. Per classification it was a
+    DISTRICT BY ANOTHER NAME: a class-region holds 4-5 schools, so ten regions × six
+    classes × 18 selections honoured ~1,080 players out of ~300 programs and every
+    school placed somebody. Region-wide: 180 selections, 47% of schools placing vs
+    All-District's 83%, teams mixing 4-5 classifications. **Class → district IS a
+    hierarchy (a district is `(classification, name)`); class → region is NOT** — the
+    honors page's Region tab deliberately ignores the classification dropdown and
+    says so on screen. Do not "tidy" All-Region back inside a class's slate.
+  - **Ratings are computed GENDER-WIDE, once** (`build_pool`), then each class's
+    slate is selected from it. Non-district play crosses classifications, so rating a
+    class alone cut those edges out of the opponent graph and defaulted every
+    cross-class opponent to 0.5 — the same reason TOSS is computed over the whole
+    gender.
   - **‼️ DOUBLES HONOURS GO TO PAIRINGS, NOT TO INDIVIDUAL DOUBLES PLAYERS** (owner
     correction 2027-08). "8 doubles" is eight doubles TEAMS — sixteen athletes. The
     candidate entity is the PARTNERSHIP (`_pairs`, keyed on the sorted pids), its
@@ -628,7 +646,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     had arithmetic that failed, this one had none.
   - **The page is four VIEWS of one slate, not one scroll** — All-State /
     All-Region / All-District / method as TABS, and the two that are themselves a
-    set of teams get a `<select>` switcher (one region, one district on screen). Each
+    set of teams get a `<select>` switcher (one region, one district on screen;
+    the Region tab is class-blind and carries a note saying so). Each
     team announces its halves ("Singles 10" / "Doubles teams 8 pairs · 16 athletes"),
     because eight pairing rows otherwise read as eight individuals. The hub rail is
     an INDEX of the page, not a copy of it. `.jh-award` is a fixed-column CSS grid —

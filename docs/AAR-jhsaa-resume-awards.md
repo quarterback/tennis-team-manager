@@ -343,8 +343,69 @@ lived. If the data was always right and the presentation was wrong, asserting on
 the data proves nothing — and it is worse than no test, because it reads like
 coverage.
 
+---
+
+# Addendum 2, 2027-08 — All-Region is region-wide, not per classification
+
+> "i realize the problem is that classifications ame the regions and districts
+> blur, it would be better to make all-region not class dependent, all region is
+> just across the whole region (which is how it works in real life too)"
+> … "so there's no 7A all-region, it's just EXAMPLE VALLEY ALL-REGION TEAM"
+
+The addendum above shipped All-Region selected **per classification**, which put
+three geographies on one page that were really only two. It was wrong, and the
+symptom was §5: every program placed somebody.
+
+**A region taken per classification is a district by another name.** The
+association has ten regions and six classifications, so a class-region holds four
+or five schools — the same order as a district, which is why the doubles halves
+kept coming up short (§1c) and why nine class-regions per gender fell under
+`MIN_REGION_PROGRAMS` entirely. Ten regions × six classes × 18 selections is
+**~1,080 region honours a gender**, on an association of ~300 programs.
+
+Region-wide and class-blind it is **one team per region for the whole gender**,
+drawn from ~40 programs. Measured on the same season: **180 selections**, 47% of
+schools placing (All-District: 83%), every team full at 10 + 8, and teams mixing
+four or five classifications each. That is where the honour belongs — harder to
+make than All-District, and open to a 2A school that produced a regional #1.
+
+## What moved
+
+- **`region_awards(pool)`** is its own selection, run once per gender, not part of
+  `season_awards`. `season_awards` is now State + District only, and its docstring
+  says why: All-State is the classification, and a **district IS
+  `(classification, name)`** — that hierarchy is real. Class → region is not.
+- **`build_pool(teams)`** rates the WHOLE GENDER once, and the per-class slates are
+  selected from it. All-Region needs a ranking that spans the association, and this
+  also fixes something that was quietly wrong before: non-district play crosses
+  classifications, so rating a class in isolation cut those edges out of the
+  opponent graph and defaulted every cross-class opponent to 0.5. It is the same
+  reason `jhsaa.power_index` is computed gender-wide.
+- **The archive** carries `all_region` and `all_region_flight_check` at the SEASON
+  level, beside `all_district`, not inside `awards[group]`. Every reader merges it
+  in — `honors_for` takes `{**aw, "all_region": arc["all_region"]}`. Readers keep an
+  `aw.get("all_region")` fallback for seasons archived under the old shape.
+- **Breadth at region scope is school + CLASSIFICATION.** Still a near-tie reorder,
+  never a quota: a region whose best ten singles seasons are all 7A gets all ten.
+
+## The page has to say so
+
+The honors page is per classification, and the Region tab now **ignores the
+classification dropdown** — the same ten teams whichever class is on screen. An
+unlabelled tab under a class heading would reproduce exactly the blur this change
+removes, so the pane carries a note in plain words ("There is no 7A All-Region
+team…") and each team is headed **"Gold Valley All-Region Team · all
+classifications"**, never "All-Region · Gold Valley" under a 7A page.
+
 ## Traps for later
 
+- **Never put All-Region back inside `awards[group]`.** If a region team is being
+  selected per classification, it is a district with a different heading.
+- Class → district is a hierarchy; class → region is not. Any UI that nests them
+  the same way is wrong.
+- A stripped-classification test must clear `arc["all_region"]` separately now —
+  emptying a class's slate no longer removes its players' region honours. Two tests
+  caught exactly this.
 - **`row_pids`, never `row["pid"]`.** A doubles row honours two athletes. Every
   membership test in the codebase goes through it; a new one that does not will
   credit exactly half of every pairing and look right on the surface it is on.

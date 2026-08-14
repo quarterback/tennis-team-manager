@@ -198,6 +198,9 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
     grp = next(g for g, nm in arc["champions"].items() if nm == champ)
     arc["awards"][grp] = {"poy": None, "all_state": []}      # strip every award...
     arc["all_district"][grp] = {}                            # ...this program could win
+    # ⚠️ All-Region is CLASS-BLIND and lives on the SEASON, so emptying a
+    # classification's slate no longer removes it — it has to go separately.
+    arc["all_region"] = {}
     try:
         conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
                      " gender='girls'", (json.dumps(arc), w["id"], w["year"]))
@@ -249,6 +252,7 @@ def test_a_season_with_nothing_to_show_is_not_listed_as_an_honour(archived):
     grp = jh.GROUPS[0]
     arc["awards"][grp] = {"poy": None, "all_state": []}
     arc["all_district"][grp] = {}
+    arc["all_region"] = {}       # class-blind, and on the SEASON — see above
     try:
         conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
                      " gender='girls'", (json.dumps(arc), w["id"], w["year"]))
@@ -417,11 +421,13 @@ def test_every_region_and_district_team_is_on_the_honors_page(archived):
     """The region and district views are SWITCHERS over the whole set, not the
     first one with a link to the rest — every team is in the page, one shown."""
     arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
+    assert arc["all_region"], "All-Region is archived at the SEASON level"
     for grp in jh.GROUPS:
-        aw = arc["awards"][grp]
         html = archived["client"].get(
             f"/jhsaa/honors?g=girls&group={grp}").get_data(as_text=True)
-        for rn in aw["all_region"]:
+        # All-Region is class-blind, so EVERY classification page carries the
+        # association's whole set of region teams — the same ten, unchanged.
+        for rn in arc["all_region"]:
             assert rn in html, (grp, rn)
         for dn in (arc["all_district"].get(grp) or {}):
             assert dn in html, (grp, dn)
@@ -444,6 +450,7 @@ def test_the_flight_check_is_archived_and_shown(archived):
     become by then."""
     from app import jhsaa_awards as jaw
     arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
+    assert arc["all_region_flight_check"]["floor"] == jaw.FLIGHT_FLOOR["region"]
     for grp in jh.GROUPS:
         fc = arc["awards"][grp]["flight_check"]
         assert fc.get("state"), grp
@@ -493,8 +500,9 @@ def test_the_honors_view_never_overwrites_a_player_with_their_school(archived):
                 if d["poy"]:
                     out.append((f"district poy {d['district']}", d["poy"]))
         else:
-            for rn in sorted(aw.get("all_region") or {}):
-                out += [(f"all-region {rn}", r) for r in aw["all_region"][rn]]
+            # All-Region hangs off the SEASON, not the class's slate.
+            for rn in sorted(arc.get("all_region") or {}):
+                out += [(f"all-region {rn}", r) for r in arc["all_region"][rn]]
             for dn in sorted(ad):
                 out += [(f"all-district {dn}", r) for r in ad[dn]]
                 r = (aw.get("district_poy") or {}).get(dn)
@@ -525,3 +533,45 @@ def test_the_honors_view_never_overwrites_a_player_with_their_school(archived):
             assert len(jaw.row_pids(seen)) == len(seen["names"])
             pairs_seen += seen["kind"] == "doubles"
     assert pairs_seen, "no pairing reached the view"
+
+
+def test_all_region_is_one_team_per_region_for_the_whole_gender(archived):
+    """‼️ ALL-REGION IS CLASS-BLIND (owner rule 2027-08). There is no 7A
+    All-Region team — there is a Gold Valley All-Region team, drawn from every
+    program in Gold Valley whatever its enrollment.
+
+    Selected per classification it was a district by another name: a class-region
+    holds four or five schools, and ten regions × six classes × 18 selections
+    honoured roughly a thousand players out of an association of ~300 programs.
+    So it is archived at the SEASON level, once, and every classification page
+    shows the same set."""
+    from app import jhsaa_awards as jaw
+    w = archived["world"]
+    arc = wd.get_jhsaa(w["id"], w["year"], "girls")
+    assert arc["all_region"]
+    for grp in jh.GROUPS:
+        assert "all_region" not in arc["awards"][grp], grp
+
+    home = {s.name: (s.area, s.group) for s in jh.load_schools("girls")}
+    for rn, rows in arc["all_region"].items():
+        assert all(home[r["school"]][0] == rn for r in rows), rn
+        assert len({r["school"] for r in rows}) > 2, rn
+    assert any(len({home[r["school"]][1] for r in rows}) > 1
+               for rows in arc["all_region"].values()), \
+        "no region team mixed classifications"
+
+    # The view serves the same slate from every classification.
+    slates = [tuple(sorted(rg["region"] for rg in
+                           st.jhsaa_honors_view(w["seed"], "girls", group=g)["regions"]))
+              for g in jh.GROUPS]
+    assert len(set(slates)) == 1 and slates[0], slates
+
+    # And it reaches a player's honours from whichever class they play in.
+    honoured = {p for rows in arc["all_region"].values()
+                for r in rows for p in jaw.row_pids(r)}
+    assert honoured
+    for grp in jh.GROUPS:
+        merged = {**arc["awards"][grp], "all_region": arc["all_region"]}
+        hits = [pid for pid in honoured
+                if any("All-Region" in h for h in jaw.honors_for(pid, merged, grp))]
+        assert len(hits) == len(honoured), grp

@@ -19,13 +19,18 @@
 
 {# ‼️ THIS PAGE IS FOUR VIEWS OF ONE SLATE, NOT FOUR STACKED LISTS. A
    classification's honours are a POY, up to four All-State teams, Honorable
-   Mention, ten All-Region teams and a dozen All-District teams — around four
-   hundred selections. Unrolled that is a scroll nobody reads and nobody can cite,
-   which is what shipped first. So: parallel views of one set of people are TABS
-   (the association's own layout rule), and the two views that are themselves a
-   set of teams get a SWITCHER, one team on screen at a time — the same shape the
-   classification select at the top has. Three dropdowns, three questions:
-   which class, which region, which district. #}
+   Mention and a dozen All-District teams, and the association's ten All-Region
+   teams sit beside them — hundreds of selections. Unrolled that is a scroll
+   nobody reads and nobody can cite, which is what shipped first. So: parallel
+   views of one set of people are TABS (the association's own layout rule), and
+   the two views that are themselves a set of teams get a SWITCHER, one team on
+   screen at a time — the same shape the classification select at the top has.
+   Three dropdowns, three questions: which class, which region, which district.
+
+   ⚠️ The three are NOT nested. Class → district is a real hierarchy (a district
+   IS `(classification, name)`); class → region is not, because All-Region is
+   class-blind. The Region tab therefore ignores the classification dropdown, and
+   the panel inside it says so out loud. #}
 
 <div class="jh-jump">
   <label><span class="k">Classification</span>
@@ -115,6 +120,17 @@
   {# --- All-Region: one team on screen, picked from a switcher ----------- #}
   <div class="jh-pane" data-pane="region" hidden>
     {% if view.regions %}
+    {# ‼️ ALL-REGION IS CLASS-BLIND. There is no 7A All-Region team — there is a
+       Gold Valley All-Region team, drawn from every program in Gold Valley
+       whatever its enrollment. So this view does NOT change with the
+       classification dropdown, and it says so: an unlabelled tab sitting under a
+       class heading is exactly the blur this rule removes. #}
+    <div class="jh-regionnote">
+      <strong>All-Region is the whole region, every classification.</strong>
+      There is no {{ view.group }} All-Region team — a region team is drawn from
+      every program in that region whatever its size, so this list is the same
+      whichever classification you are looking at.
+    </div>
     <div class="jh-jump" style="margin:10px 14px 0">
       <label><span class="k">Region</span>
         <select data-switch="rg">
@@ -128,15 +144,15 @@
     {% for rg in view.regions %}
     <div class="jh-swpane" data-sw="rg" data-i="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
       <div class="jh-awardsec">
-        <div class="jh-awardsec-head">All-Region · {{ rg.region }}</div>
+        <div class="jh-awardsec-head">{{ rg.region }} All-Region Team
+          <span>all classifications</span></div>
         {{ award_team(rg.players) }}
       </div>
     </div>
     {% endfor %}
     {% else %}
-    <div class="jh-empty" style="padding:16px">No region in {{ view.group }} fields
-      enough programs to crown a team; those players are honoured on the All-District
-      and All-State teams instead.</div>
+    <div class="jh-empty" style="padding:16px">No All-Region teams archived for this
+      season.</div>
     {% endif %}
   </div>
 
@@ -210,6 +226,16 @@
           record beside a pairing is the partnership's. Which category an athlete is considered
           in follows where they actually played, so nobody holds both a singles slot and a
           doubles slot on the same team.</p>
+        <p style="margin:0 0 8px"><strong>The three honours are three different
+          geographies, and only two of them are per classification.</strong> All-State
+          is the classification. A district is <em>(classification, name)</em> — the
+          association reuses its geographic names at every level — so All-District is
+          too. <strong>All-Region is neither</strong>: a region team is drawn from every
+          program in that region whatever its enrollment, which is how it works in real
+          life and is why there is no {{ view.group }} All-Region team, only a Gold
+          Valley one. Selected per classification it honoured roughly a thousand players
+          a season on an association of ~300 programs — every school placed somebody, and
+          it was an All-District team with a different heading.</p>
         <p style="margin:0">Every All-State, All-Region and All-District team is
           <strong>{{ view.team_singles }} singles + {{ view.team_doubles }} doubles teams</strong>
           — {{ view.team_singles + 2 * view.team_doubles }} athletes. 7A crowns a Fourth Team;

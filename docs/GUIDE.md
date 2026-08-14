@@ -720,10 +720,11 @@ start of the offseason ladder — before the recruit board needs its output.
   classification and gender, in one pass off the **completed** season — every
   dual including the state tournament and the TOC: **State Player of the
   Year**; **All-State First / Second / Third Team** — plus a **Fourth Team in
-  7A**, whose talent pool is much larger — then **Honorable Mention**; one
-  **All-Region team** per geographic region; and for every district, a
-  **District Player of the Year** and one **All-District team**. Every team is
-  the same size: **10 singles + 8 doubles teams** — 26 athletes.
+  7A**, whose talent pool is much larger — then **Honorable Mention**; and for
+  every district, a **District Player of the Year** and one **All-District
+  team**. Separately, once for the whole association, one **All-Region team**
+  per geographic region. Every team is the same size: **10 singles + 8 doubles
+  teams** — 26 athletes.
   What the selectors weigh, in the association's own order: the player's
   record and how much they played; the **flight** they played it at; the
   **quality of the individual opponents** faced, not just the opposing team;
@@ -761,6 +762,17 @@ start of the offseason ladder — before the recruit board needs its output.
   smaller pond, but the hierarchy still holds. Every season archives a **Flight
   check**, visible on the Honors page: how many selections came from each flight
   at each level, and every below-band pick named with its position and record.
+
+  **All-Region is the whole region, every classification.** There is no 7A
+  All-Region team — there is a Gold Valley All-Region team, drawn from every
+  program in that region whatever its enrollment, which is how it works in real
+  life. All-State is the classification and a district is
+  *(classification, name)*, so those two are per class; a region is neither, and
+  selecting one per classification made it a second All-District — four or five
+  schools per class-region, roughly a thousand honours a season on an association
+  of ~300 programs, every school placing somebody. Region-wide it is one team per
+  region drawn from ~40 programs, so it sits where it belongs: harder to make
+  than All-District, and open to a 2A school that produced a regional #1.
 
   The Honors page itself is four views of one slate — All-State, All-Region,
   All-District and the method — with a dropdown for the classification, one for

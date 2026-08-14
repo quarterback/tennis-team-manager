@@ -131,30 +131,86 @@ def _all_rows(a):
     for t in a["teams"]:
         out += [(f"all-state {t['name']}", r) for r in t["players"]]
     out += [("hm", r) for r in a["honorable_mention"]]
-    for rn, rs in a["all_region"].items():
-        out += [(f"all-region {rn}", r) for r in rs]
     for dn, rs in a["all_district"].items():
         out += [(f"all-district {dn}", r) for r in rs]
     out += [(f"district poy {d}", r) for d, r in a["district_poy"].items()]
     return out
 
 
-def test_every_region_team_is_ten_singles_and_eight_doubles(season):
-    """A region team is the same size as the others — except that a team can only
-    be as large as the candidates who cleared the bar. A four-school region cannot
-    always supply eight DISJOINT partnerships that clear `MIN_PAIR_MATCHES`, and
-    the honest answer there is one pairing fewer, not a ninth-best pair promoted
-    to fill a slot (the same no-backfill rule Honorable Mention runs on)."""
-    full = short = 0
+# --- All-Region is REGION-WIDE and CLASS-BLIND (owner rule 2027-08) ------------
+
+def test_all_region_is_not_selected_per_classification(season):
+    """‼️ There is no 7A All-Region team — there is a Gold Valley All-Region team.
+
+    A region team selected per classification is a DISTRICT by another name: a
+    class-region holds four or five schools. So All-Region lives on the SEASON,
+    not in any classification's slate, and there is exactly one team per region
+    for the whole gender."""
+    assert "all_region" in season and season["all_region"]
     for g in jh.GROUPS:
-        for rn, rows in season["awards"][g]["all_region"].items():
-            s = [r for r in rows if r["kind"] == "singles"]
-            d = [r for r in rows if r["kind"] == "doubles"]
-            assert len(s) == aw.AR_SINGLES, (g, rn, len(s))
-            assert len(d) <= aw.AR_DOUBLES, (g, rn, len(d))
-            full += len(d) == aw.AR_DOUBLES
-            short += len(d) < aw.AR_DOUBLES
-    assert full > short, (full, short)
+        assert "all_region" not in season["awards"][g], g
+
+
+def test_every_region_team_is_ten_singles_and_eight_doubles(season):
+    """Region-wide the pool is ~40 programs, so unlike the old per-class teams
+    these fill: ten singles and eight DISJOINT partnerships every time."""
+    assert len(season["all_region"]) >= 2
+    for rn, rows in season["all_region"].items():
+        s = [r for r in rows if r["kind"] == "singles"]
+        d = [r for r in rows if r["kind"] == "doubles"]
+        assert (len(s), len(d)) == (aw.AR_SINGLES, aw.AR_DOUBLES), (rn, len(s), len(d))
+
+
+def test_a_region_team_draws_from_more_than_one_classification(season):
+    """The whole point: enrollment does not enter into it, so a region team mixes
+    classifications where its region holds more than one.
+
+    ⚠️ The per-region league count is NOT asserted: this fixture keeps two
+    districts per classification, so a region can legitimately end up holding
+    programs from a single league — an artefact of the cut, not of the rule. What
+    holds at any size is that a region team spans several SCHOOLS and that the
+    association's teams are not all single-class."""
+    home = {}
+    for t in season["teams"].values():
+        for pid in t.records:
+            home[pid] = (t.school.area, t.school.group, t.school.district)
+    mixed = 0
+    for rn, rows in season["all_region"].items():
+        groups, leagues = set(), set()
+        for r in rows:
+            for pid in aw.row_pids(r):
+                assert home[pid][0] == rn, (rn, r["name"])
+                groups.add(home[pid][1])
+                # ‼️ A LEAGUE IS `(CLASSIFICATION, name)` — the association reuses
+                # its district names at every level, so comparing names alone
+                # makes six different leagues look like one.
+                leagues.add((home[pid][1], home[pid][2]))
+        assert len({r["school"] for r in rows}) > 2, (rn, "a team, not a roster")
+        mixed += len(groups) > 1
+    assert mixed, "no region team drew from more than one classification"
+
+
+def test_all_region_is_the_same_slate_whatever_class_you_came_from(season):
+    """It is one gender-wide selection, so a player's All-Region honour cannot
+    depend on which classification page it is read from."""
+    seen = {p for rows in season["all_region"].values()
+            for r in rows for p in aw.row_pids(r)}
+    for g in jh.GROUPS:
+        aws = {**season["awards"][g], "all_region": season["all_region"]}
+        for pid in list(seen)[:25]:
+            assert any("All-Region" in h for h in aw.honors_for(pid, aws, g))
+
+
+def test_all_region_is_far_smaller_than_it_was_per_class(season):
+    """Selected per classification it produced ten regions × six classes × 18
+    selections — on an association of ~300 programs, every school placed
+    somebody, which is what made it a second All-District. Region-wide it is one
+    team per region, so the honour is scarce enough to mean something."""
+    n = sum(len(rows) for rows in season["all_region"].values())
+    assert n <= len(season["all_region"]) * (aw.AR_SINGLES + aw.AR_DOUBLES)
+    schools = {s.name for s in jh.load_schools("boys")}
+    placed = {r["school"] for rows in season["all_region"].values() for r in rows}
+    assert len(placed) < 0.75 * len(schools), (len(placed), len(schools))
 
 
 def test_honors_identity_resolves_to_a_real_player(season):
@@ -187,9 +243,6 @@ def test_geographic_scope_comes_from_school_data(season):
             home[pid] = (t.school.area, t.school.district, t.school.group)
     for g in jh.GROUPS:
         a = season["awards"][g]
-        for rn, rows in a["all_region"].items():
-            for r in rows:
-                assert all(home[p][0] == rn for p in aw.row_pids(r)), (g, rn, r["name"])
         for dn, rows in a["all_district"].items():
             for r in rows:
                 assert all(home[p][1] == dn for p in aw.row_pids(r)), (g, dn, r["name"])
@@ -207,10 +260,13 @@ def test_no_athlete_holds_two_slots_on_one_honors_team(season):
         a = season["awards"][g]
         rosters = ([(t["name"], t["players"]) for t in a["teams"]]
                    + [("hm", a["honorable_mention"])]
-                   + list(a["all_region"].items()) + list(a["all_district"].items()))
+                   + list(a["all_district"].items()))
         for name, rows in rosters:
             pids = [p for r in rows for p in aw.row_pids(r)]
             assert len(pids) == len(set(pids)), (g, name)
+    for rn, rows in season["all_region"].items():
+        pids = [p for r in rows for p in aw.row_pids(r)]
+        assert len(pids) == len(set(pids)), rn
 
 
 # --- doubles honours are PAIRINGS (owner correction, 2027-08) -----------------
@@ -374,6 +430,11 @@ def test_the_flight_check_is_archived_with_the_season(season):
             assert len(rep["exceptions"]) == rep["below_floor"], (g, lvl)
             for e in rep["exceptions"]:
                 assert e["name"] and e["school"] and e["record"], (g, lvl)
+    # The REGION check hangs off the season, like the teams it describes.
+    rep = season["all_region_flight_check"]
+    assert rep["floor"] == aw.FLIGHT_FLOOR["region"]
+    assert sum(rep["flights"].values()) == rep["total"] > 0
+    assert len(rep["exceptions"]) == rep["below_floor"]
 
 
 def test_a_player_may_hold_several_geographic_honors(season):
@@ -398,7 +459,7 @@ def test_region_teams_are_recomputed_not_the_all_state_leftovers(season):
     for g in jh.GROUPS:
         a = season["awards"][g]
         state = {p for t in a["teams"] for r in t["players"] for p in aw.row_pids(r)}
-        for rows in a["all_region"].values():
+        for rows in season["all_region"].values():
             if state & {p for r in rows for p in aw.row_pids(r)}:
                 shared += 1
     assert shared > 0, "no All-State player appears on any All-Region team"
