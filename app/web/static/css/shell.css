@@ -248,15 +248,30 @@ body { background: var(--fm-app-bg); }
    nothing about what you are choosing, and each of these palettes has a
    character worth saying out loud. The row is the control; the swatch inside it
    is decoration. */
+/* ‼️ THIS BAR IS `--surface-card`, NOT THE MASTHEAD. Ported from Apex, where the
+   picker sits on a dark mast, the summary was `color: var(--on-mast)` — white on
+   a white bar. The control was present, rendered, wired and completely
+   invisible, which is the worst way for a UI element to be wrong: nothing to see
+   and nothing to report. Read the surface a control actually sits on. */
 .fm-theme { position: relative; flex: none; }
 .fm-theme > summary {
   list-style: none; cursor: pointer; display: inline-flex; align-items: center;
-  justify-content: center; width: 32px; height: 32px; border-radius: 7px;
-  color: var(--on-mast, #fff); opacity: .85;
+  justify-content: center; gap: 7px; height: 32px; padding: 0 11px;
+  border: 1px solid var(--border-default); border-radius: 7px;
+  background: var(--surface-card); color: var(--text-secondary);
+  font-size: 13.5px; font-weight: 600; white-space: nowrap;
 }
 .fm-theme > summary::-webkit-details-marker { display: none; }
-.fm-theme > summary:hover { opacity: 1; background: oklch(1 0 0 / 0.12); }
-.fm-theme[open] > summary { background: oklch(1 0 0 / 0.18); opacity: 1; }
+.fm-theme > summary:hover { border-color: var(--brand); color: var(--brand-strong); }
+.fm-theme[open] > summary { border-color: var(--brand); color: var(--brand-strong);
+  background: var(--surface-hover); }
+/* The swatch on the BUTTON shows the scheme you are currently in, so the control
+   says what it does without being opened. */
+.fm-theme > summary .cur {
+  width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--border-default);
+  background: linear-gradient(135deg, var(--brand) 0 50%, var(--accent-live, var(--brand-strong)) 0);
+}
+@media (max-width: 1180px) { .fm-theme > summary .lbl { display: none; } }
 .fm-theme-menu {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; width: 288px;
   background: var(--surface-card); border: 1px solid var(--border-default);
