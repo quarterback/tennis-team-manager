@@ -7,7 +7,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
-  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Gender</span>
     <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
       {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}
@@ -54,7 +54,7 @@
   <span class="bl-entries-right">{{ uni_label }} · the placeable pool — find who to move, then place them on the portal</span>
 </div></div>
 
-<div class="bl-notes"><div class="bl-note" style="font-size:12px">
+<div class="bl-notes"><div class="bl-note" style="font-size:13.5px">
   Every rostered player, filterable by where they're <strong>from</strong> — US state, region, or
   international — plus class and division. Built for portal placement: narrow to the profile you want,
   then type the name into the <a href="{{ url_for('preseason_portal', u=u) }}">Pre-season</a> /

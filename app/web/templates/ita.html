@@ -10,7 +10,7 @@
    Everything is positioned server-side by `state.ita_bracket_view`. #}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · Preseason NIT —
+  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · Preseason NIT —
     {% if br and br.runs_kickoff %}Kickoff Weekend &amp; National Team Indoor{% else %}National Team Indoor{% endif %}</span>
   <span class="bl-bracket-pills" style="margin-left:auto">
     {% for val, d, g, lbl in universes %}
@@ -41,7 +41,7 @@
 <div class="bl-container"><div class="bl-champ">
   {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
   <div><div class="label">Preseason NIT Champion</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div>
+    <div style="font-size:22px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div>
     <div class="sub">{{ sel_year }} {{ uni_label }} — won the National Team Indoor Championship to open the season</div></div>
 </div></div>
 {% endif %}

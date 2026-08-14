@@ -3565,7 +3565,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # it in the same way. Selected per class it produced ~1,080 region
                 # honours a gender on ~300 programs — every school placed somebody,
                 # and it was a district by another name.
-                "all_region": season.get("all_region", {}),
+                "all_region": season.get("all_region", {}),   # {region: {tiers, honorable_mention, programs}}
                 "all_region_flight_check": season.get("all_region_flight_check", {}),
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
@@ -4026,10 +4026,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # All-Region hangs off the SEASON, not the classification (owner rule 2027-08
     # — a region team is class-blind). `aw` is the fallback for seasons archived
     # while it still lived inside a class's slate.
-    for rname, rs in (arc.get("all_region") or aw.get("all_region") or {}).items():
-        for r in rs:
-            if r.get("school") == school:
-                row["honors"].append(f"All-Region ({rname}) — {r['name']}")
+    from .jhsaa_awards import region_rows
+    for rname, tier, r in region_rows(arc.get("all_region") or aw.get("all_region")):
+        if r.get("school") == school:
+            row["honors"].append(
+                f"All-Region {tier} ({rname}) — {r['name']}".replace("  ", " "))
     # All-State names the TIER it was won on (First/Second/Third/Fourth Team, then
     # Honorable Mention). `teams` is the SOP shape; the flat `all_state` list is
     # the fallback for seasons archived before the tiers existed.

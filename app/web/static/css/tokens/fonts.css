@@ -1,14 +1,75 @@
 /* ============================================================
-   Baseline — Webfonts
-   Hanken Grotesk : clean geometric-grotesque sans for the entire
-                    UI, including numbers (tabular figures). Matches
-                    the utilitarian, system-sans feel of
-                    oregontennis.org, elevated a touch.
-   IBM Plex Mono  : kept for the rare code-like token (sim seed,
-                    model id). NOT used for stat numbers.
-   ------------------------------------------------------------
-   Loaded from Google Fonts (no binaries supplied). To self-host,
-   drop .woff2 files in assets/fonts/ and swap to @font-face.
+   Webfonts — the owner's licensed families, self-hosted.
+
+   Ported from the Varsity Apex sheet (prep-network/site/style.css), which is
+   where the discipline below comes from: EACH FAMILY HAS ONE JOB. The files are
+   the same binaries, served from our own /static/fonts — no CDN, no Google
+   Fonts, no external request on any page. That was already true of Apex for CSP
+   reasons and is worth keeping here.
+
+   Replaces the previous `@import` of Hanken Grotesk + IBM Plex Mono off Google
+   Fonts. That import was a render-blocking round trip to a third party on every
+   page load; these are ~876 KB of woff2 served from the same origin with
+   `font-display: swap`.
+
+   ⚠️ The paths are `../../fonts/` — TWO levels. A `url()` inside an @imported
+   sheet resolves against THAT FILE's directory, not the importer's, and this
+   file sits at /static/css/tokens/. `../fonts/` resolves to /static/css/fonts/,
+   which does not exist; the browser reports nothing and silently falls back to
+   Helvetica, so the only way to catch it is to resolve the path.
+
+   ⚠️ Neue Montreal has a noticeably larger x-height than Hanken Grotesk, so text
+   reads about a step bigger at the same px. That is deliberate and it compounds
+   with the raised scale in `typography.css` — do not "correct" the sizes back
+   down because the page now looks larger. It looks larger because it was too
+   small.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@font-face { font-family: 'PP Valve'; font-weight: 800; font-style: italic;
+  font-display: swap; src: url('../../fonts/PPValve-PlainExtraboldItalic.woff2') format('woff2'); }
+@font-face { font-family: 'PP Valve Stencil'; font-weight: 800; font-style: italic;
+  font-display: swap; src: url('../../fonts/PPValve-StencilExtraboldItalic.woff2') format('woff2'); }
+@font-face { font-family: 'PP Neue Montreal'; font-weight: 800; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPNeueMontreal-Extrabold.woff2') format('woff2'); }
+@font-face { font-family: 'PP Neue Montreal'; font-weight: 600; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPNeueMontreal-Semibold.woff2') format('woff2'); }
+@font-face { font-family: 'PP Neue Montreal'; font-weight: 500; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPNeueMontreal-Medium.woff2') format('woff2'); }
+@font-face { font-family: 'PP Neue Montreal'; font-weight: 400; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPNeueMontreal-Book.woff2') format('woff2'); }
+@font-face { font-family: 'PP Object Sans'; font-weight: 900; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPObjectSans-Heavy.woff2') format('woff2'); }
+@font-face { font-family: 'PP Object Sans'; font-weight: 900; font-style: italic;
+  font-display: swap; src: url('../../fonts/PPObjectSans-HeavySlanted.woff2') format('woff2'); }
+@font-face { font-family: 'PP Formula Extended'; font-weight: 700; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPFormula-ExtendedBold.woff') format('woff'); }
+@font-face { font-family: 'PP Pangram Compressed'; font-weight: 800; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPPangramSans-CompressedExtrabold.woff') format('woff'); }
+@font-face { font-family: 'PP Fuji'; font-weight: 700; font-style: normal;
+  font-display: swap; src: url('../../fonts/PPFuji-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'Author'; font-weight: 400; font-style: normal;
+  font-display: swap; src: url('../../fonts/author-regular.woff') format('woff'); }
+@font-face { font-family: 'Author'; font-weight: 600; font-style: normal;
+  font-display: swap; src: url('../../fonts/author-semibold.woff') format('woff'); }
+@font-face { font-family: 'Author'; font-weight: 700; font-style: italic;
+  font-display: swap; src: url('../../fonts/author-bold-italic.woff') format('woff'); }
+@font-face { font-family: 'Switzer'; font-weight: 600; font-style: normal;
+  font-display: swap; src: url('../../fonts/switzer-semibold.woff2') format('woff2'); }
+@font-face { font-family: 'Azeret Mono'; font-weight: 100 900; font-style: normal;
+  font-display: swap; src: url('../../fonts/azeret-mono-variable.woff2') format('woff2'); }
+
+:root {
+  /* ---- type roles — each family one job ----
+     `--font-display` and `--font-text` are the two this app already reads
+     everywhere; the rest are the Apex vocabulary, here so the editorial
+     components can be ported without a second font pass. */
+  --font-wordmark:  'PP Valve', 'Arial Black', sans-serif;
+  --font-stencil:   'PP Valve Stencil', 'PP Valve', 'Arial Black', sans-serif;
+  --font-display:   'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-text:      'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-serif:     'Author', Georgia, 'Times New Roman', serif;
+  --font-label:     'PP Object Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-condensed: 'PP Pangram Compressed', 'Arial Narrow', sans-serif;
+  --font-poster:    'PP Formula Extended', 'Arial Black', sans-serif;
+  --font-mono:      'Azeret Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}

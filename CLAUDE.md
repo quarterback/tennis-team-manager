@@ -591,6 +591,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   — a cap that applies to HM ALONE**; the numbered teams stack a school as high as
   its résumés earn (4 seen). If every class shows the same HM count, a slot count
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
+  - **‼️ REGIONS ARE NOT THE SAME SIZE, so the honour scales with them** (owner rule
+    2027-08). Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17.
+    A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
+    Team**; below that, ONE unnumbered team (calling it "First" with no second
+    promises a tier that does not exist). Halbrook alone clears
+    **`AR_HM_MIN_PROGRAMS` (100)** and adds an **Honorable Mention** — All-State's
+    threshold logic exactly (no slot count, same criteria and flight weighting)
+    but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
+    singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a
+    list of region names** — the owner named four regions and the counts said five
+    (South Coast, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
+    `{tiers, honorable_mention, programs}` and **`jhsaa_awards.region_rows()` is
+    the ONE place that knows that shape** — a reader that walks the dict itself
+    will silently show a big region's First Team only.
+  - **‼️ `used` CARRIES ACROSS THE TIERS OF A LEVEL** (`_pick_team`). Ranked slices
+    keep tiers disjoint by INDEX, but a player with two strong partnerships sits at
+    two indices, so a per-team `used` put the same athlete on the First Team with
+    one partner and the Second with another. Owner: "that should not happen." The
+    All-State tier loop had the identical shape and the same latent bug.
+  - **‼️ AN ATHLETE'S CATEGORY IS THEIR BETTER DISCIPLINE, NOT THEIR MORE FREQUENT
+    ONE** (owner rule 2027-08: "kids can't play singles and doubles in the same
+    match so just take their better thing and give them that"). `_assign_primary`
+    compares STANDING — percentile in the gender-wide singles field vs percentile
+    of their strongest partnership in the gender-wide pairs field — because a
+    singles résumé and a partnership's are different currencies and cannot be
+    compared raw. Ties to singles. ⚠️ `_pairs` therefore builds EVERY partnership
+    and the cross-category ones are dropped after; gating pairs on the primary is
+    circular, since the primary is derived from the pair ratings.
   - **‼️ ALL-REGION IS REGION-WIDE AND CLASS-BLIND** (owner rule 2027-08). There is
     no 7A All-Region team — there is a **Gold Valley All-Region team**, drawn from
     every program in Gold Valley whatever its enrollment, exactly as in real life.
@@ -782,6 +810,68 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `docs/AAR-jhsaa-upset-variance-recalibration.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
+
+## ⚠️ THE SUITE MUST NOT SHARE A DATABASE WITH THE APP (it isn't about the save)
+`app.dbpath.resolve_db_path()` returns `$TENNIS_DB_PATH` or the repo's `./tennis.db`, and
+**`world.WORLD_DB` resolves to the SAME file** (one database, separate tables). The
+`played_season` fixture calls `world.reset()` (`DELETE FROM world`) and then plays a
+season into that file. So the suite READ AND WROTE whatever `./tennis.db` happened to
+contain, and its results depended on local state rather than on the code.
+> ⚠️ Do NOT write this up as save protection. **The owner never keeps a `tennis.db`** —
+> they rebuild the sim from scratch on every reload, so a wiped world costs them nothing
+> and is not a reason to do anything. The reason is HERMETICITY: a test that reads a file
+> the app also writes passes or fails on leftovers.
+The root `conftest.py` now points `TENNIS_DB_PATH` at a throwaway temp file BEFORE any
+`app` import. That guard is load-bearing — without it a test result is a statement about
+the developer's disk.
+- **This is what broke the awards test.** A world reset with the played SEASON rows left
+  behind means the season's ~4,600 pids name people `build_roster` no longer produces.
+  `awards._eligible` `continue`d past every one, returned `[]`, and every All-American
+  tier came back empty on a fully played season — no error, no log, a clean and
+  completely wrong "nobody was honored". Diagnosed by measuring the two pid sets (4,596
+  each, **zero** overlap), not by reading the selector, which was correct. `_eligible`
+  now logs loudly when nothing resolves, because an empty honors board on a played season
+  is a FAULT and not a result. **If awards are empty, check that log before the selection
+  code.**
+- **"Pre-existing" describes WHEN a failure started, not whether it matters.** This one
+  was correctly bisected to "not mine" and was still a real bug in the suite.
+
+## ⚠️ TYPE SCALE — a scale that is not used is not a scale (owner rule 2027-08)
+The app had **768 px font-size declarations against a 12-token scale used SEVEN times**:
+78% of all type under 14px, 34% under 12px, 31 distinct sizes with seven half-pixel
+steps. Raised across the board with a hard floor of 11px (uppercase tracked labels only);
+`tokens/typography.css` owns SIZES and weights, `tokens/fonts.css` owns FAMILIES (they
+both declared families once and typography, importing second, silently won). **Use a
+token; a literal is how the scale drifted from 12 values to 31.**
+- **‼️ FIXED-SIZE BOXES ARE EXEMPT AND MUST CLIP.** A crest is an ICON, not prose:
+  `.bl-crest.xs` is a 20px square, and four glyphs of 800-weight display type only fit it
+  at ~9px, so the sweep's 9→11px raise pushed WAKE/TAMU/MICH/NCST out over the school
+  name on every bracket, standings, portal and search row. Raising it means widening
+  every crest box and so every dense row in the app. Compact sizes + `overflow: hidden`,
+  which is a guarantee rather than an assumption about label length. Same for the recruit
+  crest and the almanac rank pip.
+- **Fixed grid columns are sized against the type they were designed with** — seven
+  column sets needed widening.
+
+## ⚠️ COLOUR — ten light schemes, and components read ALIASES ONLY
+`tokens/colors.css` is three layers: palette slots → structural slots → semantic aliases.
+A scheme (`[data-theme="…"]`) overrides the first two only, which is what lets ten
+palettes exist without touching a component rule. **Never write a raw colour outside this
+file.** `color-scheme: only light` is deliberate (Chromium's Auto Dark Theme re-inverts a
+page that never asked). Schemes are shared with `prep-network/site/style.css`; the picker
+list is `server.SCHEMES`.
+- **Measure every slot against its own ground before writing it down.** The `clay` scheme
+  contains NO colour dark enough to be ink — the darkest is 1.8:1 — so its ink and link
+  are derived by pushing the palette's hues down. Dropped in as sent it would have
+  rendered unreadable body text with no error anywhere.
+- **Win/loss stays green/red in every scheme**: those carry MEANING, not identity.
+- **A swatch is keyed on the scheme NAME** — rename a scheme and its chip goes blank
+  while everything else still works. Every key in `SCHEMES` needs a `.fm-theme-sw.s-*`
+  rule.
+- A token that is referenced but never DEFINED silently keeps its hard-coded fallback and
+  ignores every scheme (`--surface`, `--border`, `--text`, `--pos`, `--neg` all did).
+  `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
+See `docs/AAR-design-port-readability-and-suite-hermeticity.md`.
 
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —

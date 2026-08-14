@@ -46,12 +46,14 @@ together before it is a partnership at all. No athlete may hold two slots on the
 same honours team, in either direction — see `_take`'s `used` set and the
 primary-discipline rule below.
 
-WHICH CATEGORY AN ATHLETE IS CONSIDERED IN is decided by ACTUAL PARTICIPATION,
-never by which of their two résumés happens to score higher: a player whose
-season was mostly singles is a singles candidate, one whose season was mostly
-doubles is a doubles candidate (`_primary_discipline`, ties to singles). That is
-what the SOP asks for, and it is also what makes "no athlete in both halves of
-one team" true by construction rather than by a post-hoc filter.
+WHICH CATEGORY AN ATHLETE IS CONSIDERED IN is whichever they were BETTER at
+(owner: "kids can't play singles and doubles in the same match so just take
+their better thing and give them that"). "Better" is STANDING, not a raw score —
+where they sit in the gender-wide singles field against where their strongest
+partnership sits in the gender-wide field of partnerships, both as percentiles
+of the same shape (`_assign_primary`, ties to singles). One category per athlete
+is what makes "no athlete in both halves of one team" true by construction
+rather than by a post-hoc filter.
 
 HOW A RÉSUMÉ IS SCORED (the SOP's criteria, in the order it lists them):
 
@@ -104,6 +106,32 @@ AD_SINGLES, AD_DOUBLES = TEAM_SINGLES, TEAM_DOUBLES
 # `region_awards`; the guard below is now nearly vacant, since a region taken
 # whole holds ~40 programs rather than the four or five a class-region did.
 MIN_REGION_PROGRAMS = 4
+
+# ‼️ A BIG REGION CROWNS TWO TEAMS (owner rule 2027-08). The association's regions
+# are nowhere near the same size — Halbrook Basin has 115 boys' programs and North
+# Range has 17 — so one team of ten singles is a far scarcer honour in one than in
+# the other. Regions at or above this many programs crown a First AND a Second
+# Team; the rest crown a single unnumbered All-Region team.
+#
+# Derived from the PROGRAM COUNT, never a list of region names: the association's
+# shape changes when schools are added, and the reason for the rule is the size,
+# not the name. Measured — boys: Halbrook 115 · Gold Valley 65 · Harborline 51 ·
+# South Coast 49 · Ashbury Metro 45, then a clean break to Sage Plains 36. Girls
+# is the same five, 50-128 against 38. So 45 splits exactly the regions the owner
+# named, plus South Coast, which is BIGGER than Ashbury Metro on the boys' side
+# and so cannot be left out on the owner's own reasoning.
+AR_TIER2_MIN_PROGRAMS = 45
+
+# ‼️ AND THE BIGGEST REGION GETS AN HONORABLE MENTION TOO (owner rule 2027-08):
+# "Halbrook should have honorable mention too, it's so much bigger than everywhere
+# else." It is not a close call — Halbrook Basin has 115 boys' / 128 girls'
+# programs and the next region down, Gold Valley, has 65 / 77. Two full teams
+# still only reach 36 athletes out of a region the size of a small classification.
+#
+# Same rule as All-State's HM and for the same reason: a THRESHOLD, not a team.
+# No slot count, so the size is an OUTPUT of how deep the region actually was,
+# and at most two ENTRIES per school.
+AR_HM_MIN_PROGRAMS = 100
 AS_TIERS = {"7A": 4}           # numbered teams; everyone else gets three
 AS_TIERS_DEFAULT = 3
 
@@ -128,6 +156,12 @@ AS_TIERS_DEFAULT = 3
 HM_DROP = 0.10
 HM_MAX_MULT = 2.5              # runaway guard on the TOTAL, never a target
 HM_PER_SCHOOL = 2              # HM only — the numbered teams have no such cap
+# ‼️ THE REGION'S HM IS CAPPED AT ONE ENTRY PER SCHOOL (owner rule 2027-08), half
+# the All-State cap. All-Region HM exists in exactly one region, and that region
+# is a fifth of the association — without a tighter cap its deepest programs
+# would take the tail of it two at a time. An entry is one singles player OR one
+# doubles pairing, so a school takes one or the other, never both.
+AR_HM_PER_SCHOOL = 1
 
 TEAM_NAMES = ["First Team", "Second Team", "Third Team", "Fourth Team"]
 
@@ -232,15 +266,41 @@ def _split(rec: dict) -> tuple[list, list]:
     return s, d
 
 
-def _primary_discipline(rec: dict) -> str:
-    """"s" or "d" — WHERE THE ATHLETE ACTUALLY PLAYED (owner, 2027-08).
+def _assign_primary(players: dict, pairs: dict) -> None:
+    """Give every athlete ONE category — the one they were BETTER at.
 
-    Not "whichever résumé scores higher": the category an athlete is considered
-    in is a fact about their season, and deciding it here is also what makes it
-    impossible for one player to hold a singles slot and a doubles slot on the
-    same honours team. Ties go to singles."""
-    s, d = _split(rec)
-    return "d" if len(d) > len(s) else "s"
+    ‼️ Owner rule, 2027-08: *"kids can't play singles and doubles in the same
+    match so just take their better thing and give them that."* An athlete is
+    honoured once, in the discipline where their season actually stands higher,
+    and is not a candidate in the other.
+
+    "Better" cannot be a raw score comparison — a singles résumé and a
+    partnership's are on different flight weights and different volumes, so the
+    numbers are not the same currency. It is STANDING: where the athlete sits in
+    the gender-wide singles field, against where their strongest partnership sits
+    in the gender-wide field of partnerships. Both are percentiles of the same
+    shape, so they compare honestly. No qualifying record in a discipline means a
+    standing of zero there; a dead tie goes to singles.
+
+    (This replaces an earlier rule that assigned on PARTICIPATION — whichever
+    discipline they played more of. That was defensible and it was not what the
+    owner asked for: a player who filled in at doubles for most of a rotation
+    while producing the region's best singles season was being judged as a
+    doubles player.)"""
+    def _pct(scores: dict) -> dict:
+        ranked = sorted(scores.items(), key=lambda kv: -kv[1])
+        n = len(ranked) or 1
+        return {k: 1.0 - i / n for i, (k, _v) in enumerate(ranked)}
+
+    s_pct = _pct({pid: r["s"] for pid, r in players.items() if r["s_n"] >= MIN_MATCHES})
+    d_pct = _pct({k: pr["d"] for k, pr in pairs.items() if pr["d_n"] >= MIN_PAIR_MATCHES})
+    best_pair: dict[str, float] = {}
+    for k, v in d_pct.items():
+        for pid in k:
+            if v > best_pair.get(pid, 0.0):
+                best_pair[pid] = v
+    for pid, rec in players.items():
+        rec["primary"] = "d" if best_pair.get(pid, 0.0) > s_pct.get(pid, 0.0) else "s"
 
 
 def _pairs(players: dict) -> dict:
@@ -256,20 +316,17 @@ def _pairs(players: dict) -> dict:
     side; the pair itself is keyed on the sorted pids so the two halves of a
     partnership can never disagree about its identity.
 
-    Only pairs of DOUBLES-PRIMARY players are candidates (`_primary_discipline`).
-    That is not a technicality: in the 1S/4D postseason format nearly every
-    singles player is put into a pairing for a handful of duals, and those are
-    not doubles teams — they are singles players covering a card."""
+    EVERY partnership is built here, whatever its members' primary discipline —
+    the primary is DECIDED from these ratings (`_assign_primary`), so gating the
+    pairs on it first would be circular."""
     out: dict[tuple, dict] = {}
     for pid, rec in players.items():
-        if rec["primary"] != "d":
-            continue
         for m in rec["log"]:
             slot, _won, _ph, opps, partner, _os = m
             if _is_singles(slot) or not partner or partner >= pid:
                 continue                    # log it once, from the higher pid
             mate = players.get(partner)
-            if mate is None or mate["primary"] != "d":
+            if mate is None:
                 continue
             key = (partner, pid)
             pr = out.get(key)
@@ -531,7 +588,8 @@ def _hm_cut(scores: list[float]) -> float:
     return last - HM_DROP * max(0.0, top - last)
 
 
-def _honorable_mention(tiers, s_rank, d_rank, si, di) -> list:
+def _honorable_mention(tiers, s_rank, d_rank, si, di, scope="state",
+                       per_school=HM_PER_SCHOOL) -> list:
     """Candidates past the numbered teams whose résumé still clears the bar.
 
     Not "the next N": each discipline gets its own cutoff from the numbered
@@ -548,21 +606,21 @@ def _honorable_mention(tiers, s_rank, d_rank, si, di) -> list:
     placed = {p for t in tiers for r in t["players"] for p in row_pids(r)}
     cands: list[tuple[float, dict]] = []
     for rank, start, key in ((s_rank, si, "s"), (d_rank, di, "d")):
-        sk = f"{key}:state"
+        sk = f"{key}:{scope}"
         cut = _hm_cut([r[sk] for r in rank[:start]])
         for rec in rank[start:]:
             if rec[sk] < cut or any(p in placed for p in rec["pids"]):
                 continue
             cands.append((rec[sk], rec))
     cands.sort(key=lambda kv: (-kv[0], kv[1]["name"]))
-    per_school: dict[str, int] = defaultdict(int)
+    per_school_n: dict[str, int] = defaultdict(int)
     used: set[str] = set()
     out, limit = [], int((TEAM_SINGLES + TEAM_DOUBLES) * HM_MAX_MULT)
     for score, rec in cands:
-        if (per_school[rec["school"]] >= HM_PER_SCHOOL or len(out) >= limit
+        if (per_school_n[rec["school"]] >= per_school or len(out) >= limit
                 or any(p in used for p in rec["pids"])):
             continue
-        per_school[rec["school"]] += 1
+        per_school_n[rec["school"]] += 1
         used.update(rec["pids"])
         out.append(_row(rec, "s" if len(rec["pids"]) == 1 else "d", score))
     return out
@@ -613,7 +671,6 @@ def build_pool(teams, postseason=None) -> dict:
     players = _collect(teams)
     for rec in players.values():
         sl, dl = _split(rec)
-        rec["primary"] = _primary_discipline(rec)
         rec["s_n"], rec["s_w"] = len(sl), sum(1 for m in sl if m[1])
         rec["s_flight"] = _flight_seat(rec, "s")
     pairs = _pairs(players)
@@ -629,8 +686,32 @@ def build_pool(teams, postseason=None) -> dict:
         for scope, alpha in FLIGHT_ALPHA.items():
             pr[f"d:{scope}"] = _resume(pr["log"], qp, postseason, alpha)
         pr["d"] = pr["d:state"]
+
+    # Every athlete gets ONE category, decided on standing (see `_assign_primary`),
+    # and a partnership survives only if BOTH its members are doubles-primary.
+    # That is what makes "nobody is honoured in both halves" true by construction
+    # rather than by a filter applied afterwards.
+    _assign_primary(players, pairs)
+    pairs = {k: pr for k, pr in pairs.items()
+             if players[k[0]]["primary"] == "d" and players[k[1]]["primary"] == "d"}
     return {"players": players, "pairs": pairs,
             "flight_of": {pid: r["s_flight"] for pid, r in players.items()}}
+
+
+def _pick_team(pool, ranked_s, ranked_d, n_s, n_d, scope, breadth, used=None):
+    """One team from ALREADY-RANKED lists — see `_build_team` for the common case.
+
+    ‼️ `used` is shared ACROSS THE TIERS of one level, not reset per team. The
+    ranked slices already keep a First and a Second Team disjoint by INDEX, but a
+    player with two strong partnerships appears at two different indices — so
+    without a carried set the same athlete lands on the First Team with one
+    partner and the Second with another, which reads as a selector that could not
+    make up its mind. You are honoured at your best tier, once."""
+    used = set() if used is None else used
+    s_picks = _take(ranked_s, n_s, f"s:{scope}", breadth, used)
+    d_picks = _take(ranked_d, n_d, f"d:{scope}", breadth, used)
+    return ([_row(r, "s", r[f"s:{scope}"]) for r in s_picks]
+            + [_row(r, "d", r[f"d:{scope}"]) for r in d_picks])
 
 
 def _build_team(pool, pids, n_s, n_d, scope, breadth):
@@ -638,7 +719,7 @@ def _build_team(pool, pids, n_s, n_d, scope, breadth):
 
     ‼️ No athlete may hold two slots on one team, in either direction: the `used`
     set carries across both halves, and the primary-discipline rule
-    (`_primary_discipline`) already keeps a singles player out of the doubles pool
+    (`_assign_primary`) already keeps a singles player out of the doubles pool
     entirely. What `used` catches is the case that rule cannot — a player with two
     strong partnerships, whose weaker pairing must not take a place another pair
     earned."""
@@ -677,18 +758,57 @@ def region_awards(pool) -> dict:
         programs[rec["region"]].add(rec["school"])
     teams = {}
     for rname, pids in by_region.items():
-        if len(programs[rname]) < MIN_REGION_PROGRAMS:
+        n_prog = len(programs[rname])
+        if n_prog < MIN_REGION_PROGRAMS:
             continue
         # Breadth here is school + CLASSIFICATION: when candidates are genuinely
         # tied, a selector spreads across the region's schools and its class
         # ladder alike. Still a near-tie reorder, never a quota — a region whose
         # best ten singles seasons are all 7A gets all ten.
-        picks = _build_team(pool, pids, AR_SINGLES, AR_DOUBLES,
-                            "region", ("school", "group"))
-        if picks:
-            teams[rname] = picks
-    flat = [r for rows in teams.values() for r in rows]
+        #
+        # A big region takes a Second Team from the candidates the First did not,
+        # exactly as All-State's tiers do: `_build_team` is handed the remainder
+        # of the ranked lists rather than re-ranking, so the Second Team is the
+        # next ten and eight and never a re-shuffle of the same names.
+        n_tiers = 2 if n_prog >= AR_TIER2_MIN_PROGRAMS else 1
+        rs = _rank_singles(pool["players"], pids, "region", pool["flight_of"])
+        rd = _rank_pairs(pool["pairs"], pids, "region")
+        tiers, used, si, di = [], set(), 0, 0
+        for t in range(n_tiers):
+            picks = _pick_team(pool, rs[si:], rd[di:], AR_SINGLES, AR_DOUBLES,
+                               "region", ("school", "group"), used)
+            si += AR_SINGLES
+            di += AR_DOUBLES
+            if not picks:
+                break
+            # One team = one honour, UNNUMBERED. Calling it "First Team" when
+            # there is no second promises a tier that does not exist.
+            tiers.append({"name": TEAM_NAMES[t] if n_tiers > 1 else "",
+                          "players": picks})
+        if not tiers:
+            continue
+        hm = (_honorable_mention(tiers, rs, rd, si, di, "region", AR_HM_PER_SCHOOL)
+              if n_prog >= AR_HM_MIN_PROGRAMS else [])
+        teams[rname] = {"tiers": tiers, "honorable_mention": hm,
+                        "programs": n_prog}
+    flat = [r for _rn, _t, r in region_rows(teams)]
     return {"teams": teams, "flight_check": _flight_report(flat, "region")}
+
+
+def region_rows(all_region: dict):
+    """Every All-Region selection as (region, tier_name, row).
+
+    ONE place knows the archive's shape. A region's value is a LIST OF TIERS —
+    one unnumbered team in a small region, First and Second in a big one — and
+    half a dozen readers walk it (`honors_for`, the school ledger, the roster
+    badges, the honors page, the tests). Walking it by hand in each of them is
+    how one of them ends up showing a big region's First Team only."""
+    for rname, reg in (all_region or {}).items():
+        for t in reg["tiers"]:
+            for r in t["players"]:
+                yield rname, t.get("name") or "", r
+        for r in reg.get("honorable_mention") or ():
+            yield rname, "Honorable Mention", r
 
 
 def season_awards(teams, postseason=None, pool=None) -> dict:
@@ -723,21 +843,16 @@ def season_awards(teams, postseason=None, pool=None) -> dict:
     s_rank = _rank_singles(players, mine, "state", pool["flight_of"])
     d_rank = _rank_pairs(pairs, mine, "state")
 
-    def build(ranked_s, ranked_d, n_s, n_d, scope, breadth):
-        used: set[str] = set()
-        s_picks = _take(ranked_s, n_s, f"s:{scope}", breadth, used)
-        d_picks = _take(ranked_d, n_d, f"d:{scope}", breadth, used)
-        return ([_row(r, "s", r[f"s:{scope}"]) for r in s_picks]
-                + [_row(r, "d", r[f"d:{scope}"]) for r in d_picks])
-
     # --- All-State: numbered teams, then the merit threshold ------------------
     # Breadth at the STATE level is school + district + region: statewide quality
-    # is overwhelmingly primary, and this only unpicks a near-tie.
+    # is overwhelmingly primary, and this only unpicks a near-tie. `used` carries
+    # across the tiers — see `_pick_team`.
     n_teams = AS_TIERS.get(group, AS_TIERS_DEFAULT)
     tiers, si, di = [], 0, 0
+    used: set[str] = set()
     for t in range(n_teams):
-        picks = build(s_rank[si:], d_rank[di:], AS_SINGLES, AS_DOUBLES,
-                      "state", ("school", "district", "region"))
+        picks = _pick_team(pool, s_rank[si:], d_rank[di:], AS_SINGLES, AS_DOUBLES,
+                           "state", ("school", "district", "region"), used)
         si += AS_SINGLES
         di += AS_DOUBLES
         if picks:
@@ -807,9 +922,10 @@ def honors_for(pid: str, awards: dict, group: str) -> list[str]:
             out.append(f"All-State Honorable Mention ({group})")
     # ⚠️ All-Region is GENDER-WIDE, not part of a classification's slate, so the
     # caller has to merge it in — the same shape `all_district` already needs.
-    for rname, rs in (awards.get("all_region") or {}).items():
-        if any(pid in row_pids(r) for r in rs):
-            out.append(f"All-Region ({rname})")
+    # A big region crowns two teams, so the tier is named when there is one.
+    for rname, tier, r in region_rows(awards.get("all_region")):
+        if pid in row_pids(r):
+            out.append(f"All-Region {tier} ({rname})".replace("  ", " "))
             break
     for dname, rs in (awards.get("all_district") or {}).items():
         if any(pid in row_pids(r) for r in rs):

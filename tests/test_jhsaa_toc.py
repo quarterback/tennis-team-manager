@@ -23,6 +23,7 @@ import sqlite3
 import pytest
 
 from app import jhsaa as jh
+from app import jhsaa_awards as jaw
 from app import world as wd
 from app.web import state as st
 from app.web.server import create_app
@@ -392,7 +393,6 @@ def test_the_honors_page_names_every_selection(archived):
     player page — a pairing rendered as one linked name and one bare one is the
     'half a pairing' fault, and it looks completely fine."""
     import html as _html
-    from app import jhsaa_awards as jaw
     arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
     for grp in jh.GROUPS:
         aw = arc["awards"][grp]
@@ -448,7 +448,6 @@ def test_the_flight_check_is_archived_and_shown(archived):
     """Flight weighting is structural, so what it produced is part of the record —
     archived with the season, not recomputed on read by whatever the selector has
     become by then."""
-    from app import jhsaa_awards as jaw
     arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
     assert arc["all_region_flight_check"]["floor"] == jaw.FLIGHT_FLOOR["region"]
     for grp in jh.GROUPS:
@@ -476,7 +475,6 @@ def test_the_honors_view_never_overwrites_a_player_with_their_school(archived):
     the VIEW, on every surface it builds, and compares each decorated row against
     the ARCHIVED row it was built from: the crest must arrive and nothing else
     may."""
-    from app import jhsaa_awards as jaw
     w = archived["world"]
     arc = wd.get_jhsaa(w["id"], w["year"], "girls")
     schools = {s.name for s in jh.load_schools("girls")}
@@ -494,15 +492,25 @@ def test_the_honors_view_never_overwrites_a_player_with_their_school(archived):
                                     else aw.get("honorable_mention", []))]
         if view:
             for rg in view["regions"]:
-                out += [(f"all-region {rg['region']}", r) for r in rg["players"]]
+                # A region carries TIERS (+ an HM in the one big enough), never
+                # a flat `players` list — see `jhsaa_awards.region_rows`.
+                for t in rg["tiers"]:
+                    out += [(f"all-region {rg['region']} {t['name']}".strip(), r)
+                            for r in t["players"]]
+                out += [(f"all-region {rg['region']} Honorable Mention", r)
+                        for r in rg["honorable_mention"]]
             for d in view["districts"]:
                 out += [(f"all-district {d['district']}", r) for r in d["players"]]
                 if d["poy"]:
                     out.append((f"district poy {d['district']}", d["poy"]))
         else:
-            # All-Region hangs off the SEASON, not the class's slate.
-            for rn in sorted(arc.get("all_region") or {}):
-                out += [(f"all-region {rn}", r) for r in arc["all_region"][rn]]
+            # All-Region hangs off the SEASON, not the class's slate. Walk it in
+            # the same order the VIEW does (it sorts by region name), or the two
+            # lists are compared row-against-unrelated-row.
+            reg_all = arc.get("all_region") or {}
+            for rn in sorted(reg_all):
+                for _rn, tier, r in jaw.region_rows({rn: reg_all[rn]}):
+                    out.append((f"all-region {rn} {tier}".strip(), r))
             for dn in sorted(ad):
                 out += [(f"all-district {dn}", r) for r in ad[dn]]
                 r = (aw.get("district_poy") or {}).get(dn)
@@ -545,7 +553,6 @@ def test_all_region_is_one_team_per_region_for_the_whole_gender(archived):
     honoured roughly a thousand players out of an association of ~300 programs.
     So it is archived at the SEASON level, once, and every classification page
     shows the same set."""
-    from app import jhsaa_awards as jaw
     w = archived["world"]
     arc = wd.get_jhsaa(w["id"], w["year"], "girls")
     assert arc["all_region"]
@@ -553,12 +560,25 @@ def test_all_region_is_one_team_per_region_for_the_whole_gender(archived):
         assert "all_region" not in arc["awards"][grp], grp
 
     home = {s.name: (s.area, s.group) for s in jh.load_schools("girls")}
-    for rn, rows in arc["all_region"].items():
+    for rn, reg in arc["all_region"].items():
+        rows = [r for _a, _b, r in jaw.region_rows({rn: reg})]
         assert all(home[r["school"]][0] == rn for r in rows), rn
         assert len({r["school"] for r in rows}) > 2, rn
-    assert any(len({home[r["school"]][1] for r in rows}) > 1
-               for rows in arc["all_region"].values()), \
+    assert any(len({home[r["school"]][1] for _a, _b, r in jaw.region_rows({rn: reg})}) > 1
+               for rn, reg in arc["all_region"].items()), \
         "no region team mixed classifications"
+
+    # A big region crowns two teams; the biggest also crowns an Honorable
+    # Mention. Both thresholds are on the PROGRAM COUNT, never a name list.
+    for rn, reg in arc["all_region"].items():
+        n = reg["programs"]
+        assert len(reg["tiers"]) == (2 if n >= jaw.AR_TIER2_MIN_PROGRAMS else 1), (rn, n)
+        if n < jaw.AR_HM_MIN_PROGRAMS:
+            assert not reg["honorable_mention"], rn
+        # HM in the one region that gets it is capped at ONE ENTRY per school.
+        from collections import Counter
+        c = Counter(r["school"] for r in reg["honorable_mention"])
+        assert not c or max(c.values()) <= jaw.AR_HM_PER_SCHOOL, (rn, c.most_common(3))
 
     # The view serves the same slate from every classification.
     slates = [tuple(sorted(rg["region"] for rg in
@@ -567,8 +587,8 @@ def test_all_region_is_one_team_per_region_for_the_whole_gender(archived):
     assert len(set(slates)) == 1 and slates[0], slates
 
     # And it reaches a player's honours from whichever class they play in.
-    honoured = {p for rows in arc["all_region"].values()
-                for r in rows for p in jaw.row_pids(r)}
+    honoured = {p for _rn, _t, r in jaw.region_rows(arc["all_region"])
+                for p in jaw.row_pids(r)}
     assert honoured
     for grp in jh.GROUPS:
         merged = {**arc["awards"][grp], "all_region": arc["all_region"]}

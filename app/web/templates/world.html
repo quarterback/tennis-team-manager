@@ -2,7 +2,7 @@
 {% block title %}Play to Clinch — The World{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Unified World · one calendar across every division &amp; gender</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Unified World · one calendar across every division &amp; gender</span>
   <form method="post" action="{{ url_for('world_boxstats') }}" style="margin-left:auto">
     <input type="hidden" name="on" value="{{ '0' if box_stats else '1' }}">
     <button class="bl-pill" style="cursor:pointer"
@@ -18,12 +18,12 @@
     </button>
   </form>
   {% if hub.primary.link %}
-  <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:8px;padding:0 16px;font-size:13px;text-decoration:none">
+  <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:8px;padding:0 16px;font-size:14.5px;text-decoration:none">
     {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}
   </a>
   {% else %}
   <form method="post" action="{{ url_for(hub.primary.endpoint) }}" style="margin-left:8px">
-    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 16px;font-size:13px">
+    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 16px;font-size:14.5px">
       {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}
     </button>
   </form>
@@ -47,8 +47,8 @@
       <div class="bl-th" style="justify-content:center">Week</div>
       <div class="bl-stat power" style="font-size:30px">{{ hub.week }}</div>
       <div class="tsub">{{ 'postseason — ready to finalize' if hub.complete else 'regular season in progress' }}</div></div>
-    <div style="text-align:right"><div class="bl-th" style="font-size:10px">CLASS SIGNED</div>
-      <span class="bl-stat" style="font-size:22px">{{ hub.signed_total }}</span>
+    <div style="text-align:right"><div class="bl-th" style="font-size:11.5px">CLASS SIGNED</div>
+      <span class="bl-stat" style="font-size:24px">{{ hub.signed_total }}</span>
       <div class="tsub">{% for g, n in hub.signed.items() %}{{ n }} {{ g }}{{ ' · ' if not loop.last }}{% endfor %}
         {% if not hub.signed %}commitments roll in weekly{% endif %}</div></div>
   </div>
@@ -106,9 +106,9 @@
 .bl-world-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
 .bl-stepper { display:flex; gap:6px; list-style:none; padding:0; margin:0 0 16px; flex-wrap:wrap; }
 .bl-step { display:flex; align-items:center; gap:8px; padding:6px 14px 6px 8px; border-radius:999px;
-  background:var(--surface-2,#f1f3f5); color:var(--text-muted); font-size:12px; font-weight:600; }
+  background:var(--surface-2,#f1f3f5); color:var(--text-muted); font-size:13.5px; font-weight:600; }
 .bl-step-dot { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
-  border-radius:50%; background:var(--border-subtle,#dee2e6); color:var(--text-muted); font-size:11px; }
+  border-radius:50%; background:var(--border-subtle,#dee2e6); color:var(--text-muted); font-size:12.5px; }
 .bl-step.done { color:var(--brand-strong); }
 .bl-step.done .bl-step-dot { background:var(--brand-strong); color:#fff; }
 .bl-step.current { background:var(--green-50,#e9fbef); color:var(--brand-strong); box-shadow:inset 0 0 0 1px var(--brand-strong); }

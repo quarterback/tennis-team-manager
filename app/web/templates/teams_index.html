@@ -12,7 +12,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
       {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {{ groups|length }} conference{{ '' if groups|length == 1 else 's' }}</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {{ groups|length }} conference{{ '' if groups|length == 1 else 's' }}</span>
 </div></div>
 </form>
 
@@ -35,7 +35,7 @@
             <span>{{ t.rec }}</span>
           </span>
         </span>
-        <span class="bl-teamcard-pi"><span class="bl-th" style="font-size:9px">PWR</span>
+        <span class="bl-teamcard-pi"><span class="bl-th" style="font-size:11px">PWR</span>
           <span class="bl-stat power">{{ "%.3f"|format(t.pi) }}</span></span>
       </a>
       {% endfor %}
@@ -52,7 +52,7 @@
 .bl-teamcard:hover{border-color:var(--brand)}
 .bl-teamcard-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .bl-teamcard-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bl-teamcard-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}
+.bl-teamcard-meta{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--text-muted)}
 .bl-teamcard-pi{text-align:right;display:flex;flex-direction:column;gap:1px}
 </style>
 {% endblock %}

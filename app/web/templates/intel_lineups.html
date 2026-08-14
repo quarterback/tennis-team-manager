@@ -6,7 +6,7 @@
 <form method="get" id="ll-form">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › Lineup Lab</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › Lineup Lab</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
     <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="document.getElementById('ll-conf').value='';this.form.submit()" style="min-width:84px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
@@ -25,8 +25,8 @@
 
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px">
   <div style="margin-bottom:14px">
-    <h1 style="margin:0 0 4px;font-size:22px">Lineup Lab — {{ div_f }} {{ conf }}</h1>
-    <p style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;max-width:760px">
+    <h1 style="margin:0 0 4px;font-size:24px">Lineup Lab — {{ div_f }} {{ conf }}</h1>
+    <p style="margin:0;font-size:14.5px;color:var(--text-muted);line-height:1.5;max-width:760px">
       How every team's singles lineup stacks up across the conference. The ladder follows live,
       results-based <strong>STR</strong> (form) — the same order the coach sets lineups by — at each
       position (the division’s singles card). Hover a dot to read that school's full ladder. Toggle <strong>OVR</strong> to
@@ -41,7 +41,7 @@
       <span class="bl-panel-meta">how the game's 31–57 STR maps to real-world ratings ▾</span>
     </summary>
     <div style="padding:14px 16px 16px">
-      <p style="margin:0 0 12px;font-size:12.5px;color:var(--text-muted);line-height:1.5;max-width:720px">
+      <p style="margin:0 0 12px;font-size:13.5px;color:var(--text-muted);line-height:1.5;max-width:720px">
         <strong>STR</strong> is the game's native 31–57 rating. <strong>UTR</strong> (1.00–16.50) is the
         upward-facing real-world comparison; <strong>WTN</strong> (40 beginner → 1 elite pro) runs the other way.
         Endpoints line up exactly with the band, but UTR and WTN are separate proprietary systems, so the
@@ -139,47 +139,47 @@
 .ll-str   { --ll-cols:26px minmax(70px,1fr) 38px 46px 46px; }
 .ll-thead {
   padding:7px 14px; background:var(--surface-th); border-bottom:1px solid var(--border-default);
-  font-size:10px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-muted);
+  font-size:11.5px; font-weight:600; letter-spacing:var(--ls-eyebrow); text-transform:uppercase; color:var(--text-muted);
 }
 .ll-thead .n { text-align:right; }
 .ll-tr { padding:8px 14px; border-bottom:1px solid var(--border-subtle); color:inherit; text-decoration:none; }
 .ll-tr:last-child { border-bottom:none; }
 a.ll-tr:hover { background:var(--surface-hover); }
-.ll-rank { font-size:11px; font-weight:700; color:var(--text-muted); }
-.ll-team { display:flex; align-items:center; gap:7px; min-width:0; color:var(--text-primary); font-weight:600; font-size:13.5px; }
+.ll-rank { font-size:12.5px; font-weight:700; color:var(--text-muted); }
+.ll-team { display:flex; align-items:center; gap:7px; min-width:0; color:var(--text-primary); font-weight:600; font-size:14.5px; }
 .ll-team .nm { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ll-stat { text-align:right; font-weight:600; font-size:13.5px; color:var(--text-primary); }
+.ll-stat { text-align:right; font-weight:600; font-size:14.5px; color:var(--text-primary); }
 .ll-stat.top { color:var(--green-700,#0e7c86); font-weight:700; }
 .ll-stat.low { color:var(--text-muted); font-weight:500; }
 /* the 1→6 ladder: a fixed 6-col micro-grid so positions stack vertically across rows */
 .ll-lad6 { display:grid; grid-template-columns:repeat(var(--ll-ncard,6),1fr); gap:2px; }
-.ll-lad6 > span, .ll-lad6 > i { text-align:right; font-size:11.5px; font-style:normal; color:var(--text-secondary); }
+.ll-lad6 > span, .ll-lad6 > i { text-align:right; font-size:12.5px; font-style:normal; color:var(--text-secondary); }
 .ll-ladhdr { display:grid; grid-template-columns:auto 1fr; align-items:center; gap:8px; }
-.ll-ladhdr .ll-lad6 > i { font-size:10px; color:var(--text-faint); font-weight:600; }
-.ll-key { display:inline-flex; align-items:center; gap:5px; margin-left:12px; font-size:12px; color:var(--text-muted); }
+.ll-ladhdr .ll-lad6 > i { font-size:11.5px; color:var(--text-faint); font-weight:600; }
+.ll-key { display:inline-flex; align-items:center; gap:5px; margin-left:12px; font-size:13.5px; color:var(--text-muted); }
 .ll-dot { width:10px; height:10px; border-radius:50%; background:#2bb3c0; display:inline-block; }
 .ll-dot.hl { background:#d81e5b; }
 .ll-row-hl { background:rgba(216,30,91,.07); }
-.ll-tier { font-size:9px; font-weight:700; letter-spacing:.03em; padding:1px 5px; border-radius:999px; text-transform:uppercase; }
+.ll-tier { font-size:11px; font-weight:700; letter-spacing:.03em; padding:1px 5px; border-radius:999px; text-transform:uppercase; }
 .ll-top { background:rgba(212,160,23,.16); color:#946c00; } .ll-major { background:rgba(14,124,134,.14); color:#0e7c86; }
 .ll-mid { background:rgba(0,0,0,.06); color:var(--text-muted); } .ll-low { background:rgba(0,0,0,.04); color:var(--text-muted); }
 .ll-tip { position:absolute; pointer-events:none; z-index:30; background:#0f1720; color:#fff; border-radius:8px;
-  padding:8px 10px; font-size:11.5px; line-height:1.5; box-shadow:0 6px 24px rgba(0,0,0,.28); min-width:150px; }
-.ll-tip .h { font-weight:800; font-size:12.5px; margin-bottom:3px; }
+  padding:8px 10px; font-size:12.5px; line-height:1.5; box-shadow:0 6px 24px rgba(0,0,0,.28); min-width:150px; }
+.ll-tip .h { font-weight:800; font-size:13.5px; margin-bottom:3px; }
 .ll-tip .lr { display:flex; justify-content:space-between; gap:14px; }
 .ll-tip .lr .p { color:#9fb3c8; } .ll-tip .lr.on { color:#ffd23f; font-weight:700; }
 .ll-cell circle { cursor:pointer; transition:r .08s; }
 .ll-unit { display:inline-flex; border:1px solid var(--border,#d8e0e8); border-radius:7px; overflow:hidden; margin-right:4px; }
-.ll-unit-btn { border:0; background:transparent; padding:3px 11px; font-size:11px; font-weight:700; letter-spacing:.03em; color:var(--text-muted); cursor:pointer; }
+.ll-unit-btn { border:0; background:transparent; padding:3px 11px; font-size:12.5px; font-weight:700; letter-spacing:.03em; color:var(--text-muted); cursor:pointer; }
 .ll-unit-btn + .ll-unit-btn { border-left:1px solid var(--border,#d8e0e8); }
 .ll-unit-btn.on { background:#2bb3c0; color:#fff; }
 .ll-scale summary::-webkit-details-marker { display:none; }
 .ll-scale summary:hover .bl-panel-meta { color:var(--text); }
 .ll-scale-grid { font-variant-numeric:tabular-nums; border:1px solid var(--border,#e8edf2); border-radius:8px; overflow:hidden; max-width:340px; }
 .ll-scale-hdr, .ll-scale-row { display:grid; grid-template-columns:1fr 1fr 1fr; }
-.ll-scale-hdr { background:var(--bg-muted,#f4f7fa); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted); }
+.ll-scale-hdr { background:var(--bg-muted,#f4f7fa); font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted); }
 .ll-scale-hdr span { padding:6px 14px; text-align:right; }
-.ll-scale-row span { padding:4px 14px; text-align:right; font-size:12.5px; }
+.ll-scale-row span { padding:4px 14px; text-align:right; font-size:13.5px; }
 .ll-scale-row:nth-child(even) { background:rgba(0,0,0,.025); }
 .ll-scale-row span:first-child { font-weight:700; color:var(--text); }
 .ll-scale-row span:not(:first-child) { color:var(--text-muted); }

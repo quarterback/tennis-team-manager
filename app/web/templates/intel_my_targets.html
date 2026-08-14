@@ -6,7 +6,7 @@
 
 {% if not tg %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
 </div></div>
 <div class="bl-container"><div class="bl-note">
   Pick a program to coach first — this board finds the players who'd upgrade <em>your</em> roster.
@@ -17,7 +17,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
     <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:130px">
       <option value="fit"{% if tg.sort=='fit' %} selected{% endif %}>Best fit (impact)</option>
@@ -85,7 +85,7 @@
         {% else %}<span class="ib-divchip">{{ t.division }}</span>{% endif %}</span>
       <a class="bl-conf" href="{{ url_for('teams', school=t.school, u=t.division ~ '-' ~ t.gender) }}" style="display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden">
         {{ crest_box(t.school, t.abbr, t.color, 'xs') }} {{ t.school }}
-        {% if t.line %}<span style="color:var(--text-faint);font-size:11px">#{{ t.line }}</span>{% elif t.walk_on %}<span style="color:var(--text-faint);font-size:11px">walk-on</span>{% endif %}</a>
+        {% if t.line %}<span style="color:var(--text-faint);font-size:12.5px">#{{ t.line }}</span>{% elif t.walk_on %}<span style="color:var(--text-faint);font-size:12.5px">walk-on</span>{% endif %}</a>
       <span class="bl-cell-num"><span class="bl-stat power">{{ t.true_overall }}</span></span>
       <span class="bl-cell-num" style="color:var(--text-muted)">{{ '%.1f'|format(t.live_str) }}</span>
       <span class="bl-conf"><span class="bl-stat {{ 'power' if t.slot <= 3 else '' }}">{{ t.slot_label }}</span></span>

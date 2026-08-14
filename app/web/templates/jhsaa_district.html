@@ -76,7 +76,7 @@
                 <span class="jh-schoolcell">{{ r.mark|safe }}
                   <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}"
                      title="{{ r.name }}">{{ r.name }}</a></span>
-                <div style="font-size:10.5px;color:var(--text-muted);padding-left:34px">{{ r.city }}</div>
+                <div style="font-size:11.5px;color:var(--text-muted);padding-left:34px">{{ r.city }}</div>
               </td>
               <td><b>{{ r.drecord or '—' }}</b></td>
               <td style="color:var(--text-muted)">{{ r.record }}</td>

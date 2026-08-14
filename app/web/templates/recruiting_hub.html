@@ -13,7 +13,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
       {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · Class of {{ grad_year }} recruiting &amp; juniors</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · Class of {{ grad_year }} recruiting &amp; juniors</span>
 </div></div>
 </form>
 
@@ -96,7 +96,7 @@
 </div></div>
 <style>
 .te-star { color: #7c3aed; }
-.al-te-note { font-size: 11px; color: var(--text-muted); padding: 8px 4px 2px; line-height: 1.5; }
+.al-te-note { font-size: 12.5px; color: var(--text-muted); padding: 8px 4px 2px; line-height: 1.5; }
 .al-te-note .te-star strong { color: #7c3aed; }
 </style>
 {% endblock %}

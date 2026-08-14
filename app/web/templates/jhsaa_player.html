@@ -54,14 +54,14 @@
             <td><b>{{ s.record }}</b></td>
             <td>{{ s.ovr }}</td>
             <td>{{ s.team.record if s.team else '—' }}</td>
-            <td style="font-variant-numeric:normal;font-size:11.5px;color:var(--text-secondary)">
+            <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">
               {% if s.team and s.team.champion %}<span class="jh-chip gold">{{ s.team.group }} CHAMPION</span> {% endif %}
               {{ s.honors|join(' · ') }}</td>
           </tr>
           {% endfor %}
         </table>
       </div>
-      <div class="bl-panel-body" style="padding:10px 14px;font-size:12px;color:var(--text-muted)">
+      <div class="bl-panel-body" style="padding:10px 14px;font-size:13.5px;color:var(--text-muted)">
         A career is rebuilt from (school, gender, entry year, seat) rather than stored, so the same
         person carries the same identity through all four years and simply matures — the junior who
         went 15–5 is the senior on next year's board. Records come from the archived duals, so the
@@ -82,7 +82,7 @@
           <div class="jh-metric"><span class="k">Honours</span><span class="v">{{ view.honors|length }}</span>
             <span class="s">across the career</span></div>
         </div>
-        <p style="margin:12px 0 0;font-size:12.5px;color:var(--text-secondary);line-height:1.5">
+        <p style="margin:12px 0 0;font-size:13.5px;color:var(--text-secondary);line-height:1.5">
           Jefferson's entries on the college recruit board are the seniors who just finished four
           years here, carrying these records with them. Once this class graduates, look for
           {{ view.name }} on the

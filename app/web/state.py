@@ -4040,6 +4040,8 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         # Sizes come off the awards module so the page cannot state a shape the
         # selector does not use.
         "team_singles": jaw.TEAM_SINGLES, "team_doubles": jaw.TEAM_DOUBLES,
+        "ar_tier2_min": jaw.AR_TIER2_MIN_PROGRAMS,
+        "ar_hm_min": jaw.AR_HM_MIN_PROGRAMS,
         # The FLIGHT CHECK is archived with the awards, never recomputed — it is
         # the record of what the selector produced, so re-deriving it from a
         # later code version would be a second source of truth for a decision
@@ -4058,10 +4060,21 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         # All-Region team. So it is read off the SEASON and is the same whichever
         # classification is on screen; `aw` is the fallback for seasons archived
         # while it still lived inside a class's slate.
+        # A region's value is a LIST OF TIERS — one unnumbered team in a small
+        # region, First and Second where the region is big enough to warrant it
+        # (`jaw.AR_TIER2_MIN_PROGRAMS`).
+        # A region carries its TIERS (one unnumbered team in a small region, a
+        # First and a Second where it is big enough — `jaw.AR_TIER2_MIN_PROGRAMS`)
+        # and, in the one region big enough to warrant it, an Honorable Mention.
         "regions": sorted(
-            ({"region": rn, "players": [deco(r) for r in rows]}
-             for rn, rows in (arc.get("all_region")
-                              or aw.get("all_region") or {}).items()),
+            ({"region": rn, "programs": reg.get("programs") or 0,
+              "tiers": [{"name": t.get("name") or "",
+                         "players": [deco(r) for r in t["players"]]}
+                        for t in reg["tiers"]],
+              "honorable_mention": [deco(r) for r in reg.get("honorable_mention") or ()],
+              "n": sum(1 for _ in jaw.region_rows({rn: reg}))}
+             for rn, reg in (arc.get("all_region")
+                             or aw.get("all_region") or {}).items()),
             key=lambda x: x["region"]),
         "districts": sorted(
             ({"district": d,
@@ -4230,10 +4243,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     badge(awards.get("poy"), f"{sc.group} Player of the Year")
     for r in awards.get("all_state", ()):
         badge(r, "All-State")
-    for _rn, rs in ((arc or {}).get("all_region")
-                    or awards.get("all_region") or {}).items():
-        for r in rs:
-            badge(r, "All-Region")
+    for _rn, tier, r in jaw.region_rows((arc or {}).get("all_region")
+                                        or awards.get("all_region")):
+        badge(r, f"All-Region {tier}".strip())
     for dname, rs in (((arc or {}).get("all_district") or {}).get(sc.group) or {}).items():
         for r in rs:
             badge(r, "All-District")

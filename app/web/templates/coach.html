@@ -4,24 +4,24 @@
 {% block content %}
 {% set abbr, color = crest(c.school) if c.school else ('—', '#888') %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Coaches › {{ c.school or 'Free agent' }} › {{ c.name }}</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Coaches › {{ c.school or 'Free agent' }} › {{ c.name }}</span>
   {% if c.school %}<a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=c.school, u=u) }}">← {{ c.school }}</a>{% endif %}
 </div></div>
 
 <div class="bl-board">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto">
-    <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:16px">{{ abbr }}</span>
+    <span class="bl-crest lg" style="background:{{ color }};width:56px;height:56px;font-size:17px">{{ abbr }}</span>
     <div><div class="tname">{% if c.home_country %}<span class="player-flag" title="{{ c.home_country|country_name }}">{{ c.home_country|flags }}</span> {% endif %}{{ c.name }}</div>
       <div class="tsub">{{ c.role_label|default('Head Coach') }}{% if c.school %} · {{ c.school }}{% endif %}
         {% if c.tenure %} · {{ c.tenure }}-yr tenure{% endif %}{% if c.archetype %} · {{ c.archetype }}{% endif %}</div>
       {% if c.player_pid %}<div class="tsub"><a href="{{ url_for('player', pid=c.player_pid, u=u) }}">View playing career →</a></div>{% endif %}
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'coty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="text-align:right">
-      {% if career and career.head_seasons %}<div class="bl-th" style="font-size:10px">CAREER (HEAD)</div>
-      <span class="bl-stat power" style="font-size:22px">{{ career.career_w }}-{{ career.career_l }}</span>
+      {% if career and career.head_seasons %}<div class="bl-th" style="font-size:11.5px">CAREER (HEAD)</div>
+      <span class="bl-stat power" style="font-size:24px">{{ career.career_w }}-{{ career.career_l }}</span>
       <div class="tsub">{{ career.head_seasons }} season{{ '' if career.head_seasons == 1 else 's' }} as head coach</div>
-      {% elif c.team_w is defined %}<div class="bl-th" style="font-size:10px">TEAM</div>
-      <span class="bl-stat power" style="font-size:22px">{{ c.team_w }}-{{ c.team_l }}</span>
+      {% elif c.team_w is defined %}<div class="bl-th" style="font-size:11.5px">TEAM</div>
+      <span class="bl-stat power" style="font-size:24px">{{ c.team_w }}-{{ c.team_l }}</span>
       <div class="tsub">this season</div>{% endif %}</div>
   </div>
 
@@ -99,7 +99,7 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Profile</span></div>
         <div class="bl-panel-body"><table class="bl-protable"><tbody>
           <tr><td>Role</td><td>{{ c.role_label|default('Head Coach') }}</td></tr>
-          {% if c.home_country %}<tr><td>Nationality</td><td><span class="player-flag">{{ c.home_country|flags }}</span> {{ c.home_country|country_name }} <span style="font-size:13px;color:var(--text-muted)">({{ c.home_country|country_abbrev }})</span></td></tr>{% endif %}
+          {% if c.home_country %}<tr><td>Nationality</td><td><span class="player-flag">{{ c.home_country|flags }}</span> {{ c.home_country|country_name }} <span style="font-size:14.5px;color:var(--text-muted)">({{ c.home_country|country_abbrev }})</span></td></tr>{% endif %}
           {% if c.school %}<tr><td>Program</td><td>{{ c.school }} · {{ c.division }} {{ c.gender }}</td></tr>{% endif %}
           {% if c.tenure %}<tr><td>Tenure</td><td>{{ c.tenure }} years</td></tr>{% endif %}
           {% if c.archetype %}<tr><td>Archetype</td><td>{{ c.archetype }}</td></tr>{% endif %}
@@ -132,7 +132,7 @@
         <div class="bl-panel-body">
           {% set others = staff | rejectattr('coach_id', 'equalto', c.coach_id) | list %}
           {% if others %}
-          <div class="bl-th" style="font-size:10px;margin-bottom:6px">PROMOTE / DEMOTE AT {{ c.school|upper }}</div>
+          <div class="bl-th" style="font-size:11.5px;margin-bottom:6px">PROMOTE / DEMOTE AT {{ c.school|upper }}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
             {% for o in others %}
             <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}">
@@ -145,7 +145,7 @@
           {% endif %}
           <form method="post" action="{{ url_for('coach_move', coach_id=c.coach_id) }}" id="coach-move-form">
             <input type="hidden" name="u" value="{{ u }}">
-            <div class="bl-th" style="font-size:10px;margin-bottom:6px">MOVE TO ANY PROGRAM (any division / gender)</div>
+            <div class="bl-th" style="font-size:11.5px;margin-bottom:6px">MOVE TO ANY PROGRAM (any division / gender)</div>
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
               <label class="bl-field"><span class="bl-field-label">Gender</span>
                 <span class="bl-select-wrap"><select class="bl-select" id="cm-gender" style="min-width:82px">

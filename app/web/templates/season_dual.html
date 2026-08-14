@@ -36,7 +36,7 @@
               {% set FE = (sst[0].fe + sst[1].fe) if is_d else sst.fe %}
               {% set FSI = (sst[0].fsi + sst[1].fsi) if is_d else sst.fsi %}
               {% set FSP = (sst[0].fsp + sst[1].fsp) if is_d else sst.fsp %}
-              <span class="tsub" style="font-size:10px;display:block;margin-top:1px" title="Aces · Double faults · Winners · Forced errors · Unforced errors · 1st-serve %">
+              <span class="tsub" style="font-size:11.5px;display:block;margin-top:1px" title="Aces · Double faults · Winners · Forced errors · Unforced errors · 1st-serve %">
                 A {{ A }} · DF {{ DF }} · W {{ W }} · FE {{ FE }} · UE {{ UE }}{% if FSP %} · 1st {{ (FSI * 100 / FSP)|round|int }}%{% endif %}</span>
             {% endif %}</span>
           <span class="bl-setnums">
@@ -60,13 +60,13 @@
   {% for ln in lines if ln.slot[0] == disc and ln.get('finish') %}{% set _ = fins.append(ln) %}{% endfor %}
   {% set fins = fins | sort(attribute='finish') %}
   {% if fins %}
-  <div class="bl-foot" style="padding:7px 12px;font-size:12px;color:var(--text-muted)">
+  <div class="bl-foot" style="padding:7px 12px;font-size:13.5px;color:var(--text-muted)">
     Order of finish: {% for ln in fins %}{{ ln.slot[1:] }}{{ ', ' if not loop.last }}{% endfor %}</div>
   {% endif %}
 {% endmacro %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">
+  <span style="font-size:14.5px;color:var(--text-muted)">
     {{ 'Teams' if active == 'Teams' else 'Season' }} › Box Score · {{ d.round }} · {{ uni_label }}</span>
   {% if back_school is defined and back_school %}
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=back_school, u=u) }}">← {{ back_school }}</a>

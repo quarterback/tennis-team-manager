@@ -1,30 +1,41 @@
 /* ============================================================
-   Baseline — Typography  (Hanken Grotesk, one family)
-   Utilitarian data tool: clean grotesque for everything, with
-   tabular figures for the dense stat tables. Mono is reserved
-   for code-like ids only.
+   Typography — the SIZE and WEIGHT scale.
+   Families are in `tokens/fonts.css` (PP Neue Montreal, one family for
+   everything, with tabular figures for the dense stat tables; mono is
+   reserved for code-like ids only).
    ============================================================ */
 
 :root {
-  --font-display: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
-  --font-text:    'Hanken Grotesk', system-ui, -apple-system, sans-serif;
-  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+  /* ⚠️ THE FAMILIES LIVE IN `tokens/fonts.css`, WHICH IS IMPORTED FIRST.
+     They used to be declared here too, which meant this file — loading second —
+     silently won. One owner per token: sizes and weights here, families there. */
 
-  /* Sizes — compact, table-friendly */
-  --fs-display-xl: 40px;
-  --fs-display-l:  30px;
-  --fs-display-m:  24px;
-  --fs-display-s:  20px;
+  /* Sizes — dense, but never at the cost of being readable.
+     ‼️ RAISED 2027-08 (owner: "it's extremely hard to read right now because the
+     text sizing isn't especially readable where it needs to be"). The app had
+     768 px font-size declarations against a 12-token scale that was used SEVEN
+     times: 78% of all type was under 14px and 34% was under 12px, in 31 distinct
+     sizes including seven half-pixel steps. Everything below 10px is gone, the
+     floor is 11px and it belongs to uppercase tracked labels alone, and the
+     whole scale moved up a step.
 
-  --fs-title-l:    18px;
-  --fs-title-m:    16px;
-  --fs-title-s:    15px;
+     If you add a size, use a TOKEN. A literal is how the scale drifted from 12
+     values to 31 in the first place, and the literals are what made the app
+     unreadable while the scale on paper looked fine. */
+  --fs-display-xl: 44px;
+  --fs-display-l:  32px;
+  --fs-display-m:  26px;
+  --fs-display-s:  22px;
 
-  --fs-body-l:     15px;
-  --fs-body-m:     14px;
-  --fs-body-s:     13px;
-  --fs-caption:    12px;
-  --fs-micro:      11px;   /* table column headers */
+  --fs-title-l:    19px;
+  --fs-title-m:    17px;
+  --fs-title-s:    16px;
+
+  --fs-body-l:     16px;
+  --fs-body-m:     15.5px;   /* body */
+  --fs-body-s:     14.5px;
+  --fs-caption:    13.5px;
+  --fs-micro:      12.5px;   /* uppercase tracked column headers — the floor */
 
   /* Weights */
   --fw-regular: 400;
@@ -36,7 +47,7 @@
   /* Line heights */
   --lh-tight:   1.1;
   --lh-snug:    1.25;
-  --lh-normal:  1.45;
+  --lh-normal:  1.5;
   --lh-relaxed: 1.6;
 
   /* Letter spacing */

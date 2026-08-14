@@ -10,7 +10,7 @@
 {% set reg_key = "INT'L" if not p.domestic else (p.region|state_abbrev if p.region|state_abbrev else 'STATE') %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:13px;color:var(--text-muted)">Recruiting › Class of {{ grad_year }} › Profile</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">Recruiting › Class of {{ grad_year }} › Profile</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('recruiting', u=u, grad_year=grad_year) }}">← Recruiting board</a>
 </div></div>
 
@@ -143,9 +143,9 @@
           <div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
             <div style="flex:1;min-width:0">
               <div style="font-weight:700">{{ p.jhsaa.school }}</div>
-              <div class="tsub" style="font-size:11px">Senior year {{ p.jhsaa.team_record }} · played #{{ p.jhsaa.ladder }}</div>
+              <div class="tsub" style="font-size:12.5px">Senior year {{ p.jhsaa.team_record }} · played #{{ p.jhsaa.ladder }}</div>
             </div>
-            <span class="bl-badge tier-D4" style="font-size:9px">{{ p.jhsaa.group }}</span>
+            <span class="bl-badge tier-D4" style="font-size:11px">{{ p.jhsaa.group }}</span>
           </div>
           {% if hs %}
           <div class="bl-table" style="--bl-grid-cols: 62px 58px 62px 1fr;margin-top:8px">
@@ -183,7 +183,7 @@
               <span title="scholarship equivalency offered">{{ o.scholarship_label }}</span>
               <span>{% if o.strikeprediction %}<span class="bl-stat power">{{ o.strikeprediction }}%</span>{% else %}—{% endif %}</span>
               <span>{% if fit %}<span class="bl-badge" style="background:{{ '#2e7d46' if fit.slot=='Starter' else '#c58a1a' if fit.slot=='Rotation' else 'var(--text-muted)' }};color:#fff" title="Your OVR {{ p.current_overall() }} vs their #{{ fit.card or 6 }} ({{ fit.sixth if fit.sixth is not none else '—' }})">{{ fit.slot }}</span>
-                <span style="font-size:10px;color:var(--text-muted);margin-left:6px">{{ fit.top6|join(' ') }}</span>{% else %}—{% endif %}</span>
+                <span style="font-size:11.5px;color:var(--text-muted);margin-left:6px">{{ fit.top6|join(' ') }}</span>{% else %}—{% endif %}</span>
               <span>{% if is_signed %}<span class="bl-badge" style="background:var(--brand)">Signed</span>{% elif o.status %}<span class="bl-badge tier-{{ 'P5' if o.status=='Finalist' else 'IVY' }}">{{ o.status }}</span>{% endif %}</span>
             </div>
             {% endfor %}
@@ -229,7 +229,7 @@
             <div class="bl-row">
               <span style="color:var(--text-muted)">{{ r.date }}</span>
               <span class="bl-school" style="font-weight:600">{{ r.tournament }}</span>
-              <span><span class="bl-pill" style="font-size:10px">{{ r.level }}</span></span>
+              <span><span class="bl-pill" style="font-size:11.5px">{{ r.level }}</span></span>
               <span style="font-weight:600;color:{{ '#3a7' if r.result=='Champion' else 'var(--text-primary)' }}">{{ r.result }}</span>
             </div>
             {% endfor %}
@@ -251,7 +251,7 @@
             <div class="bl-row">
               <span style="color:var(--text-muted)">{{ r.date }}</span>
               <span class="bl-school" style="font-weight:600">{{ r.tournament }}</span>
-              <span><span class="bl-pill" style="font-size:10px">{{ r.level }}</span></span>
+              <span><span class="bl-pill" style="font-size:11.5px">{{ r.level }}</span></span>
               <span style="color:var(--text-secondary)">{{ r.partner }}</span>
               <span style="font-weight:600;color:{{ '#3a7' if r.result=='Champion' else 'var(--text-primary)' }}">{{ r.result }}</span>
             </div>
@@ -273,7 +273,7 @@
             {% for m in p.junior_matches %}
             <div class="bl-row">
               <span style="color:var(--text-muted)">{{ m.date }}</span>
-              <span>{{ m.tournament }} <span style="color:var(--text-muted);font-size:11px">{{ m.round }}</span></span>
+              <span>{{ m.tournament }} <span style="color:var(--text-muted);font-size:12.5px">{{ m.round }}</span></span>
               <span style="font-weight:700;color:{{ '#3a7' if m.won else '#c55' }}">{{ 'W' if m.won else 'L' }}</span>
               <span class="bl-school">{{ m.opponent }}</span>
               <span style="font-variant-numeric:tabular-nums">{{ m.score }}</span>
@@ -339,8 +339,8 @@
           <table class="bl-protable"><tbody>
             {% for e in rec.timeline %}
             <tr><td>{{ e.label }}</td>
-              <td style="text-align:right;white-space:nowrap"><span class="bl-pill" style="font-size:10px">{{ e.kind }}</span>
-                <span style="color:var(--text-muted);font-size:12px">Wk {{ e.week }}</span></td></tr>
+              <td style="text-align:right;white-space:nowrap"><span class="bl-pill" style="font-size:11.5px">{{ e.kind }}</span>
+                <span style="color:var(--text-muted);font-size:13.5px">Wk {{ e.week }}</span></td></tr>
             {% endfor %}
           </tbody></table>
         </div>

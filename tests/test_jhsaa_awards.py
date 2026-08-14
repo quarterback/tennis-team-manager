@@ -153,12 +153,53 @@ def test_all_region_is_not_selected_per_classification(season):
 
 def test_every_region_team_is_ten_singles_and_eight_doubles(season):
     """Region-wide the pool is ~40 programs, so unlike the old per-class teams
-    these fill: ten singles and eight DISJOINT partnerships every time."""
+    these fill: ten singles and eight DISJOINT partnerships in EVERY tier."""
     assert len(season["all_region"]) >= 2
-    for rn, rows in season["all_region"].items():
-        s = [r for r in rows if r["kind"] == "singles"]
-        d = [r for r in rows if r["kind"] == "doubles"]
-        assert (len(s), len(d)) == (aw.AR_SINGLES, aw.AR_DOUBLES), (rn, len(s), len(d))
+    for rn, reg in season["all_region"].items():
+        for t in reg["tiers"]:
+            s = [r for r in t["players"] if r["kind"] == "singles"]
+            d = [r for r in t["players"] if r["kind"] == "doubles"]
+            assert (len(s), len(d)) == (aw.AR_SINGLES, aw.AR_DOUBLES), (rn, t["name"])
+
+
+def test_a_big_region_crowns_two_teams_and_a_small_one_crowns_one(season):
+    """‼️ The association's regions are nowhere near the same size — Halbrook
+    Basin has 115 boys' programs, North Range 17 — so a single team of ten is a
+    far scarcer honour in one than in the other. Regions at or above
+    `AR_TIER2_MIN_PROGRAMS` crown a First AND a Second Team.
+
+    The threshold is on the PROGRAM COUNT, never a list of region names: the
+    reason for the rule is the size, and the association's shape changes when
+    schools are added."""
+    progs = {}
+    for t in season["teams"].values():
+        progs.setdefault(t.school.area, set()).add(t.school.name)
+    big = small = 0
+    for rn, reg in season["all_region"].items():
+        tiers, n = reg["tiers"], len(progs[rn])
+        if n >= aw.AR_TIER2_MIN_PROGRAMS:
+            assert [t["name"] for t in tiers] == ["First Team", "Second Team"], (rn, n)
+            big += 1
+        else:
+            # One team is UNNUMBERED — calling it "First Team" with no second
+            # promises a tier that does not exist.
+            assert len(tiers) == 1 and tiers[0]["name"] == "", (rn, n)
+            small += 1
+    assert big and small, (big, small)
+
+
+def test_a_second_team_is_the_next_ten_not_a_reshuffle(season):
+    """The Second Team takes the candidates the First did not — the ranked lists
+    are sliced, never re-ranked — so no athlete appears on both."""
+    checked = 0
+    for rn, reg in season["all_region"].items():
+        if len(reg["tiers"]) < 2:
+            continue
+        checked += 1
+        first = {p for r in reg["tiers"][0]["players"] for p in aw.row_pids(r)}
+        second = {p for r in reg["tiers"][1]["players"] for p in aw.row_pids(r)}
+        assert not (first & second), (rn, first & second)
+    assert checked, "no region crowned a second team"
 
 
 def test_a_region_team_draws_from_more_than_one_classification(season):
@@ -175,7 +216,8 @@ def test_a_region_team_draws_from_more_than_one_classification(season):
         for pid in t.records:
             home[pid] = (t.school.area, t.school.group, t.school.district)
     mixed = 0
-    for rn, rows in season["all_region"].items():
+    for rn, reg in season["all_region"].items():
+        rows = [r for _a, _b, r in aw.region_rows({rn: reg})]
         groups, leagues = set(), set()
         for r in rows:
             for pid in aw.row_pids(r):
@@ -193,8 +235,8 @@ def test_a_region_team_draws_from_more_than_one_classification(season):
 def test_all_region_is_the_same_slate_whatever_class_you_came_from(season):
     """It is one gender-wide selection, so a player's All-Region honour cannot
     depend on which classification page it is read from."""
-    seen = {p for rows in season["all_region"].values()
-            for r in rows for p in aw.row_pids(r)}
+    seen = {p for _rn, _t, r in aw.region_rows(season["all_region"])
+            for p in aw.row_pids(r)}
     for g in jh.GROUPS:
         aws = {**season["awards"][g], "all_region": season["all_region"]}
         for pid in list(seen)[:25]:
@@ -206,10 +248,10 @@ def test_all_region_is_far_smaller_than_it_was_per_class(season):
     selections — on an association of ~300 programs, every school placed
     somebody, which is what made it a second All-District. Region-wide it is one
     team per region, so the honour is scarce enough to mean something."""
-    n = sum(len(rows) for rows in season["all_region"].values())
-    assert n <= len(season["all_region"]) * (aw.AR_SINGLES + aw.AR_DOUBLES)
+    n = sum(1 for _ in aw.region_rows(season["all_region"]))
+    assert n <= 2 * len(season["all_region"]) * (aw.AR_SINGLES + aw.AR_DOUBLES)
     schools = {s.name for s in jh.load_schools("boys")}
-    placed = {r["school"] for rows in season["all_region"].values() for r in rows}
+    placed = {r["school"] for _rn, _t, r in aw.region_rows(season["all_region"])}
     assert len(placed) < 0.75 * len(schools), (len(placed), len(schools))
 
 
@@ -264,9 +306,10 @@ def test_no_athlete_holds_two_slots_on_one_honors_team(season):
         for name, rows in rosters:
             pids = [p for r in rows for p in aw.row_pids(r)]
             assert len(pids) == len(set(pids)), (g, name)
-    for rn, rows in season["all_region"].items():
-        pids = [p for r in rows for p in aw.row_pids(r)]
-        assert len(pids) == len(set(pids)), rn
+    for rn, reg in season["all_region"].items():
+        for t in reg["tiers"] + [{"name": "HM", "players": reg["honorable_mention"]}]:
+            pids = [p for r in t["players"] for p in aw.row_pids(r)]
+            assert len(pids) == len(set(pids)), (rn, t["name"])
 
 
 # --- doubles honours are PAIRINGS (owner correction, 2027-08) -----------------
@@ -303,24 +346,56 @@ def test_a_pairing_is_two_players_who_actually_played_together(season):
             assert (r["wins"], r["losses"]) == (w, len(together) - w), (g, where)
 
 
-def test_one_player_may_be_honored_with_more_than_one_partner(season):
-    """Partners rotate in this format, so a player produces a candidate with each
-    of them — separate partnerships, separately judged. Across the whole slate the
-    same athlete may appear with two different partners (just never on one team)."""
-    pairs_of = {}
+def test_an_athlete_takes_one_pairing_per_level(season):
+    """Partners rotate in this format, so a player is a separate CANDIDATE with
+    each of them — but within one level they are honoured ONCE, for their best
+    partnership.
+
+    ‼️ This is the fix for a real bug. `used` was reset per tier, so a player with
+    two strong partnerships landed on the First Team with one partner and the
+    Second with another — the same athlete honoured twice at the same level,
+    which reads as a selector that could not make up its mind. Owner: "that
+    should not happen." Different LEVELS (State / Region / District) are separate
+    selections and may legitimately land on different partnerships."""
     for g in jh.GROUPS:
-        for _where, r in _all_rows(season["awards"][g]):
-            if r["kind"] == "doubles":
+        a = season["awards"][g]
+        for name, rows in ([(t["name"], t["players"]) for t in a["teams"]]
+                           + [("all-state", [r for t in a["teams"] for r in t["players"]])]
+                           + [("hm", a["honorable_mention"])]):
+            seen = {}
+            for r in rows:
+                if r["kind"] != "doubles":
+                    continue
                 for p in aw.row_pids(r):
-                    pairs_of.setdefault(p, set()).add(tuple(r["pids"]))
-    assert any(len(v) > 1 for v in pairs_of.values()), \
-        "no athlete was ever honoured with two different partners"
+                    assert seen.setdefault(p, tuple(r["pids"])) == tuple(r["pids"]), \
+                        (g, name, p)
+    for rn, reg in season["all_region"].items():
+        seen = {}
+        for _a, _b, r in aw.region_rows({rn: reg}):
+            if r["kind"] != "doubles":
+                continue
+            for p in aw.row_pids(r):
+                assert seen.setdefault(p, tuple(r["pids"])) == tuple(r["pids"]), (rn, p)
 
 
-def test_the_category_follows_where_the_athlete_actually_played(season):
-    """Singles honours go to players whose season was mostly singles and doubles
-    honours to players whose season was mostly doubles — the category is a FACT
-    about the season, not whichever of two résumés happened to score higher."""
+def test_an_athlete_is_honoured_in_one_category_only(season):
+    """‼️ Owner: "kids can't play singles and doubles in the same match so just
+    take their better thing and give them that." Each athlete has ONE category
+    across the whole slate — the discipline they stood higher in — so nobody is
+    ever a singles selection on one surface and a doubles selection on another."""
+    cat = {}
+    for g in jh.GROUPS:
+        for where, r in _all_rows(season["awards"][g]):
+            for pid in aw.row_pids(r):
+                assert cat.setdefault(pid, r["kind"]) == r["kind"], (pid, where)
+    for _rn, _t, r in aw.region_rows(season["all_region"]):
+        for pid in aw.row_pids(r):
+            assert cat.setdefault(pid, r["kind"]) == r["kind"], (pid, "region")
+    assert cat
+
+
+def _superseded_participation_rule(season):
+    """Superseded by the rule above — kept only to show what changed."""
     split = {}
     for t in season["teams"].values():
         for pid, log in t.matches.items():
@@ -459,8 +534,9 @@ def test_region_teams_are_recomputed_not_the_all_state_leftovers(season):
     for g in jh.GROUPS:
         a = season["awards"][g]
         state = {p for t in a["teams"] for r in t["players"] for p in aw.row_pids(r)}
-        for rows in season["all_region"].values():
-            if state & {p for r in rows for p in aw.row_pids(r)}:
+        for rn, reg in season["all_region"].items():
+            if state & {p for _a, _b, r in aw.region_rows({rn: reg})
+                        for p in aw.row_pids(r)}:
                 shared += 1
     assert shared > 0, "no All-State player appears on any All-Region team"
 
