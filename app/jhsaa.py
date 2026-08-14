@@ -479,6 +479,9 @@ class TeamSeason:
     # pid -> [wins, losses] at any line. Awards are individual, so they need this.
     records: dict = field(default_factory=dict)
     by_pid: dict = field(default_factory=dict)
+    # pid -> [(slot, won, phase, opp_pids, partner_pid, opp_school), ...] — the
+    # match-by-match RÉSUMÉ the awards are selected from (`_credit`).
+    matches: dict = field(default_factory=dict)
     # Every dual this team played, in order. Kept so a school's season can be read
     # match by match without replaying it — the college side's schedule view.
     schedule: list = field(default_factory=list)
@@ -928,11 +931,24 @@ def _slot_players(lineup: list, phase: str, slot: str) -> list:
     return [at(base), at(base + 1)]
 
 
-def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool) -> None:
-    for p in _slot_players(lineup, phase, slot):
+def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
+            opp_lineup: list | None = None, opp_school: str = "") -> None:
+    """Credit a line to the players who played it — and LOG the match.
+
+    The W-L counters alone cannot answer any of the questions the awards ask
+    (`jhsaa_awards`): who you beat, from which court, and when. So each
+    appearance also records the opponent's pids, the slot and the phase — a
+    résumé, not a record. Kept as a tuple rather than a dict because a gender's
+    season logs ~100k of these."""
+    mates = _slot_players(lineup, phase, slot)
+    opps = tuple(p.pid for p in _slot_players(opp_lineup, phase, slot)) if opp_lineup else ()
+    for p in mates:
         rec = ts.records.setdefault(p.pid, [0, 0])
         rec[0 if won else 1] += 1
         ts.by_pid.setdefault(p.pid, p)
+        partner = next((q.pid for q in mates if q.pid != p.pid), "")
+        ts.matches.setdefault(p.pid, []).append(
+            (slot, bool(won), phase, opps, partner, opp_school))
 
 
 def _score_str(ln) -> str:
@@ -969,8 +985,8 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
         if hw is None:
             continue
         slot = getattr(ln, "slot", "")
-        _credit(a, la, phase, slot, bool(hw))
-        _credit(b, lb, phase, slot, not hw)
+        _credit(a, la, phase, slot, bool(hw), lb, b.school.name)
+        _credit(b, lb, phase, slot, not hw, la, a.school.name)
         lines.append({"slot": slot,
                       "home": [x.name for x in _slot_players(la, phase, slot)],
                       "away": [x.name for x in _slot_players(lb, phase, slot)],
@@ -2035,57 +2051,12 @@ def _challenge_pairs(by_group: dict, year: int, salt: str,
 
 
 # --- awards -------------------------------------------------------------------
-ALL_DISTRICT_N = 6            # per district, per gender
-ALL_STATE_N = 6               # per classification group
-
-
-def _player_rows(teams: list[TeamSeason]) -> list[dict]:
-    rows = []
-    for t in teams:
-        for pid, (w, l) in t.records.items():
-            p = t.by_pid.get(pid)
-            if p is None:
-                continue
-            rows.append({"pid": pid, "name": p.name, "grade": p.grade,
-                         "school": t.school.name, "district": t.school.district,
-                         "group": t.school.group, "wins": w, "losses": l,
-                         "pct": w / (w + l) if (w + l) else 0.0,
-                         "ovr": p.current_overall()})
-    return rows
-
-
-def _rank(rows: list[dict]) -> list[dict]:
-    return sorted(rows, key=lambda r: (-r["wins"], -r["pct"], -r["ovr"], r["name"]))
-
-
-def season_awards(teams: list[TeamSeason]) -> dict:
-    """All-District, All-State and Player of the Year for one classification group.
-
-    Individual honours off individual records — wins first, then win rate, then ability
-    as the tiebreak. Jefferson is the only association with a simulated high-school
-    season, so it is the only state whose recruits arrive with honours attached."""
-    rows = _player_rows(teams)
-    by_district: dict[str, list[dict]] = defaultdict(list)
-    for r in rows:
-        by_district[r["district"]].append(r)
-    all_district = {d: _rank(rs)[:ALL_DISTRICT_N] for d, rs in by_district.items()}
-    all_state = _rank(rows)[:ALL_STATE_N]
-    return {"all_district": all_district, "all_state": all_state,
-            "poy": all_state[0] if all_state else None}
-
-
-def honors_for(pid: str, awards: dict, group: str) -> list[str]:
-    """The honours one player earned, newest-sounding first."""
-    out = []
-    if awards.get("poy") and awards["poy"]["pid"] == pid:
-        out.append(f"{group} Player of the Year")
-    if any(r["pid"] == pid for r in awards.get("all_state", ())):
-        out.append(f"All-State ({group})")
-    for dname, rs in awards.get("all_district", {}).items():
-        if any(r["pid"] == pid for r in rs):
-            out.append(f"All-District ({dname})")
-            break
-    return out
+# The selection model lives in `app/jhsaa_awards.py` (owner SOP 2027-08): All-State
+# First/Second/Third — plus a Fourth in 7A — then Honorable Mention, a District
+# Player of the Year and one wide All-District team per district, all chosen from
+# the season's MATCH LOG rather than from ability ratings. Re-exported here so
+# `run_season` and every existing caller keep one import.
+from .jhsaa_awards import season_awards, honors_for       # noqa: E402,F401
 
 
 _season_cache: dict = {}
