@@ -234,5 +234,31 @@
     });
   })();
   </script>
+<script>
+/* The scheme picker. `default` is the bare :root, so choosing it REMOVES the
+   attribute rather than setting data-theme="default" — otherwise the default
+   would need a block of its own that duplicates :root. */
+(function () {
+  var rows = document.querySelectorAll(".fm-theme-row");
+  if (!rows.length) return;
+  function apply(name) {
+    if (name === "default") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", name);
+    rows.forEach(function (r) {
+      r.setAttribute("aria-pressed", r.dataset.themeChoice === name ? "true" : "false");
+    });
+    try { localStorage.setItem("ptc-theme", name === "default" ? "" : name); } catch (e) {}
+  }
+  rows.forEach(function (r) {
+    r.addEventListener("click", function () {
+      apply(r.dataset.themeChoice);
+      var d = r.closest("details"); if (d) d.open = false;
+    });
+  });
+  var t = null;
+  try { t = localStorage.getItem("ptc-theme"); } catch (e) {}
+  apply(t || "default");
+})();
+</script>
 </body>
 </html>
