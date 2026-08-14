@@ -319,6 +319,21 @@ def reclassify(schools: list[dict]) -> int:
 _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
 
 
+def canon(name: str) -> str:
+    """A school's STABLE identity, whichever name prep-network currently uses.
+
+    ‼️ This is what makes the import invariant to the source rename. The
+    sponsorship dice are drawn positionally over a NAME-SORTED list, so once
+    prep-network was renamed to match (`scripts/rename_prep_network.py`), the
+    alphabet moved and every school inherited its neighbour's roll: measured, the
+    association swapped a large slice of its membership and quietly re-admitted
+    magnet schools this cleanup had just removed. Sorting and forcing on the
+    canonical name reproduces the ORIGINAL order in BOTH states — pre-rename a
+    source name misses the map and returns itself, post-rename a display name
+    maps back — so the same schools sponsor tennis either way."""
+    return _CANONICAL.get(name, name)
+
+
 def champ_group(classification: str) -> str:
     return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
 
@@ -382,15 +397,19 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     """(girls, boys) school names. One roll for girls; boys drawn from that set — except
     that owner-named schools are in regardless, for both genders."""
     rng = random.Random(SEED)
-    forced = {_key(n) for n in always_sponsor()}
-    girls_only = {_key(n) for n in ALWAYS_GIRLS_ONLY}
+    # Everything here keys on `canon()`, never the current name — see that
+    # function. Forcing lists mix both vocabularies (archetypes.json is keyed by
+    # the association's display name, ALWAYS_EXTRA by prep-network's), and
+    # canonicalising both sides lands them on one identity.
+    forced = {_key(canon(n)) for n in always_sponsor()}
+    girls_only = {_key(canon(n)) for n in ALWAYS_GIRLS_ONLY}
     girls, boys = set(), set()
-    for s in sorted(schools, key=lambda s: s["name"]):        # stable order = stable draw
+    for s in sorted(schools, key=lambda s: canon(s["name"])):  # stable order = stable draw
         hit = rng.random() < GIRLS_RATE[s["classification"]]  # drawn either way, so the
         sub = rng.random() < BOYS_OF_GIRLS                    # roll stays reproducible
-        if _key(s["name"]) in forced:
+        if _key(canon(s["name"])) in forced:
             girls.add(s["name"])
-            if _key(s["name"]) not in girls_only:
+            if _key(canon(s["name"])) not in girls_only:
                 boys.add(s["name"])
         elif hit:
             girls.add(s["name"])
@@ -416,7 +435,10 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
     def county(s):
         return cities.get(s["city"], {}).get("county", "?")
 
-    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], s["name"]))
+    # `canon`, not the display name — same reason as `sponsors`: the blocks are cut
+    # off this ORDER, so sorting on a name the owner can rename moves schools
+    # between districts every time one is renamed.
+    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], canon(s["name"])))
     n = len(pool)
     if not n:
         return {}
@@ -479,7 +501,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
         # second time. Keying off the display name gives the same answer in both
         # states, which is the whole point. `RENAMES` is therefore a PERMANENT
         # historical record; do not prune it once prep-network is updated.
-        canonical = _CANONICAL.get(display, display)
+        canonical = canon(name)
         out.append({
             "name": display,
             # Only written when it differs — a school nobody renamed is its own
