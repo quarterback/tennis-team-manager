@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header, jh_school, jh_player, jh_round_tabs, jh_tabs, jh_tabs_script %}
+{% from "_jhsaa.html" import jh_header, jh_school, jh_player, jh_award_names, jh_round_tabs, jh_tabs, jh_tabs_script %}
 {% from "_bracket.html" import brk_canvas %}
 {% block title %}JHSAA {{ view.group }} — High School{% endblock %}
 {% block content %}
@@ -139,54 +139,34 @@
       </div>
     </div>
 
-    {# One honours panel, three views — Player of the Year, All-State and
-       All-District were three stacked panels running the rail past the bottom of the
-       page beside it. District Champions was a fourth, and was the Districts table's
-       champion column with the numbers moved around. #}
+    {# The honours are their own PAGE (`/jhsaa/honors`) — a classification's slate
+       is a POY, four All-State teams, Honorable Mention, ten All-Region teams and
+       a dozen All-District teams, which is not a rail panel. So the rail carries
+       the INDEX of that page: who won it, how big the slate was, and a way in.
+       It used to reproduce All-State and All-District here in full, which ran the
+       rail past the bottom of the page beside it and answered the same question
+       twice. #}
     {% if view.poy or view.all_state or view.all_district %}
     <div class="bl-panel jh-mod">
-      {{ jh_tabs([('poy', 'POY', 0),
-                  ('state', 'All-State', view.all_state|length),
-                  ('district', 'All-District', 0)], 'jhhon') }}
-
-      <div class="jh-pane" data-pane="poy">
+      <div class="bl-panel-head"><span class="bl-panel-title">Honors</span>
+        <span class="bl-panel-meta">{{ view.group }} · {{ view.season_year }}</span></div>
+      <div class="bl-panel-body">
         {% if view.poy %}
-        <a class="jh-poy" href="{{ url_for('jhsaa_player', school=view.poy.school, pid=view.poy.pid, u=u, g=view.gender) }}">
+        <div class="jh-poy" style="margin:0 0 6px">
           <div style="min-width:0">
-            <div class="n">{{ view.poy.name }}</div>
-            <div class="s">{{ view.poy.school }} · grade {{ view.poy.grade }}</div>
+            <div class="n">{{ jh_award_names(view.poy, u, view.gender) }}</div>
+            <div class="s">{{ view.poy.school }} · Player of the Year</div>
           </div>
           <span class="v">{{ view.poy.wins }}–{{ view.poy.losses }}</span>
+        </div>
+        {% endif %}
+        <a class="jh-modrow" href="{{ url_for('jhsaa_honors', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">
+          <span class="bd"><span class="n">All-State, All-Region &amp; All-District →</span>
+            <span class="s">{{ view.all_state|length }} All-State selections ·
+              {{ view.all_district|length }} district teams</span></span>
         </a>
-        {% else %}<p class="jh-empty">No Player of the Year archived.</p>{% endif %}
-      </div>
-
-      <div class="jh-pane" data-pane="state" hidden>
-        {% for r in view.all_state %}
-        <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
-          <span class="rk">{{ loop.index }}</span>
-          <span class="bd"><span class="n">{{ r.name }}</span>
-            <span class="s">{{ r.school }} · grade {{ r.grade }}</span></span>
-          <span class="v">{{ r.wins }}–{{ r.losses }}</span>
-        </a>
-        {% endfor %}
-      </div>
-
-      <div class="jh-pane" data-pane="district" hidden>
-        {% for dname, rows in view.all_district.items() %}
-        <details class="jh-fold">
-          <summary>{{ dname }}</summary>
-          {% for r in rows %}
-          <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
-            <span class="bd"><span class="n">{{ r.name }}</span><span class="s">{{ r.school }}</span></span>
-            <span class="v">{{ r.wins }}–{{ r.losses }}</span>
-          </a>
-          {% endfor %}
-        </details>
-        {% endfor %}
       </div>
     </div>
-    {{ jh_tabs_script('jhhon') }}
     {% endif %}
 
     <div class="bl-panel jh-mod">

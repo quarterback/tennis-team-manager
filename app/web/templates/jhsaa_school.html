@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header, jh_player %}
+{% from "_jhsaa.html" import jh_header, jh_player, jh_award_names %}
 {% block title %}{{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 {% set t = view.history.totals %}
@@ -254,8 +254,8 @@
           {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>
         <td style="font-variant-numeric:normal;font-size:11.5px;color:var(--text-secondary)">
-          {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_player(r.name, view.school, r.pid, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
-          {% for r in s.all_state %}All-State {{ jh_player(r.name, view.school, r.pid, u, view.gender) }}{% if not loop.last %} · {% endif %}{% endfor %}
+          {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_award_names(r, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
+          {% for r in s.all_state %}All-State {{ jh_award_names(r, u, view.gender) }}{% if not loop.last %} · {% endif %}{% endfor %}
           {% if not s.poy and not s.all_state and s.all_district %}{{ s.all_district|length }} all-district{% endif %}
         </td>
       </tr>

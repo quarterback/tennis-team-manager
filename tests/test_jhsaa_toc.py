@@ -217,11 +217,18 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
 
 
 def test_a_season_with_nothing_to_show_is_not_listed_as_an_honour(archived):
-    """The other half: `honoured` must not simply be true for everyone, or the panel
-    becomes the ledger a second time. TEAM honours widened it (owner rule 2027-08 —
-    a tournament-unit win or a State appearance counts, not just titles and TOC
-    berths), so the floor is now "won nothing, reached nothing": such a season is
-    still unhonoured, and at least one program in the association has one."""
+    """The other half: `honoured` must be COMPUTED, never simply true for everyone,
+    or the panel becomes the ledger a second time. TEAM honours widened it (owner
+    rule 2027-08 — a tournament-unit win or a State appearance counts, not just
+    titles and TOC berths), so the floor is "won nothing, reached nothing".
+
+    ⚠️ It is no longer safe to look for a bare season in the LIVE archive. Doubles
+    honours are PAIRINGS (owner correction 2027-08), so an All-District team is 10
+    singles + 8 pairs = **26 athletes** spread over a district of about a dozen
+    schools, and All-Region sits on top of that — in practice every program places
+    somebody. That is the honours being wide, not `honoured` being hardcoded, and
+    the two are only distinguishable by taking the awards away. So this strips a
+    classification's slate and checks a program in it goes dark."""
     w = archived["world"]
     rows = [wd.jhsaa_school_history(w["id"], "girls", s.name)["seasons"]
             for s in jh.load_schools("girls")]
@@ -230,7 +237,34 @@ def test_a_season_with_nothing_to_show_is_not_listed_as_an_honour(archived):
         assert row["honoured"] == bool(
             row["honors"] or row["champion"] or row["toc_champion"]
             or row["unit_wins"] or row["made_state"])
-    assert any(not s["honoured"] for s in seasons)
+
+    # Now take the awards away from one classification and find a program in it
+    # that won nothing and reached nothing — it must go unhonoured.
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    original = conn.execute(
+        "SELECT data FROM world_jhsaa WHERE world_id=? AND year=? AND gender='girls'",
+        (w["id"], w["year"])).fetchone()["data"]
+    arc = json.loads(original)
+    grp = jh.GROUPS[0]
+    arc["awards"][grp] = {"poy": None, "all_state": []}
+    arc["all_district"][grp] = {}
+    try:
+        conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
+                     " gender='girls'", (json.dumps(arc), w["id"], w["year"]))
+        conn.commit()
+        bare = [wd.jhsaa_school_history(w["id"], "girls", s.name)["seasons"][0]
+                for s in jh.load_schools("girls") if s.group == grp]
+        assert any(not r["honoured"] for r in bare), \
+            "no program in a classification with NO awards went unhonoured"
+        for r in bare:
+            assert r["honoured"] == bool(
+                r["champion"] or r["toc_champion"] or r["unit_wins"] or r["made_state"])
+    finally:
+        conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
+                     " gender='girls'", (original, w["id"], w["year"]))
+        conn.commit()
+        conn.close()
 
 
 def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
@@ -332,3 +366,162 @@ def test_the_rankings_page_shows_the_whole_classification(archived):
         f"/jhsaa/rankings?g=girls&group={grp}").get_data(as_text=True)
     for r in rows:
         assert r["school"] in html, r["school"]
+
+
+# --- the honors page, over the SAME archived season --------------------------
+# An empty-state route test cannot see any of this: every fault below only exists
+# once a season has actually been selected and written down.
+
+def test_the_honors_page_renders_every_classification(archived):
+    c = archived["client"]
+    for grp in jh.GROUPS:
+        r = c.get(f"/jhsaa/honors?g=girls&group={grp}")
+        assert r.status_code == 200, grp
+        html = r.get_data(as_text=True)
+        assert "All-State" in html and "All-Region" in html and "All-District" in html
+        assert "Flight check" in html
+
+
+def test_the_honors_page_names_every_selection(archived):
+    """The rows must carry PEOPLE. A doubles selection is a PAIRING, so both of
+    its players' names have to be on the page and both have to link to their own
+    player page — a pairing rendered as one linked name and one bare one is the
+    'half a pairing' fault, and it looks completely fine."""
+    import html as _html
+    from app import jhsaa_awards as jaw
+    arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
+    for grp in jh.GROUPS:
+        aw = arc["awards"][grp]
+        # Unescape: Jinja escapes an apostrophe to &#39;, and plenty of these
+        # players are named Ta'amu or O'Rourke.
+        html = _html.unescape(archived["client"].get(
+            f"/jhsaa/honors?g=girls&group={grp}").get_data(as_text=True))
+        rows = [r for t in aw["teams"] for r in t["players"]]
+        assert rows, grp
+        for r in rows:
+            for nm in r["names"]:
+                assert nm in html, (grp, nm)
+            for pid in jaw.row_pids(r):
+                assert pid in html, (grp, r["name"], pid)
+
+
+def test_the_honors_page_separates_singles_from_doubles_teams(archived):
+    """‼️ "8 doubles" means eight PAIRS — sixteen athletes. The page has to say so;
+    a flat list of eighteen rows reads as eighteen individuals."""
+    html = archived["client"].get(
+        f"/jhsaa/honors?g=girls&group={jh.GROUPS[0]}").get_data(as_text=True)
+    assert "Doubles teams" in html and "pairs ·" in html and "athletes" in html
+
+
+def test_every_region_and_district_team_is_on_the_honors_page(archived):
+    """The region and district views are SWITCHERS over the whole set, not the
+    first one with a link to the rest — every team is in the page, one shown."""
+    arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
+    for grp in jh.GROUPS:
+        aw = arc["awards"][grp]
+        html = archived["client"].get(
+            f"/jhsaa/honors?g=girls&group={grp}").get_data(as_text=True)
+        for rn in aw["all_region"]:
+            assert rn in html, (grp, rn)
+        for dn in (arc["all_district"].get(grp) or {}):
+            assert dn in html, (grp, dn)
+
+
+def test_an_archived_season_keeps_its_honors_pinned_to_that_year(archived):
+    """The archive is the point: a season has to still be readable years later,
+    and a link taken inside an archived season must stay inside it."""
+    yr = archived["world"]["year"]
+    grp = jh.GROUPS[0]
+    r = archived["client"].get(f"/jhsaa/honors?g=girls&group={grp}&year={yr}")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert f"year={yr}" in html          # cross-links carry the pin
+
+
+def test_the_flight_check_is_archived_and_shown(archived):
+    """Flight weighting is structural, so what it produced is part of the record —
+    archived with the season, not recomputed on read by whatever the selector has
+    become by then."""
+    from app import jhsaa_awards as jaw
+    arc = wd.get_jhsaa(archived["world"]["id"], archived["world"]["year"], "girls")
+    for grp in jh.GROUPS:
+        fc = arc["awards"][grp]["flight_check"]
+        assert fc.get("state"), grp
+        assert fc["state"]["floor"] == jaw.FLIGHT_FLOOR["state"]
+        html = archived["client"].get(
+            f"/jhsaa/honors?g=girls&group={grp}").get_data(as_text=True)
+        for flight, n in fc["state"]["flights"].items():
+            assert f"{flight} × {n}" in html, (grp, flight)
+
+
+def test_the_honors_view_never_overwrites_a_player_with_their_school(archived):
+    """‼️ THE REGRESSION THAT ACTUALLY SHIPPED, tested where it happened.
+
+    The selector's rows always named people. `jhsaa_honors_view.deco()` splatted
+    `_jh_deco(...)` — which describes a SCHOOL and whose dict is keyed `name` —
+    over each award row, so every selection rendered as its own school: All-State
+    read "Beacon Hill", "Belmonte West", "Serrano". Every other caller splats a
+    deco over a row that IS a school, where `name` colliding is correct; this is
+    the one place the row is a PERSON.
+
+    A test on `season["awards"]` cannot see this and stays green with the fix
+    reverted, because the data underneath was never wrong. So this goes through
+    the VIEW, on every surface it builds, and compares each decorated row against
+    the ARCHIVED row it was built from: the crest must arrive and nothing else
+    may."""
+    from app import jhsaa_awards as jaw
+    w = archived["world"]
+    arc = wd.get_jhsaa(w["id"], w["year"], "girls")
+    schools = {s.name for s in jh.load_schools("girls")}
+
+    def surfaces(aw, ad, view=False):
+        """The same rows in the same order, off the archive and off the view."""
+        out = []
+        poy = view["poy"] if view else aw.get("poy")
+        if poy:
+            out.append(("poy", poy))
+        tiers = view["teams"] if view else aw.get("teams", [])
+        for t in tiers:
+            out += [(f"all-state {t['name']}", r) for r in t["players"]]
+        out += [("hm", r) for r in (view["honorable_mention"] if view
+                                    else aw.get("honorable_mention", []))]
+        if view:
+            for rg in view["regions"]:
+                out += [(f"all-region {rg['region']}", r) for r in rg["players"]]
+            for d in view["districts"]:
+                out += [(f"all-district {d['district']}", r) for r in d["players"]]
+                if d["poy"]:
+                    out.append((f"district poy {d['district']}", d["poy"]))
+        else:
+            for rn in sorted(aw.get("all_region") or {}):
+                out += [(f"all-region {rn}", r) for r in aw["all_region"][rn]]
+            for dn in sorted(ad):
+                out += [(f"all-district {dn}", r) for r in ad[dn]]
+                r = (aw.get("district_poy") or {}).get(dn)
+                if r:
+                    out.append((f"district poy {dn}", r))
+        return out
+
+    pairs_seen = 0
+    for grp in jh.GROUPS:
+        v = st.jhsaa_honors_view(w["seed"], "girls", group=grp)
+        assert v["ready"] and v["teams"] and v["districts"], grp
+        shown = surfaces(None, None, view=v)
+        stored = surfaces(arc["awards"][grp], arc["all_district"].get(grp) or {})
+        assert len(shown) == len(stored) and shown, (grp, len(shown), len(stored))
+        for (w1, seen), (w2, kept) in zip(shown, stored):
+            assert w1 == w2, (grp, w1, w2)
+            # The crest is what `deco` is FOR — it must still arrive…
+            assert "mark" in seen, (grp, w1)
+            # …and it must have brought nothing else with it. Every field that
+            # describes the PERSON has to survive the merge untouched.
+            for k in ("name", "names", "pid", "pids", "school", "kind",
+                      "flight", "wins", "losses"):
+                assert seen[k] == kept[k], (grp, w1, k, seen[k], kept[k])
+            assert seen["name"] not in schools, (grp, w1, seen["name"])
+            assert seen["name"] != seen["school"], (grp, w1)
+            for nm in seen["names"]:
+                assert nm not in schools, (grp, w1, nm)
+            assert len(jaw.row_pids(seen)) == len(seen["names"])
+            pairs_seen += seen["kind"] == "doubles"
+    assert pairs_seen, "no pairing reached the view"

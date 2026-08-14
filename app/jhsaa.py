@@ -2128,8 +2128,6 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     district_champs = {}
     for group in GROUPS:
         standings = by_group[group]
-        out["awards"][group] = season_awards(
-            [t for ts in standings.values() for t in ts])
         k = ladder_scale(group)
         protected, entrants = sectional_field(group, standings, power, scale=k)
         protecteds[group] = [t.school.name for t in protected]
@@ -2177,6 +2175,20 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
     out["toc"] = run_toc(champs, seed=seed + 7717)
+
+    # ‼️ AWARDS ARE SELECTED AFTER EVERY DUAL HAS BEEN PLAYED — the same rule the
+    # RECORD snapshot below runs on, and it was broken here in the same way. The
+    # selection used to sit in the qualification loop above, which meant it ran
+    # BEFORE Sectionals, so criterion 7 of the SOP ("Sectionals through State count
+    # for more") weighted a postseason nobody had played yet: `PHASE_WEIGHT` never
+    # applied to a single match, a state run added nothing to a résumé, and — worse,
+    # because it is silent — the 1S/4D postseason moves most of a roster into
+    # doubles, so the singles/doubles participation split the category rule reads
+    # (`_primary_discipline`) was taken with a third of the season missing. Nothing
+    # errored; the teams just quietly described the regular season.
+    for group in GROUPS:
+        out["awards"][group] = season_awards(
+            [t for ts in by_group[group].values() for t in ts])
 
     for group in GROUPS:
         standings = by_group[group]

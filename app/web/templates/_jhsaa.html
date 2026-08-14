@@ -26,6 +26,19 @@
 {%- else -%}{{ name }}{%- endif -%}
 {%- endmacro %}
 
+{# ‼️ AN AWARD ROW MAY NAME TWO PEOPLE — doubles honours go to PAIRINGS, not to
+   individual doubles players (owner, 2027-08). `names`/`pids` are parallel lists
+   of length 1 (singles) or 2 (a pairing), and BOTH names link to their own
+   player page. Rows archived before the correction carry only `name`/`pid`. #}
+{% macro jh_award_names(r, u, gender) -%}
+{%- set names = r.names or [r.name] -%}
+{%- set pids = r.pids or [r.pid] -%}
+{%- for nm in names -%}
+{{ jh_player(nm, r.school, pids[loop.index0], u, gender) }}
+{%- if not loop.last %} <span class="jh-amp">/</span> {% endif -%}
+{%- endfor -%}
+{%- endmacro %}
+
 {% macro jh_class_chip(group) -%}
 <span class="jh-chip c-{{ group }}">{{ group }}</span>
 {%- endmacro %}

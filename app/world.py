@@ -3546,7 +3546,18 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                "honorable_mention":
                                    season["awards"][g].get("honorable_mention", []),
                                "district_poy":
-                                   season["awards"][g].get("district_poy", {})}
+                                   season["awards"][g].get("district_poy", {}),
+                               # All-Region: one team per geographic region,
+                               # between All-State and All-District.
+                               "all_region":
+                                   season["awards"][g].get("all_region", {}),
+                               # The FLIGHT CHECK the selector ran before
+                               # finalising each singles team (owner, 2027-08 —
+                               # flight weighting is structural). Archived, so a
+                               # season can be audited years later without
+                               # re-running a selector that may have moved on.
+                               "flight_check":
+                                   season["awards"][g].get("flight_check", {})}
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
@@ -4004,6 +4015,10 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     for dname, r in (aw.get("district_poy") or {}).items():
         if r and r.get("school") == school:
             row["honors"].append(f"{dname} Player of the Year — {r['name']}")
+    for rname, rs in (aw.get("all_region") or {}).items():
+        for r in rs:
+            if r.get("school") == school:
+                row["honors"].append(f"All-Region ({rname}) — {r['name']}")
     # All-State names the TIER it was won on (First/Second/Third/Fourth Team, then
     # Honorable Mention). `teams` is the SOP shape; the flat `all_state` list is
     # the fallback for seasons archived before the tiers existed.

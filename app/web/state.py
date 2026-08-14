@@ -4040,10 +4040,19 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         # Sizes come off the awards module so the page cannot state a shape the
         # selector does not use.
         "team_singles": jaw.TEAM_SINGLES, "team_doubles": jaw.TEAM_DOUBLES,
+        # The FLIGHT CHECK is archived with the awards, never recomputed — it is
+        # the record of what the selector produced, so re-deriving it from a
+        # later code version would be a second source of truth for a decision
+        # the season already made.
+        "flight_check": aw.get("flight_check") or {},
         "poy": deco(aw["poy"]) if aw.get("poy") else None,
         "teams": [{"name": t["name"], "players": [deco(r) for r in t["players"]]}
                   for t in tiers],
         "honorable_mention": [deco(r) for r in aw.get("honorable_mention") or ()],
+        "regions": sorted(
+            ({"region": rn, "players": [deco(r) for r in rows]}
+             for rn, rows in (aw.get("all_region") or {}).items()),
+            key=lambda x: x["region"]),
         "districts": sorted(
             ({"district": d,
               "poy": deco((aw.get("district_poy") or {}).get(d))
@@ -4137,6 +4146,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     the roster is rebuilt for THAT season's year, so an archived page shows the team
     that actually played it rather than today's."""
     import app.jhsaa as jh
+    import app.jhsaa_awards as jaw
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
@@ -4198,16 +4208,24 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
     honor_pids = {}
-    poy = awards.get("poy")
-    if poy and poy.get("school") == school:
-        honor_pids.setdefault(poy["pid"], []).append(f"{sc.group} Player of the Year")
+    # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
+    # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
+    # people a row names; matching on `row["pid"]` badged half of every pairing
+    # and silently left the partner's roster line blank.
+    def badge(row, label):
+        if row and row.get("school") == school:
+            for p in jaw.row_pids(row):
+                honor_pids.setdefault(p, []).append(label)
+
+    badge(awards.get("poy"), f"{sc.group} Player of the Year")
     for r in awards.get("all_state", ()):
-        if r.get("school") == school:
-            honor_pids.setdefault(r["pid"], []).append("All-State")
+        badge(r, "All-State")
+    for _rn, rs in (awards.get("all_region") or {}).items():
+        for r in rs:
+            badge(r, "All-Region")
     for dname, rs in (((arc or {}).get("all_district") or {}).get(sc.group) or {}).items():
         for r in rs:
-            if r.get("school") == school:
-                honor_pids.setdefault(r["pid"], []).append("All-District")
+            badge(r, "All-District")
 
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,

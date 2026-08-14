@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header, jh_player %}
+{% from "_jhsaa.html" import jh_header, jh_player, jh_award_names, jh_tabs, jh_tabs_script %}
 {% block title %}JHSAA {{ view.group }} Honors{% endblock %}
 {% block content %}
 
 {{ jh_header(view.scope, u, 'honors', view.group ~ ' Honors',
-             'Player of the Year, the All-State teams and every district\'s All-District
-              team — selected on this season\'s résumé, not on ability ratings.',
+             'Player of the Year, All-State, All-Region and All-District — selected on
+              this season\'s résumé, not on ability ratings. Every season is archived.',
              [('Season', view.season_year),
               ('All-State', view.teams|map(attribute='players')|map('length')|sum),
+              ('Regions', view.regions|length),
               ('Districts', view.districts|length)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -16,7 +17,16 @@
   writes one each world year.</div></div>
 {% else %}
 
-{# Sibling pages get their own switcher rather than a trip back to the hub. #}
+{# ‼️ THIS PAGE IS FOUR VIEWS OF ONE SLATE, NOT FOUR STACKED LISTS. A
+   classification's honours are a POY, up to four All-State teams, Honorable
+   Mention, ten All-Region teams and a dozen All-District teams — around four
+   hundred selections. Unrolled that is a scroll nobody reads and nobody can cite,
+   which is what shipped first. So: parallel views of one set of people are TABS
+   (the association's own layout rule), and the two views that are themselves a
+   set of teams get a SWITCHER, one team on screen at a time — the same shape the
+   classification select at the top has. Three dropdowns, three questions:
+   which class, which region, which district. #}
+
 <div class="jh-jump">
   <label><span class="k">Classification</span>
     <select onchange="if(this.value)window.location=this.value">
@@ -28,113 +38,237 @@
 </div>
 
 {% macro award_row(r, rank=0) %}
-{# One selection. The RÉSUMÉ is the point of these awards, so the record and the
-   flight the player earned it at are shown next to the name, never an OVR. #}
+{# ONE SELECTION — which for doubles is ONE PAIRING, rendered as a single row
+   naming both players (owner, 2027-08). The RÉSUMÉ is the point of these awards,
+   so the record and the flight it was earned at sit next to the names, never an
+   OVR. The record on a pairing row is the PARTNERSHIP's, from the matches those
+   two played together. #}
 <div class="jh-award">
-  {% if rank %}<span class="rk">{{ rank }}</span>{% endif %}
+  {# ALWAYS emit the rank cell, empty or not — the row is a CSS grid with fixed
+     columns, so dropping it shifted the crest, name, school and record one
+     column left on every unnumbered team. #}
+  <span class="rk">{{ rank or '' }}</span>
   <span class="jh-schoolcell">{{ r.mark|safe }}</span>
-  <span class="nm">{{ jh_player(r.name, r.school, r.pid, u, view.gender) }}
-    <span class="gr">{{ r.grade }}th</span></span>
+  <span class="nm">{{ jh_award_names(r, u, view.gender) }}</span>
   <span class="sch"><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></span>
-  <span class="jh-chip {{ 'unit' if r.kind == 'doubles' }}">{{ r.kind|upper }}</span>
+  <span class="jh-chip {{ 'unit' if r.kind == 'doubles' }}">{{ r.flight or r.kind|upper }}</span>
   <span class="rec">{{ r.wins }}–{{ r.losses }}</span>
 </div>
 {% endmacro %}
 
-{# The criteria belong WHERE THE AWARDS ARE. A user looking at a selection they
-   disagree with should be able to see what the selectors weighed without leaving
-   the page for the Guide — folded, because it is reference, not the content. #}
-<details class="jh-stagefold" style="margin-bottom:14px">
-  <summary><span class="cr">›</span><span class="nm">How these are selected</span>
-    <span class="jh-chip ghost">résumé, not ratings</span></summary>
-  <div class="bd" style="padding:10px 16px 14px;font-size:12.5px;color:var(--text-secondary);line-height:1.65">
-    <p style="margin:0 0 8px">Selections are made from what happened this season — the
-      match-by-match record — and <strong>never from ability ratings</strong>. Nothing here
-      reads OVR, talent, class year, recruiting rank or last season's honours, so a great
-      player on a poor team can win Player of the Year, and an unbeaten record against a
-      weak slate does not automatically outrank a strong one against the best in the class.</p>
-    <p style="margin:0 0 8px">What the selectors weigh:</p>
-    <ul style="margin:0 0 10px 18px">
-      <li><strong>Record and volume</strong> — wins, losses and how much the player actually played.</li>
-      <li><strong>Position</strong> — the flight it was earned at. A win at #1 singles or
-        #1 doubles counts for far more than one at #5.</li>
-      <li><strong>Opposition</strong> — the quality of the individual opponents faced, not
-        the opposing team's overall strength.</li>
-      <li><strong>Quality wins</strong> — beating other award-calibre players is the fastest way up.</li>
-      <li><strong>Good losses</strong> — a competitive loss to an elite opponent costs very
-        little; a loss to a weak one costs plenty.</li>
-      <li><strong>Head-to-head</strong> — decides between candidates whose résumés are otherwise level.</li>
-      <li><strong>Postseason</strong> — Sectionals through State count for more. There is no
-        individual state tournament in Jefferson; this is the team postseason the player played.</li>
-    </ul>
-    <p style="margin:0">Every All-State and All-District team is <strong>{{ view.team_singles }} singles +
-      {{ view.team_doubles }} doubles</strong> selections. 7A crowns a Fourth Team; every other classification
-      stops at Third. <strong>Honorable Mention is a threshold, not a team</strong> — there is no
-      slot count, so a deep classification honours more players and a thin one fewer, and a good
-      season can miss it entirely. At most two Honorable Mention selections per school; the
-      numbered teams have no such cap.</p>
-  </div>
-</details>
+{% macro award_team(rows, numbered=true) %}
+{# A team is TWO honours in one, and they are not interchangeable: ten singles
+   players and eight doubles TEAMS. Splitting them under their own headings is
+   what makes "8 doubles" legible as sixteen athletes in eight pairs rather than
+   eight names in a list. #}
+{% set singles = rows|selectattr('kind','equalto','singles')|list %}
+{% set doubles = rows|selectattr('kind','equalto','doubles')|list %}
+{% if singles %}
+<div class="jh-awardhead">Singles <span>{{ singles|length }}</span></div>
+{% for r in singles %}{{ award_row(r, loop.index if numbered else 0) }}{% endfor %}
+{% endif %}
+{% if doubles %}
+<div class="jh-awardhead">Doubles teams <span>{{ doubles|length }} pairs · {{ doubles|length * 2 }} athletes</span></div>
+{% for r in doubles %}{{ award_row(r, loop.index if numbered else 0) }}{% endfor %}
+{% endif %}
+{% endmacro %}
 
-{% if view.poy %}
-<div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Player of the Year</span>
-    <span class="bl-panel-meta">the most outstanding season in the classification</span></div>
-  <div class="bl-panel-body" style="padding:14px 16px">
-    <div class="jh-poy">
+<div class="bl-panel jh-mod">
+  {{ jh_tabs([('state', 'All-State', view.teams|map(attribute='players')|map('length')|sum),
+              ('region', 'All-Region', view.regions|length),
+              ('district', 'All-District', view.districts|length),
+              ('method', 'How these are selected', 0)], 'jhaw') }}
+
+  {# --- All-State ------------------------------------------------------- #}
+  <div class="jh-pane" data-pane="state">
+    {% if view.poy %}
+    <div class="jh-poy" style="margin:10px 14px 4px">
       <span class="jh-schoolcell">{{ view.poy.mark|safe }}</span>
       <div>
-        <div class="nm">{{ jh_player(view.poy.name, view.poy.school, view.poy.pid, u, view.gender) }}</div>
+        <div class="nm">{{ jh_award_names(view.poy, u, view.gender) }}</div>
         <div class="sub">{{ view.poy.school }} · {{ view.poy.district }} ·
-          {{ view.poy.kind }} {{ view.poy.wins }}–{{ view.poy.losses }}</div>
+          {{ view.poy.flight or view.poy.kind }} {{ view.poy.wins }}–{{ view.poy.losses }}</div>
       </div>
       <span class="jh-chip gold">PLAYER OF THE YEAR</span>
     </div>
-  </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{% for t in view.teams %}
-<div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head">
-    <span class="bl-panel-title">All-State {{ t.name }}</span>
-    <span class="bl-panel-meta">{{ t.players|selectattr('kind','equalto','singles')|list|length }} singles ·
-      {{ t.players|selectattr('kind','equalto','doubles')|list|length }} doubles</span>
-  </div>
-  <div class="bl-panel-body" style="padding:6px 0">
-    {% for r in t.players %}{{ award_row(r) }}{% endfor %}
-  </div>
-</div>
-{% endfor %}
+    {% for t in view.teams %}
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">All-State {{ t.name }}</div>
+      {{ award_team(t.players) }}
+    </div>
+    {% endfor %}
 
-{% if view.honorable_mention %}
-<div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">All-State Honorable Mention</span>
-    <span class="bl-panel-meta">{{ view.honorable_mention|length }} selections — merit, after the numbered teams</span></div>
-  <div class="bl-panel-body" style="padding:6px 0">
-    {% for r in view.honorable_mention %}{{ award_row(r) }}{% endfor %}
+    {% if view.honorable_mention %}
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">Honorable Mention
+        <span>{{ view.honorable_mention|length }} selections — a threshold, not a team</span></div>
+      {{ award_team(view.honorable_mention, numbered=false) }}
+    </div>
+    {% else %}
+    <div class="jh-awardsec"><div class="jh-empty">No season cleared the Honorable
+      Mention threshold in {{ view.group }} — it is a merit line, not a slot count.</div></div>
+    {% endif %}
   </div>
-</div>
-{% endif %}
 
-{# The districts are an INDEX of many teams, so they fold rather than stack: a
-   classification has ten-plus of them and each All-District team is eighteen
-   players, which is a very long page unrolled. #}
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">All-District</span>
-    <span class="bl-panel-meta">{{ view.districts|length }} districts · one team each, plus a District Player of the Year</span></div>
-  <div class="bl-panel-body">
-    {% for d in view.districts %}
-    <details class="jh-stagefold">
-      <summary><span class="cr">›</span><span class="nm">{{ d.district }}</span>
-        {% if d.poy %}<span class="jh-chip">POY {{ d.poy.name }}</span>{% endif %}</summary>
-      <div class="bd" style="padding:4px 0">
-        {% for r in d.players %}{{ award_row(r, loop.index) }}{% endfor %}
+  {# --- All-Region: one team on screen, picked from a switcher ----------- #}
+  <div class="jh-pane" data-pane="region" hidden>
+    {% if view.regions %}
+    <div class="jh-jump" style="margin:10px 14px 0">
+      <label><span class="k">Region</span>
+        <select data-switch="rg">
+          {% for rg in view.regions %}
+          <option value="{{ loop.index0 }}">{{ rg.region }}</option>
+          {% endfor %}
+        </select></label>
+      <span class="jh-chip ghost">{{ view.team_singles }} singles +
+        {{ view.team_doubles }} doubles teams each</span>
+    </div>
+    {% for rg in view.regions %}
+    <div class="jh-swpane" data-sw="rg" data-i="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+      <div class="jh-awardsec">
+        <div class="jh-awardsec-head">All-Region · {{ rg.region }}</div>
+        {{ award_team(rg.players) }}
       </div>
-    </details>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="jh-empty" style="padding:16px">No region in {{ view.group }} fields
+      enough programs to crown a team; those players are honoured on the All-District
+      and All-State teams instead.</div>
+    {% endif %}
+  </div>
+
+  {# --- All-District: same shape, one league at a time ------------------- #}
+  <div class="jh-pane" data-pane="district" hidden>
+    <div class="jh-jump" style="margin:10px 14px 0">
+      <label><span class="k">District</span>
+        <select data-switch="ds">
+          {% for d in view.districts %}
+          <option value="{{ loop.index0 }}">{{ d.district }}</option>
+          {% endfor %}
+        </select></label>
+    </div>
+    {% for d in view.districts %}
+    <div class="jh-swpane" data-sw="ds" data-i="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+      {% if d.poy %}
+      <div class="jh-poy" style="margin:10px 14px 4px">
+        <span class="jh-schoolcell">{{ d.poy.mark|safe }}</span>
+        <div>
+          <div class="nm">{{ jh_award_names(d.poy, u, view.gender) }}</div>
+          <div class="sub">{{ d.poy.school }} · {{ d.poy.flight or d.poy.kind }}
+            {{ d.poy.wins }}–{{ d.poy.losses }}</div>
+        </div>
+        <span class="jh-chip">DISTRICT PLAYER OF THE YEAR</span>
+      </div>
+      {% endif %}
+      <div class="jh-awardsec">
+        <div class="jh-awardsec-head">All-District · {{ d.district }}</div>
+        {{ award_team(d.players) }}
+      </div>
+    </div>
     {% endfor %}
   </div>
+
+  {# --- Method: the criteria, and the flight check the selector ran ------- #}
+  {# The criteria belong WHERE THE AWARDS ARE. A user looking at a selection they
+     disagree with should be able to see what the selectors weighed without leaving
+     the page for the Guide — in its own view, because it is reference. #}
+  <div class="jh-pane" data-pane="method" hidden>
+    <div class="jh-awardsec" style="font-size:12.5px;color:var(--text-secondary);line-height:1.65">
+      <div class="jh-awardsec-head">What the selectors weigh</div>
+      <div style="padding:10px 16px 16px">
+        <p style="margin:0 0 8px">Selections are made from what happened this season — the
+          match-by-match record — and <strong>never from ability ratings</strong>. Nothing here
+          reads OVR, talent, class year, recruiting rank or last season's honours, so a great
+          player on a poor team can win Player of the Year, and an unbeaten record against a
+          weak slate does not automatically outrank a strong one against the best in the class.</p>
+        <ul style="margin:0 0 10px 18px">
+          <li><strong>Record and volume</strong> — wins, losses and how much the player actually played.</li>
+          <li><strong>Position</strong> — the flight it was earned at, and this is
+            <strong>structural, not a bonus</strong>. 19–7 at #1 singles is a bigger season
+            than 25–1 at #5, because the #1 spent the year playing every other program's
+            best player. <strong>All-State is a #1/#2 honour</strong> and All-Region reaches
+            #3; below that a player is selected only on extraordinary evidence — a
+            near-perfect record <em>and</em> a win over somebody who played higher up the
+            card. All-District broadens downward, because a district is a smaller pond, but
+            the hierarchy still holds. The Flight check below is the audit.</li>
+          <li><strong>Opposition</strong> — the quality of the individual opponents faced (of the
+            opposing PAIR, in doubles), not the opposing team's overall strength.</li>
+          <li><strong>Quality wins</strong> — beating other award-calibre players is the fastest way up.</li>
+          <li><strong>Good losses</strong> — a competitive loss to an elite opponent costs very
+            little; a loss to a weak one costs plenty.</li>
+          <li><strong>Head-to-head</strong> — decides between candidates whose résumés are otherwise level.</li>
+          <li><strong>Postseason</strong> — Sectionals through State count for more. There is no
+            individual state tournament in Jefferson; this is the team postseason the player played.</li>
+        </ul>
+        <p style="margin:0 0 8px"><strong>Doubles honours go to pairings, not to individual
+          doubles players.</strong> A doubles selection is two players who actually competed
+          together, judged on the matches they played <em>as a team</em> against other teams —
+          so a player who partnered around is a separate candidate with each partner, and the
+          record beside a pairing is the partnership's. Which category an athlete is considered
+          in follows where they actually played, so nobody holds both a singles slot and a
+          doubles slot on the same team.</p>
+        <p style="margin:0">Every All-State, All-Region and All-District team is
+          <strong>{{ view.team_singles }} singles + {{ view.team_doubles }} doubles teams</strong>
+          — {{ view.team_singles + 2 * view.team_doubles }} athletes. 7A crowns a Fourth Team;
+          every other classification stops at Third. <strong>Honorable Mention is a threshold,
+          not a team</strong> — there is no slot count, so a deep classification honours more
+          and a thin one fewer, and a good season can miss it entirely. At most two Honorable
+          Mention <em>selections</em> per school (a pairing is one); the numbered teams have no
+          such cap. A team can only be as large as the candidates who cleared the bar, so a
+          thin region occasionally crowns one pairing fewer rather than honouring one that
+          did not earn it.</p>
+      </div>
+    </div>
+
+    {# THE FLIGHT SANITY CHECK, archived with the season (owner, 2027-08). Flight
+       weighting is structural, so the association publishes what it produced: how
+       many selections came from each flight, and — where an honour reached below
+       its dominant band — exactly who, at what position, on what record. #}
+    {% if view.flight_check %}
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">Flight check <span>singles selections by position</span></div>
+      <div style="padding:10px 16px 16px;font-size:12.5px;color:var(--text-secondary)">
+        {% for lvl in ['state', 'region', 'district'] %}{% set fc = view.flight_check.get(lvl) %}
+        {% if fc %}
+        <div style="margin-bottom:12px">
+          <strong style="text-transform:capitalize;color:var(--text-primary)">{{ lvl }}</strong>
+          — {{ fc.total }} singles selections{% if fc.floor %}, dominant band #1–#{{ fc.floor }}{% endif %}<br>
+          <span style="display:inline-flex;flex-wrap:wrap;gap:5px;margin-top:5px">
+          {% for f, n in fc.flights.items() %}<span class="jh-chip ghost">{{ f }} × {{ n }}</span>{% endfor %}
+          </span>
+          {% if fc.exceptions %}
+          <div style="margin-top:6px">{{ fc.below_floor }} below the band, each admitted on
+            extraordinary evidence:
+            {% for e in fc.exceptions %}<strong>{{ e.name }}</strong> ({{ e.school }},
+            {{ e.flight }}, {{ e.record }}){% if not loop.last %} · {% endif %}{% endfor %}</div>
+          {% elif fc.floor %}<div style="margin-top:6px">No selection came from below the band.</div>{% endif %}
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
 </div>
+{{ jh_tabs_script('jhaw') }}
+<script>
+/* The region and district views are each a SET of teams, so they get a switcher
+   rather than a stack — one team on screen, chosen the same way the
+   classification is chosen. Client-side, so browsing regions never reloads the
+   page and the archived-season pin in the URL cannot be lost on the way. */
+(function () {
+  document.querySelectorAll('select[data-switch]').forEach(function (sel) {
+    var k = sel.dataset.switch;
+    sel.addEventListener('change', function () {
+      document.querySelectorAll('[data-sw="' + k + '"]').forEach(function (p) {
+        p.hidden = p.dataset.i !== sel.value;
+      });
+    });
+  });
+})();
+</script>
 {% endif %}
 </div>
 {% endblock %}
