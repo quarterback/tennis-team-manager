@@ -1,5 +1,19 @@
 # AAR — Name pool expansion + country diversity (diaspora names)
 
+> ## ⚠️ SUPERSEDED IN PART, 2027-08 — read this first
+> The diaspora blend described below was right in intent and wrong in
+> implementation. It picked the donor culture with a **second, independent draw
+> from the whole world mix**, so any region could donate a name to any other:
+> Russian names on Dominicans, Chinese names on Africans, at ~11% of all players.
+> Owner: *"the pool is a sieve … it's breaking my immersion."*
+>
+> Diaspora is now **DIRECTED** — a region may only receive a name from a heritage
+> it declares (`diaspora` in `regions.json`), and a region that declares none is
+> monocultural. **Do not restore the undirected draw**, and do not read the
+> `DIASPORA_SHARE = 0.12` below as licence to: that constant is now only the
+> default RATE for a region that has declared sources.
+> See `docs/AAR-directed-diaspora-and-africa-regions.md`.
+
 **Date:** 2026-06-27
 **Scope:** Bigger name pools, a fix so place-names that are also real given names
 (Denver, Houston, Dallas, Montana, London) survive the scrubber, and a diversity

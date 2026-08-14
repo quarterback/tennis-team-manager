@@ -178,6 +178,19 @@ COACH_UPGRADE_MARGIN = 0.08  # a free coach must clear the incumbent by this to 
 SYNTHETIC_HANDICAP = 0.15    # ...and a real ex-player displaces a synthetic seed easily
 
 
+
+# ‼️ THE PRO LEAGUE MUST PASS THE WORLD'S NATIONALITY BAND. `make_name_picker`
+# falls back to the `americas_pro` preset when `region_weights` is None
+# (generators/names.py::_default_region_weights), so every call here that omitted
+# it silently generated a permanently 55%-US / 28%-Latin-America league no matter
+# what the save's band said. Nothing errored and the names were all real, which is
+# why it survived: the only symptom is a distribution that quietly ignores the
+# player's choice.
+def _world_weights() -> dict:
+    from app import worldconfig
+    return worldconfig.region_weights()
+
+
 def _inj_scope(league_id: int, year: int) -> int:
     """One opaque int key for a (league, year) pair — the store takes a single
     scope id, and injuries never carry across a pro season."""
@@ -386,7 +399,8 @@ def _intake(conn, league, needed_by_gender):
     # top up with generated rookies if the pipeline came up short
     rng = random.Random(_h(seed, lid, "rookies", year))
     for g, full in (("m", "male"), ("w", "female")):
-        name_fn = make_name_picker(random.Random(_h(seed, lid, g, year)), gender=full)
+        name_fn = make_name_picker(random.Random(_h(seed, lid, g, year)), gender=full,
+                                   region_weights=_world_weights())
         # Top up to the POOL target, not just the roster holes. Filling only the
         # holes is why the wire drained: year 0 had a surplus, every year after had
         # exactly enough bodies for the rosters and nothing left over.
@@ -874,8 +888,10 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     for fid in fids:
         base = 48 + 16 * (_h(seed, fid, "base") / 0xFFFFFFFF)
         prng = random.Random(_h(seed, fid, "founders"))
-        men_fn = make_name_picker(random.Random(_h(seed, fid, "m")), gender="male")
-        women_fn = make_name_picker(random.Random(_h(seed, fid, "w")), gender="female")
+        men_fn = make_name_picker(random.Random(_h(seed, fid, "m")), gender="male",
+                              region_weights=_world_weights())
+        women_fn = make_name_picker(random.Random(_h(seed, fid, "w")), gender="female",
+                                region_weights=_world_weights())
         for gender, name_fn, tgt in (("m", men_fn, TARGET_MEN), ("w", women_fn, TARGET_WOMEN)):
             while counts[fid][gender] < tgt:
                 r = _gen_player(prng, name_fn, gender, prng.gauss(base, 5), start_year)
@@ -886,8 +902,10 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     # to top up — so in-season add/drop signs the save's players when there are
     # any left to sign.
     fa_rng = random.Random(_h(seed, "founding_fa"))
-    fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male")
-    fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female")
+    fa_men = make_name_picker(random.Random(_h(seed, "fa_m")), gender="male",
+                             region_weights=_world_weights())
+    fa_women = make_name_picker(random.Random(_h(seed, "fa_w")), gender="female",
+                               region_weights=_world_weights())
     _founding_surplus = max(2, int(round(DRAFT_SURPLUS_PER_CLUB * n_teams)))
     for gender, name_fn, n in (("m", fa_men, _founding_surplus),
                                ("w", fa_women, _founding_surplus)):
