@@ -716,6 +716,28 @@ start of the offseason ladder — before the recruit board needs its output.
   let teams sitting at home out-qualify teams still playing.
   The **Tournament of Champions** is its own event on top of State, reserved
   for the six classification champions.
+- **Postseason awards are résumé selections, on the Honors tab.** Per
+  classification and gender, in one pass off the completed season: **State
+  Player of the Year**; **All-State First / Second / Third Team** — plus a
+  **Fourth Team in 7A**, whose talent pool is much larger — then **Honorable
+  Mention**; and for every district, a **District Player of the Year** and one
+  **All-District team**. Every All-State and All-District team is the same
+  size: **10 singles + 8 doubles selections**.
+  What the selectors weigh, in the association's own order: the player's
+  record and how much they played; the **flight** they played it at (a win at
+  #1 singles or #1 doubles counts for far more than one at #5); the **quality
+  of the individual opponents** faced, not just the opposing team; **quality
+  wins** over other award candidates; **good losses**, which cost very little
+  when they come against elite opposition; **head-to-head** between candidates
+  whose résumés are otherwise level; and **postseason matches**, weighted up.
+  Ability ratings are deliberately *not* an input — no OVR, talent, class year,
+  recruit ranking or last season's honours. A great player on a poor team can
+  win Player of the Year, and an unbeaten record against a weak slate does not
+  automatically beat a strong record against the best in the class.
+  **Honorable Mention is a threshold, not a team** — there is no slot count, so
+  a deep classification honours a couple of dozen extra players and a thin one
+  only a handful, and a good season can miss it entirely. At most **two HM
+  selections per school**; the numbered teams have no such cap.
 - **A program's record is one continuous number**, not split into "regular"
   and "postseason" halves that could double-count games — the postseason is
   folded into the same season total real high-school and NCAA records use,
@@ -998,6 +1020,10 @@ behind any rule in this guide instead of reading them all in date order.
 - [`AAR-jhsaa-high-school-season.md`](AAR-jhsaa-high-school-season.md) — The JHSAA: a simulated high-school season inside the college sim
 - [`AAR-jhsaa-program-history-and-design-pass.md`](AAR-jhsaa-program-history-and-design-pass.md) — the JHSAA becomes a world surface: program history, and the design pass
 - [`AAR-jhsaa-talent-identity-and-toc.md`](AAR-jhsaa-talent-identity-and-toc.md) — what a program IS, and the tournament that proved it wasn't working
+- [`AAR-jhsaa-resume-awards.md`](AAR-jhsaa-resume-awards.md) — postseason awards become résumé selections, on a Honors page of their own
+- [`AAR-jhsaa-order-of-ability.md`](AAR-jhsaa-order-of-ability.md) — NFHS anti-stacking: the frozen Order of Ability, and the regular season's lineup philosophies
+- [`AAR-jhsaa-state-expansion-recovery-rounds.md`](AAR-jhsaa-state-expansion-recovery-rounds.md) — State grows to 32/24 and the remaining berths are earned on court
+- [`AAR-jhsaa-upset-variance-recalibration.md`](AAR-jhsaa-upset-variance-recalibration.md) — the hinged gap response, and outcomes that read ability shape
 
 **The Pro Tour (GTT)**
 - [`AAR-gtt-add-drop-waiver-wire.md`](AAR-gtt-add-drop-waiver-wire.md) — GTT in-season add/drop waiver wire

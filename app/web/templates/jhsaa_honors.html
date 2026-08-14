@@ -41,6 +41,41 @@
 </div>
 {% endmacro %}
 
+{# The criteria belong WHERE THE AWARDS ARE. A user looking at a selection they
+   disagree with should be able to see what the selectors weighed without leaving
+   the page for the Guide — folded, because it is reference, not the content. #}
+<details class="jh-stagefold" style="margin-bottom:14px">
+  <summary><span class="cr">›</span><span class="nm">How these are selected</span>
+    <span class="jh-chip ghost">résumé, not ratings</span></summary>
+  <div class="bd" style="padding:10px 16px 14px;font-size:12.5px;color:var(--text-secondary);line-height:1.65">
+    <p style="margin:0 0 8px">Selections are made from what happened this season — the
+      match-by-match record — and <strong>never from ability ratings</strong>. Nothing here
+      reads OVR, talent, class year, recruiting rank or last season's honours, so a great
+      player on a poor team can win Player of the Year, and an unbeaten record against a
+      weak slate does not automatically outrank a strong one against the best in the class.</p>
+    <p style="margin:0 0 8px">What the selectors weigh:</p>
+    <ul style="margin:0 0 10px 18px">
+      <li><strong>Record and volume</strong> — wins, losses and how much the player actually played.</li>
+      <li><strong>Position</strong> — the flight it was earned at. A win at #1 singles or
+        #1 doubles counts for far more than one at #5.</li>
+      <li><strong>Opposition</strong> — the quality of the individual opponents faced, not
+        the opposing team's overall strength.</li>
+      <li><strong>Quality wins</strong> — beating other award-calibre players is the fastest way up.</li>
+      <li><strong>Good losses</strong> — a competitive loss to an elite opponent costs very
+        little; a loss to a weak one costs plenty.</li>
+      <li><strong>Head-to-head</strong> — decides between candidates whose résumés are otherwise level.</li>
+      <li><strong>Postseason</strong> — Sectionals through State count for more. There is no
+        individual state tournament in Jefferson; this is the team postseason the player played.</li>
+    </ul>
+    <p style="margin:0">Every All-State and All-District team is <strong>{{ view.team_singles }} singles +
+      {{ view.team_doubles }} doubles</strong> selections. 7A crowns a Fourth Team; every other classification
+      stops at Third. <strong>Honorable Mention is a threshold, not a team</strong> — there is no
+      slot count, so a deep classification honours more players and a thin one fewer, and a good
+      season can miss it entirely. At most two Honorable Mention selections per school; the
+      numbered teams have no such cap.</p>
+  </div>
+</details>
+
 {% if view.poy %}
 <div class="bl-panel" style="margin-bottom:14px">
   <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Player of the Year</span>
