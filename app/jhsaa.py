@@ -58,7 +58,10 @@ FORMATS = {
 # The POSTSEASON phases — one per stage, because the archive (`world_jhsaa_dual.phase`)
 # is the only place the stages can be told apart afterwards. All of them share the
 # 1S/4D shape, the strict best-nine lineup, and exclusion from the cutoff TOSS.
-POSTSEASON = ("sectional", "ward", "regional", "zonal", "state", "toc")
+# "super_regional" and "semi_state" are the RECOVERY rounds (owner rule 2027-08):
+# the second-chance ladder that earns the non-automatic State berths on court.
+POSTSEASON = ("sectional", "ward", "regional", "zonal",
+              "super_regional", "semi_state", "state", "toc")
 
 
 def dual_format(phase: str) -> DualFormat:
@@ -121,31 +124,56 @@ CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level 
 # Winners, scores and individual records are all unaffected; only per-point box detail is.
 FIDELITY = "fast"
 
-# --- the postseason (owner spec) ---------------------------------------------
+# --- the postseason (owner spec 2027-08, expanded State fields) ----------------
 #
-# Three separate mechanisms, deliberately decoupled:
+# Decoupled mechanisms, in ladder order:
 #
-#   1. SECTIONALS — broad access and field reduction. Every non-protected team
-#      enters; the shape is flexible per classification (byes/play-ins as needed);
-#      the ONLY fixed requirement is the output: exactly `WARD_FIELD` teams.
-#   2. The pre-state ladder — fixed for every classification and both genders:
+#   1. SECTIONALS (Areas when multi-round) — broad access and field reduction.
+#      Every non-protected team enters; the shape is flexible per classification
+#      (byes/play-ins as needed); the ONLY fixed requirement is the output:
+#      exactly `WARD_FIELD` teams.
+#   2. The qualification ladder — fixed for every classification and both genders:
 #         Wards      32 -> 16
 #         Regionals  32 -> 16   (16 Ward champions + 16 protected)
-#         Zonals     16 -> 8    (Zonal champions qualify for State)
+#         Zonals     16 -> 8    (Zonal champions qualify for State, WITH the
+#                                privileged path: they are the State draw's top
+#                                seeds, so a 24-team field's eight byes are theirs)
 #      The protected 16 enter at Regionals: district champions first, then the
 #      best remaining cutoff TOSS until the seats are filled.
-#   3. Wild cards — selected AFTER Zonals, from a TOSS recomputed over every
-#      completed pre-state match (`power_index(..., prestate=True)`): the top
-#      `WILDCARDS` teams that did not win a Zonal. They join the Zonal champions
-#      in a fresh 16-team State draw (R16 -> QF -> SF -> Final). The wild-card
-#      split never resizes anything upstream.
+#   3. THE DISTRICT GUARANTEE — a district champion is guaranteed State ACCESS
+#      even if it loses in the ladder (a geographic-access safeguard: no region
+#      is excluded from State because TOSS dislikes it). Access only: no State
+#      bye unless it also won its Zonal, and no extra berth if it did.
+#   4. THE RECOVERY ROUNDS — Super Regionals -> Semi-State. The remaining State
+#      berths are EARNED ON COURT by the loser pool (16 Regional losers + 8
+#      Zonal losers, minus anyone the district guarantee already admitted),
+#      never handed out by a TOSS recompute: the owner replaced the wild-card
+#      model precisely because teams sitting at home could out-rank teams still
+#      playing. Regional losers (and, where the arithmetic needs bodies — 7A —
+#      the best-TOSS Ward losers, who get another chance to PLAY, not a berth)
+#      enter at Super Regionals; Zonal losers enter at Semi-State; Semi-State's
+#      survivors take exactly the berths that remain. The arithmetic is DYNAMIC
+#      (`_recovery`): berths = state field - Zonal champions - unique non-Zonal
+#      district champions, and the two rounds together always eliminate
+#      `RECOVERY_CUT` teams, so the shape is the same statewide whatever the
+#      district-champion count happens to be.
+#
+# `STATE_FIELD`: 7A crowns from 32; every other classification from 24 — the
+# 24 is load-bearing, because a 24-team seeded draw has exactly eight first-round
+# byes and those byes ARE the Zonal champions' privilege.
 #
 # `ladder_scale` shrinks every number together (powers of two, same shape) when a
 # classification is too small for the full size. Every real classification fits
 # the full size today; the scale exists for small pools, not as a format fork.
 PROTECTED = 16
 WARD_FIELD = 32
-WILDCARDS = 8
+STATE_FIELD = {"7A": 32}
+STATE_FIELD_DEFAULT = 24
+RECOVERY_CUT = 8          # teams the two recovery rounds eliminate, together
+
+
+def state_field_size(group: str, scale: int = 1) -> int:
+    return STATE_FIELD.get(group, STATE_FIELD_DEFAULT) // scale
 
 
 def ladder_scale(group: str) -> int:
@@ -1303,8 +1331,8 @@ FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
     "D1": 1.00, "D2": 0.50,
     # D3/D4 exist only in the postseason's 1S/4D duals, so they are rated only by
-    # the post-Zonal wild-card recompute (`power_index(prestate=True)`); the cutoff
-    # TOSS never sees them. Same decay as the doubles column above.
+    # the in-postseason recomputes (`power_index(prestate=True)` — recovery-field
+    # and State seeding); the cutoff TOSS never sees them. Same decay as above.
     "D3": 0.25, "D4": 0.10,
 }
 MAX_FLIGHT_WEIGHT = 3.70          # regular-season sum (S1..S5 + D1/D2)
@@ -1336,9 +1364,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     counting each meeting twice would flatten strength of schedule toward .500.
 
     Default (the CUTOFF TOSS — seeding, district tiebreak, protection): the regular
-    season only, every postseason phase excluded. `prestate=True` (the post-Zonal
-    wild-card recompute) additionally includes the completed pre-state stages —
-    sectional/ward/regional/zonal — and still excludes state and the TOC."""
+    season only, every postseason phase excluded. `prestate=True` (the in-postseason
+    recomputes: recovery-field seeding after Zonals, State seeding after Semi-State)
+    additionally includes every completed pre-state stage — sectional/ward/regional/
+    zonal and, once played, super_regional/semi_state — and still excludes state and
+    the TOC."""
     drop = ("state", "toc") if prestate else POSTSEASON
     out = []
     for t in teams:
@@ -1361,8 +1391,8 @@ def power_index(teams, *, prestate: bool = False) -> dict:
     Run over the WHOLE gender rather than a classification at a time: non-district
     play crosses classifications, so a 7A team's schedule strength depends on the 6A
     teams it played, and rating each class in isolation would cut those edges out of
-    the results graph. `prestate=True` is the post-Zonal wild-card recompute — same
-    graph plus every completed pre-state match (see `rating_duals`)."""
+    the results graph. `prestate=True` is the in-postseason recompute — same graph
+    plus every completed pre-state match (see `rating_duals`)."""
     from .rating import compute_ratings
     return compute_ratings(rating_duals(teams, prestate=prestate),
                            weights=FLIGHT_WEIGHTS)
@@ -1501,9 +1531,128 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
              "round_names": [_STAGE_NAMES[p] for p in phases]}, survivors)
 
 
+# --- the RECOVERY ROUNDS (owner rule 2027-08): Super Regionals -> Semi-State ---
+
+_RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State"}
+_RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State"}
+
+
+def _losers(stage: dict, round_ix: int) -> list[str]:
+    """School names eliminated in round `round_ix` of an archived stage dict."""
+    out = []
+    for gm in (stage.get("rounds") or [[]] * (round_ix + 1))[round_ix]:
+        out.append(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
+    return out
+
+
+def _last_opponent(ts: TeamSeason) -> str:
+    return ts.schedule[-1]["opp"] if ts.schedule else ""
+
+
+def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple]:
+    """Pair a recovery round's playing set, strongest-vs-weakest — then repair
+    the draw around the owner's rematch rule: never immediately replay the
+    opponent that just eliminated you (hard), avoid same-district pairings
+    where practical (soft). A handful of swap passes over the bottom halves is
+    enough at these sizes; TOSS order (the list order) is otherwise preserved."""
+    n = len(playing)
+    top, bottom = playing[:n // 2], list(reversed(playing[n - n // 2:]))
+
+    def penalty(a, b):
+        p = 0
+        if _last_opponent(a) == b.school.name or _last_opponent(b) == a.school.name:
+            p += 10                                    # the just-played opponent
+        if (a.school.group, a.school.district) == (b.school.group, b.school.district):
+            p += 1                                     # same league, if avoidable
+        return p
+
+    for _ in range(4):
+        improved = False
+        for i in range(len(top)):
+            for j in range(i + 1, len(top)):
+                cur = penalty(top[i], bottom[i]) + penalty(top[j], bottom[j])
+                alt = penalty(top[i], bottom[j]) + penalty(top[j], bottom[i])
+                if alt < cur:
+                    bottom[i], bottom[j] = bottom[j], bottom[i]
+                    improved = True
+        if not improved:
+            break
+    return list(zip(top, bottom))
+
+
+def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
+                    rng: random.Random) -> tuple[dict, list[TeamSeason]]:
+    """One recovery round: cut `pool` (TOSS-ordered, strongest first) to exactly
+    `out_target` survivors. Byes go to the top of the pool; the rest pair via
+    `_recovery_pairs`. Same archive shape as every other stage."""
+    games_n = max(0, len(pool) - out_target)
+    byes = len(pool) - 2 * games_n
+    protected, playing = pool[:byes], pool[byes:]
+    games, winners = [], []
+    for n, (a, b) in enumerate(_recovery_pairs(playing, rng)):
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
+        win = a if res.winner == 0 else b
+        games.append({"home": a.school.name, "away": b.school.name,
+                      "home_points": res.home_points, "away_points": res.away_points,
+                      "winner": win.school.name,
+                      "unit": f"{_RECOVERY_UNITS[phase]} {n + 1}"})
+        winners.append(win)
+    survivors = protected + winners
+    return ({"field": [t.school.name for t in pool], "rounds": [games],
+             "survivors": [t.school.name for t in survivors],
+             "round_names": [_RECOVERY_NAMES[phase]]}, survivors)
+
+
+def _recovery(group: str, by_name: dict, wards: dict, prestate: dict,
+              zonal_champs: list, district_champs: list[str], scale: int,
+              power: dict, *, seed: int) -> tuple[dict, dict, list, list[str]]:
+    """The whole recovery path for one group: who still needs a berth, who gets
+    another chance, and the two rounds that decide it.
+
+    Returns (super_regional_arc, semi_state_arc, qualifiers, district_qualifiers):
+    `qualifiers` are the Semi-State survivors (TeamSeasons) and
+    `district_qualifiers` the names admitted by the district guarantee alone.
+
+    The arithmetic is DYNAMIC (owner requirement): berths to earn = state field
+    - Zonal champions - unique non-Zonal district champions, and the two rounds
+    together eliminate `RECOVERY_CUT // scale` teams. For a 24-team field that
+    falls out of the loser pool on its own (the pool and the berths shrink by
+    the same district-champion count, so eliminations are always 8); 7A's
+    32-team field consumes the whole pool with nothing to play for, which is
+    where the best-TOSS Ward losers come in — enough of them join the Super
+    Regional field to keep the two rounds real. TOSS gives them the CHANCE;
+    the berth is won on court."""
+    zc_names = {t.school.name for t in zonal_champs}
+    district_qualifiers = [n for n in district_champs if n not in zc_names]
+    berths = state_field_size(group, scale) - len(zonal_champs) - len(district_qualifiers)
+    berths = max(0, berths)
+    guaranteed = set(district_qualifiers)
+    reg_losers = [by_name[n] for n in _losers(prestate, 0) if n not in guaranteed]
+    zon_losers = [by_name[n] for n in _losers(prestate, 1) if n not in guaranteed]
+    cut = RECOVERY_CUT // scale
+    # 7A (and any scaled shape short of bodies): top-TOSS Ward losers fill the
+    # Super Regional field until the rounds have `cut` eliminations to play.
+    need = cut - (len(reg_losers) + len(zon_losers) - berths)
+    if need > 0:
+        ward_losers = sorted((by_name[n] for n in _losers(wards, 0)
+                              if n not in guaranteed), key=_power_key(power))
+        reg_losers += ward_losers[:need]
+    rng = random.Random(seed)
+    e_total = max(0, len(reg_losers) + len(zon_losers) - berths)
+    e1 = min(e_total - e_total // 2, len(reg_losers) // 2)
+    sr_pool = sorted(reg_losers, key=_power_key(power))
+    sr_arc, sr_out = _recovery_round(sr_pool, len(sr_pool) - e1,
+                                     phase="super_regional", rng=rng)
+    ss_pool = sorted(sr_out + zon_losers, key=_power_key(power))
+    ss_arc, qualifiers = _recovery_round(ss_pool, berths,
+                                         phase="semi_state", rng=rng)
+    return sr_arc, ss_arc, qualifiers, district_qualifiers
+
+
 def run_state(field: list[TeamSeason], *, seed: int) -> dict:
-    """The State Tournament: a fresh 16-team draw (Zonal champions + wild cards,
-    post-Zonal-TOSS ordered) played to a champion — R16, QF, SF, Final.
+    """The State Tournament: a fresh seeded draw (32 teams in 7A, 24 elsewhere —
+    Zonal champions first, then the district-guarantee and Semi-State qualifiers
+    in post-recovery TOSS order) played to a champion.
 
     The draw is SEEDED (`engine.tournament.seeded_draw`): entrants go to the
     standard bracket anchors so the top seeds can only meet late, then the bracket
@@ -1883,8 +2032,8 @@ _season_cache: dict = {}
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
     """One full JHSAA season for `gender`: every district's regular season, the
     crossover schedule, the awards, and each classification's postseason ladder
-    (Sectionals → Wards → Regionals → Zonals → wild cards → State — see the
-    postseason constants above `ladder_scale`).
+    (Sectionals → Wards → Regionals → Zonals → Super Regionals → Semi-State →
+    State — see the postseason constants above `ladder_scale`).
 
     Memoized per (salt, gender, year, seed) — a season is deterministic, and both the
     recruit hand-off and any page that wants standings would otherwise re-simulate
@@ -1938,11 +2087,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # six programs in it therefore had their last one or two duals archived on their
     # SCHEDULE but missing from their RECORD. Measured: 131 of 137 programs archived
     # every dual they played, and the six that did not were exactly the TOC field.
-    # The pre-state ladder, every group, before any State bracket: the wild cards
-    # are selected on a TOSS recomputed over ALL completed pre-state matches, and
-    # TOSS runs over the whole gender at once, so every group's Zonals must be
-    # done before any group's wild cards can be picked.
+    # The qualification ladder, every group, before any recovery round: the
+    # recovery fields are seeded on a TOSS recomputed over ALL completed
+    # pre-state matches, and TOSS runs over the whole gender at once, so every
+    # group's Zonals must be done before any group's Super Regionals can start.
     sectionals, wards, prestates, protecteds, zonal_champs = {}, {}, {}, {}, {}
+    district_champs = {}
     for group in GROUPS:
         standings = by_group[group]
         out["awards"][group] = season_awards(
@@ -1950,6 +2100,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         k = ladder_scale(group)
         protected, entrants = sectional_field(group, standings, power, scale=k)
         protecteds[group] = [t.school.name for t in protected]
+        district_champs[group] = [ts[0].school.name
+                                  for ts in standings.values() if ts]
         gseed = seed + hash(group) % 9973
         sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD // k,
                                                        seed=gseed)
@@ -1960,17 +2112,34 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         prestates[group], zonal_champs[group] = run_rounds(
             reg_field, ("regional", "zonal"), seed=gseed + 8219)
     post_power = power_index(every_team, prestate=True)
-    states, wildcards = {}, {}
+    # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
+    # any State draw: the remaining berths are earned on court, and the State
+    # seeding TOSS is recomputed once more AFTERWARD so it includes them.
+    super_regionals, semi_states, recovery_q, district_q = {}, {}, {}, {}
     for group in GROUPS:
         k = ladder_scale(group)
-        zc = zonal_champs[group]
-        zc_names = {t.school.name for t in zc}
-        pool = sorted((t for ts in by_group[group].values() for t in ts
-                       if t.school.name not in zc_names), key=_power_key(post_power))
-        wc = pool[:WILDCARDS // k]
-        wildcards[group] = [t.school.name for t in wc]
-        field = sorted(zc + wc, key=_power_key(post_power))
-        states[group] = run_state(field, seed=seed + hash(group) % 9973 + 12281)
+        by_name_g = {t.school.name: t
+                     for ts in by_group[group].values() for t in ts}
+        sr, ss, quals, dq = _recovery(
+            group, by_name_g, wards[group], prestates[group],
+            zonal_champs[group], district_champs[group], k, post_power,
+            seed=seed + hash(group) % 9973 + 16223)
+        super_regionals[group], semi_states[group] = sr, ss
+        recovery_q[group], district_q[group] = quals, dq
+    final_power = power_index(every_team, prestate=True)
+    states = {}
+    for group in GROUPS:
+        by_name_g = {t.school.name: t
+                     for ts in by_group[group].values() for t in ts}
+        # Zonal champions FIRST — the privileged path: they are the draw's top
+        # seeds, so a 24-team field's eight first-round byes are exactly theirs.
+        # The district-guarantee and Semi-State qualifiers follow, together, in
+        # post-recovery TOSS order — the guarantee buys ACCESS, never seeding.
+        zc = sorted(zonal_champs[group], key=_power_key(final_power))
+        rest = sorted([by_name_g[n] for n in district_q[group]] + recovery_q[group],
+                      key=_power_key(final_power))
+        states[group] = run_state(zc + rest,
+                                  seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
@@ -2004,7 +2173,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "sectional": sectionals[group],
             "ward": wards[group],
             "prestate": prestates[group],
-            "wildcards": wildcards[group],
+            "super_regional": super_regionals[group],
+            "semi_state": semi_states[group],
+            # The names admitted by the DISTRICT GUARANTEE alone (champions who
+            # did not win a Zonal) — access without a bye. Replaces the retired
+            # TOSS wild cards; old archives keep their "wildcards" key.
+            "district_qualifiers": district_q[group],
             "state": state,
         }
         for ts in standings.values():

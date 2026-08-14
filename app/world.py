@@ -3540,15 +3540,23 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
-                # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed
-                # "brackets" (the State bracket). "protected" and "wildcards" record
-                # the two selections. See `jhsaa_postseason_result`.
+                # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed the
+                # RECOVERY rounds ("super_regional" / "semi_state"), which feed
+                # "brackets" (the State bracket). "protected" records the Regionals
+                # entry list; "district_qualifiers" the district-guarantee berths
+                # (pre-2027-expansion archives carry "wildcards" instead — the
+                # readers accept both). See `jhsaa_postseason_result`.
                 "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
                 "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
                 "wards": {g: season["groups"][g]["ward"] for g in jhsaa.GROUPS},
                 "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
+                "super_regional": {g: season["groups"][g]["super_regional"]
+                                   for g in jhsaa.GROUPS},
+                "semi_state": {g: season["groups"][g]["semi_state"]
+                               for g in jhsaa.GROUPS},
                 "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},
-                "wildcards": {g: season["groups"][g]["wildcards"] for g in jhsaa.GROUPS},
+                "district_qualifiers": {g: season["groups"][g]["district_qualifiers"]
+                                        for g in jhsaa.GROUPS},
                 # The Tournament of Champions — the SIX classification champions, one
                 # winner. Archived beside the brackets it is drawn from, in the same
                 # shape, so it reads back through the same helpers.
@@ -3725,22 +3733,33 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
 
 def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     """The furthest `school`'s postseason reached, across every archived stage of a
-    group's postseason (`{"sectional", "ward", "prestate", "state", "wildcards"}` —
-    the keys `run_season` writes per group). One call for a program page or ledger
-    row; a State entrant (Zonal champion or wild card) takes priority, then the
-    stages walk backward. `finish` for a pre-state exit is the stage's own name —
-    "Areas" / "Sectionals" / "Wards" / "Regionals" / "Zonals" — never a
-    team-count band.
-    Old single-bracket archives carry only `state`, and fall through unchanged."""
+    group's postseason (`{"sectional", "ward", "prestate", "super_regional",
+    "semi_state", "state", ...}` — the keys `run_season` writes per group). One
+    call for a program page or ledger row; a State entrant takes priority, then
+    the stages walk backward, RECOVERY rounds before the ladder round the school
+    lost (a Regionals loser that fought through Super Regionals ended its year at
+    Semi-State or State, never at "Regionals"). `finish` for a pre-state exit is
+    the stage's own name — "Areas" / "Sectionals" / "Wards" / "Regionals" /
+    "Zonals" / "Super Regionals" / "Semi-State" — never a team-count band.
+    Old archives (16-team State, TOSS wild cards under a "wildcards" key, no
+    recovery stages) fall through unchanged."""
     grp = grp or {}
     sec_field = (grp.get("sectional") or {}).get("field") or ()
     st = jhsaa_state_result(grp.get("state") or {}, school)
     if st["made_state"]:
         return {**st, "played_sectional": school in sec_field,
-                "wildcard": school in (grp.get("wildcards") or ())}
+                "wildcard": school in (grp.get("wildcards") or ()),
+                "district_qualifier": school in (grp.get("district_qualifiers") or ())}
     out = {"made_state": False, "seed": 0, "place": 0, "finish": "",
            "champion": False, "played_sectional": school in sec_field,
-           "wildcard": False}
+           "wildcard": False, "district_qualifier": False}
+    # A recovery run supersedes the ladder loss that sent the school there.
+    if school in ((grp.get("semi_state") or {}).get("field") or ()):
+        out["finish"] = "Semi-State"
+        return out
+    if school in ((grp.get("super_regional") or {}).get("field") or ()):
+        out["finish"] = "Super Regionals"
+        return out
     pre = grp.get("prestate") or {}
     if school in (pre.get("field") or ()):
         # Eliminated at Regionals (round 0) or Zonals (round 1): the last round
@@ -3876,15 +3895,18 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
         return None
     # `jhsaa_postseason_result` walks every archived stage, so `state_finish` on the
     # ledger row names the stage a run ended at — "Areas" / "Sectionals" / "Wards"
-    # / "Regionals" / "Zonals" — instead of going blank for a team that never
-    # reached the State bracket.
+    # / "Regionals" / "Zonals" / "Super Regionals" / "Semi-State" — instead of
+    # going blank for a team that never reached the State bracket.
     g = row["group"]
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
          "ward": (arc.get("wards") or {}).get(g),
          "prestate": (arc.get("prestate") or {}).get(g),
+         "super_regional": (arc.get("super_regional") or {}).get(g),
+         "semi_state": (arc.get("semi_state") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
-         "wildcards": (arc.get("wildcards") or {}).get(g)}, school)
+         "wildcards": (arc.get("wildcards") or {}).get(g),
+         "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a
