@@ -14,18 +14,28 @@ from . import dbpath
 # Friendly nationality bands offered at onboarding -> name-region preset id.
 # Each value must be a real preset in generators/data/names/regions.json.
 BANDS: list[tuple[str, str]] = [
-    ("tennis_global", "Realistic tour geography (default)"),
+    # ---- the owner's five (2027-08). Authored as CONTINENT targets and split
+    # down to region ids in regions.json; every column sums to 100%. These lead
+    # the list because they are the set that was balanced against each other.
+    ("global_college", "Global College — realistic NCAA geography (default)"),
+    ("latin_world", "Latin World — Americas 49%"),
+    ("afro_global", "Afro-Global — Africa 22%"),
+    ("asia_pacific", "Asia-Pacific — Asia 25%"),
+    ("eurasian", "Eurasian — Europe 27%, Central Asia 3%"),
+    # ---- the older bands, kept so an existing save's choice still resolves
+    ("tennis_global", "Realistic tour geography"),
     ("pro_tour", "Pro Tour — global mix (ATP/WTA-shaped)"),
     ("global", "Worldwide — even mix"),
     ("us_majority", "USA-heavy"),
     ("european", "European"),
     ("americas_pro", "Americas"),
-    ("asian_pro", "Asia-Pacific"),
-    ("africa_pro", "Africa"),
+    ("asian_pro", "Asia-Pacific (legacy)"),
+    ("africa_pro", "Africa (legacy)"),
     ("oceania", "Oceania"),
 ]
+
 _VALID = {b for b, _ in BANDS}
-_DEFAULTS = {"name_preset": "tennis_global"}
+_DEFAULTS = {"name_preset": "global_college"}
 _cache: dict[str, str] = {}
 
 
