@@ -4006,6 +4006,7 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     program pages. There was nowhere to see who the association actually
     honoured, and nothing to page back through year over year."""
     import app.jhsaa as jh
+    import app.jhsaa_awards as jaw
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
@@ -4030,6 +4031,9 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         "ready": bool(arc), "gender": g, "year": yr, "years": years,
         "group": grp, "groups": list(jh.GROUPS), "scope": scope,
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
+        # Sizes come off the awards module so the page cannot state a shape the
+        # selector does not use.
+        "team_singles": jaw.TEAM_SINGLES, "team_doubles": jaw.TEAM_DOUBLES,
         "poy": deco(aw["poy"]) if aw.get("poy") else None,
         "teams": [{"name": t["name"], "players": [deco(r) for r in t["players"]]}
                   for t in tiers],
