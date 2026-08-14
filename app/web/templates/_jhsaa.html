@@ -87,6 +87,8 @@
          href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, year=scope.pin) }}">TOC</a>
       <a class="{{ 'on' if tab == 'rankings' }}"
          href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Rankings</a>
+      <a class="{{ 'on' if tab == 'honors' }}" title="Player of the Year, All-State, All-District"
+         href="{{ url_for('jhsaa_honors', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Honors</a>
       <a class="{{ 'on' if tab == 'districts' }}"
          href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Districts</a>
       <a class="{{ 'on' if tab == 'history' }}"

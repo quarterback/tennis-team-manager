@@ -408,3 +408,26 @@
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
 .jh-mgame .cap { grid-column: 1 / -1; font-size: 9px; font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+
+/* ---- Honors page (owner SOP 2027-08) ---- */
+/* Awards are a RÉSUMÉ list: name, school, discipline, record. Deliberately no
+   ability column — these describe what happened, not how good anyone is. */
+.jh-award {
+  display: grid; grid-template-columns: 26px 22px 1fr 190px 74px 56px;
+  align-items: center; gap: 8px; padding: 6px 16px; font-size: 12.5px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.jh-award:last-child { border-bottom: 0; }
+.jh-award .rk { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.jh-award .nm { font-weight: 650; }
+.jh-award .nm .gr { color: var(--text-faint); font-weight: 400; font-size: 11px; margin-left: 4px; }
+.jh-award .sch { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-award .rec { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.jh-poy { display: flex; align-items: center; gap: 12px; }
+.jh-poy .nm { font-size: 17px; font-weight: 750; }
+.jh-poy .sub { color: var(--text-secondary); font-size: 12px; }
+.jh-poy .jh-chip { margin-left: auto; }
+@media (max-width: 720px) {
+  .jh-award { grid-template-columns: 22px 20px 1fr 60px; }
+  .jh-award .sch { display: none; }
+}

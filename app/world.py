@@ -3535,8 +3535,18 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
                               for g in jhsaa.GROUPS},
+                # The full awards slate (owner SOP 2027-08): `teams` is the
+                # numbered All-State tiers (First..Third, plus Fourth in 7A),
+                # `honorable_mention` the merit tier after them, `district_poy`
+                # one per district. `all_state` stays as the FLAT list of every
+                # numbered-team selection so pre-SOP readers keep working.
                 "awards": {g: {"poy": season["awards"][g].get("poy"),
-                               "all_state": season["awards"][g].get("all_state", [])}
+                               "all_state": season["awards"][g].get("all_state", []),
+                               "teams": season["awards"][g].get("teams", []),
+                               "honorable_mention":
+                                   season["awards"][g].get("honorable_mention", []),
+                               "district_poy":
+                                   season["awards"][g].get("district_poy", {})}
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
@@ -3991,10 +4001,30 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     if poy and poy.get("school") == school:
         row["poy"].append(poy)
         row["honors"].append(f"{row['group']} Player of the Year — {poy['name']}")
-    for r in aw.get("all_state", ()):
-        if r.get("school") == school:
-            row["all_state"].append(r)
-            row["honors"].append(f"All-State ({row['group']}) — {r['name']}")
+    for dname, r in (aw.get("district_poy") or {}).items():
+        if r and r.get("school") == school:
+            row["honors"].append(f"{dname} Player of the Year — {r['name']}")
+    # All-State names the TIER it was won on (First/Second/Third/Fourth Team, then
+    # Honorable Mention). `teams` is the SOP shape; the flat `all_state` list is
+    # the fallback for seasons archived before the tiers existed.
+    tiers = aw.get("teams") or []
+    if tiers:
+        for tier in tiers:
+            for r in tier["players"]:
+                if r.get("school") == school:
+                    row["all_state"].append(r)
+                    row["honors"].append(
+                        f"All-State {tier['name']} ({row['group']}) — {r['name']}")
+        for r in aw.get("honorable_mention") or ():
+            if r.get("school") == school:
+                row["all_state"].append(r)
+                row["honors"].append(
+                    f"All-State Honorable Mention ({row['group']}) — {r['name']}")
+    else:
+        for r in aw.get("all_state", ()):
+            if r.get("school") == school:
+                row["all_state"].append(r)
+                row["honors"].append(f"All-State ({row['group']}) — {r['name']}")
     for dname, rs in ((arc.get("all_district") or {}).get(row["group"]) or {}).items():
         if dname != row["district"]:
             continue

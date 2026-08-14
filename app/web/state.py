@@ -3992,6 +3992,57 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
+                      year: int | None = None) -> dict:
+    """The classification's postseason AWARDS, on a page of their own.
+
+    Player of the Year, the numbered All-State teams and Honorable Mention, then
+    every district's All-District team and District Player of the Year — the
+    whole slate `jhsaa_awards.season_awards` selected, read straight back off the
+    archive so a past season shows exactly what it awarded at the time.
+
+    It used to be scattered: POY and a six-name All-State list sat in a rail
+    panel on the hub, and All-District only ever appeared one school at a time on
+    program pages. There was nowhere to see who the association actually
+    honoured, and nothing to page back through year over year."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g) or {}
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      arc.get("season_year"), arc)
+    schools = _jh_schools(g)
+    aw = (arc.get("awards") or {}).get(grp) or {}
+    ad = (arc.get("all_district") or {}).get(grp) or {}
+
+    def deco(r):
+        return {**r, **_jh_deco(schools, r.get("school", ""), 20)}
+
+    # Pre-SOP seasons archived a flat six-name `all_state` and no tiers; show it
+    # as a single unnamed team rather than an empty page.
+    tiers = aw.get("teams") or ([{"name": "All-State", "players": aw["all_state"]}]
+                                if aw.get("all_state") else [])
+    return {
+        "ready": bool(arc), "gender": g, "year": yr, "years": years,
+        "group": grp, "groups": list(jh.GROUPS), "scope": scope,
+        "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
+        "poy": deco(aw["poy"]) if aw.get("poy") else None,
+        "teams": [{"name": t["name"], "players": [deco(r) for r in t["players"]]}
+                  for t in tiers],
+        "honorable_mention": [deco(r) for r in aw.get("honorable_mention") or ()],
+        "districts": sorted(
+            ({"district": d,
+              "poy": deco((aw.get("district_poy") or {}).get(d))
+                     if (aw.get("district_poy") or {}).get(d) else None,
+              "players": [deco(r) for r in rows]}
+             for d, rows in ad.items()), key=lambda x: x["district"]),
+    }
+
+
 def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                        year: int | None = None) -> dict:
     """The full state draw on its own surface — the same server-positioned tree the

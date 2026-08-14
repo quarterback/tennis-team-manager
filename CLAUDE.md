@@ -577,6 +577,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   "Quarterfinalist" and a six-team meta-event has no quarterfinal. The finish rides on the
   ledger row, the totals, the honours panel and a GOLD `jh-tag toc` on the schedule (never
   the state event's green — the TOC is the rung above it).
+- **‼️ AWARDS ARE RÉSUMÉ SELECTIONS, on their own page (owner SOP 2027-08,
+  `app/jhsaa_awards.py`, `/jhsaa/honors`).** Never an ability leaderboard: selections
+  come off the per-match log (`TeamSeason.matches` — opponent pids, flight, phase),
+  scored on record, FLIGHT played (`FLIGHT_WEIGHTS`), opponent quality (two-pass),
+  quality wins, cheap "good losses", head-to-head among near-ties, and postseason
+  weight. Nothing reads OVR/talent/class year/last year. Per classification: State
+  POY, All-State First/Second/Third (+**Fourth in 7A**) each **10 singles + 8
+  doubles — the same size as an All-District team**, then Honorable Mention, plus a
+  District POY and one All-District team per district. **HM is a THRESHOLD, not a
+  team**: no slot count, size varies by how deep the class actually was (measured
+  boys 7A 30 vs 5A 7), and **max 2 per school — a cap that applies to HM ALONE**;
+  the numbered teams stack a school as high as its résumés earn (4 seen). If every
+  class shows the same HM count, a slot count has crept back in — pinned by
+  `tests/test_jhsaa_awards.py`.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.

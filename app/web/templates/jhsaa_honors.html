@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_player %}
+{% block title %}JHSAA {{ view.group }} Honors{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'honors', view.group ~ ' Honors',
+             'Player of the Year, the All-State teams and every district\'s All-District
+              team — selected on this season\'s résumé, not on ability ratings.',
+             [('Season', view.season_year),
+              ('All-State', view.teams|map(attribute='players')|map('length')|sum),
+              ('Districts', view.districts|length)] if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No season archived yet — the JHSAA rung
+  writes one each world year.</div></div>
+{% else %}
+
+{# Sibling pages get their own switcher rather than a trip back to the hub. #}
+<div class="jh-jump">
+  <label><span class="k">Classification</span>
+    <select onchange="if(this.value)window.location=this.value">
+      {% for gp in view.groups %}
+      <option value="{{ url_for('jhsaa_honors', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
+              {{ 'selected' if gp == view.group }}>{{ gp }}</option>
+      {% endfor %}
+    </select></label>
+</div>
+
+{% macro award_row(r, rank=0) %}
+{# One selection. The RÉSUMÉ is the point of these awards, so the record and the
+   flight the player earned it at are shown next to the name, never an OVR. #}
+<div class="jh-award">
+  {% if rank %}<span class="rk">{{ rank }}</span>{% endif %}
+  <span class="jh-schoolcell">{{ r.mark|safe }}</span>
+  <span class="nm">{{ jh_player(r.name, r.school, r.pid, u, view.gender) }}
+    <span class="gr">{{ r.grade }}th</span></span>
+  <span class="sch"><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></span>
+  <span class="jh-chip {{ 'unit' if r.kind == 'doubles' }}">{{ r.kind|upper }}</span>
+  <span class="rec">{{ r.wins }}–{{ r.losses }}</span>
+</div>
+{% endmacro %}
+
+{% if view.poy %}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Player of the Year</span>
+    <span class="bl-panel-meta">the most outstanding season in the classification</span></div>
+  <div class="bl-panel-body" style="padding:14px 16px">
+    <div class="jh-poy">
+      <span class="jh-schoolcell">{{ view.poy.mark|safe }}</span>
+      <div>
+        <div class="nm">{{ jh_player(view.poy.name, view.poy.school, view.poy.pid, u, view.gender) }}</div>
+        <div class="sub">{{ view.poy.school }} · {{ view.poy.district }} ·
+          {{ view.poy.kind }} {{ view.poy.wins }}–{{ view.poy.losses }}</div>
+      </div>
+      <span class="jh-chip gold">PLAYER OF THE YEAR</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% for t in view.teams %}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">All-State {{ t.name }}</span>
+    <span class="bl-panel-meta">{{ t.players|selectattr('kind','equalto','singles')|list|length }} singles ·
+      {{ t.players|selectattr('kind','equalto','doubles')|list|length }} doubles</span>
+  </div>
+  <div class="bl-panel-body" style="padding:6px 0">
+    {% for r in t.players %}{{ award_row(r) }}{% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% if view.honorable_mention %}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">All-State Honorable Mention</span>
+    <span class="bl-panel-meta">{{ view.honorable_mention|length }} selections — merit, after the numbered teams</span></div>
+  <div class="bl-panel-body" style="padding:6px 0">
+    {% for r in view.honorable_mention %}{{ award_row(r) }}{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# The districts are an INDEX of many teams, so they fold rather than stack: a
+   classification has ten-plus of them and each All-District team is eighteen
+   players, which is a very long page unrolled. #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">All-District</span>
+    <span class="bl-panel-meta">{{ view.districts|length }} districts · one team each, plus a District Player of the Year</span></div>
+  <div class="bl-panel-body">
+    {% for d in view.districts %}
+    <details class="jh-stagefold">
+      <summary><span class="cr">›</span><span class="nm">{{ d.district }}</span>
+        {% if d.poy %}<span class="jh-chip">POY {{ d.poy.name }}</span>{% endif %}</summary>
+      <div class="bd" style="padding:4px 0">
+        {% for r in d.players %}{{ award_row(r, loop.index) }}{% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
