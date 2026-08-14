@@ -3862,6 +3862,49 @@ def _wl(record: str | None) -> tuple[int, int]:
         return 0, 0
 
 
+# --- TEAM tournament honours (owner rule 2027-08) ------------------------------
+# Every non-state postseason dual is a named, numbered UNIT on purpose ("Regional
+# 9", "Ward 4"), and winning one is an honour the program keeps — written the
+# association's way, with ROMAN numerals: "Region IX", "Ward IV" (Zonals keep
+# their letters: "Zone C"). A season's unit wins all render on ONE honours line
+# (state has plenty of its own); making State earns a separate line of its own.
+_UNIT_HONOUR = {"Area": "Area", "Section": "Section", "Ward": "Ward",
+                "Regional": "Region", "Zonal": "Zone",
+                "Super Regional": "Super Region", "Semi-State": "Semi-State"}
+
+
+def _roman(n: int) -> str:
+    vals = ((1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"),
+            (90, "XC"), (50, "L"), (40, "XL"), (10, "X"), (9, "IX"),
+            (5, "V"), (4, "IV"), (1, "I"))
+    out = ""
+    for v, s in vals:
+        while n >= v:
+            out += s
+            n -= v
+    return out
+
+
+def _unit_honour(unit: str) -> str:
+    """'Regional 9' -> 'Region IX'; 'Zonal C' -> 'Zone C' (letters stay)."""
+    head, _, tail = unit.rpartition(" ")
+    name = _UNIT_HONOUR.get(head, head)
+    return f"{name} {_roman(int(tail))}" if tail.isdigit() else f"{name} {tail}"
+
+
+def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
+    """The tournament units `school` won that season, in ladder order. Archives
+    from before units existed carry no `unit` keys and yield nothing."""
+    out = []
+    for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
+        d = (arc.get(key) or {}).get(group) or {}
+        for games in d.get("rounds") or ():
+            for gm in games:
+                if gm.get("winner") == school and gm.get("unit"):
+                    out.append(_unit_honour(gm["unit"]))
+    return out
+
+
 def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
     """One archived season as this program lived it. `None` if the program has no
     standings row that year (it didn't sponsor the sport, or the archive predates
@@ -3877,7 +3920,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False, "honoured": False,
+           "toc_champion": False, "honoured": False, "unit_wins": [],
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
@@ -3909,6 +3952,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
+    row["unit_wins"] = _unit_wins(arc, g, school)
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a
     # deeper run at state: only a classification champion is in it, so making it is
     # itself the honour and it has to be readable off the ledger row.
@@ -3965,7 +4009,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # `honors` list, and a panel selecting on that drops the season before it can draw
     # either banner. Deriving the answer here rather than in the template keeps the two
     # halves — what the panel filters on and what it renders — from disagreeing.
-    row["honoured"] = bool(row["honors"]) or row["champion"] or row["toc_champion"]
+    # ...and the TEAM tournament honours widen it further (owner rule 2027-08):
+    # a unit win or a State appearance is an honour too — only champions and TOC
+    # sides earning anything "wasn't realistic".
+    row["honoured"] = (bool(row["honors"]) or row["champion"] or row["toc_champion"]
+                       or bool(row["unit_wins"]) or row["made_state"])
     return row
 
 

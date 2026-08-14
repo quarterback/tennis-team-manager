@@ -160,6 +160,15 @@
 .jh-chip.c-3A { background: var(--gray-500); }
 .jh-chip.c-2A-1A { background: var(--gray-600); }
 .jh-chip.gold { background: var(--rank-gold); }
+/* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
+   bronze = semifinalist, BLUE = every other State finish — reaching State is an
+   honour of its own and must not read as a medal. `unit` is the quieter tier
+   below them: the non-state tournament units a program won (Region IX, Ward IV). */
+.jh-chip.silver { background: var(--rank-silver); }
+.jh-chip.bronze { background: var(--rank-bronze); }
+.jh-chip.state { background: var(--cat-6a); }
+.jh-chip.unit { background: transparent; color: var(--stat-power);
+  border: 1px solid color-mix(in oklch, var(--stat-power) 35%, transparent); font-weight: 700; }
 .jh-chip.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
 
 /* ---- Schedule ---- */

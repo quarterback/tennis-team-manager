@@ -352,3 +352,80 @@ def test_every_archived_record_covers_every_dual_played(archived):
                     assert sched["c"] == wins + losses, (gender, school, r["record"])
                     assert sched["w"] == wins, (gender, school, r["record"])
     conn.close()
+
+
+# --- TEAM honours (owner rule 2027-08) ----------------------------------------------
+#
+# Every non-state postseason dual is a named, numbered UNIT, and winning one is an
+# honour the program keeps — in ROMAN numerals ("Region IX", "Ward IV"; Zonals keep
+# their letters). Reaching State is an honour of its own. Before this, only state
+# champions and TOC sides carried anything.
+
+def test_roman_numeral_unit_honours():
+    assert [wd._roman(n) for n in (1, 4, 5, 9, 14, 40)] \
+        == ["I", "IV", "V", "IX", "XIV", "XL"]
+    assert wd._unit_honour("Regional 9") == "Region IX"
+    assert wd._unit_honour("Ward 4") == "Ward IV"
+    assert wd._unit_honour("Super Regional 2") == "Super Region II"
+    assert wd._unit_honour("Zonal C") == "Zone C"       # letters stay letters
+
+
+def test_every_unit_win_becomes_a_team_honour(archived):
+    """A program's unit-win honours are exactly the units it won, ladder order."""
+    arc = archived["arc"]
+    for g in jh.GROUPS:
+        won = {}
+        for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
+            for games in (arc[key][g].get("rounds") or ()):
+                for gm in games:
+                    won.setdefault(gm["winner"], []).append(wd._unit_honour(gm["unit"]))
+        for school, units in won.items():
+            row = next(r for r in wd.jhsaa_school_seasons(
+                archived["world"]["id"], "girls", school)
+                if r["year"] == archived["world"]["year"])
+            assert row["unit_wins"] == units, school
+            assert row["honoured"]
+
+
+def test_reaching_state_is_itself_an_honour(archived):
+    """The report: only champions and TOC sides earned anything. Every State
+    entrant now carries an honoured season with a finish to show for it."""
+    arc = archived["arc"]
+    for g in jh.GROUPS:
+        for school in arc["brackets"][g]["field"]:
+            row = next(r for r in wd.jhsaa_school_seasons(
+                archived["world"]["id"], "girls", school)
+                if r["year"] == archived["world"]["year"])
+            assert row["made_state"] and row["honoured"] and row["state_finish"]
+
+
+def test_recovery_draws_never_replay_the_team_that_just_eliminated_you(archived):
+    """The hard half of the owner's draw rule, over every recovery dual in the
+    association — INCLUDING bye recipients.
+
+    Byes used to be handed to the top seeds before pairing, so a bye team could be
+    frozen into a rematch the repair could not reach: in this fixture a Super
+    Regional bye side met, at Semi-State, the team that had knocked it out at Wards.
+    Bye selection and pairing are chosen together now (`jhsaa._draw_recovery`), so a
+    bye team's next dual is checked against its LAST one exactly like everyone
+    else's — a bye does not hide a rematch."""
+    arc = archived["arc"]
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    offenders = []
+    for g in jh.GROUPS:
+        for key in ("super_regional", "semi_state"):
+            for gm in (arc[key][g].get("rounds") or [[]])[0]:
+                for me, opp in ((gm["home"], gm["away"]), (gm["away"], gm["home"])):
+                    # No id column: the archive preserves INSERT order, which is
+                    # the order of play (`_jh_dates` lays the same order on a
+                    # calendar), so rowid is the season's only clock.
+                    sched = [r["opp"] for r in conn.execute(
+                        "SELECT opp FROM world_jhsaa_dual WHERE world_id=? AND year=?"
+                        " AND gender='girls' AND school=? ORDER BY rowid",
+                        (archived["world"]["id"], archived["world"]["year"], me))]
+                    for i, o in enumerate(sched):
+                        if o == opp and i and sched[i - 1] == opp:
+                            offenders.append((g, key, me, opp))
+    conn.close()
+    assert not offenders, offenders[:5]

@@ -1549,35 +1549,70 @@ def _last_opponent(ts: TeamSeason) -> str:
     return ts.schedule[-1]["opp"] if ts.schedule else ""
 
 
+def _pair_penalty(a: TeamSeason, b: TeamSeason) -> int:
+    """How bad a recovery pairing is: replaying the opponent that JUST eliminated
+    you is the hard rule; a same-league pairing is a soft preference."""
+    p = 0
+    if _last_opponent(a) == b.school.name or _last_opponent(b) == a.school.name:
+        p += 10                                        # the just-played opponent
+    if (a.school.group, a.school.district) == (b.school.group, b.school.district):
+        p += 1                                         # same league, if avoidable
+    return p
+
+
 def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple]:
     """Pair a recovery round's playing set, strongest-vs-weakest — then repair
-    the draw around the owner's rematch rule: never immediately replay the
-    opponent that just eliminated you (hard), avoid same-district pairings
-    where practical (soft). A handful of swap passes over the bottom halves is
-    enough at these sizes; TOSS order (the list order) is otherwise preserved."""
+    the draw around the owner's rematch rule. A handful of swap passes over the
+    bottom half is enough at these sizes; TOSS order is otherwise preserved."""
     n = len(playing)
     top, bottom = playing[:n // 2], list(reversed(playing[n - n // 2:]))
-
-    def penalty(a, b):
-        p = 0
-        if _last_opponent(a) == b.school.name or _last_opponent(b) == a.school.name:
-            p += 10                                    # the just-played opponent
-        if (a.school.group, a.school.district) == (b.school.group, b.school.district):
-            p += 1                                     # same league, if avoidable
-        return p
-
     for _ in range(4):
         improved = False
         for i in range(len(top)):
             for j in range(i + 1, len(top)):
-                cur = penalty(top[i], bottom[i]) + penalty(top[j], bottom[j])
-                alt = penalty(top[i], bottom[j]) + penalty(top[j], bottom[i])
+                cur = _pair_penalty(top[i], bottom[i]) + _pair_penalty(top[j], bottom[j])
+                alt = _pair_penalty(top[i], bottom[j]) + _pair_penalty(top[j], bottom[i])
                 if alt < cur:
                     bottom[i], bottom[j] = bottom[j], bottom[i]
                     improved = True
         if not improved:
             break
     return list(zip(top, bottom))
+
+
+def _draw_recovery(pool: list[TeamSeason], byes: int,
+                   rng: random.Random) -> tuple[list[TeamSeason], list[tuple]]:
+    """Choose WHO SITS OUT and who plays whom, together.
+
+    ‼️ Bye selection and pairing are one problem, not two. Byes went to the top
+    `byes` seeds first and only the playing tail was then repaired, so a bye
+    recipient could be frozen into a rematch the repair was structurally unable
+    to reach: in the scaled 7A fixture a Super Regional bye team met, at
+    Semi-State, the very side that had knocked it out at Wards — with other
+    opponents available in the field (caught in review). So the pure-TOSS bye
+    set is the STARTING point, and if it leaves a hard rematch on the board a
+    bye is traded with a playing team to clear it. Ties keep the bye as close to
+    TOSS order as possible: seeding privilege bends only to remove a rematch,
+    and never further than one swap needs."""
+    def cost(bye_ix: list[int]) -> tuple[int, list[tuple]]:
+        playing = [t for i, t in enumerate(pool) if i not in set(bye_ix)]
+        pairs = _recovery_pairs(playing, rng)
+        return sum(_pair_penalty(a, b) for a, b in pairs), pairs
+
+    best_ix = list(range(byes))
+    best_cost, best_pairs = cost(best_ix)
+    if best_cost >= 10 and byes:                        # a hard rematch survives
+        for i in reversed(range(byes)):                 # trade the LOWEST bye first
+            for j in range(byes, len(pool)):
+                trial = [k for k in best_ix if k != i] + [j]
+                c, prs = cost(trial)
+                if c < best_cost:
+                    best_ix, best_cost, best_pairs = sorted(trial), c, prs
+                    if best_cost < 10:
+                        break
+            if best_cost < 10:
+                break
+    return [pool[i] for i in sorted(best_ix)], best_pairs
 
 
 def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
@@ -1587,9 +1622,10 @@ def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
     `_recovery_pairs`. Same archive shape as every other stage."""
     games_n = max(0, len(pool) - out_target)
     byes = len(pool) - 2 * games_n
-    protected, playing = pool[:byes], pool[byes:]
+    # Byes and pairings are chosen TOGETHER — see `_draw_recovery`.
+    protected, pairs = _draw_recovery(pool, byes, rng)
     games, winners = [], []
-    for n, (a, b) in enumerate(_recovery_pairs(playing, rng)):
+    for n, (a, b) in enumerate(pairs):
         res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
         win = a if res.winner == 0 else b
         games.append({"home": a.school.name, "away": b.school.name,

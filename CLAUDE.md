@@ -476,6 +476,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   contradicts its own seeds. Rounding is a display concern; it does not belong in a
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
+- **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
+  State is **32 in 7A, 24 elsewhere**, and the old TOSS wild cards are GONE — a rating
+  never hands out a berth again (the report: a #14 missed State while #23 got in by
+  winning). Three ways in: the 8 **Zonal champions** (automatic + the draw's top seeds,
+  so a 24-field's eight byes are theirs by construction); the **district guarantee**
+  (a district champion always has ACCESS — no bye, no seed help, no extra berth if it
+  also won its Zonal); and the **recovery rounds** `super_regional` → `semi_state`
+  (Regional losers, plus 7A's best-TOSS Ward losers as BODIES not berths, then Zonal
+  losers joining at Semi-State). Arithmetic is DYNAMIC (`_recovery`: berths = field −
+  champions − unique non-Zonal district champions; the two rounds always cut
+  `RECOVERY_CUT`). Draw rule: never immediately replay the team that just eliminated
+  you — and **bye selection and pairing are ONE problem** (`_draw_recovery`), since
+  choosing byes first froze a bye team into an unreachable rematch. Finishes for
+  recovery runs SUPERSEDE the ladder round that sent them there. See
+  `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **Team honours exist beyond titles (same rule):** every unit won is an honour in
+  ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line, and
+  reaching State is its own line — gold title / silver finalist / bronze semifinalist /
+  **blue** every other State finish. `honoured` = honors | champion | toc_champion |
+  unit_wins | made_state.
 - **The state draw is SEEDED, with byes to the top seeds, and then FIXED.** `run_state`
   places entrants via `engine.tournament.seeded_draw` (the college championship's
   helper), so a 12-team field is a 16 draw where **seeds 1-4 sit out and 5-12 play into
