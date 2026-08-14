@@ -191,14 +191,22 @@ covering a card.
 
 ### 1c. A team can only be as large as the candidates who cleared the bar
 
+> **Superseded in scale by Addendum 2** — the region teams that were coming up
+> short were the symptom of a deeper error, not a pool problem. Kept because the
+> RULE still holds; the measurement no longer does.
+
 A four-school region (the `MIN_REGION_PROGRAMS` floor) has ~20 doubles-primary
 players and ~9 partnerships over the threshold; eight DISJOINT pairs is not always
-available. Those regions crown seven pairs rather than promoting a ninth-best pair
-to fill a slot — the same no-backfill rule Honorable Mention runs on. Measured: 13
-of 16 region teams full, 3 short by exactly one pairing. The singles half is always
-full. `test_every_region_team_is_ten_singles_and_eight_doubles` asserts the shape
-and that full teams outnumber short ones, rather than pinning an exact count that
-would force a backfill back in.
+available. Such a region crowns seven pairs rather than promoting a ninth-best pair
+to fill a slot — the same no-backfill rule Honorable Mention runs on. The singles
+half is always full.
+
+That a region was ever that thin was the actual bug: All-Region was being selected
+per classification, so a "region" held four or five schools. Taken whole (Addendum
+2) a region holds ~40 programs and every team fills. The no-backfill principle
+stands and still governs Honorable Mention — a team is only as large as the
+candidates who cleared the bar — but if a region team is coming up short again,
+look first at whether something has re-narrowed its pool.
 
 ## 2. Flight weighting is STRUCTURAL, not a small bonus
 
@@ -308,11 +316,19 @@ reads and nobody can cite. Rebuilt on the association's own layout rules:
 
 ## 5. A knock-on: the honours got wider, and a test was measuring that
 
+> **Half of this was wrong, and Addendum 2 is the correction.** "Every program
+> places somebody" was read here as the spec working as written. It was not — it
+> was the tell that All-Region had been built per classification. The owner's
+> reply: *"unless you're telling me every school places someone as a good thing —
+> and in which case, yeah, that's the whole point."* It was not a good thing.
+
 A doubles selection being a pairing doubles the athletes in the doubles half, so
 an All-District team went from 18 people to **26** — 10 singles plus 8 pairs —
-spread over a district of about a dozen schools. Add All-Region on top and in
-practice **every program places somebody**. That is the owner's spec working as
-written (they set the team sizes and then made doubles a pairing), not a bug.
+spread over a district of about a dozen schools. That part IS the spec working as
+written (the owner set the team sizes and then made doubles a pairing): a district
+is a small pond and All-District is meant to be the wide honour, at 83% of schools
+placing. What was not the spec was ~1,080 region honours stacked on top of it,
+which is what pushed coverage to everybody.
 
 It broke `test_a_season_with_nothing_to_show_is_not_listed_as_an_honour`, which
 looked for a bare season in the live archive to prove `honoured` was computed
@@ -320,6 +336,15 @@ rather than hardcoded true. Those are two different claims and only one of them
 was ever the point. The test now **strips a classification's slate** and checks a
 program in it goes dark — the same mutate/restore pattern its neighbour uses —
 which tests the computation instead of the breadth of the awards.
+
+**The lesson is about how the failure was read, not what it was.** A test that had
+held for releases started failing, and the first instinct was to reclassify it as
+measuring the wrong thing. That instinct was half right — the assertion genuinely
+was over-specified — and it was also a way of not asking why coverage had gone to
+100%. A guard that suddenly goes green-by-saturation is evidence about the DATA.
+Loosen it only after answering what changed underneath, and say the number out
+loud to the owner: "every school now places somebody" was the whole diagnosis, one
+sentence long, and it took the owner saying it back to land.
 
 ## 6. A test that could not see the bug it was named after
 
