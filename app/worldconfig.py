@@ -338,8 +338,12 @@ _HIDDEN_REGIONS = {"guam"}
 # Continents → ordered region ids, for grouping the editor. Any region not listed
 # here is appended to "Other" so the editor always covers every region in the data.
 _CONTINENTS: list[tuple[str, list[str]]] = [
-    ("Africa", ["africa", "africa_cricket", "north_africa", "namibia", "cape_verde",
-                "mauritius", "uganda"]),
+    # Six regions (owner rule 2027-08), matching the association's own taxonomy.
+    # The old shape filed Kenya with South Africa and Zimbabwe under
+    # `africa_cricket`, and put Angola and Mozambique in a pan-African `africa`
+    # bucket — so "West Africa" and "Central Africa" could not be expressed at all.
+    ("Africa", ["north_africa", "west_africa", "central_africa", "southern_africa",
+                "east_africa", "indian_ocean_africa"]),
     ("Americas", ["us", "canada", "latin_america", "south_america", "brazil", "mexico",
                   "cuba", "dominican", "venezuela", "haiti", "curacao", "aruba", "suriname",
                   "guyana", "caribbean_dutch", "caribbean_cricket", "barbados", "bahamas",

@@ -867,123 +867,6 @@
         }
       ]
     },
-    "africa_cricket": {
-      "label": "Africa (Cricket Nations)",
-      "subregions": [
-        {
-          "weight": 0.2,
-          "country": "ZA",
-          "first_keys": [
-            "afrikaner"
-          ],
-          "surname_keys": [
-            "afrikaner"
-          ]
-        },
-        {
-          "weight": 0.13,
-          "country": "ZA",
-          "first_keys": [
-            "english_south_african",
-            "anglo_australian"
-          ],
-          "surname_keys": [
-            "english_south_african"
-          ]
-        },
-        {
-          "weight": 0.18,
-          "country": "ZA",
-          "first_keys": [
-            "zulu"
-          ],
-          "surname_keys": [
-            "zulu"
-          ]
-        },
-        {
-          "weight": 0.1,
-          "country": "ZA",
-          "first_keys": [
-            "xhosa"
-          ],
-          "surname_keys": [
-            "xhosa"
-          ]
-        },
-        {
-          "weight": 0.07,
-          "country": "ZA",
-          "first_keys": [
-            "indian_south_african",
-            "indian_south"
-          ],
-          "surname_keys": [
-            "indian_south_african"
-          ]
-        },
-        {
-          "weight": 0.06,
-          "country": "ZW",
-          "first_keys": [
-            "english_zimbabwean"
-          ],
-          "surname_keys": [
-            "english_zimbabwean"
-          ]
-        },
-        {
-          "weight": 0.1,
-          "country": "ZW",
-          "first_keys": [
-            "shona"
-          ],
-          "surname_keys": [
-            "shona"
-          ]
-        },
-        {
-          "weight": 0.04,
-          "country": "ZW",
-          "first_keys": [
-            "ndebele"
-          ],
-          "surname_keys": [
-            "ndebele"
-          ]
-        },
-        {
-          "weight": 0.04,
-          "country": "KE",
-          "first_keys": [
-            "english_kenyan"
-          ],
-          "surname_keys": [
-            "english_kenyan"
-          ]
-        },
-        {
-          "weight": 0.05,
-          "country": "KE",
-          "first_keys": [
-            "kikuyu"
-          ],
-          "surname_keys": [
-            "kikuyu"
-          ]
-        },
-        {
-          "weight": 0.03,
-          "country": "KE",
-          "first_keys": [
-            "luo"
-          ],
-          "surname_keys": [
-            "luo"
-          ]
-        }
-      ]
-    },
     "british_isles": {
       "label": "Britain & Ireland",
       "subregions": [
@@ -1031,10 +914,11 @@
       "diaspora": {
         "south_asia": 0.4,
         "caribbean_cricket": 0.18,
-        "africa": 0.16,
         "poland": 0.14,
         "china": 0.06,
-        "north_africa": 0.06
+        "north_africa": 0.06,
+        "west_africa": 0.12,
+        "east_africa": 0.04
       }
     },
     "afghan_central_asia": {
@@ -1322,9 +1206,9 @@
       "diaspora": {
         "europe_southeast": 0.28,
         "lebanon": 0.22,
-        "africa": 0.18,
         "iran": 0.18,
-        "turkey": 0.14
+        "turkey": 0.14,
+        "east_africa": 0.18
       }
     },
     "southeast_asia": {
@@ -1642,9 +1526,9 @@
       "diaspora": {
         "russia": 0.42,
         "north_africa": 0.26,
-        "africa": 0.12,
         "france": 0.1,
-        "iran": 0.1
+        "iran": 0.1,
+        "east_africa": 0.12
       }
     },
     "netherlands": {
@@ -1723,9 +1607,9 @@
       "diaspora": {
         "europe_southeast": 0.28,
         "iran": 0.2,
-        "africa": 0.18,
         "lebanon": 0.18,
-        "turkey": 0.16
+        "turkey": 0.16,
+        "east_africa": 0.18
       }
     },
     "norway": {
@@ -1744,9 +1628,9 @@
       "diaspora": {
         "poland": 0.3,
         "europe_southeast": 0.24,
-        "africa": 0.18,
         "south_asia": 0.16,
-        "lebanon": 0.12
+        "lebanon": 0.12,
+        "east_africa": 0.18
       }
     },
     "denmark": {
@@ -1983,138 +1867,6 @@
           ],
           "surname_keys": [
             "slovenian"
-          ]
-        }
-      ]
-    },
-    "africa": {
-      "_note": [
-        "Decomposed by ethnic group within country. Nigeria splits Yoruba",
-        "/ Igbo / Hausa (visibly different surnames); Ethiopia splits",
-        "Amharic / Oromo; Ghana represented by Akan. The previous flat",
-        "pools (african, ethiopian, east_african, lusophone_african,",
-        "malagasy) remain available as fallbacks for the country-level",
-        "subregions that don't have their own ethnic decomposition yet",
-        "(TZ, MG, MZ, AO)."
-      ],
-      "label": "Sub-Saharan Africa",
-      "subregions": [
-        {
-          "weight": 0.18,
-          "country": "NG",
-          "first_keys": [
-            "yoruba",
-            "african"
-          ],
-          "surname_keys": [
-            "yoruba",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.14,
-          "country": "NG",
-          "first_keys": [
-            "igbo",
-            "african"
-          ],
-          "surname_keys": [
-            "igbo",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.08,
-          "country": "NG",
-          "first_keys": [
-            "hausa",
-            "african"
-          ],
-          "surname_keys": [
-            "hausa",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.13,
-          "country": "ET",
-          "first_keys": [
-            "amharic",
-            "ethiopian"
-          ],
-          "surname_keys": [
-            "amharic",
-            "ethiopian"
-          ]
-        },
-        {
-          "weight": 0.07,
-          "country": "ET",
-          "first_keys": [
-            "oromo",
-            "ethiopian"
-          ],
-          "surname_keys": [
-            "oromo",
-            "ethiopian"
-          ]
-        },
-        {
-          "weight": 0.15,
-          "country": "GH",
-          "first_keys": [
-            "akan",
-            "african"
-          ],
-          "surname_keys": [
-            "akan",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.1,
-          "country": "TZ",
-          "first_keys": [
-            "east_african",
-            "african"
-          ],
-          "surname_keys": [
-            "east_african",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.05,
-          "country": "MG",
-          "first_keys": [
-            "malagasy"
-          ],
-          "surname_keys": [
-            "malagasy"
-          ]
-        },
-        {
-          "weight": 0.05,
-          "country": "MZ",
-          "first_keys": [
-            "lusophone_african",
-            "african"
-          ],
-          "surname_keys": [
-            "lusophone_african",
-            "african"
-          ]
-        },
-        {
-          "weight": 0.05,
-          "country": "AO",
-          "first_keys": [
-            "lusophone_african",
-            "african"
-          ],
-          "surname_keys": [
-            "lusophone_african",
-            "african"
           ]
         }
       ]
@@ -2413,49 +2165,6 @@
         "english_general"
       ]
     },
-    "namibia": {
-      "_doc": [
-        "Associate cricket nation whose national side is historically",
-        "dominated by the Afrikaans- and German-descended communities",
-        "(Erasmus, Wiese, Trumpelmann, Loftie-Eaton) over an Oshiwambo/Bantu",
-        "majority. Reuses the afrikaner, german and african pools rather than",
-        "minting a new bucket — the demographic IS that blend."
-      ],
-      "label": "Namibia",
-      "subregions": [
-        {
-          "weight": 0.45,
-          "country": "NA",
-          "first_keys": [
-            "afrikaner"
-          ],
-          "surname_keys": [
-            "afrikaner"
-          ]
-        },
-        {
-          "weight": 0.3,
-          "country": "NA",
-          "first_keys": [
-            "german",
-            "afrikaner"
-          ],
-          "surname_keys": [
-            "german"
-          ]
-        },
-        {
-          "weight": 0.25,
-          "country": "NA",
-          "first_keys": [
-            "african"
-          ],
-          "surname_keys": [
-            "african"
-          ]
-        }
-      ]
-    },
     "kazakhstan": {
       "_doc": [
         "Central-Asian frontier market. The growth thesis is the Koryo-saram",
@@ -2667,102 +2376,6 @@
         "lithuanian"
       ]
     },
-    "cape_verde": {
-      "_doc": [
-        "Caribbean-adjacent Atlantic sleeper. The large Cape Verdean diaspora",
-        "in New England (the oldest African-immigrant community in the US)",
-        "gives O27 a real recruiting channel into the islands. Lusophone-",
-        "Creole naming (Tavares, Monteiro, Lopes) over Portuguese given",
-        "names. Tagged CV."
-      ],
-      "label": "Cape Verde",
-      "country": "CV",
-      "first_keys": [
-        "lusophone_african",
-        "portuguese"
-      ],
-      "surname_keys": [
-        "lusophone_african"
-      ]
-    },
-    "mauritius": {
-      "_doc": [
-        "Indian-Ocean sleeper — the 'Samoa-to-rugby' archetype: a small",
-        "island whose multi-ethnic athletic base over-produces relative to",
-        "population once a sport takes root. Naming is the real Mauritian",
-        "mosaic: Indo-Mauritian Hindu (Bihari) majority, Tamil/Telugu and",
-        "Muslim Indian lines, an Afro-Malagasy Creole plurality, the Franco-",
-        "Mauritian elite and a Sino-Mauritian minority. Tagged MU."
-      ],
-      "label": "Mauritius",
-      "subregions": [
-        {
-          "weight": 0.32,
-          "country": "MU",
-          "first_keys": [
-            "indian",
-            "indian_north"
-          ],
-          "surname_keys": [
-            "indian"
-          ]
-        },
-        {
-          "weight": 0.15,
-          "country": "MU",
-          "first_keys": [
-            "indian_south"
-          ],
-          "surname_keys": [
-            "indian_south_tamil",
-            "indian"
-          ]
-        },
-        {
-          "weight": 0.13,
-          "country": "MU",
-          "first_keys": [
-            "arabic",
-            "indian"
-          ],
-          "surname_keys": [
-            "indian"
-          ]
-        },
-        {
-          "weight": 0.25,
-          "country": "MU",
-          "first_keys": [
-            "french",
-            "malagasy"
-          ],
-          "surname_keys": [
-            "french",
-            "malagasy"
-          ]
-        },
-        {
-          "weight": 0.08,
-          "country": "MU",
-          "first_keys": [
-            "french"
-          ],
-          "surname_keys": [
-            "french"
-          ]
-        },
-        {
-          "weight": 0.07,
-          "country": "MU",
-          "first_keys": [
-            "chinese"
-          ],
-          "surname_keys": [
-            "chinese"
-          ]
-        }
-      ]
-    },
     "barbados": {
       "_doc": [
         "Anglophone Caribbean nation with a tiny but real baseball community",
@@ -2809,24 +2422,6 @@
         "iranian"
       ]
     },
-    "uganda": {
-      "_doc": [
-        "African baseball sleeper — the genuine Little-League Cinderella",
-        "story (Uganda reached the LLWS), an O27 development target. Reuses",
-        "the east_african + african pools (Baganda / Banyankole / Acholi",
-        "naming). Tagged UG."
-      ],
-      "label": "Uganda",
-      "country": "UG",
-      "first_keys": [
-        "east_african",
-        "african"
-      ],
-      "surname_keys": [
-        "east_african",
-        "african"
-      ]
-    },
     "spain": {
       "_doc": [
         "Second-tier European baseball nation (CBS league, perennial Euro",
@@ -2844,7 +2439,7 @@
         "latin_america": 0.4,
         "north_africa": 0.3,
         "romania": 0.2,
-        "africa": 0.1
+        "west_africa": 0.1
       }
     },
     "poland": {
@@ -2886,9 +2481,10 @@
       ],
       "diaspora": {
         "north_africa": 0.4,
-        "africa": 0.2,
         "turkey": 0.18,
-        "italy": 0.22
+        "italy": 0.22,
+        "central_africa": 0.14,
+        "west_africa": 0.06
       }
     },
     "palestine": {
@@ -3202,10 +2798,11 @@
       ],
       "diaspora": {
         "north_africa": 0.46,
-        "africa": 0.22,
         "haiti": 0.08,
         "italy": 0.08,
-        "turkey": 0.06
+        "turkey": 0.06,
+        "west_africa": 0.16,
+        "central_africa": 0.06
       }
     },
     "argentina": {
@@ -3359,6 +2956,716 @@
       "surname_keys": [
         "chinese_taiwanese"
       ]
+    },
+    "west_africa": {
+      "label": "West Africa",
+      "subregions": [
+        {
+          "weight": 0.17,
+          "country": "NG",
+          "first_keys": [
+            "yoruba"
+          ],
+          "surname_keys": [
+            "yoruba"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "NG",
+          "first_keys": [
+            "igbo"
+          ],
+          "surname_keys": [
+            "igbo"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "NG",
+          "first_keys": [
+            "hausa"
+          ],
+          "surname_keys": [
+            "hausa"
+          ]
+        },
+        {
+          "weight": 0.11,
+          "country": "GH",
+          "first_keys": [
+            "akan"
+          ],
+          "surname_keys": [
+            "akan"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GH",
+          "first_keys": [
+            "ga_adangbe"
+          ],
+          "surname_keys": [
+            "ga_adangbe"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GH",
+          "first_keys": [
+            "ewe"
+          ],
+          "surname_keys": [
+            "ewe"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "SN",
+          "first_keys": [
+            "wolof"
+          ],
+          "surname_keys": [
+            "wolof"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "SN",
+          "first_keys": [
+            "fula"
+          ],
+          "surname_keys": [
+            "fula"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "CI",
+          "first_keys": [
+            "bambara",
+            "akan"
+          ],
+          "surname_keys": [
+            "bambara",
+            "akan"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ML",
+          "first_keys": [
+            "bambara"
+          ],
+          "surname_keys": [
+            "bambara"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "GN",
+          "first_keys": [
+            "fula",
+            "mandinka"
+          ],
+          "surname_keys": [
+            "fula",
+            "mandinka"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "BF",
+          "first_keys": [
+            "bambara"
+          ],
+          "surname_keys": [
+            "bambara"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GM",
+          "first_keys": [
+            "mandinka"
+          ],
+          "surname_keys": [
+            "mandinka"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "TG",
+          "first_keys": [
+            "ewe"
+          ],
+          "surname_keys": [
+            "ewe"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "BJ",
+          "first_keys": [
+            "ewe",
+            "yoruba"
+          ],
+          "surname_keys": [
+            "ewe",
+            "yoruba"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "CV",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "SL",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "LR",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        }
+      ]
+    },
+    "central_africa": {
+      "label": "Central Africa",
+      "subregions": [
+        {
+          "weight": 0.2,
+          "country": "CD",
+          "first_keys": [
+            "lingala"
+          ],
+          "surname_keys": [
+            "lingala"
+          ]
+        },
+        {
+          "weight": 0.14,
+          "country": "CD",
+          "first_keys": [
+            "luba"
+          ],
+          "surname_keys": [
+            "luba"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "CD",
+          "first_keys": [
+            "kongo"
+          ],
+          "surname_keys": [
+            "kongo"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "CM",
+          "first_keys": [
+            "bamileke"
+          ],
+          "surname_keys": [
+            "bamileke"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "CM",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "AO",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "CG",
+          "first_keys": [
+            "kongo"
+          ],
+          "surname_keys": [
+            "kongo"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "GA",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "GQ",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "CF",
+          "first_keys": [
+            "sango"
+          ],
+          "surname_keys": [
+            "sango"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "TD",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        }
+      ]
+    },
+    "southern_africa": {
+      "label": "Southern Africa",
+      "subregions": [
+        {
+          "weight": 0.16,
+          "country": "ZA",
+          "first_keys": [
+            "afrikaner"
+          ],
+          "surname_keys": [
+            "afrikaner"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "ZA",
+          "first_keys": [
+            "english_south_african"
+          ],
+          "surname_keys": [
+            "english_south_african"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "ZA",
+          "first_keys": [
+            "zulu"
+          ],
+          "surname_keys": [
+            "zulu"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "ZA",
+          "first_keys": [
+            "xhosa"
+          ],
+          "surname_keys": [
+            "xhosa"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "ZA",
+          "first_keys": [
+            "sotho"
+          ],
+          "surname_keys": [
+            "sotho"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ZA",
+          "first_keys": [
+            "tswana"
+          ],
+          "surname_keys": [
+            "tswana"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "ZA",
+          "first_keys": [
+            "tsonga"
+          ],
+          "surname_keys": [
+            "tsonga"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ZA",
+          "first_keys": [
+            "indian_south_african"
+          ],
+          "surname_keys": [
+            "indian_south_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "ZW",
+          "first_keys": [
+            "shona"
+          ],
+          "surname_keys": [
+            "shona"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZW",
+          "first_keys": [
+            "ndebele"
+          ],
+          "surname_keys": [
+            "ndebele"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZW",
+          "first_keys": [
+            "english_zimbabwean"
+          ],
+          "surname_keys": [
+            "english_zimbabwean"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "NA",
+          "first_keys": [
+            "afrikaner"
+          ],
+          "surname_keys": [
+            "afrikaner"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "NA",
+          "first_keys": [
+            "german"
+          ],
+          "surname_keys": [
+            "german"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "BW",
+          "first_keys": [
+            "tswana"
+          ],
+          "surname_keys": [
+            "tswana"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZM",
+          "first_keys": [
+            "chewa"
+          ],
+          "surname_keys": [
+            "chewa"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "MW",
+          "first_keys": [
+            "chewa"
+          ],
+          "surname_keys": [
+            "chewa"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "MZ",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        }
+      ]
+    },
+    "east_africa": {
+      "label": "East Africa",
+      "subregions": [
+        {
+          "weight": 0.14,
+          "country": "KE",
+          "first_keys": [
+            "kikuyu"
+          ],
+          "surname_keys": [
+            "kikuyu"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "KE",
+          "first_keys": [
+            "luo"
+          ],
+          "surname_keys": [
+            "luo"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "KE",
+          "first_keys": [
+            "english_kenyan"
+          ],
+          "surname_keys": [
+            "english_kenyan"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "KE",
+          "first_keys": [
+            "swahili"
+          ],
+          "surname_keys": [
+            "swahili"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "ET",
+          "first_keys": [
+            "amharic"
+          ],
+          "surname_keys": [
+            "amharic"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "ET",
+          "first_keys": [
+            "oromo"
+          ],
+          "surname_keys": [
+            "oromo"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "TZ",
+          "first_keys": [
+            "swahili"
+          ],
+          "surname_keys": [
+            "swahili"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "TZ",
+          "first_keys": [
+            "east_african"
+          ],
+          "surname_keys": [
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "UG",
+          "first_keys": [
+            "east_african"
+          ],
+          "surname_keys": [
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "RW",
+          "first_keys": [
+            "kinyarwanda"
+          ],
+          "surname_keys": [
+            "kinyarwanda"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "BI",
+          "first_keys": [
+            "kinyarwanda"
+          ],
+          "surname_keys": [
+            "kinyarwanda"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "SO",
+          "first_keys": [
+            "somali"
+          ],
+          "surname_keys": [
+            "somali"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ER",
+          "first_keys": [
+            "tigrinya"
+          ],
+          "surname_keys": [
+            "tigrinya"
+          ]
+        }
+      ]
+    },
+    "indian_ocean_africa": {
+      "label": "Indian Ocean Africa",
+      "subregions": [
+        {
+          "weight": 0.34,
+          "country": "MG",
+          "first_keys": [
+            "malagasy"
+          ],
+          "surname_keys": [
+            "malagasy"
+          ]
+        },
+        {
+          "weight": 0.17,
+          "country": "MU",
+          "first_keys": [
+            "indian",
+            "indian_north"
+          ],
+          "surname_keys": [
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "MU",
+          "first_keys": [
+            "indian_south"
+          ],
+          "surname_keys": [
+            "indian_south_tamil",
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "MU",
+          "first_keys": [
+            "arabic",
+            "indian"
+          ],
+          "surname_keys": [
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "MU",
+          "first_keys": [
+            "french",
+            "malagasy"
+          ],
+          "surname_keys": [
+            "french",
+            "malagasy"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "MU",
+          "first_keys": [
+            "chinese"
+          ],
+          "surname_keys": [
+            "chinese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "SC",
+          "first_keys": [
+            "french",
+            "east_african"
+          ],
+          "surname_keys": [
+            "french",
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "KM",
+          "first_keys": [
+            "arabic",
+            "swahili"
+          ],
+          "surname_keys": [
+            "arabic",
+            "swahili"
+          ]
+        }
+      ]
     }
   },
   "presets": {
@@ -3394,7 +3701,6 @@
         "belgium": 0.015,
         "austria": 0.015,
         "kazakhstan": 0.01,
-        "africa": 0.02,
         "south_asia": 0.02,
         "north_africa": 0.015,
         "southeast_asia": 0.015,
@@ -3409,7 +3715,11 @@
         "georgia": 0.006,
         "iceland": 0.006,
         "latvia": 0.006,
-        "zaryanovia": 0.02
+        "zaryanovia": 0.02,
+        "west_africa": 0.011,
+        "east_africa": 0.006,
+        "central_africa": 0.002,
+        "indian_ocean_africa": 0.001
       }
     },
     "americas_pro": {
@@ -3421,8 +3731,11 @@
         "anzac": 0.03,
         "canada": 0.1,
         "europe_western": 0.03,
-        "africa": 0.02,
-        "central_west_asia": 0.01
+        "central_west_asia": 0.01,
+        "west_africa": 0.011,
+        "east_africa": 0.006,
+        "central_africa": 0.002,
+        "indian_ocean_africa": 0.001
       }
     },
     "o27_year_1": {
@@ -3448,7 +3761,6 @@
         "anzac": 0.05,
         "caribbean_cricket": 0.07,
         "caribbean_dutch": 0.01,
-        "africa_cricket": 0.03,
         "british_isles": 0.025,
         "afghan_central_asia": 0.005,
         "malaysia": 0.01,
@@ -3457,7 +3769,9 @@
         "philippines": 0.01,
         "europe_western": 0.02,
         "europe_eastern": 0.005,
-        "zaryanovia": 0.02
+        "zaryanovia": 0.02,
+        "southern_africa": 0.0234,
+        "east_africa": 0.0066
       }
     },
     "o27_year_5": {
@@ -3481,7 +3795,6 @@
         "anzac": 0.06,
         "caribbean_cricket": 0.11,
         "caribbean_dutch": 0.02,
-        "africa_cricket": 0.05,
         "british_isles": 0.03,
         "afghan_central_asia": 0.015,
         "malaysia": 0.025,
@@ -3492,7 +3805,9 @@
         "europe_eastern": 0.02,
         "zaryanovia": 0.04,
         "mongolia": 0.02,
-        "north_korea": 0.015
+        "north_korea": 0.015,
+        "southern_africa": 0.039,
+        "east_africa": 0.011
       }
     },
     "o27_year_10": {
@@ -3520,7 +3835,6 @@
         "anzac": 0.075,
         "caribbean_cricket": 0.13,
         "caribbean_dutch": 0.025,
-        "africa_cricket": 0.06,
         "british_isles": 0.035,
         "afghan_central_asia": 0.02,
         "malaysia": 0.035,
@@ -3531,7 +3845,9 @@
         "europe_eastern": 0.04,
         "zaryanovia": 0.06,
         "mongolia": 0.04,
-        "north_korea": 0.035
+        "north_korea": 0.035,
+        "southern_africa": 0.0468,
+        "east_africa": 0.0132
       }
     },
     "global": {
@@ -3551,8 +3867,6 @@
         "central_west_asia": 0.03,
         "gulf_cricket": 0.02,
         "israel": 0.01,
-        "africa": 0.05,
-        "africa_cricket": 0.05,
         "anzac": 0.04,
         "caribbean_cricket": 0.05,
         "caribbean_dutch": 0.02,
@@ -3561,7 +3875,12 @@
         "malaysia": 0.02,
         "zaryanovia": 0.03,
         "mongolia": 0.02,
-        "north_korea": 0.015
+        "north_korea": 0.015,
+        "west_africa": 0.0275,
+        "east_africa": 0.026,
+        "central_africa": 0.005,
+        "indian_ocean_africa": 0.0025,
+        "southern_africa": 0.039
       }
     },
     "european": {
@@ -3572,7 +3891,10 @@
         "nordic": 0.13,
         "british_isles": 0.15,
         "central_west_asia": 0.05,
-        "africa": 0.04
+        "west_africa": 0.022,
+        "east_africa": 0.012,
+        "central_africa": 0.004,
+        "indian_ocean_africa": 0.002
       }
     },
     "asian_pro": {
@@ -3606,13 +3928,12 @@
     "africa_pro": {
       "label": "African (broad-mix)",
       "weights": {
-        "africa": 0.4,
-        "africa_cricket": 0.2,
         "north_africa": 0.15,
-        "uganda": 0.08,
-        "namibia": 0.07,
-        "cape_verde": 0.05,
-        "mauritius": 0.05
+        "west_africa": 0.27,
+        "east_africa": 0.244,
+        "central_africa": 0.04,
+        "indian_ocean_africa": 0.07,
+        "southern_africa": 0.226
       }
     },
     "oceania": {
@@ -3631,7 +3952,10 @@
         "east_asia": 0.05,
         "europe_western": 0.05,
         "anzac": 0.05,
-        "africa": 0.05
+        "west_africa": 0.0275,
+        "east_africa": 0.015,
+        "central_africa": 0.005,
+        "indian_ocean_africa": 0.0025
       }
     },
     "east_asia_majority": {
@@ -3720,7 +4044,6 @@
         "philippines": 1.5,
         "indonesia": 0.6,
         "malaysia": 0.6,
-        "africa": 3.95,
         "north_africa": 2.26,
         "switzerland": 1.2,
         "austria": 0.6,
@@ -3730,11 +4053,6 @@
         "turkey": 1.0,
         "kazakhstan": 0.5,
         "israel": 0.5,
-        "africa_cricket": 1.41,
-        "mauritius": 0.56,
-        "cape_verde": 0.56,
-        "uganda": 0.45,
-        "namibia": 0.45,
         "caribbean_cricket": 2.82,
         "caribbean_dutch": 1.13,
         "barbados": 0.68,
@@ -3757,7 +4075,12 @@
         "uruguay": 0.5,
         "ecuador": 0.4,
         "romania": 0.6,
-        "taiwan": 0.6
+        "taiwan": 0.6,
+        "west_africa": 2.7325,
+        "east_africa": 1.9452,
+        "central_africa": 0.395,
+        "indian_ocean_africa": 0.7575,
+        "southern_africa": 1.5498
       }
     }
   }

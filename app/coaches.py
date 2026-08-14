@@ -83,6 +83,18 @@ COUNTRY_REGIONS = {
     "MZ": "africa", "MG": "africa", "EG": "africa", "MA": "africa",
     "DZ": "africa", "TN": "africa", "LY": "africa",
     "RSA": "africa", "MAR": "africa", "TUN": "africa",
+    # ⚠️ EVERY code the name generator can emit must appear here. An unmapped
+    # country falls through `_region_for_country` to "global" — no error, just a
+    # coach who quietly belongs to nowhere. These are the countries the six
+    # African name regions produce (owner rule 2027-08).
+    "SN": "africa", "CI": "africa", "ML": "africa", "GN": "africa",
+    "BF": "africa", "GM": "africa", "TG": "africa", "BJ": "africa",
+    "SL": "africa", "LR": "africa", "NE": "africa",
+    "CD": "africa", "CM": "africa", "CG": "africa", "GA": "africa",
+    "GQ": "africa", "CF": "africa", "TD": "africa",
+    "BW": "africa", "ZM": "africa", "MW": "africa", "LS": "africa", "SZ": "africa",
+    "RW": "africa", "BI": "africa", "SO": "africa", "ER": "africa", "SS": "africa",
+    "SC": "africa", "KM": "africa",
     # Asia-Pacific (incl. alt-history Zaryanovia / Far East)
     "IN": "asia_pacific", "PK": "asia_pacific", "MY": "asia_pacific",
     "PH": "asia_pacific", "JP": "asia_pacific", "KR": "asia_pacific",
