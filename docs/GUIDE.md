@@ -694,15 +694,26 @@ start of the offseason ladder — before the recruit board needs its output.
   (postseason results don't feed back into the seeding that produced them).
 - **State qualification is a ladder**, the same shape for every classification
   and both genders: **Sectionals** (every non-protected team; byes/play-ins as
-  needed; cuts to 32 — a multi-round Sectionals opens with **Areas**) → **Wards** (32→16) → **Regionals** (the 16 Ward
-  champions + 16 protected entrants — district champions first, then best
-  cutoff TOSS) → **Zonals** (16→8). The eight Zonal champions qualify for
-  State automatically; TOSS is then **recomputed over all pre-state results**
-  and the top eight non-champions enter as wild cards, making a fresh 16-team
-  **State bracket** (R16 → QF → SF → Final, no reseeding between rounds). All
-  16 are seeded together on the recomputed TOSS — a Zonal title buys entry,
-  never a seed — and a team can lose its Zonal and still reach State on its
-  postseason résumé.
+  needed; cuts to 32 — a multi-round Sectionals opens with **Areas**) →
+  **Wards** (32→16) → **Regionals** (the 16 Ward champions + 16 protected
+  entrants — district champions first, then best cutoff TOSS) → **Zonals**
+  (16→8). Three ways into State:
+  1. The eight **Zonal champions** qualify automatically, with the privileged
+     path: they are the State draw's top seeds, so a 24-team field's eight
+     first-round byes are exactly theirs.
+  2. A **district champion is guaranteed access** even if it loses in the
+     ladder — access, never a bye or a seed. This is a geographic safeguard:
+     no district is excluded from State because TOSS dislikes it.
+  3. Every remaining berth is **earned on court in the recovery rounds**:
+     Regional losers (plus, in 7A, the best-TOSS Ward losers — TOSS buys them
+     another chance to *play*, never a berth) enter **Super Regionals**;
+     Zonal losers join at **Semi-State**; Semi-State's survivors complete the
+     field. Recovery draws avoid immediate rematches with the opponent that
+     just eliminated a team, and same-district pairings where practical.
+  State is **32 teams in 7A, 24 in every other classification** (no reseeding
+  between rounds). The retired wild-card model — top post-Zonal TOSS
+  non-champions straight into a 16-team field — is gone precisely because it
+  let teams sitting at home out-qualify teams still playing.
   The **Tournament of Champions** is its own event on top of State, reserved
   for the six classification champions.
 - **A program's record is one continuous number**, not split into "regular"

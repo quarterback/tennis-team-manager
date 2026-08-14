@@ -216,14 +216,21 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
         conn.close()
 
 
-def test_a_titleless_season_is_not_listed_as_an_honour(archived):
+def test_a_season_with_nothing_to_show_is_not_listed_as_an_honour(archived):
     """The other half: `honoured` must not simply be true for everyone, or the panel
-    becomes the ledger a second time."""
+    becomes the ledger a second time. TEAM honours widened it (owner rule 2027-08 —
+    a tournament-unit win or a State appearance counts, not just titles and TOC
+    berths), so the floor is now "won nothing, reached nothing": such a season is
+    still unhonoured, and at least one program in the association has one."""
     w = archived["world"]
-    plain = next(s.name for s in jh.load_schools("girls")
-                 if s.name not in archived["arc"]["toc"]["field"])
-    row = wd.jhsaa_school_history(w["id"], "girls", plain)["seasons"][0]
-    assert row["honoured"] == bool(row["honors"] or row["champion"])
+    rows = [wd.jhsaa_school_history(w["id"], "girls", s.name)["seasons"]
+            for s in jh.load_schools("girls")]
+    seasons = [r[0] for r in rows if r]
+    for row in seasons:
+        assert row["honoured"] == bool(
+            row["honors"] or row["champion"] or row["toc_champion"]
+            or row["unit_wins"] or row["made_state"])
+    assert any(not s["honoured"] for s in seasons)
 
 
 def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):

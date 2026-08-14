@@ -1,0 +1,129 @@
+# AAR — JHSAA State expansion: recovery rounds, the district guarantee, team honours
+
+## What started it
+
+The owner watched a 5A season where **Rosa Salcedo (TOSS #14) missed State
+while Crown Hill (#23) got in**, and asked whether it was a bracket bug. It was
+not: under the old spec (Zonal champions + the top eight post-Zonal TOSS
+non-champions as wild cards, into a 16-team field) Crown Hill *beat* Rosa
+Salcedo 4-1 in the Regional and then won its Zonal, while RS's one postseason
+data point was that loss, which dropped it below the wild-card line. Working as
+designed — and the design was the problem:
+
+> "this just proves we need to expand the state brackets across the board…
+> make teams PLAY for the remaining State berths rather than benefit from
+> sitting home while TOSS is recomputed."
+
+## The new structure (owner spec 2027-08)
+
+**Field sizes:** 7A 32, every other classification 24. The 24 is load-bearing:
+a 24-team seeded draw has exactly eight first-round byes, and those byes ARE
+the Zonal champions' privilege.
+
+**Three ways in, and no others:**
+
+1. **Zonal champions** (8) — automatic, and the draw's top seeds, so the byes
+   fall to them by construction rather than by a special case.
+2. **The district guarantee** — a district champion has State ACCESS even if it
+   loses in the ladder. Access only: no bye, no seeding help, and no extra
+   berth if it also won its Zonal. A geographic-access safeguard, in the
+   owner's words, so no district is shut out because TOSS dislikes it.
+3. **The recovery rounds** — Super Regionals → Semi-State, two new named
+   stages with their own archived phases. The 16 Regional losers (plus, in 7A,
+   the best-TOSS Ward losers) enter Super Regionals; the 8 Zonal losers join at
+   Semi-State; Semi-State's survivors take exactly the berths that remain.
+
+**TOSS's role is now bounded**: it seeds, it arranges draws, and in 7A it
+decides *which Ward losers get another chance to play*. It never hands anyone a
+berth.
+
+## Implementation notes worth keeping
+
+- **The arithmetic is DYNAMIC, per the spec.** `berths = state_field -
+  zonal_champions - unique non-Zonal district champions`, and the two recovery
+  rounds together always eliminate `RECOVERY_CUT` (8, scaled). For a 24-team
+  field this falls out of the loser pool by itself: the pool and the berths
+  shrink by the same district-champion count, so the eliminations are always 8
+  regardless of how many champions the guarantee admits. Measured across a full
+  boys' season, district-champion counts ranged 2-4 per classification and every
+  field still landed exactly on 24 (7A on 32).
+- **7A needs bodies, not berths.** A 32-team field consumes almost the whole
+  24-team loser pool, leaving the recovery rounds nothing to play for. So
+  `_recovery` computes the shortfall and tops the Super Regional field up with
+  the best-TOSS Ward losers — measured: 7A ran SR 21→17 and SS 24→20 (4 duals
+  each), the same shape as everyone else's 14→10 / 16→12.
+- **Recovery seeding uses a post-Zonal TOSS recompute, and State a second one**
+  (`power_index(prestate=True)`, which now includes the recovery duals) — the
+  ratings are inputs to draws, never to qualification.
+- **Finish labels supersede.** `jhsaa_postseason_result` checks the recovery
+  stages BEFORE the ladder round a school lost, so a Regional loser that fought
+  through Super Regionals reads "Semi-State", never "Regionals".
+- **Old archives keep working.** Pre-expansion seasons have no recovery keys and
+  a `wildcards` list; every reader treats both shapes, and the ledger/bracket
+  surfaces degrade to what was archived.
+
+## ‼️ Bye selection and pairing are ONE problem (review catch)
+
+The draw rule is: never immediately replay the opponent that just eliminated
+you (hard), avoid same-district pairings where practical (soft). The first
+implementation assigned byes to the top seeds and *then* repaired the pairing
+of the playing tail — so a bye recipient was frozen before the repair could see
+it. A review found the exact case: a 7A side took a Super Regional bye and met,
+at Semi-State, the team that had knocked it out at Wards, **with other
+opponents available in the field**. The repair was structurally unable to reach
+it.
+
+`_draw_recovery` now chooses both together: the pure-TOSS bye set is the
+starting point, and if it leaves a hard rematch on the board a bye is traded
+with a playing team until the rematch clears — lowest bye traded first, so
+seeding privilege bends only as far as removing the rematch requires. Pinned by
+`test_recovery_draws_never_replay_the_team_that_just_eliminated_you`, which
+walks every recovery dual in the association and checks each side's PREVIOUS
+archived dual — bye recipients included, since a bye means the previous dual is
+the one from the round before.
+
+## Team honours (same session, owner rule)
+
+> "right now only state champions and TOC participants get any honours and
+> that's not realistic."
+
+Every non-state postseason dual is a named, numbered unit on purpose, so
+winning one is an honour the program keeps:
+
+- **Unit wins, in ROMAN numerals** — "Region IX", "Ward IV", "Super Region II"
+  (Zonals keep their letters: "Zone C"). All of a season's unit wins render on
+  **one line**, because there are several a year and State has plenty of its
+  own.
+- **Reaching State is its own honour line**, coloured by tier so the medals stay
+  readable: gold = the title, silver = finalist, bronze = semifinalist, and
+  **blue** for every other State finish ("STATE OCTOFINALIST").
+- `honoured` (what the panel filters on) widened accordingly — it is now
+  `honors or champion or toc_champion or unit_wins or made_state`. A season
+  with none of those is still unhonoured, and the TOC test that pinned the old
+  narrow rule was rewritten to assert the new definition *and* that at least one
+  program in the association still has an unhonoured season, which is the real
+  invariant (the panel must not become the ledger twice).
+
+## Validation
+
+- `tests/test_jhsaa_ladder.py` (21) rewritten for the new structure: field
+  composition and sizing, champions-as-top-seeds, State byes belonging to
+  champions, the district guarantee, berths earned on court, recovery round
+  names/units/phases, finish supersession, the rematch rule, and the honours.
+- All other JHSAA suites green (103) — toc, routes, format, lineup, schedule,
+  bracket scores, archetypes, talent shape.
+- Full-size season run end-to-end: every classification's field landed exactly
+  on 32/24, zero immediate rematches in recovery draws, and the bracket page and
+  school schedule render the new stages under their own names.
+
+## Traps for later
+
+- **Never re-add a rating-selected berth.** TOSS seeds, arranges and (in 7A)
+  invites to *play*. The moment it selects a qualifier again, the Rosa Salcedo
+  complaint is back.
+- The **district guarantee is access, not seeding** — if a guaranteed champion
+  ever starts drawing a bye, the privilege ordering in `run_season` has been
+  broken (champions first, then guarantee + recovery together by TOSS).
+- `RECOVERY_CUT` is what makes the shape statewide-uniform; changing the State
+  field sizes without re-deriving it is how a classification ends up with a
+  recovery round that eliminates nobody.

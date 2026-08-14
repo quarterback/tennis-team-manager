@@ -3540,15 +3540,23 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                            for g in jhsaa.GROUPS},
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
-                # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed
-                # "brackets" (the State bracket). "protected" and "wildcards" record
-                # the two selections. See `jhsaa_postseason_result`.
+                # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed the
+                # RECOVERY rounds ("super_regional" / "semi_state"), which feed
+                # "brackets" (the State bracket). "protected" records the Regionals
+                # entry list; "district_qualifiers" the district-guarantee berths
+                # (pre-2027-expansion archives carry "wildcards" instead — the
+                # readers accept both). See `jhsaa_postseason_result`.
                 "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
                 "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
                 "wards": {g: season["groups"][g]["ward"] for g in jhsaa.GROUPS},
                 "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
+                "super_regional": {g: season["groups"][g]["super_regional"]
+                                   for g in jhsaa.GROUPS},
+                "semi_state": {g: season["groups"][g]["semi_state"]
+                               for g in jhsaa.GROUPS},
                 "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},
-                "wildcards": {g: season["groups"][g]["wildcards"] for g in jhsaa.GROUPS},
+                "district_qualifiers": {g: season["groups"][g]["district_qualifiers"]
+                                        for g in jhsaa.GROUPS},
                 # The Tournament of Champions — the SIX classification champions, one
                 # winner. Archived beside the brackets it is drawn from, in the same
                 # shape, so it reads back through the same helpers.
@@ -3725,22 +3733,33 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
 
 def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     """The furthest `school`'s postseason reached, across every archived stage of a
-    group's postseason (`{"sectional", "ward", "prestate", "state", "wildcards"}` —
-    the keys `run_season` writes per group). One call for a program page or ledger
-    row; a State entrant (Zonal champion or wild card) takes priority, then the
-    stages walk backward. `finish` for a pre-state exit is the stage's own name —
-    "Areas" / "Sectionals" / "Wards" / "Regionals" / "Zonals" — never a
-    team-count band.
-    Old single-bracket archives carry only `state`, and fall through unchanged."""
+    group's postseason (`{"sectional", "ward", "prestate", "super_regional",
+    "semi_state", "state", ...}` — the keys `run_season` writes per group). One
+    call for a program page or ledger row; a State entrant takes priority, then
+    the stages walk backward, RECOVERY rounds before the ladder round the school
+    lost (a Regionals loser that fought through Super Regionals ended its year at
+    Semi-State or State, never at "Regionals"). `finish` for a pre-state exit is
+    the stage's own name — "Areas" / "Sectionals" / "Wards" / "Regionals" /
+    "Zonals" / "Super Regionals" / "Semi-State" — never a team-count band.
+    Old archives (16-team State, TOSS wild cards under a "wildcards" key, no
+    recovery stages) fall through unchanged."""
     grp = grp or {}
     sec_field = (grp.get("sectional") or {}).get("field") or ()
     st = jhsaa_state_result(grp.get("state") or {}, school)
     if st["made_state"]:
         return {**st, "played_sectional": school in sec_field,
-                "wildcard": school in (grp.get("wildcards") or ())}
+                "wildcard": school in (grp.get("wildcards") or ()),
+                "district_qualifier": school in (grp.get("district_qualifiers") or ())}
     out = {"made_state": False, "seed": 0, "place": 0, "finish": "",
            "champion": False, "played_sectional": school in sec_field,
-           "wildcard": False}
+           "wildcard": False, "district_qualifier": False}
+    # A recovery run supersedes the ladder loss that sent the school there.
+    if school in ((grp.get("semi_state") or {}).get("field") or ()):
+        out["finish"] = "Semi-State"
+        return out
+    if school in ((grp.get("super_regional") or {}).get("field") or ()):
+        out["finish"] = "Super Regionals"
+        return out
     pre = grp.get("prestate") or {}
     if school in (pre.get("field") or ()):
         # Eliminated at Regionals (round 0) or Zonals (round 1): the last round
@@ -3843,6 +3862,49 @@ def _wl(record: str | None) -> tuple[int, int]:
         return 0, 0
 
 
+# --- TEAM tournament honours (owner rule 2027-08) ------------------------------
+# Every non-state postseason dual is a named, numbered UNIT on purpose ("Regional
+# 9", "Ward 4"), and winning one is an honour the program keeps — written the
+# association's way, with ROMAN numerals: "Region IX", "Ward IV" (Zonals keep
+# their letters: "Zone C"). A season's unit wins all render on ONE honours line
+# (state has plenty of its own); making State earns a separate line of its own.
+_UNIT_HONOUR = {"Area": "Area", "Section": "Section", "Ward": "Ward",
+                "Regional": "Region", "Zonal": "Zone",
+                "Super Regional": "Super Region", "Semi-State": "Semi-State"}
+
+
+def _roman(n: int) -> str:
+    vals = ((1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"),
+            (90, "XC"), (50, "L"), (40, "XL"), (10, "X"), (9, "IX"),
+            (5, "V"), (4, "IV"), (1, "I"))
+    out = ""
+    for v, s in vals:
+        while n >= v:
+            out += s
+            n -= v
+    return out
+
+
+def _unit_honour(unit: str) -> str:
+    """'Regional 9' -> 'Region IX'; 'Zonal C' -> 'Zone C' (letters stay)."""
+    head, _, tail = unit.rpartition(" ")
+    name = _UNIT_HONOUR.get(head, head)
+    return f"{name} {_roman(int(tail))}" if tail.isdigit() else f"{name} {tail}"
+
+
+def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
+    """The tournament units `school` won that season, in ladder order. Archives
+    from before units existed carry no `unit` keys and yield nothing."""
+    out = []
+    for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
+        d = (arc.get(key) or {}).get(group) or {}
+        for games in d.get("rounds") or ():
+            for gm in games:
+                if gm.get("winner") == school and gm.get("unit"):
+                    out.append(_unit_honour(gm["unit"]))
+    return out
+
+
 def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
     """One archived season as this program lived it. `None` if the program has no
     standings row that year (it didn't sponsor the sport, or the archive predates
@@ -3858,7 +3920,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False, "honoured": False,
+           "toc_champion": False, "honoured": False, "unit_wins": [],
            "poy": [], "all_state": [], "all_district": [], "honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
@@ -3876,17 +3938,21 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
         return None
     # `jhsaa_postseason_result` walks every archived stage, so `state_finish` on the
     # ledger row names the stage a run ended at — "Areas" / "Sectionals" / "Wards"
-    # / "Regionals" / "Zonals" — instead of going blank for a team that never
-    # reached the State bracket.
+    # / "Regionals" / "Zonals" / "Super Regionals" / "Semi-State" — instead of
+    # going blank for a team that never reached the State bracket.
     g = row["group"]
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
          "ward": (arc.get("wards") or {}).get(g),
          "prestate": (arc.get("prestate") or {}).get(g),
+         "super_regional": (arc.get("super_regional") or {}).get(g),
+         "semi_state": (arc.get("semi_state") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
-         "wildcards": (arc.get("wildcards") or {}).get(g)}, school)
+         "wildcards": (arc.get("wildcards") or {}).get(g),
+         "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)
     row.update(made_state=st["made_state"], seed=st["seed"], state_place=st["place"],
                state_finish=st["finish"], champion=st["champion"])
+    row["unit_wins"] = _unit_wins(arc, g, school)
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a
     # deeper run at state: only a classification champion is in it, so making it is
     # itself the honour and it has to be readable off the ledger row.
@@ -3943,7 +4009,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # `honors` list, and a panel selecting on that drops the season before it can draw
     # either banner. Deriving the answer here rather than in the template keeps the two
     # halves — what the panel filters on and what it renders — from disagreeing.
-    row["honoured"] = bool(row["honors"]) or row["champion"] or row["toc_champion"]
+    # ...and the TEAM tournament honours widen it further (owner rule 2027-08):
+    # a unit win or a State appearance is an honour too — only champions and TOC
+    # sides earning anything "wasn't realistic".
+    row["honoured"] = (bool(row["honors"]) or row["champion"] or row["toc_champion"]
+                       or bool(row["unit_wins"]) or row["made_state"])
     return row
 
 
