@@ -9,7 +9,6 @@
     "Beacon Hill": "development",
     "Breakwater": "development",
     "Calderwood School": "development",
-    "Caswell Depot High": "doubles",
     "Central Christian": "development",
     "Chaminade": "blue_blood",
     "Commonwealth": "development",
@@ -19,14 +18,12 @@
     "Dolores Huerta": "blue_blood",
     "Dry Lake": "development",
     "Eastmont Christian": "blue_blood",
-    "Echevarria Foundry High": "doubles",
     "Elk Bluff": "doubles",
     "Elk Crossing": "development",
     "Emerson": "development",
     "Ferris Union": "development",
     "Fort Valois": "development",
     "Gagarin": "development",
-    "Gagarin School of Public Service": "development",
     "Galena": "blue_blood",
     "George Washington Carver": "development",
     "Gold Junction": "development",
@@ -49,7 +46,6 @@
     "Pacific Friends School": "blue_blood",
     "Paul Robeson": "development",
     "Pinecrest School": "blue_blood",
-    "Port Meridian Polytechnic": "doubles",
     "Port Meridian West": "development",
     "Providence Academy": "blue_blood",
     "Romero-Finniski": "blue_blood",
@@ -83,6 +79,10 @@
     "Valley Christian": "blue_blood",
     "Westover": "development",
     "Westside Christian": "blue_blood",
-    "Winifred Booker": "blue_blood"
+    "Winifred Booker": "blue_blood",
+    "Cherry Hill North": "doubles",
+    "Echevarria North": "doubles",
+    "Port Meridian North": "doubles",
+    "Gagarin East": "development"
   }
 }
