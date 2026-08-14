@@ -358,6 +358,19 @@ Traps:
   in real life. Galena is **D2** (in the JVC); Jefferson A&M took the D1 seat, in CUSA. Chosen over renaming Pac-16→Pac-18, whose abbr is a key in `CONF_PRESTIGE`,
   `CONF_TIER`, `state.py::_P5` and `polls.py::_POWER_CONFS`. Gonzaga is in the **Pac-16**,
   not the WCC — check the data before reasoning about it.
+- **‼️ TODO (owner approved, DEFERRED): push the school-name cleanup INTO prep-network.**
+  The tennis association renamed 62 confusingly-similar schools and handed 9 magnets'
+  seats to their city flagships (`import_jhsaa.RENAMES` / `SUBSTITUTIONS` are the
+  authoritative list; `docs/JHSAA-name-cleanup-2027.md` is generated from them). The
+  owner wants prep-network brought in line but **explicitly did not want it done
+  immediately** — do it when asked, never on your own initiative. It is already
+  automated and verified end-to-end on a copy: `python3 scripts/rename_prep_network.py
+  --dry-run`, then without the flag. Scope: ~59k occurrences in ~6.3k files PLUS ~5.7k
+  contest FILENAME slugs, so it changes public URLs — that is why it is a separate
+  explicit step and not part of the import. The script preflights its own safety
+  invariants and is idempotent. Only the 62 RENAMES rewrite source records; the 9
+  substituted magnets keep their identity in prep-network and merely stop sponsoring
+  tennis, so they must NOT be renamed there.
 
 ## ⚠️ THE JHSAA — Jefferson's high-school season is SIMULATED and VISIBLE (`app/jhsaa.py`)
 Owner rule 2027-08, and it REVERSED an earlier "keep the HS season invisible" decision:

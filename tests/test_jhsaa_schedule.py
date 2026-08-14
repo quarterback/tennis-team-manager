@@ -32,14 +32,27 @@ import pytest
 from app import jhsaa
 
 
+DISTRICTS = 3        # per classification — see the note in `played`
+
+
 @pytest.fixture(scope="module")
 def played():
-    """Two 7A districts and two 6A, played in `run_season`'s order and windows."""
+    """Three 7A districts and three 6A, played in `run_season`'s order and windows.
+
+    ⚠️ Not two. The non-district matcher may only pair inside one classification of
+    its own and never a rematch or a league-mate, and when it runs out of eligible
+    partners it drops the quota rather than stall (`_nondistrict_pairs`). At two
+    districts a class the pool is thin enough that this genuinely fires — one team
+    finished on three non-district duals against an allowance of four — which is a
+    property of the FIXTURE, not of the association: measured over the shipped
+    boys' season, 0 of 459 programs fall outside the allowance. Three districts
+    restores the real behaviour for ~2s, which is cheaper than weakening the
+    assertion until it stops describing the rule."""
     by_group = {}
     for group in ("7A", "6A"):
         d = jhsaa.districts("girls", group)
         by_group[group] = {name: jhsaa.district_teams(d[name], 2030)
-                           for name in sorted(d)[:2]}
+                           for name in sorted(d)[:DISTRICTS]}
     teams, _power = jhsaa.play_regular_season(by_group, 2030, "girls")
     return teams
 

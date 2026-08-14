@@ -432,10 +432,33 @@ class School:
     colors: list
     district: str
     gender: str
+    # ‼️ THE ROSTER IDENTITY, and it is NOT the name. A program's twelve players
+    # are rebuilt on demand from (identity, entry year, seat) — nothing about a
+    # roster is persisted — so whatever string seeds that RNG *is* the school as
+    # far as its people are concerned. `name` is a DISPLAY string and the owner
+    # renames schools (`import_jhsaa.RENAMES`), which would otherwise hand every
+    # renamed program twelve strangers overnight: its juniors never become
+    # seniors, and every archived pid (awards, All-State rows, /jhsaa/player
+    # links) stops resolving to anybody. So generation keys on `source` — the
+    # school's ORIGINAL prep-network name, stamped into `data/jhsaa/schools.json`
+    # at import and never rewritten, even after prep-network itself is renamed.
+    # Empty for schools that were never renamed, where the name IS the identity.
+    #
+    # The owner rebuilds the sim from scratch on reload, so no save currently
+    # crosses a rename and nothing depends on this today. It is kept because it
+    # costs one optional field and makes "a rename is a rename, not a roster
+    # transplant" true by construction — the invariant is cheap here and
+    # expensive to retrofit once a save DOES carry history across one.
+    source: str = ""
+
+    @property
+    def ident(self) -> str:
+        """The stable identity string — see `source`."""
+        return self.source or self.name
 
     @property
     def key(self) -> str:
-        return f"{self.name}|{self.gender}"
+        return f"{self.ident}|{self.gender}"
 
 
 @dataclass
@@ -501,6 +524,7 @@ def load_schools(gender: str) -> list[School]:
             classification=r["classification"], group=r["group"],
             enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
             colors=r["colors"], district=r[f"{gender}_district"], gender=gender,
+            source=r.get("source", ""),
         ))
     return out
 
@@ -578,7 +602,9 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
                                                             school.gender, mod)
                                              + mod.get("pot", 0.0)),
                                   maturity_range=maturity,
-                                  pid=make_pid("jhsaa", school.name, school.gender,
+                                  # `ident`, never `name` — a pid has to survive a
+                                  # rename or every archived award points at nobody.
+                                  pid=make_pid("jhsaa", school.ident, school.gender,
                                                entry, seat))
             p.class_year = str(grade)
             p.grade = grade

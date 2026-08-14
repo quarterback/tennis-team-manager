@@ -192,7 +192,95 @@ ALWAYS_EXTRA = [
 # drawing — runs on the source name; only the written row carries the new one.
 RENAMES = {
     "Bahía Leal Costa Verde": "Housatonic HS",   # keeps its Warthogs
+    "Belyakov Academy of Music and Media": "Belyakov North",
+    "Belyakov Environmental Sciences Academy": "Belyakov South",
+    "Belyakov I-50 Technical": "Belyakov East",
+    "Belyakov Polytechnic Institute": "Belyakov West",
+    "Belyakov School of Design and Engineering": "Theodore Roosevelt",
+    "Belyakov School of Public Service": "Abraham Lincoln",
+    "Belyakov School of Science and Industry": "Belyakov Technical",
+    "Belmonte Agricultural Sciences Academy": "Belmonte North",
+    "Belmonte Applied Sciences Institute": "Belmonte South",
+    "Belmonte Civic Leadership Academy": "Belmonte East",
+    "Belmonte Health Sciences Academy": "Belmonte West",
+    "Belmonte Classical Academy": "James Madison",
+    "Belmonte Technical Arts Academy": "Woodrow Wilson",
+    "St. Basil School": "St. Ignatius",
+    "Caswell Classical School": "Cherry Hill",
+    "Caswell Depot High": "Cherry Hill North",
+    "Caswell I-50 Technical": "Cherry Hill South",
+    "Caswell School of Science and Industry": "Andrew Jackson",
+    "Caswell University Prep": "Caswell West",
+    "Aldecoa Academy of Arts and Letters": "Aldecoa North",
+    "Aldecoa Applied Sciences Institute": "Aldecoa South",
+    "Aldecoa Depot High": "Ulysses Grant",
+    "Echevarria Foundry High": "Echevarria North",
+    "Echevarria I-50 Technical": "Echevarria South",
+    "Echevarria School of Commerce": "William McKinley",
+    "Orellana Foundry High": "Orellana North",
+    "Orellana School of Commerce": "Orellana South",
+    "Eagleton School of Science and Industry": "Eagleton West",
+    "Port Veles Agricultural Sciences Academy": "Port Veles North",
+    "Port Veles Civic Leadership Academy": "Port Veles South",
+    "Nadia Sidorov": "Anton Sidorov",
+    "Port Meridian Polytechnic": "Port Meridian North",
+    "San Borondón Agricultural Sciences Academy": "San Borondón North",
+    "San Borondón Environmental Sciences Academy": "San Borondón South",
+    "Puerto de los Reyes International School": "Puerto de los Reyes North",
+    "Puerto de los Reyes School of Commerce": "Puerto de los Reyes South",
+    "Llerena Civic Leadership Academy": "Llerena North",
+    "Llerena School of Science and Industry": "Llerena South",
+    "Javier Villalba": "Alonso Villalba",
+    "Serrano Applied Sciences Institute": "Serrano North",
+    "Serrano Depot High": "Serrano South",
+    "Halbrook Technical": "Halbrook East",
+    "Greaves Junction Treasure Valley": "Greaves Junction South",
+    "Cortland Environmental Sciences Academy": "Cortland North",
+    "Cortland Foundry High": "Harry S. Truman",
+    "Valderra Aviation and Engineering Academy": "Valderra North",
+    "Valderra Technical Arts Academy": "Dwight Eisenhower",
+    "Mercer City Technical Arts Academy": "Mercer City North",
+    "Montelago Agricultural Sciences Academy": "Montelago South",
+    "Moriarty Foundry High": "Moriarty West",
+    "Las Norias Foundry High": "Las Norias East",
+    "Lake Esperanza School of Science and Industry": "Lake Esperanza North",
+    "Harriman Civic Leadership Academy": "Harriman North",
+    "Harriman Maritime Academy": "John F. Kennedy",
+    "San Cordero Maritime Academy": "San Cordero North",
+    "San Cordero School of Commerce": "San Cordero South",
+    "Fort Valois School of Design and Engineering": "Fort Valois North",
+    "Gagarin School of Public Service": "Gagarin East",
+    "Fellows Mill International School": "Fellows Mill South",
+    "Rye Academy of Arts and Letters": "Rye North",
+    "Ansotegui Siding Commonwealth": "Ansotegui Siding North",
 }
+
+# ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
+# school in the tennis association while the plain city high school — which
+# exists in prep-network and is usually the bigger, older school — sat out. That
+# is backwards: an arts-and-letters academy or a polytechnic institute mostly
+# does not field teams, and if a city sends one program to the state tournament
+# it is the flagship. So these are SUBSTITUTIONS, not renames: the magnet's seat
+# in the association is given to the bare-named school, which then plays under
+# its OWN classification, enrollment, mascot and colours (they differ — Altamonte
+# is 5A where its School of Commerce was 4A). Nothing is deleted; the magnet
+# simply does not sponsor tennis, exactly as it would not in life.
+#
+# Applied AFTER the sponsorship draw for the same reason RENAMES is applied at
+# emit: the dice are positional over the name-sorted list, so swapping names
+# earlier would reshuffle everyone in between.
+SUBSTITUTIONS = {
+    "Altamonte School of Commerce": "Altamonte",
+    "Bellacosta University Prep": "Bellacosta",
+    "Calder Aviation and Engineering Academy": "Calder",
+    "Copper Lake Academy of Music and Media": "Copper Lake",
+    "Copperview Polytechnic Institute": "Copperview",
+    "Fort Meriwether School of Public Service": "Fort Meriwether",
+    "Mercer City School of Design and Engineering": "Mercer City",
+    "Mount Horeb Academy of Arts and Letters": "Mount Horeb",
+    "Puerto de los Reyes Civic Leadership Academy": "Puerto de los Reyes",
+}
+
 
 # Championship groups. 3A stands ALONE and 2A/1A combine (owner rule 2027-08): the
 # enrollment gap across the old 3A-1A group was the widest in the association — medians
@@ -226,6 +314,24 @@ def reclassify(schools: list[dict]) -> int:
             s["classification"] = "3A"
             moved += 1
     return moved
+
+
+_CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
+
+
+def canon(name: str) -> str:
+    """A school's STABLE identity, whichever name prep-network currently uses.
+
+    ‼️ This is what makes the import invariant to the source rename. The
+    sponsorship dice are drawn positionally over a NAME-SORTED list, so once
+    prep-network was renamed to match (`scripts/rename_prep_network.py`), the
+    alphabet moved and every school inherited its neighbour's roll: measured, the
+    association swapped a large slice of its membership and quietly re-admitted
+    magnet schools this cleanup had just removed. Sorting and forcing on the
+    canonical name reproduces the ORIGINAL order in BOTH states — pre-rename a
+    source name misses the map and returns itself, post-rename a display name
+    maps back — so the same schools sponsor tennis either way."""
+    return _CANONICAL.get(name, name)
 
 
 def champ_group(classification: str) -> str:
@@ -271,7 +377,14 @@ def always_sponsor() -> set[str]:
             out |= set(json.load(fh).get("programs", {}))
     except (FileNotFoundError, ValueError):
         pass
-    return out
+    # ⚠️ `archetypes.json` is keyed by the name the ASSOCIATION uses (the emitted,
+    # possibly renamed one) because `jhsaa.archetype()` looks a school up by the
+    # name on its roster row. Forcing, though, happens against prep-network's
+    # SOURCE names. So a renamed school's archetype entry has to be translated
+    # back here, or it silently stops forcing that school into the association —
+    # and, being a blue blood the dice never drew, it vanishes.
+    back = {new: src for src, new in RENAMES.items()}
+    return {back.get(n, n) for n in out}
 
 
 def _key(name: str) -> str:
@@ -284,20 +397,33 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     """(girls, boys) school names. One roll for girls; boys drawn from that set — except
     that owner-named schools are in regardless, for both genders."""
     rng = random.Random(SEED)
-    forced = {_key(n) for n in always_sponsor()}
-    girls_only = {_key(n) for n in ALWAYS_GIRLS_ONLY}
+    # Everything here keys on `canon()`, never the current name — see that
+    # function. Forcing lists mix both vocabularies (archetypes.json is keyed by
+    # the association's display name, ALWAYS_EXTRA by prep-network's), and
+    # canonicalising both sides lands them on one identity.
+    forced = {_key(canon(n)) for n in always_sponsor()}
+    girls_only = {_key(canon(n)) for n in ALWAYS_GIRLS_ONLY}
     girls, boys = set(), set()
-    for s in sorted(schools, key=lambda s: s["name"]):        # stable order = stable draw
+    for s in sorted(schools, key=lambda s: canon(s["name"])):  # stable order = stable draw
         hit = rng.random() < GIRLS_RATE[s["classification"]]  # drawn either way, so the
         sub = rng.random() < BOYS_OF_GIRLS                    # roll stays reproducible
-        if _key(s["name"]) in forced:
+        if _key(canon(s["name"])) in forced:
             girls.add(s["name"])
-            if _key(s["name"]) not in girls_only:
+            if _key(canon(s["name"])) not in girls_only:
                 boys.add(s["name"])
         elif hit:
             girls.add(s["name"])
             if sub:
                 boys.add(s["name"])
+    # THE FLAGSHIP PLAYS THE SPORT: hand each substituted magnet's seat to the
+    # bare-named school in its city, per gender, after the draw (see
+    # SUBSTITUTIONS). The bare school may also have been drawn on its own — sets
+    # make that a no-op rather than a double entry.
+    for side in (girls, boys):
+        for magnet, flagship in SUBSTITUTIONS.items():
+            if magnet in side:
+                side.discard(magnet)
+                side.add(flagship)
     return girls, boys
 
 
@@ -309,15 +435,30 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
     def county(s):
         return cities.get(s["city"], {}).get("county", "?")
 
-    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], s["name"]))
+    # `canon`, not the display name — same reason as `sponsors`: the blocks are cut
+    # off this ORDER, so sorting on a name the owner can rename moves schools
+    # between districts every time one is renamed.
+    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], canon(s["name"])))
     n = len(pool)
     if not n:
         return {}
     k = max(1, -(-n // MAX_DISTRICT))
-    size = -(-n // k)
-    out, used = {}, set()
+    # ⚠️ SPREAD THE REMAINDER, don't dump it in the last block. Filling `k` blocks
+    # of a fixed `ceil(n/k)` leaves the tail whatever is left over, which is fine
+    # when it divides evenly and awful when it doesn't: 100 7A boys into blocks of
+    # 12 gives eight full districts and a NINTH OF FOUR — an eight-dual league
+    # season against everyone else's twenty-two, because district size IS the
+    # schedule here. Sizes now differ by at most one (`n % k` blocks take the
+    # extra), so the same 100 becomes one 12 and eight 11s.
+    big, base = n % k, n // k
+    bounds, at = [], 0
     for i in range(k):
-        block = pool[i * size:(i + 1) * size]
+        step = base + (1 if i < big else 0)
+        bounds.append((at, at + step))
+        at += step
+    out, used = {}, set()
+    for lo, hi in bounds:
+        block = pool[lo:hi]
         if not block:
             continue
         # name for the dominant area, else the dominant county, else a numbered fallback
@@ -346,8 +487,26 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         city = cities.get(s["city"], {})
+        display = RENAMES.get(name, name)
+        # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
+        # forever — it seeds the RNG that builds a program's twelve players and
+        # the pids on their records, so if it moves, every renamed school gets
+        # twelve strangers and its archived awards point at nobody.
+        #
+        # Derived from the DISPLAY name through the inverse map, NOT from the
+        # name prep-network currently uses, because prep-network is itself being
+        # renamed to match (`scripts/rename_prep_network.py`). Once that lands,
+        # `name` here IS the new name, `RENAMES.get` misses, and a source-side
+        # identity would silently become the new name — churning every roster a
+        # second time. Keying off the display name gives the same answer in both
+        # states, which is the whole point. `RENAMES` is therefore a PERMANENT
+        # historical record; do not prune it once prep-network is updated.
+        canonical = canon(name)
         out.append({
-            "name": RENAMES.get(name, name),
+            "name": display,
+            # Only written when it differs — a school nobody renamed is its own
+            # identity, and an absent key reads as "name" in `School.ident`.
+            **({"source": canonical} if canonical != display else {}),
             "city": s["city"],
             "county": city.get("county", ""),
             "area": s["area"],
