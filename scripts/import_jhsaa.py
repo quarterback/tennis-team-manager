@@ -316,6 +316,9 @@ def reclassify(schools: list[dict]) -> int:
     return moved
 
 
+_CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
+
+
 def champ_group(classification: str) -> str:
     return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
 
@@ -462,8 +465,26 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         city = cities.get(s["city"], {})
+        display = RENAMES.get(name, name)
+        # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
+        # forever — it seeds the RNG that builds a program's twelve players and
+        # the pids on their records, so if it moves, every renamed school gets
+        # twelve strangers and its archived awards point at nobody.
+        #
+        # Derived from the DISPLAY name through the inverse map, NOT from the
+        # name prep-network currently uses, because prep-network is itself being
+        # renamed to match (`scripts/rename_prep_network.py`). Once that lands,
+        # `name` here IS the new name, `RENAMES.get` misses, and a source-side
+        # identity would silently become the new name — churning every roster a
+        # second time. Keying off the display name gives the same answer in both
+        # states, which is the whole point. `RENAMES` is therefore a PERMANENT
+        # historical record; do not prune it once prep-network is updated.
+        canonical = _CANONICAL.get(display, display)
         out.append({
-            "name": RENAMES.get(name, name),
+            "name": display,
+            # Only written when it differs — a school nobody renamed is its own
+            # identity, and an absent key reads as "name" in `School.ident`.
+            **({"source": canonical} if canonical != display else {}),
             "city": s["city"],
             "county": city.get("county", ""),
             "area": s["area"],
