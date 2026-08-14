@@ -774,6 +774,17 @@ start of the offseason ladder — before the recruit board needs its output.
   region drawn from ~40 programs, so it sits where it belongs: harder to make
   than All-District, and open to a 2A school that produced a regional #1.
 
+  **The regions are nowhere near the same size, so the honour scales with them.**
+  Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17. A region
+  of **45 or more programs crowns a First and a Second Team** (Halbrook Basin,
+  Gold Valley, Harborline, South Coast, Ashbury Metro); the rest crown a single
+  unnumbered team. **Halbrook Basin alone** — nearly twice the next region — also
+  crowns an **All-Region Honorable Mention**, on exactly the All-State terms: a
+  merit threshold rather than a third team, no slot count, same résumé criteria
+  and same flight weighting, capped at **one selection per school**. The
+  thresholds are on the program count, not a list of region names, so they follow
+  the association as it changes.
+
   The Honors page itself is four views of one slate — All-State, All-Region,
   All-District and the method — with a dropdown for the classification, one for
   the region and one for the district, so a team can be read (and cited) without

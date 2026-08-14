@@ -9,6 +9,7 @@
              [('Season', view.season_year),
               ('All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('Regions', view.regions|length),
+              ('All-Region', view.regions|sum(attribute='n')),
               ('Districts', view.districts|length)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -80,7 +81,7 @@
 
 <div class="bl-panel jh-mod">
   {{ jh_tabs([('state', 'All-State', view.teams|map(attribute='players')|map('length')|sum),
-              ('region', 'All-Region', view.regions|length),
+              ('region', 'All-Region', view.regions|sum(attribute='n')),
               ('district', 'All-District', view.districts|length),
               ('method', 'How these are selected', 0)], 'jhaw') }}
 
@@ -129,7 +130,11 @@
       <strong>All-Region is the whole region, every classification.</strong>
       There is no {{ view.group }} All-Region team — a region team is drawn from
       every program in that region whatever its size, so this list is the same
-      whichever classification you are looking at.
+      whichever classification you are looking at. The regions are nowhere near
+      the same size, so the honour scales with them: a region of
+      {{ view.ar_tier2_min }}+ programs crowns a <strong>First and a Second
+      Team</strong>, and one of {{ view.ar_hm_min }}+ adds an
+      <strong>Honorable Mention</strong>.
     </div>
     <div class="jh-jump" style="margin:10px 14px 0">
       <label><span class="k">Region</span>
@@ -139,15 +144,29 @@
           {% endfor %}
         </select></label>
       <span class="jh-chip ghost">{{ view.team_singles }} singles +
-        {{ view.team_doubles }} doubles teams each</span>
+        {{ view.team_doubles }} doubles teams per team</span>
     </div>
     {% for rg in view.regions %}
     <div class="jh-swpane" data-sw="rg" data-i="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+      {# A big region crowns a First AND a Second Team — the association's regions
+         are nowhere near the same size (Halbrook Basin has 115 boys' programs,
+         North Range 17), so one team is a far scarcer honour in one than the
+         other. Small regions crown a single unnumbered team, and the heading
+         drops the tier rather than calling it "First Team" with no second. #}
+      {% for t in rg.tiers %}
       <div class="jh-awardsec">
-        <div class="jh-awardsec-head">{{ rg.region }} All-Region Team
-          <span>all classifications</span></div>
-        {{ award_team(rg.players) }}
+        <div class="jh-awardsec-head">{{ rg.region }} All-Region{% if t.name %} · {{ t.name }}{% else %} Team{% endif %}
+          <span>all classifications{% if rg.programs %} · {{ rg.programs }} programs{% endif %}</span></div>
+        {{ award_team(t.players) }}
       </div>
+      {% endfor %}
+      {% if rg.honorable_mention %}
+      <div class="jh-awardsec">
+        <div class="jh-awardsec-head">{{ rg.region }} All-Region · Honorable Mention
+          <span>{{ rg.honorable_mention|length }} selections — a threshold, not a team</span></div>
+        {{ award_team(rg.honorable_mention, numbered=false) }}
+      </div>
+      {% endif %}
     </div>
     {% endfor %}
     {% else %}

@@ -591,6 +591,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   — a cap that applies to HM ALONE**; the numbered teams stack a school as high as
   its résumés earn (4 seen). If every class shows the same HM count, a slot count
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
+  - **‼️ REGIONS ARE NOT THE SAME SIZE, so the honour scales with them** (owner rule
+    2027-08). Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17.
+    A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
+    Team**; below that, ONE unnumbered team (calling it "First" with no second
+    promises a tier that does not exist). Halbrook alone clears
+    **`AR_HM_MIN_PROGRAMS` (100)** and adds an **Honorable Mention** — All-State's
+    threshold logic exactly (no slot count, same criteria and flight weighting)
+    but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
+    singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a
+    list of region names** — the owner named four regions and the counts said five
+    (South Coast, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
+    `{tiers, honorable_mention, programs}` and **`jhsaa_awards.region_rows()` is
+    the ONE place that knows that shape** — a reader that walks the dict itself
+    will silently show a big region's First Team only.
+  - **‼️ `used` CARRIES ACROSS THE TIERS OF A LEVEL** (`_pick_team`). Ranked slices
+    keep tiers disjoint by INDEX, but a player with two strong partnerships sits at
+    two indices, so a per-team `used` put the same athlete on the First Team with
+    one partner and the Second with another. Owner: "that should not happen." The
+    All-State tier loop had the identical shape and the same latent bug.
+  - **‼️ AN ATHLETE'S CATEGORY IS THEIR BETTER DISCIPLINE, NOT THEIR MORE FREQUENT
+    ONE** (owner rule 2027-08: "kids can't play singles and doubles in the same
+    match so just take their better thing and give them that"). `_assign_primary`
+    compares STANDING — percentile in the gender-wide singles field vs percentile
+    of their strongest partnership in the gender-wide pairs field — because a
+    singles résumé and a partnership's are different currencies and cannot be
+    compared raw. Ties to singles. ⚠️ `_pairs` therefore builds EVERY partnership
+    and the cross-category ones are dropped after; gating pairs on the primary is
+    circular, since the primary is derived from the pair ratings.
   - **‼️ ALL-REGION IS REGION-WIDE AND CLASS-BLIND** (owner rule 2027-08). There is
     no 7A All-Region team — there is a **Gold Valley All-Region team**, drawn from
     every program in Gold Valley whatever its enrollment, exactly as in real life.

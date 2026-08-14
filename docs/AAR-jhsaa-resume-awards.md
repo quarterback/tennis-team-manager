@@ -422,8 +422,106 @@ removes, so the pane carries a note in plain words ("There is no 7A All-Region
 team…") and each team is headed **"Gold Valley All-Region Team · all
 classifications"**, never "All-Region · Gold Valley" under a 7A page.
 
+---
+
+# Addendum 3, 2027-08 — regions are not the same size, and an athlete is one thing
+
+Three owner corrections on top of Addendum 2, and one real bug that the first of
+them exposed.
+
+## 1. A big region crowns two teams; the biggest also crowns an HM
+
+> "some regions are bigger than others so like the Ashbury Metro, Halbrook Basin,
+> Gold Valley, and maybe the Harborline regions should all have bigger All-Region
+> Teams because there are so many schools. So I'd say First and Second Team"
+
+Making All-Region region-wide (Addendum 2) fixed the honour's SCOPE and left its
+SIZE flat, which is its own unfairness: ten singles places is a very different
+honour in a region of 115 programs than in one of 17.
+
+Measured, boys / girls:
+
+| region | boys | girls | | region | boys | girls |
+|---|---|---|---|---|---|---|
+| Halbrook Basin | 115 | 128 | | Sage Plains | 36 | 38 |
+| Gold Valley | 65 | 77 | | Juniper Highlands | 31 | 32 |
+| Harborline | 51 | 56 | | Cascade Divide | 28 | 29 |
+| South Coast | **49** | **50** | | Timber Valley | 22 | 24 |
+| Ashbury Metro | 45 | 54 | | North Range | 17 | 18 |
+
+**The measurement corrected the request.** The owner named four regions; the
+counts say five, because South Coast (49) is BIGGER than Ashbury Metro (45) on the
+boys' side. Excluding it would have contradicted the owner's own stated reason —
+"because there are so many schools" — so the threshold is on the PROGRAM COUNT
+(`AR_TIER2_MIN_PROGRAMS = 45`), never a list of region names. There is a clean
+break there: the next region down is 36. A name list would also have gone stale
+the first time a school was added.
+
+Halbrook is then its own case (`AR_HM_MIN_PROGRAMS = 100`): 115/128 against a
+next-largest 65/77, so even two full teams reach only 36 athletes in a region the
+size of a small classification. Its HM mirrors All-State's exactly — a merit
+THRESHOLD, not a fixed-size third team, same résumé criteria and same flight
+weighting, no requirement to fill anything — with one difference the owner set:
+**one entry per school, not two** (`AR_HM_PER_SCHOOL = 1`), an entry being one
+singles player OR one pairing. All-Region HM exists in exactly one region, and
+that region is a fifth of the association; without the tighter cap its deepest
+programs would take the tail of it two at a time.
+
+Shape: `all_region[region]` is now `{tiers, honorable_mention, programs}`, and
+**`region_rows()` is the one place that knows it.** Half a dozen readers walk this
+structure; walking it by hand in each is how one of them ends up showing a big
+region's First Team only.
+
+## 2. THE BUG: an athlete on both the First and the Second Team
+
+The tier test failed immediately — one Gold Valley athlete on both teams. Cause:
+`used` was created fresh per team. The ranked slices keep tiers disjoint by INDEX,
+but **a player with two strong partnerships appears at two different indices**, so
+they landed on the First Team with one partner and the Second with another.
+
+Owner: *"that should not happen."* Correct — that reads as a selector that could
+not make up its mind. `used` now carries across the tiers of a level, so an
+athlete is taken at their best tier and skipped thereafter.
+
+**It was not only a region bug.** All-State's tier loop had the identical shape,
+so the same duplication was possible on the First/Second/Third/Fourth teams and
+nobody had looked. Adding a feature surfaced a fault in the thing it was copied
+from — worth remembering: when a new caller of an old pattern fails, check the
+old callers before assuming the new one is wrong.
+
+## 3. The category is the athlete's BETTER discipline, not their more frequent one
+
+> "kids can't play singles and doubles in the same match so just take their better
+> thing and give them that"
+
+Addendum 1 assigned an athlete's category by PARTICIPATION — whichever discipline
+they played more of. Defensible, and not what was asked for: a player who filled
+in at doubles through a rotation while producing the region's best singles season
+was being judged as a doubles player.
+
+Now it is STANDING (`_assign_primary`). "Better" cannot be a raw score comparison
+— a singles résumé and a partnership's carry different flight weights over
+different volumes, so the numbers are not the same currency. It compares where the
+athlete sits in the gender-wide singles field against where their strongest
+partnership sits in the gender-wide field of partnerships, both as percentiles of
+the same shape. Ties go to singles.
+
+This inverted a dependency: `_pairs` used to skip non-doubles-primary players, but
+the primary is now DECIDED from the pair ratings, so every partnership is built
+first and the cross-category ones are dropped afterwards. Circular otherwise.
+
+One category per athlete is still what makes "nobody in both halves of one team"
+true by construction rather than by a filter.
+
 ## Traps for later
 
+- **A threshold that separates a named list today will separate a different list
+  tomorrow.** Derive from the property the owner is actually reasoning about
+  (size), then CHECK it against the names they gave — and say so when it disagrees.
+- **`region_rows()` or nothing.** Any new reader of `all_region` that walks the
+  dict itself will miss a tier or the HM.
+- `used` carries across tiers, at every level. Resetting it per team silently
+  re-admits the duplicate.
 - **Never put All-Region back inside `awards[group]`.** If a region team is being
   selected per classification, it is a district with a different heading.
 - Class → district is a hierarchy; class → region is not. Any UI that nests them
