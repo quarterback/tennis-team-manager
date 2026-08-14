@@ -586,11 +586,73 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   POY, All-State First/Second/Third (+**Fourth in 7A**) each **10 singles + 8
   doubles — the same size as an All-District team**, then Honorable Mention, plus a
   District POY and one All-District team per district. **HM is a THRESHOLD, not a
-  team**: no slot count, size varies by how deep the class actually was (measured
-  boys 7A 30 vs 5A 7), and **max 2 per school — a cap that applies to HM ALONE**;
-  the numbered teams stack a school as high as its résumés earn (4 seen). If every
-  class shows the same HM count, a slot count has crept back in — pinned by
-  `tests/test_jhsaa_awards.py`.
+  team**: no slot count, size varies by how
+  deep the class actually was (measured boys 7A 30 vs 5A 7), and **max 2 per school
+  — a cap that applies to HM ALONE**; the numbered teams stack a school as high as
+  its résumés earn (4 seen). If every class shows the same HM count, a slot count
+  has crept back in — pinned by `tests/test_jhsaa_awards.py`.
+  - **‼️ ALL-REGION IS REGION-WIDE AND CLASS-BLIND** (owner rule 2027-08). There is
+    no 7A All-Region team — there is a **Gold Valley All-Region team**, drawn from
+    every program in Gold Valley whatever its enrollment, exactly as in real life.
+    It is therefore selected ONCE PER GENDER (`jhsaa_awards.region_awards`, off the
+    gender-wide `build_pool`), archived at the SEASON level beside `all_district`
+    (NOT in `awards[group]`), and every reader merges it in — `honors_for` takes it
+    via `{**aw, "all_region": arc["all_region"]}`. Per classification it was a
+    DISTRICT BY ANOTHER NAME: a class-region holds 4-5 schools, so ten regions × six
+    classes × 18 selections honoured ~1,080 players out of ~300 programs and every
+    school placed somebody. Region-wide: 180 selections, 47% of schools placing vs
+    All-District's 83%, teams mixing 4-5 classifications. **Class → district IS a
+    hierarchy (a district is `(classification, name)`); class → region is NOT** — the
+    honors page's Region tab deliberately ignores the classification dropdown and
+    says so on screen. Do not "tidy" All-Region back inside a class's slate.
+  - **Ratings are computed GENDER-WIDE, once** (`build_pool`), then each class's
+    slate is selected from it. Non-district play crosses classifications, so rating a
+    class alone cut those edges out of the opponent graph and defaulted every
+    cross-class opponent to 0.5 — the same reason TOSS is computed over the whole
+    gender.
+  - **‼️ DOUBLES HONOURS GO TO PAIRINGS, NOT TO INDIVIDUAL DOUBLES PLAYERS** (owner
+    correction 2027-08). "8 doubles" is eight doubles TEAMS — sixteen athletes. The
+    candidate entity is the PARTNERSHIP (`_pairs`, keyed on the sorted pids), its
+    résumé is only the matches those two played TOGETHER, and it is rated against
+    the OPPOSING PAIR (`_q_pairs`/`_h2h_pairs`), never against individuals. Partners
+    rotate in this format, so one player is several candidates (`MIN_PAIR_MATCHES`
+    6 separates a partnership from two people put together once). **Which category
+    an athlete is considered in is decided by ACTUAL PARTICIPATION**
+    (`_primary_discipline`, ties to singles) — not by whichever résumé scores
+    higher — which is also what makes "no athlete in both halves of one team" true
+    by construction; `_take`'s `used` set catches the rest. ‼️ **Every "was this
+    person honoured?" test goes through `jhsaa_awards.row_pids`** — matching on
+    `row["pid"]` credits HALF of every pairing and looks perfectly fine on the
+    surface it is on. A team may be short a pairing where the pool cannot supply
+    eight disjoint ones (thin regions); **do not backfill**.
+  - **‼️ FLIGHT WEIGHTING IS STRUCTURAL, NOT A SMALL BONUS** (same correction). Two
+    mechanisms, both load-bearing: `FLIGHT_ALPHA` (1.00/0.90/0.70) sets how far
+    apart the flights sit, `FLIGHT_FLOOR` sets how far down the card a level reaches
+    at all — **State is a #1/#2 honour**, Region reaches #3, District has no floor.
+    Below the floor a player needs `_extraordinary`: a near-perfect record AND a win
+    over somebody who played at or above the floor, **checked against the match log,
+    not by re-scoring** (re-scoring only re-asks what the weights already answered).
+    Do NOT soften the alpha to open a lower level up — that was the old shape and it
+    opens the state list at the same time. The **flight sanity check**
+    (`_flight_report`) is archived per season (`awards[g]["flight_check"]`) and
+    rendered on the page: counts by flight plus every below-band pick by name,
+    flight and record. It is an artefact of a DECISION — never recompute it on read.
+  - **‼️ AWARDS ARE SELECTED AFTER THE LAST DUAL**, beside the record snapshot in
+    `run_season`. They used to be selected inside the qualification loop, i.e.
+    BEFORE Sectionals: `PHASE_WEIGHT` weighted a postseason nobody had played, and —
+    silently — the 1S/4D postseason moves most of a roster into doubles, so the
+    participation split the category rule reads was taken with a third of the season
+    missing. Same fault, same function, as the record-snapshot bug above; that one
+    had arithmetic that failed, this one had none.
+  - **The page is four VIEWS of one slate, not one scroll** — All-State /
+    All-Region / All-District / method as TABS, and the two that are themselves a
+    set of teams get a `<select>` switcher (one region, one district on screen;
+    the Region tab is class-blind and carries a note saying so). Each
+    team announces its halves ("Singles 10" / "Doubles teams 8 pairs · 16 athletes"),
+    because eight pairing rows otherwise read as eight individuals. The hub rail is
+    an INDEX of the page, not a copy of it. `.jh-award` is a fixed-column CSS grid —
+    **always emit the rank cell**, empty or not, or every unnumbered team shifts a
+    column. Data-bearing coverage lives in `tests/test_jhsaa_toc.py`.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.

@@ -2056,7 +2056,8 @@ def _challenge_pairs(by_group: dict, year: int, salt: str,
 # Player of the Year and one wide All-District team per district, all chosen from
 # the season's MATCH LOG rather than from ability ratings. Re-exported here so
 # `run_season` and every existing caller keep one import.
-from .jhsaa_awards import season_awards, honors_for       # noqa: E402,F401
+from .jhsaa_awards import (season_awards, region_awards, build_pool,   # noqa: E402,F401
+                           honors_for)
 
 
 _season_cache: dict = {}
@@ -2128,8 +2129,6 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     district_champs = {}
     for group in GROUPS:
         standings = by_group[group]
-        out["awards"][group] = season_awards(
-            [t for ts in standings.values() for t in ts])
         k = ladder_scale(group)
         protected, entrants = sectional_field(group, standings, power, scale=k)
         protecteds[group] = [t.school.name for t in protected]
@@ -2177,6 +2176,30 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
     out["toc"] = run_toc(champs, seed=seed + 7717)
+
+    # ‼️ AWARDS ARE SELECTED AFTER EVERY DUAL HAS BEEN PLAYED — the same rule the
+    # RECORD snapshot below runs on, and it was broken here in the same way. The
+    # selection used to sit in the qualification loop above, which meant it ran
+    # BEFORE Sectionals, so criterion 7 of the SOP ("Sectionals through State count
+    # for more") weighted a postseason nobody had played yet: `PHASE_WEIGHT` never
+    # applied to a single match, a state run added nothing to a résumé, and — worse,
+    # because it is silent — the 1S/4D postseason moves most of a roster into
+    # doubles, so the singles/doubles participation split the category rule reads
+    # (`_primary_discipline`) was taken with a third of the season missing. Nothing
+    # errored; the teams just quietly described the regular season.
+    # ONE rating pass over the WHOLE GENDER, then the per-class slates off it.
+    # Non-district play crosses classifications, so rating a class in isolation
+    # cuts those edges out of the opponent graph — the same reason TOSS is
+    # computed gender-wide. It is also what All-Region needs, because that honour
+    # is REGION-WIDE AND CLASS-BLIND: there is no 7A All-Region team, there is a
+    # Gold Valley All-Region team, drawn from every program in Gold Valley.
+    pool = build_pool([t for g in GROUPS for ts in by_group[g].values() for t in ts])
+    for group in GROUPS:
+        out["awards"][group] = season_awards(
+            [t for ts in by_group[group].values() for t in ts], pool=pool)
+    region = region_awards(pool)
+    out["all_region"] = region["teams"]
+    out["all_region_flight_check"] = region["flight_check"]
 
     for group in GROUPS:
         standings = by_group[group]
@@ -2235,8 +2258,11 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     """
     season = run_season(gender, year, seed=seed, salt=salt)
     grads = []
+    # All-Region is GENDER-WIDE, so it is merged into each class's slate for the
+    # honours lookup rather than living inside one — `honors_for` reads by pid.
+    region = season.get("all_region") or {}
     for name, ts in season["teams"].items():
-        awards = season["awards"].get(ts.school.group, {})
+        awards = {**season["awards"].get(ts.school.group, {}), "all_region": region}
         ladder = {p.pid: i + 1 for i, p in enumerate(ts.roster)}
         for p in [x for x in ts.roster if x.grade == 12]:
             w, l = ts.records.get(p.pid, [0, 0])

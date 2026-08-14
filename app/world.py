@@ -3546,8 +3546,27 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                "honorable_mention":
                                    season["awards"][g].get("honorable_mention", []),
                                "district_poy":
-                                   season["awards"][g].get("district_poy", {})}
+                                   season["awards"][g].get("district_poy", {}),
+                               # All-Region: one team per geographic region,
+                               # between All-State and All-District.
+                               # The FLIGHT CHECK the selector ran before
+                               # finalising each singles team (owner, 2027-08 —
+                               # flight weighting is structural). Archived, so a
+                               # season can be audited years later without
+                               # re-running a selector that may have moved on.
+                               "flight_check":
+                                   season["awards"][g].get("flight_check", {})}
                            for g in jhsaa.GROUPS},
+                # ‼️ ALL-REGION IS GENDER-WIDE, NOT PER CLASSIFICATION (owner rule
+                # 2027-08). There is no 7A All-Region team — there is a Gold Valley
+                # All-Region team, drawn from every program in Gold Valley whatever
+                # its enrollment. So it is archived beside `all_district` at the
+                # season level, NOT inside `awards[group]`, and every reader merges
+                # it in the same way. Selected per class it produced ~1,080 region
+                # honours a gender on ~300 programs — every school placed somebody,
+                # and it was a district by another name.
+                "all_region": season.get("all_region", {}),
+                "all_region_flight_check": season.get("all_region_flight_check", {}),
                 "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
                 # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed the
@@ -4004,6 +4023,13 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     for dname, r in (aw.get("district_poy") or {}).items():
         if r and r.get("school") == school:
             row["honors"].append(f"{dname} Player of the Year — {r['name']}")
+    # All-Region hangs off the SEASON, not the classification (owner rule 2027-08
+    # — a region team is class-blind). `aw` is the fallback for seasons archived
+    # while it still lived inside a class's slate.
+    for rname, rs in (arc.get("all_region") or aw.get("all_region") or {}).items():
+        for r in rs:
+            if r.get("school") == school:
+                row["honors"].append(f"All-Region ({rname}) — {r['name']}")
     # All-State names the TIER it was won on (First/Second/Third/Fourth Team, then
     # Honorable Mention). `teams` is the SOP shape; the flat `all_state` list is
     # the fallback for seasons archived before the tiers existed.

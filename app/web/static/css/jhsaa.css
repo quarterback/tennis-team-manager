@@ -427,7 +427,47 @@
 .jh-poy .nm { font-size: 17px; font-weight: 750; }
 .jh-poy .sub { color: var(--text-secondary); font-size: 12px; }
 .jh-poy .jh-chip { margin-left: auto; }
+.jh-award .nm a { color: inherit; text-decoration: none; }
+.jh-award .nm a:hover { color: var(--brand-strong); text-decoration: underline; }
+/* A doubles selection is a PAIRING, so the name cell routinely carries two
+   linked names — it must wrap rather than clip. */
+.jh-award .nm { min-width: 0; }
+.jh-amp { color: var(--text-faint); font-weight: 400; }
+
+/* A team is two honours in one — ten singles, eight doubles TEAMS — so each half
+   is announced. Without the split, "8 doubles" read as eight people. */
+.jh-awardhead {
+  display: flex; align-items: baseline; gap: 8px; padding: 9px 16px 5px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle); background: var(--surface-sunken, transparent);
+}
+.jh-awardhead span { font-weight: 400; letter-spacing: 0; text-transform: none;
+  font-size: 11px; color: var(--text-faint); }
+
+/* One award section — a numbered team, an HM group, a region, a district. */
+.jh-awardsec { border-top: 1px solid var(--border-subtle); }
+.jh-awardsec:first-child { border-top: 0; }
+.jh-awardsec-head {
+  display: flex; align-items: baseline; gap: 10px; padding: 11px 16px 8px;
+  font-family: var(--font-display); font-size: 14.5px; color: var(--text-primary);
+}
+.jh-awardsec-head span { font-family: var(--font-body, inherit); font-size: 11.5px;
+  color: var(--text-muted); }
+
 @media (max-width: 720px) {
   .jh-award { grid-template-columns: 22px 20px 1fr 60px; }
-  .jh-award .sch { display: none; }
+  .jh-award .sch, .jh-award .jh-chip { display: none; }
 }
+
+/* ‼️ All-Region is CLASS-BLIND — the one view on a per-classification page that
+   the classification dropdown does not change. Saying so is load-bearing: the
+   whole reason the honour was rebuilt is that a region team selected per class
+   was a district by another name, and an unlabelled tab under a class heading
+   reproduces exactly that confusion. */
+.jh-regionnote {
+  margin: 10px 14px 0; padding: 9px 12px; border-radius: 7px;
+  border: 1px solid var(--border-subtle); background: var(--surface-sunken, transparent);
+  font-size: 12px; line-height: 1.55; color: var(--text-secondary);
+}
+.jh-regionnote strong { color: var(--text-primary); }

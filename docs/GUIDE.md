@@ -717,19 +717,21 @@ start of the offseason ladder — before the recruit board needs its output.
   The **Tournament of Champions** is its own event on top of State, reserved
   for the six classification champions.
 - **Postseason awards are résumé selections, on the Honors tab.** Per
-  classification and gender, in one pass off the completed season: **State
-  Player of the Year**; **All-State First / Second / Third Team** — plus a
-  **Fourth Team in 7A**, whose talent pool is much larger — then **Honorable
-  Mention**; and for every district, a **District Player of the Year** and one
-  **All-District team**. Every All-State and All-District team is the same
-  size: **10 singles + 8 doubles selections**.
+  classification and gender, in one pass off the **completed** season — every
+  dual including the state tournament and the TOC: **State Player of the
+  Year**; **All-State First / Second / Third Team** — plus a **Fourth Team in
+  7A**, whose talent pool is much larger — then **Honorable Mention**; and for
+  every district, a **District Player of the Year** and one **All-District
+  team**. Separately, once for the whole association, one **All-Region team**
+  per geographic region. Every team is the same size: **10 singles + 8 doubles
+  teams** — 26 athletes.
   What the selectors weigh, in the association's own order: the player's
-  record and how much they played; the **flight** they played it at (a win at
-  #1 singles or #1 doubles counts for far more than one at #5); the **quality
-  of the individual opponents** faced, not just the opposing team; **quality
-  wins** over other award candidates; **good losses**, which cost very little
-  when they come against elite opposition; **head-to-head** between candidates
-  whose résumés are otherwise level; and **postseason matches**, weighted up.
+  record and how much they played; the **flight** they played it at; the
+  **quality of the individual opponents** faced, not just the opposing team;
+  **quality wins** over other award candidates; **good losses**, which cost very
+  little when they come against elite opposition; **head-to-head** between
+  candidates whose résumés are otherwise level; and **postseason matches**,
+  weighted up.
   Ability ratings are deliberately *not* an input — no OVR, talent, class year,
   recruit ranking or last season's honours. A great player on a poor team can
   win Player of the Year, and an unbeaten record against a weak slate does not
@@ -738,6 +740,45 @@ start of the offseason ladder — before the recruit board needs its output.
   a deep classification honours a couple of dozen extra players and a thin one
   only a handful, and a good season can miss it entirely. At most **two HM
   selections per school**; the numbered teams have no such cap.
+
+  **Doubles honours go to pairings, not to individual doubles players.** "8
+  doubles" means eight doubles *teams* — sixteen athletes. A doubles selection
+  is two players who actually competed together, judged only on the matches
+  they played **as a team** against other teams, so a player who partnered
+  around is a separate candidate with each partner and the record shown beside
+  a pairing is the partnership's. Which category an athlete is considered in
+  follows **where they actually played** that season, so nobody holds a singles
+  slot and a doubles slot on the same team, and no athlete appears twice on one
+  team. A team is only as large as the candidates who cleared the bar, so a thin
+  region occasionally crowns one pairing fewer rather than honouring one that
+  did not earn it.
+
+  **Flight is structural, not a bonus.** A 19–7 season at #1 singles is a bigger
+  season than 25–1 at #5, because the #1 spent the year playing every other
+  program's best player. So **All-State is a #1/#2 honour** and **All-Region
+  reaches #3**; below that a player is selected only on extraordinary evidence
+  — a near-perfect record *and* at least one win over somebody who played higher
+  up the card. **All-District** broadens further down, because a district is a
+  smaller pond, but the hierarchy still holds. Every season archives a **Flight
+  check**, visible on the Honors page: how many selections came from each flight
+  at each level, and every below-band pick named with its position and record.
+
+  **All-Region is the whole region, every classification.** There is no 7A
+  All-Region team — there is a Gold Valley All-Region team, drawn from every
+  program in that region whatever its enrollment, which is how it works in real
+  life. All-State is the classification and a district is
+  *(classification, name)*, so those two are per class; a region is neither, and
+  selecting one per classification made it a second All-District — four or five
+  schools per class-region, roughly a thousand honours a season on an association
+  of ~300 programs, every school placing somebody. Region-wide it is one team per
+  region drawn from ~40 programs, so it sits where it belongs: harder to make
+  than All-District, and open to a 2A school that produced a regional #1.
+
+  The Honors page itself is four views of one slate — All-State, All-Region,
+  All-District and the method — with a dropdown for the classification, one for
+  the region and one for the district, so a team can be read (and cited) without
+  scrolling past four hundred selections. Every season is archived exactly as it
+  was awarded, and the year selector reads it back.
 - **A program's record is one continuous number**, not split into "regular"
   and "postseason" halves that could double-count games — the postseason is
   folded into the same season total real high-school and NCAA records use,
