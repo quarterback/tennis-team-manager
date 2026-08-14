@@ -783,6 +783,62 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 
+## ⚠️ THE TEST SUITE MUST NEVER RESOLVE TO A REAL DATABASE (cost: the owner's save, repeatedly)
+`app.dbpath.resolve_db_path()` returns `$TENNIS_DB_PATH` or the repo's `./tennis.db`,
+and **`world.WORLD_DB` resolves to the SAME file** (one database, separate tables). The
+`played_season` fixture calls `world.reset()`, whose first statement is `DELETE FROM
+world`. So for as long as that fixture existed, **running `pytest` wiped the world in
+`./tennis.db`** — which is a real save, gitignored, 218 MB. The root `conftest.py` now
+points `TENNIS_DB_PATH` at a throwaway temp file BEFORE any `app` import; that guard is
+load-bearing and deleting it re-arms the save-eater.
+- **It also silently broke the awards.** The reset removed the world and left the played
+  SEASON rows, so the season's ~4,600 pids named people `build_roster` no longer
+  produces. `awards._eligible` `continue`d past every one, returned `[]`, and every
+  All-American tier came back empty on a fully played season — no error, no log, a clean
+  and completely wrong "nobody was honored". Diagnosed by measuring the two pid sets
+  (4,596 each, **zero** overlap), not by reading the selector, which was correct.
+  `_eligible` now logs loudly when nothing resolves. **If awards are empty, check that
+  log before the selection code.**
+- **"Pre-existing" describes WHEN a failure started, not whether it matters.** This one
+  was correctly bisected to "not mine" and was destroying data on every run.
+
+## ⚠️ TYPE SCALE — a scale that is not used is not a scale (owner rule 2027-08)
+The app had **768 px font-size declarations against a 12-token scale used SEVEN times**:
+78% of all type under 14px, 34% under 12px, 31 distinct sizes with seven half-pixel
+steps. Raised across the board with a hard floor of 11px (uppercase tracked labels only);
+`tokens/typography.css` owns SIZES and weights, `tokens/fonts.css` owns FAMILIES (they
+both declared families once and typography, importing second, silently won). **Use a
+token; a literal is how the scale drifted from 12 values to 31.**
+- **‼️ FIXED-SIZE BOXES ARE EXEMPT AND MUST CLIP.** A crest is an ICON, not prose:
+  `.bl-crest.xs` is a 20px square, and four glyphs of 800-weight display type only fit it
+  at ~9px, so the sweep's 9→11px raise pushed WAKE/TAMU/MICH/NCST out over the school
+  name on every bracket, standings, portal and search row. Raising it means widening
+  every crest box and so every dense row in the app. Compact sizes + `overflow: hidden`,
+  which is a guarantee rather than an assumption about label length. Same for the recruit
+  crest and the almanac rank pip.
+- **Fixed grid columns are sized against the type they were designed with** — seven
+  column sets needed widening.
+
+## ⚠️ COLOUR — ten light schemes, and components read ALIASES ONLY
+`tokens/colors.css` is three layers: palette slots → structural slots → semantic aliases.
+A scheme (`[data-theme="…"]`) overrides the first two only, which is what lets ten
+palettes exist without touching a component rule. **Never write a raw colour outside this
+file.** `color-scheme: only light` is deliberate (Chromium's Auto Dark Theme re-inverts a
+page that never asked). Schemes are shared with `prep-network/site/style.css`; the picker
+list is `server.SCHEMES`.
+- **Measure every slot against its own ground before writing it down.** The `clay` scheme
+  contains NO colour dark enough to be ink — the darkest is 1.8:1 — so its ink and link
+  are derived by pushing the palette's hues down. Dropped in as sent it would have
+  rendered unreadable body text with no error anywhere.
+- **Win/loss stays green/red in every scheme**: those carry MEANING, not identity.
+- **A swatch is keyed on the scheme NAME** — rename a scheme and its chip goes blank
+  while everything else still works. Every key in `SCHEMES` needs a `.fm-theme-sw.s-*`
+  rule.
+- A token that is referenced but never DEFINED silently keeps its hard-coded fallback and
+  ignores every scheme (`--surface`, `--border`, `--text`, `--pos`, `--neg` all did).
+  `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
+See `docs/AAR-design-port-readability-and-the-save-eating-suite.md`.
+
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one
