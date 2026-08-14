@@ -324,6 +324,25 @@ def _str_scale_rows():
     return rows
 
 
+# ---- Colour schemes -----------------------------------------------------------
+# The picker's list. Keys match the `[data-theme="…"]` blocks in
+# `static/css/tokens/colors.css`, and the default is the bare `:root` — so
+# "Ensign" carries no attribute at all. Ported from the Varsity Apex sheet along
+# with the palettes themselves; ten light schemes, no dark mode.
+SCHEMES = [
+    ("default",    "Ensign",     "Deep twilight · cobalt · white · red"),
+    ("laurel",     "Laurel",     "Evergreen · crimson · parchment · amber"),
+    ("apex",       "Apex",       "Prussian · steel blue · amber · flag red"),
+    ("rally",      "Rally",      "Blue bell · aqua · lemon · racing red"),
+    ("clay",       "Clay",       "Neon pink · coral · petal · sand · olive"),
+    ("floodlight", "Floodlight", "Shadow · indigo · canary · mint · cherry"),
+    ("ember",      "Ember",      "Bordeaux · iron · peach · caramel · teal"),
+    ("harbor",     "Harbor",     "Dark teal · peach · red"),
+    ("citrus",     "Citrus",     "Aqua · beige · pumpkin"),
+    ("pitch",      "Pitch",      "Mint · sea green · amber · black"),
+]
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
@@ -423,7 +442,7 @@ def create_app() -> Flask:
         return {"universes": UNIVERSES, "u": u, "uni_label": label,
                 "my_team": prog["school"] if prog else None,
                 "nav_groups": groups, "active_nav": _active_nav(request),
-                "game": _game_context()}
+                "schemes": SCHEMES, "game": _game_context()}
 
     @app.before_request
     def _prime_world():

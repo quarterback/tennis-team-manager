@@ -10,7 +10,11 @@ These are *computed* honors (a transparent proxy for the real NCAA selection),
 so they stay consistent with the rankings, box scores, and player cards."""
 from __future__ import annotations
 
+import logging
+
 from .state import ranking_rows, DEFAULT_SEED
+
+log = logging.getLogger("baseline.awards")
 
 # Selection sizes (singles). Tunable; deliberately conservative.
 AA_FIRST = 10           # First Team All-American (national)
@@ -101,11 +105,17 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
     recs = sm.player_records(sid)               # pid -> (w, l) singles totals (eligibility)
     lrec = sm.player_line_records(sid)          # pid -> {'singles': {n:[w,l]}, 'doubles': {n:[w,l]}}
     out = []
+    unresolved = 0
     for pid, (w, l) in recs.items():
         if w + l < MIN_MATCHES:
             continue
         info = pidx.get(pid)
         if info is None:
+            # A pid in the season's results that the CURRENT roster generation
+            # does not produce. One or two is ordinary churn (a transfer, a
+            # portal move); all of them means the season and the rosters are
+            # describing different populations — see the guard below.
+            unresolved += 1
             continue
         c, ca = conf.get(info["school"], ("Independent", "IND"))
         lr = lrec.get(pid, {})
@@ -122,6 +132,24 @@ def _eligible(division: str, gender: str, seed: int) -> list[dict]:
                     "w": w, "l": l, "line": line, "perf": round(perf, 2),
                     "team_wpct": round(team_wpct.get(info["school"], 0.5), 3),
                     "conf_prestige": round(conf_prestige(ca), 3)})
+    # ‼️ AN EMPTY HONORS BOARD ON A PLAYED SEASON IS A FAULT, NOT A RESULT.
+    # Every pid failing to resolve means the season's results and the roster
+    # generation are describing DIFFERENT POPULATIONS — the save's world was
+    # reset (or rebuilt under a new salt) while its played season rows survived.
+    # Nothing errored: `_eligible` returned [], every All-American tier came back
+    # empty, and the awards page rendered a clean, plausible, completely wrong
+    # "nobody was honored". That is the silent-degradation shape this codebase
+    # keeps paying for, so it is now loud.
+    if unresolved and not out:
+        log.error(
+            "awards: %s-%s has %d players with results but NONE resolve against the "
+            "current roster index (%d pids). The season and the rosters are from "
+            "different worlds — the world was probably reset while its season rows "
+            "survived. Honors will be empty until the season is replayed.",
+            division, gender, unresolved, len(pidx))
+    elif unresolved > 0.25 * max(1, unresolved + len(out)):
+        log.warning("awards: %s-%s dropped %d of %d players as unresolved pids",
+                    division, gender, unresolved, unresolved + len(out))
     out.sort(key=lambda p: (p["perf"], p["w"], -p["l"]), reverse=True)
     return out
 

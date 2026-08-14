@@ -1,83 +1,693 @@
 /* ============================================================
-   Baseline — Color tokens  (light only)
-   Palette mirrors oregontennis.org: pine-green header, semantic
-   stat colors (Power Index blue, APR/FQI green), classification
-   badges (6A blue / 5A purple / small-class green), result tints,
-   gold top-ranks. Flat & utilitarian — borders, not shadows.
+   Colour — the Varsity Apex palette system, ported whole.
+
+   THREE LAYERS, and components only ever read the third:
+     1. palette slots   the scheme's raw colours (--oxblood, --cobalt, …)
+     2. structural slots what the components were actually built against
+                         (--ink, --paper, --linen, --cyan, --ice, --brand…)
+     3. semantic aliases --text-*, --surface-*, --border-*, --cat-*, …
+
+   A scheme overrides layers 1-2 only. That is what makes ten palettes possible
+   without touching a single component rule, and it is why this file must stay
+   the ONLY place a raw colour is written.
+
+   ‼️ EVERY LIGHT, DELIBERATELY. `color-scheme: only light` is the documented
+   opt-out from Chromium's Auto Dark Theme, which re-inverts a page that never
+   asked for it — white masthead type survives, white icon strokes do not, and
+   the whole app comes out muddy grey. Plain `light` is NOT enough; the UA still
+   applies its own adjustment.
    ============================================================ */
 
+:root { color-scheme: only light; }
+
 :root {
-  /* ---- Brand: pine / sea green (header bar) ---- */
-  --green-800: oklch(0.38 0.075 162);
-  --green-700: oklch(0.45 0.090 162);
-  --green-600: oklch(0.525 0.098 162);   /* primary header + brand */
-  --green-500: oklch(0.60 0.110 162);
-  --green-200: oklch(0.88 0.055 162);
-  --green-100: oklch(0.94 0.038 162);
-  --green-50:  oklch(0.972 0.020 162);
+  /* ---- palette slots (owner scheme 2027-08e — the site default) ----
+     oxblood #970005 · pure-red #ed0101 · white #ffffff ·
+     cobalt-blue #0c44ac · deep-twilight #000052.
 
-  /* ---- Semantic stat colors ---- */
-  --stat-power:        oklch(0.50 0.165 262);   /* Power Index — blue, bold */
-  --stat-power-bg:     oklch(0.96 0.025 262);
-  --stat-good:         oklch(0.555 0.125 160);  /* APR / FQI — green */
-  --stat-good-strong:  oklch(0.47 0.115 160);
-  --stat-muted:        oklch(0.66 0.010 255);   /* low/greyed stat */
+     The plain red-white-blue, and the only palette here that needed no
+     adjustment anywhere. Measured on white:
+       deep-twilight 18.7:1  the ink, and the masthead bar
+       oxblood        9.1:1  body-safe text; chips and the rank colour
+       cobalt         8.6:1  LINK TEXT AT THE HEX GIVEN — nothing darkened
+       pure-red       4.6:1  clears AA body; the live accent and mast rule
+     Every other scheme in this file has at least one colour pushed darker to
+     be legible. This one uses all five as sent. */
+  --oxblood: #970005;
+  --pure-red: #ed0101;
+  --cobalt: #0c44ac;
+  --twilight: #000052;
 
-  --rank-gold:   oklch(0.70 0.135 78);
-  --rank-silver: oklch(0.72 0.020 250);
-  --rank-bronze: oklch(0.60 0.110 52);
+  /* the structural slots the components were built against */
+  --linen: hsl(219, 70%, 93%);     /* cobalt, laid down flat: bands and heads */
+  --ivory: #ffffff;                /* white, literally, is the ground */
+  --cyan: hsl(219, 60%, 95%);      /* cobalt wash: hover, highlight */
+  --ice: var(--cobalt);            /* accent detail */
+  --prussian: var(--twilight);     /* the ink slot keeps its historical name */
 
-  /* ---- Classification badge colors ---- */
-  --cat-6a: oklch(0.55 0.165 260);   /* blue   */
-  --cat-5a: oklch(0.56 0.165 300);   /* purple */
-  --cat-sm: oklch(0.555 0.120 162);  /* 4A/3A/2A/1A — green */
-  --cat-d1: oklch(0.55 0.165 260);   /* (college reuse of 6A blue) */
+  --ink: var(--prussian);
+  --paper: var(--ivory);
+  --brand: var(--prussian);
+  --brand-strong: var(--cobalt);        /* 8.6:1 — link text, unmodified */
+  --brand-tint: var(--cyan);
+  --accent-live: var(--pure-red);       /* in progress, happening now */
 
-  /* ---- Result / H2H tints ---- */
-  --tint-win-bg:  oklch(0.93 0.055 160);  --tint-win-fg:  oklch(0.43 0.105 160);
-  --tint-loss-bg: oklch(0.935 0.045 27);  --tint-loss-fg: oklch(0.52 0.150 27);
-  --tint-even-bg: oklch(0.955 0.060 95);  --tint-even-fg: oklch(0.50 0.090 75);
+  /* neutrals — twilight at falling strength */
+  --gray-150: hsl(219, 30%, 93%);
+  --gray-200: hsla(240, 100%, 16%, 0.13);
+  --gray-300: hsla(240, 100%, 16%, 0.22);
+  --gray-400: hsl(222, 14%, 62%);
+  --gray-500: hsl(222, 18%, 46%);
+  --gray-600: hsl(228, 34%, 30%);
 
-  /* ---- Neutrals: cool gray ---- */
-  --gray-50:  oklch(0.985 0.002 255);
-  --gray-100: oklch(0.970 0.003 255);
-  --gray-150: oklch(0.955 0.004 255);
-  --gray-200: oklch(0.928 0.005 255);
-  --gray-300: oklch(0.882 0.006 255);
-  --gray-400: oklch(0.735 0.008 255);
-  --gray-500: oklch(0.620 0.010 255);
-  --gray-600: oklch(0.515 0.011 255);
-  --gray-700: oklch(0.410 0.012 255);
-  --gray-800: oklch(0.320 0.013 255);
-  --gray-900: oklch(0.245 0.013 255);
+  /* classification chips — chip BACKGROUNDS carrying white text, so every
+     one of these is dark enough to hold it (6.5:1 at the lightest). */
+  --cat-7a: var(--twilight);
+  --cat-6a: hsl(228, 90%, 22%);
+  --cat-5a: var(--cobalt);
+  --cat-4a: hsl(219, 70%, 44%);
+  --cat-3a: var(--oxblood);
+  --cat-2a: hsl(358, 80%, 38%);
+  --cat-1a: hsl(0, 75%, 40%);
 
-  /* ---- Semantic aliases ---- */
-  --surface-page:    oklch(1 0 0);
-  --surface-card:    oklch(1 0 0);
-  --surface-subtle:  var(--gray-50);
-  --surface-toolbar: var(--gray-100);
-  --surface-th:      var(--gray-100);     /* table header */
-  --surface-zebra:   var(--gray-50);      /* odd rows */
-  --surface-hover:   var(--green-50);
-  --surface-header:  var(--green-600);    /* the green nav bar */
+  --rank-gold: var(--oxblood);
 
-  --text-primary:   var(--gray-900);
+  /* ---- semantic aliases — components read these only ---- */
+  --surface-page: var(--paper);
+  --surface-card: var(--paper);
+  --surface-subtle: hsl(219, 60%, 97%);
+  --surface-th: var(--linen);
+  --surface-zebra: hsla(219, 70%, 90%, 0.34);
+  --surface-hover: var(--cyan);
+  --surface-mast: var(--twilight);   /* the bar IS the palette */
+  /* Masthead ink. A scheme with a DARK masthead needs light type on it, and
+     without these aliases the only masthead any palette could have was a pale
+     wash — which is why two palettes built around navy and red came out
+     reading as beige: their loudest colours had nowhere to go but a 20px
+     chip. `--mast-rule` is the band under the bar, where an athletics site
+     traditionally puts its second colour. */
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(219, 60%, 82%);
+  --mast-rule: var(--pure-red);
+
+  --text-primary: var(--ink);
   --text-secondary: var(--gray-600);
-  --text-muted:     var(--gray-500);
-  --text-faint:     var(--gray-400);
-  --text-inverse:   oklch(1 0 0);
-  --text-link:      var(--stat-power);
+  --text-muted: var(--gray-500);
+  --text-faint: var(--gray-400);
+  --text-link: var(--brand-strong);
 
-  --border-subtle:  var(--gray-200);
+  --border-subtle: var(--gray-200);
   --border-default: var(--gray-300);
-  --border-strong:  var(--gray-400);
+  --rule: 2px solid var(--ink);
+  --hairline: 1px solid var(--border-subtle);
 
-  --brand:          var(--green-600);
-  --brand-strong:   var(--green-700);
-  --brand-contrast: oklch(1 0 0);
-  --accent:         var(--stat-power);
+  /* ---- type roles ---- */
+  --font-wordmark: 'PP Valve', 'Arial Black', sans-serif;
+  --font-stencil: 'PP Valve Stencil', 'PP Valve', 'Arial Black', sans-serif;
+  --font-display: 'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-text: 'PP Neue Montreal', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-serif: 'Author', Georgia, 'Times New Roman', serif;
+  --font-label: 'PP Object Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-condensed: 'PP Pangram Compressed', 'Arial Narrow', sans-serif;
+  --font-poster: 'PP Formula Extended', 'Arial Black', sans-serif;
+  --font-mono: 'Azeret Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --focus-ring:     var(--green-600);
+  --fs-display: 30px; --fs-title: 18px; --fs-body: 14px; --fs-small: 13px;
+  --fs-caption: 12px; --fs-micro: 11px;
+  --ls-caps: 0.06em;
 
-  --signal-live:    oklch(0.585 0.205 25);  /* live dot */
+  --radius: 8px; --radius-pill: 999px;
+  --container: 1180px; --gutter: 20px;
+
+  /* crest tones — hash-assigned per school, themed with the scheme */
+  --crest-0: #000052;            --crest-1: hsl(228, 90%, 22%);
+  --crest-2: #0c44ac;            --crest-3: hsl(219, 70%, 44%);
+  --crest-4: #970005;            --crest-5: hsl(358, 80%, 40%);
+  --crest-6: hsl(0, 75%, 42%);   --crest-7: hsl(219, 40%, 34%);
+  --crest-8: hsl(240, 60%, 26%); --crest-9: hsl(350, 50%, 34%);
+  --crest-10: hsl(210, 45%, 30%); --crest-11: hsl(228, 30%, 38%);
+}
+:root { color-scheme: only light; }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body { overflow-x: clip; }
+body {
+  margin: 0; background: var(--surface-page); color: var(--text-primary);
+  font-family: var(--font-text); font-size: var(--fs-body); line-height: 1.5;
+}
+
+
+/* ============================================================
+   The Play to Clinch alias layer.
+
+   This app was built against its own token names — `--green-*` for the brand
+   ramp, `--stat-*` for the Power Index colours, `--tint-*` for result cells,
+   `--surface-header` for the nav bar. All ~950 of those references keep working
+   because every one of them is re-pointed at a SLOT above, so they follow the
+   scheme automatically. Nothing below is a raw colour.
+   ============================================================ */
+:root {
+  /* The brand ramp. The names are historical — this app started green and the
+     `.jh-champ` hero and the segmented controls read `--green-*` directly — but
+     they are now the SCHEME's brand at five strengths. Renaming them would touch
+     40-odd call sites to say the same thing. */
+  --green-800: color-mix(in oklab, var(--brand) 78%, black);
+  --green-700: color-mix(in oklab, var(--brand) 88%, black);
+  --green-600: var(--brand);
+  --green-500: color-mix(in oklab, var(--brand) 82%, white);
+  --green-200: color-mix(in oklab, var(--brand) 26%, white);
+  --green-100: color-mix(in oklab, var(--brand) 12%, white);
+  --green-50:  var(--cyan);           /* the hover/highlight wash — 27 uses */
+
+  /* Greys the Apex schemes do not define, derived from the scheme's own ink so
+     they carry its temperature rather than sitting neutral against it. */
+  --gray-50:  color-mix(in oklab, var(--ink) 2%,  white);
+  --gray-100: color-mix(in oklab, var(--ink) 4%,  white);
+  --gray-700: color-mix(in oklab, var(--ink) 82%, white);
+  --gray-800: color-mix(in oklab, var(--ink) 91%, white);
+  --gray-900: var(--ink);
+
+  /* Power Index / stat colours. `--stat-power` was the blue that carried the
+     headline number; it becomes the scheme's link colour, which is the slot
+     already proven to carry text on that ground. */
+  --stat-power:       var(--brand-strong);
+  --stat-power-bg:    color-mix(in oklab, var(--brand-strong) 8%, white);
+  --stat-muted:       var(--text-faint);
+
+  /* ⚠️ WIN/LOSS STAYS GREEN/RED IN EVERY SCHEME, ON PURPOSE. These are the only
+     colours in the app carrying MEANING rather than identity — a result cell,
+     an APR arrow — and a reader should not have to re-learn them because they
+     picked a different palette. They are muted enough to sit inside any of the
+     ten without shouting. */
+  --stat-good:        oklch(0.52 0.115 160);
+  --stat-good-strong: oklch(0.44 0.105 160);
+  --tint-win-bg:  color-mix(in oklab, oklch(0.52 0.115 160) 13%, var(--paper));
+  --tint-win-fg:  oklch(0.42 0.105 160);
+  --tint-loss-bg: color-mix(in oklab, oklch(0.55 0.150 27) 12%, var(--paper));
+  --tint-loss-fg: oklch(0.48 0.150 27);
+  --tint-even-bg: color-mix(in oklab, oklch(0.62 0.100 85) 16%, var(--paper));
+  --tint-even-fg: oklch(0.45 0.085 75);
+
+  /* Ranks + classification badges ride the scheme's own chip ramp. */
+  --rank-silver: var(--gray-400);
+  --rank-bronze: color-mix(in oklab, var(--rank-gold) 74%, var(--ink));
+  --cat-sm: var(--cat-3a);
+  --cat-d1: var(--cat-6a);
+
+  /* Chrome */
+  --surface-header:  var(--surface-mast);   /* the nav bar IS the palette */
+  --surface-toolbar: var(--surface-th);
+  --border-strong:   var(--gray-400);
+  --text-inverse:    var(--on-mast);
+  --brand-contrast:  var(--on-mast);
+  --accent:          var(--brand-strong);
+  --focus-ring:      var(--brand-strong);
+  --signal-live:     var(--accent-live);
+
+  /* ⚠️ SHORT ALIASES THAT WERE NEVER DEFINED. Several older rules read
+     `var(--surface, #fff)`, `var(--border, #d8e0e8)`, `var(--pos, #1a8f4c)` and
+     friends — tokens this file never declared, so the HARD-CODED FALLBACK won
+     every time. Nothing looked broken, and nothing would have: they simply sat
+     at a fixed light-mode colour while every scheme changed around them, which
+     is precisely how a palette ends up looking half-applied. `var(--text)` had
+     no fallback at all. Pointed at real slots so they follow the scheme. */
+  --surface:        var(--surface-card);
+  --surface-2:      var(--surface-subtle);
+  --surface-sunken: var(--surface-subtle);
+  --bg-muted:       var(--surface-th);
+  --border:         var(--border-default);
+  --text:           var(--text-primary);
+  --pos:            var(--stat-good);
+  --neg:            var(--tint-loss-fg);
+  --stat-bad:        var(--tint-loss-fg);
+  --stat-bad-strong: oklch(0.44 0.150 27);
+  --font-body:      var(--font-text);
+}
+
+
+/* ==== the schemes ==== */
+
+/* ── scheme: pitch — mint-cream / olive-wood / sea-green / bright-amber /
+   pitch-black (owner palette 2027-08b). Pitch is the ink at 17.4:1 on mint;
+   olive-wood (4.8:1) is the one accent that carries body-size text and takes
+   the secondary-text role; sea-green is 3.5:1 at full strength so links take
+   it at 24% (4.7:1); bright-amber is 1.3:1 — fill and border only. ── */
+[data-theme="pitch"] {
+  --linen: hsl(49, 90%, 88%);
+  --ivory: #eaf2ef;
+  --cyan: hsl(166, 45%, 89%);
+  --ice: #00916e;
+  --prussian: #0d090a;
+
+  --brand-strong: hsl(166, 100%, 24%);
+  --accent-live: hsl(27, 65%, 38%);
+
+  --gray-150: hsl(158, 16%, 90%);
+  --gray-200: hsla(345, 18%, 4%, 0.14);
+  --gray-300: hsla(345, 18%, 4%, 0.24);
+  --gray-400: hsl(160, 8%, 58%);
+  --gray-500: hsl(160, 10%, 43%);
+  --gray-600: hsl(27, 22%, 34%);
+
+  --cat-7a: hsl(345, 18%, 6%);
+  --cat-6a: hsl(166, 60%, 16%);
+  --cat-5a: hsl(166, 100%, 22%);
+  --cat-4a: hsl(166, 55%, 30%);
+  --cat-3a: hsl(27, 30%, 30%);
+  --cat-2a: hsl(27, 26%, 38%);
+  --cat-1a: hsl(45, 100%, 24%);
+
+  --rank-gold: hsl(45, 100%, 30%);
+
+
+  --surface-subtle: hsl(49, 55%, 95%);
+  --surface-zebra: hsla(166, 55%, 86%, 0.30);
+
+  --crest-0: hsl(345, 18%, 8%);  --crest-1: hsl(166, 65%, 18%);
+  --crest-2: hsl(166, 100%, 26%); --crest-3: hsl(166, 45%, 34%);
+  --crest-4: hsl(27, 30%, 30%);  --crest-5: hsl(27, 24%, 42%);
+  --crest-6: hsl(45, 100%, 26%); --crest-7: hsl(49, 70%, 34%);
+  --crest-8: hsl(158, 20%, 34%); --crest-9: hsl(190, 40%, 28%);
+  --crest-10: hsl(27, 40%, 24%); --crest-11: hsl(345, 12%, 30%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: #0d090a;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(158, 24%, 80%);
+  --mast-rule: #ffcf00;
+}
+
+/* ── scheme: rally — sky-aqua / blue-bell / bright-lemon / tiger-flame /
+   racing-red (owner palette 2027-08d). Five saturated colours and no dark or
+   light value in the set, so the ink and the ground derive from the aqua and
+   bell hues (192 / 205) the way bloom's and citrus's did. Every one of the
+   five is too bright to carry text on paper — lemon is 1.3:1 — so they take
+   the surfaces instead: a deep-bell bar under a racing-red rule, aqua as the
+   highlight wash, lemon as the band, flame and red as the accents. ── */
+[data-theme="rally"] {
+  --linen: hsl(54, 100%, 86%);   /* bright-lemon, laid down flat: bands, heads */
+  --ivory: hsl(192, 60%, 97%);   /* aqua at a whisper takes the ground slot */
+  --cyan: hsl(192, 90%, 91%);    /* sky-aqua wash: hover, highlight */
+  --ice: #19a5ff;                /* blue-bell takes the accent-detail slot */
+  --prussian: hsl(206, 62%, 12%);
+
+  --brand-strong: hsl(205, 90%, 32%);   /* blue-bell at 6.5:1 — link text */
+
+  --gray-150: hsl(192, 30%, 91%);
+  --gray-200: hsla(206, 62%, 10%, 0.14);
+  --gray-300: hsla(206, 62%, 10%, 0.24);
+  --gray-400: hsl(200, 14%, 60%);
+  --gray-500: hsl(202, 16%, 44%);
+  --gray-600: hsl(206, 30%, 28%);
+
+  /* chip backgrounds hold white text: 5.3:1 at the lightest */
+  --cat-7a: hsl(206, 70%, 12%);
+  --cat-6a: hsl(206, 75%, 20%);
+  --cat-5a: hsl(205, 85%, 28%);
+  --cat-4a: hsl(196, 70%, 30%);
+  --cat-3a: hsl(16, 80%, 34%);
+  --cat-2a: hsl(16, 70%, 42%);
+  --cat-1a: hsl(356, 85%, 38%);
+
+  --rank-gold: hsl(44, 95%, 32%);
+  --accent-live: #f00c18;               /* racing-red: happening now */
+
+  --surface-mast: hsl(206, 80%, 20%);   /* deep blue-bell, 12.1:1 on white */
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(196, 60%, 80%);
+  --mast-rule: #f00c18;
+
+  --surface-subtle: hsl(54, 90%, 95%);
+  --surface-zebra: hsla(192, 90%, 86%, 0.30);
+
+  --crest-0: hsl(206, 75%, 18%); --crest-1: hsl(205, 85%, 28%);
+  --crest-2: hsl(196, 70%, 30%); --crest-3: hsl(192, 60%, 36%);
+  --crest-4: #b30f1a;            --crest-5: hsl(356, 70%, 46%);
+  --crest-6: hsl(16, 80%, 34%);  --crest-7: hsl(16, 70%, 44%);
+  --crest-8: hsl(44, 95%, 28%);  --crest-9: hsl(54, 70%, 30%);
+  --crest-10: hsl(206, 40%, 34%); --crest-11: hsl(192, 30%, 30%);
+}
+
+/* ── scheme: clay — neon-pink / light-coral / powder-petal / sand-dune /
+   muted-olive. The tennis one: a clay court and the grass beside it.
+
+   ‼️ THE ONLY SCHEME HERE WHOSE PALETTE CONTAINS NO INK. Every one of the five
+   is a light or mid tone — the darkest, muted-olive, is 1.8:1 on the ground —
+   so the ink and the link are DERIVED by pushing the olive and pink hues down
+   until they are legible, and the five sent colours are kept for the ground,
+   the band, and the accents where their lightness is the point. Measured on
+   powder-petal:
+     olive ink   11.7:1   the ink, and the masthead bar
+     pink link    6.8:1   link text, the pink hue at 32% lightness
+     coral live   5.1:1   the in-progress accent
+   Neon-pink survives UNMODIFIED where it sits on the dark bar (the mast rule)
+   and as an accent detail, which is the only place 3.7:1 is enough. ── */
+[data-theme="clay"] {
+  --linen: #d6d5b3;             /* sand-dune takes the band slot */
+  --ivory: hsl(23, 68%, 92%);   /* powder-petal, lifted, is the ground */
+  --cyan: hsl(23, 68%, 88%);    /* petal at full strength: hover, highlight */
+  --ice: #f92a82;               /* neon-pink takes the accent-detail slot */
+  --prussian: hsl(121, 34%, 12%);
+
+  --brand-strong: hsl(334, 74%, 32%);   /* the pink hue, pushed to carry text */
+
+  --gray-150: hsl(58, 30%, 88%);
+  --gray-200: hsla(121, 34%, 12%, 0.15);
+  --gray-300: hsla(121, 34%, 12%, 0.25);
+  --gray-400: hsl(58, 12%, 58%);
+  --gray-500: hsl(60, 10%, 33%);
+  --gray-600: hsl(121, 14%, 28%);
+
+  --cat-7a: hsl(121, 34%, 13%);
+  --cat-6a: hsl(121, 30%, 20%);
+  --cat-5a: hsl(121, 26%, 28%);
+  --cat-4a: hsl(58, 32%, 26%);
+  --cat-3a: hsl(355, 52%, 38%);
+  --cat-2a: hsl(334, 70%, 35%);
+  --cat-1a: hsl(20, 18%, 34%);
+
+  --rank-gold: hsl(30, 62%, 31%);
+  --accent-live: hsl(355, 60%, 42%);
+
+  --surface-subtle: hsl(23, 60%, 95%);
+  --surface-zebra: hsla(58, 30%, 70%, 0.20);
+
+  --crest-0: hsl(121, 32%, 18%); --crest-1: hsl(121, 26%, 28%);
+  --crest-2: hsl(334, 66%, 32%); --crest-3: hsl(334, 50%, 42%);
+  --crest-4: hsl(355, 50%, 40%); --crest-5: hsl(355, 40%, 48%);
+  --crest-6: hsl(58, 32%, 28%);  --crest-7: hsl(30, 40%, 36%);
+  --crest-8: hsl(100, 24%, 30%); --crest-9: hsl(15, 30%, 38%);
+  --crest-10: hsl(80, 22%, 34%); --crest-11: hsl(345, 30%, 40%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: hsl(121, 34%, 14%);
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(58, 30%, 82%);
+  --mast-rule: #f92a82;         /* neon-pink, unmodified, on the dark bar */
+}
+
+/* ── scheme: floodlight — shadow-grey / twilight-indigo / canary-yellow /
+   mint-leaf / cherry-rose. A night match: dark stands, bright court.
+
+   Three of the five carry type as sent, which is unusual here. Measured on
+   white:
+     shadow-grey    17.5:1  the ink, and the masthead bar
+     twilight-indigo 11.6:1  LINK TEXT AT THE HEX GIVEN
+     cherry-rose     6.9:1  the live accent, and a chip ground
+   Canary (1.2:1) and mint (2.0:1) are the floodlit half of the palette and are
+   used ONLY where they sit on the dark bar or hold no type at all. ── */
+[data-theme="floodlight"] {
+  --linen: hsl(216, 44%, 90%);  /* indigo tint takes the band slot */
+  --ivory: #ffffff;             /* white is the ground */
+  --cyan: hsl(168, 60%, 93%);   /* mint tint takes the highlight slot */
+  --ice: #03cea4;               /* mint-leaf takes the accent-detail slot */
+  --prussian: #161925;
+
+  --brand-strong: #23395b;      /* twilight-indigo, unmodified, carries links */
+
+  --gray-150: hsl(216, 25%, 92%);
+  --gray-200: hsla(228, 25%, 12%, 0.14);
+  --gray-300: hsla(228, 25%, 12%, 0.24);
+  --gray-400: hsl(220, 12%, 62%);
+  --gray-500: hsl(220, 14%, 44%);
+  --gray-600: hsl(216, 26%, 32%);
+
+  --cat-7a: #161925;
+  --cat-6a: #23395b;
+  --cat-5a: hsl(216, 40%, 34%);
+  --cat-4a: hsl(168, 90%, 24%);
+  --cat-3a: hsl(168, 70%, 30%);
+  --cat-2a: #ab2346;
+  --cat-1a: hsl(345, 50%, 50%);
+
+  --rank-gold: hsl(45, 88%, 27%);
+  --accent-live: #ab2346;
+
+  --surface-subtle: hsl(216, 40%, 97%);
+  --surface-zebra: hsla(216, 44%, 72%, 0.16);
+
+  --crest-0: #161925;            --crest-1: #23395b;
+  --crest-2: hsl(216, 40%, 34%); --crest-3: hsl(216, 28%, 42%);
+  --crest-4: hsl(168, 85%, 22%); --crest-5: hsl(168, 60%, 30%);
+  --crest-6: #ab2346;            --crest-7: hsl(345, 48%, 46%);
+  --crest-8: hsl(45, 70%, 28%);  --crest-9: hsl(260, 26%, 36%);
+  --crest-10: hsl(195, 40%, 30%); --crest-11: hsl(300, 20%, 36%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: #161925;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(216, 30%, 76%);
+  --mast-rule: #f7f052;         /* canary, unmodified — it only ever sits on the bar */
+}
+
+/* ── scheme: laurel — evergreen / crimson-violet / parchment / bubblegum-pink /
+   amber-flame. Parchment ground, two very dark inks, two hot accents.
+
+   The second scheme after Ensign that needed nothing darkened to carry type.
+   Measured on parchment:
+     evergreen      13.2:1  the ink, and the masthead bar
+     crimson-violet 12.2:1  LINK TEXT AT THE HEX GIVEN
+   Bubblegum-pink (3.0:1) and amber-flame (1.5:1) are accents only; the amber
+   is pushed to 27% lightness where it has to carry a rank number. ── */
+[data-theme="laurel"] {
+  --linen: hsl(182, 22%, 88%);  /* evergreen tint takes the band slot */
+  --ivory: #f2edeb;             /* parchment takes the ground slot */
+  --cyan: hsl(353, 60%, 94%);   /* pink tint takes the highlight slot */
+  --ice: #fabc2a;               /* amber-flame takes the accent-detail slot */
+  --prussian: #042a2b;
+
+  --brand-strong: #5c0029;      /* crimson-violet, unmodified, carries links */
+
+  --gray-150: hsl(17, 21%, 91%);
+  --gray-200: hsla(182, 83%, 9%, 0.14);
+  --gray-300: hsla(182, 83%, 9%, 0.24);
+  --gray-400: hsl(17, 10%, 60%);
+  --gray-500: hsl(17, 10%, 39%);
+  --gray-600: hsl(182, 18%, 28%);
+
+  --cat-7a: #021818;
+  --cat-6a: #042a2b;
+  --cat-5a: hsl(182, 60%, 20%);
+  --cat-4a: hsl(182, 40%, 28%);
+  --cat-3a: #5c0029;
+  --cat-2a: hsl(333, 60%, 30%);
+  --cat-1a: hsl(42, 70%, 30%);
+
+  --rank-gold: hsl(42, 88%, 27%);
+  --accent-live: hsl(353, 70%, 44%);
+
+  --surface-subtle: hsl(17, 30%, 96%);
+  --surface-zebra: hsla(182, 30%, 70%, 0.16);
+
+  --crest-0: #042a2b;            --crest-1: hsl(182, 60%, 20%);
+  --crest-2: hsl(182, 40%, 28%); --crest-3: hsl(182, 26%, 38%);
+  --crest-4: #5c0029;            --crest-5: hsl(333, 60%, 30%);
+  --crest-6: hsl(353, 55%, 40%); --crest-7: hsl(42, 70%, 30%);
+  --crest-8: hsl(42, 50%, 38%);  --crest-9: hsl(300, 26%, 34%);
+  --crest-10: hsl(200, 30%, 30%); --crest-11: hsl(15, 30%, 36%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: #042a2b;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(182, 24%, 78%);
+  --mast-rule: #fabc2a;
+}
+
+/* ── scheme: harbor — ink-black / deep-ocean / jungle-teal / peach-glow /
+   racing-red. Peach is the warm ground; the red stays a detail. ── */
+[data-theme="harbor"] {
+  --linen: #f4c095;             /* peach-glow takes the band slot */
+  --ivory: hsl(27, 65%, 95%);   /* peach tint takes the ground slot */
+  --cyan: hsl(177, 45%, 87%);   /* ocean tint takes the highlight slot */
+  --ice: #ee2e31;               /* racing-red takes the accent-detail slot */
+  --prussian: #071e22;
+
+  --brand-strong: hsl(177, 61%, 25%);
+
+  --gray-150: hsl(27, 25%, 88%);
+  --gray-200: hsla(189, 66%, 8%, 0.15);
+  --gray-300: hsla(189, 66%, 8%, 0.25);
+  --gray-400: hsl(167, 8%, 58%);
+  --gray-500: hsl(170, 10%, 42%);
+  --gray-600: hsl(180, 16%, 28%);
+
+  --cat-7a: #031114;
+  --cat-6a: #071e22;
+  --cat-5a: hsl(177, 61%, 22%);
+  --cat-4a: hsl(177, 45%, 32%);
+  --cat-3a: hsl(167, 20%, 40%);
+  --cat-2a: hsl(359, 60%, 40%);
+  --cat-1a: hsl(27, 45%, 40%);
+
+  --rank-gold: hsl(359, 70%, 44%);
+  --accent-live: hsl(359, 74%, 44%);
+
+  --surface-subtle: hsl(27, 55%, 93%);
+  --surface-zebra: hsla(167, 17%, 49%, 0.12);
+
+  --crest-0: #071e22; --crest-1: hsl(177, 61%, 22%);
+  --crest-2: hsl(177, 45%, 30%); --crest-3: hsl(167, 22%, 38%);
+  --crest-4: hsl(359, 60%, 36%); --crest-5: hsl(359, 48%, 46%);
+  --crest-6: hsl(27, 50%, 38%);  --crest-7: hsl(27, 40%, 46%);
+  --crest-8: hsl(200, 30%, 30%); --crest-9: hsl(150, 20%, 32%);
+  --crest-10: hsl(220, 20%, 36%); --crest-11: hsl(0, 20%, 34%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: #071e22;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(24, 55%, 82%);
+  --mast-rule: #ee2e31;
+}
+
+/* ── scheme: citrus — electric-aqua / pearl-aqua / beige / pumpkin-spice /
+   harvest-orange. No dark value, so ink derives deep on the aqua hue. ── */
+[data-theme="citrus"] {
+  --linen: #a8dcd1;             /* pearl-aqua takes the band slot */
+  --ivory: hsl(74, 30%, 93%);   /* beige tint takes the ground slot */
+  --cyan: hsl(188, 75%, 87%);   /* electric-aqua tint takes the highlight slot */
+  --ice: #f96900;               /* pumpkin-spice takes the accent-detail slot */
+  --prussian: hsl(188, 55%, 13%);
+
+  --brand-strong: hsl(25, 90%, 36%);
+
+  --gray-150: hsl(74, 18%, 86%);
+  --gray-200: hsla(188, 55%, 13%, 0.15);
+  --gray-300: hsla(188, 55%, 13%, 0.25);
+  --gray-400: hsl(167, 10%, 58%);
+  --gray-500: hsl(180, 12%, 42%);
+  --gray-600: hsl(188, 18%, 30%);
+
+  --cat-7a: hsl(188, 65%, 11%);
+  --cat-6a: hsl(188, 55%, 18%);
+  --cat-5a: hsl(188, 50%, 28%);
+  --cat-4a: hsl(167, 35%, 34%);
+  --cat-3a: hsl(25, 85%, 36%);
+  --cat-2a: hsl(26, 70%, 44%);
+  --cat-1a: hsl(74, 25%, 36%);
+
+  --rank-gold: hsl(25, 95%, 42%);
+  --accent-live: hsl(8, 82%, 46%);
+
+  --surface-subtle: hsl(167, 35%, 92%);
+  --surface-zebra: hsla(188, 83%, 67%, 0.14);
+
+  --crest-0: hsl(188, 55%, 20%); --crest-1: hsl(188, 45%, 30%);
+  --crest-2: hsl(167, 35%, 32%); --crest-3: hsl(167, 28%, 42%);
+  --crest-4: hsl(25, 80%, 36%);  --crest-5: hsl(26, 65%, 44%);
+  --crest-6: hsl(74, 28%, 34%);  --crest-7: hsl(74, 22%, 44%);
+  --crest-8: hsl(210, 30%, 34%); --crest-9: hsl(150, 22%, 36%);
+  --crest-10: hsl(240, 15%, 38%); --crest-11: hsl(10, 40%, 42%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: hsl(188, 60%, 15%);
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(167, 40%, 80%);
+  --mast-rule: #f96900;
+}
+
+/* ── scheme: apex — prussian-blue / amber-honey / bright-snow / flag-red /
+   steel-blue (owner palette 2027-08a; the default until the mint palette
+   took that slot). Contrast against snow: prussian 17.8:1 is the ink;
+   flag-red 4.8:1 is the live accent; steel is 4.1:1 so LINKS take it a
+   shade darker (5.2:1); amber is 2.0:1 — fill and border only. ── */
+/* ── scheme: ember — iron-grey / peach-fuzz / light-caramel / muted-teal /
+   night-bordeaux. Peach is the ground; the bordeaux is the ink.
+
+   Two of the five are body-safe as sent, which is why this one needed almost
+   no adjustment. Measured on the peach ground:
+     night-bordeaux 13.7:1  the ink, and the masthead bar
+     iron-grey       7.8:1  LINK TEXT AT THE HEX GIVEN
+   Caramel, peach and teal are ground and detail — they carry no type. ── */
+[data-theme="ember"] {
+  --linen: #facfad;             /* peach-fuzz takes the band slot */
+  --ivory: hsl(26, 89%, 95%);   /* peach tint takes the ground slot */
+  --cyan: hsl(31, 90%, 90%);    /* caramel tint takes the highlight slot */
+  --ice: #f8bd7f;               /* light-caramel takes the accent-detail slot */
+  --prussian: #49111c;
+
+  --brand-strong: hsl(187, 22%, 28%);   /* iron-grey carries links */
+
+  --gray-150: hsl(26, 45%, 90%);
+  --gray-200: hsla(348, 62%, 18%, 0.15);
+  --gray-300: hsla(348, 62%, 18%, 0.25);
+  --gray-400: hsl(26, 14%, 62%);
+  --gray-500: hsl(200, 12%, 39%);
+  --gray-600: hsl(187, 16%, 30%);
+
+  --cat-7a: hsl(348, 62%, 14%);
+  --cat-6a: #49111c;
+  --cat-5a: hsl(348, 50%, 28%);
+  --cat-4a: hsl(187, 20%, 28%);
+  --cat-3a: hsl(187, 16%, 38%);
+  --cat-2a: hsl(125, 20%, 32%);
+  --cat-1a: hsl(31, 60%, 32%);
+
+  --rank-gold: hsl(31, 72%, 34%);
+  --accent-live: hsl(348, 62%, 38%);
+
+  --surface-subtle: hsl(26, 70%, 96%);
+  --surface-zebra: hsla(26, 80%, 78%, 0.24);
+
+  --crest-0: #49111c;            --crest-1: hsl(348, 50%, 28%);
+  --crest-2: hsl(187, 22%, 26%); --crest-3: hsl(187, 16%, 36%);
+  --crest-4: hsl(125, 22%, 30%); --crest-5: hsl(125, 16%, 40%);
+  --crest-6: hsl(31, 62%, 32%);  --crest-7: hsl(31, 48%, 40%);
+  --crest-8: hsl(348, 30%, 34%); --crest-9: hsl(210, 20%, 34%);
+  --crest-10: hsl(160, 18%, 32%); --crest-11: hsl(10, 26%, 38%);
+
+  /* the bar in this scheme's OWN colours — a masthead that does not
+     change with the palette is not a palette */
+  --surface-mast: #49111c;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(26, 50%, 82%);
+  --mast-rule: #f8bd7f;
+}
+
+[data-theme="apex"] {
+  --linen: hsl(43, 78%, 92%);   /* amber, laid down flat: bands and heads */
+  --ivory: #fbfaf8;             /* bright-snow takes the ground slot */
+  --cyan: hsl(203, 66%, 93%);   /* steel, laid down flat: hover, highlight */
+  --ice: #2c80b5;               /* steel takes the accent-detail slot */
+  --prussian: #0a122a;
+
+  --brand-strong: hsl(203, 61%, 38%);   /* steel at 5.2:1 — link text */
+
+  --gray-150: hsl(216, 22%, 92%);
+  --gray-200: hsla(216, 61%, 10%, 0.13);
+  --gray-300: hsla(216, 61%, 10%, 0.22);
+  --gray-400: hsl(216, 14%, 62%);
+  --gray-500: hsl(216, 16%, 48%);
+  --gray-600: hsl(216, 22%, 34%);
+
+  /* chip backgrounds hold white text: 4.7:1 at the lightest */
+  --cat-7a: #0a122a;
+  --cat-6a: hsl(216, 50%, 25%);
+  --cat-5a: hsl(203, 60%, 32%);
+  --cat-4a: hsl(203, 55%, 40%);
+  --cat-3a: hsl(43, 84%, 26%);
+  --cat-2a: hsl(43, 80%, 32%);
+  --cat-1a: hsl(353, 72%, 38%);
+
+  --rank-gold: hsl(43, 84%, 34%);
+  --accent-live: #db162f;               /* flag-red: in progress, happening now */
+
+  --surface-mast: #0a122a;
+  --on-mast: #ffffff;
+  --on-mast-dim: hsl(203, 40%, 82%);
+  --mast-rule: #db162f;
+
+  --surface-subtle: hsl(43, 44%, 96%);
+  --surface-zebra: hsla(203, 80%, 90%, 0.34);
+
+  --crest-0: #0a122a; --crest-1: #1c3157; --crest-2: #2c80b5;
+  --crest-3: #1d5f88; --crest-4: #14496b; --crest-5: #3f7fa3;
+  --crest-6: #8a6410; --crest-7: #a8791a; --crest-8: #6b4d0d;
+  --crest-9: #a71b2b; --crest-10: #7d1622; --crest-11: #435063;
 }

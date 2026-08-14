@@ -152,7 +152,7 @@
 .rc-prating .g { font-size: 15.5px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .rc-pstr { text-align: center; font-weight: 800; color: var(--stat-power); font-variant-numeric: tabular-nums; }
 .rc-pcommit { text-align: center; }
-.rc-pcommit .bl-crest { width: 26px; height: 26px; font-size: 11.5px; }
+.rc-pcommit .bl-crest { width: 26px; height: 26px; font-size: 10.5px; }   /* a crest is an icon — see .bl-crest in app.css */
 .rc-pcommit .none { color: var(--text-faint); }
 
 /* ============================================================ Analytics Bureau */

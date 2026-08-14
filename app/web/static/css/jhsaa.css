@@ -304,7 +304,7 @@
 }
 .jh-modrow:last-child { border-bottom: 0; }
 .jh-modrow:hover { background: var(--surface-hover); }
-.jh-modrow .rk { flex: 0 0 auto; width: 17px; font-size: 12.5px; font-weight: 800; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+.jh-modrow .rk { flex: 0 0 auto; width: 22px; font-size: 12.5px; font-weight: 800; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
 /* `.bd` wraps two SPANS, so they need display:block or the name and its subtitle
    run together on one line ("Ruby StokesCascade Divide District"). */
 .jh-modrow .bd { min-width: 0; flex: 1 1 auto; overflow: hidden; }

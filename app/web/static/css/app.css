@@ -212,14 +212,28 @@
 .bl-toc a { color: var(--text-link); font-weight: 600; }
 
 /* ---- Team crest ---- */
+/* ‼️ A CREST IS AN ICON, NOT TEXT — it is the ONE thing exempt from the raised
+   type scale (tokens/typography.css). The box is a FIXED square that dense rows
+   are laid out around, and the label inside it is a monogram: text-only crests
+   carry two-, three- and four-character abbreviations (WAKE, TAMU, MICH, NCST).
+   Four characters of 800-weight display type only physically fit a 20px box at
+   ~9px, so the sweep's 9px→11px raise pushed those labels straight out of the
+   crest and over the school name beside them — on brackets, standings, the
+   portal and search, everywhere `crest_box(..., 'xs')` is used.
+   Raising the type here would mean widening every crest box, which widens every
+   dense row in the app to make a decoration bigger. So: compact sizes, and
+   `overflow: hidden` as the GUARANTEE — whatever a future abbreviation turns
+   out to be, it is contained by the box rather than by an assumption about how
+   long it is. */
 .bl-crest {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
-  border-radius: 6px; color: #fff; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.01em;
+  overflow: hidden; line-height: 1;
+  border-radius: 6px; color: #fff; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
 }
-.bl-crest.xs { width: 20px; height: 20px; font-size: 11px; }
-.bl-crest.sm { width: 24px; height: 24px; font-size: 11px; }
-.bl-crest.md { width: 30px; height: 30px; font-size: 11.5px; }
-.bl-crest.lg { width: 40px; height: 40px; font-size: 13.5px; }
+.bl-crest.xs { width: 20px; height: 20px; font-size: 9px; }
+.bl-crest.sm { width: 24px; height: 24px; font-size: 10px; }
+.bl-crest.md { width: 30px; height: 30px; font-size: 12px; }
+.bl-crest.lg { width: 40px; height: 40px; font-size: 15px; }
 /* Logo variant: white pad behind the transparent ESPN mark. */
 .bl-crest.has-logo { background: #fff; padding: 2px; }
 .bl-crest.has-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
