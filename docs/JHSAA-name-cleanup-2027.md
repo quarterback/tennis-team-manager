@@ -80,3 +80,23 @@
 | 7 | Mercer City School of Design and Engineering (5A) | **Mercer City** | Mercer City | 4A | Fighting Mustangs |
 | 8 | Mount Horeb Academy of Arts and Letters (3A) | **Mount Horeb** | Mount Horeb | 3A | Flying Raiders |
 | 9 | Puerto de los Reyes Civic Leadership Academy (6A) | **Puerto de los Reyes** | Puerto de los Reyes | 5A | Saiga |
+
+---
+
+## Pending: apply these to prep-network (owner approved, deferred)
+
+The owner wants the source repo brought in line with the table above — **not
+urgent, do it when asked.** Scope, measured: **56,785 occurrences across 6,008
+files**, almost all under `records/` (contests, postseason, editorial), plus
+contest FILENAME slugs (`12720-bah-a-leal-costa-verde-at-san-borond-n.json`)
+and the varsityapex site pages, which changes existing URLs.
+
+Drive it off `scripts/import_jhsaa.py` — `RENAMES` (62, keyed source → new) and
+`SUBSTITUTIONS` (9, magnet → flagship) are the authoritative list; this document
+is generated from them. The substitutions are NOT renames: those nine magnets
+keep their identity in prep-network and simply stop appearing as tennis
+sponsors, so only the 62 renames rewrite source records.
+
+Until then the two repos disagree on purpose: prep-network keeps the published
+record under the original names, and the tennis association knows the schools by
+the names in the table.
