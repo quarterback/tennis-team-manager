@@ -91,9 +91,17 @@ files**, almost all under `records/` (contests, postseason, editorial), plus
 contest FILENAME slugs (`12720-bah-a-leal-costa-verde-at-san-borond-n.json`)
 and the varsityapex site pages, which changes existing URLs.
 
-Drive it off `scripts/import_jhsaa.py` — `RENAMES` (62, keyed source → new) and
-`SUBSTITUTIONS` (9, magnet → flagship) are the authoritative list; this document
-is generated from them. The substitutions are NOT renames: those nine magnets
+**It is automated — do not do this by hand.** `scripts/rename_prep_network.py`
+drives the whole pass off `import_jhsaa.RENAMES` (the authoritative list; this
+document is generated from it):
+
+    python3 scripts/rename_prep_network.py --dry-run     # report, change nothing
+    python3 scripts/rename_prep_network.py               # apply
+
+Verified end-to-end on a throwaway copy of the repo: 59,095 occurrences in 6,281
+files rewritten, 5,668 files renamed, every JSON still parses, a second run is a
+no-op (idempotent), and renamed schools keep their own city/class/mascot/colours.
+The script preflights its safety invariants and aborts rather than half-apply. The substitutions are NOT renames: those nine magnets
 keep their identity in prep-network and simply stop appearing as tennis
 sponsors, so only the 62 renames rewrite source records.
 
