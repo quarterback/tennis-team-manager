@@ -10,7 +10,7 @@
         {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
       </select></span></label>
   </form>
-  <span style="font-size:13px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
   <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
     <span class="bl-field-label">
       {% if ph == 'ita_kickoff' %}Preseason NIT — Kickoff Weekend
@@ -36,12 +36,12 @@
 
 <div class="bl-board">
   {% if ph == 'complete' and s.champion %}
-  <div class="bl-champ"><span class="bl-crest lg" style="background:{{ crest(s.champion)[1] }};width:56px;height:56px;font-size:16px">{{ crest(s.champion)[0] }}</span>
+  <div class="bl-champ"><span class="bl-crest lg" style="background:{{ crest(s.champion)[1] }};width:56px;height:56px;font-size:17px">{{ crest(s.champion)[0] }}</span>
     <div><div class="label">National Champion</div><div class="name">{{ s.champion }}</div>
       <div class="sub">2026 {{ uni_label }} — won the NCAA dual-match championship</div></div></div>
   {% elif ita_champ %}
   <a class="bl-champ" style="text-decoration:none;color:inherit" href="{{ url_for('season_ita', u=u) }}">
-    <span class="bl-crest lg" style="background:{{ crest(ita_champ)[1] }};width:56px;height:56px;font-size:16px">{{ crest(ita_champ)[0] }}</span>
+    <span class="bl-crest lg" style="background:{{ crest(ita_champ)[1] }};width:56px;height:56px;font-size:17px">{{ crest(ita_champ)[0] }}</span>
     <div><div class="label">Preseason NIT Champion</div><div class="name">{{ ita_champ }}</div>
       <div class="sub">2026 {{ uni_label }} — won the Preseason NIT (National Indoor Tournament) to open the season</div></div></a>
   {% endif %}
@@ -54,7 +54,7 @@
         <span class="bl-panel-meta" style="display:inline-flex;align-items:center;gap:8px">
           week {{ s.current_week }} · {{ n_week }} duals
           <form method="get" style="margin:0"><input type="hidden" name="u" value="{{ u }}">
-            <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:120px;font-size:12px">
+            <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:120px;font-size:13.5px">
               <option value="All"{% if conf_sel == 'All' %} selected{% endif %}>All — top matchups</option>
               {% for c in week_confs %}<option value="{{ c }}"{% if c == conf_sel %} selected{% endif %}>{{ c }}</option>{% endfor %}
             </select></span></form></span></div>
@@ -89,7 +89,7 @@
           <span class="bl-conf">{{ r.rec }}</span>
           <span class="bl-stat power">{{ "%.3f"|format(r.pi) }}</span>
         </div>{% endfor %}
-        {% else %}<div class="bl-panel-body"><p style="margin:0;color:var(--text-muted);font-size:13px">Advance a week to generate results.</p></div>{% endif %}
+        {% else %}<div class="bl-panel-body"><p style="margin:0;color:var(--text-muted);font-size:14.5px">Advance a week to generate results.</p></div>{% endif %}
       </div>
     </div>
     </div>

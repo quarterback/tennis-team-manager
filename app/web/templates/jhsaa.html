@@ -99,7 +99,7 @@
             <td style="font-variant-numeric:normal">
               <a style="font-weight:700;color:var(--text-primary);text-decoration:none"
                  href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.district }}</a>
-              <div style="font-size:10.5px;color:var(--text-muted)">{{ d.members }} schools</div>
+              <div style="font-size:11.5px;color:var(--text-muted)">{{ d.members }} schools</div>
             </td>
             <td style="font-variant-numeric:normal">
               <span class="jh-schoolcell">{{ d.champion.mark|safe }}
@@ -133,7 +133,7 @@
         </a>
         {% endfor %}
       </div>
-      <div class="bl-panel-body" style="padding:8px 13px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
+      <div class="bl-panel-body" style="padding:8px 13px;font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
         TOSS — 40% strength of schedule, 40% flight-weighted results, 20% game share.
         At-large bids and state seeds are drawn from this, not from the raw record.
       </div>

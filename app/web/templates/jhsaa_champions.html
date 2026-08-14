@@ -32,7 +32,7 @@
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
           {% set poy = y.poy.get(gp) %}
           {% if poy and poy.get('name') %}
-          <div style="font-size:10.5px;color:var(--text-muted);padding-left:28px">
+          <div style="font-size:11.5px;color:var(--text-muted);padding-left:28px">
             POY {{ jh_player(poy.name, poy.school, poy.pid, u, view.gender) }}</div>
           {% endif %}
         </td>

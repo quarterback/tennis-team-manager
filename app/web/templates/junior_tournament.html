@@ -4,7 +4,7 @@
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('junior_tour', u=u, grad_year=grad_year, tier=t.level) }}">← Junior Tour</a>
-  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">Week {{ t.week }} · {{ t.n_entrants }}-player draw · class of {{ grad_year }}</span>
+  <span style="margin-left:auto;font-size:14.5px;color:var(--text-muted)">Week {{ t.week }} · {{ t.n_entrants }}-player draw · class of {{ grad_year }}</span>
 </div></div>
 
 <div class="bl-container">
@@ -47,26 +47,26 @@
 <style>
   .jt-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     border:1px solid var(--border-subtle); border-radius:12px; padding:16px 18px; background:var(--surface-card); }
-  .jt-name { font-size:20px; font-weight:800; margin-bottom:6px; }
+  .jt-name { font-size:22px; font-weight:800; margin-bottom:6px; }
   .jt-champ { display:flex; flex-direction:column; align-items:flex-end; text-decoration:none; }
-  .jt-champ-k { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); font-weight:700; }
-  .jt-champ-v { font-size:18px; font-weight:800; color:var(--text-primary); }
-  .al-tier { font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; color:#fff; }
+  .jt-champ-k { font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); font-weight:700; }
+  .jt-champ-v { font-size:19px; font-weight:800; color:var(--text-primary); }
+  .al-tier { font-size:12.5px; font-weight:700; padding:2px 8px; border-radius:4px; color:#fff; }
   .al-t-GrandSlam { background:#b8860b; } .al-t-Masters { background:#c0392b; } .al-t-Major { background:#d2691e; }
   .al-t-Premier { background:#3071b9; } .al-t-National { background:#2faa55; }
   .al-t-Developmental { background:#647082; } .al-t-State { background:#8a939c; }
   .jt-match { display:grid; grid-template-columns: 1fr auto; align-items:center; gap:4px 12px;
     padding:9px 16px; border-top:1px solid var(--border-subtle); }
   .jt-match:first-child { border-top:none; }
-  .jt-side { font-size:14px; min-width:0; }
+  .jt-side { font-size:15.5px; min-width:0; }
   .jt-side a { color:var(--text-primary); text-decoration:none; font-weight:600; }
   .jt-side a:hover { color:var(--text-link); }
   .jt-win { font-weight:700; }
   .jt-win a { font-weight:700; }
   .jt-lose { color:var(--text-secondary); }
   .jt-lose a { color:var(--text-secondary); font-weight:500; }
-  .jt-def { font-size:11px; color:var(--text-muted); margin-left:6px; font-weight:500; }
-  .jt-score { grid-row:1 / span 2; font-variant-numeric:tabular-nums; font-weight:700; font-size:14px;
+  .jt-def { font-size:12.5px; color:var(--text-muted); margin-left:6px; font-weight:500; }
+  .jt-score { grid-row:1 / span 2; font-variant-numeric:tabular-nums; font-weight:700; font-size:15.5px;
     color:var(--text-primary); white-space:nowrap; }
 </style>
 {% endblock %}

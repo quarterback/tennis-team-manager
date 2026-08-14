@@ -33,7 +33,7 @@
 .bl-bracket-title-row p {
   margin: 8px 0 0;
   max-width: 720px;
-  font-size: 14.5px;
+  font-size: 15.5px;
   line-height: 1.5;
   color: var(--text-secondary);
 }
@@ -50,7 +50,7 @@
 }
 .bl-bracket-control-note {
   margin-left: auto;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-muted);
 }
 .bl-bracket-shell {
@@ -86,7 +86,7 @@
 }
 .bl-card-sub {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 14.5px;
   color: var(--text-secondary);
 }
 .bl-metric-grid {
@@ -103,7 +103,7 @@
 }
 .bl-metric .lbl {
   display: block;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--ls-eyebrow);
@@ -120,7 +120,7 @@
 .bl-metric span:last-child {
   display: block;
   margin-top: 5px;
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -174,11 +174,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 700;
 }
 .bl-seed-row .conf {
-  font-size: 11px;
+  font-size: 12.5px;
   color: var(--text-muted);
 }
 .bl-path-row {
@@ -201,11 +201,11 @@
 .bl-rounds-header h2 {
   margin: 2px 0 0;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 22px;
   color: var(--text-primary);
 }
 .bl-legend {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--text-muted);
 }
 .bl-legend span {
@@ -252,7 +252,7 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
@@ -271,7 +271,7 @@
   padding: 3px 0;
 }
 .bl-team-seed {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--text-muted);
   text-align: right;
@@ -289,7 +289,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14.5px;
   color: var(--text-secondary);
 }
 .bl-team-copy .meta {
@@ -297,7 +297,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--text-muted);
 }
 .bl-bracket-team.is-winner .nm,
@@ -312,7 +312,7 @@
 /* Optional trailing score (doubles championship match lines). Only rows that
    carry a score widen to a 4th column, so the team bracket is unaffected. */
 .bl-team-score {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -334,7 +334,7 @@
   border-radius: 4px;
   background: var(--gray-200);
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -374,7 +374,7 @@
     align-items: flex-start;
   }
   .bl-card-title {
-    font-size: 22px;
+    font-size: 24px;
   }
 }
 
@@ -387,28 +387,28 @@
    ========================================================================== */
 .brk-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
 .brk-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-.brk-tab { padding: 5px 11px; font-size: 12px; font-weight: 700; border-radius: 999px; cursor: pointer;
+.brk-tab { padding: 5px 11px; font-size: 13.5px; font-weight: 700; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-secondary); }
 .brk-tab:hover { border-color: var(--brand, #0e7c86); }
 .brk-tab.active { background: var(--brand, #0e7c86); border-color: var(--brand, #0e7c86); color: #fff; }
 .brk-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-left: auto; }
-.brk-btn { min-width: 28px; padding: 4px 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+.brk-btn { min-width: 28px; padding: 4px 8px; font-size: 13.5px; font-weight: 700; cursor: pointer;
   border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-card); color: var(--text-secondary); }
 .brk-btn:hover { border-color: var(--brand, #0e7c86); color: var(--brand, #0e7c86); }
 .brk-sep { width: 1px; height: 18px; background: var(--border-subtle); }
-.brk-check { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
-.brk-find { width: 150px; padding: 4px 8px; font-size: 12px; border-radius: 6px;
+.brk-check { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--text-muted); }
+.brk-find { width: 150px; padding: 4px 8px; font-size: 13.5px; border-radius: 6px;
   border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary); }
 
 .brk-region { margin-bottom: 18px; }
 .brk-region-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
-.brk-region-head h2 { margin: 0; font-family: var(--font-display); font-size: 17px; color: var(--text-primary); }
-.brk-region-champ { font-size: 11.5px; color: var(--text-muted); }
+.brk-region-head h2 { margin: 0; font-family: var(--font-display); font-size: 18px; color: var(--text-primary); }
+.brk-region-champ { font-size: 12.5px; color: var(--text-muted); }
 .brk-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 6px;
   border-top: 1px solid var(--border-subtle); }
 .brk-headers { position: sticky; top: 0; z-index: 4; height: 26px;
   background: var(--surface-page, var(--surface-card)); }
-.brk-head { position: absolute; top: 0; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+.brk-head { position: absolute; top: 0; font-size: 11.5px; font-weight: 800; letter-spacing: .06em;
   text-transform: uppercase; color: var(--text-faint); padding-top: 7px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
 .brk-head .ct { margin-left: 5px; opacity: .65; font-weight: 700; }
@@ -428,7 +428,7 @@
    Round of 64 reads as the top of the bracket proper. */
 .brk-card.is-playin { background: var(--surface-sunken, #fafbfb); border-color: var(--border-subtle);
   opacity: .92; }
-.brk-card.is-playin .brk-name { font-size: 12px; }
+.brk-card.is-playin .brk-name { font-size: 13.5px; }
 /* A round that hasn't been drawn yet: the slot exists, the teams don't. Kept on
    the canvas so the whole tree is visible from the moment the draw is made. */
 .brk-card.is-tbd { opacity: .55; box-shadow: none; }
@@ -439,25 +439,25 @@
 .brk-team { display: grid; grid-template-columns: 20px 18px minmax(0, 1fr) auto auto; align-items: center;
   gap: 6px; padding: 3px 7px; min-width: 0; }
 .brk-team + .brk-team { border-top: 1px solid var(--border-subtle); }
-.brk-seed { font-size: 10.5px; font-weight: 800; color: var(--text-faint); text-align: right;
+.brk-seed { font-size: 11.5px; font-weight: 800; color: var(--text-faint); text-align: right;
   font-variant-numeric: tabular-nums; }
 .brk-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12.5px; color: var(--text-secondary); text-decoration: none; }
+  font-size: 13.5px; color: var(--text-secondary); text-decoration: none; }
 a.brk-name:hover { text-decoration: underline; }
 .brk-team.is-winner .brk-name { font-weight: 800; color: var(--text-primary); }
 .brk-team.is-winner .brk-score { color: var(--brand, #0e7c86); font-weight: 800; }
 .brk-team.is-out { opacity: .62; }
-.brk-bid { font-size: 8.5px; font-weight: 800; letter-spacing: .03em; padding: 0 3px; border-radius: 3px;
+.brk-bid { font-size: 11px; font-weight: 800; letter-spacing: .03em; padding: 0 3px; border-radius: 3px;
   color: var(--text-faint); background: var(--gray-100, rgba(0,0,0,.05)); }
-.brk-score { font-size: 12px; font-weight: 700; color: var(--text-muted); min-width: 12px; text-align: right;
+.brk-score { font-size: 13.5px; font-weight: 700; color: var(--text-muted); min-width: 12px; text-align: right;
   font-variant-numeric: tabular-nums; }
 .brk-stage.no-seeds .brk-seed, .brk-stage.no-scores .brk-score { visibility: hidden; }
 .brk-region[hidden] { display: none; }
 
 .brk-drawer { border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-card);
   padding: 8px 12px; margin-bottom: 12px; }
-.brk-drawer > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
-.brk-drawer-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.brk-drawer > summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--text-secondary); }
+.brk-drawer-note { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
 .brk-seedsheet { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 18px; }
 .bl-seed-rgnhead { padding: 8px 4px 2px; }
 
@@ -471,8 +471,8 @@ a.brk-name:hover { text-decoration: underline; }
 .brk-site .brk-scroll { border-top: 0; }
 .brk-site .brk-headers { border-top: 1px solid var(--border-subtle); }
 .brk-site-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
-.brk-site-head h3 { margin: 0; font-family: var(--font-display); font-size: 14px; color: var(--text-primary); }
-.brk-site-head .to { font-size: 11px; color: var(--text-muted); min-width: 0; overflow: hidden;
+.brk-site-head h3 { margin: 0; font-family: var(--font-display); font-size: 15.5px; color: var(--text-primary); }
+.brk-site-head .to { font-size: 12.5px; color: var(--text-muted); min-width: 0; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
 .brk-site-head .to strong { color: var(--text-primary); }
 @media (max-width: 900px) { .brk-grid { grid-template-columns: 1fr; } }
@@ -489,7 +489,7 @@ a.brk-name:hover { text-decoration: underline; }
 }
 
 /* Seed-sheet furniture shared by the bracket pages. */
-.rgn { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
+.rgn { font-size: 11.5px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px;
   background: var(--green-50, rgba(14,124,134,.10)); color: var(--green-700, #0e7c86); white-space: nowrap; }
 .bl-bracket-layout2 { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 16px; align-items: start; }
 .bl-seedsheet { position: sticky; top: 12px; }

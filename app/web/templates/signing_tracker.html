@@ -15,7 +15,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:150px">
       {% for y in trk.years %}<option value="{{ y.val }}"{% if y.val == trk.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:13px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }} — the archived class and how each signee turned out{% else %}live commitments this recruiting year{% endif %}</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }} — the archived class and how each signee turned out{% else %}live commitments this recruiting year{% endif %}</span>
   <a class="al-feed" style="margin-left:auto" href="{{ url_for('recruiting_hub_page', u=u) }}">← Recruiting HQ</a>
 </div></div>
 </form>
@@ -58,7 +58,7 @@
       {% for c in trk.classes %}
       <div class="bl-row">
         <span class="bl-rank {{ 'gold' if c.rank==1 else 'bronze' if c.rank<=3 else '' }}">{{ c.rank }}</span>
-        <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}{% if c.blue %} <span style="font-size:11px"><i class="fa-solid fa-gem" aria-hidden="true"></i>{{ c.blue }}</span>{% endif %}</a>
+        <a class="bl-school" href="{{ url_for('team_recruiting', school=c.school, u=u) }}">{{ crest_box(c.school, c.abbr, c.color, 'sm') }} {{ c.school }}{% if c.blue %} <span style="font-size:12.5px"><i class="fa-solid fa-gem" aria-hidden="true"></i>{{ c.blue }}</span>{% endif %}</a>
         <span class="bl-cell-num"><span class="bl-stat power">{{ '%.1f'|format(c.score) }}</span></span>
         <span class="bl-cell-num"><span class="bl-conf">{{ c.n }}</span></span>
         <span>{{ spread(c.breakdown, 'sm') }}</span>
@@ -85,7 +85,7 @@
         <span class="bl-cell-num">{{ r.stars if r.stars else '–' }}</span>
         <a class="bl-conf" href="{{ url_for('team_recruiting', school=r.school, u=u) }}" style="text-decoration:none;display:flex;align-items:center;gap:5px">{{ crest_box(r.school, r.abbr, r.color, 'xs') }} {{ r.school }}</a>
         <span class="bl-conf">{% if r.out %}{% if r.out.status == 'Active' %}{{ r.out.school }}{% if r.out.cls %} · {{ r.out.cls }}{% endif %}{% elif r.out.status == 'Grad' %}Grad{% if r.out.school %} · {{ r.out.school }}{% endif %}{% else %}Left{% endif %}{% else %}—{% endif %}</span>
-        <span class="bl-cell-num" style="white-space:nowrap">{{ r.str_sign }}{% if r.out and r.out.str_now is not none %} → {{ r.out.str_now }}{% if r.delta is not none %} <span style="font-size:10px;font-weight:700;color:{{ 'var(--pos, #1a8f4c)' if r.delta >= 0 else 'var(--neg, #c0392b)' }}">{{ '+' if r.delta >= 0 }}{{ r.delta }}</span>{% endif %}{% endif %}</span>
+        <span class="bl-cell-num" style="white-space:nowrap">{{ r.str_sign }}{% if r.out and r.out.str_now is not none %} → {{ r.out.str_now }}{% if r.delta is not none %} <span style="font-size:11.5px;font-weight:700;color:{{ 'var(--pos, #1a8f4c)' if r.delta >= 0 else 'var(--neg, #c0392b)' }}">{{ '+' if r.delta >= 0 }}{{ r.delta }}</span>{% endif %}{% endif %}</span>
       </div>
       {% endfor %}
     </div>
@@ -94,7 +94,7 @@
       <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">★</span><span class="bl-th">SIGNED WITH</span></div>
       {% for r in trk.commitments[:40] %}
       <div class="bl-row">
-        <a class="bl-school" href="{{ url_for('recruit', pid=r.p.pid, u=u, grad_year=r.p.grad_year) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}{% if r.p.flips %} <span title="Decommitted {{ r.p.flips }}×" style="font-size:10px;color:#c0392b;font-weight:600">FLIP</span>{% endif %}</a>
+        <a class="bl-school" href="{{ url_for('recruit', pid=r.p.pid, u=u, grad_year=r.p.grad_year) }}"><span class="player-flag" title="{{ r.p.country|country_name }}">{{ r.p.country|flags(r.p.secondary_country) }}</span> {{ r.p.name }}{% if r.p.flips %} <span title="Decommitted {{ r.p.flips }}×" style="font-size:11.5px;color:#c0392b;font-weight:600">FLIP</span>{% endif %}</a>
         <span class="bl-cell-num">{{ '★'*r.stars if r.stars else '–' }}</span>
         <a class="bl-conf" href="{{ url_for('team_recruiting', school=r.school, u=u) }}" style="text-decoration:none;display:flex;align-items:center;gap:5px">{{ crest_box(r.school, r.abbr, r.color, 'xs') }} {{ r.school }}</a>
       </div>
