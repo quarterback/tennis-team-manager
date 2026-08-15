@@ -207,11 +207,19 @@ are written bare. So:
   twelve strangers and unlinks its archived awards. `archetypes.json` keys on
   the display name and moved too.
 
-**And "School of SUBJECT" collapses to the subject** (a follow-up owner rule:
-*"you just say San Cordero Commerce or Plainfield Science"*), truncated at
-"and" — "Calder School of Science and Industry" reads "Calder Science". The
-collapse is GATED on a subject vocabulary because the same shape carries
-places ("Jesuit High School of Sacramento", "Latin School of Chicago"), where
-the of-phrase is the name. 16 collapsed across the pool, including the
-validating real case: "Bronx High School of Science" → **"Bronx Science"**,
-which is exactly what everyone calls it.
+**And "School of X" collapses** — in two owner passes. First subjects (*"you
+just say San Cordero Commerce or Plainfield Science"*): truncated at "and", so
+"Calder School of Science and Industry" reads "Calder Science", with the
+validating real case "Bronx High School of Science" → **"Bronx Science"**. I
+initially gated places out, reasoning "Jesuit Sacramento" would be garbage —
+and was corrected: *"Jesuit Sacramento is exactly what it'd be called. Just
+like Chicago or Boston Latin."* So places collapse too, with the order the
+usage actually has: PRE + PLACE normally ("Jesuit Sacramento", and "College
+Preparatory School of" collapses the same way, giving "Jesuit Dallas"), but
+the classic type-named schools read PLACE + TYPE ("Chicago Latin", "Boston
+English", "Wilmington Charter" — `_TYPE_FIRST`). "of the X" non-subject forms
+stay whole ("Jewish Community High School of the Bay"). The same pass swept
+the curated pool's scrape artifacts: 26 Wikipedia disambiguation titles
+("Paris High School, Paris, Kentucky" → "Paris"), plural/system forms
+("Kamehameha Schools" → "Kamehameha"), and two entries that were never schools
+at all ("Online High Schools in Florida").

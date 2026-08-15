@@ -62,19 +62,29 @@ _TENNIS_SPORTS = ("boys-tennis", "girls-tennis")
 # "Housatonic HS High School". Now we strip trailing suffixes instead.
 _SUFFIX_STRIP = ("high school", "hs", "school")
 
-# "School of SUBJECT" collapses to the SUBJECT (owner rule 2027-08: "you just say
-# San Cordero Commerce or Plainfield Science"), truncated at "and" — Science and
-# Industry reads "Science". Gated on a subject vocabulary because the same shape
-# also carries PLACES ("Jesuit High School of Sacramento", "Latin School of
-# Chicago"), where the of-phrase is part of the name and must not collapse.
+# "School of X" collapses (owner rule 2027-08, sharpened twice: "you just say
+# San Cordero Commerce or Plainfield Science", then "Jesuit Sacramento is
+# exactly what it'd be called. Just like Chicago or Boston Latin"):
+#   * SUBJECT of-phrases collapse to the first subject — "Calder Science",
+#     "Bronx Science" ("Science and Industry" truncates at "and").
+#   * PLACE of-phrases collapse too — "Jesuit Sacramento", "Wilmington Charter".
+#     ORDER follows usage: normally PRE + PLACE ("Jesuit Sacramento"), but the
+#     classic type-named schools read PLACE + TYPE ("Chicago Latin",
+#     "Boston English", "Wilmington Charter") — the _TYPE_FIRST set.
+#   * "of the X" where X is NOT a subject stays whole ("Jewish Community High
+#     School of the Bay", "Carnahan High School of the Future") — there is no
+#     colloquial collapse for those.
+#   * "College Preparatory School of" collapses like "School of", which is how
+#     "Jesuit College Preparatory School of Dallas" reads "Jesuit Dallas".
 _SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
              "design", "engineering", "public", "business", "agriculture",
              "agricultural", "medicine", "health", "law", "mathematics", "math",
              "media", "music", "leadership", "communication", "communications",
              "humanities", "advanced", "applied", "performing", "visual",
              "environmental", "innovation", "trades", "aviation"}
+_TYPE_FIRST = {"latin", "english", "charter"}
 _SCHOOL_OF_RE = re.compile(
-    r"^(?P<pre>.+?)\s+(?:High\s+)?Schools?\s+of\s+(?:the\s+)?(?P<subj>.+)$",
+    r"^(?P<pre>.+?)\s+(?:(?:College\s+Preparatory|High)\s+)?Schools?\s+of\s+(?P<obj>.+)$",
     re.IGNORECASE)
 
 
@@ -82,10 +92,19 @@ def _collapse_school_of(name: str) -> str:
     m = _SCHOOL_OF_RE.match(name)
     if not m:
         return name
-    subj = m.group("subj")
-    if subj.split()[0].lower() not in _SUBJECTS:
-        return name
-    return f"{m.group('pre')} {subj.split(' and ')[0].strip()}"
+    pre, obj = m.group("pre"), m.group("obj")
+    the = obj.lower().startswith("the ")
+    if the:
+        obj = obj[4:]
+    if obj.split()[0].lower() in _SUBJECTS:
+        return f"{pre} {obj.split(' and ')[0].strip()}"
+    if the:
+        return name                   # "of the Bay" / "of the Future" — the name
+    if pre.lower().startswith("the "):
+        pre = pre[4:]                 # "The Catholic ... of Baltimore" -> Catholic
+    if pre.split()[-1].lower() in _TYPE_FIRST:
+        return f"{obj} {pre}"         # Chicago Latin, Boston English
+    return f"{pre} {obj}"             # Jesuit Sacramento
 
 # Repeat-as-weight for the hometown pool: `roll_us_hometown` does a flat
 # rng.choice over the list, so a city listed twice is twice as likely. This is the

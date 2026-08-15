@@ -1014,10 +1014,14 @@ SUBJECT" collapses to the subject, truncated at "and"**: "San Cordero Commerce",
 "Calder Science", and — the validating real case — "Bronx Science". This REVERSED
 the original rule, which APPENDED " High School" to bare names and, not knowing "HS"
 was a school marker, shipped "Baptist HS High School".
-- **‼️ The collapse is GATED on a subject vocabulary** (`_SUBJECTS` in both import
-  scripts): the same shape carries PLACES — "Jesuit High School of Sacramento",
-  "Latin School of Chicago" — where the of-phrase is the name and collapsing it
-  produces garbage ("Jesuit Sacramento"). A new subject word goes in BOTH copies.
+- **PLACE of-phrases collapse too** (owner correction: "Jesuit Sacramento is exactly
+  what it'd be called. Just like Chicago or Boston Latin"): normally PRE + PLACE
+  ("Jesuit Sacramento", "Jesuit Dallas" — "College Preparatory School of" collapses
+  like "School of"), but the classic type-named schools read PLACE + TYPE
+  ("Chicago Latin", "Boston English", "Wilmington Charter") — `_TYPE_FIRST` in both
+  import scripts. **"of the X" where X is not a subject stays whole** ("Jewish
+  Community High School of the Bay", "Carnahan High School of the Future") — no
+  colloquial collapse exists for those. New subject/type words go in BOTH copies.
 - Enforced in THREE places that must agree: `import_jefferson.high_school_name`
   (strips + collapses, never appends), `import_jhsaa._display_name` (at EMIT,
   exactly like `RENAMES` — dice/districts/identity all run on the source name), and
