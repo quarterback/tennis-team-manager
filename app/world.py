@@ -3567,8 +3567,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     conn = _db()
     champs = {}
     try:
+        # Divisions are numbered STATEWIDE, girls first then boys, bottom-up by
+        # classification — so the counter runs across both genders' seasons.
+        division_no = 1
         for gender in ("girls", "boys"):
             season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
+            division_no = jhsaa.renumber_divisions(season, division_no)
             summary = {
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
@@ -3959,7 +3963,9 @@ def _roman(n: int) -> str:
 
 
 def _unit_honour(unit: str) -> str:
-    """'Regional 9' -> 'Region IX'; 'Zonal C' -> 'Zone C' (letters stay)."""
+    """'Regional 9' -> 'Region IX'; 'Division 11' -> 'Division XI' (the count is
+    statewide, the numeral is Roman like every other unit); 'Zonal C' -> 'Zone C'
+    (letters stay letters)."""
     head, _, tail = unit.rpartition(" ")
     name = _UNIT_HONOUR.get(head, head)
     return f"{name} {_roman(int(tail))}" if tail.isdigit() else f"{name} {tail}"

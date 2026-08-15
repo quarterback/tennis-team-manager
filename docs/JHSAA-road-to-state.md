@@ -57,6 +57,22 @@ a readmission. A Zonal loser — a *better* team, it got further — entered at
 Semi-State, lost once, and was done. One chance against two or three. Now
 everyone in recovery gets two live chances.
 
+### How Divisions are numbered
+
+Every other unit is counted **inside its own classification** — there is a Region
+IX in 7A and another in 3A. **Divisions are counted statewide.** There is exactly
+one Division I in Jefferson each year.
+
+The sequence runs **girls first, then boys**, and **bottom-up by classification**
+(2A-1A, 3A, 4A, 5A, 6A, 7A), continuing straight across both genders. So 2A-1A
+girls hold **Division I**, and the last number of the year lands on 7A boys —
+"(7A) Division XI", if the state played that many Divisional duals that season.
+How many there are depends on how many berths the Divisional Round has to fill,
+which varies year to year.
+
+Numerals are Roman on the honours line, like every other unit: **Division XI**,
+alongside Region IX and Ward IV.
+
 ### Where the extra bodies come from
 
 When a round needs more teams to pair completely, they are drawn in order of how

@@ -523,7 +523,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     field. Bodies come best-pool-first: readmitted **SR losers**, then a walk back
     through **Ward → Sectional → Area** losers, best TOSS within each tier; a body
     is a chance to PLAY, never a berth. `jhsaa.DIVISIONAL_NAME` is the only place
-    the round is named. Pinned by `test_no_recovery_round_has_a_bye`; explainer in
+    the round is named. **‼️ DIVISIONS ARE NUMBERED STATEWIDE**, unlike every
+    other unit (a Region IX exists once per classification; there is ONE Division
+    I in Jefferson per year): `jhsaa.renumber_divisions` assigns them after BOTH
+    genders have played — girls first, then boys, classifications bottom-up
+    (2A-1A → 7A) — because how many there are depends on how many berths the
+    round had to fill that year. Roman on the honours chip like the rest
+    ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in

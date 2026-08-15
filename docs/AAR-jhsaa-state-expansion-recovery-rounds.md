@@ -295,3 +295,23 @@ relearning: **verify the edit landed, and ask rather than invent** — the
 owner's one-sentence statement of the goal was worth more than all of it.
 
 The player-facing explainer lives at `docs/JHSAA-road-to-state.md`.
+
+### Numbering the Divisions (owner rule 2027-08)
+
+Every other tournament unit is numbered **within its classification** — 7A has a
+Region IX and so does 3A. Divisions are the exception: they are numbered
+**statewide**, so there is exactly one Division I in Jefferson each year. The
+sequence runs **girls first, then boys**, **bottom-up by classification**
+(2A-1A → 7A), continuing across both genders — 2A-1A girls hold Division I and
+the year's last number lands on 7A boys.
+
+That forces the assignment to happen **after both genders have played**
+(`jhsaa.renumber_divisions`, called from `world.run_jhsaa`), not inside the
+round that plays the duals: how many Divisions exist depends on how many berths
+the Divisional Round had to fill, which varies by year and by classification.
+The pass always recomputes and overwrites, so it is idempotent against the
+memoised season cache.
+
+Numerals are Roman on the honours line like every other unit — "Division XI"
+beside "Region IX" and "Ward IV" — while the stored unit keeps its arabic form
+("Division 11"), exactly as "Regional 9" does.

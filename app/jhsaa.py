@@ -1586,7 +1586,33 @@ DIVISIONAL_NAME = "Divisional Round"
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
                    "divisional": DIVISIONAL_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
-                   "divisional": "Divisional"}
+                   "divisional": "Division"}
+
+
+def renumber_divisions(season: dict, start: int = 1) -> int:
+    """Number this gender's Divisions and return the next number.
+
+    ‼️ DIVISIONS ARE NUMBERED STATEWIDE, not within a classification (owner rule
+    2027-08) — every other unit counts inside its own class ("Region IX" exists
+    once per classification), but there is exactly one Division 1 in Jefferson
+    each year. The sequence runs **girls first, then boys**, and **bottom-up by
+    classification** (2A-1A, 3A, 4A, 5A, 6A, 7A), continuing across both, so
+    2A-1A girls hold Division 1 and the highest number lands on 7A boys — "(7A)
+    Division 11", if the state played that many that year. How many there are
+    depends on how many Divisional duals the berths actually require, which
+    varies by year, so the numbers are assigned here — once both genders are
+    known — rather than inside the round that plays them.
+
+    Idempotent: the number is always recomputed and overwritten, so re-running
+    against a memoised season cannot double-count."""
+    n = start
+    for g in reversed(GROUPS):                    # 2A-1A up to 7A
+        dv = ((season.get("groups") or {}).get(g) or {}).get("divisional") or {}
+        for games in dv.get("rounds") or ():
+            for gm in games:
+                gm["unit"] = f"Division {n}"
+                n += 1
+    return n
 
 
 def _losers(stage: dict, round_ix: int) -> list[str]:
