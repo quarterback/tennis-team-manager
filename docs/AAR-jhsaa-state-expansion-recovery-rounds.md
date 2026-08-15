@@ -227,3 +227,91 @@ losers before Super Regional bye holders**, because one bye is less bad than a
 double — loudly logged, and the field still arrives full. First cut of that
 fallback took the best-TOSS ineligible team and handed a double bye straight
 back to a Super Regional sitter; the tiering exists because of it.
+
+---
+
+## Addendum 3: the Divisional Round, and why byes are gone entirely
+
+Three reports, one bug. A No. 19 TOSS Regional loser byed through *both*
+recovery rounds and reached State unplayed. A No. 4 TOSS Zonal loser took the
+Semi-State bye and reached State "without winning their district." And each
+fix I wrote just moved which bye was the unearned one — because I kept
+treating byes as something to *allocate correctly* rather than something to
+*abolish*. The owner named the actual goal:
+
+> "my goal is ultimately to keep people from earning their way to state with a
+> bye basically that's what i don't want"
+
+Byes existed because the two recovery rounds were **cuts** sized to whatever
+the loser pool happened to be; whatever didn't pair off became a bye. So the
+fix is not a better bye rule — it is a third round that absorbs the leftover
+berths, letting every round pair its **entire** field:
+
+```
+Super Regionals   P (even)                  -> P/2 winners
+Semi-State        S = P/2 + Z + readmits    -> S/2 winners  (berths)
+Divisional Round  2L best Semi-State losers -> L winners    (last berths)
+        L = berths - S/2   =>   4*berths/3 <= S <= 2*berths
+```
+
+A bye is now structurally impossible, not merely forbidden. `_recovery_round`
+raises on an odd field rather than sitting anybody, and all the bye machinery
+— `bye_eligible`, `bye_last_resort`, the overflow branch and its warning — is
+deleted.
+
+**It also fixes a real inequity**, which is why the owner preferred it: a
+Regional loser got Super Regionals *plus* a readmission to Semi-State, while a
+Zonal loser — a better team, it got further — entered at Semi-State, lost once
+and was out. Two or three chances against one. Now everyone in recovery gets
+two.
+
+Measured across all six classifications on a real archived season: **zero byes
+in any recovery round**, every State field exactly full (8/8, 6/6, 12/12 at
+fixture scale), berths filled exactly.
+
+### Bodies, in order of how well qualified they are
+
+The other half of the owner's correction was that I reached for the *worst*
+pool first:
+
+> "before you even go down to ward teams, you could reconsider Super Regional
+> losers using TOSS … it's another pool and they're usually better qualified
+> teams inside of that pool. again, common sense"
+
+So: readmitted **Super Regional losers** first (they already fought through
+Regionals), and only then the walk back down the ladder — **Ward → Sectional →
+Area** losers, best TOSS within each tier. A body is a chance to PLAY, never a
+berth; a readmitted team still has to win.
+
+### What I got wrong, for the record
+
+I twice told the owner the shortfall "can't happen," from a budget calculation
+that ignored district-guarantee teams being pulled *out of* the loser pools
+(the real budget is `40 − dq` against `2 × (24 − dq)` berths). I then built a
+speculative unearned-bye fallback for a case I should have asked about in one
+line. Two blind string replacements also silently no-opped, so a "fix" ran
+twice against unchanged code. The lesson is the one this repo keeps
+relearning: **verify the edit landed, and ask rather than invent** — the
+owner's one-sentence statement of the goal was worth more than all of it.
+
+The player-facing explainer lives at `docs/JHSAA-road-to-state.md`.
+
+### Numbering the Divisions (owner rule 2027-08)
+
+Every other tournament unit is numbered **within its classification** — 7A has a
+Region IX and so does 3A. Divisions are the exception: they are numbered
+**statewide**, so there is exactly one Division I in Jefferson each year. The
+sequence runs **girls first, then boys**, **bottom-up by classification**
+(2A-1A → 7A), continuing across both genders — 2A-1A girls hold Division I and
+the year's last number lands on 7A boys.
+
+That forces the assignment to happen **after both genders have played**
+(`jhsaa.renumber_divisions`, called from `world.run_jhsaa`), not inside the
+round that plays the duals: how many Divisions exist depends on how many berths
+the Divisional Round had to fill, which varies by year and by classification.
+The pass always recomputes and overwrites, so it is idempotent against the
+memoised season cache.
+
+Numerals are Roman on the honours line like every other unit — "Division XI"
+beside "Region IX" and "Ward IV" — while the stored unit keeps its arabic form
+("Division 11"), exactly as "Regional 9" does.

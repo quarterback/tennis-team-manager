@@ -3567,8 +3567,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     conn = _db()
     champs = {}
     try:
+        # Divisions are numbered STATEWIDE, girls first then boys, bottom-up by
+        # classification — so the counter runs across both genders' seasons.
+        division_no = 1
         for gender in ("girls", "boys"):
             season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
+            division_no = jhsaa.renumber_divisions(season, division_no)
             summary = {
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
@@ -3619,6 +3623,8 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
                 "super_regional": {g: season["groups"][g]["super_regional"]
                                    for g in jhsaa.GROUPS},
+                "divisional": {g: season["groups"][g].get("divisional")
+                                for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
                                for g in jhsaa.GROUPS},
                 "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},
@@ -3821,6 +3827,10 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
            "champion": False, "played_sectional": school in sec_field,
            "wildcard": False, "district_qualifier": False}
     # A recovery run supersedes the ladder loss that sent the school there.
+    if school in ((grp.get("divisional") or {}).get("field") or ()):
+        from . import jhsaa as _jh
+        out["finish"] = _jh.DIVISIONAL_NAME
+        return out
     if school in ((grp.get("semi_state") or {}).get("field") or ()):
         out["finish"] = "Semi-State"
         return out
@@ -3953,7 +3963,9 @@ def _roman(n: int) -> str:
 
 
 def _unit_honour(unit: str) -> str:
-    """'Regional 9' -> 'Region IX'; 'Zonal C' -> 'Zone C' (letters stay)."""
+    """'Regional 9' -> 'Region IX'; 'Division 11' -> 'Division XI' (the count is
+    statewide, the numeral is Roman like every other unit); 'Zonal C' -> 'Zone C'
+    (letters stay letters)."""
     head, _, tail = unit.rpartition(" ")
     name = _UNIT_HONOUR.get(head, head)
     return f"{name} {_roman(int(tail))}" if tail.isdigit() else f"{name} {tail}"
@@ -3963,7 +3975,8 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     """The tournament units `school` won that season, in ladder order. Archives
     from before units existed carry no `unit` keys and yield nothing."""
     out = []
-    for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
+    for key in ("sectionals", "wards", "prestate", "super_regional",
+                "semi_state", "divisional"):
         d = (arc.get(key) or {}).get(group) or {}
         for games in d.get("rounds") or ():
             for gm in games:
@@ -4014,6 +4027,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "prestate": (arc.get("prestate") or {}).get(g),
          "super_regional": (arc.get("super_regional") or {}).get(g),
          "semi_state": (arc.get("semi_state") or {}).get(g),
+         "divisional": (arc.get("divisional") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)

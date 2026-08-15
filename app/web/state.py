@@ -4124,7 +4124,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     stages = []
     # The RECOVERY rounds sit closest to State, so their folds come first
     # (the list is reverse-chronological: the stage that fed State on top).
-    for key in ("semi_state", "super_regional"):
+    for key in ("divisional", "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
             # A recovery round only needs to ELIMINATE its cut, so part of the
@@ -4213,7 +4213,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(sc.group) or {})
     sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(sc.group) or {})
     ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(sc.group) or {})
-    _KIND = {"toc": "TOC", "state": "STATE", "semi_state": "SEMI-STATE",
+    dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
+    _KIND = {"toc": "TOC", "state": "STATE", "divisional": "DIVISIONAL",
+             "semi_state": "SEMI-STATE",
              "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
              "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
     # The sectional PHASE holds every cut round, but a multi-round Sectionals
@@ -4234,7 +4236,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
             k = "AREA"
         return k
     kinds = [_kind(d) for d in sched]
-    _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "SEMI-STATE": ss_seeds,
+    _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "DIVISIONAL": dv_seeds,
+              "SEMI-STATE": ss_seeds,
               "SUPER REGIONAL": sr_seeds, "ZONAL": pre_seeds,
               "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds,
               "AREA": sec_seeds}
