@@ -112,6 +112,29 @@ def test_the_state_field_is_champions_guarantees_and_recovery_survivors(archived
         assert set(state["field"][:len(zonal_champs)]) == zonal_champs
 
 
+def test_zonal_champions_are_the_top_seeds_byes_or_not(archived):
+    """‼️ WINNING A ZONAL BUYS SEEDS 1-8 (owner clarification 2027-08). This is a
+    SEEDING guarantee in its own right, not a side effect of byes. In a 24-team
+    field the top eight seeds also collect the eight first-round byes, so the
+    rule LOOKS like a bye rule — but 7A's field is 32, a power of two with no
+    byes at all, and the guarantee there is purely that the Zonal champions are
+    seeded 1-8. Asserted for BOTH shapes, so a change that ties the privilege to
+    byes fails on the no-bye classification."""
+    checked_bye_free = False
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, dq, sr, ss, dv = _stages(archived, g)
+        champs = list(pre["survivors"])
+        field = state["field"]
+        # the champions hold the top seed slots, in TOSS order among themselves
+        assert set(field[:len(champs)]) == set(champs), g
+        # ...and nobody else is seeded above one
+        assert not (set(field[len(champs):]) & set(champs)), g
+        n = len(field)
+        if n and n & (n - 1) == 0:            # a power of two: no first-round byes
+            checked_bye_free = True
+    assert checked_bye_free, "no bye-free field in the fixture — the 7A case is untested"
+
+
 def test_district_champions_always_reach_state(archived):
     """The geographic-access safeguard: every district champion is in the State
     field, zonal title or not — and the guarantee list is exactly the champions

@@ -2275,9 +2275,14 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        # Zonal champions FIRST — the privileged path: they are the draw's top
-        # seeds, so a 24-team field's eight first-round byes are exactly theirs.
-        # The district-guarantee and Semi-State qualifiers follow, together, in
+        # ‼️ ZONAL CHAMPIONS ARE THE TOP SEEDS — the whole privileged path, and
+        # it is a SEEDING guarantee in its own right, not a side effect of byes
+        # (owner clarification 2027-08). Winning a Zonal buys seeds 1-8 in every
+        # classification: in a 24-team field that also hands them the eight
+        # first-round byes, but 7A's 32-team field is a power of two and has NO
+        # byes at all — there the guarantee is purely that they are seeded 1-8.
+        # Champions first, TOSS-ordered among themselves; the district-guarantee
+        # and Semi-State qualifiers follow, together, in
         # post-recovery TOSS order — the guarantee buys ACCESS, never seeding.
         zc = sorted(zonal_champs[group], key=_power_key(final_power))
         rest = sorted([by_name_g[n] for n in district_q[group]] + recovery_q[group],

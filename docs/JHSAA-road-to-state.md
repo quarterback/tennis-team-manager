@@ -25,7 +25,12 @@ draw's top seeds — so State's first-round byes belong to them, by right.
 
 State is **32 teams in 7A, 24 everywhere else**, and that number never moves.
 
-1. **Win your Zonal** — 8 automatic berths, top seeds.
+1. **Win your Zonal** — 8 automatic berths, and **seeds 1–8 of the State draw**.
+   This is a seeding guarantee in its own right, not a byproduct of byes: in a
+   24-team field the top eight seeds also take the eight first-round byes, but
+   7A's field is 32 — a clean bracket with no byes at all — and the eight Zonal
+   champions are still seeded 1 through 8 there. Winning your Zonal buys the top
+   half of the seed list either way.
 2. **Win your district** — a district champion always has access, even if it
    loses in the ladder. Access only: no bye, no seed help, and no extra berth if
    it also won a Zonal.
