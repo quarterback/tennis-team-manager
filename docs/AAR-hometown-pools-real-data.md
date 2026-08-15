@@ -207,5 +207,11 @@ are written bare. So:
   twelve strangers and unlinks its archived awards. `archetypes.json` keys on
   the display name and moved too.
 
-Only the tail strips: "San Cordero School of Commerce" ends in "Commerce" and
-is untouched.
+**And "School of SUBJECT" collapses to the subject** (a follow-up owner rule:
+*"you just say San Cordero Commerce or Plainfield Science"*), truncated at
+"and" — "Calder School of Science and Industry" reads "Calder Science". The
+collapse is GATED on a subject vocabulary because the same shape carries
+places ("Jesuit High School of Sacramento", "Latin School of Chicago"), where
+the of-phrase is the name. 16 collapsed across the pool, including the
+validating real case: "Bronx High School of Science" → **"Bronx Science"**,
+which is exactly what everyone calls it.

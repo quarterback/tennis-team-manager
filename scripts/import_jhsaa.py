@@ -327,7 +327,34 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 _SUFFIX_RE = re.compile(r"\s+(High School|HS|School)$", re.IGNORECASE)
 
 
+# "School of SUBJECT" collapses to the SUBJECT (owner rule 2027-08: "you just say
+# San Cordero Commerce or Plainfield Science"), truncated at "and" — Science and
+# Industry reads "Science". Gated on a subject vocabulary because the same shape
+# also carries PLACES ("Jesuit High School of Sacramento", "Latin School of
+# Chicago"), where the of-phrase is part of the name and must not collapse.
+_SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
+             "design", "engineering", "public", "business", "agriculture",
+             "agricultural", "medicine", "health", "law", "mathematics", "math",
+             "media", "music", "leadership", "communication", "communications",
+             "humanities", "advanced", "applied", "performing", "visual",
+             "environmental", "innovation", "trades", "aviation"}
+_SCHOOL_OF_RE = re.compile(
+    r"^(?P<pre>.+?)\s+(?:High\s+)?Schools?\s+of\s+(?:the\s+)?(?P<subj>.+)$",
+    re.IGNORECASE)
+
+
+def _collapse_school_of(name: str) -> str:
+    m = _SCHOOL_OF_RE.match(name)
+    if not m:
+        return name
+    subj = m.group("subj")
+    if subj.split()[0].lower() not in _SUBJECTS:
+        return name
+    return f"{m.group('pre')} {subj.split(' and ')[0].strip()}"
+
+
 def _display_name(name: str) -> str:
+    name = _collapse_school_of(name)
     while True:
         stripped = _SUFFIX_RE.sub("", name).strip()
         if stripped == name or not stripped:

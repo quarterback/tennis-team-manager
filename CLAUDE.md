@@ -1009,14 +1009,20 @@ they had cities and nothing errored; regenerate instead. ~5,100 distinct US citi
 
 ## ⚠️ SCHOOL NAMES carry NO institutional suffix (owner rule 2027-08)
 "You don't need to have HS or High School ever, or even 'School' because nobody uses
-it" — and a day school reads "X Day" ("usually it just says Day"). This REVERSED the
-original rule, which APPENDED " High School" to bare names and, not knowing "HS" was
-a school marker, shipped "Baptist HS High School". Only the TAIL strips: "San Cordero
-School of Commerce" ends in "Commerce" and is untouched.
+it" — a day school reads "X Day" ("usually it just says Day"), and **"School of
+SUBJECT" collapses to the subject, truncated at "and"**: "San Cordero Commerce",
+"Calder Science", and — the validating real case — "Bronx Science". This REVERSED
+the original rule, which APPENDED " High School" to bare names and, not knowing "HS"
+was a school marker, shipped "Baptist HS High School".
+- **‼️ The collapse is GATED on a subject vocabulary** (`_SUBJECTS` in both import
+  scripts): the same shape carries PLACES — "Jesuit High School of Sacramento",
+  "Latin School of Chicago" — where the of-phrase is the name and collapsing it
+  produces garbage ("Jesuit Sacramento"). A new subject word goes in BOTH copies.
 - Enforced in THREE places that must agree: `import_jefferson.high_school_name`
-  (strips, never appends), `import_jhsaa._display_name` (at EMIT, exactly like
-  `RENAMES` — dice/districts/identity all run on the source name), and the one-time
-  strip already applied to all 56 states of `high_schools.json` (13,800+ names).
+  (strips + collapses, never appends), `import_jhsaa._display_name` (at EMIT,
+  exactly like `RENAMES` — dice/districts/identity all run on the source name), and
+  the one-time pass applied to all 56 states of `high_schools.json` (13,800+
+  suffixes stripped, 16 School-of names collapsed).
 - **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and

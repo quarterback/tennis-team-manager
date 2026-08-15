@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -58,10 +59,33 @@ _TENNIS_SPORTS = ("boys-tennis", "girls-tennis")
 # it's just the name of the school without that"). This REVERSED the original
 # rule, which APPENDED " High School" to bare names and — because it did not
 # recognise "HS" as a school marker — produced "Baptist HS High School" and
-# "Housatonic HS High School". Now we strip trailing suffixes instead. Only the
-# TAIL is stripped: "San Cordero School of Commerce" ends in "Commerce" and is
-# untouched — a mid-name "School of X" is part of the name.
+# "Housatonic HS High School". Now we strip trailing suffixes instead.
 _SUFFIX_STRIP = ("high school", "hs", "school")
+
+# "School of SUBJECT" collapses to the SUBJECT (owner rule 2027-08: "you just say
+# San Cordero Commerce or Plainfield Science"), truncated at "and" — Science and
+# Industry reads "Science". Gated on a subject vocabulary because the same shape
+# also carries PLACES ("Jesuit High School of Sacramento", "Latin School of
+# Chicago"), where the of-phrase is part of the name and must not collapse.
+_SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
+             "design", "engineering", "public", "business", "agriculture",
+             "agricultural", "medicine", "health", "law", "mathematics", "math",
+             "media", "music", "leadership", "communication", "communications",
+             "humanities", "advanced", "applied", "performing", "visual",
+             "environmental", "innovation", "trades", "aviation"}
+_SCHOOL_OF_RE = re.compile(
+    r"^(?P<pre>.+?)\s+(?:High\s+)?Schools?\s+of\s+(?:the\s+)?(?P<subj>.+)$",
+    re.IGNORECASE)
+
+
+def _collapse_school_of(name: str) -> str:
+    m = _SCHOOL_OF_RE.match(name)
+    if not m:
+        return name
+    subj = m.group("subj")
+    if subj.split()[0].lower() not in _SUBJECTS:
+        return name
+    return f"{m.group('pre')} {subj.split(' and ')[0].strip()}"
 
 # Repeat-as-weight for the hometown pool: `roll_us_hometown` does a flat
 # rng.choice over the list, so a city listed twice is twice as likely. This is the
@@ -94,10 +118,10 @@ _MAX_CITIES: int | None = None
 
 def high_school_name(name: str) -> str:
     """`name` as it should read in a player bio: the bare institution name
-    ("Alder Landing", "Housatonic"), with any trailing HS / High School / School
-    stripped — the bio row is already labelled "High school", so a suffix only
-    repeats it (see the `_SUFFIX_STRIP` note)."""
-    name = name.strip()
+    ("Alder Landing", "Housatonic", "San Cordero Commerce"), with any trailing
+    HS / High School / School stripped and "School of SUBJECT" collapsed — the
+    bio row is already labelled "High school", so a suffix only repeats it."""
+    name = _collapse_school_of(name.strip())
     changed = True
     while changed:
         changed = False
