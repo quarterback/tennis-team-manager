@@ -51,11 +51,15 @@ most of them go elsewhere to play, exactly as they do for California, Texas and 
 "A good tennis state" has never meant "a state that keeps its own kids," and a big
 in-state D1 footprint is not how the state's quality is expressed.
 
-One measured trap worth recording: Jefferson's city pool is **capped at 46 cities**, and
-that cap is load-bearing. All 272 of its cities made Jefferson 64% of the western
-hometown pool, so every California, Oregon and Washington roster filled with Jefferson
-kids and nothing errored anywhere. 46 puts it at 23.1%, matching its actual population
-share.
+One measured trap worth recording: Jefferson's city pool is **capped as a proportion** —
+about 23% of the western hometown pool, matching its population share — and that cap is
+load-bearing in both directions. Exporting all 272 of its cities against the original
+hand-curated western pool made Jefferson 64% of it, so every California, Oregon and
+Washington roster filled with Jefferson kids and nothing errored anywhere. The cap was
+first 46 cities; when the hometown pools were later rebuilt from real Census and
+GeoNames data (below), the west grew from ~150 cities to ~666 and the same cap had
+silently become an 8% *under*-representation — so it is now derived from the share, not
+stored as a number, and re-derives to 199.
 
 ---
 
@@ -584,6 +588,27 @@ Funded from ANZAC down to a floor and then from Europe pro-rata — nothing out 
 Asia, which had just been raised, and nothing out of the US anchor. All five still sum to
 100.0 with their Africa, Asia and US totals unchanged, and no bucket exceeds 1.1× reuse
 pressure.
+
+### Hometowns from real place data
+
+The follow-up to the name work was the hometowns behind them. The per-state city lists
+were hand-typed flavour that nobody had ever sized against draw volume: **33 of 55
+states drew more recruits per class than they had cities** — Florida drew 248 recruits a
+class from 46 cities — and nothing errored, because a repeated hometown is not an error.
+
+Typing more names in would have added invented data on top of thin data, so the pools
+are now **generated from two real datasets**: GeoNames supplies population, and the US
+Census Gazetteer supplies legitimacy — each catching what the other misses. GeoNames
+alone classes DC neighbourhoods like "NoMa" and "Foggy Bottom" as towns (first attempt
+gave the District 28 "cities"); the Census place file alone gave Vermont four, because
+New England's municipalities are towns and Hawaii's are CDPs, invisible at that summary
+level. The curated lists stay as a union on top — the campus towns matter to this game
+and many sit under the population floor.
+
+After: **1,218 distinct US cities becomes ~3,900** (Florida 46 → 295, California 81 →
+461), Canada's birthplace pool 60 → 405, Mexico's 19 → 396, all population-weighted by
+the same one-slot-per-25k rule Jefferson already used. States drawing more than one
+recruit per city per class: 33 → **2**, and both survivors are by design.
 
 ### A mix is a file you keep
 
