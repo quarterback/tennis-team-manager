@@ -378,8 +378,13 @@ def test_roman_numeral_unit_honours():
 
 
 def test_every_unit_win_becomes_a_team_honour(archived):
-    """A program's unit-win honours are exactly the units it won, ladder order."""
+    """A program's unit-win honours are exactly the units it won, ladder order —
+    led by the district title when the program won its district (owner rule
+    2027-08: the title sits with the zone/ward/section chips)."""
     arc = archived["arc"]
+    champs = {g: {rows[0]["school"]: dname
+                  for dname, rows in arc["standings"][g].items() if rows}
+              for g in jh.GROUPS}
     for g in jh.GROUPS:
         won = {}
         for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
@@ -390,7 +395,8 @@ def test_every_unit_win_becomes_a_team_honour(archived):
             row = next(r for r in wd.jhsaa_school_seasons(
                 archived["world"]["id"], "girls", school)
                 if r["year"] == archived["world"]["year"])
-            assert row["unit_wins"] == units, school
+            title = [champs[g][school]] if school in champs[g] else []
+            assert row["unit_wins"] == title + units, school
             assert row["honoured"]
 
 
@@ -510,3 +516,28 @@ def test_recovery_byes_reach_the_bracket_view(archived):
             expect = [nm for nm in arc["field"] if nm not in played]
             got = [b["name"] for b in by_stage[name].get("byes", [])]
             assert got == expect, (g, name)
+
+
+def test_district_title_leads_the_units_honour_line(archived):
+    """The district title sits ON the units line, first — with the zone/ward/
+    section chips, not only as a ledger badge (owner rule 2027-08: the honours
+    panel said "Region V · Zone C" while the header counted "1 district title")."""
+    standings = archived["arc"]["standings"]
+    checked = 0
+    for g in jh.GROUPS:
+        for dname, rows in standings[g].items():
+            if not rows:
+                continue
+            champ = rows[0]["school"]
+            for srow in wd.jhsaa_school_seasons(archived["world"]["id"], "girls", champ):
+                if srow["year"] != archived["world"]["year"]:
+                    continue
+                assert srow["unit_wins"][:1] == [dname], (g, dname, champ)
+                checked += 1
+            # and the runner-up must NOT carry it
+            if len(rows) > 1:
+                for srow in wd.jhsaa_school_seasons(archived["world"]["id"], "girls",
+                                                    rows[1]["school"]):
+                    if srow["year"] == archived["world"]["year"]:
+                        assert dname not in srow["unit_wins"]
+    assert checked

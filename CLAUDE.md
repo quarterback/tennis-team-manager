@@ -526,7 +526,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     counters, no explainer copy. Pinned by `test_a_bye_is_never_the_ticket_into_state`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
-  ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line, and
+  ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
+  led by the DISTRICT TITLE when the program won its district (owner rule 2027-08:
+  it sits with the zone/ward/section chips, chip text = the district name) — and
   reaching State is its own line — gold title / silver finalist / bronze semifinalist /
   **blue** every other State finish. `honoured` = honors | champion | toc_champion |
   unit_wins | made_state.
