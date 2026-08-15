@@ -698,18 +698,30 @@ start of the offseason ladder — before the recruit board needs its output.
   **Wards** (32→16) → **Regionals** (the 16 Ward champions + 16 protected
   entrants — district champions first, then best cutoff TOSS) → **Zonals**
   (16→8). Three ways into State:
-  1. The eight **Zonal champions** qualify automatically, with the privileged
-     path: they are the State draw's top seeds, so a 24-team field's eight
-     first-round byes are exactly theirs.
+  1. The eight **Zonal champions** qualify automatically and take **seeds 1-8
+     of the State draw**. That is a seeding guarantee in its own right, not a
+     byproduct of byes: in a 24-team field the top eight seeds also collect the
+     eight first-round byes, but 7A's field is 32 — a clean bracket with no
+     byes at all — and the Zonal champions are still seeded 1 through 8 there.
   2. A **district champion is guaranteed access** even if it loses in the
      ladder — access, never a bye or a seed. This is a geographic safeguard:
      no district is excluded from State because TOSS dislikes it.
-  3. Every remaining berth is **earned on court in the recovery rounds**:
-     Regional losers (plus, in 7A, the best-TOSS Ward losers — TOSS buys them
-     another chance to *play*, never a berth) enter **Super Regionals**;
-     Zonal losers join at **Semi-State**; Semi-State's survivors complete the
-     field. Recovery draws avoid immediate rematches with the opponent that
-     just eliminated a team, and same-district pairings where practical.
+  3. Every remaining berth is **earned on court in the recovery rounds**, and
+     **nobody reaches State on a bye** — the rounds each pair their *entire*
+     field, so advancing without playing is impossible rather than merely
+     disallowed. Regional losers enter **Super Regionals**; the winners, the
+     **Zonal losers** and the best-TOSS readmitted Super Regional losers meet at
+     **Semi-State**; and the berths Semi-State cannot fill are contested in the
+     **Divisionals**, drawn from the best Semi-State losers. That third round
+     also evens the chances — a Regional loser used to get two or three cracks
+     while a Zonal loser, a better team, got one. Extra bodies are drawn
+     best-pool-first: readmitted Super Regional losers, then Ward, Sectional
+     and Area losers by TOSS — another chance to *play*, never a berth. Recovery
+     draws avoid immediate rematches with the opponent that just eliminated a
+     team, and same-district pairings where practical.
+     Divisional units are numbered **statewide** (girls first, then boys,
+     classifications bottom-up), so there is exactly one Division I in Jefferson
+     each year — unlike Regions and Wards, which are numbered within a class.
   State is **32 teams in 7A, 24 in every other classification** (no reseeding
   between rounds). The retired wild-card model — top post-Zonal TOSS
   non-champions straight into a 16-team field — is gone precisely because it

@@ -100,7 +100,7 @@
                 'ZONAL': view.group ~ ' Zonals',
                 'SUPER REGIONAL': view.group ~ ' Super Regionals',
                 'SEMI-STATE': view.group ~ ' Semi-State',
-                'DIVISIONAL': view.group ~ ' Divisional Round',
+                'DIVISIONAL': view.group ~ ' Divisionals',
                 'STATE': view.group ~ ' State Tournament',
                 'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
           {% endif %}
@@ -119,7 +119,12 @@
             </td>
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST' else 'state' if d.kind != 'NON-DIST' }}">{{ d.kind }}</span>
+            {# Three tag colours, because they are three different things: the
+               league season, the ROAD to State (Areas..Divisionals) and the State
+               event itself. A State/TOC dual also names its bracket round. #}
+            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
+                     else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'NON-DIST' }}">{{ d.kind }}</span>
+              {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}

@@ -496,8 +496,12 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
   State is **32 in 7A, 24 elsewhere**, and the old TOSS wild cards are GONE — a rating
   never hands out a berth again (the report: a #14 missed State while #23 got in by
-  winning). Three ways in: the 8 **Zonal champions** (automatic + the draw's top seeds,
-  so a 24-field's eight byes are theirs by construction); the **district guarantee**
+  winning). Three ways in: the 8 **Zonal champions** — automatic, AND **seeds 1-8 of
+  the State draw**. That is a SEEDING guarantee, not a bye rule (owner clarification
+  2027-08): a 24-field's eight byes fall to them as a consequence, but 7A's 32-field
+  is a power of two with NO byes and they are still seeded 1-8 there. Pinned for both
+  shapes by `test_zonal_champions_are_the_top_seeds_byes_or_not`. Then the
+  **district guarantee**
   (a district champion always has ACCESS — no bye, no seed help, no extra berth if it
   also won its Zonal); and the **recovery rounds** `super_regional` → `semi_state`
   (Regional losers, plus 7A's best-TOSS Ward losers as BODIES not berths, then Zonal
@@ -523,7 +527,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     field. Bodies come best-pool-first: readmitted **SR losers**, then a walk back
     through **Ward → Sectional → Area** losers, best TOSS within each tier; a body
     is a chance to PLAY, never a berth. `jhsaa.DIVISIONAL_NAME` is the only place
-    the round is named. **‼️ DIVISIONS ARE NUMBERED STATEWIDE**, unlike every
+    the round is named — PLURAL, no "Round" ("7A Divisionals"), matching every
+    other stage heading; the per-dual UNIT keeps the singular "Division N". **‼️ DIVISIONS ARE NUMBERED STATEWIDE**, unlike every
     other unit (a Region IX exists once per classification; there is ONE Division
     I in Jefferson per year): `jhsaa.renumber_divisions` assigns them after BOTH
     genders have played — girls first, then boys, classifications bottom-up
@@ -731,6 +736,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   trip back to the index (the pattern `season_standings.html` already uses for
   conferences); and if two panels answer the same question, delete one — "District
   Champions" in the rail *was* the district index's champion column.
+- **Schedule tags are THREE things, not one**: the league season (`dist`), the
+  ROAD to State — Areas through Divisionals (`road`) — and the State event itself
+  (`state`/`toc`). A State or TOC dual also carries its BRACKET ROUND beside the
+  tag (R32/R24 · Octas · QF · SF · Final), read off the archived bracket rather
+  than inferred from schedule position.
 - **‼️ Schedule dates are a DISPLAY calendar, and the date belongs to the MATCH
   (`world.jhsaa_match_dates`), never to a card.** There is no clock inside a JHSAA
   season — it all runs in one rung at week 0 — so dates are derived from the persisted
