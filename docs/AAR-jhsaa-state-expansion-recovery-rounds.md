@@ -127,3 +127,52 @@ winning one is an honour the program keeps:
 - `RECOVERY_CUT` is what makes the shape statewide-uniform; changing the State
   field sizes without re-deriving it is how a classification ends up with a
   recovery round that eliminates nobody.
+
+---
+
+## Addendum (2027-08): no double byes, byes rendered, and the handbook gap
+
+The owner met the recovery rounds in the wild before meeting them in the
+documentation: a No. 19-TOSS team lost its Regional 1–4 and appeared in the
+State draw three days later with no Super Regional or Semi-State dual anywhere
+on any page. *"Is something broken?"* Nothing was — the rounds only eliminate
+their cut, byes go to the top of each round's TOSS order, and that team was
+comfortably the strongest side in the loser pool, so it sat out both rounds.
+Working exactly as built, and completely illegible. Three separate failures:
+
+1. **The handbook never explained the mechanism.** The Guide named the stages
+   and said "berths are earned on court" — which the double bye quietly made
+   false — but not the cut arithmetic, the TOSS protection, or that byes
+   existed at all. ("You were really lazy about explaining how it really
+   works.") The Guide now walks the berth arithmetic, the cut-not-a-bracket
+   shape, the bye, and the lucky-loser identity.
+2. **Byes rendered nowhere.** The Road to State folds list only played duals,
+   and the schedule only shows things that happened. A double-bye team's path
+   was invisible on every surface. Each recovery fold now ends with a plain
+   footnote — `Byes: A, B, C` — and deliberately nothing more: no counters, no
+   explainer copy ("i absolutely hate all that superfluous microcopy"), and
+   nothing on the schedule.
+3. **The double bye itself violated the design intent.** The rounds exist so
+   the last berths are earned on court; a team reaching State having played
+   zero recovery duals is the exact thing they were built to prevent ("it
+   feels a bit unfair for a team to skip rounds I designed specifically to
+   ensure everyone who makes it to State played their way in").
+
+The fix for (3) is the owner's agent's design, chosen over a bigger
+everyone-plays rewrite I had drafted (which changed the round shapes and game
+counts; rejected for exactly that): **keep the arithmetic, ban the double
+bye.** A Super Regional bye forces a Semi-State dual; the Semi-State bye can
+only land on a team that played and won its Super Regional (or a Zonal loser,
+whose one bye it would be). TOSS still assigns protection and pairings; game
+counts are untouched. Implementation is a `must_play` set threaded through
+`_draw_recovery`'s joint bye-and-pairing selection, plus one arithmetic
+consequence: Semi-State's byes must all fit on bye-eligible teams, which works
+out to `pool >= 2*(berths − zonal_losers)` — independent of how eliminations
+split across the rounds — so the Ward-loser body top-up now fills to that
+floor too. Pinned by `test_nobody_gets_a_bye_in_both_recovery_rounds`.
+
+Also recorded for the next reader: my first explanation reasoned about the
+second round's byes from the pre-Super-Regional TOSS, and the owner correctly
+objected that the ranking shifts the moment the next matches are played — a
+round's byes are a fact about that round's own draw, and should be presented
+(and reasoned about) per-stage, never projected forward.

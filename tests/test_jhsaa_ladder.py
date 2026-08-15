@@ -429,3 +429,40 @@ def test_recovery_draws_never_replay_the_team_that_just_eliminated_you(archived)
                             offenders.append((g, key, me, opp))
     conn.close()
     assert not offenders, offenders[:5]
+
+
+def test_nobody_gets_a_bye_in_both_recovery_rounds(archived):
+    """‼️ NO DOUBLE BYES (owner rule 2027-08). Byes go to the top of the TOSS
+    order, and both recovery rounds only ELIMINATE a cut — so under the first
+    shape a strong Regional loser could sit out Super Regionals AND Semi-State
+    and reach State having played zero recovery duals (a No. 19 seed did: "it
+    feels a bit unfair for a team to skip rounds I designed specifically to
+    ensure everyone who makes it to State played their way in"). A Super
+    Regional bye now forces a Semi-State dual; the Semi-State bye is earned by
+    playing and winning the Super Regional. Game counts are untouched — the
+    rule only moves WHO sits."""
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
+        def byes(arc):
+            played = {nm for games in arc["rounds"] for gm in games
+                      for nm in (gm["home"], gm["away"])}
+            return {nm for nm in arc["field"] if nm not in played}
+        double = byes(sr) & byes(ss)
+        assert not double, (g, sorted(double))
+
+
+def test_recovery_byes_reach_the_bracket_view(archived):
+    """The Road-to-State stages carry each recovery round's byes, so a lucky
+    loser's path is legible on the bracket page — and nowhere else (not the
+    schedule, no counters — owner rules 2027-08)."""
+    from app.web.state import jhsaa_bracket_view
+    for g in jh.GROUPS:
+        view = jhsaa_bracket_view(wd.DEFAULT_SEED, "girls", g)
+        sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
+        by_stage = {st["name"]: st for st in view["stages"]}
+        for arc, name in ((sr, "Super Regionals"), (ss, "Semi-State")):
+            played = {nm for games in arc["rounds"] for gm in games
+                      for nm in (gm["home"], gm["away"])}
+            expect = [nm for nm in arc["field"] if nm not in played]
+            got = [b["name"] for b in by_stage[name].get("byes", [])]
+            assert got == expect, (g, name)

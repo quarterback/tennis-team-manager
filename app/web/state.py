@@ -4127,18 +4127,16 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     for key in ("semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
-            # A recovery round only needs to ELIMINATE its cut, so most of the
-            # pool advances on a BYE (top of that round's own TOSS order) and
-            # plays nothing — which is invisible in the game cards and reads as
-            # a team having skipped the stage (a No. 19 lucky loser looked like
-            # it jumped from a Regional loss straight into State). Byes are a
-            # fact of THIS stage, decided on the TOSS of that moment — render
-            # them on the stage, not on the schedule (owner rule 2027-08).
+            # A recovery round only needs to ELIMINATE its cut, so part of the
+            # pool advances on a BYE and plays nothing — invisible in the game
+            # cards, which is how a lucky loser looked like it jumped from a
+            # Regional loss straight into State. A footnote on the stage, not
+            # the schedule, and no counters (owner rule 2027-08).
             sseeds = _jh_seeds(d)
             played = {nm for rd in d["rounds"] for gm in rd
                       for nm in (gm["home"], gm["away"])}
-            byes = [{**_jh_deco(schools, nm, 20), "seed": sseeds.get(nm, 0)}
-                    for nm in (d.get("field") or ()) if nm not in played]
+            byes = [{"name": nm} for nm in (d.get("field") or ())
+                    if nm not in played]
             for rd in _deco_rounds(d, sseeds):
                 stages.append({"name": rd["name"], "rounds": [rd], "byes": byes})
     pre = (arc.get("prestate") or {}).get(grp) or {}

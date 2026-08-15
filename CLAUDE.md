@@ -506,8 +506,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `RECOVERY_CUT`). Draw rule: never immediately replay the team that just eliminated
   you — and **bye selection and pairing are ONE problem** (`_draw_recovery`), since
   choosing byes first froze a bye team into an unreachable rematch. Finishes for
-  recovery runs SUPERSEDE the ladder round that sent them there. See
-  `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+  recovery runs SUPERSEDE the ladder round that sent them there.
+  - **‼️ NO DOUBLE BYES (owner rule 2027-08).** A recovery round is a CUT, not a
+    bracket — byes go to the top of its TOSS order — so a strong Regional loser once
+    sat out BOTH rounds and reached State having played zero recovery duals, which is
+    the exact thing the rounds exist to prevent. A Super Regional bye now forces a
+    Semi-State dual (`must_play` through `_draw_recovery`); the Semi-State bye is
+    earned by winning a Super Regional. Feasibility needs `pool ≥ 2×(berths − zonal
+    losers)` — the Ward-loser body top-up fills to that floor. Byes render as a plain
+    `Byes: A, B, C` FOOTNOTE on the Road-to-State folds — never on the schedule, no
+    counters, no explainer copy (owner: "i absolutely hate all that superfluous
+    microcopy"). Pinned by `test_nobody_gets_a_bye_in_both_recovery_rounds`.
+  See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line, and
   reaching State is its own line — gold title / silver finalist / bronze semifinalist /
