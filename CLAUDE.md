@@ -961,6 +961,35 @@ See `docs/AAR-international-distribution-and-name-pools.md`.
     covers the document, the drift report and the routes.
 - Names are not save state — this changes future-generated worlds only.
 
+## ⚠️ HOMETOWNS — generated from real place data, never hand-typed (owner rule 2027-08)
+`generators/data/names/hometowns.json` holds two tiers with DIFFERENT key spaces that
+collide (`us_states["CA"]` is California, `cities["CA"]` is Canada — 14 such keys; the
+tiers are kept apart only by which function reads them). `scripts/build_hometowns.py`
+rebuilds both from GeoNames (population) × the US Census Gazetteer (legitimacy —
+GeoNames alone classes DC neighbourhoods like "NoMa" as towns; New England's
+municipalities are cousub TOWNS and Hawaii's are CDPs, invisible in the place file).
+Curated cities are a UNION on top (campus towns matter and sit under the floor). Do
+NOT hand-type city lists back in — 33 of 55 states drew more recruits per class than
+they had cities and nothing errored; regenerate instead.
+- **Repeats ARE the weighting, in BOTH tiers** (`roll_us_hometown` and
+  `roll_hometown` are flat `rng.choice`): one slot per 25k residents capped at 12 —
+  the `import_jefferson` rule, ONE idiom. `ncaa.towns_in_region` DEDUPES, so repeats
+  never distort the 70% local-roster draw; only distinct counts count there.
+- **‼️ JF's city cap is a PROPORTION (~23% of the western DISTINCT pool), not a
+  number.** It was 46 against ~150 western cities; the rebuild took the west to ~666,
+  so `import_jefferson._MAX_CITIES` is now **199** — and it must move again if the
+  pools do, in EITHER direction (the share report warns both ways, and counts the
+  pool the way `towns_in_region` does: us_states ∪ campus cities).
+- **‼️ `scrub_name_pools.py --check` IS A REAL RUN, not a dry-run** (scrub, then
+  verify idempotency). The rebuild's 801 new Canada/Mexico cities deleted 38 curated
+  surnames (García, Thompson, Brooks, Mercier…) before the keep-set caught up —
+  restore from git, extend `SURNAME_CITY_KEEP`, re-run. Only the `cities` tier feeds
+  the scrubber; `us_states` never does.
+- `flavor.py` defines `_load_us_states`/`roll_us_hometown` TWICE (the first pair is
+  dead code — Python keeps the second); hometown caches are module-global and cleared
+  by NOTHING, so a data change needs a process restart. A player's hometown is
+  materialised at generation and persisted — expansions change new players only.
+
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one

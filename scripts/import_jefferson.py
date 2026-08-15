@@ -78,15 +78,18 @@ _MAX_SLOTS = 12
 #   2. `ncaa.towns_in_region("W")` — the pool EVERY western program draws its
 #      local year-0 base-roster players from (`LOCAL_REGION_TARGET` = 0.70). It
 #      dedupes by (city, state), so only the DISTINCT count matters there.
-# Jefferson has 272 cities; the rest of region "W" contributes 153 (CA 92, WA 23,
-# OR 19, AK 9, HI 9, BC 1). Exporting all 272 would make Jefferson 64% of that
-# pool — every California, Oregon and Washington roster would fill with Jefferson
-# kids, and nothing would error. So cap the distinct cities at Jefferson's share
-# of the region's POPULATION: ~17.6M of ~76M ≈ 23%, and 46/(46+153) ≈ 23%.
-# That also puts Jefferson at ~2.6 cities per million, in line with CA's 2.4.
-# If Jefferson's population or the western state pools change, re-derive this —
-# do not just raise it.
-_MAX_CITIES = 46
+# Jefferson has 272 cities. The cap is Jefferson's share of the region's
+# POPULATION (~17.6M of ~76M ≈ 23%) applied to the WESTERN pool's distinct
+# count — so it moves whenever the real states' pools do, in either direction.
+# At the original hand-curated pools (~153 other western cities) that came to
+# 46; after the 2027-08 hometown rebuild (scripts/build_hometowns.py, real
+# Census/GeoNames data — CA alone went 81 -> 461) the west carries ~665 other
+# cities, so 199/(199+665) ≈ 23%. Exporting all 272 at the OLD pool size would
+# have made Jefferson 64% of the pool — every California, Oregon and Washington
+# roster would fill with Jefferson kids, and nothing would error. If Jefferson's
+# population or the western pools change again, re-derive this — do not just
+# raise it (the share report below now warns in BOTH directions).
+_MAX_CITIES = 199
 
 
 def high_school_name(name: str) -> str:
@@ -140,15 +143,32 @@ def _report_region_share(distinct: int) -> None:
     with Jefferson kids and raises no error. See the `_MAX_CITIES` note."""
     try:
         sys.path.insert(0, _REPO)
-        from app.ncaa import STATE_REGION                    # noqa: PLC0415
+        # Count the DISTINCT (city, state) union exactly the way the consumer
+        # does — `ncaa.towns_in_region` merges the campus cities from
+        # locations.json on top of us_states, so counting us_states alone
+        # UNDERSTATES the pool (it printed 24.9% when the real share was 26.6%).
+        from app.ncaa import STATE_REGION, cities_by_state   # noqa: PLC0415
         from generators.flavor import _load_us_states        # noqa: PLC0415
-        others = sum(len({*c}) for st, c in _load_us_states().items()
-                     if st != STATE_ABBR and STATE_REGION.get(st) == "W")
+        west: dict[str, set] = {}
+        for source in (_load_us_states(), cities_by_state()):
+            for st, cs in source.items():
+                if STATE_REGION.get(st) == "W":
+                    west.setdefault(st, set()).update(cs)
+        others = sum(len(cs) for st, cs in west.items() if st != STATE_ABBR)
+        distinct = len(west.get(STATE_ABBR, set()) or set()) or distinct
     except Exception:                                        # pragma: no cover
         return                                               # reporting only
     total = distinct + others
     share = distinct / total * 100 if total else 0.0
-    warn = "  <-- TOO HIGH, re-derive _MAX_CITIES" if share > 30 else ""
+    # The cap is a PROPORTION (JF ≈ 23% of the west's population), so it drifts
+    # off its anchor in BOTH directions: too high fills western rosters with
+    # Jefferson kids; too low starves Jefferson below its population share once
+    # the real states' pools grow. Warn on both sides.
+    warn = ""
+    if share > 30:
+        warn = "  <-- TOO HIGH, re-derive _MAX_CITIES"
+    elif share < 16:
+        warn = "  <-- TOO LOW, re-derive _MAX_CITIES (western pools grew?)"
     print(f"  -> region W town pool: {distinct} JF + {others} other "
           f"= {total} ({share:.0f}% Jefferson){warn}")
 
