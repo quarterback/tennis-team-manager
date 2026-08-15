@@ -58,7 +58,7 @@ MAX_DISTRICT = 12
 # and then MORE again: 2A/1A sponsor at rates no real state would post, because a
 # huge, ragged small-school classification is the fun of it. The talent bands say
 # what the level is; the roster count says how much of it there is to watch.
-GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
+GIRLS_RATE = {"9A": 0.88, "8A": 0.86, "7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
               "3A": 0.26, "2A": 0.78, "1A": 0.62}
 BOYS_OF_GIRLS = 0.88
 
@@ -176,6 +176,45 @@ ALWAYS_EXTRA = [
     "Westover",
     "Westside Christian",
     "Winifred Booker",
+    # ⚠️ CONTINUITY (owner rule 2027-08). prep-network grew from 840 schools to
+    # 1,111 and sponsorship is a positional dice draw over the name-sorted list,
+    # so schools already in the association — including ones the owner had named
+    # a mascot for, Trout Junction among them — fell out of it for no reason but
+    # their neighbours' arrival. A school that has played here stays here.
+    "Alder Landing Beacon Hill",
+    "Alderfield",
+    "Alina Belov",
+    "Andrés Valera",
+    "Aspen Harbor",
+    "Belmonte",
+    "Bidwell",
+    "Draybrook Union",
+    "Eleanor Tillman",
+    "Elk Prairie",
+    "Fort Salish",
+    "Garazi Aramburu",
+    "Haverly",
+    "High Desert Christian",
+    "Katherine Davenport",
+    "Lev Voronin",
+    "Los Robles",
+    "Marian Browne",
+    "Millport",
+    "Orchard Hill",
+    "Oskar Bellini",
+    "Port Meridian South",
+    "Quarmont",
+    "Ryken",
+    "Sage Meadows",
+    "Soren Ekström",
+    "Southridge Christian",
+    "St. Elian",
+    "St. Elias Academy",
+    "Starlake",
+    "Thomas Ekström",
+    "Trout Junction",
+    "Yarburg",
+    "Yarmere",
 ]
 
 # ABSORPTION-STYLE RENAMES (owner rule 2027-08) — the same pattern the college
@@ -610,10 +649,12 @@ def canon(name: str) -> str:
 
 
 def champ_group(classification: str) -> str:
-    return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
+    return (classification
+            if classification in ("9A", "8A", "7A", "6A", "5A", "4A", "3A")
+            else "2A-1A")
 
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:

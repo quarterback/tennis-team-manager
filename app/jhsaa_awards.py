@@ -132,7 +132,7 @@ AR_TIER2_MIN_PROGRAMS = 45
 # No slot count, so the size is an OUTPUT of how deep the region actually was,
 # and at most two ENTRIES per school.
 AR_HM_MIN_PROGRAMS = 100
-AS_TIERS = {"7A": 4}           # numbered teams; everyone else gets three
+AS_TIERS = {"9A": 4}           # the largest class; everyone else gets three
 AS_TIERS_DEFAULT = 3
 
 # ‼️ HONORABLE MENTION IS A THRESHOLD, NOT A TEAM (owner, 2027-08). There is no

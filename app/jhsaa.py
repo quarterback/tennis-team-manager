@@ -48,7 +48,7 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -171,7 +171,10 @@ FIDELITY = "fast"
 # the full size today; the scale exists for small pools, not as a format fork.
 PROTECTED = 16
 WARD_FIELD = 32
-STATE_FIELD = {"7A": 32}
+# The LARGEST classification crowns from 32; every other from 24. That was 7A
+# until the association went to nine classes (owner ladder 2027-08) and it is
+# 9A now — the rule is "the top class", not the letter.
+STATE_FIELD = {"9A": 32}
 STATE_FIELD_DEFAULT = 24
 RECOVERY_CUT = 8          # teams the two recovery rounds eliminate, together
 
@@ -229,8 +232,13 @@ def ladder_scale(group: str) -> int:
 # Widening the spread as the mean falls does both jobs at once, because 12 ceilings are
 # drawn and the best 9 dress: a wide draw lifts the number one a long way and drags the
 # number nine down. Do NOT "tidy" these back into an even ladder with shrinking spreads.
+# The nine-class ladder (owner 2027-08) extended the top of this table. 9A/8A/7A
+# sit close together on purpose — see the note above: the real steps are lower
+# down, and every classification can still produce an elite number one.
 _TALENT = {
-    ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.0, 14.0),
+    ("9A", "boys"):   (59.4, 14.4), ("9A", "girls"):   (54.6, 13.4),
+    ("8A", "boys"):   (58.7, 14.8), ("8A", "girls"):   (53.9, 13.8),
+    ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.3, 13.9),
     ("6A", "boys"):   (56.5, 15.5), ("6A", "girls"):   (51.5, 14.5),
     ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
     ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
