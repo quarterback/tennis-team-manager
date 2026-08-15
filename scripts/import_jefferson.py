@@ -53,15 +53,15 @@ _INSERT_AFTER = "IA"
 # A Jefferson recruit should come from a school that actually fields tennis.
 _TENNIS_SPORTS = ("boys-tennis", "girls-tennis")
 
-# Words that already mark a name as a school. If any of these appears ANYWHERE in
-# the name we leave it alone; otherwise we append " High School". Matching the
-# whole name rather than just its tail matters: prep-network has magnet schools
-# like "San Cordero School of Commerce" and "Lake Esperanza School of Science and
-# Industry", which end in a topic word but must not become "... High School".
-_SCHOOL_WORDS = frozenset({
-    "school", "schools", "academy", "institute", "prep", "preparatory",
-    "collegiate", "high",
-})
+# ⚠️ School names carry NO institutional suffix (owner rule 2027-08: "you don't
+# need to have HS or High School ever, or even 'School' because nobody uses it,
+# it's just the name of the school without that"). This REVERSED the original
+# rule, which APPENDED " High School" to bare names and — because it did not
+# recognise "HS" as a school marker — produced "Baptist HS High School" and
+# "Housatonic HS High School". Now we strip trailing suffixes instead. Only the
+# TAIL is stripped: "San Cordero School of Commerce" ends in "Commerce" and is
+# untouched — a mid-name "School of X" is part of the name.
+_SUFFIX_STRIP = ("high school", "hs", "school")
 
 # Repeat-as-weight for the hometown pool: `roll_us_hometown` does a flat
 # rng.choice over the list, so a city listed twice is twice as likely. This is the
@@ -93,11 +93,21 @@ _MAX_CITIES: int | None = None
 
 
 def high_school_name(name: str) -> str:
-    """`name` as it should read in a player bio. prep-network stores the bare
-    institution name ("Alder Landing", "Halbrook Technical") because its own site
-    supplies the context; here the string stands alone in a "High school" row."""
-    words = {w.strip(".,").lower() for w in name.split()}
-    return name if words & _SCHOOL_WORDS else f"{name} High School"
+    """`name` as it should read in a player bio: the bare institution name
+    ("Alder Landing", "Housatonic"), with any trailing HS / High School / School
+    stripped — the bio row is already labelled "High school", so a suffix only
+    repeats it (see the `_SUFFIX_STRIP` note)."""
+    name = name.strip()
+    changed = True
+    while changed:
+        changed = False
+        low = name.lower()
+        for suf in _SUFFIX_STRIP:
+            if low.endswith(" " + suf):
+                name = name[: -len(suf) - 1].rstrip()
+                changed = True
+                break
+    return name
 
 
 def _load_prep_network(root: str) -> tuple[list[dict], list[dict]]:

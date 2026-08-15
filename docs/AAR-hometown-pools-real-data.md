@@ -160,3 +160,52 @@ Almonte are Ontario townships; Armstrong, Merritt, Oliver, Hope and Trail are
 BC towns; Alvarado, Hidalgo, Nava and Arriaga are Mexican municipios).
 Restored, 24 more names into `SURNAME_CITY_KEEP`, re-run clean. If the floors
 ever drop again, budget for a third pass.
+
+---
+
+## Addendum 2: review fixes, and school names lose their suffixes
+
+Three review findings and one owner rule, landed together.
+
+**A stale cache shadowed the download.** `--cache` defaulted to
+`/tmp/cities5000.zip` after the source moved to `cities1000.zip`; a leftover
+file from the earlier run satisfied the exists-check and `_fetch` raised
+`KeyError` on the member. The default now derives from the dump URL, and a
+cached zip that does not contain the expected member is treated as stale and
+refetched.
+
+**Generated output was becoming next run's "curated" input.** The union ran
+over the LIVE file, so after one rebuild every generated town read as curated —
+a place GeoNames drops or a tightened floor excludes could never leave, kept
+forever at weight 1. The hand-curated baseline is now frozen in
+`hometowns_curated.json` (extracted from the pre-rebuild git state, 1,315 US +
+79 CA/MX entries), the generator unions THAT, and the rebuild verifies
+byte-identical against the current pools. New hand-picked cities go in the
+baseline, where they survive every rebuild.
+
+**"Baptist HS High School."** `high_school_name()` appended " High School" to
+any name without a school word, and did not know "HS" was one. The owner's
+ruling went further than the fix: *"you don't need to have HS or High School
+ever, or even 'School' because nobody uses it"* — school names on real sites
+are written bare. So:
+
+- `import_jefferson.high_school_name` now STRIPS trailing `High School` / `HS`
+  / `School` and never appends anything.
+- The same strip runs at `import_jhsaa`'s emit point, exactly like `RENAMES` —
+  everything internal (sponsorship dice, district draws, pid identity) still
+  runs on the source name.
+- All 56 states of `high_schools.json` were stripped in place: **13,800+
+  names** ("A. H. Parker High School" → "A. H. Parker"), 13 collapsing as
+  duplicates of an existing bare name.
+- Day schools keep the word "Day" but not "School" (owner: *"usually it just
+  says Day"*): "Telfair Country Day School" → "Telfair Country Day". The
+  fallback suffix list's "Day School" became "Day". (This took three passes —
+  strip, restore, re-strip — as the rule sharpened; the final rule is
+  UNIVERSAL, no exceptions.)
+- The 11 suffixed JHSAA display names were renamed **with `source` stamped** —
+  generation keys pids on `source or name`, so a bare rename hands a program
+  twelve strangers and unlinks its archived awards. `archetypes.json` keys on
+  the display name and moved too.
+
+Only the tail strips: "San Cordero School of Commerce" ends in "Commerce" and
+is untouched.

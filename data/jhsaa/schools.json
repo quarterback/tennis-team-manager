@@ -1060,7 +1060,7 @@
       "boys_district": "Cascade Divide District"
     },
     {
-      "name": "Baptist HS",
+      "name": "Baptist",
       "city": "Hetfield",
       "county": "Windrow",
       "area": "North Range",
@@ -1076,7 +1076,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "North Range District",
-      "boys_district": "North Range District"
+      "boys_district": "North Range District",
+      "source": "Baptist HS"
     },
     {
       "name": "Barclay Golden Gate",
@@ -1582,7 +1583,7 @@
       "boys_district": "Juniper Highlands District"
     },
     {
-      "name": "Calderwood School",
+      "name": "Calderwood",
       "city": "Cedarport",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -1598,7 +1599,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley District",
-      "boys_district": "Gold Valley District"
+      "boys_district": "Gold Valley District",
+      "source": "Calderwood School"
     },
     {
       "name": "Canal View",
@@ -3764,7 +3766,7 @@
       "boys_district": "Sage Plains District"
     },
     {
-      "name": "Housatonic HS",
+      "name": "Housatonic",
       "source": "Bahía Leal Costa Verde",
       "city": "Bahía Leal",
       "county": "San Marcos",
@@ -5216,7 +5218,7 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "Metropolitan Country Day School",
+      "name": "Metropolitan Country Day",
       "city": "Ashbury",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -5232,7 +5234,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "boys_district": "Ashbury Metro District",
+      "source": "Metropolitan Country Day School"
     },
     {
       "name": "Mikel Elorriaga",
@@ -6189,7 +6192,7 @@
       "boys_district": "Juniper Highlands District"
     },
     {
-      "name": "Pacific Friends School",
+      "name": "Pacific Friends",
       "city": "Ashbury",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -6205,7 +6208,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
+      "boys_district": "Ashbury Metro District",
+      "source": "Pacific Friends School"
     },
     {
       "name": "Pacific Gate",
@@ -6379,7 +6383,7 @@
       "boys_district": "Timber Valley District"
     },
     {
-      "name": "Pinecrest School",
+      "name": "Pinecrest",
       "city": "Averill",
       "county": "Sablewood",
       "area": "Gold Valley",
@@ -6395,7 +6399,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ferris District",
-      "boys_district": "Ferris District"
+      "boys_district": "Ferris District",
+      "source": "Pinecrest School"
     },
     {
       "name": "Plainfield Science",
@@ -7392,7 +7397,7 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "San Borondón Country Day School",
+      "name": "San Borondón Country Day",
       "city": "San Borondón",
       "county": "San Marcos",
       "area": "South Coast",
@@ -7408,7 +7413,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
+      "boys_district": "South Coast District",
+      "source": "San Borondón Country Day School"
     },
     {
       "name": "San Borondón North",
@@ -8082,7 +8088,7 @@
       "boys_district": "Gold Valley District"
     },
     {
-      "name": "St. Casimir High School",
+      "name": "St. Casimir",
       "city": "Harriman",
       "county": "Emigrant",
       "area": "Sage Plains",
@@ -8098,7 +8104,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
+      "boys_district": "Sage Plains District",
+      "source": "St. Casimir High School"
     },
     {
       "name": "St. Casimir Preparatory",
@@ -8349,7 +8356,7 @@
       "boys_district": "Ferris District"
     },
     {
-      "name": "St. Martin High School",
+      "name": "St. Martin",
       "city": "Northrup",
       "county": "Vance",
       "area": "Halbrook Basin",
@@ -8365,7 +8372,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
+      "boys_district": "Halbrook Basin District",
+      "source": "St. Martin High School"
     },
     {
       "name": "St. Martin Preparatory",
@@ -8501,7 +8509,7 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "St. Vincent School",
+      "name": "St. Vincent",
       "city": "Port Veles",
       "county": "Bidwell",
       "area": "Harborline",
@@ -8517,7 +8525,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
+      "boys_district": "Harborline District",
+      "source": "St. Vincent School"
     },
     {
       "name": "Starlake",
@@ -8748,7 +8757,7 @@
       "boys_district": "Juniper Highlands District"
     },
     {
-      "name": "Telfair Country Day School",
+      "name": "Telfair Country Day",
       "city": "Telfair",
       "county": "Rimrock",
       "area": "Juniper Highlands",
@@ -8764,7 +8773,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper Highlands District",
-      "boys_district": "Juniper Highlands District"
+      "boys_district": "Juniper Highlands District",
+      "source": "Telfair Country Day School"
     },
     {
       "name": "Thelma Moss",

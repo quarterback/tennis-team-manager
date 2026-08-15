@@ -80,7 +80,7 @@ ALWAYS_EXTRA = [
     "Arrieta Treasure Valley",
     "Aurelia",
     "Bahía Leal",
-    "Bahía Leal Costa Verde",    # → "Housatonic HS" in this association (RENAMES)
+    "Bahía Leal Costa Verde",    # → "Housatonic" in this association (RENAMES)
     "Baptist HS",
     "Beacon Hill",
     "Breakwater",
@@ -191,7 +191,7 @@ ALWAYS_EXTRA = [
 # a chunk of the association. Everything internal — forcing, dice, district
 # drawing — runs on the source name; only the written row carries the new one.
 RENAMES = {
-    "Bahía Leal Costa Verde": "Housatonic HS",   # keeps its Warthogs
+    "Bahía Leal Costa Verde": "Housatonic",      # keeps its Warthogs
     "Belyakov Academy of Music and Media": "Belyakov North",
     "Belyakov Environmental Sciences Academy": "Belyakov South",
     "Belyakov I-50 Technical": "Belyakov East",
@@ -317,6 +317,22 @@ def reclassify(schools: list[dict]) -> int:
 
 
 _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
+
+# ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
+# need to have HS or High School ever, or even 'School' because nobody uses it").
+# Applied at EMIT, exactly like RENAMES: everything internal (dice, districts,
+# identity) runs on the source name, and `School.source` keeps the pre-strip name
+# so pids never move. Only the TAIL strips — "San Cordero School of Commerce"
+# ends in "Commerce" and is untouched.
+_SUFFIX_RE = re.compile(r"\s+(High School|HS|School)$", re.IGNORECASE)
+
+
+def _display_name(name: str) -> str:
+    while True:
+        stripped = _SUFFIX_RE.sub("", name).strip()
+        if stripped == name or not stripped:
+            return name
+        name = stripped
 
 
 def canon(name: str) -> str:
@@ -487,7 +503,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         city = cities.get(s["city"], {})
-        display = RENAMES.get(name, name)
+        display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and
         # the pids on their records, so if it moves, every renamed school gets

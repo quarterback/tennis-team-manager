@@ -996,10 +996,32 @@ they had cities and nothing errored; regenerate instead. ~5,100 distinct US citi
   Armstrong/Merritt BC towns, Alvarado/Hidalgo Mexican municipios) — each time
   before the keep-set caught up. Restore from git, extend `SURNAME_CITY_KEEP`,
   re-run. Only the `cities` tier feeds the scrubber; `us_states` never does.
+- **The curated baseline lives in `hometowns_curated.json`, NOT the live file.** The
+  generator unions THAT over its output; unioning the live file (mostly generated
+  after one rebuild) would grandfather every generated town in forever — a place
+  GeoNames drops or a tightened floor excludes could never leave. Add hand-picked
+  cities to the BASELINE and they survive every rebuild. The dump cache is validated
+  by member name (a stale zip from a different dump shadowed the download once).
 - `flavor.py` defines `_load_us_states`/`roll_us_hometown` TWICE (the first pair is
   dead code — Python keeps the second); hometown caches are module-global and cleared
   by NOTHING, so a data change needs a process restart. A player's hometown is
   materialised at generation and persisted — expansions change new players only.
+
+## ⚠️ SCHOOL NAMES carry NO institutional suffix (owner rule 2027-08)
+"You don't need to have HS or High School ever, or even 'School' because nobody uses
+it" — and a day school reads "X Day" ("usually it just says Day"). This REVERSED the
+original rule, which APPENDED " High School" to bare names and, not knowing "HS" was
+a school marker, shipped "Baptist HS High School". Only the TAIL strips: "San Cordero
+School of Commerce" ends in "Commerce" and is untouched.
+- Enforced in THREE places that must agree: `import_jefferson.high_school_name`
+  (strips, never appends), `import_jhsaa._display_name` (at EMIT, exactly like
+  `RENAMES` — dice/districts/identity all run on the source name), and the one-time
+  strip already applied to all 56 states of `high_schools.json` (13,800+ names).
+- **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
+  (generation keys pids on `source or name` — move the name without it and the
+  program gets twelve strangers and archived awards point at nobody), and
+  `data/jhsaa/archetypes.json` keys on the DISPLAY name, so its keys move too.
+- `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —

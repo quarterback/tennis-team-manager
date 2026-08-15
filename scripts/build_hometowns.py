@@ -65,6 +65,11 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOMETOWNS = os.path.join(ROOT, "generators", "data", "names", "hometowns.json")
+# The hand-curated baseline, frozen pre-rebuild. The union runs over THIS, never
+# the live file: after one rebuild the live lists are mostly generated output, so
+# unioning against them would grandfather every generated town in forever —
+# a place GeoNames drops or a tightened floor excludes could never leave.
+CURATED = os.path.join(ROOT, "generators", "data", "names", "hometowns_curated.json")
 DUMP_URL = "https://download.geonames.org/export/dump/cities1000.zip"
 
 GAZ_BASE = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer"
@@ -103,9 +108,21 @@ def _repeats(pop: int) -> int:
 
 
 def _fetch(url: str, cache: str, member: str, encoding: str) -> list[str]:
-    if not os.path.exists(cache):
-        print(f"fetching {url} ...")
-        urllib.request.urlretrieve(url, cache)
+    """Download-and-cache. A cached zip that does NOT contain `member` is a
+    stale cache from a different dump (the default cache name once said
+    cities5000 while the URL said cities1000 — the leftover file shadowed the
+    real download and _fetch raised KeyError). Validate, refetch on mismatch."""
+    if os.path.exists(cache):
+        try:
+            with zipfile.ZipFile(cache) as z:
+                if member in z.namelist():
+                    return z.read(member).decode(encoding).splitlines()
+            print(f"cache {cache} does not contain {member} — refetching")
+        except zipfile.BadZipFile:
+            print(f"cache {cache} is not a zip — refetching")
+        os.remove(cache)
+    print(f"fetching {url} ...")
+    urllib.request.urlretrieve(url, cache)
     with zipfile.ZipFile(cache) as z:
         return z.read(member).decode(encoding).splitlines()
 
@@ -185,6 +202,10 @@ def build(dry: bool, cache: str) -> None:
         data = json.load(fh)
     us_states: dict[str, list[str]] = data["us_states"]
     cities: dict[str, list[str]] = data["cities"]
+    with open(CURATED, encoding="utf-8") as fh:
+        curated = json.load(fh)
+    curated_us: dict[str, list[str]] = curated["us_states"]
+    curated_intl: dict[str, list[str]] = curated["cities"]
 
     cache_dir = os.path.dirname(os.path.abspath(cache)) or "."
     legit = _legit_us(cache_dir)
@@ -216,11 +237,10 @@ def build(dry: bool, cache: str) -> None:
                 floor = f
                 break
         keep = {n: p for n, p in pool.items() if p >= floor}
-        # Union with the curated list: an existing city absent from the dump (or
-        # under the floor) stays, at weight 1 — curated campus towns are data.
-        old = us_states.get(st, [])
-        old_distinct = len(set(old))
-        for n in old:
+        # Union with the CURATED baseline: a hand-picked city absent from the
+        # dump (or under the floor) stays, at weight 1 — campus towns are data.
+        old_distinct = len(set(us_states.get(st, [])))
+        for n in curated_us.get(st, []):
             keep.setdefault(n, 0)
         rows: list[str] = []
         for n in sorted(keep):
@@ -235,7 +255,7 @@ def build(dry: bool, cache: str) -> None:
         pool = {name: pop for (c, _a, name), pop in best.items()
                 if c == cc and pop >= floor}
         old = cities.get(cc, [])
-        for n in old:
+        for n in curated_intl.get(cc, []):
             pool.setdefault(n, 0)
         # `roll_hometown` is a flat rng.choice too (flavor.py:206), so the
         # birthplace pools take the same population repeats as the states.
@@ -288,7 +308,8 @@ def build(dry: bool, cache: str) -> None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--cache", default="/tmp/cities5000.zip",
+    ap.add_argument("--cache",
+                    default=os.path.join("/tmp", os.path.basename(DUMP_URL)),
                     help="where to keep the downloaded dump")
     args = ap.parse_args()
     build(args.dry_run, args.cache)
