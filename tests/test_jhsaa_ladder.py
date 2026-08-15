@@ -101,14 +101,10 @@ def test_the_state_field_is_champions_guarantees_and_recovery_survivors(archived
         sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
         k = jh.ladder_scale(g)
         zonal_champs = set(pre["survivors"])
-        # A Semi-State bye no eligible holder can take is PLAYED OFF instead
-        # (owner rule: a bye is never the ticket in), so the round may cut
-        # deeper than its target and the field may run short — by exactly the
-        # extra duals played, never more.
-        berths = jh.state_field_size(g, k) - len(zonal_champs) - len(dq)
-        natural = len(ss["field"]) - berths
-        extra = max(0, len(ss["rounds"][0]) - natural)
-        assert len(state["field"]) == jh.state_field_size(g, k) - extra
+        # ‼️ THE STATE FIELD IS FIXED (owner patch 2027-08): recovery conforms
+        # to it — bye shortages are solved upstream with Ward-loser bodies,
+        # never by extra duals, a deeper cut, or a short field.
+        assert len(state["field"]) == jh.state_field_size(g, k)
         assert zonal_champs.isdisjoint(dq)
         assert set(state["field"]) \
             == zonal_champs | set(dq) | set(ss["survivors"])
@@ -492,13 +488,25 @@ def test_a_bye_is_never_the_ticket_into_state(archived):
             return {nm for nm in arc["field"] if nm not in played}
         assert not byes(sr) & byes(ss), (g, "double bye")
         sr_winners = {gm["winner"] for games in sr["rounds"] for gm in games}
-        assert byes(ss) <= sr_winners, (g, "Semi-State bye without an SR win")
-        # the invariant the two rules add up to: every recovery qualifier
-        # WON a recovery dual — champions and the guarantee are the only
-        # other doors into State.
+        # The ONE sanctioned exception (owner patch 2027-08): the State field is
+        # FIXED, so when the upstream Ward-loser bodies are genuinely exhausted
+        # the overflow byes fall to ineligible teams rather than shorting the
+        # field. Only then — every non-guaranteed Ward loser must already be in
+        # the Super Regional field, and every eligible winner must be sitting.
+        ineligible = byes(ss) - sr_winners
+        if ineligible:
+            ward_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
+                           for games in ward["rounds"] for gm in games}
+            bodies_left = ward_losers - set(sr["field"]) - set(dq)
+            assert not bodies_left, (g, "ineligible bye with bodies to spare")
+            assert sr_winners <= byes(ss), (g, "eligible winner playing while "
+                                               "an ineligible team sits")
+        # the invariant the rules add up to: every recovery qualifier won a
+        # recovery dual — champions, the guarantee, and the exhaustion
+        # overflow are the only other doors into State.
         earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
         won = sr_winners | {gm["winner"] for games in ss["rounds"] for gm in games}
-        assert earned <= won, (g, sorted(earned - won))
+        assert earned <= won | ineligible, (g, sorted(earned - won - ineligible))
 
 
 def test_recovery_byes_reach_the_bracket_view(archived):

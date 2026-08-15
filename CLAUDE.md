@@ -516,9 +516,12 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     dual: not an SR bye taker (a No. 19 seed once coasted through both rounds
     unplayed) and not a Zonal loser (a No. 4-TOSS district runner-up once took the
     SS bye and reached State having won nothing). District champions never enter
-    the pool. A bye no eligible team can hold is PLAYED OFF (extra duals, deeper
-    cut, logged) — never handed down the pool. Feasibility floor: `pool + zonal
-    losers ≥ 2×berths`, filled by the Ward-loser body top-up. The rematch rule
+    the pool. **The State field is FIXED (32/24) and recovery CONFORMS to it** —
+    a bye shortage is solved UPSTREAM (Ward-loser bodies into the SR field, floor
+    `pool + zonal losers ≥ 2×berths`), never by extra duals, a deeper cut, or a
+    short field. If bodies truly run dry (tiny scaled class only), overflow byes
+    go to ineligible teams — Zonal losers before SR bye holders, loudly logged —
+    and the field still arrives full. The rematch rule
     ("never immediately replay your eliminator") is a pairing PREFERENCE — small
     pools brute-force the matching (≤8: exact), but a two-team Semi-State that just
     played each other is a forced rematch and allowed. Byes render as a plain

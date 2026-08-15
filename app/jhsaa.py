@@ -1667,6 +1667,7 @@ def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple
 def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
                     rng: random.Random,
                     bye_eligible: set[str] | None = None,
+                    bye_last_resort: set[str] = frozenset(),
                     ) -> tuple[dict, list[TeamSeason]]:
     """One recovery round: cut `pool` (TOSS-ordered, strongest first) to exactly
     `out_target` survivors.
@@ -1684,21 +1685,33 @@ def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
     No. 4-TOSS Zonal loser once coasted in having won nothing). District
     champions are already State-guaranteed and never enter the pool at all.
 
-    A bye no eligible team can hold is NOT handed down the pool — it is PLAYED
-    OFF: each extra dual seats two more teams and eliminates one more, so the
-    round may cut deeper than its target (logged; the State draw already
-    handles a short field with byes to its top seeds)."""
+    ‼️ THE STATE FIELD IS FIXED — 32 in 7A, 24 elsewhere — and the recovery
+    bracket CONFORMS to it, never alters it (owner patch 2027-08). A bye
+    shortage is solved UPSTREAM, by adding the highest-TOSS eligible Ward
+    losers to the Super Regional field until enough Super Regional winners can
+    exist (`_recovery`'s body top-up); this round never plays extra duals,
+    never cuts deeper than its target, and never shorts the qualifier count.
+    If the upstream bodies genuinely run dry (a tiny scaled class), the
+    overflow byes fall to the best-TOSS ineligible teams — loudly, because
+    each one is a team reaching State without a recovery win, the exact thing
+    the eligibility rule exists to prevent — but the field arrives full."""
     games_n = max(0, len(pool) - out_target)
     byes = len(pool) - 2 * games_n
     eligible = pool if bye_eligible is None else \
         [t for t in pool if t.school.name in bye_eligible]
     if byes > len(eligible):
-        extra = (byes - len(eligible) + 1) // 2
-        games_n += extra
-        byes -= 2 * extra
-        log.warning("JHSAA %s: %d bye(s) had no eligible holder — playing %d "
-                    "extra dual(s); the round cuts deeper than its target",
-                    phase, 2 * extra, extra)
+        # Tiered overflow: a team that PLAYED its previous round (a Zonal
+        # loser, one bye total) before a team that already sat one out (a
+        # Super Regional bye holder — a double bye, the worst outcome left).
+        names = {e.school.name for e in eligible}
+        ineligible = sorted((t for t in pool if t.school.name not in names),
+                            key=lambda t: t.school.name in bye_last_resort)
+        overflow = ineligible[:byes - len(eligible)]
+        log.warning("JHSAA %s: %d bye(s) had no eligible holder — granted to "
+                    "%s (upstream bodies exhausted; the State field stays full)",
+                    phase, byes - len(eligible),
+                    ", ".join(t.school.name for t in overflow))
+        eligible = eligible + overflow
     protected = eligible[:byes]                    # by TOSS, eligible only
     sitting = set(id(t) for t in protected)
     playing = [t for t in pool if id(t) not in sitting]
@@ -1778,9 +1791,13 @@ def _recovery(group: str, by_name: dict, wards: dict, prestate: dict,
     # So every recovery qualifier's last appearance is a WIN: a Semi-State win,
     # or a Super Regional win covered by the earned Semi-State bye.
     sr_winners = {gm["winner"] for rd in sr_arc["rounds"] for gm in rd}
+    sr_played = {nm for rd in sr_arc["rounds"] for gm in rd
+                 for nm in (gm["home"], gm["away"])}
+    sr_byes = {nm for nm in sr_arc["field"] if nm not in sr_played}
     ss_pool = sorted(sr_out + zon_losers, key=_power_key(power))
     ss_arc, qualifiers = _recovery_round(ss_pool, berths, phase="semi_state",
-                                         rng=rng, bye_eligible=sr_winners)
+                                         rng=rng, bye_eligible=sr_winners,
+                                         bye_last_resort=sr_byes)
     return sr_arc, ss_arc, qualifiers, district_qualifiers
 
 

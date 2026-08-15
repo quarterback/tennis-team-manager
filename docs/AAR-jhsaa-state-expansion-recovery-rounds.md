@@ -212,3 +212,18 @@ greedy repair, which the tighter bye rules had been out-manoeuvring.
 repair) is deleted. Its reason for existing — a bye recipient frozen into a
 rematch — is handled by the pairing method itself now that byes are a rule
 rather than a search variable.
+
+### Addendum 3: the State field is fixed; recovery conforms to it
+
+Owner patch on the play-off degrade: extra Semi-State duals shrank the State
+field, and the field is the invariant — **32 in 7A, 24 elsewhere, always**. A
+bye shortage is solved UPSTREAM by adding the highest-TOSS eligible Ward
+losers to the Super Regional field until enough SR winners can exist (the
+feasibility floor `pool + zonal losers ≥ 2×berths` already drives the top-up);
+the recovery bracket never plays extra duals, never cuts deeper, never shorts
+the qualifier count. When bodies genuinely run dry (only reachable in a
+scaled-down test class), the overflow byes fall to ineligible teams — **Zonal
+losers before Super Regional bye holders**, because one bye is less bad than a
+double — loudly logged, and the field still arrives full. First cut of that
+fallback took the best-TOSS ineligible team and handed a double bye straight
+back to a Super Regional sitter; the tiering exists because of it.
