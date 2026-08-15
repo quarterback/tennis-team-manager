@@ -58,8 +58,8 @@ MAX_DISTRICT = 12
 # and then MORE again: 2A/1A sponsor at rates no real state would post, because a
 # huge, ragged small-school classification is the fun of it. The talent bands say
 # what the level is; the roster count says how much of it there is to watch.
-GIRLS_RATE = {"9A": 0.88, "8A": 0.86, "7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
-              "3A": 0.26, "2A": 0.78, "1A": 0.62}
+GIRLS_RATE = {"9A": 0.90, "8A": 0.88, "7A": 0.85, "6A": 0.80, "5A": 0.74, "4A": 0.66,
+              "3A": 0.58, "2A": 0.72, "1A": 0.60}
 BOYS_OF_GIRLS = 0.88
 
 # Forced-in schools that field GIRLS tennis only. `always_sponsor()` puts a named
