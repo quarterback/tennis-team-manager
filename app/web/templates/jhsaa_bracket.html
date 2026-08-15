@@ -60,8 +60,21 @@
     <div class="bl-panel-body">
       {% for st in view.stages %}
       <details class="jh-stagefold">
-        <summary><span class="cr">›</span><span class="nm">{{ st.name }}</span></summary>
+        <summary><span class="cr">›</span><span class="nm">{{ st.name }}</span>{% if st.byes %}<span class="ct">{{ st.rounds[0].games|length }} duals · {{ st.byes|length }} byes</span>{% endif %}</summary>
         <div class="bd">
+          {# A recovery round cuts its losers and BYES the rest through — the byes
+             are the stage's protected seeds (top of its own TOSS order) and play
+             nothing, so without this strip a lucky loser looks like it skipped
+             the stage entirely. #}
+          {% if st.byes %}
+          <div class="jh-byes">
+            <span class="cap">Byes — advanced without playing</span>
+            {% for b in st.byes %}
+            <a class="jh-bye" href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">
+              <span class="sd">{{ b.seed or '' }}</span>{{ b.name }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
           {% for rd in st.rounds %}
           <div class="jh-cols2">
             {% for col in rd.games|batch((rd.games|length / 2)|round(0, 'ceil')|int, none) %}
