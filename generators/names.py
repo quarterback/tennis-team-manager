@@ -260,6 +260,7 @@ def make_name_picker(
 
 
     def _name() -> tuple[str, str]:
+        fallback: Optional[tuple[str, str]] = None
         for _ in range(500):
             region_id = _pick_weighted_key(rng, weights)
             # Diversity: sometimes this citizen carries another culture's name. The
@@ -282,9 +283,20 @@ def make_name_picker(
             if not first or not last:
                 continue
             full = f"{first} {last}"
+            fallback = fallback or (full, country)     # first REAL name we saw
             if full not in used:
                 used.add(full)
                 return full, country
+        # ‼️ EXHAUSTION RETURNS A REAL NAME, REPEATED — never a placeholder.
+        # The uniqueness set can genuinely run dry: the thinnest pools are only a
+        # few hundred first x surname combinations (Estonia was 14 x 15), so a
+        # large draw against a small region hits every combination and falls out
+        # of the loop. This used to emit `Player 447` WITH AN EMPTY COUNTRY —
+        # a placeholder person, flagless, shipped into a save and archived with
+        # everyone else. A duplicated real name is a blemish; a fake one is a bug,
+        # and the empty country makes it a bug in the nationality data too.
+        if fallback:
+            return fallback
         return f"Player {rng.randint(100, 999)}", ""
 
     return _name
