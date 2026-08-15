@@ -731,10 +731,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   trip back to the index (the pattern `season_standings.html` already uses for
   conferences); and if two panels answer the same question, delete one — "District
   Champions" in the rail *was* the district index's champion column.
-- **Schedule dates are a DISPLAY calendar (`state._jh_dates`), not sim state.** There is
-  no clock inside a JHSAA season — it all runs in one rung at week 0 — so the dates are
-  derived from the persisted ORDER of play (non-district → district round-robin → state)
-  laid on a spring calendar at three duals a week. Nothing reads them back.
+- **‼️ Schedule dates are a DISPLAY calendar, and the date belongs to the MATCH
+  (`world.jhsaa_match_dates`), never to a card.** There is no clock inside a JHSAA
+  season — it all runs in one rung at week 0 — so dates are derived from the persisted
+  ORDER of play. They used to be derived per school from that school's POSITION in its
+  own card, so the same dual showed two different days on the two schools' pages (Lake
+  Esperanza's Super Regional read May 14, its opponent's read May 17): each card was
+  internally plausible and only RECIPROCITY was wrong, which is why it survived. One
+  date is now assigned per dual for the whole gender-season and both cards look it up
+  (`world.jh_match_key` is the identity, the same from either side).
+  - Matches are packed into **ROUNDS** (a round = duals with no team in common, so
+    everything that can share a day does) over a topological order of the play
+    sequence. Assigning day-by-day in play order instead lets the constraint chain
+    through opponents — A waits on B, B on C — and a 30-dual card sprawled over three
+    months. Ties in the topological sort break on ARCHIVE order, because district play
+    is already generated as rounds and an alphabetical tie-break scrambles that.
+  - **Boys play a fall calendar (Aug–Nov), girls a spring one (Mar–Jun)** — cosmetic
+    only; both are still simulated together in the same rung, with no separate clock,
+    phase or season state. Days are Mon/Wed/Fri/Sat, so **never a Sunday** by
+    construction (6 is in no pattern), at ~4 duals a week.
+  - Classifications deliberately do NOT share stage dates — a 7A Super Regional and a
+    3A one can fall on different days. The only invariant is that both sides of one
+    dual show the same date.
   See `docs/AAR-jhsaa-program-history-and-design-pass.md`.
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the

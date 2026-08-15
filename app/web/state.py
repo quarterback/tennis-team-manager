@@ -3560,35 +3560,31 @@ def _jh_deco(schools: dict, name: str, size: int = 34) -> dict:
             "found": True}
 
 
-def _jh_dates(sched: list[dict], season_year: int | None) -> list[str]:
+def _jh_dates(sched: list[dict], season_year: int | None,
+              cal: dict | None = None) -> list[str]:
     """A DISPLAY calendar for one season's card.
 
-    The simulation has no clock inside a JHSAA season — the whole association runs in
-    one rung at world week 0 — so there is no date to read. What IS real and persisted
-    is the ORDER the duals were played in (non-district, then the district double
-    round-robin, then the state tournament and the Tournament of Champions after it),
-    and these lay that order on a spring high-school calendar at three duals a week, so
-    a ~26-dual card runs March to mid-May and the postseason follows it. Presentation
-    only: nothing reads them back, and no simulation decision has ever depended on one.
-    """
-    import app.jhsaa as jh
+    ‼️ THE DATE BELONGS TO THE MATCH, NOT THE CARD (owner rule 2027-08). This
+    used to derive a date from each dual's POSITION in the school's own
+    schedule, so the same dual showed two different days on the two schools'
+    pages — Lake Esperanza's Super Regional read May 14 and its opponent José
+    Martí's read May 17. Each card was internally plausible; only reciprocity
+    was wrong, which is why it survived. `world.jhsaa_match_dates` now assigns
+    one date per DUAL for the whole gender-season and both cards look it up.
+
+    Still presentation only: there is no clock inside a JHSAA season, nothing
+    reads a date back, and no simulation decision depends on one. The fallback
+    below keeps a card readable when the calendar cannot be built (an archive
+    with no dual rows)."""
+    import app.world as world
     if not season_year:
         return ["" for _ in sched]
-    open_day = _dt.date(season_year, 3, 1)
-    open_day += _dt.timedelta(days=-open_day.weekday() % 7)           # first Monday
-    _DAY = (0, 2, 4)                                                  # Mon / Wed / Fri
-    out, n, k, last = [], 0, 0, open_day
+    cal = cal or {}
+    out = []
     for d in sched:
-        if d.get("phase") in jh.POSTSEASON:
-            day = last + _dt.timedelta(days=5 + 3 * k)                # the postseason run
-            k += 1
-        else:
-            day = open_day + _dt.timedelta(days=_DAY[n % 3], weeks=n // 3)
-            n += 1
-            last = day
-        out.append(day)
-    return [f"{d:%b} {d.day}" for d in out]
-
+        day = cal.get(world.jh_match_key(d))
+        out.append(f"{day:%b} {day.day}" if day else "")
+    return out
 
 def _jh_reported_lines(d: dict) -> list[dict]:
     """A dual's lines with every set score WINNER-FIRST — how tennis is actually reported.
@@ -4198,7 +4194,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     season_year = ((arc or {}).get("season_year")
                    or (season or {}).get("season_year") or world.jhsaa_season_year(w))
     sched = world.jhsaa_schedule(w["id"], yr, g, school)
-    dates = _jh_dates(sched, season_year)
+    dates = _jh_dates(sched, season_year,
+                      world.jhsaa_match_dates(w["id"], yr, g, season_year))
     lines = _jh_line_records(sched)
     roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}

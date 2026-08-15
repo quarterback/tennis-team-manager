@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import bisect
 import copy
+import datetime as _dt
 import json
 import random
 import secrets
@@ -3691,11 +3692,172 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     out = []
     for r in rows:
         d = dict(r)
+        # The row is one SIDE of a dual; carrying its own school makes it
+        # self-describing, so `jh_match_key` can identify the match from either
+        # side without the caller threading the school through.
+        d["school"] = school
         try:
             d["lines"] = json.loads(d.get("lines") or "[]")
         except ValueError:
             d["lines"] = []
         out.append(d)
+    return out
+
+
+# --- the JHSAA display calendar ------------------------------------------------
+# ‼️ A DUAL IS ONE EVENT WITH ONE DATE (owner rule 2027-08). Dates used to be
+# derived per school from that school's POSITION in its own card, so the same
+# match landed on two different days — Lake Esperanza had its Super Regional on
+# May 14 and José Martí, its opponent, had the same dual on May 17. Nothing
+# errored: each card was internally plausible and only reciprocity was wrong.
+# The date is therefore assigned to the MATCH, once per season, and both cards
+# look it up.
+#
+# There is still no clock inside a JHSAA season (the whole association runs in
+# one rung at world week 0), so this remains PRESENTATION: nothing reads a date
+# back and no simulation decision depends on one.
+_JH_CAL_CACHE: dict[tuple, dict] = {}
+_JH_CAL_MAX = 8
+
+# Boys play a fall season, girls a spring one — cosmetic separation only; both
+# are still simulated together in the same rung.
+_JH_SEASON_OPEN = {"boys": (8, 1), "girls": (3, 1)}
+# Weekday offsets from a Monday. A fictional association can play densely — the
+# owner allows roughly 3-4 duals a week including Saturdays — and **never on a
+# Sunday**, which is true by construction here: 6 appears in neither pattern.
+# One pattern for the whole season: Mon / Wed / Fri / Sat. The postseason lands
+# two or three days between stages, which is how a real state series runs and
+# leaves the Road to State progression readable without stretching the calendar.
+_JH_DAYS = (0, 2, 4, 5)
+_JH_DAYS_POST = _JH_DAYS
+
+
+def _jh_day(start: _dt.date, idx: int, pattern: tuple) -> _dt.date:
+    wk, k = divmod(idx, len(pattern))
+    return start + _dt.timedelta(weeks=wk, days=pattern[k])
+
+
+def jh_match_key(row: dict) -> tuple:
+    """The identity of a DUAL, the same from either side's row: phase, whether it
+    was a league match, and the (home, away) pair in that order. A district double
+    round robin meets twice with the venue reversed, so ordering the pair by venue
+    keeps the two meetings distinct."""
+    home = bool(row.get("home"))
+    a, b = (row["school"], row["opp"]) if home else (row["opp"], row["school"])
+    return (row.get("phase") or "", int(bool(row.get("district"))), a, b)
+
+
+def _jh_global_order(by_school: dict[str, list[tuple]],
+                    seen: dict[tuple, int] | None = None) -> list[tuple]:
+    """Every match of the season in one play order.
+
+    Each school's card is already in the order it played, and those orders come
+    from one simulation, so a consistent global order exists — recover it with a
+    topological sort over "team X played M before N" edges rather than guessing
+    from positions. Guessing is what a max-of-positions heuristic does, and it
+    reorders a team's own card whenever its opponent had played a different
+    number of duals by then."""
+    indeg: dict[tuple, int] = {}
+    nxt: dict[tuple, list[tuple]] = {}
+    for keys in by_school.values():
+        for k in keys:
+            indeg.setdefault(k, 0)
+            nxt.setdefault(k, [])
+        for a, b in zip(keys, keys[1:]):
+            nxt[a].append(b)
+            indeg[b] = indeg.get(b, 0) + 1
+    # Ties break on the order the duals were actually ARCHIVED, not alphabetically:
+    # district play is generated as rounds (every team plays once per round), so the
+    # natural order already groups the matches that can share a day. An alphabetical
+    # tie-break scrambles that and the round packing below needs ~35% more rounds to
+    # rebuild it.
+    import heapq
+    seen = seen or {}
+    pri = lambda k: (seen.get(k, 0), k)                                 # noqa: E731
+    ready = [pri(k) for k, d in indeg.items() if d == 0]
+    heapq.heapify(ready)
+    out = []
+    while ready:
+        _, k = heapq.heappop(ready)
+        out.append(k)
+        for m in nxt.get(k, ()):
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                heapq.heappush(ready, pri(m))
+    if len(out) < len(indeg):                 # a cycle: fall back, deterministically
+        out += sorted(k for k, d in indeg.items() if d > 0)
+    return out
+
+
+def jhsaa_match_dates(world_id: int, year: int, gender: str,
+                      season_year: int | None) -> dict[tuple, _dt.date]:
+    """{match key -> date} for one archived gender-season. One date per dual, so
+    both schools' cards agree. Cached per (world, year, gender)."""
+    ck = (world_id, year, gender, season_year)
+    hit = _JH_CAL_CACHE.get(ck)
+    if hit is not None:
+        return hit
+    out: dict[tuple, str] = {}
+    if not season_year:
+        return out
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT rowid, school, opp, home, phase, district FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? ORDER BY rowid",
+            (world_id, year, gender)).fetchall()
+    except sqlite3.OperationalError:
+        rows = []
+    finally:
+        conn.close()
+    by_school: dict[str, list[tuple]] = {}
+    seen: dict[tuple, int] = {}
+    for r in rows:
+        k = jh_match_key(dict(r))
+        by_school.setdefault(r["school"], []).append(k)
+        seen.setdefault(k, r["rowid"])
+    from . import jhsaa as _jh
+    rank = {p: i + 1 for i, p in enumerate(_jh.POSTSEASON)}
+    # Play order first, then STAGE — a topological order alone interleaves the
+    # stages across schools (one school's Sectional can sort before another's
+    # last regular dual), and a stage floor that moves forward on every switch
+    # then drags the regular season through the whole calendar. A team's own
+    # matches already run regular -> Sectionals -> ... -> State, so a stable
+    # sort by stage keeps each card in order while separating the stages.
+    order = sorted(_jh_global_order(by_school, seen),
+                   key=lambda k: rank.get(k[0], 0))
+    mon, day = _JH_SEASON_OPEN.get(gender, _JH_SEASON_OPEN["girls"])
+    opening = _dt.date(season_year, mon, day)
+    opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
+
+    # Pack matches into ROUNDS: a round is a set of duals with no team in common,
+    # so everything that could be played on one day is. Assigning day-by-day in
+    # play order instead lets the constraint chain through opponents — A waits on
+    # B, B on C — and a ~26-dual card sprawled over three months. A team's round
+    # numbers are strictly increasing, so its card still reads in order.
+    slot: dict[tuple, tuple] = {}
+    nxt: dict[str, int] = {}
+    cur_rank, floor_r, top_r = 0, 0, -1
+    for key in order:
+        phase, _dist, a_s, b_s = key
+        r_rank = rank.get(phase, 0)
+        if r_rank != cur_rank:            # a stage opens after the previous one closes
+            floor_r, cur_rank = top_r + 1, r_rank
+        r = max(floor_r, nxt.get(a_s, 0), nxt.get(b_s, 0))
+        nxt[a_s] = nxt[b_s] = r + 1
+        top_r = max(top_r, r)
+        slot[key] = (r_rank, r)
+
+    reg_rounds = max((r for (rk, r) in slot.values() if rk == 0), default=-1) + 1
+    post_open = _jh_day(opening, max(0, reg_rounds - 1), _JH_DAYS) + _dt.timedelta(days=2)
+    post_open += _dt.timedelta(days=-post_open.weekday() % 7)      # the next Monday
+    for key, (r_rank, r) in slot.items():
+        out[key] = (_jh_day(opening, r, _JH_DAYS) if not r_rank
+                    else _jh_day(post_open, r - reg_rounds, _JH_DAYS_POST))
+    if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
+        for k in list(_JH_CAL_CACHE)[:len(_JH_CAL_CACHE) - _JH_CAL_MAX + 1]:
+            _JH_CAL_CACHE.pop(k, None)
+    _JH_CAL_CACHE[ck] = out
     return out
 
 
