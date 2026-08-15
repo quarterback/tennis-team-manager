@@ -4124,7 +4124,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     stages = []
     # The RECOVERY rounds sit closest to State, so their folds come first
     # (the list is reverse-chronological: the stage that fed State on top).
-    for key in ("semi_state", "super_regional"):
+    for key in ("divisional", "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
             # A recovery round only needs to ELIMINATE its cut, so part of the

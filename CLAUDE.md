@@ -507,26 +507,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   you — and **bye selection and pairing are ONE problem** (`_draw_recovery`), since
   choosing byes first froze a bye team into an unreachable rematch. Finishes for
   recovery runs SUPERSEDE the ladder round that sent them there.
-  - **‼️ A BYE IS NEVER THE TICKET INTO STATE (owner rules 2027-08, two reports).**
-    A recovery round is a CUT, not a bracket, so byes exist — and byes are decided
-    FIRST, by TOSS, then everyone remaining pairs by the normal method
-    (`_recovery_round`; there is NO joint bye-and-pairing search and no `must_play`
-    constraint — "must play" is just what not being bye-eligible means). The
-    Semi-State bye is eligible ONLY to a team that played and WON a Super Regional
-    dual: not an SR bye taker (a No. 19 seed once coasted through both rounds
-    unplayed) and not a Zonal loser (a No. 4-TOSS district runner-up once took the
-    SS bye and reached State having won nothing). District champions never enter
-    the pool. **The State field is FIXED (32/24) and recovery CONFORMS to it** —
-    a bye shortage is solved UPSTREAM (Ward-loser bodies into the SR field, floor
-    `pool + zonal losers ≥ 2×berths`), never by extra duals, a deeper cut, or a
-    short field. If bodies truly run dry (tiny scaled class only), overflow byes
-    go to ineligible teams — Zonal losers before SR bye holders, loudly logged —
-    and the field still arrives full. The rematch rule
-    ("never immediately replay your eliminator") is a pairing PREFERENCE — small
-    pools brute-force the matching (≤8: exact), but a two-team Semi-State that just
-    played each other is a forced rematch and allowed. Byes render as a plain
-    `Byes: A, B, C` FOOTNOTE on the Road-to-State folds — never on the schedule, no
-    counters, no explainer copy. Pinned by `test_a_bye_is_never_the_ticket_into_state`.
+  - **‼️ NOBODY REACHES STATE ON A BYE — the rounds are BYELESS BY CONSTRUCTION
+    (owner rule 2027-08, after three reports).** Recovery is THREE rounds and each
+    pairs its ENTIRE field: **Super Regionals** (Regional losers) → **Semi-State**
+    (SR winners + Zonal losers + readmitted SR losers) → **Divisional Round** (the
+    best Semi-State losers), the last two taking berths. A bye is therefore not
+    disallowed, it is impossible. The rounds used to be CUTS sized to whatever the
+    pool was, leaving byes over — a No. 19 seed byed through both; a No. 4-TOSS
+    Zonal loser took the Semi-State bye and reached State "without winning their
+    district"; and every rule patch just moved which bye was unearned. The
+    Divisional Round absorbs the berths that used to become byes AND fixes the
+    inequity that caused it: a Regional loser got two or three chances, a Zonal
+    loser one. Now everyone in recovery gets two. **The State field is FIXED**
+    (32/24) and recovery conforms — never extra duals, a deeper cut, or a short
+    field. Bodies come best-pool-first: readmitted **SR losers**, then a walk back
+    through **Ward → Sectional → Area** losers, best TOSS within each tier; a body
+    is a chance to PLAY, never a berth. `jhsaa.DIVISIONAL_NAME` is the only place
+    the round is named. Pinned by `test_no_recovery_round_has_a_bye`; explainer in
+    `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
