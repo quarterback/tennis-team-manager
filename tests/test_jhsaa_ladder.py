@@ -101,6 +101,9 @@ def test_the_state_field_is_champions_guarantees_and_recovery_survivors(archived
         sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
         k = jh.ladder_scale(g)
         zonal_champs = set(pre["survivors"])
+        # ‼️ THE STATE FIELD IS FIXED (owner patch 2027-08): recovery conforms
+        # to it — bye shortages are solved upstream with Ward-loser bodies,
+        # never by extra duals, a deeper cut, or a short field.
         assert len(state["field"]) == jh.state_field_size(g, k)
         assert zonal_champs.isdisjoint(dq)
         assert set(state["field"]) \
@@ -371,8 +374,13 @@ def test_roman_numeral_unit_honours():
 
 
 def test_every_unit_win_becomes_a_team_honour(archived):
-    """A program's unit-win honours are exactly the units it won, ladder order."""
+    """A program's unit-win honours are exactly the units it won, ladder order —
+    led by the district title when the program won its district (owner rule
+    2027-08: the title sits with the zone/ward/section chips)."""
     arc = archived["arc"]
+    champs = {g: {rows[0]["school"]: dname
+                  for dname, rows in arc["standings"][g].items() if rows}
+              for g in jh.GROUPS}
     for g in jh.GROUPS:
         won = {}
         for key in ("sectionals", "wards", "prestate", "super_regional", "semi_state"):
@@ -383,7 +391,8 @@ def test_every_unit_win_becomes_a_team_honour(archived):
             row = next(r for r in wd.jhsaa_school_seasons(
                 archived["world"]["id"], "girls", school)
                 if r["year"] == archived["world"]["year"])
-            assert row["unit_wins"] == units, school
+            title = [champs[g][school]] if school in champs[g] else []
+            assert row["unit_wins"] == title + units, school
             assert row["honoured"]
 
 
@@ -400,32 +409,143 @@ def test_reaching_state_is_itself_an_honour(archived):
 
 
 def test_recovery_draws_never_replay_the_team_that_just_eliminated_you(archived):
-    """The hard half of the owner's draw rule, over every recovery dual in the
-    association — INCLUDING bye recipients.
-
-    Byes used to be handed to the top seeds before pairing, so a bye team could be
-    frozen into a rematch the repair could not reach: in this fixture a Super
-    Regional bye side met, at Semi-State, the team that had knocked it out at Wards.
-    Bye selection and pairing are chosen together now (`jhsaa._draw_recovery`), so a
-    bye team's next dual is checked against its LAST one exactly like everyone
-    else's — a bye does not hide a rematch."""
+    """The draw preference: don't immediately replay the opponent that just sent
+    you here. Byes are awarded FIRST, by TOSS from the bye-eligible teams
+    (owner rule 2027-08 — no joint bye-and-pairing search), and the pairing
+    method then avoids rematches wherever a rematch-free matching of the
+    playing set EXISTS. In a degenerate pool (a two-team Semi-State whose two
+    teams just played each other) the rematch is structurally forced and
+    allowed — so this asserts no AVOIDABLE rematch, by checking every perfect
+    matching of the round's playing set."""
+    import itertools
     arc = archived["arc"]
     conn = sqlite3.connect(archived["db"])
     conn.row_factory = sqlite3.Row
+
+    def last_before(school, opp_this_round):
+        sched = [r["opp"] for r in conn.execute(
+            "SELECT opp FROM world_jhsaa_dual WHERE world_id=? AND year=?"
+            " AND gender='girls' AND school=? ORDER BY rowid",
+            (archived["world"]["id"], archived["world"]["year"], school))]
+        # LAST occurrence: district opponents meet twice in the round robin, so
+        # the first hit could be a March league dual rather than this round.
+        for i in range(len(sched) - 1, 0, -1):
+            if sched[i] == opp_this_round:
+                return sched[i - 1]
+        return ""
+
+    def matchings(items):
+        if not items:
+            yield []
+            return
+        a = items[0]
+        for k in range(1, len(items)):
+            for m in matchings(items[1:k] + items[k + 1:]):
+                yield [(a, items[k])] + m
+
     offenders = []
     for g in jh.GROUPS:
         for key in ("super_regional", "semi_state"):
-            for gm in (arc[key][g].get("rounds") or [[]])[0]:
-                for me, opp in ((gm["home"], gm["away"]), (gm["away"], gm["home"])):
-                    # No id column: the archive preserves INSERT order, which is
-                    # the order of play (`_jh_dates` lays the same order on a
-                    # calendar), so rowid is the season's only clock.
-                    sched = [r["opp"] for r in conn.execute(
-                        "SELECT opp FROM world_jhsaa_dual WHERE world_id=? AND year=?"
-                        " AND gender='girls' AND school=? ORDER BY rowid",
-                        (archived["world"]["id"], archived["world"]["year"], me))]
-                    for i, o in enumerate(sched):
-                        if o == opp and i and sched[i - 1] == opp:
-                            offenders.append((g, key, me, opp))
+            games = (arc[key][g].get("rounds") or [[]])[0]
+            if not games:
+                continue
+            playing = [nm for gm in games for nm in (gm["home"], gm["away"])]
+            # each team's opponent in the dual immediately before this round
+            prev = {nm: last_before(nm, opp)
+                    for gm in games
+                    for nm, opp in ((gm["home"], gm["away"]),
+                                    (gm["away"], gm["home"]))}
+            hit = [(gm["home"], gm["away"]) for gm in games
+                   if prev[gm["home"]] == gm["away"] or prev[gm["away"]] == gm["home"]]
+            if not hit:
+                continue
+            # a rematch happened — is any matching of this playing set clean?
+            avoidable = False
+            for m in matchings(playing):
+                if all(prev[a] != b and prev[b] != a for a, b in m):
+                    avoidable = True
+                    break
+            if avoidable:
+                offenders.append((g, key, hit))
     conn.close()
     assert not offenders, offenders[:5]
+
+def test_a_bye_is_never_the_ticket_into_state(archived):
+    """‼️ EVERY RECOVERY QUALIFIER'S LAST APPEARANCE IS A WIN (owner rules
+    2027-08, sharpened across two reports). Byes go to the top of the TOSS
+    order and the rounds only eliminate a cut, so the original shape let a
+    No. 19 seed coast through BOTH rounds unplayed, and the first fix still let
+    a No. 4-TOSS Zonal loser take the Semi-State bye and reach State having
+    won nothing ("a team loses in zonals and gets to state without winning
+    their district"). Now the Semi-State bye belongs only to a Super Regional
+    game-WINNER: Super Regional bye holders and Zonal losers alike must play
+    at Semi-State. Game counts are untouched — the rules only move WHO sits."""
+    for g in jh.GROUPS:
+        sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
+        def byes(arc):
+            played = {nm for games in arc["rounds"] for gm in games
+                      for nm in (gm["home"], gm["away"])}
+            return {nm for nm in arc["field"] if nm not in played}
+        assert not byes(sr) & byes(ss), (g, "double bye")
+        sr_winners = {gm["winner"] for games in sr["rounds"] for gm in games}
+        # The ONE sanctioned exception (owner patch 2027-08): the State field is
+        # FIXED, so when the upstream Ward-loser bodies are genuinely exhausted
+        # the overflow byes fall to ineligible teams rather than shorting the
+        # field. Only then — every non-guaranteed Ward loser must already be in
+        # the Super Regional field, and every eligible winner must be sitting.
+        ineligible = byes(ss) - sr_winners
+        if ineligible:
+            ward_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
+                           for games in ward["rounds"] for gm in games}
+            bodies_left = ward_losers - set(sr["field"]) - set(dq)
+            assert not bodies_left, (g, "ineligible bye with bodies to spare")
+            assert sr_winners <= byes(ss), (g, "eligible winner playing while "
+                                               "an ineligible team sits")
+        # the invariant the rules add up to: every recovery qualifier won a
+        # recovery dual — champions, the guarantee, and the exhaustion
+        # overflow are the only other doors into State.
+        earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
+        won = sr_winners | {gm["winner"] for games in ss["rounds"] for gm in games}
+        assert earned <= won | ineligible, (g, sorted(earned - won - ineligible))
+
+
+def test_recovery_byes_reach_the_bracket_view(archived):
+    """The Road-to-State stages carry each recovery round's byes, so a lucky
+    loser's path is legible on the bracket page — and nowhere else (not the
+    schedule, no counters — owner rules 2027-08)."""
+    from app.web.state import jhsaa_bracket_view
+    for g in jh.GROUPS:
+        view = jhsaa_bracket_view(wd.DEFAULT_SEED, "girls", g)
+        sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
+        by_stage = {st["name"]: st for st in view["stages"]}
+        for arc, name in ((sr, "Super Regionals"), (ss, "Semi-State")):
+            played = {nm for games in arc["rounds"] for gm in games
+                      for nm in (gm["home"], gm["away"])}
+            expect = [nm for nm in arc["field"] if nm not in played]
+            got = [b["name"] for b in by_stage[name].get("byes", [])]
+            assert got == expect, (g, name)
+
+
+def test_district_title_leads_the_units_honour_line(archived):
+    """The district title sits ON the units line, first — with the zone/ward/
+    section chips, not only as a ledger badge (owner rule 2027-08: the honours
+    panel said "Region V · Zone C" while the header counted "1 district title")."""
+    standings = archived["arc"]["standings"]
+    checked = 0
+    for g in jh.GROUPS:
+        for dname, rows in standings[g].items():
+            if not rows:
+                continue
+            champ = rows[0]["school"]
+            for srow in wd.jhsaa_school_seasons(archived["world"]["id"], "girls", champ):
+                if srow["year"] != archived["world"]["year"]:
+                    continue
+                assert srow["unit_wins"][:1] == [dname], (g, dname, champ)
+                checked += 1
+            # and the runner-up must NOT carry it
+            if len(rows) > 1:
+                for srow in wd.jhsaa_school_seasons(archived["world"]["id"], "girls",
+                                                    rows[1]["school"]):
+                    if srow["year"] == archived["world"]["year"]:
+                        assert dname not in srow["unit_wins"]
+    assert checked

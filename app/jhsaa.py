@@ -32,11 +32,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import random
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+log = logging.getLogger(__name__)
 
 from engine.dual import DualFormat, Team, simulate_dual
 from engine.format import PRESETS
@@ -1607,6 +1610,32 @@ def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple
     the draw around the owner's rematch rule. A handful of swap passes over the
     bottom half is enough at these sizes; TOSS order is otherwise preserved."""
     n = len(playing)
+    # Small sets get an EXACT answer: a tight must-play round leaves the greedy
+    # repair no room (offenders survived in every scaled class), and a perfect
+    # matching over <=8 teams is at most 105 candidates. Score = total penalty,
+    # then closeness to the strongest-vs-weakest ideal.
+    if 2 <= n <= 8:
+        import itertools
+        rank = {t.school.name: i for i, t in enumerate(playing)}
+        def matchings(items):
+            if not items:
+                yield []
+                return
+            a = items[0]
+            for k in range(1, len(items)):
+                rest = items[1:k] + items[k + 1:]
+                for m in matchings(rest):
+                    yield [(a, items[k])] + m
+        ideal = {i: n - 1 - i for i in range(n)}
+        best, best_key = None, None
+        for m in matchings(list(playing)):
+            pen = sum(_pair_penalty(x, y) for x, y in m)
+            drift = sum(abs(ideal[rank[x.school.name]] - rank[y.school.name])
+                        for x, y in m)
+            key = (pen, drift)
+            if best_key is None or key < best_key:
+                best, best_key = m, key
+        return best
     top, bottom = playing[:n // 2], list(reversed(playing[n - n // 2:]))
     for _ in range(4):
         improved = False
@@ -1619,53 +1648,74 @@ def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple
                     improved = True
         if not improved:
             break
+    # Last resort for a HARD rematch the bottom-half swaps cannot reach (small
+    # pools under a tight must-play set leave them no room): break the
+    # strongest-vs-weakest partition for exactly the pair that needs it.
+    for i in range(len(top)):
+        if _pair_penalty(top[i], bottom[i]) >= 10:
+            for j in range(len(top)):
+                if i == j:
+                    continue
+                cur = _pair_penalty(top[i], bottom[i]) + _pair_penalty(top[j], bottom[j])
+                alt = _pair_penalty(top[i], top[j]) + _pair_penalty(bottom[i], bottom[j])
+                if alt < cur:
+                    top[j], bottom[i] = bottom[i], top[j]
+                    break
     return list(zip(top, bottom))
 
 
-def _draw_recovery(pool: list[TeamSeason], byes: int,
-                   rng: random.Random) -> tuple[list[TeamSeason], list[tuple]]:
-    """Choose WHO SITS OUT and who plays whom, together.
-
-    ‼️ Bye selection and pairing are one problem, not two. Byes went to the top
-    `byes` seeds first and only the playing tail was then repaired, so a bye
-    recipient could be frozen into a rematch the repair was structurally unable
-    to reach: in the scaled 7A fixture a Super Regional bye team met, at
-    Semi-State, the very side that had knocked it out at Wards — with other
-    opponents available in the field (caught in review). So the pure-TOSS bye
-    set is the STARTING point, and if it leaves a hard rematch on the board a
-    bye is traded with a playing team to clear it. Ties keep the bye as close to
-    TOSS order as possible: seeding privilege bends only to remove a rematch,
-    and never further than one swap needs."""
-    def cost(bye_ix: list[int]) -> tuple[int, list[tuple]]:
-        playing = [t for i, t in enumerate(pool) if i not in set(bye_ix)]
-        pairs = _recovery_pairs(playing, rng)
-        return sum(_pair_penalty(a, b) for a, b in pairs), pairs
-
-    best_ix = list(range(byes))
-    best_cost, best_pairs = cost(best_ix)
-    if best_cost >= 10 and byes:                        # a hard rematch survives
-        for i in reversed(range(byes)):                 # trade the LOWEST bye first
-            for j in range(byes, len(pool)):
-                trial = [k for k in best_ix if k != i] + [j]
-                c, prs = cost(trial)
-                if c < best_cost:
-                    best_ix, best_cost, best_pairs = sorted(trial), c, prs
-                    if best_cost < 10:
-                        break
-            if best_cost < 10:
-                break
-    return [pool[i] for i in sorted(best_ix)], best_pairs
-
-
 def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
-                    rng: random.Random) -> tuple[dict, list[TeamSeason]]:
+                    rng: random.Random,
+                    bye_eligible: set[str] | None = None,
+                    bye_last_resort: set[str] = frozenset(),
+                    ) -> tuple[dict, list[TeamSeason]]:
     """One recovery round: cut `pool` (TOSS-ordered, strongest first) to exactly
-    `out_target` survivors. Byes go to the top of the pool; the rest pair via
-    `_recovery_pairs`. Same archive shape as every other stage."""
+    `out_target` survivors.
+
+    ‼️ BYES FIRST, THEN PAIRING (owner rule 2027-08). Work out how many byes the
+    bracket requires, award exactly that many BY TOSS from the bye-eligible
+    teams, and only then pair everyone remaining with the normal
+    strongest-vs-weakest method (`_recovery_pairs`, which owns rematch
+    avoidance). There is no joint bye-and-pairing search and no `must_play`
+    constraint on the draw — "must play" is simply what not being bye-eligible
+    means. `bye_eligible` is None when the round places no restriction (Super
+    Regionals: top of the pool sits); at Semi-State it is the Super Regional
+    game-WINNERS, and nobody else: not Super Regional bye takers (no double
+    byes) and not Zonal losers (a bye is never the ticket into State — a
+    No. 4-TOSS Zonal loser once coasted in having won nothing). District
+    champions are already State-guaranteed and never enter the pool at all.
+
+    ‼️ THE STATE FIELD IS FIXED — 32 in 7A, 24 elsewhere — and the recovery
+    bracket CONFORMS to it, never alters it (owner patch 2027-08). A bye
+    shortage is solved UPSTREAM, by adding the highest-TOSS eligible Ward
+    losers to the Super Regional field until enough Super Regional winners can
+    exist (`_recovery`'s body top-up); this round never plays extra duals,
+    never cuts deeper than its target, and never shorts the qualifier count.
+    If the upstream bodies genuinely run dry (a tiny scaled class), the
+    overflow byes fall to the best-TOSS ineligible teams — loudly, because
+    each one is a team reaching State without a recovery win, the exact thing
+    the eligibility rule exists to prevent — but the field arrives full."""
     games_n = max(0, len(pool) - out_target)
     byes = len(pool) - 2 * games_n
-    # Byes and pairings are chosen TOGETHER — see `_draw_recovery`.
-    protected, pairs = _draw_recovery(pool, byes, rng)
+    eligible = pool if bye_eligible is None else \
+        [t for t in pool if t.school.name in bye_eligible]
+    if byes > len(eligible):
+        # Tiered overflow: a team that PLAYED its previous round (a Zonal
+        # loser, one bye total) before a team that already sat one out (a
+        # Super Regional bye holder — a double bye, the worst outcome left).
+        names = {e.school.name for e in eligible}
+        ineligible = sorted((t for t in pool if t.school.name not in names),
+                            key=lambda t: t.school.name in bye_last_resort)
+        overflow = ineligible[:byes - len(eligible)]
+        log.warning("JHSAA %s: %d bye(s) had no eligible holder — granted to "
+                    "%s (upstream bodies exhausted; the State field stays full)",
+                    phase, byes - len(eligible),
+                    ", ".join(t.school.name for t in overflow))
+        eligible = eligible + overflow
+    protected = eligible[:byes]                    # by TOSS, eligible only
+    sitting = set(id(t) for t in protected)
+    playing = [t for t in pool if id(t) not in sitting]
+    pairs = _recovery_pairs(playing, rng)
     games, winners = [], []
     for n, (a, b) in enumerate(pairs):
         res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
@@ -1679,7 +1729,6 @@ def _recovery_round(pool: list[TeamSeason], out_target: int, *, phase: str,
     return ({"field": [t.school.name for t in pool], "rounds": [games],
              "survivors": [t.school.name for t in survivors],
              "round_names": [_RECOVERY_NAMES[phase]]}, survivors)
-
 
 def _recovery(group: str, by_name: dict, wards: dict, prestate: dict,
               zonal_champs: list, district_champs: list[str], scale: int,
@@ -1708,22 +1757,47 @@ def _recovery(group: str, by_name: dict, wards: dict, prestate: dict,
     reg_losers = [by_name[n] for n in _losers(prestate, 0) if n not in guaranteed]
     zon_losers = [by_name[n] for n in _losers(prestate, 1) if n not in guaranteed]
     cut = RECOVERY_CUT // scale
-    # 7A (and any scaled shape short of bodies): top-TOSS Ward losers fill the
-    # Super Regional field until the rounds have `cut` eliminations to play.
-    need = cut - (len(reg_losers) + len(zon_losers) - berths)
-    if need > 0:
-        ward_losers = sorted((by_name[n] for n in _losers(wards, 0)
-                              if n not in guaranteed), key=_power_key(power))
-        reg_losers += ward_losers[:need]
+    # Top-TOSS Ward losers pad the Super Regional field — a CHANCE to play,
+    # never a berth — until (a) the two rounds have `cut` eliminations to play
+    # (the original 7A bodies rule) and (b) the NO-DOUBLE-BYE rule is
+    # satisfiable: Semi-State's byes must all fit on bye-eligible teams (Super
+    # Regional game-winners + Zonal losers), which works out to
+    # pool >= 2*(berths - zonal_losers), independent of how the eliminations
+    # split across the rounds.
+    ward_losers = sorted((by_name[n] for n in _losers(wards, 0)
+                          if n not in guaranteed), key=_power_key(power))
+    def _short() -> bool:
+        e_total = len(reg_losers) + len(zon_losers) - berths
+        # Feasibility floor for BOTH bye rules (see below): with the Semi-State
+        # bye reserved for Super Regional game-winners, every Semi-State bye
+        # needs an SR winner to hold it AND every must-play team needs a seat,
+        # which both reduce to pool + zonal losers >= 2 * berths — two candidates
+        # per open berth, however the eliminations split.
+        return e_total < cut or len(reg_losers) + len(zon_losers) < 2 * berths
+    while ward_losers and _short():
+        reg_losers.append(ward_losers.pop(0))
     rng = random.Random(seed)
     e_total = max(0, len(reg_losers) + len(zon_losers) - berths)
     e1 = min(e_total - e_total // 2, len(reg_losers) // 2)
     sr_pool = sorted(reg_losers, key=_power_key(power))
     sr_arc, sr_out = _recovery_round(sr_pool, len(sr_pool) - e1,
                                      phase="super_regional", rng=rng)
+    # ‼️ A BYE IS NEVER THE TICKET INTO STATE (owner rules 2027-08, two
+    # reports): the Semi-State bye belongs ONLY to a non-guaranteed team that
+    # played and WON a Super Regional dual. Not a Super Regional bye taker (a
+    # No. 19 seed once coasted through both rounds unplayed), and not a Zonal
+    # loser (Semi-State is their first recovery round — a No. 4-TOSS district
+    # runner-up once took the bye there and reached State having won nothing).
+    # So every recovery qualifier's last appearance is a WIN: a Semi-State win,
+    # or a Super Regional win covered by the earned Semi-State bye.
+    sr_winners = {gm["winner"] for rd in sr_arc["rounds"] for gm in rd}
+    sr_played = {nm for rd in sr_arc["rounds"] for gm in rd
+                 for nm in (gm["home"], gm["away"])}
+    sr_byes = {nm for nm in sr_arc["field"] if nm not in sr_played}
     ss_pool = sorted(sr_out + zon_losers, key=_power_key(power))
-    ss_arc, qualifiers = _recovery_round(ss_pool, berths,
-                                         phase="semi_state", rng=rng)
+    ss_arc, qualifiers = _recovery_round(ss_pool, berths, phase="semi_state",
+                                         rng=rng, bye_eligible=sr_winners,
+                                         bye_last_resort=sr_byes)
     return sr_arc, ss_arc, qualifiers, district_qualifiers
 
 

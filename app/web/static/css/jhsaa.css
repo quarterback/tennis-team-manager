@@ -409,6 +409,13 @@
 .jh-mgame .cap { grid-column: 1 / -1; font-size: 11px; font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 
+/* Recovery-round byes — a footnote under the stage's duals, nothing more (owner
+   rule 2027-08). Without it a lucky loser reads as having skipped the stage. */
+.jh-byes { margin: 8px 2px 0; font-size: 12.5px; line-height: 1.5;
+  color: var(--text-muted); }
+.jh-byes a { color: var(--text-secondary); text-decoration: none; }
+.jh-byes a:hover { color: var(--brand); }
+
 /* ---- Honors page (owner SOP 2027-08) ---- */
 /* Awards are a RÉSUMÉ list: name, school, discipline, record. Deliberately no
    ability column — these describe what happened, not how good anyone is. */

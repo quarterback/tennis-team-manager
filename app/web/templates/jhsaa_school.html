@@ -294,9 +294,10 @@
       <span><span class="jh-chip {{ 'silver' if s.state_place == 2 else 'bronze' if s.state_place <= 4 else 'state' }}">STATE {{ s.state_finish|upper }}</span>
         {% if s.seed %}<span style="color:var(--text-muted)">No. {{ s.seed }} seed</span>{% endif %}</span></div>
     {% endif %}
-    {# Every non-state unit a program won, on ONE line — "Region IX · Ward IV".
-       They are real honours (each unit is a distinct named tournament) but there
-       are several a season, so they never get a line each. #}
+    {# Every unit a program won, on ONE line — the district title first, then
+       "Region IX · Ward IV" (owner rule 2027-08: the district title sits with
+       the zone/ward/section chips). Real honours, several a season, so they
+       never get a line each. #}
     {% if s.unit_wins %}
     <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
       <span>{% for u in s.unit_wins %}<span class="jh-chip unit">{{ u }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>

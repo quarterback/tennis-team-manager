@@ -85,6 +85,11 @@
             {% endfor %}
           </div>
           {% endfor %}
+          {# Byes are real — a footnote, nothing more (owner rule 2027-08:
+             no counters, no explainer copy). #}
+          {% if st.byes %}
+          <p class="jh-byes">Byes: {% for b in st.byes %}<a href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ b.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+          {% endif %}
         </div>
       </details>
       {% endfor %}

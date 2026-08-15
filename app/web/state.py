@@ -4127,8 +4127,18 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     for key in ("semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
-            for rd in _deco_rounds(d, _jh_seeds(d)):
-                stages.append({"name": rd["name"], "rounds": [rd]})
+            # A recovery round only needs to ELIMINATE its cut, so part of the
+            # pool advances on a BYE and plays nothing — invisible in the game
+            # cards, which is how a lucky loser looked like it jumped from a
+            # Regional loss straight into State. A footnote on the stage, not
+            # the schedule, and no counters (owner rule 2027-08).
+            sseeds = _jh_seeds(d)
+            played = {nm for rd in d["rounds"] for gm in rd
+                      for nm in (gm["home"], gm["away"])}
+            byes = [{"name": nm} for nm in (d.get("field") or ())
+                    if nm not in played]
+            for rd in _deco_rounds(d, sseeds):
+                stages.append({"name": rd["name"], "rounds": [rd], "byes": byes})
     pre = (arc.get("prestate") or {}).get(grp) or {}
     if pre.get("rounds"):
         for rd in reversed(_deco_rounds(pre, _jh_seeds(pre))):
