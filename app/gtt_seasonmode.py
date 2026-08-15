@@ -186,9 +186,36 @@ SYNTHETIC_HANDICAP = 0.15    # ...and a real ex-player displaces a synthetic see
 # what the save's band said. Nothing errored and the names were all real, which is
 # why it survived: the only symptom is a distribution that quietly ignores the
 # player's choice.
+#
+# ‼️ And it must pass the COMPLETE map, not `region_weights()`. That one omits `us`
+# by contract (its share is the domestic split), so handing it straight to the
+# picker renormalizes over the international regions alone and generates a 100%
+# international league — the same class of silent-distribution bug, introduced by
+# the fix for the one above. `full_region_weights()` is the map with `us` restored
+# at the configured `intl_share()`.
 def _world_weights() -> dict:
     from app import worldconfig
-    return worldconfig.region_weights()
+    return worldconfig.full_region_weights()
+
+
+def _prime_world_config() -> None:
+    """Load every `world_setting` value into worldconfig's cache BEFORE a GTT
+    transaction opens.
+
+    ‼️ world and GTT tables share ONE SQLite file. `worldconfig.get()` opens its own
+    connection and issues `CREATE TABLE IF NOT EXISTS`, which takes a write lock — so
+    reading config while this module holds a connection with pending INSERTs
+    deadlocks ("database is locked"). It is the same hazard `_world_graduates`
+    documents when it borrows the caller's connection.
+
+    This was latent for as long as the picker needed one config key: the value was
+    almost always already cached from an earlier call, so the second connection was
+    never opened and the bug never fired. Adding a second key (`intl_share`, when the
+    picker map started restoring the US share) made a cold read likely and it fired
+    immediately. Prime once at the entry point rather than relying on cache warmth.
+    """
+    from app import worldconfig
+    worldconfig.prime_cache(worldconfig.snapshot())
 
 
 def _inj_scope(league_id: int, year: int) -> int:
@@ -329,13 +356,27 @@ def _world_graduates(conn, world_seed, exclude_pids, limit, d1_share=None):
         return []
     rows = conn.execute("SELECT division, gender, pid, str, ovr, data FROM world_graduates "
                         "WHERE world_id=? AND year=?", (wid, year)).fetchall()
+    return _select_graduates(
+        [(r["division"], r["gender"], r["pid"], r["str"], r["ovr"], r["data"]) for r in rows],
+        active, exclude_pids, limit, d1_share)
+
+
+def _select_graduates(rows, active, exclude_pids, limit, d1_share=None):
+    """Rank and cut a graduating class for the pro intake: 95% D1 / 5% non-D1, the
+    non-D1 side gated on the small-school competitiveness bar.
+
+    Split out from `_world_graduates` so the ARCHIVED class and the live
+    about-to-graduate class (`world.departing_now`, used when founding a league
+    before any rollover) go through ONE set of rules — a second copy would let a
+    league's founding draft and its first off-season draft rank players differently.
+    `rows` is (division, gender, pid, str, ovr, data).
+    """
     d1, non = [], []
-    for r in rows:
-        division, gender = r["division"], r["gender"]
-        if r["pid"] in exclude_pids or (division, gender) not in active:
+    for division, gender, pid, r_str, r_ovr, data in rows:
+        if pid in exclude_pids or (division, gender) not in active:
             continue
         g = "m" if gender in ("men", "male", "m") else "w"
-        item = (g, r["pid"], r["data"], float(r["str"] or 0.0), float(r["ovr"] or 0.0), division)
+        item = (g, pid, data, float(r_str or 0.0), float(r_ovr or 0.0), division)
         if division == "D1":
             d1.append(item)
         elif item[3] >= NON_D1_MIN_STR and item[4] >= NON_D1_MIN_OVR:
@@ -812,11 +853,30 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     day one) and its founding rosters draft the save's latest graduating class
     first — real college players, real pids — with the Pro Round rule applied
     at founding too (at most one ex-pro per club; leftover pros never enter).
-    Generated founders fill only the seats the class can't. A fresh save with
-    no graduates yet gets the classic all-founder inaugural league."""
+    Generated founders fill only the seats the class can't.
+
+    ‼️ A world that has not rolled over yet still has a class. `world_graduates` is
+    written AT the rollover, so founding a league in world year 0 used to find an
+    empty table and seat a 100% generated inaugural league (measured: 112 of 112)
+    next to a college world holding tens of thousands of real players. The shortage
+    was never real — the ARCHIVE did not exist yet — so with no archived class we
+    draft the seniors who are about to graduate, live off the rosters
+    (`world.departing_now`). Generated founders now fill only genuinely empty seats.
+    """
+    _prime_world_config()          # before any transaction opens — see the helper
     conn = _db()
     seed = _active_world_seed(conn, seed)
     start_year = _world_year(conn, seed) or 0
+    # Read the founding class BEFORE any write. `departing_now` opens the world's
+    # own connection, and this one holds pending INSERTs the moment we start seating
+    # players — world and GTT tables share one SQLite file, so nesting the two
+    # deadlocks (the same reason `_world_graduates` borrows the caller's conn).
+    founding_fallback: list[tuple] = []
+    if not _world_graduates(conn, seed, set(), 1):
+        conn.close()
+        from app import world as _wd
+        founding_fallback = _wd.departing_now(seed)
+        conn = _db()
     cur = conn.execute(
         "INSERT INTO gtt_leagues (name, world_seed, current_year, current_week,"
         " total_weeks, phase, champion) VALUES (?,?,?,?,?,?,?)",
@@ -843,7 +903,11 @@ def create_league(name="Global Team Tennis", *, seed=None, n_teams=DEFAULT_TEAMS
     # --- Founding draft from the latest graduating class (STR order, snake) ---
     from .pros import is_pro as _is_pro
     pool, pro_pool = {"m": [], "w": []}, {"m": [], "w": []}
-    for g, pid, data, st in _world_graduates(conn, seed, set(), 10_000):
+    founding_class = (_select_graduates(founding_fallback, _active_unis_via(conn),
+                                        set(), 10_000)
+                      if founding_fallback
+                      else _world_graduates(conn, seed, set(), 10_000))
+    for g, pid, data, st in founding_class:
         (pro_pool if _is_pro(_prospect(data)) else pool)[g].append((pid, data, st))
     for g in ("m", "w"):
         pool[g].sort(key=lambda x: -x[2])
@@ -1279,6 +1343,7 @@ def advance(league_id, *, fidelity="full"):
     s = load_league(league_id)
     if not s:
         return {"phase": "none"}
+    _prime_world_config()          # the off-season generates names mid-transaction
     conn = _db()
     year = s["current_year"]
 

@@ -908,6 +908,31 @@ See `docs/AAR-international-distribution-and-name-pools.md`.
   rule: warm-weather, high-sun, emergent), funded from `anzac` down to a floor and
   then Europe pro-rata — deliberately NOT from Africa or Asia, which the owner had
   just raised.
+- **‼️ `region_weights()` IS NOT A PICKER MAP — it omits `us` by contract** (its share
+  is the domestic split, not a region weight). Hand it straight to
+  `make_name_picker` and the picker renormalizes over the international regions
+  alone, so the world generates **100% international** players whatever split the
+  owner chose; nothing errors and every name is real. `worldconfig.with_domestic
+  (weights, share)` is the ONE place that scales an international mix and restores
+  `us`; `full_region_weights()` is it applied to the world's own `intl_share()` (for
+  generators with no per-program share — the pro league, free agents, rookies), and
+  `ncaa.region_weights_for` is it applied to a program's level-derived share. The pro
+  league shipped the bare map for a release.
+- **‼️ A RETIRED REGION ID IS A SILENT LOSS OF SHARE, not an error.** `_draw_from_region`
+  returns nothing for an id the table lacks and the picker just retries, so a
+  persisted `region_w` naming an old id quietly redistributes that share — and a mix
+  made ONLY of old ids burns all 500 retries into the `Player NNN` placeholder.
+  `region_w` outlives the build that wrote it, so retired ids are folded into their
+  successors in `worldconfig._LEGACY_REGIONS`, applied on READ (`region_weights_custom`,
+  `parse_region_mix`) rather than by a one-shot migration nobody will run. **Renaming
+  or removing a region id means adding a row there**, splitting by what the old region
+  actually contained.
+- **‼️ NEVER read `worldconfig` while holding a GTT/world SQLite transaction.** They
+  share ONE file; `worldconfig.get()` opens its own connection and runs `CREATE TABLE
+  IF NOT EXISTS`, which takes a write lock → "database is locked". Call
+  `gtt_seasonmode._prime_world_config()` at the entry point BEFORE the transaction.
+  This was latent for as long as the picker needed one config key (a warm cache meant
+  the second connection was never opened); adding a second key fired it at once.
 - **A new region needs a row in THREE files or it half-works silently**:
   `regions.json` (pools), `worldconfig._CONTINENTS` (editor grouping — anything
   unlisted is filed under "Other", which is how China, Japan and France ended up

@@ -3490,6 +3490,44 @@ def cup_rosters(world: dict) -> dict:
     return out
 
 
+def departing_now(seed: int = DEFAULT_SEED) -> list[tuple]:
+    """The cohort that will graduate at THIS year's rollover, read from the LIVE
+    rosters — same predicate (`_departing`) and same row shape as the archive
+    `_save_graduates` writes: (division, gender, pid, str, ovr, data).
+
+    ‼️ This exists for ONE caller: founding a pro league. `world_graduates` is only
+    written AT a rollover, so on a world that has not rolled over yet the table is
+    empty and every consumer correctly reads "no graduates" — which for the GTT
+    founding draft meant an inaugural league of 100% generated players standing
+    beside a college world holding tens of thousands of real ones. The shortage was
+    never real; the ARCHIVE just did not exist yet.
+
+    It is deliberately NOT a fallback inside `_world_graduates`. Everywhere else, an
+    empty class means the world binding is broken (see `gtt._active_world_seed`), and
+    silently substituting live players there would turn a should-be-visible fault
+    into plausible-looking data — the failure mode this codebase keeps relearning.
+
+    Resolves through `load_world` and returns [] when the world is absent: it must
+    never `get_or_create` a parallel universe out of a stale seed.
+    """
+    world = load_world(seed)
+    if not world:
+        return []
+    rows: list[tuple] = []
+    for (d, g), schools in cup_rosters(world).items():
+        if not worldconfig.is_active(d, g):
+            continue
+        for roster in schools.values():
+            for p in roster:
+                if not _departing(p):
+                    continue
+                # No season has been played, so there are no results-based STR
+                # values; `_str_of` already degrades to the player's own rating.
+                rows.append((d, g, p.pid, float(_str_of({}, p)),
+                             float(p.current_overall()), json.dumps(prospect_to_dict(p))))
+    return rows
+
+
 def jhsaa_season_year(world: dict) -> int:
     """The calendar year of the JHSAA season for this world-year — IDENTICAL to
     `recruiting_grad_year` (BASE_YEAR + year + 1), because the season's seniors ARE

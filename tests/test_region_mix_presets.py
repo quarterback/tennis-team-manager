@@ -68,10 +68,10 @@ def test_a_region_this_build_lacks_is_reported_not_swallowed():
     Africa into six and promoted a dozen countries out of shared buckets. A mix
     authored against an older build is silently a DIFFERENT mix unless the gaps
     are named."""
-    doc = _mix(weights={"france": 160, "africa_cricket": 90, "not_a_place": 12})
+    doc = _mix(weights={"france": 160, "not_a_place": 12, "atlantis": 3})
     parsed = wc.parse_region_mix(doc)
-    assert parsed["unknown"] == ["africa_cricket", "not_a_place"]
-    assert "africa_cricket" not in parsed["weights"]
+    assert parsed["unknown"] == ["atlantis", "not_a_place"]
+    assert "not_a_place" not in parsed["weights"]
     assert parsed["weights"]["france"] == 160
 
 
@@ -185,3 +185,115 @@ def test_the_onboarding_page_offers_the_controls():
     for hook in ("ob-mix-download", "ob-mix-load", "ob-mix-save", "ob-mix-file",
                  "Shows up", wc.PRESET_FORMAT):
         assert hook in html, hook
+
+
+# --- the complete picker map ----------------------------------------------------
+# `region_weights()` omits `us` by contract, so it is an INTERNATIONAL mix and never
+# a picker map on its own. Handing it straight to make_name_picker generates a 100%
+# international world whatever split the owner chose, and nothing errors.
+
+def test_the_world_map_restores_the_us_share():
+    full = wc.full_region_weights()
+    assert "us" not in wc.region_weights()
+    assert full["us"] == pytest.approx(1.0 - wc.intl_share())
+
+
+def test_the_international_regions_keep_their_proportions():
+    intl = wc.region_weights()
+    full = wc.full_region_weights()
+    a, b = sorted(intl)[:2]
+    assert full[a] / full[b] == pytest.approx(intl[a] / intl[b])
+    assert sum(v for k, v in full.items() if k != "us") == pytest.approx(wc.intl_share())
+
+
+@pytest.mark.parametrize("share", [0.0, 0.3, 0.8, 0.95])
+def test_with_domestic_hits_the_requested_share(share):
+    out = wc.with_domestic({"france": 3.0, "japan": 1.0}, share)
+    assert out["us"] == pytest.approx(1.0 - share)
+    assert out["france"] == pytest.approx(0.75 * share)
+
+
+def test_an_empty_international_mix_is_all_domestic():
+    """No international regions configured must mean 100% US, not a divide by zero."""
+    assert wc.with_domestic({}, 0.5) == {"us": 1.0}
+    assert wc.with_domestic({"france": 0.0}, 0.5)["us"] == 1.0
+
+
+def test_the_pro_league_generates_at_the_configured_split():
+    """The regression this pins: gtt_seasonmode passed region_weights() straight to
+    the picker, so every generated pro was international."""
+    import collections
+    import random
+    from app import gtt_seasonmode
+    from generators.names import make_name_picker
+    pick = make_name_picker(random.Random(5), gender="mixed",
+                            region_weights=gtt_seasonmode._world_weights())
+    us = sum(1 for _ in range(4000) if pick()[1] == "US") / 4000
+    assert us == pytest.approx(1.0 - wc.intl_share(), abs=0.05)
+
+
+# --- retired region ids ---------------------------------------------------------
+# A region id the table no longer has is not an error anywhere: the picker's draw
+# returns nothing and simply retries, so the share is silently redistributed.
+
+LEGACY = ["africa", "africa_cricket", "namibia", "cape_verde", "mauritius", "uganda"]
+
+
+@pytest.mark.parametrize("old", LEGACY)
+def test_every_retired_region_migrates_to_regions_this_build_has(old):
+    from generators.names import get_name_regions
+    known = get_name_regions()
+    migrated, moved = wc.migrate_region_weights({old: 100.0})
+    assert moved[old]
+    assert set(migrated) <= set(known), migrated
+    assert sum(migrated.values()) == pytest.approx(100.0)
+
+
+def test_migration_preserves_total_weight_in_a_mixed_map():
+    """A save keeps the share it authored — the fold must not lose or invent any."""
+    legacy = {"france": 100, "africa_cricket": 90, "africa": 60, "uganda": 20}
+    migrated, moved = wc.migrate_region_weights(legacy)
+    assert sum(migrated.values()) == pytest.approx(sum(legacy.values()))
+    assert migrated["france"] == 100
+    assert set(moved) == {"africa_cricket", "africa", "uganda"}
+
+
+def test_a_persisted_legacy_mix_is_migrated_on_read():
+    wc.set("region_w", json.dumps({"france": 100, "africa_cricket": 90}))
+    wc._cache.pop("region_w", None)
+    got = wc.region_weights_custom()
+    assert "africa_cricket" not in got
+    assert got["southern_africa"] == pytest.approx(79.2)
+    assert got["east_africa"] == pytest.approx(10.8)
+    assert sum(got.values()) == pytest.approx(190.0)
+
+
+def test_an_unresolvable_region_is_dropped_rather_than_left_undrawable():
+    """A weight the picker cannot draw is a hole in the mix, not a weight."""
+    wc.set("region_w", json.dumps({"france": 100, "atlantis": 50}))
+    wc._cache.pop("region_w", None)
+    assert wc.region_weights_custom() == {"france": 100.0}
+
+
+def test_an_all_legacy_mix_still_generates_real_people():
+    """The failure this prevents: every draw resolves to nothing, all 500 retries
+    burn, and the picker emits `Player NNN` with an empty country."""
+    import random
+    wc.set("region_w", json.dumps({"africa_cricket": 90}))
+    wc._cache.pop("region_w", None)
+    from generators.names import make_name_picker
+    pick = make_name_picker(random.Random(2), gender="mixed",
+                            region_weights=wc.full_region_weights())
+    names = [pick() for _ in range(600)]
+    assert not [n for n, _c in names if n.startswith("Player ")]
+    assert not [c for _n, c in names if not c]
+    assert {c for _n, c in names} >= {"ZA", "US"}
+
+
+def test_a_mix_file_from_an_older_build_migrates_rather_than_losing_africa():
+    parsed = wc.parse_region_mix({
+        "format": wc.PRESET_FORMAT, "version": 1, "name": "Old", "base_band": "global_college",
+        "intl_share": 0.4, "weights": {"france": 100, "africa_cricket": 90}})
+    assert parsed["unknown"] == []
+    assert parsed["migrated"] == {"africa_cricket": "southern_africa, east_africa"}
+    assert parsed["weights"]["southern_africa"] == pytest.approx(79.2)

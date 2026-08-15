@@ -376,16 +376,78 @@ _CONTINENTS: list[tuple[str, list[str]]] = [
 ]
 
 
+# ‼️ A REGION ID THAT NO LONGER EXISTS IS NOT AN ERROR ANYWHERE — it is a SILENT
+# LOSS OF SHARE. `_draw_from_region` returns (None, None, "") for an id the region
+# table has never heard of, so the picker just `continue`s: a mix that still holds a
+# legacy key quietly redistributes that key's share across the others (a save with
+# `africa_cricket: 90` out of 500 loses 18% of its authored geography and reports
+# nothing), and a mix made ONLY of legacy keys burns all 500 retries and falls out
+# to the `Player NNN` placeholder with an empty country — the one failure the
+# exhaustion path was rewritten to make impossible.
+#
+# `region_w` is PERSISTED, so it outlives the build that wrote it. When 2027-08
+# replaced the two African buckets with six, every existing save's authored mix
+# still named the old ones. Migrate on READ rather than in a one-shot upgrade
+# script: the rows are already out there in saves nobody will run a migration
+# against, and the read point is the only place all of them pass through.
+#
+# Splits follow what each old region actually CONTAINED, so a save keeps both its
+# total African share and roughly where in Africa it pointed.
+_LEGACY_REGIONS: dict[str, dict[str, float]] = {
+    # Sub-Saharan catch-all: NG .40, ET .20, GH .15, TZ .10, MG/MZ/AO .05 each.
+    "africa": {"west_africa": 0.55, "east_africa": 0.30,
+               "central_africa": 0.05, "southern_africa": 0.05,
+               "indian_ocean_africa": 0.05},
+    # Cricket nations: ZA .68, ZW .20, KE .12.
+    "africa_cricket": {"southern_africa": 0.88, "east_africa": 0.12},
+    "namibia": {"southern_africa": 1.0},        # NA
+    "cape_verde": {"west_africa": 1.0},         # CV
+    "mauritius": {"indian_ocean_africa": 1.0},  # MU
+    "uganda": {"east_africa": 1.0},             # UG
+}
+
+
+def migrate_region_weights(weights: dict) -> tuple[dict[str, float], dict[str, str]]:
+    """Fold any retired region id into its replacements. Returns the migrated map
+    and a {old_id: "new_id, new_id"} note of what moved, so a caller can SAY so
+    rather than changing the owner's authored mix behind their back."""
+    out: dict[str, float] = {}
+    moved: dict[str, str] = {}
+    for k, v in (weights or {}).items():
+        split = _LEGACY_REGIONS.get(k)
+        if split is None:
+            out[k] = out.get(k, 0.0) + v
+            continue
+        for new_id, frac in split.items():
+            out[new_id] = out.get(new_id, 0.0) + v * frac
+        moved[k] = ", ".join(split)
+    return {k: round(v, 3) for k, v in out.items()}, moved
+
+
 def region_weights_custom() -> dict[str, float]:
     """The player's authored absolute {region: weight} international mix, or {} when
-    none is set (fall back to the chosen band)."""
+    none is set (fall back to the chosen band). Retired region ids are migrated (see
+    `_LEGACY_REGIONS`) and anything this build still cannot resolve is DROPPED — a
+    weight the picker cannot draw is not a weight, it is a hole in the mix."""
     raw = get("region_w")
     try:
         d = json.loads(raw) if raw else {}
-        return {str(k): float(v) for k, v in d.items()
-                if float(v) > 0 and str(k) not in _HIDDEN_REGIONS and str(k) != "us"}
+        d = {str(k): float(v) for k, v in d.items()
+             if float(v) > 0 and str(k) not in _HIDDEN_REGIONS and str(k) != "us"}
     except (ValueError, TypeError, AttributeError):
         return {}
+    migrated, _moved = migrate_region_weights(d)
+    from generators.names import get_name_regions
+    known = get_name_regions()
+    unknown = [k for k in migrated if k not in known]
+    if unknown:
+        import logging
+        logging.getLogger(__name__).error(
+            "region_w names %d region(s) this build does not have: %s. They are "
+            "dropped; their share goes to the rest of the mix. Re-author the mix on "
+            "/start (or load a mix file) to say where it should go.",
+            len(unknown), ", ".join(sorted(unknown)))
+    return {k: v for k, v in migrated.items() if k in known}
 
 
 def set_region_weights(weights: dict) -> None:
@@ -414,6 +476,45 @@ def region_weights() -> dict[str, float]:
     base = dict(region_preset(name_preset()))
     return {k: v for k, v in base.items()
             if v > 0 and k not in _HIDDEN_REGIONS and k != "us"}
+
+
+def with_domestic(weights: dict, share) -> dict:
+    """A COMPLETE name-picker map: the international mix scaled to fill `share`,
+    plus the `us` weight that fills the rest. Non-US regions keep their relative
+    proportions. Returns a new dict.
+
+    ‼️ `region_weights()` OMITS `us` by contract — its share is the domestic split,
+    not a region weight — so it is an *international* mix and is never a picker map
+    on its own. Hand it to `make_name_picker` directly and the picker renormalizes
+    over the international regions alone, i.e. the world generates 100% international
+    players whatever split the owner chose. Nothing errors and every name is real, so
+    the only symptom is a distribution that quietly ignores the setting. The pro
+    league shipped exactly that bug. Every pipeline that turns the world mix into a
+    picker goes through here.
+    """
+    try:
+        share = max(0.0, min(0.95, float(share)))
+    except (ValueError, TypeError):
+        share = DEFAULT_INTL_SHARE
+    rest = {k: max(0.0, float(v)) for k, v in (weights or {}).items() if k != "us"}
+    rest_total = sum(rest.values())
+    out: dict[str, float] = {}
+    if rest_total > 0:
+        for k, v in rest.items():
+            out[k] = (v / rest_total) * share
+    else:
+        share = 0.0            # no international regions configured → all domestic
+    out["us"] = 1.0 - share
+    return out
+
+
+def full_region_weights() -> dict[str, float]:
+    """The world's complete picker map — `region_weights()` scaled to the configured
+    `intl_share()`, with `us` taking the remainder. This is what a generator wants
+    when it has no per-program share of its own (the pro league, free agents,
+    generated rookies); college programs derive their own share and go through
+    `ncaa.region_weights_for` instead."""
+    return with_domestic(region_weights(), intl_share())
 
 
 def region_groups() -> list[dict]:
@@ -534,11 +635,16 @@ def parse_region_mix(doc) -> dict:
     from generators.names import get_name_regions
     known = {r for r in get_name_regions()
              if r not in _HIDDEN_REGIONS and r != "us"}
-    unknown = sorted(str(k) for k in raw if str(k) not in known)
+    # A retired id is FOLDED INTO its replacements, not dropped — a mix file is a
+    # long-lived artefact and the whole point is that one authored last year still
+    # loads. Only ids with no known successor are reported as lost.
+    migrated, moved = migrate_region_weights({str(k): v for k, v in raw.items()})
+    unknown = sorted(k for k in migrated if k not in known)
     out = region_mix_doc(doc.get("name"), doc.get("base_band"),
-                         doc.get("intl_share"), {k: v for k, v in raw.items()
-                                                 if str(k) in known})
+                         doc.get("intl_share"), {k: v for k, v in migrated.items()
+                                                 if k in known})
     out["unknown"] = unknown
+    out["migrated"] = moved
     # NB `set` is this module's config setter, not the builtin — dict keys already
     # support the set algebra, so nothing here needs it.
     out["missing"] = sorted(known - out["weights"].keys())
@@ -566,7 +672,7 @@ def save_mix(doc: dict) -> list[dict]:
     keep = [m for m in saved_mixes() if m["name"].lower() != doc["name"].lower()]
     rows = ([doc] + keep)[:MAX_SAVED_MIXES]
     set("region_mixes", json.dumps([{k: v for k, v in m.items()
-                                     if k not in ("unknown", "missing")}
+                                     if k not in ("unknown", "missing", "migrated")}
                                     for m in rows]))
     return rows
 
@@ -574,6 +680,6 @@ def save_mix(doc: dict) -> list[dict]:
 def delete_mix(name: str) -> list[dict]:
     rows = [m for m in saved_mixes() if m["name"].lower() != str(name or "").lower()]
     set("region_mixes", json.dumps([{k: v for k, v in m.items()
-                                     if k not in ("unknown", "missing")}
+                                     if k not in ("unknown", "missing", "migrated")}
                                     for m in rows]))
     return rows

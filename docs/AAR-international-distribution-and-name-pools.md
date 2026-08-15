@@ -227,6 +227,89 @@ open a **fresh page**, load the file, and compare the grid. That check caught
 nothing on the first run, which is only meaningful because it also exercises the
 stale-file, junk-file and band-still-works paths.
 
+---
+
+## 7. Three faults the region work left behind (found in review)
+
+All three share a shape: **a wrong distribution is not an error.** Every name is
+real, every page renders, and the only tell is a number nobody was looking at.
+
+### `region_weights()` is not a picker map
+
+Its docstring says so — `us` is omitted because its share is the domestic split,
+not a region weight — but §4's fix wired it straight into `make_name_picker` at all
+five pro-league call sites. The picker renormalizes whatever it is given, so the
+pros generated **99.8% international** players against a configured 30%. The
+previous bug (falling through to the `americas_pro` default, which carries
+`us: 0.55`) had at least been *approximately* right.
+
+`worldconfig.with_domestic(weights, share)` is now the one place that scales an
+international mix and restores `us`. `ncaa.region_weights_for` — which already had
+this arithmetic, wrapped in college-specific share derivation — delegates to it, and
+`full_region_weights()` applies it to the world's own `intl_share()` for generators
+with no per-program share. Measured after: **69.4% US**, matching the 30% setting.
+
+### A retired region id loses share silently
+
+`_draw_from_region` returns `(None, None, "")` for an id the table lacks and the
+draw loop just `continue`s. So an existing save whose persisted `region_w` still
+named `africa` or `africa_cricket` (§2 removed six ids) **quietly redistributed
+that share** to the rest of the mix — and a mix made *only* of retired ids burned
+all 500 retries and fell out to the `Player NNN` placeholder that §3 was rewritten
+to make impossible. It was reachable again through a door nobody had shut.
+
+`region_w` is persisted, so it outlives the build that wrote it. Retired ids are
+folded into their successors (`worldconfig._LEGACY_REGIONS`, split by what each old
+region actually *contained*: `africa_cricket` was 68% South Africa, 20% Zimbabwe,
+12% Kenya → southern 0.88 / east 0.12), applied **on read** rather than by a
+one-shot migration — the rows are already out in saves nobody will run a script
+against, and the read point is where all of them pass through. Anything still
+unresolvable is dropped *and logged*, because a weight the picker cannot draw is a
+hole in the mix, not a weight.
+
+### Reading config inside a transaction deadlocks
+
+`worldconfig.get()` opens its own connection and issues `CREATE TABLE IF NOT
+EXISTS`, which takes a write lock — and world and GTT tables **share one SQLite
+file**. Reading config while `create_league` holds pending INSERTs is a
+`database is locked`.
+
+This was latent for as long as the picker needed one config key: that key was
+almost always already cached, so the second connection was never opened. Restoring
+the US share added a second key (`intl_share`), a cold read became likely, and
+**20 of 21 GTT tests failed at once**. `_prime_world_config()` loads the whole
+settings snapshot at the entry point, before any transaction opens.
+
+## 8. The pro league was never short of players
+
+> *"the GTT should always have enough players there are tens of thousands of them
+> … so idk why the GTT wouldn't have players."*
+
+Correct, and the founding draft was seating **112 generated players out of 112**
+on a fresh world anyway. Not a shortage: `world_graduates` is written **at a year
+rollover**, so a league founded in world year 0 queried an empty table, and
+`create_league`'s own docstring blessed the outcome — *"a fresh save with no
+graduates yet gets the classic all-founder inaugural league."* The archive was
+missing; the players were not. A year-0 world holds ~2,262 programs and roughly
+**7,300 seniors** about to graduate.
+
+With no archived class the founding draft now reads the live about-to-graduate
+cohort (`world.departing_now`) — same `_departing` predicate and same row shape as
+the archive, resolved through `load_world` so a stale seed can never
+`get_or_create` a parallel universe. Measured after: **112 of 112 real college
+players**, every pid present in the world.
+
+Deliberately **not** a fallback inside `_world_graduates`. Everywhere else an empty
+class means the world binding is broken (the very thing `_active_world_seed`
+self-heals), and substituting live players there would convert a visible fault into
+plausible-looking data — the failure this codebase keeps relearning. A test pins
+that `_intake` never calls it.
+
+The ranking rules are shared rather than copied: `_select_graduates` was split out
+of `_world_graduates` so the archived class and the live one go through one set of
+D1/non-D1 rules, instead of a league's founding draft and its first off-season
+draft ranking players differently.
+
 ## Still open
 
 - The generic `african` bucket remains a catch-all for a handful of countries

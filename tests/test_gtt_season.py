@@ -340,3 +340,48 @@ def test_gtt_intake_uses_persisted_world_graduates_with_d1_mix_and_slack(db):
     # none was wasted.
     assert college_before > 0, "the founding pool ignored the persisted graduates"
     assert len(college) >= college_before
+
+
+def test_founding_league_drafts_real_players_before_any_rollover(db):
+    """‼️ `world_graduates` is written AT a rollover, so a league founded in world
+    year 0 found an empty table and seated a 100% GENERATED inaugural league —
+    measured 112 of 112 — beside a college world holding tens of thousands of real
+    players. The shortage was never real, only the archive was missing. With no
+    archived class the founding draft reads the seniors who are about to graduate
+    (`world.departing_now`)."""
+    from app import world as wd, worldconfig
+    # The `db` fixture only repoints the GTT path; world and GTT must share ONE
+    # file (they share it in the app — separate tables, same database).
+    wd.WORLD_DB = g.DB_PATH
+    wd._schema_ready_for = None
+    worldconfig._cache.clear()
+    worldconfig.set_active(["D1"], ["men", "women"])
+    wd.start_new(salt="founding-class")
+
+    conn = g._db()
+    archived = conn.execute("SELECT COUNT(*) c FROM world_graduates").fetchone()["c"]
+    conn.close()
+    assert archived == 0, "this test is only meaningful before a rollover"
+
+    lid = g.create_league("GTT", n_teams=4)
+    conn = g._db()
+    rows = conn.execute("SELECT origin, pid FROM gtt_players WHERE league_id=?",
+                        (lid,)).fetchall()
+    conn.close()
+    origins = [r["origin"] for r in rows]
+    assert origins, "the founding draft seated nobody"
+    assert "founder" not in origins, f"generated players still seated: {set(origins)}"
+
+    # Real pids, not synthesised ones: every drafted player must exist in the world.
+    world = wd.load_world()
+    live = {p.pid for schools in wd.cup_rosters(world).values()
+            for roster in schools.values() for p in roster}
+    assert {r["pid"] for r in rows} <= live
+
+
+def test_the_founding_fallback_does_not_leak_into_later_drafts(db):
+    """Everywhere but founding, an empty class means the world binding is broken.
+    Substituting live players there would hide a real fault behind plausible data."""
+    import inspect
+    src = inspect.getsource(g._intake)
+    assert "departing_now" not in src
