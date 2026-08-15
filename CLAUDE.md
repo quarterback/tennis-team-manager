@@ -873,6 +873,47 @@ list is `server.SCHEMES`.
   `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
 See `docs/AAR-design-port-readability-and-suite-hermeticity.md`.
 
+## ⚠️ NAMES — the pools are curated data with THREE authorities that must agree
+`generators/names.py` draws a player's name from `regions.json` (regions, subregions
+and the owner's international-distribution PRESETS) over three bucket-keyed pools
+(`male_first.json`, `female_first.json`, `surnames.json`).
+See `docs/AAR-international-distribution-and-name-pools.md`.
+- **‼️ DIASPORA IS DIRECTED, never a second roll on the world mix.** A region may only
+  receive a name from a heritage it DECLARES (`diaspora` in `regions.json`); a region
+  that declares none is monocultural. The 2026 blend drew the donor culture from the
+  whole world mix, so **11.4%** of players had a name with no link to their country —
+  Russian names on Dominicans, Chinese names on Africans ("the pool is a sieve … it's
+  breaking my immersion"). Nothing errors: generated names are real names, so it reads
+  as an odd squad, not a bug. `DIASPORA_SHARE` (0.12) is now ONLY the default RATE for
+  a region that has declared sources — not licence to restore the undirected draw.
+- **‼️ THE SCRUBBER IS AUTHORITATIVE — a name added only to the JSON is deleted on the
+  next run.** `scripts/scrub_name_pools.py` rewrites several buckets wholesale from
+  in-script allowlists (`KOREAN_SURNAMES`, `CHINESE_SURNAMES`, `KOREAN_FEMALE_GIVEN`,
+  `TAIWAN_SURNAME_ADD`) and strips any token that is also a city or a scraped club
+  name. Additions to a scrubbed bucket go IN THE SCRUBBER; place-name collisions that
+  are genuine family names go in `SURNAME_CITY_KEEP` (Rosario, Jerez, Ramsay,
+  Grandison, Toledo, Pickering…). **Always finish with `--check` and read the diff.**
+  Write JSON the way the scrubber does — `indent=2`, `ensure_ascii=False`, trailing
+  newline, **insertion key order (no `sort_keys`)** — or a four-name change reformats
+  16,800 lines.
+- **Repetition is measured as PRESSURE, not pool size**: expected draws per 10k ÷
+  bucket size, at each bucket's HEAVIEST preset weight. A 200-name bucket at 4% is
+  under more strain than a 40-name one at 0.1%. Target ≤1.5×; currently ≤1.1×.
+  The exhaustion path returns the last valid (name, country), NEVER a
+  `f"Player {randint}"` placeholder with an empty country — a repeated real name is
+  cosmetic, `Player 447` is a visible defect.
+- **The five owner presets each sum to EXACTLY 100.0 with `us` pinned at 30.0.** That
+  anchor is what makes them comparable — fund any change from somewhere else. The
+  Caribbean (12 regions) and `pacific_islands` were boosted 2–4× in 2027-08 (owner
+  rule: warm-weather, high-sun, emergent), funded from `anzac` down to a floor and
+  then Europe pro-rata — deliberately NOT from Africa or Asia, which the owner had
+  just raised.
+- **A new region needs a row in THREE files or it half-works silently**:
+  `regions.json` (pools), `worldconfig._CONTINENTS` (editor grouping — anything
+  unlisted is filed under "Other", which is how China, Japan and France ended up
+  there) and `coaches.COUNTRY_REGIONS` (an unmapped ISO code becomes `"global"`).
+- Names are not save state — this changes future-generated worlds only.
+
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one

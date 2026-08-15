@@ -318,6 +318,11 @@ SURNAME_CITY_KEEP = {
     # Common English surname that also names a town (and scraped in as sports
     # junk) — a real family name, kept.
     "Pickering",
+    # Caribbean expansion (2027-08). "Jerez"/"Rosario" are among the most common
+    # Dominican family names and "Grandison"/"Ramsay" are ordinary Anglo-Caribbean
+    # ones; they collide with a Spanish city, an Argentine city and two scraped
+    # club tokens respectively.
+    "Grandison", "Jerez", "Ramsay", "Rosario",
 }
 
 
