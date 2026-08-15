@@ -3,7 +3,7 @@
 **Date:** 2027-08
 **Scope:** `generators/data/names/hometowns.json` (both tiers),
 `scripts/build_hometowns.py` (new), `scripts/import_jefferson.py`
-(`_MAX_CITIES` 46 → 199, two-way share warning), `scripts/scrub_name_pools.py`
+(`_MAX_CITIES` 46 → 199 → uncapped; see addendum), `scripts/scrub_name_pools.py`
 (`SURNAME_CITY_KEEP` +20)
 
 ## The ask, and the question under it
@@ -128,3 +128,35 @@ python3 scripts/scrub_name_pools.py --check         # REAL RUN — read the diff
 python3 -m pytest -q tests/test_world_model.py tests/test_juniors.py \
     tests/test_name_pool_clean.py tests/test_cities.py
 ```
+
+---
+
+## Addendum (same day): uncapped Jefferson, graduated floors
+
+Two owner rulings landed right after the first pass shipped:
+
+**"jefferson doesn't have to be capped anymore clearly."** Correct — the cap
+defended a ~150-city western pool that the rebuild abolished. `_MAX_CITIES` is
+now `None`: all 272 Jefferson cities export, ~27% of the ~1,000-city west
+against a ~23% population share. The share report stays as the **tripwire**
+(warns past 35%): if the western pools ever shrink — a floor change, a
+regeneration bug — the old 64% disaster comes back and a cap must too.
+
+**"you can go down to like cities of 5k or 2k not 10k … i don't need tiny
+places in big states but other ones should be represented more wholly …
+realism isn't the issue it's interestingness."** So the floor is GRADUATED,
+not uniform: each state keeps the highest of (10k, 5k, 2k) that still yields
+`TARGET_PLACES` (40) distinct places. Source moved from `cities5000` to
+`cities1000` to reach the 2k tier. CA/TX/FL stay at 10k with no hamlets;
+VT/WY/MT/ME/NV fall to 2k and field their real small towns — Vermont 40
+(Bennington, Lyndon), Wyoming 32 (Lovell, Lyman), Maine 124.
+
+Final: **~5,100 distinct US cities** (from 1,218), Canada 659, Mexico 610.
+Pressure unchanged at 2 states over 1.0/city, both by design.
+
+The scrubber bit a SECOND time, same session, same way: the 2k-floor
+Canadian/Mexican towns collided with 38 more curated surnames (King and
+Almonte are Ontario townships; Armstrong, Merritt, Oliver, Hope and Trail are
+BC towns; Alvarado, Hidalgo, Nava and Arriaga are Mexican municipios).
+Restored, 24 more names into `SURNAME_CITY_KEEP`, re-run clean. If the floors
+ever drop again, budget for a third pass.

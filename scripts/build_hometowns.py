@@ -25,8 +25,10 @@ fcode filter plus the population floor is the best available gate).
 
 Rules (all measured against the game's own draw mechanics):
 - `us_states` (per-state pools feeding `roll_us_hometown` + `towns_in_region`):
-  population >= 10k, relaxed to 5k in states with fewer than MIN_PLACES over
-  10k (VT, MT, WY...). Weighting is POPULATION REPEATS — `roll_us_hometown` is
+  a GRADUATED floor — each state keeps the highest of (10k, 5k, 2k) that still
+  yields ~40 places, so big states take no hamlets while VT/WY/MT are
+  represented by the towns they actually have (owner rule 2027-08).
+  Weighting is POPULATION REPEATS — `roll_us_hometown` is
   a flat rng.choice, so an entry's count IS its weight (the Jefferson pattern,
   see CLAUDE.md). `towns_in_region` DEDUPES, so repeats never distort a
   program's local-roster pool; only the distinct count counts there.
@@ -34,11 +36,11 @@ Rules (all measured against the game's own draw mechanics):
   composites are dropped: "Kalihi-Palama" is not a hometown.
 - every existing hand-curated city is KEPT (union) — the campus towns
   (Saint Leo, Moraga, Cheney...) matter to this game and many sit under 10k.
-- Jefferson ("JF") is fictional and NOT regenerated here, but its cap is
-  recomputed: the JF pool must stay proportional to its ~23% share of the
-  WESTERN pool (CLAUDE.md), so when the real states grow, JF grows with them.
-  This script prints the recommended cap; scripts/import_jefferson.py owns the
-  actual JF list.
+- Jefferson ("JF") is fictional and NOT regenerated here — it exports all 272
+  of its cities UNCAPPED (owner rule 2027-08; the old cap defended a ~150-city
+  western pool that no longer exists). This script reports JF's share of the
+  west; scripts/import_jefferson.py owns the list and warns if the share ever
+  climbs past 35% again.
 - `cities` (international birthplace pools): CA and MX are regenerated from the
   same dump (CA >= 10k, MX >= 25k). ⚠️ Additions here FEED THE SURNAME
   SCRUBBER's city blocklist (`scripts/scrub_name_pools.py _surname_cities` —
@@ -63,15 +65,19 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOMETOWNS = os.path.join(ROOT, "generators", "data", "names", "hometowns.json")
-DUMP_URL = "https://download.geonames.org/export/dump/cities5000.zip"
+DUMP_URL = "https://download.geonames.org/export/dump/cities1000.zip"
 
 GAZ_BASE = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer"
 
-US_FLOOR = 10_000        # per-state population floor...
-US_FLOOR_SMALL = 5_000   # ...relaxed where a state has too few places over it
-MIN_PLACES = 12          # "too few" threshold
-CA_FLOOR = 10_000
-MX_FLOOR = 25_000
+# Graduated per-state floor (owner rule 2027-08: "i don't need tiny places in
+# big states but other ones should be represented more wholly"). Each state
+# keeps the HIGHEST floor that still yields TARGET_PLACES distinct places, so
+# Texas never takes hamlets while Vermont and Wyoming — states without big
+# cities — go down to 2k and get represented by the towns they actually have.
+US_FLOORS = (10_000, 5_000, 2_000)
+TARGET_PLACES = 40
+CA_FLOOR = 5_000
+MX_FLOOR = 15_000
 
 # New England: municipalities are county-subdivision TOWNS, not places.
 NEW_ENGLAND = {"CT", "MA", "ME", "NH", "RI", "VT"}
@@ -183,7 +189,7 @@ def build(dry: bool, cache: str) -> None:
     cache_dir = os.path.dirname(os.path.abspath(cache)) or "."
     legit = _legit_us(cache_dir)
     best: dict[tuple[str, str, str], int] = {}
-    for cc, adm, name, pop in _places(_fetch(DUMP_URL, cache, "cities5000.txt", "utf-8")):
+    for cc, adm, name, pop in _places(_fetch(DUMP_URL, cache, os.path.basename(DUMP_URL).replace(".zip", ".txt"), "utf-8")):
         if cc not in ("US", "CA", "MX"):
             continue
         # ⚠️ GeoNames classes big-city neighbourhoods ("NoMa", "Foggy Bottom")
@@ -204,8 +210,11 @@ def build(dry: bool, cache: str) -> None:
     report = []
     for st in sorted(set(by_state) | set(us_states) - SKIP_STATES):
         pool = by_state.get(st, {})
-        over = {n: p for n, p in pool.items() if p >= US_FLOOR}
-        floor = US_FLOOR if len(over) >= MIN_PLACES else US_FLOOR_SMALL
+        floor = US_FLOORS[-1]
+        for f in US_FLOORS:                 # highest floor that still fills the state
+            if sum(1 for p in pool.values() if p >= f) >= TARGET_PLACES:
+                floor = f
+                break
         keep = {n: p for n, p in pool.items() if p >= floor}
         # Union with the curated list: an existing city absent from the dump (or
         # under the floor) stays, at weight 1 — curated campus towns are data.
@@ -253,16 +262,17 @@ def build(dry: bool, cache: str) -> None:
     west_distinct = sum(len(set(us_states.get(s, [])) | campus.get(s, set()))
                        for s in WEST_STATES)
     jf_now = len(set(us_states.get("JF", [])))
-    jf_cap = round(JF_WEST_SHARE * west_distinct / (1 - JF_WEST_SHARE))
 
     print(f"{'st':<4}{'old':>6}{'new':>6}{'entries':>9}{'floor':>8}")
     for st, old_d, new_d, entries, floor in report:
         print(f"{st:<4}{old_d:>6}{new_d:>6}{entries:>9}{floor:>8}")
     for cc, old_d, new_d, entries in intl_report:
         print(f"cities[{cc}]: {old_d} -> {new_d} distinct ({entries} entries)")
+    share = jf_now / (jf_now + west_distinct) * 100 if west_distinct else 0
     print(f"\nwestern distinct pool (excl JF): {west_distinct}")
-    print(f"JF now {jf_now}; proportional cap at {JF_WEST_SHARE:.0%} share: ~{jf_cap}")
-    print("  -> regenerate JF via scripts/import_jefferson.py with that cap.")
+    print(f"JF {jf_now} distinct -> {share:.0f}% of the west "
+          f"(uncapped, owner rule 2027-08; population share ~{JF_WEST_SHARE:.0%}; "
+          f"import_jefferson warns if it climbs past 35%)")
     print("\n⚠️  cities[CA]/cities[MX] feed the surname scrubber's blocklist —")
     print("   run scripts/scrub_name_pools.py --check and review the diff before committing.")
 

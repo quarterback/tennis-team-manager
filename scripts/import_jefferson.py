@@ -78,18 +78,18 @@ _MAX_SLOTS = 12
 #   2. `ncaa.towns_in_region("W")` — the pool EVERY western program draws its
 #      local year-0 base-roster players from (`LOCAL_REGION_TARGET` = 0.70). It
 #      dedupes by (city, state), so only the DISTINCT count matters there.
-# Jefferson has 272 cities. The cap is Jefferson's share of the region's
-# POPULATION (~17.6M of ~76M ≈ 23%) applied to the WESTERN pool's distinct
-# count — so it moves whenever the real states' pools do, in either direction.
-# At the original hand-curated pools (~153 other western cities) that came to
-# 46; after the 2027-08 hometown rebuild (scripts/build_hometowns.py, real
-# Census/GeoNames data — CA alone went 81 -> 461) the west carries ~665 other
-# cities, so 199/(199+665) ≈ 23%. Exporting all 272 at the OLD pool size would
-# have made Jefferson 64% of the pool — every California, Oregon and Washington
-# roster would fill with Jefferson kids, and nothing would error. If Jefferson's
-# population or the western pools change again, re-derive this — do not just
-# raise it (the share report below now warns in BOTH directions).
-_MAX_CITIES = 199
+# Jefferson has 272 cities and exports ALL of them (owner rule 2027-08:
+# "jefferson doesn't have to be capped anymore"). The cap only ever existed
+# because the OLD hand-curated western pool was tiny (~153 other cities), so a
+# full export made Jefferson 64% of `towns_in_region("W")` and every
+# California/Oregon/Washington roster filled with Jefferson kids while nothing
+# errored. The 2027-08 hometown rebuild (scripts/build_hometowns.py, real
+# Census/GeoNames data — CA alone went 81 -> 461) took the west to ~666 other
+# cities, so the full 272 is ~29% against a ~23% population share: mildly warm,
+# fine. The share report below is the TRIPWIRE that lets this stay uncapped —
+# if the western pools ever shrink (a floor change, a regeneration bug), it
+# fires TOO HIGH again and a cap must come back. None = no cap.
+_MAX_CITIES: int | None = None
 
 
 def high_school_name(name: str) -> str:
@@ -125,12 +125,13 @@ def build_high_schools(schools: list[dict]) -> list[str]:
 
 
 def build_hometowns(cities: list[dict]) -> list[str]:
-    """Jefferson's `_MAX_CITIES` largest cities, each repeated by population so the
-    big metros dominate a recruit's hometown roll the way they do in a real state.
-    Capped rather than exhaustive — see the `_MAX_CITIES` note above."""
+    """Every Jefferson city (or the `_MAX_CITIES` largest, if a cap is ever
+    reinstated), each repeated by population so the big metros dominate a
+    recruit's hometown roll the way they do in a real state. Uncapped since the
+    2027-08 hometown rebuild — see the `_MAX_CITIES` note above."""
     out: list[str] = []
     ranked = sorted(cities, key=lambda c: (-c.get("population", 0), c["name"]))
-    for c in ranked[:_MAX_CITIES]:
+    for c in (ranked if _MAX_CITIES is None else ranked[:_MAX_CITIES]):
         slots = max(1, min(_MAX_SLOTS, round(c.get("population", 0) / _POP_PER_SLOT)))
         out.extend([c["name"]] * slots)
     return out
@@ -160,15 +161,14 @@ def _report_region_share(distinct: int) -> None:
         return                                               # reporting only
     total = distinct + others
     share = distinct / total * 100 if total else 0.0
-    # The cap is a PROPORTION (JF ≈ 23% of the west's population), so it drifts
-    # off its anchor in BOTH directions: too high fills western rosters with
-    # Jefferson kids; too low starves Jefferson below its population share once
-    # the real states' pools grow. Warn on both sides.
+    # Jefferson is uncapped (owner rule 2027-08); this report is the TRIPWIRE
+    # that keeps that safe. The full 272 is ~29% of the real-data western pool
+    # against a ~23% population share — warm, accepted. If the western pools
+    # ever SHRINK, the share climbs back toward the old 64% disaster and a cap
+    # must return; warn well before that.
     warn = ""
-    if share > 30:
-        warn = "  <-- TOO HIGH, re-derive _MAX_CITIES"
-    elif share < 16:
-        warn = "  <-- TOO LOW, re-derive _MAX_CITIES (western pools grew?)"
+    if share > 35:
+        warn = "  <-- TOO HIGH, western pools shrank? reinstate a _MAX_CITIES cap"
     print(f"  -> region W town pool: {distinct} JF + {others} other "
           f"= {total} ({share:.0f}% Jefferson){warn}")
 

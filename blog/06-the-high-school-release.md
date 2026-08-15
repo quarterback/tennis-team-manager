@@ -51,15 +51,15 @@ most of them go elsewhere to play, exactly as they do for California, Texas and 
 "A good tennis state" has never meant "a state that keeps its own kids," and a big
 in-state D1 footprint is not how the state's quality is expressed.
 
-One measured trap worth recording: Jefferson's city pool is **capped as a proportion** —
-about 23% of the western hometown pool, matching its population share — and that cap is
-load-bearing in both directions. Exporting all 272 of its cities against the original
-hand-curated western pool made Jefferson 64% of it, so every California, Oregon and
-Washington roster filled with Jefferson kids and nothing errored anywhere. The cap was
-first 46 cities; when the hometown pools were later rebuilt from real Census and
-GeoNames data (below), the west grew from ~150 cities to ~666 and the same cap had
-silently become an 8% *under*-representation — so it is now derived from the share, not
-stored as a number, and re-derives to 199.
+One measured trap worth recording: Jefferson's city pool was **capped at 46 of its 272
+cities**, and the cap was load-bearing — against the original hand-curated western pool
+of ~150 cities, exporting all 272 made Jefferson 64% of it, so every California, Oregon
+and Washington roster filled with Jefferson kids and nothing errored anywhere. When the
+hometown pools were later rebuilt from real Census and GeoNames data (below), the west
+grew to ~729 real cities and the cap's reason evaporated: Jefferson now exports **all
+272 uncapped**, about 27% of the western pool against a 23% population share, with a
+tripwire in the import script that warns if the share ever climbs back toward the old
+disaster.
 
 ---
 
@@ -605,8 +605,14 @@ New England's municipalities are towns and Hawaii's are CDPs, invisible at that 
 level. The curated lists stay as a union on top — the campus towns matter to this game
 and many sit under the population floor.
 
-After: **1,218 distinct US cities becomes ~3,900** (Florida 46 → 295, California 81 →
-461), Canada's birthplace pool 60 → 405, Mexico's 19 → 396, all population-weighted by
+The floor is graduated per state, because narrative diversity was the point: each state
+keeps the highest of 10k / 5k / 2k population that still yields about forty places, so
+big states take no hamlets while the states that simply don't have big cities — Vermont,
+Wyoming, Montana, Maine — are represented by the towns they actually have. Vermont
+fields 40 real towns, Maine 124.
+
+After: **1,218 distinct US cities becomes ~5,100** (Florida 46 → 295, California 81 →
+461), Canada's birthplace pool 60 → 659, Mexico's 19 → 610, all population-weighted by
 the same one-slot-per-25k rule Jefferson already used. States drawing more than one
 recruit per city per class: 33 → **2**, and both survivors are by design.
 

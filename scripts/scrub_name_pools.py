@@ -331,6 +331,14 @@ SURNAME_CITY_KEEP = {
     "Alma", "Amos", "Bedford", "Bolton", "Brandon", "Brooks", "Duncan",
     "García", "Isla", "Kirkland", "Lacombe", "Langford", "Lindsay", "Linares",
     "Mercier", "Stratford", "Thompson", "Vernon", "Villahermosa", "Winkler",
+    # ...and the graduated-floor pass (2k-floor small towns): King and Almonte
+    # are Ontario townships, Armstrong/Merritt/Oliver/Hope/Trail are BC towns,
+    # Alvarado/Hidalgo/Nava/Arriaga are Mexican municipios. All are curated
+    # family names first.
+    "Acton", "Almonte", "Alvarado", "Armstrong", "Arriaga", "Beaumont",
+    "Burnside", "Chandler", "Douglas", "Greenwood", "Hidalgo", "Hinton",
+    "Hope", "Hudson", "Humphrey", "King", "Merritt", "Nava", "Oliver",
+    "Russell", "Shannon", "Shelburne", "Trail", "Wainwright",
 }
 
 
