@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -53,15 +54,57 @@ _INSERT_AFTER = "IA"
 # A Jefferson recruit should come from a school that actually fields tennis.
 _TENNIS_SPORTS = ("boys-tennis", "girls-tennis")
 
-# Words that already mark a name as a school. If any of these appears ANYWHERE in
-# the name we leave it alone; otherwise we append " High School". Matching the
-# whole name rather than just its tail matters: prep-network has magnet schools
-# like "San Cordero School of Commerce" and "Lake Esperanza School of Science and
-# Industry", which end in a topic word but must not become "... High School".
-_SCHOOL_WORDS = frozenset({
-    "school", "schools", "academy", "institute", "prep", "preparatory",
-    "collegiate", "high",
-})
+# ⚠️ School names carry NO institutional suffix (owner rule 2027-08: "you don't
+# need to have HS or High School ever, or even 'School' because nobody uses it,
+# it's just the name of the school without that"). This REVERSED the original
+# rule, which APPENDED " High School" to bare names and — because it did not
+# recognise "HS" as a school marker — produced "Baptist HS High School" and
+# "Housatonic HS High School". Now we strip trailing suffixes instead.
+_SUFFIX_STRIP = ("high school", "hs", "school")
+
+# "School of X" collapses (owner rule 2027-08, sharpened twice: "you just say
+# San Cordero Commerce or Plainfield Science", then "Jesuit Sacramento is
+# exactly what it'd be called. Just like Chicago or Boston Latin"):
+#   * SUBJECT of-phrases collapse to the first subject — "Calder Science",
+#     "Bronx Science" ("Science and Industry" truncates at "and").
+#   * PLACE of-phrases collapse too — "Jesuit Sacramento", "Wilmington Charter".
+#     ORDER follows usage: normally PRE + PLACE ("Jesuit Sacramento"), but the
+#     classic type-named schools read PLACE + TYPE ("Chicago Latin",
+#     "Boston English", "Wilmington Charter") — the _TYPE_FIRST set.
+#   * "of the X" where X is NOT a subject stays whole ("Jewish Community High
+#     School of the Bay", "Carnahan High School of the Future") — there is no
+#     colloquial collapse for those.
+#   * "College Preparatory School of" collapses like "School of", which is how
+#     "Jesuit College Preparatory School of Dallas" reads "Jesuit Dallas".
+_SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
+             "design", "engineering", "public", "business", "agriculture",
+             "agricultural", "medicine", "health", "law", "mathematics", "math",
+             "media", "music", "leadership", "communication", "communications",
+             "humanities", "advanced", "applied", "performing", "visual",
+             "environmental", "innovation", "trades", "aviation"}
+_TYPE_FIRST = {"latin", "english", "charter"}
+_SCHOOL_OF_RE = re.compile(
+    r"^(?P<pre>.+?)\s+(?:(?:College\s+Preparatory|High)\s+)?Schools?\s+of\s+(?P<obj>.+)$",
+    re.IGNORECASE)
+
+
+def _collapse_school_of(name: str) -> str:
+    m = _SCHOOL_OF_RE.match(name)
+    if not m:
+        return name
+    pre, obj = m.group("pre"), m.group("obj")
+    the = obj.lower().startswith("the ")
+    if the:
+        obj = obj[4:]
+    if obj.split()[0].lower() in _SUBJECTS:
+        return f"{pre} {obj.split(' and ')[0].strip()}"
+    if the:
+        return name                   # "of the Bay" / "of the Future" — the name
+    if pre.lower().startswith("the "):
+        pre = pre[4:]                 # "The Catholic ... of Baltimore" -> Catholic
+    if pre.split()[-1].lower() in _TYPE_FIRST:
+        return f"{obj} {pre}"         # Chicago Latin, Boston English
+    return f"{pre} {obj}"             # Jesuit Sacramento
 
 # Repeat-as-weight for the hometown pool: `roll_us_hometown` does a flat
 # rng.choice over the list, so a city listed twice is twice as likely. This is the
@@ -78,23 +121,36 @@ _MAX_SLOTS = 12
 #   2. `ncaa.towns_in_region("W")` — the pool EVERY western program draws its
 #      local year-0 base-roster players from (`LOCAL_REGION_TARGET` = 0.70). It
 #      dedupes by (city, state), so only the DISTINCT count matters there.
-# Jefferson has 272 cities; the rest of region "W" contributes 153 (CA 92, WA 23,
-# OR 19, AK 9, HI 9, BC 1). Exporting all 272 would make Jefferson 64% of that
-# pool — every California, Oregon and Washington roster would fill with Jefferson
-# kids, and nothing would error. So cap the distinct cities at Jefferson's share
-# of the region's POPULATION: ~17.6M of ~76M ≈ 23%, and 46/(46+153) ≈ 23%.
-# That also puts Jefferson at ~2.6 cities per million, in line with CA's 2.4.
-# If Jefferson's population or the western state pools change, re-derive this —
-# do not just raise it.
-_MAX_CITIES = 46
+# Jefferson has 272 cities and exports ALL of them (owner rule 2027-08:
+# "jefferson doesn't have to be capped anymore"). The cap only ever existed
+# because the OLD hand-curated western pool was tiny (~153 other cities), so a
+# full export made Jefferson 64% of `towns_in_region("W")` and every
+# California/Oregon/Washington roster filled with Jefferson kids while nothing
+# errored. The 2027-08 hometown rebuild (scripts/build_hometowns.py, real
+# Census/GeoNames data — CA alone went 81 -> 461) took the west to ~666 other
+# cities, so the full 272 is ~29% against a ~23% population share: mildly warm,
+# fine. The share report below is the TRIPWIRE that lets this stay uncapped —
+# if the western pools ever shrink (a floor change, a regeneration bug), it
+# fires TOO HIGH again and a cap must come back. None = no cap.
+_MAX_CITIES: int | None = None
 
 
 def high_school_name(name: str) -> str:
-    """`name` as it should read in a player bio. prep-network stores the bare
-    institution name ("Alder Landing", "Halbrook Technical") because its own site
-    supplies the context; here the string stands alone in a "High school" row."""
-    words = {w.strip(".,").lower() for w in name.split()}
-    return name if words & _SCHOOL_WORDS else f"{name} High School"
+    """`name` as it should read in a player bio: the bare institution name
+    ("Alder Landing", "Housatonic", "San Cordero Commerce"), with any trailing
+    HS / High School / School stripped and "School of SUBJECT" collapsed — the
+    bio row is already labelled "High school", so a suffix only repeats it."""
+    name = _collapse_school_of(name.strip())
+    changed = True
+    while changed:
+        changed = False
+        low = name.lower()
+        for suf in _SUFFIX_STRIP:
+            if low.endswith(" " + suf):
+                name = name[: -len(suf) - 1].rstrip()
+                changed = True
+                break
+    return name
 
 
 def _load_prep_network(root: str) -> tuple[list[dict], list[dict]]:
@@ -122,12 +178,13 @@ def build_high_schools(schools: list[dict]) -> list[str]:
 
 
 def build_hometowns(cities: list[dict]) -> list[str]:
-    """Jefferson's `_MAX_CITIES` largest cities, each repeated by population so the
-    big metros dominate a recruit's hometown roll the way they do in a real state.
-    Capped rather than exhaustive — see the `_MAX_CITIES` note above."""
+    """Every Jefferson city (or the `_MAX_CITIES` largest, if a cap is ever
+    reinstated), each repeated by population so the big metros dominate a
+    recruit's hometown roll the way they do in a real state. Uncapped since the
+    2027-08 hometown rebuild — see the `_MAX_CITIES` note above."""
     out: list[str] = []
     ranked = sorted(cities, key=lambda c: (-c.get("population", 0), c["name"]))
-    for c in ranked[:_MAX_CITIES]:
+    for c in (ranked if _MAX_CITIES is None else ranked[:_MAX_CITIES]):
         slots = max(1, min(_MAX_SLOTS, round(c.get("population", 0) / _POP_PER_SLOT)))
         out.extend([c["name"]] * slots)
     return out
@@ -140,15 +197,31 @@ def _report_region_share(distinct: int) -> None:
     with Jefferson kids and raises no error. See the `_MAX_CITIES` note."""
     try:
         sys.path.insert(0, _REPO)
-        from app.ncaa import STATE_REGION                    # noqa: PLC0415
+        # Count the DISTINCT (city, state) union exactly the way the consumer
+        # does — `ncaa.towns_in_region` merges the campus cities from
+        # locations.json on top of us_states, so counting us_states alone
+        # UNDERSTATES the pool (it printed 24.9% when the real share was 26.6%).
+        from app.ncaa import STATE_REGION, cities_by_state   # noqa: PLC0415
         from generators.flavor import _load_us_states        # noqa: PLC0415
-        others = sum(len({*c}) for st, c in _load_us_states().items()
-                     if st != STATE_ABBR and STATE_REGION.get(st) == "W")
+        west: dict[str, set] = {}
+        for source in (_load_us_states(), cities_by_state()):
+            for st, cs in source.items():
+                if STATE_REGION.get(st) == "W":
+                    west.setdefault(st, set()).update(cs)
+        others = sum(len(cs) for st, cs in west.items() if st != STATE_ABBR)
+        distinct = len(west.get(STATE_ABBR, set()) or set()) or distinct
     except Exception:                                        # pragma: no cover
         return                                               # reporting only
     total = distinct + others
     share = distinct / total * 100 if total else 0.0
-    warn = "  <-- TOO HIGH, re-derive _MAX_CITIES" if share > 30 else ""
+    # Jefferson is uncapped (owner rule 2027-08); this report is the TRIPWIRE
+    # that keeps that safe. The full 272 is ~29% of the real-data western pool
+    # against a ~23% population share — warm, accepted. If the western pools
+    # ever SHRINK, the share climbs back toward the old 64% disaster and a cap
+    # must return; warn well before that.
+    warn = ""
+    if share > 35:
+        warn = "  <-- TOO HIGH, western pools shrank? reinstate a _MAX_CITIES cap"
     print(f"  -> region W town pool: {distinct} JF + {others} other "
           f"= {total} ({share:.0f}% Jefferson){warn}")
 

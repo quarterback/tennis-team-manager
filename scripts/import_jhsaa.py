@@ -80,7 +80,7 @@ ALWAYS_EXTRA = [
     "Arrieta Treasure Valley",
     "Aurelia",
     "Bahía Leal",
-    "Bahía Leal Costa Verde",    # → "Housatonic HS" in this association (RENAMES)
+    "Bahía Leal Costa Verde",    # → "Housatonic" in this association (RENAMES)
     "Baptist HS",
     "Beacon Hill",
     "Breakwater",
@@ -191,7 +191,7 @@ ALWAYS_EXTRA = [
 # a chunk of the association. Everything internal — forcing, dice, district
 # drawing — runs on the source name; only the written row carries the new one.
 RENAMES = {
-    "Bahía Leal Costa Verde": "Housatonic HS",   # keeps its Warthogs
+    "Bahía Leal Costa Verde": "Housatonic",      # keeps its Warthogs
     "Belyakov Academy of Music and Media": "Belyakov North",
     "Belyakov Environmental Sciences Academy": "Belyakov South",
     "Belyakov I-50 Technical": "Belyakov East",
@@ -317,6 +317,68 @@ def reclassify(schools: list[dict]) -> int:
 
 
 _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
+
+# ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
+# need to have HS or High School ever, or even 'School' because nobody uses it").
+# Applied at EMIT, exactly like RENAMES: everything internal (dice, districts,
+# identity) runs on the source name, and `School.source` keeps the pre-strip name
+# so pids never move. Only the TAIL strips — "San Cordero School of Commerce"
+# ends in "Commerce" and is untouched.
+_SUFFIX_RE = re.compile(r"\s+(High School|HS|School)$", re.IGNORECASE)
+
+
+# "School of X" collapses (owner rule 2027-08, sharpened twice: "you just say
+# San Cordero Commerce or Plainfield Science", then "Jesuit Sacramento is
+# exactly what it'd be called. Just like Chicago or Boston Latin"):
+#   * SUBJECT of-phrases collapse to the first subject — "Calder Science",
+#     "Bronx Science" ("Science and Industry" truncates at "and").
+#   * PLACE of-phrases collapse too — "Jesuit Sacramento", "Wilmington Charter".
+#     ORDER follows usage: normally PRE + PLACE ("Jesuit Sacramento"), but the
+#     classic type-named schools read PLACE + TYPE ("Chicago Latin",
+#     "Boston English", "Wilmington Charter") — the _TYPE_FIRST set.
+#   * "of the X" where X is NOT a subject stays whole ("Jewish Community High
+#     School of the Bay", "Carnahan High School of the Future") — there is no
+#     colloquial collapse for those.
+#   * "College Preparatory School of" collapses like "School of", which is how
+#     "Jesuit College Preparatory School of Dallas" reads "Jesuit Dallas".
+_SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
+             "design", "engineering", "public", "business", "agriculture",
+             "agricultural", "medicine", "health", "law", "mathematics", "math",
+             "media", "music", "leadership", "communication", "communications",
+             "humanities", "advanced", "applied", "performing", "visual",
+             "environmental", "innovation", "trades", "aviation"}
+_TYPE_FIRST = {"latin", "english", "charter"}
+_SCHOOL_OF_RE = re.compile(
+    r"^(?P<pre>.+?)\s+(?:(?:College\s+Preparatory|High)\s+)?Schools?\s+of\s+(?P<obj>.+)$",
+    re.IGNORECASE)
+
+
+def _collapse_school_of(name: str) -> str:
+    m = _SCHOOL_OF_RE.match(name)
+    if not m:
+        return name
+    pre, obj = m.group("pre"), m.group("obj")
+    the = obj.lower().startswith("the ")
+    if the:
+        obj = obj[4:]
+    if obj.split()[0].lower() in _SUBJECTS:
+        return f"{pre} {obj.split(' and ')[0].strip()}"
+    if the:
+        return name                   # "of the Bay" / "of the Future" — the name
+    if pre.lower().startswith("the "):
+        pre = pre[4:]                 # "The Catholic ... of Baltimore" -> Catholic
+    if pre.split()[-1].lower() in _TYPE_FIRST:
+        return f"{obj} {pre}"         # Chicago Latin, Boston English
+    return f"{pre} {obj}"             # Jesuit Sacramento
+
+
+def _display_name(name: str) -> str:
+    name = _collapse_school_of(name)
+    while True:
+        stripped = _SUFFIX_RE.sub("", name).strip()
+        if stripped == name or not stripped:
+            return name
+        name = stripped
 
 
 def canon(name: str) -> str:
@@ -487,7 +549,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         city = cities.get(s["city"], {})
-        display = RENAMES.get(name, name)
+        display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and
         # the pids on their records, so if it moves, every renamed school gets

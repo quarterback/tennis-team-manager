@@ -323,6 +323,22 @@ SURNAME_CITY_KEEP = {
     # ones; they collide with a Spanish city, an Argentine city and two scraped
     # club tokens respectively.
     "Grandison", "Jerez", "Ramsay", "Rosario",
+    # Hometown-pool rebuild (2027-08, scripts/build_hometowns.py): the Canada/
+    # Mexico birthplace pools went 79 -> 801 distinct cities, and these curated
+    # surnames collide with a real municipality (García NL, Thompson MB,
+    # Brooks AB, Duncan BC, Mercier QC, Winkler MB, Linares NL...). Every one is
+    # a genuine family name that was already in the pools on purpose.
+    "Alma", "Amos", "Bedford", "Bolton", "Brandon", "Brooks", "Duncan",
+    "García", "Isla", "Kirkland", "Lacombe", "Langford", "Lindsay", "Linares",
+    "Mercier", "Stratford", "Thompson", "Vernon", "Villahermosa", "Winkler",
+    # ...and the graduated-floor pass (2k-floor small towns): King and Almonte
+    # are Ontario townships, Armstrong/Merritt/Oliver/Hope/Trail are BC towns,
+    # Alvarado/Hidalgo/Nava/Arriaga are Mexican municipios. All are curated
+    # family names first.
+    "Acton", "Almonte", "Alvarado", "Armstrong", "Arriaga", "Beaumont",
+    "Burnside", "Chandler", "Douglas", "Greenwood", "Hidalgo", "Hinton",
+    "Hope", "Hudson", "Humphrey", "King", "Merritt", "Nava", "Oliver",
+    "Russell", "Shannon", "Shelburne", "Trail", "Wainwright",
 }
 
 

@@ -312,13 +312,17 @@ US_REGIONS` maps 58 codes, adding AS/MP/BC). Jefferson is an ORDINARY state here
 ["JF"]="W"`, `scout_intel.US_REGIONS["JF"]="Pacific"`. Its recruits are **generated
 here** — prep-network supplies INSTITUTIONS only; never import that repo's players.
 Traps:
-- **The `us_states["JF"]` city pool is capped at 46 cities and MUST stay proportional.**
-  It feeds `roll_us_hometown` (flat choice, so its population repeats are the weighting)
-  AND `ncaa.towns_in_region("W")` (dedupes, so only the DISTINCT count counts) — the pool
-  every western program draws local base-roster players from at `LOCAL_REGION_TARGET`
-  0.70. All 272 cities made Jefferson **64%** of that pool: every CA/OR/WA roster fills
-  with Jefferson kids and NOTHING ERRORS. 46 ≈ its 23% population share.
-  `scripts/import_jefferson.py` prints the share and warns above 30%.
+- **The `us_states["JF"]` city pool is UNCAPPED (owner rule 2027-08) — but its SHARE of
+  the western pool is still the thing that bites.** It feeds `roll_us_hometown` (flat
+  choice, so its population repeats are the weighting) AND `ncaa.towns_in_region("W")`
+  (dedupes, so only the DISTINCT count counts) — the pool every western program draws
+  local base-roster players from at `LOCAL_REGION_TARGET` 0.70. Against the ORIGINAL
+  ~150-city hand-curated west, all 272 cities made Jefferson **64%** of that pool
+  (every CA/OR/WA roster filled with Jefferson kids, NOTHING ERRORED), which is why a
+  46-city cap existed. The 2027-08 hometown rebuild (`scripts/build_hometowns.py`)
+  took the west to ~729 real cities, so the full 272 is ~27% vs a ~23% population
+  share — accepted. `scripts/import_jefferson.py` reports the share and warns past
+  **35%**: if the western pools ever shrink, a cap must come back.
 - **`US_JUNIOR_TENNIS_ORIGIN_WEIGHTS` no longer sums to 1.0** (~1.134) — deliberate, they
   are relative and `rng.choices` renormalizes. JF 0.1400, with OR/NV/ID/CA shaved by the
   county share Jefferson takes. Measured: **JF 188** · CA 186 · FL 166 · TX 113 · NY 82.
@@ -960,6 +964,74 @@ See `docs/AAR-international-distribution-and-name-pools.md`.
     Flask test client cannot see a Blob download. `tests/test_region_mix_presets.py`
     covers the document, the drift report and the routes.
 - Names are not save state — this changes future-generated worlds only.
+
+## ⚠️ HOMETOWNS — generated from real place data, never hand-typed (owner rule 2027-08)
+`generators/data/names/hometowns.json` holds two tiers with DIFFERENT key spaces that
+collide (`us_states["CA"]` is California, `cities["CA"]` is Canada — 14 such keys; the
+tiers are kept apart only by which function reads them). `scripts/build_hometowns.py`
+rebuilds both from GeoNames (population) × the US Census Gazetteer (legitimacy —
+GeoNames alone classes DC neighbourhoods like "NoMa" as towns; New England's
+municipalities are cousub TOWNS and Hawaii's are CDPs, invisible in the place file).
+Curated cities are a UNION on top (campus towns matter and sit under the floor). Do
+NOT hand-type city lists back in — 33 of 55 states drew more recruits per class than
+they had cities and nothing errored; regenerate instead. ~5,100 distinct US cities.
+- **The floor is GRADUATED, per state (owner rule 2027-08)**: each state keeps the
+  HIGHEST of (10k, 5k, 2k) that still yields ~`TARGET_PLACES` (40) places — "i don't
+  need tiny places in big states but other ones should be represented more wholly."
+  CA/TX/FL sit at 10k with no hamlets; VT/WY/MT/ME go to 2k and field their real
+  small towns (VT 40, ME 124). The point is NARRATIVE DIVERSITY, not realism (owner:
+  "the more the better — realism isn't the issue, it's interestingness").
+- **Repeats ARE the weighting, in BOTH tiers** (`roll_us_hometown` and
+  `roll_hometown` are flat `rng.choice`): one slot per 25k residents capped at 12 —
+  the `import_jefferson` rule, ONE idiom. `ncaa.towns_in_region` DEDUPES, so repeats
+  never distort the 70% local-roster draw; only distinct counts count there.
+- **JF exports all 272 cities UNCAPPED** (owner rule 2027-08 — see the Jefferson §
+  above; ~27% of the ~1,000-city west vs a 23% population share, accepted). The old
+  cap defended a ~150-city pool that no longer exists; `import_jefferson`'s share
+  report is the tripwire (warns past 35%) that lets it stay uncapped.
+- **‼️ `scrub_name_pools.py --check` IS A REAL RUN, not a dry-run** (scrub, then
+  verify idempotency). The rebuild's new Canada/Mexico cities deleted curated
+  surnames TWICE — 38 at the first pass (García, Thompson, Brooks, Mercier…), 38
+  more at the graduated-floor pass (King and Almonte are Ontario townships,
+  Armstrong/Merritt BC towns, Alvarado/Hidalgo Mexican municipios) — each time
+  before the keep-set caught up. Restore from git, extend `SURNAME_CITY_KEEP`,
+  re-run. Only the `cities` tier feeds the scrubber; `us_states` never does.
+- **The curated baseline lives in `hometowns_curated.json`, NOT the live file.** The
+  generator unions THAT over its output; unioning the live file (mostly generated
+  after one rebuild) would grandfather every generated town in forever — a place
+  GeoNames drops or a tightened floor excludes could never leave. Add hand-picked
+  cities to the BASELINE and they survive every rebuild. The dump cache is validated
+  by member name (a stale zip from a different dump shadowed the download once).
+- `flavor.py` defines `_load_us_states`/`roll_us_hometown` TWICE (the first pair is
+  dead code — Python keeps the second); hometown caches are module-global and cleared
+  by NOTHING, so a data change needs a process restart. A player's hometown is
+  materialised at generation and persisted — expansions change new players only.
+
+## ⚠️ SCHOOL NAMES carry NO institutional suffix (owner rule 2027-08)
+"You don't need to have HS or High School ever, or even 'School' because nobody uses
+it" — a day school reads "X Day" ("usually it just says Day"), and **"School of
+SUBJECT" collapses to the subject, truncated at "and"**: "San Cordero Commerce",
+"Calder Science", and — the validating real case — "Bronx Science". This REVERSED
+the original rule, which APPENDED " High School" to bare names and, not knowing "HS"
+was a school marker, shipped "Baptist HS High School".
+- **PLACE of-phrases collapse too** (owner correction: "Jesuit Sacramento is exactly
+  what it'd be called. Just like Chicago or Boston Latin"): normally PRE + PLACE
+  ("Jesuit Sacramento", "Jesuit Dallas" — "College Preparatory School of" collapses
+  like "School of"), but the classic type-named schools read PLACE + TYPE
+  ("Chicago Latin", "Boston English", "Wilmington Charter") — `_TYPE_FIRST` in both
+  import scripts. **"of the X" where X is not a subject stays whole** ("Jewish
+  Community High School of the Bay", "Carnahan High School of the Future") — no
+  colloquial collapse exists for those. New subject/type words go in BOTH copies.
+- Enforced in THREE places that must agree: `import_jefferson.high_school_name`
+  (strips + collapses, never appends), `import_jhsaa._display_name` (at EMIT,
+  exactly like `RENAMES` — dice/districts/identity all run on the source name), and
+  the one-time pass applied to all 56 states of `high_schools.json` (13,800+
+  suffixes stripped, 16 School-of names collapsed).
+- **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
+  (generation keys pids on `source or name` — move the name without it and the
+  program gets twelve strangers and archived awards point at nobody), and
+  `data/jhsaa/archetypes.json` keys on the DISPLAY name, so its keys move too.
+- `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —

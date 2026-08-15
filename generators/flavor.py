@@ -159,7 +159,9 @@ _MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 # High-school / academy flavor (synthetic placeholders until real HS data is
 # scraped). International juniors skew toward the famous tennis academies.
-_HS_SUFFIX = ("High", "High", "Prep", "Academy", "Catholic", "Day School", "Christian")
+# No "School"/"High School" suffixes — school names never carry them (owner rule
+# 2027-08, "nobody uses it"); a day school reads "X Day".
+_HS_SUFFIX = ("High", "High", "Prep", "Academy", "Catholic", "Day", "Christian")
 _ACADEMIES = ("IMG Academy", "Saddlebrook Prep", "Evert Academy", "Weil Tennis Academy",
               "Smith Stearns Academy", "Mouratoglou Academy", "Rafa Nadal Academy",
               "Sánchez-Casal Academy", "Bollettieri Prep")
