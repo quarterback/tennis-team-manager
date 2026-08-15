@@ -572,7 +572,29 @@ def create_app() -> Flask:
                                intl_share_choices=worldconfig.INTL_SHARE_CHOICES,
                                programs_by_universe=all_programs_by_universe(),
                                user_program=worldconfig.user_program(),
+                               saved_mixes=worldconfig.saved_mixes(),
+                               preset_format=worldconfig.PRESET_FORMAT,
+                               preset_version=worldconfig.PRESET_VERSION,
                                default_seed=secrets.token_hex(4))
+
+    @app.route("/world/mix/save", methods=["POST"])
+    def world_mix_save():
+        """Store the mix currently on screen under a name. The editor posts its own
+        live state (not the persisted config) because the owner authors the grid and
+        saves before any world exists."""
+        from app import worldconfig
+        doc = request.get_json(silent=True) or {}
+        try:
+            rows = worldconfig.save_mix(doc)
+        except worldconfig.MixFormatError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
+        return jsonify({"ok": True, "mixes": rows})
+
+    @app.route("/world/mix/delete", methods=["POST"])
+    def world_mix_delete():
+        from app import worldconfig
+        name = (request.get_json(silent=True) or {}).get("name", "")
+        return jsonify({"ok": True, "mixes": worldconfig.delete_mix(name)})
 
     @app.route("/world/new", methods=["POST"])
     def world_new():

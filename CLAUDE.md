@@ -873,6 +873,94 @@ list is `server.SCHEMES`.
   `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
 See `docs/AAR-design-port-readability-and-suite-hermeticity.md`.
 
+## ⚠️ NAMES — the pools are curated data with THREE authorities that must agree
+`generators/names.py` draws a player's name from `regions.json` (regions, subregions
+and the owner's international-distribution PRESETS) over three bucket-keyed pools
+(`male_first.json`, `female_first.json`, `surnames.json`).
+See `docs/AAR-international-distribution-and-name-pools.md`.
+- **‼️ DIASPORA IS DIRECTED, never a second roll on the world mix.** A region may only
+  receive a name from a heritage it DECLARES (`diaspora` in `regions.json`); a region
+  that declares none is monocultural. The 2026 blend drew the donor culture from the
+  whole world mix, so **11.4%** of players had a name with no link to their country —
+  Russian names on Dominicans, Chinese names on Africans ("the pool is a sieve … it's
+  breaking my immersion"). Nothing errors: generated names are real names, so it reads
+  as an odd squad, not a bug. `DIASPORA_SHARE` (0.12) is now ONLY the default RATE for
+  a region that has declared sources — not licence to restore the undirected draw.
+- **‼️ THE SCRUBBER IS AUTHORITATIVE — a name added only to the JSON is deleted on the
+  next run.** `scripts/scrub_name_pools.py` rewrites several buckets wholesale from
+  in-script allowlists (`KOREAN_SURNAMES`, `CHINESE_SURNAMES`, `KOREAN_FEMALE_GIVEN`,
+  `TAIWAN_SURNAME_ADD`) and strips any token that is also a city or a scraped club
+  name. Additions to a scrubbed bucket go IN THE SCRUBBER; place-name collisions that
+  are genuine family names go in `SURNAME_CITY_KEEP` (Rosario, Jerez, Ramsay,
+  Grandison, Toledo, Pickering…). **Always finish with `--check` and read the diff.**
+  Write JSON the way the scrubber does — `indent=2`, `ensure_ascii=False`, trailing
+  newline, **insertion key order (no `sort_keys`)** — or a four-name change reformats
+  16,800 lines.
+- **Repetition is measured as PRESSURE, not pool size**: expected draws per 10k ÷
+  bucket size, at each bucket's HEAVIEST preset weight. A 200-name bucket at 4% is
+  under more strain than a 40-name one at 0.1%. Target ≤1.5×; currently ≤1.1×.
+  The exhaustion path returns the last valid (name, country), NEVER a
+  `f"Player {randint}"` placeholder with an empty country — a repeated real name is
+  cosmetic, `Player 447` is a visible defect.
+- **The five owner presets each sum to EXACTLY 100.0 with `us` pinned at 30.0.** That
+  anchor is what makes them comparable — fund any change from somewhere else. The
+  Caribbean (12 regions) and `pacific_islands` were boosted 2–4× in 2027-08 (owner
+  rule: warm-weather, high-sun, emergent), funded from `anzac` down to a floor and
+  then Europe pro-rata — deliberately NOT from Africa or Asia, which the owner had
+  just raised.
+- **‼️ `region_weights()` IS NOT A PICKER MAP — it omits `us` by contract** (its share
+  is the domestic split, not a region weight). Hand it straight to
+  `make_name_picker` and the picker renormalizes over the international regions
+  alone, so the world generates **100% international** players whatever split the
+  owner chose; nothing errors and every name is real. `worldconfig.with_domestic
+  (weights, share)` is the ONE place that scales an international mix and restores
+  `us`; `full_region_weights()` is it applied to the world's own `intl_share()` (for
+  generators with no per-program share — the pro league, free agents, rookies), and
+  `ncaa.region_weights_for` is it applied to a program's level-derived share. The pro
+  league shipped the bare map for a release.
+- **‼️ A RETIRED REGION ID IS A SILENT LOSS OF SHARE, not an error.** `_draw_from_region`
+  returns nothing for an id the table lacks and the picker just retries, so a
+  persisted `region_w` naming an old id quietly redistributes that share — and a mix
+  made ONLY of old ids burns all 500 retries into the `Player NNN` placeholder.
+  `region_w` outlives the build that wrote it, so retired ids are folded into their
+  successors in `worldconfig._LEGACY_REGIONS`, applied on READ (`region_weights_custom`,
+  `parse_region_mix`) rather than by a one-shot migration nobody will run. **Renaming
+  or removing a region id means adding a row there**, splitting by what the old region
+  actually contained.
+- **‼️ NEVER read `worldconfig` while holding a GTT/world SQLite transaction.** They
+  share ONE file; `worldconfig.get()` opens its own connection and runs `CREATE TABLE
+  IF NOT EXISTS`, which takes a write lock → "database is locked". Call
+  `gtt_seasonmode._prime_world_config()` at the entry point BEFORE the transaction.
+  This was latent for as long as the picker needed one config key (a warm cache meant
+  the second connection was never opened); adding a second key fired it at once.
+- **A new region needs a row in THREE files or it half-works silently**:
+  `regions.json` (pools), `worldconfig._CONTINENTS` (editor grouping — anything
+  unlisted is filed under "Other", which is how China, Japan and France ended up
+  there) and `coaches.COUNTRY_REGIONS` (an unmapped ISO code becomes `"global"`).
+  **A fourth consequence:** a renamed or new region id silently changes what an
+  exported mix means, which is why `parse_region_mix` REPORTS `unknown`/`missing`
+  instead of dropping them.
+- **‼️ A REGION MIX IS A FILE FIRST, a saved row second (owner rule 2027-08).** The
+  ~90 authored weights are the owner's most-retyped input — they rebuild the sim on
+  every reload, so a mix stored in `world_setting` dies with the save it was meant to
+  outlive. `/start` therefore DOWNLOADS a `*.ptc-mix.json` (`worldconfig.
+  PRESET_FORMAT`/`PRESET_VERSION`, built client-side from the LIVE grid so it works
+  before a world exists) and loads one back; "Save to this world" is a within-save
+  convenience and the UI says so. Do not make the saved copy the primary and do not
+  drop the download for it.
+  - **Weights in a document are the EDITOR's integers, not fractions.** Normalising
+    on save round-trips the MIX but not the DISPLAY — 160 comes back as 561, and the
+    owner is authoring by eye. `applyWeights(map, fractions)` is the ONE apply path:
+    bands pass fractions, files and saved mixes pass raw. A region at 0 is OMITTED
+    (a missing key already reads as zero; ~60 explicit zeros would triple the file).
+  - Loading sets the band `<select>` **silently** — firing its change event would run
+    `applyBand` and clobber the mix you just loaded.
+  - Coverage is a real browser (`node` + `playwright-core` against
+    `/opt/pw-browsers/chromium-1194`), because the whole feature is client-side and a
+    Flask test client cannot see a Blob download. `tests/test_region_mix_presets.py`
+    covers the document, the drift report and the routes.
+- Names are not save state — this changes future-generated worlds only.
+
 ## Other notes
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one

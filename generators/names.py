@@ -121,12 +121,33 @@ def _pick_weighted_key(rng: random.Random, weights: dict[str, float]) -> str:
 # Picker
 # ---------------------------------------------------------------------------
 
-# Diversity / diaspora: the share of draws where a citizen of one region carries
-# a name from ANOTHER culture (the country/flag stays the home region's, only the
-# name comes from elsewhere) — so diverse nations field diverse people, not a
-# monoculture. A region can override this with a `diversity` field in regions.json
-# (e.g. crank the melting-pot nations up, keep insular ones near 0). Only fires
-# when the world mix spans more than one region. See AAR-name-pool-diversity.
+# ‼️ DIASPORA IS DIRECTED, NOT A SECOND ROLL ON THE WORLD MIX (owner rule 2027-08).
+#
+# The idea is right and stays: diverse nations should field diverse people, so a
+# share of draws give a citizen of one region a name from another culture — the
+# country and flag stay the home region's, only the name comes from elsewhere.
+# The ORIGINAL implementation drew that other culture with
+# `_pick_weighted_key(rng, weights)` — a second, independent sample of THE WHOLE
+# WORLD MIX. Any region could donate a name to any other, with no adjacency, no
+# migration history and no plausibility filter of any kind. Measured on a seeded
+# `pro_tour` world: 11.4% of ALL players carried a foreign-culture name, and the
+# donor was simply whatever was common in that world — `Mensur Lukić (DO)`,
+# `Gang Huang (NG)`, `Cenk Söyüncü (GH)`, `Marian Oprea (ZA)`. Owner: "the pool
+# is a sieve and we're getting russian names on dominicans or chinese names on
+# africans and it's breaking my immersion."
+#
+# Now a region may only receive a name from a heritage it actually HAS, declared
+# as a `diaspora` map in regions.json ({source_region: weight}). Two consequences
+# that matter:
+#   * THE DEFAULT IS NO MIXING. A region that declares no `diaspora` is
+#     monocultural, which is the safe direction: an insular nation reading as
+#     insular is correct, an insular nation reading as a melting pot is a bug.
+#   * The donor draw NO LONGER TOUCHES THE WORLD WEIGHTS. A French player can be
+#     named Karim Diallo whether or not North Africa is in this world's mix,
+#     because the heritage is a fact about France, not about the tournament field.
+#
+# `DIASPORA_SHARE` is now only the DEFAULT RATE for a region that declares
+# sources without its own `diversity`. It cannot re-open the sieve on its own.
 DIASPORA_SHARE = 0.12
 
 
@@ -237,31 +258,45 @@ def make_name_picker(
             return _resolve_country(sr) or _resolve_country(region)
         return _resolve_country(region)
 
-    multi_region = len(weights) > 1
 
     def _name() -> tuple[str, str]:
+        fallback: Optional[tuple[str, str]] = None
         for _ in range(500):
             region_id = _pick_weighted_key(rng, weights)
             # Diversity: sometimes this citizen carries another culture's name. The
             # flag stays this region's; only the name is drawn from elsewhere.
             name_region = region_id
-            if multi_region:
-                reg = regions_meta.get(region_id) or {}
+            reg = regions_meta.get(region_id) or {}
+            sources = reg.get("diaspora") or {}
+            if sources:
                 share = reg.get("diversity")
                 share = DIASPORA_SHARE if share is None else float(share)
                 if share > 0.0 and rng.random() < share:
-                    name_region = _pick_weighted_key(rng, weights)
-                    if name_region == "zaryanovia":    # fictional, procedural — not
-                        name_region = region_id        # a real diaspora heritage
+                    # ⚠️ Drawn from THIS REGION'S declared heritages, never from
+                    # the world mix. See DIASPORA_SHARE above.
+                    pick = _pick_weighted_key(rng, sources)
+                    if pick in regions_meta and pick != "zaryanovia":
+                        name_region = pick
             first, last, country = _draw_from_region(name_region)
             if name_region != region_id:
                 country = _country_for(region_id)      # nationality = home region
             if not first or not last:
                 continue
             full = f"{first} {last}"
+            fallback = fallback or (full, country)     # first REAL name we saw
             if full not in used:
                 used.add(full)
                 return full, country
+        # ‼️ EXHAUSTION RETURNS A REAL NAME, REPEATED — never a placeholder.
+        # The uniqueness set can genuinely run dry: the thinnest pools are only a
+        # few hundred first x surname combinations (Estonia was 14 x 15), so a
+        # large draw against a small region hits every combination and falls out
+        # of the loop. This used to emit `Player 447` WITH AN EMPTY COUNTRY —
+        # a placeholder person, flagless, shipped into a save and archived with
+        # everyone else. A duplicated real name is a blemish; a fake one is a bug,
+        # and the empty country makes it a bug in the nationality data too.
+        if fallback:
+            return fallback
         return f"Player {rng.randint(100, 999)}", ""
 
     return _name

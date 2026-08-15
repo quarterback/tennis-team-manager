@@ -536,19 +536,11 @@ def region_weights_for(weights: dict, division: str, gender: str,
     `recruiting.intl_share_for(division, gender, prestige, academics)`, then nudged
     by the program's coach (`coach_intl`). Non-US regions keep their relative
     proportions, scaled to fill the international share. Returns a new dict."""
+    from . import worldconfig
     from .recruiting import intl_share_for
     share = intl_share_for(division, gender, prestige, academics)
     share = max(0.0, min(0.95, share * float(coach_intl)))   # coach dice-roll push
-    rest = {k: max(0.0, float(v)) for k, v in weights.items() if k != "us"}
-    rest_total = sum(rest.values())
-    out: dict[str, float] = {}
-    if rest_total > 0:
-        for k, v in rest.items():
-            out[k] = (v / rest_total) * share
-    else:
-        share = 0.0                         # no international regions configured → all domestic
-    out["us"] = 1.0 - share
-    return out
+    return worldconfig.with_domestic(weights, share)
 
 
 # A few programs recruit ONE foreign territory as essentially their home pipeline

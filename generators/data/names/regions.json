@@ -1,3609 +1,4587 @@
 {
- "_doc": [
-  "World-region groupings + named presets for the league name picker.",
-  "",
-  "A region either has flat first_keys/surname_keys (legacy shape) OR a list",
-  "of `subregions`. Subregions are the picker's atomic unit: when a draw lands",
-  "on a region with subregions, ONE subregion is chosen by weight and the",
-  "first name + surname are both drawn from THAT subregion's keys. This keeps",
-  "names culturally coherent — a Pakistani draw produces 'Babar Iqbal', not",
-  "'Babar Iyer' (which would happen if first/surname were sampled from the",
-  "concatenated South Asia pool).",
-  "",
-  "`country` (or, for legacy regions, `country_weights`) gives the ISO 3166-1",
-  "alpha-2 country code stored on the player row. The web UI converts it to",
-  "a flag emoji at render time.",
-  "",
-  "Presets are O27-thesis-shaped: the league launches in East Asia, then a",
-  "cricket-conversion pipeline floods the rosters with South Asian, Caribbean,",
-  "Australasian, African, Afghan and (most importantly) Malaysian players —",
-  "Malaysia being the structural growth market for the sport, the way Germany",
-  "is for football."
- ],
- "regions": {
-  "us": {
-   "subregions": [
-    {
-     "weight": 0.55,
-     "country": "US",
-     "first_keys": [
-      "american_northeast",
-      "american_south",
-      "american_midwest",
-      "american_west",
-      "american_texas_southwest",
-      "american_general"
-     ],
-     "surname_keys": [
-      "american_general"
-     ]
-    },
-    {
-     "weight": 0.22,
-     "country": "US",
-     "first_keys": [
-      "black_american"
-     ],
-     "surname_keys": [
-      "black_american",
-      "american_general"
-     ]
-    },
-    {
-     "weight": 0.12,
-     "country": "US",
-     "first_keys": [
-      "asian_american"
-     ],
-     "surname_keys": [
-      "chinese",
-      "korean",
-      "vietnamese",
-      "filipino",
-      "japanese",
-      "indian"
-     ]
-    },
-    {
-     "weight": 0.11,
-     "country": "US",
-     "first_keys": [
-      "latino_hispanic"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "spanish"
-     ]
-    }
-   ]
-  },
-  "canada": {
-   "subregions": [
-    {
-     "weight": 0.72,
-     "country": "CA",
-     "first_keys": [
-      "canadian_english"
-     ],
-     "surname_keys": [
-      "american_general",
-      "uk_european"
-     ]
-    },
-    {
-     "weight": 0.28,
-     "country": "CA",
-     "first_keys": [
-      "canadian_french"
-     ],
-     "surname_keys": [
-      "canadian_french"
-     ]
-    }
-   ]
-  },
-  "latin_america": {
-   "_doc": [
-    "Subregioned by country so each youth-league nation pins to a",
-    "country-flavored pool via make_country_pinned_picker. Subregion",
-    "weights mirror the prior country_weights so the broad pro-league",
-    "use of latin_america: 1.0 keeps its country mix.",
-    "PR pulls from the curated puerto_rican pool (see male_first /",
-    "surnames JSON); the rest currently share latino_hispanic +",
-    "latin_american pending per-country curation."
-   ],
-   "label": "Latin America",
-   "subregions": [
-    {
-     "weight": 0.3,
-     "country": "DO",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "VE",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "CU",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "PR",
-     "first_keys": [
-      "puerto_rican"
-     ],
-     "surname_keys": [
-      "puerto_rican",
-      "latino_hispanic"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "MX",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "CO",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.02,
-     "country": "PA",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    },
-    {
-     "weight": 0.02,
-     "country": "NI",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    }
-   ]
-  },
-  "south_america": {
-   "_doc": [
-    "ARGENTINA + BRAZIL are the secondary 'non-baseball powerhouse' axis.",
-    "Football-built athletic infrastructure redirects to O27, scouts arrive",
-    "before MLB saturates. Top-10 by player count, not per-capita —",
-    "their dominance comes from population scale, not the structural",
-    "over-production seen in Guyana/Trinidad.",
+  "_doc": [
+    "World-region groupings + named presets for the league name picker.",
     "",
-    "Brazilian sub-pools deliberately surface hyphenated naming patterns",
-    "(Yamamoto-Costa, Bauer-Silva) that are genuinely distinct from",
-    "generic 'Latin American' MLB naming."
-   ],
-   "label": "South America (non-baseball powerhouses)",
-   "subregions": [
-    {
-     "weight": 0.18,
-     "country": "AR",
-     "first_keys": [
-      "argentinian",
-      "spanish",
-      "italian"
-     ],
-     "surname_keys": [
-      "argentinian"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "AR",
-     "first_keys": [
-      "argentinian_german",
-      "argentinian"
-     ],
-     "surname_keys": [
-      "argentinian_german"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "portuguese"
-     ],
-     "surname_keys": [
-      "brazilian_portuguese"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "italian"
-     ],
-     "surname_keys": [
-      "brazilian_italian"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "BR",
-     "first_keys": [
-      "brazilian_japanese"
-     ],
-     "surname_keys": [
-      "brazilian_japanese"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "german"
-     ],
-     "surname_keys": [
-      "brazilian_german"
-     ]
-    },
-    {
-     "weight": 0.02,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "arabic"
-     ],
-     "surname_keys": [
-      "brazilian_lebanese"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "CL",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american",
-      "spanish"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "PE",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american",
-      "spanish"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "CO",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american",
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american",
-      "spanish"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "VE",
-     "first_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ],
-     "surname_keys": [
-      "latino_hispanic",
-      "latin_american"
-     ]
-    }
-   ]
-  },
-  "south_asia": {
-   "label": "South Asia (cricket pipeline)",
-   "subregions": [
-    {
-     "weight": 0.2,
-     "country": "IN",
-     "first_keys": [
-      "indian_north"
-     ],
-     "surname_keys": [
-      "indian_north"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "IN",
-     "first_keys": [
-      "indian_punjabi_sikh",
-      "indian_north"
-     ],
-     "surname_keys": [
-      "indian_punjabi_sikh"
-     ]
-    },
-    {
-     "weight": 0.16,
-     "country": "IN",
-     "first_keys": [
-      "indian_south"
-     ],
-     "surname_keys": [
-      "indian_south_tamil",
-      "indian_south_telugu",
-      "indian_south_kannada"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "IN",
-     "first_keys": [
-      "indian_west"
-     ],
-     "surname_keys": [
-      "indian_west_marathi",
-      "indian_west_gujarati"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "IN",
-     "first_keys": [
-      "indian_east"
-     ],
-     "surname_keys": [
-      "indian_east"
-     ]
-    },
-    {
-     "weight": 0.18,
-     "country": "PK",
-     "first_keys": [
-      "pakistani"
-     ],
-     "surname_keys": [
-      "pakistani"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "BD",
-     "first_keys": [
-      "bangladeshi"
-     ],
-     "surname_keys": [
-      "bangladeshi"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "LK",
-     "first_keys": [
-      "sri_lankan_sinhalese"
-     ],
-     "surname_keys": [
-      "sri_lankan_sinhalese"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "LK",
-     "first_keys": [
-      "sri_lankan_tamil"
-     ],
-     "surname_keys": [
-      "sri_lankan_tamil"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "NP",
-     "first_keys": [
-      "nepali"
-     ],
-     "surname_keys": [
-      "nepali"
-     ]
-    }
-   ]
-  },
-  "east_asia": {
-   "label": "East Asia",
-   "_note": [
-    "Decomposed into culturally cohesive subregions so a Japanese player",
-    "draws Japanese first + Japanese surname, not the cross-pollinated",
-    "'Yamamoto Kim' shape the old flat region produced. JP is the launch",
-    "market of O27 and stays the largest single subregion."
-   ],
-   "subregions": [
-    {
-     "weight": 0.45,
-     "country": "JP",
-     "first_keys": [
-      "japanese"
-     ],
-     "surname_keys": [
-      "japanese"
-     ]
-    },
-    {
-     "weight": 0.32,
-     "country": "KR",
-     "first_keys": [
-      "korean"
-     ],
-     "surname_keys": [
-      "korean"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "TW",
-     "first_keys": [
-      "chinese_taiwanese"
-     ],
-     "surname_keys": [
-      "chinese_taiwanese"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "CN",
-     "first_keys": [
-      "chinese"
-     ],
-     "surname_keys": [
-      "chinese"
-     ]
-    }
-   ]
-  },
-  "anzac": {
-   "label": "Australia / New Zealand",
-   "subregions": [
-    {
-     "weight": 0.5,
-     "country": "AU",
-     "first_keys": [
-      "anglo_australian"
-     ],
-     "surname_keys": [
-      "anglo_australian"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "AU",
-     "first_keys": [
-      "aboriginal_australian",
-      "anglo_australian"
-     ],
-     "surname_keys": [
-      "anglo_australian"
-     ]
-    },
-    {
-     "weight": 0.3,
-     "country": "NZ",
-     "first_keys": [
-      "anglo_nz"
-     ],
-     "surname_keys": [
-      "anglo_nz"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "NZ",
-     "first_keys": [
-      "maori",
-      "anglo_nz"
-     ],
-     "surname_keys": [
-      "maori",
-      "anglo_nz"
-     ]
-    }
-   ]
-  },
-  "pacific_islands": {
-   "_doc": [
-    "Indo-Fijian is the THIRD cricket-conversion country (after Guyana",
-    "and Trinidad) — Indo-Fijians have a separate cricket pipeline,",
-    "underutilised by the West Indies / Asia structure, that O27",
-    "reroutes. Held to ~0.18 of the region (smaller than native Fijian",
-    "by population but high per-capita talent yield, mirroring the",
-    "GY/TT pattern). Native Fijian, Samoan, Tongan, and Papuan",
-    "subregions decompose what was previously a flat pacific_islander",
-    "draw. Guam (Chamorro), American Samoa (reusing the Samoan pool)",
-    "and Hawaii (Native Hawaiian + Portuguese/Asian-American island",
-    "blend) extend the region into the real US-affiliated baseball",
-    "pipeline. Hawaii carries country code US — it is a US state, not",
-    "a separate nation."
-   ],
-   "label": "Pacific Islands",
-   "subregions": [
-    {
-     "weight": 0.22,
-     "country": "FJ",
-     "first_keys": [
-      "fijian",
-      "pacific_islander"
-     ],
-     "surname_keys": [
-      "fijian",
-      "pacific_islander"
-     ]
-    },
-    {
-     "weight": 0.14,
-     "country": "FJ",
-     "first_keys": [
-      "indo_fijian"
-     ],
-     "surname_keys": [
-      "indo_fijian"
-     ]
-    },
-    {
-     "weight": 0.18,
-     "country": "WS",
-     "first_keys": [
-      "samoan",
-      "pacific_islander"
-     ],
-     "surname_keys": [
-      "samoan",
-      "pacific_islander"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "TO",
-     "first_keys": [
-      "tongan",
-      "pacific_islander"
-     ],
-     "surname_keys": [
-      "tongan",
-      "pacific_islander"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "PG",
-     "first_keys": [
-      "papuan_melanesian",
-      "pacific_islander"
-     ],
-     "surname_keys": [
-      "papuan_melanesian",
-      "pacific_islander"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "AS",
-     "first_keys": [
-      "samoan",
-      "pacific_islander"
-     ],
-     "surname_keys": [
-      "samoan",
-      "pacific_islander"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "US",
-     "first_keys": [
-      "hawaiian"
-     ],
-     "surname_keys": [
-      "hawaiian"
-     ]
-    }
-   ]
-  },
-  "caribbean_dutch": {
-   "_doc": [
-    "Dutch Caribbean — Curaçao/Aruba (Papiamento blend, real baseball",
-    "pedigree: Bogaerts, Profar, Jansen) and Suriname (Dutch +",
-    "Javanese + Hindustani + Maroon — arguably the most ethnically",
-    "diverse naming pool in the hemisphere). Distinct from the",
-    "Anglophone caribbean_cricket region: different language, different",
-    "pipeline, different naming conventions."
-   ],
-   "label": "Caribbean (Dutch)",
-   "subregions": [
-    {
-     "weight": 0.4,
-     "country": "CW",
-     "first_keys": [
-      "curacao_papiamento"
-     ],
-     "surname_keys": [
-      "curacao_papiamento"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "AW",
-     "first_keys": [
-      "curacao_papiamento"
-     ],
-     "surname_keys": [
-      "aruban_papiamento",
-      "curacao_papiamento"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_hindustani"
-     ],
-     "surname_keys": [
-      "surinamese_hindustani"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_javanese"
-     ],
-     "surname_keys": [
-      "surinamese_javanese"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_maroon",
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "surinamese_maroon",
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_dutch",
-      "dutch"
-     ],
-     "surname_keys": [
-      "surinamese_dutch",
-      "dutch"
-     ]
-    }
-   ]
-  },
-  "caribbean_cricket": {
-   "_doc": [
-    "GUYANA + TRINIDAD are the dual axis. Combined they hold 0.72 of",
-    "the region's mass — disproportionate to their populations relative",
-    "to JM/BB/AG, but matching the O27 thesis: the Indo-Caribbean cricket",
-    "pipeline is the highest-density talent producer in the league per",
-    "capita. Trinidad is decomposed into Indo / Afro / Chinese / Lebanese",
-    "subregions to reflect the country's actual demographic spread, which",
-    "is more complex than Guyana's bi-ethnic split."
-   ],
-   "label": "Caribbean (Cricket Anglophone)",
-   "subregions": [
-    {
-     "weight": 0.26,
-     "country": "GY",
-     "first_keys": [
-      "indo_guyanese"
-     ],
-     "surname_keys": [
-      "indo_guyanese"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "GY",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_guyanese",
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "TT",
-     "first_keys": [
-      "indo_trinidadian"
-     ],
-     "surname_keys": [
-      "indo_trinidadian"
-     ]
-    },
-    {
-     "weight": 0.11,
-     "country": "TT",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_trinidadian",
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "TT",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "chinese_trinidadian"
-     ]
-    },
-    {
-     "weight": 0.02,
-     "country": "TT",
-     "first_keys": [
-      "arabic"
-     ],
-     "surname_keys": [
-      "lebanese_trinidadian"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "JM",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "BB",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "AG",
-     "first_keys": [
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_caribbean"
-     ]
-    }
-   ]
-  },
-  "africa_cricket": {
-   "label": "Africa (Cricket Nations)",
-   "subregions": [
-    {
-     "weight": 0.2,
-     "country": "ZA",
-     "first_keys": [
-      "afrikaner"
-     ],
-     "surname_keys": [
-      "afrikaner"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "ZA",
-     "first_keys": [
-      "english_south_african",
-      "anglo_australian"
-     ],
-     "surname_keys": [
-      "english_south_african"
-     ]
-    },
-    {
-     "weight": 0.18,
-     "country": "ZA",
-     "first_keys": [
-      "zulu"
-     ],
-     "surname_keys": [
-      "zulu"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "ZA",
-     "first_keys": [
-      "xhosa"
-     ],
-     "surname_keys": [
-      "xhosa"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "ZA",
-     "first_keys": [
-      "indian_south_african",
-      "indian_south"
-     ],
-     "surname_keys": [
-      "indian_south_african"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "ZW",
-     "first_keys": [
-      "english_zimbabwean"
-     ],
-     "surname_keys": [
-      "english_zimbabwean"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "ZW",
-     "first_keys": [
-      "shona"
-     ],
-     "surname_keys": [
-      "shona"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "ZW",
-     "first_keys": [
-      "ndebele"
-     ],
-     "surname_keys": [
-      "ndebele"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "KE",
-     "first_keys": [
-      "english_kenyan"
-     ],
-     "surname_keys": [
-      "english_kenyan"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "KE",
-     "first_keys": [
-      "kikuyu"
-     ],
-     "surname_keys": [
-      "kikuyu"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "KE",
-     "first_keys": [
-      "luo"
-     ],
-     "surname_keys": [
-      "luo"
-     ]
-    }
-   ]
-  },
-  "british_isles": {
-   "label": "Britain & Ireland",
-   "subregions": [
-    {
-     "weight": 0.5,
-     "country": "GB",
-     "first_keys": [
-      "english_general"
-     ],
-     "surname_keys": [
-      "english_general"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "GB",
-     "first_keys": [
-      "scottish"
-     ],
-     "surname_keys": [
-      "scottish"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "GB",
-     "first_keys": [
-      "welsh"
-     ],
-     "surname_keys": [
-      "welsh"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "IE",
-     "first_keys": [
-      "irish"
-     ],
-     "surname_keys": [
-      "irish"
-     ]
-    }
-   ]
-  },
-  "afghan_central_asia": {
-   "label": "Afghanistan / Central Asia",
-   "subregions": [
-    {
-     "weight": 0.55,
-     "country": "AF",
-     "first_keys": [
-      "pashto"
-     ],
-     "surname_keys": [
-      "pashto"
-     ]
-    },
-    {
-     "weight": 0.3,
-     "country": "AF",
-     "first_keys": [
-      "dari"
-     ],
-     "surname_keys": [
-      "dari"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "UZ",
-     "first_keys": [
-      "uzbek"
-     ],
-     "surname_keys": [
-      "uzbek"
-     ]
-    }
-   ]
-  },
-  "malaysia": {
-   "label": "Malaysia (the structural growth market)",
-   "subregions": [
-    {
-     "weight": 0.55,
-     "country": "MY",
-     "first_keys": [
-      "malay"
-     ],
-     "surname_keys": [
-      "malay"
-     ]
-    },
-    {
-     "weight": 0.3,
-     "country": "MY",
-     "first_keys": [
-      "chinese_malaysian"
-     ],
-     "surname_keys": [
-      "chinese_malaysian"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "MY",
-     "first_keys": [
-      "indian_malaysian"
-     ],
-     "surname_keys": [
-      "indian_malaysian"
-     ]
-    }
-   ]
-  },
-  "europe_western": {
-   "subregions": [
-    {
-     "weight": 0.25,
-     "country": "DE",
-     "first_keys": [
-      "german"
-     ],
-     "surname_keys": [
-      "german"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "FR",
-     "first_keys": [
-      "french"
-     ],
-     "surname_keys": [
-      "french"
-     ]
-    },
-    {
-     "weight": 0.18,
-     "country": "NL",
-     "first_keys": [
-      "dutch"
-     ],
-     "surname_keys": [
-      "dutch"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "IT",
-     "first_keys": [
-      "italian"
-     ],
-     "surname_keys": [
-      "italian"
-     ]
-    },
-    {
-     "weight": 0.12,
-     "country": "ES",
-     "first_keys": [
-      "spanish"
-     ],
-     "surname_keys": [
-      "spanish"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "PT",
-     "first_keys": [
-      "portuguese"
-     ],
-     "surname_keys": [
-      "portuguese"
-     ]
-    }
-   ]
-  },
-  "europe_eastern": {
-   "_doc": [
-    "CZECH REPUBLIC is the European baseball powerhouse — real-world",
-    "Czech baseball has been the breakout story (WBC 2023 qualification,",
-    "growing MLB-org presence). In O27 fiction the trend accelerates:",
-    "European football academies redirect to baseball faster in CZ than",
-    "anywhere else on the continent, and Czech players become the",
-    "single largest non-Anglophone European feeder. CZ holds 0.42 of",
-    "the region — more than PL+RU combined.",
+    "A region either has flat first_keys/surname_keys (legacy shape) OR a list",
+    "of `subregions`. Subregions are the picker's atomic unit: when a draw lands",
+    "on a region with subregions, ONE subregion is chosen by weight and the",
+    "first name + surname are both drawn from THAT subregion's keys. This keeps",
+    "names culturally coherent — a Pakistani draw produces 'Babar Iqbal', not",
+    "'Babar Iyer' (which would happen if first/surname were sampled from the",
+    "concatenated South Asia pool).",
     "",
-    "Other subregions decompose Eastern Europe properly: Ukraine,",
-    "Hungary, Slovakia, Romania, Bulgaria. Russia retained but",
-    "reduced — a real but secondary pipeline."
-   ],
-   "label": "Eastern Europe",
-   "subregions": [
-    {
-     "weight": 0.42,
-     "country": "CZ",
-     "first_keys": [
-      "czech"
-     ],
-     "surname_keys": [
-      "czech"
-     ]
+    "`country` (or, for legacy regions, `country_weights`) gives the ISO 3166-1",
+    "alpha-2 country code stored on the player row. The web UI converts it to",
+    "a flag emoji at render time.",
+    "",
+    "Presets are O27-thesis-shaped: the league launches in East Asia, then a",
+    "cricket-conversion pipeline floods the rosters with South Asian, Caribbean,",
+    "Australasian, African, Afghan and (most importantly) Malaysian players —",
+    "Malaysia being the structural growth market for the sport, the way Germany",
+    "is for football."
+  ],
+  "regions": {
+    "us": {
+      "subregions": [
+        {
+          "weight": 0.55,
+          "country": "US",
+          "first_keys": [
+            "american_northeast",
+            "american_south",
+            "american_midwest",
+            "american_west",
+            "american_texas_southwest",
+            "american_general"
+          ],
+          "surname_keys": [
+            "american_general"
+          ]
+        },
+        {
+          "weight": 0.22,
+          "country": "US",
+          "first_keys": [
+            "black_american"
+          ],
+          "surname_keys": [
+            "black_american",
+            "american_general"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "US",
+          "first_keys": [
+            "asian_american"
+          ],
+          "surname_keys": [
+            "chinese",
+            "korean",
+            "vietnamese",
+            "filipino",
+            "japanese",
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.11,
+          "country": "US",
+          "first_keys": [
+            "latino_hispanic"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "spanish"
+          ]
+        }
+      ]
     },
-    {
-     "weight": 0.18,
-     "country": "PL",
-     "first_keys": [
-      "polish"
-     ],
-     "surname_keys": [
-      "polish"
-     ]
+    "canada": {
+      "subregions": [
+        {
+          "weight": 0.72,
+          "country": "CA",
+          "first_keys": [
+            "canadian_english"
+          ],
+          "surname_keys": [
+            "american_general",
+            "uk_european"
+          ]
+        },
+        {
+          "weight": 0.28,
+          "country": "CA",
+          "first_keys": [
+            "canadian_french"
+          ],
+          "surname_keys": [
+            "canadian_french"
+          ]
+        }
+      ],
+      "diaspora": {
+        "china": 0.22,
+        "south_asia": 0.22,
+        "caribbean_cricket": 0.13,
+        "philippines": 0.1,
+        "hong_kong": 0.07,
+        "italy": 0.09,
+        "ukraine": 0.09,
+        "lebanon": 0.08
+      }
     },
-    {
-     "weight": 0.12,
-     "country": "RU",
-     "first_keys": [
-      "russian"
-     ],
-     "surname_keys": [
-      "russian"
-     ]
+    "latin_america": {
+      "_doc": [
+        "Subregioned by country so each youth-league nation pins to a",
+        "country-flavored pool via make_country_pinned_picker. Subregion",
+        "weights mirror the prior country_weights so the broad pro-league",
+        "use of latin_america: 1.0 keeps its country mix.",
+        "PR pulls from the curated puerto_rican pool (see male_first /",
+        "surnames JSON); the rest currently share latino_hispanic +",
+        "latin_american pending per-country curation."
+      ],
+      "label": "Latin America",
+      "subregions": [
+        {
+          "weight": 0.3,
+          "country": "DO",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "VE",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "CU",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "PR",
+          "first_keys": [
+            "puerto_rican"
+          ],
+          "surname_keys": [
+            "puerto_rican",
+            "latino_hispanic"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "MX",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "CO",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "PA",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "NI",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        }
+      ]
     },
-    {
-     "weight": 0.1,
-     "country": "UA",
-     "first_keys": [
-      "ukrainian"
-     ],
-     "surname_keys": [
-      "ukrainian"
-     ]
+    "south_america": {
+      "_doc": [
+        "ARGENTINA + BRAZIL are the secondary 'non-baseball powerhouse' axis.",
+        "Football-built athletic infrastructure redirects to O27, scouts arrive",
+        "before MLB saturates. Top-10 by player count, not per-capita —",
+        "their dominance comes from population scale, not the structural",
+        "over-production seen in Guyana/Trinidad.",
+        "",
+        "Brazilian sub-pools deliberately surface hyphenated naming patterns",
+        "(Yamamoto-Costa, Bauer-Silva) that are genuinely distinct from",
+        "generic 'Latin American' MLB naming."
+      ],
+      "label": "South America (non-baseball powerhouses)",
+      "subregions": [
+        {
+          "weight": 0.18,
+          "country": "AR",
+          "first_keys": [
+            "argentinian",
+            "spanish",
+            "italian"
+          ],
+          "surname_keys": [
+            "argentinian"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "AR",
+          "first_keys": [
+            "argentinian_german",
+            "argentinian"
+          ],
+          "surname_keys": [
+            "argentinian_german"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "portuguese"
+          ],
+          "surname_keys": [
+            "brazilian_portuguese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "italian"
+          ],
+          "surname_keys": [
+            "brazilian_italian"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "BR",
+          "first_keys": [
+            "brazilian_japanese"
+          ],
+          "surname_keys": [
+            "brazilian_japanese"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "german"
+          ],
+          "surname_keys": [
+            "brazilian_german"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "arabic"
+          ],
+          "surname_keys": [
+            "brazilian_lebanese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "CL",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american",
+            "spanish"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "PE",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american",
+            "spanish"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "CO",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american",
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american",
+            "spanish"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "VE",
+          "first_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ],
+          "surname_keys": [
+            "latino_hispanic",
+            "latin_american"
+          ]
+        }
+      ]
     },
-    {
-     "weight": 0.08,
-     "country": "HU",
-     "first_keys": [
-      "hungarian"
-     ],
-     "surname_keys": [
-      "hungarian"
-     ]
+    "south_asia": {
+      "label": "South Asia (cricket pipeline)",
+      "subregions": [
+        {
+          "weight": 0.2,
+          "country": "IN",
+          "first_keys": [
+            "indian_north"
+          ],
+          "surname_keys": [
+            "indian_north"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "IN",
+          "first_keys": [
+            "indian_punjabi_sikh",
+            "indian_north"
+          ],
+          "surname_keys": [
+            "indian_punjabi_sikh"
+          ]
+        },
+        {
+          "weight": 0.16,
+          "country": "IN",
+          "first_keys": [
+            "indian_south"
+          ],
+          "surname_keys": [
+            "indian_south_tamil",
+            "indian_south_telugu",
+            "indian_south_kannada"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "IN",
+          "first_keys": [
+            "indian_west"
+          ],
+          "surname_keys": [
+            "indian_west_marathi",
+            "indian_west_gujarati"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "IN",
+          "first_keys": [
+            "indian_east"
+          ],
+          "surname_keys": [
+            "indian_east"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "PK",
+          "first_keys": [
+            "pakistani"
+          ],
+          "surname_keys": [
+            "pakistani"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "BD",
+          "first_keys": [
+            "bangladeshi"
+          ],
+          "surname_keys": [
+            "bangladeshi"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "LK",
+          "first_keys": [
+            "sri_lankan_sinhalese"
+          ],
+          "surname_keys": [
+            "sri_lankan_sinhalese"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "LK",
+          "first_keys": [
+            "sri_lankan_tamil"
+          ],
+          "surname_keys": [
+            "sri_lankan_tamil"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "NP",
+          "first_keys": [
+            "nepali"
+          ],
+          "surname_keys": [
+            "nepali"
+          ]
+        }
+      ]
     },
-    {
-     "weight": 0.05,
-     "country": "SK",
-     "first_keys": [
-      "slovak"
-     ],
-     "surname_keys": [
-      "slovak"
-     ]
+    "east_asia": {
+      "label": "East Asia",
+      "_note": [
+        "Decomposed into culturally cohesive subregions so a Japanese player",
+        "draws Japanese first + Japanese surname, not the cross-pollinated",
+        "'Yamamoto Kim' shape the old flat region produced. JP is the launch",
+        "market of O27 and stays the largest single subregion."
+      ],
+      "subregions": [
+        {
+          "weight": 0.45,
+          "country": "JP",
+          "first_keys": [
+            "japanese"
+          ],
+          "surname_keys": [
+            "japanese"
+          ]
+        },
+        {
+          "weight": 0.32,
+          "country": "KR",
+          "first_keys": [
+            "korean"
+          ],
+          "surname_keys": [
+            "korean"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "TW",
+          "first_keys": [
+            "chinese_taiwanese"
+          ],
+          "surname_keys": [
+            "chinese_taiwanese"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "CN",
+          "first_keys": [
+            "chinese"
+          ],
+          "surname_keys": [
+            "chinese"
+          ]
+        }
+      ]
     },
-    {
-     "weight": 0.03,
-     "country": "RO",
-     "first_keys": [
-      "romanian"
-     ],
-     "surname_keys": [
-      "romanian"
-     ]
+    "anzac": {
+      "label": "Australia / New Zealand",
+      "subregions": [
+        {
+          "weight": 0.5,
+          "country": "AU",
+          "first_keys": [
+            "anglo_australian"
+          ],
+          "surname_keys": [
+            "anglo_australian"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "AU",
+          "first_keys": [
+            "aboriginal_australian",
+            "anglo_australian"
+          ],
+          "surname_keys": [
+            "anglo_australian"
+          ]
+        },
+        {
+          "weight": 0.3,
+          "country": "NZ",
+          "first_keys": [
+            "anglo_nz"
+          ],
+          "surname_keys": [
+            "anglo_nz"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "NZ",
+          "first_keys": [
+            "maori",
+            "anglo_nz"
+          ],
+          "surname_keys": [
+            "maori",
+            "anglo_nz"
+          ]
+        }
+      ],
+      "diaspora": {
+        "china": 0.2,
+        "south_asia": 0.16,
+        "greece": 0.12,
+        "italy": 0.12,
+        "southeast_asia": 0.12,
+        "lebanon": 0.09,
+        "philippines": 0.1,
+        "croatia": 0.09
+      }
     },
-    {
-     "weight": 0.02,
-     "country": "BG",
-     "first_keys": [
-      "bulgarian"
-     ],
-     "surname_keys": [
-      "bulgarian"
-     ]
+    "pacific_islands": {
+      "_doc": [
+        "Indo-Fijian is the THIRD cricket-conversion country (after Guyana",
+        "and Trinidad) — Indo-Fijians have a separate cricket pipeline,",
+        "underutilised by the West Indies / Asia structure, that O27",
+        "reroutes. Held to ~0.18 of the region (smaller than native Fijian",
+        "by population but high per-capita talent yield, mirroring the",
+        "GY/TT pattern). Native Fijian, Samoan, Tongan, and Papuan",
+        "subregions decompose what was previously a flat pacific_islander",
+        "draw. Guam (Chamorro), American Samoa (reusing the Samoan pool)",
+        "and Hawaii (Native Hawaiian + Portuguese/Asian-American island",
+        "blend) extend the region into the real US-affiliated baseball",
+        "pipeline. Hawaii carries country code US — it is a US state, not",
+        "a separate nation."
+      ],
+      "label": "Pacific Islands",
+      "subregions": [
+        {
+          "weight": 0.22,
+          "country": "FJ",
+          "first_keys": [
+            "fijian",
+            "pacific_islander"
+          ],
+          "surname_keys": [
+            "fijian",
+            "pacific_islander"
+          ]
+        },
+        {
+          "weight": 0.14,
+          "country": "FJ",
+          "first_keys": [
+            "indo_fijian"
+          ],
+          "surname_keys": [
+            "indo_fijian"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "WS",
+          "first_keys": [
+            "samoan",
+            "pacific_islander"
+          ],
+          "surname_keys": [
+            "samoan",
+            "pacific_islander"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "TO",
+          "first_keys": [
+            "tongan",
+            "pacific_islander"
+          ],
+          "surname_keys": [
+            "tongan",
+            "pacific_islander"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "PG",
+          "first_keys": [
+            "papuan_melanesian",
+            "pacific_islander"
+          ],
+          "surname_keys": [
+            "papuan_melanesian",
+            "pacific_islander"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "AS",
+          "first_keys": [
+            "samoan",
+            "pacific_islander"
+          ],
+          "surname_keys": [
+            "samoan",
+            "pacific_islander"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "US",
+          "first_keys": [
+            "hawaiian"
+          ],
+          "surname_keys": [
+            "hawaiian"
+          ]
+        }
+      ]
+    },
+    "caribbean_dutch": {
+      "_doc": [
+        "Dutch Caribbean — Curaçao/Aruba (Papiamento blend, real baseball",
+        "pedigree: Bogaerts, Profar, Jansen) and Suriname (Dutch +",
+        "Javanese + Hindustani + Maroon — arguably the most ethnically",
+        "diverse naming pool in the hemisphere). Distinct from the",
+        "Anglophone caribbean_cricket region: different language, different",
+        "pipeline, different naming conventions."
+      ],
+      "label": "Caribbean (Dutch)",
+      "subregions": [
+        {
+          "weight": 0.4,
+          "country": "CW",
+          "first_keys": [
+            "curacao_papiamento"
+          ],
+          "surname_keys": [
+            "curacao_papiamento"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "AW",
+          "first_keys": [
+            "curacao_papiamento"
+          ],
+          "surname_keys": [
+            "aruban_papiamento",
+            "curacao_papiamento"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_hindustani"
+          ],
+          "surname_keys": [
+            "surinamese_hindustani"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_javanese"
+          ],
+          "surname_keys": [
+            "surinamese_javanese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_maroon",
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "surinamese_maroon",
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_dutch",
+            "dutch"
+          ],
+          "surname_keys": [
+            "surinamese_dutch",
+            "dutch"
+          ]
+        }
+      ]
+    },
+    "caribbean_cricket": {
+      "_doc": [
+        "GUYANA + TRINIDAD are the dual axis. Combined they hold 0.72 of",
+        "the region's mass — disproportionate to their populations relative",
+        "to JM/BB/AG, but matching the O27 thesis: the Indo-Caribbean cricket",
+        "pipeline is the highest-density talent producer in the league per",
+        "capita. Trinidad is decomposed into Indo / Afro / Chinese / Lebanese",
+        "subregions to reflect the country's actual demographic spread, which",
+        "is more complex than Guyana's bi-ethnic split."
+      ],
+      "label": "Caribbean (Cricket Anglophone)",
+      "subregions": [
+        {
+          "weight": 0.26,
+          "country": "GY",
+          "first_keys": [
+            "indo_guyanese"
+          ],
+          "surname_keys": [
+            "indo_guyanese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "GY",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_guyanese",
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "TT",
+          "first_keys": [
+            "indo_trinidadian"
+          ],
+          "surname_keys": [
+            "indo_trinidadian"
+          ]
+        },
+        {
+          "weight": 0.11,
+          "country": "TT",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_trinidadian",
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "TT",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "chinese_trinidadian"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "TT",
+          "first_keys": [
+            "arabic"
+          ],
+          "surname_keys": [
+            "lebanese_trinidadian"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "JM",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "BB",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "AG",
+          "first_keys": [
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_caribbean"
+          ]
+        }
+      ]
+    },
+    "british_isles": {
+      "label": "Britain & Ireland",
+      "subregions": [
+        {
+          "weight": 0.5,
+          "country": "GB",
+          "first_keys": [
+            "english_general"
+          ],
+          "surname_keys": [
+            "english_general"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "GB",
+          "first_keys": [
+            "scottish"
+          ],
+          "surname_keys": [
+            "scottish"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "GB",
+          "first_keys": [
+            "welsh"
+          ],
+          "surname_keys": [
+            "welsh"
+          ]
+        },
+        {
+          "weight": 0.25,
+          "country": "IE",
+          "first_keys": [
+            "irish"
+          ],
+          "surname_keys": [
+            "irish"
+          ]
+        }
+      ],
+      "diaspora": {
+        "south_asia": 0.4,
+        "caribbean_cricket": 0.18,
+        "poland": 0.14,
+        "china": 0.06,
+        "north_africa": 0.06,
+        "west_africa": 0.12,
+        "east_africa": 0.04
+      }
+    },
+    "afghan_central_asia": {
+      "label": "Afghanistan / Central Asia",
+      "subregions": [
+        {
+          "weight": 0.55,
+          "country": "AF",
+          "first_keys": [
+            "pashto"
+          ],
+          "surname_keys": [
+            "pashto"
+          ]
+        },
+        {
+          "weight": 0.3,
+          "country": "AF",
+          "first_keys": [
+            "dari"
+          ],
+          "surname_keys": [
+            "dari"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "UZ",
+          "first_keys": [
+            "uzbek"
+          ],
+          "surname_keys": [
+            "uzbek"
+          ]
+        }
+      ]
+    },
+    "malaysia": {
+      "label": "Malaysia (the structural growth market)",
+      "subregions": [
+        {
+          "weight": 0.55,
+          "country": "MY",
+          "first_keys": [
+            "malay"
+          ],
+          "surname_keys": [
+            "malay"
+          ]
+        },
+        {
+          "weight": 0.3,
+          "country": "MY",
+          "first_keys": [
+            "chinese_malaysian"
+          ],
+          "surname_keys": [
+            "chinese_malaysian"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "MY",
+          "first_keys": [
+            "indian_malaysian"
+          ],
+          "surname_keys": [
+            "indian_malaysian"
+          ]
+        }
+      ]
+    },
+    "europe_western": {
+      "subregions": [
+        {
+          "weight": 0.25,
+          "country": "DE",
+          "first_keys": [
+            "german"
+          ],
+          "surname_keys": [
+            "german"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "FR",
+          "first_keys": [
+            "french"
+          ],
+          "surname_keys": [
+            "french"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "NL",
+          "first_keys": [
+            "dutch"
+          ],
+          "surname_keys": [
+            "dutch"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "IT",
+          "first_keys": [
+            "italian"
+          ],
+          "surname_keys": [
+            "italian"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "ES",
+          "first_keys": [
+            "spanish"
+          ],
+          "surname_keys": [
+            "spanish"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "PT",
+          "first_keys": [
+            "portuguese"
+          ],
+          "surname_keys": [
+            "portuguese"
+          ]
+        }
+      ]
+    },
+    "europe_eastern": {
+      "_doc": [
+        "CZECH REPUBLIC is the European baseball powerhouse — real-world",
+        "Czech baseball has been the breakout story (WBC 2023 qualification,",
+        "growing MLB-org presence). In O27 fiction the trend accelerates:",
+        "European football academies redirect to baseball faster in CZ than",
+        "anywhere else on the continent, and Czech players become the",
+        "single largest non-Anglophone European feeder. CZ holds 0.42 of",
+        "the region — more than PL+RU combined.",
+        "",
+        "Other subregions decompose Eastern Europe properly: Ukraine,",
+        "Hungary, Slovakia, Romania, Bulgaria. Russia retained but",
+        "reduced — a real but secondary pipeline."
+      ],
+      "label": "Eastern Europe",
+      "subregions": [
+        {
+          "weight": 0.42,
+          "country": "CZ",
+          "first_keys": [
+            "czech"
+          ],
+          "surname_keys": [
+            "czech"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "PL",
+          "first_keys": [
+            "polish"
+          ],
+          "surname_keys": [
+            "polish"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "RU",
+          "first_keys": [
+            "russian"
+          ],
+          "surname_keys": [
+            "russian"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "UA",
+          "first_keys": [
+            "ukrainian"
+          ],
+          "surname_keys": [
+            "ukrainian"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "HU",
+          "first_keys": [
+            "hungarian"
+          ],
+          "surname_keys": [
+            "hungarian"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "SK",
+          "first_keys": [
+            "slovak"
+          ],
+          "surname_keys": [
+            "slovak"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "RO",
+          "first_keys": [
+            "romanian"
+          ],
+          "surname_keys": [
+            "romanian"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "BG",
+          "first_keys": [
+            "bulgarian"
+          ],
+          "surname_keys": [
+            "bulgarian"
+          ]
+        }
+      ]
+    },
+    "nordic": {
+      "_doc": [
+        "Full national breakout: Sweden / Finland / Norway / Denmark each",
+        "draw from their own distinct given+surname pools (the -sson, -nen",
+        "and -sen patronymic belts are kept separate) rather than a single",
+        "blended Scandinavian pool. Weights match the old country split."
+      ],
+      "label": "Nordic",
+      "subregions": [
+        {
+          "weight": 0.3,
+          "country": "SE",
+          "first_keys": [
+            "swedish"
+          ],
+          "surname_keys": [
+            "swedish"
+          ]
+        },
+        {
+          "weight": 0.3,
+          "country": "FI",
+          "first_keys": [
+            "finnish"
+          ],
+          "surname_keys": [
+            "finnish"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "NO",
+          "first_keys": [
+            "norwegian"
+          ],
+          "surname_keys": [
+            "norwegian"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "DK",
+          "first_keys": [
+            "danish"
+          ],
+          "surname_keys": [
+            "danish"
+          ]
+        }
+      ],
+      "diaspora": {
+        "europe_southeast": 0.28,
+        "lebanon": 0.22,
+        "iran": 0.18,
+        "turkey": 0.14,
+        "east_africa": 0.18
+      }
+    },
+    "southeast_asia": {
+      "_note": [
+        "Decomposed into culturally cohesive subregions. The Philippines",
+        "is no longer a subregion here — it was promoted to its own",
+        "top-level `philippines` region (six cultural subregions). This",
+        "region now covers mainland + maritime SE Asia: Vietnam, Thailand,",
+        "Indonesia, Singapore (Chinese + Malay), Myanmar (mononymic",
+        "Burmese), Laos, Cambodia and Brunei (reusing the malay pool)."
+      ],
+      "label": "Southeast Asia",
+      "subregions": [
+        {
+          "weight": 0.3,
+          "country": "VN",
+          "first_keys": [
+            "vietnamese"
+          ],
+          "surname_keys": [
+            "vietnamese"
+          ]
+        },
+        {
+          "weight": 0.22,
+          "country": "TH",
+          "first_keys": [
+            "thai"
+          ],
+          "surname_keys": [
+            "thai"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "ID",
+          "first_keys": [
+            "indonesian"
+          ],
+          "surname_keys": [
+            "indonesian"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "SG",
+          "first_keys": [
+            "singaporean_chinese"
+          ],
+          "surname_keys": [
+            "chinese_malaysian"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "SG",
+          "first_keys": [
+            "malay"
+          ],
+          "surname_keys": [
+            "malay"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "MM",
+          "first_keys": [
+            "burmese"
+          ],
+          "surname_keys": [
+            "burmese"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "LA",
+          "first_keys": [
+            "lao"
+          ],
+          "surname_keys": [
+            "lao"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "KH",
+          "first_keys": [
+            "cambodian"
+          ],
+          "surname_keys": [
+            "cambodian"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "BN",
+          "first_keys": [
+            "malay"
+          ],
+          "surname_keys": [
+            "malay"
+          ]
+        }
+      ]
+    },
+    "philippines": {
+      "_doc": [
+        "Promoted from a single Spanish-colonial subregion of southeast_asia",
+        "to a full region. Filipino naming is Spanish-Catholic surnames over",
+        "Tagalog/regional given names — but the country is not monolithic:",
+        "Visayan and Ilocano lines carry distinct surname pools, the",
+        "Chinese-Filipino (Chinoy) community uses Hokkien-derived surnames",
+        "with mostly Western given names, the old landed Spanish-mestizo",
+        "families surface peninsular Spanish surnames, and Muslim Mindanao",
+        "(Maranao/Tausug/Maguindanao) is a wholly separate naming world.",
+        "Weights are a rough demographic split, not a baseball-talent claim."
+      ],
+      "label": "Philippines",
+      "subregions": [
+        {
+          "weight": 0.34,
+          "country": "PH",
+          "first_keys": [
+            "filipino"
+          ],
+          "surname_keys": [
+            "filipino"
+          ]
+        },
+        {
+          "weight": 0.24,
+          "country": "PH",
+          "first_keys": [
+            "filipino"
+          ],
+          "surname_keys": [
+            "filipino_visayan",
+            "filipino"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "PH",
+          "first_keys": [
+            "filipino"
+          ],
+          "surname_keys": [
+            "filipino_ilocano",
+            "filipino"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "PH",
+          "first_keys": [
+            "filipino_chinese",
+            "filipino"
+          ],
+          "surname_keys": [
+            "filipino_chinese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "PH",
+          "first_keys": [
+            "filipino"
+          ],
+          "surname_keys": [
+            "spanish",
+            "filipino"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "PH",
+          "first_keys": [
+            "filipino_muslim"
+          ],
+          "surname_keys": [
+            "filipino_muslim"
+          ]
+        }
+      ]
+    },
+    "central_west_asia": {
+      "subregions": [
+        {
+          "weight": 0.45,
+          "country": "TR",
+          "first_keys": [
+            "turkish"
+          ],
+          "surname_keys": [
+            "turkish"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "SA",
+          "first_keys": [
+            "arabic"
+          ],
+          "surname_keys": [
+            "arabic"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "IR",
+          "first_keys": [
+            "iranian"
+          ],
+          "surname_keys": [
+            "iranian"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "EG",
+          "first_keys": [
+            "egyptian"
+          ],
+          "surname_keys": [
+            "egyptian"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "KZ",
+          "first_keys": [
+            "central_asian"
+          ],
+          "surname_keys": [
+            "central_asian"
+          ]
+        }
+      ]
+    },
+    "gulf_cricket": {
+      "_doc": [
+        "UAE & Oman associate-cricket sides are overwhelmingly South-Asian",
+        "expat communities (Indian + Pakistani) with a thin native-Emirati/",
+        "Omani Arab tail. Reuses the existing south-Asian and Arabic pools",
+        "rather than minting new buckets — the demographic IS the diaspora."
+      ],
+      "label": "Gulf (expat cricket)",
+      "subregions": [
+        {
+          "weight": 0.35,
+          "country": "AE",
+          "first_keys": [
+            "indian_north"
+          ],
+          "surname_keys": [
+            "indian_north"
+          ]
+        },
+        {
+          "weight": 0.25,
+          "country": "AE",
+          "first_keys": [
+            "pakistani"
+          ],
+          "surname_keys": [
+            "pakistani"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "AE",
+          "first_keys": [
+            "arabic"
+          ],
+          "surname_keys": [
+            "arabic"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "OM",
+          "first_keys": [
+            "indian_south"
+          ],
+          "surname_keys": [
+            "indian_south_tamil",
+            "indian_south_telugu"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "OM",
+          "first_keys": [
+            "pakistani"
+          ],
+          "surname_keys": [
+            "pakistani"
+          ]
+        }
+      ]
+    },
+    "israel": {
+      "_doc": [
+        "Real WBC baseball nation (qualified 2017 & 2023). Native Israeli",
+        "Hebrew given names + the Sephardi/Mizrahi/Ashkenazi surname blend."
+      ],
+      "label": "Israel",
+      "country": "IL",
+      "first_keys": [
+        "israeli"
+      ],
+      "surname_keys": [
+        "israeli"
+      ],
+      "diaspora": {
+        "russia": 0.42,
+        "north_africa": 0.26,
+        "france": 0.1,
+        "iran": 0.1,
+        "east_africa": 0.12
+      }
+    },
+    "netherlands": {
+      "_doc": [
+        "Established European baseball nation (Hoofdklasse, multiple WBC",
+        "appearances). Promoted out of the flat europe_western pool so a",
+        "Netherlands national side draws Dutch names tagged NL rather than",
+        "the mixed German/French/Spanish blend."
+      ],
+      "label": "Netherlands",
+      "country": "NL",
+      "first_keys": [
+        "dutch"
+      ],
+      "surname_keys": [
+        "dutch"
+      ],
+      "diaspora": {
+        "indonesia": 0.3,
+        "suriname": 0.2,
+        "north_africa": 0.22,
+        "turkey": 0.2,
+        "curacao": 0.08
+      }
+    },
+    "italy": {
+      "_doc": [
+        "Established European baseball nation (Serie A1, WBC regular).",
+        "Promoted out of europe_western so an Italy national side draws",
+        "Italian names tagged IT."
+      ],
+      "label": "Italy",
+      "country": "IT",
+      "first_keys": [
+        "italian"
+      ],
+      "surname_keys": [
+        "italian"
+      ],
+      "diaspora": {
+        "albania": 0.28,
+        "romania": 0.28,
+        "north_africa": 0.24,
+        "ukraine": 0.1,
+        "china": 0.1
+      }
+    },
+    "finland": {
+      "_doc": [
+        "Home of pesäpallo (Finnish baseball). Dedicated Finnish given/",
+        "family-name pool (the -nen surname belt: Virtanen, Korhonen,",
+        "Mäkinen), distinct from the Scandinavian neighbours."
+      ],
+      "label": "Finland",
+      "country": "FI",
+      "first_keys": [
+        "finnish"
+      ],
+      "surname_keys": [
+        "finnish"
+      ]
+    },
+    "sweden": {
+      "_doc": [
+        "Swedish national pool — the -sson patronymic belt (Andersson,",
+        "Johansson, Karlsson)."
+      ],
+      "label": "Sweden",
+      "country": "SE",
+      "first_keys": [
+        "swedish"
+      ],
+      "surname_keys": [
+        "swedish"
+      ],
+      "diaspora": {
+        "europe_southeast": 0.28,
+        "iran": 0.2,
+        "lebanon": 0.18,
+        "turkey": 0.16,
+        "east_africa": 0.18
+      }
+    },
+    "norway": {
+      "_doc": [
+        "Norwegian national pool — the -sen patronymic belt (Hansen,",
+        "Johansen, Olsen) with the ø/å given names."
+      ],
+      "label": "Norway",
+      "country": "NO",
+      "first_keys": [
+        "norwegian"
+      ],
+      "surname_keys": [
+        "norwegian"
+      ],
+      "diaspora": {
+        "poland": 0.3,
+        "europe_southeast": 0.24,
+        "south_asia": 0.16,
+        "lebanon": 0.12,
+        "east_africa": 0.18
+      }
+    },
+    "denmark": {
+      "_doc": [
+        "Danish national pool — the -sen belt (Jensen, Nielsen, Hansen)."
+      ],
+      "label": "Denmark",
+      "country": "DK",
+      "first_keys": [
+        "danish"
+      ],
+      "surname_keys": [
+        "danish"
+      ],
+      "diaspora": {
+        "turkey": 0.28,
+        "europe_southeast": 0.26,
+        "north_africa": 0.18,
+        "poland": 0.18,
+        "lebanon": 0.1
+      }
+    },
+    "haiti": {
+      "_doc": [
+        "The 'Puerto Rico of O27' — shares Hispaniola with the baseball-mad",
+        "Dominican Republic, so the same island pipeline feeds a distinct",
+        "Francophone naming world: French/Haitian-Creole given names over",
+        "French + saint-prefixed surnames (Saint-Fleur, Jean-Baptiste, Désir)."
+      ],
+      "label": "Haiti",
+      "country": "HT",
+      "first_keys": [
+        "haitian"
+      ],
+      "surname_keys": [
+        "haitian"
+      ]
+    },
+    "curacao": {
+      "_doc": [
+        "Dutch-Caribbean baseball powerhouse (Bogaerts, Profar, Jansen).",
+        "Promoted out of caribbean_dutch to its own Papiamento pool."
+      ],
+      "label": "Curacao",
+      "country": "CW",
+      "first_keys": [
+        "curacao_papiamento"
+      ],
+      "surname_keys": [
+        "curacao_papiamento"
+      ]
+    },
+    "aruba": {
+      "_doc": [
+        "Dutch-Caribbean baseball nation alongside Curacao. Papiamento",
+        "given names with the Aruban surname set (Croes, Tromp, Maduro)."
+      ],
+      "label": "Aruba",
+      "country": "AW",
+      "first_keys": [
+        "aruban_papiamento"
+      ],
+      "surname_keys": [
+        "aruban_papiamento",
+        "curacao_papiamento"
+      ]
+    },
+    "suriname": {
+      "_doc": [
+        "The most ethnically diverse naming pool in the hemisphere:",
+        "Hindustani, Javanese, Maroon and Dutch-Creole lines, each with",
+        "its own given/surname set. Promoted out of caribbean_dutch."
+      ],
+      "label": "Suriname",
+      "subregions": [
+        {
+          "weight": 0.37,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_hindustani"
+          ],
+          "surname_keys": [
+            "surinamese_hindustani"
+          ]
+        },
+        {
+          "weight": 0.25,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_javanese"
+          ],
+          "surname_keys": [
+            "surinamese_javanese"
+          ]
+        },
+        {
+          "weight": 0.23,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_maroon",
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "surinamese_maroon",
+            "afro_caribbean"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "SR",
+          "first_keys": [
+            "surinamese_dutch",
+            "dutch"
+          ],
+          "surname_keys": [
+            "surinamese_dutch",
+            "dutch"
+          ]
+        }
+      ]
+    },
+    "guyana": {
+      "_doc": [
+        "Anglophone South American cricket nation, bi-ethnic Indo-Guyanese",
+        "and Afro-Guyanese split. Promoted out of caribbean_cricket to its",
+        "own region."
+      ],
+      "label": "Guyana",
+      "subregions": [
+        {
+          "weight": 0.62,
+          "country": "GY",
+          "first_keys": [
+            "indo_guyanese"
+          ],
+          "surname_keys": [
+            "indo_guyanese"
+          ]
+        },
+        {
+          "weight": 0.38,
+          "country": "GY",
+          "first_keys": [
+            "afro_guyanese",
+            "afro_caribbean"
+          ],
+          "surname_keys": [
+            "afro_guyanese",
+            "afro_caribbean"
+          ]
+        }
+      ]
+    },
+    "guam": {
+      "_doc": [
+        "Pacific CHamoru name pool. Spanish-colonial surnames over CHamoru/",
+        "Western given names. NOTE: Guam is a US TERRITORY here, not a standalone",
+        "nationality — it is generated as a US dual-citizen origin (like Puerto",
+        "Rico / US Virgin Islands) via app/juniors.US_STATES, and this region only",
+        "backs the Chamorro name picker for those recruits. It is force-excluded",
+        "from the international mix by worldconfig._HIDDEN_REGIONS. Do NOT re-add",
+        "'guam' to any nationality preset/_CONTINENTS, and do NOT add a GU subregion",
+        "to pacific_islands (that would leak Guam back into the international pool,",
+        "where generate_class would convert it to a domestic recruit)."
+      ],
+      "label": "Guam",
+      "country": "GU",
+      "first_keys": [
+        "chamorro"
+      ],
+      "surname_keys": [
+        "chamorro"
+      ]
+    },
+    "indonesia": {
+      "_doc": [
+        "Southeast Asian growth market. Indonesian given/family names."
+      ],
+      "label": "Indonesia",
+      "country": "ID",
+      "first_keys": [
+        "indonesian"
+      ],
+      "surname_keys": [
+        "indonesian"
+      ]
+    },
+    "thailand": {
+      "_doc": [
+        "Southeast Asian baseball/softball nation. Thai given/family names."
+      ],
+      "label": "Thailand",
+      "country": "TH",
+      "first_keys": [
+        "thai"
+      ],
+      "surname_keys": [
+        "thai"
+      ]
+    },
+    "europe_southeast": {
+      "_doc": [
+        "Emerging European baseball nations outside the established DE/NL/",
+        "IT/CZ core: Greece (long-standing federation, 2004-Olympics host),",
+        "Croatia and Slovenia."
+      ],
+      "label": "Southeast Europe (emerging baseball)",
+      "subregions": [
+        {
+          "weight": 0.45,
+          "country": "GR",
+          "first_keys": [
+            "greek"
+          ],
+          "surname_keys": [
+            "greek"
+          ]
+        },
+        {
+          "weight": 0.35,
+          "country": "HR",
+          "first_keys": [
+            "croatian"
+          ],
+          "surname_keys": [
+            "croatian"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "SI",
+          "first_keys": [
+            "slovenian"
+          ],
+          "surname_keys": [
+            "slovenian"
+          ]
+        }
+      ]
+    },
+    "brazil": {
+      "_doc": [
+        "Promoted out of south_america to its own region. Brazil's distinctive",
+        "naming is the hyphenated immigrant blend — Japanese-Brazilian,",
+        "Italian-Brazilian, German-Brazilian and Lebanese-Brazilian lines",
+        "(Yamamoto-Costa, Bauer-Silva) layered over the Portuguese base — which",
+        "is genuinely distinct from generic MLB-shaped Latin American naming.",
+        "Subregion weights are the south_america BR subregions renormalised to 1.0."
+      ],
+      "label": "Brazil",
+      "subregions": [
+        {
+          "weight": 0.46,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "portuguese"
+          ],
+          "surname_keys": [
+            "brazilian_portuguese"
+          ]
+        },
+        {
+          "weight": 0.23,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "italian"
+          ],
+          "surname_keys": [
+            "brazilian_italian"
+          ]
+        },
+        {
+          "weight": 0.16,
+          "country": "BR",
+          "first_keys": [
+            "brazilian_japanese"
+          ],
+          "surname_keys": [
+            "brazilian_japanese"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "german"
+          ],
+          "surname_keys": [
+            "brazilian_german"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "BR",
+          "first_keys": [
+            "brazilian",
+            "arabic"
+          ],
+          "surname_keys": [
+            "brazilian_lebanese"
+          ]
+        }
+      ],
+      "diaspora": {
+        "japan": 0.24,
+        "italy": 0.26,
+        "germany": 0.16,
+        "lebanon": 0.14,
+        "poland": 0.1,
+        "spain": 0.1
+      }
+    },
+    "mexico": {
+      "_doc": [
+        "Real baseball nation (LMB summer league, LMP winter league, WBC",
+        "regular). Promoted out of the latin_america MX subregion so a Mexico",
+        "national side draws names tagged MX rather than the blended Latin",
+        "American pool."
+      ],
+      "label": "Mexico",
+      "country": "MX",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish"
+      ]
+    },
+    "cuba": {
+      "_doc": [
+        "Premier baseball nation. Promoted out of the latin_america CU",
+        "subregion (which only borrowed the generic latino_hispanic pool)",
+        "to a dedicated Cuban pool. The distinctive feature is the wave of",
+        "Y-initial given names (Yoenis, Yasiel, Yandy, Yulieski) that mark",
+        "post-1990s Cuban naming, over a Spanish + Afro-Cuban surname stock."
+      ],
+      "label": "Cuba",
+      "country": "CU",
+      "first_keys": [
+        "cuban"
+      ],
+      "surname_keys": [
+        "cuban"
+      ]
+    },
+    "dominican": {
+      "_doc": [
+        "The single largest non-US MLB feeder. Promoted out of the",
+        "latin_america DO subregion to a dedicated Dominican pool (García,",
+        "Tatís, Guerrero, Encarnación over the Vladimir/Wander/Starlin",
+        "given-name set)."
+      ],
+      "label": "Dominican Republic",
+      "country": "DO",
+      "first_keys": [
+        "dominican"
+      ],
+      "surname_keys": [
+        "dominican"
+      ]
+    },
+    "venezuela": {
+      "_doc": [
+        "Top-tier baseball nation (LVBP, second-largest MLB feeder after the",
+        "DR). Promoted out of the latin_america VE subregion to a dedicated",
+        "Venezuelan pool (Altuve, Cabrera, Aparicio, Concepción over the",
+        "Asdrúbal/Gleyber/Salvador given-name set)."
+      ],
+      "label": "Venezuela",
+      "country": "VE",
+      "first_keys": [
+        "venezuelan"
+      ],
+      "surname_keys": [
+        "venezuelan"
+      ],
+      "diaspora": {
+        "italy": 0.34,
+        "spain": 0.28,
+        "lebanon": 0.18
+      }
+    },
+    "turkey": {
+      "_doc": [
+        "Promoted out of the central_west_asia blend. Turkish given + family",
+        "names tagged TR."
+      ],
+      "label": "Turkey",
+      "country": "TR",
+      "first_keys": [
+        "turkish"
+      ],
+      "surname_keys": [
+        "turkish"
+      ]
+    },
+    "greece": {
+      "_doc": [
+        "Long-standing baseball federation (hosted the 2004 Olympic",
+        "tournament). Promoted out of europe_southeast to its own Greek pool."
+      ],
+      "label": "Greece",
+      "country": "GR",
+      "first_keys": [
+        "greek"
+      ],
+      "surname_keys": [
+        "greek"
+      ]
+    },
+    "russia": {
+      "_doc": [
+        "Promoted out of the europe_eastern blend. Russian given + family",
+        "names tagged RU."
+      ],
+      "label": "Russia",
+      "country": "RU",
+      "first_keys": [
+        "russian"
+      ],
+      "surname_keys": [
+        "russian"
+      ],
+      "diaspora": {
+        "central_west_asia": 0.34,
+        "afghan_central_asia": 0.26,
+        "georgia": 0.2,
+        "ukraine": 0.2
+      }
+    },
+    "ukraine": {
+      "_doc": [
+        "Promoted out of the europe_eastern blend. Ukrainian given + family",
+        "names tagged UA."
+      ],
+      "label": "Ukraine",
+      "country": "UA",
+      "first_keys": [
+        "ukrainian"
+      ],
+      "surname_keys": [
+        "ukrainian"
+      ]
+    },
+    "czechia": {
+      "_doc": [
+        "The European baseball powerhouse (real-world WBC 2023 qualifier and",
+        "the continent's breakout program). Promoted out of the europe_eastern",
+        "blend — where it already holds the dominant CZ subregion — to its own",
+        "Czech pool."
+      ],
+      "label": "Czech Republic",
+      "country": "CZ",
+      "first_keys": [
+        "czech"
+      ],
+      "surname_keys": [
+        "czech"
+      ]
+    },
+    "germany": {
+      "_doc": [
+        "Established amateur-baseball nation (Bundesliga + a growing MLB-org",
+        "academy presence). Promoted out of the flat europe_western pool so a",
+        "Germany side draws German names tagged DE."
+      ],
+      "label": "Germany",
+      "country": "DE",
+      "first_keys": [
+        "german"
+      ],
+      "surname_keys": [
+        "german"
+      ],
+      "diaspora": {
+        "turkey": 0.4,
+        "poland": 0.16,
+        "russia": 0.16,
+        "europe_southeast": 0.16,
+        "italy": 0.12
+      }
+    },
+    "scotland": {
+      "_doc": [
+        "Associate cricket nation with its own pathway. Promoted out of the",
+        "british_isles GB blend to a dedicated Scottish pool (Mc/Mac surnames",
+        "+ the Scottish given-name set). Carries country code GB."
+      ],
+      "label": "Scotland",
+      "country": "GB",
+      "first_keys": [
+        "scottish"
+      ],
+      "surname_keys": [
+        "scottish"
+      ]
+    },
+    "hong_kong": {
+      "_doc": [
+        "Associate cricket side and an East-Asian baseball outpost. Chinese",
+        "(Cantonese) given + family names tagged HK."
+      ],
+      "label": "Hong Kong",
+      "country": "HK",
+      "first_keys": [
+        "chinese"
+      ],
+      "surname_keys": [
+        "chinese"
+      ]
+    },
+    "bermuda": {
+      "_doc": [
+        "Atlantic cricket nation with deep pedigree (the St. George's /",
+        "Somerset Cup Match rivalry). Afro-Caribbean given + family names",
+        "over a British-colonial surname layer, tagged BM."
+      ],
+      "label": "Bermuda",
+      "country": "BM",
+      "first_keys": [
+        "afro_caribbean",
+        "english_general"
+      ],
+      "surname_keys": [
+        "afro_caribbean",
+        "english_general"
+      ]
+    },
+    "kazakhstan": {
+      "_doc": [
+        "Central-Asian frontier market. The growth thesis is the Koryo-saram",
+        "infusion: the ethnic-Korean community deported to Kazakhstan in 1937",
+        "carries the baseball culture of the East-Asian launch market inland,",
+        "seeding the sport ahead of its neighbours. Rosters blend the Kazakh",
+        "majority (the central_asian pool — Nursultan, Nazarbayev, Doszhanov)",
+        "with a deliberately over-weighted Korean wave and the large Russian-",
+        "Kazakhstani minority. All tagged KZ."
+      ],
+      "label": "Kazakhstan",
+      "subregions": [
+        {
+          "weight": 0.55,
+          "country": "KZ",
+          "first_keys": [
+            "central_asian"
+          ],
+          "surname_keys": [
+            "central_asian"
+          ]
+        },
+        {
+          "weight": 0.25,
+          "country": "KZ",
+          "first_keys": [
+            "korean"
+          ],
+          "surname_keys": [
+            "korean"
+          ]
+        },
+        {
+          "weight": 0.2,
+          "country": "KZ",
+          "first_keys": [
+            "russian"
+          ],
+          "surname_keys": [
+            "russian"
+          ]
+        }
+      ]
+    },
+    "croatia": {
+      "_doc": [
+        "European baseball nation (best Euro finish 7th, 2021). Promoted out",
+        "of the europe_southeast blend to its own Croatian pool."
+      ],
+      "label": "Croatia",
+      "country": "HR",
+      "first_keys": [
+        "croatian"
+      ],
+      "surname_keys": [
+        "croatian"
+      ]
+    },
+    "serbia": {
+      "_doc": [
+        "A tennis powerhouse far out of proportion to its size (Djokovic,",
+        "Jankovic, Ivanovic, Tipsarevic). Own curated Serbian first/surname",
+        "pool, keyed to RS."
+      ],
+      "label": "Serbia",
+      "country": "RS",
+      "first_keys": [
+        "serbian"
+      ],
+      "surname_keys": [
+        "serbian"
+      ]
+    },
+    "slovenia": {
+      "_doc": [
+        "Emerging European baseball nation (Euro debut 10th, 1995). Promoted",
+        "out of the europe_southeast blend to its own Slovenian pool."
+      ],
+      "label": "Slovenia",
+      "country": "SI",
+      "first_keys": [
+        "slovenian"
+      ],
+      "surname_keys": [
+        "slovenian"
+      ]
+    },
+    "hungary": {
+      "_doc": [
+        "Emerging European baseball nation. Promoted out of the europe_eastern",
+        "blend so a Hungary side draws Magyar (surname-first in life, rendered",
+        "given-surname here) names tagged HU."
+      ],
+      "label": "Hungary",
+      "country": "HU",
+      "first_keys": [
+        "hungarian"
+      ],
+      "surname_keys": [
+        "hungarian"
+      ]
+    },
+    "slovakia": {
+      "_doc": [
+        "Emerging European baseball nation. Promoted out of the europe_eastern",
+        "blend to its own Slovak pool, tagged SK."
+      ],
+      "label": "Slovakia",
+      "country": "SK",
+      "first_keys": [
+        "slovak"
+      ],
+      "surname_keys": [
+        "slovak"
+      ]
+    },
+    "austria": {
+      "_doc": [
+        "European baseball nation (Euro 9th, 2025). German given + family",
+        "names tagged AT, distinct from the Germany pool only by country code."
+      ],
+      "label": "Austria",
+      "country": "AT",
+      "first_keys": [
+        "german"
+      ],
+      "surname_keys": [
+        "german"
+      ],
+      "diaspora": {
+        "europe_southeast": 0.45,
+        "turkey": 0.35,
+        "poland": 0.2
+      }
+    },
+    "san_marino": {
+      "_doc": [
+        "European baseball pioneer — the microstate's 5th place in 1971 is the",
+        "best finish of any never-medalist. Italian given + family names",
+        "tagged SM."
+      ],
+      "label": "San Marino",
+      "country": "SM",
+      "first_keys": [
+        "italian"
+      ],
+      "surname_keys": [
+        "italian"
+      ]
+    },
+    "switzerland": {
+      "_doc": [
+        "European baseball nation (Euro 11th, 2025). Multilingual by",
+        "construction: a German-speaking majority with French- and Italian-",
+        "speaking minorities, each drawing its own given+surname pool. All",
+        "tagged CH."
+      ],
+      "label": "Switzerland",
+      "subregions": [
+        {
+          "weight": 0.62,
+          "country": "CH",
+          "first_keys": [
+            "german"
+          ],
+          "surname_keys": [
+            "german"
+          ]
+        },
+        {
+          "weight": 0.23,
+          "country": "CH",
+          "first_keys": [
+            "french"
+          ],
+          "surname_keys": [
+            "french"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "CH",
+          "first_keys": [
+            "italian"
+          ],
+          "surname_keys": [
+            "italian"
+          ]
+        }
+      ],
+      "diaspora": {
+        "italy": 0.3,
+        "europe_southeast": 0.3,
+        "turkey": 0.2
+      }
+    },
+    "lithuania": {
+      "_doc": [
+        "Baltic baseball nation (Euro 15th-tie, 2025). Dedicated Lithuanian",
+        "pool — the gendered -as/-is/-us masculine surname endings",
+        "(Kazlauskas, Stankevičius, Sabonis). Tagged LT."
+      ],
+      "label": "Lithuania",
+      "country": "LT",
+      "first_keys": [
+        "lithuanian"
+      ],
+      "surname_keys": [
+        "lithuanian"
+      ]
+    },
+    "barbados": {
+      "_doc": [
+        "Anglophone Caribbean nation with a tiny but real baseball community",
+        "alongside its cricket pedigree — an O27 conversion target. Afro-",
+        "Caribbean given + family names. Tagged BB."
+      ],
+      "label": "Barbados",
+      "country": "BB",
+      "first_keys": [
+        "afro_caribbean"
+      ],
+      "surname_keys": [
+        "afro_caribbean"
+      ]
+    },
+    "bahamas": {
+      "_doc": [
+        "Caribbean baseball sleeper with genuine MLB pedigree per capita",
+        "(Jazz Chisholm Jr., Antoan Richardson). Afro-Caribbean given +",
+        "family names. Tagged BS."
+      ],
+      "label": "Bahamas",
+      "country": "BS",
+      "first_keys": [
+        "afro_caribbean"
+      ],
+      "surname_keys": [
+        "afro_caribbean"
+      ]
+    },
+    "iran": {
+      "_doc": [
+        "Real baseball federation with a small, growing community — an O27",
+        "frontier target. Dedicated Iranian-Persian pool (Dariush, Kourosh,",
+        "Arash over Hosseini/Shirazi/Esfahani), distinct from the Afghan",
+        "Dari pool. Tagged IR."
+      ],
+      "label": "Iran",
+      "country": "IR",
+      "first_keys": [
+        "iranian"
+      ],
+      "surname_keys": [
+        "iranian"
+      ]
+    },
+    "spain": {
+      "_doc": [
+        "Second-tier European baseball nation (CBS league, perennial Euro",
+        "qualifier). Castilian given + family names tagged ES."
+      ],
+      "label": "Spain",
+      "country": "ES",
+      "first_keys": [
+        "spanish"
+      ],
+      "surname_keys": [
+        "spanish"
+      ],
+      "diaspora": {
+        "latin_america": 0.4,
+        "north_africa": 0.3,
+        "romania": 0.2,
+        "west_africa": 0.1
+      }
+    },
+    "poland": {
+      "_doc": [
+        "Small but real European baseball scene (Polish Baseball League,",
+        "Euro qualifier). Polish given + family names tagged PL."
+      ],
+      "label": "Poland",
+      "country": "PL",
+      "first_keys": [
+        "polish"
+      ],
+      "surname_keys": [
+        "polish"
+      ]
+    },
+    "belgium": {
+      "subregions": [
+        {
+          "weight": 0.6,
+          "country": "BE",
+          "first_keys": [
+            "dutch"
+          ],
+          "surname_keys": [
+            "dutch"
+          ]
+        },
+        {
+          "weight": 0.4,
+          "country": "BE",
+          "first_keys": [
+            "french"
+          ],
+          "surname_keys": [
+            "french"
+          ]
+        }
+      ],
+      "diaspora": {
+        "north_africa": 0.4,
+        "turkey": 0.18,
+        "italy": 0.22,
+        "central_africa": 0.14,
+        "west_africa": 0.06
+      }
+    },
+    "palestine": {
+      "_doc": [
+        "Frontier baseball nation with little domestic infrastructure — the",
+        "program leans on the diaspora (the expat-fueled talent steering in",
+        "o27v2.youth gives it occasional foreign-raised call-ups). Arabic",
+        "given + family names tagged PS."
+      ],
+      "label": "Palestine",
+      "country": "PS",
+      "first_keys": [
+        "arabic"
+      ],
+      "surname_keys": [
+        "arabic"
+      ]
+    },
+    "lebanon": {
+      "country": "LB",
+      "first_keys": [
+        "arabic"
+      ],
+      "surname_keys": [
+        "arabic"
+      ]
+    },
+    "zaryanovia": {
+      "_doc": [
+        "Zaryanovia — alt-history Russian Far East. Names are produced by",
+        "the Zaryanification converter (o27v2/zaryan_names.py): English first",
+        "+ surname drawn from the American / Black-American pools and run",
+        "through a Russian-English creole pipeline (phonology, patronymic,",
+        "surname-path A/B/C, feminization). The creole majority is the",
+        "primary draw; the minority subregions below carry the four other",
+        "founding-stream populations (ethnic Russians, Koryo-saram Koreans,",
+        "Chinese, Africans incl. the Ethiopian thread) plus the Soviet-era",
+        "Kazakh / Central Asian minority. The Russian ethnic minority is the",
+        "'marked' group — small share. No Japanese stream (Sakhalin Japanese",
+        "were not a founding population per the master wiki)."
+      ],
+      "label": "Zaryanovia",
+      "country": "ZR",
+      "subregions": [
+        {
+          "weight": 0.65,
+          "country": "ZR",
+          "_note": "creole majority — Zaryanification pipeline applies",
+          "first_keys": [
+            "black_american",
+            "american_south"
+          ],
+          "surname_keys": [
+            "american_general",
+            "black_american"
+          ]
+        },
+        {
+          "weight": 0.12,
+          "country": "ZR",
+          "first_keys": [
+            "russian"
+          ],
+          "surname_keys": [
+            "russian"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "ZR",
+          "first_keys": [
+            "korean"
+          ],
+          "surname_keys": [
+            "koryo_saram"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "ZR",
+          "first_keys": [
+            "african",
+            "ethiopian",
+            "amharic"
+          ],
+          "surname_keys": [
+            "african",
+            "ethiopian",
+            "amharic"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ZR",
+          "first_keys": [
+            "chinese"
+          ],
+          "surname_keys": [
+            "chinese"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZR",
+          "first_keys": [
+            "central_asian"
+          ],
+          "surname_keys": [
+            "central_asian"
+          ]
+        }
+      ]
+    },
+    "north_africa": {
+      "label": "North Africa (Maghreb & Egypt)",
+      "subregions": [
+        {
+          "weight": 0.3,
+          "country": "EG",
+          "first_keys": [
+            "egyptian"
+          ],
+          "surname_keys": [
+            "egyptian"
+          ]
+        },
+        {
+          "weight": 0.25,
+          "country": "MA",
+          "first_keys": [
+            "maghrebi"
+          ],
+          "surname_keys": [
+            "maghrebi"
+          ]
+        },
+        {
+          "weight": 0.24,
+          "country": "DZ",
+          "first_keys": [
+            "maghrebi"
+          ],
+          "surname_keys": [
+            "maghrebi"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "TN",
+          "first_keys": [
+            "maghrebi"
+          ],
+          "surname_keys": [
+            "maghrebi"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "LY",
+          "first_keys": [
+            "maghrebi",
+            "arabic"
+          ],
+          "surname_keys": [
+            "maghrebi",
+            "arabic"
+          ]
+        }
+      ]
+    },
+    "mongolia": {
+      "_doc": [
+        "Mongolia. Designated expansion market for Zaryan baseball — ",
+        "the Zaryanovia thread evangelises the sport across the steppe ",
+        "via the established Russian-Far-East to Ulaanbaatar trade ",
+        "corridor. Names use modern Latin transliteration (Batbayar, ",
+        "Bolormaa, Borjigin) so they read cleanly on a roster."
+      ],
+      "label": "Mongolia",
+      "country": "MN",
+      "first_keys": [
+        "mongolian"
+      ],
+      "surname_keys": [
+        "mongolian"
+      ]
+    },
+    "north_korea": {
+      "_doc": [
+        "DPRK. Second Zaryan-baseball expansion market — short border ",
+        "with Zaryanovia carries the sport across the river. Pool uses ",
+        "McCune-Reischauer-style romanization (Ri/Pak/Choe vs. South ",
+        "Korean Lee/Park/Choi) to visually distinguish from the existing ",
+        "south-flavored `korean` pool. Surnames bias hard toward Kim ",
+        "(~25% in real DPRK), reproduced by duplicate entries in the ",
+        "flat surname list."
+      ],
+      "label": "North Korea (DPRK)",
+      "country": "KP",
+      "first_keys": [
+        "korean_north"
+      ],
+      "surname_keys": [
+        "korean_north"
+      ]
+    },
+    "south_korea": {
+      "_doc": [
+        "Republic of Korea (ROK) — a standalone Korean market so South Korea ",
+        "can be dialled up directly, symmetric with the north_korea region. ",
+        "Uses the south-flavored `korean` pool (Lee/Park/Choi/Kim), the same ",
+        "names east_asia draws its KR subregion from; absent from the base ",
+        "presets, so it surfaces via a boost in the nationality editor."
+      ],
+      "label": "South Korea",
+      "country": "KR",
+      "first_keys": [
+        "korean"
+      ],
+      "surname_keys": [
+        "korean"
+      ]
+    },
+    "albania": {
+      "_doc": [
+        "Adriatic frontier baseball nation. The curated Albanian pool existed",
+        "in the name files with no region — promoted here so an Albania side",
+        "draws Albanian given + family names tagged AL."
+      ],
+      "label": "Albania",
+      "country": "AL",
+      "first_keys": [
+        "albanian"
+      ],
+      "surname_keys": [
+        "albanian"
+      ]
+    },
+    "estonia": {
+      "_doc": [
+        "Baltic baseball nation alongside Lithuania and Latvia. The curated",
+        "Estonian pool existed in the name files with no region — promoted",
+        "here so an Estonia side draws Estonian given + family names tagged EE."
+      ],
+      "label": "Estonia",
+      "country": "EE",
+      "first_keys": [
+        "estonian"
+      ],
+      "surname_keys": [
+        "estonian"
+      ]
+    },
+    "georgia": {
+      "_doc": [
+        "Caucasus frontier baseball nation. The curated Georgian pool existed",
+        "in the name files with no region — promoted here so a Georgia side",
+        "draws Georgian given + family names (the -shvili / -dze surname",
+        "belts: Beridze, Kapanadze, Gelashvili) tagged GE."
+      ],
+      "label": "Georgia",
+      "country": "GE",
+      "first_keys": [
+        "georgian"
+      ],
+      "surname_keys": [
+        "georgian"
+      ]
+    },
+    "iceland": {
+      "_doc": [
+        "Nordic frontier baseball nation. The icelandic given-name pools",
+        "already existed but had no surname bucket (Icelandic names are",
+        "patronymic), so the region couldn't be wired. Surnames seeded with",
+        "the -son patronymic belt (Sigurðsson, Guðmundsson, Jónsson) plus a",
+        "few real inherited family names. Tagged IS."
+      ],
+      "label": "Iceland",
+      "country": "IS",
+      "first_keys": [
+        "icelandic"
+      ],
+      "surname_keys": [
+        "icelandic"
+      ]
+    },
+    "latvia": {
+      "_doc": [
+        "Baltic baseball nation (Latvia has a small but real federation).",
+        "The curated Latvian pool existed in the name files with no region —",
+        "promoted here so a Latvia side draws Latvian given + family names",
+        "(the gendered -s/-š masculine surname endings) tagged LV."
+      ],
+      "label": "Latvia",
+      "country": "LV",
+      "first_keys": [
+        "latvian"
+      ],
+      "surname_keys": [
+        "latvian"
+      ]
+    },
+    "france": {
+      "label": "France",
+      "country": "FR",
+      "first_keys": [
+        "french"
+      ],
+      "surname_keys": [
+        "french"
+      ],
+      "diaspora": {
+        "north_africa": 0.46,
+        "haiti": 0.08,
+        "italy": 0.08,
+        "turkey": 0.06,
+        "west_africa": 0.16,
+        "central_africa": 0.06
+      }
+    },
+    "argentina": {
+      "label": "Argentina",
+      "country": "AR",
+      "first_keys": [
+        "argentinian",
+        "spanish",
+        "italian"
+      ],
+      "surname_keys": [
+        "argentinian"
+      ],
+      "diaspora": {
+        "italy": 0.4,
+        "germany": 0.16,
+        "lebanon": 0.16,
+        "spain": 0.16,
+        "croatia": 0.12
+      }
+    },
+    "china": {
+      "label": "China",
+      "country": "CN",
+      "first_keys": [
+        "chinese"
+      ],
+      "surname_keys": [
+        "chinese"
+      ]
+    },
+    "japan": {
+      "label": "Japan",
+      "country": "JP",
+      "first_keys": [
+        "japanese"
+      ],
+      "surname_keys": [
+        "japanese"
+      ]
+    },
+    "chile": {
+      "label": "Chile",
+      "country": "CL",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish"
+      ],
+      "diaspora": {
+        "palestine": 0.34,
+        "germany": 0.24,
+        "italy": 0.22,
+        "croatia": 0.2
+      }
+    },
+    "bulgaria": {
+      "label": "Bulgaria",
+      "country": "BG",
+      "first_keys": [
+        "bulgarian"
+      ],
+      "surname_keys": [
+        "bulgarian"
+      ]
+    },
+    "colombia": {
+      "label": "Colombia",
+      "country": "CO",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "afro_caribbean"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish"
+      ]
+    },
+    "peru": {
+      "label": "Peru",
+      "country": "PE",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish"
+      ],
+      "diaspora": {
+        "japan": 0.4,
+        "china": 0.4,
+        "italy": 0.2
+      }
+    },
+    "uruguay": {
+      "label": "Uruguay",
+      "country": "UY",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish",
+        "italian"
+      ],
+      "diaspora": {
+        "italy": 0.55,
+        "spain": 0.25,
+        "lebanon": 0.2
+      }
+    },
+    "ecuador": {
+      "label": "Ecuador",
+      "country": "EC",
+      "first_keys": [
+        "latino_hispanic",
+        "latin_american"
+      ],
+      "surname_keys": [
+        "latino_hispanic",
+        "latin_american",
+        "spanish"
+      ]
+    },
+    "romania": {
+      "label": "Romania",
+      "country": "RO",
+      "first_keys": [
+        "romanian"
+      ],
+      "surname_keys": [
+        "romanian"
+      ]
+    },
+    "taiwan": {
+      "label": "Taiwan",
+      "country": "TW",
+      "first_keys": [
+        "chinese_taiwanese"
+      ],
+      "surname_keys": [
+        "chinese_taiwanese"
+      ]
+    },
+    "west_africa": {
+      "label": "West Africa",
+      "subregions": [
+        {
+          "weight": 0.17,
+          "country": "NG",
+          "first_keys": [
+            "yoruba"
+          ],
+          "surname_keys": [
+            "yoruba"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "NG",
+          "first_keys": [
+            "igbo"
+          ],
+          "surname_keys": [
+            "igbo"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "NG",
+          "first_keys": [
+            "hausa"
+          ],
+          "surname_keys": [
+            "hausa"
+          ]
+        },
+        {
+          "weight": 0.11,
+          "country": "GH",
+          "first_keys": [
+            "akan"
+          ],
+          "surname_keys": [
+            "akan"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GH",
+          "first_keys": [
+            "ga_adangbe"
+          ],
+          "surname_keys": [
+            "ga_adangbe"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GH",
+          "first_keys": [
+            "ewe"
+          ],
+          "surname_keys": [
+            "ewe"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "SN",
+          "first_keys": [
+            "wolof"
+          ],
+          "surname_keys": [
+            "wolof"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "SN",
+          "first_keys": [
+            "fula"
+          ],
+          "surname_keys": [
+            "fula"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "CI",
+          "first_keys": [
+            "bambara",
+            "akan"
+          ],
+          "surname_keys": [
+            "bambara",
+            "akan"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ML",
+          "first_keys": [
+            "bambara"
+          ],
+          "surname_keys": [
+            "bambara"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "GN",
+          "first_keys": [
+            "fula",
+            "mandinka"
+          ],
+          "surname_keys": [
+            "fula",
+            "mandinka"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "BF",
+          "first_keys": [
+            "bambara"
+          ],
+          "surname_keys": [
+            "bambara"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "GM",
+          "first_keys": [
+            "mandinka"
+          ],
+          "surname_keys": [
+            "mandinka"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "TG",
+          "first_keys": [
+            "ewe"
+          ],
+          "surname_keys": [
+            "ewe"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "BJ",
+          "first_keys": [
+            "ewe",
+            "yoruba"
+          ],
+          "surname_keys": [
+            "ewe",
+            "yoruba"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "CV",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "SL",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "LR",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        }
+      ]
+    },
+    "central_africa": {
+      "label": "Central Africa",
+      "subregions": [
+        {
+          "weight": 0.2,
+          "country": "CD",
+          "first_keys": [
+            "lingala"
+          ],
+          "surname_keys": [
+            "lingala"
+          ]
+        },
+        {
+          "weight": 0.14,
+          "country": "CD",
+          "first_keys": [
+            "luba"
+          ],
+          "surname_keys": [
+            "luba"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "CD",
+          "first_keys": [
+            "kongo"
+          ],
+          "surname_keys": [
+            "kongo"
+          ]
+        },
+        {
+          "weight": 0.18,
+          "country": "CM",
+          "first_keys": [
+            "bamileke"
+          ],
+          "surname_keys": [
+            "bamileke"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "CM",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "AO",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "CG",
+          "first_keys": [
+            "kongo"
+          ],
+          "surname_keys": [
+            "kongo"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "GA",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "GQ",
+          "first_keys": [
+            "fang"
+          ],
+          "surname_keys": [
+            "fang"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "CF",
+          "first_keys": [
+            "sango"
+          ],
+          "surname_keys": [
+            "sango"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "TD",
+          "first_keys": [
+            "african"
+          ],
+          "surname_keys": [
+            "african"
+          ]
+        }
+      ]
+    },
+    "southern_africa": {
+      "label": "Southern Africa",
+      "subregions": [
+        {
+          "weight": 0.16,
+          "country": "ZA",
+          "first_keys": [
+            "afrikaner"
+          ],
+          "surname_keys": [
+            "afrikaner"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "ZA",
+          "first_keys": [
+            "english_south_african"
+          ],
+          "surname_keys": [
+            "english_south_african"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "ZA",
+          "first_keys": [
+            "zulu"
+          ],
+          "surname_keys": [
+            "zulu"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "ZA",
+          "first_keys": [
+            "xhosa"
+          ],
+          "surname_keys": [
+            "xhosa"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "ZA",
+          "first_keys": [
+            "sotho"
+          ],
+          "surname_keys": [
+            "sotho"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ZA",
+          "first_keys": [
+            "tswana"
+          ],
+          "surname_keys": [
+            "tswana"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "ZA",
+          "first_keys": [
+            "tsonga"
+          ],
+          "surname_keys": [
+            "tsonga"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "ZA",
+          "first_keys": [
+            "indian_south_african"
+          ],
+          "surname_keys": [
+            "indian_south_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "ZW",
+          "first_keys": [
+            "shona"
+          ],
+          "surname_keys": [
+            "shona"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZW",
+          "first_keys": [
+            "ndebele"
+          ],
+          "surname_keys": [
+            "ndebele"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZW",
+          "first_keys": [
+            "english_zimbabwean"
+          ],
+          "surname_keys": [
+            "english_zimbabwean"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "NA",
+          "first_keys": [
+            "afrikaner"
+          ],
+          "surname_keys": [
+            "afrikaner"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "NA",
+          "first_keys": [
+            "german"
+          ],
+          "surname_keys": [
+            "german"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "BW",
+          "first_keys": [
+            "tswana"
+          ],
+          "surname_keys": [
+            "tswana"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ZM",
+          "first_keys": [
+            "chewa"
+          ],
+          "surname_keys": [
+            "chewa"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "MW",
+          "first_keys": [
+            "chewa"
+          ],
+          "surname_keys": [
+            "chewa"
+          ]
+        },
+        {
+          "weight": 0.02,
+          "country": "MZ",
+          "first_keys": [
+            "lusophone_african"
+          ],
+          "surname_keys": [
+            "lusophone_african"
+          ]
+        }
+      ]
+    },
+    "east_africa": {
+      "label": "East Africa",
+      "subregions": [
+        {
+          "weight": 0.14,
+          "country": "KE",
+          "first_keys": [
+            "kikuyu"
+          ],
+          "surname_keys": [
+            "kikuyu"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "KE",
+          "first_keys": [
+            "luo"
+          ],
+          "surname_keys": [
+            "luo"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "KE",
+          "first_keys": [
+            "english_kenyan"
+          ],
+          "surname_keys": [
+            "english_kenyan"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "KE",
+          "first_keys": [
+            "swahili"
+          ],
+          "surname_keys": [
+            "swahili"
+          ]
+        },
+        {
+          "weight": 0.15,
+          "country": "ET",
+          "first_keys": [
+            "amharic"
+          ],
+          "surname_keys": [
+            "amharic"
+          ]
+        },
+        {
+          "weight": 0.09,
+          "country": "ET",
+          "first_keys": [
+            "oromo"
+          ],
+          "surname_keys": [
+            "oromo"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "TZ",
+          "first_keys": [
+            "swahili"
+          ],
+          "surname_keys": [
+            "swahili"
+          ]
+        },
+        {
+          "weight": 0.06,
+          "country": "TZ",
+          "first_keys": [
+            "east_african"
+          ],
+          "surname_keys": [
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "UG",
+          "first_keys": [
+            "east_african"
+          ],
+          "surname_keys": [
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.05,
+          "country": "RW",
+          "first_keys": [
+            "kinyarwanda"
+          ],
+          "surname_keys": [
+            "kinyarwanda"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "BI",
+          "first_keys": [
+            "kinyarwanda"
+          ],
+          "surname_keys": [
+            "kinyarwanda"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "SO",
+          "first_keys": [
+            "somali"
+          ],
+          "surname_keys": [
+            "somali"
+          ]
+        },
+        {
+          "weight": 0.03,
+          "country": "ER",
+          "first_keys": [
+            "tigrinya"
+          ],
+          "surname_keys": [
+            "tigrinya"
+          ]
+        }
+      ]
+    },
+    "indian_ocean_africa": {
+      "label": "Indian Ocean Africa",
+      "subregions": [
+        {
+          "weight": 0.34,
+          "country": "MG",
+          "first_keys": [
+            "malagasy"
+          ],
+          "surname_keys": [
+            "malagasy"
+          ]
+        },
+        {
+          "weight": 0.17,
+          "country": "MU",
+          "first_keys": [
+            "indian",
+            "indian_north"
+          ],
+          "surname_keys": [
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.08,
+          "country": "MU",
+          "first_keys": [
+            "indian_south"
+          ],
+          "surname_keys": [
+            "indian_south_tamil",
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "MU",
+          "first_keys": [
+            "arabic",
+            "indian"
+          ],
+          "surname_keys": [
+            "indian"
+          ]
+        },
+        {
+          "weight": 0.13,
+          "country": "MU",
+          "first_keys": [
+            "french",
+            "malagasy"
+          ],
+          "surname_keys": [
+            "french",
+            "malagasy"
+          ]
+        },
+        {
+          "weight": 0.04,
+          "country": "MU",
+          "first_keys": [
+            "chinese"
+          ],
+          "surname_keys": [
+            "chinese"
+          ]
+        },
+        {
+          "weight": 0.1,
+          "country": "SC",
+          "first_keys": [
+            "french",
+            "east_african"
+          ],
+          "surname_keys": [
+            "french",
+            "east_african"
+          ]
+        },
+        {
+          "weight": 0.07,
+          "country": "KM",
+          "first_keys": [
+            "arabic",
+            "swahili"
+          ],
+          "surname_keys": [
+            "arabic",
+            "swahili"
+          ]
+        }
+      ]
     }
-   ]
   },
-  "nordic": {
-   "_doc": [
-    "Full national breakout: Sweden / Finland / Norway / Denmark each",
-    "draw from their own distinct given+surname pools (the -sson, -nen",
-    "and -sen patronymic belts are kept separate) rather than a single",
-    "blended Scandinavian pool. Weights match the old country split."
-   ],
-   "label": "Nordic",
-   "subregions": [
-    {
-     "weight": 0.3,
-     "country": "SE",
-     "first_keys": [
-      "swedish"
-     ],
-     "surname_keys": [
-      "swedish"
-     ]
+  "presets": {
+    "tennis_global": {
+      "label": "Tennis Global (realistic tour talent geography)",
+      "_doc": [
+        "Tennis-shaped world. The developed-tennis bloc (USA, the Spanish/",
+        "French/Italian/German Western-Europe pool, Eastern Europe, Russia,",
+        "Australasia, South America, East Asia, Britain, the Balkans, Canada,",
+        "Switzerland, the Nordics) carries ~88% of draws. The remaining block",
+        "below is a deliberate >=10% RESERVE for the rest of the world so",
+        "talent keeps emerging outside the majors -- those nations fall back",
+        "to neutral 50/50 in nation_talent.json, so they generate at",
+        "tour-average with full variance and still surface the occasional gem."
+      ],
+      "weights": {
+        "us": 0.16,
+        "spain": 0.09,
+        "europe_western": 0.16,
+        "italy": 0.06,
+        "europe_eastern": 0.09,
+        "russia": 0.05,
+        "serbia": 0.03,
+        "south_america": 0.06,
+        "anzac": 0.05,
+        "east_asia": 0.05,
+        "british_isles": 0.04,
+        "europe_southeast": 0.04,
+        "germany": 0.03,
+        "canada": 0.08,
+        "switzerland": 0.02,
+        "nordic": 0.02,
+        "belgium": 0.015,
+        "austria": 0.015,
+        "kazakhstan": 0.01,
+        "south_asia": 0.02,
+        "north_africa": 0.015,
+        "southeast_asia": 0.015,
+        "central_west_asia": 0.015,
+        "turkey": 0.01,
+        "mexico": 0.01,
+        "caribbean_cricket": 0.01,
+        "pacific_islands": 0.008,
+        "philippines": 0.007,
+        "albania": 0.006,
+        "estonia": 0.006,
+        "georgia": 0.006,
+        "iceland": 0.006,
+        "latvia": 0.006,
+        "zaryanovia": 0.02,
+        "west_africa": 0.011,
+        "east_africa": 0.006,
+        "central_africa": 0.002,
+        "indian_ocean_africa": 0.001
+      }
     },
-    {
-     "weight": 0.3,
-     "country": "FI",
-     "first_keys": [
-      "finnish"
-     ],
-     "surname_keys": [
-      "finnish"
-     ]
+    "americas_pro": {
+      "label": "Americas Pro (MLB-like — pre-cricket-pipeline baseline)",
+      "weights": {
+        "us": 0.55,
+        "latin_america": 0.28,
+        "east_asia": 0.04,
+        "anzac": 0.03,
+        "canada": 0.1,
+        "europe_western": 0.03,
+        "central_west_asia": 0.01,
+        "west_africa": 0.011,
+        "east_africa": 0.006,
+        "central_africa": 0.002,
+        "indian_ocean_africa": 0.001
+      }
     },
-    {
-     "weight": 0.2,
-     "country": "NO",
-     "first_keys": [
-      "norwegian"
-     ],
-     "surname_keys": [
-      "norwegian"
-     ]
+    "o27_year_1": {
+      "label": "O27 Year 1 (Launch — East Asia + legacy baseball pipelines)",
+      "_note": [
+        "Launch season: cricket-conversion academies announced but the player",
+        "pipeline hasn't matured. Roster mix is heavily MLB-shaped + a real",
+        "East-Asia presence (the launch market) and the first wave of cricket",
+        "early-adopters from South Asia, Australia, Caribbean, SA.",
+        "",
+        "Guyana and Trinidad already over-represented within the (small)",
+        "caribbean_cricket allocation — see that region's subregion weights.",
+        "South America starts visible: Argentine and Brazilian football-",
+        "infrastructure converts faster than expected. Pelé's grandson",
+        "narrative."
+      ],
+      "weights": {
+        "us": 0.33,
+        "latin_america": 0.2,
+        "south_america": 0.04,
+        "east_asia": 0.12,
+        "south_asia": 0.07,
+        "anzac": 0.05,
+        "caribbean_cricket": 0.07,
+        "caribbean_dutch": 0.01,
+        "british_isles": 0.025,
+        "afghan_central_asia": 0.005,
+        "malaysia": 0.01,
+        "pacific_islands": 0.005,
+        "canada": 0.1,
+        "philippines": 0.01,
+        "europe_western": 0.02,
+        "europe_eastern": 0.005,
+        "zaryanovia": 0.02,
+        "southern_africa": 0.0234,
+        "east_africa": 0.0066
+      }
     },
-    {
-     "weight": 0.2,
-     "country": "DK",
-     "first_keys": [
-      "danish"
-     ],
-     "surname_keys": [
-      "danish"
-     ]
+    "o27_year_5": {
+      "label": "O27 Year 5 (Pipeline visible — academies producing pros)",
+      "_note": [
+        "Mid-pipeline: cricket academies in Pakistan, India, Caribbean, SA",
+        "are graduating their first wave of legitimate O27 pros. Malaysia",
+        "growth visible. North American share retreats.",
+        "",
+        "Guyana + Trinidad combined now ~70% of caribbean_cricket mass.",
+        "Argentine + Brazilian academies (football pipeline conversion)",
+        "produce first All-Stars; south_america cracks 10% — top-10 by",
+        "count, while GY+TT remain top-tier per capita."
+      ],
+      "weights": {
+        "us": 0.18,
+        "latin_america": 0.15,
+        "south_america": 0.1,
+        "east_asia": 0.09,
+        "south_asia": 0.14,
+        "anzac": 0.06,
+        "caribbean_cricket": 0.11,
+        "caribbean_dutch": 0.02,
+        "british_isles": 0.03,
+        "afghan_central_asia": 0.015,
+        "malaysia": 0.025,
+        "pacific_islands": 0.02,
+        "canada": 0.05,
+        "philippines": 0.02,
+        "europe_western": 0.015,
+        "europe_eastern": 0.02,
+        "zaryanovia": 0.04,
+        "mongolia": 0.02,
+        "north_korea": 0.015,
+        "southern_africa": 0.039,
+        "east_africa": 0.011
+      }
+    },
+    "o27_year_10": {
+      "label": "O27 Year 10 (Mature — full cricket-pipeline thesis)",
+      "_note": [
+        "Mature league: the cricket-conversion thesis has played out. South",
+        "Asia is the largest single feeder, Malaysia is the structural",
+        "growth market, and the league looks globally rooted instead of an",
+        "MLB sim with the rules filed off.",
+        "",
+        "Guyana + Trinidad combined are ~10% of total league players —",
+        "from countries with a combined population of ~2M. That's the",
+        "structural over-production: Cuba-of-O27 per capita, top-5 elite",
+        "producers in absolute terms. South America (Argentina + Brazil",
+        "anchor) is the top-10-by-scale story: ~13% of league, Brazil with",
+        "visibly hyphenated Italian-Brazilian / Japanese-Brazilian /",
+        "German-Brazilian rosters distinct from MLB-shaped Latin America."
+      ],
+      "weights": {
+        "us": 0.13,
+        "latin_america": 0.11,
+        "south_america": 0.13,
+        "east_asia": 0.09,
+        "south_asia": 0.2,
+        "anzac": 0.075,
+        "caribbean_cricket": 0.13,
+        "caribbean_dutch": 0.025,
+        "british_isles": 0.035,
+        "afghan_central_asia": 0.02,
+        "malaysia": 0.035,
+        "pacific_islands": 0.04,
+        "canada": 0.04,
+        "philippines": 0.03,
+        "europe_western": 0.005,
+        "europe_eastern": 0.04,
+        "zaryanovia": 0.06,
+        "mongolia": 0.04,
+        "north_korea": 0.035,
+        "southern_africa": 0.0468,
+        "east_africa": 0.0132
+      }
+    },
+    "global": {
+      "label": "Global (even-handed mix)",
+      "weights": {
+        "us": 0.1,
+        "latin_america": 0.08,
+        "south_america": 0.06,
+        "europe_western": 0.07,
+        "europe_eastern": 0.04,
+        "nordic": 0.02,
+        "europe_southeast": 0.02,
+        "east_asia": 0.07,
+        "southeast_asia": 0.05,
+        "philippines": 0.04,
+        "south_asia": 0.12,
+        "central_west_asia": 0.03,
+        "gulf_cricket": 0.02,
+        "israel": 0.01,
+        "anzac": 0.04,
+        "caribbean_cricket": 0.05,
+        "caribbean_dutch": 0.02,
+        "pacific_islands": 0.03,
+        "british_isles": 0.03,
+        "malaysia": 0.02,
+        "zaryanovia": 0.03,
+        "mongolia": 0.02,
+        "north_korea": 0.015,
+        "west_africa": 0.0275,
+        "east_africa": 0.026,
+        "central_africa": 0.005,
+        "indian_ocean_africa": 0.0025,
+        "southern_africa": 0.039
+      }
+    },
+    "european": {
+      "label": "European",
+      "weights": {
+        "europe_western": 0.45,
+        "europe_eastern": 0.18,
+        "nordic": 0.13,
+        "british_isles": 0.15,
+        "central_west_asia": 0.05,
+        "west_africa": 0.022,
+        "east_africa": 0.012,
+        "central_africa": 0.004,
+        "indian_ocean_africa": 0.002
+      }
+    },
+    "asian_pro": {
+      "label": "East-Asia Pro",
+      "weights": {
+        "east_asia": 0.6,
+        "southeast_asia": 0.13,
+        "philippines": 0.1,
+        "us": 0.07,
+        "latin_america": 0.05,
+        "malaysia": 0.05,
+        "zaryanovia": 0.12,
+        "mongolia": 0.05,
+        "north_korea": 0.04
+      }
+    },
+    "nordic": {
+      "label": "Nordic (pesäpallo / Finnish)",
+      "weights": {
+        "nordic": 0.92,
+        "europe_eastern": 0.04,
+        "us": 0.04
+      }
+    },
+    "us_only": {
+      "label": "USA Only",
+      "weights": {
+        "us": 1.0
+      }
+    },
+    "africa_pro": {
+      "label": "African (broad-mix)",
+      "weights": {
+        "north_africa": 0.15,
+        "west_africa": 0.27,
+        "east_africa": 0.244,
+        "central_africa": 0.04,
+        "indian_ocean_africa": 0.07,
+        "southern_africa": 0.226
+      }
+    },
+    "oceania": {
+      "label": "Oceania (ANZAC + Pacific)",
+      "weights": {
+        "anzac": 0.55,
+        "pacific_islands": 0.4,
+        "philippines": 0.05
+      }
+    },
+    "us_majority": {
+      "label": "USA majority + global (70/30)",
+      "weights": {
+        "us": 0.7,
+        "latin_america": 0.1,
+        "east_asia": 0.05,
+        "europe_western": 0.05,
+        "anzac": 0.05,
+        "west_africa": 0.0275,
+        "east_africa": 0.015,
+        "central_africa": 0.005,
+        "indian_ocean_africa": 0.0025
+      }
+    },
+    "east_asia_majority": {
+      "label": "East Asia majority + global (75/25)",
+      "weights": {
+        "east_asia": 0.75,
+        "us": 0.1,
+        "latin_america": 0.05,
+        "southeast_asia": 0.05,
+        "philippines": 0.05,
+        "zaryanovia": 0.08,
+        "mongolia": 0.04,
+        "north_korea": 0.03
+      }
+    },
+    "far_east": {
+      "label": "Far East (East Asia + Zaryanovia)",
+      "weights": {
+        "east_asia": 0.45,
+        "zaryanovia": 0.25,
+        "southeast_asia": 0.12,
+        "philippines": 0.08,
+        "malaysia": 0.05,
+        "us": 0.05,
+        "mongolia": 0.1,
+        "north_korea": 0.08
+      }
+    },
+    "zaryan_mongolia": {
+      "label": "Zaryan / Mongolian expansion (Zaryanovia + Mongolia + East Asia tail)",
+      "weights": {
+        "zaryanovia": 0.5,
+        "mongolia": 0.3,
+        "east_asia": 0.1,
+        "central_west_asia": 0.05,
+        "us": 0.05,
+        "north_korea": 0.1
+      }
+    },
+    "zaryan_expansion": {
+      "label": "Zaryan expansion frontier (Zaryanovia + Mongolia + DPRK)",
+      "weights": {
+        "zaryanovia": 0.45,
+        "mongolia": 0.22,
+        "north_korea": 0.18,
+        "east_asia": 0.08,
+        "central_west_asia": 0.04,
+        "us": 0.03
+      }
+    },
+    "pro_tour": {
+      "label": "Pro Tour — global mix (ATP/WTA-shaped)",
+      "_doc": [
+        "Owner mix: big Western buckets (US, UK, Spain/France/Germany/Italy) with a strong,",
+        "globally-representative tail — South America, Canada, Mexico, Australia, East &",
+        "SE Asia (China/Japan/Korea, Thailand, Philippines), an Eastern-Europe bloc incl.",
+        "Poland, and an influential-but-smaller Africa/Brazil. Shapes the FOREIGN share of",
+        "each roster; the US/foreign split stays division-driven."
+      ],
+      "weights": {
+        "us": 0.2,
+        "british_isles": 20.44,
+        "south_america": 1.2,
+        "brazil": 3.2,
+        "canada": 6.0,
+        "mexico": 2.5,
+        "spain": 5.0,
+        "europe_western": 6.0,
+        "germany": 5.0,
+        "italy": 5.0,
+        "poland": 2.18,
+        "europe_eastern": 1.4,
+        "russia": 1.45,
+        "czechia": 1.09,
+        "serbia": 1.09,
+        "croatia": 0.73,
+        "slovakia": 0.58,
+        "hungary": 0.58,
+        "ukraine": 0.73,
+        "nordic": 2.0,
+        "anzac": 10.68,
+        "east_asia": 1.4,
+        "south_korea": 1.0,
+        "hong_kong": 0.6,
+        "thailand": 1.5,
+        "philippines": 1.5,
+        "indonesia": 0.6,
+        "malaysia": 0.6,
+        "north_africa": 2.26,
+        "switzerland": 1.2,
+        "austria": 0.6,
+        "belgium": 0.6,
+        "netherlands": 1.0,
+        "greece": 1.6,
+        "turkey": 1.0,
+        "kazakhstan": 0.5,
+        "israel": 0.5,
+        "caribbean_cricket": 2.82,
+        "caribbean_dutch": 1.13,
+        "barbados": 0.68,
+        "bahamas": 0.68,
+        "bermuda": 0.56,
+        "haiti": 0.85,
+        "cuba": 0.85,
+        "dominican": 1.02,
+        "guyana": 0.34,
+        "suriname": 0.34,
+        "pacific_islands": 1.6,
+        "france": 4.0,
+        "argentina": 1.6,
+        "chile": 0.8,
+        "china": 1.2,
+        "japan": 1.2,
+        "bulgaria": 0.6,
+        "colombia": 0.8,
+        "peru": 0.7,
+        "uruguay": 0.5,
+        "ecuador": 0.4,
+        "romania": 0.6,
+        "taiwan": 0.6,
+        "west_africa": 2.7325,
+        "east_africa": 1.9452,
+        "central_africa": 0.395,
+        "indian_ocean_africa": 0.7575,
+        "southern_africa": 1.5498
+      }
+    },
+    "global_college": {
+      "label": "Global College",
+      "_doc": "The default college mix — realistic NCAA geography, Africa fully represented, and the Caribbean and Pacific carried as emergent warm-weather regions",
+      "weights": {
+        "us": 30.0,
+        "canada": 3.5,
+        "mexico": 2.5,
+        "brazil": 1.4,
+        "argentina": 1.0,
+        "colombia": 0.9,
+        "chile": 0.5,
+        "peru": 0.36,
+        "ecuador": 0.24,
+        "uruguay": 0.4,
+        "venezuela": 0.28,
+        "guyana": 0.1612,
+        "suriname": 0.0988,
+        "latin_america": 0.5,
+        "dominican": 0.6396,
+        "cuba": 0.4212,
+        "caribbean_cricket": 0.3796,
+        "haiti": 0.3302,
+        "bahamas": 0.1508,
+        "barbados": 0.13,
+        "bermuda": 0.0806,
+        "aruba": 0.0702,
+        "curacao": 0.0702,
+        "caribbean_dutch": 0.0676,
+        "south_america": 0.5,
+        "british_isles": 3.591,
+        "scotland": 0.4896,
+        "france": 1.8135,
+        "germany": 1.3601,
+        "italy": 1.6321,
+        "spain": 0.7254,
+        "netherlands": 0.4497,
+        "belgium": 0.2756,
+        "nordic": 0.408,
+        "sweden": 0.2992,
+        "norway": 0.1904,
+        "denmark": 0.1904,
+        "finland": 0.1904,
+        "iceland": 0.0816,
+        "europe_southeast": 0.4715,
+        "serbia": 0.2902,
+        "croatia": 0.2539,
+        "greece": 0.2539,
+        "slovenia": 0.1451,
+        "albania": 0.1451,
+        "bulgaria": 0.1269,
+        "romania": 0.1269,
+        "russia": 0.7979,
+        "ukraine": 0.3591,
+        "kazakhstan": 0.22,
+        "georgia": 0.1396,
+        "estonia": 0.1396,
+        "latvia": 0.1396,
+        "lithuania": 0.1396,
+        "europe_eastern": 0.0798,
+        "poland": 0.5078,
+        "czechia": 0.3627,
+        "hungary": 0.2902,
+        "austria": 0.2539,
+        "slovakia": 0.2176,
+        "switzerland": 0.1813,
+        "europe_western": 1.6367,
+        "san_marino": 0.0861,
+        "china": 2.2,
+        "japan": 1.8,
+        "south_korea": 1.316,
+        "north_korea": 0.084,
+        "taiwan": 0.44,
+        "hong_kong": 0.36,
+        "philippines": 1.5,
+        "indonesia": 1.5,
+        "south_asia": 1.5,
+        "southeast_asia": 0.5,
+        "thailand": 0.3,
+        "malaysia": 0.2,
+        "afghan_central_asia": 0.8,
+        "mongolia": 0.2,
+        "turkey": 0.408,
+        "iran": 0.27,
+        "israel": 0.24,
+        "lebanon": 0.21,
+        "palestine": 0.12,
+        "gulf_cricket": 0.12,
+        "central_west_asia": 0.09,
+        "east_asia": 1.8,
+        "north_africa": 4.0,
+        "west_africa": 3.5,
+        "southern_africa": 3.0,
+        "east_africa": 2.2,
+        "central_africa": 1.2,
+        "indian_ocean_africa": 1.1,
+        "anzac": 3.2,
+        "pacific_islands": 2.0,
+        "zaryanovia": 0.1
+      }
+    },
+    "latin_world": {
+      "label": "Latin World",
+      "_doc": "Latin America turned up, the Spanish-speaking Caribbean loudest; Europe and Asia give way",
+      "weights": {
+        "us": 30.0,
+        "canada": 3.0,
+        "mexico": 3.3,
+        "brazil": 2.3,
+        "argentina": 1.7,
+        "colombia": 1.5,
+        "chile": 1.0,
+        "peru": 0.6,
+        "ecuador": 0.4,
+        "uruguay": 0.8,
+        "venezuela": 0.56,
+        "guyana": 0.22,
+        "suriname": 0.132,
+        "latin_america": 1.0,
+        "dominican": 1.364,
+        "cuba": 0.946,
+        "caribbean_cricket": 0.462,
+        "haiti": 0.44,
+        "bahamas": 0.198,
+        "barbados": 0.176,
+        "bermuda": 0.11,
+        "aruba": 0.132,
+        "curacao": 0.132,
+        "caribbean_dutch": 0.088,
+        "south_america": 1.1,
+        "british_isles": 2.9851,
+        "scotland": 0.407,
+        "france": 1.5264,
+        "germany": 1.1024,
+        "italy": 1.272,
+        "spain": 0.5936,
+        "netherlands": 0.368,
+        "belgium": 0.2256,
+        "nordic": 0.2544,
+        "sweden": 0.1866,
+        "norway": 0.1187,
+        "denmark": 0.1187,
+        "finland": 0.1187,
+        "iceland": 0.0509,
+        "europe_southeast": 0.3528,
+        "serbia": 0.2171,
+        "croatia": 0.19,
+        "greece": 0.19,
+        "slovenia": 0.1085,
+        "albania": 0.1085,
+        "bulgaria": 0.095,
+        "romania": 0.095,
+        "russia": 0.5767,
+        "ukraine": 0.2595,
+        "kazakhstan": 0.17,
+        "georgia": 0.1009,
+        "estonia": 0.1009,
+        "latvia": 0.1009,
+        "lithuania": 0.1009,
+        "europe_eastern": 0.0577,
+        "poland": 0.4274,
+        "czechia": 0.3053,
+        "hungary": 0.2442,
+        "austria": 0.2137,
+        "slovakia": 0.1832,
+        "switzerland": 0.1526,
+        "europe_western": 1.5307,
+        "san_marino": 0.0806,
+        "china": 1.8,
+        "japan": 1.5,
+        "south_korea": 1.034,
+        "north_korea": 0.066,
+        "taiwan": 0.385,
+        "hong_kong": 0.315,
+        "philippines": 1.2,
+        "indonesia": 1.3,
+        "south_asia": 1.3,
+        "southeast_asia": 0.45,
+        "thailand": 0.27,
+        "malaysia": 0.18,
+        "afghan_central_asia": 0.64,
+        "mongolia": 0.16,
+        "turkey": 0.2798,
+        "iran": 0.198,
+        "israel": 0.176,
+        "lebanon": 0.154,
+        "palestine": 0.088,
+        "gulf_cricket": 0.088,
+        "central_west_asia": 0.066,
+        "east_asia": 1.3,
+        "north_africa": 4.2,
+        "west_africa": 3.6,
+        "southern_africa": 3.0,
+        "east_africa": 2.1,
+        "central_africa": 1.1,
+        "indian_ocean_africa": 1.0,
+        "anzac": 3.2,
+        "pacific_islands": 1.8,
+        "zaryanovia": 0.1
+      }
+    },
+    "afro_global": {
+      "label": "Afro-Global",
+      "_doc": "Africa at 22% — the six African regions carry the international share, with Haiti and the anglophone Caribbean weighted as the diaspora's other half",
+      "weights": {
+        "us": 30.0,
+        "canada": 2.8,
+        "mexico": 2.1,
+        "brazil": 1.1,
+        "argentina": 0.7,
+        "colombia": 0.6,
+        "chile": 0.4,
+        "peru": 0.24,
+        "ecuador": 0.16,
+        "uruguay": 0.3,
+        "venezuela": 0.21,
+        "guyana": 0.18,
+        "suriname": 0.12,
+        "latin_america": 0.4,
+        "dominican": 0.6,
+        "cuba": 0.42,
+        "caribbean_cricket": 0.57,
+        "haiti": 0.6,
+        "bahamas": 0.165,
+        "barbados": 0.15,
+        "bermuda": 0.075,
+        "aruba": 0.045,
+        "curacao": 0.045,
+        "caribbean_dutch": 0.03,
+        "south_america": 0.4,
+        "british_isles": 2.902,
+        "scotland": 0.3958,
+        "france": 1.3886,
+        "germany": 1.0414,
+        "italy": 1.215,
+        "spain": 0.5207,
+        "netherlands": 0.3228,
+        "belgium": 0.1979,
+        "nordic": 0.2604,
+        "sweden": 0.1909,
+        "norway": 0.1215,
+        "denmark": 0.1215,
+        "finland": 0.1215,
+        "iceland": 0.0521,
+        "europe_southeast": 0.3385,
+        "serbia": 0.2083,
+        "croatia": 0.1823,
+        "greece": 0.1823,
+        "slovenia": 0.1041,
+        "albania": 0.1041,
+        "bulgaria": 0.0911,
+        "romania": 0.0911,
+        "russia": 0.6249,
+        "ukraine": 0.2812,
+        "kazakhstan": 0.18,
+        "georgia": 0.1094,
+        "estonia": 0.1094,
+        "latvia": 0.1094,
+        "lithuania": 0.1094,
+        "europe_eastern": 0.0625,
+        "poland": 0.486,
+        "czechia": 0.3471,
+        "hungary": 0.2777,
+        "austria": 0.243,
+        "slovakia": 0.2083,
+        "switzerland": 0.1736,
+        "europe_western": 2.0612,
+        "san_marino": 0.1085,
+        "china": 2.0,
+        "japan": 1.6,
+        "south_korea": 1.128,
+        "north_korea": 0.072,
+        "taiwan": 0.44,
+        "hong_kong": 0.36,
+        "philippines": 1.4,
+        "indonesia": 1.4,
+        "south_asia": 1.5,
+        "southeast_asia": 0.45,
+        "thailand": 0.27,
+        "malaysia": 0.18,
+        "afghan_central_asia": 0.72,
+        "mongolia": 0.18,
+        "turkey": 0.3645,
+        "iran": 0.252,
+        "israel": 0.224,
+        "lebanon": 0.196,
+        "palestine": 0.112,
+        "gulf_cricket": 0.112,
+        "central_west_asia": 0.084,
+        "east_asia": 1.9,
+        "north_africa": 5.4,
+        "west_africa": 5.2,
+        "southern_africa": 4.5,
+        "east_africa": 3.2,
+        "central_africa": 2.0,
+        "indian_ocean_africa": 1.7,
+        "anzac": 3.3,
+        "pacific_islands": 1.6,
+        "zaryanovia": 0.1
+      }
+    },
+    "asia_pacific": {
+      "label": "Asia-Pacific",
+      "_doc": "East and Southeast Asia at 25%, Oceania at 6.6% with the islands ahead of ANZAC",
+      "weights": {
+        "us": 30.0,
+        "canada": 2.8,
+        "mexico": 2.0,
+        "brazil": 1.0,
+        "argentina": 0.7,
+        "colombia": 0.6,
+        "chile": 0.4,
+        "peru": 0.24,
+        "ecuador": 0.16,
+        "uruguay": 0.3,
+        "venezuela": 0.21,
+        "guyana": 0.1116,
+        "suriname": 0.0684,
+        "latin_america": 0.4,
+        "dominican": 0.4428,
+        "cuba": 0.2916,
+        "caribbean_cricket": 0.2628,
+        "haiti": 0.2286,
+        "bahamas": 0.1044,
+        "barbados": 0.09,
+        "bermuda": 0.0558,
+        "aruba": 0.0486,
+        "curacao": 0.0486,
+        "caribbean_dutch": 0.0468,
+        "south_america": 0.5,
+        "british_isles": 3.0109,
+        "scotland": 0.4106,
+        "france": 1.3507,
+        "germany": 1.0806,
+        "italy": 1.2607,
+        "spain": 0.5403,
+        "netherlands": 0.335,
+        "belgium": 0.2053,
+        "nordic": 0.2431,
+        "sweden": 0.1783,
+        "norway": 0.1135,
+        "denmark": 0.1135,
+        "finland": 0.1135,
+        "iceland": 0.0486,
+        "europe_southeast": 0.3512,
+        "serbia": 0.2161,
+        "croatia": 0.1891,
+        "greece": 0.1891,
+        "slovenia": 0.1081,
+        "albania": 0.1081,
+        "bulgaria": 0.0946,
+        "romania": 0.0946,
+        "russia": 0.6123,
+        "ukraine": 0.2756,
+        "kazakhstan": 0.17,
+        "georgia": 0.1072,
+        "estonia": 0.1072,
+        "latvia": 0.1072,
+        "lithuania": 0.1072,
+        "europe_eastern": 0.0612,
+        "poland": 0.5043,
+        "czechia": 0.3602,
+        "hungary": 0.2882,
+        "austria": 0.2521,
+        "slovakia": 0.2161,
+        "switzerland": 0.1801,
+        "europe_western": 2.3953,
+        "san_marino": 0.1261,
+        "china": 4.0,
+        "japan": 3.2,
+        "south_korea": 2.444,
+        "north_korea": 0.156,
+        "taiwan": 0.825,
+        "hong_kong": 0.675,
+        "philippines": 2.8,
+        "indonesia": 3.2,
+        "south_asia": 2.1,
+        "southeast_asia": 0.9,
+        "thailand": 0.54,
+        "malaysia": 0.36,
+        "afghan_central_asia": 1.04,
+        "mongolia": 0.26,
+        "turkey": 0.3242,
+        "iran": 0.216,
+        "israel": 0.192,
+        "lebanon": 0.168,
+        "palestine": 0.096,
+        "gulf_cricket": 0.096,
+        "central_west_asia": 0.072,
+        "east_asia": 1.3,
+        "north_africa": 3.1,
+        "west_africa": 2.4,
+        "southern_africa": 2.2,
+        "east_africa": 1.5,
+        "central_africa": 1.0,
+        "indian_ocean_africa": 0.8,
+        "anzac": 3.2,
+        "pacific_islands": 3.4,
+        "zaryanovia": 0.1
+      }
+    },
+    "eurasian": {
+      "label": "Eurasian",
+      "_doc": "Europe 26% and Central Asia 3% — Nordics, Balkans and post-Soviet weighted up",
+      "weights": {
+        "us": 30.0,
+        "canada": 2.8,
+        "mexico": 2.0,
+        "brazil": 0.9,
+        "argentina": 0.6,
+        "colombia": 0.4,
+        "chile": 0.3,
+        "peru": 0.18,
+        "ecuador": 0.12,
+        "uruguay": 0.2,
+        "venezuela": 0.14,
+        "guyana": 0.0868,
+        "suriname": 0.0532,
+        "latin_america": 0.3,
+        "dominican": 0.3444,
+        "cuba": 0.2268,
+        "caribbean_cricket": 0.2044,
+        "haiti": 0.1778,
+        "bahamas": 0.0812,
+        "barbados": 0.07,
+        "bermuda": 0.0434,
+        "aruba": 0.0378,
+        "curacao": 0.0378,
+        "caribbean_dutch": 0.0364,
+        "south_america": 0.4,
+        "british_isles": 3.8521,
+        "scotland": 0.5253,
+        "france": 2.14,
+        "germany": 1.7509,
+        "italy": 1.7509,
+        "spain": 0.7782,
+        "netherlands": 0.4825,
+        "belgium": 0.2957,
+        "nordic": 0.963,
+        "sweden": 0.7062,
+        "norway": 0.4494,
+        "denmark": 0.4494,
+        "finland": 0.4494,
+        "iceland": 0.1926,
+        "europe_southeast": 0.9864,
+        "serbia": 0.607,
+        "croatia": 0.5311,
+        "greece": 0.5311,
+        "slovenia": 0.3035,
+        "albania": 0.3035,
+        "bulgaria": 0.2656,
+        "romania": 0.2656,
+        "russia": 1.7898,
+        "ukraine": 0.8054,
+        "kazakhstan": 0.46,
+        "georgia": 0.3132,
+        "estonia": 0.3132,
+        "latvia": 0.3132,
+        "lithuania": 0.3132,
+        "europe_eastern": 0.179,
+        "poland": 0.5447,
+        "czechia": 0.3891,
+        "hungary": 0.3113,
+        "austria": 0.2724,
+        "slovakia": 0.2335,
+        "switzerland": 0.1945,
+        "europe_western": 1.2013,
+        "san_marino": 0.0632,
+        "china": 2.5,
+        "japan": 2.0,
+        "south_korea": 1.692,
+        "north_korea": 0.108,
+        "taiwan": 0.495,
+        "hong_kong": 0.405,
+        "philippines": 1.3,
+        "indonesia": 1.3,
+        "south_asia": 1.7,
+        "southeast_asia": 0.5,
+        "thailand": 0.3,
+        "malaysia": 0.2,
+        "afghan_central_asia": 2.4,
+        "mongolia": 0.6,
+        "turkey": 0.5836,
+        "iran": 0.36,
+        "israel": 0.32,
+        "lebanon": 0.28,
+        "palestine": 0.16,
+        "gulf_cricket": 0.16,
+        "central_west_asia": 0.12,
+        "east_asia": 2.5,
+        "north_africa": 2.7,
+        "west_africa": 2.0,
+        "southern_africa": 1.7,
+        "east_africa": 1.2,
+        "central_africa": 0.8,
+        "indian_ocean_africa": 0.6,
+        "anzac": 3.7,
+        "pacific_islands": 1.2,
+        "zaryanovia": 0.1
+      }
     }
-   ]
-  },
-  "southeast_asia": {
-   "_note": [
-    "Decomposed into culturally cohesive subregions. The Philippines",
-    "is no longer a subregion here — it was promoted to its own",
-    "top-level `philippines` region (six cultural subregions). This",
-    "region now covers mainland + maritime SE Asia: Vietnam, Thailand,",
-    "Indonesia, Singapore (Chinese + Malay), Myanmar (mononymic",
-    "Burmese), Laos, Cambodia and Brunei (reusing the malay pool)."
-   ],
-   "label": "Southeast Asia",
-   "subregions": [
-    {
-     "weight": 0.3,
-     "country": "VN",
-     "first_keys": [
-      "vietnamese"
-     ],
-     "surname_keys": [
-      "vietnamese"
-     ]
-    },
-    {
-     "weight": 0.22,
-     "country": "TH",
-     "first_keys": [
-      "thai"
-     ],
-     "surname_keys": [
-      "thai"
-     ]
-    },
-    {
-     "weight": 0.18,
-     "country": "ID",
-     "first_keys": [
-      "indonesian"
-     ],
-     "surname_keys": [
-      "indonesian"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "SG",
-     "first_keys": [
-      "singaporean_chinese"
-     ],
-     "surname_keys": [
-      "chinese_malaysian"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "SG",
-     "first_keys": [
-      "malay"
-     ],
-     "surname_keys": [
-      "malay"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "MM",
-     "first_keys": [
-      "burmese"
-     ],
-     "surname_keys": [
-      "burmese"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "LA",
-     "first_keys": [
-      "lao"
-     ],
-     "surname_keys": [
-      "lao"
-     ]
-    },
-    {
-     "weight": 0.04,
-     "country": "KH",
-     "first_keys": [
-      "cambodian"
-     ],
-     "surname_keys": [
-      "cambodian"
-     ]
-    },
-    {
-     "weight": 0.02,
-     "country": "BN",
-     "first_keys": [
-      "malay"
-     ],
-     "surname_keys": [
-      "malay"
-     ]
-    }
-   ]
-  },
-  "philippines": {
-   "_doc": [
-    "Promoted from a single Spanish-colonial subregion of southeast_asia",
-    "to a full region. Filipino naming is Spanish-Catholic surnames over",
-    "Tagalog/regional given names — but the country is not monolithic:",
-    "Visayan and Ilocano lines carry distinct surname pools, the",
-    "Chinese-Filipino (Chinoy) community uses Hokkien-derived surnames",
-    "with mostly Western given names, the old landed Spanish-mestizo",
-    "families surface peninsular Spanish surnames, and Muslim Mindanao",
-    "(Maranao/Tausug/Maguindanao) is a wholly separate naming world.",
-    "Weights are a rough demographic split, not a baseball-talent claim."
-   ],
-   "label": "Philippines",
-   "subregions": [
-    {
-     "weight": 0.34,
-     "country": "PH",
-     "first_keys": [
-      "filipino"
-     ],
-     "surname_keys": [
-      "filipino"
-     ]
-    },
-    {
-     "weight": 0.24,
-     "country": "PH",
-     "first_keys": [
-      "filipino"
-     ],
-     "surname_keys": [
-      "filipino_visayan",
-      "filipino"
-     ]
-    },
-    {
-     "weight": 0.12,
-     "country": "PH",
-     "first_keys": [
-      "filipino"
-     ],
-     "surname_keys": [
-      "filipino_ilocano",
-      "filipino"
-     ]
-    },
-    {
-     "weight": 0.12,
-     "country": "PH",
-     "first_keys": [
-      "filipino_chinese",
-      "filipino"
-     ],
-     "surname_keys": [
-      "filipino_chinese"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "PH",
-     "first_keys": [
-      "filipino"
-     ],
-     "surname_keys": [
-      "spanish",
-      "filipino"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "PH",
-     "first_keys": [
-      "filipino_muslim"
-     ],
-     "surname_keys": [
-      "filipino_muslim"
-     ]
-    }
-   ]
-  },
-  "central_west_asia": {
-   "subregions": [
-    {
-     "weight": 0.45,
-     "country": "TR",
-     "first_keys": [
-      "turkish"
-     ],
-     "surname_keys": [
-      "turkish"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "SA",
-     "first_keys": [
-      "arabic"
-     ],
-     "surname_keys": [
-      "arabic"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "IR",
-     "first_keys": [
-      "iranian"
-     ],
-     "surname_keys": [
-      "iranian"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "EG",
-     "first_keys": [
-      "egyptian"
-     ],
-     "surname_keys": [
-      "egyptian"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "KZ",
-     "first_keys": [
-      "central_asian"
-     ],
-     "surname_keys": [
-      "central_asian"
-     ]
-    }
-   ]
-  },
-  "gulf_cricket": {
-   "_doc": [
-    "UAE & Oman associate-cricket sides are overwhelmingly South-Asian",
-    "expat communities (Indian + Pakistani) with a thin native-Emirati/",
-    "Omani Arab tail. Reuses the existing south-Asian and Arabic pools",
-    "rather than minting new buckets — the demographic IS the diaspora."
-   ],
-   "label": "Gulf (expat cricket)",
-   "subregions": [
-    {
-     "weight": 0.35,
-     "country": "AE",
-     "first_keys": [
-      "indian_north"
-     ],
-     "surname_keys": [
-      "indian_north"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "AE",
-     "first_keys": [
-      "pakistani"
-     ],
-     "surname_keys": [
-      "pakistani"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "AE",
-     "first_keys": [
-      "arabic"
-     ],
-     "surname_keys": [
-      "arabic"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "OM",
-     "first_keys": [
-      "indian_south"
-     ],
-     "surname_keys": [
-      "indian_south_tamil",
-      "indian_south_telugu"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "OM",
-     "first_keys": [
-      "pakistani"
-     ],
-     "surname_keys": [
-      "pakistani"
-     ]
-    }
-   ]
-  },
-  "israel": {
-   "_doc": [
-    "Real WBC baseball nation (qualified 2017 & 2023). Native Israeli",
-    "Hebrew given names + the Sephardi/Mizrahi/Ashkenazi surname blend."
-   ],
-   "label": "Israel",
-   "country": "IL",
-   "first_keys": [
-    "israeli"
-   ],
-   "surname_keys": [
-    "israeli"
-   ]
-  },
-  "netherlands": {
-   "_doc": [
-    "Established European baseball nation (Hoofdklasse, multiple WBC",
-    "appearances). Promoted out of the flat europe_western pool so a",
-    "Netherlands national side draws Dutch names tagged NL rather than",
-    "the mixed German/French/Spanish blend."
-   ],
-   "label": "Netherlands",
-   "country": "NL",
-   "first_keys": [
-    "dutch"
-   ],
-   "surname_keys": [
-    "dutch"
-   ]
-  },
-  "italy": {
-   "_doc": [
-    "Established European baseball nation (Serie A1, WBC regular).",
-    "Promoted out of europe_western so an Italy national side draws",
-    "Italian names tagged IT."
-   ],
-   "label": "Italy",
-   "country": "IT",
-   "first_keys": [
-    "italian"
-   ],
-   "surname_keys": [
-    "italian"
-   ]
-  },
-  "finland": {
-   "_doc": [
-    "Home of pesäpallo (Finnish baseball). Dedicated Finnish given/",
-    "family-name pool (the -nen surname belt: Virtanen, Korhonen,",
-    "Mäkinen), distinct from the Scandinavian neighbours."
-   ],
-   "label": "Finland",
-   "country": "FI",
-   "first_keys": [
-    "finnish"
-   ],
-   "surname_keys": [
-    "finnish"
-   ]
-  },
-  "sweden": {
-   "_doc": [
-    "Swedish national pool — the -sson patronymic belt (Andersson,",
-    "Johansson, Karlsson)."
-   ],
-   "label": "Sweden",
-   "country": "SE",
-   "first_keys": [
-    "swedish"
-   ],
-   "surname_keys": [
-    "swedish"
-   ]
-  },
-  "norway": {
-   "_doc": [
-    "Norwegian national pool — the -sen patronymic belt (Hansen,",
-    "Johansen, Olsen) with the ø/å given names."
-   ],
-   "label": "Norway",
-   "country": "NO",
-   "first_keys": [
-    "norwegian"
-   ],
-   "surname_keys": [
-    "norwegian"
-   ]
-  },
-  "denmark": {
-   "_doc": [
-    "Danish national pool — the -sen belt (Jensen, Nielsen, Hansen)."
-   ],
-   "label": "Denmark",
-   "country": "DK",
-   "first_keys": [
-    "danish"
-   ],
-   "surname_keys": [
-    "danish"
-   ]
-  },
-  "haiti": {
-   "_doc": [
-    "The 'Puerto Rico of O27' — shares Hispaniola with the baseball-mad",
-    "Dominican Republic, so the same island pipeline feeds a distinct",
-    "Francophone naming world: French/Haitian-Creole given names over",
-    "French + saint-prefixed surnames (Saint-Fleur, Jean-Baptiste, Désir)."
-   ],
-   "label": "Haiti",
-   "country": "HT",
-   "first_keys": [
-    "haitian"
-   ],
-   "surname_keys": [
-    "haitian"
-   ]
-  },
-  "curacao": {
-   "_doc": [
-    "Dutch-Caribbean baseball powerhouse (Bogaerts, Profar, Jansen).",
-    "Promoted out of caribbean_dutch to its own Papiamento pool."
-   ],
-   "label": "Curacao",
-   "country": "CW",
-   "first_keys": [
-    "curacao_papiamento"
-   ],
-   "surname_keys": [
-    "curacao_papiamento"
-   ]
-  },
-  "aruba": {
-   "_doc": [
-    "Dutch-Caribbean baseball nation alongside Curacao. Papiamento",
-    "given names with the Aruban surname set (Croes, Tromp, Maduro)."
-   ],
-   "label": "Aruba",
-   "country": "AW",
-   "first_keys": [
-    "aruban_papiamento"
-   ],
-   "surname_keys": [
-    "aruban_papiamento",
-    "curacao_papiamento"
-   ]
-  },
-  "suriname": {
-   "_doc": [
-    "The most ethnically diverse naming pool in the hemisphere:",
-    "Hindustani, Javanese, Maroon and Dutch-Creole lines, each with",
-    "its own given/surname set. Promoted out of caribbean_dutch."
-   ],
-   "label": "Suriname",
-   "subregions": [
-    {
-     "weight": 0.37,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_hindustani"
-     ],
-     "surname_keys": [
-      "surinamese_hindustani"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_javanese"
-     ],
-     "surname_keys": [
-      "surinamese_javanese"
-     ]
-    },
-    {
-     "weight": 0.23,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_maroon",
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "surinamese_maroon",
-      "afro_caribbean"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "SR",
-     "first_keys": [
-      "surinamese_dutch",
-      "dutch"
-     ],
-     "surname_keys": [
-      "surinamese_dutch",
-      "dutch"
-     ]
-    }
-   ]
-  },
-  "guyana": {
-   "_doc": [
-    "Anglophone South American cricket nation, bi-ethnic Indo-Guyanese",
-    "and Afro-Guyanese split. Promoted out of caribbean_cricket to its",
-    "own region."
-   ],
-   "label": "Guyana",
-   "subregions": [
-    {
-     "weight": 0.62,
-     "country": "GY",
-     "first_keys": [
-      "indo_guyanese"
-     ],
-     "surname_keys": [
-      "indo_guyanese"
-     ]
-    },
-    {
-     "weight": 0.38,
-     "country": "GY",
-     "first_keys": [
-      "afro_guyanese",
-      "afro_caribbean"
-     ],
-     "surname_keys": [
-      "afro_guyanese",
-      "afro_caribbean"
-     ]
-    }
-   ]
-  },
-  "guam": {
-   "_doc": [
-    "Pacific CHamoru name pool. Spanish-colonial surnames over CHamoru/",
-    "Western given names. NOTE: Guam is a US TERRITORY here, not a standalone",
-    "nationality — it is generated as a US dual-citizen origin (like Puerto",
-    "Rico / US Virgin Islands) via app/juniors.US_STATES, and this region only",
-    "backs the Chamorro name picker for those recruits. It is force-excluded",
-    "from the international mix by worldconfig._HIDDEN_REGIONS. Do NOT re-add",
-    "'guam' to any nationality preset/_CONTINENTS, and do NOT add a GU subregion",
-    "to pacific_islands (that would leak Guam back into the international pool,",
-    "where generate_class would convert it to a domestic recruit)."
-   ],
-   "label": "Guam",
-   "country": "GU",
-   "first_keys": [
-    "chamorro"
-   ],
-   "surname_keys": [
-    "chamorro"
-   ]
-  },
-  "indonesia": {
-   "_doc": [
-    "Southeast Asian growth market. Indonesian given/family names."
-   ],
-   "label": "Indonesia",
-   "country": "ID",
-   "first_keys": [
-    "indonesian"
-   ],
-   "surname_keys": [
-    "indonesian"
-   ]
-  },
-  "thailand": {
-   "_doc": [
-    "Southeast Asian baseball/softball nation. Thai given/family names."
-   ],
-   "label": "Thailand",
-   "country": "TH",
-   "first_keys": [
-    "thai"
-   ],
-   "surname_keys": [
-    "thai"
-   ]
-  },
-  "europe_southeast": {
-   "_doc": [
-    "Emerging European baseball nations outside the established DE/NL/",
-    "IT/CZ core: Greece (long-standing federation, 2004-Olympics host),",
-    "Croatia and Slovenia."
-   ],
-   "label": "Southeast Europe (emerging baseball)",
-   "subregions": [
-    {
-     "weight": 0.45,
-     "country": "GR",
-     "first_keys": [
-      "greek"
-     ],
-     "surname_keys": [
-      "greek"
-     ]
-    },
-    {
-     "weight": 0.35,
-     "country": "HR",
-     "first_keys": [
-      "croatian"
-     ],
-     "surname_keys": [
-      "croatian"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "SI",
-     "first_keys": [
-      "slovenian"
-     ],
-     "surname_keys": [
-      "slovenian"
-     ]
-    }
-   ]
-  },
-  "africa": {
-   "_note": [
-    "Decomposed by ethnic group within country. Nigeria splits Yoruba",
-    "/ Igbo / Hausa (visibly different surnames); Ethiopia splits",
-    "Amharic / Oromo; Ghana represented by Akan. The previous flat",
-    "pools (african, ethiopian, east_african, lusophone_african,",
-    "malagasy) remain available as fallbacks for the country-level",
-    "subregions that don't have their own ethnic decomposition yet",
-    "(TZ, MG, MZ, AO)."
-   ],
-   "label": "Sub-Saharan Africa",
-   "subregions": [
-    {
-     "weight": 0.18,
-     "country": "NG",
-     "first_keys": [
-      "yoruba",
-      "african"
-     ],
-     "surname_keys": [
-      "yoruba",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.14,
-     "country": "NG",
-     "first_keys": [
-      "igbo",
-      "african"
-     ],
-     "surname_keys": [
-      "igbo",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "NG",
-     "first_keys": [
-      "hausa",
-      "african"
-     ],
-     "surname_keys": [
-      "hausa",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "ET",
-     "first_keys": [
-      "amharic",
-      "ethiopian"
-     ],
-     "surname_keys": [
-      "amharic",
-      "ethiopian"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "ET",
-     "first_keys": [
-      "oromo",
-      "ethiopian"
-     ],
-     "surname_keys": [
-      "oromo",
-      "ethiopian"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "GH",
-     "first_keys": [
-      "akan",
-      "african"
-     ],
-     "surname_keys": [
-      "akan",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.1,
-     "country": "TZ",
-     "first_keys": [
-      "east_african",
-      "african"
-     ],
-     "surname_keys": [
-      "east_african",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "MG",
-     "first_keys": [
-      "malagasy"
-     ],
-     "surname_keys": [
-      "malagasy"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "MZ",
-     "first_keys": [
-      "lusophone_african",
-      "african"
-     ],
-     "surname_keys": [
-      "lusophone_african",
-      "african"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "AO",
-     "first_keys": [
-      "lusophone_african",
-      "african"
-     ],
-     "surname_keys": [
-      "lusophone_african",
-      "african"
-     ]
-    }
-   ]
-  },
-  "brazil": {
-   "_doc": [
-    "Promoted out of south_america to its own region. Brazil's distinctive",
-    "naming is the hyphenated immigrant blend — Japanese-Brazilian,",
-    "Italian-Brazilian, German-Brazilian and Lebanese-Brazilian lines",
-    "(Yamamoto-Costa, Bauer-Silva) layered over the Portuguese base — which",
-    "is genuinely distinct from generic MLB-shaped Latin American naming.",
-    "Subregion weights are the south_america BR subregions renormalised to 1.0."
-   ],
-   "label": "Brazil",
-   "subregions": [
-    {
-     "weight": 0.46,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "portuguese"
-     ],
-     "surname_keys": [
-      "brazilian_portuguese"
-     ]
-    },
-    {
-     "weight": 0.23,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "italian"
-     ],
-     "surname_keys": [
-      "brazilian_italian"
-     ]
-    },
-    {
-     "weight": 0.16,
-     "country": "BR",
-     "first_keys": [
-      "brazilian_japanese"
-     ],
-     "surname_keys": [
-      "brazilian_japanese"
-     ]
-    },
-    {
-     "weight": 0.09,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "german"
-     ],
-     "surname_keys": [
-      "brazilian_german"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "BR",
-     "first_keys": [
-      "brazilian",
-      "arabic"
-     ],
-     "surname_keys": [
-      "brazilian_lebanese"
-     ]
-    }
-   ]
-  },
-  "mexico": {
-   "_doc": [
-    "Real baseball nation (LMB summer league, LMP winter league, WBC",
-    "regular). Promoted out of the latin_america MX subregion so a Mexico",
-    "national side draws names tagged MX rather than the blended Latin",
-    "American pool."
-   ],
-   "label": "Mexico",
-   "country": "MX",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish"
-   ]
-  },
-  "cuba": {
-   "_doc": [
-    "Premier baseball nation. Promoted out of the latin_america CU",
-    "subregion (which only borrowed the generic latino_hispanic pool)",
-    "to a dedicated Cuban pool. The distinctive feature is the wave of",
-    "Y-initial given names (Yoenis, Yasiel, Yandy, Yulieski) that mark",
-    "post-1990s Cuban naming, over a Spanish + Afro-Cuban surname stock."
-   ],
-   "label": "Cuba",
-   "country": "CU",
-   "first_keys": [
-    "cuban"
-   ],
-   "surname_keys": [
-    "cuban"
-   ]
-  },
-  "dominican": {
-   "_doc": [
-    "The single largest non-US MLB feeder. Promoted out of the",
-    "latin_america DO subregion to a dedicated Dominican pool (García,",
-    "Tatís, Guerrero, Encarnación over the Vladimir/Wander/Starlin",
-    "given-name set)."
-   ],
-   "label": "Dominican Republic",
-   "country": "DO",
-   "first_keys": [
-    "dominican"
-   ],
-   "surname_keys": [
-    "dominican"
-   ]
-  },
-  "venezuela": {
-   "_doc": [
-    "Top-tier baseball nation (LVBP, second-largest MLB feeder after the",
-    "DR). Promoted out of the latin_america VE subregion to a dedicated",
-    "Venezuelan pool (Altuve, Cabrera, Aparicio, Concepción over the",
-    "Asdrúbal/Gleyber/Salvador given-name set)."
-   ],
-   "label": "Venezuela",
-   "country": "VE",
-   "first_keys": [
-    "venezuelan"
-   ],
-   "surname_keys": [
-    "venezuelan"
-   ]
-  },
-  "turkey": {
-   "_doc": [
-    "Promoted out of the central_west_asia blend. Turkish given + family",
-    "names tagged TR."
-   ],
-   "label": "Turkey",
-   "country": "TR",
-   "first_keys": [
-    "turkish"
-   ],
-   "surname_keys": [
-    "turkish"
-   ]
-  },
-  "greece": {
-   "_doc": [
-    "Long-standing baseball federation (hosted the 2004 Olympic",
-    "tournament). Promoted out of europe_southeast to its own Greek pool."
-   ],
-   "label": "Greece",
-   "country": "GR",
-   "first_keys": [
-    "greek"
-   ],
-   "surname_keys": [
-    "greek"
-   ]
-  },
-  "russia": {
-   "_doc": [
-    "Promoted out of the europe_eastern blend. Russian given + family",
-    "names tagged RU."
-   ],
-   "label": "Russia",
-   "country": "RU",
-   "first_keys": [
-    "russian"
-   ],
-   "surname_keys": [
-    "russian"
-   ]
-  },
-  "ukraine": {
-   "_doc": [
-    "Promoted out of the europe_eastern blend. Ukrainian given + family",
-    "names tagged UA."
-   ],
-   "label": "Ukraine",
-   "country": "UA",
-   "first_keys": [
-    "ukrainian"
-   ],
-   "surname_keys": [
-    "ukrainian"
-   ]
-  },
-  "czechia": {
-   "_doc": [
-    "The European baseball powerhouse (real-world WBC 2023 qualifier and",
-    "the continent's breakout program). Promoted out of the europe_eastern",
-    "blend — where it already holds the dominant CZ subregion — to its own",
-    "Czech pool."
-   ],
-   "label": "Czech Republic",
-   "country": "CZ",
-   "first_keys": [
-    "czech"
-   ],
-   "surname_keys": [
-    "czech"
-   ]
-  },
-  "germany": {
-   "_doc": [
-    "Established amateur-baseball nation (Bundesliga + a growing MLB-org",
-    "academy presence). Promoted out of the flat europe_western pool so a",
-    "Germany side draws German names tagged DE."
-   ],
-   "label": "Germany",
-   "country": "DE",
-   "first_keys": [
-    "german"
-   ],
-   "surname_keys": [
-    "german"
-   ]
-  },
-  "scotland": {
-   "_doc": [
-    "Associate cricket nation with its own pathway. Promoted out of the",
-    "british_isles GB blend to a dedicated Scottish pool (Mc/Mac surnames",
-    "+ the Scottish given-name set). Carries country code GB."
-   ],
-   "label": "Scotland",
-   "country": "GB",
-   "first_keys": [
-    "scottish"
-   ],
-   "surname_keys": [
-    "scottish"
-   ]
-  },
-  "hong_kong": {
-   "_doc": [
-    "Associate cricket side and an East-Asian baseball outpost. Chinese",
-    "(Cantonese) given + family names tagged HK."
-   ],
-   "label": "Hong Kong",
-   "country": "HK",
-   "first_keys": [
-    "chinese"
-   ],
-   "surname_keys": [
-    "chinese"
-   ]
-  },
-  "bermuda": {
-   "_doc": [
-    "Atlantic cricket nation with deep pedigree (the St. George's /",
-    "Somerset Cup Match rivalry). Afro-Caribbean given + family names",
-    "over a British-colonial surname layer, tagged BM."
-   ],
-   "label": "Bermuda",
-   "country": "BM",
-   "first_keys": [
-    "afro_caribbean",
-    "english_general"
-   ],
-   "surname_keys": [
-    "afro_caribbean",
-    "english_general"
-   ]
-  },
-  "namibia": {
-   "_doc": [
-    "Associate cricket nation whose national side is historically",
-    "dominated by the Afrikaans- and German-descended communities",
-    "(Erasmus, Wiese, Trumpelmann, Loftie-Eaton) over an Oshiwambo/Bantu",
-    "majority. Reuses the afrikaner, german and african pools rather than",
-    "minting a new bucket — the demographic IS that blend."
-   ],
-   "label": "Namibia",
-   "subregions": [
-    {
-     "weight": 0.45,
-     "country": "NA",
-     "first_keys": [
-      "afrikaner"
-     ],
-     "surname_keys": [
-      "afrikaner"
-     ]
-    },
-    {
-     "weight": 0.3,
-     "country": "NA",
-     "first_keys": [
-      "german",
-      "afrikaner"
-     ],
-     "surname_keys": [
-      "german"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "NA",
-     "first_keys": [
-      "african"
-     ],
-     "surname_keys": [
-      "african"
-     ]
-    }
-   ]
-  },
-  "kazakhstan": {
-   "_doc": [
-    "Central-Asian frontier market. The growth thesis is the Koryo-saram",
-    "infusion: the ethnic-Korean community deported to Kazakhstan in 1937",
-    "carries the baseball culture of the East-Asian launch market inland,",
-    "seeding the sport ahead of its neighbours. Rosters blend the Kazakh",
-    "majority (the central_asian pool — Nursultan, Nazarbayev, Doszhanov)",
-    "with a deliberately over-weighted Korean wave and the large Russian-",
-    "Kazakhstani minority. All tagged KZ."
-   ],
-   "label": "Kazakhstan",
-   "subregions": [
-    {
-     "weight": 0.55,
-     "country": "KZ",
-     "first_keys": [
-      "central_asian"
-     ],
-     "surname_keys": [
-      "central_asian"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "KZ",
-     "first_keys": [
-      "korean"
-     ],
-     "surname_keys": [
-      "korean"
-     ]
-    },
-    {
-     "weight": 0.2,
-     "country": "KZ",
-     "first_keys": [
-      "russian"
-     ],
-     "surname_keys": [
-      "russian"
-     ]
-    }
-   ]
-  },
-  "croatia": {
-   "_doc": [
-    "European baseball nation (best Euro finish 7th, 2021). Promoted out",
-    "of the europe_southeast blend to its own Croatian pool."
-   ],
-   "label": "Croatia",
-   "country": "HR",
-   "first_keys": [
-    "croatian"
-   ],
-   "surname_keys": [
-    "croatian"
-   ]
-  },
-  "serbia": {
-   "_doc": [
-    "A tennis powerhouse far out of proportion to its size (Djokovic,",
-    "Jankovic, Ivanovic, Tipsarevic). Own curated Serbian first/surname",
-    "pool, keyed to RS."
-   ],
-   "label": "Serbia",
-   "country": "RS",
-   "first_keys": [
-    "serbian"
-   ],
-   "surname_keys": [
-    "serbian"
-   ]
-  },
-  "slovenia": {
-   "_doc": [
-    "Emerging European baseball nation (Euro debut 10th, 1995). Promoted",
-    "out of the europe_southeast blend to its own Slovenian pool."
-   ],
-   "label": "Slovenia",
-   "country": "SI",
-   "first_keys": [
-    "slovenian"
-   ],
-   "surname_keys": [
-    "slovenian"
-   ]
-  },
-  "hungary": {
-   "_doc": [
-    "Emerging European baseball nation. Promoted out of the europe_eastern",
-    "blend so a Hungary side draws Magyar (surname-first in life, rendered",
-    "given-surname here) names tagged HU."
-   ],
-   "label": "Hungary",
-   "country": "HU",
-   "first_keys": [
-    "hungarian"
-   ],
-   "surname_keys": [
-    "hungarian"
-   ]
-  },
-  "slovakia": {
-   "_doc": [
-    "Emerging European baseball nation. Promoted out of the europe_eastern",
-    "blend to its own Slovak pool, tagged SK."
-   ],
-   "label": "Slovakia",
-   "country": "SK",
-   "first_keys": [
-    "slovak"
-   ],
-   "surname_keys": [
-    "slovak"
-   ]
-  },
-  "austria": {
-   "_doc": [
-    "European baseball nation (Euro 9th, 2025). German given + family",
-    "names tagged AT, distinct from the Germany pool only by country code."
-   ],
-   "label": "Austria",
-   "country": "AT",
-   "first_keys": [
-    "german"
-   ],
-   "surname_keys": [
-    "german"
-   ]
-  },
-  "san_marino": {
-   "_doc": [
-    "European baseball pioneer — the microstate's 5th place in 1971 is the",
-    "best finish of any never-medalist. Italian given + family names",
-    "tagged SM."
-   ],
-   "label": "San Marino",
-   "country": "SM",
-   "first_keys": [
-    "italian"
-   ],
-   "surname_keys": [
-    "italian"
-   ]
-  },
-  "switzerland": {
-   "_doc": [
-    "European baseball nation (Euro 11th, 2025). Multilingual by",
-    "construction: a German-speaking majority with French- and Italian-",
-    "speaking minorities, each drawing its own given+surname pool. All",
-    "tagged CH."
-   ],
-   "label": "Switzerland",
-   "subregions": [
-    {
-     "weight": 0.62,
-     "country": "CH",
-     "first_keys": [
-      "german"
-     ],
-     "surname_keys": [
-      "german"
-     ]
-    },
-    {
-     "weight": 0.23,
-     "country": "CH",
-     "first_keys": [
-      "french"
-     ],
-     "surname_keys": [
-      "french"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "CH",
-     "first_keys": [
-      "italian"
-     ],
-     "surname_keys": [
-      "italian"
-     ]
-    }
-   ]
-  },
-  "lithuania": {
-   "_doc": [
-    "Baltic baseball nation (Euro 15th-tie, 2025). Dedicated Lithuanian",
-    "pool — the gendered -as/-is/-us masculine surname endings",
-    "(Kazlauskas, Stankevičius, Sabonis). Tagged LT."
-   ],
-   "label": "Lithuania",
-   "country": "LT",
-   "first_keys": [
-    "lithuanian"
-   ],
-   "surname_keys": [
-    "lithuanian"
-   ]
-  },
-  "cape_verde": {
-   "_doc": [
-    "Caribbean-adjacent Atlantic sleeper. The large Cape Verdean diaspora",
-    "in New England (the oldest African-immigrant community in the US)",
-    "gives O27 a real recruiting channel into the islands. Lusophone-",
-    "Creole naming (Tavares, Monteiro, Lopes) over Portuguese given",
-    "names. Tagged CV."
-   ],
-   "label": "Cape Verde",
-   "country": "CV",
-   "first_keys": [
-    "lusophone_african",
-    "portuguese"
-   ],
-   "surname_keys": [
-    "lusophone_african"
-   ]
-  },
-  "mauritius": {
-   "_doc": [
-    "Indian-Ocean sleeper — the 'Samoa-to-rugby' archetype: a small",
-    "island whose multi-ethnic athletic base over-produces relative to",
-    "population once a sport takes root. Naming is the real Mauritian",
-    "mosaic: Indo-Mauritian Hindu (Bihari) majority, Tamil/Telugu and",
-    "Muslim Indian lines, an Afro-Malagasy Creole plurality, the Franco-",
-    "Mauritian elite and a Sino-Mauritian minority. Tagged MU."
-   ],
-   "label": "Mauritius",
-   "subregions": [
-    {
-     "weight": 0.32,
-     "country": "MU",
-     "first_keys": [
-      "indian",
-      "indian_north"
-     ],
-     "surname_keys": [
-      "indian"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "MU",
-     "first_keys": [
-      "indian_south"
-     ],
-     "surname_keys": [
-      "indian_south_tamil",
-      "indian"
-     ]
-    },
-    {
-     "weight": 0.13,
-     "country": "MU",
-     "first_keys": [
-      "arabic",
-      "indian"
-     ],
-     "surname_keys": [
-      "indian"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "MU",
-     "first_keys": [
-      "french",
-      "malagasy"
-     ],
-     "surname_keys": [
-      "french",
-      "malagasy"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "MU",
-     "first_keys": [
-      "french"
-     ],
-     "surname_keys": [
-      "french"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "MU",
-     "first_keys": [
-      "chinese"
-     ],
-     "surname_keys": [
-      "chinese"
-     ]
-    }
-   ]
-  },
-  "barbados": {
-   "_doc": [
-    "Anglophone Caribbean nation with a tiny but real baseball community",
-    "alongside its cricket pedigree — an O27 conversion target. Afro-",
-    "Caribbean given + family names. Tagged BB."
-   ],
-   "label": "Barbados",
-   "country": "BB",
-   "first_keys": [
-    "afro_caribbean"
-   ],
-   "surname_keys": [
-    "afro_caribbean"
-   ]
-  },
-  "bahamas": {
-   "_doc": [
-    "Caribbean baseball sleeper with genuine MLB pedigree per capita",
-    "(Jazz Chisholm Jr., Antoan Richardson). Afro-Caribbean given +",
-    "family names. Tagged BS."
-   ],
-   "label": "Bahamas",
-   "country": "BS",
-   "first_keys": [
-    "afro_caribbean"
-   ],
-   "surname_keys": [
-    "afro_caribbean"
-   ]
-  },
-  "iran": {
-   "_doc": [
-    "Real baseball federation with a small, growing community — an O27",
-    "frontier target. Dedicated Iranian-Persian pool (Dariush, Kourosh,",
-    "Arash over Hosseini/Shirazi/Esfahani), distinct from the Afghan",
-    "Dari pool. Tagged IR."
-   ],
-   "label": "Iran",
-   "country": "IR",
-   "first_keys": [
-    "iranian"
-   ],
-   "surname_keys": [
-    "iranian"
-   ]
-  },
-  "uganda": {
-   "_doc": [
-    "African baseball sleeper — the genuine Little-League Cinderella",
-    "story (Uganda reached the LLWS), an O27 development target. Reuses",
-    "the east_african + african pools (Baganda / Banyankole / Acholi",
-    "naming). Tagged UG."
-   ],
-   "label": "Uganda",
-   "country": "UG",
-   "first_keys": [
-    "east_african",
-    "african"
-   ],
-   "surname_keys": [
-    "east_african",
-    "african"
-   ]
-  },
-  "spain": {
-   "_doc": [
-    "Second-tier European baseball nation (CBS league, perennial Euro",
-    "qualifier). Castilian given + family names tagged ES."
-   ],
-   "label": "Spain",
-   "country": "ES",
-   "first_keys": [
-    "spanish"
-   ],
-   "surname_keys": [
-    "spanish"
-   ]
-  },
-  "poland": {
-   "_doc": [
-    "Small but real European baseball scene (Polish Baseball League,",
-    "Euro qualifier). Polish given + family names tagged PL."
-   ],
-   "label": "Poland",
-   "country": "PL",
-   "first_keys": [
-    "polish"
-   ],
-   "surname_keys": [
-    "polish"
-   ]
-  },
-  "belgium": {
-   "subregions": [
-    {
-     "weight": 0.6,
-     "country": "BE",
-     "first_keys": [
-      "dutch"
-     ],
-     "surname_keys": [
-      "dutch"
-     ]
-    },
-    {
-     "weight": 0.4,
-     "country": "BE",
-     "first_keys": [
-      "french"
-     ],
-     "surname_keys": [
-      "french"
-     ]
-    }
-   ]
-  },
-  "palestine": {
-   "_doc": [
-    "Frontier baseball nation with little domestic infrastructure — the",
-    "program leans on the diaspora (the expat-fueled talent steering in",
-    "o27v2.youth gives it occasional foreign-raised call-ups). Arabic",
-    "given + family names tagged PS."
-   ],
-   "label": "Palestine",
-   "country": "PS",
-   "first_keys": [
-    "arabic"
-   ],
-   "surname_keys": [
-    "arabic"
-   ]
-  },
-  "lebanon": {
-   "country": "LB",
-   "first_keys": [
-    "arabic"
-   ],
-   "surname_keys": [
-    "arabic"
-   ]
-  },
-  "zaryanovia": {
-   "_doc": [
-    "Zaryanovia — alt-history Russian Far East. Names are produced by",
-    "the Zaryanification converter (o27v2/zaryan_names.py): English first",
-    "+ surname drawn from the American / Black-American pools and run",
-    "through a Russian-English creole pipeline (phonology, patronymic,",
-    "surname-path A/B/C, feminization). The creole majority is the",
-    "primary draw; the minority subregions below carry the four other",
-    "founding-stream populations (ethnic Russians, Koryo-saram Koreans,",
-    "Chinese, Africans incl. the Ethiopian thread) plus the Soviet-era",
-    "Kazakh / Central Asian minority. The Russian ethnic minority is the",
-    "'marked' group — small share. No Japanese stream (Sakhalin Japanese",
-    "were not a founding population per the master wiki)."
-   ],
-   "label": "Zaryanovia",
-   "country": "ZR",
-   "subregions": [
-    {
-     "weight": 0.65,
-     "country": "ZR",
-     "_note": "creole majority — Zaryanification pipeline applies",
-     "first_keys": [
-      "black_american",
-      "american_south"
-     ],
-     "surname_keys": [
-      "american_general",
-      "black_american"
-     ]
-    },
-    {
-     "weight": 0.12,
-     "country": "ZR",
-     "first_keys": [
-      "russian"
-     ],
-     "surname_keys": [
-      "russian"
-     ]
-    },
-    {
-     "weight": 0.08,
-     "country": "ZR",
-     "first_keys": [
-      "korean"
-     ],
-     "surname_keys": [
-      "koryo_saram"
-     ]
-    },
-    {
-     "weight": 0.07,
-     "country": "ZR",
-     "first_keys": [
-      "african",
-      "ethiopian",
-      "amharic"
-     ],
-     "surname_keys": [
-      "african",
-      "ethiopian",
-      "amharic"
-     ]
-    },
-    {
-     "weight": 0.05,
-     "country": "ZR",
-     "first_keys": [
-      "chinese"
-     ],
-     "surname_keys": [
-      "chinese"
-     ]
-    },
-    {
-     "weight": 0.03,
-     "country": "ZR",
-     "first_keys": [
-      "central_asian"
-     ],
-     "surname_keys": [
-      "central_asian"
-     ]
-    }
-   ]
-  },
-  "north_africa": {
-   "label": "North Africa (Maghreb & Egypt)",
-   "subregions": [
-    {
-     "weight": 0.3,
-     "country": "EG",
-     "first_keys": [
-      "egyptian"
-     ],
-     "surname_keys": [
-      "egyptian"
-     ]
-    },
-    {
-     "weight": 0.25,
-     "country": "MA",
-     "first_keys": [
-      "maghrebi"
-     ],
-     "surname_keys": [
-      "maghrebi"
-     ]
-    },
-    {
-     "weight": 0.24,
-     "country": "DZ",
-     "first_keys": [
-      "maghrebi"
-     ],
-     "surname_keys": [
-      "maghrebi"
-     ]
-    },
-    {
-     "weight": 0.15,
-     "country": "TN",
-     "first_keys": [
-      "maghrebi"
-     ],
-     "surname_keys": [
-      "maghrebi"
-     ]
-    },
-    {
-     "weight": 0.06,
-     "country": "LY",
-     "first_keys": [
-      "maghrebi",
-      "arabic"
-     ],
-     "surname_keys": [
-      "maghrebi",
-      "arabic"
-     ]
-    }
-   ]
-  },
-  "mongolia": {
-   "_doc": [
-    "Mongolia. Designated expansion market for Zaryan baseball — ",
-    "the Zaryanovia thread evangelises the sport across the steppe ",
-    "via the established Russian-Far-East to Ulaanbaatar trade ",
-    "corridor. Names use modern Latin transliteration (Batbayar, ",
-    "Bolormaa, Borjigin) so they read cleanly on a roster."
-   ],
-   "label": "Mongolia",
-   "country": "MN",
-   "first_keys": [
-    "mongolian"
-   ],
-   "surname_keys": [
-    "mongolian"
-   ]
-  },
-  "north_korea": {
-   "_doc": [
-    "DPRK. Second Zaryan-baseball expansion market — short border ",
-    "with Zaryanovia carries the sport across the river. Pool uses ",
-    "McCune-Reischauer-style romanization (Ri/Pak/Choe vs. South ",
-    "Korean Lee/Park/Choi) to visually distinguish from the existing ",
-    "south-flavored `korean` pool. Surnames bias hard toward Kim ",
-    "(~25% in real DPRK), reproduced by duplicate entries in the ",
-    "flat surname list."
-   ],
-   "label": "North Korea (DPRK)",
-   "country": "KP",
-   "first_keys": [
-    "korean_north"
-   ],
-   "surname_keys": [
-    "korean_north"
-   ]
-  },
-  "south_korea": {
-   "_doc": [
-    "Republic of Korea (ROK) — a standalone Korean market so South Korea ",
-    "can be dialled up directly, symmetric with the north_korea region. ",
-    "Uses the south-flavored `korean` pool (Lee/Park/Choi/Kim), the same ",
-    "names east_asia draws its KR subregion from; absent from the base ",
-    "presets, so it surfaces via a boost in the nationality editor."
-   ],
-   "label": "South Korea",
-   "country": "KR",
-   "first_keys": [
-    "korean"
-   ],
-   "surname_keys": [
-    "korean"
-   ]
-  },
-  "albania": {
-   "_doc": [
-    "Adriatic frontier baseball nation. The curated Albanian pool existed",
-    "in the name files with no region — promoted here so an Albania side",
-    "draws Albanian given + family names tagged AL."
-   ],
-   "label": "Albania",
-   "country": "AL",
-   "first_keys": [
-    "albanian"
-   ],
-   "surname_keys": [
-    "albanian"
-   ]
-  },
-  "estonia": {
-   "_doc": [
-    "Baltic baseball nation alongside Lithuania and Latvia. The curated",
-    "Estonian pool existed in the name files with no region — promoted",
-    "here so an Estonia side draws Estonian given + family names tagged EE."
-   ],
-   "label": "Estonia",
-   "country": "EE",
-   "first_keys": [
-    "estonian"
-   ],
-   "surname_keys": [
-    "estonian"
-   ]
-  },
-  "georgia": {
-   "_doc": [
-    "Caucasus frontier baseball nation. The curated Georgian pool existed",
-    "in the name files with no region — promoted here so a Georgia side",
-    "draws Georgian given + family names (the -shvili / -dze surname",
-    "belts: Beridze, Kapanadze, Gelashvili) tagged GE."
-   ],
-   "label": "Georgia",
-   "country": "GE",
-   "first_keys": [
-    "georgian"
-   ],
-   "surname_keys": [
-    "georgian"
-   ]
-  },
-  "iceland": {
-   "_doc": [
-    "Nordic frontier baseball nation. The icelandic given-name pools",
-    "already existed but had no surname bucket (Icelandic names are",
-    "patronymic), so the region couldn't be wired. Surnames seeded with",
-    "the -son patronymic belt (Sigurðsson, Guðmundsson, Jónsson) plus a",
-    "few real inherited family names. Tagged IS."
-   ],
-   "label": "Iceland",
-   "country": "IS",
-   "first_keys": [
-    "icelandic"
-   ],
-   "surname_keys": [
-    "icelandic"
-   ]
-  },
-  "latvia": {
-   "_doc": [
-    "Baltic baseball nation (Latvia has a small but real federation).",
-    "The curated Latvian pool existed in the name files with no region —",
-    "promoted here so a Latvia side draws Latvian given + family names",
-    "(the gendered -s/-š masculine surname endings) tagged LV."
-   ],
-   "label": "Latvia",
-   "country": "LV",
-   "first_keys": [
-    "latvian"
-   ],
-   "surname_keys": [
-    "latvian"
-   ]
-  },
-  "france": {
-   "label": "France",
-   "country": "FR",
-   "first_keys": [
-    "french"
-   ],
-   "surname_keys": [
-    "french"
-   ]
-  },
-  "argentina": {
-   "label": "Argentina",
-   "country": "AR",
-   "first_keys": [
-    "argentinian",
-    "spanish",
-    "italian"
-   ],
-   "surname_keys": [
-    "argentinian"
-   ]
-  },
-  "china": {
-   "label": "China",
-   "country": "CN",
-   "first_keys": [
-    "chinese"
-   ],
-   "surname_keys": [
-    "chinese"
-   ]
-  },
-  "japan": {
-   "label": "Japan",
-   "country": "JP",
-   "first_keys": [
-    "japanese"
-   ],
-   "surname_keys": [
-    "japanese"
-   ]
-  },
-  "chile": {
-   "label": "Chile",
-   "country": "CL",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish"
-   ]
-  },
-  "bulgaria": {
-   "label": "Bulgaria",
-   "country": "BG",
-   "first_keys": [
-    "bulgarian"
-   ],
-   "surname_keys": [
-    "bulgarian"
-   ]
-  },
-  "colombia": {
-   "label": "Colombia",
-   "country": "CO",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "afro_caribbean"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish"
-   ]
-  },
-  "peru": {
-   "label": "Peru",
-   "country": "PE",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish"
-   ]
-  },
-  "uruguay": {
-   "label": "Uruguay",
-   "country": "UY",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish",
-    "italian"
-   ]
-  },
-  "ecuador": {
-   "label": "Ecuador",
-   "country": "EC",
-   "first_keys": [
-    "latino_hispanic",
-    "latin_american"
-   ],
-   "surname_keys": [
-    "latino_hispanic",
-    "latin_american",
-    "spanish"
-   ]
-  },
-  "romania": {
-   "label": "Romania",
-   "country": "RO",
-   "first_keys": [
-    "romanian"
-   ],
-   "surname_keys": [
-    "romanian"
-   ]
-  },
-  "taiwan": {
-   "label": "Taiwan",
-   "country": "TW",
-   "first_keys": [
-    "chinese_taiwanese"
-   ],
-   "surname_keys": [
-    "chinese_taiwanese"
-   ]
   }
- },
- "presets": {
-  "tennis_global": {
-   "label": "Tennis Global (realistic tour talent geography)",
-   "_doc": [
-    "Tennis-shaped world. The developed-tennis bloc (USA, the Spanish/",
-    "French/Italian/German Western-Europe pool, Eastern Europe, Russia,",
-    "Australasia, South America, East Asia, Britain, the Balkans, Canada,",
-    "Switzerland, the Nordics) carries ~88% of draws. The remaining block",
-    "below is a deliberate >=10% RESERVE for the rest of the world so",
-    "talent keeps emerging outside the majors -- those nations fall back",
-    "to neutral 50/50 in nation_talent.json, so they generate at",
-    "tour-average with full variance and still surface the occasional gem."
-   ],
-   "weights": {
-    "us": 0.16,
-    "spain": 0.09,
-    "europe_western": 0.16,
-    "italy": 0.06,
-    "europe_eastern": 0.09,
-    "russia": 0.05,
-    "serbia": 0.03,
-    "south_america": 0.06,
-    "anzac": 0.05,
-    "east_asia": 0.05,
-    "british_isles": 0.04,
-    "europe_southeast": 0.04,
-    "germany": 0.03,
-    "canada": 0.08,
-    "switzerland": 0.02,
-    "nordic": 0.02,
-    "belgium": 0.015,
-    "austria": 0.015,
-    "kazakhstan": 0.01,
-    "africa": 0.02,
-    "south_asia": 0.02,
-    "north_africa": 0.015,
-    "southeast_asia": 0.015,
-    "central_west_asia": 0.015,
-    "turkey": 0.01,
-    "mexico": 0.01,
-    "caribbean_cricket": 0.01,
-    "pacific_islands": 0.008,
-    "philippines": 0.007,
-    "albania": 0.006,
-    "estonia": 0.006,
-    "georgia": 0.006,
-    "iceland": 0.006,
-    "latvia": 0.006,
-    "zaryanovia": 0.02
-   }
-  },
-  "americas_pro": {
-   "label": "Americas Pro (MLB-like — pre-cricket-pipeline baseline)",
-   "weights": {
-    "us": 0.55,
-    "latin_america": 0.28,
-    "east_asia": 0.04,
-    "anzac": 0.03,
-    "canada": 0.1,
-    "europe_western": 0.03,
-    "africa": 0.02,
-    "central_west_asia": 0.01
-   }
-  },
-  "o27_year_1": {
-   "label": "O27 Year 1 (Launch — East Asia + legacy baseball pipelines)",
-   "_note": [
-    "Launch season: cricket-conversion academies announced but the player",
-    "pipeline hasn't matured. Roster mix is heavily MLB-shaped + a real",
-    "East-Asia presence (the launch market) and the first wave of cricket",
-    "early-adopters from South Asia, Australia, Caribbean, SA.",
-    "",
-    "Guyana and Trinidad already over-represented within the (small)",
-    "caribbean_cricket allocation — see that region's subregion weights.",
-    "South America starts visible: Argentine and Brazilian football-",
-    "infrastructure converts faster than expected. Pelé's grandson",
-    "narrative."
-   ],
-   "weights": {
-    "us": 0.33,
-    "latin_america": 0.2,
-    "south_america": 0.04,
-    "east_asia": 0.12,
-    "south_asia": 0.07,
-    "anzac": 0.05,
-    "caribbean_cricket": 0.07,
-    "caribbean_dutch": 0.01,
-    "africa_cricket": 0.03,
-    "british_isles": 0.025,
-    "afghan_central_asia": 0.005,
-    "malaysia": 0.01,
-    "pacific_islands": 0.005,
-    "canada": 0.1,
-    "philippines": 0.01,
-    "europe_western": 0.02,
-    "europe_eastern": 0.005,
-    "zaryanovia": 0.02
-   }
-  },
-  "o27_year_5": {
-   "label": "O27 Year 5 (Pipeline visible — academies producing pros)",
-   "_note": [
-    "Mid-pipeline: cricket academies in Pakistan, India, Caribbean, SA",
-    "are graduating their first wave of legitimate O27 pros. Malaysia",
-    "growth visible. North American share retreats.",
-    "",
-    "Guyana + Trinidad combined now ~70% of caribbean_cricket mass.",
-    "Argentine + Brazilian academies (football pipeline conversion)",
-    "produce first All-Stars; south_america cracks 10% — top-10 by",
-    "count, while GY+TT remain top-tier per capita."
-   ],
-   "weights": {
-    "us": 0.18,
-    "latin_america": 0.15,
-    "south_america": 0.1,
-    "east_asia": 0.09,
-    "south_asia": 0.14,
-    "anzac": 0.06,
-    "caribbean_cricket": 0.11,
-    "caribbean_dutch": 0.02,
-    "africa_cricket": 0.05,
-    "british_isles": 0.03,
-    "afghan_central_asia": 0.015,
-    "malaysia": 0.025,
-    "pacific_islands": 0.02,
-    "canada": 0.05,
-    "philippines": 0.02,
-    "europe_western": 0.015,
-    "europe_eastern": 0.02,
-    "zaryanovia": 0.04,
-    "mongolia": 0.02,
-    "north_korea": 0.015
-   }
-  },
-  "o27_year_10": {
-   "label": "O27 Year 10 (Mature — full cricket-pipeline thesis)",
-   "_note": [
-    "Mature league: the cricket-conversion thesis has played out. South",
-    "Asia is the largest single feeder, Malaysia is the structural",
-    "growth market, and the league looks globally rooted instead of an",
-    "MLB sim with the rules filed off.",
-    "",
-    "Guyana + Trinidad combined are ~10% of total league players —",
-    "from countries with a combined population of ~2M. That's the",
-    "structural over-production: Cuba-of-O27 per capita, top-5 elite",
-    "producers in absolute terms. South America (Argentina + Brazil",
-    "anchor) is the top-10-by-scale story: ~13% of league, Brazil with",
-    "visibly hyphenated Italian-Brazilian / Japanese-Brazilian /",
-    "German-Brazilian rosters distinct from MLB-shaped Latin America."
-   ],
-   "weights": {
-    "us": 0.13,
-    "latin_america": 0.11,
-    "south_america": 0.13,
-    "east_asia": 0.09,
-    "south_asia": 0.2,
-    "anzac": 0.075,
-    "caribbean_cricket": 0.13,
-    "caribbean_dutch": 0.025,
-    "africa_cricket": 0.06,
-    "british_isles": 0.035,
-    "afghan_central_asia": 0.02,
-    "malaysia": 0.035,
-    "pacific_islands": 0.04,
-    "canada": 0.04,
-    "philippines": 0.03,
-    "europe_western": 0.005,
-    "europe_eastern": 0.04,
-    "zaryanovia": 0.06,
-    "mongolia": 0.04,
-    "north_korea": 0.035
-   }
-  },
-  "global": {
-   "label": "Global (even-handed mix)",
-   "weights": {
-    "us": 0.1,
-    "latin_america": 0.08,
-    "south_america": 0.06,
-    "europe_western": 0.07,
-    "europe_eastern": 0.04,
-    "nordic": 0.02,
-    "europe_southeast": 0.02,
-    "east_asia": 0.07,
-    "southeast_asia": 0.05,
-    "philippines": 0.04,
-    "south_asia": 0.12,
-    "central_west_asia": 0.03,
-    "gulf_cricket": 0.02,
-    "israel": 0.01,
-    "africa": 0.05,
-    "africa_cricket": 0.05,
-    "anzac": 0.04,
-    "caribbean_cricket": 0.05,
-    "caribbean_dutch": 0.02,
-    "pacific_islands": 0.03,
-    "british_isles": 0.03,
-    "malaysia": 0.02,
-    "zaryanovia": 0.03,
-    "mongolia": 0.02,
-    "north_korea": 0.015
-   }
-  },
-  "european": {
-   "label": "European",
-   "weights": {
-    "europe_western": 0.45,
-    "europe_eastern": 0.18,
-    "nordic": 0.13,
-    "british_isles": 0.15,
-    "central_west_asia": 0.05,
-    "africa": 0.04
-   }
-  },
-  "asian_pro": {
-   "label": "East-Asia Pro",
-   "weights": {
-    "east_asia": 0.6,
-    "southeast_asia": 0.13,
-    "philippines": 0.1,
-    "us": 0.07,
-    "latin_america": 0.05,
-    "malaysia": 0.05,
-    "zaryanovia": 0.12,
-    "mongolia": 0.05,
-    "north_korea": 0.04
-   }
-  },
-  "nordic": {
-   "label": "Nordic (pesäpallo / Finnish)",
-   "weights": {
-    "nordic": 0.92,
-    "europe_eastern": 0.04,
-    "us": 0.04
-   }
-  },
-  "us_only": {
-   "label": "USA Only",
-   "weights": {
-    "us": 1.0
-   }
-  },
-  "africa_pro": {
-   "label": "African (broad-mix)",
-   "weights": {
-    "africa": 0.4,
-    "africa_cricket": 0.2,
-    "north_africa": 0.15,
-    "uganda": 0.08,
-    "namibia": 0.07,
-    "cape_verde": 0.05,
-    "mauritius": 0.05
-   }
-  },
-  "oceania": {
-   "label": "Oceania (ANZAC + Pacific)",
-   "weights": {
-    "anzac": 0.55,
-    "pacific_islands": 0.4,
-    "philippines": 0.05
-   }
-  },
-  "us_majority": {
-   "label": "USA majority + global (70/30)",
-   "weights": {
-    "us": 0.7,
-    "latin_america": 0.1,
-    "east_asia": 0.05,
-    "europe_western": 0.05,
-    "anzac": 0.05,
-    "africa": 0.05
-   }
-  },
-  "east_asia_majority": {
-   "label": "East Asia majority + global (75/25)",
-   "weights": {
-    "east_asia": 0.75,
-    "us": 0.1,
-    "latin_america": 0.05,
-    "southeast_asia": 0.05,
-    "philippines": 0.05,
-    "zaryanovia": 0.08,
-    "mongolia": 0.04,
-    "north_korea": 0.03
-   }
-  },
-  "far_east": {
-   "label": "Far East (East Asia + Zaryanovia)",
-   "weights": {
-    "east_asia": 0.45,
-    "zaryanovia": 0.25,
-    "southeast_asia": 0.12,
-    "philippines": 0.08,
-    "malaysia": 0.05,
-    "us": 0.05,
-    "mongolia": 0.1,
-    "north_korea": 0.08
-   }
-  },
-  "zaryan_mongolia": {
-   "label": "Zaryan / Mongolian expansion (Zaryanovia + Mongolia + East Asia tail)",
-   "weights": {
-    "zaryanovia": 0.5,
-    "mongolia": 0.3,
-    "east_asia": 0.1,
-    "central_west_asia": 0.05,
-    "us": 0.05,
-    "north_korea": 0.1
-   }
-  },
-  "zaryan_expansion": {
-   "label": "Zaryan expansion frontier (Zaryanovia + Mongolia + DPRK)",
-   "weights": {
-    "zaryanovia": 0.45,
-    "mongolia": 0.22,
-    "north_korea": 0.18,
-    "east_asia": 0.08,
-    "central_west_asia": 0.04,
-    "us": 0.03
-   }
-  },
-  "pro_tour": {
-   "label": "Pro Tour — global mix (ATP/WTA-shaped)",
-   "_doc": [
-    "Owner mix: big Western buckets (US, UK, Spain/France/Germany/Italy) with a strong,",
-    "globally-representative tail — South America, Canada, Mexico, Australia, East &",
-    "SE Asia (China/Japan/Korea, Thailand, Philippines), an Eastern-Europe bloc incl.",
-    "Poland, and an influential-but-smaller Africa/Brazil. Shapes the FOREIGN share of",
-    "each roster; the US/foreign split stays division-driven."
-   ],
-   "weights": {
-    "us": 0.2,
-    "british_isles": 20.44,
-    "south_america": 1.2,
-    "brazil": 3.2,
-    "canada": 6.0,
-    "mexico": 2.5,
-    "spain": 5.0,
-    "europe_western": 6.0,
-    "germany": 5.0,
-    "italy": 5.0,
-    "poland": 2.18,
-    "europe_eastern": 1.4,
-    "russia": 1.45,
-    "czechia": 1.09,
-    "serbia": 1.09,
-    "croatia": 0.73,
-    "slovakia": 0.58,
-    "hungary": 0.58,
-    "ukraine": 0.73,
-    "nordic": 2.0,
-    "anzac": 10.68,
-    "east_asia": 1.4,
-    "south_korea": 1.0,
-    "hong_kong": 0.6,
-    "thailand": 1.5,
-    "philippines": 1.5,
-    "indonesia": 0.6,
-    "malaysia": 0.6,
-    "africa": 3.95,
-    "north_africa": 2.26,
-    "switzerland": 1.2,
-    "austria": 0.6,
-    "belgium": 0.6,
-    "netherlands": 1.0,
-    "greece": 1.6,
-    "turkey": 1.0,
-    "kazakhstan": 0.5,
-    "israel": 0.5,
-    "africa_cricket": 1.41,
-    "mauritius": 0.56,
-    "cape_verde": 0.56,
-    "uganda": 0.45,
-    "namibia": 0.45,
-    "caribbean_cricket": 2.82,
-    "caribbean_dutch": 1.13,
-    "barbados": 0.68,
-    "bahamas": 0.68,
-    "bermuda": 0.56,
-    "haiti": 0.85,
-    "cuba": 0.85,
-    "dominican": 1.02,
-    "guyana": 0.34,
-    "suriname": 0.34,
-    "pacific_islands": 1.6,
-    "france": 4.0,
-    "argentina": 1.6,
-    "chile": 0.8,
-    "china": 1.2,
-    "japan": 1.2,
-    "bulgaria": 0.6,
-    "colombia": 0.8,
-    "peru": 0.7,
-    "uruguay": 0.5,
-    "ecuador": 0.4,
-    "romania": 0.6,
-    "taiwan": 0.6
-   }
-  }
- }
 }

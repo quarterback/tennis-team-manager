@@ -37,7 +37,7 @@ def test_draws_are_subregion_coherent():
 
     Guards the BASELINE pools, so the intentional diversity/diaspora blend is held
     OFF here (it deliberately pairs a home country with another culture's name —
-    see test_diaspora_pairs_real_names). With it off, every draw must be coherent."""
+    see test_diaspora_is_directed). With it off, every draw must be coherent."""
     import json
     import os
     import random
@@ -134,5 +134,116 @@ def test_diaspora_pairs_real_names():
                     f"diaspora produced an unreal name: {full!r}"
                 cross += 1
         assert cross > 0
+    finally:
+        _names.DIASPORA_SHARE = saved
+
+
+def _first_tokens(full):
+    """Candidate FIRST-name readings of a full name.
+
+    Some cultures have multi-word given names ("Chee Wee Tee" is Chee Wee + Tee),
+    so a bare `split(" ", 1)[0]` reads the first word only and calls a perfectly
+    coherent name a violation. The existing coherence test does the same
+    two-reading dance; anything checking a first name has to."""
+    return {full.split(" ", 1)[0], full.rsplit(" ", 1)[0]}
+
+
+def test_diaspora_is_directed_not_a_second_roll_on_the_world_mix():
+    """‼️ THE SIEVE. Diaspora used to pick its donor with a second, independent
+    draw from THE WHOLE WORLD MIX, so any region could donate a name to any other
+    — Russian names on Dominicans, Chinese names on Africans, at ~11% of all
+    players. Owner, 2027-08: "the pool is a sieve … it's breaking my immersion."
+
+    A region may now only receive a name from a heritage it DECLARES
+    (`diaspora` in regions.json), and a region that declares none is
+    monocultural. This drives the blend as hard as it goes and asserts every
+    single crossing lands on a declared route."""
+    import json
+    import os
+    import random
+
+    import generators.names as _names
+    from generators import make_name_picker
+    from generators.names import _NAMES_DIR
+
+    pools = {k: json.load(open(os.path.join(_NAMES_DIR, f"{k}.json")))
+             for k in ("male_first", "female_first", "surnames")}
+    regions = json.load(open(os.path.join(_NAMES_DIR, "regions.json")))["regions"]
+
+    def firsts(rid, kind):
+        out = set()
+        for sr in (regions[rid].get("subregions") or [regions[rid]]):
+            for k in sr.get("first_keys", []):
+                out |= set(pools[kind].get(k) or [])
+        return out
+
+    # Every declared donor must be a real region, or the route silently does
+    # nothing and the region quietly becomes monocultural.
+    for rid, reg in regions.items():
+        for donor in (reg.get("diaspora") or {}):
+            assert donor in regions, f"{rid} declares unknown heritage {donor!r}"
+
+    saved = _names.DIASPORA_SHARE
+    _names.DIASPORA_SHARE = 1.0            # every eligible draw crosses
+    try:
+        for rid in sorted(regions):
+            if rid == "zaryanovia":
+                continue
+            for gender, kind in (("male", "male_first"), ("female", "female_first")):
+                own = firsts(rid, kind)
+                if not own:
+                    continue
+                legal = set(own)
+                for donor in (regions[rid].get("diaspora") or {}):
+                    legal |= firsts(donor, kind)
+                fn = make_name_picker(random.Random(hash(rid) & 0xffff), gender=gender,
+                                      region_weights={rid: 1.0})
+                for _ in range(60):
+                    full, _c = fn()
+                    if full.startswith("Player "):   # pool exhausted — see below
+                        continue
+                    assert _first_tokens(full) & legal, (
+                        f"{rid} drew {full!r}, a heritage it never declared — the "
+                        f"donor pool is not being taken from `diaspora`")
+    finally:
+        _names.DIASPORA_SHARE = saved
+
+
+def test_a_region_without_declared_heritage_is_monocultural():
+    """The DEFAULT is no mixing. An insular nation reading as insular is correct;
+    an insular nation reading as a melting pot is the bug this rule removes."""
+    import json
+    import os
+    import random
+
+    import generators.names as _names
+    from generators import make_name_picker
+    from generators.names import _NAMES_DIR
+
+    regions = json.load(open(os.path.join(_NAMES_DIR, "regions.json")))["regions"]
+    silent = [r for r in ("dominican", "japan", "china", "south_korea", "africa",
+                          "north_africa", "mexico")
+              if r in regions and not regions[r].get("diaspora")]
+    assert silent, "expected the insular regions to declare no heritage"
+
+    pools = {k: json.load(open(os.path.join(_NAMES_DIR, f"{k}.json")))
+             for k in ("male_first", "surnames")}
+
+    saved = _names.DIASPORA_SHARE
+    _names.DIASPORA_SHARE = 1.0
+    try:
+        for rid in silent:
+            own = set()
+            for sr in (regions[rid].get("subregions") or [regions[rid]]):
+                for k in sr.get("first_keys", []):
+                    own |= set(pools["male_first"].get(k) or [])
+            fn = make_name_picker(random.Random(5), gender="male",
+                                  region_weights={rid: 1.0})
+            for _ in range(80):
+                full, _c = fn()
+                if full.startswith("Player "):
+                    continue
+                assert _first_tokens(full) & own, \
+                    f"{rid} is monocultural but drew {full!r}"
     finally:
         _names.DIASPORA_SHARE = saved

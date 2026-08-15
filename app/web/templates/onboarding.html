@@ -58,6 +58,41 @@
           <em>Picking a band just pre-fills these weights; the US row is the “US vs. world split” above.</em>
           <button type="button" class="ob-reset" id="ob-reset">Reset to band</button>
         </p>
+
+        <div class="ob-mix" id="ob-mix">
+          <div class="ob-mix-row">
+            <span class="ob-mix-k"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Keep this mix</span>
+            <input type="text" id="ob-mix-name" class="ob-select ob-mix-name" maxlength="60"
+                   placeholder="Name this mix…" autocomplete="off" spellcheck="false">
+            <input type="file" id="ob-mix-file" accept="application/json,.json" hidden>
+          </div>
+          <div class="ob-mix-row ob-mix-acts">
+            <button type="button" class="ob-mix-btn primary" id="ob-mix-download">
+              <i class="fa-solid fa-download" aria-hidden="true"></i> Download</button>
+            <button type="button" class="ob-mix-btn" id="ob-mix-load">
+              <i class="fa-solid fa-upload" aria-hidden="true"></i> Load file…</button>
+            <button type="button" class="ob-mix-btn" id="ob-mix-save">Save to this world</button>
+          </div>
+          <div class="ob-mix-row" id="ob-mix-saved-row"{% if not saved_mixes %} hidden{% endif %}>
+            <span class="ob-mix-k"><i class="fa-solid fa-bookmark" aria-hidden="true"></i> Saved here</span>
+            <select id="ob-mix-saved" class="ob-select ob-mix-name">
+              <option value="">Saved mixes…</option>
+              {% for m in saved_mixes %}
+              <option value="{{ m.name }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="ob-mix-btn" id="ob-mix-apply">Apply</button>
+            <button type="button" class="ob-mix-btn danger" id="ob-mix-del">Delete</button>
+          </div>
+          <p class="ob-mix-hint">
+            <strong>Download</strong> writes the whole mix — every weight, the band it started
+            from and the US/world split — to a small <code>.json</code> file on your machine, and
+            <strong>Load file…</strong> reads one straight back into the grid. That file is the
+            copy that lasts: <em>Save to this world</em> keeps a named mix inside this save, so it
+            goes away when the save does.
+          </p>
+          <p class="ob-mix-status" id="ob-mix-status" role="status" aria-live="polite"></p>
+        </div>
         {% for grp in region_groups %}
         <details class="ob-cont">
           <summary>{{ grp.continent }} <span class="ob-cont-n">{{ grp.regions|length }}</span></summary>
@@ -113,16 +148,24 @@
             span.classList.toggle('zero', pct < 0.05);
           });
         }
-        // Pre-fill every weight input from a band's map (band fraction × SCALE).
-        function applyBand() {
-          var m = bandWeights[bandSel.value] || {};
+        // Pre-fill every weight input from a {region: weight} map. A band's map is
+        // FRACTIONS (scale to the editor's integers); a saved/loaded mix already
+        // holds the editor's own integers, so it round-trips to the same visible
+        // numbers. Either way a region the map omits means zero — which is why a
+        // mix document omits its zeros rather than storing ~60 of them.
+        function applyWeights(m, fractions) {
+          m = m || {};
           rows.forEach(function (row) {
             if (row.dataset.domestic) return;
             var v = m[row.dataset.region];
-            inputOf(row).value = (v == null ? 0 : Math.max(1, Math.round(v * SCALE)));
+            if (v == null) { inputOf(row).value = 0; return; }
+            inputOf(row).value = fractions ? Math.max(1, Math.round(v * SCALE))
+                                           : Math.max(0, Math.round(v));
           });
           recompute();
         }
+        function applyBand() { applyWeights(bandWeights[bandSel.value], true); }
+
         intlSel.addEventListener('change', recompute);
         rows.forEach(function (row) {
           var inp = inputOf(row);
@@ -132,6 +175,170 @@
         var reset = document.getElementById('ob-reset');
         if (reset) reset.addEventListener('click', applyBand);
         recompute();
+
+        // --- Portable mixes: download / load a file / save into this world -------
+        var FORMAT = {{ preset_format|tojson }}, VERSION = {{ preset_version }};
+        var nameInp = document.getElementById('ob-mix-name');
+        var statusEl = document.getElementById('ob-mix-status');
+        var savedSel = document.getElementById('ob-mix-saved');
+        var savedRow = document.getElementById('ob-mix-saved-row');
+        var fileInp = document.getElementById('ob-mix-file');
+        var savedMixes = {};
+
+        function say(msg, kind) {
+          statusEl.textContent = msg || '';
+          statusEl.className = 'ob-mix-status' + (kind ? ' ' + kind : '');
+        }
+        // Read the LIVE grid, not the persisted config — the whole point is to
+        // author a mix and keep it before any world exists.
+        function collect() {
+          var w = {};
+          rows.forEach(function (row) {
+            if (row.dataset.domestic) return;
+            var v = Math.max(0, parseFloat(inputOf(row).value) || 0);
+            if (v > 0) w[row.dataset.region] = Math.round(v * 1000) / 1000;
+          });
+          return {
+            format: FORMAT, version: VERSION,
+            name: (nameInp.value || '').trim().slice(0, 60) || 'Custom mix',
+            base_band: bandSel ? bandSel.value : '',
+            intl_share: parseFloat(intlSel.value) || 0,
+            weights: w
+          };
+        }
+        function slug(s) {
+          return (s || 'region-mix').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                 .replace(/^-+|-+$/g, '') || 'region-mix';
+        }
+        // Apply a validated document, reporting what did NOT survive. Region ids
+        // are added and renamed between builds, so a mix authored against an older
+        // one is quietly a DIFFERENT mix unless the gaps are named out loud.
+        function applyDoc(doc, source) {
+          var known = {};
+          rows.forEach(function (r) { if (!r.dataset.domestic) known[r.dataset.region] = 1; });
+          var w = doc.weights || {}, unknown = [], kept = {};
+          Object.keys(w).forEach(function (k) {
+            if (known[k]) kept[k] = w[k]; else unknown.push(k);
+          });
+          var missing = Object.keys(known).filter(function (k) { return kept[k] == null; });
+          if (doc.base_band && bandSel) {
+            var opt = bandSel.querySelector('option[value="' + doc.base_band + '"]');
+            if (opt) bandSel.value = doc.base_band;   // set silently: no change event,
+          }                                           // so applyBand can't clobber the load
+          if (doc.intl_share != null) {
+            var best = null;
+            Array.prototype.forEach.call(intlSel.options, function (o) {
+              var d = Math.abs(parseFloat(o.value) - doc.intl_share);
+              if (best === null || d < best.d) best = {d: d, v: o.value};
+            });
+            if (best) intlSel.value = best.v;
+          }
+          if (doc.name) nameInp.value = doc.name;
+          applyWeights(kept, false);
+
+          var msg = 'Loaded “' + (doc.name || 'mix') + '” from ' + source + ' — '
+                  + Object.keys(kept).length + ' regions.';
+          if (unknown.length) {
+            msg += ' Ignored ' + unknown.length + ' region'
+                 + (unknown.length > 1 ? 's' : '') + ' this build does not have: '
+                 + unknown.join(', ') + '.';
+          }
+          if (missing.length) {
+            msg += ' ' + missing.length + ' region' + (missing.length > 1 ? 's are' : ' is')
+                 + ' not in the file and loaded at zero'
+                 + (missing.length <= 8 ? ': ' + missing.join(', ') + '.' : '.');
+          }
+          say(msg, (unknown.length || missing.length) ? 'warn' : 'ok');
+        }
+
+        document.getElementById('ob-mix-download').addEventListener('click', function () {
+          var doc = collect();
+          if (!Object.keys(doc.weights).length) {
+            return say('Nothing to download — every region is at zero.', 'warn');
+          }
+          var blob = new Blob([JSON.stringify(doc, null, 2)], {type: 'application/json'});
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = slug(doc.name) + '.ptc-mix.json';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          say('Downloaded “' + doc.name + '” — ' + Object.keys(doc.weights).length
+              + ' regions. Load it into any future world with “Load file…”.', 'ok');
+        });
+
+        document.getElementById('ob-mix-load').addEventListener('click', function () {
+          fileInp.value = '';           // so re-picking the same file still fires change
+          fileInp.click();
+        });
+        fileInp.addEventListener('change', function () {
+          var f = fileInp.files && fileInp.files[0];
+          if (!f) return;
+          var reader = new FileReader();
+          reader.onerror = function () { say('Could not read that file.', 'err'); };
+          reader.onload = function () {
+            var doc;
+            try { doc = JSON.parse(reader.result); }
+            catch (e) { return say('That file is not valid JSON.', 'err'); }
+            if (!doc || doc.format !== FORMAT) {
+              return say('That is not a region-mix file.', 'err');
+            }
+            if ((doc.version | 0) > VERSION) {
+              return say('That mix is version ' + doc.version + '; this build reads up to '
+                         + VERSION + '.', 'err');
+            }
+            if (!doc.weights || typeof doc.weights !== 'object') {
+              return say('That region-mix file has no weights.', 'err');
+            }
+            applyDoc(doc, f.name);
+          };
+          reader.readAsText(f);
+        });
+
+        function renderSaved(mixes) {
+          savedMixes = {};
+          savedSel.innerHTML = '<option value="">Saved mixes…</option>';
+          (mixes || []).forEach(function (m) {
+            savedMixes[m.name] = m;
+            var o = document.createElement('option');
+            o.value = m.name; o.textContent = m.name;
+            savedSel.appendChild(o);
+          });
+          savedRow.hidden = !(mixes && mixes.length);
+        }
+        function post(url, body, then) {
+          fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify(body)})
+            .then(function (r) { return r.json().then(function (j) { return {ok: r.ok, j: j}; }); })
+            .then(function (res) {
+              if (!res.ok || !res.j.ok) return say(res.j.error || 'That did not save.', 'err');
+              renderSaved(res.j.mixes);
+              then(res.j);
+            })
+            .catch(function () { say('Could not reach the server.', 'err'); });
+        }
+        document.getElementById('ob-mix-save').addEventListener('click', function () {
+          var doc = collect();
+          if (!Object.keys(doc.weights).length) {
+            return say('Nothing to save — every region is at zero.', 'warn');
+          }
+          post('{{ url_for("world_mix_save") }}', doc, function () {
+            savedSel.value = doc.name;
+            say('Saved “' + doc.name + '” into this world. Download it too if you want it '
+                + 'to outlive this save.', 'ok');
+          });
+        });
+        document.getElementById('ob-mix-apply').addEventListener('click', function () {
+          var m = savedMixes[savedSel.value];
+          if (!m) return say('Pick a saved mix first.', 'warn');
+          applyDoc(m, 'this world');
+        });
+        document.getElementById('ob-mix-del').addEventListener('click', function () {
+          var n = savedSel.value;
+          if (!n) return say('Pick a saved mix first.', 'warn');
+          post('{{ url_for("world_mix_delete") }}', {name: n},
+               function () { say('Deleted “' + n + '”.', 'ok'); });
+        });
+        renderSaved({{ saved_mixes|tojson }});
       })();
       </script>
 
@@ -274,6 +481,35 @@
 .ob-rweight:focus { border-color: var(--brand); outline: none; }
 .ob-reset { float: right; cursor: pointer; font-size: 12.5px; color: var(--brand); background: none; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 2px 8px; }
 .ob-reset:hover { border-color: var(--brand); }
+
+/* Portable mixes. The download is the durable copy and the save is not, so the
+   download button is the only one that reads as primary. */
+.ob-mix { margin: 4px 0 14px; padding: 12px 14px; border: 1px solid var(--border-subtle);
+  border-radius: 10px; background: var(--surface-page); }
+.ob-mix-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ob-mix-row + .ob-mix-row { margin-top: 8px; }
+.ob-mix-row[hidden] { display: none; }
+.ob-mix-k { font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-width: 118px; }
+.ob-mix-name { flex: 1 1 180px; min-width: 140px; font-size: 13.5px; padding: 5px 8px; }
+.ob-mix-acts { padding-left: 118px; }
+@media (max-width: 560px) { .ob-mix-acts { padding-left: 0; } }
+.ob-mix-btn { cursor: pointer; font-size: 13px; font-weight: 600; flex: 0 0 auto;
+  color: var(--text-secondary); background: var(--surface-card);
+  border: 1px solid var(--border-subtle); border-radius: 7px; padding: 5px 11px;
+  transition: border-color var(--dur-fast, .12s), color var(--dur-fast, .12s); }
+.ob-mix-btn:hover { border-color: var(--brand); color: var(--brand); }
+.ob-mix-btn.primary { color: var(--brand-contrast); background: var(--brand);
+  border-color: var(--brand); }
+.ob-mix-btn.primary:hover { background: var(--brand-strong); color: var(--brand-contrast); }
+.ob-mix-btn.danger:hover { border-color: var(--neg); color: var(--neg); }
+.ob-mix-hint { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
+.ob-mix-hint code { font-size: 12px; }
+.ob-mix-status { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.ob-mix-status:empty { display: none; }
+.ob-mix-status.ok { color: var(--pos); }
+.ob-mix-status.warn { color: var(--text-primary); }
+.ob-mix-status.err { color: var(--neg); }
 .ob-btn-primary { cursor: pointer; font-size: 16px; font-weight: 700;
   color: var(--brand-contrast); background: var(--brand); border: 1px solid var(--brand);
   border-radius: 9px; padding: 12px 20px; transition: background var(--dur-fast, .12s); }
