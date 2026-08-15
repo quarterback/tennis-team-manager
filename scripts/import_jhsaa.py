@@ -212,7 +212,7 @@ ALWAYS_EXTRA = [
     "St. Elias Academy",
     "Starlake",
     "Thomas Ekström",
-    "Trout Junction",
+    "Trout Lake",
     "Yarburg",
     "Yarmere",
 ]
@@ -527,7 +527,7 @@ MASCOTS = {
     "Meridian Regional": "Tinsmiths",           # Stovepipe
     "Telfair": "Kangaroo Rats",
     "Dry Lake": "Mirages",
-    "Trout Junction": "Silverlegs",             # the ask: named for its own fish
+    "Trout Lake": "Silverlegs",             # the ask: named for its own fish
 
     # ── North Range: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
@@ -559,7 +559,7 @@ MASCOTS = {
 # carry the monogram, the second is the accent.
 COLORS = {
     # rainbow trout: olive back over a silver flank
-    "Trout Junction": ["#2F3328", "#C0C5CE"],
+    "Trout Lake": ["#2F3328", "#C0C5CE"],
     "Treasure Valley": ["#4E1533", "#DED3B4"],      # beet root over refined sugar
     "Bahía Azúl": ["#173A5E", "#E0733A"],           # bay water, cooked crab
     "Yarmere": ["#2B2118", "#E08A2E"],              # the ensatina's orange
