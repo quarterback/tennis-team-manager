@@ -302,3 +302,50 @@ computations that agree by luck.
 
 The chain the section exists for now has no gaps:
 **freshman → four high-school seasons → graduating class → recruit board → college.**
+
+---
+
+## Addendum (2027-08): one dual, one date — and split boys/girls calendars
+
+**The bug.** `_jh_dates` built a card's calendar from each dual's POSITION in
+*that school's* schedule, so the two sides of one match derived different days:
+Lake Esperanza's Super Regional against José Martí read **May 14**, and José
+Martí's against Lake Esperanza read **May 17**. Nothing errored. Each card was
+internally plausible and self-consistent; only *reciprocity* was wrong, which is
+the same shape as the bracket-score bug this file already records — a fault that
+is invisible from any single page.
+
+**The fix is where the date lives.** A dual is one event, so the date belongs to
+the MATCH: `world.jhsaa_match_dates` assigns one date per dual for a whole
+gender-season and both cards look it up, keyed by `world.jh_match_key` — phase,
+league flag, and the (home, away) pair in venue order, which is identical from
+either side and still tells the two meetings of a double round robin apart.
+
+**Packing.** Dates come from a topological order of the play sequence (each
+school's card is already in play order, and they all come from one simulation,
+so a consistent global order exists — recover it rather than guess). Matches are
+then packed into **rounds**: a round holds duals with no team in common, so
+everything that could be played on one day is. Two things this avoids:
+
+- *Day-by-day assignment in play order* chains the constraint through opponents
+  — A waits on B, B waits on C — and stretched a 30-dual card across three
+  months.
+- *A max-of-positions heuristic* reorders a team's own card whenever its
+  opponent had played a different number of duals by then, which is why the
+  topological sort is worth the twenty lines.
+
+Ties in that sort break on **archive order**, not alphabetically: district play
+is already generated as rounds, so the natural order groups exactly the matches
+that can share a day.
+
+**Split calendars, cosmetic only.** Boys now show a fall season (Aug–Nov) and
+girls a spring one (Mar–Jun). This is presentation: both genders are still
+simulated together in the same rung, with no new clock, phase or season state.
+Days are Mon/Wed/Fri/Sat at ~4 duals a week, so a Sunday is impossible by
+construction rather than by a check. Classifications deliberately do not share
+stage dates — only the two sides of one dual must agree.
+
+Verified programmatically over every archived dual in both genders: every match
+has exactly two sides, one shared date, mirrored scores, reciprocal home/away,
+one winner, no Sunday, each card's dates non-decreasing in play order, and no
+school double-booked.
