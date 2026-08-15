@@ -101,7 +101,14 @@ def test_the_state_field_is_champions_guarantees_and_recovery_survivors(archived
         sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
         k = jh.ladder_scale(g)
         zonal_champs = set(pre["survivors"])
-        assert len(state["field"]) == jh.state_field_size(g, k)
+        # A Semi-State bye no eligible holder can take is PLAYED OFF instead
+        # (owner rule: a bye is never the ticket in), so the round may cut
+        # deeper than its target and the field may run short — by exactly the
+        # extra duals played, never more.
+        berths = jh.state_field_size(g, k) - len(zonal_champs) - len(dq)
+        natural = len(ss["field"]) - berths
+        extra = max(0, len(ss["rounds"][0]) - natural)
+        assert len(state["field"]) == jh.state_field_size(g, k) - extra
         assert zonal_champs.isdisjoint(dq)
         assert set(state["field"]) \
             == zonal_champs | set(dq) | set(ss["survivors"])
@@ -400,55 +407,92 @@ def test_reaching_state_is_itself_an_honour(archived):
 
 
 def test_recovery_draws_never_replay_the_team_that_just_eliminated_you(archived):
-    """The hard half of the owner's draw rule, over every recovery dual in the
-    association — INCLUDING bye recipients.
-
-    Byes used to be handed to the top seeds before pairing, so a bye team could be
-    frozen into a rematch the repair could not reach: in this fixture a Super
-    Regional bye side met, at Semi-State, the team that had knocked it out at Wards.
-    Bye selection and pairing are chosen together now (`jhsaa._draw_recovery`), so a
-    bye team's next dual is checked against its LAST one exactly like everyone
-    else's — a bye does not hide a rematch."""
+    """The draw preference: don't immediately replay the opponent that just sent
+    you here. Byes are awarded FIRST, by TOSS from the bye-eligible teams
+    (owner rule 2027-08 — no joint bye-and-pairing search), and the pairing
+    method then avoids rematches wherever a rematch-free matching of the
+    playing set EXISTS. In a degenerate pool (a two-team Semi-State whose two
+    teams just played each other) the rematch is structurally forced and
+    allowed — so this asserts no AVOIDABLE rematch, by checking every perfect
+    matching of the round's playing set."""
+    import itertools
     arc = archived["arc"]
     conn = sqlite3.connect(archived["db"])
     conn.row_factory = sqlite3.Row
+
+    def last_before(school, opp_this_round):
+        sched = [r["opp"] for r in conn.execute(
+            "SELECT opp FROM world_jhsaa_dual WHERE world_id=? AND year=?"
+            " AND gender='girls' AND school=? ORDER BY rowid",
+            (archived["world"]["id"], archived["world"]["year"], school))]
+        # LAST occurrence: district opponents meet twice in the round robin, so
+        # the first hit could be a March league dual rather than this round.
+        for i in range(len(sched) - 1, 0, -1):
+            if sched[i] == opp_this_round:
+                return sched[i - 1]
+        return ""
+
+    def matchings(items):
+        if not items:
+            yield []
+            return
+        a = items[0]
+        for k in range(1, len(items)):
+            for m in matchings(items[1:k] + items[k + 1:]):
+                yield [(a, items[k])] + m
+
     offenders = []
     for g in jh.GROUPS:
         for key in ("super_regional", "semi_state"):
-            for gm in (arc[key][g].get("rounds") or [[]])[0]:
-                for me, opp in ((gm["home"], gm["away"]), (gm["away"], gm["home"])):
-                    # No id column: the archive preserves INSERT order, which is
-                    # the order of play (`_jh_dates` lays the same order on a
-                    # calendar), so rowid is the season's only clock.
-                    sched = [r["opp"] for r in conn.execute(
-                        "SELECT opp FROM world_jhsaa_dual WHERE world_id=? AND year=?"
-                        " AND gender='girls' AND school=? ORDER BY rowid",
-                        (archived["world"]["id"], archived["world"]["year"], me))]
-                    for i, o in enumerate(sched):
-                        if o == opp and i and sched[i - 1] == opp:
-                            offenders.append((g, key, me, opp))
+            games = (arc[key][g].get("rounds") or [[]])[0]
+            if not games:
+                continue
+            playing = [nm for gm in games for nm in (gm["home"], gm["away"])]
+            # each team's opponent in the dual immediately before this round
+            prev = {nm: last_before(nm, opp)
+                    for gm in games
+                    for nm, opp in ((gm["home"], gm["away"]),
+                                    (gm["away"], gm["home"]))}
+            hit = [(gm["home"], gm["away"]) for gm in games
+                   if prev[gm["home"]] == gm["away"] or prev[gm["away"]] == gm["home"]]
+            if not hit:
+                continue
+            # a rematch happened — is any matching of this playing set clean?
+            avoidable = False
+            for m in matchings(playing):
+                if all(prev[a] != b and prev[b] != a for a, b in m):
+                    avoidable = True
+                    break
+            if avoidable:
+                offenders.append((g, key, hit))
     conn.close()
     assert not offenders, offenders[:5]
 
-
-def test_nobody_gets_a_bye_in_both_recovery_rounds(archived):
-    """‼️ NO DOUBLE BYES (owner rule 2027-08). Byes go to the top of the TOSS
-    order, and both recovery rounds only ELIMINATE a cut — so under the first
-    shape a strong Regional loser could sit out Super Regionals AND Semi-State
-    and reach State having played zero recovery duals (a No. 19 seed did: "it
-    feels a bit unfair for a team to skip rounds I designed specifically to
-    ensure everyone who makes it to State played their way in"). A Super
-    Regional bye now forces a Semi-State dual; the Semi-State bye is earned by
-    playing and winning the Super Regional. Game counts are untouched — the
-    rule only moves WHO sits."""
+def test_a_bye_is_never_the_ticket_into_state(archived):
+    """‼️ EVERY RECOVERY QUALIFIER'S LAST APPEARANCE IS A WIN (owner rules
+    2027-08, sharpened across two reports). Byes go to the top of the TOSS
+    order and the rounds only eliminate a cut, so the original shape let a
+    No. 19 seed coast through BOTH rounds unplayed, and the first fix still let
+    a No. 4-TOSS Zonal loser take the Semi-State bye and reach State having
+    won nothing ("a team loses in zonals and gets to state without winning
+    their district"). Now the Semi-State bye belongs only to a Super Regional
+    game-WINNER: Super Regional bye holders and Zonal losers alike must play
+    at Semi-State. Game counts are untouched — the rules only move WHO sits."""
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss = _stages(archived, g)
         def byes(arc):
             played = {nm for games in arc["rounds"] for gm in games
                       for nm in (gm["home"], gm["away"])}
             return {nm for nm in arc["field"] if nm not in played}
-        double = byes(sr) & byes(ss)
-        assert not double, (g, sorted(double))
+        assert not byes(sr) & byes(ss), (g, "double bye")
+        sr_winners = {gm["winner"] for games in sr["rounds"] for gm in games}
+        assert byes(ss) <= sr_winners, (g, "Semi-State bye without an SR win")
+        # the invariant the two rules add up to: every recovery qualifier
+        # WON a recovery dual — champions and the guarantee are the only
+        # other doors into State.
+        earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
+        won = sr_winners | {gm["winner"] for games in ss["rounds"] for gm in games}
+        assert earned <= won, (g, sorted(earned - won))
 
 
 def test_recovery_byes_reach_the_bracket_view(archived):

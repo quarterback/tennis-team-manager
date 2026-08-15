@@ -176,3 +176,39 @@ second round's byes from the pre-Super-Regional TOSS, and the owner correctly
 objected that the ranking shifts the moment the next matches are played — a
 round's byes are a fact about that round's own draw, and should be presented
 (and reasoned about) per-stage, never projected forward.
+
+### Addendum 2 (same day): the Zonal-loser hole, and byes-first
+
+The no-double-bye rule closed one door and left its twin open: a **Zonal
+loser** enters recovery at Semi-State, had no prior bye, and was therefore
+still bye-eligible — so a No. 4-TOSS district runner-up lost its Zonal, took
+the Semi-State bye, and reached State having won nothing ("a team loses in
+zonals and gets to state without winning their district"). The two reports
+add up to one principle: **a bye is never the ticket into State.**
+
+The final shape is the owner's algorithm, replacing the `must_play`
+matching-search I had built: **decide the byes first, then pair.**
+
+1. Compute how many Semi-State byes the bracket requires.
+2. Award exactly that many, by TOSS, from the eligible set — non-guaranteed
+   teams that **played and won a Super Regional dual**. SR bye takers and
+   Zonal losers are not eligible; district champions are already guaranteed
+   and never enter the pool.
+3. Pair everyone remaining with the normal seeding/pairing method. "Must
+   play" is not a constraint on the draw — it is simply what not being
+   bye-eligible means.
+
+Two consequences worth recording. A bye no eligible team can hold is **played
+off** — extra duals, cutting deeper than the round's target — rather than
+handed down the pool; the State draw already tolerates a short field. And the
+rematch rule is now explicitly a *pairing preference*: with byes fixed by
+rule, a degenerate pool (a two-team Semi-State whose teams just played each
+other) forces the rematch, and the test asserts no **avoidable** rematch —
+checking every perfect matching of the playing set — instead of none at all.
+Small playing sets (≤8) get an exact minimum-penalty matching rather than the
+greedy repair, which the tighter bye rules had been out-manoeuvring.
+
+`_draw_recovery` (the joint bye-and-pairing search, including its bye-trading
+repair) is deleted. Its reason for existing — a bye recipient frozen into a
+rematch — is handled by the pairing method itself now that byes are a rule
+rather than a search variable.
