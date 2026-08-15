@@ -1579,10 +1579,12 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
 
 # --- the RECOVERY ROUNDS (owner rule 2027-08): Super Regionals -> Semi-State ---
 
-# ⚠️ DIVISIONAL_NAME is the only place the third round is named — the owner is
-# still choosing a name for it; change it here and the phase key, and every
-# surface follows.
-DIVISIONAL_NAME = "Divisional Round"
+# ⚠️ DIVISIONAL_NAME is the only place the round is named; change it here and
+# every surface follows. PLURAL and no "Round" — the stage headings read
+# "7A Areas", "7A Wards", "7A Super Regionals", so "7A Divisionals" matches and
+# "7A Divisional Round" did not (owner, 2027-08). The per-dual UNIT keeps the
+# singular "Division N", the same way a Ward dual sits in "Ward 4".
+DIVISIONAL_NAME = "Divisionals"
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
                    "divisional": DIVISIONAL_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",

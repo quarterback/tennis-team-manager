@@ -527,7 +527,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     field. Bodies come best-pool-first: readmitted **SR losers**, then a walk back
     through **Ward → Sectional → Area** losers, best TOSS within each tier; a body
     is a chance to PLAY, never a berth. `jhsaa.DIVISIONAL_NAME` is the only place
-    the round is named. **‼️ DIVISIONS ARE NUMBERED STATEWIDE**, unlike every
+    the round is named — PLURAL, no "Round" ("7A Divisionals"), matching every
+    other stage heading; the per-dual UNIT keeps the singular "Division N". **‼️ DIVISIONS ARE NUMBERED STATEWIDE**, unlike every
     other unit (a Region IX exists once per classification; there is ONE Division
     I in Jefferson per year): `jhsaa.renumber_divisions` assigns them after BOTH
     genders have played — girls first, then boys, classifications bottom-up
@@ -735,6 +736,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   trip back to the index (the pattern `season_standings.html` already uses for
   conferences); and if two panels answer the same question, delete one — "District
   Champions" in the rail *was* the district index's champion column.
+- **Schedule tags are THREE things, not one**: the league season (`dist`), the
+  ROAD to State — Areas through Divisionals (`road`) — and the State event itself
+  (`state`/`toc`). A State or TOC dual also carries its BRACKET ROUND beside the
+  tag (R32/R24 · Octas · QF · SF · Final), read off the archived bracket rather
+  than inferred from schedule position.
 - **‼️ Schedule dates are a DISPLAY calendar, and the date belongs to the MATCH
   (`world.jhsaa_match_dates`), never to a card.** There is no clock inside a JHSAA
   season — it all runs in one rung at week 0 — so dates are derived from the persisted

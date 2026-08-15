@@ -4233,6 +4233,26 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
             k = "AREA"
         return k
     kinds = [_kind(d) for d in sched]
+    # The State/TOC bracket ROUND a dual belongs to, so the card can say "R32"
+    # or "SF" beside the STATE tag rather than tagging five different rounds
+    # identically. Read off the archived bracket (one appearance per round), not
+    # inferred from the schedule's position.
+    _SHORT = {"Championship": "Final", "Semifinals": "SF", "Quarterfinals": "QF",
+              "Octofinals": "Octas"}
+
+    def _round_of(bracket):
+        out = {}
+        for rd in world.jhsaa_state_rounds(bracket or {}):
+            nm = _SHORT.get(rd["name"]) or (f"R{rd['alive']}" if rd["name"].startswith("Round of")
+                                            else rd["name"])
+            for gm in rd["games"]:
+                if school in (gm.get("home"), gm.get("away")):
+                    other = gm["away"] if gm["home"] == school else gm["home"]
+                    out[other] = nm
+        return out
+    state_round = _round_of(br)
+    toc_round = _round_of((arc or {}).get("toc") or {})
+
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "DIVISIONAL": dv_seeds,
               "SEMI-STATE": ss_seeds,
               "SUPER REGIONAL": sr_seeds, "ZONAL": pre_seeds,
@@ -4282,7 +4302,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "toc_finish": (season or {}).get("toc_finish", ""),
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
-                      "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0)}
+                      "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
+                      "round": (state_round if k == "STATE" else
+                                toc_round if k == "TOC" else {}).get(d["opp"], "")}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
