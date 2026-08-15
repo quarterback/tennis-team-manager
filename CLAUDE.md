@@ -912,6 +912,28 @@ See `docs/AAR-international-distribution-and-name-pools.md`.
   `regions.json` (pools), `worldconfig._CONTINENTS` (editor grouping — anything
   unlisted is filed under "Other", which is how China, Japan and France ended up
   there) and `coaches.COUNTRY_REGIONS` (an unmapped ISO code becomes `"global"`).
+  **A fourth consequence:** a renamed or new region id silently changes what an
+  exported mix means, which is why `parse_region_mix` REPORTS `unknown`/`missing`
+  instead of dropping them.
+- **‼️ A REGION MIX IS A FILE FIRST, a saved row second (owner rule 2027-08).** The
+  ~90 authored weights are the owner's most-retyped input — they rebuild the sim on
+  every reload, so a mix stored in `world_setting` dies with the save it was meant to
+  outlive. `/start` therefore DOWNLOADS a `*.ptc-mix.json` (`worldconfig.
+  PRESET_FORMAT`/`PRESET_VERSION`, built client-side from the LIVE grid so it works
+  before a world exists) and loads one back; "Save to this world" is a within-save
+  convenience and the UI says so. Do not make the saved copy the primary and do not
+  drop the download for it.
+  - **Weights in a document are the EDITOR's integers, not fractions.** Normalising
+    on save round-trips the MIX but not the DISPLAY — 160 comes back as 561, and the
+    owner is authoring by eye. `applyWeights(map, fractions)` is the ONE apply path:
+    bands pass fractions, files and saved mixes pass raw. A region at 0 is OMITTED
+    (a missing key already reads as zero; ~60 explicit zeros would triple the file).
+  - Loading sets the band `<select>` **silently** — firing its change event would run
+    `applyBand` and clobber the mix you just loaded.
+  - Coverage is a real browser (`node` + `playwright-core` against
+    `/opt/pw-browsers/chromium-1194`), because the whole feature is client-side and a
+    Flask test client cannot see a Blob download. `tests/test_region_mix_presets.py`
+    covers the document, the drift report and the routes.
 - Names are not save state — this changes future-generated worlds only.
 
 ## Other notes

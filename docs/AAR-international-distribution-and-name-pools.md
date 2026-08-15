@@ -171,10 +171,67 @@ zero placeholders in every preset, and **no bucket over 1.1× reuse pressure**.
   editor because they were promoted to their own regions after the grouping was
   written. Fixed here. Any new region needs a row in both files.
 
+---
+
+## 6. A mix is a file (owner rule 2027-08)
+
+> *"I often will create a new save once I've updated the file … but then I have to
+> re-create my entire geographic parameters and it can be very tedious because I can
+> often be very precise about what I wanna do on them … just being able to download
+> the preset would be better because then I don't have to worry about it anymore."*
+
+The five presets above are a *starting point*; the thing the owner actually authors
+is the ~90-weight grid on `/start`, and it was the most-retyped input in the app.
+
+**Saving it was not enough, and this is the load-bearing part.** `world_setting` —
+where every other config value lives — is a table in the same `tennis.db` as
+everything else. A "saved preset" would therefore die with the save, which is
+*precisely* the event the owner is trying to survive. So:
+
+- **Download** writes a `*.ptc-mix.json` holding every weight, the band it started
+  from, and the US/world split. Built **client-side from the live grid**, because the
+  owner tunes the boxes and keeps the result before any world exists — an endpoint
+  reading the persisted config would export the wrong thing.
+- **Load file…** reads one back into the grid on a brand-new save.
+- **Save to this world** stores a named mix in `world_setting` — a convenience
+  *within* a save. The panel says out loud that the file is the copy that lasts;
+  an affordance that silently promises durability it doesn't have is worse than
+  not having it.
+
+### Two decisions worth keeping
+
+**Weights in the document are the editor's own integers, not fractions.**
+Normalising on save round-trips the *mix* — every consumer renormalizes, so 160/40
+and 0.30/0.075 are the same world — but not the *display*: 160 comes back as 561.
+The owner authors by eye, so the numbers have to return as typed. One apply path,
+`applyWeights(map, fractions)`: bands pass fractions, files and saved mixes pass raw.
+
+**A load reports what did NOT survive.** Region ids get added and renamed between
+builds — *this build alone* split Africa into six and promoted a dozen countries out
+of shared buckets. A mix authored against an older build is quietly a **different
+mix**, and every value in it still looks perfectly valid. `parse_region_mix` returns
+`unknown` (regions in the file this build lacks) and `missing` (regions this build
+has that the file omits, which load at zero) and the panel names them:
+
+> *Loaded "Euro core" from euro-core.ptc-mix.json — 3 regions. Ignored 1 region this
+> build does not have: africa_cricket. 89 regions are not in the file and loaded at
+> zero.*
+
+### Testing a feature that has no server
+
+The download is a Blob and the load is a `FileReader`; a Flask test client cannot
+see either. `tests/test_region_mix_presets.py` covers the document, the drift report
+and the two routes (25 tests), and the browser half runs under `node` +
+`playwright-core` against the preinstalled Chromium — author a mix, download it,
+open a **fresh page**, load the file, and compare the grid. That check caught
+nothing on the first run, which is only meaningful because it also exercises the
+stale-file, junk-file and band-still-works paths.
+
 ## Still open
 
 - The generic `african` bucket remains a catch-all for a handful of countries
   (SL, LR, TD) with no dedicated pool.
 - ~254 buckets sit under 45 names. All are under 0.3× pressure, so none of them
   repeats in practice — but they are thin if a future preset weights them up.
-- There is no user-saveable *named* preset; the five are authored in the data file.
+- A downloaded mix carries the geography only — not the active divisions/genders or
+  the coached program. Those are a handful of clicks; the grid was ninety.

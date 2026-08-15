@@ -448,3 +448,132 @@ def region_groups() -> list[dict]:
     if other:
         groups.append({"continent": "Other", "regions": other})
     return groups
+
+
+# --- Portable region mixes ------------------------------------------------------
+# Authoring an international mix is ~90 numbers the owner is deliberately precise
+# about, and it used to have to be retyped for every new save. A mix is now a
+# PORTABLE DOCUMENT: it can be downloaded to a file, and a file can be loaded back
+# into the editor before a world exists.
+#
+# ‼️ The FILE is the durable form, not the saved copy. Named mixes live in
+# `world_setting`, which lives in the same `tennis.db` as everything else — so a
+# saved mix dies with the save, which is exactly the situation the owner is trying
+# to escape ("I create a new save once I've updated the file"). Saving is a
+# convenience WITHIN a save; downloading is what survives one. Any UI that offers
+# both has to say so, or it promises durability it does not have.
+#
+# Weights in a document are the EDITOR's own integers (the numbers in the boxes),
+# not fractions — so a load round-trips to the same visible numbers. They are
+# relative and every consumer renormalizes, so the absolute scale carries no
+# meaning. A region at zero is OMITTED rather than stored as 0: `applyWeights`
+# reads a missing region as zero, and storing an explicit 0 for ~60 unused regions
+# would triple the file for no information.
+PRESET_FORMAT = "ptc-region-mix"
+PRESET_VERSION = 1
+MAX_SAVED_MIXES = 40
+
+
+def region_mix_doc(name: str, base_band: str, share, weights: dict) -> dict:
+    """Build a portable mix document from raw editor state. Pure — takes what the
+    editor has on screen rather than what is persisted, since the owner tunes the
+    grid and exports before any world exists."""
+    clean: dict[str, float] = {}
+    for k, v in (weights or {}).items():
+        try:
+            f = float(v)
+        except (ValueError, TypeError):
+            continue
+        rid = str(k)
+        if f > 0 and rid not in _HIDDEN_REGIONS and rid != "us":
+            clean[rid] = round(f, 3)
+    try:
+        share_f = max(0.0, min(0.95, float(share)))
+    except (ValueError, TypeError):
+        share_f = DEFAULT_INTL_SHARE
+    return {
+        "format": PRESET_FORMAT,
+        "version": PRESET_VERSION,
+        "name": (str(name or "").strip() or "Custom mix")[:60],
+        "base_band": base_band if base_band in _VALID else _DEFAULTS["name_preset"],
+        "intl_share": round(share_f, 4),
+        "weights": dict(sorted(clean.items())),
+    }
+
+
+class MixFormatError(ValueError):
+    """A file that is not a region mix at all — wrong format tag or shape."""
+
+
+def parse_region_mix(doc) -> dict:
+    """Validate a mix document and report what did NOT survive the round trip.
+
+    Returns the doc plus `unknown` (regions in the file this build has never heard
+    of) and `missing` (regions this build has that the file does not mention, so
+    they load as zero). Both are REPORTED rather than swallowed: region ids get
+    added and renamed between builds — this build alone split Africa into six and
+    promoted a dozen countries out of shared buckets — so a mix authored against an
+    older build is silently a different mix, with no error anywhere.
+    """
+    if not isinstance(doc, dict):
+        raise MixFormatError("not a region-mix file")
+    if doc.get("format") != PRESET_FORMAT:
+        raise MixFormatError("not a region-mix file "
+                             f"(format={doc.get('format')!r}, expected {PRESET_FORMAT!r})")
+    try:
+        ver = int(doc.get("version", 0))
+    except (ValueError, TypeError):
+        raise MixFormatError("region-mix file has no readable version")
+    if ver > PRESET_VERSION:
+        raise MixFormatError(f"region mix is version {ver}; this build reads "
+                             f"up to version {PRESET_VERSION}")
+    raw = doc.get("weights")
+    if not isinstance(raw, dict):
+        raise MixFormatError("region mix has no weights")
+
+    from generators.names import get_name_regions
+    known = {r for r in get_name_regions()
+             if r not in _HIDDEN_REGIONS and r != "us"}
+    unknown = sorted(str(k) for k in raw if str(k) not in known)
+    out = region_mix_doc(doc.get("name"), doc.get("base_band"),
+                         doc.get("intl_share"), {k: v for k, v in raw.items()
+                                                 if str(k) in known})
+    out["unknown"] = unknown
+    # NB `set` is this module's config setter, not the builtin — dict keys already
+    # support the set algebra, so nothing here needs it.
+    out["missing"] = sorted(known - out["weights"].keys())
+    return out
+
+
+def saved_mixes() -> list[dict]:
+    """The player's named mixes, newest first. Save-scoped — see the note above."""
+    try:
+        rows = json.loads(get("region_mixes") or "[]")
+    except (ValueError, TypeError):
+        return []
+    out = []
+    for r in rows if isinstance(rows, list) else []:
+        try:
+            out.append(parse_region_mix(r))
+        except MixFormatError:
+            continue
+    return out
+
+
+def save_mix(doc: dict) -> list[dict]:
+    """Store a named mix, replacing any of the same name. Returns the new list."""
+    doc = parse_region_mix(doc)
+    keep = [m for m in saved_mixes() if m["name"].lower() != doc["name"].lower()]
+    rows = ([doc] + keep)[:MAX_SAVED_MIXES]
+    set("region_mixes", json.dumps([{k: v for k, v in m.items()
+                                     if k not in ("unknown", "missing")}
+                                    for m in rows]))
+    return rows
+
+
+def delete_mix(name: str) -> list[dict]:
+    rows = [m for m in saved_mixes() if m["name"].lower() != str(name or "").lower()]
+    set("region_mixes", json.dumps([{k: v for k, v in m.items()
+                                     if k not in ("unknown", "missing")}
+                                    for m in rows]))
+    return rows
