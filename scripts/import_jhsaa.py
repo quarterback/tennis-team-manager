@@ -320,6 +320,43 @@ RENAMES = {
     # needs it; `build` refuses to emit a collision either way.
     "Katherine Booker": "James K. Polk",
     "Amos Cross": "Lyndon B. Johnson",
+    # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
+    # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
+    # renamed school takes a PLACE name off its own town instead.
+    #
+    # The generator had produced whole families of schools named for invented
+    # people — eight Crosses, seven Bookers, six Corderos, five Aramburus, all
+    # unrelated — which the owner found immersion-breaking. Each surname keeps
+    # ONE school (Winifred Booker, Garazi Aramburu, Carmen Cordero, plus the
+    # place-named Benton Cross / San Cordero and the parish Holy Cross); the
+    # rest take either a name off the owner's list or, where the list is spent,
+    # their own town. Naming a school for its town is the ordinary case
+    # everywhere and adds no new invented person.
+    "Amaia Aramburu": "Ketanji Brown Jackson",
+    "Amaia Aramburu North": "Belmonte Ridge",
+    "Amos Cross": "Lyndon B. Johnson",
+    "Ander Aramburu": "Western Sky",
+    "Andrew Jackson North": "Caswell Heights",
+    "Clara Cross": "Valderra Heights",
+    "Evelyn Booker": "William Howard Taft",
+    "Geraldine Cross": "Port Veles Park",
+    "Iker Aramburu": "Sandra Day O'Connor",
+    "Iker Aramburu North": "Belmonte Heights",
+    "Imani Cross": "San Borondón Heights",
+    "Isaiah Booker": "Earl Warren",
+    "John F. Kennedy North": "Harriman Heights",
+    "Katherine Booker": "James K. Polk",
+    "Leire Aramburu": "Echevarria",
+    "Lorna Booker": "Moriarty Heights",
+    "Manuel Cordero": "Sonia Sotomayor",
+    "Marian Cross": "Fort Valois Heights",
+    "Nathaniel Cross": "Port Veles Ridge",
+    "Nathaniel Cross North": "Port Veles Union",
+    "Nicolás Cordero": "Ruth Bader Ginsberg",
+    "Pauli Booker": "Vespertine Heights",
+    "Ralph Booker": "Port Veles Heights",
+    "Ralph Booker North": "Port Veles Commons",
+    "Sofía Cordero": "John Quincy Adams",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
