@@ -456,6 +456,17 @@ RENAMES = {
     "Marsh Depot": "Jersey City",
     "Rentie Grove": "Jamaica",
     "Wheatley": "Minnesota City",
+    "Ashwood": "Gruesome Ridge",
+    "Copper Crossing": "Copper Gap",
+    "Dahlberg": "Dahlberg Summit",
+    "Doyle Junction": "Doyle Pass",
+    "Elmburg": "Mt Jacqueline",
+    "Gold Junction": "Gold Pass",
+    "Harmon": "Annes Summit",
+    "Hetfield": "Brynildson Hill",
+    "Huckle Lake": "Mount Dylan Lake",
+    "Thornford": "Thorn Summit",
+    "Wolf Gap": "Corey Canyon",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1050,6 +1061,32 @@ CITY_RENAMES = {
     "Marsh Depot": "Jersey City",
     "Rentie Grove": "Jamaica",
     "Wheatley": "Minnesota City",
+    # ‼️ THE UPLANDS GET NAMES THAT SAY SO (owner, 2027-08). A third of the
+    # state is upland and almost nothing on the map admitted it — one Mount,
+    # no Pass, no Rim, no Summit, no Canyon — while the coast was thick with
+    # Ports and Capes and the gold country announced itself constantly. These
+    # encode elevation, passage, escarpment and volcanic ground, in the
+    # Klamath/Modoc/Siskiyou register the real terrain has.
+    "Ashwood": "Gruesome Ridge",
+    "Aspen Meadows": "Mount Clambake",
+    "Brackwood": "Brackwood Pass",
+    "Clear Prairie": "Clear Rim",
+    "Copper Crossing": "Copper Gap",
+    "Dahlberg": "Dahlberg Summit",
+    "Doyle Junction": "Doyle Pass",
+    "Elmburg": "Mt Jacqueline",
+    "Farleyford": "Aftdahl Ridge",
+    "Gold Junction": "Gold Pass",
+    "Harmon": "Annes Summit",
+    "Hetfield": "Brynildson Hill",
+    "Huckle Lake": "Mount Dylan Lake",
+    "Norford": "Meridian Passage",
+    "Plainfield": "Mount Henson",
+    "Ransom City": "Ransom Pass",
+    "Silton": "Silton Ridge",
+    "Thornford": "Thorn Summit",
+    "Winvale": "Mount Ruth",
+    "Wolf Gap": "Corey Canyon",
 }
 
 RELOCATIONS = {

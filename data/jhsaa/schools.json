@@ -619,6 +619,26 @@
       "boys_district": "Mariners League"
     },
     {
+      "name": "Annes Summit",
+      "city": "Annes Summit",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 244,
+      "private": false,
+      "mascot": "Knights",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Harmon"
+    },
+    {
       "name": "Annie Springs",
       "city": "Annie Springs",
       "county": "Cinder",
@@ -1019,25 +1039,6 @@
       "boys_district": ""
     },
     {
-      "name": "Ashwood",
-      "city": "Ashwood",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 297,
-      "private": false,
-      "mascot": "Crusaders",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
-    },
-    {
       "name": "Assay",
       "city": "Assay",
       "county": "Windrow",
@@ -1173,7 +1174,7 @@
     {
       "name": "Baptist",
       "source": "Baptist HS",
-      "city": "Hetfield",
+      "city": "Brynildson Hill",
       "county": "Windrow",
       "area": "Millersylvania",
       "classification": "1A",
@@ -2270,8 +2271,8 @@
       "boys_district": ""
     },
     {
-      "name": "Brackwood Union",
-      "city": "Brackwood",
+      "name": "Brackwood Pass",
+      "city": "Brackwood Pass",
       "county": "Tamarack",
       "area": "Cascade Divide",
       "classification": "1A",
@@ -2286,7 +2287,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "boys_district": "East Cascades League",
+      "source": "Brackwood Union"
     },
     {
       "name": "Breakwater",
@@ -2346,6 +2348,26 @@
       "boys_district": "Metro League"
     },
     {
+      "name": "Brynildson Hill",
+      "city": "Brynildson Hill",
+      "county": "Windrow",
+      "area": "Millersylvania",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 113,
+      "private": false,
+      "mascot": "Iron Pioneers",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League",
+      "source": "Hetfield"
+    },
+    {
       "name": "Buckeye Bend",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -2385,7 +2407,7 @@
     },
     {
       "name": "Calasanz Prep",
-      "city": "Plainfield",
+      "city": "Mount Henson",
       "county": "Antler",
       "area": "Alderwold",
       "classification": "4A",
@@ -3214,8 +3236,8 @@
       "boys_district": "Quarry League"
     },
     {
-      "name": "Copper Crossing",
-      "city": "Copper Crossing",
+      "name": "Copper Gap",
+      "city": "Copper Gap",
       "county": "Juniper",
       "area": "Juniper Highlands",
       "classification": "1A",
@@ -3230,7 +3252,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "boys_district": "Halbrook Basin League",
+      "source": "Copper Crossing"
     },
     {
       "name": "Copper Lake",
@@ -3326,6 +3349,26 @@
       "boys": false,
       "girls_district": "Coastal Range League",
       "boys_district": ""
+    },
+    {
+      "name": "Corey Canyon",
+      "city": "Corey Canyon",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 477,
+      "private": false,
+      "mascot": "Mountaineers",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Wolf Gap"
     },
     {
       "name": "Cortland",
@@ -3537,28 +3580,9 @@
       "boys_district": "Del Rey Athletic Association"
     },
     {
-      "name": "Dahlberg",
-      "city": "Dahlberg",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 446,
-      "private": false,
-      "mascot": "Crevasse",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League"
-    },
-    {
       "name": "Dahlberg Science",
       "source": "Dahlberg School of Science and Industry",
-      "city": "Dahlberg",
+      "city": "Dahlberg Summit",
       "county": "Tamarack",
       "area": "Cascade Divide",
       "classification": "3A",
@@ -3574,6 +3598,26 @@
       "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
+    },
+    {
+      "name": "Dahlberg Summit",
+      "city": "Dahlberg Summit",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 446,
+      "private": false,
+      "mascot": "Crevasse",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sky-Em League",
+      "boys_district": "Sky-Em League",
+      "source": "Dahlberg"
     },
     {
       "name": "Daniel Gaines",
@@ -3747,8 +3791,8 @@
       "boys_district": "Kaleva League"
     },
     {
-      "name": "Doyle Junction",
-      "city": "Doyle Junction",
+      "name": "Doyle Pass",
+      "city": "Doyle Pass",
       "county": "Rimrock",
       "area": "Juniper Highlands",
       "classification": "4A",
@@ -3763,7 +3807,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Twin Counties Athletic Association",
-      "boys_district": "Twin Counties Athletic Association"
+      "boys_district": "Twin Counties Athletic Association",
+      "source": "Doyle Junction"
     },
     {
       "name": "Draybrook Union",
@@ -4283,25 +4328,6 @@
       "boys": false,
       "girls_district": "Dual County League",
       "boys_district": ""
-    },
-    {
-      "name": "Elmburg",
-      "city": "Elmburg",
-      "county": "Juniper",
-      "area": "Juniper Highlands",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 347,
-      "private": false,
-      "mascot": "Pirates",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Dual County League",
-      "boys_district": "Dual County League"
     },
     {
       "name": "Emerson",
@@ -5311,7 +5337,7 @@
     },
     {
       "name": "George Washington Carver",
-      "city": "Plainfield",
+      "city": "Mount Henson",
       "county": "Antler",
       "area": "Alderwold",
       "classification": "6A",
@@ -5407,8 +5433,8 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Gold Junction",
-      "city": "Gold Junction",
+      "name": "Gold Pass",
+      "city": "Gold Pass",
       "county": "Juniper",
       "area": "Juniper Highlands",
       "classification": "2A",
@@ -5423,7 +5449,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "boys_district": "Halbrook Basin League",
+      "source": "Gold Junction"
     },
     {
       "name": "Goldbank County",
@@ -5674,6 +5701,26 @@
       "source": "Marina Moroz"
     },
     {
+      "name": "Gruesome Ridge",
+      "city": "Gruesome Ridge",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 297,
+      "private": false,
+      "mascot": "Crusaders",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Ashwood"
+    },
+    {
       "name": "Gulch Bend",
       "city": "Gulch Bend",
       "county": "Goldbank",
@@ -5882,25 +5929,6 @@
       "boys": true,
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League"
-    },
-    {
-      "name": "Harmon",
-      "city": "Harmon",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 244,
-      "private": false,
-      "mascot": "Knights",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
     },
     {
       "name": "Harold Calder",
@@ -6304,25 +6332,6 @@
       "boys_district": "Big Basin League"
     },
     {
-      "name": "Hetfield",
-      "city": "Hetfield",
-      "county": "Windrow",
-      "area": "Millersylvania",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 113,
-      "private": false,
-      "mascot": "Iron Pioneers",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
-    },
-    {
       "name": "High Bar",
       "city": "High Bar",
       "county": "Ferris",
@@ -6343,7 +6352,7 @@
     },
     {
       "name": "High Desert Christian",
-      "city": "Doyle Junction",
+      "city": "Doyle Pass",
       "county": "Rimrock",
       "area": "Juniper Highlands",
       "classification": "3A",
@@ -6512,25 +6521,6 @@
       "boys": true,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
-    },
-    {
-      "name": "Huckle Lake",
-      "city": "Huckle Lake",
-      "county": "Cinder",
-      "area": "Cascade Divide",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 76,
-      "private": false,
-      "mascot": "Red Raiders",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
     },
     {
       "name": "Hydraulicwood",
@@ -8756,7 +8746,7 @@
     },
     {
       "name": "Marlow County",
-      "city": "Clear Prairie",
+      "city": "Clear Rim",
       "county": "Juniper",
       "area": "Juniper Highlands",
       "classification": "1A",
@@ -9389,6 +9379,26 @@
       "boys_district": ""
     },
     {
+      "name": "Mount Dylan Lake",
+      "city": "Mount Dylan Lake",
+      "county": "Cinder",
+      "area": "Cascade Divide",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 76,
+      "private": false,
+      "mascot": "Red Raiders",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League",
+      "source": "Huckle Lake"
+    },
+    {
       "name": "Mount Horeb",
       "city": "Mount Horeb",
       "county": "Marlow",
@@ -9425,6 +9435,26 @@
       "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
+    },
+    {
+      "name": "Mt Jacqueline",
+      "city": "Mt Jacqueline",
+      "county": "Juniper",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 347,
+      "private": false,
+      "mascot": "Pirates",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Dual County League",
+      "boys_district": "Dual County League",
+      "source": "Elmburg"
     },
     {
       "name": "Naomi Ellison",
@@ -11399,8 +11429,8 @@
       "boys_district": "Halbrook Basin League"
     },
     {
-      "name": "Ransom City Union",
-      "city": "Ransom City",
+      "name": "Ransom Pass",
+      "city": "Ransom Pass",
       "county": "Tamarack",
       "area": "Cascade Divide",
       "classification": "1A",
@@ -11415,7 +11445,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "source": "Ransom City Union"
     },
     {
       "name": "Ransom Spur",
@@ -11571,7 +11602,7 @@
     },
     {
       "name": "Rimrock",
-      "city": "Norford",
+      "city": "Meridian Passage",
       "county": "Galena",
       "area": "Millersylvania",
       "classification": "3A",
@@ -11954,7 +11985,7 @@
     },
     {
       "name": "Sablewood Union",
-      "city": "Winvale",
+      "city": "Mount Ruth",
       "county": "Antler",
       "area": "Alderwold",
       "classification": "1A",
@@ -12760,8 +12791,8 @@
       "boys_district": "Sunkist League"
     },
     {
-      "name": "Silton Union",
-      "city": "Silton",
+      "name": "Silton Ridge",
+      "city": "Silton Ridge",
       "county": "Rimrock",
       "area": "Juniper Highlands",
       "classification": "1A",
@@ -12776,11 +12807,12 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association"
+      "boys_district": "Vesterheim Athletic Association",
+      "source": "Silton Union"
     },
     {
       "name": "Silver Lake",
-      "city": "Farleyford",
+      "city": "Aftdahl Ridge",
       "county": "Galena",
       "area": "Millersylvania",
       "classification": "1A",
@@ -13474,7 +13506,7 @@
     {
       "name": "St. Helena",
       "source": "St. Helena School",
-      "city": "Aspen Meadows",
+      "city": "Mount Clambake",
       "county": "Antler",
       "area": "Alderwold",
       "classification": "3A",
@@ -14583,8 +14615,8 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Thornford",
-      "city": "Thornford",
+      "name": "Thorn Summit",
+      "city": "Thorn Summit",
       "county": "Juniper",
       "area": "Juniper Highlands",
       "classification": "1A",
@@ -14599,7 +14631,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "boys_district": "Halbrook Basin League",
+      "source": "Thornford"
     },
     {
       "name": "Three Saints",
@@ -16121,28 +16154,9 @@
       "boys_district": "Coastal Range League"
     },
     {
-      "name": "Wolf Gap",
-      "city": "Wolf Gap",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 477,
-      "private": false,
-      "mascot": "Mountaineers",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
-    },
-    {
       "name": "Wolf Gap International",
       "source": "Wolf Gap International School",
-      "city": "Wolf Gap",
+      "city": "Corey Canyon",
       "county": "Antler",
       "area": "Alderwold",
       "classification": "2A",
