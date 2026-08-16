@@ -201,7 +201,7 @@
       "name": "Alben Barkley",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 354,
@@ -2231,7 +2231,7 @@
       "name": "Bethel Christian",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 244,
@@ -2244,7 +2244,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Goldbank District",
-      "boys_district": "Mother Lode District"
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Bidwell",
@@ -2593,7 +2593,7 @@
       "name": "Calvary Chapel Ditch Fork",
       "city": "Ditch Fork",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 70,
@@ -2605,8 +2605,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Calvary Chapel Kilbride Switch",
@@ -3471,7 +3471,7 @@
       "name": "Cradle Reach",
       "city": "Cradle Reach",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 282,
@@ -3483,8 +3483,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Crane",
@@ -3719,7 +3719,7 @@
       "name": "Ditch Fork",
       "city": "Ditch Fork",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "7A",
       "group": "7A",
       "enrollment": 1462,
@@ -4064,7 +4064,7 @@
       "name": "Eisenhower",
       "city": "Sluice Crossing",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "4A",
       "group": "4A",
       "enrollment": 792,
@@ -4464,7 +4464,7 @@
       "name": "Ewart City",
       "city": "Ewart City",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "7A",
       "group": "7A",
       "enrollment": 1568,
@@ -4483,7 +4483,7 @@
       "name": "Ewartville",
       "city": "Ewartville",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 288,
@@ -4496,13 +4496,13 @@
       "girls": true,
       "boys": true,
       "girls_district": "Goldbank District",
-      "boys_district": "Mother Lode District"
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Featherstone Institute",
       "city": "Ewart City",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 117,
@@ -4514,8 +4514,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Fellows Mill",
@@ -4636,7 +4636,7 @@
       "name": "Foothills Christian",
       "city": "Gulch Bend",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 177,
@@ -4649,7 +4649,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Goldbank District",
-      "boys_district": "Mother Lode District"
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Fort Carden",
@@ -5229,7 +5229,7 @@
       "name": "Gilhooly",
       "city": "Gilhooly",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 319,
@@ -5286,7 +5286,7 @@
       "name": "Goldbank County",
       "city": "Hydraulic Gap",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 451,
@@ -5305,7 +5305,7 @@
       "name": "Goldbank Hall",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 330,
@@ -5571,7 +5571,7 @@
       "name": "Gulch Bend",
       "city": "Gulch Bend",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "6A",
       "group": "6A",
       "enrollment": 1297,
@@ -6448,7 +6448,7 @@
       "name": "Hydraulicwood",
       "city": "Hydraulicwood",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 246,
@@ -6460,8 +6460,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "I-50 Technical",
@@ -8143,7 +8143,7 @@
       "name": "Lonepine Canyon",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "4A",
       "group": "4A",
       "enrollment": 714,
@@ -8390,7 +8390,7 @@
       "name": "Madison",
       "city": "Ewart City",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 360,
@@ -8789,7 +8789,7 @@
       "name": "Martin Luther",
       "city": "Ditch Fork",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 187,
@@ -8801,8 +8801,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Matteo Dahl",
@@ -8935,7 +8935,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
+      "girls_district": "Ewart Canyon District",
       "boys_district": "Juniper Highlands District"
     },
     {
@@ -9031,7 +9031,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
+      "girls_district": "Ewart Canyon District",
       "boys_district": "Juniper Highlands District"
     },
     {
@@ -12758,7 +12758,7 @@
       "name": "Serra Caverly",
       "city": "Caverly",
       "county": "Featherstone",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 72,
@@ -12770,8 +12770,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Serrano",
@@ -12867,7 +12867,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
+      "girls_district": "Ewart Canyon District",
       "boys_district": "Juniper Highlands District"
     },
     {
@@ -12886,7 +12886,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Mother Lode District",
+      "girls_district": "Ewart Canyon District",
       "boys_district": ""
     },
     {
@@ -12969,7 +12969,7 @@
       "name": "Sluice Crossing",
       "city": "Sluice Crossing",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "7A",
       "group": "7A",
       "enrollment": 1519,
@@ -12988,7 +12988,7 @@
       "name": "Sluice Landing",
       "city": "Sluice Landing",
       "county": "Highgrade",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 264,
@@ -13001,7 +13001,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Goldbank District",
-      "boys_district": "Mother Lode District"
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Snowline",
@@ -13332,7 +13332,7 @@
       "name": "St. Cecilia Academy",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 127,
@@ -13345,7 +13345,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Goldbank District",
-      "boys_district": "Mother Lode District"
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "St. Dominic Academy",
@@ -13849,7 +13849,7 @@
       "name": "St. Perpetua Preparatory",
       "city": "Vessey Switch",
       "county": "Highgrade",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 179,
@@ -14366,7 +14366,7 @@
       "name": "Tailing Crossing-Ewart Bar Union",
       "city": "Ewart Bar",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 216,
@@ -14378,8 +14378,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
-      "boys_district": "Mother Lode District"
+      "girls_district": "Ewart Canyon District",
+      "boys_district": "Ewart Canyon District"
     },
     {
       "name": "Tallow",
@@ -14760,7 +14760,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mother Lode District",
+      "girls_district": "Ewart Canyon District",
       "boys_district": "Juniper Highlands District"
     },
     {
@@ -15147,7 +15147,7 @@
       "name": "Tunnel Diggings",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "4A",
       "group": "4A",
       "enrollment": 718,
@@ -15166,7 +15166,7 @@
       "name": "Tunnelton",
       "city": "Tunnelton",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 437,
@@ -15453,7 +15453,7 @@
       "name": "Vessey Junction",
       "city": "Vessey Junction",
       "county": "Highgrade",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "2A",
       "group": "2A-1A",
       "enrollment": 235,
@@ -15472,7 +15472,7 @@
       "name": "Vessey Junction-Tailingford Union",
       "city": "Tailingford",
       "county": "Highgrade",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "1A",
       "group": "2A-1A",
       "enrollment": 120,
@@ -15700,7 +15700,7 @@
       "name": "Walter Mondale",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
-      "area": "Mother Lode",
+      "area": "Ewart Canyon",
       "classification": "3A",
       "group": "3A",
       "enrollment": 467,
