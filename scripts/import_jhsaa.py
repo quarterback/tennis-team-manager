@@ -302,6 +302,9 @@ RENAMES = {
     # association's no-suffix rule prints "Evans Larsen Day". Blue blood
     # (archetypes.json); Steeplejacks (MASCOTS below).
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
+    # Renamed off the region that no longer exists, and moved out of Gagarin
+    # (four programs already) to Copper Prairie — see RELOCATIONS.
+    "Mother Lode": "Siskiyou Valley",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -393,6 +396,7 @@ def reclassify(schools: list[dict]) -> int:
 # source record.
 MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
+    "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
     # ── Harborline: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",
@@ -588,11 +592,24 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # the leagues. The region also names its district ("<region> District"), so the
 # rename carries there too.
 #
-# "Mother Lode" was the generic California gold-country label; the region is the
-# Ewart river country (Ewart Bar, Ewart City, Ewartville) in Goldbank,
-# Featherstone and Highgrade counties, and Jefferson already has a Gold Valley.
+# "Mother Lode" was the generic California gold-country label the owner rejected
+# outright. The region is the state's southern end — Goldbank, Featherstone and
+# Highgrade counties — so it is SOUTHERN JEFFERSON. (The D1 college of the same
+# name is a different namespace; a region and a program can share a compass
+# point the way a real state's do.)
 AREA_RENAMES = {
-    "Mother Lode": "Ewart Canyon",
+    "Mother Lode": "Southern Jefferson",
+}
+
+# RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
+# area, keyed by SOURCE name and applied at emit like every other override.
+# Gagarin already sponsors four programs, so the renamed Mother Lode goes to
+# Copper Prairie, a one-school town in the same county — which keeps its
+# district and its geography while taking the crowding off one city.
+# ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
+# so a relocation must stay inside the area the districts were drawn from.
+RELOCATIONS = {
+    "Mother Lode": "Copper Prairie",
 }
 
 # ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
@@ -849,7 +866,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     out = []
     for name in sorted(girls | boys):
         s = by_name[name]
-        city = cities.get(s["city"], {})
+        town = RELOCATIONS.get(name, s["city"])
+        city = cities.get(town, {})
         display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and
@@ -870,7 +888,7 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             # Only written when it differs — a school nobody renamed is its own
             # identity, and an absent key reads as "name" in `School.ident`.
             **({"source": canonical} if canonical != display else {}),
-            "city": s["city"],
+            "city": town,
             "county": city.get("county", ""),
             # Renamed at EMIT, like the school names — district drawing above
             # sorted on the SOURCE area, so this cannot move a league.
