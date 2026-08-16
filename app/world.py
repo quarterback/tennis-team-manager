@@ -4085,7 +4085,7 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
                          "wins": w, "losses": l, "record": r.get("record", ""),
                          "drecord": r.get("drecord", ""), "place": r.get("place", 0),
                          "pct": w / (w + l) if (w + l) else 0.0,
-                         "pi": r.get("pi"),
+                         "pi": r.get("pi"), "atr": r.get("atr"),
                          "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
     if rated:
         rows.sort(key=lambda r: (-(r["pi"] or 0.0), r["school"]))

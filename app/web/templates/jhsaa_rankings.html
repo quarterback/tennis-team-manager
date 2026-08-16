@@ -42,6 +42,7 @@
         <th style="width:62px" title="Courts won per dual">PF</th>
         <th style="width:62px" title="Courts lost per dual">PA</th>
         <th style="width:64px" title="TOSS Power Index">TOSS</th>
+        <th style="width:64px" title="Average Team Rating — half TOSS, half win percentage">ATR</th>
         <th style="width:48px">Seed</th><th style="width:150px">State finish</th>
       </tr>
       {% for r in view.rows %}
@@ -57,6 +58,7 @@
         <td class="num">{{ '%.1f'|format(r.pf) }}</td>
         <td class="num">{{ '%.1f'|format(r.pa) }}</td>
         <td class="num">{{ '%.3f'|format(r.pi) if r.pi is not none else '—' }}</td>
+        <td class="num">{{ '%.3f'|format(r.atr) if r.atr is not none else '—' }}</td>
         <td>{{ r.seed or '—' }}</td>
         <td class="fin">{% if r.state_finish %}{{ r.state_finish }}{% else %}<span style="color:var(--text-faint)">did not qualify</span>{% endif %}</td>
       </tr>
@@ -68,6 +70,14 @@
     computed over the whole association's regular season, not one classification, and is
     archived with the season: at-large bids and state seeds were drawn from exactly these
     numbers, so the ranking and the bracket cannot disagree.
+    <br><br>
+    ATR — the Average Team Rating, half TOSS and half win percentage, archived the same
+    way. It is the only figure here that is not pure TOSS, and it exists for one job:
+    ranking the <strong>Conference</strong> pool, the last recovery round. TOSS measures
+    who you played, so a middling team in a brutal district is propped up by the company
+    it keeps while a twenty-win season against an ordinary schedule rates below it —
+    the right trade for seeding a draw, the wrong one for the last seat in the field.
+    Seasons archived before ATR existed show a dash.
   </div>
 </div>
 {% endif %}

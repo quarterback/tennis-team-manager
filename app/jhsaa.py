@@ -1640,6 +1640,12 @@ DIVISIONAL_NAME = "Divisionals"
 ATR_TOSS_WEIGHT = 0.5
 
 
+def atr_of(pi: float, win_pct: float) -> float:
+    """ATR from its two raw terms — the ONE formula, so the number archived on a
+    standings row and the number the Conference pool is ranked on cannot drift."""
+    return ATR_TOSS_WEIGHT * pi + (1.0 - ATR_TOSS_WEIGHT) * win_pct
+
+
 def atr(team: TeamSeason, power: dict | None) -> float:
     """The Average Team Rating: `ATR_TOSS_WEIGHT` TOSS + the rest win percentage.
 
@@ -1650,8 +1656,7 @@ def atr(team: TeamSeason, power: dict | None) -> float:
     line = (power or {}).get(team.school.name)
     if line is None:
         return team.win_pct
-    return (ATR_TOSS_WEIGHT * line.pi_raw
-            + (1.0 - ATR_TOSS_WEIGHT) * team.win_pct)
+    return atr_of(line.pi_raw, team.win_pct)
 
 
 def _atr_key(power: dict):
@@ -2543,7 +2548,11 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "standings": {d: [{"school": t.school.name, "record": t.record,
                                "drecord": t.district_record, "place": t.district_place,
                                "pf": t.points_for, "pa": t.points_against,
-                               "pi": t.power}
+                               "pi": t.power,
+                               # ATR beside the TOSS it is half of — ARCHIVED,
+                               # not recomputed on read, exactly like `pi`: it is
+                               # the number the Conference pool was ranked on.
+                               "atr": atr_of(t.power, t.win_pct)}
                               for t in ts] for d, ts in standings.items()},
             "protected": protecteds[group],
             "sectional": sectionals[group],

@@ -600,25 +600,6 @@
       "boys_district": "Harborline District"
     },
     {
-      "name": "Amos Cross",
-      "city": "Mercer City",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2300,
-      "private": false,
-      "mascot": "Smelters",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Gold Valley District",
-      "boys_district": ""
-    },
-    {
       "name": "Amos Moss",
       "city": "Los Robles",
       "county": "Marlow",
@@ -6844,6 +6825,26 @@
       "boys_district": ""
     },
     {
+      "name": "James K. Polk",
+      "city": "Orellana",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2516,
+      "private": false,
+      "mascot": "Puffins",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Vance District",
+      "source": "Katherine Booker"
+    },
+    {
       "name": "James Madison",
       "source": "Belmonte Classical Academy",
       "city": "Belmonte",
@@ -7282,25 +7283,6 @@
       "boys": false,
       "girls_district": "Weller District",
       "boys_district": ""
-    },
-    {
-      "name": "Katherine Booker",
-      "city": "Orellana",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2516,
-      "private": false,
-      "mascot": "Puffins",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Vance District"
     },
     {
       "name": "Katherine Davenport",
@@ -8366,6 +8348,26 @@
       "boys": true,
       "girls_district": "Halbrook District",
       "boys_district": "Halbrook District"
+    },
+    {
+      "name": "Lyndon B. Johnson",
+      "city": "Mercer City",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2300,
+      "private": false,
+      "mascot": "Smelters",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Gold Valley District",
+      "boys_district": "",
+      "source": "Amos Cross"
     },
     {
       "name": "Mabryville",

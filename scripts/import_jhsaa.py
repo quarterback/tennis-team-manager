@@ -305,6 +305,21 @@ RENAMES = {
     # Renamed off the region that no longer exists, and moved out of Gagarin
     # (four programs already) to Copper Prairie — see RELOCATIONS.
     "Mother Lode": "Siskiyou Valley",
+    # ‼️ NAMED FOR REAL FIGURES WITH LITTLE OR NO SCHOOL NAMING BEHIND THEM
+    # (owner rule 2027-08). Jefferson had none of these and a great many schools
+    # named for INVENTED people, several sharing a surname across the state —
+    # seven Bookers, eight Crosses — so the invented duplicates are what gets
+    # replaced. Names still on the owner's list for future renames: Lyndon B.
+    # Johnson (taken below), William Howard Taft, Earl Warren, Sonia Sotomayor,
+    # Ketanji Brown Jackson, Sandra Day O'Connor, Ruth Bader Ginsburg, John
+    # Quincy Adams, John F. Kennedy, Western Sky.
+    #
+    # ⚠️ If a TOWN ends up with the same school name twice, the second is
+    # qualified by its town — "Jefferson Heights Polk" — never by a suffix.
+    # Both of these are the only school of their name in the state, so neither
+    # needs it; `build` refuses to emit a collision either way.
+    "Katherine Booker": "James K. Polk",
+    "Amos Cross": "Lyndon B. Johnson",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
