@@ -90,7 +90,6 @@
   <div class="bl-entries"><div class="bl-entries-left">
     <strong style="color:var(--text-primary)"><span class="pro-badge">PRO</span> Pro free agents</strong>
   </div><span class="bl-entries-right">{{ _signed }} signed · {{ pp.pros|length - _signed }} available</span></div>
-  </div>
   {% if request.args.get('signerr') %}
   <div class="bl-note" style="font-size:13.5px;margin-bottom:8px;border-color:#c0392b;color:#c0392b;background:rgba(192,57,43,.06)">
     ⚠ {{ request.args.get('signerr') }}
