@@ -1459,7 +1459,7 @@
     },
     {
       "name": "Beatrice Davenport",
-      "city": "Fort Rogue",
+      "city": "Fort Halloran",
       "county": "Marlow",
       "area": "Ashbury Metro",
       "classification": "4A",
@@ -3877,7 +3877,7 @@
     },
     {
       "name": "Earl Warren",
-      "city": "Fort Salish",
+      "city": "Fort Weller",
       "county": "Weller",
       "area": "Selquah",
       "classification": "4A",
@@ -4604,6 +4604,26 @@
       "boys_district": "Sluice League"
     },
     {
+      "name": "Fort Bardsley",
+      "city": "Fort Bardsley",
+      "county": "Paddock",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 522,
+      "private": false,
+      "mascot": "Jaguars",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Goodman"
+    },
+    {
       "name": "Fort Carden",
       "city": "Fort Carden",
       "county": "Tamarack",
@@ -4739,45 +4759,6 @@
       "boys_district": "Chinook League"
     },
     {
-      "name": "Fort Salish",
-      "city": "Fort Salish",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 729,
-      "private": false,
-      "mascot": "Cheesemongers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
-    },
-    {
-      "name": "Fort Salish Independent",
-      "source": "Fort Salish Independent School",
-      "city": "Fort Salish",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 414,
-      "private": true,
-      "mascot": "Shipwrights",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League"
-    },
-    {
       "name": "Fort Valois",
       "city": "Fort Valois",
       "county": "Stagewater",
@@ -4857,6 +4838,46 @@
       "boys_district": "Frontier League"
     },
     {
+      "name": "Fort Weller",
+      "city": "Fort Weller",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 729,
+      "private": false,
+      "mascot": "Cheesemongers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Fort Salish"
+    },
+    {
+      "name": "Fort Weller Independent",
+      "source": "Fort Salish Independent School",
+      "city": "Fort Weller",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 414,
+      "private": true,
+      "mascot": "Shipwrights",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pori League",
+      "boys_district": "Pori League"
+    },
+    {
       "name": "Fort Wren",
       "city": "Fort Wren",
       "county": "Juniper",
@@ -4875,26 +4896,6 @@
       "girls_district": "Halbrook Basin League",
       "boys_district": "",
       "source": "Silvale"
-    },
-    {
-      "name": "Fort Yarrow",
-      "city": "Fort Yarrow",
-      "county": "Paddock",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 522,
-      "private": false,
-      "mascot": "Jaguars",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League",
-      "source": "Goodman"
     },
     {
       "name": "Foundry High",

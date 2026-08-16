@@ -333,7 +333,9 @@ RENAMES = {
     "Silvale": "Fort Wren",
     "Ewartville": "Fort Ewart",
     "Marshdale": "Fort Lassiter",
-    "Goodman": "Fort Yarrow",
+    "Goodman": "Fort Bardsley",
+    "Fort Salish": "Fort Weller",
+    "Fort Salish Independent": "Fort Weller Independent",
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -360,7 +362,9 @@ RENAMES = {
     "Silvale": "Fort Wren",
     "Ewartville": "Fort Ewart",
     "Marshdale": "Fort Lassiter",
-    "Goodman": "Fort Yarrow",
+    "Goodman": "Fort Bardsley",
+    "Fort Salish": "Fort Weller",
+    "Fort Salish Independent": "Fort Weller Independent",
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -996,10 +1000,19 @@ CITY_RENAMES = {
     # interior, where these four go. Named the way real ones are — for an
     # officer, or for the river crossing they guarded (Fort Ewart on the Ewart,
     # beside Ewart Bar and Ewart City, exactly as Fort Benton sits by Benton).
+    # ‼️ A FORT IS NAMED FOR A PERSON (owner rule 2027-08). Almost every real
+    # one carries an officer, an agent or a commander — Carden, Meriwether,
+    # Lassiter, Wren, Ewart are surnames, and that is the whole naming grammar.
+    # NOT a river, NOT a plant, and above all NOT a people: Fort Salish named a
+    # nation the way no fort of that era was named, and it is now Fort Weller.
+    # (The county or the river usually takes ITS name from the fort, not the
+    # other way round — Bardsley County sits under Fort Bardsley.)
     "Silvale": "Fort Wren",
     "Ewartville": "Fort Ewart",
     "Marshdale": "Fort Lassiter",
-    "Goodman": "Fort Yarrow",
+    "Goodman": "Fort Bardsley",
+    "Fort Rogue": "Fort Halloran",
+    "Fort Salish": "Fort Weller",
 }
 
 RELOCATIONS = {
