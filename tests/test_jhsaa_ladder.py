@@ -15,7 +15,7 @@ The qualification structure (owner spec 2027-08, expanded State fields):
      same recovery pools as everyone else and wins its way in, or does not go.
   4. The recovery rounds — Super Regionals → Semi-State → Divisionals, and a
      CONDITIONAL Conference round — best-TOSS Divisional losers paired against
-     the best-qualified district losers — that convenes only if berths remain. Every berth is EARNED ON COURT by the loser pool (Regional losers,
+     the best-qualified district champions still outside the field — that convenes only if berths remain. Every berth is EARNED ON COURT by the loser pool (Regional losers,
      joined at Semi-State by Zonal losers, then Ward/Sectional/Area losers as
      bodies once the ladder's own losers are exhausted — a body is another
      chance to play, never a berth). No berth is handed out by a TOSS recompute

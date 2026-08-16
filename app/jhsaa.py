@@ -1909,11 +1909,12 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #
     #   * one side is the best-TOSS DIVISIONAL LOSERS — teams that got all the
     #     way to the last berth-bearing round and lost it;
-    #   * the other is the best-qualified DISTRICT LOSERS — the best teams by
-    #     TOSS that did not win their district and are not already in the field.
-    #     A district title is not a qualification any more (see above), so the
-    #     strongest team in a deep district can land here having been beaten
-    #     early, and it still has to win to get in.
+    #   * the other is the best-qualified DISTRICT CHAMPIONS still outside the
+    #     field. This is what is left of the retired guarantee, and it is the
+    #     shape the owner wanted all along: winning your district does not put
+    #     you in, it earns you ONE more dual, against a team that fought to the
+    #     last recovery round. Win it and you are in; lose and your season ends
+    #     having been beaten on court, which is the whole rule.
     #
     # It convenes ONLY when berths remain — "it can be like other rounds where
     # if we don't need it, it doesn't trigger", the shape the Divisional round
@@ -1927,11 +1928,12 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                        key=_power_key(power))[:cf_n]
     placed = {t.school.name for t in qualifiers} | zc_names | {
         t.school.name for t in dv_losers}
-    champ_names = set(district_champs)
-    dist_losers = sorted((t for n, t in by_name.items()
-                          if n not in placed and n not in champ_names),
-                         key=_power_key(power))[:len(dv_losers)]
-    cf_pairs = list(zip(dv_losers, dist_losers))
+    champs_out = sorted((by_name[n] for n in district_champs
+                         if n in by_name and n not in placed),
+                        key=_power_key(power))
+    # One dual per outstanding berth, so the round is only as deep as the
+    # SHORTER side can fill — every entrant plays exactly once.
+    cf_pairs = list(zip(dv_losers, champs_out))
     cf_pool = [t for pair in cf_pairs for t in pair]
     if cf_n and cf_pairs:
         cf_arc, cf_winners = _recovery_round(cf_pool, phase="conference", rng=rng,

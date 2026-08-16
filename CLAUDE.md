@@ -521,8 +521,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   joining at Semi-State, and only once the ladder's OWN losers are exhausted do
   Ward → Sectional → Area losers come in as BODIES, never berths). **CONFERENCE
   is the only round drawn from TWO pools and paired ACROSS them** — best-TOSS
-  Divisional losers against the best-qualified district losers (teams that did
-  not win a district and are not already in the field) — and it convenes ONLY if
+  Divisional losers against the best-qualified DISTRICT CHAMPIONS still outside
+  the field — what is left of the retired guarantee: a district title earns you
+  ONE more dual, not a berth — and it convenes ONLY if
   berths are still outstanding, which on the current membership is never. n
   berths means n duals, one team from each pool, so it is byeless by
   construction. Arithmetic is

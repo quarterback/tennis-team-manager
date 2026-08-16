@@ -50,16 +50,18 @@ rounds, and **every round pairs its entire field** — there are no byes anywher
 in recovery, so nobody can advance without playing. A fourth round, the
 **Conference**, convenes only if berths are still outstanding — on the current
 membership it never has to. It is the one round drawn from two pools: the best
-Divisional losers by TOSS are paired against the best-qualified district losers
-(the strongest teams that did not win a district and are not already in the
-field). One dual per outstanding berth, one team from each pool.
+Divisional losers by TOSS are paired against the best-qualified **district
+champions** still outside the field. That is what is left of the old guarantee:
+winning your district does not put you in State, it earns you one more dual
+against a team that fought all the way to the last recovery round. One dual per
+outstanding berth, one team from each pool.
 
 | Round | Who plays | Winners |
 |---|---|---|
 | **Super Regionals** | Regional losers (plus bodies, below) | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
 | **Divisional Round** | the best Semi-State losers | **take the last berths** |
-| **Conference** *(only if needed)* | best Divisional losers vs. best-qualified district losers | **take any berth still outstanding** |
+| **Conference** *(only if needed)* | best Divisional losers vs. district champions still outside the field | **take any berth still outstanding** |
 
 ### Why the Divisional Round exists
 
