@@ -3571,9 +3571,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # Divisions are numbered STATEWIDE, girls first then boys, bottom-up by
         # classification — so the counter runs across both genders' seasons.
         division_no = 1
+        # Conferences are LETTERED statewide the same way, Z backwards, letters
+        # never recycled — the index runs across both genders too.
+        conference_ix = 0
         for gender in ("girls", "boys"):
             season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
             division_no = jhsaa.renumber_divisions(season, division_no)
+            conference_ix = jhsaa.reletter_conferences(season, conference_ix)
             summary = {
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]

@@ -531,7 +531,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   retired guarantee: a title earns you one more dual, never a berth), then the
   top Ward → Sectional → Area losers. It takes twice the outstanding berths, so
   it is byeless by construction, and it convenes only if berths remain: dormant
-  in the 24-classes, ~28 teams in the 40s.
+  in the 24-classes, ~28 teams in the 40s. **Units are LETTERED STATEWIDE,
+  BACKWARDS FROM Z, carrying their own class** — "6A-Z Conference", "6A-Y
+  Conference" — via `jhsaa.reletter_conferences` (the Divisions' pattern: after
+  both genders, girls first, classes bottom-up, letters never recycled; past A
+  the sequence doubles, ZZ, ZY, …).
   **‼️ ITS POOL IS RANKED ON `jhsaa.atr`, NOT TOSS** — Average Team Rating,
   `ATR_TOSS_WEIGHT` (0.5) × `pi_raw` + the rest win percentage, and the ONE
   place the association rates a team on anything but TOSS. TOSS is an

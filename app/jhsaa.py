@@ -1698,6 +1698,41 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     return n
 
 
+def _rev_letters(i: int) -> str:
+    """The i-th label of the reverse alphabet, 0-based: Z, Y … A, then ZZ, ZY …
+    (bijective base-26 on the reversed alphabet, so letters NEVER recycle however
+    many Conferences a year needs — full size plays ~140)."""
+    i += 1
+    out = ""
+    while i:
+        i, r = divmod(i - 1, 26)
+        out = chr(ord("Z") - r) + out
+    return out
+
+
+def reletter_conferences(season: dict, start: int = 0) -> int:
+    """Letter this gender's Conferences and return the next index.
+
+    ‼️ CONFERENCES ARE LETTERED STATEWIDE, BACKWARDS FROM Z (owner rule 2027-08),
+    and the unit carries its OWN classification: "6A-Z Conference", "6A-Y
+    Conference"… Like the Divisions the count is statewide — letters are never
+    recycled across classifications — and the sequence runs the same order:
+    girls first, then boys, classifications bottom-up (2A-1A → 9A). Z opening
+    the sequence instead of A is the point: the Conference is the LAST rung, and
+    its labels read like it. Past A the sequence doubles (ZZ, ZY, …) rather than
+    recycling. Assigned here, after both genders are known, for the Divisions'
+    reason exactly; idempotent the same way (always recomputed, memoised season
+    safe)."""
+    n = start
+    for g in reversed(GROUPS):                    # 2A-1A up to 9A
+        cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
+        for games in cf.get("rounds") or ():
+            for gm in games:
+                gm["unit"] = f"{g}-{_rev_letters(n)} Conference"
+                n += 1
+    return n
+
+
 def _losers(stage: dict, round_ix: int) -> list[str]:
     """School names eliminated in round `round_ix` of an archived stage dict."""
     out = []
