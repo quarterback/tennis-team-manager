@@ -519,14 +519,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   a Zonal title, or the **recovery rounds** `super_regional` → `semi_state` →
   `divisional` → conditional `conference` (Regional losers first, Zonal losers
   joining at Semi-State, and only once the ladder's OWN losers are exhausted do
-  Ward → Sectional → Area losers come in as BODIES, never berths). **CONFERENCE
-  is the only round drawn from TWO pools and paired ACROSS them** — best-TOSS
-  Divisional losers against the best-qualified DISTRICT CHAMPIONS still outside
-  the field — what is left of the retired guarantee: a district title earns you
-  ONE more dual, not a berth — and it convenes ONLY if
-  berths are still outstanding, which on the current membership is never. n
-  berths means n duals, one team from each pool, so it is byeless by
-  construction. Arithmetic is
+  Ward → Sectional → Area losers come in as BODIES, never berths). **‼️ NO WARD PLAYBACKS — Ward losers enter at CONFERENCE and nowhere
+  else** (owner rule 2027-08). They used to be drafted into the Super Regional
+  pool as bodies, which gave them TWO OR THREE bites (Super Regionals, a
+  readmission to Semi-State, then Divisionals) while a Zonal loser got one, and
+  berths were being earned off them three rounds early. Super Regionals is now
+  the 16 Regional losers, full stop. CONFERENCE is the last rung and fills every
+  berth the ladder's own losers could not: ONE pool, reseeded and paired like
+  every other round, drawn in order of how well qualified you are — Divisional
+  losers, then DISTRICT CHAMPIONS still outside the field (what is left of the
+  retired guarantee: a title earns you one more dual, never a berth), then the
+  top Ward → Sectional → Area losers. It takes twice the outstanding berths, so
+  it is byeless by construction, and it convenes only if berths remain: dormant
+  in the 24-classes, ~28 teams in the 40s.
+  **‼️ ITS POOL IS RANKED ON `jhsaa.atr`, NOT TOSS** — Average Team Rating,
+  `ATR_TOSS_WEIGHT` (0.5) × `pi_raw` + the rest win percentage, and the ONE
+  place the association rates a team on anything but TOSS. TOSS is an
+  opponent-strength composite, so a middling team in a brutal district is
+  propped up by the company it keeps while a 20-win season against an ordinary
+  schedule rates below it — right for seeding a draw, wrong for the last seat in
+  the tournament. Arithmetic is
   DYNAMIC (`_recovery`: berths = field − champions; the Semi-State floor is
   `ceil(4·berths/3)` **rounded UP TO EVEN before the reservoir is sized** — rounding
   after left 4A one berth short of a 40 field at full size while every other class

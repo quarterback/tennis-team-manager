@@ -676,26 +676,6 @@
       "boys_district": "Vance District"
     },
     {
-      "name": "Andrew Jackson",
-      "source": "Caswell School of Science and Industry",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 884,
-      "private": false,
-      "mascot": "Buccaneers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
-    },
-    {
       "name": "Andrew Jackson North",
       "city": "Caswell",
       "county": "Halbrook",
@@ -3048,6 +3028,26 @@
       "boys": false,
       "girls_district": "Halbrook Basin District",
       "boys_district": ""
+    },
+    {
+      "name": "Chester A. Arthur",
+      "source": "Caswell School of Science and Industry",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 884,
+      "private": false,
+      "mascot": "Greenies",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook District"
     },
     {
       "name": "Christ the King",

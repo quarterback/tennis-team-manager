@@ -248,7 +248,7 @@ RENAMES = {
     "Caswell Classical School": "Cherry Hill",
     "Caswell Depot High": "Cherry Hill North",
     "Caswell I-50 Technical": "Cherry Hill South",
-    "Caswell School of Science and Industry": "Andrew Jackson",
+    "Caswell School of Science and Industry": "Chester A. Arthur",
     "Caswell University Prep": "Caswell West",
     "Aldecoa Academy of Arts and Letters": "Aldecoa North",
     "Aldecoa Applied Sciences Institute": "Aldecoa South",
@@ -396,6 +396,7 @@ def reclassify(schools: list[dict]) -> int:
 # source record.
 MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
+    "Chester A. Arthur": "Greenies",            # owner naming, 2027-08
     "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
     # ── Harborline: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
