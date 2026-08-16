@@ -694,7 +694,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   its résumés earn (4 seen). If every class shows the same HM count, a slot count
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
   - **‼️ REGIONS ARE NOT THE SAME SIZE, so the honour scales with them** (owner rule
-    2027-08). Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17.
+    2027-08). Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25.
     A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
     Team**; below that, ONE unnumbered team (calling it "First" with no second
     promises a tier that does not exist). Halbrook alone clears

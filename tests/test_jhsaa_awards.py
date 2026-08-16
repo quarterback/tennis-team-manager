@@ -164,7 +164,7 @@ def test_every_region_team_is_ten_singles_and_eight_doubles(season):
 
 def test_a_big_region_crowns_two_teams_and_a_small_one_crowns_one(season):
     """‼️ The association's regions are nowhere near the same size — Halbrook
-    Basin has 115 boys' programs, North Range 17 — so a single team of ten is a
+    Basin has 199 boys' programs, Millersylvania 25 — so a single team of ten is a
     far scarcer honour in one than in the other. Regions at or above
     `AR_TIER2_MIN_PROGRAMS` crown a First AND a Second Team.
 

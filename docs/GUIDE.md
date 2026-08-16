@@ -787,7 +787,7 @@ start of the offseason ladder — before the recruit board needs its output.
   than All-District, and open to a 2A school that produced a regional #1.
 
   **The regions are nowhere near the same size, so the honour scales with them.**
-  Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17. A region
+  Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25. A region
   of **45 or more programs crowns a First and a Second Team** (Halbrook Basin,
   Gold Valley, Harborline, South Coast, Ashbury Metro); the rest crown a single
   unnumbered team. **Halbrook Basin alone** — nearly twice the next region — also

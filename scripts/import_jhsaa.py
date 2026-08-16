@@ -596,11 +596,11 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Juniper League", "Juniper Highlands"),
     ("Desert Sky League", "Juniper Highlands"),
     ("Intermountain Athletic Association", "Juniper Highlands"),
-    ("High Lakes League", "North Range"),
-    ("North Range League", "North Range"),
-    ("Big Sky League", "North Range"),
-    ("Black Canyon League", "North Range"),
-    ("Basalt League", "North Range"),
+    ("High Lakes League", "Millersylvania"),
+    ("North Range League", "Millersylvania"),
+    ("Big Sky League", "Millersylvania"),
+    ("Black Canyon League", "Millersylvania"),
+    ("Basalt League", "Millersylvania"),
     # -- sage, plains and the interior --------------------------------------
     ("Sage Plains League", "Sage Plains"),
     ("Inland Empire League", "Sage Plains"),
@@ -831,7 +831,7 @@ MASCOTS = {
     "Dry Lake": "Mirages",
     "Trout Lake": "Silverlegs",             # the ask: named for its own fish
 
-    # ── North Range: the mines and the snow ──────────────────────────────────
+    # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
     "Norstead": "Longships",
     "Aspen Harbor": "Harbor Seals",
@@ -886,6 +886,11 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # point the way a real state's do.)
 AREA_RENAMES = {
     "Mother Lode": "Southern Jefferson",
+    # A wooded northern range deserves better than a compass bearing
+    # (owner rule 2027-08). "North Range League" survives in the league
+    # bank on purpose — a league name outliving the geography it was
+    # named for is the fossil behaviour LEAGUE_NAMES exists to allow.
+    "North Range": "Millersylvania",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
