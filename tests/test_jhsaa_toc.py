@@ -607,7 +607,7 @@ def test_an_expanded_bracket_page_renders_two_draws(archived):
     Rendered, not just viewed: a template resolves a wrong shape to an empty box
     with no error anywhere, which is how the TOC page shipped as a toolbar over
     nothing. The fixture's smaller classes scale the 40-field down
-    (`ladder_scale`), so any group whose archived bracket carries `round_names`
+    so any group whose archived bracket carries `round_names`
     exercises the split; a 24-shape group keeps the single tree and no tab."""
     arc = archived["arc"]
     expanded = [g for g in jh.GROUPS

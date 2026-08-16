@@ -167,9 +167,9 @@ FIDELITY = "fast"
 # Zonal champions' privilege; a 40 puts a Qualifiers Round in front of that same
 # 24 (see the table's own comment).
 #
-# `ladder_scale` shrinks every number together (powers of two, same shape) when a
-# classification is too small for the full size. Every real classification fits
-# the full size today; the scale exists for small pools, not as a format fork.
+# ‼️ THERE IS NO SCALING. Every classification plays the full ladder and the
+# owner's field table as written; a pool too small for it is a broken fixture,
+# not a format to accommodate.
 PROTECTED = 16
 WARD_FIELD = 32
 # Field size per classification (owner table, 2027-08). The three largest classes
@@ -185,7 +185,7 @@ WARD_FIELD = 32
 #
 # This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
 # given a bye without inventing a round for everybody else to sit out.
-STATE_FIELD = {"9A": 24, "8A": 24, "7A": 24,
+STATE_FIELD = {"9A": 40, "8A": 40, "7A": 24,
                "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A-1A": 40}
 STATE_FIELD_DEFAULT = 24
 
@@ -196,26 +196,12 @@ QUALIFIER_NAME = "Qualifiers Round"
 RECOVERY_CUT = 8          # teams the two recovery rounds eliminate, together
 
 
-def state_field_size(group: str, scale: int = 1) -> int:
-    return STATE_FIELD.get(group, STATE_FIELD_DEFAULT) // scale
+def state_field_size(group: str) -> int:
+    """The classification's State field. There is no scaling: every class plays the
+    owner's table at full size, and a pool too small for it is a broken fixture, not
+    a format to accommodate."""
+    return STATE_FIELD.get(group, STATE_FIELD_DEFAULT)
 
-
-def ladder_scale(group: str) -> int:
-    """One divisor for all of `group`'s postseason numbers, shared by both genders
-    (a classification plays ONE format) and sized by the smaller gender's count.
-
-    Two fits, both required: the LADDER's seats (`PROTECTED + WARD_FIELD`) must not
-    exceed the class, and the STATE FIELD must stay a minority of it (at most half)
-    — the fixed-field rule ("recovery conforms, never a short field") presumes the
-    berths can be contested from the loser pools, and a State that admits most of a
-    small class drains those pools dry. Full-size classes clear both terms at k=1;
-    only tiny pools (test fixtures) scale."""
-    n = min(sum(1 for s in load_schools(g) if s.group == group) for g in GENDERS)
-    k = 1
-    while k < 8 and ((PROTECTED + WARD_FIELD) // k > n
-                     or state_field_size(group, k) > n // 2):
-        k *= 2
-    return k
 
 # --- talent ------------------------------------------------------------------
 # (mean, spread) of the 20-80 grade per classification. Well beneath the college bands
@@ -1489,17 +1475,17 @@ def _power_key(power: dict | None):
 
 
 def sectional_field(group: str, standings: dict[str, list[TeamSeason]],
-                     power: dict | None = None, scale: int = 1
+                     power: dict | None = None
                      ) -> tuple[list[TeamSeason], list[TeamSeason]]:
     """(protected, entrants) for `group` — every program in the classification.
 
-    Protected (`PROTECTED // scale` seats, enter at Regionals): district champions
+    Protected (`PROTECTED` seats, enter at Regionals): district champions
     first, then the best remaining cutoff TOSS until the seats are filled. Everyone
     else enters Sectionals. Both lists come back cutoff-TOSS ordered."""
     key = _power_key(power)
     champs = sorted((ts[0] for ts in standings.values() if ts), key=key)
     rest = sorted((t for ts in standings.values() for t in ts[1:]), key=key)
-    fill = max(0, PROTECTED // scale - len(champs))
+    fill = max(0, PROTECTED - len(champs))
     protected = sorted(champs + rest[:fill], key=key)
     return protected, rest[fill:]
 
@@ -1762,7 +1748,7 @@ def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple
     bottom half is enough at these sizes; TOSS order is otherwise preserved."""
     n = len(playing)
     # Small sets get an EXACT answer: a tight must-play round leaves the greedy
-    # repair no room (offenders survived in every scaled class), and a perfect
+    # repair no room (offenders survived in every class), and a perfect
     # matching over <=8 teams is at most 105 candidates. Score = total penalty,
     # then closeness to the strongest-vs-weakest ideal.
     if 2 <= n <= 8:
@@ -1850,7 +1836,7 @@ def _recovery_round(pool: list[TeamSeason], *, phase: str,
 
 def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
               prestate: dict, zonal_champs: list, district_champs: list[str],
-              scale: int, power: dict, *,
+              power: dict, *,
               seed: int) -> tuple[dict, dict, dict, list, list[str]]:
     """The whole recovery path for one group: who still needs a berth, who gets
     another chance, and the THREE rounds that decide it.
@@ -1894,7 +1880,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # every reader (`jhsaa_postseason_result`, the ledger chip) already handles
     # the key, so retiring the rule does not have to rewrite history.
     district_qualifiers: list[str] = []
-    berths = max(0, state_field_size(group, scale) - len(zonal_champs))
+    berths = max(0, state_field_size(group) - len(zonal_champs))
     reg_losers = [by_name[n] for n in _losers(prestate, 0)]
     zon_losers = [by_name[n] for n in _losers(prestate, 1)]
     # Walk back down the ladder for bodies: Ward, then Sectional, then Area
@@ -1930,7 +1916,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # the cap refused it, and the odd-drop took a pair back off: measured at full
     # size, 4A wanted a 39 window, got 38, and finished ONE berth short of a 40
     # field with every other classification full. An odd floor is the only case,
-    # which is why it survived the scaled fixture entirely.
+    # which is why it went unseen for so long.
     # P must reach the floor even after readmitting every Super Regional loser
     # (max S = P + z), and must be even so Super Regionals is byeless.
     sr_pool = sorted(reg_losers, key=_power_key(power))
@@ -2043,8 +2029,8 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
     `champions` is how many Zonal champions lead the field (the caller's `len(zc)`,
     scaled with the ladder) — the draw's bye budget, and the count that decides
     whether the field is EXPANDED. A field whose padding byes are exactly the
-    champions (24 in 32 slots, or any `ladder_scale` image of it) plays one fixed
-    draw. A larger field (40, or its scaled images) is that same draw with a
+    champions (24 in 32 slots) plays one fixed draw. A larger field — 40 — is
+    that same draw with a
     QUALIFIERS ROUND in front: the champions take a double bye while everyone else
     plays the Qualies and then the First Round down to `champions` survivors, and
     the survivors join them in a fresh draw — exactly how a tour event's qualifying
@@ -2425,7 +2411,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     """One full JHSAA season for `gender`: every district's regular season, the
     crossover schedule, the awards, and each classification's postseason ladder
     (Sectionals → Wards → Regionals → Zonals → Super Regionals → Semi-State →
-    State — see the postseason constants above `ladder_scale`).
+    State — see the postseason constants above).
 
     Memoized per (salt, gender, year, seed) — a season is deterministic, and both the
     recruit hand-off and any page that wants standings would otherwise re-simulate
@@ -2487,13 +2473,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     district_champs = {}
     for group in GROUPS:
         standings = by_group[group]
-        k = ladder_scale(group)
-        protected, entrants = sectional_field(group, standings, power, scale=k)
+        protected, entrants = sectional_field(group, standings, power)
         protecteds[group] = [t.school.name for t in protected]
         district_champs[group] = [ts[0].school.name
                                   for ts in standings.values() if ts]
         gseed = seed + hash(group) % 9973
-        sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD // k,
+        sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD,
                                                        seed=gseed)
         ward_field = sorted(ward_field, key=_power_key(power))
         wards[group], ward_champs = run_rounds(ward_field, ("ward",),
@@ -2509,12 +2494,11 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
     for group in GROUPS:
-        k = ladder_scale(group)
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
         sr, ss, dv, cf, quals, dq, atr_used = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
-            zonal_champs[group], district_champs[group], k, post_power,
+            zonal_champs[group], district_champs[group], post_power,
             seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], conferences[group] = dv, cf

@@ -494,8 +494,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
-  State is **24 in the three largest classes, 40 in the five smaller ones** (owner
-  table 2027-08 — `jhsaa.STATE_FIELD`). **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
+  State is **40 everywhere except 7A, which crowns from 24** (owner table
+  2027-08 — `jhsaa.STATE_FIELD`; 9A and 8A joined the 40s because the
+  association's deepest classes were leaving plainly good teams home). **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
   FRONT OF IT** (`run_state(champions=)`): the Zonal champions take a DOUBLE bye
   while seeds 9-40 play the Qualies and then the First Round, and the eight
   survivors join them in a FRESH draw — so both shapes converge at the Octofinals,

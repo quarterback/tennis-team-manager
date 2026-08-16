@@ -23,9 +23,8 @@ The qualification structure (owner spec 2027-08, expanded State fields):
 
 State is 24 teams in the three largest classes and 40 in the five smaller ones
 (owner table 2027-08) — a 40 being a 24 with a Qualifiers Round in front of it.
-`ladder_scale` shrinks every number together for pools too small for the full
-shape — the two-district fixture here exercises exactly that; the full-size
-arithmetic is asserted proportionally and pinned on synthetic draws below.
+There is NO scaling: every classification plays the full ladder and the field
+table as written.
 
 Fixture pattern shared with `test_jhsaa_toc.py` (two districts per
 classification, so a run stays a few seconds).
@@ -89,12 +88,11 @@ def test_the_ladder_shape_is_fixed_and_proportional(archived):
     protected and halves twice down to the Zonal champions."""
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
-        k = jh.ladder_scale(g)
-        assert len(ward["field"]) == jh.WARD_FIELD // k
+        assert len(ward["field"]) == jh.WARD_FIELD
         assert len(sec["survivors"]) == len(ward["field"])
         assert len(ward["survivors"]) == len(ward["field"]) // 2
         assert len(pre["field"]) == len(ward["survivors"]) + len(protected)
-        assert len(pre["field"]) == jh.WARD_FIELD // k          # Regionals re-fills to 32
+        assert len(pre["field"]) == jh.WARD_FIELD          # Regionals re-fills to 32
         assert len(pre["survivors"]) == len(pre["field"]) // 4  # two rounds: 32 -> 8
         assert set(pre["field"]) == set(ward["survivors"]) | set(protected)
 
@@ -109,12 +107,11 @@ def test_the_state_field_is_champions_and_recovery_survivors(archived):
     to the classification's State field with the champions seeded first."""
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
-        k = jh.ladder_scale(g)
         zonal_champs = set(pre["survivors"])
         # ‼️ THE STATE FIELD IS FIXED (owner patch 2027-08): recovery conforms
         # to it — bye shortages are solved upstream with Ward-loser bodies,
         # never by extra duals, a deeper cut, or a short field.
-        assert len(state["field"]) == jh.state_field_size(g, k)
+        assert len(state["field"]) == jh.state_field_size(g)
         assert not dq, (g, dq)          # the guarantee is retired
         assert set(state["field"]) == (zonal_champs | set(ss["survivors"])
                                        | set(dv["survivors"]) | set(lc["survivors"]))

@@ -23,8 +23,8 @@ draw's top seeds — so State's first-round byes belong to them, by right.
 
 ## The two ways into State
 
-State is **24 teams in the three largest classes and 40 in the five smaller
-ones**, and that number never moves. A 40 is a 24 with a **Qualifiers Round**
+State is **40 teams in every classification except 7A, which crowns from 24**,
+and that number never moves. A 40 is a 24 with a **Qualifiers Round**
 in front of it: seeds 9–40 play the Qualies and then the First Round, the
 eight survivors join the Zonal champions in the Octofinals, and from there the
 two shapes are the same championship.
