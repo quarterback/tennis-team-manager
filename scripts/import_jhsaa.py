@@ -448,6 +448,8 @@ RENAMES = {
     "Stone Springs": "Simmons",
     "Trout Point": "North Simmons",
     "Walnut Yard": "South Simmons",
+    "Alderfield": "Linden",
+    "Sage Lake": "Sage Village",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1034,6 +1036,8 @@ CITY_RENAMES = {
     "Stone Springs": "Simmons",
     "Trout Point": "North Simmons",
     "Walnut Yard": "South Simmons",
+    "Alderfield": "Linden",
+    "Sage Lake": "Sage Village",
 }
 
 RELOCATIONS = {

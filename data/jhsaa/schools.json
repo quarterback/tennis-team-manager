@@ -276,25 +276,6 @@
       "boys_district": "Big Basin League"
     },
     {
-      "name": "Alderfield",
-      "city": "Alderfield",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 186,
-      "private": false,
-      "mascot": "Rough Skins",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
-    },
-    {
       "name": "Alejandro Zamora",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
@@ -8178,6 +8159,26 @@
       "boys_district": "Gold Valley League"
     },
     {
+      "name": "Linden",
+      "city": "Linden",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 186,
+      "private": false,
+      "mascot": "Rough Skins",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League",
+      "source": "Alderfield"
+    },
+    {
       "name": "Llerena",
       "city": "Llerena",
       "county": "Halbrook",
@@ -11985,8 +11986,8 @@
       "boys_district": "Dual County League"
     },
     {
-      "name": "Sage Lake",
-      "city": "Sage Lake",
+      "name": "Sage Village",
+      "city": "Sage Village",
       "county": "Windrow",
       "area": "Millersylvania",
       "classification": "1A",
@@ -12001,7 +12002,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
+      "boys_district": "High Lakes League",
+      "source": "Sage Lake"
     },
     {
       "name": "Saint Francis",
