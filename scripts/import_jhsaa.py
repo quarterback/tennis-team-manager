@@ -537,13 +537,13 @@ def reclassify(schools: list[dict]) -> int:
 # block sitting in that region and used anywhere once the preferred pool is spent.
 LEAGUE_NAMES: list[tuple[str, str | None]] = [
     # -- coast and tidewater ------------------------------------------------
-    ("Harborline League", "Harborline"),
-    ("Tidelands League", "Harborline"),
-    ("Sea View League", "Harborline"),
-    ("Cape-Meridian League", "Harborline"),
-    ("Breakwater Athletic Association", "Harborline"),
-    ("Chinook League", "Harborline"),
-    ("Mariners League", "Harborline"),
+    ("Harborline League", "Selquah"),
+    ("Tidelands League", "Selquah"),
+    ("Sea View League", "Selquah"),
+    ("Cape-Meridian League", "Selquah"),
+    ("Breakwater Athletic Association", "Selquah"),
+    ("Chinook League", "Selquah"),
+    ("Mariners League", "Selquah"),
     ("South Coast League", "Sebastian Cape"),
     ("Surf League", "Sebastian Cape"),
     ("Pacific Coast League", "Sebastian Cape"),
@@ -620,10 +620,10 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Orchard League", "Alderwold"),
     ("Millworks Athletic Association", "Alderwold"),
     ("Cowapa League", "Alderwold"),
-    ("Vermilion Valley League", "Vermilion Valley"),
-    ("Marble Valley League", "Vermilion Valley"),
-    ("Ironwood League", "Vermilion Valley"),
-    ("Quarry League", "Vermilion Valley"),
+    ("Vermilion Valley League", "Yarrowmere"),
+    ("Marble Valley League", "Yarrowmere"),
+    ("Ironwood League", "Yarrowmere"),
+    ("Quarry League", "Yarrowmere"),
     # -- unanchored: the names that outlived whatever they described --------
     ("Trinity League", None),
     ("Olympic League", None),
@@ -688,7 +688,7 @@ MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
     "Chester A. Arthur": "Greenies",            # owner naming, 2027-08
     "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
-    # ── Harborline: the working coast ────────────────────────────────────────
+    # ── Selquah: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",
     "Port Veles": "Chinook",                    # the port itself
@@ -910,6 +910,19 @@ AREA_RENAMES = {
     # Finnish-American surname besides. One word, like Alderwold, Harborline
     # and Millersylvania.
     "Sage Plains": "Kangas",
+    # A -mere is a lake or marsh, and yarrow grows on wet ground: YARROWMERE
+    # retires the last spare X-Valley (Gold Valley keeps its, having gold under
+    # it) in the archaic-English register Alderwold opened.
+    "Vermilion Valley": "Yarrowmere",
+    # ⚠️ SELQUAH IS INVENTED, and deliberately so. Jefferson stands on southern
+    # Oregon and northern California ground, where the real coastal names are
+    # indigenous — Chetco, Coquille, Umpqua, Siuslaw — and a map of that country
+    # with none of that in it reads wrong. But a fictional state must not put a
+    # REAL nation's name on a made-up region and a made-up school district: the
+    # phonology is regional (the -quah ending Issaquah and Snoqualmie carry),
+    # the word is not a people, a place or a language that exists. Coin in the
+    # register; never borrow the referent.
+    "Harborline": "Selquah",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
