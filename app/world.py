@@ -3626,6 +3626,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                    for g in jhsaa.GROUPS},
                 "divisional": {g: season["groups"][g].get("divisional")
                                 for g in jhsaa.GROUPS},
+                # The CONDITIONAL fourth rung — present and empty in a year that
+                # did not need it (owner rule 2027-08). `.get` because seasons
+                # archived before it existed have no key at all.
+                "last_chance": {g: season["groups"][g].get("last_chance")
+                                for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
                                for g in jhsaa.GROUPS},
                 "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},

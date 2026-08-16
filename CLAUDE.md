@@ -508,13 +508,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   2027-08): a 24-field's eight byes fall to them as a consequence, but 7A's 32-field
   is a power of two with NO byes and they are still seeded 1-8 there. Pinned for both
   shapes by `test_zonal_champions_are_the_top_seeds_byes_or_not`. Then the
-  **district guarantee**
-  (a district champion always has ACCESS — no bye, no seed help, no extra berth if it
-  also won its Zonal); and the **recovery rounds** `super_regional` → `semi_state`
-  (Regional losers, plus 7A's best-TOSS Ward losers as BODIES not berths, then Zonal
-  losers joining at Semi-State). Arithmetic is DYNAMIC (`_recovery`: berths = field −
-  champions − unique non-Zonal district champions; the two rounds always cut
-  `RECOVERY_CUT`). Draw rule: never immediately replay the team that just eliminated
+  **‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY IN (owner reversal
+  2027-08).** It briefly existed and was retired for contradicting the rule it sat
+  beside: a district champion could keep losing and still be handed a berth. A
+  district title buys a **PROTECTED seat** (entry at Regionals, skipping Sectionals
+  and Wards) and NOTHING at State — a champion that loses falls into the same
+  recovery pools as everyone else and earns a berth on court or does not go.
+  `district_qualifiers` stays in the return and the archive as an EMPTY list so
+  seasons played under the old rule still read. So there are TWO ways in, not three:
+  a Zonal title, or the **recovery rounds** `super_regional` → `semi_state` →
+  `divisional` → conditional `last_chance` (Regional losers first, Zonal losers
+  joining at Semi-State, and only once the ladder's OWN losers are exhausted do
+  Ward → Sectional → Area losers come in as BODIES, never berths). Arithmetic is
+  DYNAMIC (`_recovery`: berths = field − champions; the Semi-State floor is
+  `ceil(4·berths/3)` **rounded UP TO EVEN before the reservoir is sized** — rounding
+  after left 4A one berth short of a 40 field at full size while every other class
+  filled, and the scaled fixture could not see it). Draw rule: never immediately replay the team that just eliminated
   you — and **bye selection and pairing are ONE problem** (`_draw_recovery`), since
   choosing byes first froze a bye team into an unreachable rematch. Finishes for
   recovery runs SUPERSEDE the ladder round that sent them there.

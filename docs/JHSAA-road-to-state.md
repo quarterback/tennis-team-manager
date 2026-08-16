@@ -3,7 +3,7 @@
 *The explainer version. One rule governs the whole design:*
 
 > **Nobody reaches State on a bye.** Every team in the State field either won a
-> Zonal title, is a district champion, or **won its last dual on court.**
+> Zonal title or **won its last dual on court.**
 
 ## The ladder
 
@@ -21,7 +21,7 @@ Everyone starts in the same place and the field narrows:
 TOSS. **Zonal champions qualify for State automatically**, and they are the State
 draw's top seeds — so State's first-round byes belong to them, by right.
 
-## The three ways into State
+## The two ways into State
 
 State is **24 teams in the three largest classes and 40 in the five smaller
 ones**, and that number never moves. A 40 is a 24 with a **Qualifiers Round**
@@ -35,16 +35,21 @@ two shapes are the same championship.
    in a 40-team field they take a **double bye** — straight to the Octofinals,
    while everyone else plays two rounds of qualifying to reach them. Winning
    your Zonal buys the top of the seed list either way.
-2. **Win your district** — a district champion always has access, even if it
-   loses in the ladder. Access only: no bye, no seed help, and no extra berth if
-   it also won a Zonal.
-3. **Win your way through recovery** — everything below.
+2. **Win your way through recovery** — everything below.
 
-## Recovery: three rounds, no byes
+Winning your district is **not** one of them. A district title buys a *protected
+seat* — you skip Sectionals and Wards and enter at Regionals — and nothing at
+State. Lose from there and you go into recovery with everybody else. There was
+briefly a guarantee and it was retired: a district champion could keep losing
+and still be handed a berth, which is the opposite of earning it.
+
+## Recovery: three rounds, no byes — and a fourth if it is needed
 
 Losing does not end your season. The remaining berths are contested in three
 rounds, and **every round pairs its entire field** — there are no byes anywhere
-in recovery, so nobody can advance without playing.
+in recovery, so nobody can advance without playing. A fourth round, **Last
+Chance**, is contested by Divisional losers and convenes only if berths are
+still outstanding; on the current membership it never has to.
 
 | Round | Who plays | Winners |
 |---|---|---|
