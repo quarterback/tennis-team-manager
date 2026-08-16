@@ -219,6 +219,40 @@ ALWAYS_EXTRA = [
     "Yarmere",
 ]
 
+# ‼️ OWNER EDICTS — NAMES THAT ARE NOT UP FOR REVISION (2027-08).
+#
+# Everything in this file is the owner's map, but these were dictated by NAME
+# rather than arrived at by a generator or proposed by an agent. A later pass
+# may rename anything else it finds bland; it may NOT "improve" one of these,
+# fold it into a naming family, or trade it away to resolve a collision. If one
+# of them collides with something, the OTHER thing moves.
+#
+# This list exists because this map has now been renamed in a dozen sweeps, and
+# the failure mode of a sweep is that it treats a deliberate name as noise.
+OWNER_EDICTS = frozenset({
+    # schools
+    "Evans Larsen Day", "Chester A. Arthur", "Siskiyou Valley", "Cook City",
+    "Fountain Park", "James K. Polk", "Lyndon B. Johnson", "William Howard Taft",
+    "Earl Warren", "Sonia Sotomayor", "Ketanji Brown Jackson",
+    "Sandra Day O'Connor", "Ruth Bader Ginsburg", "John Quincy Adams",
+    "John F. Kennedy", "Western Sky",
+    # towns
+    "Cape Angeles", "Fort Tabor", "New Penzance Island", "Bay Oregon",
+    "Carolina Island", "North San Francisco", "California Canyons", "Vonjo City",
+    "Galactica Plains", "Simmons", "North Simmons", "South Simmons",
+    "East Simmons", "Linden", "Sage Village", "Minnesota City",
+    "Seamus Town",
+    "Georgia Mills", "Texas Beach", "California Beach", "Jersey City", "Jamaica",
+    "Sotkamo", "Kuusamo", "Iisalmi", "Lieksa", "Nurmes", "Raahe",
+    # the uplands the owner named outright
+    "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit",
+    "Meridian Passage", "Mount Ruth", "Mount Dylan Lake", "Corey Canyon",
+    "Aftdahl Ridge", "Brynildson Hill", "Mount Henson",
+    # areas
+    "Southern Jefferson", "Millersylvania",
+})
+
+
 # ABSORPTION-STYLE RENAMES (owner rule 2027-08) — the same pattern the college
 # import uses for programs standing on Jefferson ground (Oregon Tech → Cascade
 # Polytechnic): the INSTITUTION comes from prep-network, which stays untouched
@@ -322,6 +356,22 @@ RENAMES = {
     # needs it; `build` refuses to emit a collision either way.
     "Katherine Booker": "James K. Polk",
     "Amos Cross": "Lyndon B. Johnson",
+    "Aldermont": "Cape Angeles",   # the town renamed under it
+    # each of these is the school named for its town, moving with it
+    "Milldale Union": "Sotkamo Union",
+    "Millview": "Kuusamo",
+    "Kelview Union": "Iisalmi Union",
+    "Standale": "Lieksa",
+    "Elmfield": "Nurmes",
+    "Stone Meadows": "Raahe",
+    "Silvale": "Fort Wren",
+    "Ewartville": "Fort Tabor",
+    "Ewart City": "Cook City",
+    "Tailing Crossing-Ewart Bar Union": "Fountain Park",
+    "Marshdale": "Fort Lassiter",
+    "Goodman": "Fort Bardsley",
+    "Fort Salish": "Fort Weller",
+    "Fort Salish Independent School": "Fort Weller Independent",
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -336,7 +386,7 @@ RENAMES = {
     # everywhere and adds no new invented person.
     "Amaia Aramburu": "Ketanji Brown Jackson",
     "Amaia Aramburu North": "Belmonte Catholic",
-    "Amos Cross": "Lyndon B. Johnson",
+    # each of these is the school named for its town, moving with it
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -347,7 +397,6 @@ RENAMES = {
     "Imani Cross": "San Borondón Heights",
     "Isaiah Booker": "Earl Warren",
     "John F. Kennedy North": "Harriman Heights",
-    "Katherine Booker": "James K. Polk",
     "Leire Aramburu": "Echevarria",
     "Lorna Booker": "Moriarty Heights",
     "Manuel Cordero": "Sonia Sotomayor",
@@ -380,7 +429,6 @@ RENAMES = {
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Carroway Public Service",
     "Dahlberg School of Science and Industry": "Dahlberg Science",
-    "Fort Salish Independent School": "Fort Salish Independent",
     "Fort Valois School of Public Service": "Fort Valois Public Service",
     "Galina Markov": "James Monroe",
     "Harbor Gate North": "Martin Van Buren",
@@ -421,6 +469,40 @@ RENAMES = {
     "Walter Hart": "Veles Narrows",
     "Walter Hart North": "Veles Quay",
     "Wolf Gap International School": "Wolf Gap International",
+    "Alder Landing Beacon Hill": "Bay Oregon",
+    "Aspen Harbor": "East Simmons",
+    "Cedarport": "North San Francisco",
+    "Elk Prairie": "Carolina Island",
+    "Granite Bar": "New Penzance",
+    "Millport": "Vonjo City",
+    "Sage Meadows": "Galactica Plains",
+    "Sage Point": "California Canyons",
+    
+    "Stone Springs": "Simmons",
+    "Trout Point": "North Simmons",
+    "Walnut Yard": "South Simmons",
+    "Alderfield": "Linden",
+    "Sage Lake": "Sage Village",
+    "Ashfield": "California Beach",
+    "Garrity": "Texas Beach",
+    "Graymont": "Georgia Mills",
+    "Marsh Depot": "Jersey City",
+    "Rentie Grove": "Jamaica",
+    "Wheatley": "Minnesota City",
+    "Ashwood": "Gruesome Ridge",
+    "Copper Crossing": "Copper Gap",
+    "Dahlberg": "Dahlberg Summit",
+    "Doyle Junction": "Doyle Pass",
+    "Elmburg": "Mt Jacqueline",
+    "Gold Junction": "Seamus Town",
+    "Harmon": "Annes Summit",
+    "Hetfield": "Brynildson Hill",
+    "Huckle Lake": "Mount Dylan Lake",
+    "Thornford": "Thorn Summit",
+    "Wolf Gap": "Corey Canyon",
+    "Brackwood Union": "Brackwood Pass",
+    "Ransom City Union": "Ransom Pass",
+    "Silton Union": "Silton Ridge",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -504,7 +586,7 @@ def reclassify(schools: list[dict]) -> int:
 # GROUND — read off the city, county and area on the record: the coast gets its
 # fish, seals and crab boats; the Halbrook Basin gets the irrigation, the beet
 # and onion fields and its Basque country; the Cascades get their salamanders
-# and lava; Timber Valley gets the logging trades. Not every generic is
+# and lava; Alderwold gets the logging trades. Not every generic is
 # replaced — a state really does have some Eagles — but none is left at twenty.
 #
 # Keyed by DISPLAY name and applied at EMIT, the same as RENAMES, so a
@@ -537,20 +619,28 @@ def reclassify(schools: list[dict]) -> int:
 # block sitting in that region and used anywhere once the preferred pool is spent.
 LEAGUE_NAMES: list[tuple[str, str | None]] = [
     # -- coast and tidewater ------------------------------------------------
-    ("Harborline League", "Harborline"),
-    ("Tidelands League", "Harborline"),
-    ("Sea View League", "Harborline"),
-    ("Cape-Meridian League", "Harborline"),
-    ("Breakwater Athletic Association", "Harborline"),
-    ("Chinook League", "Harborline"),
-    ("Mariners League", "Harborline"),
-    ("South Coast League", "South Coast"),
-    ("Surf League", "South Coast"),
-    ("Pacific Coast League", "South Coast"),
-    ("Coastal Range League", "South Coast"),
-    ("Del Rey Athletic Association", "South Coast"),
-    ("Gold Coast League", "South Coast"),
-    ("Valley Coast Interscholastic League", "South Coast"),
+    # ‼️ REAL FINNISH PLACE NAMES, not Nordic-sounding coinages (owner rule
+    # 2027-08). Ostrobothnia is the coastal province on the Gulf of Bothnia, so
+    # it belongs on a working coast; the rest are small Finnish cities that have
+    # no American namesake, which is the whole appeal — Sotkamo, Pori, Vimpeli
+    # (the pesapallo town), Imatra, Kokkola, Rauma, Kajaani, Narpes.
+    ("Ostrobothnia League", "Selquah"),
+    ("Rauma Athletic Association", "Selquah"),
+    ("Narpes Interscholastic League", "Selquah"),
+    ("Pori League", "Selquah"),
+    ("Tidelands League", "Selquah"),
+    ("Sea View League", "Selquah"),
+    ("Cape-Meridian League", "Selquah"),
+    ("Breakwater Athletic Association", "Selquah"),
+    ("Chinook League", "Selquah"),
+    ("Mariners League", "Selquah"),
+    ("South Coast League", "Sebastian Cape"),
+    ("Surf League", "Sebastian Cape"),
+    ("Pacific Coast League", "Sebastian Cape"),
+    ("Coastal Range League", "Sebastian Cape"),
+    ("Del Rey Athletic Association", "Sebastian Cape"),
+    ("Gold Coast League", "Sebastian Cape"),
+    ("Valley Coast Interscholastic League", "Sebastian Cape"),
     # -- the metropolitan middle --------------------------------------------
     ("Metro League", "Ashbury Metro"),
     ("Gateway League", "Ashbury Metro"),
@@ -596,30 +686,38 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Juniper League", "Juniper Highlands"),
     ("Desert Sky League", "Juniper Highlands"),
     ("Intermountain Athletic Association", "Juniper Highlands"),
-    ("High Lakes League", "North Range"),
-    ("North Range League", "North Range"),
-    ("Big Sky League", "North Range"),
-    ("Black Canyon League", "North Range"),
-    ("Basalt League", "North Range"),
+    ("High Lakes League", "Millersylvania"),
+    ("North Range League", "Millersylvania"),
+    ("Big Sky League", "Millersylvania"),
+    ("Black Canyon League", "Millersylvania"),
+    ("Basalt League", "Millersylvania"),
     # -- sage, plains and the interior --------------------------------------
-    ("Sage Plains League", "Sage Plains"),
-    ("Inland Empire League", "Sage Plains"),
-    ("Far West League", "Sage Plains"),
-    ("Golden West League", "Sage Plains"),
-    ("Sunbelt League", "Sage Plains"),
-    ("Wheatland Athletic Association", "Sage Plains"),
-    ("Frontier League", "Sage Plains"),
-    ("Pioneer League", "Sage Plains"),
+    ("Sage Plains League", "Kangas"),
+    ("Inland Empire League", "Kangas"),
+    ("Far West League", "Kangas"),
+    ("Golden West League", "Kangas"),
+    ("Sunbelt League", "Kangas"),
+    ("Wheatland Athletic Association", "Kangas"),
+    ("Frontier League", "Kangas"),
+    ("Kaleva League", "Kangas"),
+    ("Vesterheim Athletic Association", "Kangas"),
+    ("Norheim League", "Kangas"),
+    ("Suomi Interscholastic League", "Kangas"),
+    ("Vimpeli Athletic Association", "Kangas"),
+    ("Imatra League", "Kangas"),
+    ("Kajaani League", "Kangas"),
+    ("Kokkola Athletic Association", "Kangas"),
+    ("Pioneer League", "Kangas"),
     # -- timber and vermilion -----------------------------------------------
-    ("Timber Valley League", "Timber Valley"),
-    ("Foundry League", "Timber Valley"),
-    ("Orchard League", "Timber Valley"),
-    ("Millworks Athletic Association", "Timber Valley"),
-    ("Cowapa League", "Timber Valley"),
-    ("Vermilion Valley League", "Vermilion Valley"),
-    ("Marble Valley League", "Vermilion Valley"),
-    ("Ironwood League", "Vermilion Valley"),
-    ("Quarry League", "Vermilion Valley"),
+    ("Timber Valley League", "Alderwold"),
+    ("Foundry League", "Alderwold"),
+    ("Orchard League", "Alderwold"),
+    ("Millworks Athletic Association", "Alderwold"),
+    ("Cowapa League", "Alderwold"),
+    ("Vermilion Valley League", "Yarrowmere"),
+    ("Marble Valley League", "Yarrowmere"),
+    ("Ironwood League", "Yarrowmere"),
+    ("Quarry League", "Yarrowmere"),
     # -- unanchored: the names that outlived whatever they described --------
     ("Trinity League", None),
     ("Olympic League", None),
@@ -684,7 +782,7 @@ MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
     "Chester A. Arthur": "Greenies",            # owner naming, 2027-08
     "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
-    # ── Harborline: the working coast ────────────────────────────────────────
+    # ── Selquah: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",
     "Port Veles": "Chinook",                    # the port itself
@@ -831,14 +929,14 @@ MASCOTS = {
     "Dry Lake": "Mirages",
     "Trout Lake": "Silverlegs",             # the ask: named for its own fish
 
-    # ── North Range: the mines and the snow ──────────────────────────────────
+    # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
     "Norstead": "Longships",
     "Aspen Harbor": "Harbor Seals",
     "Elk Bluff": "Bugles",
     "Millport": "Log Drivers",
 
-    # ── Sage Plains: sagebrush and stock ─────────────────────────────────────
+    # ── Kangas: sagebrush, stock and the Finn settlements ────────────────────
     "Ninemile": "Freighters",
     "Alina Belov": "White Sage",
     "Sage Meadows": "Meadowlarks",
@@ -886,6 +984,39 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # point the way a real state's do.)
 AREA_RENAMES = {
     "Mother Lode": "Southern Jefferson",
+    # A wooded northern range deserves better than a compass bearing
+    # (owner rule 2027-08). "North Range League" survives in the league
+    # bank on purpose — a league name outliving the geography it was
+    # named for is the fossil behaviour LEAGUE_NAMES exists to allow.
+    "North Range": "Millersylvania",
+    # Two more bearings-and-features, replaced with names of their own (owner
+    # rule 2027-08). "South Coast" was a compass point plus a landform, and
+    # "Timber Valley" was one of THREE X-Valley areas — Cape Sebastian is a real
+    # Oregon headland inverted to the owner's "<name> Cape" shape, and a wold is
+    # a wooded upland, so Alderwold says what Timber Valley said without being
+    # the third Valley on the map.
+    "South Coast": "Sebastian Cape",
+    "Timber Valley": "Alderwold",
+    # The last bare noun-plus-landform, and the NORDIC/FINNISH register the
+    # owner asked for — which the real Pacific Northwest already carries
+    # (Astoria's Finns, Naselle, Poulsbo, Ballard). "Kangas" is Finnish for the
+    # dry pine heath, which is precisely what the region is, and a common
+    # Finnish-American surname besides. One word, like Alderwold, Harborline
+    # and Millersylvania.
+    "Sage Plains": "Kangas",
+    # A -mere is a lake or marsh, and yarrow grows on wet ground: YARROWMERE
+    # retires the last spare X-Valley (Gold Valley keeps its, having gold under
+    # it) in the archaic-English register Alderwold opened.
+    "Vermilion Valley": "Yarrowmere",
+    # ⚠️ SELQUAH IS INVENTED, and deliberately so. Jefferson stands on southern
+    # Oregon and northern California ground, where the real coastal names are
+    # indigenous — Chetco, Coquille, Umpqua, Siuslaw — and a map of that country
+    # with none of that in it reads wrong. But a fictional state must not put a
+    # REAL nation's name on a made-up region and a made-up school district: the
+    # phonology is regional (the -quah ending Issaquah and Snoqualmie carry),
+    # the word is not a people, a place or a language that exists. Coin in the
+    # register; never borrow the referent.
+    "Harborline": "Selquah",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
@@ -895,6 +1026,105 @@ AREA_RENAMES = {
 # district and its geography while taking the crowding off one city.
 # ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
 # so a relocation must stay inside the area the districts were drawn from.
+# TOWN RENAMES (owner rule 2027-08) — the settlement itself, not a school.
+# ⚠️ Applied AFTER the county lookup, which must run on the SOURCE name:
+# prep-network's city table is keyed by the old name, so renaming first would
+# emit an empty county. Same reason RELOCATIONS looks its town up before the
+# rename is applied.
+#
+# Aldermont was the third Alder on the map (Alderwold the area, Alder Landing
+# and Alderfield the towns) and a one-school fishing port besides, so it takes
+# the cape: CAPE ANGELES, and its high school with it.
+CITY_RENAMES = {
+    "Aldermont": "Cape Angeles",
+    # ‼️ REAL FINNISH CITIES, UNACCENTED (owner rule 2027-08). Small Finnish
+    # towns with no American namesake, in the Kangas interior where the state's
+    # Finns settled. The accents come OFF — an American town would not carry
+    # them, which is exactly why Narpes and Riihimaki read as US place names and
+    # Narpes and Riihimaki with diacritics do not.
+    "Milldale": "Sotkamo",
+    "Millview": "Kuusamo",
+    "Kelview": "Iisalmi",
+    "Standale": "Lieksa",
+    "Elmfield": "Nurmes",
+    "Stone Meadows": "Raahe",
+    # ‼️ FORTS — it is the old West (owner rule 2027-08). The state had five and
+    # every one of them sat on the coast or in the Cascades, which is backwards:
+    # a frontier post belongs in the high desert, the gold country and the
+    # interior, where these four go. Named the way real ones are — for an
+    # officer. Fort Tabor stands on the Ewart, but the river keeps its own name
+    # beside Ewart Bar and Ewart City, exactly as Fort Benton sits by Benton).
+    # ‼️ A FORT IS NAMED FOR A PERSON (owner rule 2027-08). Almost every real
+    # one carries an officer, an agent or a commander — Carden, Meriwether,
+    # Lassiter, Wren, Ewart are surnames, and that is the whole naming grammar.
+    # NOT a river, NOT a plant, and above all NOT a people: Fort Salish named a
+    # nation the way no fort of that era was named, and it is now Fort Weller.
+    # (The county or the river usually takes ITS name from the fort, not the
+    # other way round — Bardsley County sits under Fort Bardsley.)
+    "Silvale": "Fort Wren",
+    "Ewartville": "Fort Tabor",
+    # The rest of the Ewart valley, renamed with it (owner, 2027-08).
+    "Ewart City": "Cook City",
+    "Ewart Bar": "Fountain Park",
+    "Marshdale": "Fort Lassiter",
+    "Goodman": "Fort Bardsley",
+    "Fort Rogue": "Fort Halloran",
+    "Fort Salish": "Fort Weller",
+    # ‼️ A SWEEP OVER THE COMMONPLACE TOWN NAMES (owner list, 2027-08). Every
+    # one of these was a stock American compound — Silver Glen, Stone Springs,
+    # Sage Meadows, Elk Prairie — the kind of name a generator reaches for and
+    # a reader slides off. The SIMMONSES are deliberately scattered rather than
+    # clustered: an East Coast state carries a Simmons and a North Simmons two
+    # counties apart, named at different times for the same family, and nothing
+    # about them has to be adjacent.
+    "Alder Landing": "Bay Oregon",
+    "Aspen Harbor": "East Simmons",
+    "Cedarport": "North San Francisco",
+    "Elk Prairie": "Carolina Island",
+    "Granite Bar": "New Penzance Island",
+    "Millport": "Vonjo City",
+    "Sage Meadows": "Galactica Plains",
+    "Sage Point": "California Canyons",
+    
+    "Stone Springs": "Simmons",
+    "Trout Point": "North Simmons",
+    "Walnut Yard": "South Simmons",
+    "Alderfield": "Linden",
+    "Sage Lake": "Sage Village",
+    "Ashfield": "California Beach",
+    "Garrity": "Texas Beach",
+    "Graymont": "Georgia Mills",
+    "Marsh Depot": "Jersey City",
+    "Rentie Grove": "Jamaica",
+    "Wheatley": "Minnesota City",
+    # ‼️ THE UPLANDS GET NAMES THAT SAY SO (owner, 2027-08). A third of the
+    # state is upland and almost nothing on the map admitted it — one Mount,
+    # no Pass, no Rim, no Summit, no Canyon — while the coast was thick with
+    # Ports and Capes and the gold country announced itself constantly. These
+    # encode elevation, passage, escarpment and volcanic ground, in the
+    # Klamath/Modoc/Siskiyou register the real terrain has.
+    "Ashwood": "Gruesome Ridge",
+    "Aspen Meadows": "Mount Clambake",
+    "Brackwood": "Brackwood Pass",
+    "Clear Prairie": "Clear Rim",
+    "Copper Crossing": "Copper Gap",
+    "Dahlberg": "Dahlberg Summit",
+    "Doyle Junction": "Doyle Pass",
+    "Elmburg": "Mt Jacqueline",
+    "Farleyford": "Aftdahl Ridge",
+    "Gold Junction": "Seamus Town",
+    "Harmon": "Annes Summit",
+    "Hetfield": "Brynildson Hill",
+    "Huckle Lake": "Mount Dylan Lake",
+    "Norford": "Meridian Passage",
+    "Plainfield": "Mount Henson",
+    "Ransom City": "Ransom Pass",
+    "Silton": "Silton Ridge",
+    "Thornford": "Thorn Summit",
+    "Winvale": "Mount Ruth",
+    "Wolf Gap": "Corey Canyon",
+}
+
 RELOCATIONS = {
     "Mother Lode": "Copper Prairie",
 }
@@ -1129,15 +1359,6 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     return out
 
 
-def _area_ren(district: str) -> str:
-    """A district is named for its region ("<region> District"), so a region
-    rename carries into it. Applied at emit for the same reason the area is."""
-    for src, dst in AREA_RENAMES.items():
-        if district.startswith(src):
-            return dst + district[len(src):]
-    return district
-
-
 def build(schools: list[dict], cities: dict) -> list[dict]:
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
@@ -1163,7 +1384,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         town = RELOCATIONS.get(name, s["city"])
-        city = cities.get(town, {})
+        city = cities.get(town, {})          # county comes off the SOURCE town
+        town = CITY_RENAMES.get(town, town)
         display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and
@@ -1197,8 +1419,13 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,
             "boys": name in boys,
-            "girls_district": _area_ren(dist["girls"].get(name, "")),
-            "boys_district": _area_ren(dist["boys"].get(name, "")),
+            # ‼️ NOT through `_area_ren`. League names come from LEAGUE_NAMES and
+            # are never derived from the area, so running an area rename over them
+            # would rewrite the FOSSILS the bank exists to keep — a North Range
+            # League emitted as "Millersylvania League" is precisely the league
+            # outliving its geography that the bank is designed to allow.
+            "girls_district": dist["girls"].get(name, ""),
+            "boys_district": dist["boys"].get(name, ""),
         })
     out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
     # ‼️ A DISPLAY NAME IS THE ARCHIVE'S IDENTITY — it keys `run_season`'s teams

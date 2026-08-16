@@ -694,7 +694,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   its résumés earn (4 seen). If every class shows the same HM count, a slot count
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
   - **‼️ REGIONS ARE NOT THE SAME SIZE, so the honour scales with them** (owner rule
-    2027-08). Halbrook Basin has 115 boys'/128 girls' programs; North Range has 17.
+    2027-08). Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25.
     A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
     Team**; below that, ONE unnumbered team (calling it "First" with no second
     promises a tier that does not exist). Halbrook alone clears
@@ -703,7 +703,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
     singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a
     list of region names** — the owner named four regions and the counts said five
-    (South Coast, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
+    (Sebastian Cape, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
     `{tiers, honorable_mention, programs}` and **`jhsaa_awards.region_rows()` is
     the ONE place that knows that shape** — a reader that walks the dict itself
     will silently show a big region's First Team only.
@@ -1152,6 +1152,14 @@ was a school marker, shipped "Baptist HS High School".
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and
   `data/jhsaa/archetypes.json` keys on the DISPLAY name, so its keys move too.
+- **‼️ OWNER EDICTS ARE NOT UP FOR REVISION** (`import_jhsaa.OWNER_EDICTS`, 2027-08).
+  57 names — schools, towns and two areas — were dictated BY NAME rather than
+  arrived at by a generator or proposed by an agent. A later pass may rename
+  anything it finds bland; it may NOT "improve" one of these, fold it into a
+  naming family, or trade it away to settle a collision. **If one collides, the
+  OTHER thing moves.** The list exists because this map has been swept a dozen
+  times and the failure mode of a sweep is treating a deliberate name as noise.
+  Verified against the data: all 57 are live.
 - **‼️ A JHSAA DISPLAY NAME MUST BE UNIQUE — it IS the archive identity.** It keys
   `run_season`'s teams dict, `world_jhsaa_dual.school`, the routes and the pids; two
   schools sharing one name silently merge into one archive slot while the standings

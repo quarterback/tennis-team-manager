@@ -4215,7 +4215,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # "in the same line section with zone, ward, section etc."). Presence on the
     # line means WON, same as every other unit chip, and the district season
     # precedes the postseason, so it comes first. The stored district name
-    # already carries the word "District" ("Sage Plains District").
+    # already carries the word "District" ("Marble Valley District").
     row["unit_wins"] = ([row["district"]] if row["place"] == 1 and row["district"]
                         else []) + _unit_wins(arc, g, school)
     # The Tournament of Champions is a SEPARATE event with a separate finish, not a
