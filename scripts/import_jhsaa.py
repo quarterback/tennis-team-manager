@@ -330,6 +330,10 @@ RENAMES = {
     "Standale": "Lieksa",
     "Elmfield": "Nurmes",
     "Stone Meadows": "Raahe",
+    "Silvale": "Fort Wren",
+    "Ewartville": "Fort Ewart",
+    "Marshdale": "Fort Lassiter",
+    "Goodman": "Fort Yarrow",
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -353,6 +357,10 @@ RENAMES = {
     "Standale": "Lieksa",
     "Elmfield": "Nurmes",
     "Stone Meadows": "Raahe",
+    "Silvale": "Fort Wren",
+    "Ewartville": "Fort Ewart",
+    "Marshdale": "Fort Lassiter",
+    "Goodman": "Fort Yarrow",
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -982,6 +990,16 @@ CITY_RENAMES = {
     "Standale": "Lieksa",
     "Elmfield": "Nurmes",
     "Stone Meadows": "Raahe",
+    # ‼️ FORTS — it is the old West (owner rule 2027-08). The state had five and
+    # every one of them sat on the coast or in the Cascades, which is backwards:
+    # a frontier post belongs in the high desert, the gold country and the
+    # interior, where these four go. Named the way real ones are — for an
+    # officer, or for the river crossing they guarded (Fort Ewart on the Ewart,
+    # beside Ewart Bar and Ewart City, exactly as Fort Benton sits by Benton).
+    "Silvale": "Fort Wren",
+    "Ewartville": "Fort Ewart",
+    "Marshdale": "Fort Lassiter",
+    "Goodman": "Fort Yarrow",
 }
 
 RELOCATIONS = {

@@ -4451,25 +4451,6 @@
       "boys_district": "Chinook League"
     },
     {
-      "name": "Ewartville",
-      "city": "Ewartville",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 288,
-      "private": false,
-      "mascot": "Huntsmen",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
-    },
-    {
       "name": "Featherstone Institute",
       "city": "Ewart City",
       "county": "Featherstone",
@@ -4640,6 +4621,46 @@
       "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
+    },
+    {
+      "name": "Fort Ewart",
+      "city": "Fort Ewart",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 288,
+      "private": false,
+      "mascot": "Huntsmen",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Ewartville"
+    },
+    {
+      "name": "Fort Lassiter",
+      "city": "Fort Lassiter",
+      "county": "Lodestone",
+      "area": "Millersylvania",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 355,
+      "private": false,
+      "mascot": "Comets",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kajaani League",
+      "boys_district": "Kajaani League",
+      "source": "Marshdale"
     },
     {
       "name": "Fort Meriwether",
@@ -4834,6 +4855,46 @@
       "boys": true,
       "girls_district": "Frontier League",
       "boys_district": "Frontier League"
+    },
+    {
+      "name": "Fort Wren",
+      "city": "Fort Wren",
+      "county": "Juniper",
+      "area": "Juniper Highlands",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 118,
+      "private": false,
+      "mascot": "Yellowjackets",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "",
+      "source": "Silvale"
+    },
+    {
+      "name": "Fort Yarrow",
+      "city": "Fort Yarrow",
+      "county": "Paddock",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 522,
+      "private": false,
+      "mascot": "Jaguars",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Goodman"
     },
     {
       "name": "Foundry High",
@@ -5391,25 +5452,6 @@
       "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
-    },
-    {
-      "name": "Goodman",
-      "city": "Goodman",
-      "county": "Paddock",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 522,
-      "private": false,
-      "mascot": "Jaguars",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League"
     },
     {
       "name": "Grace Christian",
@@ -8698,25 +8740,6 @@
       "boys": true,
       "girls_district": "Ironwood League",
       "boys_district": "Ironwood League"
-    },
-    {
-      "name": "Marshdale",
-      "city": "Marshdale",
-      "county": "Lodestone",
-      "area": "Millersylvania",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 355,
-      "private": false,
-      "mascot": "Comets",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kajaani League",
-      "boys_district": "Kajaani League"
     },
     {
       "name": "Martin Luther",
@@ -12717,25 +12740,6 @@
       "boys": true,
       "girls_district": "Vesterheim Athletic Association",
       "boys_district": "Vesterheim Athletic Association"
-    },
-    {
-      "name": "Silvale",
-      "city": "Silvale",
-      "county": "Juniper",
-      "area": "Juniper Highlands",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 118,
-      "private": false,
-      "mascot": "Yellowjackets",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": ""
     },
     {
       "name": "Silver Glen",
