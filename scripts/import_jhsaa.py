@@ -436,6 +436,18 @@ RENAMES = {
     "Walter Hart": "Veles Narrows",
     "Walter Hart North": "Veles Quay",
     "Wolf Gap International School": "Wolf Gap International",
+    "Alder Landing Beacon Hill": "Bay Oregon",
+    "Aspen Harbor": "East Simmons",
+    "Cedarport": "North San Francisco",
+    "Elk Prairie": "Carolina Island",
+    "Granite Bar": "New Penzance",
+    "Millport": "Vonjo City",
+    "Sage Meadows": "Galactica Plains",
+    "Sage Point": "California Canyons",
+    "Silver Glen": "West Simmons",
+    "Stone Springs": "Simmons",
+    "Trout Point": "North Simmons",
+    "Walnut Yard": "South Simmons",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1003,6 +1015,25 @@ CITY_RENAMES = {
     "Goodman": "Fort Bardsley",
     "Fort Rogue": "Fort Halloran",
     "Fort Salish": "Fort Weller",
+    # ‼️ A SWEEP OVER THE COMMONPLACE TOWN NAMES (owner list, 2027-08). Every
+    # one of these was a stock American compound — Silver Glen, Stone Springs,
+    # Sage Meadows, Elk Prairie — the kind of name a generator reaches for and
+    # a reader slides off. The SIMMONSES are deliberately scattered rather than
+    # clustered: an East Coast state carries a Simmons and a North Simmons two
+    # counties apart, named at different times for the same family, and nothing
+    # about them has to be adjacent.
+    "Alder Landing": "Bay Oregon",
+    "Aspen Harbor": "East Simmons",
+    "Cedarport": "North San Francisco",
+    "Elk Prairie": "Carolina Island",
+    "Granite Bar": "New Penzance Island",
+    "Millport": "Vonjo City",
+    "Sage Meadows": "Galactica Plains",
+    "Sage Point": "California Canyons",
+    "Silver Glen": "West Simmons",
+    "Stone Springs": "Simmons",
+    "Trout Point": "North Simmons",
+    "Walnut Yard": "South Simmons",
 }
 
 RELOCATIONS = {

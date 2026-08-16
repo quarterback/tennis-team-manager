@@ -142,7 +142,7 @@
     },
     {
       "name": "Ainhoa Mendizabal",
-      "city": "Stone Springs",
+      "city": "Simmons",
       "county": "Vance",
       "area": "Halbrook Basin",
       "classification": "6A",
@@ -274,25 +274,6 @@
       "boys": true,
       "girls_district": "Big Basin League",
       "boys_district": "Big Basin League"
-    },
-    {
-      "name": "Alder Landing Beacon Hill",
-      "city": "Alder Landing",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 225,
-      "private": false,
-      "mascot": "Ospreys",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "Alderfield",
@@ -1095,25 +1076,6 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Aspen Harbor",
-      "city": "Aspen Harbor",
-      "county": "Windrow",
-      "area": "Millersylvania",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 293,
-      "private": false,
-      "mascot": "Harbor Seals",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
-    },
-    {
       "name": "Assay",
       "city": "Assay",
       "county": "Windrow",
@@ -1418,6 +1380,26 @@
       "boys": true,
       "girls_district": "Kaleva League",
       "boys_district": "Kaleva League"
+    },
+    {
+      "name": "Bay Oregon",
+      "city": "Bay Oregon",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 225,
+      "private": false,
+      "mascot": "Ospreys",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Alder Landing Beacon Hill"
     },
     {
       "name": "Bayard Rustin",
@@ -2480,7 +2462,7 @@
     {
       "name": "Calderwood",
       "source": "Calderwood School",
-      "city": "Cedarport",
+      "city": "North San Francisco",
       "county": "Ferris",
       "area": "Gold Valley",
       "classification": "3A",
@@ -2496,6 +2478,26 @@
       "boys": true,
       "girls_district": "Mission League",
       "boys_district": "Mission League"
+    },
+    {
+      "name": "California Canyons",
+      "city": "California Canyons",
+      "county": "Juniper",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 399,
+      "private": false,
+      "mascot": "Bunchgrass",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Dual County League",
+      "boys_district": "Dual County League",
+      "source": "Sage Point"
     },
     {
       "name": "Calvary Chapel Ditch Fork",
@@ -2747,6 +2749,26 @@
       "boys_district": "Dual County League"
     },
     {
+      "name": "Carolina Island",
+      "city": "Carolina Island",
+      "county": "Ostrander",
+      "area": "Sebastian Cape",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 73,
+      "private": false,
+      "mascot": "Tule Elk",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League",
+      "source": "Elk Prairie"
+    },
+    {
       "name": "Carroway",
       "city": "Carroway",
       "county": "Rimrock",
@@ -2862,25 +2884,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin League",
       "boys_district": "Halbrook Basin League"
-    },
-    {
-      "name": "Cedarport",
-      "city": "Cedarport",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1587,
-      "private": false,
-      "mascot": "Gators",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
     },
     {
       "name": "Central Christian",
@@ -3916,6 +3919,26 @@
       "source": "Isaiah Booker"
     },
     {
+      "name": "East Simmons",
+      "city": "East Simmons",
+      "county": "Windrow",
+      "area": "Millersylvania",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 293,
+      "private": false,
+      "mascot": "Harbor Seals",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League",
+      "source": "Aspen Harbor"
+    },
+    {
       "name": "Eastgate North",
       "city": "Boyerstown",
       "county": "Marlow",
@@ -3936,7 +3959,7 @@
     },
     {
       "name": "Eastmont Christian",
-      "city": "Cedarport",
+      "city": "North San Francisco",
       "county": "Ferris",
       "area": "Gold Valley",
       "classification": "3A",
@@ -4259,25 +4282,6 @@
       "boys": true,
       "girls_district": "Mission League",
       "boys_district": "Mission League"
-    },
-    {
-      "name": "Elk Prairie",
-      "city": "Elk Prairie",
-      "county": "Ostrander",
-      "area": "Sebastian Cape",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 73,
-      "private": false,
-      "mascot": "Tule Elk",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
     },
     {
       "name": "Ella Baker",
@@ -5131,6 +5135,26 @@
       "boys_district": "Placer League"
     },
     {
+      "name": "Galactica Plains",
+      "city": "Galactica Plains",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 105,
+      "private": false,
+      "mascot": "Meadowlarks",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vesterheim Athletic Association",
+      "boys_district": "Vesterheim Athletic Association",
+      "source": "Sage Meadows"
+    },
+    {
       "name": "Galena",
       "city": "Galena",
       "county": "Galena",
@@ -5514,25 +5538,6 @@
       "boys_district": ""
     },
     {
-      "name": "Granite Bar",
-      "city": "Granite Bar",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 195,
-      "private": false,
-      "mascot": "Cowboys",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
-    },
-    {
       "name": "Granite Basin",
       "city": "Cinder",
       "county": "Antler",
@@ -5667,7 +5672,7 @@
     },
     {
       "name": "Greta Bellini",
-      "city": "Silver Glen",
+      "city": "West Simmons",
       "county": "Ferris",
       "area": "Gold Valley",
       "classification": "3A",
@@ -9129,25 +9134,6 @@
       "source": "Igor Chernov North"
     },
     {
-      "name": "Millport",
-      "city": "Millport",
-      "county": "Windrow",
-      "area": "Millersylvania",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 548,
-      "private": false,
-      "mascot": "Log Drivers",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
-    },
-    {
       "name": "Mirage Crossing",
       "city": "Mirage Crossing",
       "county": "Scheelite",
@@ -9682,6 +9668,26 @@
       "boys_district": "Sky-Em League"
     },
     {
+      "name": "New Penzance",
+      "city": "New Penzance Island",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 195,
+      "private": false,
+      "mascot": "Cowboys",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Granite Bar"
+    },
+    {
       "name": "Newark River",
       "city": "Newark River",
       "county": "Weller",
@@ -9929,6 +9935,46 @@
       "boys_district": "Ambassador League"
     },
     {
+      "name": "North San Francisco",
+      "city": "North San Francisco",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1587,
+      "private": false,
+      "mascot": "Gators",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Cedarport"
+    },
+    {
+      "name": "North Simmons",
+      "city": "North Simmons",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 197,
+      "private": false,
+      "mascot": "Bilbies",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Black Canyon League",
+      "boys_district": "",
+      "source": "Trout Point"
+    },
+    {
       "name": "North Valley Christian",
       "city": "Netherwood",
       "county": "Antler",
@@ -10083,7 +10129,7 @@
     },
     {
       "name": "Oksana Petrov",
-      "city": "Stone Springs",
+      "city": "Simmons",
       "county": "Vance",
       "area": "Halbrook Basin",
       "classification": "4A",
@@ -11958,44 +12004,6 @@
       "boys_district": "High Lakes League"
     },
     {
-      "name": "Sage Meadows",
-      "city": "Sage Meadows",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 105,
-      "private": false,
-      "mascot": "Meadowlarks",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association"
-    },
-    {
-      "name": "Sage Point",
-      "city": "Sage Point",
-      "county": "Juniper",
-      "area": "Juniper Highlands",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 399,
-      "private": false,
-      "mascot": "Bunchgrass",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Dual County League",
-      "boys_district": "Dual County League"
-    },
-    {
       "name": "Saint Francis",
       "city": "Port Meridian",
       "county": "Bidwell",
@@ -12764,25 +12772,6 @@
       "boys_district": "Vesterheim Athletic Association"
     },
     {
-      "name": "Silver Glen",
-      "city": "Silver Glen",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 467,
-      "private": false,
-      "mascot": "Silversmiths",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
-    },
-    {
       "name": "Silver Lake",
       "city": "Farleyford",
       "county": "Galena",
@@ -12800,6 +12789,26 @@
       "boys": true,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
+    },
+    {
+      "name": "Simmons",
+      "city": "Simmons",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1429,
+      "private": false,
+      "mascot": "Springers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pioneer League",
+      "boys_district": "Pioneer League",
+      "source": "Stone Springs"
     },
     {
       "name": "Siskiyou Valley",
@@ -12993,6 +13002,26 @@
       "girls_district": "Kaleva League",
       "boys_district": "Kaleva League",
       "source": "Milldale Union"
+    },
+    {
+      "name": "South Simmons",
+      "city": "South Simmons",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 317,
+      "private": false,
+      "mascot": "Honey Badgers",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Walnut Yard"
     },
     {
       "name": "Southern Jefferson Christian",
@@ -13226,7 +13255,7 @@
     },
     {
       "name": "St. Dominic Academy",
-      "city": "Millport",
+      "city": "Vonjo City",
       "county": "Windrow",
       "area": "Millersylvania",
       "classification": "3A",
@@ -14031,25 +14060,6 @@
       "boys_district": "Assay Athletic Association"
     },
     {
-      "name": "Stone Springs",
-      "city": "Stone Springs",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1429,
-      "private": false,
-      "mascot": "Springers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
-    },
-    {
       "name": "Sulphur Springs",
       "city": "Orellana",
       "county": "Vance",
@@ -14850,25 +14860,6 @@
       "boys_district": "Juniper League"
     },
     {
-      "name": "Trout Point",
-      "city": "Trout Point",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 197,
-      "private": false,
-      "mascot": "Bilbies",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Black Canyon League",
-      "boys_district": ""
-    },
-    {
       "name": "Tule",
       "city": "Tule",
       "county": "Bidwell",
@@ -15623,6 +15614,26 @@
       "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
+      "name": "Vonjo City",
+      "city": "Vonjo City",
+      "county": "Windrow",
+      "area": "Millersylvania",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 548,
+      "private": false,
+      "mascot": "Log Drivers",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League",
+      "source": "Millport"
+    },
+    {
       "name": "Wales City",
       "city": "Wales City",
       "county": "Weller",
@@ -15640,25 +15651,6 @@
       "boys": true,
       "girls_district": "Quarry League",
       "boys_district": "Quarry League"
-    },
-    {
-      "name": "Walnut Yard",
-      "city": "Walnut Yard",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 317,
-      "private": false,
-      "mascot": "Honey Badgers",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League"
     },
     {
       "name": "Walter Langston",
@@ -15792,6 +15784,26 @@
       "boys": true,
       "girls_district": "Ironwood League",
       "boys_district": "Ironwood League"
+    },
+    {
+      "name": "West Simmons",
+      "city": "West Simmons",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 467,
+      "private": false,
+      "mascot": "Silversmiths",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Silver Glen"
     },
     {
       "name": "Western Sky",
