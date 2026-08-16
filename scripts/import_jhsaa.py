@@ -22,8 +22,10 @@ Co-op programs are not modelled — single schools only.
 Districts: prep-network's 99 conferences are all-sport geographic groupings and 92 of
 them span classifications, so they shatter when filtered to one class and to tennis
 sponsors. Tennis draws its own map the way Oregon does — balanced districts of <= 12 per
-classification, geographically contiguous, named for their dominant area (falling through
-to the dominant county when that area name is already used in the same classification).
+classification, geographically contiguous, named for a PLACE — area, then county, then
+city, then a compound of its two largest towns. Never numbered, and never sharing a
+leading word with another district in the same class ("Halbrook Basin" and "Halbrook"
+are an area and a county inside it, and read as one league).
 
 Deterministic: seeded, so two runs are identical. Idempotent.
 
@@ -947,12 +949,43 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
         block = pool[lo:hi]
         if not block:
             continue
-        # name for the dominant area, else the dominant county, else a numbered fallback
-        cands = [f"{Counter(s['area'] for s in block).most_common(1)[0][0]} District"]
-        cands += [f"{c} District"
-                  for c, _ in Counter(county(s) for s in block).most_common()]
-        name = next((c for c in cands if c not in used),
-                    f"{block[0]['area']} {len(used) + 1} District")
+        # ‼️ A DISTRICT IS NAMED FOR A PLACE, NEVER NUMBERED. The cascade walks
+        # from the widest name to the narrowest and only then to a compound —
+        # area, then each county it covers, then each city, then a compound of
+        # its two largest towns. It used to give up after area-and-county and
+        # emit "Halbrook Basin 6 District", which is not a name, and which the
+        # owner met with "this is the laziest work i've seen in my life". A
+        # block entirely inside ONE county whose name is already taken is the
+        # case that hits it — the fix is to keep going, not to count.
+        #
+        # ⚠️ Ordered by frequency and tie-broken by NAME: `Counter.most_common`
+        # is insertion-ordered on ties, and insertion order here follows the
+        # sorted pool, so a tie would otherwise be decided by whichever school
+        # was renamed most recently.
+        def _by_freq(vals):
+            c = Counter(vals)
+            return [v for v, _ in sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+        areas, counties = _by_freq(s["area"] for s in block), _by_freq(county(s) for s in block)
+        towns = _by_freq(s["city"] for s in block)
+        cands = [f"{a} District" for a in areas]
+        cands += [f"{c} District" for c in counties]
+        cands += [f"{c} District" for c in towns]
+        if len(towns) > 1:
+            cands.append(f"{towns[0]}-{towns[1]} District")
+        cands += [f"{t} {c} District" for c in counties for t in towns]
+        # ‼️ DISTINCT ENOUGH, not merely unequal. "Halbrook Basin" is an AREA and
+        # "Halbrook" is a COUNTY inside it, so the area-then-county cascade
+        # cheerfully produced "Halbrook Basin District" AND "Halbrook District"
+        # in the same classification — two leagues that read as one, which is
+        # what the owner was looking at. A candidate is rejected when it shares
+        # its LEADING WORD with a district already drawn in this class.
+        def _ok(c):
+            head = c.split()[0]
+            return c not in used and all(u.split()[0] != head for u in used)
+
+        name = next((c for c in cands if _ok(c)), None) or next(c for c in cands
+                                                                if c not in used)
         used.add(name)
         for s in block:
             out[s["name"]] = name

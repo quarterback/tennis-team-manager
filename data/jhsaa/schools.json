@@ -157,7 +157,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Aitor Echevarria",
@@ -577,7 +577,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
@@ -654,7 +654,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Anneliese Ricci",
@@ -883,7 +883,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Archbishop Doyle Prep North",
@@ -901,8 +901,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Caswell District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Archbishop Quinlan",
@@ -1704,7 +1704,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District",
+      "boys_district": "Belmonte District",
       "source": "Iker Aramburu North"
     },
     {
@@ -1918,7 +1918,7 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": ""
     },
     {
@@ -1997,7 +1997,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -2629,7 +2629,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Canal View North",
@@ -3034,7 +3034,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Christ the King",
@@ -3433,7 +3433,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vance District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Cradle Reach",
@@ -4046,8 +4046,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Llerena District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Edith Ward",
@@ -4142,7 +4142,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Elena Petrenko",
@@ -4332,7 +4332,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Emigrant Trail",
@@ -5560,7 +5560,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Greaves Aviation and Engineering Academy",
@@ -6286,7 +6286,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Hetfield",
@@ -6572,7 +6572,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Ida B. Wells",
@@ -6993,7 +6993,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -7012,8 +7012,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Llerena District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Jean Lindgren",
@@ -7246,7 +7246,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Jon Garmendia",
@@ -8101,7 +8101,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
@@ -8120,8 +8120,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Llerena District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Llerena South",
@@ -8368,8 +8368,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Caswell District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Lyndon B. Johnson",
@@ -8464,7 +8464,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
@@ -8483,7 +8483,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -8578,8 +8578,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Caswell District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Marcus Mercer",
@@ -8981,7 +8981,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vance District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Mila Chernov North",
@@ -9953,7 +9953,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Northside Christian",
@@ -10200,7 +10200,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vance District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Orchard Gate",
@@ -10238,7 +10238,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vance District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Orchard Hill",
@@ -10563,8 +10563,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Caswell District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Pavel Kovalenko",
@@ -11866,7 +11866,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vance District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Sage Lake",
@@ -11998,8 +11998,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Caswell District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "San Aurelio",
@@ -12612,7 +12612,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -12652,7 +12652,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -13054,7 +13054,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
@@ -13131,7 +13131,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Llerena District",
       "boys_district": "Vance District"
     },
     {
@@ -13497,7 +13497,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "St. Lucy",
@@ -13648,7 +13648,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
@@ -14357,7 +14357,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
+      "boys_district": "Belyakov District"
     },
     {
       "name": "Thelma Moss",
@@ -14757,7 +14757,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Treasure Valley North",
@@ -14776,7 +14776,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Trinity Catholic",
@@ -15139,8 +15139,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Llerena District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Vasquez North",
@@ -15567,8 +15567,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
-      "boys_district": "Halbrook District"
+      "girls_district": "Llerena District",
+      "boys_district": "Belmonte District"
     },
     {
       "name": "Villard",
@@ -15796,7 +15796,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District",
+      "boys_district": "Belyakov District",
       "source": "Ander Aramburu"
     },
     {
@@ -15891,7 +15891,7 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook District",
+      "girls_district": "Caswell District",
       "boys_district": "Vance District"
     },
     {
