@@ -4643,26 +4643,6 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Fort Ewart",
-      "city": "Fort Ewart",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 288,
-      "private": false,
-      "mascot": "Huntsmen",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
-      "source": "Ewartville"
-    },
-    {
       "name": "Fort Lassiter",
       "city": "Fort Lassiter",
       "county": "Lodestone",
@@ -4757,6 +4737,26 @@
       "boys": true,
       "girls_district": "Chinook League",
       "boys_district": "Chinook League"
+    },
+    {
+      "name": "Fort Tabor",
+      "city": "Fort Tabor",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 288,
+      "private": false,
+      "mascot": "Huntsmen",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Ewartville"
     },
     {
       "name": "Fort Valois",
