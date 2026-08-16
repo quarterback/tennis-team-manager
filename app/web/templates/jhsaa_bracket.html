@@ -33,7 +33,12 @@
    cards and SVG elbows share one coordinate system (`state._bracket_canvas`), so
    bracket alignment is never a CSS problem here either. #}
 <div class="jh-brk-desktop">
-  {{ brk_toolbar([('all', view.group ~ ' Draw')]) }}
+  {# An expanded field is TWO trees: the qualifying (Qualies + First Round) feeds a
+     FRESH main draw, so there is no bracket path between them and one tree would
+     draw links that don't exist — the same reason a tour event prints its
+     qualifying draw on its own sheet. `qual_canvas` is None for 24-team classes
+     and old archives, and the toolbar then shows the one tab it always did. #}
+  {{ brk_toolbar([('all', view.group ~ ' Draw')] + ([('qual', 'Qualifying')] if view.qual_canvas else [])) }}
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
@@ -43,6 +48,15 @@
       </div>
       {{ brk_canvas(view.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
     </section>
+    {% if view.qual_canvas %}
+    <section class="brk-region" data-view="qual" hidden>
+      <div class="brk-region-head">
+        <h2>{{ view.season_year }} {{ view.group }} · Qualifying</h2>
+        <span class="brk-region-champ">winners join the seeded Zonal champions in the main draw</span>
+      </div>
+      {{ brk_canvas(view.qual_canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
+    </section>
+    {% endif %}
   </div>
 </div>
 

@@ -162,18 +162,16 @@ FIDELITY = "fast"
 #      `RECOVERY_CUT` teams, so the shape is the same statewide whatever the
 #      district-champion count happens to be.
 #
-# `STATE_FIELD`: 7A crowns from 32; every other classification from 24 — the
-# 24 is load-bearing, because a 24-team seeded draw has exactly eight first-round
-# byes and those byes ARE the Zonal champions' privilege.
+# `STATE_FIELD`: the owner's field table below — the 24 is load-bearing, because
+# a 24-team seeded draw has exactly eight first-round byes and those byes ARE the
+# Zonal champions' privilege; a 40 puts a Qualifiers Round in front of that same
+# 24 (see the table's own comment).
 #
 # `ladder_scale` shrinks every number together (powers of two, same shape) when a
 # classification is too small for the full size. Every real classification fits
 # the full size today; the scale exists for small pools, not as a format fork.
 PROTECTED = 16
 WARD_FIELD = 32
-# The LARGEST classification crowns from 32; every other from 24. That was 7A
-# until the association went to nine classes (owner ladder 2027-08) and it is
-# 9A now — the rule is "the top class", not the letter.
 # Field size per classification (owner table, 2027-08). The three largest classes
 # crown from 24; the five smaller ones — which now hold MORE programs than the big
 # ones (2A-1A 137 and 3A 127 against 9A's 80) — crown from 40, landing every class
@@ -204,10 +202,18 @@ def state_field_size(group: str, scale: int = 1) -> int:
 
 def ladder_scale(group: str) -> int:
     """One divisor for all of `group`'s postseason numbers, shared by both genders
-    (a classification plays ONE format) and sized by the smaller gender's count."""
+    (a classification plays ONE format) and sized by the smaller gender's count.
+
+    Two fits, both required: the LADDER's seats (`PROTECTED + WARD_FIELD`) must not
+    exceed the class, and the STATE FIELD must stay a minority of it (at most half)
+    — the fixed-field rule ("recovery conforms, never a short field") presumes the
+    berths can be contested from the loser pools, and a State that admits most of a
+    small class drains those pools dry. Full-size classes clear both terms at k=1;
+    only tiny pools (test fixtures) scale."""
     n = min(sum(1 for s in load_schools(g) if s.group == group) for g in GENDERS)
     k = 1
-    while k < 8 and (PROTECTED + WARD_FIELD) // k > n:
+    while k < 8 and ((PROTECTED + WARD_FIELD) // k > n
+                     or state_field_size(group, k) > n // 2):
         k *= 2
     return k
 
@@ -1866,10 +1872,21 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     return sr_arc, ss_arc, dv_arc, qualifiers, district_qualifiers
 
 
-def run_state(field: list[TeamSeason], *, seed: int) -> dict:
-    """The State Tournament: a fresh seeded draw (32 teams in 7A, 24 elsewhere —
-    Zonal champions first, then the district-guarantee and Semi-State qualifiers
-    in post-recovery TOSS order) played to a champion.
+def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
+    """The State Tournament: a fresh seeded draw (24 teams in the three largest
+    classes, 40 elsewhere — Zonal champions first, then the district-guarantee and
+    Semi-State qualifiers in post-recovery TOSS order) played to a champion.
+
+    `champions` is how many Zonal champions lead the field (the caller's `len(zc)`,
+    scaled with the ladder) — the draw's bye budget, and the count that decides
+    whether the field is EXPANDED. A field whose padding byes are exactly the
+    champions (24 in 32 slots, or any `ladder_scale` image of it) plays one fixed
+    draw. A larger field (40, or its scaled images) is that same draw with a
+    QUALIFIERS ROUND in front: the champions take a double bye while everyone else
+    plays the Qualies and then the First Round down to `champions` survivors, and
+    the survivors join them in a fresh draw — exactly how a tour event's qualifying
+    feeds its main draw, which is why there is no bracket path from a Qualies slot
+    to a main-draw slot.
 
     The draw is SEEDED (`engine.tournament.seeded_draw`): entrants go to the
     standard bracket anchors so the top seeds can only meet late, then the bracket
@@ -1907,20 +1924,30 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
     rounds: list = []
     names: list[str] = []
     entrants = list(field)
+    c = max(1, min(champions, len(field)))
+    size = 1
+    while size < len(field):
+        size *= 2
 
-    if len(field) > 32:
-        # THE EXPANDED FIELD. Seeds 1-8 are the Zonal champions and sit out BOTH
-        # of these rounds — the double bye; seeds 9-40 play the Qualifiers Round
-        # and then the First Round, and the eight who survive both join them.
-        # After the Qualies exactly 24 are alive, which IS the other classes'
-        # bracket, so both shapes converge on the Octofinals.
-        champs, rest = field[:8], field[8:]
+    if len(field) > 2 * c and size - len(field) != c:
+        # THE EXPANDED FIELD. The top `c` seeds are the Zonal champions and sit
+        # out the whole preliminary — the double bye; everyone else plays the
+        # Qualifiers Round and then the First Round, and the `c` who survive
+        # both join them. After the Qualies the alive count IS the other
+        # classes' field (40 → 24 at full size), so both shapes converge.
+        champs, rest = field[:c], field[c:]
+        sub = 1
+        while sub < len(rest):
+            sub *= 2
         slots: list[TeamSeason | None] = [
             None if r is None else rest[r]
-            for r in seeded_draw(len(rest), 32, len(rest), rng)]
-        for label in (QUALIFIER_NAME, "First Round"):
+            for r in seeded_draw(len(rest), sub, len(rest), rng)]
+        while sum(1 for t in slots if t is not None) > c:
             slots = _play(slots, rounds)
-            names.append(label)
+        # The LAST preliminary round is the First Round; everything before it
+        # is the Qualies (two rounds at every real size — rest is always 4×c).
+        names = [QUALIFIER_NAME] * (len(rounds) - 1) + ["First Round"] \
+            if len(rounds) > 1 else [QUALIFIER_NAME] * len(rounds)
         entrants = champs + [t for t in slots if t is not None]
 
     size = 1
@@ -2338,7 +2365,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         zc = sorted(zonal_champs[group], key=_power_key(final_power))
         rest = sorted([by_name_g[n] for n in district_q[group]] + recovery_q[group],
                       key=_power_key(final_power))
-        states[group] = run_state(zc + rest,
+        states[group] = run_state(zc + rest, champions=len(zc),
                                   seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts

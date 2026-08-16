@@ -23,14 +23,18 @@ draw's top seeds — so State's first-round byes belong to them, by right.
 
 ## The three ways into State
 
-State is **32 teams in 7A, 24 everywhere else**, and that number never moves.
+State is **24 teams in the three largest classes and 40 in the five smaller
+ones**, and that number never moves. A 40 is a 24 with a **Qualifiers Round**
+in front of it: seeds 9–40 play the Qualies and then the First Round, the
+eight survivors join the Zonal champions in the Octofinals, and from there the
+two shapes are the same championship.
 
 1. **Win your Zonal** — 8 automatic berths, and **seeds 1–8 of the State draw**.
    This is a seeding guarantee in its own right, not a byproduct of byes: in a
-   24-team field the top eight seeds also take the eight first-round byes, but
-   7A's field is 32 — a clean bracket with no byes at all — and the eight Zonal
-   champions are still seeded 1 through 8 there. Winning your Zonal buys the top
-   half of the seed list either way.
+   24-team field the top eight seeds also take the eight first-round byes, and
+   in a 40-team field they take a **double bye** — straight to the Octofinals,
+   while everyone else plays two rounds of qualifying to reach them. Winning
+   your Zonal buys the top of the seed list either way.
 2. **Win your district** — a district champion always has access, even if it
    loses in the ladder. Access only: no bye, no seed help, and no extra berth if
    it also won a Zonal.

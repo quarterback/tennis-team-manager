@@ -292,6 +292,10 @@ RENAMES = {
     "Fellows Mill International School": "Fellows Mill South",
     "Rye Academy of Arts and Letters": "Rye North",
     "Ansotegui Siding Commonwealth": "Ansotegui Siding North",
+    # Two St. Genevieves — a 1A in Benchton natively bare, a 6A whose suffix
+    # strip collides with it. The bigger school takes the city, PRE + PLACE
+    # ("Jesuit Sacramento"); the 1A keeps the name it always had.
+    "St. Genevieve High School": "St. Genevieve San Cordero",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -600,6 +604,15 @@ _SUBJECTS = {"science", "technology", "commerce", "industry", "arts", "art",
              "humanities", "advanced", "applied", "performing", "visual",
              "environmental", "innovation", "trades", "aviation"}
 _TYPE_FIRST = {"latin", "english", "charter"}
+# A CAMPUS QUALIFIER survives the subject truncation. The prep-network rebuild
+# splits an over-cap school into directional campuses ("Jefferson School of
+# Science and Technology North"), and truncating the subject at " and " used to
+# take the qualifier with it — BOTH campuses collapsed to "Jefferson Science",
+# and a display-name collision corrupts the archive (see `build`'s guard).
+# "Bronx Science" usage keeps the campus: the split reads "Jefferson Science
+# North".
+_CAMPUS = {"north", "south", "east", "west",
+           "northeast", "northwest", "southeast", "southwest"}
 _SCHOOL_OF_RE = re.compile(
     r"^(?P<pre>.+?)\s+(?:(?:College\s+Preparatory|High)\s+)?Schools?\s+of\s+(?P<obj>.+)$",
     re.IGNORECASE)
@@ -614,7 +627,11 @@ def _collapse_school_of(name: str) -> str:
     if the:
         obj = obj[4:]
     if obj.split()[0].lower() in _SUBJECTS:
-        return f"{pre} {obj.split(' and ')[0].strip()}"
+        keep = obj.split(" and ")[0].strip()
+        tail = obj.split()[-1]
+        if tail.lower() in _CAMPUS and not keep.lower().endswith(f" {tail.lower()}"):
+            keep = f"{keep} {tail}"   # the campus rides the collapsed subject
+        return f"{pre} {keep}"
     if the:
         return name                   # "of the Bay" / "of the Future" — the name
     if pre.lower().startswith("the "):
@@ -838,6 +855,16 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "boys_district": dist["boys"].get(name, ""),
         })
     out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
+    # ‼️ A DISPLAY NAME IS THE ARCHIVE'S IDENTITY — it keys `run_season`'s teams
+    # dict, `world_jhsaa_dual.school`, the school routes and the pid space. Two
+    # schools sharing one name silently merge into one archive slot while the
+    # standings carry both rows, so a program's record stops covering the duals
+    # it played (this shipped once: both halves of a split campus collapsed to
+    # "Jefferson Science" and the season archived a third school that was
+    # neither). A collision is a missing RENAMES decision — stop, never emit.
+    dupes = {n: c for n, c in Counter(r["name"] for r in out).items() if c > 1}
+    if dupes:
+        sys.exit(f"display-name collisions (add a RENAMES entry): {dupes}")
     return out
 
 
