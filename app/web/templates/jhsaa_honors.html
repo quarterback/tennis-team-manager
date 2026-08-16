@@ -14,8 +14,7 @@
 
 <div class="jh-shell">
 {% if not view.ready %}
-<div class="bl-panel"><div class="jh-empty">No season archived yet — the JHSAA rung
-  writes one each world year.</div></div>
+<div class="bl-panel"><div class="jh-empty">No season archived yet.</div></div>
 {% else %}
 
 {# ‼️ THIS PAGE IS FOUR VIEWS OF ONE SLATE, NOT FOUR STACKED LISTS. A
@@ -114,7 +113,7 @@
     </div>
     {% else %}
     <div class="jh-awardsec"><div class="jh-empty">No season cleared the Honorable
-      Mention threshold in {{ view.group }} — it is a merit line, not a slot count.</div></div>
+      Mention threshold in {{ view.group }}.</div></div>
     {% endif %}
   </div>
 
@@ -128,13 +127,6 @@
        class heading is exactly the blur this rule removes. #}
     <div class="jh-regionnote">
       <strong>All-Region is the whole region, every classification.</strong>
-      There is no {{ view.group }} All-Region team — a region team is drawn from
-      every program in that region whatever its size, so this list is the same
-      whichever classification you are looking at. The regions are nowhere near
-      the same size, so the honour scales with them: a region of
-      {{ view.ar_tier2_min }}+ programs crowns a <strong>First and a Second
-      Team</strong>, and one of {{ view.ar_hm_min }}+ adds an
-      <strong>Honorable Mention</strong>.
     </div>
     <div class="jh-jump" style="margin:10px 14px 0">
       <label><span class="k">Region</span>
@@ -206,7 +198,7 @@
     {% endfor %}
   </div>
 
-  {# --- Method: the criteria, and the flight check the selector ran ------- #}
+  {# --- The flight check the selector ran ------- #}
   <div class="jh-pane" data-pane="method" hidden>
     {# THE FLIGHT SANITY CHECK, archived with the season (owner, 2027-08). Flight
        weighting is structural, so the association publishes what it produced: how
