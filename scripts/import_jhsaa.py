@@ -450,6 +450,12 @@ RENAMES = {
     "Walnut Yard": "South Simmons",
     "Alderfield": "Linden",
     "Sage Lake": "Sage Village",
+    "Ashfield": "California Beach",
+    "Garrity": "Texas Beach",
+    "Graymont": "Georgia Mills",
+    "Marsh Depot": "Jersey City",
+    "Rentie Grove": "Jamaica",
+    "Wheatley": "Minnesota City",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1038,6 +1044,12 @@ CITY_RENAMES = {
     "Walnut Yard": "South Simmons",
     "Alderfield": "Linden",
     "Sage Lake": "Sage Village",
+    "Ashfield": "California Beach",
+    "Garrity": "Texas Beach",
+    "Graymont": "Georgia Mills",
+    "Marsh Depot": "Jersey City",
+    "Rentie Grove": "Jamaica",
+    "Wheatley": "Minnesota City",
 }
 
 RELOCATIONS = {

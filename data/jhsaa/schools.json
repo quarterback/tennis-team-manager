@@ -1000,25 +1000,6 @@
       "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
-      "name": "Ashfield",
-      "city": "Ashfield",
-      "county": "Ostrander",
-      "area": "Sebastian Cape",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 139,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
-    },
-    {
       "name": "Ashstead",
       "city": "Ashstead",
       "county": "Cinder",
@@ -2459,6 +2440,26 @@
       "boys": true,
       "girls_district": "Mission League",
       "boys_district": "Mission League"
+    },
+    {
+      "name": "California Beach",
+      "city": "California Beach",
+      "county": "Ostrander",
+      "area": "Sebastian Cape",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 139,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League",
+      "source": "Ashfield"
     },
     {
       "name": "California Canyons",
@@ -5250,25 +5251,6 @@
       "boys_district": "Big Basin League"
     },
     {
-      "name": "Garrity",
-      "city": "Garrity",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 249,
-      "private": false,
-      "mascot": "Frilled Lizards",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
-    },
-    {
       "name": "Garrow",
       "city": "Garrow",
       "county": "Kernwood",
@@ -5345,6 +5327,26 @@
       "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League"
+    },
+    {
+      "name": "Georgia Mills",
+      "city": "Georgia Mills",
+      "county": "Lodestone",
+      "area": "Millersylvania",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 279,
+      "private": true,
+      "mascot": "Numbats",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Black Canyon League",
+      "boys_district": "Black Canyon League",
+      "source": "Graymont"
     },
     {
       "name": "Gerald Ford",
@@ -5555,25 +5557,6 @@
       "boys": true,
       "girls_district": "River Valley League",
       "boys_district": "River Valley League"
-    },
-    {
-      "name": "Graymont",
-      "city": "Graymont",
-      "county": "Lodestone",
-      "area": "Millersylvania",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 279,
-      "private": true,
-      "mascot": "Numbats",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Black Canyon League",
-      "boys_district": "Black Canyon League"
     },
     {
       "name": "Greaves",
@@ -6817,6 +6800,26 @@
       "boys_district": ""
     },
     {
+      "name": "Jamaica",
+      "city": "Jamaica",
+      "county": "Paddock",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 116,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Marble Valley League",
+      "boys_district": "",
+      "source": "Rentie Grove"
+    },
+    {
       "name": "James Baldwin",
       "city": "Perryville",
       "county": "Marlow",
@@ -7143,6 +7146,26 @@
       "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League"
+    },
+    {
+      "name": "Jersey City",
+      "city": "Jersey City",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 449,
+      "private": false,
+      "mascot": "Honey Badgers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Marsh Depot"
     },
     {
       "name": "Jessup Bar",
@@ -8751,25 +8774,6 @@
       "boys_district": "Halbrook Basin League"
     },
     {
-      "name": "Marsh Depot",
-      "city": "Marsh Depot",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 449,
-      "private": false,
-      "mascot": "Honey Badgers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League"
-    },
-    {
       "name": "Martin Luther",
       "city": "Ditch Fork",
       "county": "Goldbank",
@@ -9133,6 +9137,26 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Igor Chernov North"
+    },
+    {
+      "name": "Minnesota City",
+      "city": "Minnesota City",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 215,
+      "private": false,
+      "mascot": "Hornbills",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Kaleva League",
+      "boys_district": "",
+      "source": "Wheatley"
     },
     {
       "name": "Mirage Crossing",
@@ -11524,25 +11548,6 @@
       "girls": true,
       "boys": false,
       "girls_district": "Gateway League",
-      "boys_district": ""
-    },
-    {
-      "name": "Rentie Grove",
-      "city": "Rentie Grove",
-      "county": "Paddock",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 116,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Marble Valley League",
       "boys_district": ""
     },
     {
@@ -14386,6 +14391,26 @@
       "boys_district": "Dual County League"
     },
     {
+      "name": "Texas Beach",
+      "city": "Texas Beach",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 249,
+      "private": false,
+      "mascot": "Frilled Lizards",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Garrity"
+    },
+    {
       "name": "Thelma Moss",
       "city": "Valderra",
       "county": "Ferris",
@@ -15883,25 +15908,6 @@
       "boys": true,
       "girls_district": "Chinook League",
       "boys_district": "Chinook League"
-    },
-    {
-      "name": "Wheatley",
-      "city": "Wheatley",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 215,
-      "private": false,
-      "mascot": "Hornbills",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Kaleva League",
-      "boys_district": ""
     },
     {
       "name": "Wheeler Academy",
