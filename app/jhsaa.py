@@ -1788,7 +1788,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
         Super Regionals   P teams (even)          -> P/2 winners
         Semi-State        S = P/2 + Z + readmits  -> S/2 winners  (berths)
-        Divisional Round       2L best Semi-State losers -> L winners  (berths)
+        Divisionals       2L best Semi-State losers      -> L winners  (berths)
 
     with `L = berths - S/2`, which forces `4*berths/3 <= S <= 2*berths`. Bodies
     are found in preference order — readmitted Super Regional LOSERS first
@@ -1850,7 +1850,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
         ss_pool = ss_pool[:-1]
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
 
-    # Divisional Round: the berths Semi-State could not fill, contested by the best
+    # Divisionals: the berths Semi-State could not fill, contested by the best
     # Semi-State losers. `L = 0` is legal and means the round did not convene.
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
