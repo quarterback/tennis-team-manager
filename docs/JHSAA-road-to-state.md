@@ -3,7 +3,7 @@
 *The explainer version. One rule governs the whole design:*
 
 > **Nobody reaches State on a bye.** Every team in the State field either won a
-> Zonal title, is a district champion, or **won its last dual on court.**
+> Zonal title or **won its last dual on court.**
 
 ## The ladder
 
@@ -21,7 +21,7 @@ Everyone starts in the same place and the field narrows:
 TOSS. **Zonal champions qualify for State automatically**, and they are the State
 draw's top seeds — so State's first-round byes belong to them, by right.
 
-## The three ways into State
+## The two ways into State
 
 State is **24 teams in the three largest classes and 40 in the five smaller
 ones**, and that number never moves. A 40 is a 24 with a **Qualifiers Round**
@@ -35,22 +35,31 @@ two shapes are the same championship.
    in a 40-team field they take a **double bye** — straight to the Octofinals,
    while everyone else plays two rounds of qualifying to reach them. Winning
    your Zonal buys the top of the seed list either way.
-2. **Win your district** — a district champion always has access, even if it
-   loses in the ladder. Access only: no bye, no seed help, and no extra berth if
-   it also won a Zonal.
-3. **Win your way through recovery** — everything below.
+2. **Win your way through recovery** — everything below.
 
-## Recovery: three rounds, no byes
+Winning your district is **not** one of them. A district title buys a *protected
+seat* — you skip Sectionals and Wards and enter at Regionals — and nothing at
+State. Lose from there and you go into recovery with everybody else. There was
+briefly a guarantee and it was retired: a district champion could keep losing
+and still be handed a berth, which is the opposite of earning it.
 
-Losing does not end your season. The remaining berths are contested in three
-rounds, and **every round pairs its entire field** — there are no byes anywhere
-in recovery, so nobody can advance without playing.
+## Recovery: four rounds, no byes
+
+Losing does not end your season. The remaining berths are contested in a
+ladder of rounds, and **every round pairs its entire field** — there are no
+byes anywhere in recovery, so nobody can advance without playing.
 
 | Round | Who plays | Winners |
 |---|---|---|
-| **Super Regionals** | Regional losers (plus bodies, below) | advance |
+| **Super Regionals** | Regional losers | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
-| **Divisionals** | the best Semi-State losers | **take the last berths** |
+| **Divisional Round** | the best Semi-State losers | **take the last berths** |
+| **Conference** *(only if berths remain)* | Divisional losers, then district champions outside the field, then the top Ward losers by ATR | **take every berth still outstanding** |
+
+The **Conference** convenes only when berths are still outstanding, so whether
+it happens depends on the size of the field: the 24-team classifications fill
+without it and never play one, while the 40-team classifications need it every
+year and it runs about 28 teams deep.
 
 ### Why the Divisionals exist
 
@@ -82,17 +91,35 @@ which varies year to year.
 Numerals are Roman on the honours line, like every other unit: **Division XI**,
 alongside Region IX and Ward IV.
 
-### Where the extra bodies come from
+### Where the extra teams come from
 
-When a round needs more teams to pair completely, they are drawn in order of how
-well qualified they are, best TOSS first within each tier:
+Recovery proper — Super Regionals, Semi-State, Divisionals — is the **ladder's
+own losers**: Regional losers, joined at Semi-State by Zonal losers and by
+readmitted Super Regional losers.
 
-1. **Super Regional losers**, readmitted to Semi-State — the best pool available;
-   they already fought through Regionals.
-2. **Ward losers**, then **Sectional losers**, then **Area losers** — walking
-   back down the ladder only as far as necessary.
+**Ward losers do not play back into it.** They used to be drafted into Super
+Regionals, which handed them two or three bites at a berth while a Zonal loser
+— a better team, it got further — had one. Now they enter at the **Conference**
+and nowhere else: one last shot, at the end, as the last-resort clubs they are.
 
-A body is **a chance to play, never a berth**. A readmitted team still has to win.
+The Conference pool is filled in order of how well qualified you are:
+
+1. **Divisional losers** — they fought to the last berth-bearing round.
+2. **District champions** still outside the field.
+3. **The top Ward losers by ATR**, then Sectional, then Area losers.
+
+### ATR — Average Team Rating
+
+The Conference pool is the one thing in the association not ranked on TOSS.
+**ATR is half TOSS, half win percentage.** TOSS measures who you played, so a
+middling team in a brutal district gets propped up by the company it keeps
+while a 20-win season against an ordinary schedule rates below it. That trade
+is right for seeding a draw and wrong for the last seat in the tournament — a
+good record should count for something when the question is who gets one final
+chance.
+
+Entering at the Conference is a chance to **play, never a berth**. You still
+have to win.
 
 ## TOSS's role
 

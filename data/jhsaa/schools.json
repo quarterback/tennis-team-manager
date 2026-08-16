@@ -467,44 +467,6 @@
       "boys_district": "Bidwell District"
     },
     {
-      "name": "Amaia Aramburu",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 815,
-      "private": false,
-      "mascot": "Pelotaris",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Amaia Aramburu North",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1233,
-      "private": false,
-      "mascot": "Trojans",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ferris District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
       "name": "Amaia Echevarria",
       "city": "Echevarria",
       "county": "Vance",
@@ -581,44 +543,6 @@
       "boys_district": ""
     },
     {
-      "name": "Amelia Freeman North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 834,
-      "private": false,
-      "mascot": "Goliath Beetles",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Amos Cross",
-      "city": "Mercer City",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2300,
-      "private": false,
-      "mascot": "Smelters",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Gold Valley District",
-      "boys_district": ""
-    },
-    {
       "name": "Amos Moss",
       "city": "Los Robles",
       "county": "Marlow",
@@ -638,25 +562,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Ander Aramburu",
-      "city": "Northrup",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1249,
-      "private": false,
-      "mascot": "Panthers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Halbrook Basin 6 District"
-    },
-    {
       "name": "Ander Arrieta",
       "city": "Weissburg",
       "county": "Halbrook",
@@ -674,45 +579,6 @@
       "boys": true,
       "girls_district": "Halbrook District",
       "boys_district": "Vance District"
-    },
-    {
-      "name": "Andrew Jackson",
-      "source": "Caswell School of Science and Industry",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 884,
-      "private": false,
-      "mascot": "Buccaneers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
-    },
-    {
-      "name": "Andrew Jackson North",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2140,
-      "private": false,
-      "mascot": "Buccaneers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ferris District",
-      "boys_district": "Halbrook Basin District"
     },
     {
       "name": "Andrés Ibarra",
@@ -789,25 +655,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook District"
-    },
-    {
-      "name": "Anneliese Halvorsen",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 552,
-      "private": false,
-      "mascot": "Sockeye",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Anneliese Ricci",
@@ -942,26 +789,6 @@
       "boys": true,
       "girls_district": "Stagewater District",
       "boys_district": "Sage Plains District"
-    },
-    {
-      "name": "Anton Sidorov",
-      "source": "Nadia Sidorov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1151,
-      "private": false,
-      "mascot": "Chandlers",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Anya Antonov",
@@ -1459,6 +1286,26 @@
       "boys_district": "Windrow District"
     },
     {
+      "name": "Barack Obama",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1302,
+      "private": false,
+      "mascot": "Lightkeepers",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Bidwell District",
+      "source": "Ralph Booker"
+    },
+    {
       "name": "Barclay",
       "city": "Barclay",
       "county": "Ferris",
@@ -1782,6 +1629,26 @@
       "boys_district": "Halbrook Basin District"
     },
     {
+      "name": "Belmonte Catholic",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1233,
+      "private": true,
+      "mascot": "Trojans",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ferris District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Amaia Aramburu North"
+    },
+    {
       "name": "Belmonte Collegiate Academy",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -1819,6 +1686,26 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Belmonte Heights",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 985,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook District",
+      "source": "Iker Aramburu North"
     },
     {
       "name": "Belmonte International",
@@ -2190,6 +2077,26 @@
       "boys_district": ""
     },
     {
+      "name": "Benjamin Harrison",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1348,
+      "private": false,
+      "mascot": "Mighty Bluejays",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Marina Moroz North"
+    },
+    {
       "name": "Benton Cross",
       "city": "Benton Cross",
       "county": "Halbrook",
@@ -2302,6 +2209,26 @@
       "boys": true,
       "girls_district": "Timber Valley District",
       "boys_district": "Timber Valley District"
+    },
+    {
+      "name": "Bill Clinton",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1346,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Bidwell District",
+      "source": "Port Veles East"
     },
     {
       "name": "Bishop Ferraro",
@@ -2647,6 +2574,26 @@
       "boys_district": "Olivet District"
     },
     {
+      "name": "Calvin Coolidge",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1187,
+      "private": false,
+      "mascot": "Dredgemen",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Nadia Chernov"
+    },
+    {
       "name": "Camden Flat",
       "city": "Camden Flat",
       "county": "Paddock",
@@ -2857,6 +2804,26 @@
       "boys_district": "Halbrook Basin District"
     },
     {
+      "name": "Caswell Heights",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2140,
+      "private": false,
+      "mascot": "Buccaneers",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ferris District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Andrew Jackson North"
+    },
+    {
       "name": "Caswell West",
       "source": "Caswell University Prep",
       "city": "Caswell",
@@ -3050,6 +3017,26 @@
       "boys_district": ""
     },
     {
+      "name": "Chester A. Arthur",
+      "source": "Caswell School of Science and Industry",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 884,
+      "private": false,
+      "mascot": "Greenies",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook District"
+    },
+    {
       "name": "Christ the King",
       "city": "Kilbride Switch",
       "county": "Olivet",
@@ -3086,25 +3073,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Clara Cross",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1713,
-      "private": false,
-      "mascot": "Stampeders",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Ferris District",
-      "boys_district": ""
     },
     {
       "name": "Claudette Cole North",
@@ -3907,6 +3875,26 @@
       "boys_district": ""
     },
     {
+      "name": "Earl Warren",
+      "city": "Fort Salish",
+      "county": "Weller",
+      "area": "Harborline",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 667,
+      "private": false,
+      "mascot": "Falcons",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Weller District",
+      "boys_district": "Weller District",
+      "source": "Isaiah Booker"
+    },
+    {
       "name": "Eastgate North",
       "city": "Boyerstown",
       "county": "Marlow",
@@ -3943,6 +3931,26 @@
       "boys": true,
       "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Echevarria",
+      "city": "Echevarria",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2422,
+      "private": false,
+      "mascot": "Fighting Tornadoes",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Vance District",
+      "source": "Leire Aramburu"
     },
     {
       "name": "Echevarria North",
@@ -4442,25 +4450,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Evelyn Booker",
-      "city": "Mount Horeb",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 560,
-      "private": false,
-      "mascot": "Highlanders",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
-    },
-    {
       "name": "Ewart City",
       "city": "Ewart City",
       "county": "Featherstone",
@@ -4805,6 +4794,26 @@
       "boys_district": "Sage Plains District"
     },
     {
+      "name": "Fort Valois Heights",
+      "city": "Fort Valois",
+      "county": "Stagewater",
+      "area": "Sage Plains",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2306,
+      "private": false,
+      "mascot": "Grey Bulldogs",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast District",
+      "boys_district": "Sage Plains District",
+      "source": "Marian Cross"
+    },
+    {
       "name": "Fort Valois North",
       "source": "Fort Valois School of Design and Engineering",
       "city": "Fort Valois",
@@ -4900,6 +4909,46 @@
       "boys": true,
       "girls_district": "Juniper Highlands District",
       "boys_district": "Bidwell District"
+    },
+    {
+      "name": "Franklin D. Roosevelt",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1176,
+      "private": false,
+      "mascot": "Dredgemen",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Nadia Chernov North"
+    },
+    {
+      "name": "Franklin Pierce",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2213,
+      "private": false,
+      "mascot": "Deckhands",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Katherine Williams"
     },
     {
       "name": "Frontier High",
@@ -5036,25 +5085,6 @@
       "boys_district": "North Range District"
     },
     {
-      "name": "Galina Markov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2348,
-      "private": false,
-      "mascot": "Anchors",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Galina Moroz",
       "city": "Tallow",
       "county": "San Marcos",
@@ -5188,6 +5218,46 @@
       "boys_district": "Vermilion Valley District"
     },
     {
+      "name": "George H. W. Bush",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 852,
+      "private": false,
+      "mascot": "Cardinals",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Opal Avery North"
+    },
+    {
+      "name": "George Washington",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 552,
+      "private": false,
+      "mascot": "Sockeye",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Anneliese Halvorsen"
+    },
+    {
       "name": "George Washington Carver",
       "city": "Plainfield",
       "county": "Antler",
@@ -5207,23 +5277,24 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "Geraldine Cross",
+      "name": "Gerald Ford",
       "city": "Port Veles",
       "county": "Bidwell",
       "area": "Harborline",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1939,
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 990,
       "private": false,
-      "mascot": "Bar Pilots",
+      "mascot": "Pelicans",
       "colors": [
-        "#333d29",
-        "#d97706"
+        "#6d1a36",
+        "#9fb4c7"
       ],
       "girls": true,
-      "boys": true,
+      "boys": false,
       "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
+      "boys_district": "",
+      "source": "Opal Avery"
     },
     {
       "name": "Gilhooly",
@@ -5568,6 +5639,26 @@
       "boys_district": ""
     },
     {
+      "name": "Grover Cleveland",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1058,
+      "private": false,
+      "mascot": "Mighty Bluejays",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Marina Moroz"
+    },
+    {
       "name": "Gulch Bend",
       "city": "Gulch Bend",
       "county": "Goldbank",
@@ -5740,25 +5831,6 @@
       "boys_district": "Sage Plains District"
     },
     {
-      "name": "Harbor Gate North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2148,
-      "private": false,
-      "mascot": "Timberwolves",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Harborline District",
-      "boys_district": ""
-    },
-    {
       "name": "Harlan Cole",
       "city": "Santa Cruz del Norte",
       "county": "San Marcos",
@@ -5909,6 +5981,26 @@
       "boys": true,
       "girls_district": "Sage Plains District",
       "boys_district": "Sage Plains District"
+    },
+    {
+      "name": "Harriman Heights",
+      "city": "Harriman",
+      "county": "Emigrant",
+      "area": "Sage Plains",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1274,
+      "private": false,
+      "mascot": "Windmills",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "South Coast District",
+      "source": "John F. Kennedy North"
     },
     {
       "name": "Harriman South",
@@ -6138,25 +6230,6 @@
       "boys": false,
       "girls_district": "Harborline District",
       "boys_district": ""
-    },
-    {
-      "name": "Henrik Keller",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2090,
-      "private": false,
-      "mascot": "Green Saints",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Herbert Hoover",
@@ -6521,101 +6594,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Igor Chernov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1685,
-      "private": false,
-      "mascot": "Gillnetters",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Igor Chernov North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1342,
-      "private": false,
-      "mascot": "Lions",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Iker Aramburu",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 1029,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Iker Aramburu North",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 985,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin District",
-      "boys_district": "Halbrook District"
-    },
-    {
-      "name": "Imani Cross",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "South Coast",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1908,
-      "private": false,
-      "mascot": "Crusaders",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "South Coast District"
-    },
-    {
       "name": "Indigo Bend",
       "city": "Furrow Crossing",
       "county": "Barlowe",
@@ -6730,25 +6708,6 @@
       "boys_district": ""
     },
     {
-      "name": "Isaiah Booker",
-      "city": "Fort Salish",
-      "county": "Weller",
-      "area": "Harborline",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 667,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Weller District",
-      "boys_district": "Weller District"
-    },
-    {
       "name": "Isaiah Price",
       "city": "Montelago",
       "county": "Ferris",
@@ -6844,6 +6803,46 @@
       "boys_district": ""
     },
     {
+      "name": "James Garfield",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 389,
+      "private": false,
+      "mascot": "Cannerymen",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Harborline District",
+      "boys_district": "",
+      "source": "Marcus Langston North"
+    },
+    {
+      "name": "James K. Polk",
+      "city": "Orellana",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2516,
+      "private": false,
+      "mascot": "Puffins",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Vance District",
+      "source": "Katherine Booker"
+    },
+    {
       "name": "James Madison",
       "source": "Belmonte Classical Academy",
       "city": "Belmonte",
@@ -6881,6 +6880,26 @@
       "boys": false,
       "girls_district": "Halbrook Basin District",
       "boys_district": ""
+    },
+    {
+      "name": "James Monroe",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2348,
+      "private": false,
+      "mascot": "Anchors",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Harborline District",
+      "source": "Galina Markov"
     },
     {
       "name": "Janice Bennett",
@@ -7112,6 +7131,46 @@
       "boys_district": "Vermilion Valley District"
     },
     {
+      "name": "Joe Biden",
+      "source": "Port Veles Agricultural Sciences Academy",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 1006,
+      "private": false,
+      "mascot": "Whalers",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Weller District"
+    },
+    {
+      "name": "John Adams",
+      "source": "Nadia Sidorov",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1151,
+      "private": false,
+      "mascot": "Chandlers",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District"
+    },
+    {
       "name": "John F. Kennedy",
       "source": "Harriman Maritime Academy",
       "city": "Harriman",
@@ -7132,25 +7191,6 @@
       "boys_district": "Harborline District"
     },
     {
-      "name": "John F. Kennedy North",
-      "city": "Harriman",
-      "county": "Emigrant",
-      "area": "Sage Plains",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1274,
-      "private": false,
-      "mascot": "Windmills",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "South Coast District"
-    },
-    {
       "name": "John Lewis",
       "city": "Novak",
       "county": "Tamarack",
@@ -7168,6 +7208,26 @@
       "boys": true,
       "girls_district": "Cascade Divide District",
       "boys_district": "Cascade Divide District"
+    },
+    {
+      "name": "John Quincy Adams",
+      "city": "St. Varian",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 913,
+      "private": false,
+      "mascot": "Buffaloes",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marlow District",
+      "boys_district": "Gold Valley District",
+      "source": "Sofía Cordero"
     },
     {
       "name": "Jon Etxeberria North",
@@ -7284,25 +7344,6 @@
       "boys_district": ""
     },
     {
-      "name": "Katherine Booker",
-      "city": "Orellana",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2516,
-      "private": false,
-      "mascot": "Puffins",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Vance District"
-    },
-    {
       "name": "Katherine Davenport",
       "city": "Fellows Mill",
       "county": "Sablewood",
@@ -7358,25 +7399,6 @@
       "boys": false,
       "girls_district": "Juniper Highlands District",
       "boys_district": ""
-    },
-    {
-      "name": "Katherine Williams",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2213,
-      "private": false,
-      "mascot": "Deckhands",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Katya Moroz",
@@ -7548,6 +7570,26 @@
       "boys": true,
       "girls_district": "Vermilion Valley District",
       "boys_district": "Vermilion Valley District"
+    },
+    {
+      "name": "Ketanji Brown Jackson",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 815,
+      "private": false,
+      "mascot": "Pelotaris",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Amaia Aramburu"
     },
     {
       "name": "Kettle Ridge",
@@ -7873,25 +7915,6 @@
       "boys_district": ""
     },
     {
-      "name": "Leire Aramburu",
-      "city": "Echevarria",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2422,
-      "private": false,
-      "mascot": "Fighting Tornadoes",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Vance District"
-    },
-    {
       "name": "Leire Garmendia",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -8197,25 +8220,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Lorna Booker",
-      "city": "Moriarty",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1105,
-      "private": false,
-      "mascot": "Maroons",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley District",
-      "boys_district": "Gold Valley District"
-    },
-    {
       "name": "Lorraine Calder",
       "city": "Belyakov",
       "county": "Vance",
@@ -8368,6 +8372,26 @@
       "boys_district": "Halbrook District"
     },
     {
+      "name": "Lyndon B. Johnson",
+      "city": "Mercer City",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2300,
+      "private": false,
+      "mascot": "Smelters",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Gold Valley District",
+      "boys_district": "",
+      "source": "Amos Cross"
+    },
+    {
       "name": "Mabryville",
       "city": "Mabryville",
       "county": "Galena",
@@ -8501,25 +8525,6 @@
       "boys_district": "Harborline District"
     },
     {
-      "name": "Manuel Cordero",
-      "city": "Mount Horeb",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 727,
-      "private": false,
-      "mascot": "Blue Mustangs",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
-    },
-    {
       "name": "Manuel Robles",
       "city": "Bahía Leal",
       "county": "San Marcos",
@@ -8577,44 +8582,6 @@
       "boys_district": "Halbrook District"
     },
     {
-      "name": "Marcus Langston",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1124,
-      "private": false,
-      "mascot": "Cannerymen",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Bidwell District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Marcus Langston North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 389,
-      "private": false,
-      "mascot": "Cannerymen",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Harborline District",
-      "boys_district": ""
-    },
-    {
       "name": "Marcus Mercer",
       "city": "Vespertine",
       "county": "Sablewood",
@@ -8670,63 +8637,6 @@
       "boys": true,
       "girls_district": "South Coast District",
       "boys_district": "Sage Plains District"
-    },
-    {
-      "name": "Marian Cross",
-      "city": "Fort Valois",
-      "county": "Stagewater",
-      "area": "Sage Plains",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2306,
-      "private": false,
-      "mascot": "Grey Bulldogs",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast District",
-      "boys_district": "Sage Plains District"
-    },
-    {
-      "name": "Marina Moroz",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1058,
-      "private": false,
-      "mascot": "Mighty Bluejays",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Marina Moroz North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1348,
-      "private": false,
-      "mascot": "Mighty Bluejays",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Marlow County",
@@ -8803,6 +8713,26 @@
       "boys": true,
       "girls_district": "Southern Jefferson District",
       "boys_district": "Southern Jefferson District"
+    },
+    {
+      "name": "Martin Van Buren",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2148,
+      "private": false,
+      "mascot": "Timberwolves",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Harborline District",
+      "boys_district": "",
+      "source": "Harbor Gate North"
     },
     {
       "name": "Matteo Dahl",
@@ -9111,6 +9041,26 @@
       "boys_district": "Timber Valley District"
     },
     {
+      "name": "Millard Fillmore",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1342,
+      "private": false,
+      "mascot": "Lions",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Harborline District",
+      "source": "Igor Chernov North"
+    },
+    {
       "name": "Milldale Union",
       "city": "Milldale",
       "county": "Stagewater",
@@ -9358,6 +9308,26 @@
       "boys_district": "Gold Valley District"
     },
     {
+      "name": "Moriarty Heights",
+      "city": "Moriarty",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1105,
+      "private": false,
+      "mascot": "Maroons",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley District",
+      "boys_district": "Gold Valley District",
+      "source": "Lorna Booker"
+    },
+    {
       "name": "Moriarty West",
       "source": "Moriarty Foundry High",
       "city": "Moriarty",
@@ -9414,44 +9384,6 @@
       "boys": true,
       "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
-    },
-    {
-      "name": "Nadia Chernov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1187,
-      "private": false,
-      "mascot": "Dredgemen",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Nadia Chernov North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1176,
-      "private": false,
-      "mascot": "Dredgemen",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Naomi Ellison",
@@ -9547,44 +9479,6 @@
       "boys": true,
       "girls_district": "Ashbury Metro District",
       "boys_district": "Ashbury Metro District"
-    },
-    {
-      "name": "Nathaniel Cross",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1582,
-      "private": false,
-      "mascot": "Dorymen",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Nathaniel Cross North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 865,
-      "private": false,
-      "mascot": "Dorymen",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Nathaniel Gaines",
@@ -9794,25 +9688,6 @@
       "boys": true,
       "girls_district": "Juniper Highlands District",
       "boys_district": "Harborline District"
-    },
-    {
-      "name": "Nicolás Cordero",
-      "city": "Aurelia",
-      "county": "Emigrant",
-      "area": "Sage Plains",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 1022,
-      "private": false,
-      "mascot": "Marauders",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sage Plains District",
-      "boys_district": "Sage Plains District"
     },
     {
       "name": "Nicolás Ordoñez",
@@ -10290,44 +10165,6 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "Opal Avery",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 990,
-      "private": false,
-      "mascot": "Pelicans",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Harborline District",
-      "boys_district": ""
-    },
-    {
-      "name": "Opal Avery North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 852,
-      "private": false,
-      "mascot": "Cardinals",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Opal Stokes",
       "city": "Boyerstown",
       "county": "Marlow",
@@ -10730,25 +10567,6 @@
       "boys_district": "Halbrook District"
     },
     {
-      "name": "Pauli Booker",
-      "city": "Vespertine",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1084,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ferris District",
-      "boys_district": "Halbrook Basin District"
-    },
-    {
       "name": "Pavel Kovalenko",
       "city": "Aldecoa",
       "county": "Vance",
@@ -10998,6 +10816,26 @@
       "boys_district": "Harborline District"
     },
     {
+      "name": "Port Veles Christian",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1117,
+      "private": true,
+      "mascot": "Lightkeepers",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Bidwell District",
+      "source": "Ralph Booker North"
+    },
+    {
       "name": "Port Veles Civic Academy",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -11017,23 +10855,24 @@
       "boys_district": "Harborline District"
     },
     {
-      "name": "Port Veles East",
+      "name": "Port Veles Episcopal",
       "city": "Port Veles",
       "county": "Bidwell",
       "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1346,
-      "private": false,
-      "mascot": "Eagles",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1939,
+      "private": true,
+      "mascot": "Bar Pilots",
       "colors": [
-        "#1e5631",
-        "#f2f2ee"
+        "#333d29",
+        "#d97706"
       ],
       "girls": true,
       "boys": true,
       "girls_district": "Harborline District",
-      "boys_district": "Bidwell District"
+      "boys_district": "Harborline District",
+      "source": "Geraldine Cross"
     },
     {
       "name": "Port Veles Foundry High",
@@ -11074,6 +10913,26 @@
       "boys_district": "Harborline District"
     },
     {
+      "name": "Port Veles Lutheran",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 865,
+      "private": true,
+      "mascot": "Dorymen",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Nathaniel Cross North"
+    },
+    {
       "name": "Port Veles Maritime Academy",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -11091,46 +10950,6 @@
       "boys": false,
       "girls_district": "Harborline District",
       "boys_district": ""
-    },
-    {
-      "name": "Port Veles North",
-      "source": "Port Veles Agricultural Sciences Academy",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 1006,
-      "private": false,
-      "mascot": "Whalers",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Weller District"
-    },
-    {
-      "name": "Port Veles South",
-      "source": "Port Veles Civic Leadership Academy",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1130,
-      "private": false,
-      "mascot": "Mantids",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
     },
     {
       "name": "Porterfield",
@@ -11437,44 +11256,6 @@
       "boys": true,
       "girls_district": "Vance District",
       "boys_district": "Vance District"
-    },
-    {
-      "name": "Ralph Booker",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1302,
-      "private": false,
-      "mascot": "Lightkeepers",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Bidwell District"
-    },
-    {
-      "name": "Ralph Booker North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1117,
-      "private": false,
-      "mascot": "Lightkeepers",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Bidwell District"
     },
     {
       "name": "Ransom City Union",
@@ -11857,25 +11638,6 @@
       "boys_district": ""
     },
     {
-      "name": "Roscoe Bennett North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1630,
-      "private": false,
-      "mascot": "Trojans",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Rostova Junction",
       "city": "Rostova Junction",
       "county": "Emigrant",
@@ -11969,6 +11731,46 @@
       "boys": true,
       "girls_district": "Gold Valley District",
       "boys_district": "Ashbury Metro District"
+    },
+    {
+      "name": "Ruth Bader Ginsburg",
+      "city": "Aurelia",
+      "county": "Emigrant",
+      "area": "Sage Plains",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 1022,
+      "private": false,
+      "mascot": "Marauders",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sage Plains District",
+      "boys_district": "Sage Plains District",
+      "source": "Nicolás Cordero"
+    },
+    {
+      "name": "Rutherford B. Hayes",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1124,
+      "private": false,
+      "mascot": "Cannerymen",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Harborline District",
+      "source": "Marcus Langston"
     },
     {
       "name": "Rye",
@@ -12296,6 +12098,26 @@
       "boys_district": "South Coast District"
     },
     {
+      "name": "San Borondón Heights",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "South Coast",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1908,
+      "private": false,
+      "mascot": "Crusaders",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast District",
+      "boys_district": "South Coast District",
+      "source": "Imani Cross"
+    },
+    {
       "name": "San Borondón South",
       "source": "San Borondón Environmental Sciences Academy",
       "city": "San Borondón",
@@ -12525,6 +12347,26 @@
       "boys": true,
       "girls_district": "Marlow District",
       "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Sandra Day O'Connor",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 1029,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Iker Aramburu"
     },
     {
       "name": "Santa Cruz del Norte",
@@ -13024,44 +12866,6 @@
       "boys_district": "Ashbury Metro District"
     },
     {
-      "name": "Sofia Romanov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1638,
-      "private": false,
-      "mascot": "Iron Warriors",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
-      "name": "Sofia Romanov North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 899,
-      "private": false,
-      "mascot": "Iron Warriors",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Weller District"
-    },
-    {
       "name": "Sofía Aranda",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
@@ -13081,23 +12885,24 @@
       "boys_district": "South Coast District"
     },
     {
-      "name": "Sofía Cordero",
-      "city": "St. Varian",
+      "name": "Sonia Sotomayor",
+      "city": "Mount Horeb",
       "county": "Marlow",
       "area": "Ashbury Metro",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 913,
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 727,
       "private": false,
-      "mascot": "Buffaloes",
+      "mascot": "Blue Mustangs",
       "colors": [
-        "#5b2a86",
-        "#e5e7eb"
+        "#0e7490",
+        "#fbbf24"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marlow District",
-      "boys_district": "Gold Valley District"
+      "girls_district": "Ashbury Metro District",
+      "boys_district": "Ashbury Metro District",
+      "source": "Manuel Cordero"
     },
     {
       "name": "Soren Ekström",
@@ -14555,25 +14360,6 @@
       "boys_district": "Halbrook Basin 6 District"
     },
     {
-      "name": "Thelma Avery",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2178,
-      "private": false,
-      "mascot": "Cobras",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District"
-    },
-    {
       "name": "Thelma Moss",
       "city": "Valderra",
       "county": "Ferris",
@@ -15241,6 +15027,26 @@
       "boys_district": "Gold Valley District"
     },
     {
+      "name": "Valderra Heights",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1713,
+      "private": false,
+      "mascot": "Stampeders",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Ferris District",
+      "boys_district": "",
+      "source": "Clara Cross"
+    },
+    {
       "name": "Valderra North",
       "source": "Valderra Aviation and Engineering Academy",
       "city": "Valderra",
@@ -15356,6 +15162,186 @@
       "boys_district": "Halbrook Basin District"
     },
     {
+      "name": "Veles Area",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 834,
+      "private": false,
+      "mascot": "Goliath Beetles",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Amelia Freeman North"
+    },
+    {
+      "name": "Veles Basin",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1638,
+      "private": false,
+      "mascot": "Iron Warriors",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Sofia Romanov"
+    },
+    {
+      "name": "Veles Cove",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2178,
+      "private": false,
+      "mascot": "Cobras",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Thelma Avery"
+    },
+    {
+      "name": "Veles Harbor",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1582,
+      "private": false,
+      "mascot": "Dorymen",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Nathaniel Cross"
+    },
+    {
+      "name": "Veles Landing",
+      "source": "Port Veles Civic Leadership Academy",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1130,
+      "private": false,
+      "mascot": "Mantids",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District"
+    },
+    {
+      "name": "Veles Narrows",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 1005,
+      "private": false,
+      "mascot": "Fishmongers",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Weller District",
+      "source": "Walter Hart"
+    },
+    {
+      "name": "Veles Point",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1630,
+      "private": false,
+      "mascot": "Trojans",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Roscoe Bennett North"
+    },
+    {
+      "name": "Veles Quay",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1348,
+      "private": false,
+      "mascot": "Pirates",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper Highlands District",
+      "boys_district": "Bidwell District",
+      "source": "Walter Hart North"
+    },
+    {
+      "name": "Veles Wharf",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 899,
+      "private": false,
+      "mascot": "Iron Warriors",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Weller District",
+      "source": "Sofia Romanov North"
+    },
+    {
       "name": "Vernal Falls",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -15449,6 +15435,26 @@
       "boys": true,
       "girls_district": "Gold Valley District",
       "boys_district": "Gold Valley District"
+    },
+    {
+      "name": "Vespertine Heights",
+      "city": "Vespertine",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1084,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ferris District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Pauli Booker"
     },
     {
       "name": "Vessey Junction",
@@ -15641,44 +15647,6 @@
       "boys_district": "Vermilion Valley District"
     },
     {
-      "name": "Walter Hart",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 1005,
-      "private": false,
-      "mascot": "Fishmongers",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Weller District"
-    },
-    {
-      "name": "Walter Hart North",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1348,
-      "private": false,
-      "mascot": "Pirates",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper Highlands District",
-      "boys_district": "Bidwell District"
-    },
-    {
       "name": "Walter Langston",
       "city": "San Telmo",
       "county": "Ferris",
@@ -15812,6 +15780,26 @@
       "boys_district": "Vermilion Valley District"
     },
     {
+      "name": "Western Sky",
+      "city": "Northrup",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1249,
+      "private": false,
+      "mascot": "Panthers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Bidwell District",
+      "boys_district": "Halbrook Basin 6 District",
+      "source": "Ander Aramburu"
+    },
+    {
       "name": "Western Slope Christian",
       "city": "Redfork",
       "county": "Tamarack",
@@ -15924,6 +15912,46 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Juniper Highlands District"
+    },
+    {
+      "name": "William Henry Harrison",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2090,
+      "private": false,
+      "mascot": "Green Saints",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Henrik Keller"
+    },
+    {
+      "name": "William Howard Taft",
+      "city": "Mount Horeb",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 560,
+      "private": false,
+      "mascot": "Highlanders",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ashbury Metro District",
+      "boys_district": "Ashbury Metro District",
+      "source": "Evelyn Booker"
     },
     {
       "name": "Willow Creek",
@@ -16287,6 +16315,26 @@
       "boys": true,
       "girls_district": "Ashbury Metro District",
       "boys_district": "Ashbury Metro District"
+    },
+    {
+      "name": "Zachary Taylor",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1685,
+      "private": false,
+      "mascot": "Gillnetters",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Igor Chernov"
     },
     {
       "name": "Zoya Orlov",

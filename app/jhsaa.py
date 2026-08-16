@@ -64,7 +64,7 @@ FORMATS = {
 # "super_regional" and "semi_state" are the RECOVERY rounds (owner rule 2027-08):
 # the second-chance ladder that earns the non-automatic State berths on court.
 POSTSEASON = ("sectional", "ward", "regional", "zonal",
-              "super_regional", "semi_state", "divisional",
+              "super_regional", "semi_state", "divisional", "conference",
               "state", "toc")
 
 
@@ -1618,10 +1618,58 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
 # "7A Divisional Round" did not (owner, 2027-08). The per-dual UNIT keeps the
 # singular "Division N", the same way a Ward dual sits in "Ward 4".
 DIVISIONAL_NAME = "Divisionals"
+#: The CONDITIONAL last rung (owner rule 2027-08). Divisionals fills every berth
+#: on the current membership, but `berths` moves with the district-champion count
+#: and with the association's size, so a year that comes up short must not ship a
+#: short State field. The CONFERENCE round pairs the best-TOSS DIVISIONAL LOSERS
+#: against the best-qualified DISTRICT LOSERS (owner rule 2027-08) — the only
+#: recovery round drawn from two pools and paired across them. In the owner's
+#: words, "it can be like other rounds where if we don't need it, it doesn't
+#: trigger": it convenes only when berths remain, exactly the way the Divisional
+#: round already declines to convene at `L = 0`. On today's membership it never
+#: fires in either gender, which is the intended resting state, not dead code.
+#: ‼️ ATR — AVERAGE TEAM RATING (owner metric 2027-08). TOSS blended with win
+#: percentage, and the ONE place the association rates a team on anything but
+#: TOSS. TOSS is an opponent-strength composite, so a middling team in a brutal
+#: district is propped up by the company it keeps while a 20-win season against
+#: an ordinary schedule rates below it. That trade is right for SEEDING a draw
+#: and wrong for the last seat in the tournament: "i'd take a 18-20+ win team
+#: regardless of schedule strength if they win a post-season game of consequence
+#: over a middling team in a hard district propped in TOSS by their opponents."
+#: Both terms are already 0-1, so the blend is a straight weighted mean.
+ATR_TOSS_WEIGHT = 0.5
+
+
+def atr_of(pi: float, win_pct: float) -> float:
+    """ATR from its two raw terms — the ONE formula, so the number archived on a
+    standings row and the number the Conference pool is ranked on cannot drift."""
+    return ATR_TOSS_WEIGHT * pi + (1.0 - ATR_TOSS_WEIGHT) * win_pct
+
+
+def atr(team: TeamSeason, power: dict | None) -> float:
+    """The Average Team Rating: `ATR_TOSS_WEIGHT` TOSS + the rest win percentage.
+
+    `power` maps school -> `rating.RatingLine`, so the TOSS term is `pi_raw` —
+    the SAME full-precision value the seeds are drawn from (`_power_key`), never
+    a rounded or re-derived one. A team the rating does not know contributes its
+    win percentage alone rather than defaulting to a zero it did not earn."""
+    line = (power or {}).get(team.school.name)
+    if line is None:
+        return team.win_pct
+    return atr_of(line.pi_raw, team.win_pct)
+
+
+def _atr_key(power: dict):
+    """Sort key: best ATR first, school name breaking ties (never a raw float
+    comparison on equal ratings — the order has to be reproducible)."""
+    return lambda t: (-atr(t, power), t.school.name)
+
+
+CONFERENCE_NAME = "Conference"
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
-                   "divisional": DIVISIONAL_NAME}
+                   "divisional": DIVISIONAL_NAME, "conference": CONFERENCE_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
-                   "divisional": "Division"}
+                   "divisional": "Division", "conference": "Conference"}
 
 
 def renumber_divisions(season: dict, start: int = 1) -> int:
@@ -1646,6 +1694,41 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
         for games in dv.get("rounds") or ():
             for gm in games:
                 gm["unit"] = f"Division {n}"
+                n += 1
+    return n
+
+
+def _rev_letters(i: int) -> str:
+    """The i-th label of the reverse alphabet, 0-based: Z, Y … A, then ZZ, ZY …
+    (bijective base-26 on the reversed alphabet, so letters NEVER recycle however
+    many Conferences a year needs — full size plays ~140)."""
+    i += 1
+    out = ""
+    while i:
+        i, r = divmod(i - 1, 26)
+        out = chr(ord("Z") - r) + out
+    return out
+
+
+def reletter_conferences(season: dict, start: int = 0) -> int:
+    """Letter this gender's Conferences and return the next index.
+
+    ‼️ CONFERENCES ARE LETTERED STATEWIDE, BACKWARDS FROM Z (owner rule 2027-08),
+    and the unit carries its OWN classification: "6A-Z Conference", "6A-Y
+    Conference"… Like the Divisions the count is statewide — letters are never
+    recycled across classifications — and the sequence runs the same order:
+    girls first, then boys, classifications bottom-up (2A-1A → 9A). Z opening
+    the sequence instead of A is the point: the Conference is the LAST rung, and
+    its labels read like it. Past A the sequence doubles (ZZ, ZY, …) rather than
+    recycling. Assigned here, after both genders are known, for the Divisions'
+    reason exactly; idempotent the same way (always recomputed, memoised season
+    safe)."""
+    n = start
+    for g in reversed(GROUPS):                    # 2A-1A up to 9A
+        cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
+        for games in cf.get("rounds") or ():
+            for gm in games:
+                gm["unit"] = f"{g}-{_rev_letters(n)} Conference"
                 n += 1
     return n
 
@@ -1796,13 +1879,24 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     then a walk back down the ladder through Ward, Sectional and Area losers,
     best TOSS within each tier. A body is a chance to PLAY, never a berth.
     """
-    zc_names = {t.school.name for t in zonal_champs}
-    district_qualifiers = [n for n in district_champs if n not in zc_names]
-    berths = state_field_size(group, scale) - len(zonal_champs) - len(district_qualifiers)
-    berths = max(0, berths)
-    guaranteed = set(district_qualifiers)
-    reg_losers = [by_name[n] for n in _losers(prestate, 0) if n not in guaranteed]
-    zon_losers = [by_name[n] for n in _losers(prestate, 1) if n not in guaranteed]
+    # ‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY INTO THE FIELD (owner
+    # rule 2027-08, REVERSING the earlier guarantee). Winning a district buys a
+    # PROTECTED seat (entry at Regionals, skipping Sectionals and Wards) and
+    # nothing else: it is access to the ladder, not access to State. The old rule
+    # let a district champion lose at Regionals, lose again, and still be handed a
+    # berth — "a district champion could keep losing and automatically get into
+    # the field at state, and that's not what I want at all." So a district
+    # champion that loses now falls into the SAME recovery pools as everybody
+    # else and earns its berth on court, or does not go.
+    #
+    # `district_qualifiers` is kept in the return and the archive as an EMPTY
+    # list: seasons archived under the guarantee still carry their names, and
+    # every reader (`jhsaa_postseason_result`, the ledger chip) already handles
+    # the key, so retiring the rule does not have to rewrite history.
+    district_qualifiers: list[str] = []
+    berths = max(0, state_field_size(group, scale) - len(zonal_champs))
+    reg_losers = [by_name[n] for n in _losers(prestate, 0)]
+    zon_losers = [by_name[n] for n in _losers(prestate, 1)]
     # Walk back down the ladder for bodies: Ward, then Sectional, then Area
     # losers, best TOSS within each tier, tiers consumed nearest-round first.
     sec_rounds = sectionals.get("rounds") or []
@@ -1813,19 +1907,32 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     bodies: list[TeamSeason] = []
     for tier in tiers:
         pick = sorted((by_name[n] for n in tier
-                       if n in by_name and n not in guaranteed and n not in taken),
+                       if n in by_name and n not in taken),
                       key=_power_key(power))
         bodies += pick
         taken |= {t.school.name for t in pick}
 
+    # ‼️ NO WARD PLAYBACKS (owner rule 2027-08). Ward losers used to be drafted
+    # into the Super Regional pool as bodies, which handed them TWO OR THREE bites
+    # — Super Regionals, then a readmission to Semi-State, then Divisionals — while
+    # a Zonal loser got one. They now enter at CONFERENCE and nowhere else: one
+    # last shot, as the true last-resort clubs they are, and berths stop being
+    # earned off them in the earlier rounds. Recovery proper is the ladder's OWN
+    # losers.
     z = len(zon_losers)
     need = -(-4 * berths // 3)                  # ceil(4*berths/3): the S floor
+    need += need % 2                            # ...and Semi-State is byeless, so EVEN
+    # ‼️ ROUND THE FLOOR TO EVEN BEFORE SIZING THE RESERVOIR, not after. Semi-State
+    # pairs its whole field, so an odd floor is really the next even number — but
+    # the pool below is grown only until `P + z` reaches the floor, and the window
+    # is then capped by exactly that (`len(ss_pool) + len(sr_losers)` IS `P + z`).
+    # Rounding afterwards therefore asked for one pair more than had been gathered,
+    # the cap refused it, and the odd-drop took a pair back off: measured at full
+    # size, 4A wanted a 39 window, got 38, and finished ONE berth short of a 40
+    # field with every other classification full. An odd floor is the only case,
+    # which is why it survived the scaled fixture entirely.
     # P must reach the floor even after readmitting every Super Regional loser
     # (max S = P + z), and must be even so Super Regionals is byeless.
-    while bodies and len(reg_losers) + z < need:
-        reg_losers.append(bodies.pop(0))
-    if len(reg_losers) % 2 and bodies:
-        reg_losers.append(bodies.pop(0))
     sr_pool = sorted(reg_losers, key=_power_key(power))
     if len(sr_pool) % 2:                        # reservoir dry: the weakest sits out
         sr_pool = sr_pool[:-1]
@@ -1865,11 +1972,67 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
         dv_arc, dv_winners = {"field": [], "rounds": [[]], "survivors": [],
                               "round_names": [_RECOVERY_NAMES["divisional"]]}, []
     qualifiers = list(ss_winners) + list(dv_winners)
+
+    # ‼️ THE CONFERENCE ROUND — the last rung, and the one that now fills every
+    # berth the ladder's own losers could not (owner rule 2027-08). It is ONE
+    # POOL, reseeded and paired like every other recovery round; the earlier
+    # two-pool cross-draw is gone.
+    #
+    # Who is in it, in order of how well qualified they are:
+    #   1. DIVISIONAL LOSERS — they fought to the last berth-bearing round;
+    #   2. DISTRICT CHAMPIONS still outside the field — what is left of the
+    #      retired guarantee: a district title earns you ONE more dual, not a
+    #      berth;
+    #   3. the top WARD (then Sectional, then Area) losers by ATR — the true
+    #      last-resort clubs. They enter HERE and nowhere else. It feels like
+    #      skipping the line, and that is the trade: better one last shot at the
+    #      end than the two or three bites the old playbacks gave them, with
+    #      berths being earned off them three rounds earlier.
+    #
+    # ‼️ RANKED ON ATR, NOT TOSS — the only place in the association that is
+    # true. The last seat should reward a 20-win season, not a middling team a
+    # hard district propped up in an opponent-strength composite.
+    #
+    # It convenes ONLY when berths remain — "if we don't need it, it doesn't
+    # trigger" — and takes twice the outstanding berths so every entrant plays
+    # exactly once and exactly that many winners come out. Byeless like the rest.
+    cf_n = max(0, berths - len(qualifiers))
+    dv_won = {id(t) for t in dv_winners}
+    placed = ({t.school.name for t in qualifiers}
+              | {t.school.name for t in zonal_champs})
+    seen: set[str] = set()
+    cf_rank: list[TeamSeason] = []
+    for tier in ([t for t in dv_pool if id(t) not in dv_won],
+                 [by_name[n] for n in district_champs if n in by_name],
+                 bodies):
+        for t in sorted(tier, key=_atr_key(power)):
+            if t.school.name in placed or t.school.name in seen:
+                continue
+            seen.add(t.school.name)
+            cf_rank.append(t)
+    # ‼️ SNAPSHOT THE ATR THAT RANKED THIS POOL, at this moment. `t.power` is the
+    # regular-season stamp and `t.win_pct` keeps moving until the last state dual,
+    # so re-deriving ATR on read gives a number that did not select anybody — the
+    # archived-not-recomputed rule the Power Index already follows, and it binds
+    # harder here because these ARE the ranks the round was built from.
+    atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
+    cf_pool = cf_rank[:2 * cf_n]
+    if len(cf_pool) % 2:
+        cf_pool = cf_pool[:-1]
+    if cf_n and cf_pool:
+        cf_pool = sorted(cf_pool, key=_atr_key(power))
+        cf_arc, cf_winners = _recovery_round(cf_pool, phase="conference", rng=rng)
+    else:
+        cf_arc, cf_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["conference"]]}, []
+    qualifiers += list(cf_winners)
+
     if len(qualifiers) != berths:
         log.warning("JHSAA %s recovery filled %d of %d berths (pool %d, "
-                    "semi-state %d, last chance %d)", group, len(qualifiers),
-                    berths, len(sr_pool), len(ss_pool), len(dv_pool))
-    return sr_arc, ss_arc, dv_arc, qualifiers, district_qualifiers
+                    "semi-state %d, divisional %d, conference %d)", group,
+                    len(qualifiers), berths, len(sr_pool), len(ss_pool),
+                    len(dv_pool), len(cf_pool))
+    return sr_arc, ss_arc, dv_arc, cf_arc, qualifiers, district_qualifiers, atr_used
 
 
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
@@ -2342,19 +2505,21 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
     # any State draw: the remaining berths are earned on court, and the State
     # seeding TOSS is recomputed once more AFTERWARD so it includes them.
-    super_regionals, semi_states, divisionals = {}, {}, {}
+    super_regionals, semi_states, divisionals, conferences = {}, {}, {}, {}
+    atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
     for group in GROUPS:
         k = ladder_scale(group)
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        sr, ss, lc, quals, dq = _recovery(
+        sr, ss, dv, cf, quals, dq, atr_used = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], k, post_power,
             seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
-        divisionals[group] = lc
+        divisionals[group], conferences[group] = dv, cf
         recovery_q[group], district_q[group] = quals, dq
+        atr_snap.update(atr_used)
     final_power = power_index(every_team, prestate=True)
     states = {}
     for group in GROUPS:
@@ -2364,14 +2529,15 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # it is a SEEDING guarantee in its own right, not a side effect of byes
         # (owner clarification 2027-08). Winning a Zonal buys seeds 1-8 in every
         # classification: in a 24-team field that also hands them the eight
-        # first-round byes, but 7A's 32-team field is a power of two and has NO
-        # byes at all — there the guarantee is purely that they are seeded 1-8.
-        # Champions first, TOSS-ordered among themselves; the district-guarantee
-        # and Semi-State qualifiers follow, together, in
-        # post-recovery TOSS order — the guarantee buys ACCESS, never seeding.
+        # first-round byes, but a 40-team field gives them a DOUBLE bye through
+        # the Qualifiers Round, and a power-of-two draw would give them neither —
+        # the guarantee is that they are seeded 1-8, whatever the shape.
+        #
+        # TWO WAYS IN AND NO OTHERS (owner rule 2027-08): win a Zonal, or win
+        # your way through recovery. Everyone below the champions is a recovery
+        # survivor, seeded in post-recovery TOSS order.
         zc = sorted(zonal_champs[group], key=_power_key(final_power))
-        rest = sorted([by_name_g[n] for n in district_q[group]] + recovery_q[group],
-                      key=_power_key(final_power))
+        rest = sorted(recovery_q[group], key=_power_key(final_power))
         states[group] = run_state(zc + rest, champions=len(zc),
                                   seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
@@ -2425,7 +2591,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "standings": {d: [{"school": t.school.name, "record": t.record,
                                "drecord": t.district_record, "place": t.district_place,
                                "pf": t.points_for, "pa": t.points_against,
-                               "pi": t.power}
+                               "pi": t.power,
+                               # ATR beside the TOSS it is half of — ARCHIVED,
+                               # not recomputed on read, exactly like `pi`: it is
+                               # the number the Conference pool was ranked on.
+                               "atr": atr_snap.get(t.school.name,
+                                                   atr_of(t.power, t.win_pct))}
                               for t in ts] for d, ts in standings.items()},
             "protected": protecteds[group],
             "sectional": sectionals[group],
@@ -2434,6 +2605,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "super_regional": super_regionals[group],
             "semi_state": semi_states[group],
             "divisional": divisionals[group],
+            "conference": conferences[group],
             # The names admitted by the DISTRICT GUARANTEE alone (champions who
             # did not win a Zonal) — access without a bye. Replaces the retired
             # TOSS wild cards; old archives keep their "wildcards" key.
