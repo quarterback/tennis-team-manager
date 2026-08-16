@@ -12041,6 +12041,26 @@
       "boys_district": "Narpes Interscholastic League"
     },
     {
+      "name": "Salmon Bay",
+      "city": "Salmon Bay",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 82,
+      "private": false,
+      "mascot": "Bruins",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Wickbrook"
+    },
+    {
       "name": "Saltbush Reach",
       "city": "Saltbush Reach",
       "county": "Scheelite",
@@ -15960,25 +15980,6 @@
       "boys": true,
       "girls_district": "Big Basin League",
       "boys_district": "Big Basin League"
-    },
-    {
-      "name": "Wickbrook",
-      "city": "Wickbrook",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 82,
-      "private": false,
-      "mascot": "Kudu",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "William Henry Harrison",
