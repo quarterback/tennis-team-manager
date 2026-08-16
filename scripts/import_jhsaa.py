@@ -296,6 +296,12 @@ RENAMES = {
     # strip collides with it. The bigger school takes the city, PRE + PLACE
     # ("Jesuit Sacramento"); the 1A keeps the name it always had.
     "St. Genevieve High School": "St. Genevieve San Cordero",
+    # The split campus of the Ashbury science magnet (owner rename 2027-08):
+    # a town would not carry two science high schools, so the North campus is
+    # a new identity outright — The Evans Larsen Day School, which the
+    # association's no-suffix rule prints "Evans Larsen Day". Blue blood
+    # (archetypes.json); Steeplejacks (MASCOTS below).
+    "Jefferson School of Science and Technology North": "Evans Larsen Day",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -386,6 +392,7 @@ def reclassify(schools: list[dict]) -> int:
 # re-import cannot quietly revert them; everything internal still runs on the
 # source record.
 MASCOTS = {
+    "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
     # ── Harborline: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",

@@ -70,6 +70,11 @@ Fixes, all three layers:
 - `_collapse_school_of` carries a trailing campus qualifier (North/South/…)
   through the subject truncation — the split reads "Jefferson Science North",
   which is how a real split campus of a Bronx-Science-style name reads anyway.
+  (The owner then renamed that campus outright — a town would not carry two
+  science high schools — to The Evans Larsen Day School, printed "Evans Larsen
+  Day" under the no-suffix rule: a RENAMES entry off the same source identity,
+  Steeplejacks, blue blood in `archetypes.json`. The collapse fix stays — it is
+  what keeps the NEXT split campus from colliding.)
 - `build` refuses to emit two rows with one display name — a collision is a
   missing RENAMES decision, and the import stops rather than ship it. The same
   sweep surfaced a second, latent collision: two genuinely distinct

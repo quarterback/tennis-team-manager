@@ -4422,6 +4422,26 @@
       "boys_district": "Vance District"
     },
     {
+      "name": "Evans Larsen Day",
+      "source": "Jefferson School of Science and Technology North",
+      "city": "Ashbury",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2181,
+      "private": false,
+      "mascot": "Steeplejacks",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ashbury Metro District",
+      "boys_district": "Ashbury Metro District"
+    },
+    {
       "name": "Evelyn Booker",
       "city": "Mount Horeb",
       "county": "Marlow",
@@ -7042,26 +7062,6 @@
       "classification": "8A",
       "group": "8A",
       "enrollment": 2162,
-      "private": false,
-      "mascot": "Muntjac",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ashbury Metro District",
-      "boys_district": "Ashbury Metro District"
-    },
-    {
-      "name": "Jefferson Science North",
-      "source": "Jefferson School of Science and Technology North",
-      "city": "Ashbury",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2181,
       "private": false,
       "mascot": "Muntjac",
       "colors": [
