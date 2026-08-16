@@ -3743,6 +3743,39 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
     }
 
 
+def _jh_split_state(br: dict) -> tuple[dict, dict | None]:
+    """An archived State bracket split at the qualifying boundary, for rendering.
+
+    An EXPANDED field's preliminary rounds (`round_names` — the Qualifiers Round
+    and the First Round) are a qualifying event feeding a FRESH seeded draw, so
+    there is NO bracket path from a Qualies slot to a main-draw slot — exactly as
+    a tour event's qualifying feeds its main draw. One positional tree over all
+    the rounds would therefore invent links (`_bracket_canvas` connects columns
+    by the 2k/2k+1 halving), so the page draws TWO canvases. The split dicts are
+    render-shapes only — the archive keeps the one bracket:
+      * main: the post-prelim rounds, `field` = the teams alive going into them
+        (the double-bye champions + the qualifying survivors), so
+        `jhsaa_state_rounds` counts down and derives byes from the right number;
+      * qualifying: the prelim rounds over the teams that actually played them.
+    Both carry `seed_map` — the TOURNAMENT's own seeds off the full field — so a
+    #23 seed that qualifies keeps its 23 chip in the main draw. A 24-team class
+    or an old archive returns `(br, None)` untouched."""
+    names = br.get("round_names") or ()
+    rounds = br.get("rounds") or ()
+    if not names or len(rounds) <= len(names):
+        return br, None
+    k = len(names)
+    seed_map = _jh_seeds(br)
+    pre, main = list(rounds[:k]), list(rounds[k:])
+    qual_field = [t for gm in pre[0] for t in (gm["home"], gm["away"])]
+    survivors = [gm["winner"] for gm in pre[-1]]
+    champs = [t for t in (br.get("field") or ()) if t not in set(qual_field)]
+    qual = {"field": qual_field, "rounds": pre, "round_names": list(names),
+            "seed_map": seed_map}
+    return ({**br, "rounds": main, "round_names": [],
+             "field": champs + survivors, "seed_map": seed_map}, qual)
+
+
 def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
     """The state tournament as bracket COLUMNS for the shared canvas.
 
@@ -3762,7 +3795,9 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
     `keep` trims to the last N rounds — the hub shows the business end of the draw and
     links to the full tree, rather than putting a 32-card ladder above the standings."""
     import app.world as world
-    seeds = _jh_seeds(bracket)
+    # A split render-shape (`_jh_split_state`) carries the tournament's own seeds;
+    # the archived bracket derives them from its field order as always.
+    seeds = (bracket or {}).get("seed_map") or _jh_seeds(bracket)
     rounds = world.jhsaa_state_rounds(bracket)
     alive = list((bracket or {}).get("field") or ())
     cols = []
@@ -4101,6 +4136,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     seeds = _jh_seeds(br)
+    main_br, qual_br = _jh_split_state(br)
 
     def _deco_rounds(d, sseeds):
         return [{**rd, "games": [
@@ -4159,8 +4195,14 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
         "field": [{**_jh_deco(schools, nm, 22), "seed": seeds[nm]}
                   for nm in (br.get("field") or ())],
         "field_n": len(br.get("field") or ()),
-        "canvas": _bracket_canvas(_jh_bracket_cols(br, schools),
+        # An expanded field renders as TWO trees — the main draw and the
+        # qualifying that fed it — because a fresh draw sits between them and a
+        # single positional tree would invent links (see `_jh_split_state`).
+        "canvas": _bracket_canvas(_jh_bracket_cols(main_br, schools),
                                   card_w=206, card_h=56, gutter=44, leaf_gap=12),
+        "qual_canvas": (_bracket_canvas(_jh_bracket_cols(qual_br, schools),
+                                        card_w=206, card_h=56, gutter=44,
+                                        leaf_gap=12) if qual_br else None),
         "rounds": _deco_rounds(br, seeds),
         "stages": stages,
     }

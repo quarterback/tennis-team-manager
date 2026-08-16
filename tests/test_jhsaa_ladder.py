@@ -18,9 +18,11 @@ The qualification structure (owner spec 2027-08, expanded State fields):
      chance to play, never a berth). No berth is handed out by a TOSS recompute
      — the wild-card model is retired.
 
-State is 32 teams in 7A, 24 elsewhere. `ladder_scale` shrinks every number
-together for pools too small for the full shape — the two-district fixture here
-exercises exactly that; the full-size arithmetic is asserted proportionally.
+State is 24 teams in the three largest classes and 40 in the five smaller ones
+(owner table 2027-08) — a 40 being a 24 with a Qualifiers Round in front of it.
+`ladder_scale` shrinks every number together for pools too small for the full
+shape — the two-district fixture here exercises exactly that; the full-size
+arithmetic is asserted proportionally and pinned on synthetic draws below.
 
 Fixture pattern shared with `test_jhsaa_toc.py` (two districts per
 classification, so a run stays a few seconds).
@@ -132,7 +134,12 @@ def test_zonal_champions_are_the_top_seeds_byes_or_not(archived):
         n = len(field)
         if n and n & (n - 1) == 0:            # a power of two: no first-round byes
             checked_bye_free = True
-    assert checked_bye_free, "no bye-free field in the fixture — the 7A case is untested"
+        if state.get("round_names"):
+            # an EXPANDED field's main draw is a full power of two with no byes
+            # at all — the champions' top seeding there is pure guarantee, which
+            # is exactly the case this assertion exists to keep honest
+            checked_bye_free = True
+    assert checked_bye_free, "no bye-free draw in the fixture — the no-bye case is untested"
 
 
 def test_district_champions_always_reach_state(archived):
@@ -215,11 +222,26 @@ def test_wards_regionals_and_zonals_are_byes_free(archived):
 
 def test_state_byes_belong_to_the_zonal_champions(archived):
     """A 24-team seeded draw has eight first-round byes, and those byes ARE the
-    champions' privilege — every bye-taker is a Zonal champion. A full field
-    (7A at 32, or a scaled pool that pads to nothing) has no byes to give and
-    the privilege is the top seeding alone."""
+    champions' privilege — every bye-taker is a Zonal champion. An EXPANDED field
+    (the 40s and their scaled images) sharpens the same privilege into a DOUBLE
+    BYE: the champions appear in none of the qualifying rounds, and the fresh
+    main draw they enter is a full power of two with no byes at all."""
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv = _stages(archived, g)
+        names = state.get("round_names") or []
+        champs = set(pre["survivors"])
+        if names:
+            # the double bye: no champion in any qualifying round...
+            for rd in state["rounds"][:len(names)]:
+                played = {n for gm in rd for n in (gm["home"], gm["away"])}
+                assert not (played & champs), g
+            # ...and the main draw pairs EVERYONE alive — champions plus the
+            # last qualifying round's winners — so nobody byes into it either.
+            alive = champs | {gm["winner"] for gm in state["rounds"][len(names) - 1]}
+            first_main = {n for gm in state["rounds"][len(names)]
+                          for n in (gm["home"], gm["away"])}
+            assert first_main == alive, g
+            continue
         size = 1
         while size < len(state["field"]):
             size *= 2
@@ -228,7 +250,7 @@ def test_state_byes_belong_to_the_zonal_champions(archived):
                        for n in (gm["home"], gm["away"])}
         sat_out = set(state["field"]) - first_round
         assert len(sat_out) == byes
-        assert sat_out <= set(pre["survivors"])
+        assert sat_out <= champs
 
 
 # --- stage names ride the archive ---------------------------------------------------
@@ -584,3 +606,50 @@ def test_district_title_leads_the_units_honour_line(archived):
                     if srow["year"] == archived["world"]["year"]:
                         assert dname not in srow["unit_wins"]
     assert checked
+
+
+# --- the expanded field and its identities (no fixture: data + synthetic draws) -----
+
+def test_display_names_are_unique_identities():
+    """‼️ A display name IS the archive's identity — it keys `run_season`'s teams
+    dict, `world_jhsaa_dual.school`, the school routes and the pid space. Two
+    schools sharing one name silently merge into one archive slot while the
+    standings carry both rows, so a program's record stops covering the duals it
+    played. This shipped once: the prep-network rebuild split an over-cap campus
+    and the display collapse dropped the "North", so BOTH halves emitted as
+    "Jefferson Science" — and the season archived a third school that was
+    neither. `scripts/import_jhsaa.py::build` now refuses to emit a collision;
+    this pins the data that is already checked in."""
+    for g in jh.GENDERS:
+        names = [s.name for s in jh.load_schools(g)]
+        dupes = {n for n in names if names.count(n) > 1}
+        assert not dupes, dupes
+
+
+def test_an_expanded_field_is_a_24_with_qualies_in_front():
+    """The owner's field table (2027-08): the three largest classes crown from 24;
+    the five smaller ones crown from 40 — and a 40 IS a 24 with a Qualifiers
+    Round in front of it. The Zonal champions take a DOUBLE bye to the
+    Octofinals; everyone else plays the Qualies and then the First Round, and
+    the eight who survive both join them in a fresh draw. After the Qualies
+    exactly 24 are alive — the other classes' bracket — so both shapes converge
+    and there is one championship from the Octofinals down."""
+    teams = jh.district_teams(jh.load_schools("girls")[:40], 2027, "")
+    br = jh.run_state(teams, seed=99, champions=8)
+    rounds = wd.jhsaa_state_rounds(br)
+    assert [(r["name"], r["alive"], len(r["games"])) for r in rounds] == [
+        ("Qualifiers Round", 40, 16), ("First Round", 24, 8),
+        ("Octofinals", 16, 8), ("Quarterfinals", 8, 4),
+        ("Semifinals", 4, 2), ("Championship", 2, 1)]
+    assert br["round_names"] == ["Qualifiers Round", "First Round"]
+    champs = {t.school.name for t in teams[:8]}
+    prelim = {n for rd in rounds[:2] for gm in rd["games"]
+              for n in (gm["home"], gm["away"])}
+    octo = {n for gm in rounds[2]["games"] for n in (gm["home"], gm["away"])}
+    assert not (champs & prelim) and champs <= octo       # the double bye
+    assert br["champion"] in {t.school.name for t in teams}
+    # the 24-team shape is untouched: one fixed draw whose byes are the champions
+    br24 = jh.run_state(teams[:24], seed=99, champions=8)
+    assert not br24["round_names"]
+    assert [(r["alive"], len(r["games"])) for r in wd.jhsaa_state_rounds(br24)] \
+        == [(24, 8), (16, 8), (8, 4), (4, 2), (2, 1)]

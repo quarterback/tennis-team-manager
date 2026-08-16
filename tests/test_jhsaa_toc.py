@@ -78,14 +78,16 @@ def test_the_field_is_one_champion_per_classification(archived):
 
 
 def test_the_draw_halves_cleanly_to_one(archived):
-    """Six into four into two into one. A single play-in regardless of field size left
-    five standing and produced a three-team "semifinal" with a bye nobody earned."""
+    """One champion per classification into four into two into one. A single play-in
+    regardless of field size left five standing and produced a three-team "semifinal"
+    with a bye nobody earned. The field is `len(GROUPS)` (eight since the nine-class
+    ladder), so the play-in cuts to four whatever the association's shape is."""
     toc = archived["arc"]["toc"]
     alive, shape = len(toc["field"]), []
     for games in toc["rounds"]:
         shape.append(alive)
         alive -= len(games)
-    assert shape == [6, 4, 2] and alive == 1
+    assert shape == [len(jh.GROUPS), 4, 2] and alive == 1
     assert toc["champion"] in toc["field"]
 
 
@@ -595,3 +597,31 @@ def test_all_region_is_one_team_per_region_for_the_whole_gender(archived):
         hits = [pid for pid in honoured
                 if any("All-Region" in h for h in jaw.honors_for(pid, merged, grp))]
         assert len(hits) == len(honoured), grp
+
+
+def test_an_expanded_bracket_page_renders_two_draws(archived):
+    """‼️ An expanded field renders as TWO trees — the main draw and the Qualifying
+    that fed it — because a FRESH draw sits between the First Round and the
+    Octofinals, so there is no bracket path across the boundary and one positional
+    tree would draw links that do not exist (`_bracket_canvas` halves 2k/2k+1).
+    Rendered, not just viewed: a template resolves a wrong shape to an empty box
+    with no error anywhere, which is how the TOC page shipped as a toolbar over
+    nothing. The fixture's smaller classes scale the 40-field down
+    (`ladder_scale`), so any group whose archived bracket carries `round_names`
+    exercises the split; a 24-shape group keeps the single tree and no tab."""
+    arc = archived["arc"]
+    expanded = [g for g in jh.GROUPS
+                if (arc["brackets"][g] or {}).get("round_names")]
+    plain = [g for g in jh.GROUPS
+             if not (arc["brackets"][g] or {}).get("round_names")]
+    assert expanded, "no expanded bracket in the fixture — the split is untested"
+    assert plain, "no 24-shape bracket in the fixture — the old shape is untested"
+    html = archived["client"].get(
+        f"/jhsaa/bracket?g=girls&group={expanded[0]}").get_data(as_text=True)
+    assert 'data-view="qual"' in html and ">Qualifying<" in html
+    # both sections carry real cards: the champion is in the main tree, and the
+    # Qualifiers Round chip names the qualifying one
+    assert arc["brackets"][expanded[0]]["champion"] in html
+    html24 = archived["client"].get(
+        f"/jhsaa/bracket?g=girls&group={plain[0]}").get_data(as_text=True)
+    assert 'data-view="qual"' not in html24

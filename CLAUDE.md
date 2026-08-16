@@ -494,7 +494,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
-  State is **32 in 7A, 24 elsewhere**, and the old TOSS wild cards are GONE — a rating
+  State is **24 in the three largest classes, 40 in the five smaller ones** (owner
+  table 2027-08 — `jhsaa.STATE_FIELD`). **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
+  FRONT OF IT** (`run_state(champions=)`): the Zonal champions take a DOUBLE bye
+  while seeds 9-40 play the Qualies and then the First Round, and the eight
+  survivors join them in a FRESH draw — so both shapes converge at the Octofinals,
+  and there is NO bracket path from a Qualies slot to a main-draw slot (the
+  bracket page therefore renders TWO trees, `state._jh_split_state`; one
+  positional tree would invent links). The old TOSS wild cards are GONE — a rating
   never hands out a berth again (the report: a #14 missed State while #23 got in by
   winning). Three ways in: the 8 **Zonal champions** — automatic, AND **seeds 1-8 of
   the State draw**. That is a SEEDING guarantee, not a bye rule (owner clarification
@@ -1085,6 +1092,14 @@ was a school marker, shipped "Baptist HS High School".
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and
   `data/jhsaa/archetypes.json` keys on the DISPLAY name, so its keys move too.
+- **‼️ A JHSAA DISPLAY NAME MUST BE UNIQUE — it IS the archive identity.** It keys
+  `run_season`'s teams dict, `world_jhsaa_dual.school`, the routes and the pids; two
+  schools sharing one name silently merge into one archive slot while the standings
+  keep both rows, so a record stops covering the duals played and NOTHING errors
+  (shipped once: a split campus's "…Science and Technology North" collapsed to the
+  same "Jefferson Science" as its sibling — the collapse now keeps a trailing
+  campus qualifier, `import_jhsaa.build` refuses to emit a collision, and
+  `test_display_names_are_unique_identities` pins the data).
 - `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes
