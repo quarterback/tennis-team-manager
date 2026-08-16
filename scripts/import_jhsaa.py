@@ -219,6 +219,39 @@ ALWAYS_EXTRA = [
     "Yarmere",
 ]
 
+# ‼️ OWNER EDICTS — NAMES THAT ARE NOT UP FOR REVISION (2027-08).
+#
+# Everything in this file is the owner's map, but these were dictated by NAME
+# rather than arrived at by a generator or proposed by an agent. A later pass
+# may rename anything else it finds bland; it may NOT "improve" one of these,
+# fold it into a naming family, or trade it away to resolve a collision. If one
+# of them collides with something, the OTHER thing moves.
+#
+# This list exists because this map has now been renamed in a dozen sweeps, and
+# the failure mode of a sweep is that it treats a deliberate name as noise.
+OWNER_EDICTS = frozenset({
+    # schools
+    "Evans Larsen Day", "Chester A. Arthur", "Siskiyou Valley", "Cook City",
+    "Fountain Park", "James K. Polk", "Lyndon B. Johnson", "William Howard Taft",
+    "Earl Warren", "Sonia Sotomayor", "Ketanji Brown Jackson",
+    "Sandra Day O'Connor", "Ruth Bader Ginsburg", "John Quincy Adams",
+    "John F. Kennedy", "Western Sky",
+    # towns
+    "Cape Angeles", "Fort Tabor", "New Penzance Island", "Bay Oregon",
+    "Carolina Island", "North San Francisco", "California Canyons", "Vonjo City",
+    "Galactica Plains", "Simmons", "North Simmons", "South Simmons",
+    "East Simmons", "West Simmons", "Linden", "Sage Village", "Minnesota City",
+    "Georgia Mills", "Texas Beach", "California Beach", "Jersey City", "Jamaica",
+    "Sotkamo", "Kuusamo", "Iisalmi", "Lieksa", "Nurmes", "Raahe",
+    # the uplands the owner named outright
+    "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit",
+    "Meridian Passage", "Mount Ruth", "Mount Dylan Lake", "Corey Canyon",
+    "Aftdahl Ridge", "Brynildson Hill", "Mount Henson",
+    # areas
+    "Southern Jefferson", "Millersylvania",
+})
+
+
 # ABSORPTION-STYLE RENAMES (owner rule 2027-08) — the same pattern the college
 # import uses for programs standing on Jefferson ground (Oregon Tech → Cascade
 # Polytechnic): the INSTITUTION comes from prep-network, which stays untouched

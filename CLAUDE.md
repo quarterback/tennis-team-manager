@@ -1152,6 +1152,14 @@ was a school marker, shipped "Baptist HS High School".
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and
   `data/jhsaa/archetypes.json` keys on the DISPLAY name, so its keys move too.
+- **‼️ OWNER EDICTS ARE NOT UP FOR REVISION** (`import_jhsaa.OWNER_EDICTS`, 2027-08).
+  57 names — schools, towns and two areas — were dictated BY NAME rather than
+  arrived at by a generator or proposed by an agent. A later pass may rename
+  anything it finds bland; it may NOT "improve" one of these, fold it into a
+  naming family, or trade it away to settle a collision. **If one collides, the
+  OTHER thing moves.** The list exists because this map has been swept a dozen
+  times and the failure mode of a sweep is treating a deliberate name as noise.
+  Verified against the data: all 57 are live.
 - **‼️ A JHSAA DISPLAY NAME MUST BE UNIQUE — it IS the archive identity.** It keys
   `run_season`'s teams dict, `world_jhsaa_dual.school`, the routes and the pids; two
   schools sharing one name silently merge into one archive slot while the standings
