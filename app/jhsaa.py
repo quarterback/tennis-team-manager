@@ -185,7 +185,7 @@ WARD_FIELD = 32
 #
 # This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
 # given a bye without inventing a round for everybody else to sit out.
-STATE_FIELD = {"9A": 24, "8A": 24, "7A": 24,
+STATE_FIELD = {"9A": 40, "8A": 40, "7A": 24,
                "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A-1A": 40}
 STATE_FIELD_DEFAULT = 24
 
@@ -205,15 +205,20 @@ def ladder_scale(group: str) -> int:
     (a classification plays ONE format) and sized by the smaller gender's count.
 
     Two fits, both required: the LADDER's seats (`PROTECTED + WARD_FIELD`) must not
-    exceed the class, and the STATE FIELD must stay a minority of it (at most half)
-    — the fixed-field rule ("recovery conforms, never a short field") presumes the
-    berths can be contested from the loser pools, and a State that admits most of a
-    small class drains those pools dry. Full-size classes clear both terms at k=1;
-    only tiny pools (test fixtures) scale."""
+    exceed the class, and the STATE FIELD must fit INSIDE that ladder — every berth
+    is earned by a ladder participant (recovery draws Regional, Zonal and, at the
+    Conference, Ward losers), so a field bigger than the ladder cannot be filled.
+
+    ⚠️ The second test used to be "at most half the class", which is a statement
+    about PERCENTAGE and not about whether the berths can be contested. 9A is the
+    association's most competitive classification and 72 programs deep; the owner
+    put it on a 40 field knowing that admits 56% of it, because the teams missing
+    out were plainly good ones. A share rule would have silently halved that field
+    to 20 instead of honouring the table."""
     n = min(sum(1 for s in load_schools(g) if s.group == group) for g in GENDERS)
     k = 1
     while k < 8 and ((PROTECTED + WARD_FIELD) // k > n
-                     or state_field_size(group, k) > n // 2):
+                     or state_field_size(group, k) > (PROTECTED + WARD_FIELD) // k):
         k *= 2
     return k
 
