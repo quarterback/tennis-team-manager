@@ -467,6 +467,9 @@ RENAMES = {
     "Huckle Lake": "Mount Dylan Lake",
     "Thornford": "Thorn Summit",
     "Wolf Gap": "Corey Canyon",
+    "Brackwood Union": "Brackwood Pass",
+    "Ransom City Union": "Ransom Pass",
+    "Silton Union": "Silton Ridge",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
