@@ -331,11 +331,11 @@ RENAMES = {
     "Elmfield": "Nurmes",
     "Stone Meadows": "Raahe",
     "Silvale": "Fort Wren",
-    "Ewartville": "Fort Ewart",
+    "Ewartville": "Fort Tabor",
     "Marshdale": "Fort Lassiter",
     "Goodman": "Fort Bardsley",
     "Fort Salish": "Fort Weller",
-    "Fort Salish Independent": "Fort Weller Independent",
+    "Fort Salish Independent School": "Fort Weller Independent",
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -350,21 +350,8 @@ RENAMES = {
     # everywhere and adds no new invented person.
     "Amaia Aramburu": "Ketanji Brown Jackson",
     "Amaia Aramburu North": "Belmonte Catholic",
-    "Amos Cross": "Lyndon B. Johnson",
     "Aldermont": "Cape Angeles",   # the town renamed under it
     # each of these is the school named for its town, moving with it
-    "Milldale Union": "Sotkamo Union",
-    "Millview": "Kuusamo",
-    "Kelview Union": "Iisalmi Union",
-    "Standale": "Lieksa",
-    "Elmfield": "Nurmes",
-    "Stone Meadows": "Raahe",
-    "Silvale": "Fort Wren",
-    "Ewartville": "Fort Ewart",
-    "Marshdale": "Fort Lassiter",
-    "Goodman": "Fort Bardsley",
-    "Fort Salish": "Fort Weller",
-    "Fort Salish Independent": "Fort Weller Independent",
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -375,7 +362,6 @@ RENAMES = {
     "Imani Cross": "San Borondón Heights",
     "Isaiah Booker": "Earl Warren",
     "John F. Kennedy North": "Harriman Heights",
-    "Katherine Booker": "James K. Polk",
     "Leire Aramburu": "Echevarria",
     "Lorna Booker": "Moriarty Heights",
     "Manuel Cordero": "Sonia Sotomayor",
@@ -998,7 +984,7 @@ CITY_RENAMES = {
     # every one of them sat on the coast or in the Cascades, which is backwards:
     # a frontier post belongs in the high desert, the gold country and the
     # interior, where these four go. Named the way real ones are — for an
-    # officer, or for the river crossing they guarded (Fort Ewart on the Ewart,
+    # officer. Fort Tabor stands on the Ewart, but the river keeps its own name
     # beside Ewart Bar and Ewart City, exactly as Fort Benton sits by Benton).
     # ‼️ A FORT IS NAMED FOR A PERSON (owner rule 2027-08). Almost every real
     # one carries an officer, an agent or a commander — Carden, Meriwether,
@@ -1008,7 +994,7 @@ CITY_RENAMES = {
     # (The county or the river usually takes ITS name from the fort, not the
     # other way round — Bardsley County sits under Fort Bardsley.)
     "Silvale": "Fort Wren",
-    "Ewartville": "Fort Ewart",
+    "Ewartville": "Fort Tabor",
     "Marshdale": "Fort Lassiter",
     "Goodman": "Fort Bardsley",
     "Fort Rogue": "Fort Halloran",
