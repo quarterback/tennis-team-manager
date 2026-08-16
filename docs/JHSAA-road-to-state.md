@@ -43,25 +43,23 @@ State. Lose from there and you go into recovery with everybody else. There was
 briefly a guarantee and it was retired: a district champion could keep losing
 and still be handed a berth, which is the opposite of earning it.
 
-## Recovery: four rounds, no byes — and a fourth if it is needed
+## Recovery: four rounds, no byes
 
-Losing does not end your season. The remaining berths are contested in three
-rounds, and **every round pairs its entire field** — there are no byes anywhere
-in recovery, so nobody can advance without playing. A fourth round, the
-**Conference**, convenes only if berths are still outstanding — on the current
-membership it never has to. It is the one round drawn from two pools: the best
-Divisional losers by TOSS are paired against the best-qualified **district
-champions** still outside the field. That is what is left of the old guarantee:
-winning your district does not put you in State, it earns you one more dual
-against a team that fought all the way to the last recovery round. One dual per
-outstanding berth, one team from each pool.
+Losing does not end your season. The remaining berths are contested in a
+ladder of rounds, and **every round pairs its entire field** — there are no
+byes anywhere in recovery, so nobody can advance without playing.
 
 | Round | Who plays | Winners |
 |---|---|---|
-| **Super Regionals** | Regional losers (plus bodies, below) | advance |
+| **Super Regionals** | Regional losers | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
 | **Divisional Round** | the best Semi-State losers | **take the last berths** |
-| **Conference** *(only if needed)* | best Divisional losers vs. district champions still outside the field | **take any berth still outstanding** |
+| **Conference** *(only if berths remain)* | Divisional losers, then district champions outside the field, then the top Ward losers by ATR | **take every berth still outstanding** |
+
+The **Conference** convenes only when berths are still outstanding, so whether
+it happens depends on the size of the field: the 24-team classifications fill
+without it and never play one, while the 40-team classifications need it every
+year and it runs about 28 teams deep.
 
 ### Why the Divisional Round exists
 
