@@ -323,6 +323,13 @@ RENAMES = {
     "Katherine Booker": "James K. Polk",
     "Amos Cross": "Lyndon B. Johnson",
     "Aldermont": "Cape Angeles",   # the town renamed under it
+    # each of these is the school named for its town, moving with it
+    "Milldale Union": "Sotkamo Union",
+    "Millview": "Kuusamo",
+    "Kelview Union": "Iisalmi Union",
+    "Standale": "Lieksa",
+    "Elmfield": "Nurmes",
+    "Stone Meadows": "Raahe",
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -339,6 +346,13 @@ RENAMES = {
     "Amaia Aramburu North": "Belmonte Catholic",
     "Amos Cross": "Lyndon B. Johnson",
     "Aldermont": "Cape Angeles",   # the town renamed under it
+    # each of these is the school named for its town, moving with it
+    "Milldale Union": "Sotkamo Union",
+    "Millview": "Kuusamo",
+    "Kelview Union": "Iisalmi Union",
+    "Standale": "Lieksa",
+    "Elmfield": "Nurmes",
+    "Stone Meadows": "Raahe",
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -623,7 +637,6 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Vesterheim Athletic Association", "Kangas"),
     ("Norheim League", "Kangas"),
     ("Suomi Interscholastic League", "Kangas"),
-    ("Sotkamo League", "Kangas"),
     ("Vimpeli Athletic Association", "Kangas"),
     ("Imatra League", "Kangas"),
     ("Kajaani League", "Kangas"),
@@ -958,6 +971,17 @@ AREA_RENAMES = {
 # the cape: CAPE ANGELES, and its high school with it.
 CITY_RENAMES = {
     "Aldermont": "Cape Angeles",
+    # ‼️ REAL FINNISH CITIES, UNACCENTED (owner rule 2027-08). Small Finnish
+    # towns with no American namesake, in the Kangas interior where the state's
+    # Finns settled. The accents come OFF — an American town would not carry
+    # them, which is exactly why Narpes and Riihimaki read as US place names and
+    # Narpes and Riihimaki with diacritics do not.
+    "Milldale": "Sotkamo",
+    "Millview": "Kuusamo",
+    "Kelview": "Iisalmi",
+    "Standale": "Lieksa",
+    "Elmfield": "Nurmes",
+    "Stone Meadows": "Raahe",
 }
 
 RELOCATIONS = {

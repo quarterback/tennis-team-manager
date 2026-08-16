@@ -4298,25 +4298,6 @@
       "boys_district": "Dual County League"
     },
     {
-      "name": "Elmfield",
-      "city": "Elmfield",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 242,
-      "private": false,
-      "mascot": "White Bulldogs",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association"
-    },
-    {
       "name": "Emerson",
       "city": "Emerson",
       "county": "Halbrook",
@@ -5125,7 +5106,7 @@
     },
     {
       "name": "Garazi Aramburu",
-      "city": "Standale",
+      "city": "Lieksa",
       "county": "Emigrant",
       "area": "Kangas",
       "classification": "2A",
@@ -6595,6 +6576,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Iisalmi Union",
+      "city": "Iisalmi",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 324,
+      "private": false,
+      "mascot": "Dingoes",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kajaani League",
+      "boys_district": "Kajaani League",
+      "source": "Kelview Union"
+    },
+    {
       "name": "Indigo Bend",
       "city": "Furrow Crossing",
       "county": "Barlowe",
@@ -7497,25 +7498,6 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Kelview Union",
-      "city": "Kelview",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 324,
-      "private": false,
-      "mascot": "Dingoes",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kajaani League",
-      "boys_district": "Kajaani League"
-    },
-    {
       "name": "Kendricks Landing",
       "city": "Kendricks Landing",
       "county": "Stagewater",
@@ -7686,6 +7668,26 @@
       "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League"
+    },
+    {
+      "name": "Kuusamo",
+      "city": "Kuusamo",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 98,
+      "private": false,
+      "mascot": "Bears",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vesterheim Athletic Association",
+      "boys_district": "Vesterheim Athletic Association",
+      "source": "Millview"
     },
     {
       "name": "Lake Esperanza",
@@ -8047,6 +8049,26 @@
       "boys": true,
       "girls_district": "Quarry League",
       "boys_district": "Quarry League"
+    },
+    {
+      "name": "Lieksa",
+      "city": "Lieksa",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 366,
+      "private": false,
+      "mascot": "Stag Beetles",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kajaani League",
+      "boys_district": "Kajaani League",
+      "source": "Standale"
     },
     {
       "name": "Lillian Price",
@@ -9062,25 +9084,6 @@
       "source": "Igor Chernov North"
     },
     {
-      "name": "Milldale Union",
-      "city": "Milldale",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 297,
-      "private": false,
-      "mascot": "Crusaders",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kaleva League",
-      "boys_district": "Kaleva League"
-    },
-    {
       "name": "Millport",
       "city": "Millport",
       "county": "Windrow",
@@ -9098,25 +9101,6 @@
       "boys": true,
       "girls_district": "Coastal Range League",
       "boys_district": "Coastal Range League"
-    },
-    {
-      "name": "Millview",
-      "city": "Millview",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 98,
-      "private": false,
-      "mascot": "Bears",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association"
     },
     {
       "name": "Mirage Crossing",
@@ -10012,6 +9996,26 @@
       "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
+    },
+    {
+      "name": "Nurmes",
+      "city": "Nurmes",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 242,
+      "private": false,
+      "mascot": "White Bulldogs",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vesterheim Athletic Association",
+      "boys_district": "Vesterheim Athletic Association",
+      "source": "Elmfield"
     },
     {
       "name": "Octavia Butler",
@@ -11219,6 +11223,26 @@
       "boys": true,
       "girls_district": "East Cascades League",
       "boys_district": "East Cascades League"
+    },
+    {
+      "name": "Raahe",
+      "city": "Raahe",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 71,
+      "private": false,
+      "mascot": "Knights",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kaleva League",
+      "boys_district": "Kaleva League",
+      "source": "Stone Meadows"
     },
     {
       "name": "Rafael Escobedo",
@@ -12925,6 +12949,26 @@
       "boys_district": "Sky-Em League"
     },
     {
+      "name": "Sotkamo Union",
+      "city": "Sotkamo",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 297,
+      "private": false,
+      "mascot": "Crusaders",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kaleva League",
+      "boys_district": "Kaleva League",
+      "source": "Milldale Union"
+    },
+    {
       "name": "Southern Jefferson Christian",
       "city": "Latgaway",
       "county": "Stagewater",
@@ -13846,25 +13890,6 @@
       "boys_district": "Chinook League"
     },
     {
-      "name": "Standale",
-      "city": "Standale",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 366,
-      "private": false,
-      "mascot": "Stag Beetles",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kajaani League",
-      "boys_district": "Kajaani League"
-    },
-    {
       "name": "Starlake",
       "city": "Starlake",
       "county": "Vance",
@@ -13978,25 +14003,6 @@
       "boys": true,
       "girls_district": "Assay Athletic Association",
       "boys_district": "Assay Athletic Association"
-    },
-    {
-      "name": "Stone Meadows",
-      "city": "Stone Meadows",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 71,
-      "private": false,
-      "mascot": "Knights",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kaleva League",
-      "boys_district": "Kaleva League"
     },
     {
       "name": "Stone Springs",
