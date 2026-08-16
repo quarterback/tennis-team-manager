@@ -553,13 +553,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **‼️ NOBODY REACHES STATE ON A BYE — the rounds are BYELESS BY CONSTRUCTION
     (owner rule 2027-08, after three reports).** Recovery is THREE rounds and each
     pairs its ENTIRE field: **Super Regionals** (Regional losers) → **Semi-State**
-    (SR winners + Zonal losers + readmitted SR losers) → **Divisional Round** (the
+    (SR winners + Zonal losers + readmitted SR losers) → **Divisionals** (the
     best Semi-State losers), the last two taking berths. A bye is therefore not
     disallowed, it is impossible. The rounds used to be CUTS sized to whatever the
     pool was, leaving byes over — a No. 19 seed byed through both; a No. 4-TOSS
     Zonal loser took the Semi-State bye and reached State "without winning their
     district"; and every rule patch just moved which bye was unearned. The
-    Divisional Round absorbs the berths that used to become byes AND fixes the
+    Divisionals absorb the berths that used to become byes AND fixes the
     inequity that caused it: a Regional loser got two or three chances, a Zonal
     loser one. Now everyone in recovery gets two. **The State field is FIXED**
     (32/24) and recovery conforms — never extra duals, a deeper cut, or a short

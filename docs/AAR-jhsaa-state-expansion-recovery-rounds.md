@@ -230,7 +230,7 @@ back to a Super Regional sitter; the tiering exists because of it.
 
 ---
 
-## Addendum 3: the Divisional Round, and why byes are gone entirely
+## Addendum 3: the Divisionals, and why byes are gone entirely
 
 Three reports, one bug. A No. 19 TOSS Regional loser byed through *both*
 recovery rounds and reached State unplayed. A No. 4 TOSS Zonal loser took the
@@ -250,7 +250,7 @@ berths, letting every round pair its **entire** field:
 ```
 Super Regionals   P (even)                  -> P/2 winners
 Semi-State        S = P/2 + Z + readmits    -> S/2 winners  (berths)
-Divisional Round  2L best Semi-State losers -> L winners    (last berths)
+Divisionals       2L best Semi-State losers -> L winners    (last berths)
         L = berths - S/2   =>   4*berths/3 <= S <= 2*berths
 ```
 
@@ -308,7 +308,7 @@ the year's last number lands on 7A boys.
 That forces the assignment to happen **after both genders have played**
 (`jhsaa.renumber_divisions`, called from `world.run_jhsaa`), not inside the
 round that plays the duals: how many Divisions exist depends on how many berths
-the Divisional Round had to fill, which varies by year and by classification.
+the Divisionals had to fill, which varies by year and by classification.
 The pass always recomputes and overwrites, so it is idempotent against the
 memoised season cache.
 
