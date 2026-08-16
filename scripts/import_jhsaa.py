@@ -504,7 +504,7 @@ def reclassify(schools: list[dict]) -> int:
 # GROUND — read off the city, county and area on the record: the coast gets its
 # fish, seals and crab boats; the Halbrook Basin gets the irrigation, the beet
 # and onion fields and its Basque country; the Cascades get their salamanders
-# and lava; Timber Valley gets the logging trades. Not every generic is
+# and lava; Alderwold gets the logging trades. Not every generic is
 # replaced — a state really does have some Eagles — but none is left at twenty.
 #
 # Keyed by DISPLAY name and applied at EMIT, the same as RENAMES, so a
@@ -544,13 +544,13 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Breakwater Athletic Association", "Harborline"),
     ("Chinook League", "Harborline"),
     ("Mariners League", "Harborline"),
-    ("South Coast League", "South Coast"),
-    ("Surf League", "South Coast"),
-    ("Pacific Coast League", "South Coast"),
-    ("Coastal Range League", "South Coast"),
-    ("Del Rey Athletic Association", "South Coast"),
-    ("Gold Coast League", "South Coast"),
-    ("Valley Coast Interscholastic League", "South Coast"),
+    ("South Coast League", "Sebastian Cape"),
+    ("Surf League", "Sebastian Cape"),
+    ("Pacific Coast League", "Sebastian Cape"),
+    ("Coastal Range League", "Sebastian Cape"),
+    ("Del Rey Athletic Association", "Sebastian Cape"),
+    ("Gold Coast League", "Sebastian Cape"),
+    ("Valley Coast Interscholastic League", "Sebastian Cape"),
     # -- the metropolitan middle --------------------------------------------
     ("Metro League", "Ashbury Metro"),
     ("Gateway League", "Ashbury Metro"),
@@ -611,11 +611,11 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Frontier League", "Sage Plains"),
     ("Pioneer League", "Sage Plains"),
     # -- timber and vermilion -----------------------------------------------
-    ("Timber Valley League", "Timber Valley"),
-    ("Foundry League", "Timber Valley"),
-    ("Orchard League", "Timber Valley"),
-    ("Millworks Athletic Association", "Timber Valley"),
-    ("Cowapa League", "Timber Valley"),
+    ("Timber Valley League", "Alderwold"),
+    ("Foundry League", "Alderwold"),
+    ("Orchard League", "Alderwold"),
+    ("Millworks Athletic Association", "Alderwold"),
+    ("Cowapa League", "Alderwold"),
     ("Vermilion Valley League", "Vermilion Valley"),
     ("Marble Valley League", "Vermilion Valley"),
     ("Ironwood League", "Vermilion Valley"),
@@ -891,6 +891,14 @@ AREA_RENAMES = {
     # bank on purpose — a league name outliving the geography it was
     # named for is the fossil behaviour LEAGUE_NAMES exists to allow.
     "North Range": "Millersylvania",
+    # Two more bearings-and-features, replaced with names of their own (owner
+    # rule 2027-08). "South Coast" was a compass point plus a landform, and
+    # "Timber Valley" was one of THREE X-Valley areas — Cape Sebastian is a real
+    # Oregon headland inverted to the owner's "<name> Cape" shape, and a wold is
+    # a wooded upland, so Alderwold says what Timber Valley said without being
+    # the third Valley on the map.
+    "South Coast": "Sebastian Cape",
+    "Timber Valley": "Alderwold",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own

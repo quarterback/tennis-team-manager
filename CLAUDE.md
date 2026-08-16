@@ -703,7 +703,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
     singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a
     list of region names** — the owner named four regions and the counts said five
-    (South Coast, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
+    (Sebastian Cape, 49, is bigger than Ashbury Metro, 45). `all_region[region]` is
     `{tiers, honorable_mention, programs}` and **`jhsaa_awards.region_rows()` is
     the ONE place that knows that shape** — a reader that walks the dict itself
     will silently show a big region's First Team only.
