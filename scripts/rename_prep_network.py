@@ -47,7 +47,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.import_jhsaa import RENAMES, SUBSTITUTIONS  # noqa: E402
+from scripts.import_jhsaa import (CITY_RENAMES, RENAMES,  # noqa: E402
+                                  SUBSTITUTIONS)
 
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".next", ".vercel"}
 
@@ -89,8 +90,18 @@ def preflight(prep: str) -> None:
     bad = [(k, n) for k in RENAMES for n in names if k != n and k in n]
     if bad:
         sys.exit(f"ABORT: source name is a substring of another school: {bad[:5]}")
-    if set(RENAMES) & cities:
-        sys.exit(f"ABORT: source name is also a city: {sorted(set(RENAMES) & cities)}")
+    # ‼️ A NAME THAT IS BOTH A SCHOOL AND A CITY is only dangerous when the two
+    # disagree. These substitutions are plain text, so renaming the school
+    # rewrites the city field too — which is CORRECT when the town was renamed to
+    # the same thing (Wickbrook is both the school and the town, and both become
+    # Salmon Bay) and corruption when it was not. So the abort fires on the
+    # disagreement, not on the coincidence.
+    shared = set(RENAMES) & cities
+    clash = sorted(k for k in shared if CITY_RENAMES.get(k) != RENAMES[k])
+    if clash:
+        sys.exit("ABORT: source name is also a city and the two renames disagree: "
+                 + repr(clash) + "\nRename the town to the same target in "
+                 "import_jhsaa.CITY_RENAMES, or rename the school separately.")
     if set(RENAMES.values()) & set(RENAMES):
         sys.exit("ABORT: a target is also a source — the pass would not be idempotent")
     overlap = set(RENAMES) & set(SUBSTITUTIONS)

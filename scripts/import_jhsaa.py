@@ -474,7 +474,7 @@ RENAMES = {
     "Aspen Harbor": "East Simmons",
     "Cedarport": "North San Francisco",
     "Elk Prairie": "Carolina Island",
-    "Granite Bar": "New Penzance",
+    "Granite Bar": "New Penzance Island",
     "Millport": "Vonjo City",
     "Sage Meadows": "Galactica Plains",
     "Sage Point": "California Canyons",
