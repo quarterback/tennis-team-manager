@@ -22,8 +22,10 @@ Co-op programs are not modelled — single schools only.
 Districts: prep-network's 99 conferences are all-sport geographic groupings and 92 of
 them span classifications, so they shatter when filtered to one class and to tennis
 sponsors. Tennis draws its own map the way Oregon does — balanced districts of <= 12 per
-classification, geographically contiguous, named for their dominant area (falling through
-to the dominant county when that area name is already used in the same classification).
+classification, geographically contiguous, named for a PLACE — area, then county, then
+city, then a compound of its two largest towns. Never numbered, and never sharing a
+leading word with another district in the same class ("Halbrook Basin" and "Halbrook"
+are an area and a county inside it, and read as one league).
 
 Deterministic: seeded, so two runs are identical. Idempotent.
 
@@ -508,6 +510,176 @@ def reclassify(schools: list[dict]) -> int:
 # Keyed by DISPLAY name and applied at EMIT, the same as RENAMES, so a
 # re-import cannot quietly revert them; everything internal still runs on the
 # source record.
+# ‼️ LEAGUE IDENTITY IS ITS OWN DATASET, NOT THE MAP (owner rule 2027-08).
+# Every league used to be "<Jefferson area> District", which made the administrative
+# geography and the league names one ontology — and real high-school athletics is
+# nothing like that tidy. A league name is an institutional FOSSIL: it encodes
+# geography, industries, former memberships, counties, rivers, old political
+# regions, aspirational words, and things that made sense in 1964 and nobody
+# changed. New Jersey runs a Cape-Atlantic League beside a Skyland and a Super
+# Essex; Vermont has a Marble Valley League named for what the ground produced;
+# Arizona is happy with one word (Fiesta, Sonoran, Premier). Massachusetts has a
+# Dual County League, which sounds like administrative history rather than
+# branding — because it is.
+#
+# So: A NAME NEED NOT DESCRIBE ITS CURRENT MEMBERS. Real league names persist
+# through realignment, and the drift is the realism.
+#
+# ⚠️ SUFFIXES: League · Interscholastic League · Athletic Association · Athletic
+# League · Assembly · Province · Organization · District (the plain legacy unit,
+# kept deliberately — not every unit needs to be evocative). NEVER Conference,
+# Division, Region, Ward, Zone, Section or Area: every one of those is a PLAYOFF
+# unit in this association (`_RECOVERY_UNITS`, `_STAGE_NAMES`, `renumber_divisions`,
+# `reletter_conferences`), and a league sharing a name with a bracket round is the
+# ambiguity this whole pass exists to remove.
+#
+# `affinity` is a SOFT tug toward a region, not a rule: a name is preferred for a
+# block sitting in that region and used anywhere once the preferred pool is spent.
+LEAGUE_NAMES: list[tuple[str, str | None]] = [
+    # -- coast and tidewater ------------------------------------------------
+    ("Harborline League", "Harborline"),
+    ("Tidelands League", "Harborline"),
+    ("Sea View League", "Harborline"),
+    ("Cape-Meridian League", "Harborline"),
+    ("Breakwater Athletic Association", "Harborline"),
+    ("Chinook League", "Harborline"),
+    ("Mariners League", "Harborline"),
+    ("South Coast League", "South Coast"),
+    ("Surf League", "South Coast"),
+    ("Pacific Coast League", "South Coast"),
+    ("Coastal Range League", "South Coast"),
+    ("Del Rey Athletic Association", "South Coast"),
+    ("Gold Coast League", "South Coast"),
+    ("Valley Coast Interscholastic League", "South Coast"),
+    # -- the metropolitan middle --------------------------------------------
+    ("Metro League", "Ashbury Metro"),
+    ("Gateway League", "Ashbury Metro"),
+    ("Greater Ashbury Interscholastic League", "Ashbury Metro"),
+    ("Capital Athletic Association", "Ashbury Metro"),
+    ("Crestview League", "Ashbury Metro"),
+    ("Montview League", "Ashbury Metro"),
+    ("Ambassador League", "Ashbury Metro"),
+    ("Commonwealth League", "Ashbury Metro"),
+    ("Liberty League", "Ashbury Metro"),
+    ("Premier Athletic Association", "Ashbury Metro"),
+    # -- basin and river ----------------------------------------------------
+    ("Halbrook Basin League", "Halbrook Basin"),
+    ("Three Rivers League", "Halbrook Basin"),
+    ("Upper Basin League", "Halbrook Basin"),
+    ("Four Rivers Interscholastic League", "Halbrook Basin"),
+    ("Dual County League", "Halbrook Basin"),
+    ("Twin Counties Athletic Association", "Halbrook Basin"),
+    ("River Valley League", "Halbrook Basin"),
+    ("Big Basin League", "Halbrook Basin"),
+    ("Forks League", "Halbrook Basin"),
+    ("Confluence Athletic Association", "Halbrook Basin"),
+    # -- gold country and the south -----------------------------------------
+    ("Gold Valley League", "Gold Valley"),
+    ("Placer League", "Gold Valley"),
+    ("Sunkist League", "Gold Valley"),
+    ("Valle Vista League", "Gold Valley"),
+    ("Hacienda League", "Gold Valley"),
+    ("Mission League", "Gold Valley"),
+    ("Old Jefferson Athletic Association", "Southern Jefferson"),
+    ("Sluice League", "Southern Jefferson"),
+    ("Hydraulic League", "Southern Jefferson"),
+    ("Assay Athletic Association", "Southern Jefferson"),
+    ("Tailings League", "Southern Jefferson"),
+    # -- mountains, high country, desert ------------------------------------
+    ("Cascade Divide League", "Cascade Divide"),
+    ("East Cascades League", "Cascade Divide"),
+    ("Mountain Pass League", "Cascade Divide"),
+    ("Summit League", "Cascade Divide"),
+    ("Sky-Em League", "Cascade Divide"),
+    ("Rim Country League", "Juniper Highlands"),
+    ("High Desert League", "Juniper Highlands"),
+    ("Juniper League", "Juniper Highlands"),
+    ("Desert Sky League", "Juniper Highlands"),
+    ("Intermountain Athletic Association", "Juniper Highlands"),
+    ("High Lakes League", "North Range"),
+    ("North Range League", "North Range"),
+    ("Big Sky League", "North Range"),
+    ("Black Canyon League", "North Range"),
+    ("Basalt League", "North Range"),
+    # -- sage, plains and the interior --------------------------------------
+    ("Sage Plains League", "Sage Plains"),
+    ("Inland Empire League", "Sage Plains"),
+    ("Far West League", "Sage Plains"),
+    ("Golden West League", "Sage Plains"),
+    ("Sunbelt League", "Sage Plains"),
+    ("Wheatland Athletic Association", "Sage Plains"),
+    ("Frontier League", "Sage Plains"),
+    ("Pioneer League", "Sage Plains"),
+    # -- timber and vermilion -----------------------------------------------
+    ("Timber Valley League", "Timber Valley"),
+    ("Foundry League", "Timber Valley"),
+    ("Orchard League", "Timber Valley"),
+    ("Millworks Athletic Association", "Timber Valley"),
+    ("Cowapa League", "Timber Valley"),
+    ("Vermilion Valley League", "Vermilion Valley"),
+    ("Marble Valley League", "Vermilion Valley"),
+    ("Ironwood League", "Vermilion Valley"),
+    ("Quarry League", "Vermilion Valley"),
+    # -- unanchored: the names that outlived whatever they described --------
+    ("Trinity League", None),
+    ("Olympic League", None),
+    ("Empire League", None),
+    ("Ivy League", None),
+    ("Union Athletic Association", None),
+    ("Lewis & Clark League", None),
+    ("PacWest League", None),
+    ("Sea-King League", None),
+    ("Skyland League", None),
+    ("Fiesta Athletic Association", None),
+    ("Sonoran League", None),
+    ("Citrus Belt League", None),
+    ("Del Rio League", None),
+    ("Rio Hondo League", None),
+    ("Southwest Assembly", None),
+    ("Northwest Assembly", None),
+    ("East Valley Assembly", None),
+    ("Central Province", None),
+    ("Western Province", None),
+    ("Tri-County Organization", None),
+    ("Charter Athletic Organization", None),
+]
+
+
+def league_names(blocks: list[list[dict]], group: str) -> list[str]:
+    """A name per block, drawn from `LEAGUE_NAMES` rather than from the map.
+
+    Deterministic: the bank is walked in an order seeded on the group, so a
+    rebuild reproduces the same leagues and a league keeps its name across
+    imports even as its membership shifts — which is the point.
+
+    Selection prefers a name whose `affinity` matches the block's dominant area,
+    then any unused name whose LEADING WORD is still free (so no two leagues in a
+    class read as one), then any unused name at all. If the bank is somehow
+    exhausted it falls through to a plain numbered District — the legacy
+    bureaucratic unit, deliberately allowed — so this can never raise or repeat.
+    """
+    rng = random.Random(f"league|{SEED}|{group}")
+    bank = LEAGUE_NAMES[:]
+    rng.shuffle(bank)
+    used: set[str] = set()
+    heads: set[str] = set()
+    out: list[str] = []
+    for i, block in enumerate(blocks):
+        area = Counter(s["area"] for s in block).most_common(1)[0][0] if block else None
+
+        def pick(pred):
+            return next((n for n, aff in bank
+                         if n not in used and n.split()[0] not in heads and pred(aff)), None)
+
+        name = (pick(lambda aff: aff == area) or pick(lambda aff: True)
+                or next((n for n, _ in bank if n not in used), None)
+                or f"District {i + 1}")
+        used.add(name)
+        heads.add(name.split()[0])
+        out.append(name)
+    return out
+
+
 MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
     "Chester A. Arthur": "Greenies",            # owner naming, 2027-08
@@ -913,7 +1085,7 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     return girls, boys
 
 
-def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
+def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str, str]:
     """school name -> district name, for ONE classification group.
 
     Sorted by area → county → city so a district is geographically contiguous, then cut
@@ -942,18 +1114,16 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
         step = base + (1 if i < big else 0)
         bounds.append((at, at + step))
         at += step
-    out, used = {}, set()
-    for lo, hi in bounds:
-        block = pool[lo:hi]
-        if not block:
-            continue
-        # name for the dominant area, else the dominant county, else a numbered fallback
-        cands = [f"{Counter(s['area'] for s in block).most_common(1)[0][0]} District"]
-        cands += [f"{c} District"
-                  for c, _ in Counter(county(s) for s in block).most_common()]
-        name = next((c for c in cands if c not in used),
-                    f"{block[0]['area']} {len(used) + 1} District")
-        used.add(name)
+    # ‼️ THE NAME COMES FROM THE LEAGUE BANK, NOT FROM THIS BLOCK'S GEOGRAPHY
+    # (owner rule 2027-08). Deriving it from the map is what produced eight
+    # variations of "<area> District", and worse, an area-then-county cascade
+    # that emitted "Halbrook Basin District" beside "Halbrook District" — an
+    # area and a county inside it, reading as one league. `league_names` draws
+    # from a separate dataset, keeps leading words distinct within the class,
+    # and cannot raise or repeat. See LEAGUE_NAMES.
+    blocks = [pool[lo:hi] for lo, hi in bounds if hi > lo]
+    out = {}
+    for block, name in zip(blocks, league_names(blocks, group)):
         for s in block:
             out[s["name"]] = name
     return out
@@ -972,12 +1142,23 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}
-    dist = {"girls": {}, "boys": {}}
+    # ‼️ A LEAGUE IS A PROPERTY OF THE SCHOOL, NOT OF THE GENDER (owner rule
+    # 2027-08). Boys and girls at one school ALWAYS play in the same league, so
+    # the map is drawn ONCE per classification over every sponsor and both
+    # gender fields read it. Drawing per gender gave a school two different
+    # league names — invisible while every league was "<area> District" and
+    # glaring the moment the names became distinctive.
+    #
+    # Blocks are balanced on the GIRLS-inclusive pool (girls sponsorship is the
+    # superset), so a league's boys half is the ~88% of it that fields a boys
+    # team. A league carrying eleven girls' teams and nine boys' is exactly how
+    # this works in life; it is not an imbalance to correct.
+    league = {}
     for g in GROUPS:
-        for gender, pool_names in (("girls", girls), ("boys", boys)):
-            pool = [by_name[n] for n in pool_names
-                    if champ_group(by_name[n]["classification"]) == g]
-            dist[gender].update(draw_districts(pool, cities))
+        pool = [by_name[n] for n in (girls | boys)
+                if champ_group(by_name[n]["classification"]) == g]
+        league.update(draw_districts(pool, cities, g))
+    dist = {"girls": league, "boys": league}
     out = []
     for name in sorted(girls | boys):
         s = by_name[name]

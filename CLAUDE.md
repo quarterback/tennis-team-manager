@@ -553,13 +553,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **‼️ NOBODY REACHES STATE ON A BYE — the rounds are BYELESS BY CONSTRUCTION
     (owner rule 2027-08, after three reports).** Recovery is THREE rounds and each
     pairs its ENTIRE field: **Super Regionals** (Regional losers) → **Semi-State**
-    (SR winners + Zonal losers + readmitted SR losers) → **Divisional Round** (the
+    (SR winners + Zonal losers + readmitted SR losers) → **Divisionals** (the
     best Semi-State losers), the last two taking berths. A bye is therefore not
     disallowed, it is impossible. The rounds used to be CUTS sized to whatever the
     pool was, leaving byes over — a No. 19 seed byed through both; a No. 4-TOSS
     Zonal loser took the Semi-State bye and reached State "without winning their
     district"; and every rule patch just moved which bye was unearned. The
-    Divisional Round absorbs the berths that used to become byes AND fixes the
+    Divisionals absorb the berths that used to become byes AND fixes the
     inequity that caused it: a Regional loser got two or three chances, a Zonal
     loser one. Now everyone in recovery gets two. **The State field is FIXED**
     (32/24) and recovery conforms — never extra duals, a deeper cut, or a short
@@ -600,6 +600,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   semifinalist, so "made the semis" is `place <= 4`, a NUMBER, never a string compared
   to a label. The champion is read off the archived bracket, not inferred from "won its
   last game" — a bye lets a program miss a round without being out.
+- **‼️ LEAGUE IDENTITY IS ITS OWN DATASET, NOT THE MAP (owner rule 2027-08).**
+  Every league used to be named `<Jefferson area> District`, so the league names
+  and the administrative areas were one ontology — "the repetition is happening
+  because right now they sound like the same ontology". `import_jhsaa.LEAGUE_NAMES`
+  is now a separate bank (~100 names: landform, watershed, historical, coined
+  compound, evocative geography, institutional, metropolitan, paired environment,
+  directional) with varied suffixes — League · Interscholastic League · Athletic
+  Association · Assembly · Province · Organization · the plain legacy District.
+  **`affinity` is a SOFT tug toward a region, never a rule**: a name need not
+  describe its current members, because real league names persist through
+  realignment and the drift is the realism.
+  - **‼️ NEVER Conference, Division, Region, Ward, Zone, Section or Area** — every
+    one is a PLAYOFF unit here (`_STAGE_NAMES`, `_RECOVERY_UNITS`,
+    `renumber_divisions`, `reletter_conferences`), and a league sharing a word
+    with a bracket round is the same ambiguity one level up.
+  - **‼️ BOYS AND GIRLS ALWAYS SHARE A LEAGUE.** A league belongs to the SCHOOL,
+    so the map is drawn ONCE per classification over every sponsor and both
+    gender fields read it. It used to be drawn per gender — a school could be
+    Chinook League for girls and Quarry League for boys, invisible for as long as
+    both draws produced "<area> District" from the same map. Blocks balance on
+    the girls-inclusive pool (girls sponsorship is the superset), so a league's
+    boys half is the ~88% that fields a boys team; 11 girls' teams and 9 boys' in
+    one league is correct, not an imbalance.
+  - Names must be **distinct to a READER, not merely unequal**: a candidate
+    sharing its LEADING WORD with a league already drawn in that class is
+    rejected. "Halbrook Basin" (area) beside "Halbrook" (county inside it)
+    shipped, and read as one league. Never a numbered fallback.
+  See `docs/AAR-jhsaa-league-identity.md`.
 - **‼️ A DISTRICT IS `(CLASSIFICATION, name)`, never the name alone.** The JHSAA reuses
   its geographic district names at every level — "Halbrook Basin District" is FIVE
   leagues — which is why the archive is keyed `standings[group][district]`. A route or

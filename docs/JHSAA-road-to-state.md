@@ -53,7 +53,7 @@ byes anywhere in recovery, so nobody can advance without playing.
 |---|---|---|
 | **Super Regionals** | Regional losers | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
-| **Divisional Round** | the best Semi-State losers | **take the last berths** |
+| **Divisionals** | the best Semi-State losers | **take the last berths** |
 | **Conference** *(only if berths remain)* | Divisional losers, then district champions outside the field, then the top Ward losers by ATR | **take every berth still outstanding** |
 
 The **Conference** convenes only when berths are still outstanding, so whether
