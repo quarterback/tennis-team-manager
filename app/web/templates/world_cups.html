@@ -12,7 +12,7 @@
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:860px">
 
   <div class="bl-toolbar"><div class="bl-toolbar-inner">
-    <span style="font-size:14.5px;color:var(--text-muted)">National-team cups · every rubber is a real match · squads drawn from the whole college world</span>
+    <span style="font-size:14.5px;color:var(--text-muted)">National-team cups</span>
   </div></div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
@@ -30,9 +30,6 @@
   {% if not cup or not cup.rounds %}
   <div class="bl-panel" style="padding:26px">
     <h2 style="margin:0 0 8px">No {{ 'Davis Cup' if g == 'men' else 'Billie Jean King Cup' }} yet</h2>
-    <p class="bl-conf">The cups are an <strong>off-season</strong> event: they play once the season
-      completes and are archived at the year rollover. Advance the world to the end of the season
-      and check back.</p>
   </div>
   {% else %}
 
@@ -89,7 +86,7 @@
 
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Squads</span>
-      <span class="bl-panel-meta">top {{ cup.nations[0].squad|length if cup.nations else 4 }} per nation by current ability, all divisions pooled</span></div>
+      <span class="bl-panel-meta">top {{ cup.nations[0].squad|length if cup.nations else 4 }} per nation</span></div>
     <div style="padding:8px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 22px">
       {% for n in cup.nations %}
       <div style="padding:6px 0;border-bottom:1px solid var(--border-subtle)">

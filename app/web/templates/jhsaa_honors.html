@@ -83,7 +83,7 @@
   {{ jh_tabs([('state', 'All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('region', 'All-Region', view.regions|sum(attribute='n')),
               ('district', 'All-District', view.districts|length),
-              ('method', 'How these are selected', 0)], 'jhaw') }}
+              ('method', 'Flight check', 0)], 'jhaw') }}
 
   {# --- All-State ------------------------------------------------------- #}
   <div class="jh-pane" data-pane="state">
@@ -207,67 +207,7 @@
   </div>
 
   {# --- Method: the criteria, and the flight check the selector ran ------- #}
-  {# The criteria belong WHERE THE AWARDS ARE. A user looking at a selection they
-     disagree with should be able to see what the selectors weighed without leaving
-     the page for the Guide — in its own view, because it is reference. #}
   <div class="jh-pane" data-pane="method" hidden>
-    <div class="jh-awardsec" style="font-size:13.5px;color:var(--text-secondary);line-height:1.65">
-      <div class="jh-awardsec-head">What the selectors weigh</div>
-      <div style="padding:10px 16px 16px">
-        <p style="margin:0 0 8px">Selections are made from what happened this season — the
-          match-by-match record — and <strong>never from ability ratings</strong>. Nothing here
-          reads OVR, talent, class year, recruiting rank or last season's honours, so a great
-          player on a poor team can win Player of the Year, and an unbeaten record against a
-          weak slate does not automatically outrank a strong one against the best in the class.</p>
-        <ul style="margin:0 0 10px 18px">
-          <li><strong>Record and volume</strong> — wins, losses and how much the player actually played.</li>
-          <li><strong>Position</strong> — the flight it was earned at, and this is
-            <strong>structural, not a bonus</strong>. 19–7 at #1 singles is a bigger season
-            than 25–1 at #5, because the #1 spent the year playing every other program's
-            best player. <strong>All-State is a #1/#2 honour</strong> and All-Region reaches
-            #3; below that a player is selected only on extraordinary evidence — a
-            near-perfect record <em>and</em> a win over somebody who played higher up the
-            card. All-District broadens downward, because a district is a smaller pond, but
-            the hierarchy still holds. The Flight check below is the audit.</li>
-          <li><strong>Opposition</strong> — the quality of the individual opponents faced (of the
-            opposing PAIR, in doubles), not the opposing team's overall strength.</li>
-          <li><strong>Quality wins</strong> — beating other award-calibre players is the fastest way up.</li>
-          <li><strong>Good losses</strong> — a competitive loss to an elite opponent costs very
-            little; a loss to a weak one costs plenty.</li>
-          <li><strong>Head-to-head</strong> — decides between candidates whose résumés are otherwise level.</li>
-          <li><strong>Postseason</strong> — Sectionals through State count for more. There is no
-            individual state tournament in Jefferson; this is the team postseason the player played.</li>
-        </ul>
-        <p style="margin:0 0 8px"><strong>Doubles honours go to pairings, not to individual
-          doubles players.</strong> A doubles selection is two players who actually competed
-          together, judged on the matches they played <em>as a team</em> against other teams —
-          so a player who partnered around is a separate candidate with each partner, and the
-          record beside a pairing is the partnership's. Which category an athlete is considered
-          in follows where they actually played, so nobody holds both a singles slot and a
-          doubles slot on the same team.</p>
-        <p style="margin:0 0 8px"><strong>The three honours are three different
-          geographies, and only two of them are per classification.</strong> All-State
-          is the classification. A district is <em>(classification, name)</em> — the
-          association reuses its geographic names at every level — so All-District is
-          too. <strong>All-Region is neither</strong>: a region team is drawn from every
-          program in that region whatever its enrollment, which is how it works in real
-          life and is why there is no {{ view.group }} All-Region team, only a Gold
-          Valley one. Selected per classification it honoured roughly a thousand players
-          a season on an association of ~300 programs — every school placed somebody, and
-          it was an All-District team with a different heading.</p>
-        <p style="margin:0">Every All-State, All-Region and All-District team is
-          <strong>{{ view.team_singles }} singles + {{ view.team_doubles }} doubles teams</strong>
-          — {{ view.team_singles + 2 * view.team_doubles }} athletes. 7A crowns a Fourth Team;
-          every other classification stops at Third. <strong>Honorable Mention is a threshold,
-          not a team</strong> — there is no slot count, so a deep classification honours more
-          and a thin one fewer, and a good season can miss it entirely. At most two Honorable
-          Mention <em>selections</em> per school (a pairing is one); the numbered teams have no
-          such cap. A team can only be as large as the candidates who cleared the bar, so a
-          thin region occasionally crowns one pairing fewer rather than honouring one that
-          did not earn it.</p>
-      </div>
-    </div>
-
     {# THE FLIGHT SANITY CHECK, archived with the season (owner, 2027-08). Flight
        weighting is structural, so the association publishes what it produced: how
        many selections came from each flight, and — where an honour reached below

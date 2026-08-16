@@ -61,11 +61,11 @@
 
   <div class="bl-config">
     <div class="bl-cfgrow">
-      <div><div class="lbl">Format</div><div class="hint">NCAA dual: no-ad, 8-game doubles pro sets, full third set</div></div>
+      <div><div class="lbl">Format</div></div>
       <div class="bl-seg"><button type="button" class="active">NCAA dual</button></div>
     </div>
     <div class="bl-cfgrow">
-      <div><div class="lbl">Fidelity</div><div class="hint">Point-by-point, or the fast game-level model</div></div>
+      <div><div class="lbl">Fidelity</div></div>
       <div class="bl-seg">
         {% for f in fidelities %}
         <button type="button" class="{{ 'active' if f == 'full' else '' }}"

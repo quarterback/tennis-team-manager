@@ -9,8 +9,7 @@
   <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
 </div></div>
 <div class="bl-container"><div class="bl-note">
-  Pick a program to coach first — this board finds the players who'd upgrade <em>your</em> roster.
-  Head to <a href="{{ url_for('teams') }}">All Teams</a>, open a program, and take the job; then come back.
+  Pick a program to coach first — <a href="{{ url_for('teams') }}">All Teams</a>.
 </div></div>
 {% else %}
 
@@ -63,7 +62,7 @@
 
 {% if not tg.targets %}
 <div class="bl-container"><div class="bl-note">
-  No one out there cracks your lineup with these filters — you're well-stocked (or loosen the filters).
+  No one cracks your lineup with these filters.
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-tablescroll">

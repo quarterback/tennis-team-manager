@@ -71,7 +71,6 @@
             </tr></tfoot>{% endif %}
           </table>
           </div>
-          <p class="bl-note" style="margin-top:8px">Career wins count head-coach seasons only — an assistant's team record is shown for context but doesn't bank wins until they run a program.</p>
           {% else %}
           <p class="aw-empty" style="padding:4px 2px">No seasons recorded yet — stamped when a season concludes.</p>
           {% endif %}
@@ -128,7 +127,7 @@
 
       {% if c.school %}
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Move coach</span>
-        <span class="bl-panel-meta">god-mode editor · swaps seats</span></div>
+        </div>
         <div class="bl-panel-body">
           {% set others = staff | rejectattr('coach_id', 'equalto', c.coach_id) | list %}
           {% if others %}
@@ -198,7 +197,6 @@
             <input type="hidden" name="u" value="{{ u }}">
             <button class="bl-pill" type="submit">Retire coach</button>
           </form>
-          <p class="bl-note" style="margin-top:8px">Moving into an <em>occupied</em> seat swaps the two; into a <em>vacant</em> one (after a retirement) just fills it, with no demotion. Retiring opens a seat and keeps the coach's record + honors.</p>
         </div>
       </div>
       {% endif %}

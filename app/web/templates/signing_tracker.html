@@ -15,7 +15,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:150px">
       {% for y in trk.years %}<option value="{{ y.val }}"{% if y.val == trk.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }} — the archived class and how each signee turned out{% else %}live commitments this recruiting year{% endif %}</span>
+  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }}{% else %}live commitments this recruiting year{% endif %}</span>
   <a class="al-feed" style="margin-left:auto" href="{{ url_for('recruiting_hub_page', u=u) }}">← Recruiting HQ</a>
 </div></div>
 </form>
@@ -38,9 +38,7 @@
   {% if trk.archive %}
   No archived signings for this class in this division.
   {% else %}
-  No commitments yet. Signings fill in week by week as the season advances — hit
-  <strong>Advance week</strong> (top right) and check back, or open the
-  <a href="{{ url_for('recruiting', u=u) }}" style="color:var(--text-link)">Recruiting Board</a> to see who's available.
+  No commitments yet · <a href="{{ url_for('recruiting', u=u) }}" style="color:var(--text-link)">Recruiting Board</a>
   {% endif %}
 </div></div>
 {% else %}

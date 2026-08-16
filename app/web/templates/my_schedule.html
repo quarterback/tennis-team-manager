@@ -4,10 +4,7 @@
 <div class="sp-wrap">
   <header class="sp-head">
     <h1 class="sp-h1">Non-conference planner</h1>
-    <p class="sp-sub">{{ plan.school }} · {{ plan.division }} {{ plan.gender|capitalize }}.
-      Your conference slate is fixed; these are the games you control. Pick who you
-      play out of conference — schedule up for a statement win, or stock up on
-      winnable duals.</p>
+    <p class="sp-sub">{{ plan.school }} · {{ plan.division }} {{ plan.gender|capitalize }}</p>
     <a class="sp-back" href="{{ url_for('my_program') }}">← Clubhouse</a>
   </header>
 
@@ -57,10 +54,8 @@
     </tbody>
   </table>
   </div>
-  <p class="sp-note">Swapping an opponent moves that dual onto their slate too (and off the
-    team you dropped) — scheduling is mutual. You can't book a team already on your slate.</p>
   {% else %}
-  <p class="sp-note">No open non-conference dates — your slate is entirely conference play.</p>
+  <p class="sp-note">No open non-conference dates.</p>
   {% endif %}
 </div>
 
