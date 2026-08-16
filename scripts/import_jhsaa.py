@@ -1358,15 +1358,6 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     return out
 
 
-def _area_ren(district: str) -> str:
-    """A district is named for its region ("<region> District"), so a region
-    rename carries into it. Applied at emit for the same reason the area is."""
-    for src, dst in AREA_RENAMES.items():
-        if district.startswith(src):
-            return dst + district[len(src):]
-    return district
-
-
 def build(schools: list[dict], cities: dict) -> list[dict]:
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
@@ -1427,8 +1418,13 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,
             "boys": name in boys,
-            "girls_district": _area_ren(dist["girls"].get(name, "")),
-            "boys_district": _area_ren(dist["boys"].get(name, "")),
+            # ‼️ NOT through `_area_ren`. League names come from LEAGUE_NAMES and
+            # are never derived from the area, so running an area rename over them
+            # would rewrite the FOSSILS the bank exists to keep — a North Range
+            # League emitted as "Millersylvania League" is precisely the league
+            # outliving its geography that the bank is designed to allow.
+            "girls_district": dist["girls"].get(name, ""),
+            "boys_district": dist["boys"].get(name, ""),
         })
     out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
     # ‼️ A DISPLAY NAME IS THE ARCHIVE'S IDENTITY — it keys `run_season`'s teams
