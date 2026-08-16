@@ -250,6 +250,7 @@ OWNER_EDICTS = frozenset({
     "Aftdahl Ridge", "Brynildson Hill", "Mount Henson",
     # areas
     "Southern Jefferson", "Millersylvania",
+    "Salmon Bay",
 })
 
 
@@ -503,6 +504,7 @@ RENAMES = {
     "Brackwood Union": "Brackwood Pass",
     "Ransom City Union": "Ransom Pass",
     "Silton Union": "Silton Ridge",
+    "Wickbrook": "Salmon Bay",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -953,6 +955,7 @@ MASCOTS = {
     "Ransoms Landing": "Muskrats",
     "Whistle Stop": "Whistlepunks",
     "Yarburg": "Shingle Weavers",
+    "Salmon Bay": "Bruins",             # owner naming, 2027-08
 }
 
 # Two-colour crests: the FIRST is the crest ground and must be dark enough to
@@ -1123,6 +1126,7 @@ CITY_RENAMES = {
     "Thornford": "Thorn Summit",
     "Winvale": "Mount Ruth",
     "Wolf Gap": "Corey Canyon",
+    "Wickbrook": "Salmon Bay",
 }
 
 RELOCATIONS = {
