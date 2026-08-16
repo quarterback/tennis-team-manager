@@ -259,9 +259,9 @@ RENAMES = {
     "Orellana Foundry High": "Orellana North",
     "Orellana School of Commerce": "Orellana South",
     "Eagleton School of Science and Industry": "Eagleton West",
-    "Port Veles Agricultural Sciences Academy": "Port Veles North",
-    "Port Veles Civic Leadership Academy": "Port Veles South",
-    "Nadia Sidorov": "Anton Sidorov",
+    "Port Veles Agricultural Sciences Academy": "Joe Biden",
+    "Port Veles Civic Leadership Academy": "Veles Landing",
+    "Nadia Sidorov": "John Adams",
     "Port Meridian Polytechnic": "Port Meridian North",
     "San Borondón Agricultural Sciences Academy": "San Borondón North",
     "San Borondón Environmental Sciences Academy": "San Borondón South",
@@ -350,13 +350,75 @@ RENAMES = {
     "Lorna Booker": "Moriarty Heights",
     "Manuel Cordero": "Sonia Sotomayor",
     "Marian Cross": "Fort Valois Heights",
-    "Nathaniel Cross": "Port Veles Ridge",
+    "Nathaniel Cross": "Veles Harbor",
     "Nathaniel Cross North": "Port Veles Lutheran",
-    "Nicolás Cordero": "Ruth Bader Ginsberg",
+    "Nicolás Cordero": "Ruth Bader Ginsburg",
     "Pauli Booker": "Vespertine Heights",
-    "Ralph Booker": "Port Veles Heights",
+    "Ralph Booker": "Barack Obama",
     "Ralph Booker North": "Port Veles Christian",
     "Sofía Cordero": "John Quincy Adams",
+
+    # ‼️ REAL PEOPLE, NOT INVENTED ONES (owner rule 2027-08: "the fictional
+    # people are kind of boring me... this is how real schools get named
+    # after all"). PORT VELES names its schools for PRESIDENTS. Elsewhere
+    # the pools, in the owner's order: vice presidents, secretaries of
+    # state, secretaries of war, postmasters general, SUFFRAGISTS and
+    # PIONEERS OF CONSEQUENCE. Where a real person is not wanted the
+    # town's own idiom serves ("Veles Area" and the harbour features).
+    # ⚠️ Vet the pool: the 19th-century war and state departments are
+    # thick with Confederates and slaveholders, and the owner has already
+    # vetoed a name on exactly those grounds. A SINGLE invented person is
+    # fine and always was — Amelia Freeman stays; it was the FAMILIES of
+    # unrelated invented people that broke immersion, and "<person> North"
+    # is never a school name.
+    "Amelia Freeman North": "Veles Area",
+    "Anneliese Halvorsen": "George Washington",
+    "Baptist HS": "Baptist",
+    "Belmonte International School": "Belmonte International",
+    "Calderwood School": "Calderwood",
+    "Carroway School of Public Service": "Carroway Public Service",
+    "Dahlberg School of Science and Industry": "Dahlberg Science",
+    "Fort Salish Independent School": "Fort Salish Independent",
+    "Fort Valois School of Public Service": "Fort Valois Public Service",
+    "Galina Markov": "James Monroe",
+    "Harbor Gate North": "Martin Van Buren",
+    "Harrow School of Design and Engineering": "Harrow Design",
+    "Henrik Keller": "William Henry Harrison",
+    "Housatonic HS": "Housatonic",
+    "Igor Chernov": "Zachary Taylor",
+    "Igor Chernov North": "Millard Fillmore",
+    "Jefferson School of Science and Technology": "Jefferson Science",
+    "Katherine Williams": "Franklin Pierce",
+    "Marcus Langston": "Rutherford B. Hayes",
+    "Marcus Langston North": "James Garfield",
+    "Marina Moroz": "Grover Cleveland",
+    "Marina Moroz North": "Benjamin Harrison",
+    "Metropolitan Country Day School": "Metropolitan Country Day",
+    "Nadia Chernov": "Calvin Coolidge",
+    "Nadia Chernov North": "Franklin D. Roosevelt",
+    "Opal Avery": "Gerald Ford",
+    "Opal Avery North": "George H. W. Bush",
+    "Pacific Friends School": "Pacific Friends",
+    "Pinecrest School": "Pinecrest",
+    "Port Veles East": "Bill Clinton",
+    "Puerto Gallego School of Science and Industry": "Puerto Gallego Science",
+    "Roscoe Bennett North": "Veles Point",
+    "San Borondón Country Day School": "San Borondón Country Day",
+    "Sofia Romanov": "Veles Basin",
+    "Sofia Romanov North": "Veles Wharf",
+    "St. Brigid School": "St. Brigid",
+    "St. Casimir High School": "St. Casimir",
+    "St. Elias School": "St. Elias",
+    "St. Helena School": "St. Helena",
+    "St. Sophia School": "St. Sophia",
+    "St. Teresa High School": "St. Teresa",
+    "St. Vincent School": "St. Vincent",
+    "Starlight School of Science and Industry": "Starlight Science",
+    "Telfair Country Day School": "Telfair Country Day",
+    "Thelma Avery": "Veles Cove",
+    "Walter Hart": "Veles Narrows",
+    "Walter Hart North": "Veles Quay",
+    "Wolf Gap International School": "Wolf Gap International",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -510,7 +572,7 @@ MASCOTS = {
     "Tomás Marín": "Beekeepers",
 
     # ── Halbrook Basin: canals, beet and onion ground, Basque country ────────
-    "Amaia Aramburu": "Ketanji Brown Jackson",              # Basque jai alai
+    "Ketanji Brown Jackson": "Pelotaris",              # Basque jai alai
     "Belmonte": "Canalmen",
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
