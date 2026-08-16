@@ -1667,6 +1667,26 @@
       "boys_district": "Halbrook Basin District"
     },
     {
+      "name": "Belmonte Catholic",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1233,
+      "private": true,
+      "mascot": "Trojans",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ferris District",
+      "boys_district": "Halbrook Basin District",
+      "source": "Amaia Aramburu North"
+    },
+    {
       "name": "Belmonte Collegiate Academy",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -1783,26 +1803,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin District",
       "boys_district": "Halbrook Basin District"
-    },
-    {
-      "name": "Belmonte Ridge",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1233,
-      "private": false,
-      "mascot": "Trojans",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ferris District",
-      "boys_district": "Halbrook Basin District",
-      "source": "Amaia Aramburu North"
     },
     {
       "name": "Belmonte River Plain",
@@ -10820,6 +10820,26 @@
       "boys_district": "Harborline District"
     },
     {
+      "name": "Port Veles Christian",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1117,
+      "private": true,
+      "mascot": "Lightkeepers",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Bidwell District",
+      "source": "Ralph Booker North"
+    },
+    {
       "name": "Port Veles Civic Academy",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -10839,26 +10859,6 @@
       "boys_district": "Harborline District"
     },
     {
-      "name": "Port Veles Commons",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1117,
-      "private": false,
-      "mascot": "Lightkeepers",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Bidwell District",
-      "source": "Ralph Booker North"
-    },
-    {
       "name": "Port Veles East",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -10876,6 +10876,26 @@
       "boys": true,
       "girls_district": "Harborline District",
       "boys_district": "Bidwell District"
+    },
+    {
+      "name": "Port Veles Episcopal",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1939,
+      "private": true,
+      "mascot": "Bar Pilots",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Geraldine Cross"
     },
     {
       "name": "Port Veles Foundry High",
@@ -10936,6 +10956,26 @@
       "boys_district": "Harborline District"
     },
     {
+      "name": "Port Veles Lutheran",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Harborline",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 865,
+      "private": true,
+      "mascot": "Dorymen",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline District",
+      "boys_district": "Harborline District",
+      "source": "Nathaniel Cross North"
+    },
+    {
       "name": "Port Veles Maritime Academy",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -10973,26 +11013,6 @@
       "boys": true,
       "girls_district": "Harborline District",
       "boys_district": "Weller District"
-    },
-    {
-      "name": "Port Veles Park",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1939,
-      "private": false,
-      "mascot": "Bar Pilots",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District",
-      "source": "Geraldine Cross"
     },
     {
       "name": "Port Veles Ridge",
@@ -11033,26 +11053,6 @@
       "boys": true,
       "girls_district": "Harborline District",
       "boys_district": "Harborline District"
-    },
-    {
-      "name": "Port Veles Union",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Harborline",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 865,
-      "private": false,
-      "mascot": "Dorymen",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline District",
-      "boys_district": "Harborline District",
-      "source": "Nathaniel Cross North"
     },
     {
       "name": "Porterfield",

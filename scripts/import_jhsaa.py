@@ -333,13 +333,13 @@ RENAMES = {
     # their own town. Naming a school for its town is the ordinary case
     # everywhere and adds no new invented person.
     "Amaia Aramburu": "Ketanji Brown Jackson",
-    "Amaia Aramburu North": "Belmonte Ridge",
+    "Amaia Aramburu North": "Belmonte Catholic",
     "Amos Cross": "Lyndon B. Johnson",
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
     "Evelyn Booker": "William Howard Taft",
-    "Geraldine Cross": "Port Veles Park",
+    "Geraldine Cross": "Port Veles Episcopal",
     "Iker Aramburu": "Sandra Day O'Connor",
     "Iker Aramburu North": "Belmonte Heights",
     "Imani Cross": "San Borondón Heights",
@@ -351,11 +351,11 @@ RENAMES = {
     "Manuel Cordero": "Sonia Sotomayor",
     "Marian Cross": "Fort Valois Heights",
     "Nathaniel Cross": "Port Veles Ridge",
-    "Nathaniel Cross North": "Port Veles Union",
+    "Nathaniel Cross North": "Port Veles Lutheran",
     "Nicolás Cordero": "Ruth Bader Ginsberg",
     "Pauli Booker": "Vespertine Heights",
     "Ralph Booker": "Port Veles Heights",
-    "Ralph Booker North": "Port Veles Commons",
+    "Ralph Booker North": "Port Veles Christian",
     "Sofía Cordero": "John Quincy Adams",
 }
 
@@ -510,7 +510,7 @@ MASCOTS = {
     "Tomás Marín": "Beekeepers",
 
     # ── Halbrook Basin: canals, beet and onion ground, Basque country ────────
-    "Amaia Aramburu": "Pelotaris",              # Basque jai alai
+    "Amaia Aramburu": "Ketanji Brown Jackson",              # Basque jai alai
     "Belmonte": "Canalmen",
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
@@ -651,7 +651,7 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # name is a different namespace; a region and a program can share a compass
 # point the way a real state's do.)
 AREA_RENAMES = {
-    "Mother Lode": "Southern Jefferson",
+    "Mother Lode": "Siskiyou Valley",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
@@ -662,7 +662,7 @@ AREA_RENAMES = {
 # ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
 # so a relocation must stay inside the area the districts were drawn from.
 RELOCATIONS = {
-    "Mother Lode": "Copper Prairie",
+    "Mother Lode": "Siskiyou Valley",
 }
 
 # ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
