@@ -58,8 +58,8 @@ MAX_DISTRICT = 12
 # and then MORE again: 2A/1A sponsor at rates no real state would post, because a
 # huge, ragged small-school classification is the fun of it. The talent bands say
 # what the level is; the roster count says how much of it there is to watch.
-GIRLS_RATE = {"7A": 0.85, "6A": 0.70, "5A": 0.55, "4A": 0.35,
-              "3A": 0.26, "2A": 0.78, "1A": 0.62}
+GIRLS_RATE = {"9A": 0.90, "8A": 0.88, "7A": 0.85, "6A": 0.80, "5A": 0.74, "4A": 0.66,
+              "3A": 0.58, "2A": 0.72, "1A": 0.60}
 BOYS_OF_GIRLS = 0.88
 
 # Forced-in schools that field GIRLS tennis only. `always_sponsor()` puts a named
@@ -176,6 +176,45 @@ ALWAYS_EXTRA = [
     "Westover",
     "Westside Christian",
     "Winifred Booker",
+    # ⚠️ CONTINUITY (owner rule 2027-08). prep-network grew from 840 schools to
+    # 1,111 and sponsorship is a positional dice draw over the name-sorted list,
+    # so schools already in the association — including ones the owner had named
+    # a mascot for, Trout Junction among them — fell out of it for no reason but
+    # their neighbours' arrival. A school that has played here stays here.
+    "Alder Landing Beacon Hill",
+    "Alderfield",
+    "Alina Belov",
+    "Andrés Valera",
+    "Aspen Harbor",
+    "Belmonte",
+    "Bidwell",
+    "Draybrook Union",
+    "Eleanor Tillman",
+    "Elk Prairie",
+    "Fort Salish",
+    "Garazi Aramburu",
+    "Haverly",
+    "High Desert Christian",
+    "Katherine Davenport",
+    "Lev Voronin",
+    "Los Robles",
+    "Marian Browne",
+    "Millport",
+    "Orchard Hill",
+    "Oskar Bellini",
+    "Port Meridian South",
+    "Quarmont",
+    "Ryken",
+    "Sage Meadows",
+    "Soren Ekström",
+    "Southridge Christian",
+    "St. Elian",
+    "St. Elias Academy",
+    "Starlake",
+    "Thomas Ekström",
+    "Trout Lake",
+    "Yarburg",
+    "Yarmere",
 ]
 
 # ABSORPTION-STYLE RENAMES (owner rule 2027-08) — the same pattern the college
@@ -316,6 +355,219 @@ def reclassify(schools: list[dict]) -> int:
     return moved
 
 
+
+# ⚠️ MASCOT / COLOUR OVERRIDES (owner rule 2027-08). Two faults in the imported
+# records, one of them the owner's headline complaint:
+#
+#   1. NO AQUATIC ANIMALS. Jefferson stands on southern-Oregon and northern-
+#      California ground — rivers, lakes and a working coast — and 506 schools
+#      carried exactly one water CREATURE (Ashbury West's Sharks) plus Mill
+#      Creek's Kokanee. The maritime OCCUPATIONS were already there and good
+#      (Shipwrights, Crabbers, Harpooners, Cannerymen, Dredgemen, Longshore,
+#      Fogbells, Bar Pilots, Dorymen, Netmenders) — the animals were the gap.
+#   2. A GENERIC HEAD. 182 of 506 schools carried one of the seventeen
+#      most-common American nicknames — Eagles 20, Panthers 20, Lions 16,
+#      Tigers 16, Bulldogs 14 — which is realistic and is also the least
+#      interesting thing a name can be. The owner's rule: "if Tillamook is the
+#      Cheesemakers, surely Jefferson can have the Sugar Beets somewhere."
+#
+# So a generic mascot is replaced by one that belongs to its SCHOOL'S OWN
+# GROUND — read off the city, county and area on the record: the coast gets its
+# fish, seals and crab boats; the Halbrook Basin gets the irrigation, the beet
+# and onion fields and its Basque country; the Cascades get their salamanders
+# and lava; Timber Valley gets the logging trades. Not every generic is
+# replaced — a state really does have some Eagles — but none is left at twenty.
+#
+# Keyed by DISPLAY name and applied at EMIT, the same as RENAMES, so a
+# re-import cannot quietly revert them; everything internal still runs on the
+# source record.
+MASCOTS = {
+    # ── Harborline: the working coast ────────────────────────────────────────
+    "St. Elias Academy": "Cormorants",          # Port Ainsley
+    "Port Meridian South": "Mariners",
+    "Port Veles": "Chinook",                    # the port itself
+    "Port Veles North": "Whalers",
+    "Anneliese Halvorsen": "Sockeye",
+    "Roscoe Bennett": "Cutthroat",
+    "Opal Avery": "Pelicans",
+    "Galina Markov": "Anchors",
+    "St. Vincent": "Sailors",
+    "Igor Chernov": "Gillnetters",
+    "Katherine Williams": "Deckhands",
+    "Walter Hart": "Fishmongers",               # the Port Veles fish market
+    "Seafarer High": "Trawlers",
+    "Santa Michaela Admiralty High": "Commodores",
+    "Alder Landing Beacon Hill": "Ospreys",
+    "Bahía Azúl": "Dungeness Crabs",
+    "Breakwater": "Riptide",                    # Fort Meriwether
+    "Klara Marchand": "Storm Petrels",
+    "Fort Salish": "Cheesemongers",             # the dairy coast
+    "Ryken": "Kingfishers",                     # Newark River
+    "Renata Adler": "Seals",                    # Wales City
+
+    # ── South Coast: the southern shore and its canneries ────────────────────
+    "Elk Prairie": "Tule Elk",
+    "Quarmont": "Stonecutters",
+    "Manuel Robles": "Sardines",                # Bahía Leal, a cannery town
+    "Rosa Salcedo": "Lightkeepers",
+    "Adela Robles": "Sea Otters",
+    "Claudette Cole": "Godwits",
+    "Elena Petrov": "Moon Jellies",
+    "Mission Bay": "Sea Lions",
+    "San Borondón North": "Rockfish",
+    "St. Jerome Academy": "Albatross",
+    "Tatiana Chernov": "Sea Urchins",
+
+    # ── Gold Valley: orchards, vineyards and the old diggings ────────────────
+    "Bancroft": "Panners",
+    "Bellacosta": "Vintners",
+    "Cortland North": "Applejacks",             # Cortland, an apple
+    "Elk Crossing": "Bull Elk",
+    "Lake Esperanza": "Sturgeon",
+    "Eleanor Tillman": "Waterwheels",           # Las Norias — "the waterwheels"
+    "Las Norias": "Ditchriders",
+    "Las Norias East": "Hullers",
+    "Oscar Micheaux": "Marble Cutters",         # Monte Blanco
+    "Golden Gate": "Bridgemen",
+    "Montelago": "Grebes",
+    "Thomas Ekström": "Hop Pickers",
+    "Moriarty": "Jackrabbits",
+    "Silver Glen": "Silversmiths",
+    "St. Elian": "Abbots",
+    "Lars Mercier": "Cellarmen",                # Valderra
+    "Orchard Hill": "Orchardists",
+    "St. Gabriel Preparatory": "Archangels",
+    "Katherine Davenport": "Millwrights",       # Fellows Mill
+    "Gagarin East": "Cosmonauts",
+    "Tomás Marín": "Beekeepers",
+
+    # ── Halbrook Basin: canals, beet and onion ground, Basque country ────────
+    "Amaia Aramburu": "Pelotaris",              # Basque jai alai
+    "Belmonte": "Canalmen",
+    "Belmonte River Plain": "River Otters",
+    "Belmonte South": "Sandhill Cranes",
+    "Javier Alvarado": "Onion Toppers",
+    "Miren Elorriaga": "Stone Lifters",         # harri-jasotzaile
+    "River Plain": "Rapids",
+    "Treasure Valley": "Sugar Beets",
+    "Berrio": "Brambles",
+    "Andrés Valera": "Hay Balers",
+    "Cherry Hill": "Cherry Pickers",
+    "Paul Robeson": "Rivermen",
+    "Greaves Junction": "Switchmen",
+    "Greaves Junction South": "Boxcars",
+    "Archbishop Doyle Prep": "Bellringers",
+    "Vasquez": "Vaqueros",
+    "Ella Baker": "Torchbearers",
+    "Javier Cárdenas": "Roadrunners",
+    "Llerena": "Bighorns",
+    "Edith Tillman": "Choristers",              # Madrigal
+    "Madrigal": "Minstrels",
+    "Serrano": "Chiles",                        # the pepper the town is named for
+    "Serrano North": "Sidewinders",             # and the snake
+    "Pavel Kovalenko": "Sunflowers",
+    "Aitor Zubieta": "Woodchoppers",            # aizkolari
+    "Amalia Escobedo": "Burrowing Owls",
+    "Belyakov South": "Beet Haulers",
+    "Carmen Cordero": "Lambs",                  # cordero
+    "Lorraine Calder": "Mobiles",
+    "Opal Tillman": "Fire Opals",               # Carden City
+    "Drayfield": "Draymen",
+    "Mae Jemison": "Orbiters",
+    "William McKinley": "Buckeyes",
+    "Sadie Freeman": "Sheepwagons",             # Etchartville
+    "Viktor Gromov": "Thunderheads",            # gromov — thunder
+    "Canal View": "Headgates",                  # Orellana
+    "Orellana North": "Riverboats",
+    "Starlake": "Bull Trout",
+    "Stone Springs": "Springers",               # a spring chinook, on a Springs town
+
+    # ── Ashbury Metro: the city ──────────────────────────────────────────────
+    "Ansotegui Siding": "Gandy Dancers",
+    "Ansotegui Siding North": "Semaphores",
+    "Haverly": "Vaudevillians",
+    "Hawk Lake Central": "Loons",
+    "Hawk Lake Southeast": "Steelhead",
+    "Southridge Christian": "Lamplighters",
+    "St. Sebastian Prep": "Archers",            # the saint's own iconography
+    "Opal Stokes": "Glassblowers",
+    "Oskar Bellini": "Skylarks",
+    "Dolores Huerta": "Grape Pickers",
+    "Los Robles": "Live Oaks",                  # los robles — the oaks
+    "Norview": "Peregrines",
+    "Commonwealth": "Statesmen",
+
+    # ── Cascade Divide: volcanic ground and wet forest ───────────────────────
+    "Annie Springs": "Herons",
+    "Annie Springs Crater View": "Calderas",
+    "Draybrook Union": "Giant Salamanders",
+    "Alderfield": "Rough Skins",                # the rough-skinned newt
+    "Celia Browne": "Powderhorns",              # Fort Carden
+    "Timber Crest": "Highclimbers",
+    "New Leiden": "Pilgrims",
+    "Soren Ekström": "Northern Lights",
+    "Orlova": "Firebirds",
+    "Ransom City Union": "Cinder Cones",
+    "Gwendolyn Brooks": "Poets",
+    "Ruby Stokes": "Garnets",
+    "San Cordero": "Lava Bears",
+    "San Cordero South": "Obsidians",
+    "Svenja Bianchi": "Snowcaps",
+    "Yarmere": "Ensatinas",                     # the salamander
+
+    # ── Juniper Highlands: high desert ───────────────────────────────────────
+    "Marlow County": "Sage Grouse",
+    "Gold Junction": "Assayers",
+    "Summervale": "Haymakers",
+    "Summervale Northwest": "Pronghorns",
+    "Thornford": "Hawthorns",
+    "Owl Canyon": "Screech Owls",
+    "High Desert Christian": "Sojourners",
+    "Marshall": "Jackalopes",
+    "Meridian Regional": "Tinsmiths",           # Stovepipe
+    "Telfair": "Kangaroo Rats",
+    "Dry Lake": "Mirages",
+    "Trout Lake": "Silverlegs",             # the ask: named for its own fish
+
+    # ── North Range: the mines and the snow ──────────────────────────────────
+    "Galena": "Silver Kings",                   # galena — the silver-lead ore
+    "Norstead": "Longships",
+    "Aspen Harbor": "Harbor Seals",
+    "Elk Bluff": "Bugles",
+    "Millport": "Log Drivers",
+
+    # ── Sage Plains: sagebrush and stock ─────────────────────────────────────
+    "Ninemile": "Freighters",
+    "Alina Belov": "White Sage",
+    "Sage Meadows": "Meadowlarks",
+    "Garazi Aramburu": "Woolgrowers",
+    "Marian Browne": "Joiners",                 # Dovetail
+    "Lev Voronin": "Ravens",                    # voronin — raven
+    "Keldale": "Shearers",
+
+    # ── Timber Valley: the woods trades ──────────────────────────────────────
+    "Ansotegui": "Chokermen",
+    "Bidwell": "Cruisers",                      # the timber cruiser
+    "Gold Hollow": "Sluicers",
+    "Pellmont": "Newts",
+    "Ransoms Landing": "Muskrats",
+    "Whistle Stop": "Whistlepunks",
+    "Yarburg": "Shingle Weavers",
+}
+
+# Two-colour crests: the FIRST is the crest ground and must be dark enough to
+# carry the monogram, the second is the accent.
+COLORS = {
+    # rainbow trout: olive back over a silver flank
+    "Trout Lake": ["#2F3328", "#C0C5CE"],
+    "Treasure Valley": ["#4E1533", "#DED3B4"],      # beet root over refined sugar
+    "Bahía Azúl": ["#173A5E", "#E0733A"],           # bay water, cooked crab
+    "Yarmere": ["#2B2118", "#E08A2E"],              # the ensatina's orange
+    "Pellmont": ["#3A2A1C", "#D96A2B"],             # a rough-skinned newt's belly
+    "Galena": ["#2C2F36", "#B9BEC7"],               # the ore: lead grey, silver bright
+}
+
+
 _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
 
 # ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
@@ -397,10 +649,12 @@ def canon(name: str) -> str:
 
 
 def champ_group(classification: str) -> str:
-    return classification if classification in ("7A", "6A", "5A", "4A", "3A") else "2A-1A"
+    return (classification
+            if classification in ("9A", "8A", "7A", "6A", "5A", "4A", "3A")
+            else "2A-1A")
 
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:
@@ -576,8 +830,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "group": champ_group(s["classification"]),
             "enrollment": s["enrollment"],
             "private": s["private"],
-            "mascot": s["mascot"],
-            "colors": s["colors"],
+            "mascot": MASCOTS.get(display, s["mascot"]),
+            "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,
             "boys": name in boys,
             "girls_district": dist["girls"].get(name, ""),

@@ -48,7 +48,7 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -171,8 +171,30 @@ FIDELITY = "fast"
 # the full size today; the scale exists for small pools, not as a format fork.
 PROTECTED = 16
 WARD_FIELD = 32
-STATE_FIELD = {"7A": 32}
+# The LARGEST classification crowns from 32; every other from 24. That was 7A
+# until the association went to nine classes (owner ladder 2027-08) and it is
+# 9A now — the rule is "the top class", not the letter.
+# Field size per classification (owner table, 2027-08). The three largest classes
+# crown from 24; the five smaller ones — which now hold MORE programs than the big
+# ones (2A-1A 137 and 3A 127 against 9A's 80) — crown from 40, landing every class
+# between 23% and 31% of its programs reaching State.
+#
+# ⚠️ A 40 IS A 24 WITH A QUALIFIERS ROUND IN FRONT OF IT. The eight Zonal champions
+# take a DOUBLE bye to the Octofinals; seeds 9-40 play the Qualifiers Round and then
+# the First Round, and the eight who survive both join them. After the Qualies
+# exactly 24 are alive — the other classes' bracket — so both shapes converge and
+# there is one championship from the Octofinals down.
+#
+# This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
+# given a bye without inventing a round for everybody else to sit out.
+STATE_FIELD = {"9A": 24, "8A": 24, "7A": 24,
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A-1A": 40}
 STATE_FIELD_DEFAULT = 24
+
+#: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
+#: STATE, not a road-to-State stage: it plays the state dual format, carries the
+#: state phase and rides on the state bracket.
+QUALIFIER_NAME = "Qualifiers Round"
 RECOVERY_CUT = 8          # teams the two recovery rounds eliminate, together
 
 
@@ -229,8 +251,13 @@ def ladder_scale(group: str) -> int:
 # Widening the spread as the mean falls does both jobs at once, because 12 ceilings are
 # drawn and the best 9 dress: a wide draw lifts the number one a long way and drags the
 # number nine down. Do NOT "tidy" these back into an even ladder with shrinking spreads.
+# The nine-class ladder (owner 2027-08) extended the top of this table. 9A/8A/7A
+# sit close together on purpose — see the note above: the real steps are lower
+# down, and every classification can still produce an elite number one.
 _TALENT = {
-    ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.0, 14.0),
+    ("9A", "boys"):   (59.4, 14.4), ("9A", "girls"):   (54.6, 13.4),
+    ("8A", "boys"):   (58.7, 14.8), ("8A", "girls"):   (53.9, 13.8),
+    ("7A", "boys"):   (58.0, 15.0), ("7A", "girls"):   (53.3, 13.9),
     ("6A", "boys"):   (56.5, 15.5), ("6A", "girls"):   (51.5, 14.5),
     ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
     ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
@@ -1858,17 +1885,9 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
     association was decided by a ladder that put its two best teams against each other
     first."""
     rng = random.Random(seed)
-    size = 1
-    while size < len(field):
-        size *= 2
-    # `n_seeds = len(field)`: the whole field is ranked, so every entrant is placed
-    # on its own anchor rather than drawn at random.
     from engine.tournament import seeded_draw
-    slots: list[TeamSeason | None] = [None if r is None else field[r]
-                                      for r in seeded_draw(len(field), size,
-                                                           len(field), rng)]
-    rounds = []
-    while len(slots) > 1:
+
+    def _play(slots, rounds):
         nxt, games = [], []
         for i in range(0, len(slots), 2):
             a, b = slots[i], slots[i + 1]
@@ -1883,9 +1902,39 @@ def run_state(field: list[TeamSeason], *, seed: int) -> dict:
             nxt.append(win)
         if games:
             rounds.append(games)
-        slots = nxt
+        return nxt
+
+    rounds: list = []
+    names: list[str] = []
+    entrants = list(field)
+
+    if len(field) > 32:
+        # THE EXPANDED FIELD. Seeds 1-8 are the Zonal champions and sit out BOTH
+        # of these rounds — the double bye; seeds 9-40 play the Qualifiers Round
+        # and then the First Round, and the eight who survive both join them.
+        # After the Qualies exactly 24 are alive, which IS the other classes'
+        # bracket, so both shapes converge on the Octofinals.
+        champs, rest = field[:8], field[8:]
+        slots: list[TeamSeason | None] = [
+            None if r is None else rest[r]
+            for r in seeded_draw(len(rest), 32, len(rest), rng)]
+        for label in (QUALIFIER_NAME, "First Round"):
+            slots = _play(slots, rounds)
+            names.append(label)
+        entrants = champs + [t for t in slots if t is not None]
+
+    size = 1
+    while size < len(entrants):
+        size *= 2
+    # `n_seeds = len(entrants)`: the whole field is ranked, so every entrant is
+    # placed on its own anchor rather than drawn at random.
+    slots = [None if r is None else entrants[r]
+             for r in seeded_draw(len(entrants), size, len(entrants), rng)]
+    while len(slots) > 1:
+        slots = _play(slots, rounds)
     return {"champion": slots[0].school.name if slots and slots[0] else None,
-            "rounds": rounds, "field": [t.school.name for t in field]}
+            "rounds": rounds, "round_names": names,
+            "field": [t.school.name for t in field]}
 
 
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:

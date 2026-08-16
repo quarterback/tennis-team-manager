@@ -4238,7 +4238,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # identically. Read off the archived bracket (one appearance per round), not
     # inferred from the schedule's position.
     _SHORT = {"Championship": "Final", "Semifinals": "SF", "Quarterfinals": "QF",
-              "Octofinals": "Octas"}
+              "Octofinals": "Octas", "Qualifiers Round": "Qualies",
+              "First Round": "R1"}
 
     def _round_of(bracket):
         out = {}
