@@ -394,7 +394,6 @@ RENAMES = {
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Carroway Public Service",
     "Dahlberg School of Science and Industry": "Dahlberg Science",
-    "Fort Salish Independent School": "Fort Salish Independent",
     "Fort Valois School of Public Service": "Fort Valois Public Service",
     "Galina Markov": "James Monroe",
     "Harbor Gate North": "Martin Van Buren",
