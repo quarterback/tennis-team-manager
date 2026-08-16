@@ -51,8 +51,18 @@
 }
 .jh-class a:hover { border-color: var(--brand); }
 .jh-class a.on { color: #fff; border-color: transparent; }
-.jh-class a.on.c-7A { background: var(--cat-6a); }
-.jh-class a.on.c-6A { background: var(--cat-5a); }
+/* ‼️ ONE RULE PER CLASSIFICATION, and the ladder runs dark → light → grey so the
+   bigger class always reads heavier. `.jh-class a.on` sets `color:#fff` and no
+   background of its own, so a class with NO rule here renders white-on-card —
+   an INVISIBLE selected tab. The nine-class ladder (owner 2027-08) added 9A and
+   8A on top and they were missing exactly that. The `--cat-*` ramp is four deep
+   in every scheme and now fully used; below it the shared brand/bronze/grey
+   slots carry the small classes. Adding a classification means adding a rule
+   HERE and in `.jh-chip` below — same trap as a theme swatch keyed on a name. */
+.jh-class a.on.c-9A { background: var(--cat-7a); }
+.jh-class a.on.c-8A { background: var(--cat-6a); }
+.jh-class a.on.c-7A { background: var(--cat-5a); }
+.jh-class a.on.c-6A { background: var(--cat-4a); }
 .jh-class a.on.c-5A { background: var(--brand); }
 .jh-class a.on.c-4A { background: var(--rank-bronze); }
 .jh-class a.on.c-3A { background: var(--gray-500); }
@@ -153,8 +163,10 @@
   font-size: 11.5px; font-weight: 800; letter-spacing: .03em; color: #fff; background: var(--gray-600);
   white-space: nowrap;
 }
-.jh-chip.c-7A { background: var(--cat-6a); }
-.jh-chip.c-6A { background: var(--cat-5a); }
+.jh-chip.c-9A { background: var(--cat-7a); }
+.jh-chip.c-8A { background: var(--cat-6a); }
+.jh-chip.c-7A { background: var(--cat-5a); }
+.jh-chip.c-6A { background: var(--cat-4a); }
 .jh-chip.c-5A { background: var(--brand); }
 .jh-chip.c-4A { background: var(--rank-bronze); }
 .jh-chip.c-3A { background: var(--gray-500); }

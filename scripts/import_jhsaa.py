@@ -302,6 +302,9 @@ RENAMES = {
     # association's no-suffix rule prints "Evans Larsen Day". Blue blood
     # (archetypes.json); Steeplejacks (MASCOTS below).
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
+    # Renamed off the region that no longer exists, and moved out of Gagarin
+    # (four programs already) to Copper Prairie — see RELOCATIONS.
+    "Mother Lode": "Siskiyou Valley",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -393,6 +396,7 @@ def reclassify(schools: list[dict]) -> int:
 # source record.
 MASCOTS = {
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
+    "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
     # ── Harborline: the working coast ────────────────────────────────────────
     "St. Elias Academy": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",
@@ -580,6 +584,33 @@ COLORS = {
 
 
 _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster identity
+
+# REGION RENAMES (owner rule 2027-08). A region name is Jefferson's own
+# geography, not prep-network's, and it is applied at EMIT for the same reason
+# school RENAMES are: everything upstream — district drawing, which sorts on
+# `area` — runs on the source name, so renaming before the draw would reshuffle
+# the leagues. The region also names its district ("<region> District"), so the
+# rename carries there too.
+#
+# "Mother Lode" was the generic California gold-country label the owner rejected
+# outright. The region is the state's southern end — Goldbank, Featherstone and
+# Highgrade counties — so it is SOUTHERN JEFFERSON. (The D1 college of the same
+# name is a different namespace; a region and a program can share a compass
+# point the way a real state's do.)
+AREA_RENAMES = {
+    "Mother Lode": "Southern Jefferson",
+}
+
+# RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
+# area, keyed by SOURCE name and applied at emit like every other override.
+# Gagarin already sponsors four programs, so the renamed Mother Lode goes to
+# Copper Prairie, a one-school town in the same county — which keeps its
+# district and its geography while taking the crowding off one city.
+# ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
+# so a relocation must stay inside the area the districts were drawn from.
+RELOCATIONS = {
+    "Mother Lode": "Copper Prairie",
+}
 
 # ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
 # need to have HS or High School ever, or even 'School' because nobody uses it").
@@ -813,6 +844,15 @@ def draw_districts(pool: list[dict], cities: dict) -> dict[str, str]:
     return out
 
 
+def _area_ren(district: str) -> str:
+    """A district is named for its region ("<region> District"), so a region
+    rename carries into it. Applied at emit for the same reason the area is."""
+    for src, dst in AREA_RENAMES.items():
+        if district.startswith(src):
+            return dst + district[len(src):]
+    return district
+
+
 def build(schools: list[dict], cities: dict) -> list[dict]:
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
@@ -826,7 +866,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     out = []
     for name in sorted(girls | boys):
         s = by_name[name]
-        city = cities.get(s["city"], {})
+        town = RELOCATIONS.get(name, s["city"])
+        city = cities.get(town, {})
         display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and
@@ -847,9 +888,11 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             # Only written when it differs — a school nobody renamed is its own
             # identity, and an absent key reads as "name" in `School.ident`.
             **({"source": canonical} if canonical != display else {}),
-            "city": s["city"],
+            "city": town,
             "county": city.get("county", ""),
-            "area": s["area"],
+            # Renamed at EMIT, like the school names — district drawing above
+            # sorted on the SOURCE area, so this cannot move a league.
+            "area": AREA_RENAMES.get(s["area"], s["area"]),
             "classification": s["classification"],
             "group": champ_group(s["classification"]),
             "enrollment": s["enrollment"],
@@ -858,8 +901,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,
             "boys": name in boys,
-            "girls_district": dist["girls"].get(name, ""),
-            "boys_district": dist["boys"].get(name, ""),
+            "girls_district": _area_ren(dist["girls"].get(name, "")),
+            "boys_district": _area_ren(dist["boys"].get(name, "")),
         })
     out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
     # ‼️ A DISPLAY NAME IS THE ARCHIVE'S IDENTITY — it keys `run_season`'s teams
