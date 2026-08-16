@@ -55,21 +55,13 @@
 
   {% if not hub.in_sync %}
   <div class="bl-note" style="margin-bottom:16px;border-color:#e0b050;background:#fdf6e6">
-    <strong>Universes are out of step.</strong> The division panels below sit at different points in
-    the season, so the rankings compare fields that have played different numbers of duals — one
-    side's conference slate has barely started. Catch the laggards up to the furthest-along universe:
+    <strong>Universes are out of step.</strong>
     <form method="post" action="{{ url_for('world_resync') }}" style="display:inline"
           data-loading='{"title":"Re-syncing universes…","sub":"Playing the weeks the lagging divisions owe — this one takes a while.","stages":["Simulating missed weeks…","Tallying results &amp; rankings…"]}'>
       <button class="bl-pill" type="submit" style="cursor:pointer">Re-sync universes →</button>
     </form>
   </div>
   {% endif %}
-
-  <div class="bl-note" style="margin-bottom:16px">
-    Each week simulates every division's slate, develops players a little, and signs more of the
-    next national class. When all six brackets finish, <strong>finalize</strong> graduates seniors,
-    runs the cross-division transfer portal off the season's results, and brings in the signed class.
-  </div>
 
   <div class="bl-world-grid">
     {% for d in hub.divisions %}

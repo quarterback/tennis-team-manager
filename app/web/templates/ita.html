@@ -31,9 +31,7 @@
 
 {% if not br %}
 <div class="bl-container"><div class="bl-note">
-  This season has no Preseason NIT drawn. Once it is, the page shows the whole bracket —
-  {% if division == 'D1' %}the sixteen four-team Kickoff Weekend sites and the sixteen-team{% else %}the eight-team{% endif %}
-  National Team Indoor Championship they feed — round by round as it's played.
+  This season has no Preseason NIT drawn.
 </div></div>
 {% else %}
 
@@ -136,12 +134,6 @@
     </div>
   </details>
 </div>
-
-<div class="bl-container"><div class="bl-note">
-  Follow the lines: every card sits between the two matchups that feed it, so a winner's path runs left to right
-  into the card it plays next. A dashed card is scheduled but unplayed; a faded TBD card is a round the draw hasn't
-  reached yet. Click a card for the box score; click a team to open its page.
-</div></div>
 
 {{ brk_script() }}
 {% endif %}

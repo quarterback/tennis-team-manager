@@ -50,15 +50,15 @@ in recovery, so nobody can advance without playing.
 |---|---|---|
 | **Super Regionals** | Regional losers (plus bodies, below) | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
-| **Divisional Round** | the best Semi-State losers | **take the last berths** |
+| **Divisionals** | the best Semi-State losers | **take the last berths** |
 
-### Why the Divisional Round exists
+### Why the Divisionals exist
 
 Two reasons, and both matter.
 
 **It removes byes.** Semi-State can only fill so many berths. Before, the
 leftovers were handed out as byes — which is how a team once reached State
-having played no recovery duals at all. The Divisional Round contests those
+having played no recovery duals at all. The Divisionals contest those
 berths instead.
 
 **It evens out the chances.** A Regional loser used to get Super Regionals *and*
@@ -76,7 +76,7 @@ The sequence runs **girls first, then boys**, and **bottom-up by classification*
 (2A-1A, 3A, 4A, 5A, 6A, 7A), continuing straight across both genders. So 2A-1A
 girls hold **Division I**, and the last number of the year lands on 7A boys —
 "(7A) Division XI", if the state played that many Divisional duals that season.
-How many there are depends on how many berths the Divisional Round has to fill,
+How many there are depends on how many berths the Divisionals have to fill,
 which varies year to year.
 
 Numerals are Roman on the honours line, like every other unit: **Division XI**,

@@ -26,16 +26,14 @@
 <div class="bl-container" style="padding-bottom:0">
   <h1 style="margin:2px 0 2px;font-size:24px">{{ pr.year_label or '' }} Transfer Portal Team Rankings</h1>
   <p style="margin:0 0 4px;font-size:13.5px;color:var(--text-muted)">
-    How much each program improved, held, or lost talent in the portal — risers + pros in, players out.
-    {{ pr.division if pr.division != 'All' else 'All divisions' }} · {{ {'all':'Men & Women','men':'Men','women':'Women'}[pr.gender] }}.
+    {{ pr.division if pr.division != 'All' else 'All divisions' }} · {{ {'all':'Men & Women','men':'Men','women':'Women'}[pr.gender] }}
   </p>
 </div>
 
 {% if not pr.classes %}
 <div class="bl-container"><div class="bl-note">
-  No portal classes yet{% if pr.year_label %} for {{ pr.year_label }}{% endif %}. Rankings fill in once a portal
-  window <strong>commits</strong> — run the <a href="{{ url_for('preseason_portal') }}">pre-season portal</a>
-  (and the fall portal later), then check back. Past years stay here once they're in the books.
+  No portal classes yet{% if pr.year_label %} for {{ pr.year_label }}{% endif %} ·
+  <a href="{{ url_for('preseason_portal') }}">pre-season portal</a>
 </div></div>
 {% else %}
 
@@ -81,11 +79,5 @@
   </div>
 </div></div>
 
-<div class="bl-container"><div class="bl-note" style="font-size:13.5px;color:var(--text-faint)">
-  <strong>SCORE</strong> ranks the incoming class (top-3 STR, same shape as recruiting classes).
-  <strong>NET Δ</strong> nets it against who left — so a program can top its division's class board yet still
-  show a small net if it also lost a star. Filter <strong>Classification</strong> to D2/D3/D4 to see which
-  lower-division programs actually got better in the window.
-</div></div>
 {% endif %}
 {% endblock %}

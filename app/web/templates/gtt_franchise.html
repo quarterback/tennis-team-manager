@@ -28,10 +28,6 @@
       </a>
       {% endfor %}
     </div></div>
-    <div class="bl-notes" style="padding:0 16px 14px"><div class="bl-note">
-      The top {{ roster | selectattr('gender','equalto','m') | rejectattr('reserve') | list | length }} of each gender are the lineup; the rest are reserves (RES) — bench depth that
-      only plays when it out-rates a starter, and the cut bait for the add/drop wire.
-    </div></div>
   </div>
 
   {% if moves %}
@@ -52,7 +48,7 @@
 
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Edit roster</span>
-      <span class="bl-panel-meta">move a player to another franchise or waive to free agency</span></div>
+      </div>
     <div style="padding:8px 16px">
       {% for p in roster %}
       <form method="post" action="{{ url_for('gtt_move', fid=fr.id) }}"
@@ -70,12 +66,6 @@
       </form>
       {% endfor %}
     </div>
-    <div class="bl-notes" style="padding:0 16px 14px"><div class="bl-note">
-      God-mode edit, like the college roster editor. A moved player keeps their
-      identity, record, STR and honors — only the club changes. Matches already
-      played stay credited to the club they were on at the time, so a mid-season
-      move tracks across both teams.
-    </div></div>
   </div>
 
   {% if free_agents %}
@@ -109,7 +99,7 @@
 
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Edit franchise</span>
-      <span class="bl-panel-meta">cosmetic only — never changes results</span></div>
+      </div>
     <form method="post" action="{{ url_for('gtt_franchise_edit', fid=fr.id) }}"
           style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:14px 16px">
       <input type="hidden" name="lg" value="{{ league.id }}">
@@ -121,10 +111,6 @@
         <input class="bl-input" name="abbrev" value="{{ fr.abbrev }}" maxlength="3" style="width:72px"></label>
       <button class="bl-pill" type="submit">Save</button>
     </form>
-    <div class="bl-notes" style="padding:0 16px 14px"><div class="bl-note">
-      A team's name is independent of its city — name it whatever you want. Rosters
-      and results are tied to the franchise id, so renaming or relocating is purely cosmetic.
-    </div></div>
   </div>
 </div>
 

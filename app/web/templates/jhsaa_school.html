@@ -79,7 +79,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">{{ view.season_year }} Schedule</span>
-        <span class="bl-panel-meta">{{ view.schedule|length }} duals · 5 singles / 2 doubles, 1S/4D in the postseason</span>
+        <span class="bl-panel-meta">{{ view.schedule|length }} duals</span>
       </div>
       <div class="tbl-scroll">
         {% if view.schedule %}
@@ -170,7 +170,7 @@
   <div class="jh-stack">
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
-        <span class="bl-panel-meta">grades 9–12</span></div>
+        </div>
       <div class="tbl-scroll">
         <table class="jh-roster">
           <tr><th>Player</th><th style="width:44px">Gr</th><th class="num" style="width:56px">Singles</th>
@@ -221,7 +221,7 @@
         </div>
         {% if t.classifications|length > 1 %}
         <p style="margin:10px 0 0;font-size:13.5px;color:var(--text-secondary)">
-          Has played in {{ t.classifications|join(', ') }} — the classification has changed since the first archived season.</p>
+          Has played in {{ t.classifications|join(', ') }}.</p>
         {% endif %}
       </div>
     </div>

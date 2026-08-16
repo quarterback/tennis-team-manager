@@ -56,7 +56,7 @@
 <div class="jh-layout" style="margin-top:14px">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
-      <span class="bl-panel-meta">every dual in the draw · 1 singles / 4 doubles</span></div>
+      <span class="bl-panel-meta">every dual in the draw</span></div>
     <div class="bl-panel-body" style="padding:12px">
       <div class="jh-cols2">
         {% for rd in view.rounds %}
@@ -88,7 +88,7 @@
      ordered by rating rather than by the size of the school. #}
   <div class="bl-panel jh-mod">
     <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
-      <span class="bl-panel-meta">{{ view.field_n }} champions, seeded on TOSS</span></div>
+      <span class="bl-panel-meta">{{ view.field_n }} champions</span></div>
     <div class="bl-panel-body">
       {% for t in view.field %}
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=t.name, u=u, g=view.gender, year=view.scope.pin) }}">
@@ -98,11 +98,6 @@
         {% if t.group %}<span class="jh-chip c-{{ t.group }}">{{ t.group }}</span>{% endif %}
       </a>
       {% endfor %}
-    </div>
-    <div class="bl-panel-body" style="padding:8px 13px;font-size:12.5px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
-      Seeded on the Power Index each champion finished the regular season with, so a 4A
-      champion that rated above the 6A one is the higher seed. The bottom four play in;
-      the top two sit out the opening round.
     </div>
   </div>
 </div>
