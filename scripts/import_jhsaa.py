@@ -539,7 +539,15 @@ def reclassify(schools: list[dict]) -> int:
 # block sitting in that region and used anywhere once the preferred pool is spent.
 LEAGUE_NAMES: list[tuple[str, str | None]] = [
     # -- coast and tidewater ------------------------------------------------
-    ("Harborline League", "Selquah"),
+    # ‼️ REAL FINNISH PLACE NAMES, not Nordic-sounding coinages (owner rule
+    # 2027-08). Ostrobothnia is the coastal province on the Gulf of Bothnia, so
+    # it belongs on a working coast; the rest are small Finnish cities that have
+    # no American namesake, which is the whole appeal — Sotkamo, Pori, Vimpeli
+    # (the pesapallo town), Imatra, Kokkola, Rauma, Kajaani, Narpes.
+    ("Ostrobothnia League", "Selquah"),
+    ("Rauma Athletic Association", "Selquah"),
+    ("Narpes Interscholastic League", "Selquah"),
+    ("Pori League", "Selquah"),
     ("Tidelands League", "Selquah"),
     ("Sea View League", "Selquah"),
     ("Cape-Meridian League", "Selquah"),
@@ -615,6 +623,11 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Vesterheim Athletic Association", "Kangas"),
     ("Norheim League", "Kangas"),
     ("Suomi Interscholastic League", "Kangas"),
+    ("Sotkamo League", "Kangas"),
+    ("Vimpeli Athletic Association", "Kangas"),
+    ("Imatra League", "Kangas"),
+    ("Kajaani League", "Kangas"),
+    ("Kokkola Athletic Association", "Kangas"),
     ("Pioneer League", "Kangas"),
     # -- timber and vermilion -----------------------------------------------
     ("Timber Valley League", "Alderwold"),
