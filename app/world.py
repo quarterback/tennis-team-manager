@@ -3629,7 +3629,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # The CONDITIONAL fourth rung — present and empty in a year that
                 # did not need it (owner rule 2027-08). `.get` because seasons
                 # archived before it existed have no key at all.
-                "last_chance": {g: season["groups"][g].get("last_chance")
+                "conference": {g: season["groups"][g].get("conference")
                                 for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
                                for g in jhsaa.GROUPS},

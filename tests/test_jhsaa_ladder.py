@@ -14,8 +14,8 @@ The qualification structure (owner spec 2027-08, expanded State fields):
      PROTECTED seat and nothing at State: a champion that loses falls into the
      same recovery pools as everyone else and wins its way in, or does not go.
   4. The recovery rounds — Super Regionals → Semi-State → Divisionals, and a
-     CONDITIONAL Last Chance from Divisional losers that convenes only if berths
-     remain. Every berth is EARNED ON COURT by the loser pool (Regional losers,
+     CONDITIONAL Conference round — best-TOSS Divisional losers paired against
+     the best-qualified district losers — that convenes only if berths remain. Every berth is EARNED ON COURT by the loser pool (Regional losers,
      joined at Semi-State by Zonal losers, then Ward/Sectional/Area losers as
      bodies once the ladder's own losers are exhausted — a body is another
      chance to play, never a berth). No berth is handed out by a TOSS recompute
@@ -79,7 +79,7 @@ def _stages(archived, g):
             arc["brackets"][g], arc["protected"][g],
             arc["district_qualifiers"][g],
             arc["super_regional"][g], arc["semi_state"][g], arc["divisional"][g],
-            arc["last_chance"][g])
+            arc["conference"][g])
 
 
 # --- the fixed shape, per classification -------------------------------------------

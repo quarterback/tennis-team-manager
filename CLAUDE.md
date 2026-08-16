@@ -517,9 +517,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `district_qualifiers` stays in the return and the archive as an EMPTY list so
   seasons played under the old rule still read. So there are TWO ways in, not three:
   a Zonal title, or the **recovery rounds** `super_regional` → `semi_state` →
-  `divisional` → conditional `last_chance` (Regional losers first, Zonal losers
+  `divisional` → conditional `conference` (Regional losers first, Zonal losers
   joining at Semi-State, and only once the ladder's OWN losers are exhausted do
-  Ward → Sectional → Area losers come in as BODIES, never berths). Arithmetic is
+  Ward → Sectional → Area losers come in as BODIES, never berths). **CONFERENCE
+  is the only round drawn from TWO pools and paired ACROSS them** — best-TOSS
+  Divisional losers against the best-qualified district losers (teams that did
+  not win a district and are not already in the field) — and it convenes ONLY if
+  berths are still outstanding, which on the current membership is never. n
+  berths means n duals, one team from each pool, so it is byeless by
+  construction. Arithmetic is
   DYNAMIC (`_recovery`: berths = field − champions; the Semi-State floor is
   `ceil(4·berths/3)` **rounded UP TO EVEN before the reservoir is sized** — rounding
   after left 4A one berth short of a 40 field at full size while every other class

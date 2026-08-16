@@ -64,7 +64,7 @@ FORMATS = {
 # "super_regional" and "semi_state" are the RECOVERY rounds (owner rule 2027-08):
 # the second-chance ladder that earns the non-automatic State berths on court.
 POSTSEASON = ("sectional", "ward", "regional", "zonal",
-              "super_regional", "semi_state", "divisional", "last_chance",
+              "super_regional", "semi_state", "divisional", "conference",
               "state", "toc")
 
 
@@ -1621,17 +1621,18 @@ DIVISIONAL_NAME = "Divisionals"
 #: The CONDITIONAL last rung (owner rule 2027-08). Divisionals fills every berth
 #: on the current membership, but `berths` moves with the district-champion count
 #: and with the association's size, so a year that comes up short must not ship a
-#: short State field. The Last Chance Round is contested by DIVISIONAL LOSERS —
-#: the owner's call: "there are losers in Divisionals who would suffice" — and, in
-#: their words, "it can be like other rounds where if we don't need it, it doesn't
+#: short State field. The CONFERENCE round pairs the best-TOSS DIVISIONAL LOSERS
+#: against the best-qualified DISTRICT LOSERS (owner rule 2027-08) — the only
+#: recovery round drawn from two pools and paired across them. In the owner's
+#: words, "it can be like other rounds where if we don't need it, it doesn't
 #: trigger": it convenes only when berths remain, exactly the way the Divisional
 #: round already declines to convene at `L = 0`. On today's membership it never
 #: fires in either gender, which is the intended resting state, not dead code.
-LAST_CHANCE_NAME = "Last Chance"
+CONFERENCE_NAME = "Conference"
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
-                   "divisional": DIVISIONAL_NAME, "last_chance": LAST_CHANCE_NAME}
+                   "divisional": DIVISIONAL_NAME, "conference": CONFERENCE_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
-                   "divisional": "Division", "last_chance": "Last Chance"}
+                   "divisional": "Division", "conference": "Conference"}
 
 
 def renumber_divisions(season: dict, start: int = 1) -> int:
@@ -1742,8 +1743,8 @@ def _recovery_pairs(playing: list[TeamSeason], rng: random.Random) -> list[tuple
     return list(zip(top, bottom))
 
 
-def _recovery_round(pool: list[TeamSeason], *, phase: str,
-                    rng: random.Random) -> tuple[dict, list[TeamSeason]]:
+def _recovery_round(pool: list[TeamSeason], *, phase: str, rng: random.Random,
+                    pairs: list[tuple] | None = None) -> tuple[dict, list[TeamSeason]]:
     """One recovery round: pair the WHOLE field and return the winners.
 
     ‼️ NO BYES IN RECOVERY (owner rule 2027-08, and the point of the whole
@@ -1756,13 +1757,17 @@ def _recovery_round(pool: list[TeamSeason], *, phase: str,
     pools even and lets the DIVISIONAL round absorb the leftover berths.
 
     An odd field is the one thing that would force a bye, so `_recovery` never
-    passes one; the assertion says so rather than silently sitting somebody."""
+    passes one; the assertion says so rather than silently sitting somebody.
+
+    `pairs` overrides the draw for a round whose pairing is not one pool played
+    strongest-against-weakest: the CONFERENCE round draws from two separate
+    pools and pairs ACROSS them, which `_recovery_pairs` has no way to express."""
     if len(pool) % 2:
         raise RuntimeError(
             f"JHSAA {phase}: odd field ({len(pool)}) would force a bye — "
             f"`_recovery` must size every recovery field even.")
     games, winners = [], []
-    for n, (a, b) in enumerate(_recovery_pairs(pool, rng)):
+    for n, (a, b) in enumerate(pairs if pairs is not None else _recovery_pairs(pool, rng)):
         res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
         win = a if res.winner == 0 else b
         games.append({"home": a.school.name, "away": b.school.name,
@@ -1897,32 +1902,51 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                               "round_names": [_RECOVERY_NAMES["divisional"]]}, []
     qualifiers = list(ss_winners) + list(dv_winners)
 
-    # LAST CHANCE — the conditional fourth rung, contested by DIVISIONAL LOSERS
-    # (owner rule 2027-08). It exists so a year whose arithmetic falls short can
-    # never ship a short State field, and it triggers ONLY when berths remain —
-    # the same "if we don't need it, it doesn't convene" shape the Divisional
-    # round already has at `L = 0`. Byeless like every recovery round: it takes
-    # twice the outstanding berths, and if the pool cannot supply an even field
-    # that deep it plays as many pairs as it can rather than sitting anybody.
-    lc_n = max(0, berths - len(qualifiers))
+    # ‼️ THE CONFERENCE ROUND — the conditional last rung (owner rule 2027-08),
+    # and the only recovery round drawn from TWO pools and paired ACROSS them:
+    # "you'd take best TOSS Divisionals Losers and pair them with best qualified
+    # Districts Losers."
+    #
+    #   * one side is the best-TOSS DIVISIONAL LOSERS — teams that got all the
+    #     way to the last berth-bearing round and lost it;
+    #   * the other is the best-qualified DISTRICT LOSERS — the best teams by
+    #     TOSS that did not win their district and are not already in the field.
+    #     A district title is not a qualification any more (see above), so the
+    #     strongest team in a deep district can land here having been beaten
+    #     early, and it still has to win to get in.
+    #
+    # It convenes ONLY when berths remain — "it can be like other rounds where
+    # if we don't need it, it doesn't trigger", the shape the Divisional round
+    # already has at `L = 0`. Byeless by construction: n outstanding berths means
+    # n duals, one team from each pool, so every entrant plays exactly once and
+    # exactly n winners come out. A thin pool plays as many pairs as it can fill
+    # rather than sitting anybody — the shortfall is logged, never a bye.
+    cf_n = max(0, berths - len(qualifiers))
     dv_won = {id(t) for t in dv_winners}
-    lc_pool = sorted((t for t in dv_pool if id(t) not in dv_won),
-                     key=_power_key(power))[:2 * lc_n]
-    if len(lc_pool) % 2:
-        lc_pool = lc_pool[:-1]
-    if lc_n and lc_pool:
-        lc_arc, lc_winners = _recovery_round(lc_pool, phase="last_chance", rng=rng)
+    dv_losers = sorted((t for t in dv_pool if id(t) not in dv_won),
+                       key=_power_key(power))[:cf_n]
+    placed = {t.school.name for t in qualifiers} | zc_names | {
+        t.school.name for t in dv_losers}
+    champ_names = set(district_champs)
+    dist_losers = sorted((t for n, t in by_name.items()
+                          if n not in placed and n not in champ_names),
+                         key=_power_key(power))[:len(dv_losers)]
+    cf_pairs = list(zip(dv_losers, dist_losers))
+    cf_pool = [t for pair in cf_pairs for t in pair]
+    if cf_n and cf_pairs:
+        cf_arc, cf_winners = _recovery_round(cf_pool, phase="conference", rng=rng,
+                                             pairs=cf_pairs)
     else:
-        lc_arc, lc_winners = {"field": [], "rounds": [[]], "survivors": [],
-                              "round_names": [_RECOVERY_NAMES["last_chance"]]}, []
-    qualifiers += list(lc_winners)
+        cf_arc, cf_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["conference"]]}, []
+    qualifiers += list(cf_winners)
 
     if len(qualifiers) != berths:
         log.warning("JHSAA %s recovery filled %d of %d berths (pool %d, "
-                    "semi-state %d, divisional %d, last chance %d)", group,
+                    "semi-state %d, divisional %d, conference %d)", group,
                     len(qualifiers), berths, len(sr_pool), len(ss_pool),
-                    len(dv_pool), len(lc_pool))
-    return sr_arc, ss_arc, dv_arc, lc_arc, qualifiers, district_qualifiers
+                    len(dv_pool), len(cf_pool))
+    return sr_arc, ss_arc, dv_arc, cf_arc, qualifiers, district_qualifiers
 
 
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
@@ -2395,18 +2419,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
     # any State draw: the remaining berths are earned on court, and the State
     # seeding TOSS is recomputed once more AFTERWARD so it includes them.
-    super_regionals, semi_states, divisionals, last_chances = {}, {}, {}, {}
+    super_regionals, semi_states, divisionals, conferences = {}, {}, {}, {}
     recovery_q, district_q = {}, {}
     for group in GROUPS:
         k = ladder_scale(group)
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        sr, ss, dv, lc, quals, dq = _recovery(
+        sr, ss, dv, cf, quals, dq = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], k, post_power,
             seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
-        divisionals[group], last_chances[group] = dv, lc
+        divisionals[group], conferences[group] = dv, cf
         recovery_q[group], district_q[group] = quals, dq
     final_power = power_index(every_team, prestate=True)
     states = {}
@@ -2488,7 +2512,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "super_regional": super_regionals[group],
             "semi_state": semi_states[group],
             "divisional": divisionals[group],
-            "last_chance": last_chances[group],
+            "conference": conferences[group],
             # The names admitted by the DISTRICT GUARANTEE alone (champions who
             # did not win a Zonal) — access without a bye. Replaces the retired
             # TOSS wild cards; old archives keep their "wildcards" key.
