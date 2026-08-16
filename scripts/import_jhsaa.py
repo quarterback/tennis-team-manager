@@ -645,10 +645,10 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
 ]
 
 
-def league_names(blocks: list[list[dict]], group: str, gender: str) -> list[str]:
+def league_names(blocks: list[list[dict]], group: str) -> list[str]:
     """A name per block, drawn from `LEAGUE_NAMES` rather than from the map.
 
-    Deterministic: the bank is walked in an order seeded on (group, gender), so a
+    Deterministic: the bank is walked in an order seeded on the group, so a
     rebuild reproduces the same leagues and a league keeps its name across
     imports even as its membership shifts — which is the point.
 
@@ -658,7 +658,7 @@ def league_names(blocks: list[list[dict]], group: str, gender: str) -> list[str]
     exhausted it falls through to a plain numbered District — the legacy
     bureaucratic unit, deliberately allowed — so this can never raise or repeat.
     """
-    rng = random.Random(f"league|{SEED}|{group}|{gender}")
+    rng = random.Random(f"league|{SEED}|{group}")
     bank = LEAGUE_NAMES[:]
     rng.shuffle(bank)
     used: set[str] = set()
@@ -1085,8 +1085,7 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     return girls, boys
 
 
-def draw_districts(pool: list[dict], cities: dict, group: str = "",
-                   gender: str = "") -> dict[str, str]:
+def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str, str]:
     """school name -> district name, for ONE classification group.
 
     Sorted by area → county → city so a district is geographically contiguous, then cut
@@ -1124,7 +1123,7 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "",
     # and cannot raise or repeat. See LEAGUE_NAMES.
     blocks = [pool[lo:hi] for lo, hi in bounds if hi > lo]
     out = {}
-    for block, name in zip(blocks, league_names(blocks, group, gender)):
+    for block, name in zip(blocks, league_names(blocks, group)):
         for s in block:
             out[s["name"]] = name
     return out
@@ -1143,12 +1142,23 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}
-    dist = {"girls": {}, "boys": {}}
+    # ‼️ A LEAGUE IS A PROPERTY OF THE SCHOOL, NOT OF THE GENDER (owner rule
+    # 2027-08). Boys and girls at one school ALWAYS play in the same league, so
+    # the map is drawn ONCE per classification over every sponsor and both
+    # gender fields read it. Drawing per gender gave a school two different
+    # league names — invisible while every league was "<area> District" and
+    # glaring the moment the names became distinctive.
+    #
+    # Blocks are balanced on the GIRLS-inclusive pool (girls sponsorship is the
+    # superset), so a league's boys half is the ~88% of it that fields a boys
+    # team. A league carrying eleven girls' teams and nine boys' is exactly how
+    # this works in life; it is not an imbalance to correct.
+    league = {}
     for g in GROUPS:
-        for gender, pool_names in (("girls", girls), ("boys", boys)):
-            pool = [by_name[n] for n in pool_names
-                    if champ_group(by_name[n]["classification"]) == g]
-            dist[gender].update(draw_districts(pool, cities, g, gender))
+        pool = [by_name[n] for n in (girls | boys)
+                if champ_group(by_name[n]["classification"]) == g]
+        league.update(draw_districts(pool, cities, g))
+    dist = {"girls": league, "boys": league}
     out = []
     for name in sorted(girls | boys):
         s = by_name[name]
