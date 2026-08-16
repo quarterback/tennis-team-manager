@@ -352,7 +352,6 @@ RENAMES = {
     # everywhere and adds no new invented person.
     "Amaia Aramburu": "Ketanji Brown Jackson",
     "Amaia Aramburu North": "Belmonte Catholic",
-    "Aldermont": "Cape Angeles",   # the town renamed under it
     # each of these is the school named for its town, moving with it
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
