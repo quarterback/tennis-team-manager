@@ -1948,7 +1948,14 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
         # is the Qualies (two rounds at every real size — rest is always 4×c).
         names = [QUALIFIER_NAME] * (len(rounds) - 1) + ["First Round"] \
             if len(rounds) > 1 else [QUALIFIER_NAME] * len(rounds)
-        entrants = champs + [t for t in slots if t is not None]
+        # Survivors re-enter the main draw at their ORIGINAL seeds, not their
+        # qualifying-bracket positions. `slots` is in sub-draw slot order, and
+        # feeding that to `seeded_draw` would let it read the positional order
+        # as seed ranks c+1… — seed 16 could take the second qualifier anchor
+        # while the archive and every page still label it No. 16.
+        order = {id(t): i for i, t in enumerate(field)}
+        entrants = champs + sorted((t for t in slots if t is not None),
+                                   key=lambda t: order[id(t)])
 
     size = 1
     while size < len(entrants):
