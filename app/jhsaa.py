@@ -1975,6 +1975,12 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                 continue
             seen.add(t.school.name)
             cf_rank.append(t)
+    # ‼️ SNAPSHOT THE ATR THAT RANKED THIS POOL, at this moment. `t.power` is the
+    # regular-season stamp and `t.win_pct` keeps moving until the last state dual,
+    # so re-deriving ATR on read gives a number that did not select anybody — the
+    # archived-not-recomputed rule the Power Index already follows, and it binds
+    # harder here because these ARE the ranks the round was built from.
+    atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
     cf_pool = cf_rank[:2 * cf_n]
     if len(cf_pool) % 2:
         cf_pool = cf_pool[:-1]
@@ -1991,7 +1997,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                     "semi-state %d, divisional %d, conference %d)", group,
                     len(qualifiers), berths, len(sr_pool), len(ss_pool),
                     len(dv_pool), len(cf_pool))
-    return sr_arc, ss_arc, dv_arc, cf_arc, qualifiers, district_qualifiers
+    return sr_arc, ss_arc, dv_arc, cf_arc, qualifiers, district_qualifiers, atr_used
 
 
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
@@ -2465,18 +2471,20 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # any State draw: the remaining berths are earned on court, and the State
     # seeding TOSS is recomputed once more AFTERWARD so it includes them.
     super_regionals, semi_states, divisionals, conferences = {}, {}, {}, {}
+    atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
     for group in GROUPS:
         k = ladder_scale(group)
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        sr, ss, dv, cf, quals, dq = _recovery(
+        sr, ss, dv, cf, quals, dq, atr_used = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], k, post_power,
             seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], conferences[group] = dv, cf
         recovery_q[group], district_q[group] = quals, dq
+        atr_snap.update(atr_used)
     final_power = power_index(every_team, prestate=True)
     states = {}
     for group in GROUPS:
@@ -2552,7 +2560,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                                # ATR beside the TOSS it is half of — ARCHIVED,
                                # not recomputed on read, exactly like `pi`: it is
                                # the number the Conference pool was ranked on.
-                               "atr": atr_of(t.power, t.win_pct)}
+                               "atr": atr_snap.get(t.school.name,
+                                                   atr_of(t.power, t.win_pct))}
                               for t in ts] for d, ts in standings.items()},
             "protected": protecteds[group],
             "sectional": sectionals[group],

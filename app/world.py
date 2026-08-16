@@ -3993,7 +3993,13 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     out = {"made_state": False, "seed": 0, "place": 0, "finish": "",
            "champion": False, "played_sectional": school in sec_field,
            "wildcard": False, "district_qualifier": False}
-    # A recovery run supersedes the ladder loss that sent the school there.
+    # A recovery run supersedes the ladder loss that sent the school there,
+    # deepest rung first — the CONFERENCE is the last one played, so a school
+    # that reached it did not end its year at Sectionals.
+    if school in ((grp.get("conference") or {}).get("field") or ()):
+        from . import jhsaa as _jh
+        out["finish"] = _jh.CONFERENCE_NAME
+        return out
     if school in ((grp.get("divisional") or {}).get("field") or ()):
         from . import jhsaa as _jh
         out["finish"] = _jh.DIVISIONAL_NAME
@@ -4143,7 +4149,7 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     from before units existed carry no `unit` keys and yield nothing."""
     out = []
     for key in ("sectionals", "wards", "prestate", "super_regional",
-                "semi_state", "divisional"):
+                "semi_state", "divisional", "conference"):
         d = (arc.get(key) or {}).get(group) or {}
         for games in d.get("rounds") or ():
             for gm in games:
@@ -4195,6 +4201,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "super_regional": (arc.get("super_regional") or {}).get(g),
          "semi_state": (arc.get("semi_state") or {}).get(g),
          "divisional": (arc.get("divisional") or {}).get(g),
+         "conference": (arc.get("conference") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)

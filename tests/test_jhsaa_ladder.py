@@ -13,13 +13,13 @@ The qualification structure (owner spec 2027-08, expanded State fields):
   3. NO district guarantee (owner reversal 2027-08). Winning a district buys a
      PROTECTED seat and nothing at State: a champion that loses falls into the
      same recovery pools as everyone else and wins its way in, or does not go.
-  4. The recovery rounds — Super Regionals → Semi-State → Divisionals, and a
-     CONDITIONAL Conference round — best-TOSS Divisional losers paired against
-     the best-qualified district champions still outside the field — that convenes only if berths remain. Every berth is EARNED ON COURT by the loser pool (Regional losers,
-     joined at Semi-State by Zonal losers, then Ward/Sectional/Area losers as
-     bodies once the ladder's own losers are exhausted — a body is another
-     chance to play, never a berth). No berth is handed out by a TOSS recompute
-     — the wild-card model is retired.
+  4. The recovery rounds — Super Regionals → Semi-State → Divisionals, then a
+     CONDITIONAL Conference that convenes only if berths remain and fills every
+     one that does. Super Regionals is the ladder's OWN losers (no Ward
+     playbacks); the Conference is one reseeded pool of Divisional losers,
+     district champions still outside the field, and the top Ward/Sectional/Area
+     losers by ATR — their single shot. No berth is handed out by a TOSS
+     recompute; the wild-card model is retired.
 
 State is 24 teams in the three largest classes and 40 in the five smaller ones
 (owner table 2027-08) — a 40 being a 24 with a Qualifiers Round in front of it.
@@ -195,7 +195,13 @@ def test_recovery_berths_are_earned_on_court(archived):
         # ever lands on a team that did not earn it.
         sec_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
                       for games in sec["rounds"] for gm in games}
+        # Super Regionals is the ladder's own losers now — Ward and Sectional
+        # losers get their one shot at the CONFERENCE instead (owner rule
+        # 2027-08: no Ward playbacks).
         assert set(sr["field"]) <= reg_losers | ward_losers | sec_losers
+        # the Conference draws on the recovery losers, the district champions
+        # still outside the field, and the last-resort Ward/Sectional pools
+        assert set(lc["field"]).isdisjoint(set(pre["survivors"]))
         # Semi-State = Super Regional winners + Zonal losers + readmitted Super
         # Regional losers; the Divisional Round is drawn from Semi-State losers.
         assert set(ss["field"]) <= set(sr["field"]) | (zon_losers - set(dq))
@@ -238,6 +244,11 @@ def test_wards_regionals_and_zonals_are_byes_free(archived):
             for games in br["rounds"]:
                 assert len(games) * 2 == alive, (g, alive, len(games))
                 alive -= len(games)
+        # every RECOVERY round pairs its entire field, the Conference included
+        for br in (sr, ss, dv, lc):
+            for games in br["rounds"]:
+                if games:
+                    assert len(games) * 2 == len(br["field"]), (g, len(br["field"]))
 
 
 def test_state_byes_belong_to_the_zonal_champions(archived):
@@ -322,12 +333,13 @@ def test_finishes_name_the_stage_a_run_ended_at(archived):
         sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
         grp = {"sectional": sec, "ward": ward, "prestate": pre,
                "super_regional": sr, "semi_state": ss, "divisional": dv,
-               "state": state, "district_qualifiers": dq}
+               "conference": lc, "state": state, "district_qualifiers": dq}
         # Sectional/Area losers can be pulled back in as recovery BODIES, and a
         # recovery run supersedes the round that sent them there — so only the
         # ones that stayed out name a Sectionals/Areas finish.
         sec_out = (set(sec["field"]) - set(sec["survivors"])
-                   - set(sr["field"]) - set(ss["field"]) - set(dv["field"]))
+                   - set(sr["field"]) - set(ss["field"]) - set(dv["field"])
+                   - set(lc["field"]))
         for name in sec_out:
             # A multi-round Sectionals opens with AREAS (owner rule): the finish
             # names the round the run actually ended in, so an Area-round exit
@@ -338,24 +350,32 @@ def test_finishes_name_the_stage_a_run_ended_at(archived):
             assert (r["finish"], r["made_state"]) == (sec["round_names"][last], False)
         # A Ward loser is out at Wards — unless TOSS handed it a recovery chance.
         for name in (set(ward["field"]) - set(ward["survivors"])
-                     - set(sr["field"]) - set(ss["field"]) - set(dv["field"])):
+                     - set(sr["field"]) - set(ss["field"]) - set(dv["field"])
+                     - set(lc["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Wards", False)
         # A ladder loser's year ends at the RECOVERY stage it fell out of, never
         # at the ladder round that sent it there — and a Super Regional loser
         # readmitted to Semi-State goes further still, so only the ones that
         # stopped there name "Super Regionals".
-        for name in set(sr["field"]) - set(sr["survivors"]) - set(ss["field"]):
+        for name in (set(sr["field"]) - set(sr["survivors"]) - set(ss["field"])
+                     - set(lc["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Super Regionals", False)
         # ...and a Semi-State loser drawn into the Divisional Round goes further
         # still, so only the ones that stopped there name "Semi-State".
-        for name in set(ss["field"]) - set(ss["survivors"]) - set(dv["field"]):
+        for name in (set(ss["field"]) - set(ss["survivors"]) - set(dv["field"])
+                     - set(lc["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Semi-State", False)
-        for name in set(dv["field"]) - set(dv["survivors"]):
+        for name in (set(dv["field"]) - set(dv["survivors"]) - set(lc["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == (jh.DIVISIONAL_NAME, False)
+        # ...and a Conference loser's year ends at the CONFERENCE, whatever
+        # rung — or none — sent it there.
+        for name in set(lc["field"]) - set(lc["survivors"]):
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert (r["finish"], r["made_state"]) == (jh.CONFERENCE_NAME, False)
         for name in dq:
             r = wd.jhsaa_postseason_result(grp, name)
             assert r["made_state"] and r["district_qualifier"]
@@ -471,7 +491,7 @@ def test_every_unit_win_becomes_a_team_honour(archived):
     for g in jh.GROUPS:
         won = {}
         for key in ("sectionals", "wards", "prestate", "super_regional",
-                    "semi_state", "divisional"):
+                    "semi_state", "divisional", "conference"):
             for games in (arc[key][g].get("rounds") or ()):
                 for gm in games:
                     won.setdefault(gm["winner"], []).append(wd._unit_honour(gm["unit"]))
@@ -575,14 +595,14 @@ def test_no_recovery_round_has_a_bye(archived):
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
         for name, arc in (("Super Regionals", sr), ("Semi-State", ss),
-                          (jh.DIVISIONAL_NAME, dv)):
+                          (jh.DIVISIONAL_NAME, dv), (jh.CONFERENCE_NAME, lc)):
             played = {nm for games in arc["rounds"] for gm in games
                       for nm in (gm["home"], gm["away"])}
             assert set(arc["field"]) == played, (g, name, "bye in recovery")
         # ...so every recovery qualifier won its LAST dual, and the only other
         # doors into State are a Zonal title and the district guarantee.
         earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
-        won = {gm["winner"] for arc in (ss, dv)
+        won = {gm["winner"] for arc in (ss, dv, lc)
                for games in arc["rounds"] for gm in games}
         assert earned <= won, (g, sorted(earned - won))
 

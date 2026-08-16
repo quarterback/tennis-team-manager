@@ -713,7 +713,7 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # name is a different namespace; a region and a program can share a compass
 # point the way a real state's do.)
 AREA_RENAMES = {
-    "Mother Lode": "Siskiyou Valley",
+    "Mother Lode": "Southern Jefferson",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
@@ -724,7 +724,7 @@ AREA_RENAMES = {
 # ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
 # so a relocation must stay inside the area the districts were drawn from.
 RELOCATIONS = {
-    "Mother Lode": "Siskiyou Valley",
+    "Mother Lode": "Copper Prairie",
 }
 
 # ⚠️ Display names carry NO institutional suffix (owner rule 2027-08: "you don't
