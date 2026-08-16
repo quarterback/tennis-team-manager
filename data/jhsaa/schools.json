@@ -5433,26 +5433,6 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Gold Pass",
-      "city": "Gold Pass",
-      "county": "Juniper",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 239,
-      "private": false,
-      "mascot": "Assayers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League",
-      "source": "Gold Junction"
-    },
-    {
       "name": "Goldbank County",
       "city": "Hydraulic Gap",
       "county": "Goldbank",
@@ -5663,7 +5643,7 @@
     },
     {
       "name": "Greta Bellini",
-      "city": "West Simmons",
+      "city": "Silver Glen",
       "county": "Ferris",
       "area": "Gold Valley",
       "classification": "3A",
@@ -12618,6 +12598,26 @@
       "boys_district": "Mariners League"
     },
     {
+      "name": "Seamus Town",
+      "city": "Seamus Town",
+      "county": "Juniper",
+      "area": "Juniper Highlands",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 239,
+      "private": false,
+      "mascot": "Assayers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League",
+      "source": "Gold Junction"
+    },
+    {
       "name": "Selbyville",
       "city": "Selbyville",
       "county": "Camas",
@@ -12809,6 +12809,26 @@
       "girls_district": "Vesterheim Athletic Association",
       "boys_district": "Vesterheim Athletic Association",
       "source": "Silton Union"
+    },
+    {
+      "name": "Silver Glen",
+      "city": "Silver Glen",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 467,
+      "private": false,
+      "mascot": "Silversmiths",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Silver Glen"
     },
     {
       "name": "Silver Lake",
@@ -15844,26 +15864,6 @@
       "boys": true,
       "girls_district": "Ironwood League",
       "boys_district": "Ironwood League"
-    },
-    {
-      "name": "West Simmons",
-      "city": "West Simmons",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 467,
-      "private": false,
-      "mascot": "Silversmiths",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Silver Glen"
     },
     {
       "name": "Western Sky",
