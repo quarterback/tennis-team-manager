@@ -3190,6 +3190,26 @@
       "boys_district": "Metro League"
     },
     {
+      "name": "Cook City",
+      "city": "Cook City",
+      "county": "Featherstone",
+      "area": "Southern Jefferson",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1568,
+      "private": false,
+      "mascot": "Hoosiers",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Ewart City"
+    },
+    {
       "name": "Coolidge",
       "city": "Olive Reach",
       "county": "Kernwood",
@@ -4432,27 +4452,8 @@
       "boys_district": "Ambassador League"
     },
     {
-      "name": "Ewart City",
-      "city": "Ewart City",
-      "county": "Featherstone",
-      "area": "Southern Jefferson",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1568,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
-    },
-    {
       "name": "Featherstone Institute",
-      "city": "Ewart City",
+      "city": "Cook City",
       "county": "Featherstone",
       "area": "Southern Jefferson",
       "classification": "1A",
@@ -4915,6 +4916,26 @@
       "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
+    },
+    {
+      "name": "Fountain Park",
+      "city": "Fountain Park",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A-1A",
+      "enrollment": 216,
+      "private": false,
+      "mascot": "Bald Eagles",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Tailing Crossing-Ewart Bar Union"
     },
     {
       "name": "Foxtail Meadows",
@@ -8478,7 +8499,7 @@
     },
     {
       "name": "Madison",
-      "city": "Ewart City",
+      "city": "Cook City",
       "county": "Featherstone",
       "area": "Southern Jefferson",
       "classification": "3A",
@@ -14179,25 +14200,6 @@
       "boys": true,
       "girls_district": "Dual County League",
       "boys_district": "Dual County League"
-    },
-    {
-      "name": "Tailing Crossing-Ewart Bar Union",
-      "city": "Ewart Bar",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A-1A",
-      "enrollment": 216,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
     },
     {
       "name": "Tallow",

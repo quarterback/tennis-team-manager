@@ -332,6 +332,8 @@ RENAMES = {
     "Stone Meadows": "Raahe",
     "Silvale": "Fort Wren",
     "Ewartville": "Fort Tabor",
+    "Ewart City": "Cook City",
+    "Tailing Crossing-Ewart Bar Union": "Fountain Park",
     "Marshdale": "Fort Lassiter",
     "Goodman": "Fort Bardsley",
     "Fort Salish": "Fort Weller",
@@ -994,6 +996,9 @@ CITY_RENAMES = {
     # other way round — Bardsley County sits under Fort Bardsley.)
     "Silvale": "Fort Wren",
     "Ewartville": "Fort Tabor",
+    # The rest of the Ewart valley, renamed with it (owner, 2027-08).
+    "Ewart City": "Cook City",
+    "Ewart Bar": "Fountain Park",
     "Marshdale": "Fort Lassiter",
     "Goodman": "Fort Bardsley",
     "Fort Rogue": "Fort Halloran",
