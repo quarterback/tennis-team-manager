@@ -602,14 +602,18 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Black Canyon League", "Millersylvania"),
     ("Basalt League", "Millersylvania"),
     # -- sage, plains and the interior --------------------------------------
-    ("Sage Plains League", "Sage Plains"),
-    ("Inland Empire League", "Sage Plains"),
-    ("Far West League", "Sage Plains"),
-    ("Golden West League", "Sage Plains"),
-    ("Sunbelt League", "Sage Plains"),
-    ("Wheatland Athletic Association", "Sage Plains"),
-    ("Frontier League", "Sage Plains"),
-    ("Pioneer League", "Sage Plains"),
+    ("Sage Plains League", "Kangas"),
+    ("Inland Empire League", "Kangas"),
+    ("Far West League", "Kangas"),
+    ("Golden West League", "Kangas"),
+    ("Sunbelt League", "Kangas"),
+    ("Wheatland Athletic Association", "Kangas"),
+    ("Frontier League", "Kangas"),
+    ("Kaleva League", "Kangas"),
+    ("Vesterheim Athletic Association", "Kangas"),
+    ("Norheim League", "Kangas"),
+    ("Suomi Interscholastic League", "Kangas"),
+    ("Pioneer League", "Kangas"),
     # -- timber and vermilion -----------------------------------------------
     ("Timber Valley League", "Alderwold"),
     ("Foundry League", "Alderwold"),
@@ -838,7 +842,7 @@ MASCOTS = {
     "Elk Bluff": "Bugles",
     "Millport": "Log Drivers",
 
-    # ── Sage Plains: sagebrush and stock ─────────────────────────────────────
+    # ── Kangas: sagebrush, stock and the Finn settlements ────────────────────
     "Ninemile": "Freighters",
     "Alina Belov": "White Sage",
     "Sage Meadows": "Meadowlarks",
@@ -899,6 +903,13 @@ AREA_RENAMES = {
     # the third Valley on the map.
     "South Coast": "Sebastian Cape",
     "Timber Valley": "Alderwold",
+    # The last bare noun-plus-landform, and the NORDIC/FINNISH register the
+    # owner asked for — which the real Pacific Northwest already carries
+    # (Astoria's Finns, Naselle, Poulsbo, Ballard). "Kangas" is Finnish for the
+    # dry pine heath, which is precisely what the region is, and a common
+    # Finnish-American surname besides. One word, like Alderwold, Harborline
+    # and Millersylvania.
+    "Sage Plains": "Kangas",
 }
 
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own

@@ -116,7 +116,7 @@ MIN_REGION_PROGRAMS = 4
 # Derived from the PROGRAM COUNT, never a list of region names: the association's
 # shape changes when schools are added, and the reason for the rule is the size,
 # not the name. Measured — boys: Halbrook 115 · Gold Valley 65 · Harborline 51 ·
-# Sebastian Cape 49 · Ashbury Metro 45, then a clean break to Sage Plains 36. Girls
+# Sebastian Cape 49 · Ashbury Metro 45, then a clean break to Kangas 36. Girls
 # is the same five, 50-128 against 38. So 45 splits exactly the regions the owner
 # named, plus Sebastian Cape, which is BIGGER than Ashbury Metro on the boys' side
 # and so cannot be left out on the owner's own reasoning.
