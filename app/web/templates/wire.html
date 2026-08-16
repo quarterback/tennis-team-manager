@@ -65,16 +65,7 @@
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ v.total }} moves</div>
-  <span class="bl-entries-right">every committed transfer, every season — not just the headline ones</span>
-</div></div>
-
-<div class="bl-notes"><div class="bl-note" style="font-size:13.5px">
-  The transaction log. <strong>Division</strong> is the division a program was in <em>at the time</em>;
-  <strong>conference</strong> is where that program plays <em>now</em>, so you can find a ten-year-old move
-  by the league you know the school by today. Filters match <em>either end</em> of a move — picking a
-  conference shows its departures as well as its arrivals. The
-  <a href="{{ url_for('portal_rankings_page', u=u) }}">Portal Rankings</a> board grades one class at a
-  time; this is the career view.
+  <span class="bl-entries-right">every committed transfer, every season</span>
 </div></div>
 
 <div class="bl-container"><div class="bl-tablescroll">
@@ -127,8 +118,8 @@
     {% endfor %}
     {% if not v.rows %}
     <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">
-      {% if v.years %}No moves match these filters — widen the season, division or conference.
-      {% else %}Nothing on the wire yet. Moves are archived when a pre-season or fall portal is committed.{% endif %}
+      {% if v.years %}No moves match these filters.
+      {% else %}Nothing on the wire yet.{% endif %}
     </span></div>
     {% endif %}
   </div>

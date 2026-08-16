@@ -3,23 +3,18 @@
 {% block content %}
 <div class="bl-prose" style="max-width:760px">
   <h1>Junior Setup</h1>
-  <p class="lede">Tune the junior circuit without touching code. Changes are saved to this world and the
-    recruiting class <strong>regenerates on the next view</strong> (the build is cached, so the first load
-    after a change does the work). Determinism holds: the same settings + seed always reproduce the same
-    résumés.</p>
-
   <form method="post" action="{{ url_for('junior_setup') }}">
     <input type="hidden" name="u" value="{{ u }}">
 
     <h2>Season</h2>
     <table class="bl-protable"><tbody>
-      <tr><td><strong>Season weeks</strong><div class="bl-help">How many abstract weeks the season runs — every recruit plays one event per week. More weeks = more matches &amp; data, slower build. Default {{ view.defaults.weeks }}.</div></td>
+      <tr><td><strong>Season weeks</strong><div class="bl-help">Default {{ view.defaults.weeks }}</div></td>
         <td class="w"><input class="bl-num" type="number" name="season_weeks" min="4" max="40" step="1" value="{{ view.weeks }}"></td></tr>
-      <tr><td><strong>Draw size</strong><div class="bl-help">Players per single-elim draw at every level. Default {{ view.defaults.draw }}.</div></td>
+      <tr><td><strong>Draw size</strong><div class="bl-help">Default {{ view.defaults.draw }}</div></td>
         <td class="w"><input class="bl-num" type="number" name="draw_size" min="8" max="64" step="1" value="{{ view.draw }}"></td></tr>
-      <tr><td><strong>Development years</strong><div class="bl-help">How much of a recruit's climb is replayed across the junior season (the bloom/plateau arc). Default {{ view.defaults.dev }}.</div></td>
+      <tr><td><strong>Development years</strong><div class="bl-help">Default {{ view.defaults.dev }}</div></td>
         <td class="w"><input class="bl-num" type="number" name="dev_years" min="0" max="3" step="0.1" value="{{ view.dev }}"></td></tr>
-      <tr><td><strong>Doubles weight</strong><div class="bl-help">Share of best-6 doubles points folded into the combined ranking (ITF CJR uses ¼). Default {{ view.defaults.doubles_weight }}.</div></td>
+      <tr><td><strong>Doubles weight</strong><div class="bl-help">Default {{ view.defaults.doubles_weight }}</div></td>
         <td class="w"><input class="bl-num" type="number" name="doubles_weight" min="0" max="1" step="0.05" value="{{ view.doubles_weight }}"></td></tr>
     </tbody></table>
 
@@ -47,11 +42,6 @@
     </div>
   </form>
 
-  <div class="bl-notes" style="margin-top:20px"><div class="bl-note">
-    These are world settings stored alongside the nationality band and active universes. The recruiting board
-    (consensus ability) is unaffected — only the junior circuit (schedule, points, development, doubles) reads
-    them. Cumulative band cutoffs are clamped ascending; State is always 100%.
-  </div></div>
 </div>
 
 <style>

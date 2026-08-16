@@ -34,14 +34,11 @@
 
 {% if not br %}
 <div class="bl-container"><div class="bl-note">
-  The NCAA bracket fills in once the tournament begins — advance through the conference tournaments and into the
-  national championship, then check back here to see the real, played bracket. (The
-  <a href="{{ url_for('bracket', u=u) }}" style="color:var(--text-link)">Bracket Simulator</a> shows a projection meanwhile.)
+  No NCAA bracket yet · <a href="{{ url_for('bracket', u=u) }}" style="color:var(--text-link)">Bracket Simulator</a>
 </div></div>
 {% elif br.reveal %}
 <div class="bl-container"><div class="bl-note new">
-  <strong><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Bracket reveal — the field is set.</strong> Conference champions are in (AQ); the rest of the
-  {{ br.size }}-team field is at-large by Power Index (AL). Advance the world to start the NCAAs.
+  <strong><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Bracket reveal — the field is set.</strong>
   {% if br.field_regions %}<br>Four S-curve-balanced regions, each seeded 1–{{ br.field_regions[0].teams|length }};
   region champions meet in the national semifinals
   ({{ br.field_regions[0].name }} v {{ br.field_regions[1].name }} ·
@@ -235,12 +232,6 @@
   </div>
 </div></div>
 {% endif %}
-
-<div class="bl-container"><div class="bl-note">
-  Follow the lines: every card sits between the two matchups that feed it, so a winner's path runs left to right
-  into the card it plays next. A greyed card with no score hasn't been played yet — that's the dual on the board now.
-  Click a card for the box score; click a team to open its page.
-</div></div>
 
 {{ brk_script() }}
 {% endif %}

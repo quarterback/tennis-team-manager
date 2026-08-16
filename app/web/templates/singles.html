@@ -6,9 +6,7 @@
 <div class="bl-board" style="max-width:760px">
   <div class="bl-panel"><div class="bl-panel-body" style="padding:32px;text-align:center">
     <h2 style="margin:0 0 8px">No singles championship yet</h2>
-    <p class="bl-conf">The individual singles championship is played <strong>after</strong> the
-    NCAA team tournament. Finish the team bracket from the
-    <a href="{{ url_for('season_hub', u=u) }}">Season</a> hub, then come back.</p>
+    <p class="bl-conf"><a href="{{ url_for('season_hub', u=u) }}">Season</a> hub</p>
   </div></div>
 </div>
 {% else %}
@@ -35,8 +33,6 @@
     <div class="bl-bracket-title-row">
       <div>
         <h1>{{ uni_label }} Singles Championship</h1>
-        <p>The 128 best singles players in the field, with the top {{ ch.n_seeds }} seeded and
-        the rest drawn in — then every round is a full point-by-point match.</p>
       </div>
       <div class="bl-bracket-actions">
         <a class="bl-pill" href="{{ url_for('doubles_championship', u=u) }}">Doubles</a>
@@ -68,7 +64,6 @@
     </select></span>
   </form>
   {% endif %}
-  <span class="bl-bracket-control-note">128 players mirrors the NCAA singles draw; {{ ch.n_seeds }} are seeded.</span>
 </div></div>
 
 <div class="bl-bracket-shell">
@@ -120,11 +115,6 @@
         </div>
       </div>
 
-      <div class="bl-note bl-bracket-note">
-        <strong>Seeding:</strong> only the top {{ ch.n_seeds }} are seeded and protected in
-        the draw (a quarter of the bracket); everyone else is drawn in at random — so an
-        unseeded player can land anywhere, and a deep run off a tough draw is earned.
-      </div>
     </aside>
 
     <main class="bl-tournament-main">

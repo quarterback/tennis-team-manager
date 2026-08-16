@@ -28,8 +28,8 @@
 
 {% if not c.commits %}
 <div class="bl-container"><div class="bl-note">
-  {{ c.school }} hasn't signed anyone yet this cycle. Commitments fill in as the season advances —
-  see the <a href="{{ url_for('signing_tracker_page', u=u) }}" style="color:var(--text-link)">Signing Tracker</a>.
+  {{ c.school }} hasn't signed anyone yet this cycle ·
+  <a href="{{ url_for('signing_tracker_page', u=u) }}" style="color:var(--text-link)">Signing Tracker</a>
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-panel">

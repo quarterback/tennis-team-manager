@@ -103,7 +103,7 @@
   {% if recent %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span>
-      <span class="bl-panel-meta">click a match for the full box score</span></div>
+      </div>
     <div style="padding:8px 16px">
       {% for d in recent %}
       {% if d.status == 'final' %}
@@ -121,7 +121,7 @@
   {% if transactions %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
-      <span class="bl-panel-meta">week 0 = off-season (draft picks &amp; founder releases) · in-season = add/drop wire, same gender, no trades</span>
+      
       <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('gtt_draft', lg=league.id) }}"><i class="fa-solid fa-list-ol" aria-hidden="true"></i> Draft board</a></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-tx">
       <div class="bl-thead gtt-tx-row">

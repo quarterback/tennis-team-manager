@@ -407,15 +407,6 @@
 /* ============================================================
    Explainer (details / summary) — "how it works" panels
    ============================================================ */
-.bl-explainer { margin: 14px 0 4px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden; }
-.bl-explainer > summary { cursor: pointer; padding: 12px 16px; font-size: 14.5px; font-weight: 700; color: var(--text-primary); list-style: none; display: flex; align-items: center; gap: 8px; }
-.bl-explainer > summary::before { content: '\25B8'; color: var(--text-muted); transition: transform var(--dur-fast) var(--ease-in-out); }
-.bl-explainer[open] > summary::before { transform: rotate(90deg); }
-.bl-explainer > summary::-webkit-details-marker { display: none; }
-.bl-explainer-body { padding: 2px 16px 14px; font-size: 14.5px; color: var(--text-secondary); line-height: 1.6; }
-.bl-explainer-body p { margin: 0 0 8px; }
-.bl-explainer-body ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
-.bl-explainer-body strong { color: var(--text-primary); }
 
 /* ============================================================
    Responsive

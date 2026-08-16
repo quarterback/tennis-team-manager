@@ -6,12 +6,6 @@
   <div class="ob-card">
     <div class="ob-eyebrow">Play to Clinch · College Tennis</div>
     <h1 class="ob-title">Start your league</h1>
-    <p class="ob-lede">
-      You're the only one here yet — nothing has been simulated. Start a fresh
-      league and you'll begin at <strong>preseason, week 0</strong>: real
-      rosters seeded across D1/D2/D3/D4 (men's and women's), no duals played. From
-      there you advance the world week by week and watch the season unfold.
-    </p>
 
     <form method="post" action="{{ url_for('world_new') }}" class="ob-actions" data-loading='{"title":"Building your world…","sub":"Generating tens of thousands of players across every division and seeding their rosters. The first build takes a minute or two — after this it loads fast.","stages":["Generating players for every division…","Seeding rosters & recruits…","Placing conferences & prestige…","Finalizing your world…"]}'>
       <label class="ob-field">
@@ -23,8 +17,6 @@
                   title="Roll a new seed"
                   onclick="this.previousElementSibling.value=Math.random().toString(36).slice(2,10)"><i class="fa-solid fa-dice" aria-hidden="true"></i> Reroll</button>
         </span>
-        <span class="ob-field-hint">Drives every name, roster &amp; recruit roll. Change it (or reroll) for a
-          different world; reuse the same seed to replay an identical one. Clear it for a random world each time.</span>
       </label>
 
       <label class="ob-field">
@@ -34,7 +26,6 @@
           <option value="{{ value }}" {% if value == band %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-        <span class="ob-field-hint">Where players, coaches &amp; recruits come from — fixed for this world.</span>
       </label>
 
       <label class="ob-field">
@@ -44,7 +35,6 @@
           <option value="{{ c }}" {% if (c - intl_share)|abs < 0.001 %}selected{% endif %}>{{ (100 - (c * 100))|round|int }}% US / {{ (c * 100)|round|int }}% international</option>
           {% endfor %}
         </select>
-        <span class="ob-field-hint">This — not the multipliers below — sets how much of each incoming recruiting class is American vs. from the rest of the world. The nationality mix above only decides <em>which</em> countries the international slice is split among.</span>
       </label>
 
       <details class="ob-regions" id="ob-regions">
@@ -353,7 +343,6 @@
           <label class="ob-chk"><input type="checkbox" name="genders" value="{{ g }}" checked> {{ lbl }}</label>
           {% endfor %}
         </div>
-        <span class="ob-field-hint">Unchecked divisions/genders still exist but run dormant in the background — lighter on memory.</span>
       </label>
 
       <div class="ob-field">
@@ -376,8 +365,6 @@
             {% endfor %}
           {% endfor %}
         </select>
-        <span class="ob-field-hint">Choose a side and division, then your program — the list filters to match.
-          The universe you coach is always run in detail. Leave it on “Spectate” to just watch the world.</span>
       </div>
       <script>
       (function () {
@@ -442,7 +429,6 @@
   color: var(--brand-strong); }
 .ob-title { font-family: var(--font-display); font-size: 32px; font-weight: 800;
   letter-spacing: -0.02em; margin: 6px 0 14px; color: var(--text-primary); }
-.ob-lede { font-size: 16px; line-height: 1.65; color: var(--text-secondary); margin: 0 0 24px; }
 .ob-actions { margin: 0 0 28px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
 .ob-field { display: flex; flex-direction: column; gap: 5px; width: 100%; max-width: 380px; }
 .ob-field-k { font-size: 13.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;

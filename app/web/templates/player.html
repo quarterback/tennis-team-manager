@@ -4,7 +4,7 @@
 {% if linked_coach %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner"><span class="bl-pill"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Coaching career</span><a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('coach', coach_id=linked_coach.coach_id, u=u) }}">View coach page →</a></div></div>
 {% elif is_alumni %}
-<div class="bl-panel" style="margin-bottom:12px"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Begin coaching career</span><span class="bl-panel-meta">creates a separate, linked coach page</span></div>
+<div class="bl-panel" style="margin-bottom:12px"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Begin coaching career</span></div>
   <div class="bl-panel-body"><form method="post" action="{{ url_for('player_become_coach', pid=pid) }}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
     <input type="hidden" name="u" value="{{ u }}">
     <label class="bl-field"><span class="bl-field-label">Gender</span><span class="bl-select-wrap"><select class="bl-select" id="pc-gender"><option value="men">Men</option><option value="women">Women</option></select></span></label>
@@ -12,7 +12,7 @@
     <label class="bl-field"><span class="bl-field-label">Program</span><span class="bl-select-wrap"><select class="bl-select" id="pc-school" name="dest_school" style="min-width:180px" required></select></span></label>
     <label class="bl-field"><span class="bl-field-label">Seat</span><span class="bl-select-wrap"><select class="bl-select" name="role"><option value="asst">Assistant Coach</option><option value="assoc">Associate Head Coach</option><option value="head">Head Coach</option></select></span></label>
     <button class="bl-pill" type="submit">Begin coaching career</button>
-  </form><p class="bl-note" style="margin-top:8px">Choose any program in any division—not only this player's alma mater. Once hired, this coach uses the normal coach movement tools and can move or change roles throughout their career.</p></div>
+  </form></div>
 </div>
 <script id="pc-tree" type="application/json">{{ coach_move_tree|tojson }}</script>
 <script>
@@ -62,7 +62,7 @@
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
-        <span class="bl-panel-meta">team · class · position · record (a school change is a transfer)</span></div>
+        <span class="bl-panel-meta">team · class · position · record</span></div>
         <div class="bl-tablescroll" style="border:none">
           <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px 74px">
             <div class="bl-thead">
@@ -120,7 +120,7 @@
       <details class="bl-panel pl-matchlog">
         <summary class="bl-panel-head">
           <span class="bl-panel-title">Match-by-match log</span>
-          <span class="bl-panel-meta">{{ wins }}-{{ losses }} singles · tap to expand</span>
+          <span class="bl-panel-meta">{{ wins }}-{{ losses }} singles</span>
         </summary>
         <div class="bl-tablescroll" style="border:none;max-height:420px;overflow:auto">
           <div class="bl-table" style="--bl-grid-cols: 70px 50px minmax(120px,1fr) 130px 70px 60px">

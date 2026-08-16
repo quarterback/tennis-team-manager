@@ -24,7 +24,7 @@
 <div class="bl-container" style="padding-top:14px">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification &amp; gender</span>
-      <span class="bl-panel-meta">finite budget · caps differ by gender (women's tennis is a headcount sport) · exchange rate diminishes by level (D1 = 1.0)</span></div>
+      </div>
     <form method="post" action="{{ url_for('editor_scholarship') }}">
       <input type="hidden" name="u" value="{{ u }}">
       <div class="bl-schol-grid">
@@ -62,7 +62,7 @@
 <div class="bl-container">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Program ratings — {{ school }}</span>
-      <span class="bl-panel-meta">recruiting levers (0–100), independent of on-court strength · prestige = athletic brand pull · academics = academic profile</span></div>
+      <span class="bl-panel-meta">0–100</span></div>
     <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
       <form method="post" action="{{ url_for('editor_prestige') }}"
             style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -98,7 +98,7 @@
 <div class="bl-container">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff — {{ school }}</span>
-      <span class="bl-panel-meta">retire a coach to leave a seat open, then promote into it (no demotion) · keyed to the coach, honors follow</span></div>
+      </div>
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:8px">
       {% for s in staff %}
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
@@ -177,7 +177,7 @@
 <div class="bl-container">
   <div class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Conference ratings — {{ conf_ratings.conf }}</span>
-      <span class="bl-panel-meta">shifts the prior for all {{ conf_ratings.n }} programs in the league (each school keeps its relative bump); per-team edits above still win</span></div>
+      <span class="bl-panel-meta">{{ conf_ratings.n }} programs</span></div>
     <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
       <form method="post" action="{{ url_for('editor_conf_prestige') }}"
             style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -291,11 +291,6 @@
         refresh();
       })();
     </script>
-    <div class="bl-notes"><div class="bl-note">
-      Reorder with ▲▼ to pin a custom lineup (lines 1–{{ n_lineup }} are the singles ladder). To relocate players,
-      set a new program in the MOVE column for as many rows as you like — any program in any division —
-      then click <strong>Apply moves</strong> to commit the whole batch in one shot. Edits persist and
-      feed the dual simulator, team pages, and new season sims.</div></div>
 
     {% set dslots = n_doubles * 2 %}
     {% if rows and rows|length >= dslots %}
@@ -306,7 +301,7 @@
     {% set dpin = doubles_pin if doubles_pin|length == dslots else rows[:dslots]|map(attribute='pid')|list %}
     <div class="bl-panel" style="margin-top:16px">
       <div class="bl-panel-head"><span class="bl-panel-title">Doubles lineup</span>
-        <span class="bl-panel-meta">{{ n_doubles }} pairs — picked independently of singles; pair anyone on the roster (players play both)</span></div>
+        <span class="bl-panel-meta">{{ n_doubles }} pairs</span></div>
       <form method="post" action="{{ url_for('editor_doubles') }}" class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
         <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
         {% for i in range(n_doubles) %}
@@ -328,10 +323,6 @@
           {% else %}<span style="font-size:13.5px;color:var(--text-muted)">Auto (best pairing of the top {{ dslots }})</span>{% endif %}
         </div>
       </form>
-      <div class="bl-note" style="margin:0 12px 12px;font-size:13.5px;color:var(--text-faint)">
-        Applies to the coached team's season duals. Leave unset and the AI auto-pairs. If a pinned
-        player is injured for a dual, that week falls back to the auto pairing.
-      </div>
     </div>
     {% endif %}
   </div>

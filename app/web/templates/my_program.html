@@ -53,7 +53,6 @@
           </form>
         {% else %}
           <span class="mp-badge">Auto lineup</span>
-          <span class="mp-note" style="margin:0;">The AI sets the ladder by strength. Nudge a player to take it over — leave it alone and you're at no disadvantage.</span>
         {% endif %}
       </div>
       {% set ladder = mp.starters + mp.bench %}
@@ -86,7 +85,6 @@
         <button class="mp-dbl-save" type="submit">Save lineup</button>
       </form>
       {% endif %}
-      <p class="mp-note">Pick any roster player into any singles slot — set the whole card at once. The “—” rows below the line are your bench. Doubles is set separately below.</p>
     </section>
 
     {% set pool = mp.starters + mp.bench %}
@@ -105,7 +103,6 @@
           </form>
         {% else %}
           <span class="mp-badge">Auto pairings</span>
-          <span class="mp-note" style="margin:0;">The AI pairs your top {{ dslots }}. Set your own — you can pair anyone on the roster, including depth from outside your singles card.</span>
         {% endif %}
       </div>
       <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl">
@@ -120,7 +117,6 @@
         {% endfor %}
         <button class="mp-dbl-save" type="submit">Save pairings</button>
       </form>
-      <p class="mp-note">Doubles is picked independently of singles, so players can play both — and you can use a depth player in doubles who isn't in that day's singles card. If a paired player is injured, that dual falls back to the auto pairing.</p>
     </section>
     {% endif %}
 
@@ -154,7 +150,7 @@
       </div>
       <div class="mp-bar"><span style="width: {{ (100 * mp.budget.allocated / mp.budget.cap)|round|int if mp.budget.cap else 0 }}%"></span></div>
       {% else %}
-      <p class="mp-note">This division offers no athletic aid — the whole roster is walk-ons ({{ mp.budget.walk_ons }}).</p>
+      <p class="mp-note">No athletic aid · {{ mp.budget.walk_ons }} walk-ons</p>
       {% endif %}
     </section>
 
