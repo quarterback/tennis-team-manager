@@ -322,6 +322,7 @@ RENAMES = {
     # needs it; `build` refuses to emit a collision either way.
     "Katherine Booker": "James K. Polk",
     "Amos Cross": "Lyndon B. Johnson",
+    "Aldermont": "Cape Angeles",   # the town renamed under it
     # ‼️ ONE SCHOOL PER NAME, and a person's name never takes a directional
     # qualifier — there is no "Sandra Day O'Connor North". A split campus of a
     # renamed school takes a PLACE name off its own town instead.
@@ -337,6 +338,7 @@ RENAMES = {
     "Amaia Aramburu": "Ketanji Brown Jackson",
     "Amaia Aramburu North": "Belmonte Catholic",
     "Amos Cross": "Lyndon B. Johnson",
+    "Aldermont": "Cape Angeles",   # the town renamed under it
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Caswell Heights",
     "Clara Cross": "Valderra Heights",
@@ -932,6 +934,19 @@ AREA_RENAMES = {
 # district and its geography while taking the crowding off one city.
 # ⚠️ The COUNTY follows the city (it is looked up from the city, not carried),
 # so a relocation must stay inside the area the districts were drawn from.
+# TOWN RENAMES (owner rule 2027-08) — the settlement itself, not a school.
+# ⚠️ Applied AFTER the county lookup, which must run on the SOURCE name:
+# prep-network's city table is keyed by the old name, so renaming first would
+# emit an empty county. Same reason RELOCATIONS looks its town up before the
+# rename is applied.
+#
+# Aldermont was the third Alder on the map (Alderwold the area, Alder Landing
+# and Alderfield the towns) and a one-school fishing port besides, so it takes
+# the cape: CAPE ANGELES, and its high school with it.
+CITY_RENAMES = {
+    "Aldermont": "Cape Angeles",
+}
+
 RELOCATIONS = {
     "Mother Lode": "Copper Prairie",
 }
@@ -1200,7 +1215,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     for name in sorted(girls | boys):
         s = by_name[name]
         town = RELOCATIONS.get(name, s["city"])
-        city = cities.get(town, {})
+        city = cities.get(town, {})          # county comes off the SOURCE town
+        town = CITY_RENAMES.get(town, town)
         display = _display_name(RENAMES.get(name, name))
         # ‼️ The ROSTER IDENTITY (`jhsaa.School.source`), and it must be stable
         # forever — it seeds the RNG that builds a program's twelve players and

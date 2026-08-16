@@ -314,25 +314,6 @@
       "boys_district": "Sky-Em League"
     },
     {
-      "name": "Aldermont",
-      "city": "Aldermont",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 309,
-      "private": false,
-      "mascot": "Gillnetters",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Harborline League",
-      "boys_district": "Harborline League"
-    },
-    {
       "name": "Alejandro Zamora",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
@@ -2649,6 +2630,26 @@
       "boys": true,
       "girls_district": "Upper Basin League",
       "boys_district": "Upper Basin League"
+    },
+    {
+      "name": "Cape Angeles",
+      "city": "Cape Angeles",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 309,
+      "private": false,
+      "mascot": "Gillnetters",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Harborline League",
+      "boys_district": "Harborline League",
+      "source": "Aldermont"
     },
     {
       "name": "Carden City",
