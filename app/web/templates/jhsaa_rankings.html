@@ -50,12 +50,12 @@
       <tr>
         {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 108, 'District — hover for the full name') }}
         {{ th('record', 'Rec', 56) }}<th style="width:52px" title="District record">Dist</th>
-        {{ th('place', 'Pl', 40) }}
+        {{ th('place', 'Pl', 36, 'District place — 1 is the district title') }}
         {{ th('pf', 'PF', 50, 'Courts won per dual') }}
         {{ th('pa', 'PA', 50, 'Courts lost per dual') }}
         {{ th('pi', 'TOSS', 56, 'TOSS Power Index — the archived seeding number') }}
         {{ th('atr', 'ATR', 56, 'Average Team Rating — half TOSS, half win percentage') }}
-        {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'State finish', 116) }}
+        {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'Finish', 64, 'State tournament finish — hover for the full label') }}
         {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played') }}
         {{ th('sc_pct', 'Rati', 48, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
         {{ th('fmt_shift', 'Fmt', 48, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
@@ -71,13 +71,15 @@
         <td><a title="{{ r.district }}" href="{{ url_for('jhsaa_district', group=view.group, district=r.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.district_short }}</a></td>
         <td><b>{{ r.record }}</b></td>
         <td>{{ r.drecord or '—' }}</td>
-        <td>{{ r.place or '—' }}{% if r.place == 1 %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>
+        {# No district-champion sticker: place 1 IS the district title, and the chip said it
+   twice in a column two characters wide. #}
+        <td>{{ r.place or '—' }}</td>
         <td class="num">{{ '%.1f'|format(r.pf) }}</td>
         <td class="num">{{ '%.1f'|format(r.pa) }}</td>
         <td class="num">{{ '%.3f'|format(r.pi) if r.pi is not none else '—' }}</td>
         <td class="num">{{ '%.3f'|format(r.atr) if r.atr is not none else '—' }}</td>
         <td>{{ r.seed or '—' }}</td>
-        <td class="fin">{% if r.state_finish %}{{ r.state_finish }}{% else %}<span style="color:var(--text-faint)">did not qualify</span>{% endif %}</td>
+        <td class="fin" title="{{ r.state_finish or 'Did not qualify' }}">{% if r.state_finish %}{{ r.state_finish_short }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}</td>
         <td class="num">{{ r.sc_n or '—' }}</td>
         <td class="num"><span class="jh-sc10">{{ '%.1f'|format(r.sc_pct * 10) if r.sc_pct is not none else '—' }}</span></td>
         <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
