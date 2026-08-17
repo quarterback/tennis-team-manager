@@ -1274,19 +1274,23 @@ was a school marker, shipped "Baptist HS High School".
   exactly like `RENAMES` — dice/districts/identity all run on the source name), and
   the one-time pass applied to all 56 states of `high_schools.json` (13,800+
   suffixes stripped, 16 School-of names collapsed).
-- **‼️ `data/jhsaa/schools.json` CANNOT BE REGENERATED — it IS the source of record.**
-  `scripts/import_jhsaa.py` reads prep-network, and prep-network carries **840
-  schools in SEVEN classifications (7A-1A) at every revision on every ref**, with no
-  9A or 8A anywhere and a different enrollment scale (its 7A runs 2,602-4,219 against
-  the committed 9A's 2,213-2,597). The committed 857/772 across nine classes came
-  from commit `3c36b16` ("Re-imported against the rebuilt records"); those rebuilt
-  records were never committed to prep-network. Run the importer today and it emits a
-  DIFFERENT association: 637 sponsors, seven classes. So a data change is applied as a
-  TRANSFORM — `scripts/jhsaa_apply_renames.py` (names/mascots/private) and
-  `scripts/jhsaa_reclassify.py` (the enrollment cascade). **Both hold zero names or
-  numbers of their own**: every table comes from `import_jhsaa`, which stays the one
-  authority, so they become no-ops the day those records come back. Both are
-  idempotent and both have `--dry-run`; prove it before committing.
+- **‼️ FETCH BEFORE YOU CONCLUDE THE SOURCE IS GONE.** `data/jhsaa/schools.json` IS
+  regenerable: prep-network carries **1,111 schools across nine classifications
+  (9A-1A), enrollment 56-2,597**, and `scripts/import_jhsaa.py` reproduces the
+  association from it (852 girls'/767 boys' programs, every 40-field class clear of
+  `jhsaa.sponsor_floor` in both genders).
+  > ⚠️ An agent concluded the opposite in 2027-08 and wrote it down as a rule — that
+  > the nine-class records "were never committed to prep-network", so the file was the
+  > de-facto source of record and changes had to be applied as transforms. It was
+  > checked with `git log --all` against a LOCAL clone that was **eight commits behind
+  > on main**, and `--all` does not see what has not been fetched. The records had
+  > landed in "Nine counties settled, and one classification ladder for the whole
+  > state". Two transform scripts and an enrollment cascade were built on that
+  > mistake. **`git fetch` first; "not in any ref" is a statement about your clone.**
+  `scripts/jhsaa_apply_renames.py` and `scripts/jhsaa_reclassify.py` survive that
+  episode as targeted transforms and hold **zero names or numbers of their own** —
+  every table comes from `import_jhsaa`, which stays the one authority — but the
+  importer is the primary path and a re-import supersedes them.
 - **‼️ RIVALRIES — pairs that must NEVER be separated (owner rule 2027-08,
   `import_jhsaa.RIVALRIES`).** A rivalry is a fact about two programs, not about their
   enrollments, so it outranks reclassification, league assignment and playing up alike.
