@@ -576,6 +576,18 @@ RENAMES = {
     "Xabier Arregui": "Sinkford",                    # 3A Navrang, Juniper Highlands
     "Miren Garmendia": "Cardinal Newman",            # 3A Homecroft
     "Janice Bennett": "Calvary Christian",           # 3A Alderwold
+    # ‼️ THREE CALVARY CHAPELS IN THREE TOWNS (owner, 2026-08): "that's confusing
+    # for a private school". A public school named for its town repeats happily —
+    # there is a Lincoln in every state and nobody is confused — because the town
+    # IS the disambiguator. A private school's name is its identity, so the same
+    # one in three places reads as one institution with three campuses, which is
+    # what the owner saw. The three replacements are owner-dictated and deliberately
+    # share no grammar with each other: an independent day school, a hyphenated
+    # endowed one, a day school. Calvary Chapel Kernwood (3A, sponsors no tennis)
+    # is untouched and is now the only one, so the name still exists in the state.
+    "Calvary Chapel Ditch Fork": "The Cassius School",      # 1A Goldbank
+    "Calvary Chapel Kilbride Switch": "Gottschalk-Herman",  # 1A Olivet
+    "Calvary Chapel Olivet": "Banfield Day School",         # 1A Olivet
     "Galina Moroz": "Our Lady of the Coast",         # 2A-1A — Sebastian Cape, coastal
     "Mikel Zubieta": "Cornerstone Christian",        # 2A-1A Clear Springs
     "Thomas Moreau": "Pope Francis",                 # 2A-1A Gold Valley
@@ -1730,6 +1742,22 @@ RELOCATIONS = {
 # ends in "Commerce" and is untouched.
 _SUFFIX_RE = re.compile(r"\s+(High School|HS|School)$", re.IGNORECASE)
 
+# ‼️ VERBATIM — a name the owner typed out, kept exactly as typed.
+#
+# The suffix rule above is about names this importer DERIVES: nobody says "Lincoln
+# High School", so nothing should emit it. It is not a claim that no institution
+# anywhere ends in the word School — the independent-school grammar genuinely does
+# ("The Chapin School", "Banfield Day School"), and stripping it there produces
+# "The Cassius", which is not a name anybody would use either.
+#
+# So the exemption is narrow and it is a WHITELIST OF STRINGS, not a pattern: a
+# name only lands here because the owner wrote it down in full. Never add one
+# because it "sounds like it wants a suffix" — derive it bare, as always.
+VERBATIM_NAMES = frozenset({
+    "The Cassius School",
+    "Banfield Day School",
+})
+
 
 # "School of X" collapses (owner rule 2027-08, sharpened twice: "you just say
 # San Cordero Commerce or Plainfield Science", then "Jesuit Sacramento is
@@ -1790,6 +1818,8 @@ def _collapse_school_of(name: str) -> str:
 
 
 def _display_name(name: str) -> str:
+    if name in VERBATIM_NAMES:
+        return name
     name = _collapse_school_of(name)
     while True:
         stripped = _SUFFIX_RE.sub("", name).strip()

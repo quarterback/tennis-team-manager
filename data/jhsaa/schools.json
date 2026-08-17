@@ -880,6 +880,26 @@
       "boys_district": "Mission League"
     },
     {
+      "name": "Banfield Day School",
+      "city": "Bracken",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 126,
+      "private": true,
+      "mascot": "Numbats",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Calvary Chapel Olivet"
+    },
+    {
       "name": "Baptist",
       "source": "Baptist HS",
       "city": "Brynildson Hill",
@@ -2479,63 +2499,6 @@
       "girls_district": "Dual County League",
       "boys_district": "Dual County League",
       "source": "Sage Point"
-    },
-    {
-      "name": "Calvary Chapel Ditch Fork",
-      "city": "Ditch Fork",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 70,
-      "private": true,
-      "mascot": "Knights",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
-    },
-    {
-      "name": "Calvary Chapel Kilbride Switch",
-      "city": "Kilbride Switch",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 113,
-      "private": true,
-      "mascot": "Pirates",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
-    },
-    {
-      "name": "Calvary Chapel Olivet",
-      "city": "Bracken",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 126,
-      "private": true,
-      "mascot": "Numbats",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
     },
     {
       "name": "Calvary Christian",
@@ -6083,6 +6046,26 @@
       "girls_district": "Metro League",
       "boys_district": "Metro League",
       "source": "Naomi Ward"
+    },
+    {
+      "name": "Gottschalk-Herman",
+      "city": "Kilbride Switch",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 113,
+      "private": true,
+      "mascot": "Pirates",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Calvary Chapel Kilbride Switch"
     },
     {
       "name": "Grace Christian",
@@ -15073,6 +15056,26 @@
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "Garrity"
+    },
+    {
+      "name": "The Cassius School",
+      "city": "Ditch Fork",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 70,
+      "private": true,
+      "mascot": "Knights",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Calvary Chapel Ditch Fork"
     },
     {
       "name": "Theodore Roosevelt",
