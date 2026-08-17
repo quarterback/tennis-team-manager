@@ -687,6 +687,44 @@ RENAMES = {
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
+    # ‼️ THE REST OF THE PERSON-CAMPUS SWEEP (owner, 2026-08). The first pass used a
+    # pool test — both tokens had to appear in the generator's own name files — and
+    # anything drawn from anywhere else walked straight past it: Anya Belov North,
+    # Adela Robles North, Jon Etxeberria North and ten more. The reliable test is the
+    # SHAPE, not the vocabulary: a name ending in a direction, read by eye.
+    #
+    # Real people included, same rule: Thurgood Marshall, José Martí, Woodrow Wilson,
+    # James Madison, Benjamin Banneker and Harry S. Truman each keep the school that
+    # bears their name and lose the second campus.
+    #
+    # And the suffix rule, which had strays of its own: NO "High" and no "High School",
+    # ever — plus "Ashbury Central North", which carried two directions at once.
+    "Adela Robles North":          "Oak Cliff",               # 4A San Borondón
+    "Anya Belov North":            "Preston Hollow",          # 4A Llerena
+    "Benjamin Banneker North":     "Deep Ellum",              # 5A Belmonte
+    "Harry S. Truman North":       "Fair Park",               # 4A Cortland
+    "James Madison North":         "Bryan Place",             # 7A Belmonte
+    "Javier Cárdenas North":       "Casa Linda",              # 5A Llerena
+    "Jon Etxeberria North":        "White Rock",              # 5A Belmonte
+    "José Martí North":            "Redbird",                 # 5A Belyakov
+    "Naomi Langston North":        "Garden District",         # 3A San Borondón
+    "Nikolai Markov North":        "Marigny",                 # 6A San Borondón
+    "Thurgood Marshall North":     "Carrollton",              # 6A San Cordero
+    "Vasquez North":               "Fontainebleau",           # 4A Halbrook
+    "Woodrow Wilson North":        "Mid-City",                # 5A Belmonte
+    "Belyakov Depot High":         "Belyakov Depot",          # 8A Belyakov
+    "Depot High":                  "Depot",                   # 4A Belmonte
+    "Depot High North":            "Depot North",             # 6A Belmonte
+    "Drayfield Foundry High":      "Drayfield Foundry",       # 5A Drayfield
+    "Fort Meriwether Foundry High": "Fort Meriwether Foundry", # 6A Fort Meriwether
+    "Fort Meriwether Foundry High North": "Fort Meriwether Foundry North", # 4A Fort Meriwether
+    "Foundry High":                "Foundry",                 # 9A Lake Esperanza
+    "Frontier High":               "Frontier",                # 5A Harriman
+    "Port Veles Foundry High":     "Port Veles Foundry",      # 8A Port Veles
+    "Seafarer High":               "Seafarer",                # 9A Port Veles
+    "St. Casimir High School North": "St. Casimir North",       # 3A Harriman
+    "Ashbury Central North":       "Ashbury Highlands",       # 4A Ashbury
+
     # ‼️ AND THE RULE APPLIES TO REAL PEOPLE TOO (owner, 2026-08). A campus direction
     # on a person's name is unrealistic whoever the person was — a school honouring
     # Gwendolyn Brooks does not have a north campus. The person keeps the school that
