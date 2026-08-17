@@ -2488,6 +2488,7 @@ def create_app() -> Flask:
                                move_tree=coach_move_tree(),
                                all_schools=sorted(p.school for p in div.programs),
                                playup=_jh_editor.playup_board(),
+                               archetypes=_jh_editor.archetype_board(),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
     def _pct01(field: str, default: float = 0.5) -> float:
@@ -2526,7 +2527,9 @@ def create_app() -> Flask:
         the owner can rewrite Jefferson's high-school pecking order as its history
         develops without touching generation code. `upstart` is deliberately absent: it
         is a temporary run the world rolls and expires by itself."""
-        school = request.form.get("school", "")
+        # ‼️ `jh_school`, not `school` — see the play-up route below. `school` on the
+        # editor page is the COLLEGE program `_editor_redirect` returns to.
+        school = request.form.get("jh_school") or request.form.get("school", "")
         kind = request.form.get("archetype", "")
         if school:
             # "none" DEMOTES a seeded program (a stored override that says "not one of

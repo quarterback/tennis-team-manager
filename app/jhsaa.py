@@ -831,6 +831,38 @@ def _playup_map(version: str) -> dict:
     return fresh
 
 
+#: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
+#: temporary run the world rolls from the salt and expires by itself, and storing one
+#: would make it permanent — the one thing an upstart must never be.
+EDITABLE_ARCHETYPES = ("blue_blood", "development", "doubles")
+
+
+def archetype_board() -> dict:
+    """The archetype EDITOR's view — the programs that HAVE an archetype, nothing else.
+
+    Same shape and same rule as `playup_board`: a list of the tagged programs, never the
+    association to scroll. ~91 programs carry a tag, so it is longer than the play-up
+    board and is grouped by kind for that reason."""
+    from app import overrides as ov
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    amap = _arch_map(ov.jhsaa_archetype_version())
+    seed = _arch_seed()
+    cls = {r["name"]: r["classification"] for r in _schools_cache}
+    rows = [{"name": n, "kind": k, "classification": cls.get(n, ""),
+             # As on the play-up board: REMOVING a seeded program is a demotion
+             # ("none"), removing an added one is a clear. One button, two meanings.
+             "seeded": n in seed}
+            for n, k in amap.items()]
+    by_kind = {k: sorted((r for r in rows if r["kind"] == k),
+                         key=lambda r: r["name"]) for k in EDITABLE_ARCHETYPES}
+    demoted = sorted(n for n, k in ov.get_jhsaa_archetypes().items() if k == "none")
+    return {"by_kind": by_kind, "kinds": EDITABLE_ARCHETYPES, "total": len(rows),
+            "demoted": demoted, "names": sorted(cls)}
+
+
 def playup_board() -> dict:
     """The play-up EDITOR's view — the handful of programs that play up, nothing else.
 
