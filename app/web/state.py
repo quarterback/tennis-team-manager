@@ -3900,6 +3900,30 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
             "season_years": {y: world.BASE_YEAR + y + 1 for y in years}}
 
 
+#: A State FINISH, abbreviated for a dense table (owner's set, 2026-08):
+#: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
+_FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
+                 "Semifinalist": "SF", "Quarterfinalist": "QF",
+                 "Octofinalist": "OF"}
+
+
+def _finish_short(label: str) -> str:
+    """`label` for a narrow column. Always render the full text as a title beside it.
+
+    The two "Round of N" labels are different ROUNDS: every field converges on the
+    same 24-team main draw at the Octofinals, so a team still alive above 24 went out
+    in the QUALIFIERS and one out at 24 went out in the First Round. That holds at any
+    field size, which is why this needs no field parameter."""
+    if not label:
+        return ""
+    if label in _FINISH_SHORT:
+        return _FINISH_SHORT[label]
+    if label.startswith("Round of "):
+        n = label[9:].strip()
+        return "QUAL" if (n.isdigit() and int(n) > 24) else "R1"
+    return label
+
+
 def jhsaa_scope_view(seed: int, gender: str, group: str | None = None,
                      year: int | None = None) -> dict:
     """Just the section scope — for a JHSAA page that edits SETTINGS rather than
@@ -4033,6 +4057,9 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
                          "district_short": jh.district_short(r.get("district", "")),
                          "seed": seeds.get(r["school"], 0),
                          "state_finish": result["finish"],
+                         # Abbreviated for the table; the full label rides along as a
+                         # title so nothing is lost.
+                         "state_finish_short": _finish_short(result["finish"]),
                          # Sort key only — negated `place` (1 = champion) so this
                          # column's click-sort shares the generic "desc = best first"
                          # convention every other numeric column uses, without
