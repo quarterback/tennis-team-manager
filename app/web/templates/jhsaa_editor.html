@@ -3,164 +3,192 @@
 {% block title %}JHSAA Programs{% endblock %}
 {% block content %}
 
-{# The JHSAA's own editing surface. These panels used to sit on /editor — the COLLEGE
-   roster editor, whose toolbar is Division / Conference / Team — third and fourth down
-   a long page, which is a fine place to put something nobody can find. Program
-   archetypes and play-up are JHSAA properties, so they live under the JHSAA. #}
-{{ jh_header(view.scope, u, 'programs', 'Programs',
-             'Durable properties of Jefferson high-school programs — which of them are
-              blue bloods, development or doubles programs, and which play a
-              classification up. Both are seeded from the data and edited here.') }}
+{# ‼️ NARROW BEFORE YOU SHOW (owner rule 2026-08). This page listed all ~91 archetyped
+   programs and all ~13 play-ups as editable rows — 195 of them. Sorting or searching
+   that table does not fix it: the problem is not organisation, it is EXPOSURE. Even a
+   perfect table makes somebody confront a whole dataset to change one school.
+
+   So: board → type → program, and then only that program. A search for anyone who
+   already knows the name, recently-viewed for anyone coming back, and the full table
+   kept as an escape hatch rather than the default. #}
+{{ jh_header(view.scope, u, 'programs', 'Programs', '') }}
 
 <div class="jh-shell">
-{# The JHSAA archetype board — the same rule as the play-up board below: a list of the
-   programs that HAVE a tag, never the association to scroll. Grouped by kind because
-   ~91 carry one, and each row can change kind in place. #}
-<div class="bl-container">
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA program archetypes</span></div>
-    {% for kind in archetypes.kinds %}
-    <div style="padding:10px 16px 0">
-      <div class="t-eyebrow">{{ kind|replace('_', ' ') }} · {{ archetypes.by_kind[kind]|length }}</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Find a program</span></div>
+
+  {# The directory: three steps, each submitting as you pick. #}
+  <form method="get" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:12px 16px">
+    <input type="hidden" name="u" value="{{ u }}">
+    <input type="hidden" name="g" value="{{ view.scope.gender }}">
+    <label class="bl-schol-f" style="max-width:170px">Board
+      <span class="bl-select-wrap"><select class="bl-select" name="board"
+             onchange="this.form.cat.value=''; this.form.submit()" style="min-width:140px">
+        {% for key, label in ed.boards %}
+        <option value="{{ key }}"{% if key == ed.board %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select></span></label>
+
+    <label class="bl-schol-f" style="max-width:220px">Type
+      <span class="bl-select-wrap"><select class="bl-select" name="cat"
+             onchange="this.form.submit()" style="min-width:190px">
+        <option value="">— choose —</option>
+        {% for key, label, n in ed.cats %}
+        <option value="{{ key }}"{% if key == ed.cat %} selected{% endif %}>{{ label }} ({{ n }})</option>
+        {% endfor %}
+      </select></span></label>
+
+    {% if ed.programs %}
+    <label class="bl-schol-f" style="max-width:300px">Program
+      <span class="bl-select-wrap"><select class="bl-select" name="school"
+             onchange="this.form.submit()" style="min-width:260px">
+        <option value="">— choose —</option>
+        {% for n in ed.programs %}
+        <option value="{{ n }}"{% if ed.selected and n == ed.selected.name %} selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select></span></label>
+    {% endif %}
+  </form>
+
+  {# For anyone who already knows the name — no menus needed. #}
+  <form method="get" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+             padding:0 16px 12px;border-top:1px solid var(--border-subtle);padding-top:12px">
+    <input type="hidden" name="u" value="{{ u }}">
+    <input type="hidden" name="g" value="{{ view.scope.gender }}">
+    <label class="bl-schol-f" style="max-width:340px">Or search by name
+      <input class="bl-input" type="text" name="school" list="jh-names" autocomplete="off"
+             placeholder="start typing a name…"></label>
+    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Find</button>
+  </form>
+  <datalist id="jh-names">{% for n in ed.names %}<option value="{{ n }}">{% endfor %}</datalist>
+
+  {% if ed.recent %}
+  <div style="padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:13.5px;color:var(--text-muted)">Recently viewed:</span>
+    {% for s in ed.recent %}
+    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if ed.selected %}
+{% set s = ed.selected %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ s.name }}</span></div>
+  <div style="padding:12px 16px">
+    <div style="color:var(--text-muted);font-size:13.5px;margin-bottom:12px">
+      {{ s.classification }} · {{ s.city }}{% if s.district %} · {{ s.district }}{% endif %}</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+      <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}"
+            style="display:flex;align-items:flex-end;gap:8px">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="back" value="jhsaa">
+        <input type="hidden" name="jh_school" value="{{ s.name }}">
+        <label class="bl-schol-f" style="max-width:180px">Archetype{% if s.arch_edited %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
+          <span class="bl-select-wrap"><select class="bl-select" name="archetype" style="min-width:150px">
+            <option value="none"{% if not s.archetype %} selected{% endif %}>— none —</option>
+            {% for k in ed.kinds %}
+            <option value="{{ k }}"{% if k == s.archetype %} selected{% endif %}>{{ k|replace('_', ' ') }}</option>
+            {% endfor %}
+          </select></span></label>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        {% if s.arch_edited %}
+        <button class="bl-pill" name="archetype" value="clear" style="cursor:pointer">Reset</button>
+        {% endif %}
+      </form>
+
+      {# Playing up is a 4A-and-below mechanism, so a bigger school has no control
+         rather than a control that silently refuses. #}
+      <form method="post" action="{{ url_for('editor_jhsaa_playup') }}"
+            style="display:flex;align-items:flex-end;gap:8px">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="back" value="jhsaa">
+        <input type="hidden" name="jh_school" value="{{ s.name }}">
+        <label class="bl-schol-f" style="max-width:240px">Plays up{% if s.play_edited %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
+          {% if s.can_play_up %}
+          <span class="bl-select-wrap"><select class="bl-select" name="play_up" style="min-width:200px">
+            <option value="no"{% if not s.plays_up %} selected{% endif %}>no — stays in {{ s.classification }}</option>
+            <option value="yes"{% if s.plays_up %} selected{% endif %}>yes — competes in {{ s.competes }}</option>
+          </select></span>
+          {% else %}
+          <span style="display:block;color:var(--text-muted);font-size:13.5px;padding-top:6px">
+            {{ s.classification }} is too big — 4A and below only</span>
+          {% endif %}</label>
+        {% if s.can_play_up %}
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        {% endif %}
+        {% if s.play_edited %}
+        <button class="bl-pill" name="play_up" value="clear" style="cursor:pointer">Reset</button>
+        {% endif %}
+      </form>
     </div>
-    <div class="tbl-scroll">
+  </div>
+</div>
+{% endif %}
+
+{% if ed.edited %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Your edits</span></div>
+  <div class="tbl-scroll">
+    <table class="bl-tbl">
+      <tr><th>School</th><th style="width:70px">Class</th><th style="width:150px">Archetype</th>
+        <th style="width:170px">Plays up</th></tr>
+      {% for s in ed.edited %}
+      <tr>
+        <td><a href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a></td>
+        <td>{{ s.classification }}</td>
+        <td>{{ s.archetype|replace('_', ' ') if s.archetype else '—' }}</td>
+        <td>{{ ('yes — ' ~ s.competes) if s.plays_up else 'no' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">What the association ships with</span></div>
+  <div style="padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap">
+    {% for k in ed.kinds %}
+    <div><div class="t-eyebrow">{{ k|replace('_', ' ') }}</div>
+      <div style="font-size:22px;font-weight:800">{{ ed.counts[k] }}</div></div>
+    {% endfor %}
+    <div><div class="t-eyebrow">playing up</div>
+      <div style="font-size:22px;font-weight:800">{{ ed.counts.play_up }}</div></div>
+  </div>
+  <div style="padding:0 16px 12px;font-size:13.5px;color:var(--text-muted)">
+    Archetypes are durable program conditions — a <b>blue blood</b> generates better and
+    clusters, a <b>development</b> program has ordinary freshmen and the best seniors, a
+    <b>doubles</b> program lifts its doubles courts only. Playing up moves a small school
+    into the classification above: a harder league, ladder and State field, same players.
+  </div>
+  {# The escape hatch: the whole set, for the rare reader who wants the reference view
+     rather than to change one school. Not the default, and deliberately not editable —
+     every row links back to the one-program view. #}
+  <div style="padding:0 16px 14px">
+    {% if ed.all %}
+    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender) }}">Hide the full list</a>
+    <div class="tbl-scroll" style="margin-top:10px">
       <table class="bl-tbl">
-        {% for p in archetypes.by_kind[kind] %}
+        <tr><th>School</th><th style="width:70px">Class</th><th style="width:150px">Archetype</th>
+          <th style="width:170px">Plays up</th></tr>
+        {% for s in ed.all %}
         <tr>
-          <td>{{ p.name }}</td>
-          <td style="width:70px">{{ p.classification }}</td>
-          <td style="width:150px">
-            {# Change kind in place: the select IS the form, so there is no Save. #}
-            <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}" style="line-height:0">
-              <input type="hidden" name="u" value="{{ u }}">
-              <input type="hidden" name="back" value="jhsaa">
-                            <input type="hidden" name="jh_school" value="{{ p.name }}">
-              <span class="bl-select-wrap"><select class="bl-select" name="archetype"
-                    onchange="this.form.submit()" style="min-width:132px">
-                {% for k in archetypes.kinds %}
-                <option value="{{ k }}"{% if k == p.kind %} selected{% endif %}>{{ k|replace('_', ' ') }}</option>
-                {% endfor %}
-              </select></span>
-            </form>
-          </td>
-          <td style="width:84px">
-            <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}" style="line-height:0">
-              <input type="hidden" name="u" value="{{ u }}">
-              <input type="hidden" name="back" value="jhsaa">
-                            <input type="hidden" name="jh_school" value="{{ p.name }}">
-              {# Seeded programs are DEMOTED ("none"); added ones are cleared. #}
-              <input type="hidden" name="archetype" value="{{ 'none' if p.seeded else 'clear' }}">
-              <button class="bl-pill" style="cursor:pointer">Remove</button>
-            </form>
-          </td>
+          <td><a href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a></td>
+          <td>{{ s.classification }}</td>
+          <td>{{ s.archetype|replace('_', ' ') if s.archetype else '—' }}</td>
+          <td>{{ ('yes — ' ~ s.competes) if s.plays_up else 'no' }}</td>
         </tr>
-        {% else %}
-        <tr><td colspan="4" style="color:var(--text-muted)">No program is a {{ kind|replace('_', ' ') }}.</td></tr>
         {% endfor %}
       </table>
     </div>
-    {% endfor %}
-    <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}"
-          style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:12px 16px">
-      <input type="hidden" name="u" value="{{ u }}">
-      <input type="hidden" name="back" value="jhsaa">
-            <label class="bl-schol-f" style="max-width:280px">Add a school
-        <input class="bl-input" type="text" name="jh_school" list="jh-playup-names"
-               placeholder="start typing a name…" autocomplete="off" required></label>
-      <label class="bl-schol-f" style="max-width:170px">Archetype
-        <span class="bl-select-wrap"><select class="bl-select" name="archetype">
-          {% for k in archetypes.kinds %}<option value="{{ k }}">{{ k|replace('_', ' ') }}</option>{% endfor %}
-        </select></span></label>
-      <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Add</button>
-    </form>
-    {% if archetypes.demoted %}
-    <div style="padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:13.5px;color:var(--text-muted)">Demoted:</span>
-      {% for n in archetypes.demoted %}
-      <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}" style="line-height:0">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="back" value="jhsaa">
-                <input type="hidden" name="jh_school" value="{{ n }}">
-        <input type="hidden" name="archetype" value="clear">
-        <button class="bl-pill" style="cursor:pointer" title="restore the default">{{ n }} ↩</button>
-      </form>
-      {% endfor %}
-    </div>
+    {% else %}
+    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, all=1) }}">View all programs</a>
     {% endif %}
-    <div style="padding:0 16px 12px;font-size:13.5px;color:var(--text-muted)">
-      Durable program conditions, not current strength. A <b>blue blood</b> generates better
-      and clusters; a <b>development</b> program has ordinary freshmen and the best seniors;
-      a <b>doubles</b> program is normal but lifts its doubles courts only. Upstarts are a
-      temporary run the world rolls itself and cannot be assigned.</div>
   </div>
 </div>
 
-{# The JHSAA play-up board. Deliberately a list of the FEW programs that play up —
-   never the association to scroll through: adding is a type-ahead over the names
-   (a native datalist filters as you type), removing is a button on the row. #}
-<div class="bl-container">
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA play-up</span></div>
-    <div class="tbl-scroll">
-      <table class="bl-tbl">
-        <tr><th>School</th><th style="width:70px">Class</th><th style="width:96px">Competes in</th>
-          <th style="width:84px"></th></tr>
-        {% for p in playup.schools %}
-        <tr>
-          <td>{{ p.name }}</td>
-          <td>{{ p.classification }}</td>
-          <td><b>{{ p.competes }}</b></td>
-          {# `p.seeded` is still what decides whether Remove HOLDS or CLEARS below —
-             it just isn't shown. It told the reader which rows shipped with the game,
-             which is a fact about the save file, not about the association. #}
-          <td>
-            {# A seeded program is HELD ("no"), an added one is CLEARED — same button,
-               because "stop playing up" is one intention to the person clicking it. #}
-            <form method="post" action="{{ url_for('editor_jhsaa_playup') }}" style="line-height:0">
-              <input type="hidden" name="u" value="{{ u }}">
-              <input type="hidden" name="back" value="jhsaa">
-                            <input type="hidden" name="jh_school" value="{{ p.name }}">
-              <input type="hidden" name="play_up" value="{{ 'no' if p.seeded else 'clear' }}">
-              <button class="bl-pill" style="cursor:pointer">Remove</button>
-            </form>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="4" style="color:var(--text-muted)">No program is playing up.</td></tr>
-        {% endfor %}
-      </table>
-    </div>
-    <form method="post" action="{{ url_for('editor_jhsaa_playup') }}"
-          style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px">
-      <input type="hidden" name="u" value="{{ u }}">
-      <input type="hidden" name="back" value="jhsaa">
-            <input type="hidden" name="play_up" value="yes">
-      <label class="bl-schol-f" style="max-width:280px">Add a school
-        <input class="bl-input" type="text" name="jh_school" list="jh-playup-names"
-               placeholder="start typing a name…" autocomplete="off" required></label>
-      <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Add</button>
-    </form>
-    <datalist id="jh-playup-names">
-      {% for n in playup.names %}<option value="{{ n }}">{% endfor %}
-    </datalist>
-    {% if playup.held %}
-    <div style="padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:13.5px;color:var(--text-muted)">Held in its own class:</span>
-      {% for n in playup.held %}
-      <form method="post" action="{{ url_for('editor_jhsaa_playup') }}" style="line-height:0">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="back" value="jhsaa">
-                <input type="hidden" name="jh_school" value="{{ n }}">
-        <input type="hidden" name="play_up" value="clear">
-        <button class="bl-pill" style="cursor:pointer" title="restore the default">{{ n }} ↩</button>
-      </form>
-      {% endfor %}
-    </div>
-    {% endif %}
-    <div style="padding:0 16px 12px;font-size:13.5px;color:var(--text-muted)">
-      A program that plays up competes one classification above its enrollment — a harder
-      league, ladder and State field, with the same players. Its league moves with it.</div>
-  </div>
-</div>
 </div>
 {% endblock %}

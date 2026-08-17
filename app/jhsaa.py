@@ -924,6 +924,74 @@ def district_short(name: str) -> str:
     return out
 
 
+def program_editor(selected: str = "", board: str = "", cat: str = "",
+                   show_all: bool = False, recent: list | None = None) -> dict:
+    """The JHSAA program editor — a DIRECTORY, not a dataset.
+
+    ‼️ NARROW BEFORE YOU SHOW (owner rule 2026-08). The first version listed all ~91
+    archetyped programs and all ~13 play-ups as editable rows — 195 of them. Sorting or
+    searching that table does not fix it: the problem is not organisation, it is
+    EXPOSURE. Even a perfect table makes somebody confront a whole dataset to change one
+    school.
+
+    So the page is: pick a board, pick a type, pick the program — then only that program.
+    A search box for anyone who already knows the name, recently-viewed for anyone
+    coming back, and the full table kept as an escape hatch for the rare reader who
+    genuinely wants the reference view. Find what I need, see only that, optionally
+    browse everything."""
+    from app import overrides as ov
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    pmap = _playup_map(ov.jhsaa_playup_version())
+    amap = _arch_map(ov.jhsaa_archetype_version())
+    arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
+    by_name = {r["name"]: r for r in _schools_cache}
+
+    def card(name):
+        r = by_name.get(name)
+        if not r:
+            return None
+        return {"name": name, "classification": r["classification"], "city": r["city"],
+                "district": r.get("girls_district") or r.get("boys_district") or "",
+                "archetype": amap.get(name, ""),
+                "plays_up": plays_up(name, bool(r.get("play_up")), pmap,
+                                     r["classification"]),
+                "can_play_up": can_play_up(r["classification"]),
+                "competes": play_up_group(r["classification"]),
+                "arch_edited": name in arch_ov, "play_edited": name in play_ov}
+
+    up = {r["name"] for r in _schools_cache
+          if plays_up(r["name"], bool(r.get("play_up")), pmap, r["classification"])}
+    held = {n for n, v in pmap.items() if v == "no"}
+
+    BOARDS = [("archetype", "Archetypes"), ("playup", "Play-up")]
+    if board == "playup":
+        cats = [("up", "Playing up", len(up)), ("held", "Held in own class", len(held))]
+        members = {"up": sorted(up), "held": sorted(held)}
+    else:
+        board = "archetype"
+        cats = [(k, k.replace("_", " ").title(),
+                 sum(1 for v in amap.values() if v == k)) for k in EDITABLE_ARCHETYPES]
+        members = {k: sorted(n for n, v in amap.items() if v == k)
+                   for k in EDITABLE_ARCHETYPES}
+    programs = members.get(cat, [])
+
+    counts = {k: sum(1 for v in amap.values() if v == k) for k in EDITABLE_ARCHETYPES}
+    counts["play_up"] = len(up)
+    everything = None
+    if show_all:
+        everything = [c for c in (card(n) for n in sorted(set(amap) | up | held)) if c]
+    return {"selected": card(selected) if selected else None,
+            "board": board, "boards": BOARDS, "cat": cat, "cats": cats,
+            "programs": programs,
+            "edited": [c for c in (card(n) for n in sorted({*arch_ov, *play_ov})) if c],
+            "recent": [c for c in (card(n) for n in (recent or [])) if c],
+            "counts": counts, "kinds": EDITABLE_ARCHETYPES,
+            "names": sorted(by_name), "all": everything}
+
+
 def playup_rows() -> list[dict]:
     """Every JHSAA school as {name, classification} — the raw rows, for a caller that
     has to VALIDATE a submitted name rather than offer one."""
