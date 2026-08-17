@@ -37,7 +37,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import (jhsaa_view, jhsaa_school_view, jhsaa_past_winners,
+from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view)
@@ -2064,6 +2064,20 @@ def create_app() -> Flask:
         return render_template("jhsaa_toc.html", active="High School",
                                view=jhsaa_toc_view(DEFAULT_SEED, g, year), u=u)
 
+    @app.route("/jhsaa/programs")
+    def jhsaa_programs():
+        """The JHSAA's own editing surface — archetypes and play-up.
+
+        These lived on `/editor` (the COLLEGE roster editor) because that is where the
+        POST routes already were. They are JHSAA properties, so they belong under the
+        JHSAA where somebody would look for them."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa as _jh
+        return render_template("jhsaa_editor.html", active="High School",
+                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
+                               playup=_jh.playup_board(), archetypes=_jh.archetype_board(),
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
         """A whole classification, ranked on TOSS — the hub's rail panel showed the
@@ -2475,7 +2489,6 @@ def create_app() -> Flask:
                      "overridden": school in ov.get_academics()}
         conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
         from app.ncaa import dual_format, lineup_size
-        from app import jhsaa as _jh_editor
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
                                n_lineup=lineup_size(division),
@@ -2487,8 +2500,6 @@ def create_app() -> Flask:
                                staff=coaching_staff(division, gender, school),
                                move_tree=coach_move_tree(),
                                all_schools=sorted(p.school for p in div.programs),
-                               playup=_jh_editor.playup_board(),
-                               archetypes=_jh_editor.archetype_board(),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
     def _pct01(field: str, default: float = 0.5) -> float:
@@ -2499,6 +2510,9 @@ def create_app() -> Flask:
             return default
 
     def _editor_redirect():
+        # An edit made on the JHSAA's own page returns there, not to the college editor.
+        if request.form.get("back") == "jhsaa":
+            return redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men")))
         return redirect(url_for("editor", u=request.form.get("u", "D1-men"),
                                 school=request.form.get("school", ""),
                                 conf=request.form.get("conf", "All")))

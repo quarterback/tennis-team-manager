@@ -3900,6 +3900,23 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
             "season_years": {y: world.BASE_YEAR + y + 1 for y in years}}
 
 
+def jhsaa_scope_view(seed: int, gender: str, group: str | None = None,
+                     year: int | None = None) -> dict:
+    """Just the section scope — for a JHSAA page that edits SETTINGS rather than
+    reading a season, so it needs the header's gender/class/season rail and nothing
+    archived. Costs one cheap year lookup instead of a whole hub view."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    return {"gender": g, "group": grp, "groups": list(jh.GROUPS), "year": yr,
+            "years": years,
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+
+
 def jhsaa_view(seed: int, gender: str, group: str | None = None,
                year: int | None = None) -> dict:
     """The JHSAA hub — the state high-school home, organised around the season being

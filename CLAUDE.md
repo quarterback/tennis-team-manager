@@ -1338,7 +1338,13 @@ was a school marker, shipped "Baptist HS High School".
     type-ahead, Remove demoting a seeded program and clearing an added one, demotions
     shown as restorable chips. `EDITABLE_ARCHETYPES` excludes `upstart` — it is a rolled
     run and storing one would make it permanent.
-  - **The BOARD is a panel on `/editor`** (`jhsaa.playup_board`) and shows ONLY the ~13
+  - **‼️ BOTH BOARDS LIVE AT `/jhsaa/programs`** (the section's "Programs" tab), NOT on
+    `/editor`. They were panels three and four down the COLLEGE roster editor — whose
+    toolbar is Division / Conference / Team — where the owner could not find them. A
+    JHSAA property belongs under the JHSAA. The POST routes keep their `/editor/jhsaa-*`
+    paths (they are the same writes) and carry `back=jhsaa` so `_editor_redirect` returns
+    to the JHSAA page instead of the college one.
+  - **The BOARD** (`jhsaa.playup_board`) shows ONLY the ~13
     programs that play up: add is a type-ahead over the names, remove is a button on the
     row, and a removed default shows as "held" so it can be restored. ‼️ Never render the
     association as a list to scroll (owner, 2026-08: "I don't want a list with 100s of
