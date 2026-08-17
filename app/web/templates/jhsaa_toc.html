@@ -55,13 +55,12 @@
 
 <div class="jh-layout" style="margin-top:14px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
-      <span class="bl-panel-meta">every dual in the draw</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span></div>
     <div class="bl-panel-body" style="padding:12px">
       <div class="jh-cols2">
         {% for rd in view.rounds %}
         <div>
-          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }} · {{ rd.alive }} alive</div>
+          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }}</div>
           {% for gm in rd.games %}
           <div class="jh-mgame">
             <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
