@@ -640,6 +640,53 @@ RENAMES = {
     "Winifred Stokes": "Mesa Cooperative",
     "Xavier Robles": "Elk River Power",
     "Yelena Belov": "Spring Valley Cooperative",
+
+    # ‼️ SCHOOLS THAT TAKE THEIR OWN PLACE NAME (owner rule 2026-08). Naming a school
+    # for the town or county it sits in is the commonest real convention there is, so
+    # where that name was still FREE it is the cheapest possible fix for an
+    # invented-person name. Each target was checked against every one of the 857
+    # names in the association and against the others in this block, so no two schools
+    # claim the same place.
+    #
+    # A county name is used where the town's was already taken (Emigrant, Ferris,
+    # San Marcos), which is also how it works in life — the county school serves the
+    # towns that have not got their own.
+    #
+    # ‼️ The six "<Town> North" entries fix TWO faults at once: a person's name, and a
+    # person's name carrying a campus direction. A PLACE can have a second campus —
+    # "Lake Esperanza North" is exactly what a town's second school is called — and a
+    # PERSON cannot (owner rule 2026-08: "no named person school should ever have more
+    # than one campus, that's not realistic").
+    #
+    # ‼️ AND VERIFY IT IS A PERSON. "Olive Head" was in the first cut of this block,
+    # bound for its county — and Olive Head is the TOWN the school sits in. It was
+    # already named the way this block is trying to name everything else. A given
+    # name plus a surname is also just how a lot of place names look.
+    #
+    # ‼️ VERIFY FICTIONAL BEFORE ADDING HERE. The first pass of this list had Harry
+    # Truman in it, and Ulysses Grant, Ella Baker, Katherine Johnson and Rita Moreno
+    # sitting one row away — every one of them tokenises exactly like a generated
+    # name. A pool test cannot tell you; a person has to read the list.
+    "Renata Dahl":               "Camas",                   # 4A Camas County
+    "Tatiana Moroz North":       "Caswell North",           # 8A Caswell
+    "Harold Tillman North":      "Echevarria",              # 5A Echevarria
+    "Katya Moroz":               "Emigrant",                # 7A Emigrant County
+    "Carmen Valera":             "Ferris",                  # 9A Ferris County
+    "Winifred Booker North":     "Fort Carden North",       # 6A Fort Carden
+    "Beatrice Davenport":        "Fort Halloran",           # 4A Fort Halloran
+    "Katya Moroz North":         "Harriman East",           # 8A Harriman
+    "Thomas Jansen North":       "Lake Esperanza East",     # 5A Lake Esperanza
+    "Gabriel Montoya":           "Marlow",                  # 4A Marlow County
+    "Matteo Dahl":               "Montelago",               # 7A Montelago
+    "Petra Bianchi":             "Perryville",              # 6A Perryville
+    "Daniel Gaines North":       "San Borondón West",       # 7A San Borondón
+    "Elena Petrov":              "San Marcos",              # 9A San Marcos County
+    "Irina Kovalenko North":     "Santa Michaela North",    # 4A Santa Michaela
+    "Galina Romanov":            "Stagewater",              # 9A Stagewater County
+    "Svenja Bianchi":            "Tamarack",                # 9A Tamarack County
+    "Carmen Cordero":            "Vance",                   # 9A Vance County
+    "Salvador Figueroa":         "Vesper",                  # 4A Vesper
+    "Klara Marchand":            "Weller",                  # 9A Weller County
 }
 
 # The institutional-naming bank the pass above drew from — kept as its own list so a
