@@ -4011,6 +4011,9 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     for r in rows:
         result = world.jhsaa_state_result(br, r["school"])
         new_rows.append({**_jh_deco(schools, r["school"], 24), **r,
+                         # Suffix dropped for the table, full name on hover and in
+                         # the link: the column is narrow and the names run long.
+                         "district_short": jh.district_short(r.get("district", "")),
                          "seed": seeds.get(r["school"], 0),
                          "state_finish": result["finish"],
                          # Sort key only — negated `place` (1 = champion) so this

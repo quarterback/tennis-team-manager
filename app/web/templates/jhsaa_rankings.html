@@ -48,7 +48,7 @@
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>
-        {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 132) }}
+        {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 108, 'District — hover for the full name') }}
         {{ th('record', 'Rec', 56) }}<th style="width:52px" title="District record">Dist</th>
         {{ th('place', 'Pl', 40) }}
         {{ th('pf', 'PF', 50, 'Courts won per dual') }}
@@ -68,7 +68,7 @@
         <td><span class="jh-schoolcell">{{ r.mark|safe }}
           <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a>
           {% if r.toc %}<span class="jh-chip gold" title="Tournament of Champions field">TOC</span>{% endif %}</span></td>
-        <td><a href="{{ url_for('jhsaa_district', group=view.group, district=r.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.district }}</a></td>
+        <td><a title="{{ r.district }}" href="{{ url_for('jhsaa_district', group=view.group, district=r.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.district_short }}</a></td>
         <td><b>{{ r.record }}</b></td>
         <td>{{ r.drecord or '—' }}</td>
         <td>{{ r.place or '—' }}{% if r.place == 1 %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>

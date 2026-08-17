@@ -888,6 +888,36 @@ def archetype_board() -> dict:
             "demoted": demoted, "names": sorted(cls)}
 
 
+#: District-name suffixes, longest first so "Interscholastic League" is matched before
+#: "League". The identity bank deliberately varies these (League · Interscholastic
+#: League · Athletic Association · Assembly · Province · Organization · District), which
+#: is what makes the names read like real leagues and also what makes them long.
+_DISTRICT_SUFFIXES = ("Interscholastic League", "Athletic Association",
+                      "Athletic Organization", "Athletic Assembly",
+                      "League", "Assembly", "Province", "Organization", "District")
+
+
+def district_short(name: str) -> str:
+    """A district name with its institutional suffix dropped — "Black Canyon League"
+    -> "Black Canyon", "Millworks Athletic Association" -> "Millworks".
+
+    ‼️ FOR DENSE TABLES AND MENUS ONLY, never for the archive, a link target or a
+    heading. A district is `(classification, name)` and THE NAME IS THE FULL ONE; this
+    is a label. Always render it beside the full name (a `title`, the row it sits on).
+
+    Initials were the obvious answer and are wrong here: district names are only
+    guaranteed distinct by their LEADING word within a classification (`import_jhsaa`
+    rejects a candidate sharing one), so "Marble Valley League" and "Millworks Athletic
+    Association" both come out "MVL"/"MAA"-ish and collide the moment two names share
+    a shape. Dropping the suffix keeps exactly the part the association guarantees is
+    distinct."""
+    out = (name or "").strip()
+    for suf in _DISTRICT_SUFFIXES:
+        if out.endswith(" " + suf):
+            return out[: -(len(suf) + 1)].strip()
+    return out
+
+
 def playup_rows() -> list[dict]:
     """Every JHSAA school as {name, classification} — the raw rows, for a caller that
     has to VALIDATE a submitted name rather than offer one."""
