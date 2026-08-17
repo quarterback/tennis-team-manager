@@ -199,10 +199,96 @@ participation share lands slightly under 50% because a group seed that cannot be
 cleanly does not attend — a group is never completed with a league-mate and never played
 short, and that is the correct way for the guardrail to lose.
 
+## POSTSCRIPT (2026-08) — the rung stopped finishing, and how I made that worse
+
+> **‼️ THE ONE THING TO TAKE FROM THIS SECTION: A SIMPLER MATCHING WAS BETTER THAN A
+> PRECISE ONE.** Not "acceptable given the cost" — *better*. The event's quality comes
+> from the tier cut; the only rule inside a tier is "no league-mates". Everything I
+> built on top of that was precision spent on a decision that carries no information,
+> and it is what turned a card-deal into a constraint solver. If you are here to change
+> showcase grouping: shuffle, deal, check the district, stop.
+
+**The report.** A world advance sat at **277s and climbing** on the JHSAA rung, where
+the UI's own copy promises about a minute. "The high school sim just keeps running,
+clearly something is wrong." The showcases were the change that landed between those
+two states, so they were the suspect.
+
+### The actual defect: I wrote a constraint solver for a problem that has no constraints
+
+`_showcase_groups` treated group formation as a placement problem — seed a group from
+the head of the pool, scan the WHOLE remaining pool for members that fit, and when it
+could not be filled, pop the seed and rescan from scratch. Quadratic in the pool, run
+for every tier of every window, with a `_fits` that did a district comparison and a
+set lookup per member on every probe.
+
+It is now a **shuffle and a deal in one pass**. The thing that makes a showcase dual
+worth playing is the TIER CUT — a statewide standing slice, classification-blind. Who
+lands in which group *inside* that slice carries almost no information, so choosing
+carefully was work spent on a decision that does not matter. The one rule that
+survives is the hard district guardrail: a team that would join a league-mate is held
+and dealt into a later group, which is the spec's "swap across pods" done in one pass
+rather than by repair.
+
+Owner, cutting through it: *"just randomly match people and be done"* and *"so long as
+it's truly random and follows the rules outlined (no district matchups) it should be
+fine."* That is the whole design note. **A random assignment that respects the one
+hard rule was always the specification; I read "quality matches" as licence to
+optimise, and quality was already bought by the tier cut one level up.**
+
+### The measurement, which does not say what I wanted it to say
+
+Full-size 335-program association, scheduler only:
+
+```
+showcase_schedule: 0.002s
+events 32 · duals 234 · same-district pairings 0
+programs attending 135/335 (40%) · appearances {1: 128, 2: 7}
+```
+
+**2ms.** So the quadratic version was ugly but was never 277 seconds either — at these
+pool sizes it had nothing to chew on. And 234 duals is ~5% on top of the ~5,100 a
+gender already plays, which cannot turn one minute into four and a half.
+
+‼️ **So this is a genuine cleanup and probably NOT the fix.** Writing it down that way
+because the tempting version of this AAR — "found the quadratic loop, replaced it,
+done" — would be a false result that the next person pays for. **The marginal cost of
+this feature is 5% of the duals. Whatever is costing four minutes is somewhere I have
+not looked.**
+
+### What I got wrong about the debugging, which cost more than the code did
+
+1. **I did not take the cheap decisive action first.** The question was "is it the
+   showcases?" and there was a one-line answer available from the start —
+   `SHOWCASE_ENABLED = False`, which makes `showcase_schedule` return before it does
+   any work. Instead I tried to reproduce a full association in a container that
+   cannot build one, ran two harnesses past their timeouts, and got nothing. **A
+   feature switch that returns before any work IS the first diagnostic**, and it is
+   worth building one for exactly this reason: it converts "which change caused this"
+   into one run by the person who can actually reproduce it.
+2. **I counted the code before I counted the work.** 234 duals against 5,100 was
+   available from arithmetic in about a minute and answers "can this possibly be the
+   cause" better than any profiler. Measure the marginal WORK a feature adds before
+   optimising the code that schedules it.
+3. **I kept flagging the same caveat after it had been heard.** Told to stop, and it
+   was fair — repeating a known limitation is not diligence, it just spends someone
+   else's attention.
+
+### The switch
+
+`SHOWCASE_ENABLED` (`app/jhsaa.py`) is the kill switch and is deliberately checked at
+the top of `showcase_schedule`: off, it returns `[]` before touching a team and not one
+showcase dual is played, so the rung runs exactly the code it ran before this feature
+existed. Everything else — the phases, both formats, the TOSS treatment, the calendar,
+the Invitationals rename — stays wired, so it is one line back on.
+
 ## What to check first if this looks wrong later
 
 - **A same-district showcase pairing.** `showcase_conflicts` should be empty and
-  `play_showcases` should have raised. If it did not, look at `_dkey` before `_fits`.
+  `play_showcases` should have raised. If it did not, look at `_dkey` before the
+  district check in `_showcase_groups`.
+- **The rung running long.** Flip `SHOWCASE_ENABLED` off before profiling anything:
+  it is one line and it answers whether the showcases are involved at all. They add
+  ~234 duals to ~5,100, so if the answer is "still slow", it was never them.
 - **Programs finishing under the non-district minimum.** Check that `spent` in
   `play_regular_season` still excludes `SHOWCASE` phases; that exclusion is the whole
   separation between the allowance and the events.
