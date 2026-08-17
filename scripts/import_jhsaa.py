@@ -663,11 +663,18 @@ PROMOTE_2A_ABOVE = 300          # 2A schools at or above this enrollment become 
 #
 # Applied TOP-DOWN (9A first) so a school can only ever move ONE class: promote 7A into
 # 8A before 8A into 9A and a big 7A school lands in 9A in a single pass.
+#
+# ⚠️ THE CUT LINES ARE CALIBRATED TO THE COMMITTED ENROLLMENT SCALE — the one in
+# `data/jhsaa/schools.json`, which is what the nine-class records carried (9A runs
+# 2,213-2,597, 8A 1,703-2,197). They are NOT calibrated to the seven-class
+# prep-network checkout, whose 7A alone runs 2,602-4,219; dropped on that scale
+# they promote nobody. Each line takes ~12 schools, which is what carries ~10 boys'
+# programs up per step and lifts 9A boys clear of `jhsaa.sponsor_floor`.
 PROMOTE_ABOVE = {
-    "8A": 2090,        # 8A schools at or above this become 9A
-    "7A": 1600,        # ...7A become 8A
-    "6A": 1290,        # ...6A become 7A
-    "5A": 1000,        # ...5A become 6A (the backfill; 4A and below are untouched)
+    "8A": 2148,        # 8A schools at or above this become 9A
+    "7A": 1638,        # ...7A become 8A
+    "6A": 1323,        # ...6A become 7A
+    "5A": 1022,        # ...5A become 6A (the backfill; 4A and below are untouched)
 }
 _PROMOTE_TO = {"8A": "9A", "7A": "8A", "6A": "7A", "5A": "6A"}
 

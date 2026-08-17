@@ -1651,7 +1651,20 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
     play, so every round halves it exactly and nobody gets a bye. Used for Wards
     (one round) and Regionals+Zonals (two rounds of one 32-draw).
 
-    Returns (archive_dict, survivors) like `run_sectional`."""
+    Returns (archive_dict, survivors) like `run_sectional`.
+
+    ‼️ AN EMPTY FIELD RAISES, LOUDLY. `size` starts at 1, so a field of 0 (or 1)
+    produced a one-slot draw and the pairing loop read `slots[i + 1]` off the end:
+    a bare `IndexError: list index out of range` twenty frames down, naming
+    neither the classification nor the stage. It means the ladder was fed nothing
+    — a pool at or below `PROTECTED` leaves Sectionals no entrants at all — which
+    is a broken pool, not a format to accommodate (the no-scaling rule), so the
+    caller must stop with something it can act on."""
+    if len(field) < 2:
+        raise RuntimeError(
+            f"JHSAA {phases[0]}: field of {len(field)} — the ladder was fed an "
+            f"empty or single-team pool. A classification with no more than "
+            f"PROTECTED ({PROTECTED}) programs leaves Sectionals no entrants.")
     rng = random.Random(seed)
     size = 1
     while size < len(field):
@@ -2154,8 +2167,9 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # reservoir cannot fill `2 * body_seats` would otherwise ship a short State
     # field, which the format does not allow, so the best-ATR surplus is admitted
     # directly and the rest play for what is left. It should never fire: the
-    # reservoir is a DATA invariant (`sponsor_floor`, preflighted at import), which
-    # is why a non-empty head is logged as loudly as an unfilled field.
+    # reservoir is a DATA invariant (`sponsor_floor`, reported per class-gender by
+    # `scripts/jhsaa_reclassify.py`), which is why a non-empty head is logged as
+    # loudly as an unfilled field.
     body_seats = max(0, cf_seats - len(cf_direct))
     sc_field = _even(min(2 * body_seats, 2 * max(0, len(sc_rank) - body_seats)))
     sc_head = sc_rank[:body_seats - sc_field // 2]
