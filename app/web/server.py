@@ -2566,6 +2566,15 @@ def create_app() -> Flask:
         choice = request.form.get("play_up", "")
         if school:
             from app import jhsaa as _jh
+            # ‼️ SERVER-SIDE ELIGIBILITY. The picker only offers small schools, but a
+            # hand-rolled POST is not the picker: playing up is a 4A-and-below
+            # mechanism, so a promotion of anything larger is refused rather than
+            # stored. "no"/clear stay allowed for every school — holding a program in
+            # its own class is always legal, and refusing it would strand any row
+            # written before this check existed.
+            row = next((r for r in _jh.playup_rows() if r["name"] == school), None)
+            if choice == "yes" and not (row and _jh.can_play_up(row["classification"])):
+                return _editor_redirect()
             if choice in ("yes", "no"):
                 ov.set_jhsaa_playup(school, choice == "yes")
             else:

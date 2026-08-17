@@ -4326,7 +4326,6 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # A showcase dual names its event beside the tag, the way a State dual names its
     # bracket round — the two showcases are a different length, a different scoring
     # format and a different weekend, and the phase is what tells them apart.
-    _SHOWCASE_ROUND = {"showcase_pod": "Pod", "showcase_tiered": "Tiered"}
     # The State/TOC bracket ROUND a dual belongs to, so the card can say "R32"
     # or "SF" beside the STATE tag rather than tagging five different rounds
     # identically. Read off the archived bracket (one appearance per round), not
@@ -4400,14 +4399,16 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
                       "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
-                      # The early non-district window plays 3S/4D, not the ordinary
-                      # INVITE card's 5S/2D — same "d.round" chip a showcase names its
-                      # event with, so the card says which shape a match was played in
-                      # rather than leaving a reader to count lines to find out.
-                      "round": ("3S/4D" if d["phase"] == jh.EARLY_FORMAT_PHASE else
-                                _SHOWCASE_ROUND.get(d["phase"], "") if k == "SHOWCASE"
-                                else (state_round if k == "STATE" else
-                                      toc_round if k == "TOC" else {}).get(d["opp"], ""))}
+                      # ‼️ ONLY a BRACKET ROUND earns the second chip (owner, 2026-08).
+                      # It carried the showcase KIND (Pod/Tiered) and the early
+                      # window's 3S/4D shape too, and both restated what the reader
+                      # already knew from the primary tag and the season: "I know what
+                      # an invite and a showcase are, and I know all programs' early
+                      # season games use 3/4". A chip that repeats its own row is noise.
+                      # R32 / QF / SF stay, because which round a State dual was cannot
+                      # be read off the row.
+                      "round": (state_round if k == "STATE" else
+                                toc_round if k == "TOC" else {}).get(d["opp"], "")}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),

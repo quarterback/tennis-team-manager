@@ -792,6 +792,21 @@ def reset_schools() -> None:
     _upstart_cache.clear()
 
 
+#: Playing up is a SMALL-SCHOOL mechanism (owner correction 2027-08): eligible at this
+#: championship group and below. Mirrors `scripts/import_jhsaa.PLAY_UP_MAX_GROUP`, which
+#: seeds the file — but the rule has to live HERE too, because the seed list is not the
+#: only way a program can be promoted. The editor is, and until this constant existed at
+#: runtime nothing checked it: `/editor/jhsaa-playup` would happily move an 8A program
+#: into 9A, which is not playing up, it is a big school in a slightly bigger class.
+#: 9A's exclusion falls out of the same rule (it has nothing above it).
+PLAY_UP_MAX_GROUP = "4A"
+
+
+def can_play_up(classification: str) -> bool:
+    """Whether a program of this size is allowed to play up at all."""
+    return GROUPS.index(champ_group(classification)) >= GROUPS.index(PLAY_UP_MAX_GROUP)
+
+
 def play_up_group(classification: str) -> str:
     """The classification one step ABOVE `classification`'s championship group, or
     the group itself at the top of the ladder — 9A has nothing to play up to."""
@@ -800,10 +815,18 @@ def play_up_group(classification: str) -> str:
     return GROUPS[i - 1] if i else g
 
 
-def plays_up(school_name: str, seeded: bool, pmap: dict | None = None) -> bool:
+def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
+             classification: str | None = None) -> bool:
     """Whether `school_name` competes a class above its own — the seed list in
     `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
     exactly the layering `archetype()` uses.
+
+    ‼️ ELIGIBILITY IS ENFORCED HERE, not only where a promotion is written. Pass
+    `classification` and a program too big to play up (`can_play_up`) returns False
+    whatever the seed list or the override table says. Validating only at the editor
+    would leave the invariant one crafted POST — or one stale row written before the
+    rule existed — away from a 9A school being "promoted" into 9A, or an 8A into a
+    championship it has no business entering. The rule belongs on the read.
 
     ‼️ PASS `pmap` WHEN ASKING ABOUT MORE THAN ONE SCHOOL. Without it this resolves
     the override table's fingerprint itself, and that fingerprint costs a SQLite
@@ -812,6 +835,8 @@ def plays_up(school_name: str, seeded: bool, pmap: dict | None = None) -> bool:
     cost. In a loop over the association that is one database round trip per school
     per pass. See `load_schools`."""
     from app import overrides as ov
+    if classification is not None and not can_play_up(classification):
+        return False
     m = _playup_map(ov.jhsaa_playup_version()) if pmap is None else pmap
     hit = m.get(school_name)
     return seeded if hit is None else hit == "yes"
@@ -863,6 +888,17 @@ def archetype_board() -> dict:
             "demoted": demoted, "names": sorted(cls)}
 
 
+def playup_rows() -> list[dict]:
+    """Every JHSAA school as {name, classification} — the raw rows, for a caller that
+    has to VALIDATE a submitted name rather than offer one."""
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    return [{"name": r["name"], "classification": r["classification"]}
+            for r in _schools_cache]
+
+
 def playup_board() -> dict:
     """The play-up EDITOR's view — the handful of programs that play up, nothing else.
 
@@ -882,9 +918,14 @@ def playup_board() -> dict:
     pmap = _playup_map(ov.jhsaa_playup_version())
     up, names = [], []
     for r in _schools_cache:
-        names.append(r["name"])
+        # ‼️ The picker offers only ELIGIBLE schools. Listing the whole association
+        # invited a 5A-9A program to be submitted with play_up=yes, which the route
+        # then stored — the small-school rule lived in the import script and nothing
+        # at runtime checked it.
+        if can_play_up(r["classification"]):
+            names.append(r["name"])
         seeded = bool(r.get("play_up"))
-        if plays_up(r["name"], seeded, pmap):
+        if plays_up(r["name"], seeded, pmap, r["classification"]):
             up.append({"name": r["name"], "classification": r["classification"],
                        "competes": play_up_group(r["classification"]),
                        # Where this program's play-up comes from, because REMOVING it
@@ -1008,7 +1049,8 @@ def _playup_districts(gender: str, rows: list[dict],
 def _plays_up_row(row: dict, pmap: dict | None = None) -> bool:
     """`pmap` is the resolved play-up map. Omit it ONLY for a one-off question about a
     single school — without it every call costs a database round trip."""
-    return plays_up(row["name"], bool(row.get("play_up")), pmap)
+    return plays_up(row["name"], bool(row.get("play_up")), pmap,
+                    row.get("classification"))
 
 
 def districts(gender: str, group: str) -> dict[str, list[School]]:

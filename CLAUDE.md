@@ -1345,7 +1345,13 @@ was a school marker, shipped "Baptist HS High School".
     schools I have to scroll"). The add field is **`jh_school`**, not `school` — `school`
     on that page is the COLLEGE program `_editor_redirect` reads to come back, so a JHSAA
     name in it sends the editor to a school its division has never heard of.
-  - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below** (owner correction
+  - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below, enforced at RUNTIME
+    (`jhsaa.can_play_up`), not just at import.** The constant lived only in
+    `scripts/import_jhsaa.py`, so the rule bound the SEED LIST and nothing else — the
+    editor would promote an 8A program into 9A, and a crafted POST anything. It is now
+    checked in `plays_up()` (the read, so a stale or crafted row cannot promote), in the
+    picker (`playup_board` offers 366 of 857) and in the route. "no"/clear stay legal for
+    every school: holding a program in its own class is always allowed.** (owner correction
     2027-08): "play up is for schools at the 4A or under level to play with teams at
     their competitive level, not already big schools". An 8A blue-blood moving to 9A is
     not playing up, it is a big school in a slightly bigger class — and the first pass
