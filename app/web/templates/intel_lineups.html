@@ -32,7 +32,6 @@
   <details class="bl-panel ll-scale" style="margin-bottom:18px">
     <summary class="bl-panel-head" style="cursor:pointer;list-style:none">
       <span class="bl-panel-title">STR ↔ UTR ↔ WTN scale</span>
-      <span class="bl-panel-meta">31–57 STR ▾</span>
     </summary>
     <div style="padding:14px 16px 16px">
       <p style="margin:0 0 12px;font-size:13.5px;color:var(--text-muted);line-height:1.5;max-width:720px">
@@ -60,12 +59,6 @@
   {# ---- the strip plot ---- #}
   <div class="bl-panel" style="margin-bottom:18px">
     <div class="bl-panel-head"><span class="bl-panel-title">Lineup vs Conference</span>
-      <span class="bl-panel-meta">
-        <span class="ll-unit" role="group" aria-label="rating lens">
-          <button type="button" class="ll-unit-btn on" data-unit="STR" title="Live results-based STR (form)">STR</button>
-          <button type="button" class="ll-unit-btn" data-unit="UTR" title="Results STR in real-world UTR units">UTR</button>
-          <button type="button" class="ll-unit-btn" data-unit="OVR" title="Static talent — OVERALL, 20–80">OVR</button>
-        </span>
         {% if highlight %}<span class="ll-key"><span class="ll-dot hl"></span>{{ highlight }}</span>{% endif %}
         <span class="ll-key"><span class="ll-dot"></span>{{ conf }}</span></span></div>
     <div id="ll-chart" style="position:relative;padding:8px 6px 4px">
@@ -77,8 +70,7 @@
   <div class="bl-board-grid" style="grid-template-columns:1fr 380px;align-items:start">
     {# ---- per-team depth table ---- #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span>
-        <span class="bl-panel-meta">ranked by average starter STR</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span></div>
       <div class="ll-tbl ll-depth" style="--ll-ncard:{{ n_card }}">
         <div class="ll-thead">
           <span>#</span><span>Team</span><span class="n">Avg</span><span class="n">Top</span><span class="n">Low</span>
@@ -101,8 +93,7 @@
 
     {# ---- relative league strength ---- #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} — league strength</span>
-        <span class="bl-panel-meta">avg starter STR</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} — league strength</span></div>
       <div class="ll-tbl ll-str">
         <div class="ll-thead">
           <span>#</span><span>Conf</span><span class="n">Tms</span><span class="n">Avg</span><span class="n">Top</span>

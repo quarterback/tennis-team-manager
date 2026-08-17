@@ -24,8 +24,7 @@
 {% for round_label, matches in t.rounds %}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ round_label }}</span>
-      <span class="bl-panel-meta">{{ matches|length }} match{{ 'es' if matches|length != 1 else '' }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ round_label }}</span></div>
     <div class="bl-panel-body" style="padding:0">
       {% for m in matches %}
       <div class="jt-match">

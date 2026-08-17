@@ -20,9 +20,7 @@
   {% for conf, teams in groups %}
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head">
-      <span class="bl-panel-title">{{ conf }}</span>
-      <span class="bl-panel-meta">{{ teams|length }} teams · ranked by Power Index</span>
-    </div>
+      <span class="bl-panel-title">{{ conf }}</span></div>
     <div class="bl-confgrid">
       {% for t in teams %}
       <a class="bl-teamcard" href="{{ url_for('teams', school=t.school, u=u) }}">

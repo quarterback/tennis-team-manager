@@ -78,9 +78,7 @@
   <div class="jh-stack">
     <div class="bl-panel">
       <div class="bl-panel-head">
-        <span class="bl-panel-title">{{ view.season_year }} Schedule</span>
-        <span class="bl-panel-meta">{{ view.schedule|length }} duals</span>
-      </div>
+        <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
       <div class="tbl-scroll">
         {% if view.schedule %}
         <table class="jh-sched">
@@ -110,7 +108,7 @@
              "line scores" row under every dual doubled the length of a 35-match
              schedule and made it unscannable, which is the thing this page was
              redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
+          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
               {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
@@ -177,8 +175,7 @@
   <!-- ============ RIGHT: roster, then the program at a glance ============ -->
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
-        </div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span></div>
       <div class="tbl-scroll">
         <table class="jh-roster">
           <tr><th>Player</th><th style="width:44px">Gr</th><th class="num" style="width:56px">Singles</th>
@@ -200,8 +197,7 @@
     </div>
 
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Program</span>
-        <span class="bl-panel-meta">all-time</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Program</span></div>
       <div class="bl-panel-body" style="padding:12px">
         <div class="jh-cols3">
           <div class="jh-metric"><span class="k">All-time</span><span class="v">{{ t.record }}</span>
@@ -239,12 +235,7 @@
 <!-- ============ Program history: the ledger, at full width ============ -->
 <div class="bl-panel" style="margin-top:14px">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">Program History</span>
-    <span class="bl-panel-meta">{{ t.seasons }} archived season{{ '' if t.seasons == 1 else 's' }} ·
-      {{ t.record }} all-time · {{ t.state_titles }} state title{{ '' if t.state_titles == 1 else 's' }} ·
-      {{ t.state_appearances }} state appearance{{ '' if t.state_appearances == 1 else 's' }} ·
-      {{ t.district_titles }} district title{{ '' if t.district_titles == 1 else 's' }}</span>
-  </div>
+    <span class="bl-panel-title">Program History</span></div>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
     <table class="jh-ledger nowrap">

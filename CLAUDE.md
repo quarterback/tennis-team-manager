@@ -972,10 +972,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     through opponents — A waits on B, B on C — and a 30-dual card sprawled over three
     months. Ties in the topological sort break on ARCHIVE order, because district play
     is already generated as rounds and an alphabetical tie-break scrambles that.
-  - **Boys play a fall calendar (Aug–Nov), girls a spring one (Mar–Jun)** — cosmetic
-    only; both are still simulated together in the same rung, with no separate clock,
-    phase or season state. Days are Mon/Wed/Fri/Sat, so **never a Sunday** by
-    construction (6 is in no pattern), at ~4 duals a week.
+  - **Boys play a fall calendar, girls a spring one** — cosmetic only; both are still
+    simulated together in the same rung, with no separate clock, phase or season state.
+    **‼️ THE SEASON IS FITTED TO A WINDOW, NOT RUN UNTIL IT ENDS (owner rule 2026-08).**
+    `_JH_SEASON_CLOSE`: boys are DONE BY END OF OCTOBER (early Nov at the latest),
+    girls by early June. The calendar used to lay four days a week and stop when the
+    rounds ran out — nothing in it knew when a season is meant to be over, and the
+    postseason finished in DECEMBER. `_jh_pattern` now picks the loosest day pattern
+    that fits the rounds in the window: Mon/Wed/Fri/Sat, else + Tue, else + Thu.
+    **Never a Sunday** by construction (6 is in no pattern). One continuous round index
+    runs the whole season — the postseason no longer restarts its count after the
+    regular season, which used to insert a break for nothing.
   - Classifications deliberately do NOT share stage dates — a 7A Super Regional and a
     3A one can fall on different days. The only invariant is that both sides of one
     dual show the same date.
@@ -995,8 +1002,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     implementation detail** — say so before committing it. This shipped unflagged and
     the owner found it themselves: the calendar is presentation, so no test covers it,
     and every individual card reads correctly because only the SPAN is wrong.
-  See `docs/AAR-jhsaa-program-history-and-design-pass.md` and
-  `docs/AAR-jhsaa-postseason-calendar-lanes.md`.
+  - **‼️ A SHOWCASE WEEKEND IS ANCHORED TO ITS OWN ROUND.** `_jh_showcase_days` kept
+    windows on distinct Saturdays by walking forward from the PREVIOUS window, with no
+    reference to the round it was played in, so the last of seven landed a month past
+    its rounds: October showcases printed between September league duals, and an
+    18-day hole where they belonged. **The "skipped month" was matches moved OUT of
+    it, not a gap in the schedule.** A collision now moves a week at most, within the
+    block's own span. And a final pass in `jhsaa_match_dates` holds every dual on or
+    after the last date either team already has, so a card cannot read backwards
+    whatever dates it — nothing is reordered, only pushed to the next slot.
+  See `docs/AAR-jhsaa-program-history-and-design-pass.md`,
+  `docs/AAR-jhsaa-postseason-calendar-lanes.md` and `docs/AAR-jhsaa-season-window.md`.
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.

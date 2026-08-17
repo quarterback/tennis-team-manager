@@ -90,7 +90,7 @@
   <section class="bl-bracket-layout">
     <aside class="bl-sim-sidebar">
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Top Seeds</span><span class="bl-panel-meta">by rating</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Top Seeds</span></div>
         <div class="bl-seed-list">
           {% for e in ch.entries[:8] %}
             <div class="bl-seed-row">
@@ -104,7 +104,7 @@
       </div>
 
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Semifinals</span><span class="bl-panel-meta">sim path</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Semifinals</span></div>
         <div class="bl-path-list">
           {% for m in semifinal_round %}
             <div class="bl-path-row">
@@ -129,8 +129,7 @@
       <div class="bl-rounds bl-rounds-sim">
         {% for rnd in ch.rounds %}
         <section class="bl-panel bl-round-panel">
-          <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
-            <span class="bl-panel-meta">{{ rnd|length }} {{ 'match' if rnd|length == 1 else 'matches' }}</span></div>
+          <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span></div>
           <div class="bl-round-body">
             {% for m in rnd %}
             <article class="bl-brk-match{% if m.upset %} has-upset{% endif %}">
@@ -154,8 +153,7 @@
 {% if past_champs %}
 <div class="bl-container" style="margin-top:18px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Past Singles Champions</span>
-      <span class="bl-panel-meta">{{ uni_label }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Past Singles Champions</span></div>
     <div class="bl-panel-body">
       <table class="bl-protable" style="width:100%">
         <thead><tr><th>Year</th><th>Champion</th><th></th><th>Runner-up</th><th></th></tr></thead>

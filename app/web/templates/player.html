@@ -61,8 +61,7 @@
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
-        <span class="bl-panel-meta">team · class · position · record</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span></div>
         <div class="bl-tablescroll" style="border:none">
           <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px 74px">
             <div class="bl-thead">
@@ -94,8 +93,7 @@
       </div>
       {% for title, sub, box in [('Career Singles Record', 'W–L by line', records.singles),
                                   ('Career Doubles Record', 'W–L by line', records.doubles)] %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">{{ title }}</span>
-        <span class="bl-panel-meta">{{ sub }} · Overall &amp; Dual</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">{{ title }}</span></div>
         <div class="bl-tablescroll" style="border:none">
           {% if box.any %}
           <table class="rc-recbox"><thead><tr>
@@ -120,7 +118,6 @@
       <details class="bl-panel pl-matchlog">
         <summary class="bl-panel-head">
           <span class="bl-panel-title">Match-by-match log</span>
-          <span class="bl-panel-meta">{{ wins }}-{{ losses }} singles</span>
         </summary>
         <div class="bl-tablescroll" style="border:none;max-height:420px;overflow:auto">
           <div class="bl-table" style="--bl-grid-cols: 70px 50px minmax(120px,1fr) 130px 70px 60px">
@@ -155,13 +152,11 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       {% if ranks %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR Rating</span>
-        <span class="bl-panel-meta">results-based · {{ ranks.division }}</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR Rating</span></div>
         <div class="bl-panel-body">
           <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
             <span class="bl-stat power" style="font-size:30px">{{ "%.1f"|format(ranks.str) }}</span>
-            {% if info.recruit_stars %}<span style="color:#e8a13a;font-size:16px;letter-spacing:1px">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span>
-              <span class="bl-panel-meta">{{ info.recruit_tier }}</span>{% endif %}
+            {% if info.recruit_stars %}<span style="color:#e8a13a;font-size:16px;letter-spacing:1px">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span>{% endif %}
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
             <div><div class="bl-th" style="font-size:11.5px">NATIONAL</div>
@@ -178,8 +173,7 @@
       </div>
       {% endif %}
       {% if season_stats %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Season Box Stats</span>
-        <span class="bl-panel-meta">this season · completed lines only</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Season Box Stats</span></div>
         <div class="bl-panel-body">
           {% for kind, st in [('Singles', season_stats.get('singles')), ('Doubles', season_stats.get('doubles'))] %}
           {% if st %}
@@ -199,8 +193,7 @@
       </div>
       {% endif %}
       {% if attrs %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
-        <span class="bl-panel-meta">scouting grades · 20–80</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable" style="width:100%"><tbody>
             {% for label, g in attrs %}
@@ -213,8 +206,7 @@
       </div>
       {% endif %}
       {% if journey %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">The Journey</span>
-        <span class="bl-panel-meta">where they've been</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">The Journey</span></div>
         <div class="bl-panel-body">
           {% set badge_class = {'current':'tier-IVY','transfer':'tier-D3','committed':'tier-D2','high_school':'tier-D4'} %}
           {% set badge_label = {'current':'CURRENT','transfer':'TRANSFER','committed':'COMMITTED','high_school':'HIGH SCHOOL'} %}
@@ -243,8 +235,7 @@
       </div>
       {% endif %}
       {% if intl is defined and intl %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i> International</span>
-        <span class="bl-panel-meta">national-team cups</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i> International</span></div>
         <div class="bl-panel-body">
           {% for r in intl %}
           <div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline;font-size:14.5px">
@@ -257,8 +248,7 @@
         </div>
       </div>
       {% endif %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span>
-        <span class="bl-panel-meta">follows the player</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span></div>
         <div class="bl-panel-body">
           {% if honor_years %}
           {% for yg in honor_years %}

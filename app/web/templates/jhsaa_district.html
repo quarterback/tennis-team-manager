@@ -149,8 +149,7 @@
   <div class="jh-stack">
     {% if view.all_district %}
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">All-District</span>
-        <span class="bl-panel-meta">top {{ view.all_district|length }} by individual record</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">All-District</span></div>
       <div class="bl-panel-body">
         {% for r in view.all_district %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">
@@ -166,8 +165,7 @@
 
     {% if view.qualifiers %}
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">At state</span>
-        <span class="bl-panel-meta">{{ view.qualifiers|length }} of {{ view.members|length }} qualified</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">At state</span></div>
       <div class="bl-panel-body">
         {% for r in view.qualifiers %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">

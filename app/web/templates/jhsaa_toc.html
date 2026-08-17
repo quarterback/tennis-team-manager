@@ -86,8 +86,7 @@
   {# The field, so the SEEDING is legible — the point of the event is that these are
      ordered by rating rather than by the size of the school. #}
   <div class="bl-panel jh-mod">
-    <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
-      <span class="bl-panel-meta">{{ view.field_n }} champions</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
     <div class="bl-panel-body">
       {% for t in view.field %}
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=t.name, u=u, g=view.gender, year=view.scope.pin) }}">

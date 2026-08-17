@@ -29,8 +29,7 @@
 
   {% if sched.playoffs %}
   <div class="bl-panel" style="margin:14px 0 16px">
-    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Playoffs</span>
-      <span class="bl-panel-meta">single elimination</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Playoffs</span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 18px;padding:6px 16px 12px">
       {% for rnd in sched.playoffs %}
       <div>
@@ -55,8 +54,7 @@
 
   {% for wk in sched.weeks %}
   <div class="bl-panel" style="margin-bottom:14px{% if sched.phase == 'regular' and wk.week == sched.current_week %};border-color:var(--accent){% endif %}">
-    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ wk.week }}</span>
-      <span class="bl-panel-meta">{% if sched.phase == 'regular' and wk.week == sched.current_week %}up next · {% endif %}{{ wk.duals|length }} duals</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ wk.week }}</span></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-sch">
       {% for d in wk.duals %}{{ dual_row(d) }}{% endfor %}
     </div></div>

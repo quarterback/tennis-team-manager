@@ -67,7 +67,6 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">State Tournament</span>
-        <span class="bl-panel-meta">{{ st.field_n }}-team field</span>
         <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
            href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">FULL BRACKET →</a>
       </div>
@@ -87,7 +86,6 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">Districts</span>
-        <span class="bl-panel-meta">{{ view.districts|length }} leagues</span>
         <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
            href="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">ALL DISTRICTS →</a>
       </div>
@@ -146,8 +144,7 @@
        twice. #}
     {% if view.poy or view.all_state or view.all_district %}
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">Honors</span>
-        <span class="bl-panel-meta">{{ view.group }} · {{ view.season_year }}</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Honors</span></div>
       <div class="bl-panel-body">
         {% if view.poy %}
         <div class="jh-poy" style="margin:0 0 6px">
@@ -168,8 +165,7 @@
     {% endif %}
 
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">State Champions</span>
-        <span class="bl-panel-meta">{{ view.season_year }}</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">State Champions</span></div>
       <div class="bl-panel-body">
         {% for gp, ch in view.champions.items() %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=gp, year=view.year) }}">

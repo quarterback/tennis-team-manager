@@ -27,8 +27,7 @@
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span>
-        <span class="bl-panel-meta">follows the coach</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career Honors</span></div>
         <div class="bl-panel-body">
           {% if honor_years %}
           {% for yg in honor_years %}
@@ -46,8 +45,7 @@
         </div>
       </div>
 
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Coaching record</span>
-        <span class="bl-panel-meta">by team · year over year</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Coaching record</span></div>
         <div class="bl-panel-body">
           {% if career and career.rows %}
           <div class="tbl-scroll">
@@ -78,8 +76,7 @@
       </div>
 
       {% if player_awards %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Players coached to awards</span>
-        <span class="bl-panel-meta">honors won on their watch</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Players coached to awards</span></div>
         <div class="bl-panel-body">
           {% for yg in player_awards %}
           <div class="pl-honyear">
@@ -109,8 +106,7 @@
       </div>
 
       {% if career_path %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-route" aria-hidden="true"></i> Career path</span>
-        <span class="bl-panel-meta">program lineage</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-route" aria-hidden="true"></i> Career path</span></div>
         <div class="bl-panel-body">
           {% for job in career_path %}
           <div class="pl-honyear">

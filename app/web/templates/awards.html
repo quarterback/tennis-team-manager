@@ -44,8 +44,7 @@
 <div class="bl-container">
   <div class="aw-top">
     <div class="bl-panel aw-poty">
-      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-crown" aria-hidden="true"></i> Player of the Year</span>
-        <span class="bl-panel-meta">national &amp; conference</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-crown" aria-hidden="true"></i> Player of the Year</span></div>
       <div class="bl-panel-body">
         {% if aw.national_poty %}
         {% set p = aw.national_poty %}{% set abbr, color = crest(p.school) %}
@@ -96,8 +95,7 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span>
-      <span class="bl-panel-meta">national &amp; conference</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i> Coach of the Year</span></div>
     <div class="bl-panel-body">
       {% if coach_awards.national %}{% set cn = coach_awards.national %}{% set abbr, color = crest(cn.school) %}
       <div class="aw-poty-nat">
@@ -129,8 +127,7 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> All-Americans</span>
-      <span class="bl-panel-meta">national · by season record at position</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> All-Americans</span></div>
     <div class="bl-panel-body">
       {% if aw.all_american %}
       <div class="aw-aa-grid">

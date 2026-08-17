@@ -30,23 +30,19 @@
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-top:14px">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — men</span>
-        <span class="bl-panel-meta">completed lines only</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — men</span></div>
       {{ leader_table(leaders.wins.m, 'wins') }}
     </div>
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — women</span>
-        <span class="bl-panel-meta">completed lines only</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Most wins — women</span></div>
       {{ leader_table(leaders.wins.w, 'wins') }}
     </div>
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — men</span>
-        <span class="bl-panel-meta">live, results-based · rostered players</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — men</span></div>
       {{ leader_table(leaders.str.m, 'str') }}
     </div>
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — women</span>
-        <span class="bl-panel-meta">live, results-based · rostered players</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> STR ratings — women</span></div>
       {{ leader_table(leaders.str.w, 'str') }}
     </div>
   </div>

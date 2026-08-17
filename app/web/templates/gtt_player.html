@@ -15,9 +15,7 @@
 
   <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
     <div class="bl-panel-head">
-      <span class="bl-panel-title">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span>
-      <span class="bl-panel-meta">{{ p.franchise }} · age {{ p.age }} · STR {{ p.str }} · {{ p.w }}-{{ p.l }} this season{% if p.status == 'retired' %} · retired{% endif %}</span>
-    </div>
+      <span class="bl-panel-title">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span></div>
     {% if p.origin == 'college' %}
     <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:13.5px">
       <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
@@ -42,8 +40,7 @@
   </div>
 
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span>
-      <span class="bl-panel-meta">college years, then pro</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span></div>
     <div class="bl-tablescroll" style="border:none">
       <div class="bl-table" style="--bl-grid-cols: 64px minmax(150px,1fr) 64px 52px 72px 56px">
         <div class="bl-thead">
@@ -73,8 +70,7 @@
 
   {% if p.multi_team %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">This season by club</span>
-      <span class="bl-panel-meta">changed clubs mid-season</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">This season by club</span></div>
     <div style="padding:8px 16px">
       {% for t in p.season_teams %}
       <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
@@ -88,8 +84,7 @@
 
   {% if p.career_honors %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career honors</span>
-      <span class="bl-panel-meta">college → pro, one timeline</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-medal" aria-hidden="true"></i> Career honors</span></div>
     <div style="padding:8px 16px">
       {% for grp in p.career_honors %}
       {% for a in grp.awards %}
@@ -107,8 +102,7 @@
 
   <div class="bl-board-grid">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
-        <span class="bl-panel-meta">draft, signings &amp; releases</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span></div>
       <div style="padding:8px 16px">
         {% for m in p.moves %}
         <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
@@ -122,8 +116,7 @@
     </div>
 
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
-        <span class="bl-panel-meta">scouting grades · 20–80</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Attributes</span></div>
       <div style="padding:8px 16px">
         {% for lbl, val in p.attributes %}
         <div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--border-subtle);align-items:center">

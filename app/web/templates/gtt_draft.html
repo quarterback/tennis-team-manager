@@ -9,8 +9,6 @@
     <div class="bl-panel-head">
       <span class="bl-panel-title"><i class="fa-solid fa-list-ol" aria-hidden="true"></i>
         {{ board.cal_year }} {{ 'Founding Draft' if board.is_founding else 'Draft' }}</span>
-      <span class="bl-panel-meta">{{ board.total }} picks ·
-        graduates of the {{ board.cal_year - 1 }} college class</span>
     </div>
   </div>
 
@@ -20,8 +18,7 @@
 
   {% if board.pro_round %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Pro Round</span>
-      </div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Pro Round</span></div>
     <div class="bl-tablescroll"><div class="bl-table" style="--bl-grid-cols: 44px minmax(140px,1fr) minmax(140px,1fr) 40px 56px">
       <div class="bl-thead">
         <span class="bl-th num">Pick</span><span class="bl-th">Franchise</span>
@@ -42,8 +39,7 @@
 
   {% for rnd in board.rounds %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Round {{ loop.index }}</span>
-      <span class="bl-panel-meta">{{ rnd|length }} picks</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Round {{ loop.index }}</span></div>
     <div class="bl-tablescroll"><div class="bl-table" style="--bl-grid-cols: 44px minmax(140px,1fr) minmax(140px,1fr) 40px 44px 56px">
       <div class="bl-thead">
         <span class="bl-th num">Pick</span><span class="bl-th">Franchise</span>

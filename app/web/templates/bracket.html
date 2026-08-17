@@ -84,7 +84,7 @@
   <section class="bl-bracket-layout">
     <aside class="bl-sim-sidebar">
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Committee Sheet</span><span class="bl-panel-meta">Top seeds</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Committee Sheet</span></div>
         <div class="bl-seed-list">
           {% for p in br.seeds[:8] %}
             <a class="bl-seed-row" href="{{ url_for('dual', home=p.school) }}">
@@ -98,7 +98,7 @@
       </div>
 
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Final Four</span><span class="bl-panel-meta">sim path</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Final Four</span></div>
         <div class="bl-path-list">
           {% for m in semifinal_round %}
             <div class="bl-path-row">

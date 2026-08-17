@@ -70,8 +70,7 @@
 
   <div style="display:flex;flex-direction:column;gap:16px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Results</span>
-      <span class="bl-panel-meta">{{ results.wins }}-{{ results.losses }} · 2026</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Results</span></div>
     <div class="bl-results">
       {% for m in results.results %}
       <a class="bl-result" href="{{ url_for('season_dual', dual_id=m.id, u=u) }}">
@@ -107,8 +106,7 @@
   </div>
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Injury Log</span>
-      <span class="bl-panel-meta"><a class="bl-school" href="{{ url_for('injuries_page', u=u) }}">league-wide →</a></span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Injury Log</span></div>
     {% if injuries %}
     <div class="bl-injlist">
       {% for i in injuries %}
