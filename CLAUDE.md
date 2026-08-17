@@ -442,6 +442,64 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     can never touch district place. The label is IN-MEMORY ONLY and deliberately not
     archived — the owner does not want it distinguished on a card.
   See `docs/AAR-jhsaa-district-schedule-passes.md`.
+- **‼️ THE MID-SEASON MATCH SHOWCASES — the only 1S/4D duals before the postseason
+  (owner spec 2027-08, `jhsaa.SHOWCASE`).** The association's postseason is a different
+  sport from its league season (5S/2D all spring, 1S/4D from Sectionals on), so a
+  program that only plays its league card arrives at Sectionals having never fielded
+  the lineup it must win with. Six to eight weekend windows in the mid-season block,
+  half of each kind, ~50% of programs attending — nearly all of them once.
+  - **Two phases, not one** (`showcase_pod` / `showcase_tiered`): a phase is the
+    archive's identity for an event, and these two are scored and dated differently.
+    **POD** = 4 programs, full round robin, 3 duals, ONE Saturday, **one 8-game pro set
+    a court** (`PRESETS["pro_set_8"]`, 7-point tiebreak at 8-8) — three pro sets is the
+    USTA junior daily limit exactly, which is why the pod is sized at 4 and scored this
+    way. **TIERED** = 6 programs, 2 duals a day over Friday-Saturday, the ordinary
+    high-school best-of-3 (it exists to replicate State length). Six, not five: a
+    6-team round robin's first four rounds are four PERFECT matchings, so nobody sits
+    out a session. **‼️ ALL JHSAA PLAY IS NO-AD, showcases included** — both formats.
+  - **‼️ NOT A TOURNAMENT, BUT FULLY RATED.** No bracket, no draw, no elimination, no
+    champion, no title — and **they ARE TOSS-rated, which is the point of playing
+    them** (`SHOWCASE_RATED` True; kept in the cutoff table AND the prestate
+    recomputes). "Non-competitive" means no advancement, NOT that the results are
+    thrown away: playing power programs from other leagues is precisely what a program
+    wants out of the weekend, and TOSS is 40% APR + 40% FQI + 20% oGS with all three
+    opponent-weighted — a season played only inside one league rates on a nearly
+    disconnected graph, and the showcases are the cross edges. **A different dual shape
+    does not make a result less real.** `rating._flight_score` normalises by the weight
+    actually CONTESTED per dual, so a 1S/4D showcase (2.85) and a 5S/2D league dual
+    (3.70) each contribute a 0-1 share — which is what lets two shapes share one table.
+    ‼️ `FLIGHT_WEIGHTS`'s D3/D4 are therefore load-bearing in the REGULAR season now,
+    not just in the in-postseason recomputes. They also count in the record and feed
+    every résumé the awards read.
+  - **‼️ HARD DISTRICT GUARDRAIL, enforced at GROUP formation, not per pairing.** A
+    group is a round robin, so every member meets every other: `_fits` rejects a
+    candidate that shares a `(classification, name)` district with ANY member (and any
+    prior opponent on either card). A conflicting program is passed over and picked up
+    by a later group — that IS the spec's "swap across pods". `showcase_conflicts` is
+    the validator and `play_showcases` refuses to play a slate that fails it.
+  - **The 2-day block TRADES a weekday date** (owner spec) and the pod does not, so
+    `play_showcases` returns what each program traded and the late tune-up's allowance
+    is shortened by it. ‼️ Showcase duals are non-district but are NOT part of the
+    `NONDISTRICT_MIN/MAX` allowance — counted there, a pod would eat a program's whole
+    remaining card.
+  - **‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY.** The freeze binds from a
+    program's first POSTSEASON dual; freezing it in April would bind the championship
+    lineup to a mid-season ladder — the drift the anti-stacking rule exists to stop.
+    A showcase dresses the LIVE ladder with the league's bench rotation, arranged onto
+    the 1S/4D card by the same `_arrange_state`.
+  - **Tiers (Open/B/C) are statewide and CLASSIFICATION-BLIND**, cut on a provisional
+    mid-season standing (`_showcase_rank` — TOSS does not exist yet mid-season). The
+    scarce 2nd/3rd seats go to the Top 25 (`SHOWCASE_ELITE`), max 3 statewide.
+  - **A window lands on ONE weekend** (`world._jh_showcase_days`): the slate is played
+    session by session across the whole gender, so a window occupies a contiguous block
+    of rounds and is dated as the single event it is. Left on the Mon/Wed/Fri/Sat
+    pattern a pod would read as three duals on three days — a different event with
+    different daily limits.
+  - On a card these are their own tag (`SHOWCASE`, naming Pod or Tiered) — and a plain
+    non-district dual is now labelled **INVITE / "Invitationals"** (owner, 2027-08):
+    that is what the association calls the duals a program arranges outside its league.
+    "Non-district" remains the right word for the scheduling RULE, never for the match.
+  See `docs/AAR-jhsaa-mid-season-showcases.md`.
 - **‼️ THERE IS NO SEPARATE POSTSEASON RECORD (owner rule 2027-08).** A record is a
   record: the NCAA and the NFHS both carry the postseason INSIDE the season total, and
   neither publishes a regular-season record beside it as though the year had two halves.

@@ -4257,7 +4257,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
     sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(sc.group) or {})
     cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
-    _KIND = {"toc": "TOC", "state": "STATE", "conference": "CONFERENCE",
+    # A non-district dual is an INVITATIONAL (owner rule 2027-08) — that is what the
+    # association calls the duals a program arranges outside its league, and the card
+    # should say what they are rather than what they are not. "Non-district" is still
+    # the right word for the SCHEDULING rule (the allowance, the matcher, the district
+    # guardrail); it was only ever wrong as a label on a match.
+    _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
+             "toc": "TOC", "state": "STATE", "conference": "CONFERENCE",
              "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
              "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
@@ -4275,11 +4281,15 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                   for gm in games}
 
     def _kind(d):
-        k = _KIND.get(d["phase"], "DIST" if d["district"] else "NON-DIST")
+        k = _KIND.get(d["phase"], "DIST" if d["district"] else "INVITE")
         if k == "SECTIONAL" and frozenset((school, d["opp"])) in area_pairs:
             k = "AREA"
         return k
     kinds = [_kind(d) for d in sched]
+    # A showcase dual names its event beside the tag, the way a State dual names its
+    # bracket round — the two showcases are a different length, a different scoring
+    # format and a different weekend, and the phase is what tells them apart.
+    _SHOWCASE_ROUND = {"showcase_pod": "Pod", "showcase_tiered": "Tiered"}
     # The State/TOC bracket ROUND a dual belongs to, so the card can say "R32"
     # or "SF" beside the STATE tag rather than tagging five different rounds
     # identically. Read off the archived bracket (one appearance per round), not
@@ -4353,8 +4363,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
                       "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
-                      "round": (state_round if k == "STATE" else
-                                toc_round if k == "TOC" else {}).get(d["opp"], "")}
+                      "round": (_SHOWCASE_ROUND.get(d["phase"], "") if k == "SHOWCASE"
+                                else (state_round if k == "STATE" else
+                                      toc_round if k == "TOC" else {}).get(d["opp"], ""))}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),

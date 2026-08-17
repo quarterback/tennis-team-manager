@@ -91,7 +91,8 @@
           {% if d.kind != ns.seg %}{% set ns.seg = d.kind %}
           {# Keyed lookup, so a phase nobody labelled raises here rather than printing
              a blank band over a block of duals. #}
-          <tr class="seg"><td colspan="6">{{ {'NON-DIST': 'Non-district',
+          <tr class="seg"><td colspan="6">{{ {'INVITE': 'Invitationals',
+                'SHOWCASE': 'Mid-season Match Showcases',
                 'DIST': view.district ~ ' — league play',
                 'AREA': view.group ~ ' Areas',
                 'SECTIONAL': view.group ~ ' Sectionals',
@@ -109,7 +110,7 @@
              "line scores" row under every dual doubled the length of a 35-match
              schedule and made it unscannable, which is the thing this page was
              redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind not in ('DIST', 'NON-DIST') }}{{ ' has-lines' if d.lines }}"
+          <tr class="{{ 'state' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
               {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
@@ -120,13 +121,17 @@
             </td>
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            {# Three tag colours, because they are three different things: the
-               league season, the ROAD to State (Areas..Conference) and the State
-               event itself. A State/TOC dual also names its bracket round.
-               Everything that is not DIST/STATE/TOC/NON-DIST is a road stage, so
-               a new recovery round is tagged by construction. #}
+            {# Tag colours, because these are different things: the league season,
+               the INVITATIONALS a program arranges around it, the mid-season
+               SHOWCASES (a weekend event, and the only 1S/4D duals before the
+               postseason), the ROAD to State (Areas..Conference) and the State
+               event itself. A State/TOC dual names its bracket round beside the
+               tag and a showcase names its event. Everything that is not
+               DIST/INVITE/SHOWCASE/STATE/TOC is a road stage, so a new recovery
+               round is tagged by construction. #}
             <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
-                     else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'NON-DIST' }}">{{ d.kind }}</span>
+                     else 'show' if d.kind == 'SHOWCASE'
+                     else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
               {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>

@@ -3802,6 +3802,58 @@ def _jh_global_order(by_school: dict[str, list[tuple]],
     return out
 
 
+def _jh_showcase_days(slot: dict, opening: _dt.date) -> dict[tuple, _dt.date]:
+    """{(showcase phase, round) -> date} — the mid-season showcase WEEKENDS.
+
+    A showcase window is played as consecutive SESSIONS across the whole gender
+    (`jhsaa.play_showcases` plays every event's first session before any event's
+    second), so a window occupies a contiguous block of rounds and can be landed on
+    the calendar as the single event it is: a 1-Day Pod's three sessions all on ONE
+    Saturday, a 2-Day Tiered block's four sessions as Friday, Friday, Saturday,
+    Saturday. Left to the ordinary Mon/Wed/Fri/Sat pattern they would read as three
+    duals on three separate days, which is a different event with different USTA
+    daily limits — the pod is scored as a pro set precisely because it is one day.
+
+    A run is cut at the event's own session count, so two windows of the same kind
+    played back to back are two weekends rather than one long one, and the weekends
+    are walked forward in order so no program is shown at two showcases on one day.
+    Still presentation only: nothing reads a date back."""
+    from . import jhsaa as _jh
+    sizes = {"showcase_pod": _jh.POD_DUALS, "showcase_tiered": _jh.TIER_DUALS}
+    rounds: dict[str, set[int]] = {}
+    for key, (_rk, r) in slot.items():
+        if key[0] in sizes:
+            rounds.setdefault(key[0], set()).add(r)
+    chunks: list[tuple[int, str, list[int]]] = []
+    for phase, rs in rounds.items():
+        run: list[int] = []
+        for r in sorted(rs):
+            if run and r == run[-1] + 1 and len(run) < sizes[phase]:
+                run.append(r)
+                continue
+            if run:
+                chunks.append((run[0], phase, run))
+            run = [r]
+        if run:
+            chunks.append((run[0], phase, run))
+    out: dict[tuple, _dt.date] = {}
+    last: _dt.date | None = None
+    for first, phase, rs in sorted(chunks):
+        base = _jh_day(opening, first, _JH_DAYS)
+        sat = base + _dt.timedelta(days=(5 - base.weekday()) % 7)
+        while last is not None and sat - _dt.timedelta(days=1) <= last:
+            sat += _dt.timedelta(days=7)
+        if phase == "showcase_pod":
+            for r in rs:
+                out[(phase, r)] = sat
+        else:
+            fri, cut = sat - _dt.timedelta(days=1), (len(rs) + 1) // 2
+            for i, r in enumerate(rs):
+                out[(phase, r)] = fri if i < cut else sat
+        last = sat
+    return out
+
+
 def jhsaa_match_dates(world_id: int, year: int, gender: str,
                       season_year: int | None) -> dict[tuple, _dt.date]:
     """{match key -> date} for one archived gender-season. One date per dual, so
@@ -3864,9 +3916,11 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     reg_rounds = max((r for (rk, r) in slot.values() if rk == 0), default=-1) + 1
     post_open = _jh_day(opening, max(0, reg_rounds - 1), _JH_DAYS) + _dt.timedelta(days=2)
     post_open += _dt.timedelta(days=-post_open.weekday() % 7)      # the next Monday
+    weekend = _jh_showcase_days(slot, opening)
     for key, (r_rank, r) in slot.items():
-        out[key] = (_jh_day(opening, r, _JH_DAYS) if not r_rank
-                    else _jh_day(post_open, r - reg_rounds, _JH_DAYS_POST))
+        out[key] = (weekend.get((key[0], r))
+                    or (_jh_day(opening, r, _JH_DAYS) if not r_rank
+                        else _jh_day(post_open, r - reg_rounds, _JH_DAYS_POST)))
     if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
         for k in list(_JH_CAL_CACHE)[:len(_JH_CAL_CACHE) - _JH_CAL_MAX + 1]:
             _JH_CAL_CACHE.pop(k, None)
