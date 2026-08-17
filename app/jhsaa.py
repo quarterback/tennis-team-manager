@@ -831,6 +831,41 @@ def _playup_map(version: str) -> dict:
     return fresh
 
 
+def playup_board() -> dict:
+    """The play-up EDITOR's view — the handful of programs that play up, nothing else.
+
+    ‼️ THIS IS A SHORT LIST BY CONSTRUCTION and that is the whole point (owner, 2026-08:
+    "I don't want a list with 100s of schools I have to scroll"). It returns the ~13
+    programs currently playing up, the ones the file seeds that the owner has held back
+    so a removal can be undone, and the bare NAMES for the add control's type-ahead —
+    never the association as a browsable list.
+
+    Play-up is a property of the SCHOOL, not of a gender's team, so this reads the raw
+    rows rather than `load_schools`: both genders of one program always move together."""
+    from app import overrides as ov
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    pmap = _playup_map(ov.jhsaa_playup_version())
+    up, names = [], []
+    for r in _schools_cache:
+        names.append(r["name"])
+        seeded = bool(r.get("play_up"))
+        if plays_up(r["name"], seeded, pmap):
+            up.append({"name": r["name"], "classification": r["classification"],
+                       "competes": play_up_group(r["classification"]),
+                       # Where this program's play-up comes from, because REMOVING it
+                       # means two different things: a seeded one is HELD ("no"), an
+                       # added one is CLEARED. A single "remove" could express only one.
+                       "seeded": seeded})
+    # Seeded programs the owner has turned off — shown so a removal is reversible
+    # rather than a thing that silently vanishes off the board.
+    held = sorted(n for n, v in pmap.items() if v == "no")
+    return {"schools": sorted(up, key=lambda x: x["name"]),
+            "held": held, "names": sorted(names)}
+
+
 def load_schools(gender: str) -> list[School]:
     """Every JHSAA program for `gender`, with its district.
 
