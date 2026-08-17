@@ -57,10 +57,10 @@
         {{ th('atr', 'ATR', 56, 'Average Team Rating — half TOSS, half win percentage') }}
         {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'Finish', 64, 'State tournament finish — hover for the full label') }}
         {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played') }}
-        {{ th('sc_pct', 'Rati', 48, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
-        {{ th('fmt_shift', 'Fmt', 48, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
+        {{ th('sc_pct', 'Rati', 48, 'Showcase rating, 0-100: the share of contested flight weight the team actually won across its showcase duals. 50 is an even split.') }}
+        {{ th('fmt_shift', 'Fmt', 48, 'Format swing, in points of Rati: showcase rating minus the team\'s own regular-season rating. +10 means it plays ten points better under the 1S/4D card State uses; 0 means the format makes no difference to it.') }}
         {{ th('dbl_plus', 'Dbl+', 48, 'ERA+/OPS+-style index: 100 x (showcase doubles win share / regular-season doubles win share). 100 = identical to the team\'s own regular season; above 100 means doubles carries MORE of the win under 1S/4D, below means less') }}
-        {{ th('sc_stdev', 'Vol', 48, 'Standard deviation of weighted win share across the team\'s showcase duals — how much one line flipping swings the whole result under the smaller 1S/4D card') }}
+        {{ th('sc_stdev', 'Vol', 48, 'Volatility, 0-100: how far the team\'s Rati swings from one showcase dual to the next. Under 1S/4D only five points are contested, so one line flipping moves a lot. Low is steady.') }}
       </tr>
       {% for r in view.rows %}
       <tr class="{{ 'title' if r.state_finish == 'Champion' }}">
@@ -81,10 +81,10 @@
         <td>{{ r.seed or '—' }}</td>
         <td class="fin" title="{{ r.state_finish or 'Did not qualify' }}">{% if r.state_finish %}{{ r.state_finish_short }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}</td>
         <td class="num">{{ r.sc_n or '—' }}</td>
-        <td class="num"><span class="jh-sc10">{{ '%.1f'|format(r.sc_pct * 10) if r.sc_pct is not none else '—' }}</span></td>
+        <td class="num"><span class="jh-sc10">{{ '%.0f'|format(r.sc_pct * 100) if r.sc_pct is not none else '—' }}</span></td>
         <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
           {%- if r.fmt_shift is not none -%}
-            <span class="jh-temp {{ 'jh-up' if r.fmt_shift > 0 else 'jh-down' if r.fmt_shift < 0 }}">{{ '%+.0f°'|format(r.fmt_shift * 100) }}</span>
+            <span class="jh-temp {{ 'jh-up' if r.fmt_shift > 0 else 'jh-down' if r.fmt_shift < 0 }}">{{ '%+.0f'|format(r.fmt_shift * 100) }}</span>
           {%- else -%}—{%- endif -%}
         </td>
         <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
@@ -92,7 +92,7 @@
             <span class="jh-plus {{ 'jh-up' if r.dbl_plus > 100 else 'jh-down' if r.dbl_plus < 100 }}">{{ r.dbl_plus }}</span>
           {%- else -%}—{%- endif -%}
         </td>
-        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">{{ '%.3f'|format(r.sc_stdev) if r.sc_stdev is not none else '—' }}</td>
+        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">{{ '%.0f'|format(r.sc_stdev * 100) if r.sc_stdev is not none else '—' }}</td>
       </tr>
       {% endfor %}
     </table>
