@@ -3,6 +3,18 @@
 {% block title %}JHSAA {{ view.group }} Rankings{% endblock %}
 {% block content %}
 
+{# A sortable column header: clicking sorts by `key` (display order only — see
+   jhsaa_rankings_view), clicking the ACTIVE column flips direction. Same pattern as
+   junior_rankings.html's `th()`. #}
+{% macro th(key, label, width=none, title=none) %}
+  {% set active = (view.sort == key) %}
+  {% set newdir = 'asc' if (active and view.dir == 'desc') else 'desc' %}
+  <th{% if width %} style="width:{{ width }}px"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+    <a class="jh-sortth{{ ' on' if active }}"
+       href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, group=view.group, year=view.scope.pin, sort=key, dir=newdir) }}">{{ label }}{% if active %}<span class="jh-sortarr">{{ '▾' if view.dir == 'desc' else '▴' }}</span>{% endif %}</a>
+  </th>
+{% endmacro %}
+
 {{ jh_header(view.scope, u, 'rankings', view.group ~ ' Rankings',
              'Every program in the classification, in the order the association itself
               ranks them — the TOSS Power Index the season was seeded from.',
@@ -36,14 +48,19 @@
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>
-        <th style="width:44px">#</th><th>School</th><th style="width:170px">District</th>
-        <th style="width:64px">Record</th><th style="width:64px">District</th>
-        <th style="width:52px">Place</th>
-        <th style="width:62px" title="Courts won per dual">PF</th>
-        <th style="width:62px" title="Courts lost per dual">PA</th>
-        <th style="width:64px" title="TOSS Power Index">TOSS</th>
-        <th style="width:64px" title="Average Team Rating — half TOSS, half win percentage">ATR</th>
-        <th style="width:48px">Seed</th><th style="width:150px">State finish</th>
+        {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 170) }}
+        {{ th('record', 'Record', 64) }}<th style="width:64px">District</th>
+        {{ th('place', 'Place', 52) }}
+        {{ th('pf', 'PF', 62, 'Courts won per dual') }}
+        {{ th('pa', 'PA', 62, 'Courts lost per dual') }}
+        {{ th('pi', 'TOSS', 64, 'TOSS Power Index — the archived seeding number') }}
+        {{ th('atr', 'ATR', 64, 'Average Team Rating — half TOSS, half win percentage') }}
+        {{ th('seed', 'Seed', 48) }}{{ th('state_finish', 'State finish', 150) }}
+        {{ th('sc_n', 'SC n', 48, 'Mid-season 1S/4D Match Showcases played') }}
+        {{ th('sc_pct', 'SC Rating', 58, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
+        {{ th('fmt_shift', 'Fmt °', 56, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
+        {{ th('dbl_plus', 'Dbl+', 56, 'ERA+/OPS+-style index: 100 x (showcase doubles win share / regular-season doubles win share). 100 = identical to the team\'s own regular season; above 100 means doubles carries MORE of the win under 1S/4D, below means less') }}
+        {{ th('sc_stdev', 'SC Volatility', 92, 'Standard deviation of weighted win share across the team\'s showcase duals — how much one line flipping swings the whole result under the smaller 1S/4D card') }}
       </tr>
       {% for r in view.rows %}
       <tr class="{{ 'title' if r.state_finish == 'Champion' }}">
@@ -61,6 +78,19 @@
         <td class="num">{{ '%.3f'|format(r.atr) if r.atr is not none else '—' }}</td>
         <td>{{ r.seed or '—' }}</td>
         <td class="fin">{% if r.state_finish %}{{ r.state_finish }}{% else %}<span style="color:var(--text-faint)">did not qualify</span>{% endif %}</td>
+        <td class="num">{{ r.sc_n or '—' }}</td>
+        <td class="num"><span class="jh-sc10">{{ '%.1f'|format(r.sc_pct * 10) if r.sc_pct is not none else '—' }}</span></td>
+        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
+          {%- if r.fmt_shift is not none -%}
+            <span class="jh-temp {{ 'jh-up' if r.fmt_shift > 0 else 'jh-down' if r.fmt_shift < 0 }}">{{ '%+.0f°'|format(r.fmt_shift * 100) }}</span>
+          {%- else -%}—{%- endif -%}
+        </td>
+        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
+          {%- if r.dbl_plus is not none -%}
+            <span class="jh-plus {{ 'jh-up' if r.dbl_plus > 100 else 'jh-down' if r.dbl_plus < 100 }}">{{ r.dbl_plus }}</span>
+          {%- else -%}—{%- endif -%}
+        </td>
+        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">{{ '%.3f'|format(r.sc_stdev) if r.sc_stdev is not none else '—' }}</td>
       </tr>
       {% endfor %}
     </table>
@@ -78,6 +108,25 @@
     it keeps while a twenty-win season against an ordinary schedule rates below it —
     the right trade for seeding a draw, the wrong one for the last seat in the field.
     Seasons archived before ATR existed show a dash.
+    <br><br>
+    The SHOWCASE columns compare each team's mid-season 1S/4D Match Showcases against
+    its 5S/2D regular season — the format State is decided in against the format the
+    regular season is played in. <strong>SC Rating</strong> is the showcase weighted
+    win share on a 0-10 scale. <strong>Fmt&nbsp;°</strong> is showcase weighted win
+    share minus regular-season weighted win share, read as a signed "degree": positive
+    ("warmer") means a team plays UP once the card drops to one singles line and four
+    doubles, negative ("colder") means down. <strong>Dbl+</strong> is an ERA+/OPS+-style
+    index for how much of a team's wins come from doubles: 100 x (showcase doubles win
+    share ÷ regular-season doubles win share) — 100 means identical to the team's own
+    regular season, above 100 means doubles is carrying more of the win under 1S/4D,
+    below means less; a dash means the team won zero of its regular-season weighted
+    points on doubles, so no baseline exists to index against.
+    <strong>SC Volatility</strong> is how much a team's result swings dual to dual
+    within its showcases; a smaller card means one line flipping moves a bigger share
+    of the outcome. None of this is TOSS or ATR, none of it is archived toward a seed,
+    and none of it means anything on a thin sample — hover any of these cells for the
+    dual count (<strong>SC n</strong>) it was built on, and a team with n=1 has played
+    one dual, not established a trend.
   </div>
 </div>
 {% endif %}

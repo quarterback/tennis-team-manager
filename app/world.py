@@ -4161,6 +4161,13 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
                          "drecord": r.get("drecord", ""), "place": r.get("place", 0),
                          "pct": w / (w + l) if (w + l) else 0.0,
                          "pi": r.get("pi"), "atr": r.get("atr"),
+                         # The format-transition readout, flattened onto the row by
+                         # `jhsaa._flat_format_profile` at archive time — read back, never
+                         # recomputed, same as pi/atr. `None` on any season archived before
+                         # this existed, exactly like `atr` before it.
+                         "sc_n": r.get("sc_n") or 0, "sc_pct": r.get("sc_pct"),
+                         "fmt_shift": r.get("fmt_shift"), "dbl_plus": r.get("dbl_plus"),
+                         "sc_stdev": r.get("sc_stdev"),
                          "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
     if rated:
         rows.sort(key=lambda r: (-(r["pi"] or 0.0), r["school"]))

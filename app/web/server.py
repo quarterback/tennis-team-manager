@@ -2067,9 +2067,15 @@ def create_app() -> Flask:
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
         """A whole classification, ranked on TOSS — the hub's rail panel showed the
-        first twelve of a list that already runs to every program in the class."""
+        first twelve of a list that already runs to every program in the class.
+
+        `sort`/`dir` re-order the DISPLAY only — the archived TOSS rank in the `#`
+        column never moves, whatever the table is sorted by (see `jhsaa_rankings_view`).
+        """
         gender, label, u, g, group, year = _jh_scope_args()
-        view = jhsaa_rankings_view(DEFAULT_SEED, g, group, year)
+        sort = request.args.get("sort") or None
+        dir_ = request.args.get("dir", "desc")
+        view = jhsaa_rankings_view(DEFAULT_SEED, g, group, year, sort=sort, dir=dir_)
         return render_template("jhsaa_rankings.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
