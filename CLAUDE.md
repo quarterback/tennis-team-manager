@@ -1333,6 +1333,13 @@ was a school marker, shipped "Baptist HS High School".
   2027-08).** 13 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
   list with `overrides.set_jhsaa_playup` / `/editor/jhsaa-playup` layered on top, the
   archetype pattern exactly ("yes" promotes, "no" holds, clearing reverts to the file).
+  - **The BOARD is a panel on `/editor`** (`jhsaa.playup_board`) and shows ONLY the ~13
+    programs that play up: add is a type-ahead over the names, remove is a button on the
+    row, and a removed default shows as "held" so it can be restored. ‼️ Never render the
+    association as a list to scroll (owner, 2026-08: "I don't want a list with 100s of
+    schools I have to scroll"). The add field is **`jh_school`**, not `school` — `school`
+    on that page is the COLLEGE program `_editor_redirect` reads to come back, so a JHSAA
+    name in it sends the editor to a school its division has never heard of.
   - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below** (owner correction
     2027-08): "play up is for schools at the 4A or under level to play with teams at
     their competitive level, not already big schools". An 8A blue-blood moving to 9A is
