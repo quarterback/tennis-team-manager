@@ -687,6 +687,57 @@ RENAMES = {
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
+    # ‼️ THE INVENTED PEOPLE THEMSELVES (owner, 2026-08). The campus sweeps kept
+    # finding "<fake person> North", renaming the CAMPUS, and leaving the person's own
+    # school standing two rows away. These are the base schools.
+    #
+    # ‼️ FOUND BY LISTING, NOT BY A TEST. Three passes of pool-matching under-counted,
+    # because these names come from vocabularies the generator's own files do not hold
+    # — Basque (Etxeberria, Elorriaga, Mendizabal, Aramburu), Russian (Voronin, Karev,
+    # Melnick), Spanish (Villaseñor, Villalba, Ordoñez). What worked was printing every
+    # two-token name that is not a known place and reading it.
+    #
+    # ‼️ REAL PEOPLE STAY, and they are most of what is left: every president and
+    # justice, plus Bayard Rustin, Paul Robeson, Shirley Chisholm, Romare Bearden,
+    # Yuri Kochiyama, Katherine Johnson, Mae Jemison, Benjamin Banneker, José Martí,
+    # Dolores Huerta, Ella Baker, Gwendolyn Brooks, Octavia Butler, James Baldwin,
+    # John Lewis, Rita Moreno, Alben Barkley, Walter Mondale. Do not sweep these.
+    #
+    # Names are CALIFORNIAN — neighbourhoods, streets and water — which is the register
+    # Jefferson's own coast already reads in. Seaside Heights, Cape Jean and Charles Harbor
+    # are owner picks (2026-08).
+    "Adela Robles":                "Seaside Heights",         # 4A San Borondón
+    "Adela Villaseñor":            "Cape Jean",               # 7A Caswell
+    "Ainhoa Mendizabal":           "Charles Harbor",               # 6A Simmons
+    "Javier Villalba":             "Los Feliz",               # 9A Llerena
+    "Amaia Etxeberria":            "Boyle Heights",           # 8A Carden City
+    "Amalia Escobedo":             "Eagle Rock",              # 7A Belyakov
+    "Anya Antonov":                "Mar Vista",               # 9A San Cordero
+    "Anya Orlov":                  "Playa Vista",             # 6A Belyakov
+    "Esteban Téllez":              "Sawtelle",                # 6A Aldecoa
+    "Garazi Aramburu":             "Ocean Park",              # 2A Lieksa
+    "Greta Adler":                 "Topanga",                 # 7A Valderra
+    "Greta Bellini":               "Glassell Park",           # 3A Silver Glen
+    "Isabel Lucero":               "El Sereno",               # 7A Bahía Leal
+    "Itziar Elorriaga":            "Elysian Valley",          # 8A Altamonte
+    "Itziar Lertxundi":            "Noe Valley",              # 6A Cañada Grande
+    "Lars Bellini":                "Bernal Heights",          # 9A Montelago
+    "Leire Garmendia":             "Potrero Hill",            # 9A Belmonte
+    "Lena Talltree":               "Dogpatch",                # 8A Ashbury
+    "Lev Kareva":                  "Hayes Valley",            # 9A Orellana
+    "Lev Voronin":                 "Cole Valley",             # 9A Fort Valois
+    "Lucía Villaseñor":            "Glen Park",               # 6A Emerson
+    "Maksim Karev":                "Excelsior",               # 4A Los Maderos
+    "Mikel Garmendia":             "Portola",                 # 5A Rostova Junction
+    "Mila Melnick":                "Sea Cliff",               # 5A Orlova
+    "Miren Elorriaga":             "West Portal",             # 9A Belmonte
+    "Nicolás Ordoñez":             "Rockridge",               # 9A Belmonte
+    "Nicolás Villalba":            "Temescal",                # 8A Starlight
+    "Sofía Aranda":                "Montclair",               # 8A Puerto de los Reyes
+    "Vasquez":                     "Fruitvale",               # 5A Halbrook
+    "Viktor Kareva":               "Adams Point",             # 5A Llerena
+    "Walter Langston":             "Maxwell Park",            # 7A San Telmo
+
     # ‼️ THE REST OF THE PERSON-CAMPUS SWEEP (owner, 2026-08). The first pass used a
     # pool test — both tokens had to appear in the generator's own name files — and
     # anything drawn from anywhere else walked straight past it: Anya Belov North,
