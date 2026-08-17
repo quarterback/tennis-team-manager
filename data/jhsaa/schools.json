@@ -3554,6 +3554,26 @@
       "boys_district": "Gold Valley League"
     },
     {
+      "name": "Cortland Memorial",
+      "city": "Cortland",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1970,
+      "private": false,
+      "mascot": "Rheas",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Svenja Ekström"
+    },
+    {
       "name": "Costa Verde",
       "city": "Bahía Leal",
       "county": "San Marcos",
@@ -9338,7 +9358,7 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Montelago",
+      "name": "Montelago Central",
       "city": "Montelago",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -9354,7 +9374,28 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "source": "Montelago"
+    },
+    {
+      "name": "Montelago South",
+      "city": "Montelago",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1955,
+      "private": false,
+      "mascot": "Hop Pickers",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League",
+      "source": "Thomas Ekström"
     },
     {
       "name": "Moriarty",
@@ -10144,6 +10185,26 @@
       "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
+    },
+    {
+      "name": "Novak Russian Orthodox",
+      "city": "Novak",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 446,
+      "private": true,
+      "mascot": "Northern Lights",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sky-Em League",
+      "boys_district": "Sky-Em League",
+      "source": "Soren Ekström"
     },
     {
       "name": "Nurmes",
@@ -13131,26 +13192,6 @@
       "source": "Manuel Cordero"
     },
     {
-      "name": "Soren Ekstrom",
-      "city": "Novak",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 446,
-      "private": false,
-      "mascot": "Northern Lights",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League",
-      "source": "Soren Ekström"
-    },
-    {
       "name": "Sotkamo Union",
       "city": "Sotkamo",
       "county": "Stagewater",
@@ -14384,26 +14425,6 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Svenja Ekstrom",
-      "city": "Cortland",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1970,
-      "private": false,
-      "mascot": "Rheas",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Svenja Ekström"
-    },
-    {
       "name": "Sycamore Flat",
       "city": "Belyakov",
       "county": "Vance",
@@ -14690,26 +14711,6 @@
       "boys": true,
       "girls_district": "River Valley League",
       "boys_district": "River Valley League"
-    },
-    {
-      "name": "Thomas Ekstrom",
-      "city": "Montelago",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1955,
-      "private": false,
-      "mascot": "Hop Pickers",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sunkist League",
-      "boys_district": "Sunkist League",
-      "source": "Thomas Ekström"
     },
     {
       "name": "Thomas Halvorsen",

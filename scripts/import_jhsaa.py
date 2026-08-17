@@ -584,12 +584,13 @@ RENAMES = {
     # an American town or school would not carry one. These three keep their
     # ALWAYS_EXTRA source spelling (it has to match prep-network) and rename
     # only at emit.
-    "Soren Ekström": "Soren Ekstrom",
-    "Svenja Ekström": "Svenja Ekstrom",
-    "Thomas Ekström": "Thomas Ekstrom",
+    "Soren Ekström": "Novak Russian Orthodox",
+    "Svenja Ekström": "Cortland Memorial",
+    "Thomas Ekström": "Montelago South",
     "Keldale": "Espoo",
     "Tule": "New Bergen",
     "Rimrock Valley": "New Ballard",
+    "Montelago": "Montelago Central",
 }
 
 # Schools whose DISPLAY name is a religious or independent institution and which
@@ -1055,8 +1056,8 @@ MASCOTS = {
     "Las Norias East": "Hullers",
     "Oscar Micheaux": "Marble Cutters",         # Monte Blanco
     "Golden Gate": "Bridgemen",
-    "Montelago": "Grebes",
-    "Thomas Ekstrom": "Hop Pickers",
+    "Montelago Central": "Grebes",
+    "Montelago South": "Hop Pickers",
     "Moriarty": "Jackrabbits",
     "Silver Glen": "Silversmiths",
     "St. Elian": "Abbots",
@@ -1134,7 +1135,7 @@ MASCOTS = {
     "Celia Browne": "Powderhorns",              # Fort Carden
     "Timber Crest": "Highclimbers",
     "New Leiden": "Pilgrims",
-    "Soren Ekstrom": "Northern Lights",
+    "Novak Russian Orthodox": "Northern Lights",
     "Orlova": "Firebirds",
     "Ransom City Union": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
