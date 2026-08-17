@@ -1447,11 +1447,11 @@ MASCOTS = {
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Serrano North": "Sidewinders",             # and the snake
     "Coles Creek": "Sunflowers",
-    "Aitor Zubieta": "Woodchoppers",            # aizkolari
+    "Ocean Beach": "Woodchoppers",            # aizkolari
     "Eagle Rock": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
     "Vance": "Lambs",                  # cordero
-    "Lorraine Calder": "Mobiles",
+    "Morro Bay": "Mobiles",
     "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",

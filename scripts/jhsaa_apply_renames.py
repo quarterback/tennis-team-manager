@@ -130,6 +130,16 @@ def main() -> None:
         r = next(x for x in rows if x["name"] == new)
         print(f"  {old:28} -> {new:26} {r['group']:5} {r['enrollment']:5} "
               f"{r['city']} ({r['area']})")
+    # ‼️ MASCOTS/COLORS/PRIVATE_SCHOOLS key on the DISPLAY name and live in
+    # import_jhsaa.py, which this script cannot edit — so a rename leaves them behind
+    # and the override is silently dropped on the next FULL import. build() refuses to
+    # run in that state, but nobody runs a full import daily, so say it here where the
+    # rename actually happens. Left behind three times before this line existed.
+    for tname in ("MASCOTS", "COLORS", "PRIVATE_SCHOOLS"):
+        stale = sorted(k for k in getattr(m, tname, ()) if k in m.RENAMES)
+        if stale:
+            print(f"  !! {tname} still keyed on {len(stale)} renamed name(s) — move "
+                  f"them to the new display name in import_jhsaa.py: {stale[:6]}")
     print(f"{len(moved)} renamed; "
           f"{sum(1 for r in rows if r.get('private'))} private of {len(rows)}")
     for n in move_archetypes(moved, args.dry_run):
