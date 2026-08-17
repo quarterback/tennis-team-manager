@@ -85,44 +85,6 @@
       "boys_district": "Vesterheim Athletic Association"
     },
     {
-      "name": "Aitor Echevarria",
-      "city": "Aldecoa",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2258,
-      "private": false,
-      "mascot": "Sodbusters",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League"
-    },
-    {
-      "name": "Aitor Zubieta",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1920,
-      "private": false,
-      "mascot": "Woodchoppers",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
-    },
-    {
       "name": "Albany Park",
       "city": "Fort Carden",
       "county": "Tamarack",
@@ -317,25 +279,6 @@
       "girls_district": "Mission League",
       "boys_district": "Mission League",
       "source": "Eleanor Tillman"
-    },
-    {
-      "name": "Ander Arrieta",
-      "city": "Weissburg",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1081,
-      "private": false,
-      "mascot": "Spartans",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
     },
     {
       "name": "Annes Summit",
@@ -2124,6 +2067,26 @@
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League",
       "source": "Nerea Urrutia"
+    },
+    {
+      "name": "Bolinas",
+      "city": "Weissburg",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1081,
+      "private": false,
+      "mascot": "Spartans",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League",
+      "source": "Ander Arrieta"
     },
     {
       "name": "Boyerstown",
@@ -6489,25 +6452,6 @@
       "boys_district": "Coastal Range League"
     },
     {
-      "name": "Harold Calder",
-      "city": "San Telmo",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1129,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mission League",
-      "boys_district": "Mission League"
-    },
-    {
       "name": "Harriman",
       "city": "Harriman",
       "county": "Emigrant",
@@ -8511,25 +8455,6 @@
       "boys_district": "Mariners League"
     },
     {
-      "name": "Lorraine Calder",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Halbrook Basin",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1370,
-      "private": false,
-      "mascot": "Mobiles",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
-    },
-    {
       "name": "Los Alisos",
       "city": "Los Alisos",
       "county": "Marlow",
@@ -9600,6 +9525,26 @@
       "boys_district": ""
     },
     {
+      "name": "Morro Bay",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1370,
+      "private": false,
+      "mascot": "Mobiles",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League",
+      "source": "Lorraine Calder"
+    },
+    {
       "name": "Mount Dylan Lake",
       "city": "Mount Dylan Lake",
       "county": "Cinder",
@@ -10261,6 +10206,26 @@
       "girls_district": "Coastal Range League",
       "boys_district": "",
       "source": "Hazel Hart"
+    },
+    {
+      "name": "Ocean Beach",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1920,
+      "private": false,
+      "mascot": "Woodchoppers",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League",
+      "source": "Aitor Zubieta"
     },
     {
       "name": "Ocean Park",
@@ -10941,6 +10906,26 @@
       "girls_district": "Halbrook Basin League",
       "boys_district": "Halbrook Basin League",
       "source": "Anya Orlov"
+    },
+    {
+      "name": "Point Loma",
+      "city": "Aldecoa",
+      "county": "Vance",
+      "area": "Halbrook Basin",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2258,
+      "private": false,
+      "mascot": "Sodbusters",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League",
+      "source": "Aitor Echevarria"
     },
     {
       "name": "Pomar",
@@ -15281,6 +15266,26 @@
       "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League"
+    },
+    {
+      "name": "Tomales Bay",
+      "city": "San Telmo",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1129,
+      "private": false,
+      "mascot": "Falcons",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mission League",
+      "boys_district": "Mission League",
+      "source": "Harold Calder"
     },
     {
       "name": "Topanga",

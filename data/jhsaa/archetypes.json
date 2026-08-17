@@ -41,7 +41,6 @@
     "Homestead": "doubles",
     "Jesuit": "blue_blood",
     "Juniper Ridge": "development",
-    "Lorraine Calder": "doubles",
     "Mabryville": "development",
     "Marlow County": "doubles",
     "Mater Dei": "blue_blood",
@@ -91,6 +90,7 @@
     "Bridgeport": "development",
     "Albany Park": "blue_blood",
     "Montelago": "blue_blood",
-    "Seafarer": "doubles"
+    "Seafarer": "doubles",
+    "Morro Bay": "doubles"
   }
 }
