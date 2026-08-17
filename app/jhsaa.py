@@ -187,7 +187,12 @@ CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level 
 # module that crowns something takes a bracket (`run_state`, `run_rounds`); a showcase
 # is a flat list of pairings, and that difference is deliberate rather than incidental.
 # If a showcase ever needs a standing, it has stopped being a showcase.
-SHOWCASE_ENABLED = True
+# ‼️ OFF (2026-08). The showcase scheduler is implicated in a JHSAA rung that stopped
+# finishing — a world advance sat at 277s and climbing where it used to take about a
+# minute. Off, `showcase_schedule` returns immediately and not one showcase dual is
+# played, so the rung is exactly what it was before the feature landed. Turn it back on
+# only once the cost is understood and measured.
+SHOWCASE_ENABLED = False
 
 # Six to eight designated weekend windows, half of each kind. A window is a WEEKEND, not
 # a week: there is no clock inside a JHSAA season (see `play_regular_season`), so a
