@@ -3744,6 +3744,33 @@ _JH_SEASON_OPEN = {"boys": (8, 1), "girls": (3, 1)}
 _JH_DAYS = (0, 2, 4, 5)
 _JH_DAYS_POST = _JH_DAYS
 
+# ‼️ THE SEASON MUST BE OVER BY THESE DATES (owner rule 2026-08). Boys play a fall
+# season and are DONE BY THE END OF OCTOBER — early November at the absolute latest;
+# girls play a spring season and are done by early June. This is not a guideline the
+# calendar drifts toward, it is the window the calendar is fitted into: the pattern
+# below is chosen per season so the last dual of the postseason lands inside it.
+_JH_SEASON_CLOSE = {"boys": (10, 31), "girls": (6, 7)}
+_JH_CLOSE_GRACE = 7          # days of slack before the hard stop (the "at the latest")
+
+# Day patterns, loosest first, as weekday offsets from Monday. A high-school week is
+# Mon/Wed/Fri/Sat; when a season has more rounds than that can hold, the extra days
+# are added rather than letting the season run into December. Never a Sunday: 6 is in
+# no pattern.
+_JH_PATTERNS = ((0, 2, 4, 5), (0, 1, 2, 4, 5), (0, 1, 2, 3, 4, 5))
+
+
+def _jh_pattern(opening: _dt.date, close: _dt.date, rounds: int) -> tuple:
+    """The loosest day pattern that fits `rounds` between `opening` and `close`.
+
+    Returns the densest one if none fits — a season that genuinely cannot be played
+    in the window still has to render, and a too-long season is visible on the card
+    rather than silently rescheduled into the winter."""
+    weeks = max(1, ((close - opening).days + 6) // 7)
+    for pat in _JH_PATTERNS:
+        if weeks * len(pat) >= rounds:
+            return pat
+    return _JH_PATTERNS[-1]
+
 
 def _jh_day(start: _dt.date, idx: int, pattern: tuple) -> _dt.date:
     wk, k = divmod(idx, len(pattern))
@@ -3802,7 +3829,8 @@ def _jh_global_order(by_school: dict[str, list[tuple]],
     return out
 
 
-def _jh_showcase_days(slot: dict, opening: _dt.date) -> dict[tuple, _dt.date]:
+def _jh_showcase_days(slot: dict, opening: _dt.date,
+                      days: tuple = _JH_DAYS) -> dict[tuple, _dt.date]:
     """{(showcase phase, round) -> date} — the mid-season showcase WEEKENDS.
 
     A showcase window is played as consecutive SESSIONS across the whole gender
@@ -3837,12 +3865,21 @@ def _jh_showcase_days(slot: dict, opening: _dt.date) -> dict[tuple, _dt.date]:
         if run:
             chunks.append((run[0], phase, run))
     out: dict[tuple, _dt.date] = {}
-    last: _dt.date | None = None
+    used: set[_dt.date] = set()
     for first, phase, rs in sorted(chunks):
-        base = _jh_day(opening, first, _JH_DAYS)
+        base = _jh_day(opening, first, days)
         sat = base + _dt.timedelta(days=(5 - base.weekday()) % 7)
-        while last is not None and sat - _dt.timedelta(days=1) <= last:
+        # ‼️ A WINDOW IS ANCHORED TO ITS OWN ROUND, never walked forward from the
+        # previous window. This used to step every later window a week past the last
+        # one — with seven windows in a season the seventh landed a month beyond the
+        # rounds it was played in, so a card showed October showcases sitting between
+        # September league duals and the dates ran BACKWARDS. Distinct weekends still
+        # matter (nobody is at two showcases on one day), so a genuine collision is
+        # nudged a week — but only ever within the block's own span, never unbounded.
+        limit = _jh_day(opening, rs[-1], days) + _dt.timedelta(days=6)
+        while sat in used and sat + _dt.timedelta(days=7) <= limit:
             sat += _dt.timedelta(days=7)
+        used.add(sat)
         if phase == "showcase_pod":
             for r in rs:
                 out[(phase, r)] = sat
@@ -3850,7 +3887,6 @@ def _jh_showcase_days(slot: dict, opening: _dt.date) -> dict[tuple, _dt.date]:
             fri, cut = sat - _dt.timedelta(days=1), (len(rs) + 1) // 2
             for i, r in enumerate(rs):
                 out[(phase, r)] = fri if i < cut else sat
-        last = sat
     return out
 
 
@@ -3973,13 +4009,39 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
         slot[key] = (r_rank, r)
 
     reg_rounds = max((r for (rk, r) in slot.values() if rk == 0), default=-1) + 1
-    post_open = _jh_day(opening, max(0, reg_rounds - 1), _JH_DAYS) + _dt.timedelta(days=2)
-    post_open += _dt.timedelta(days=-post_open.weekday() % 7)      # the next Monday
-    weekend = _jh_showcase_days(slot, opening)
-    for key, (r_rank, r) in slot.items():
-        out[key] = (weekend.get((key[0], r))
-                    or (_jh_day(opening, r, _JH_DAYS) if not r_rank
-                        else _jh_day(post_open, r - reg_rounds, _JH_DAYS_POST)))
+    # ‼️ ONE CONTINUOUS ROUND INDEX, AND A PATTERN CHOSEN TO FIT THE WINDOW. The
+    # postseason used to restart its own count at the Monday after the regular season,
+    # which inserted a break and — with the count fixed at four days a week — let the
+    # season run wherever it ran. A boys' season finishing in December is wrong on its
+    # face: it is a FALL sport and it is over by the end of October.
+    #
+    # The postseason lanes already continue the same counter, so `r` is a global index
+    # for the whole season; the only choice left is how many days a week it is laid on,
+    # and that is now derived from how many rounds have to fit rather than fixed.
+    mon_c, day_c = _JH_SEASON_CLOSE.get(gender, _JH_SEASON_CLOSE["girls"])
+    close = _dt.date(season_year, mon_c, day_c) + _dt.timedelta(days=_JH_CLOSE_GRACE)
+    total = max((r for (_rk, r) in slot.values()), default=0) + 1
+    days = _jh_pattern(opening, close, total)
+    weekend = _jh_showcase_days(slot, opening, days)
+    for key, (_r_rank, r) in slot.items():
+        out[key] = weekend.get((key[0], r)) or _jh_day(opening, r, days)
+
+    # ‼️ A CARD READS IN DATE ORDER, and that is a GUARANTEE rather than something
+    # the round arithmetic happens to produce. Anything that dates a dual outside the
+    # ordinary round pattern — the showcase weekends do, and a future event would —
+    # can otherwise land a match before one its own team already played, which is how
+    # October showcases came to sit between September league duals.
+    #
+    # So: walk the play order and hold each dual on or after the last date either of
+    # its teams has been given. Nothing is reordered — the sequence is the archive's
+    # and is not up for revision — only pushed forward to the next available slot in
+    # the same pattern, which is what a real fixture list does when a date slips.
+    seen: dict[str, _dt.date] = {}
+    for key in order:
+        floor = max((seen[s] for s in (key[2], key[3]) if s in seen), default=None)
+        if floor is not None and out[key] < floor:
+            out[key] = floor
+        seen[key[2]] = seen[key[3]] = out[key]
     if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
         for k in list(_JH_CAL_CACHE)[:len(_JH_CAL_CACHE) - _JH_CAL_MAX + 1]:
             _JH_CAL_CACHE.pop(k, None)
