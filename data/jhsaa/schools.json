@@ -4534,6 +4534,26 @@
       "boys_district": "Chinook League"
     },
     {
+      "name": "Espoo",
+      "city": "Espoo",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 140,
+      "private": true,
+      "mascot": "Shearers",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Kaleva League",
+      "boys_district": "Kaleva League",
+      "source": "Keldale"
+    },
+    {
       "name": "Esteban Téllez",
       "city": "Aldecoa",
       "county": "Vance",
@@ -7577,25 +7597,6 @@
       "boys_district": "Del Rey Athletic Association"
     },
     {
-      "name": "Keldale",
-      "city": "Keldale",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 140,
-      "private": true,
-      "mascot": "Shearers",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Kaleva League",
-      "boys_district": "Kaleva League"
-    },
-    {
       "name": "Kelford",
       "city": "Kelford",
       "county": "Ferris",
@@ -9664,6 +9665,46 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
+      "name": "New Ballard",
+      "city": "New Ballard",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 344,
+      "private": false,
+      "mascot": "Galahs",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Pori League",
+      "boys_district": "",
+      "source": "Rimrock Valley"
+    },
+    {
+      "name": "New Bergen",
+      "city": "New Bergen",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 412,
+      "private": false,
+      "mascot": "Huskies",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pori League",
+      "boys_district": "Pori League",
+      "source": "Tule"
+    },
+    {
       "name": "New Hope Christian",
       "city": "Pear Slough",
       "county": "Barlowe",
@@ -11621,25 +11662,6 @@
       "girls": true,
       "boys": false,
       "girls_district": "Kajaani League",
-      "boys_district": ""
-    },
-    {
-      "name": "Rimrock Valley",
-      "city": "Rimrock",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 344,
-      "private": false,
-      "mascot": "Galahs",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Pori League",
       "boys_district": ""
     },
     {
@@ -15052,25 +15074,6 @@
       "boys": true,
       "girls_district": "Juniper League",
       "boys_district": "Juniper League"
-    },
-    {
-      "name": "Tule",
-      "city": "Tule",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 412,
-      "private": false,
-      "mascot": "Huskies",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League"
     },
     {
       "name": "Tule Flat",

@@ -251,6 +251,7 @@ OWNER_EDICTS = frozenset({
     # areas
     "Southern Jefferson", "Millersylvania",
     "Salmon Bay",
+    "Espoo", "New Bergen", "New Ballard",
 })
 
 
@@ -586,6 +587,9 @@ RENAMES = {
     "Soren Ekström": "Soren Ekstrom",
     "Svenja Ekström": "Svenja Ekstrom",
     "Thomas Ekström": "Thomas Ekstrom",
+    "Keldale": "Espoo",
+    "Tule": "New Bergen",
+    "Rimrock Valley": "New Ballard",
 }
 
 # Schools whose DISPLAY name is a religious or independent institution and which
@@ -1350,6 +1354,13 @@ CITY_RENAMES = {
     "Winvale": "Mount Ruth",
     "Wolf Gap": "Corey Canyon",
     "Wickbrook": "Salmon Bay",
+    # Espoo (real Finnish city, no accent needed), New Bergen and New Ballard
+    # (the American "New <old-country city>" convention — Bergen and Ballard
+    # are both real maritime cities, which is why both land on the Selquah
+    # coast) — owner list, 2027-08.
+    "Keldale": "Espoo",
+    "Tule": "New Bergen",
+    "Rimrock": "New Ballard",
 }
 
 RELOCATIONS = {
