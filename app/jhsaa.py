@@ -11,9 +11,10 @@ are the kids who just finished four years in this association, carrying their re
 `graduating_class()` is that hand-off.
 
 FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by literal:
-  * regular season  5 singles / 2 doubles  → 7 points
-  * state tournament 1 singles / 4 doubles → 5 points
-Both totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
+  * early non-district  3 singles / 4 doubles → 7 points
+  * regular season      5 singles / 2 doubles → 7 points
+  * state tournament    1 singles / 4 doubles → 5 points
+All totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
 Every match plays to completion — there is no clinch in high school
 (`simulate_dual(play_all=True)`, as D3/D4 already do).
 
@@ -63,9 +64,28 @@ GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
 FORMATS = {
+    "early":   DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
     "regular": DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
     "state":   DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
 }
+
+# EARLY NON-DISTRICT DUALS PLAY 3S/4D (owner rule 2027-08). A JHSAA roster carries 12
+# players, but the 5S/2D league card only gives nine of them a meaningful court — real
+# high-school programs run JV/exhibition dates to get deeper into a roster, and this
+# association has no separate JV system to model that with. So the FIRST non-district
+# window (`phase="early"`, played in `play_regular_season` before any district round) is
+# 3 singles / 4 doubles instead — 11 players dress, reaching roster spots #10-11, and
+# a program gets more doubles reps ahead of the 1S/4D postseason. Every court is a real
+# result on the existing `FLIGHT_WEIGHTS` table (D4's weight is already the low one that
+# keeps an extra developmental court from moving TOSS much).
+#
+# Once district play starts, the card goes straight back to 5S/2D — the mid-season
+# non-district window and the late tune-up are both scheduled AFTER district pass 1 has
+# begun, so they stay `phase="regular"` like every league dual. The mid-season MATCH
+# SHOWCASES (`SHOWCASE`, 1S/4D) are a different, separately-scheduled event and are
+# untouched by this — an early-window program still gets its normal showcase invites at
+# their own shape. Postseason stays 1S/4D as always.
+EARLY_FORMAT_PHASE = "early"
 
 
 # The POSTSEASON phases — one per stage, because the archive (`world_jhsaa_dual.phase`)
@@ -87,12 +107,16 @@ SHOWCASE = ("showcase_pod", "showcase_tiered")
 
 
 def dual_format(phase: str) -> DualFormat:
-    """The dual shape for `phase` ("regular" | "district" | a showcase | one of
-    `POSTSEASON`). District tournaments play the regular-season shape; the postseason
-    switches — and so do the showcases, which exist precisely to play the 1S/4D card
-    in the middle of a 5S/2D league season."""
-    return (FORMATS["state"] if phase in POSTSEASON or phase in SHOWCASE
-            else FORMATS["regular"])
+    """The dual shape for `phase` ("early" | "regular" | a showcase | one of
+    `POSTSEASON`). District duals play the regular-season shape (they are always
+    `phase="regular"`); the postseason switches — and so do the showcases, which exist
+    precisely to play the 1S/4D card in the middle of a 5S/2D league season. The early
+    non-district window switches the other way, to 3S/4D."""
+    if phase in POSTSEASON or phase in SHOWCASE:
+        return FORMATS["state"]
+    if phase == EARLY_FORMAT_PHASE:
+        return FORMATS["early"]
+    return FORMATS["regular"]
 
 
 # SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
@@ -1251,11 +1275,17 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
             pick = bench[rng.randrange(len(bench))]
             if pick is not nine[-1]:
                 nine[-2] = pick
-    # League policy: the program's philosophy decides the card's shape (the
-    # per-dual flip draw runs either way, so the rng stream stays aligned).
-    flip = rng.random() < _PHILOSOPHY_FLIP
-    if _doubles_forward(ts.school.key) != flip:
-        return _arrange_regular(nine)
+    # League policy: the program's philosophy decides the card's shape — but
+    # `_arrange_regular` is built for the 5S/2D card's nine positions (S1-S5/D1/D2)
+    # specifically, and only applies there. The early 3S/4D card already puts the
+    # top three players on singles and the next eight into doubles in plain ladder
+    # order, which is the whole point of the format (get #10-11 real minutes), so
+    # there is no overlay to draw for it.
+    if phase == "regular":
+        # the per-dual flip draw runs either way, so the rng stream stays aligned.
+        flip = rng.random() < _PHILOSOPHY_FLIP
+        if _doubles_forward(ts.school.key) != flip:
+            return _arrange_regular(nine)
     return nine
 
 
@@ -1614,7 +1644,13 @@ def district_oowp(teams: list[TeamSeason]) -> dict[str, float]:
     matched each other on everything else. Computed on overall win %, which is what OOWP
     means — the depth of a schedule is not a league-only property."""
     by = {t.school.name: t for t in teams}
-    opps = {t.school.name: [x["opp"] for x in t.schedule if x.get("phase") == "regular"]
+    # ‼️ Every non-postseason, non-showcase dual — never just `phase == "regular"`.
+    # The early non-district window (`EARLY_FORMAT_PHASE`) is still a regular-season
+    # opponent for OOWP's purposes; filtering to "regular" only would silently drop
+    # every program's early-window opponents from its opponents' opponents' win %.
+    opps = {t.school.name: [x["opp"] for x in t.schedule
+                            if x.get("phase") not in POSTSEASON
+                            and x.get("phase") not in SHOWCASE]
             for t in teams}
 
     def owp(name: str) -> float:
@@ -1823,11 +1859,17 @@ def _fmt_sample(schedule: list[dict], *, showcase: bool) -> list[dict]:
     SHOWCASE duals (`showcase=True`) out of one team's schedule. The postseason plays
     1S/4D too but is deliberately excluded from both samples — it is the event these
     numbers exist to help a team prepare FOR, not more data to fold into the same
-    average, and it has its own bracket-round display already."""
+    average, and it has its own bracket-round display already.
+
+    The early non-district window (`EARLY_FORMAT_PHASE`) is EXCLUDED from the regular
+    sample too, for the same reason — it plays its own 3S/4D shape, not the 5S/2D card
+    this metric means by "regular season". Folding it in would quietly average two
+    different formats into one number and call it the team's regular-season baseline."""
     if showcase:
         return [d for d in schedule if d.get("phase") in SHOWCASE]
     return [d for d in schedule
-            if d.get("phase") not in SHOWCASE and d.get("phase") not in POSTSEASON]
+            if d.get("phase") not in SHOWCASE and d.get("phase") not in POSTSEASON
+            and d.get("phase") != EARLY_FORMAT_PHASE]
 
 
 def _fmt_split(sample: list[dict]) -> dict:
@@ -2818,11 +2860,13 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
     return pairs
 
 
-def _play_pairs(pairs: list[tuple], rng: random.Random, *, challenge: bool = False) -> None:
+def _play_pairs(pairs: list[tuple], rng: random.Random, *, challenge: bool = False,
+                phase: str = "regular") -> None:
     """Play a window's non-district pairs. Never district, so district place is
-    untouched whatever else these results feed."""
+    untouched whatever else these results feed. `phase` defaults to the ordinary
+    5S/2D card; the early window passes `EARLY_FORMAT_PHASE` for the 3S/4D one."""
     for a, b in pairs:
-        play_dual(a, b, seed=rng.randrange(1 << 30), phase="regular",
+        play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase,
                   district=False, challenge=challenge)
 
 
@@ -2851,7 +2895,12 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
-    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+    # The early window plays 3S/4D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
+    # ONLY block of the season that does. Everything from district pass 1 on, including
+    # the mid-season non-district window and the late tune-up below, is back to the
+    # ordinary 5S/2D `phase="regular"` because district play has already started by then.
+    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng,
+               phase=EARLY_FORMAT_PHASE)
 
     rounds = {(g, d): district_rounds(teams, year, salt)
               for g, st in by_group.items() for d, teams in st.items()}

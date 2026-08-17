@@ -384,12 +384,35 @@ at `/jhsaa`, and its graduating seniors ARE Jefferson's entries on the college r
 comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons:
 `docs/AAR-jhsaa-high-school-season.md`.
 - **Two format axes, both explicit.** SHAPE (`jhsaa.dual_format`): regular **5S/2D**,
-  state tournament **1S/4D** — both odd, so a dual can never tie, and there is no
-  tie-breaking logic anywhere. SCORING (`jhsaa.MATCH_FORMAT` = `PRESETS["high_school"]`):
-  **all high-school tennis is no-ad, and DOUBLES is a full best-of-3, not the college
-  8-game pro set.** `simulate_dual` defaults to the college presets, so both `singles_fmt`
-  and `doubles_fmt` must be passed — miss `doubles_fmt` and lines silently score `5-8`.
-  Every match plays to completion; there is no clinch in high school.
+  state tournament **1S/4D**, early non-district **3S/4D** (see below) — all odd, so a
+  dual can never tie, and there is no tie-breaking logic anywhere. SCORING
+  (`jhsaa.MATCH_FORMAT` = `PRESETS["high_school"]`): **all high-school tennis is no-ad,
+  and DOUBLES is a full best-of-3, not the college 8-game pro set.** `simulate_dual`
+  defaults to the college presets, so both `singles_fmt` and `doubles_fmt` must be
+  passed — miss `doubles_fmt` and lines silently score `5-8`. Every match plays to
+  completion; there is no clinch in high school.
+- **‼️ THE EARLY NON-DISTRICT WINDOW PLAYS 3S/4D, not 5S/2D (owner rule 2027-08,
+  `jhsaa.EARLY_FORMAT_PHASE = "early"`).** A JHSAA roster carries 12 players but the
+  league card only gives nine of them a real match; this association has no JV system
+  to develop the rest, so the FIRST non-district window (played in `play_regular_season`
+  BEFORE any district round — `NONDISTRICT_MIN/MAX` × `EARLY_SHARE` already lands most
+  programs at 1-3 duals here) plays 3 singles / 4 doubles instead, putting roster spots
+  #10-11 on court. **Scoped to that one block only**: the mid-season non-district window
+  and the late tune-up are both scheduled AFTER district play starts and stay
+  `phase="regular"`; district duals are always `phase="regular"`; the mid-season Match
+  SHOWCASES and the whole postseason stay 1S/4D, untouched. All seven courts are real,
+  TOSS-rated results on the existing `FLIGHT_WEIGHTS` table (D4's 0.10 weight keeps the
+  extra developmental court from moving TOSS much). Displays as an ordinary INVITE tag
+  with a "3S/4D" `d.round` chip, the same slot a showcase names its event in.
+  `_lineup`'s doubles-forward philosophy overlay (`_arrange_regular`) is built for the
+  5S/2D card's nine fixed positions and does not apply here — the early card's top
+  three land on S1-S3 and the next eight on D1-D4 in plain ladder order by
+  construction, which is the whole point (no overlay to bench #10-11 behind).
+  `district_oowp`'s opponent filter reads by EXCLUSION (not `phase == "regular"`) for
+  exactly this reason — an inclusion filter silently drops a new phase's opponents from
+  OOWP. The format-profile metrics below deliberately EXCLUDE this phase from their
+  "regular" sample — it is a third shape, not noise to average into the 5S/2D baseline.
+  See `docs/AAR-jhsaa-early-nondistrict-3s4d.md`.
 - **SCHEDULE (owner rule 2027-08): district DOUBLE round-robin + 4-8 non-district.** You
   play every league opponent home AND away, so DISTRICT SIZE sets the season length (a
   12-team district is 22 league duals; ~26 total). To shorten seasons shrink

@@ -4400,7 +4400,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
                       "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
-                      "round": (_SHOWCASE_ROUND.get(d["phase"], "") if k == "SHOWCASE"
+                      # The early non-district window plays 3S/4D, not the ordinary
+                      # INVITE card's 5S/2D — same "d.round" chip a showcase names its
+                      # event with, so the card says which shape a match was played in
+                      # rather than leaving a reader to count lines to find out.
+                      "round": ("3S/4D" if d["phase"] == jh.EARLY_FORMAT_PHASE else
+                                _SHOWCASE_ROUND.get(d["phase"], "") if k == "SHOWCASE"
                                 else (state_round if k == "STATE" else
                                       toc_round if k == "TOC" else {}).get(d["opp"], ""))}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
