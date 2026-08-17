@@ -1784,6 +1784,135 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     return out
 
 
+# --- format profile: 5S/2D vs the mid-season 1S/4D SHOWCASES -------------------
+# A team's regular season is played 5S/2D; the mid-season showcases and the whole
+# postseason are played 1S/4D. Doubles is 1.5 of 3.70 possible weighted points in the
+# regular shape and up to 1.85 of 2.85 in the showcase/postseason shape — a team that
+# lives off a deep #3-#5 singles bench looks strong all season and can fall apart the
+# moment the card flips, and the showcases exist so that shows up BEFORE State does.
+#
+# ‼️ DISPLAY ONLY, computed fresh every call off `t.schedule` — never archived, never
+# read back into TOSS/ATR or any seeding decision. It works whether or not showcase
+# results are ever folded into TOSS (`SHOWCASE_RATED`); that flag decides who plays
+# whom, this decides what a coach or a reader sees about how they'll play. Takes a
+# plain schedule (list of the same dicts `t.schedule` and `world.jhsaa_schedule` both
+# already produce), so it reads a live season or an archived one without a wrapper.
+def _weighted_lines(d: dict) -> tuple[float, float, float, float]:
+    """(singles weighted won, singles weighted played, doubles weighted won, doubles
+    weighted played) for ONE dual, from the schedule OWNER's side — `d["home"]` says
+    whether they were the dual's home team, which is what a line's `home_won` is
+    relative to."""
+    sw = sp = dw = dp = 0.0
+    is_home = bool(d.get("home"))
+    for ln in d.get("lines") or ():
+        slot = ln.get("slot", "")
+        w = FLIGHT_WEIGHTS.get(slot)
+        hw = ln.get("home_won")
+        if w is None or hw is None:
+            continue
+        won = hw if is_home else not hw
+        if slot.startswith("S"):
+            sp += w; sw += w if won else 0.0
+        elif slot.startswith("D"):
+            dp += w; dw += w if won else 0.0
+    return sw, sp, dw, dp
+
+
+def _fmt_sample(schedule: list[dict], *, showcase: bool) -> list[dict]:
+    """The 5S/2D regular-season duals (`showcase=False`) or the mid-season 1S/4D
+    SHOWCASE duals (`showcase=True`) out of one team's schedule. The postseason plays
+    1S/4D too but is deliberately excluded from both samples — it is the event these
+    numbers exist to help a team prepare FOR, not more data to fold into the same
+    average, and it has its own bracket-round display already."""
+    if showcase:
+        return [d for d in schedule if d.get("phase") in SHOWCASE]
+    return [d for d in schedule
+            if d.get("phase") not in SHOWCASE and d.get("phase") not in POSTSEASON]
+
+
+def _fmt_split(sample: list[dict]) -> dict:
+    """One format sample, summarised. `weighted_pct` is the share of contested flight
+    weight the team actually won — a truer margin than the dual W-L, since a 5-0 sweep
+    and a 3-2 squeaker both just say "won" in the record. `doubles_win_share` is the
+    share of the team's WEIGHTED WINS that came from doubles specifically — how much
+    of this team's success in this sample is doubles-driven, which is the number that
+    is expected to jump between the two formats."""
+    if not sample:
+        return {"n": 0, "wins": 0, "losses": 0, "weighted_pct": None,
+                "doubles_win_share": None}
+    wins = sum(1 for d in sample if d.get("won"))
+    sw = sp = dw = dp = 0.0
+    for d in sample:
+        a, b, c, e = _weighted_lines(d)
+        sw += a; sp += b; dw += c; dp += e
+    total_w, total_p = sw + dw, sp + dp
+    return {"n": len(sample), "wins": wins, "losses": len(sample) - wins,
+            "weighted_pct": total_w / total_p if total_p else None,
+            "doubles_win_share": dw / total_w if total_w else None}
+
+
+def _fmt_delta(reg: dict, sc: dict, key: str) -> dict | None:
+    """`sc[key] - reg[key]`, carrying the SHOWCASE sample's own `n` — `None` if the
+    showcase sample can't support the comparison. A delta computed on n=1 is not a
+    trend, it is one dual with a sign on it; every caller must show `n` beside it
+    rather than the delta alone, so a coach doesn't read a single result as a pattern."""
+    if not sc["n"] or reg[key] is None or sc[key] is None:
+        return None
+    return {"n": sc["n"], "delta": sc[key] - reg[key]}
+
+
+def _fmt_volatility(sample: list[dict]) -> dict | None:
+    """How much a team's weighted win share swings dual to dual within one sample —
+    the standard deviation of per-dual weighted win share. 1S/4D is five contested
+    points instead of nine, so one line flipping swings a much larger share of a
+    showcase dual than of a regular-season one; this is what shows that up. `None`
+    under two duals — a spread needs at least two points to mean anything."""
+    margins = []
+    for d in sample:
+        sw, sp, dw, dp = _weighted_lines(d)
+        played = sp + dp
+        if played:
+            margins.append((sw + dw) / played)
+    if len(margins) < 2:
+        return None
+    mean = sum(margins) / len(margins)
+    var = sum((x - mean) ** 2 for x in margins) / len(margins)
+    return {"n": len(margins), "stdev": var ** 0.5}
+
+
+def format_profile(schedule: list[dict]) -> dict:
+    """A team's format-transition profile, comparing its 5S/2D regular season against
+    its mid-season 1S/4D SHOWCASES: `regular` / `showcase` (`_fmt_split`, each with its
+    own `n`), `shift` and `doubles_shift` (`_fmt_delta` on `weighted_pct` and
+    `doubles_win_share`), and `regular_volatility` / `showcase_volatility`
+    (`_fmt_volatility`). Every number that can be computed on a thin sample carries
+    its own `n`; a caller must show it, not hide behind a lone percentage.
+
+    Read-only and archives nothing — see the module note above. Callable on a live
+    `TeamSeason.schedule` or on `world.jhsaa_schedule(...)`'s archived rows; both are
+    the same dict shape."""
+    reg, sc = _fmt_sample(schedule, showcase=False), _fmt_sample(schedule, showcase=True)
+    r, s = _fmt_split(reg), _fmt_split(sc)
+    return {"regular": r, "showcase": s,
+            "shift": _fmt_delta(r, s, "weighted_pct"),
+            "doubles_shift": _fmt_delta(r, s, "doubles_win_share"),
+            "regular_volatility": _fmt_volatility(reg),
+            "showcase_volatility": _fmt_volatility(sc)}
+
+
+def _flat_format_profile(schedule: list[dict]) -> dict:
+    """`format_profile`, flattened to the plain numeric fields a standings row can
+    carry (JSON, sortable, no nested dicts): `sc_n` / `sc_pct` (the showcase sample and
+    its weighted win share), `fmt_shift` / `dbl_shift` (the deltas, `None` under one
+    showcase dual), `sc_stdev` (showcase volatility, `None` under two). Missing keys
+    read back as `None` through `.get`, exactly like a pre-ATR season's `atr`."""
+    p = format_profile(schedule)
+    return {"sc_n": p["showcase"]["n"], "sc_pct": p["showcase"]["weighted_pct"],
+            "fmt_shift": (p["shift"] or {}).get("delta"),
+            "dbl_shift": (p["doubles_shift"] or {}).get("delta"),
+            "sc_stdev": (p["showcase_volatility"] or {}).get("stdev")}
+
+
 def power_index(teams, *, prestate: bool = False) -> dict:
     """Power Index for every program in a gender, keyed by school name.
 
@@ -3262,7 +3391,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                                # not recomputed on read, exactly like `pi`: it is
                                # the number the Conference pool was ranked on.
                                "atr": atr_snap.get(t.school.name,
-                                                   atr_of(t.power, t.win_pct))}
+                                                   atr_of(t.power, t.win_pct)),
+                               # `format_profile` FLATTENED onto the row, same rule as
+                               # `pi`/`atr`: computed once here, off the finished season's
+                               # schedule, and read back — never rebuilt on a rankings-page
+                               # request. See the module note above `format_profile`.
+                               **_flat_format_profile(t.schedule)}
                               for t in ts] for d, ts in standings.items()},
             "protected": protecteds[group],
             "sectional": sectionals[group],

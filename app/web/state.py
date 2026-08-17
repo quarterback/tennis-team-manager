@@ -3977,7 +3977,8 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
 
 
 def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
-                        year: int | None = None) -> dict:
+                        year: int | None = None, sort: str | None = None,
+                        dir: str = "desc") -> dict:
     """The whole classification, ranked — the association's own order, top to bottom.
 
     `jhsaa_group_ranking` already returns EVERY program in the class; the hub simply
@@ -4006,6 +4007,36 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     seeds = _jh_seeds(br)
     toc_field = set((arc.get("toc") or {}).get("field") or ())
     rows = world.jhsaa_group_ranking(arc, grp)
+    rows = [{**_jh_deco(schools, r["school"], 24), **r,
+             "seed": seeds.get(r["school"], 0),
+             "state_finish": world.jhsaa_state_result(br, r["school"])["finish"],
+             "toc": r["school"] in toc_field}
+            for r in rows]
+    # ‼️ DISPLAY ORDER ONLY. `r["rank"]` is the archived TOSS position — it is what
+    # seeded the postseason, and it never moves, whatever the table is sorted by. A
+    # click-sort just reorders the ROWS the page draws; sorting by "Doubles Shift" and
+    # seeing #1 sit fourth in the list is correct, not a bug — that program is still
+    # TOSS's #1, it just isn't the biggest doubles-shift story this year. Missing
+    # values (no showcase duals, a season archived before ATR/format data existed)
+    # sort LAST regardless of direction, so an empty column never reads as a zero.
+    SORTABLE = {"rank": "rank", "school": "school", "district": "district",
+               "record": "pct", "place": "place", "pf": "pf", "pa": "pa",
+               "pi": "pi", "atr": "atr", "seed": "seed",
+               "state_finish": "state_finish",
+               "sc_n": "sc_n", "sc_pct": "sc_pct", "fmt_shift": "fmt_shift",
+               "dbl_shift": "dbl_shift", "sc_stdev": "sc_stdev"}
+    key = SORTABLE.get(sort)
+    if key:
+        # "empty" isn't always `None` — an unqualified team's seed is 0 and a team
+        # that missed State has an empty finish string, neither of which should sort
+        # as though it beat every real value on an ascending click.
+        def _empty(r):
+            v = r.get(key)
+            return v is None or (key == "seed" and not v) or (key == "state_finish" and not v)
+        present = [r for r in rows if not _empty(r)]
+        missing = [r for r in rows if _empty(r)]
+        present.sort(key=lambda r: r[key], reverse=(dir != "asc"))
+        rows = present + missing
     return {
         "ready": True, "gender": g, "year": yr, "years": years,
         "group": grp, "groups": list(jh.GROUPS), "scope": scope,
@@ -4015,11 +4046,8 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
         # instead of printing a blank where a number belongs.
         "rated": all(r.get("pi") is not None for r in rows) if rows else False,
         "qualified": sum(1 for r in rows if seeds.get(r["school"])),
-        "rows": [{**_jh_deco(schools, r["school"], 24), **r,
-                  "seed": seeds.get(r["school"], 0),
-                  "state_finish": world.jhsaa_state_result(br, r["school"])["finish"],
-                  "toc": r["school"] in toc_field}
-                 for r in rows],
+        "sort": sort or "", "dir": dir,
+        "rows": rows,
     }
 
 

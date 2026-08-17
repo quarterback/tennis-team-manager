@@ -502,3 +502,16 @@
   font-size: 13.5px; line-height: 1.55; color: var(--text-secondary);
 }
 .jh-regionnote strong { color: var(--text-primary); }
+
+/* ---- Sortable ranking-table headers (jhsaa_rankings.html) ---- */
+.jh-sortth {
+  display: inline-flex; align-items: center; gap: 3px; color: inherit;
+  text-decoration: none; cursor: pointer;
+}
+.jh-sortth:hover { color: var(--brand-strong); }
+.jh-sortth.on { color: var(--brand-strong); font-weight: 800; }
+.jh-sortarr { font-size: 10px; }
+/* Shift columns carry a sign the reader should read as meaning, not identity —
+   same rule as a win/loss chip: --pos/--neg, never a raw colour. */
+.jh-up { color: var(--pos); }
+.jh-down { color: var(--neg); }
