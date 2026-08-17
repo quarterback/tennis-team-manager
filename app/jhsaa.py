@@ -77,11 +77,22 @@ POSTSEASON = ("sectional", "ward", "regional", "zonal",
               "super_regional", "semi_state", "divisional", "semi_conference",
               "conference", "state", "toc")
 
+# The mid-season MATCH SHOWCASES (owner spec 2027-08) — see the INVITATIONALS section
+# below for the scheduling rules. Two phases rather than one, because the phase is the
+# archive's identity for an event and the two showcases are two events: they are scored
+# differently (an 8-game pro set against a full best-of-3) and sit on the calendar
+# differently (one Saturday against a Friday-Saturday block). Written as one phase, a
+# card could not tell them apart and the display calendar could not place either.
+SHOWCASE = ("showcase_pod", "showcase_tiered")
+
 
 def dual_format(phase: str) -> DualFormat:
-    """The dual shape for `phase` ("regular" | "district" | one of `POSTSEASON`).
-    District tournaments play the regular-season shape; the postseason switches."""
-    return FORMATS["state"] if phase in POSTSEASON else FORMATS["regular"]
+    """The dual shape for `phase` ("regular" | "district" | a showcase | one of
+    `POSTSEASON`). District tournaments play the regular-season shape; the postseason
+    switches — and so do the showcases, which exist precisely to play the 1S/4D card
+    in the middle of a 5S/2D league season."""
+    return (FORMATS["state"] if phase in POSTSEASON or phase in SHOWCASE
+            else FORMATS["regular"])
 
 
 # SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
@@ -89,6 +100,22 @@ def dual_format(phase: str) -> DualFormat:
 # College doubles is an 8-game pro set and `engine.dual` defaults to it, so both formats
 # are passed explicitly at every call; without them a JHSAA doubles line scores "5-8".
 MATCH_FORMAT = PRESETS["high_school"]
+
+# The ONE exception, and it is a scoring axis rather than a shape: a 1-Day Pod showcase
+# plays a single 8-game pro set per court, 7-point tiebreak at 8-8. NO-AD, like every
+# other ball struck in this association — `pro_set_8` already carries that, so the pod
+# needs no preset of its own. The 2-Day Tiered showcase plays the ordinary high-school
+# best-of-3, deliberately: it exists to replicate State-tournament length and endurance,
+# so scoring it any other way would defeat the point of holding it.
+SHOWCASE_FORMAT = {"showcase_pod": PRESETS["pro_set_8"],
+                   "showcase_tiered": MATCH_FORMAT}
+
+
+def match_format(phase: str):
+    """The SCORING rules for `phase`. Everything is the high-school best-of-3 except
+    the pod showcase's pro set. Keyed, never inferred from the dual shape — the two
+    showcases share a shape and differ only here."""
+    return SHOWCASE_FORMAT.get(phase, MATCH_FORMAT)
 
 
 def lineup_need(phase: str) -> int:
@@ -130,6 +157,61 @@ MID_NONDISTRICT = 1       # non-district duals in the mid-season window, besides
 CHALLENGE_ENABLED = True
 CHALLENGE_PLACE_SLACK = 1     # pair a #3 with a #2-#4; never a #1 with a #8
 CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level right
+
+# --- the mid-season MATCH SHOWCASES (owner spec 2027-08) ----------------------
+#
+# ‼️ THE ASSOCIATION'S POSTSEASON IS A DIFFERENT SPORT FROM ITS LEAGUE SEASON. League
+# play is 5S/2D and rewards singles depth; State is 1S/4D and is decided by four doubles
+# pairings. A program that only ever plays its league card arrives at Sectionals having
+# never fielded the lineup it must win with, and its coach has no evidence at all about
+# which of #4-#9 play well together. The showcases are where that evidence is generated,
+# and they are the ONLY 1S/4D duals in the regular season.
+#
+# ‼️ THEY ARE NOT A TOURNAMENT. No bracket, no draw, no compass, no elimination, no
+# champion, no title, no seed and nothing at stake — a program attends to play a fixed
+# number of duals against opponents it would not otherwise meet. Everything in this
+# module that crowns something takes a bracket (`run_state`, `run_rounds`); a showcase
+# is a flat list of pairings, and that difference is deliberate rather than incidental.
+# If a showcase ever needs a standing, it has stopped being a showcase.
+SHOWCASE_ENABLED = True
+
+# Six to eight designated weekend windows, half of each kind. A window is a WEEKEND, not
+# a week: there is no clock inside a JHSAA season (see `play_regular_season`), so a
+# window is a position in the order of play, and `world.jhsaa_match_dates` is what lands
+# it on a Saturday or a Friday-Saturday.
+SHOWCASE_WINDOWS_MIN, SHOWCASE_WINDOWS_MAX = 6, 8
+
+# A 1-DAY POD is four programs playing a full round robin: three duals, one Saturday,
+# three pro sets per player. That is the USTA junior daily limit exactly, and it is why
+# the pod is scored as a pro set and sized at four rather than five — a fourth dual, or
+# a best-of-3, would put a junior over the limit in a single day.
+POD_SIZE, POD_DUALS = 4, 3
+# A 2-DAY TIERED group is six programs playing four of the other five: two duals a day
+# across Friday and Saturday. Six rather than five because a 6-team round robin's first
+# four rounds are four PERFECT matchings — everybody plays in every session, so the four
+# duals fall as 2 + 2 with nobody sitting out a day. A 5-team group would give the same
+# four duals only by byeing somebody out of each session.
+TIER_SIZE, TIER_DUALS = 6, 4
+# The three skill tiers a 2-day showcase's field is split into, top down. Statewide and
+# CLASSIFICATION-BLIND (owner spec): the point of the event is cross-classification
+# exposure, so a 3A program that has earned an Open-tier seat plays there.
+SHOWCASE_TIERS = ("Open", "B", "C")
+
+# Participation, as a share of the association (owner spec 2027-08). About half the
+# programs attend a showcase in a given season, nearly all of them once.
+SHOWCASE_SHARE = 0.50         # of all programs, per gender, per season
+SHOWCASE_TWO_SHARE = 0.045    # of those, attending twice
+SHOWCASE_THREE_MAX = 3        # statewide, and elite only — 1% of a ~450-program field
+SHOWCASE_ELITE = 25           # the Top 25 get first call on every multi-event seat
+
+# ‼️ A SHOWCASE RESULT IS NOT RATED, and that is the same decision as "no title".
+# TOSS is what seeds every draw the association runs, so a rated showcase would be a
+# competitive event by the only measure that matters here, whatever the card called it.
+# The duals still count in the RECORD — they were played, and a record is a record
+# (the postseason is carried the same way: in the record, out of the cutoff TOSS) — and
+# they still feed every individual and pairing résumé the awards read, which is the
+# data the showcases exist to generate. Flip this to include them.
+SHOWCASE_RATED = False
 
 # High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
 # is 6.7x the cost and is meant for the college season you actually watch; a season here
@@ -1123,6 +1205,21 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
     """The nine who dress for THIS dual, in slot order."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
         return _arrange_state(_postseason_nine(ts))
+    if phase in SHOWCASE:
+        # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
+        # association's anti-stacking rule and it binds from a program's first
+        # POSTSEASON dual — a showcase is regular season, in the middle of it, and
+        # freezing here would bind a program's championship lineup to its April
+        # ladder and hand the rule a month of drift it was written to prevent.
+        # So: the LIVE ladder, with the league's bench rotation (a showcase is
+        # where a coach tries people), arranged onto the 1S/4D card by the same
+        # anti-stacking arrangement the postseason uses.
+        order = _order(ts)
+        need = lineup_need(phase)
+        nine, bench = order[:need], order[need:]
+        if bench and rng.random() < _ROTATE_ONE:
+            nine[-1] = bench[rng.randrange(len(bench))]
+        return _arrange_state(nine)
     order = _order(ts)
     need = lineup_need(phase)
     nine, bench = order[:need], order[need:]
@@ -1201,9 +1298,10 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     to mark it, the column comes first — do not infer it from position in the card."""
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
+    fmt = match_format(phase)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
                         play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase),
-                        singles_fmt=MATCH_FORMAT, doubles_fmt=MATCH_FORMAT)
+                        singles_fmt=fmt, doubles_fmt=fmt)
     lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
@@ -1635,8 +1733,14 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     recomputes: recovery-field seeding after Zonals, State seeding after Semi-State)
     additionally includes every completed pre-state stage — sectional/ward/regional/
     zonal and, once played, super_regional/semi_state — and still excludes state and
-    the TOC."""
+    the TOC.
+
+    The mid-season SHOWCASES are excluded from both (`SHOWCASE_RATED`): they are
+    non-competitive by rule, and TOSS is the one number in this association that
+    decides who plays whom in the postseason."""
     drop = ("state", "toc") if prestate else POSTSEASON
+    if not SHOWCASE_RATED:
+        drop = tuple(drop) + SHOWCASE
     out = []
     for t in teams:
         for d in t.schedule:
@@ -2604,12 +2708,29 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     if CHALLENGE_ENABLED:
         _play_pairs(_challenge_pairs(by_group, year, salt, played), xrng, challenge=True)
 
+    # --- the mid-season MATCH SHOWCASES: 6-8 weekend windows of 1S/4D duals ---
+    # They sit here for the same reason the challenge does — a showcase field is cut on
+    # how the season has actually gone, which needs a league pass behind it — and
+    # because this is where the calendar has open weekends. See the SHOWCASE section.
+    traded = play_showcases(
+        showcase_schedule(every_team, year, gender, salt, played), xrng)
+
     for key, rr in rounds.items():
         play_rounds(rr[half[key]:], year, salt, key[1])
 
     # --- the late tune-up: whatever the allowance has left ---
-    spent = {id(t): sum(1 for s in t.schedule if not s["district"]) for t in every_team}
-    owed = {id(t): max(0, quota[id(t)] - spent[id(t)]) for t in every_team}
+    # ‼️ SPENT COUNTS INVITATIONALS, NOT SHOWCASES. Both are non-district, but the
+    # allowance is a card of ordinary weekday duals and a showcase is a weekend event
+    # held beside it: counted here, a program's three pod duals would eat its whole
+    # remaining allowance and it would finish the season short of the association's
+    # minimum. What a showcase DOES cost is the trade — a 2-day block is played on a
+    # Friday and takes one standard weekday date back with it (owner spec), which is
+    # `traded`. A 1-day pod is an open Saturday and costs nothing.
+    spent = {id(t): sum(1 for s in t.schedule
+                        if not s["district"] and s["phase"] not in SHOWCASE)
+             for t in every_team}
+    owed = {id(t): max(0, quota[id(t)] - spent[id(t)] - traded.get(id(t), 0))
+            for t in every_team}
     _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
 
     # Power Index BEFORE settling: rung 4 of the tiebreak ladder reads `t.power`, and it
@@ -2691,6 +2812,233 @@ def _challenge_pairs(by_group: dict, year: int, salt: str,
             for x, y in ((a, b), (b, a)):
                 played[id(x)].add(y.school.name)
     return slate
+
+
+# --- the mid-season MATCH SHOWCASES -------------------------------------------
+#
+# The constants and the reasoning are at the top of the module. This is the scheduler:
+# who attends, how often, who they are grouped with, and who they play. It produces
+# EVENTS — a kind, a window, a field and a list of rounds — and `play_showcases` plays
+# them. Nothing here ranks, advances or eliminates anybody.
+
+
+def _dkey(t: TeamSeason) -> tuple:
+    """A program's district identity. ‼️ A DISTRICT IS `(CLASSIFICATION, name)` — the
+    association reuses its geographic district names at every level, so comparing the
+    name alone would call two programs league-mates that have never met."""
+    return (t.school.group, t.school.district)
+
+
+def _showcase_rank(teams: list[TeamSeason]) -> list[TeamSeason]:
+    """The provisional statewide order, best first, as it stands at the break.
+
+    Not TOSS: TOSS is computed once on the FINISHED regular season (it is both the
+    seeding input and rung 4 of the district tiebreak), and this runs in the middle of
+    one. So it is the two things that exist mid-season — how the program has actually
+    gone, then how good the nine who dress are. It decides two things only: which
+    programs get the scarce multi-event seats, and which tier a 2-day entrant lands in.
+    Nothing is crowned off it."""
+    return sorted(teams, key=lambda t: (
+        -(t.wins / (t.wins + t.losses)) if (t.wins + t.losses) else 0.0,
+        -_strength(t), t.school.name))
+
+
+def showcase_entries(teams: list[TeamSeason], rng: random.Random,
+                     ranked: list[TeamSeason]) -> dict[int, int]:
+    """How many showcases each program attends this season, {id(team): 1..3}.
+
+    About half the association attends (`SHOWCASE_SHARE`) and nearly all of those
+    attend once. The multi-event seats are scarce and DELIBERATELY not spread evenly:
+    the whole return on a showcase is 1S/4D evidence, and evidence from the programs
+    that will still be playing in late May is worth more than evidence from the ones
+    that will not — so the Top 25 (`SHOWCASE_ELITE`) get first call on them, and only
+    two or three programs statewide attend three."""
+    n = int(round(len(teams) * SHOWCASE_SHARE))
+    if n < POD_SIZE:
+        return {}
+    field = rng.sample(teams, n)
+    quota = {id(t): 1 for t in field}
+    inside = {id(t) for t in field}
+    # Elite first, then anyone else attending — an elite program that drew no seat in
+    # the participation sample cannot be handed a second one it is not at.
+    order = ([t for t in ranked[:SHOWCASE_ELITE] if id(t) in inside]
+             + [t for t in ranked[SHOWCASE_ELITE:] if id(t) in inside])
+    threes = min(SHOWCASE_THREE_MAX, max(1, int(round(len(field) * 0.01))))
+    twos = int(round(len(field) * SHOWCASE_TWO_SHARE))
+    for t in order[:threes]:
+        quota[id(t)] = 3
+    for t in order[threes:threes + twos]:
+        quota[id(t)] = 2
+    return quota
+
+
+def _fits(t: TeamSeason, grp: list[TeamSeason], played: dict[int, set[str]]) -> bool:
+    """Whether `t` can join `grp`. A showcase group is a round robin, so every member
+    plays every other one: the guardrails are checked against the GROUP, not against a
+    pairing, which is what makes an intra-district showcase match structurally
+    impossible rather than merely screened for afterwards.
+
+      * HARD DISTRICT GUARDRAIL — never a league-mate. The whole event exists for
+        cross-district, cross-classification exposure; a program's district opponents
+        are on its card twice already.
+      * Never a rematch of anything else on either program's card, so the showcase
+        does not quietly hand somebody a third meeting with a non-league opponent."""
+    return all(_dkey(t) != _dkey(o) and t.school.name not in played[id(o)]
+               for o in grp)
+
+
+def _showcase_groups(pool: list[TeamSeason], size: int,
+                     played: dict[int, set[str]]) -> list[list[TeamSeason]]:
+    """Split a rank-ordered `pool` into groups of exactly `size`, every group clean.
+
+    This IS the spec's "swap teams across pods/tiers to resolve a conflict": a program
+    that cannot join the group being filled is passed over and picked up by a later
+    one, which is the same movement expressed as placement rather than as repair. A
+    seed that cannot be filled from what is left does not attend — a group is never
+    completed with a league-mate and never played short."""
+    remaining, groups = list(pool), []
+    while len(remaining) >= size:
+        grp, picked = [remaining[0]], [0]
+        for i in range(1, len(remaining)):
+            if len(grp) == size:
+                break
+            if _fits(remaining[i], grp, played):
+                grp.append(remaining[i])
+                picked.append(i)
+        if len(grp) < size:
+            remaining.pop(0)                 # unfillable seed: it does not attend
+            continue
+        for i in reversed(picked):
+            remaining.pop(i)
+        for a in grp:                        # every pair meets, so book them all now
+            for b in grp:
+                if a is not b:
+                    played[id(a)].add(b.school.name)
+        groups.append(grp)
+    return groups
+
+
+def _showcase_rounds(grp: list[TeamSeason], duals: int, year: int,
+                     salt: str) -> list[list[tuple]]:
+    """A group's SESSIONS: `duals` rounds, every member playing in every one.
+
+    A pod (4 teams, 3 duals) is a complete round robin. A tier group (6 teams, 4 duals)
+    is the first four rounds of one — four perfect matchings, so both days are full and
+    nobody sits out a session. Hosting is drawn on the pairing and the year, never on
+    who was listed first, so no program is systematically at home for its showcase."""
+    out = []
+    for rnd in _rr_rounds(len(grp))[:duals]:
+        date = []
+        for i, j in rnd:
+            a, b = grp[i], grp[j]
+            key = "|".join(sorted((a.school.name, b.school.name)))
+            h = int(hashlib.blake2s(f"{salt}|show|{year}|{key}".encode(),
+                                    digest_size=4).hexdigest(), 16)
+            date.append((a, b) if h % 2 == 0 else (b, a))
+        out.append(date)
+    return out
+
+
+def showcase_schedule(teams: list[TeamSeason], year: int, gender: str, salt: str,
+                      played: dict[int, set[str]]) -> list[dict]:
+    """The season's showcase slate: a list of events in window order.
+
+    An event is `{kind, phase, window, tier, teams, rounds}` — a field and its fixed
+    matchups, with no bracket anywhere in it. `played` is the caller's no-rematch
+    ledger and is mutated in place, exactly as `_nondistrict_pairs` uses it, so the
+    showcases share one view of who has met whom with the rest of the card."""
+    if not SHOWCASE_ENABLED or len(teams) < POD_SIZE:
+        return []
+    rng = random.Random(f"{salt}|showcase|{gender}|{year}")
+    ranked = _showcase_rank(teams)
+    quota = showcase_entries(teams, rng, ranked)
+    if not quota:
+        return []
+    n_win = SHOWCASE_WINDOWS_MIN + rng.randrange(
+        SHOWCASE_WINDOWS_MAX - SHOWCASE_WINDOWS_MIN + 1)
+    # Half the blocks of each kind, pods leading. An odd window count gives the extra
+    # block to the pods — the cheaper event, one day and no weekday dual traded away.
+    kinds = ["pod" if i % 2 == 0 else "tiered" for i in range(n_win)]
+    # Which windows each program attends. A program is at one event per window at most,
+    # which is what makes "3 duals in a day" and "2 a day for two days" true of the
+    # program and not merely of the event.
+    #
+    # ⚠️ Membership is by id, never by value: `TeamSeason` is a dataclass, so `in` on a
+    # list of them compares ROSTERS field by field — slow, and equal for two programs
+    # whose seasons happen to look alike.
+    entered: list[set[int]] = [set() for _ in range(n_win)]
+    for t in ranked:                                   # rank order, so it is stable
+        q = quota.get(id(t))
+        if not q:
+            continue
+        for w in rng.sample(range(n_win), min(q, n_win)):
+            entered[w].add(id(t))
+
+    events = []
+    for w, kind in enumerate(kinds):
+        pool = [t for t in ranked if id(t) in entered[w]]   # statewide rank order
+        phase = "showcase_pod" if kind == "pod" else "showcase_tiered"
+        if kind == "pod":
+            # A pod is not tiered, but it is not a lottery either: filling from a rank
+            # order puts comparable programs in a pod, which is what makes the three
+            # duals worth playing.
+            fields = [(None, pool)]
+        else:
+            # THE TIERS: the field cut into three by statewide standing, top down and
+            # classification-blind. Cut before grouping, so an Open-tier program is
+            # never grouped with a C-tier one to make the arithmetic come out.
+            k = len(pool) // 3
+            fields = list(zip(SHOWCASE_TIERS,
+                              (pool[:k], pool[k:2 * k], pool[2 * k:])))
+        size = POD_SIZE if kind == "pod" else TIER_SIZE
+        duals = POD_DUALS if kind == "pod" else TIER_DUALS
+        for tier, field in fields:
+            for grp in _showcase_groups(field, size, played):
+                events.append({"kind": kind, "phase": phase, "window": w,
+                               "tier": tier, "teams": grp,
+                               "rounds": _showcase_rounds(grp, duals, year, salt)})
+    return events
+
+
+def showcase_conflicts(events: list[dict]) -> list[tuple]:
+    """Every same-district pairing in the slate — the spec's
+    `ensure_zero_district_conflicts`, as a report rather than an assert so a caller
+    can name the offenders. It must always be empty; `_fits` is what makes it so."""
+    return [(e["kind"], a.school.name, b.school.name)
+            for e in events for rnd in e["rounds"] for a, b in rnd
+            if _dkey(a) == _dkey(b)]
+
+
+def play_showcases(events: list[dict], rng: random.Random) -> dict[int, int]:
+    """Play the slate in window order, SESSION BY SESSION across every event.
+
+    Returns {id(team): weekday duals traded away} — a 2-day showcase is played on a
+    Friday and a Saturday and the association takes a standard weekday non-district
+    date back for it (owner spec), so the caller shortens that program's remaining
+    allowance by one. A 1-day pod is played on an open Saturday and costs nothing.
+
+    Playing session by session rather than event by event is what lets the display
+    calendar land a window on one weekend: every event's first session is played
+    before any event's second, so the whole window occupies one block of the play
+    order (see `world.jhsaa_match_dates`)."""
+    bad = showcase_conflicts(events)
+    if bad:
+        raise ValueError(f"showcase slate has same-district pairings: {bad[:5]}")
+    traded: dict[int, int] = {}
+    for w in sorted({e["window"] for e in events}):
+        win = [e for e in events if e["window"] == w]
+        for s in range(max((len(e["rounds"]) for e in win), default=0)):
+            for e in win:
+                if s >= len(e["rounds"]):
+                    continue
+                for a, b in e["rounds"][s]:
+                    play_dual(a, b, seed=rng.randrange(1 << 30), phase=e["phase"],
+                              district=False)
+        for e in win:
+            if e["kind"] == "tiered":
+                for t in e["teams"]:
+                    traded[id(t)] = traded.get(id(t), 0) + 1
+    return traded
 
 
 # --- awards -------------------------------------------------------------------
