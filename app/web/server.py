@@ -349,14 +349,14 @@ SCHEMES = [
 ]
 
 # Serializes `/world/advance` (and its standalone-season fallback) across
-# gthreads. `world.advance_week()`/`seasonmode.advance()` can hold a single open
-# SQLite write transaction across MANY duals (every active universe's whole
-# week, sometimes a full postseason round) — easily longer than the 5s busy
-# timeout. A second overlapping POST (a double-click, a slow first request plus
-# a retry, two tabs) used to open its own writer against the same file mid-
-# transaction and die with sqlite3.OperationalError: database is locked deep in
-# seasonmode._play_and_store. One button, one clock — so a duplicate advance
-# while one is already running is a no-op, not a second writer. Mirrors
+# gthreads. Stepping the world (or a standalone season, in seasonmode) can hold
+# a single open SQLite write transaction across MANY duals (every active
+# universe's whole week, sometimes a full postseason round) — easily longer
+# than the 5s busy timeout. A second overlapping POST (a double-click, a slow
+# first request plus a retry, two tabs) used to open its own writer against the
+# same file mid-transaction and die with sqlite3.OperationalError: database is
+# locked deep in the per-dual write. One button, one clock — so a duplicate
+# advance while one is already running is a no-op, not a second writer. Mirrors
 # `world._prime_lock`'s reason for existing.
 _advance_lock = threading.Lock()
 
