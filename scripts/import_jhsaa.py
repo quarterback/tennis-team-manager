@@ -688,6 +688,69 @@ RENAMES = {
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
+    # ‼️ NEIGHBOURHOODS, NOT DIRECTIONS (owner rule 2026-08). The association already
+    # has too many directional names, so a school that cannot take its town's name
+    # takes a neighbourhood — which is how a city with five high schools names them
+    # in life. Owner's pool: Chicago, St. Louis, Kansas City, Houston, Dallas, New
+    # Orleans and the Gulf Coast.
+    "========================":  "========================", # ===== ===============
+    "========================":  "========================", # ===== ===============
+    "repeated invented SURNAM":  "ES (the tell that a pool", # gene rated them):
+    "Zamora           x2":       "Alejandro Zamora, Beatri", # z Zam ora
+    "Petrenko         x2":       "Elena Petrenko, Sergei P", # etren ko
+    "Castañeda        x2":       "Javier Castañeda, Rosa C", # astañ eda
+    "Quiñones         x2":       "Lucía Quiñones, Nicolás", # Quiño nes
+    "Browne           x2":       "Marian Browne, Winifred", # Brown e
+    "------------------------":  "------------------------", # ----- -----------------------
+    "Pavel Kovalenko":           "Coles Creek",             # 7A Aldecoa
+    "Elena Petrenko":            "Kingsway",                # 6A Aurelia
+    "Andrés Ibarra":             "Hyde Park",               # 7A Belmonte
+    "Javier Alvarado":           "Lincoln Park",            # 8A Belmonte
+    "Rosa Castañeda":            "Wicker Park",             # 9A Belmonte
+    "Yelena Sokolov":            "Ravenswood",              # 8A Belmonte
+    "Mikhail Sidorov":           "Southampton",             # 6A Belyakov
+    "Nicolás Quiñones":          "Covenant",                # 7A Calder
+    "Katherine Whitaker":        "Brookside",               # 6A Carroway
+    "Oskar Weiss":               "Waldo",                   # 8A Cortland
+    "Marian Browne":             "River Market",            # 3A Dovetail
+    "Yuri Chernov":              "Sunset Hills",            # 8A Emerson
+    "Eleanor Cole":              "Jefferson Park",          # 8A Fort Carden
+    "Winifred Booker":           "Albany Park",             # 7A Fort Carden
+    "Nerea Urrutia":             "Blue Valley",             # 2A Galena
+    "Viktor Gromov":             "Armour Fields",           # 7A Greaves
+    "Gabriel Zúñiga":            "Longfellow",              # 8A Lake Esperanza
+    "Hazel Hart":                "Oak Meyer",               # 3A Los Maderos
+    "Edith Tillman":             "Norwood Park",            # 5A Madrigal
+    "Javier Castañeda":          "Kenwood",                 # 5A Madrigal
+    "Lucía Quiñones":            "Edgewater",               # 4A Madrigal
+    "Isaiah Price":              "Squier Park",             # 7A Montelago
+    "Ruby Mercer":               "Pendleton Heights",       # 7A Moriarty
+    "Lev Volkov":                "Sherwood Estates",        # 4A Newark River
+    "Alina Antonov":             "River Oaks",              # 8A Orellana
+    "Amelia Freeman":            "Montrose",                # 5A Port Veles
+    "Alejandro Zamora":          "Morgan Park",             # 9A Puerto de los Reyes
+    "César Peralta":             "Avalon Park",             # 8A Puerto de los Reyes
+    "Alina Belov":               "Clear Lake",              # 3A Rilland
+    "Daniel Gaines":             "Lafayette Square",        # 7A San Borondón
+    "Harold Williams":           "Soulard",                 # 9A San Borondón
+    "Emilia Jansen":             "Sharpstown",              # 4A San Dámaso
+    "Naomi Moss":                "Meyerland",               # 5A San Tomás
+    "Winifred Ellison":          "Kingwood",                # 5A Santa Cruz del Norte
+    "Anneliese Ricci":           "Carondelet",              # 9A Santa Michaela
+    "Hazel Bennett":             "Benton Park",             # 9A Santa Michaela
+    "Beatriz Zamora":            "Tower Grove",             # 9A Serrano
+    "Edith Mercer":              "Forest Park",             # 9A Serrano
+    "Oksana Petrov":             "Oak Forest",              # 4A Simmons
+    "Edith Ward":                "Central West End",        # 5A Telfair
+    "Tomás Mendoza":             "Fairgrounds",             # 5A Telfair
+    "Isabel Montalvo":           "Magnolia Park",           # 4A Three Saints
+    "Jean Lindgren":             "Bridgeport",              # 6A Valderra
+    "Thelma Moss":               "Roscoe Village",          # 5A Valderra
+    "Winifred Browne":           "Rogers Park",             # 9A Valderra
+    "Katherine Bellamy":         "Meadowbrook",             # 5A Wales City
+    "Sergei Petrenko":           "Willowbrook",             # 3A Weissburg
+    "Beatriz Salcedo":           "Spring Branch",           # 7A Zubieta
+
     # ‼️ A SPECIALIZED SCHOOL'S NAME IS SHORT (owner rule 2026-08). Nobody says
     # "Manufacturing and Technology Academy" — a tech school is "<Place> Tech" and an
     # arts school is "<Place> Arts", the way Oakland School for the Arts is Oakland
