@@ -3104,49 +3104,52 @@ def showcase_entries(teams: list[TeamSeason], rng: random.Random,
     return quota
 
 
-def _fits(t: TeamSeason, grp: list[TeamSeason], played: dict[int, set[str]]) -> bool:
-    """Whether `t` can join `grp`. A showcase group is a round robin, so every member
-    plays every other one: the guardrails are checked against the GROUP, not against a
-    pairing, which is what makes an intra-district showcase match structurally
-    impossible rather than merely screened for afterwards.
+def _showcase_groups(pool: list[TeamSeason], size: int, played: dict[int, set[str]],
+                     rng: random.Random) -> list[list[TeamSeason]]:
+    """Shuffle the pool and DEAL groups of `size` off it, in one pass.
 
-      * HARD DISTRICT GUARDRAIL — never a league-mate. The whole event exists for
-        cross-district, cross-classification exposure; a program's district opponents
-        are on its card twice already.
-      * Never a rematch of anything else on either program's card, so the showcase
-        does not quietly hand somebody a third meeting with a non-league opponent."""
-    return all(_dkey(t) != _dkey(o) and t.school.name not in played[id(o)]
-               for o in grp)
+    ‼️ DELIBERATELY DUMB, and it replaced a constraint solver that was not (owner,
+    2026-08: "just randomly match people and be done"). The first version treated
+    group formation as a placement problem — seed a group, scan the whole remaining
+    pool for members that fit, pop the seed and rescan when it could not be filled —
+    which is quadratic in the pool for every tier of every window, and the JHSAA rung
+    stopped finishing.
 
+    A showcase field is already a rank-ordered slice of one tier, so who lands in
+    which group inside that slice carries almost no information: the tier cut is what
+    makes the duals worth playing, and dealing at random inside it is as good and is
+    linear. The ONE rule that survives is the hard district guardrail — a team that
+    would join a league-mate is set aside and dealt into a later group instead, which
+    is the spec's "swap across pods" done in a single pass rather than by repair.
 
-def _showcase_groups(pool: list[TeamSeason], size: int,
-                     played: dict[int, set[str]]) -> list[list[TeamSeason]]:
-    """Split a rank-ordered `pool` into groups of exactly `size`, every group clean.
+    A trailing part-group is not played: a showcase is a fixed number of duals, so a
+    short field is dropped rather than fielded."""
+    teams = list(pool)
+    rng.shuffle(teams)
+    groups: list[list[TeamSeason]] = []
+    cur: list[TeamSeason] = []
+    held: list[TeamSeason] = []
 
-    This IS the spec's "swap teams across pods/tiers to resolve a conflict": a program
-    that cannot join the group being filled is passed over and picked up by a later
-    one, which is the same movement expressed as placement rather than as repair. A
-    seed that cannot be filled from what is left does not attend — a group is never
-    completed with a league-mate and never played short."""
-    remaining, groups = list(pool), []
-    while len(remaining) >= size:
-        grp, picked = [remaining[0]], [0]
-        for i in range(1, len(remaining)):
-            if len(grp) == size:
-                break
-            if _fits(remaining[i], grp, played):
-                grp.append(remaining[i])
-                picked.append(i)
-        if len(grp) < size:
-            remaining.pop(0)                 # unfillable seed: it does not attend
-            continue
-        for i in reversed(picked):
-            remaining.pop(i)
-        for a in grp:                        # every pair meets, so book them all now
+    def offer(t: TeamSeason) -> None:
+        nonlocal cur
+        if any(_dkey(t) == _dkey(o) for o in cur):   # league-mate: deal it later
+            held.append(t)
+            return
+        cur.append(t)
+        if len(cur) == size:
+            groups.append(cur)
+            cur = []
+
+    for t in teams:
+        offer(t)
+    for t in list(held):                             # one retry pass, then done
+        held.remove(t)
+        offer(t)
+    for grp in groups:                               # every pair meets, so book them
+        for a in grp:
             for b in grp:
                 if a is not b:
                     played[id(a)].add(b.school.name)
-        groups.append(grp)
     return groups
 
 
@@ -3225,7 +3228,7 @@ def showcase_schedule(teams: list[TeamSeason], year: int, gender: str, salt: str
         size = POD_SIZE if kind == "pod" else TIER_SIZE
         duals = POD_DUALS if kind == "pod" else TIER_DUALS
         for tier, field in fields:
-            for grp in _showcase_groups(field, size, played):
+            for grp in _showcase_groups(field, size, played, rng):
                 events.append({"kind": kind, "phase": phase, "window": w,
                                "tier": tier, "teams": grp,
                                "rounds": _showcase_rounds(grp, duals, year, salt)})
@@ -3235,7 +3238,8 @@ def showcase_schedule(teams: list[TeamSeason], year: int, gender: str, salt: str
 def showcase_conflicts(events: list[dict]) -> list[tuple]:
     """Every same-district pairing in the slate — the spec's
     `ensure_zero_district_conflicts`, as a report rather than an assert so a caller
-    can name the offenders. It must always be empty; `_fits` is what makes it so."""
+    can name the offenders. It must always be empty; the district check in
+    `_showcase_groups` is what makes it so."""
     return [(e["kind"], a.school.name, b.school.name)
             for e in events for rnd in e["rounds"] for a, b in rnd
             if _dkey(a) == _dkey(b)]

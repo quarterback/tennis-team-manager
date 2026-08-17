@@ -494,12 +494,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ‼️ `FLIGHT_WEIGHTS`'s D3/D4 are therefore load-bearing in the REGULAR season now,
     not just in the in-postseason recomputes. They also count in the record and feed
     every résumé the awards read.
+  - **‼️ GROUPS ARE SHUFFLED AND DEALT — SIMPLER MATCHING BEATS PRECISE MATCHING HERE
+    (owner rule 2026-08).** `_showcase_groups` shuffles the tier's pool and deals
+    groups of 4 (pod) / 6 (tiered) in ONE PASS. It was a placement solver first — seed
+    a group, scan the whole pool for members that fit, pop the seed and rescan when it
+    could not be filled — which is quadratic per tier per window and was written while
+    hunting a rung that stopped finishing. **The quality of a showcase dual comes from
+    the TIER CUT; who lands in which group inside a tier carries no information**, so
+    choosing carefully was precision spent on a decision that does not matter. Owner:
+    "just randomly match people and be done… so long as it's truly random and follows
+    the rules outlined (no district matchups) it should be fine."
   - **‼️ HARD DISTRICT GUARDRAIL, enforced at GROUP formation, not per pairing.** A
-    group is a round robin, so every member meets every other: `_fits` rejects a
-    candidate that shares a `(classification, name)` district with ANY member (and any
-    prior opponent on either card). A conflicting program is passed over and picked up
-    by a later group — that IS the spec's "swap across pods". `showcase_conflicts` is
-    the validator and `play_showcases` refuses to play a slate that fails it.
+    group is a round robin, so every member meets every other: a candidate sharing a
+    `(classification, name)` district with ANY member is held back and dealt into a
+    later group — that IS the spec's "swap across pods", done in one pass rather than
+    by repair. `showcase_conflicts` is the validator and `play_showcases` refuses to
+    play a slate that fails it. It is the ONLY rule inside a tier; do not add a second.
+  - **`SHOWCASE_ENABLED` is the kill switch and the FIRST diagnostic.** Checked at the
+    top of `showcase_schedule`, so off it returns before touching a team and the rung
+    runs exactly the pre-feature code. The events add ~234 duals to a gender's ~5,100
+    (~5%): if the rung is slow with it off, they were never the cause.
   - **The 2-day block TRADES a weekday date** (owner spec) and the pod does not, so
     `play_showcases` returns what each program traded and the late tune-up's allowance
     is shortened by it. ‼️ Showcase duals are non-district but are NOT part of the
