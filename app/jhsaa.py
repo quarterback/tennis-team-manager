@@ -537,6 +537,13 @@ def _arch_map(version: str) -> dict:
 def upstarts(year: int, salt: str = "") -> dict[str, float]:
     """{school: lift} for the programs currently on an upstart run.
 
+    ‼️ MEMOISED PER SEASON, because `_program_mod` calls it for EVERY program and it
+    walks the whole association twice (both genders) to build its pool. Unmemoised
+    that is two `load_schools` calls per roster built — and once `load_schools` stopped
+    being free (see there), it was 39,776 database round trips and 6.2 seconds for one
+    program's roster. The table is a pure function of (year, salt) and the two override
+    tables, so it is computed once per season and reused.
+
     Rolled per world rather than stored, because an upstart is a RUN and a stored tag
     would make it permanent. Each candidate's run start and length are derived from the
     salt, so the same save always tells the same story and a run ends by itself.
@@ -547,7 +554,12 @@ def upstarts(year: int, salt: str = "") -> dict[str, float]:
     non-local: tagging one school changed which OTHER schools drew an upstart that
     season, because it changed what `rng.sample` was sampling from. A tag must only ever
     affect the school it is on."""
-    tagged = set(_arch_map(__import__("app.overrides", fromlist=["x"]).jhsaa_archetype_version()))
+    from app import overrides as ov
+    ck = (year, salt, ov.jhsaa_archetype_version(), ov.jhsaa_playup_version())
+    hit = _upstart_cache.get(ck)
+    if hit is not None:
+        return hit
+    tagged = set(_arch_map(ov.jhsaa_archetype_version()))
     pool = sorted({s.name for s in load_schools("girls")} | {s.name for s in load_schools("boys")})
     if not pool:
         return {}
@@ -562,15 +574,18 @@ def upstarts(year: int, salt: str = "") -> dict[str, float]:
             lift = round(rng.uniform(*UPSTART_LIFT), 3)
             if start <= year < start + run and n not in tagged:
                 out[n] = lift
+    _upstart_cache.clear()               # one season is live at a time
+    _upstart_cache[ck] = out
     return out
 
 
 def _program_mod(school: School, year: int, salt: str) -> dict:
     """The combined school-level modifier for one program-season."""
-    a = ARCHETYPES.get(archetype(school.name), {})
+    kind = archetype(school.name)        # one lookup: it resolves a table fingerprint
+    a = ARCHETYPES.get(kind, {})
     mod = {"mean": a.get("mean", 0.0), "spread": a.get("spread", 1.0),
            "pot": a.get("pot", 0.0), "mature": a.get("mature", 0.0),
-           "kind": archetype(school.name)}
+           "kind": kind}
     lift = upstarts(year, salt).get(school.name)
     if lift:
         # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
@@ -728,6 +743,12 @@ class TeamSeason:
 
 _schools_cache: dict | None = None
 _playup_cache: dict = {}
+# The BUILT School objects, keyed (gender, play-up version). `_schools_cache` above is
+# only the raw JSON; rebuilding the objects is what used to be free and is not any
+# more — see `load_schools`. Read-only: callers filter and group it, nobody mutates a
+# School, and handing out the same list is the entire point.
+_schoolobj_cache: dict = {}
+_upstart_cache: dict = {}
 
 #: The largest league the association will cut, mirroring
 #: `scripts/import_jhsaa.MAX_DISTRICT` — read here only so a played-up program does
@@ -743,6 +764,8 @@ def reset_schools() -> None:
     global _schools_cache
     _schools_cache = None
     _playup_cache.clear()
+    _schoolobj_cache.clear()
+    _upstart_cache.clear()
 
 
 def play_up_group(classification: str) -> str:
@@ -753,12 +776,20 @@ def play_up_group(classification: str) -> str:
     return GROUPS[i - 1] if i else g
 
 
-def plays_up(school_name: str, seeded: bool) -> bool:
+def plays_up(school_name: str, seeded: bool, pmap: dict | None = None) -> bool:
     """Whether `school_name` competes a class above its own — the seed list in
     `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
-    exactly the layering `archetype()` uses."""
+    exactly the layering `archetype()` uses.
+
+    ‼️ PASS `pmap` WHEN ASKING ABOUT MORE THAN ONE SCHOOL. Without it this resolves
+    the override table's fingerprint itself, and that fingerprint costs a SQLite
+    connect + query + close EVERY CALL — the `_playup_cache` memoises the map but is
+    keyed on the very thing that is expensive to compute, so the cache never saved the
+    cost. In a loop over the association that is one database round trip per school
+    per pass. See `load_schools`."""
     from app import overrides as ov
-    hit = _playup_map(ov.jhsaa_playup_version()).get(school_name)
+    m = _playup_map(ov.jhsaa_playup_version()) if pmap is None else pmap
+    hit = m.get(school_name)
     return seeded if hit is None else hit == "yes"
 
 
@@ -777,12 +808,34 @@ def _playup_map(version: str) -> dict:
 
 
 def load_schools(gender: str) -> list[School]:
-    """Every JHSAA program for `gender`, with its district."""
+    """Every JHSAA program for `gender`, with its district.
+
+    ‼️ MEMOISED, AND THE PLAY-UP MAP IS RESOLVED ONCE. This was a pure JSON-to-objects
+    loop with no database access at all until play-up landed, which is why nothing was
+    cached and why nobody noticed when it stopped being free: `_plays_up_row` went into
+    the per-row loop, and each call resolved the override table's FINGERPRINT with its
+    own SQLite connect + query + close. One call to this function did ~20,000 database
+    round trips — the row loop, plus `_playup_districts` walking the rows twice more.
+
+    `build_roster` then calls `upstarts()`, which called this twice per program, so a
+    single program's roster cost 39,776 queries and 6.2 seconds, and the JHSAA rung —
+    ~1,630 programs — would never finish. Measured, not estimated.
+
+    So: the fingerprint is resolved ONCE here, the map is threaded down, and the built
+    objects are cached per (gender, version). Anything that walks the association must
+    hold the map, never re-ask per school."""
+    from app import overrides as ov
+    version = ov.jhsaa_playup_version()
+    ck = (gender, version)
+    hit = _schoolobj_cache.get(ck)
+    if hit is not None:
+        return hit
     global _schools_cache
     if _schools_cache is None:
         with open(_DATA, encoding="utf-8") as fh:
             _schools_cache = json.load(fh)["schools"]
-    moved = _playup_districts(gender, _schools_cache)
+    pmap = _playup_map(version)
+    moved = _playup_districts(gender, _schools_cache, pmap)
     out = []
     for r in _schools_cache:
         if not r.get(gender):
@@ -793,7 +846,7 @@ def load_schools(gender: str) -> list[School]:
         # actually is, which is what `School.talent_group` generates from. A school
         # that plays up gets a HARDER FIELD, never better players.
         group = r["group"]
-        if _plays_up_row(r):
+        if _plays_up_row(r, pmap):
             group = play_up_group(r["classification"])
         out.append(School(
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
@@ -807,10 +860,15 @@ def load_schools(gender: str) -> list[School]:
             district=moved.get(r["name"], r[f"{gender}_district"]),
             gender=gender, source=r.get("source", ""),
         ))
+    # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
+    # thread can clear this between the store and the return.
+    _schoolobj_cache.clear()          # one version is live at a time
+    _schoolobj_cache[ck] = out
     return out
 
 
-def _playup_districts(gender: str, rows: list[dict]) -> dict[str, str]:
+def _playup_districts(gender: str, rows: list[dict],
+                      pmap: dict | None = None) -> dict[str, str]:
     """{school: league} for every played-up program — the leagues they join in the
     class they compete in.
 
@@ -828,18 +886,18 @@ def _playup_districts(gender: str, rows: list[dict]) -> dict[str, str]:
     key = f"{gender}_district"
     size: dict[tuple[str, str], int] = {}
     for x in rows:
-        if not x.get(gender) or not x.get(key) or _plays_up_row(x):
+        if not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap):
             continue
         size[(x["group"], x[key])] = size.get((x["group"], x[key]), 0) + 1
 
     out = {}
-    movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x)),
+    movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x, pmap)),
                     key=lambda x: x["name"])          # deterministic order
     for row in movers:
         group = play_up_group(row["classification"])
         near: dict[str, list[int]] = {}
         for x in rows:
-            if (not x.get(gender) or not x.get(key) or _plays_up_row(x)
+            if (not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap)
                     or x["group"] != group):
                 continue
             slot = near.setdefault(x[key], [0, 0])
@@ -856,8 +914,10 @@ def _playup_districts(gender: str, rows: list[dict]) -> dict[str, str]:
     return out
 
 
-def _plays_up_row(row: dict) -> bool:
-    return plays_up(row["name"], bool(row.get("play_up")))
+def _plays_up_row(row: dict, pmap: dict | None = None) -> bool:
+    """`pmap` is the resolved play-up map. Omit it ONLY for a one-off question about a
+    single school — without it every call costs a database round trip."""
+    return plays_up(row["name"], bool(row.get("play_up")), pmap)
 
 
 def districts(gender: str, group: str) -> dict[str, list[School]]:
