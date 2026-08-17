@@ -307,7 +307,6 @@ RENAMES = {
     "Puerto de los Reyes School of Commerce": "Puerto de los Reyes South",
     "Llerena Civic Leadership Academy": "Llerena North",
     "Llerena School of Science and Industry": "Llerena South",
-    "Javier Villalba": "Alonso Villalba",
     "Serrano Applied Sciences Institute": "Serrano North",
     "Serrano Depot High": "Serrano South",
     "Halbrook Technical": "Halbrook East",
@@ -709,7 +708,14 @@ RENAMES = {
     "Adela Robles":                "Seaside Heights",         # 4A San Borondón
     "Adela Villaseñor":            "Cape Jean",               # 7A Caswell
     "Ainhoa Mendizabal":           "Charles Harbor",               # 6A Simmons
+    # ‼️ TWO KEYS, ONE SCHOOL. `Javier Villalba` is the prep-network identity and
+    # `Alonso Villalba` is what the PREVIOUS version of this table renamed it to — a
+    # checkout already migrated by the old script carries that name, so without the
+    # alias rerunning the documented migration would leave it stranded under a name
+    # nothing recognises. Only one of the two ever exists in a given dataset, so they
+    # cannot both emit and collide.
     "Javier Villalba":             "Los Feliz",               # 9A Llerena
+    "Alonso Villalba":             "Los Feliz",               # migration alias
     "Amaia Etxeberria":            "Boyle Heights",           # 8A Carden City
     "Amalia Escobedo":             "Eagle Rock",              # 7A Belyakov
     "Anya Antonov":                "Mar Vista",               # 9A San Cordero
@@ -1355,7 +1361,7 @@ MASCOTS = {
     "Zachary Taylor": "Gillnetters",
     "Franklin Pierce": "Deckhands",
     "Veles Narrows": "Fishmongers",               # the Port Veles fish market
-    "Seafarer High": "Trawlers",
+    "Seafarer": "Trawlers",
     "Santa Michaela Admiralty High": "Commodores",
     "Bay Oregon": "Ospreys",
     "Bahía Azúl": "Dungeness Crabs",
@@ -1370,7 +1376,7 @@ MASCOTS = {
     "Quarmont": "Stonecutters",
     "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
-    "Adela Robles": "Sea Otters",
+    "Seaside Heights": "Sea Otters",
     "Claudette Cole": "Godwits",
     "San Marcos": "Moon Jellies",
     "Mission Bay": "Sea Lions",
@@ -1407,7 +1413,7 @@ MASCOTS = {
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
     "Lincoln Park": "Onion Toppers",
-    "Miren Elorriaga": "Stone Lifters",         # harri-jasotzaile
+    "West Portal": "Stone Lifters",         # harri-jasotzaile
     "River Plain": "Rapids",
     "Treasure Valley": "Sugar Beets",
     "Berrio": "Brambles",
@@ -1416,7 +1422,7 @@ MASCOTS = {
     "Greaves Junction": "Switchmen",
     "Greaves Junction South": "Boxcars",
     "Archbishop Doyle Prep": "Bellringers",
-    "Vasquez": "Vaqueros",
+    "Fruitvale": "Vaqueros",
     "Ella Baker": "Torchbearers",
     "Javier Cárdenas": "Roadrunners",
     "Llerena": "Bighorns",
@@ -1426,7 +1432,7 @@ MASCOTS = {
     "Serrano North": "Sidewinders",             # and the snake
     "Coles Creek": "Sunflowers",
     "Aitor Zubieta": "Woodchoppers",            # aizkolari
-    "Amalia Escobedo": "Burrowing Owls",
+    "Eagle Rock": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
     "Vance": "Lambs",                  # cordero
     "Lorraine Calder": "Mobiles",
@@ -1502,9 +1508,9 @@ MASCOTS = {
     "Ninemile": "Freighters",
     "Clear Lake": "White Sage",
     "Galactica Plains": "Meadowlarks",
-    "Garazi Aramburu": "Woolgrowers",
+    "Ocean Park": "Woolgrowers",
     "River Market": "Joiners",                 # Dovetail
-    "Lev Voronin": "Ravens",                    # voronin — raven
+    "Cole Valley": "Ravens",                    # voronin — raven
     "Espoo": "Shearers",
 
     # ── Timber Valley: the woods trades ──────────────────────────────────────
