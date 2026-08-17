@@ -3902,29 +3902,25 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 
 #: A State FINISH, abbreviated for a dense table (owner's set, 2026-08):
 #: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
-#:
-#: ‼️ The two "Round of N" labels are DIFFERENT ROUNDS, not one. A 40 is a 24 with a
-#: Qualifiers Round in front, so losing at 40 alive means losing in the QUALIES and
-#: losing at 24 alive means losing in the First Round — which is why this maps the
-#: round a team went out in rather than the count it went out at.
 _FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
                  "Octofinalist": "OF"}
 
 
-def _finish_short(label: str, field: int = 0) -> str:
-    """`label` for a narrow column. Always render the full text as a title beside it."""
+def _finish_short(label: str) -> str:
+    """`label` for a narrow column. Always render the full text as a title beside it.
+
+    The two "Round of N" labels are different ROUNDS: every field converges on the
+    same 24-team main draw at the Octofinals, so a team still alive above 24 went out
+    in the QUALIFIERS and one out at 24 went out in the First Round. That holds at any
+    field size, which is why this needs no field parameter."""
     if not label:
         return ""
     if label in _FINISH_SHORT:
         return _FINISH_SHORT[label]
     if label.startswith("Round of "):
         n = label[9:].strip()
-        # A Qualifiers Round exists only in a field BIGGER than the 24 underneath it
-        # (a 40 is a 24 with the Qualies in front). So out at the full field size is
-        # QUAL only where that round is played — in a 24-field class, out at 24 alive
-        # is the FIRST ROUND, and calling it QUAL would name a round nobody played.
-        return ("QUAL" if (field > 24 and n.isdigit() and int(n) >= field) else "R1")
+        return "QUAL" if (n.isdigit() and int(n) > 24) else "R1"
     return label
 
 
@@ -4063,8 +4059,7 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
                          "state_finish": result["finish"],
                          # Abbreviated for the table; the full label rides along as a
                          # title so nothing is lost.
-                         "state_finish_short": _finish_short(result["finish"],
-                                                            jh.state_field_size(grp)),
+                         "state_finish_short": _finish_short(result["finish"]),
                          # Sort key only — negated `place` (1 = champion) so this
                          # column's click-sort shares the generic "desc = best first"
                          # convention every other numeric column uses, without
