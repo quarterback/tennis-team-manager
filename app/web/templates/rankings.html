@@ -100,8 +100,7 @@
 <div class="bl-container rk-regions">
   {% for region, entries in regions %}
   <div class="bl-panel rk-region">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span>
-      <span class="bl-panel-meta">Final {{ season }} · {{ uni_label }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span></div>
     <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px minmax(150px,1.5fr) {% if view != 'teams' %}minmax(100px,1fr) {% endif %}52px 58px 60px; min-width:0">
         <div class="bl-thead">
@@ -213,8 +212,7 @@
 <div class="bl-container rk-regions">
   {% for region, teams in regions %}
   <div class="bl-panel rk-region">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span>
-      <span class="bl-panel-meta">Top {{ teams|length }} · {{ uni_label }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span></div>
     <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px 44px minmax(120px,1fr) 52px 66px 62px 64px; min-width:0">
         <div class="bl-thead">
@@ -243,8 +241,7 @@
 <div class="bl-container rk-regions">
   {% for region, players in regions %}
   <div class="bl-panel rk-region">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span>
-      <span class="bl-panel-meta">Top {{ players|length }} {{ noun }} · {{ uni_label }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ region }}</span></div>
     <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px minmax(150px,1.5fr) minmax(100px,1fr) 52px 58px 60px; min-width:0">
         <div class="bl-thead">

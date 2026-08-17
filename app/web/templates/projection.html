@@ -45,8 +45,7 @@
 
   {# Quick read: the cut line. #}
   <div class="bl-panel" style="margin-bottom:18px">
-    <div class="bl-panel-head"><span class="bl-panel-title">The Cut Line</span>
-      <span class="bl-panel-meta">last in at #{{ proj.field }} · first out at #{{ proj.field + 1 }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">The Cut Line</span></div>
     {{ bubble_split({'last_in': proj.last_in, 'first_out': proj.first_out}, u) }}
   </div>
 
@@ -54,8 +53,7 @@
     {# Seed list: the full field ranked by strength (AQ + at-large interleaved),
        the cut line at the field size, then the teams chasing in. #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Seed List</span>
-        <span class="bl-panel-meta">full field</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Seed List</span></div>
       <div class="bl-stand-hdr" style="grid-template-columns:42px 1fr 40px 56px 70px 56px">
         <span>Seed</span><span>Team</span><span>Bid</span><span>Conf</span><span>Overall</span><span>Score</span>
       </div>
@@ -88,8 +86,7 @@
 
     {# Projected automatic qualifiers (conference leaders). #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Automatic Bids</span>
-        <span class="bl-panel-meta">{{ proj.aq|length }} · projected conf leaders</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Automatic Bids</span></div>
       {% for t in proj.aq %}
       <a class="bl-brk-match" style="grid-template-columns:1fr 50px 56px;text-decoration:none"
          href="{{ url_for('teams', school=t.school, u=u) }}">

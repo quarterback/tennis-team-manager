@@ -18,8 +18,7 @@
    ~91 carry one, and each row can change kind in place. #}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA program archetypes</span>
-      <span class="bl-panel-meta">{{ archetypes.total }} tagged</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA program archetypes</span></div>
     {% for kind in archetypes.kinds %}
     <div style="padding:10px 16px 0">
       <div class="t-eyebrow">{{ kind|replace('_', ' ') }} · {{ archetypes.by_kind[kind]|length }}</div>
@@ -101,8 +100,7 @@
    (a native datalist filters as you type), removing is a button on the row. #}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA play-up</span>
-      <span class="bl-panel-meta">{{ playup.schools|length }} program{{ '' if playup.schools|length == 1 else 's' }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">JHSAA play-up</span></div>
     <div class="tbl-scroll">
       <table class="bl-tbl">
         <tr><th>School</th><th style="width:70px">Class</th><th style="width:96px">Competes in</th>

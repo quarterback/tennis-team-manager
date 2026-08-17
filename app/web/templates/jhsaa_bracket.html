@@ -113,8 +113,7 @@
   {% endif %}
 
   <div class="bl-panel jh-mod">
-    <div class="bl-panel-head"><span class="bl-panel-title">The field</span>
-      <span class="bl-panel-meta">{{ view.field_n }} teams, seeded</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
     <div class="bl-panel-body">
       {% for s in view.field %}
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">

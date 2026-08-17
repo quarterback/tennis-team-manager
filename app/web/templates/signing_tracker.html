@@ -45,8 +45,7 @@
 <div class="bl-container"><div class="bl-board-grid" style="align-items:start">
   <!-- Team class rankings -->
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Team Class Rankings</span>
-      <span class="bl-panel-meta">by class score</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Team Class Rankings</span></div>
     <div class="bl-tablescroll">
     <div class="bl-table al-dense" style="--bl-grid-cols: 34px minmax(130px,1fr) 78px 28px minmax(150px,auto) minmax(100px,1.1fr)">
       <div class="bl-thead">
@@ -69,8 +68,7 @@
 
   <!-- Top commitments (live) / how they turned out (archived class) -->
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ 'How They Turned Out' if trk.archive else 'Top Commitments' }}</span>
-      <span class="bl-panel-meta">{{ trk.total_signed }} signed</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ 'How They Turned Out' if trk.archive else 'Top Commitments' }}</span></div>
     <div class="bl-tablescroll">
     {% if trk.archive %}
     <div class="bl-table al-dense" style="--bl-grid-cols: minmax(120px,1fr) 44px minmax(90px,1fr) minmax(100px,1fr) 92px">

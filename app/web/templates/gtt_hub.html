@@ -5,9 +5,7 @@
 
   <div class="bl-panel" style="margin-bottom:16px">
     <div class="bl-panel-head">
-      <span class="bl-panel-title">Global Team Tennis</span>
-      <span class="bl-panel-meta">co-ed pro league · 3 MS + 3 WS + 3 XD, first to 5 of 9</span>
-    </div>
+      <span class="bl-panel-title">Global Team Tennis</span></div>
     <div style="padding:14px 16px">
       {% if leagues %}
       <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
@@ -82,8 +80,7 @@
 
   {% if league %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Standings</span>
-      <span class="bl-panel-meta">W-L · line differential</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Standings</span></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-std">
       <div class="bl-thead gtt-std-row">
         <span class="bl-th">#</span><span class="bl-th">Franchise</span>
@@ -102,8 +99,7 @@
 
   {% if recent %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span>
-      </div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Week {{ recent_week }} results</span></div>
     <div style="padding:8px 16px">
       {% for d in recent %}
       {% if d.status == 'final' %}
@@ -142,8 +138,7 @@
 
   {% if history %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Season history</span>
-      <span class="bl-panel-meta"><a href="{{ url_for('gtt_hall', lg=league.id) }}" style="text-decoration:none">Hall of Fame →</a></span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Season history</span></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-hist">
       <div class="bl-thead gtt-hist-row">
         <span class="bl-th num">Year</span><span class="bl-th">Champion</span><span class="bl-th">MVP</span>

@@ -20,8 +20,7 @@
 
 {% if res.players %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Players</span>
-    <span class="bl-panel-meta">{{ res.players|length }} on rosters</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Players</span></div>
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.4fr) minmax(130px,1fr) 70px 60px">
       <div class="bl-thead"><span class="bl-th">PLAYER</span><span class="bl-th">TEAM</span>
@@ -44,8 +43,7 @@
 
 {% if res.recruits %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Recruits</span>
-    <span class="bl-panel-meta">class of {{ res.recruits[0].grad_year }}</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Recruits</span></div>
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: minmax(150px,1.4fr) minmax(130px,1fr) 90px">
       <div class="bl-thead"><span class="bl-th">RECRUIT</span><span class="bl-th">HOMETOWN</span>

@@ -28,8 +28,7 @@
 {# Compact single-column card (narrow sidebars, e.g. the season hub). #}
 {% macro bubble_compact(bubble, u) %}
 <div class="bl-panel" style="align-self:start">
-  <div class="bl-panel-head"><span class="bl-panel-title">Bubble Watch</span>
-    <span class="bl-panel-meta">if held today</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Bubble Watch</span></div>
   <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
   {% for t in bubble.last_in %}{{ _row(t, u, 'in') }}{% endfor %}
   <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>

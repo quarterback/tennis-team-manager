@@ -23,8 +23,7 @@
 
 <div class="bl-container" style="padding-top:14px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification &amp; gender</span>
-      </div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification &amp; gender</span></div>
     <form method="post" action="{{ url_for('editor_scholarship') }}">
       <input type="hidden" name="u" value="{{ u }}">
       <div class="bl-schol-grid">
@@ -61,8 +60,7 @@
 
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Program ratings — {{ school }}</span>
-      <span class="bl-panel-meta">0–100</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Program ratings — {{ school }}</span></div>
     <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
       <form method="post" action="{{ url_for('editor_prestige') }}"
             style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -98,8 +96,7 @@
 {% if staff %}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff — {{ school }}</span>
-      </div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff — {{ school }}</span></div>
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:8px">
       {% for s in staff %}
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
@@ -177,8 +174,7 @@
 {% if conf_ratings %}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Conference ratings — {{ conf_ratings.conf }}</span>
-      <span class="bl-panel-meta">{{ conf_ratings.n }} programs</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Conference ratings — {{ conf_ratings.conf }}</span></div>
     <div style="display:flex;gap:24px;padding:12px 16px;flex-wrap:wrap">
       <form method="post" action="{{ url_for('editor_conf_prestige') }}"
             style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -301,8 +297,7 @@
            no doubles-only player type. ---- #}
     {% set dpin = doubles_pin if doubles_pin|length == dslots else rows[:dslots]|map(attribute='pid')|list %}
     <div class="bl-panel" style="margin-top:16px">
-      <div class="bl-panel-head"><span class="bl-panel-title">Doubles lineup</span>
-        <span class="bl-panel-meta">{{ n_doubles }} pairs</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Doubles lineup</span></div>
       <form method="post" action="{{ url_for('editor_doubles') }}" class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
         <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
         {% for i in range(n_doubles) %}

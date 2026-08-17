@@ -57,8 +57,7 @@
 
   {% for rnd in cup.rounds %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span>
-      <span class="bl-panel-meta">{{ rnd|length }} tie{{ 's' if rnd|length != 1 }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ rnd[0].rnd }}</span></div>
     <div style="padding:6px 16px 12px">
       {% for m in rnd %}
       {% set win = m.hi if m.winner_is_hi else m.lo %}
@@ -85,8 +84,7 @@
   {% endfor %}
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Squads</span>
-      <span class="bl-panel-meta">top {{ cup.nations[0].squad|length if cup.nations else 4 }} per nation</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Squads</span></div>
     <div style="padding:8px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 22px">
       {% for n in cup.nations %}
       <div style="padding:6px 0;border-bottom:1px solid var(--border-subtle)">

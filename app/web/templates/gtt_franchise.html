@@ -8,7 +8,6 @@
   <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
     <div class="bl-panel-head">
       <span class="bl-panel-title">{{ fr.name }} {% if is_champion %}<i class="fa-solid fa-trophy" aria-hidden="true"></i>{% endif %}</span>
-      <span class="bl-panel-meta">{{ fr.city }} · [{{ fr.abbrev }}]{% if row %} · {{ row.w }}-{{ row.l }} ({{ "%+d"|format(row.diff) }}){% endif %}</span>
     </div>
     <div class="bl-tablescroll"><div class="bl-table gtt-ros">
       <div class="bl-thead gtt-ros-row">
@@ -32,8 +31,7 @@
 
   {% if moves %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span>
-      <span class="bl-panel-meta">this season's add/drop moves</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span></div>
     <div style="padding:8px 16px">
       {% for t in moves %}
       <div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle);font-size:14.5px">
@@ -70,8 +68,7 @@
 
   {% if free_agents %}
   <div class="bl-panel" style="margin-bottom:16px">
-    <div class="bl-panel-head"><span class="bl-panel-title">Free agents</span>
-      <span class="bl-panel-meta">the wire — unsigned, best STR first · Sign to {{ fr.abbrev }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Free agents</span></div>
     <div class="bl-tablescroll"><div class="bl-table gtt-fa">
       <div class="bl-thead gtt-fa-row">
         <span class="bl-th"></span><span class="bl-th">Player</span>

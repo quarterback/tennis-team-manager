@@ -105,8 +105,7 @@
 </div>
 {% if p.commit_history and p.commit_history|length > 1 %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Commitment Trail</span>
-    <span class="bl-panel-meta">decommitted {{ p.flips }}×</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Commitment Trail</span></div>
   <div class="bl-panel-body"><table class="bl-protable" style="width:100%"><tbody>
     {% for c in p.commit_history %}
     <tr><td>{% if loop.first %}Committed to{% elif loop.last %}Signed with{% else %}Reopened, committed to{% endif %}
@@ -137,8 +136,7 @@
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
       {% if p.jhsaa %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">High School</span>
-        <span class="bl-panel-meta">JHSAA · {{ p.jhsaa.group }} · {{ p.jhsaa.district }}</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">High School</span></div>
         <div class="bl-panel-body">
           <div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
             <div style="flex:1;min-width:0">
@@ -163,8 +161,7 @@
       </div>
       {% endif %}
       {% if rec.offers %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span>
-        <span class="bl-panel-meta">{{ rec.n_offers }} offers</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">College List</span></div>
         <div class="bl-tablescroll">
           <div class="bl-table" style="--bl-grid-cols: minmax(120px,1fr) 48px 64px 78px 84px 148px 76px">
             <div class="bl-thead">
@@ -193,8 +190,7 @@
       {% endif %}
 
       {% if rec.dreamsheet %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Dreamsheet</span>
-        <span class="bl-panel-meta">schools this recruit dreams of</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Dreamsheet</span></div>
         <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:8px">
           {% for d in rec.dreamsheet %}
           <span class="bl-pill" style="display:inline-flex;align-items:center;gap:6px;border-color:{{ '#3a7' if d.offered else 'var(--border)' }}">
@@ -206,8 +202,7 @@
 
       {% set badges = p|profile_badges %}
       {% if badges %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Badges</span></div>
         <div class="bl-panel-body" style="display:flex;flex-wrap:wrap;gap:7px">
           {% for sh in badges %}
           <span class="al-shield"><span class="al-shield-l">{{ sh.left }}</span><span class="al-shield-r al-r-{{ sh.tier }}">{{ sh.right }}</span></span>
@@ -217,8 +212,7 @@
       {% endif %}
 
       {% if p.junior_results %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Results</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Results</span></div>
         <div class="bl-tablescroll">
           <div class="bl-table" style="--bl-grid-cols: 84px minmax(140px,1fr) 96px 110px">
             <div class="bl-thead">
@@ -239,8 +233,7 @@
       {% endif %}
 
       {% if p.junior_doubles_results %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Doubles</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Doubles</span></div>
         <div class="bl-tablescroll">
           <div class="bl-table" style="--bl-grid-cols: 84px minmax(140px,1fr) 96px minmax(120px,1fr) 110px">
             <div class="bl-thead">
@@ -262,8 +255,7 @@
       {% endif %}
 
       {% if p.junior_matches %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Match Record</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Junior Match Record</span></div>
         <div class="bl-tablescroll">
           <div class="bl-table" style="--bl-grid-cols: 76px minmax(120px,1fr) 40px minmax(120px,1fr) 96px">
             <div class="bl-thead">
@@ -288,8 +280,7 @@
 
     <div style="display:flex;flex-direction:column;gap:16px">
       {% if view.sat %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Academics</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Academics</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable"><tbody>
             <tr title="Admissions test score on the 800–1600 scale (academics only, never affects match play). D4 programs gate recruiting on a minimum."><td>TEST</td><td class="w">{{ view.sat }}</td></tr>
@@ -300,8 +291,7 @@
 
       {% if p.ranking_history %}
       {% set rh0 = p.ranking_history[0] %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Ranking History</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Ranking History</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable" style="width:100%"><thead>
             <tr><td class="bl-th">DATE</td>
@@ -320,8 +310,7 @@
       </div>
       {% endif %}
 
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span>
-        </div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Attributes</span></div>
         <div class="bl-panel-body">
           <table class="bl-protable" style="width:100%"><tbody>
             {% for label, g in view.scout_bars %}

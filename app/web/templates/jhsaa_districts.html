@@ -17,7 +17,6 @@
     <div class="bl-panel-head">
       <a class="bl-panel-title" style="text-decoration:none"
          href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.district }} →</a>
-      <span class="bl-panel-meta">{{ d.members }} schools · {{ d.qualifiers|length }} to state</span>
     </div>
     <div class="bl-panel-body">
       {% if d.champion %}

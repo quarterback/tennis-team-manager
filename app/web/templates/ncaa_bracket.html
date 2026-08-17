@@ -48,8 +48,7 @@
 <div class="bl-container"><div class="rs-regions">
   {% for rg in br.field_regions %}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ rg.name }} Region</span>
-      <span class="bl-panel-meta">seeds 1–{{ rg.teams|length }}</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ rg.name }} Region</span></div>
     <div class="rs-field rs-field-rgn">
       {% for p in rg.teams %}
       <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
@@ -66,8 +65,7 @@
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">The Field</span>
-    <span class="bl-panel-meta">{{ br.size }} teams · {{ br.n_aq }} automatic qualifiers</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">The Field</span></div>
   <div class="rs-field">
     {% for p in br.field %}
     <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
@@ -85,8 +83,7 @@
 
 {% if br.out_board %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">First Out</span>
-    <span class="bl-panel-meta">highest Power Index left out of the field</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">First Out</span></div>
   <div class="rs-field">
     {% for o in br.out_board %}
     <a class="rs-seedrow out" href="{{ url_for('teams', school=o.school, u=u) }}">
@@ -199,8 +196,7 @@
 <div class="bl-container"><div class="bl-bracket-layout2">
   {% if br.top_seeds %}
   <aside class="bl-panel bl-panel-tight bl-seedsheet">
-    <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span>
-      <span class="bl-panel-meta">how the field was seeded</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span></div>
     <div class="bl-seed-list">
       {% for p in br.top_seeds %}
       <a class="bl-seed-row" href="{{ url_for('teams', school=p.school, u=u) }}">

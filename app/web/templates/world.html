@@ -68,11 +68,6 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <a class="bl-panel-title" style="text-decoration:none" href="{{ url_for('rankings', u=d.u) }}">{{ d.label }}</a>
-        <span class="bl-panel-meta">
-          {% if d.phase == 'regular' %}wk {{ d.week }}/{{ d.total }}
-          {% elif d.phase == 'conf_tournaments' %}conf tourneys
-          {% elif d.phase == 'ncaa' %}NCAA bracket
-          {% else %}complete{% endif %}</span>
       </div>
       <div>
         {% if d.champion %}

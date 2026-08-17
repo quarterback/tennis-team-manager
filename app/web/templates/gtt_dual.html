@@ -23,7 +23,6 @@
         <span style="margin:0 6px">{{ d.home_points }}–{{ d.away_points }}</span>
         <a href="{{ url_for('gtt_franchise', fid=d.away_fid, lg=league.id) }}" style="text-decoration:none;{{ 'font-weight:800' if d.winner == 1 else 'color:var(--text-muted)' }}">{{ d.away_name }}</a>
       </span>
-      <span class="bl-panel-meta">{% if d.round == 'PO' %}Playoffs{% else %}Week {{ d.week }}{% endif %} · {{ d.year + 2027 }}</span>
     </div>
     <div style="padding:6px 16px 14px;color:var(--text-muted);font-size:14.5px">
       Click any line for the full match stats. First to 5 of 9 lines clinches.
