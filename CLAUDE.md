@@ -238,6 +238,26 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    `scout_intel` (it projects duals, so it must honor a pin). When you narrow one invalidation
    edge, `grep -rn "roster_version\|move_version" app/` and check every stamp keyed on the same
    edited table. See `docs/AAR-cache-invalidation-scope-lineup-stall.md` (the "IT RESURFACED" §).
+5. **‼️ A MEMO CACHE IS ONLY AS CHEAP AS ITS KEY — never resolve a version FINGERPRINT
+   inside a loop.** `plays_up()` read `_playup_map(ov.jhsaa_playup_version())`: the map was
+   memoised, but the KEY cost a SQLite connect+query+close per call, so every lookup paid
+   exactly the price the cache existed to avoid. It obeyed every rule above and saved
+   nothing. Inside `load_schools`'s per-row loop (×3 per call, ×2 per program via the
+   unmemoised `upstarts()`) that was **39,776 queries and 6.19s to build ONE program's
+   roster** — ~65M queries and ~2.8 HOURS for the JHSAA rung, which is why a world advance
+   "never finished". Resolve a fingerprint ONCE at the top of an operation and thread the
+   resolved map down; cache the BUILT objects, not just the raw JSON behind them.
+   ‼️ The trap that hid it: `load_schools` was a pure JSON-to-objects loop with **no DB
+   access at all** until play-up landed, so nothing was cached and nothing needed to be.
+   **A change can alter a function's COST CLASS while leaving its signature identical** —
+   every existing caller keeps calling it as if it were still free. When you add a lookup
+   to satisfy a rule, you own WHERE it happens; the owner asked for "a handful of play up
+   schools and that was it", not a database read in a loop over the whole association.
+   ‼️ MATCH THE MACHINERY TO THE SIZE OF THE PROBLEM: the seed list is **13 schools** and
+   the override table is usually empty — a handful of rows needs reading ONCE, not a
+   fingerprint-keyed invalidation protocol consulted per school per pass. Diagnose by COUNTING calls
+   for the smallest unit of work (one `build_roster`) and multiplying — never by trying to
+   reproduce a full season. See `docs/AAR-jhsaa-playup-fingerprint-query-storm.md`.
 
 ## ⚠️ ONE WORLD PER SAVE — "seed" means three different things (cost a corrupted save)
 A save has exactly ONE real world (`world.start_new` resets before creating; the
