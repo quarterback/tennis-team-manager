@@ -585,9 +585,15 @@ RENAMES = {
     # share no grammar with each other: an independent day school, a hyphenated
     # endowed one, a day school. Calvary Chapel Kernwood (3A, sponsors no tennis)
     # is untouched and is now the only one, so the name still exists in the state.
-    "Calvary Chapel Ditch Fork": "The Cassius School",      # 1A Goldbank
+    "Calvary Chapel Ditch Fork": "Cassius",                 # 1A Goldbank
+    # ‼️ A CAMPUS DIRECTION IS NOT AN IDENTITY (owner, 2026-08). These read as an
+    # annex of the school they sit beside — Northside Christian NORTH next to
+    # Northside Christian, Welsh Plains NORTHWEST next to Welsh Plains — so each
+    # gets a name of its own. All owner-dictated.
+    "Northside Christian North": "Toussaint",               # 4A Halbrook
+    "Welsh Plains Northwest": "Grayston",                   # 3A Paddock
     "Calvary Chapel Kilbride Switch": "Gottschalk-Herman",  # 1A Olivet
-    "Calvary Chapel Olivet": "Banfield Day School",         # 1A Olivet
+    "Calvary Chapel Olivet": "Banfield Day",                # 1A Olivet
     "Galina Moroz": "Our Lady of the Coast",         # 2A-1A — Sebastian Cape, coastal
     "Mikel Zubieta": "Cornerstone Christian",        # 2A-1A Clear Springs
     "Thomas Moreau": "Pope Francis",                 # 2A-1A Gold Valley
@@ -618,7 +624,7 @@ RENAMES = {
     "Elias Mercier": "Cascade Mutual",
     "Frances Gaines": "Empire Milling",
     "Garazi Mendizabal": "Cedar Exchange",
-    "Harlan Cole": "Millrace Tech",
+    "Harlan Cole": "Harlan",
     "Harold Tillman": "Copper Belt",
     "James Gaines": "Rogue Valley Packing",
     "Janice Cole": "Fallon Works",
@@ -802,7 +808,7 @@ RENAMES = {
     "Depot High North":            "Depot North",             # 6A Belmonte
     "Drayfield Foundry High":      "Drayfield Foundry",       # 5A Drayfield
     "Fort Meriwether Foundry High": "Fort Meriwether Foundry", # 6A Fort Meriwether
-    "Fort Meriwether Foundry High North": "Fort Meriwether Foundry North", # 4A Fort Meriwether
+    "Fort Meriwether Foundry High North": "Westfield Friends",  # 4A Fort Meriwether
     "Foundry High":                "Foundry",                 # 9A Lake Esperanza
     "Frontier High":               "Frontier",                # 5A Harriman
     "Port Veles Foundry High":     "Port Veles Foundry",      # 8A Port Veles
@@ -973,6 +979,7 @@ PRIVATE_SCHOOLS = {
     "Cascade Christian", "Sinkford",
     "Cardinal Newman", "Calvary Christian", "Our Lady of the Coast",
     "Cornerstone Christian", "Pope Francis",
+    "Westfield Friends",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1742,22 +1749,6 @@ RELOCATIONS = {
 # ends in "Commerce" and is untouched.
 _SUFFIX_RE = re.compile(r"\s+(High School|HS|School)$", re.IGNORECASE)
 
-# ‼️ VERBATIM — a name the owner typed out, kept exactly as typed.
-#
-# The suffix rule above is about names this importer DERIVES: nobody says "Lincoln
-# High School", so nothing should emit it. It is not a claim that no institution
-# anywhere ends in the word School — the independent-school grammar genuinely does
-# ("The Chapin School", "Banfield Day School"), and stripping it there produces
-# "The Cassius", which is not a name anybody would use either.
-#
-# So the exemption is narrow and it is a WHITELIST OF STRINGS, not a pattern: a
-# name only lands here because the owner wrote it down in full. Never add one
-# because it "sounds like it wants a suffix" — derive it bare, as always.
-VERBATIM_NAMES = frozenset({
-    "The Cassius School",
-    "Banfield Day School",
-})
-
 
 # "School of X" collapses (owner rule 2027-08, sharpened twice: "you just say
 # San Cordero Commerce or Plainfield Science", then "Jesuit Sacramento is
@@ -1818,8 +1809,6 @@ def _collapse_school_of(name: str) -> str:
 
 
 def _display_name(name: str) -> str:
-    if name in VERBATIM_NAMES:
-        return name
     name = _collapse_school_of(name)
     while True:
         stripped = _SUFFIX_RE.sub("", name).strip()

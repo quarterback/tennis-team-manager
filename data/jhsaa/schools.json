@@ -880,7 +880,7 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Banfield Day School",
+      "name": "Banfield Day",
       "city": "Bracken",
       "county": "Olivet",
       "area": "Yarrowmere",
@@ -2912,6 +2912,26 @@
       "girls_district": "Metro League",
       "boys_district": "Metro League",
       "source": "Elias Mercier"
+    },
+    {
+      "name": "Cassius",
+      "city": "Ditch Fork",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "1A",
+      "group": "2A-1A",
+      "enrollment": 70,
+      "private": true,
+      "mascot": "Knights",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Calvary Chapel Ditch Fork"
     },
     {
       "name": "Caswell",
@@ -5300,26 +5320,6 @@
       "source": "Fort Meriwether Foundry High"
     },
     {
-      "name": "Fort Meriwether Foundry North",
-      "city": "Fort Meriwether",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 623,
-      "private": false,
-      "mascot": "Red Mustangs",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
-      "source": "Fort Meriwether Foundry High North"
-    },
-    {
       "name": "Fort Tabor",
       "city": "Fort Tabor",
       "county": "Goldbank",
@@ -6184,6 +6184,26 @@
       "boys_district": "Sunbelt League"
     },
     {
+      "name": "Grayston",
+      "city": "Welsh Plains",
+      "county": "Paddock",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 420,
+      "private": false,
+      "mascot": "Blue Hurricanes",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Welsh Plains Northwest"
+    },
+    {
       "name": "Greaves",
       "city": "Greaves",
       "county": "Vance",
@@ -6433,6 +6453,26 @@
       "boys": true,
       "girls_district": "Coastal Range League",
       "boys_district": "Coastal Range League"
+    },
+    {
+      "name": "Harlan",
+      "city": "Santa Cruz del Norte",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1990,
+      "private": false,
+      "mascot": "Saltdogs",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League",
+      "source": "Harlan Cole"
     },
     {
       "name": "Harriman",
@@ -9196,26 +9236,6 @@
       "source": "Igor Chernov North"
     },
     {
-      "name": "Millrace Tech",
-      "city": "Santa Cruz del Norte",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1990,
-      "private": false,
-      "mascot": "Saltdogs",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast League",
-      "boys_district": "South Coast League",
-      "source": "Harlan Cole"
-    },
-    {
       "name": "Minnesota City",
       "city": "Minnesota City",
       "county": "Emigrant",
@@ -10002,25 +10022,6 @@
       "group": "4A",
       "enrollment": 754,
       "private": true,
-      "mascot": "Phoenix",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
-    },
-    {
-      "name": "Northside Christian North",
-      "city": "Halbrook",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 642,
-      "private": false,
       "mascot": "Phoenix",
       "colors": [
         "#4b2e83",
@@ -15058,26 +15059,6 @@
       "source": "Garrity"
     },
     {
-      "name": "The Cassius School",
-      "city": "Ditch Fork",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "1A",
-      "group": "2A-1A",
-      "enrollment": 70,
-      "private": true,
-      "mascot": "Knights",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
-      "source": "Calvary Chapel Ditch Fork"
-    },
-    {
       "name": "Theodore Roosevelt",
       "source": "Belyakov School of Design and Engineering",
       "city": "Belyakov",
@@ -15309,6 +15290,26 @@
       "girls_district": "Three Rivers League",
       "boys_district": "Three Rivers League",
       "source": "Greta Adler"
+    },
+    {
+      "name": "Toussaint",
+      "city": "Halbrook",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 642,
+      "private": false,
+      "mascot": "Phoenix",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
+      "source": "Northside Christian North"
     },
     {
       "name": "Tower Grove",
@@ -16266,25 +16267,6 @@
       "boys_district": "Quarry League"
     },
     {
-      "name": "Welsh Plains Northwest",
-      "city": "Welsh Plains",
-      "county": "Paddock",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 420,
-      "private": false,
-      "mascot": "Blue Hurricanes",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League"
-    },
-    {
       "name": "West Portal",
       "city": "Belmonte",
       "county": "Halbrook",
@@ -16342,6 +16324,26 @@
       "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
+    },
+    {
+      "name": "Westfield Friends",
+      "city": "Fort Meriwether",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 623,
+      "private": true,
+      "mascot": "Red Mustangs",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Fort Meriwether Foundry High North"
     },
     {
       "name": "Westover",
