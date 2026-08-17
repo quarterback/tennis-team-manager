@@ -45,7 +45,6 @@
     "Mabryville": "development",
     "Marlow County": "doubles",
     "Mater Dei": "blue_blood",
-    "Montelago Central": "blue_blood",
     "Netherwood": "doubles",
     "New Leiden": "doubles",
     "Newark River North": "doubles",
@@ -91,6 +90,7 @@
     "Westside Christian": "blue_blood",
     "Benton Park": "development",
     "Bridgeport": "development",
-    "Albany Park": "blue_blood"
+    "Albany Park": "blue_blood",
+    "Montelago": "blue_blood"
   }
 }

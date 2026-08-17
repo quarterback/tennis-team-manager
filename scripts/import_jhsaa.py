@@ -275,7 +275,7 @@ RENAMES = {
     "Belyakov Polytechnic Institute": "Belyakov West",
     "Belyakov School of Design and Engineering": "Theodore Roosevelt",
     "Belyakov School of Public Service": "Abraham Lincoln",
-    "Belyakov School of Science and Industry": "Belyakov Technical",
+    "Belyakov School of Science and Industry": "Belyakov Tech",
     "Belmonte Agricultural Sciences Academy": "Belmonte North",
     "Belmonte Applied Sciences Institute": "Belmonte South",
     "Belmonte Civic Leadership Academy": "Belmonte East",
@@ -441,7 +441,7 @@ RENAMES = {
     "Fort Valois School of Public Service": "Fort Valois Public Service",
     "Galina Markov": "James Monroe",
     "Harbor Gate North": "Martin Van Buren",
-    "Harrow School of Design and Engineering": "Harrow Design",
+    "Harrow School of Design and Engineering": "Harrow Arts",
     "Henrik Keller": "William Henry Harrison",
     "Housatonic HS": "Housatonic",
     "Igor Chernov": "Zachary Taylor",
@@ -590,7 +590,6 @@ RENAMES = {
     "Keldale": "Espoo",
     "Tule": "New Bergen",
     "Rimrock Valley": "New Ballard",
-    "Montelago": "Montelago Central",
     # ‼️ NAMED FOR THINGS THAT EXISTED BEFORE THE SCHOOL, NOT FOR MORE PEOPLE
     # (owner rule 2027-08). The invented-person families (Stokes, Belov, Tillman,
     # Echevarria and a dozen others) were replaced with old local INSTITUTIONS —
@@ -608,7 +607,7 @@ RENAMES = {
     "Elias Mercier": "Cascade Mutual",
     "Frances Gaines": "Empire Milling",
     "Garazi Mendizabal": "Cedar Exchange",
-    "Harlan Cole": "Millrace Technical",
+    "Harlan Cole": "Millrace Tech",
     "Harold Tillman": "Copper Belt",
     "James Gaines": "Rogue Valley Packing",
     "Janice Cole": "Fallon Works",
@@ -625,7 +624,7 @@ RENAMES = {
     "Nicolás Salcedo": "Siskiyou Electric",
     "Opal Stokes": "Dry Creek Cooperative",
     "Opal Tillman": "Granite Water & Power",
-    "Petra Jansen": "Southern Pacific Technical",
+    "Petra Jansen": "Southern Pacific Tech",
     "Rafael Escobedo": "Pioneer Electric",
     "Renata Adler": "Bracken Works",
     "Rosa Salcedo": "Quarry Workers",
@@ -677,7 +676,7 @@ RENAMES = {
     "Katya Moroz North":         "Harriman East",           # 8A Harriman
     "Thomas Jansen North":       "Lake Esperanza East",     # 5A Lake Esperanza
     "Gabriel Montoya":           "Marlow",                  # 4A Marlow County
-    "Matteo Dahl":               "Montelago",               # 7A Montelago
+    "Matteo Dahl":               "Bywater",               # 7A Montelago
     "Petra Bianchi":             "Perryville",              # 6A Perryville
     "Daniel Gaines North":       "San Borondón West",       # 7A San Borondón
     "Elena Petrov":              "San Marcos",              # 9A San Marcos County
@@ -688,20 +687,18 @@ RENAMES = {
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
+    # ‼️ AND THE RULE APPLIES TO REAL PEOPLE TOO (owner, 2026-08). A campus direction
+    # on a person's name is unrealistic whoever the person was — a school honouring
+    # Gwendolyn Brooks does not have a north campus. The person keeps the school that
+    # bears their name; the extra campus becomes a neighbourhood.
+    "Gwendolyn Brooks North":    "Lakewood",                # 7A San Cordero
+    "Rita Moreno North":         "Gentilly",                # 6A Valderra
+
     # ‼️ NEIGHBOURHOODS, NOT DIRECTIONS (owner rule 2026-08). The association already
     # has too many directional names, so a school that cannot take its town's name
     # takes a neighbourhood — which is how a city with five high schools names them
     # in life. Owner's pool: Chicago, St. Louis, Kansas City, Houston, Dallas, New
     # Orleans and the Gulf Coast.
-    "========================":  "========================", # ===== ===============
-    "========================":  "========================", # ===== ===============
-    "repeated invented SURNAM":  "ES (the tell that a pool", # gene rated them):
-    "Zamora           x2":       "Alejandro Zamora, Beatri", # z Zam ora
-    "Petrenko         x2":       "Elena Petrenko, Sergei P", # etren ko
-    "Castañeda        x2":       "Javier Castañeda, Rosa C", # astañ eda
-    "Quiñones         x2":       "Lucía Quiñones, Nicolás", # Quiño nes
-    "Browne           x2":       "Marian Browne, Winifred", # Brown e
-    "------------------------":  "------------------------", # ----- -----------------------
     "Pavel Kovalenko":           "Coles Creek",             # 7A Aldecoa
     "Elena Petrenko":            "Kingsway",                # 6A Aurelia
     "Andrés Ibarra":             "Hyde Park",               # 7A Belmonte
@@ -760,17 +757,14 @@ RENAMES = {
     "Altamonte Civic Leadership Academy":               "Altamonte Civic",
     "Belden Springs Academy of Music and Media":        "Belden Springs Arts",
     "Belyakov Agricultural Sciences Academy":           "Belyakov Agricultural",
-    "Belyakov Technical":                               "Belyakov Tech",
     "Cabo Esperanza Technical Arts Academy":            "Cabo Esperanza Tech",
     "Featherstone Institute":                           "Featherstone Tech",
     "Fellows Mill Civic Leadership Academy":            "Fellows Mill Civic",
     "Greaves Aviation and Engineering Academy":         "Greaves Aviation",
-    "Harrow Design":                                    "Harrow Arts",
     "Homecroft Manufacturing and Technology Academy":   "Homecroft Tech",
     "I-50 Technical":                                   "I-50 Tech",
     "I-50 Technical North":                             "I-50 Tech North",
     "Leidesdorff Academy of Music and Media":           "Leidesdorff Arts",
-    "Millrace Technical":                               "Millrace Tech",
     "Northrup I-50 Technical":                          "Northrup I-50 Tech",
     "Paddock Institute":                                "Paddock Tech",
     "Perryville Civic Leadership Academy":              "Perryville Civic",
@@ -779,7 +773,6 @@ RENAMES = {
     "San Borondón Civic Academy":                       "San Borondón Civic",
     "San Telmo Agricultural Sciences Academy":          "San Telmo Agricultural",
     "Selbyville Manufacturing and Technology Academy":  "Selbyville Tech",
-    "Southern Pacific Technical":                       "Southern Pacific Tech",
     "Vesper Polytechnic Institute":                     "Vesper Tech",
     "Zubieta Manufacturing and Technology Academy":     "Zubieta Tech",
 

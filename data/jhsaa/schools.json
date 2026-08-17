@@ -1848,7 +1848,7 @@
       "boys_district": "River Valley League"
     },
     {
-      "name": "Belyakov Technical",
+      "name": "Belyakov Tech",
       "source": "Belyakov School of Science and Industry",
       "city": "Belyakov",
       "county": "Vance",
@@ -2506,6 +2506,26 @@
       "boys": true,
       "girls_district": "Three Rivers League",
       "boys_district": "Three Rivers League"
+    },
+    {
+      "name": "Bywater",
+      "city": "Montelago",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1487,
+      "private": false,
+      "mascot": "Assayers",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Matteo Dahl"
     },
     {
       "name": "Cabo Esperanza Tech",
@@ -5687,6 +5707,26 @@
       "boys_district": "Quarry League"
     },
     {
+      "name": "Gentilly",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1275,
+      "private": false,
+      "mascot": "Giant Hornets",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
+      "source": "Rita Moreno North"
+    },
+    {
       "name": "George H. W. Bush",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -6191,25 +6231,6 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Gwendolyn Brooks North",
-      "city": "San Cordero",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1416,
-      "private": false,
-      "mascot": "Wildcats",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
-    },
-    {
       "name": "Haddon Siding",
       "city": "Haddon Siding",
       "county": "Barlowe",
@@ -6441,7 +6462,7 @@
       "boys_district": "Surf League"
     },
     {
-      "name": "Harrow Design",
+      "name": "Harrow Arts",
       "source": "Harrow School of Design and Engineering",
       "city": "Harrow",
       "county": "Emigrant",
@@ -8014,6 +8035,26 @@
       "source": "Marcus Price North"
     },
     {
+      "name": "Lakewood",
+      "city": "San Cordero",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1416,
+      "private": false,
+      "mascot": "Wildcats",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Premier Athletic Association",
+      "boys_district": "Premier Athletic Association",
+      "source": "Gwendolyn Brooks North"
+    },
+    {
       "name": "Lanphere",
       "city": "Lanphere",
       "county": "Kernwood",
@@ -9307,7 +9348,7 @@
       "source": "Igor Chernov North"
     },
     {
-      "name": "Millrace Technical",
+      "name": "Millrace Tech",
       "city": "Santa Cruz del Norte",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -9484,26 +9525,6 @@
       "city": "Montelago",
       "county": "Ferris",
       "area": "Gold Valley",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1487,
-      "private": false,
-      "mascot": "Assayers",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "Matteo Dahl"
-    },
-    {
-      "name": "Montelago Central",
-      "city": "Montelago",
-      "county": "Ferris",
-      "area": "Gold Valley",
       "classification": "8A",
       "group": "8A",
       "enrollment": 1814,
@@ -9516,8 +9537,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Montelago"
+      "boys_district": "Gold Valley League"
     },
     {
       "name": "Montelago South",
@@ -11830,25 +11850,6 @@
       "boys_district": "Placer League"
     },
     {
-      "name": "Rita Moreno North",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1275,
-      "private": false,
-      "mascot": "Giant Hornets",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League"
-    },
-    {
       "name": "River Market",
       "city": "Dovetail",
       "county": "Stagewater",
@@ -13530,7 +13531,7 @@
       "boys_district": "Kaleva League"
     },
     {
-      "name": "Southern Pacific Technical",
+      "name": "Southern Pacific Tech",
       "city": "Mercer City",
       "county": "Ferris",
       "area": "Gold Valley",
