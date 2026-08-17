@@ -79,7 +79,39 @@ def build_pairs() -> list[tuple[str, str]]:
     return pairs
 
 
-def preflight(prep: str) -> None:
+def build_shields(names: set[str]) -> list[tuple[str, str]]:
+    """(text, sentinel) for every school name that CONTAINS a rename source and is
+    not itself one — masked before the pass and restored after.
+
+    ‼️ THIS REPLACED AN ABORT, and the abort was right to exist. These are plain
+    text substitutions, so renaming "Cedarport" rewrites the middle of "Cedarport
+    Southeast" and quietly invents a school that never existed. The original pass
+    asserted the hazard away — no source may be a substring of another name — which
+    held while the association was small and stopped being true as prep-network grew:
+    five pairs now, and three of them are safe anyway because the LONGER name is
+    itself a rename source and `pairs` is applied longest-first, so it is consumed
+    before the shorter one is ever tried. Only the other two are exposed.
+
+    Masking makes the hazard structurally impossible instead of merely detected, and
+    it does not need a rule about which names may exist. The sentinel is NUL-wrapped
+    because these are text files: a NUL cannot occur in one, so the mask cannot
+    collide with real content."""
+    shields: list[tuple[str, str]] = []
+    exposed = sorted({n for k in RENAMES for n in names
+                      if k != n and k in n and n not in RENAMES}, key=len, reverse=True)
+    # ‼️ ONE SENTINEL PER FORM, never per school. Sharing a sentinel across a name's
+    # raw / escaped / slug forms makes the mask lossy: unmasking restores whichever
+    # form the lookup happens to reach first, so a slug occurrence came back as the
+    # raw name — `cedarport-southeast` restored to `Cedarport Southeast`, corrupting
+    # the URL it was protecting. A mask has to round-trip exactly what it replaced.
+    for i, name in enumerate(exposed):
+        for j, form in enumerate(dict.fromkeys((name, _escaped(name), slug(name)))):
+            shields.append((form, f"\x00SHIELD{i}_{j}\x00"))
+    shields.sort(key=lambda s: -len(s[0]))
+    return shields
+
+
+def preflight(prep: str) -> set[str]:
     reg = os.path.join(prep, "records", "orgs", "schools.json")
     if not os.path.exists(reg):
         sys.exit(f"not found: {reg}\nPoint --prep-network at a prep-network checkout.")
@@ -87,9 +119,6 @@ def preflight(prep: str) -> None:
         schools = json.load(fh)["schools"]
     names = {s["name"] for s in schools}
     cities = {s["city"] for s in schools}
-    bad = [(k, n) for k in RENAMES for n in names if k != n and k in n]
-    if bad:
-        sys.exit(f"ABORT: source name is a substring of another school: {bad[:5]}")
     # ‼️ A NAME THAT IS BOTH A SCHOOL AND A CITY is only dangerous when the two
     # disagree. These substitutions are plain text, so renaming the school
     # rewrites the city field too — which is CORRECT when the town was renamed to
@@ -107,6 +136,7 @@ def preflight(prep: str) -> None:
     overlap = set(RENAMES) & set(SUBSTITUTIONS)
     if overlap:
         sys.exit(f"ABORT: school is both renamed and substituted: {sorted(overlap)}")
+    return names
 
 
 def main() -> None:
@@ -118,11 +148,27 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     prep = os.path.abspath(args.prep_network)
-    preflight(prep)
+    names = preflight(prep)
     pairs = build_pairs()
+    shields = build_shields(names)
     print(f"prep-network: {prep}")
     print(f"{len(RENAMES)} renames -> {len(pairs)} text forms "
-          f"(raw + escaped + slug); {len(SUBSTITUTIONS)} substitutions left alone\n")
+          f"(raw + escaped + slug); {len(SUBSTITUTIONS)} substitutions left alone")
+    print(f"{len(shields)} shielded forms (names a source sits inside)\n")
+
+    def swap(text: str) -> tuple[str, int]:
+        """Mask the shielded names, apply the renames, restore. Returns (text, hits)
+        counted on the RENAMES only — a shield is never a change."""
+        for real, tok in shields:
+            text = text.replace(real, tok)
+        n = 0
+        for old, new in pairs:
+            if old in text:
+                n += text.count(old)
+                text = text.replace(old, new)
+        for real, tok in shields:
+            text = text.replace(tok, real)
+        return text, n
 
     edited = renamed = hits = 0
     pending: list[tuple[str, str]] = []            # (old path, new path)
@@ -134,20 +180,13 @@ def main() -> None:
                 text = io.open(p, encoding="utf-8").read()
             except (UnicodeDecodeError, OSError):
                 continue                            # binary / unreadable: leave it
-            out, n = text, 0
-            for old, new in pairs:
-                if old in out:
-                    n += out.count(old)
-                    out = out.replace(old, new)
+            out, n = swap(text)
             if n:
                 hits += n
                 edited += 1
                 if not args.dry_run:
                     io.open(p, "w", encoding="utf-8").write(out)
-            nf = f
-            for old, new in pairs:
-                if old in nf:
-                    nf = nf.replace(old, new)
+            nf, _ = swap(f)
             if nf != f:
                 renamed += 1
                 pending.append((p, os.path.join(root, nf)))

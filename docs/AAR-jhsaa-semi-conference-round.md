@@ -83,7 +83,35 @@ hole in it. When a tier list is built by exclusion (`not in taken`), the teams t
 through are invisible by construction — there is no error, no log line, and no surface
 that shows an empty tier.
 
-## ‼️ The data could not be regenerated, and finding that out took a dry run
+## ‼️ CORRECTION: the data COULD be regenerated. I checked a stale clone.
+
+Everything in the section below is wrong, and it is left standing because the mistake
+is more useful than the conclusion was.
+
+prep-network carries **1,111 schools across nine classifications, enrollment 56-2,597**
+— exactly the rebuilt records the committed data came from — in "Nine counties settled,
+and one classification ladder for the whole state". The importer reproduces the
+association from them cleanly.
+
+I concluded they did not exist. I ran `git log --all` and `git rev-list --all` against
+the local prep-network clone, found 840 schools and seven classifications at every
+revision, and wrote it down as a rule in `CLAUDE.md`. **The clone was eight commits
+behind on main, and `--all` does not see what has not been fetched.** "Not in any ref"
+was a statement about my disk, not about the repository — the same category of error as
+the suite-hermeticity bug this codebase already has an AAR about, where a test result
+was a statement about the developer's disk.
+
+What it cost: two transform scripts and an entire enrollment cascade — 48 promotions,
+a league-realignment pass, and the rivalry split that came out of it — built to work
+around a source that was one `git fetch` away. The cascade is redundant against the real
+records, which already put 9A boys at 84 against a floor of 76.
+
+**Lesson: `git fetch` before concluding anything from history, and be most suspicious of
+a conclusion that conveniently explains why you cannot do the obvious thing.** I treated
+"the generator's input no longer exists" as a discovery and designed around it, when the
+cheap check was to update the clone and run the generator.
+
+## The original (wrong) section, kept for the record
 
 `scripts/import_jhsaa.py --dry-run` emitted **637 sponsors in seven classifications with
 no 9A or 8A**, against the committed 857/772 across nine. The instinct was that this
