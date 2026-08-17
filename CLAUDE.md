@@ -979,7 +979,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - Classifications deliberately do NOT share stage dates — a 7A Super Regional and a
     3A one can fall on different days. The only invariant is that both sides of one
     dual show the same date.
-  See `docs/AAR-jhsaa-program-history-and-design-pass.md`.
+  - **‼️ EACH CLASSIFICATION HAS ITS OWN POSTSEASON LANE (owner rule 2026-08).** The
+    stage floor was GLOBAL (`floor_r = top_r + 1` over the whole gender), so 7A's
+    Regionals waited on 2A-1A's Sectionals: eight classes that never meet were
+    serialised into one queue and the 11-stage ladder cost ~8× what any class plays.
+    **The boys' postseason ran to January and the girls' to July.** A class now waits
+    only on the previous stage of its OWN class; lanes open together and advance
+    independently. The REGULAR season keeps one shared calendar (invitationals and
+    showcases cross classifications). ‼️ The **TOC is NOT a lane** — it fields every
+    class's champion, so it takes `max` over all lanes and still waits on all of them.
+    Lanes key on the classification the season was **ARCHIVED** in
+    (`_jh_school_groups`), never today's school list, since reclassification and
+    play-up both move a program; no archive → one lane → the old behaviour.
+    ‼️ **A change to how many MONTHS a season spans is a product decision, not an
+    implementation detail** — say so before committing it. This shipped unflagged and
+    the owner found it themselves: the calendar is presentation, so no test covers it,
+    and every individual card reads correctly because only the SPAN is wrong.
+  See `docs/AAR-jhsaa-program-history-and-design-pass.md` and
+  `docs/AAR-jhsaa-postseason-calendar-lanes.md`.
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
