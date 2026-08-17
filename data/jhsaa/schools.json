@@ -13109,7 +13109,7 @@
       "source": "Manuel Cordero"
     },
     {
-      "name": "Soren Ekström",
+      "name": "Soren Ekstrom",
       "city": "Novak",
       "county": "Tamarack",
       "area": "Cascade Divide",
@@ -13125,7 +13125,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League"
+      "boys_district": "Sky-Em League",
+      "source": "Soren Ekström"
     },
     {
       "name": "Sotkamo Union",
@@ -14361,7 +14362,7 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Svenja Ekström",
+      "name": "Svenja Ekstrom",
       "city": "Cortland",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -14377,7 +14378,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "source": "Svenja Ekström"
     },
     {
       "name": "Sycamore Flat",
@@ -14668,7 +14670,7 @@
       "boys_district": "River Valley League"
     },
     {
-      "name": "Thomas Ekström",
+      "name": "Thomas Ekstrom",
       "city": "Montelago",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -14684,7 +14686,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sunkist League",
-      "boys_district": "Sunkist League"
+      "boys_district": "Sunkist League",
+      "source": "Thomas Ekström"
     },
     {
       "name": "Thomas Halvorsen",

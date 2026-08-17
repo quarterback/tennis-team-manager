@@ -579,6 +579,13 @@ RENAMES = {
     "Galina Moroz": "Our Lady of the Coast",         # 2A-1A — Sebastian Cape, coastal
     "Mikel Zubieta": "Cornerstone Christian",        # 2A-1A Clear Springs
     "Thomas Moreau": "Pope Francis",                 # 2A-1A Gold Valley
+    # ‼️ NO ACCENTS (owner rule 2027-08, same as the Nordic town sweep):
+    # an American town or school would not carry one. These three keep their
+    # ALWAYS_EXTRA source spelling (it has to match prep-network) and rename
+    # only at emit.
+    "Soren Ekström": "Soren Ekstrom",
+    "Svenja Ekström": "Svenja Ekstrom",
+    "Thomas Ekström": "Thomas Ekstrom",
 }
 
 # Schools whose DISPLAY name is a religious or independent institution and which
@@ -1045,7 +1052,7 @@ MASCOTS = {
     "Oscar Micheaux": "Marble Cutters",         # Monte Blanco
     "Golden Gate": "Bridgemen",
     "Montelago": "Grebes",
-    "Thomas Ekström": "Hop Pickers",
+    "Thomas Ekstrom": "Hop Pickers",
     "Moriarty": "Jackrabbits",
     "Silver Glen": "Silversmiths",
     "St. Elian": "Abbots",
@@ -1123,7 +1130,7 @@ MASCOTS = {
     "Celia Browne": "Powderhorns",              # Fort Carden
     "Timber Crest": "Highclimbers",
     "New Leiden": "Pilgrims",
-    "Soren Ekström": "Northern Lights",
+    "Soren Ekstrom": "Northern Lights",
     "Orlova": "Firebirds",
     "Ransom City Union": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
