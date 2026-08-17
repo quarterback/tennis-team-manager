@@ -609,9 +609,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
-  State is **40 everywhere except 7A, which crowns from 24** (owner table
-  2027-08 — `jhsaa.STATE_FIELD`; 9A and 8A joined the 40s because the
-  association's deepest classes were leaving plainly good teams home). **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
+  State is **40 in EVERY classification** (`jhsaa.STATE_FIELD`; 9A and 8A were
+  raised in 2027-08 because the association's deepest classes were leaving plainly
+  good teams home, and **7A followed in 2026-08** — it was simply the class that pass
+  did not touch, never a special case). It stays a per-class TABLE because the field
+  size is an owner decision per class and the whole ladder derives from it. **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
   FRONT OF IT** (`run_state(champions=)`): the Zonal champions take a DOUBLE bye
   while seeds 9-40 play the Qualies and then the First Round, and the eight
   survivors join them in a FRESH draw — so both shapes converge at the Octofinals,
@@ -621,9 +623,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never hands out a berth again (the report: a #14 missed State while #23 got in by
   winning). Three ways in: the 8 **Zonal champions** — automatic, AND **seeds 1-8 of
   the State draw**. That is a SEEDING guarantee, not a bye rule (owner clarification
-  2027-08): a 24-field's eight byes fall to them as a consequence, but 7A's 32-field
-  is a power of two with NO byes and they are still seeded 1-8 there. Pinned for both
-  shapes by `test_zonal_champions_are_the_top_seeds_byes_or_not`. Then the
+  2027-08): a 24-field's eight byes fall to them as a consequence, but a power-of-two
+  field has NO byes and they are still seeded 1-8 there. Both shapes are pinned by
+  `test_zonal_champions_are_the_top_seeds_byes_or_not` — keep it that way even though
+  no class currently plays the byeless shape, since the table can move a class back. Then the
   **‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY IN (owner reversal
   2027-08).** It briefly existed and was retired for contradicting the rule it sat
   beside: a district champion could keep losing and still be handed a berth. A
