@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import os
 import threading
-from flask import Flask, render_template, request, abort, redirect, url_for, jsonify, Response
+from flask import (Flask, render_template, request, abort, redirect, url_for,
+                   jsonify, make_response, Response)
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -2078,10 +2079,25 @@ def create_app() -> Flask:
         JHSAA where somebody would look for them."""
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
-        return render_template("jhsaa_editor.html", active="HS Programs",
-                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
-                               playup=_jh.playup_board(), archetypes=_jh.archetype_board(),
-                               gender=gender, u=u, uni_label=label)
+        sel = (request.args.get("school") or "").strip()
+        # Recently viewed, in a cookie — no schema for a convenience, and it is per
+        # browser rather than per save, which is what "where was I" actually means.
+        recent = [x for x in (request.cookies.get("jh_recent") or "").split("|") if x]
+        if sel:
+            recent = [sel] + [x for x in recent if x != sel]
+        recent = recent[:6]
+        resp = make_response(render_template(
+            "jhsaa_editor.html", active="HS Programs",
+            view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
+            ed=_jh.program_editor(sel, request.args.get("board", ""),
+                                  request.args.get("cat", ""),
+                                  bool(request.args.get("all")),
+                                  [x for x in recent if x != sel]),
+            gender=gender, u=u, uni_label=label))
+        if sel:
+            resp.set_cookie("jh_recent", "|".join(recent), max_age=60 * 60 * 24 * 90,
+                            samesite="Lax")
+        return resp
 
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
