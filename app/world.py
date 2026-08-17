@@ -3854,6 +3854,25 @@ def _jh_showcase_days(slot: dict, opening: _dt.date) -> dict[tuple, _dt.date]:
     return out
 
 
+
+def _jh_school_groups(world_id: int, year: int, gender: str) -> dict[str, str]:
+    """{school: classification} for one archived gender-season, read off the ARCHIVE
+    rather than off today's school list.
+
+    A program's classification moves — reclassification, and a play-up changes which
+    championship it entered — so the live map would put an old season's duals in the
+    wrong lane. The standings are what that season was actually played in."""
+    arc = get_jhsaa(world_id, year, gender) or {}
+    out: dict[str, str] = {}
+    for group, dists in (arc.get("standings") or {}).items():
+        for teams in (dists or {}).values():
+            for row in teams or ():
+                nm = row.get("school") if isinstance(row, dict) else None
+                if nm:
+                    out[nm] = group
+    return out
+
+
 def jhsaa_match_dates(world_id: int, year: int, gender: str,
                       season_year: int | None) -> dict[tuple, _dt.date]:
     """{match key -> date} for one archived gender-season. One date per dual, so
@@ -3900,17 +3919,57 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     # play order instead lets the constraint chain through opponents — A waits on
     # B, B on C — and a ~26-dual card sprawled over three months. A team's round
     # numbers are strictly increasing, so its card still reads in order.
+    # ‼️ EACH CLASSIFICATION GETS ITS OWN POSTSEASON LANE (owner rule 2026-08).
+    # The stage floor used to be GLOBAL: `floor_r = top_r + 1` over the whole gender,
+    # so 7A's Regionals could not begin until 2A-1A's Sectionals had finished. Eight
+    # classifications that never play each other were serialised into one queue, and
+    # the eleven-stage ladder therefore cost eight times what any one class actually
+    # plays — which is what pushed the boys' postseason into January and the girls'
+    # into July.
+    #
+    # A class's stage now waits only on the PREVIOUS STAGE OF ITS OWN CLASS. Every
+    # lane opens at the same postseason window and advances independently, so the
+    # postseason lasts as long as the longest single class's ladder rather than the
+    # sum of all eight.
+    #
+    # PRESENTATION ONLY. Match order, qualification and results are untouched: this
+    # function reads the finished archive and decides nothing but what day a dual is
+    # printed on.
+    #
+    # The REGULAR season stays on one shared calendar — invitationals and showcases
+    # cross classifications, so those duals genuinely do share a queue.
+    #
+    # ‼️ THE TOC IS NOT A LANE. It fields the champions of every classification, so it
+    # is the one postseason event with a real cross-class dependency: it waits on all
+    # of them. Giving it a lane of its own (keyed on neither school's group) would let
+    # it be dated before a state final it depends on.
+    group_of = _jh_school_groups(world_id, year, gender)
     slot: dict[tuple, tuple] = {}
     nxt: dict[str, int] = {}
-    cur_rank, floor_r, top_r = 0, 0, -1
+    reg_floor, reg_top = 0, -1
+    lane_rank: dict[str, int] = {}
+    lane_floor: dict[str, int] = {}
+    lane_top: dict[str, int] = {}
+    post_base: int | None = None
     for key in order:
         phase, _dist, a_s, b_s = key
         r_rank = rank.get(phase, 0)
-        if r_rank != cur_rank:            # a stage opens after the previous one closes
-            floor_r, cur_rank = top_r + 1, r_rank
-        r = max(floor_r, nxt.get(a_s, 0), nxt.get(b_s, 0))
+        if not r_rank:                                     # regular season, one queue
+            r = max(reg_floor, nxt.get(a_s, 0), nxt.get(b_s, 0))
+            nxt[a_s] = nxt[b_s] = r + 1
+            reg_top = max(reg_top, r)
+            slot[key] = (0, r)
+            continue
+        if post_base is None:                              # every lane opens together
+            post_base = reg_top + 1
+        lane = "" if phase == "toc" else (group_of.get(a_s) or group_of.get(b_s) or "")
+        if lane_rank.get(lane) != r_rank:                  # this LANE's next stage
+            base = (max(lane_top.values(), default=post_base - 1) if phase == "toc"
+                    else lane_top.get(lane, post_base - 1))
+            lane_floor[lane], lane_rank[lane] = base + 1, r_rank
+        r = max(lane_floor[lane], post_base, nxt.get(a_s, 0), nxt.get(b_s, 0))
         nxt[a_s] = nxt[b_s] = r + 1
-        top_r = max(top_r, r)
+        lane_top[lane] = max(lane_top.get(lane, -1), r)
         slot[key] = (r_rank, r)
 
     reg_rounds = max((r for (rk, r) in slot.values() if rk == 0), default=-1) + 1
