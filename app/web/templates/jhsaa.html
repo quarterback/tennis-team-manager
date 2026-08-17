@@ -169,7 +169,7 @@
 
     <div class="bl-panel jh-mod">
       <div class="bl-panel-head"><span class="bl-panel-title">State Champions</span>
-        <span class="bl-panel-meta">every class · {{ view.season_year }}</span></div>
+        <span class="bl-panel-meta">{{ view.season_year }}</span></div>
       <div class="bl-panel-body">
         {% for gp, ch in view.champions.items() %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=gp, year=view.year) }}">

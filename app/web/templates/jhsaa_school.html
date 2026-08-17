@@ -288,8 +288,7 @@
 {% set honor_years = view.history.seasons | selectattr('honoured') | list %}
 {% if honor_years %}
 <div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Honours</span>
-    <span class="bl-panel-meta">team and individual, by season</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Honours</span></div>
   <div class="bl-panel-body" style="padding:0">
     {% for s in honor_years %}
     {% if s.champion %}
