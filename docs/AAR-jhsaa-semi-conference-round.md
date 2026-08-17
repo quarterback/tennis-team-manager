@@ -269,13 +269,49 @@ to the data that happened to be there.
   full-size numbers.
 *(Play-up was finished in the same session — see below.)*
 
+## Rivalries — the thing the cascade broke that no number could show
+
+Condotti Vanguard Academy (1,666) and Romero-Finniski (1,526) are rivals. Both in
+Ashbury, both 7A, both in Metro League for as long as the association has existed.
+The enrollment cascade's 7A cut line was 1,638, so it promoted one and not the other,
+and every individual number in that decision was correct.
+
+It is unrepairable after the fact, which is why it needs a rule rather than a fix: a
+district is `(classification, name)`, so once the two are in different classes there
+is no league either could join to be with the other. `import_jhsaa.RIVALRIES` now
+outranks the cut line, and `jhsaa_reclassify.check_rivals` **asserts** the invariant
+rather than repairing it — a drifted pair means the mechanism that moved them is
+broken, and quietly pulling them back together hides that.
+
+Two implementation traps, and the test found the second:
+
+- **The whole class must be decided BEFORE any of it moves.** Checked row by row, the
+  guard splits the pair the *other* way when both members qualify: the first is
+  promoted, and the second then reads its already-moved rival as no longer being in
+  the source class and stays behind. One rule, two opposite failures.
+- **Sorting rivals adjacently is not enough for the league draw.** The block boundary
+  can still land exactly between them, which is what happened — 7A grew to 97, one
+  past its eight leagues, triggering a full redraw that separated two schools nothing
+  had moved. `draw_districts` now walks the cut forward past any pair it would split.
+
+**Lesson:** an enrollment cut line is a statement about size, and it was being asked
+to decide something that is not about size at all. Where a rule has to survive a
+mechanism it knows nothing about, assert it at the end and fail — the check is what
+found both bugs.
+
 ## Playing up
 
-14 blue-bloods compete a classification above their enrollment class, drawn from the
-archetype seed list (`scripts/jhsaa_playup.py`, weighted to the top of each class,
-9A excluded because there is nothing above it) with `overrides.set_jhsaa_playup`
-layered on top exactly as archetypes are — "yes" promotes, "no" holds, clearing
-reverts to the file.
+13 blue-bloods compete a classification above their enrollment class, drawn from the
+archetype seed list (`scripts/jhsaa_playup.py`, weighted to the top of each class)
+with `overrides.set_jhsaa_playup` layered on top exactly as archetypes are — "yes"
+promotes, "no" holds, clearing reverts to the file.
+
+**‼️ SMALL SCHOOLS ONLY**, `PLAY_UP_MAX_GROUP` 4A and below (owner correction): "play
+up is for schools at the 4A or under level to play with teams at their competitive
+level, not already big schools". The first pass drew from every class and shipped two
+8A blue-bloods moving to 9A, which is not playing up — it is a big school in a
+slightly bigger class. 9A's exclusion falls out of the same rule instead of needing
+its own.
 
 **It moves `group` and never `classification`**, and that is the entire feature.
 `group` is the championship you enter; `classification` is how many students you have,

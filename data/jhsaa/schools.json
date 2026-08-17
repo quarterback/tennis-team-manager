@@ -675,7 +675,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Metro League",
-      "boys_district": ""
+      "boys_district": "Metro League"
     },
     {
       "name": "Antelope Butte",
@@ -981,7 +981,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Metro League",
-      "boys_district": ""
+      "boys_district": "Metro League"
     },
     {
       "name": "Ashbury Heights",
@@ -1132,8 +1132,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "Bancroft",
@@ -1421,8 +1421,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Pioneer League",
-      "boys_district": ""
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Beatriz Zamora",
@@ -1516,8 +1516,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Bellarmine Prep",
@@ -2292,7 +2292,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Premier Athletic Association",
-      "boys_district": ""
+      "boys_district": "Premier Athletic Association"
     },
     {
       "name": "Brackwood Pass",
@@ -2349,8 +2349,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Brookmont",
@@ -2717,8 +2717,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Carden City West Bench",
@@ -3087,8 +3087,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "play_up": true
+      "boys_district": "Metro League"
     },
     {
       "name": "Cherry Hill East",
@@ -3327,8 +3326,8 @@
       "city": "Ashbury",
       "county": "Marlow",
       "area": "Ashbury Metro",
-      "classification": "8A",
-      "group": "8A",
+      "classification": "7A",
+      "group": "7A",
       "enrollment": 1666,
       "private": true,
       "mascot": "Bogongs",
@@ -3338,9 +3337,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
-      "play_up": true
+      "girls_district": "Metro League",
+      "boys_district": "Metro League"
     },
     {
       "name": "Cook City",
@@ -3358,8 +3356,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League",
       "source": "Ewart City"
     },
     {
@@ -3783,7 +3781,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Coastal Range League",
-      "boys_district": ""
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "Daniel Gaines North",
@@ -3916,8 +3914,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Dolores Huerta",
@@ -4168,7 +4166,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Mission League",
-      "boys_district": "Mission League"
+      "boys_district": "Mission League",
+      "play_up": true
     },
     {
       "name": "Echevarria Central",
@@ -5768,8 +5767,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "Greta Bellini",
@@ -5866,8 +5865,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "play_up": true
+      "boys_district": "Gold Valley League"
     },
     {
       "name": "Gwendolyn Brooks North",
@@ -5962,8 +5960,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League"
     },
     {
       "name": "Halemere",
@@ -6114,8 +6112,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Harriman Heights",
@@ -6573,8 +6571,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Homestead North",
@@ -6592,8 +6590,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Housatonic",
@@ -6765,8 +6763,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League"
     },
     {
       "name": "Irina Kovalenko North",
@@ -7017,7 +7015,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Three Rivers League",
-      "boys_district": ""
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "James Monroe",
@@ -7556,8 +7554,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "Katya Moroz North",
@@ -7728,8 +7726,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League"
     },
     {
       "name": "Kilbride Hall",
@@ -7862,8 +7860,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Lanphere",
@@ -9181,8 +9179,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League",
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
       "source": "Igor Chernov North"
     },
     {
@@ -9317,7 +9315,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Premier Athletic Association",
-      "boys_district": ""
+      "boys_district": "Premier Athletic Association"
     },
     {
       "name": "Monte Blanco",
@@ -9587,7 +9585,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Valle Vista League",
-      "boys_district": ""
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Navrang",
@@ -9815,8 +9813,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Nicolás Salcedo",
@@ -10180,8 +10178,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Olive Reach",
@@ -10256,8 +10254,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Opal Stokes",
@@ -10313,8 +10311,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Orchard Gate North",
@@ -10813,7 +10811,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "play_up": true
     },
     {
       "name": "Pomar",
@@ -10910,8 +10909,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League"
     },
     {
       "name": "Port Meridian West",
@@ -10987,8 +10986,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League"
     },
     {
       "name": "Port Veles Episcopal",
@@ -11430,8 +11429,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League"
     },
     {
       "name": "Ransom Pass",
@@ -11736,8 +11735,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "play_up": true
+      "boys_district": "Metro League"
     },
     {
       "name": "Ronald Reagan",
@@ -11831,8 +11829,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "Ruby Mercer",
@@ -12084,8 +12082,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "play_up": true
+      "boys_district": "Narpes Interscholastic League"
     },
     {
       "name": "Salmon Bay",
@@ -12219,7 +12216,7 @@
       "girls": true,
       "boys": false,
       "girls_district": "Coastal Range League",
-      "boys_district": ""
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "San Borondón Country Day",
@@ -12317,7 +12314,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "boys_district": "Valle Vista League",
+      "play_up": true
     },
     {
       "name": "San Cordero East",
@@ -12547,8 +12545,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League"
     },
     {
       "name": "Santa Laura",
@@ -12931,8 +12929,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League",
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League",
       "source": "Stone Springs"
     },
     {
@@ -13030,8 +13028,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Sluice Landing",
@@ -13223,8 +13221,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "St. Agnes Preparatory",
@@ -13262,7 +13260,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "boys_district": "Three Rivers League",
+      "play_up": true
     },
     {
       "name": "St. Brigid",
@@ -13571,7 +13570,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Surf League",
-      "boys_district": "Surf League"
+      "boys_district": "Surf League",
+      "play_up": true
     },
     {
       "name": "St. Gabriel Academy",
@@ -13609,8 +13609,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Placer League",
-      "boys_district": "Placer League",
-      "play_up": true
+      "boys_district": "Placer League"
     },
     {
       "name": "St. Genevieve",
@@ -13706,8 +13705,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "St. Ignatius",
@@ -13746,7 +13745,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Mission League",
-      "boys_district": "Mission League"
+      "boys_district": "Mission League",
+      "play_up": true
     },
     {
       "name": "St. Jerome Academy",
@@ -13859,8 +13859,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Pioneer League",
-      "boys_district": ""
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "St. Nicholas College Prep",
@@ -13898,8 +13898,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "play_up": true
+      "boys_district": "Metro League"
     },
     {
       "name": "St. Olga College Prep",
@@ -14129,8 +14128,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League"
     },
     {
       "name": "Starlake",
@@ -14626,8 +14625,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "Thelma Stokes",
@@ -14876,7 +14875,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gateway League",
-      "boys_district": "Gateway League"
+      "boys_district": "Gateway League",
+      "play_up": true
     },
     {
       "name": "Timberline North",
@@ -14971,8 +14971,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League",
-      "play_up": true
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "Treasure Valley North",
@@ -15280,7 +15279,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League"
+      "boys_district": "Sky-Em League",
+      "play_up": true
     },
     {
       "name": "Valley Forge",
@@ -15514,8 +15514,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League",
+      "girls_district": "Tidelands League",
+      "boys_district": "Tidelands League",
       "source": "Walter Hart North"
     },
     {
@@ -15573,8 +15573,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League"
     },
     {
       "name": "Vesper Polytechnic Institute",
@@ -15611,8 +15611,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "Vespertine Heights",
@@ -15707,8 +15707,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": ""
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Viktor Kareva",
@@ -16033,8 +16033,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Metro League",
-      "boys_district": "Metro League"
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League"
     },
     {
       "name": "William Henry Harrison",
@@ -16112,8 +16112,7 @@
       "girls": true,
       "boys": true,
       "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
-      "play_up": true
+      "boys_district": "Premier Athletic Association"
     },
     {
       "name": "Winifred Booker North",
@@ -16207,8 +16206,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League"
     },
     {
       "name": "Wolf Gap International",
@@ -16458,8 +16457,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Pioneer League",
-      "boys_district": "Pioneer League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Zubieta Manufacturing and Technology Academy",

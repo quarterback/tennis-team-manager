@@ -1192,11 +1192,33 @@ was a school marker, shipped "Baptist HS High School".
   numbers of their own**: every table comes from `import_jhsaa`, which stays the one
   authority, so they become no-ops the day those records come back. Both are
   idempotent and both have `--dry-run`; prove it before committing.
+- **‼️ RIVALRIES — pairs that must NEVER be separated (owner rule 2027-08,
+  `import_jhsaa.RIVALRIES`).** A rivalry is a fact about two programs, not about their
+  enrollments, so it outranks reclassification, league assignment and playing up alike.
+  It NEEDS a rule because a district is `(classification, name)`: once two rivals sit
+  in different classes there is no league either could join to be with the other, so
+  the split is unrepairable. Condotti Vanguard Academy (1,666) and Romero-Finniski
+  (1,526) — both Ashbury, both always Metro League — were split by a 1,638 cut line
+  with every individual number correct.
+  - **A pair is promoted only if EVERY member clears the cut**, and **the whole class
+    is decided BEFORE any of it moves**: checked row by row it splits the pair the
+    OTHER way when both qualify, because the first is promoted and the second then
+    reads its already-moved rival as no longer being in the source class.
+  - **`draw_districts` sorts a pair adjacently AND walks the block boundary past it.**
+    Adjacency alone is not enough — the boundary landing exactly between them is what
+    split those two on a 7A redraw, with nothing having moved either school.
+  - `jhsaa_reclassify.check_rivals` ASSERTS the invariant rather than repairing it: a
+    drifted pair means the mechanism that moved them is broken, and quietly pulling
+    them back together hides that.
 - **‼️ PLAYING UP — a school competes ONE class above its enrollment class (owner rule
-  2027-08).** 14 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
-  list (9A excluded — nothing above it) with `overrides.set_jhsaa_playup` /
-  `/editor/jhsaa-playup` layered on top, the archetype pattern exactly ("yes" promotes,
-  "no" holds, clearing reverts to the file).
+  2027-08).** 13 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
+  list with `overrides.set_jhsaa_playup` / `/editor/jhsaa-playup` layered on top, the
+  archetype pattern exactly ("yes" promotes, "no" holds, clearing reverts to the file).
+  - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below** (owner correction
+    2027-08): "play up is for schools at the 4A or under level to play with teams at
+    their competitive level, not already big schools". An 8A blue-blood moving to 9A is
+    not playing up, it is a big school in a slightly bigger class — and the first pass
+    shipped exactly that. 9A's exclusion falls out of the same rule.
   - **‼️ IT MOVES `group`, NEVER `classification`.** `group` is the championship you
     enter — leagues, the ladder, State, All-State; `classification` is how many students
     you have, and `_TALENT` reads THAT (`School.talent_group`). Keyed on `group`, a 5A

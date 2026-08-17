@@ -75,9 +75,16 @@ def test_a_played_up_school_competes_above_its_own_class(clean):
         assert s.group != jh.champ_group(s.classification), s.name
 
 
-def test_nobody_plays_up_from_the_top_class(clean):
-    """There is nothing above 9A, so a 9A school must never be flagged — the
-    alternative is a silent no-op that reads as a play-up on the school page."""
+def test_only_small_schools_play_up(clean):
+    """‼️ PLAYING UP IS A SMALL-SCHOOL THING (owner correction 2027-08): "play up is
+    for schools at the 4A or under level to play with teams at their competitive
+    level, not already big schools". An 8A blue-blood moving to 9A is not playing up,
+    it is a big school in a slightly bigger class — and the first pass shipped exactly
+    that, which is why the floor is asserted rather than left to the seed script.
+    9A's exclusion falls out of the same rule rather than needing its own."""
+    floor = jh.GROUPS.index("4A")
+    for s in _ups():
+        assert jh.GROUPS.index(jh.champ_group(s.classification)) >= floor, s.name
     assert not [s for s in _ups() if s.classification == jh.GROUPS[0]]
 
 

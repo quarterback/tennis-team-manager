@@ -50,10 +50,15 @@ def pick(rows: list[dict], m) -> list[dict]:
     """The blue-bloods that play up, weighted toward the top of their own class."""
     with open(_ARCH, encoding="utf-8") as fh:
         arch = json.load(fh)["programs"]
-    # 9A has nothing above it; a school must sponsor at least one gender to compete.
+    # ‼️ SMALL SCHOOLS ONLY (owner correction 2027-08). "Play up is for schools at the
+    # 4A or under level to play with teams at their competitive level, not already big
+    # schools." An 8A blue-blood moving to 9A is not playing up — it is a big school in
+    # a slightly bigger class — and the first pass shipped exactly that. Eligibility
+    # starts at `PLAY_UP_MAX_GROUP` and runs down; 9A's exclusion falls out of it.
+    floor = m.GROUPS.index(m.PLAY_UP_MAX_GROUP)
     pool = [r for r in rows
             if arch.get(r["name"]) == "blue_blood"
-            and r["group"] != m.GROUPS[0]
+            and m.GROUPS.index(r["group"]) >= floor
             and (r["girls"] or r["boys"])]
     # Rank within the class by enrollment — a school already near the cut line is the
     # one that plausibly plays up — then draw without replacement on that weight.

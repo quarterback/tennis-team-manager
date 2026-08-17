@@ -692,8 +692,49 @@ _PROMOTE_TO = {"8A": "9A", "7A": "8A", "6A": "7A", "5A": "6A"}
 #
 # Weighted to the TOP of each class by enrollment — a school already near the cut
 # line is the one that plausibly plays up — and seeded, so the list is reproducible.
+#
+# ‼️ PLAYING UP IS A SMALL-SCHOOL THING (owner correction 2027-08). "Play up is for
+# schools at the 4A or under level to play with teams at their competitive level, not
+# already big schools" — an 8A blue-blood moving to 9A is not playing up, it is just a
+# big school in a slightly bigger class, and the first pass shipped exactly that
+# (Condotti Vanguard Academy 8A -> 9A, Gwendolyn Brooks 8A -> 9A). The point is a small
+# program good enough that its own classification cannot give it a game.
+PLAY_UP_MAX_GROUP = "4A"        # eligible at this championship group and below
 PLAY_UP_COUNT = 14
 PLAY_UP_SEED = 90210
+
+# ‼️ RIVALRIES — schools that must NEVER be separated (owner rule 2027-08). A rivalry
+# is a fact about two programs, not about their enrollments, so it outranks every
+# mechanism here that would move one of them: reclassification, league assignment and
+# playing up all have to keep the pair together or leave it alone.
+#
+# This is not hypothetical. The 2027-08 enrollment cascade promoted Condotti Vanguard
+# Academy (1,666) past a 1,638 cut line while Romero-Finniski (1,526) stayed put, so
+# two Ashbury schools that had shared Metro League for as long as the association has
+# existed ended up in different CLASSIFICATIONS — and a district is (classification,
+# name), so nothing short of another reclassification could ever put them back in the
+# same league. Every number was correct and the result was wrong.
+#
+# Enforcement: a pair is promoted only if EVERY member clears the cut (otherwise none
+# of them move), and afterwards the whole pair takes one league.
+RIVALRIES = [
+    ("Condotti Vanguard Academy", "Romero-Finniski"),
+]
+
+
+def rival_group(name: str) -> tuple[str, ...] | None:
+    """The rivalry `name` belongs to, or None."""
+    for pair in RIVALRIES:
+        if name in pair:
+            return pair
+    return None
+
+
+def _splits_rivalry(pool: list[dict], at: int) -> bool:
+    """True if cutting `pool` at index `at` would put two rivals either side. Only
+    meaningful once the pool is sorted so rivals sit adjacent (see `draw_districts`)."""
+    before = rival_group(pool[at - 1]["name"])
+    return bool(before) and rival_group(pool[at]["name"]) is before
 
 
 def reclassify(schools: list[dict]) -> int:
@@ -1505,7 +1546,26 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     # `canon`, not the display name — same reason as `sponsors`: the blocks are cut
     # off this ORDER, so sorting on a name the owner can rename moves schools
     # between districts every time one is renamed.
-    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], canon(s["name"])))
+    # ‼️ RIVALS SORT AS ONE SCHOOL. A rivalry has to survive a redraw, and the ordering
+    # is what the blocks are cut from, so the pair takes its representative's place in
+    # the sort and only tie-breaks among itself. Without this the two are ordered by
+    # their own names — Condotti Vanguard Academy and Romero-Finniski are both in
+    # Ashbury and sorted a whole alphabet apart, so a 7A redraw put them in different
+    # leagues even though nothing had moved them.
+    def order(s):
+        pair = rival_group(s["name"])
+        lead = by_pair.get(pair) if pair else None
+        head = lead or s
+        return (head["area"], county(head), head["city"], canon(head["name"]),
+                canon(s["name"]))
+
+    by_pair = {}
+    for pair in RIVALRIES:
+        members = sorted((s for s in pool if s["name"] in pair),
+                         key=lambda s: canon(s["name"]))
+        if members:
+            by_pair[pair] = members[0]
+    pool = sorted(pool, key=order)
     n = len(pool)
     if not n:
         return {}
@@ -1521,8 +1581,16 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     bounds, at = [], 0
     for i in range(k):
         step = base + (1 if i < big else 0)
-        bounds.append((at, at + step))
-        at += step
+        end = min(n, at + step)
+        # ‼️ AND A CUT NEVER FALLS INSIDE A RIVALRY. Sorting the pair adjacently is
+        # not enough on its own — the boundary can still land between them, which is
+        # precisely what happened — so the cut walks forward past any pair it would
+        # split. That moves at most one school per rivalry into the earlier block,
+        # keeping sizes within one of each other rather than exactly equal.
+        while 0 < end < n and _splits_rivalry(pool, end):
+            end += 1
+        bounds.append((at, end))
+        at = end
     # ‼️ THE NAME COMES FROM THE LEAGUE BANK, NOT FROM THIS BLOCK'S GEOGRAPHY
     # (owner rule 2027-08). Deriving it from the map is what produced eight
     # variations of "<area> District", and worse, an area-then-county cascade

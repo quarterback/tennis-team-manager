@@ -62,12 +62,50 @@ def promote(rows: list[dict], m) -> list[tuple[dict, str, str]]:
     moved = []
     for src in ("8A", "7A", "6A", "5A"):
         dst = m._PROMOTE_TO[src]
+        # ‼️ DECIDE THE WHOLE CLASS BEFORE MOVING ANY OF IT. A rivalry outranks the cut
+        # line (owner rule 2027-08): a pair moves only if EVERY member clears it,
+        # otherwise none of them do, because promoting one across a class boundary is
+        # unrepairable — a district is (classification, name), so there is no league
+        # both could then join. That check has to run against the state BEFORE this
+        # pass mutates anything. Testing it row by row splits the pair the OTHER way
+        # when both members qualify: the first is promoted, and the second then reads
+        # its already-moved rival as no longer being in `src` and stays behind.
+        #
+        # The original report was the first half of this: Condotti Vanguard Academy
+        # (1,666) cleared a 1,638 line, Romero-Finniski (1,526) did not, and two
+        # Ashbury schools that had always shared Metro League ended a class apart with
+        # every individual number correct.
+        eligible = {r["name"] for r in rows
+                    if r["classification"] == src
+                    and r["enrollment"] >= m.PROMOTE_ABOVE[src]}
+        here = {r["name"] for r in rows if r["classification"] == src}
+        for pair in m.RIVALRIES:
+            members = [n for n in pair if n in here or n in eligible]
+            if members and not all(n in eligible for n in members):
+                eligible -= set(members)
         for r in rows:
-            if r["classification"] == src and r["enrollment"] >= m.PROMOTE_ABOVE[src]:
-                moved.append((r, src, dst))
-                r["classification"] = dst
-                r["group"] = m.champ_group(dst)
+            if r["name"] not in eligible or r["classification"] != src:
+                continue
+            moved.append((r, src, dst))
+            r["classification"] = dst
+            r["group"] = m.champ_group(dst)
     return moved
+
+
+def check_rivals(rows: list[dict], m) -> None:
+    """Rivals share a classification AND a league, in both genders. ASSERTED rather
+    than repaired: if a pair has drifted apart, the mechanism that moved them is what
+    needs fixing, and quietly pulling them back together would hide it."""
+    by_name = {r["name"]: r for r in rows}
+    for pair in m.RIVALRIES:
+        live = [by_name[n] for n in pair if n in by_name]
+        if len(live) < 2:
+            continue
+        groups = {r["group"] for r in live}
+        assert len(groups) == 1, (pair, "split across classifications", groups)
+        for key in ("girls_district", "boys_district"):
+            leagues = {r[key] for r in live if r[key]}
+            assert len(leagues) <= 1, (pair, key, leagues)
 
 
 def rehome(rows: list[dict], moved: list[tuple[dict, str, str]], m) -> None:
@@ -184,6 +222,7 @@ def main() -> None:
         print(f"  {r['name'][:30]:30} {src} -> {dst}  {r['enrollment']:5}  "
               f"{r['girls_district']}")
     print(f"{len(moved)} promoted\n")
+    check_rivals(rows, m)
     report(rows)
 
     if args.dry_run:
