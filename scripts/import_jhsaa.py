@@ -307,7 +307,6 @@ RENAMES = {
     "Puerto de los Reyes School of Commerce": "Puerto de los Reyes South",
     "Llerena Civic Leadership Academy": "Llerena North",
     "Llerena School of Science and Industry": "Llerena South",
-    "Javier Villalba": "Alonso Villalba",
     "Serrano Applied Sciences Institute": "Serrano North",
     "Serrano Depot High": "Serrano South",
     "Halbrook Technical": "Halbrook East",
@@ -686,6 +685,102 @@ RENAMES = {
     "Carmen Cordero":            "Vance",                   # 9A Vance County
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
+
+    # ‼️ THE INVENTED PEOPLE THEMSELVES (owner, 2026-08). The campus sweeps kept
+    # finding "<fake person> North", renaming the CAMPUS, and leaving the person's own
+    # school standing two rows away. These are the base schools.
+    #
+    # ‼️ FOUND BY LISTING, NOT BY A TEST. Three passes of pool-matching under-counted,
+    # because these names come from vocabularies the generator's own files do not hold
+    # — Basque (Etxeberria, Elorriaga, Mendizabal, Aramburu), Russian (Voronin, Karev,
+    # Melnick), Spanish (Villaseñor, Villalba, Ordoñez). What worked was printing every
+    # two-token name that is not a known place and reading it.
+    #
+    # ‼️ REAL PEOPLE STAY, and they are most of what is left: every president and
+    # justice, plus Bayard Rustin, Paul Robeson, Shirley Chisholm, Romare Bearden,
+    # Yuri Kochiyama, Katherine Johnson, Mae Jemison, Benjamin Banneker, José Martí,
+    # Dolores Huerta, Ella Baker, Gwendolyn Brooks, Octavia Butler, James Baldwin,
+    # John Lewis, Rita Moreno, Alben Barkley, Walter Mondale. Do not sweep these.
+    #
+    # Names are CALIFORNIAN — neighbourhoods, streets and water — which is the register
+    # Jefferson's own coast already reads in. Seaside Heights, Cape Jean and Charles Harbor
+    # are owner picks (2026-08).
+    "Adela Robles":                "Seaside Heights",         # 4A San Borondón
+    "Adela Villaseñor":            "Cape Jean",               # 7A Caswell
+    "Ainhoa Mendizabal":           "Charles Harbor",               # 6A Simmons
+    # ‼️ TWO KEYS, ONE SCHOOL. `Javier Villalba` is the prep-network identity and
+    # `Alonso Villalba` is what the PREVIOUS version of this table renamed it to — a
+    # checkout already migrated by the old script carries that name, so without the
+    # alias rerunning the documented migration would leave it stranded under a name
+    # nothing recognises. Only one of the two ever exists in a given dataset, so they
+    # cannot both emit and collide.
+    "Javier Villalba":             "Los Feliz",               # 9A Llerena
+    "Alonso Villalba":             "Los Feliz",               # migration alias
+    "Amaia Etxeberria":            "Boyle Heights",           # 8A Carden City
+    "Amalia Escobedo":             "Eagle Rock",              # 7A Belyakov
+    "Anya Antonov":                "Mar Vista",               # 9A San Cordero
+    "Anya Orlov":                  "Playa Vista",             # 6A Belyakov
+    "Esteban Téllez":              "Sawtelle",                # 6A Aldecoa
+    "Garazi Aramburu":             "Ocean Park",              # 2A Lieksa
+    "Greta Adler":                 "Topanga",                 # 7A Valderra
+    "Greta Bellini":               "Glassell Park",           # 3A Silver Glen
+    "Isabel Lucero":               "El Sereno",               # 7A Bahía Leal
+    "Itziar Elorriaga":            "Elysian Valley",          # 8A Altamonte
+    "Itziar Lertxundi":            "Noe Valley",              # 6A Cañada Grande
+    "Lars Bellini":                "Bernal Heights",          # 9A Montelago
+    "Leire Garmendia":             "Potrero Hill",            # 9A Belmonte
+    "Lena Talltree":               "Dogpatch",                # 8A Ashbury
+    "Lev Kareva":                  "Hayes Valley",            # 9A Orellana
+    "Lev Voronin":                 "Cole Valley",             # 9A Fort Valois
+    "Lucía Villaseñor":            "Glen Park",               # 6A Emerson
+    "Maksim Karev":                "Excelsior",               # 4A Los Maderos
+    "Mikel Garmendia":             "Portola",                 # 5A Rostova Junction
+    "Mila Melnick":                "Sea Cliff",               # 5A Orlova
+    "Miren Elorriaga":             "West Portal",             # 9A Belmonte
+    "Nicolás Ordoñez":             "Rockridge",               # 9A Belmonte
+    "Nicolás Villalba":            "Temescal",                # 8A Starlight
+    "Sofía Aranda":                "Montclair",               # 8A Puerto de los Reyes
+    "Vasquez":                     "Fruitvale",               # 5A Halbrook
+    "Viktor Kareva":               "Adams Point",             # 5A Llerena
+    "Walter Langston":             "Maxwell Park",            # 7A San Telmo
+
+    # ‼️ THE REST OF THE PERSON-CAMPUS SWEEP (owner, 2026-08). The first pass used a
+    # pool test — both tokens had to appear in the generator's own name files — and
+    # anything drawn from anywhere else walked straight past it: Anya Belov North,
+    # Adela Robles North, Jon Etxeberria North and ten more. The reliable test is the
+    # SHAPE, not the vocabulary: a name ending in a direction, read by eye.
+    #
+    # Real people included, same rule: Thurgood Marshall, José Martí, Woodrow Wilson,
+    # James Madison, Benjamin Banneker and Harry S. Truman each keep the school that
+    # bears their name and lose the second campus.
+    #
+    # And the suffix rule, which had strays of its own: NO "High" and no "High School",
+    # ever — plus "Ashbury Central North", which carried two directions at once.
+    "Adela Robles North":          "Oak Cliff",               # 4A San Borondón
+    "Anya Belov North":            "Preston Hollow",          # 4A Llerena
+    "Benjamin Banneker North":     "Deep Ellum",              # 5A Belmonte
+    "Harry S. Truman North":       "Fair Park",               # 4A Cortland
+    "James Madison North":         "Bryan Place",             # 7A Belmonte
+    "Javier Cárdenas North":       "Casa Linda",              # 5A Llerena
+    "Jon Etxeberria North":        "White Rock",              # 5A Belmonte
+    "José Martí North":            "Redbird",                 # 5A Belyakov
+    "Naomi Langston North":        "Garden District",         # 3A San Borondón
+    "Nikolai Markov North":        "Marigny",                 # 6A San Borondón
+    "Thurgood Marshall North":     "Carrollton",              # 6A San Cordero
+    "Vasquez North":               "Fontainebleau",           # 4A Halbrook
+    "Woodrow Wilson North":        "Mid-City",                # 5A Belmonte
+    "Belyakov Depot High":         "Belyakov Depot",          # 8A Belyakov
+    "Depot High":                  "Depot",                   # 4A Belmonte
+    "Depot High North":            "Depot North",             # 6A Belmonte
+    "Drayfield Foundry High":      "Drayfield Foundry",       # 5A Drayfield
+    "Fort Meriwether Foundry High": "Fort Meriwether Foundry", # 6A Fort Meriwether
+    "Fort Meriwether Foundry High North": "Fort Meriwether Foundry North", # 4A Fort Meriwether
+    "Foundry High":                "Foundry",                 # 9A Lake Esperanza
+    "Frontier High":               "Frontier",                # 5A Harriman
+    "Port Veles Foundry High":     "Port Veles Foundry",      # 8A Port Veles
+    "Seafarer High":               "Seafarer",                # 9A Port Veles
+    "St. Casimir High School North": "St. Casimir North",       # 3A Harriman
+    "Ashbury Central North":       "Ashbury Highlands",       # 4A Ashbury
 
     # ‼️ AND THE RULE APPLIES TO REAL PEOPLE TOO (owner, 2026-08). A campus direction
     # on a person's name is unrealistic whoever the person was — a school honouring
@@ -1266,7 +1361,7 @@ MASCOTS = {
     "Zachary Taylor": "Gillnetters",
     "Franklin Pierce": "Deckhands",
     "Veles Narrows": "Fishmongers",               # the Port Veles fish market
-    "Seafarer High": "Trawlers",
+    "Seafarer": "Trawlers",
     "Santa Michaela Admiralty High": "Commodores",
     "Bay Oregon": "Ospreys",
     "Bahía Azúl": "Dungeness Crabs",
@@ -1281,7 +1376,7 @@ MASCOTS = {
     "Quarmont": "Stonecutters",
     "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
-    "Adela Robles": "Sea Otters",
+    "Seaside Heights": "Sea Otters",
     "Claudette Cole": "Godwits",
     "San Marcos": "Moon Jellies",
     "Mission Bay": "Sea Lions",
@@ -1318,7 +1413,7 @@ MASCOTS = {
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
     "Lincoln Park": "Onion Toppers",
-    "Miren Elorriaga": "Stone Lifters",         # harri-jasotzaile
+    "West Portal": "Stone Lifters",         # harri-jasotzaile
     "River Plain": "Rapids",
     "Treasure Valley": "Sugar Beets",
     "Berrio": "Brambles",
@@ -1327,7 +1422,7 @@ MASCOTS = {
     "Greaves Junction": "Switchmen",
     "Greaves Junction South": "Boxcars",
     "Archbishop Doyle Prep": "Bellringers",
-    "Vasquez": "Vaqueros",
+    "Fruitvale": "Vaqueros",
     "Ella Baker": "Torchbearers",
     "Javier Cárdenas": "Roadrunners",
     "Llerena": "Bighorns",
@@ -1337,7 +1432,7 @@ MASCOTS = {
     "Serrano North": "Sidewinders",             # and the snake
     "Coles Creek": "Sunflowers",
     "Aitor Zubieta": "Woodchoppers",            # aizkolari
-    "Amalia Escobedo": "Burrowing Owls",
+    "Eagle Rock": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
     "Vance": "Lambs",                  # cordero
     "Lorraine Calder": "Mobiles",
@@ -1413,9 +1508,9 @@ MASCOTS = {
     "Ninemile": "Freighters",
     "Clear Lake": "White Sage",
     "Galactica Plains": "Meadowlarks",
-    "Garazi Aramburu": "Woolgrowers",
+    "Ocean Park": "Woolgrowers",
     "River Market": "Joiners",                 # Dovetail
-    "Lev Voronin": "Ravens",                    # voronin — raven
+    "Cole Valley": "Ravens",                    # voronin — raven
     "Espoo": "Shearers",
 
     # ── Timber Valley: the woods trades ──────────────────────────────────────

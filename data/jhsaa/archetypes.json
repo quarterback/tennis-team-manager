@@ -60,7 +60,6 @@
     "Saint Francis": "blue_blood",
     "San Cordero": "blue_blood",
     "San Tomás": "doubles",
-    "Seafarer High": "doubles",
     "Seamus Town": "development",
     "Selbyville": "development",
     "Silver Glen": "development",
@@ -91,6 +90,7 @@
     "Benton Park": "development",
     "Bridgeport": "development",
     "Albany Park": "blue_blood",
-    "Montelago": "blue_blood"
+    "Montelago": "blue_blood",
+    "Seafarer": "doubles"
   }
 }
