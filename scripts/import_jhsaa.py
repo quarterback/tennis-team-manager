@@ -275,7 +275,7 @@ RENAMES = {
     "Belyakov Polytechnic Institute": "Belyakov West",
     "Belyakov School of Design and Engineering": "Theodore Roosevelt",
     "Belyakov School of Public Service": "Abraham Lincoln",
-    "Belyakov School of Science and Industry": "Belyakov Technical",
+    "Belyakov School of Science and Industry": "Belyakov Tech",
     "Belmonte Agricultural Sciences Academy": "Belmonte North",
     "Belmonte Applied Sciences Institute": "Belmonte South",
     "Belmonte Civic Leadership Academy": "Belmonte East",
@@ -441,7 +441,7 @@ RENAMES = {
     "Fort Valois School of Public Service": "Fort Valois Public Service",
     "Galina Markov": "James Monroe",
     "Harbor Gate North": "Martin Van Buren",
-    "Harrow School of Design and Engineering": "Harrow Design",
+    "Harrow School of Design and Engineering": "Harrow Arts",
     "Henrik Keller": "William Henry Harrison",
     "Housatonic HS": "Housatonic",
     "Igor Chernov": "Zachary Taylor",
@@ -590,7 +590,6 @@ RENAMES = {
     "Keldale": "Espoo",
     "Tule": "New Bergen",
     "Rimrock Valley": "New Ballard",
-    "Montelago": "Montelago Central",
     # ‼️ NAMED FOR THINGS THAT EXISTED BEFORE THE SCHOOL, NOT FOR MORE PEOPLE
     # (owner rule 2027-08). The invented-person families (Stokes, Belov, Tillman,
     # Echevarria and a dozen others) were replaced with old local INSTITUTIONS —
@@ -608,7 +607,7 @@ RENAMES = {
     "Elias Mercier": "Cascade Mutual",
     "Frances Gaines": "Empire Milling",
     "Garazi Mendizabal": "Cedar Exchange",
-    "Harlan Cole": "Millrace Technical",
+    "Harlan Cole": "Millrace Tech",
     "Harold Tillman": "Copper Belt",
     "James Gaines": "Rogue Valley Packing",
     "Janice Cole": "Fallon Works",
@@ -625,7 +624,7 @@ RENAMES = {
     "Nicolás Salcedo": "Siskiyou Electric",
     "Opal Stokes": "Dry Creek Cooperative",
     "Opal Tillman": "Granite Water & Power",
-    "Petra Jansen": "Southern Pacific Technical",
+    "Petra Jansen": "Southern Pacific Tech",
     "Rafael Escobedo": "Pioneer Electric",
     "Renata Adler": "Bracken Works",
     "Rosa Salcedo": "Quarry Workers",
@@ -677,7 +676,7 @@ RENAMES = {
     "Katya Moroz North":         "Harriman East",           # 8A Harriman
     "Thomas Jansen North":       "Lake Esperanza East",     # 5A Lake Esperanza
     "Gabriel Montoya":           "Marlow",                  # 4A Marlow County
-    "Matteo Dahl":               "Montelago",               # 7A Montelago
+    "Matteo Dahl":               "Bywater",               # 7A Montelago
     "Petra Bianchi":             "Perryville",              # 6A Perryville
     "Daniel Gaines North":       "San Borondón West",       # 7A San Borondón
     "Elena Petrov":              "San Marcos",              # 9A San Marcos County
@@ -686,7 +685,127 @@ RENAMES = {
     "Svenja Bianchi":            "Tamarack",                # 9A Tamarack County
     "Carmen Cordero":            "Vance",                   # 9A Vance County
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
-    "Klara Marchand":            "Weller",                  # 9A Weller County
+    "Klara Marchand":            "Weller",
+
+    # ‼️ AND THE RULE APPLIES TO REAL PEOPLE TOO (owner, 2026-08). A campus direction
+    # on a person's name is unrealistic whoever the person was — a school honouring
+    # Gwendolyn Brooks does not have a north campus. The person keeps the school that
+    # bears their name; the extra campus becomes a neighbourhood.
+    "Gwendolyn Brooks North":    "Lakewood",                # 7A San Cordero
+    "Rita Moreno North":         "Gentilly",                # 6A Valderra
+
+    # ‼️ NEIGHBOURHOODS, NOT DIRECTIONS (owner rule 2026-08). The association already
+    # has too many directional names, so a school that cannot take its town's name
+    # takes a neighbourhood — which is how a city with five high schools names them
+    # in life. Owner's pool: Chicago, St. Louis, Kansas City, Houston, Dallas, New
+    # Orleans and the Gulf Coast.
+    "Pavel Kovalenko":           "Coles Creek",             # 7A Aldecoa
+    "Elena Petrenko":            "Kingsway",                # 6A Aurelia
+    "Andrés Ibarra":             "Hyde Park",               # 7A Belmonte
+    "Javier Alvarado":           "Lincoln Park",            # 8A Belmonte
+    "Rosa Castañeda":            "Wicker Park",             # 9A Belmonte
+    "Yelena Sokolov":            "Ravenswood",              # 8A Belmonte
+    "Mikhail Sidorov":           "Southampton",             # 6A Belyakov
+    "Nicolás Quiñones":          "Covenant",                # 7A Calder
+    "Katherine Whitaker":        "Brookside",               # 6A Carroway
+    "Oskar Weiss":               "Waldo",                   # 8A Cortland
+    "Marian Browne":             "River Market",            # 3A Dovetail
+    "Yuri Chernov":              "Sunset Hills",            # 8A Emerson
+    "Eleanor Cole":              "Jefferson Park",          # 8A Fort Carden
+    "Winifred Booker":           "Albany Park",             # 7A Fort Carden
+    "Nerea Urrutia":             "Blue Valley",             # 2A Galena
+    "Viktor Gromov":             "Armour Fields",           # 7A Greaves
+    "Gabriel Zúñiga":            "Longfellow",              # 8A Lake Esperanza
+    "Hazel Hart":                "Oak Meyer",               # 3A Los Maderos
+    "Edith Tillman":             "Norwood Park",            # 5A Madrigal
+    "Javier Castañeda":          "Kenwood",                 # 5A Madrigal
+    "Lucía Quiñones":            "Edgewater",               # 4A Madrigal
+    "Isaiah Price":              "Squier Park",             # 7A Montelago
+    "Ruby Mercer":               "Pendleton Heights",       # 7A Moriarty
+    "Lev Volkov":                "Sherwood Estates",        # 4A Newark River
+    "Alina Antonov":             "River Oaks",              # 8A Orellana
+    "Amelia Freeman":            "Montrose",                # 5A Port Veles
+    "Alejandro Zamora":          "Morgan Park",             # 9A Puerto de los Reyes
+    "César Peralta":             "Avalon Park",             # 8A Puerto de los Reyes
+    "Alina Belov":               "Clear Lake",              # 3A Rilland
+    "Daniel Gaines":             "Lafayette Square",        # 7A San Borondón
+    "Harold Williams":           "Soulard",                 # 9A San Borondón
+    "Emilia Jansen":             "Sharpstown",              # 4A San Dámaso
+    "Naomi Moss":                "Meyerland",               # 5A San Tomás
+    "Winifred Ellison":          "Kingwood",                # 5A Santa Cruz del Norte
+    "Anneliese Ricci":           "Carondelet",              # 9A Santa Michaela
+    "Hazel Bennett":             "Benton Park",             # 9A Santa Michaela
+    "Beatriz Zamora":            "Tower Grove",             # 9A Serrano
+    "Edith Mercer":              "Forest Park",             # 9A Serrano
+    "Oksana Petrov":             "Oak Forest",              # 4A Simmons
+    "Edith Ward":                "Central West End",        # 5A Telfair
+    "Tomás Mendoza":             "Fairgrounds",             # 5A Telfair
+    "Isabel Montalvo":           "Magnolia Park",           # 4A Three Saints
+    "Jean Lindgren":             "Bridgeport",              # 6A Valderra
+    "Thelma Moss":               "Roscoe Village",          # 5A Valderra
+    "Winifred Browne":           "Rogers Park",             # 9A Valderra
+    "Katherine Bellamy":         "Meadowbrook",             # 5A Wales City
+    "Sergei Petrenko":           "Willowbrook",             # 3A Weissburg
+    "Beatriz Salcedo":           "Spring Branch",           # 7A Zubieta
+
+    # ‼️ A SPECIALIZED SCHOOL'S NAME IS SHORT (owner rule 2026-08). Nobody says
+    # "Manufacturing and Technology Academy" — a tech school is "<Place> Tech" and an
+    # arts school is "<Place> Arts", the way Oakland School for the Arts is Oakland
+    # Arts. The long descriptive form is a district's paperwork, not what anyone
+    # calls it.
+    "Academy of Arts and Communication":                "Ashbury Arts",
+    "Altamonte Civic Leadership Academy":               "Altamonte Civic",
+    "Belden Springs Academy of Music and Media":        "Belden Springs Arts",
+    "Belyakov Agricultural Sciences Academy":           "Belyakov Agricultural",
+    "Cabo Esperanza Technical Arts Academy":            "Cabo Esperanza Tech",
+    "Featherstone Institute":                           "Featherstone Tech",
+    "Fellows Mill Civic Leadership Academy":            "Fellows Mill Civic",
+    "Greaves Aviation and Engineering Academy":         "Greaves Aviation",
+    "Homecroft Manufacturing and Technology Academy":   "Homecroft Tech",
+    "I-50 Technical":                                   "I-50 Tech",
+    "I-50 Technical North":                             "I-50 Tech North",
+    "Leidesdorff Academy of Music and Media":           "Leidesdorff Arts",
+    "Northrup I-50 Technical":                          "Northrup I-50 Tech",
+    "Paddock Institute":                                "Paddock Tech",
+    "Perryville Civic Leadership Academy":              "Perryville Civic",
+    "Port Veles Civic Academy":                         "Port Veles Civic",
+    "Rostova Junction Technical Arts Academy":          "Rostova Junction Tech",
+    "San Borondón Civic Academy":                       "San Borondón Civic",
+    "San Telmo Agricultural Sciences Academy":          "San Telmo Agricultural",
+    "Selbyville Manufacturing and Technology Academy":  "Selbyville Tech",
+    "Vesper Polytechnic Institute":                     "Vesper Tech",
+    "Zubieta Manufacturing and Technology Academy":     "Zubieta Tech",
+
+
+    # ‼️ A PERSON'S NAME NEVER CARRIES A CAMPUS DIRECTION (owner rule 2026-08): "no
+    # named person school should ever have more than one campus, that's not
+    # realistic". A PLACE can — Belmonte North is ordinary — so every one of these
+    # becomes a place, a neighbourhood or a landform. Names from the owner's own
+    # non-person pool; where their first choice was already a live school the town's
+    # next free direction is used instead.
+    #
+    # Ben Franklin and Hollywood are owner picks (2026-08). Jefferson's big-city
+    # districts name schools the way Portland's do — presidents and Franklin — and
+    # neighbourhoods broaden the range inside one town, which is where Hollywood comes
+    # from.
+    "Andrés Ibarra North":       "Belmonte Central",        # 4A Belmonte
+    "Elena Mendoza North":       "Cedar Ridge",             # 6A Belmonte
+    "Javier Alvarado North":     "Grandview",               # 6A Belmonte
+    "Jean Lindgren North":       "Valderra South",          # 4A Valderra
+    "Petra Weiss North":         "Las Colinas",             # 4A Valderra
+    "Thelma Moss North":         "Valderra Central",        # 7A Valderra
+    "Claudette Cole North":      "San Borondón Central",    # 5A San Borondón
+    "Tatiana Chernov North":     "Bahía Vista",             # 6A San Borondón
+    "Vernon Moss North":         "San Marcos Valley",       # 7A San Borondón
+    "Mila Chernov North":        "Belyakov Central",        # 4A Belyakov
+    "Viktor Antonov North":      "Pine Creek",              # 4A Belyakov
+    "Andrés Valera North":       "Caswell South",           # 6A Caswell
+    "Salvador Montalvo North":   "Stone Ridge",             # 6A Caswell
+    "Marcus Price North":        "Lake Esperanza West",     # 4A Lake Esperanza
+    "Ruby Stokes North":         "San Cordero West",        # 8A San Cordero
+    "Lillian Stokes":            "Ben Franklin",            # 8A Mercer City
+    "Thomas Halvorsen":          "Hollywood",               # 8A Mercer City
+                  # 9A Weller County
 }
 
 # The institutional-naming bank the pass above drew from — kept as its own list so a
@@ -1139,32 +1258,32 @@ MASCOTS = {
     "Port Meridian South": "Mariners",
     "Port Veles": "Chinook",                    # the port itself
     "Port Veles North": "Whalers",
-    "Anneliese Halvorsen": "Sockeye",
+    "George Washington": "Sockeye",
     "Roscoe Bennett": "Cutthroat",
-    "Opal Avery": "Pelicans",
-    "Galina Markov": "Anchors",
+    "Gerald Ford": "Pelicans",
+    "James Monroe": "Anchors",
     "St. Vincent": "Sailors",
-    "Igor Chernov": "Gillnetters",
-    "Katherine Williams": "Deckhands",
-    "Walter Hart": "Fishmongers",               # the Port Veles fish market
+    "Zachary Taylor": "Gillnetters",
+    "Franklin Pierce": "Deckhands",
+    "Veles Narrows": "Fishmongers",               # the Port Veles fish market
     "Seafarer High": "Trawlers",
     "Santa Michaela Admiralty High": "Commodores",
-    "Alder Landing Beacon Hill": "Ospreys",
+    "Bay Oregon": "Ospreys",
     "Bahía Azúl": "Dungeness Crabs",
     "Breakwater": "Riptide",                    # Fort Meriwether
-    "Klara Marchand": "Storm Petrels",
-    "Fort Salish": "Cheesemongers",             # the dairy coast
+    "Weller": "Storm Petrels",
+    "Fort Weller": "Cheesemongers",             # the dairy coast
     "Ryken": "Kingfishers",                     # Newark River
     "Bracken Works": "Seals",                    # Wales City
 
     # ── South Coast: the southern shore and its canneries ────────────────────
-    "Elk Prairie": "Tule Elk",
+    "Carolina Island": "Tule Elk",
     "Quarmont": "Stonecutters",
     "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
     "Adela Robles": "Sea Otters",
     "Claudette Cole": "Godwits",
-    "Elena Petrov": "Moon Jellies",
+    "San Marcos": "Moon Jellies",
     "Mission Bay": "Sea Lions",
     "San Borondón North": "Rockfish",
     "St. Jerome Academy": "Albatross",
@@ -1198,12 +1317,11 @@ MASCOTS = {
     "Belmonte": "Canalmen",
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
-    "Javier Alvarado": "Onion Toppers",
+    "Lincoln Park": "Onion Toppers",
     "Miren Elorriaga": "Stone Lifters",         # harri-jasotzaile
     "River Plain": "Rapids",
     "Treasure Valley": "Sugar Beets",
     "Berrio": "Brambles",
-    "Andrés Valera": "Hay Balers",
     "Cherry Hill": "Cherry Pickers",
     "Paul Robeson": "Rivermen",
     "Greaves Junction": "Switchmen",
@@ -1213,26 +1331,26 @@ MASCOTS = {
     "Ella Baker": "Torchbearers",
     "Javier Cárdenas": "Roadrunners",
     "Llerena": "Bighorns",
-    "Edith Tillman": "Choristers",              # Madrigal
+    "Norwood Park": "Choristers",              # Madrigal
     "Madrigal": "Minstrels",
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Serrano North": "Sidewinders",             # and the snake
-    "Pavel Kovalenko": "Sunflowers",
+    "Coles Creek": "Sunflowers",
     "Aitor Zubieta": "Woodchoppers",            # aizkolari
     "Amalia Escobedo": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
-    "Carmen Cordero": "Lambs",                  # cordero
+    "Vance": "Lambs",                  # cordero
     "Lorraine Calder": "Mobiles",
     "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
     "High Desert Cooperative": "Sheepwagons",             # Etchartville
-    "Viktor Gromov": "Thunderheads",            # gromov — thunder
+    "Armour Fields": "Thunderheads",            # gromov — thunder
     "Canal View": "Headgates",                  # Orellana
     "Orellana North": "Riverboats",
     "Starlake": "Bull Trout",
-    "Stone Springs": "Springers",               # a spring chinook, on a Springs town
+    "Simmons": "Springers",               # a spring chinook, on a Springs town
 
     # ── Ashbury Metro: the city ──────────────────────────────────────────────
     "Ansotegui Siding": "Gandy Dancers",
@@ -1256,26 +1374,26 @@ MASCOTS = {
     "Annie Springs": "Herons",
     "Annie Springs Crater View": "Calderas",
     "Draybrook Union": "Giant Salamanders",
-    "Alderfield": "Rough Skins",                # the rough-skinned newt
+    "Linden": "Rough Skins",                # the rough-skinned newt
     "Celia Browne": "Powderhorns",              # Fort Carden
     "Timber Crest": "Highclimbers",
     "New Leiden": "Pilgrims",
     "Novak Russian Orthodox": "Northern Lights",
     "Orlova": "Firebirds",
-    "Ransom City Union": "Cinder Cones",
+    "Ransom Pass": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
     "Klamath Exchange": "Garnets",
     "San Cordero": "Lava Bears",
     "San Cordero South": "Obsidians",
-    "Svenja Bianchi": "Snowcaps",
+    "Tamarack": "Snowcaps",
     "Yarmere": "Ensatinas",                     # the salamander
 
     # ── Juniper Highlands: high desert ───────────────────────────────────────
     "Marlow County": "Sage Grouse",
-    "Gold Junction": "Assayers",
+    "Seamus Town": "Assayers",
     "Summervale": "Haymakers",
     "Summervale Northwest": "Pronghorns",
-    "Thornford": "Hawthorns",
+    "Thorn Summit": "Hawthorns",
     "Owl Canyon": "Screech Owls",
     "High Desert Christian": "Sojourners",
     "Marshall": "Jackalopes",
@@ -1287,18 +1405,18 @@ MASCOTS = {
     # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
     "Norstead": "Longships",
-    "Aspen Harbor": "Harbor Seals",
+    "East Simmons": "Harbor Seals",
     "Elk Bluff": "Bugles",
-    "Millport": "Log Drivers",
+    "Vonjo City": "Log Drivers",
 
     # ── Kangas: sagebrush, stock and the Finn settlements ────────────────────
     "Ninemile": "Freighters",
-    "Alina Belov": "White Sage",
-    "Sage Meadows": "Meadowlarks",
+    "Clear Lake": "White Sage",
+    "Galactica Plains": "Meadowlarks",
     "Garazi Aramburu": "Woolgrowers",
-    "Marian Browne": "Joiners",                 # Dovetail
+    "River Market": "Joiners",                 # Dovetail
     "Lev Voronin": "Ravens",                    # voronin — raven
-    "Keldale": "Shearers",
+    "Espoo": "Shearers",
 
     # ── Timber Valley: the woods trades ──────────────────────────────────────
     "Ansotegui": "Chokermen",
@@ -1751,6 +1869,21 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
 
 
 def build(schools: list[dict], cities: dict) -> list[dict]:
+    # ‼️ MASCOTS / COLORS / PRIVATE_SCHOOLS KEY ON THE **DISPLAY** NAME, so a rename
+    # has to move their keys with it. Left behind, the lookup below misses and the
+    # school silently reverts to prep-network's mascot — invisible in the committed
+    # JSON, because the rename-only helper preserves whatever is already in the file
+    # and only a FULL import exposes it. 29 keys had drifted before this check
+    # existed. Checked here rather than in a test: build() is the one path where the
+    # miss actually costs something.
+    for tbl, name in ((MASCOTS, "MASCOTS"), (COLORS, "COLORS"),
+                      (PRIVATE_SCHOOLS, "PRIVATE_SCHOOLS")):
+        stale = sorted(k for k in tbl if k in RENAMES)
+        if stale:
+            raise SystemExit(
+                f"{name} is keyed on {len(stale)} name(s) that RENAMES moves; move the "
+                f"key to the new display name or the override is silently dropped: "
+                + repr(stale[:5]))
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}

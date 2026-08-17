@@ -37,17 +37,14 @@
     "George Washington Carver": "development",
     "Golden Gate": "blue_blood",
     "Gwendolyn Brooks": "blue_blood",
-    "Hazel Bennett": "development",
     "High Prairie": "development",
     "Homestead": "doubles",
-    "Jean Lindgren": "development",
     "Jesuit": "blue_blood",
     "Juniper Ridge": "development",
     "Lorraine Calder": "doubles",
     "Mabryville": "development",
     "Marlow County": "doubles",
     "Mater Dei": "blue_blood",
-    "Montelago Central": "blue_blood",
     "Netherwood": "doubles",
     "New Leiden": "doubles",
     "Newark River North": "doubles",
@@ -91,6 +88,9 @@
     "Valley Christian": "blue_blood",
     "Westover": "development",
     "Westside Christian": "blue_blood",
-    "Winifred Booker": "blue_blood"
+    "Benton Park": "development",
+    "Bridgeport": "development",
+    "Albany Park": "blue_blood",
+    "Montelago": "blue_blood"
   }
 }

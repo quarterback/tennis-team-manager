@@ -6,7 +6,7 @@
 
 {{ jh_header(view.scope, u, 'state',
              'JHSAA ' ~ view.group,
-             'The ' ~ view.season_year ~ ' ' ~ view.group ~ ' ' ~ view.gender ~ " season — district play, the state dual-team tournament, and the class's programs.",
+             '',
              [('Season', view.season_year), ('Class', view.group)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -30,7 +30,9 @@
         <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
         <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ st.champion.name }}</a>
         <div class="sub">{{ st.champion.mascot }} · {{ st.champion.city }}, Jefferson ·
-          {{ st.champion.district }}{% if view.rank_by.get(st.champion.name) %} · No.&nbsp;{{ view.rank_by[st.champion.name] }} in {{ view.group }}{% endif %}</div>
+          {# No TOSS rank beside a champion: they won the thing the rank exists to
+             predict, and nobody cares where a state champion was ranked. #}
+          {{ st.champion.district }}</div>
       </div>
       {% if st.final %}
       <div class="sc">

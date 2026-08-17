@@ -83,6 +83,119 @@
 
 ---
 
+## C. RENAMES added 2026-08 (94) — the person-name sweep
+
+Rules applied, in one pass:
+
+* a school takes its own **town or county** name where that name was free;
+* **no person's name carries a campus direction** — real or invented. A place
+  may have a second campus, a person may not;
+* everything else person-named took a **neighbourhood** name — no directionals,
+  the association has too many;
+* a **specialized school is called what people call it**: `<Place> Tech`,
+  `<Place> Arts`, never the long descriptive form.
+
+Ben Franklin and Hollywood are new owner picks. Olive Head keeps its name — it
+is the town it sits in. No school named for a REAL person was renamed; two real
+people's extra campuses were (Gwendolyn Brooks North, Rita Moreno North).
+
+| # | Old name | New name | City | Class |
+|---|---|---|---|---|
+| 1 | Winifred Booker | **Albany Park** | Fort Carden | 7A |
+| 2 | Altamonte Civic Leadership Academy | **Altamonte Civic** | Altamonte | 8A |
+| 3 | Viktor Gromov | **Armour Fields** | Greaves | 7A |
+| 4 | Academy of Arts and Communication | **Ashbury Arts** | Ashbury | 7A |
+| 5 | César Peralta | **Avalon Park** | Puerto de los Reyes | 8A |
+| 6 | Tatiana Chernov North | **Bahía Vista** | San Borondón | 6A |
+| 7 | Belden Springs Academy of Music and Media | **Belden Springs Arts** | Belden Springs | 3A |
+| 8 | Andrés Ibarra North | **Belmonte Central** | Belmonte | 4A |
+| 9 | Belyakov Agricultural Sciences Academy | **Belyakov Agricultural** | Belyakov | 9A |
+| 10 | Mila Chernov North | **Belyakov Central** | Belyakov | 4A |
+| 11 | Belyakov School of Science and Industry | **Belyakov Tech** | Belyakov | 8A |
+| 12 | Lillian Stokes | **Ben Franklin** | Mercer City | 8A |
+| 13 | Hazel Bennett | **Benton Park** | Santa Michaela | 9A |
+| 14 | Nerea Urrutia | **Blue Valley** | Galena | 2A |
+| 15 | Jean Lindgren | **Bridgeport** | Valderra | 6A |
+| 16 | Katherine Whitaker | **Brookside** | Carroway | 6A |
+| 17 | Matteo Dahl | **Bywater** | Montelago | 7A |
+| 18 | Cabo Esperanza Technical Arts Academy | **Cabo Esperanza Tech** | Cabo Esperanza | 3A |
+| 19 | Anneliese Ricci | **Carondelet** | Santa Michaela | 9A |
+| 20 | Andrés Valera North | **Caswell South** | Caswell | 6A |
+| 21 | Elena Mendoza North | **Cedar Ridge** | Belmonte | 6A |
+| 22 | Edith Ward | **Central West End** | Telfair | 5A |
+| 23 | Alina Belov | **Clear Lake** | Rilland | 3A |
+| 24 | Pavel Kovalenko | **Coles Creek** | Aldecoa | 7A |
+| 25 | Nicolás Quiñones | **Covenant** | Calder | 7A |
+| 26 | Lucía Quiñones | **Edgewater** | Madrigal | 4A |
+| 27 | Tomás Mendoza | **Fairgrounds** | Telfair | 5A |
+| 28 | Featherstone Institute | **Featherstone Tech** | Cook City | 1A |
+| 29 | Fellows Mill Civic Leadership Academy | **Fellows Mill Civic** | Fellows Mill | 4A |
+| 30 | Edith Mercer | **Forest Park** | Serrano | 9A |
+| 31 | Rita Moreno North | **Gentilly** | Valderra | 6A |
+| 32 | Javier Alvarado North | **Grandview** | Belmonte | 6A |
+| 33 | Greaves Aviation and Engineering Academy | **Greaves Aviation** | Greaves | 5A |
+| 34 | Harrow School of Design and Engineering | **Harrow Arts** | Harrow | 5A |
+| 35 | Thomas Halvorsen | **Hollywood** | Mercer City | 8A |
+| 36 | Homecroft Manufacturing and Technology Academy | **Homecroft Tech** | Homecroft | 3A |
+| 37 | Andrés Ibarra | **Hyde Park** | Belmonte | 7A |
+| 38 | I-50 Technical | **I-50 Tech** | Belmonte | 8A |
+| 39 | I-50 Technical North | **I-50 Tech North** | Belmonte | 6A |
+| 40 | Eleanor Cole | **Jefferson Park** | Fort Carden | 8A |
+| 41 | Javier Castañeda | **Kenwood** | Madrigal | 5A |
+| 42 | Elena Petrenko | **Kingsway** | Aurelia | 6A |
+| 43 | Winifred Ellison | **Kingwood** | Santa Cruz del Norte | 5A |
+| 44 | Daniel Gaines | **Lafayette Square** | San Borondón | 7A |
+| 45 | Marcus Price North | **Lake Esperanza West** | Lake Esperanza | 4A |
+| 46 | Gwendolyn Brooks North | **Lakewood** | San Cordero | 7A |
+| 47 | Petra Weiss North | **Las Colinas** | Valderra | 4A |
+| 48 | Leidesdorff Academy of Music and Media | **Leidesdorff Arts** | Leidesdorff | 5A |
+| 49 | Javier Alvarado | **Lincoln Park** | Belmonte | 8A |
+| 50 | Gabriel Zúñiga | **Longfellow** | Lake Esperanza | 8A |
+| 51 | Isabel Montalvo | **Magnolia Park** | Three Saints | 4A |
+| 52 | Katherine Bellamy | **Meadowbrook** | Wales City | 5A |
+| 53 | Naomi Moss | **Meyerland** | San Tomás | 5A |
+| 54 | Harlan Cole | **Millrace Tech** | Santa Cruz del Norte | 8A |
+| 55 | Amelia Freeman | **Montrose** | Port Veles | 5A |
+| 56 | Alejandro Zamora | **Morgan Park** | Puerto de los Reyes | 9A |
+| 57 | Northrup I-50 Technical | **Northrup I-50 Tech** | Northrup | 6A |
+| 58 | Edith Tillman | **Norwood Park** | Madrigal | 5A |
+| 59 | Oksana Petrov | **Oak Forest** | Simmons | 4A |
+| 60 | Hazel Hart | **Oak Meyer** | Los Maderos | 3A |
+| 61 | Paddock Institute | **Paddock Tech** | Welsh Plains | 2A |
+| 62 | Ruby Mercer | **Pendleton Heights** | Moriarty | 7A |
+| 63 | Perryville Civic Leadership Academy | **Perryville Civic** | Perryville | 5A |
+| 64 | Viktor Antonov North | **Pine Creek** | Belyakov | 4A |
+| 65 | Port Veles Civic Academy | **Port Veles Civic** | Port Veles | 7A |
+| 66 | Yelena Sokolov | **Ravenswood** | Belmonte | 8A |
+| 67 | Marian Browne | **River Market** | Dovetail | 3A |
+| 68 | Alina Antonov | **River Oaks** | Orellana | 8A |
+| 69 | Winifred Browne | **Rogers Park** | Valderra | 9A |
+| 70 | Thelma Moss | **Roscoe Village** | Valderra | 5A |
+| 71 | Rostova Junction Technical Arts Academy | **Rostova Junction Tech** | Rostova Junction | 7A |
+| 72 | Claudette Cole North | **San Borondón Central** | San Borondón | 5A |
+| 73 | San Borondón Civic Academy | **San Borondón Civic** | San Borondón | 7A |
+| 74 | Ruby Stokes North | **San Cordero West** | San Cordero | 8A |
+| 75 | Vernon Moss North | **San Marcos Valley** | San Borondón | 7A |
+| 76 | San Telmo Agricultural Sciences Academy | **San Telmo Agricultural** | San Telmo | 7A |
+| 77 | Selbyville Manufacturing and Technology Academy | **Selbyville Tech** | Selbyville | 3A |
+| 78 | Emilia Jansen | **Sharpstown** | San Dámaso | 4A |
+| 79 | Lev Volkov | **Sherwood Estates** | Newark River | 4A |
+| 80 | Harold Williams | **Soulard** | San Borondón | 9A |
+| 81 | Mikhail Sidorov | **Southampton** | Belyakov | 6A |
+| 82 | Petra Jansen | **Southern Pacific Tech** | Mercer City | 9A |
+| 83 | Beatriz Salcedo | **Spring Branch** | Zubieta | 7A |
+| 84 | Isaiah Price | **Squier Park** | Montelago | 7A |
+| 85 | Salvador Montalvo North | **Stone Ridge** | Caswell | 6A |
+| 86 | Yuri Chernov | **Sunset Hills** | Emerson | 8A |
+| 87 | Beatriz Zamora | **Tower Grove** | Serrano | 9A |
+| 88 | Thelma Moss North | **Valderra Central** | Valderra | 7A |
+| 89 | Jean Lindgren North | **Valderra South** | Valderra | 4A |
+| 90 | Vesper Polytechnic Institute | **Vesper Tech** | Vesper | 3A |
+| 91 | Oskar Weiss | **Waldo** | Cortland | 8A |
+| 92 | Rosa Castañeda | **Wicker Park** | Belmonte | 9A |
+| 93 | Sergei Petrenko | **Willowbrook** | Weissburg | 3A |
+| 94 | Zubieta Manufacturing and Technology Academy | **Zubieta Tech** | Zubieta | 6A |
+
 ## Pending: apply these to prep-network (owner approved, deferred)
 
 The owner wants the source repo brought in line with the table above — **not
