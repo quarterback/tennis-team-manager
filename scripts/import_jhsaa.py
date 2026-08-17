@@ -1258,32 +1258,32 @@ MASCOTS = {
     "Port Meridian South": "Mariners",
     "Port Veles": "Chinook",                    # the port itself
     "Port Veles North": "Whalers",
-    "Anneliese Halvorsen": "Sockeye",
+    "George Washington": "Sockeye",
     "Roscoe Bennett": "Cutthroat",
-    "Opal Avery": "Pelicans",
-    "Galina Markov": "Anchors",
+    "Gerald Ford": "Pelicans",
+    "James Monroe": "Anchors",
     "St. Vincent": "Sailors",
-    "Igor Chernov": "Gillnetters",
-    "Katherine Williams": "Deckhands",
-    "Walter Hart": "Fishmongers",               # the Port Veles fish market
+    "Zachary Taylor": "Gillnetters",
+    "Franklin Pierce": "Deckhands",
+    "Veles Narrows": "Fishmongers",               # the Port Veles fish market
     "Seafarer High": "Trawlers",
     "Santa Michaela Admiralty High": "Commodores",
-    "Alder Landing Beacon Hill": "Ospreys",
+    "Bay Oregon": "Ospreys",
     "Bahía Azúl": "Dungeness Crabs",
     "Breakwater": "Riptide",                    # Fort Meriwether
-    "Klara Marchand": "Storm Petrels",
-    "Fort Salish": "Cheesemongers",             # the dairy coast
+    "Weller": "Storm Petrels",
+    "Fort Weller": "Cheesemongers",             # the dairy coast
     "Ryken": "Kingfishers",                     # Newark River
     "Bracken Works": "Seals",                    # Wales City
 
     # ── South Coast: the southern shore and its canneries ────────────────────
-    "Elk Prairie": "Tule Elk",
+    "Carolina Island": "Tule Elk",
     "Quarmont": "Stonecutters",
     "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
     "Adela Robles": "Sea Otters",
     "Claudette Cole": "Godwits",
-    "Elena Petrov": "Moon Jellies",
+    "San Marcos": "Moon Jellies",
     "Mission Bay": "Sea Lions",
     "San Borondón North": "Rockfish",
     "St. Jerome Academy": "Albatross",
@@ -1317,12 +1317,11 @@ MASCOTS = {
     "Belmonte": "Canalmen",
     "Belmonte River Plain": "River Otters",
     "Belmonte South": "Sandhill Cranes",
-    "Javier Alvarado": "Onion Toppers",
+    "Lincoln Park": "Onion Toppers",
     "Miren Elorriaga": "Stone Lifters",         # harri-jasotzaile
     "River Plain": "Rapids",
     "Treasure Valley": "Sugar Beets",
     "Berrio": "Brambles",
-    "Andrés Valera": "Hay Balers",
     "Cherry Hill": "Cherry Pickers",
     "Paul Robeson": "Rivermen",
     "Greaves Junction": "Switchmen",
@@ -1332,26 +1331,26 @@ MASCOTS = {
     "Ella Baker": "Torchbearers",
     "Javier Cárdenas": "Roadrunners",
     "Llerena": "Bighorns",
-    "Edith Tillman": "Choristers",              # Madrigal
+    "Norwood Park": "Choristers",              # Madrigal
     "Madrigal": "Minstrels",
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Serrano North": "Sidewinders",             # and the snake
-    "Pavel Kovalenko": "Sunflowers",
+    "Coles Creek": "Sunflowers",
     "Aitor Zubieta": "Woodchoppers",            # aizkolari
     "Amalia Escobedo": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
-    "Carmen Cordero": "Lambs",                  # cordero
+    "Vance": "Lambs",                  # cordero
     "Lorraine Calder": "Mobiles",
     "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
     "High Desert Cooperative": "Sheepwagons",             # Etchartville
-    "Viktor Gromov": "Thunderheads",            # gromov — thunder
+    "Armour Fields": "Thunderheads",            # gromov — thunder
     "Canal View": "Headgates",                  # Orellana
     "Orellana North": "Riverboats",
     "Starlake": "Bull Trout",
-    "Stone Springs": "Springers",               # a spring chinook, on a Springs town
+    "Simmons": "Springers",               # a spring chinook, on a Springs town
 
     # ── Ashbury Metro: the city ──────────────────────────────────────────────
     "Ansotegui Siding": "Gandy Dancers",
@@ -1375,26 +1374,26 @@ MASCOTS = {
     "Annie Springs": "Herons",
     "Annie Springs Crater View": "Calderas",
     "Draybrook Union": "Giant Salamanders",
-    "Alderfield": "Rough Skins",                # the rough-skinned newt
+    "Linden": "Rough Skins",                # the rough-skinned newt
     "Celia Browne": "Powderhorns",              # Fort Carden
     "Timber Crest": "Highclimbers",
     "New Leiden": "Pilgrims",
     "Novak Russian Orthodox": "Northern Lights",
     "Orlova": "Firebirds",
-    "Ransom City Union": "Cinder Cones",
+    "Ransom Pass": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
     "Klamath Exchange": "Garnets",
     "San Cordero": "Lava Bears",
     "San Cordero South": "Obsidians",
-    "Svenja Bianchi": "Snowcaps",
+    "Tamarack": "Snowcaps",
     "Yarmere": "Ensatinas",                     # the salamander
 
     # ── Juniper Highlands: high desert ───────────────────────────────────────
     "Marlow County": "Sage Grouse",
-    "Gold Junction": "Assayers",
+    "Seamus Town": "Assayers",
     "Summervale": "Haymakers",
     "Summervale Northwest": "Pronghorns",
-    "Thornford": "Hawthorns",
+    "Thorn Summit": "Hawthorns",
     "Owl Canyon": "Screech Owls",
     "High Desert Christian": "Sojourners",
     "Marshall": "Jackalopes",
@@ -1406,18 +1405,18 @@ MASCOTS = {
     # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
     "Norstead": "Longships",
-    "Aspen Harbor": "Harbor Seals",
+    "East Simmons": "Harbor Seals",
     "Elk Bluff": "Bugles",
-    "Millport": "Log Drivers",
+    "Vonjo City": "Log Drivers",
 
     # ── Kangas: sagebrush, stock and the Finn settlements ────────────────────
     "Ninemile": "Freighters",
-    "Alina Belov": "White Sage",
-    "Sage Meadows": "Meadowlarks",
+    "Clear Lake": "White Sage",
+    "Galactica Plains": "Meadowlarks",
     "Garazi Aramburu": "Woolgrowers",
-    "Marian Browne": "Joiners",                 # Dovetail
+    "River Market": "Joiners",                 # Dovetail
     "Lev Voronin": "Ravens",                    # voronin — raven
-    "Keldale": "Shearers",
+    "Espoo": "Shearers",
 
     # ── Timber Valley: the woods trades ──────────────────────────────────────
     "Ansotegui": "Chokermen",
@@ -1870,6 +1869,21 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
 
 
 def build(schools: list[dict], cities: dict) -> list[dict]:
+    # ‼️ MASCOTS / COLORS / PRIVATE_SCHOOLS KEY ON THE **DISPLAY** NAME, so a rename
+    # has to move their keys with it. Left behind, the lookup below misses and the
+    # school silently reverts to prep-network's mascot — invisible in the committed
+    # JSON, because the rename-only helper preserves whatever is already in the file
+    # and only a FULL import exposes it. 29 keys had drifted before this check
+    # existed. Checked here rather than in a test: build() is the one path where the
+    # miss actually costs something.
+    for tbl, name in ((MASCOTS, "MASCOTS"), (COLORS, "COLORS"),
+                      (PRIVATE_SCHOOLS, "PRIVATE_SCHOOLS")):
+        stale = sorted(k for k in tbl if k in RENAMES)
+        if stale:
+            raise SystemExit(
+                f"{name} is keyed on {len(stale)} name(s) that RENAMES moves; move the "
+                f"key to the new display name or the override is silently dropped: "
+                + repr(stale[:5]))
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}
