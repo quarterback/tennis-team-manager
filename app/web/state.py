@@ -4079,8 +4079,7 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
                "record": "pct", "place": "place", "pf": "pf", "pa": "pa",
                "pi": "pi", "atr": "atr", "seed": "seed",
                "state_finish": "state_finish_rank",
-               "sc_n": "sc_n", "sc_pct": "sc_pct", "fmt_shift": "fmt_shift",
-               "dbl_plus": "dbl_plus", "sc_stdev": "sc_stdev"}
+               "sc_n": "sc_n", "fmt_pts": "fmt_pts", "dbl_pts": "dbl_pts"}
     key = SORTABLE.get(sort)
     if key:
         # "empty" isn't always `None` — an unqualified team's seed is 0 and a team

@@ -2108,6 +2108,23 @@ def _fmt_delta(reg: dict, sc: dict, key: str) -> dict | None:
     return {"n": sc["n"], "delta": sc[key] - reg[key]}
 
 
+#: How many showcase duals it takes before a difference is read at ~half its face
+#: value. A showcase sample is 3-8 duals; at n=3 a raw difference is mostly noise —
+#: the 8A table had an 18-18 team ranked 52nd posting the largest format swing in the
+#: classification off four duals. Damping is the same shape `ladder_score` already
+#: uses on a player's record: multiply by n/(n+k), so evidence has to accumulate
+#: before the number moves. Nothing is hidden and no threshold is imposed; a thin
+#: sample simply reads closer to "no difference", which is what it actually shows.
+FORMAT_PRIOR = 4.0
+
+
+def _damped(delta: float | None, n: int) -> float | None:
+    """`delta` pulled toward 0 by how little evidence stands behind it."""
+    if delta is None or not n:
+        return None
+    return delta * n / (n + FORMAT_PRIOR)
+
+
 def _fmt_index(reg: dict, sc: dict, key: str) -> dict | None:
     """A normalized 100-baseline index — the ERA+/OPS+ shape, not a difference. `100`
     means the showcase sample matched the team's own regular-season `key` exactly;
@@ -2165,6 +2182,11 @@ def format_profile(schedule: list[dict]) -> dict:
     r, s = _fmt_split(reg), _fmt_split(sc)
     return {"regular": r, "showcase": s,
             "shift": _fmt_delta(r, s, "weighted_pct"),
+            # The doubles reading as a SIGNED DIFFERENCE beside the ratio index. Both
+            # describe the same thing; the difference is the one a reader can state
+            # ("doubles carries six points more of the win under 1S/4D") and the ratio
+            # is the one nobody could ("Dbl+ 155").
+            "doubles_shift": _fmt_delta(r, s, "doubles_win_share"),
             "doubles_index": _fmt_index(r, s, "doubles_win_share"),
             "regular_volatility": _fmt_volatility(reg),
             "showcase_volatility": _fmt_volatility(sc)}
@@ -2180,10 +2202,17 @@ def _flat_format_profile(schedule: list[dict]) -> dict:
     (showcase volatility, `None` under two). Missing keys read back as `None` through
     `.get`, exactly like a pre-ATR season's `atr`."""
     p = format_profile(schedule)
-    return {"sc_n": p["showcase"]["n"], "sc_pct": p["showcase"]["weighted_pct"],
+    n = p["showcase"]["n"]
+    return {"sc_n": n, "sc_pct": p["showcase"]["weighted_pct"],
             "fmt_shift": (p["shift"] or {}).get("delta"),
+            "dbl_shift": (p["doubles_shift"] or {}).get("delta"),
             "dbl_plus": (p["doubles_index"] or {}).get("index"),
-            "sc_stdev": (p["showcase_volatility"] or {}).get("stdev")}
+            "sc_stdev": (p["showcase_volatility"] or {}).get("stdev"),
+            # What the RANKINGS TABLE shows: both readings damped by sample size and
+            # centred on 0, so the column means "what the format does to this team"
+            # rather than "how well it happened to do in three duals".
+            "fmt_pts": _damped((p["shift"] or {}).get("delta"), n),
+            "dbl_pts": _damped((p["doubles_shift"] or {}).get("delta"), n)}
 
 
 def power_index(teams, *, prestate: bool = False) -> dict:
