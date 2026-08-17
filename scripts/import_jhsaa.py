@@ -686,6 +686,22 @@ RENAMES = {
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
+    # ‼️ THE LAST FIVE, and the reason they survived four sweeps: every filter that
+    # excluded PLACE WORDS excluded them. Echevarria, Zubieta, Arrieta and Calder are
+    # all Jefferson TOWNS as well as surnames, so "Aitor Echevarria" was read as a
+    # place and skipped — by the pool test, and then by the two-token place filter
+    # that replaced it.
+    #
+    # The test that finally worked looks at the FIRST word only: a name whose first
+    # word is not place or institution vocabulary is a person, whatever the second
+    # word doubles as. A surname that is also a town cannot hide a given name in
+    # front of it.
+    "Aitor Echevarria":            "Point Loma",              # 9A Aldecoa
+    "Aitor Zubieta":               "Ocean Beach",             # 8A Belyakov
+    "Ander Arrieta":               "Bolinas",                 # 6A Weissburg
+    "Harold Calder":               "Tomales Bay",             # 6A San Telmo
+    "Lorraine Calder":             "Morro Bay",               # 7A Belyakov
+
     # ‼️ THE INVENTED PEOPLE THEMSELVES (owner, 2026-08). The campus sweeps kept
     # finding "<fake person> North", renaming the CAMPUS, and leaving the person's own
     # school standing two rows away. These are the base schools.
@@ -1431,11 +1447,11 @@ MASCOTS = {
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Serrano North": "Sidewinders",             # and the snake
     "Coles Creek": "Sunflowers",
-    "Aitor Zubieta": "Woodchoppers",            # aizkolari
+    "Ocean Beach": "Woodchoppers",            # aizkolari
     "Eagle Rock": "Burrowing Owls",
     "Belyakov South": "Beet Haulers",
     "Vance": "Lambs",                  # cordero
-    "Lorraine Calder": "Mobiles",
+    "Morro Bay": "Mobiles",
     "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",
