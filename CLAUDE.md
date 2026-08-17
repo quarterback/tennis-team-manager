@@ -609,9 +609,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
-  State is **40 everywhere except 7A, which crowns from 24** (owner table
-  2027-08 — `jhsaa.STATE_FIELD`; 9A and 8A joined the 40s because the
-  association's deepest classes were leaving plainly good teams home). **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
+  State is **40 in EVERY classification** (`jhsaa.STATE_FIELD`; 9A and 8A were
+  raised in 2027-08 because the association's deepest classes were leaving plainly
+  good teams home, and **7A followed in 2026-08** — it was simply the class that pass
+  did not touch, never a special case). It stays a per-class TABLE because the field
+  size is an owner decision per class and the whole ladder derives from it. **A 40 IS A 24 WITH A QUALIFIERS ROUND IN
   FRONT OF IT** (`run_state(champions=)`): the Zonal champions take a DOUBLE bye
   while seeds 9-40 play the Qualies and then the First Round, and the eight
   survivors join them in a FRESH draw — so both shapes converge at the Octofinals,
@@ -621,9 +623,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never hands out a berth again (the report: a #14 missed State while #23 got in by
   winning). Three ways in: the 8 **Zonal champions** — automatic, AND **seeds 1-8 of
   the State draw**. That is a SEEDING guarantee, not a bye rule (owner clarification
-  2027-08): a 24-field's eight byes fall to them as a consequence, but 7A's 32-field
-  is a power of two with NO byes and they are still seeded 1-8 there. Pinned for both
-  shapes by `test_zonal_champions_are_the_top_seeds_byes_or_not`. Then the
+  2027-08): a 24-field's eight byes fall to them as a consequence, but a power-of-two
+  field has NO byes and they are still seeded 1-8 there. Both shapes are pinned by
+  `test_zonal_champions_are_the_top_seeds_byes_or_not` — keep it that way even though
+  no class currently plays the byeless shape, since the table can move a class back. Then the
   **‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY IN (owner reversal
   2027-08).** It briefly existed and was retired for contradicting the rule it sat
   beside: a district champion could keep losing and still be handed a berth. A
@@ -1338,7 +1341,13 @@ was a school marker, shipped "Baptist HS High School".
     type-ahead, Remove demoting a seeded program and clearing an added one, demotions
     shown as restorable chips. `EDITABLE_ARCHETYPES` excludes `upstart` — it is a rolled
     run and storing one would make it permanent.
-  - **The BOARD is a panel on `/editor`** (`jhsaa.playup_board`) and shows ONLY the ~13
+  - **‼️ BOTH BOARDS LIVE AT `/jhsaa/programs`** (the section's "Programs" tab), NOT on
+    `/editor`. They were panels three and four down the COLLEGE roster editor — whose
+    toolbar is Division / Conference / Team — where the owner could not find them. A
+    JHSAA property belongs under the JHSAA. The POST routes keep their `/editor/jhsaa-*`
+    paths (they are the same writes) and carry `back=jhsaa` so `_editor_redirect` returns
+    to the JHSAA page instead of the college one.
+  - **The BOARD** (`jhsaa.playup_board`) shows ONLY the ~13
     programs that play up: add is a type-ahead over the names, remove is a button on the
     row, and a removed default shows as "held" so it can be restored. ‼️ Never render the
     association as a list to scroll (owner, 2026-08: "I don't want a list with 100s of

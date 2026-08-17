@@ -298,20 +298,26 @@ FIDELITY = "fast"
 #      round pairs its whole field, so the shape follows the field size rather
 #      than a constant. `recovery_shape` projects it from the constants alone.
 #
-# `STATE_FIELD`: the owner's field table below — the 24 is load-bearing, because
-# a 24-team seeded draw has exactly eight first-round byes and those byes ARE the
-# Zonal champions' privilege; a 40 puts a Qualifiers Round in front of that same
-# 24 (see the table's own comment).
+# `STATE_FIELD`: the owner's field table below. EVERY class now crowns from 40, but
+# the 24 remains the shape underneath it — a 24-team seeded draw has exactly eight
+# first-round byes and those byes ARE the Zonal champions' privilege; a 40 puts a
+# Qualifiers Round in front of that same 24 (see the table's own comment).
 #
 # ‼️ THERE IS NO SCALING. Every classification plays the full ladder and the
 # owner's field table as written; a pool too small for it is a broken fixture,
 # not a format to accommodate.
 PROTECTED = 16
 WARD_FIELD = 32
-# Field size per classification (owner table, 2027-08). The three largest classes
-# crown from 24; the five smaller ones — which now hold MORE programs than the big
-# ones (2A-1A 137 and 3A 127 against 9A's 80) — crown from 40, landing every class
-# between 23% and 31% of its programs reaching State.
+# Field size per classification (owner table, 2027-08; 7A raised 2026-08). EVERY
+# classification crowns from 40. The table stays a table rather than becoming one
+# constant because the field size is an owner DECISION per class, and the ladder's
+# arithmetic is derived from it (`_recovery`, `recovery_shape`, `sponsor_floor`) —
+# a class could be moved back without touching anything else.
+#
+# It got here in two steps and 7A was the straggler: all three of the largest classes
+# crowned from 24, then 9A and 8A were raised because the deepest classes were leaving
+# plainly good teams home, and 7A was simply not changed in that pass. Nothing about
+# 7A was ever special.
 #
 # ⚠️ A 40 IS A 24 WITH A QUALIFIERS ROUND IN FRONT OF IT. The eight Zonal champions
 # take a DOUBLE bye to the Octofinals; seeds 9-40 play the Qualifiers Round and then
@@ -321,7 +327,7 @@ WARD_FIELD = 32
 #
 # This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
 # given a bye without inventing a round for everybody else to sit out.
-STATE_FIELD = {"9A": 40, "8A": 40, "7A": 24,
+STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
                "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A-1A": 40}
 STATE_FIELD_DEFAULT = 24
 
