@@ -108,7 +108,7 @@
              "line scores" row under every dual doubled the length of a 35-match
              schedule and made it unscannable, which is the thing this page was
              redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
+          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
               {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>

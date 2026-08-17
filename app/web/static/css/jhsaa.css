@@ -195,8 +195,14 @@
   background: var(--surface-subtle); font-size: 11.5px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase; color: var(--text-secondary); padding: 5px 10px;
 }
+/* The State event and the ROAD to it are different things and must not share a
+   row tint — the tags already say so, and a card where Areas through Divisionals
+   look identical to the state tournament reads as one long postseason. State keeps
+   the brand green; the road takes the neutral sunken surface with a muted rule. */
 .jh-sched tr.state td { background: var(--green-50); }
 .jh-sched tr.state td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.jh-sched tr.road td { background: var(--surface-sunken); }
+.jh-sched tr.road td:first-child { box-shadow: inset 3px 0 0 var(--border-strong, var(--text-faint)); }
 .jh-sched .dt { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .jh-sched .ha { color: var(--text-faint); font-size: 12.5px; }
 .jh-sched .op { min-width: 0; }
