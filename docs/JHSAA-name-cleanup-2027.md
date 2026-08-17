@@ -221,3 +221,84 @@ sponsors, so only the 62 renames rewrite source records.
 Until then the two repos disagree on purpose: prep-network keeps the published
 record under the original names, and the tennis association knows the schools by
 the names in the table.
+
+---
+
+# D. 2026-08 pass — duplicate names, campus directions, sponsorship
+
+A second, much smaller pass, all owner-dictated. Same mechanism as section A:
+`import_jhsaa.RENAMES`, keyed on the prep-network SOURCE name, applied at emit,
+with `School.source` preserved so no roster, pid or archived award moves. Two of
+these rewrote an EXISTING mapping's target rather than adding a hop — a chained
+rename is folded into the original source mapping, never stacked.
+
+## D1. Renames (7)
+
+| Source (prep-network) | Was | Now | City | Class |
+|---|---|---|---|---|
+| Calvary Chapel Ditch Fork | Calvary Chapel Ditch Fork | **Cassius** | Ditch Fork | 1A |
+| Calvary Chapel Kilbride Switch | Calvary Chapel Kilbride Switch | **Gottschalk-Herman** | Kilbride Switch | 1A |
+| Calvary Chapel Olivet | Calvary Chapel Olivet | **Banfield Day** | Bracken | 1A |
+| Fort Meriwether Foundry High North | Fort Meriwether Foundry North | **Westfield Friends** | Fort Meriwether | 4A |
+| Northside Christian North | Northside Christian North | **Toussaint** | Halbrook | 4A |
+| Welsh Plains Northwest | Welsh Plains Northwest | **Grayston** | Welsh Plains | 3A |
+| Harlan Cole | Millrace Tech | **Harlan** | Santa Cruz del Norte | 8A |
+
+Two problems, one fix each:
+
+- **A private school's name is its identity, so it cannot repeat.** Three
+  *Calvary Chapel*s in three towns read as one institution with three campuses.
+  A PUBLIC school named for its town repeats happily — there is a Lincoln in
+  every state — because the town is the disambiguator; a private school has no
+  such anchor. Calvary Chapel Kernwood (3A, sponsors no tennis) is untouched and
+  is now the only one, so the name survives in the state.
+- **A campus direction is not an identity.** *Northside Christian North* beside
+  Northside Christian, *Welsh Plains Northwest* beside Welsh Plains, *Fort
+  Meriwether Foundry North* beside Fort Meriwether Foundry: each reads as an
+  annex of the school next to it. Note this is only true of a direction on
+  another SCHOOL's name — Belmonte North/South/East/West are directions on the
+  CITY, which is how real districts name schools, and they stay.
+
+**And still no institutional suffix.** The owner writes names out in full — "The
+Cassius School", "Banfield Day School", "Toussaint School" — and `_SUFFIX_RE`
+strips the tail at emit exactly as it always has. There is no exemption list and
+none is wanted: "Cassius" and "Banfield Day" are the names.
+
+## D2. Public → private (2)
+
+`PRIVATE_SCHOOLS` keys on the DISPLAY name. Both were public in the source record
+and are private in the association by owner decision:
+
+- **Westfield Friends** (4A, Fort Meriwether) — a Friends school is not a public
+  high school.
+- **Summervale Northwest** (3A, Summervale) — converted as-is; it still needs a
+  name of its own.
+
+## D3. Sponsorship (+1)
+
+Not a rename at all, and the reason this section exists separately: **who plays
+tennis is a map decision.** 83 Jefferson towns had a high school and no tennis
+program while five cities carried 28-44 programs each.
+
+- **Whistle Stop** (1A, 152, Whistle Stop, Antler) now sponsors tennis — the
+  town's only school, and the town had none.
+
+`import_jhsaa.EXTRA_SPONSORS` / `NEVER_SPONSOR` hold this, and
+`scripts/jhsaa_sponsors.py` applies it to the committed data. ‼️ **A sponsorship
+change redraws the leagues of the classes it touches** and there is no way round
+it: a district is cut from a geographic ORDER into blocks of `MAX_DISTRICT`, and
+every league a new school actually belongs in was already full at 12. Placing it
+by hand would have put a Timber Valley 1A in a Gold Valley league to satisfy an
+arithmetic invariant. 2A-1A was redrawn; the other seven classes are untouched,
+because the draw is per classification and they are independent.
+
+**A sponsorship change never rewrites a prep-network record.** Like the section-B
+substitutions, the school keeps its identity there and only its participation in
+this association changes — so D3 is NOT part of the sync below.
+
+## D4. What prep-network needs from this pass
+
+Only **D1** — the seven renames — join the pending sync described above. They are
+already in `import_jhsaa.RENAMES`, so `scripts/rename_prep_network.py` picks them
+up with no further work; nothing needs to be transcribed by hand. D2 and D3 are
+association-side properties and stop here.

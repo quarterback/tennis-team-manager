@@ -979,7 +979,8 @@ PRIVATE_SCHOOLS = {
     "Cascade Christian", "Sinkford",
     "Cardinal Newman", "Calvary Christian", "Our Lady of the Coast",
     "Cornerstone Christian", "Pope Francis",
-    "Westfield Friends",
+    # Converted from public by owner decision, 2026-08.
+    "Westfield Friends", "Summervale Northwest",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -996,6 +997,20 @@ PRIVATE_SCHOOLS = {
 # Applied AFTER the sponsorship draw for the same reason RENAMES is applied at
 # emit: the dice are positional over the name-sorted list, so swapping names
 # earlier would reshuffle everyone in between.
+# ‼️ WHO SPONSORS TENNIS IS A MAP DECISION (owner rule 2026-08). The association
+# had 83 Jefferson towns with a high school and no tennis program at all, while
+# five cities carried 28-44 programs each. Both tables key on the PREP-NETWORK
+# name, like ALWAYS_EXTRA and unlike archetypes.json, and both are applied AFTER
+# the draw for the same reason SUBSTITUTIONS is: the dice are positional over the
+# name-sorted list, so removing a school before the roll reshuffles every school
+# after it. Applied to the committed data by `scripts/jhsaa_sponsors.py`, which
+# redraws the leagues of the classes they touch.
+NEVER_SPONSOR = frozenset()
+
+EXTRA_SPONSORS = frozenset({
+    "Whistle Stop",   # 1A 152 — Whistle Stop, Antler. The town's only school, and
+})                    # the town had no tennis at all.
+
 SUBSTITUTIONS = {
     "Altamonte School of Commerce": "Altamonte",
     "Bellacosta University Prep": "Bellacosta",
