@@ -518,21 +518,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `district_qualifiers` stays in the return and the archive as an EMPTY list so
   seasons played under the old rule still read. So there are TWO ways in, not three:
   a Zonal title, or the **recovery rounds** `super_regional` → `semi_state` →
-  `divisional` → conditional `conference` (Regional losers first, Zonal losers
-  joining at Semi-State, and only once the ladder's OWN losers are exhausted do
-  Ward → Sectional → Area losers come in as BODIES, never berths). **‼️ NO WARD PLAYBACKS — Ward losers enter at CONFERENCE and nowhere
-  else** (owner rule 2027-08). They used to be drafted into the Super Regional
-  pool as bodies, which gave them TWO OR THREE bites (Super Regionals, a
-  readmission to Semi-State, then Divisionals) while a Zonal loser got one, and
-  berths were being earned off them three rounds early. Super Regionals is now
-  the 16 Regional losers, full stop. CONFERENCE is the last rung and fills every
-  berth the ladder's own losers could not: ONE pool, reseeded and paired like
-  every other round, drawn in order of how well qualified you are — Divisional
-  losers, then DISTRICT CHAMPIONS still outside the field (what is left of the
-  retired guarantee: a title earns you one more dual, never a berth), then the
-  top Ward → Sectional → Area losers. It takes twice the outstanding berths, so
-  it is byeless by construction, and it convenes only if berths remain: dormant
-  in the 24-classes, ~28 teams in the 40s. **Units are LETTERED STATEWIDE,
+  `divisional` → conditional `semi_conference` → conditional `conference`
+  (Regional losers first, Zonal losers joining at Semi-State, and only once the
+  ladder's OWN losers are exhausted do Ward → Sectional → Area losers come in as
+  BODIES, never berths). **‼️ NO WARD PLAYBACKS — Ward losers enter at the
+  SEMI-CONFERENCE and nowhere else** (owner rule 2027-08). They used to be
+  drafted into the Super Regional pool as bodies, which gave them TWO OR THREE
+  bites (Super Regionals, a readmission to Semi-State, then Divisionals) while a
+  Zonal loser got one, and berths were being earned off them three rounds early.
+  Super Regionals is now the 16 Regional losers, full stop.
+  **‼️ THE SEMI-CONFERENCE — EVERYONE BUT THE DIVISIONAL LOSERS QUALIFIES FOR THE
+  CONFERENCE ON COURT (owner rule 2027-08).** The Conference awards the largest
+  single block of berths in recovery (14 of 40) and used to admit its whole field
+  directly — **22 of its 28 entrants were Ward/Sectional/Area losers who had
+  played NO recovery dual at all**, level with 6 Divisional losers who had come
+  through three rounds. Owner: they "should have to play a qualify match rather
+  than giving the teams direct access when other teams will have played several
+  matches where they've gotten wins before making it to that round." So a byeless
+  `semi_conference` (44 teams → 22 in a 40-field class) now sits in front of it.
+  It grants **ZERO extra bites at a berth** — the Conference is still the only
+  berth-bearing round these teams see — it makes them earn the seat, and that is
+  exactly what separates it from the retired playbacks. Dormant wherever the
+  Conference is.
+  **‼️ ITS POOL WALKS THE LADDER BACK IN ROUND ORDER, and never skips a survivor
+  of a LATER round**: district champions still outside → **Semi-State losers the
+  Divisionals could not take** → **Super Regional losers Semi-State could not
+  readmit** → Ward → Sectional → Area. ATR orders WITHIN a tier, never across
+  one. The two orphan tiers are usually empty and were in NO tier at all before —
+  `bodies` starts at Wards and `taken` excludes every Regional and Zonal loser,
+  so an orphan could be walked straight past by a Ward loser. It is live in the
+  24-classes already (the Divisionals take 10 of 11 Semi-State losers, orphaning
+  one a season) and invisible only because those classes never convene a
+  Conference. CONFERENCE is the last rung and fills every berth the ladder's own
+  losers could not: ONE pool — **Divisional losers plus the Semi-Conference
+  winners, and nothing else** — reseeded and paired like every other round. It
+  takes twice the outstanding berths, so it is byeless by construction, and it
+  convenes only if berths remain: dormant in the 24-classes, 28 teams in the 40s.
+  **Units are LETTERED STATEWIDE,
   BACKWARDS FROM Z, carrying their own class** — "6A-Z Conference", "6A-Y
   Conference" — via `jhsaa.reletter_conferences` (the Divisions' pattern: after
   both genders, girls first, classes bottom-up, letters never recycled; past A
@@ -547,10 +569,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   DYNAMIC (`_recovery`: berths = field − champions; the Semi-State floor is
   `ceil(4·berths/3)` **rounded UP TO EVEN before the reservoir is sized** — rounding
   after left 4A one berth short of a 40 field at full size while every other class
-  filled, and the scaled fixture could not see it). Draw rule: never immediately replay the team that just eliminated
-  you — and **bye selection and pairing are ONE problem** (`_draw_recovery`), since
-  choosing byes first froze a bye team into an unreachable rematch. Finishes for
-  recovery runs SUPERSEDE the ladder round that sent them there.
+  filled, and the scaled fixture could not see it). `jhsaa.recovery_shape(group)`
+  PROJECTS the whole ladder from the constants with no season, which is what lets
+  `jhsaa.sponsor_floor(group)` state the DATA invariant the Semi-Conference needs:
+  **76 sponsors per gender in a 40-field class** (`WARD_FIELD` 32 + the 44-team
+  qualifying field). It is a projection, not a second implementation — a full-size
+  run must land on it. Under the floor the round degrades LOUDLY rather than
+  shipping a short State field: the best bodies by ATR enter the Conference
+  directly (`sc_head`) and a warning names the class. Draw rule: never immediately
+  replay the team that just eliminated you — and **bye selection and pairing are
+  ONE problem**, since choosing byes first froze a bye team into an unreachable
+  rematch. Finishes for recovery runs SUPERSEDE the ladder round that sent them
+  there.
   - **‼️ NOBODY REACHES STATE ON A BYE — the rounds are BYELESS BY CONSTRUCTION
     (owner rule 2027-08, after three reports).** Recovery is THREE rounds and each
     pairs its ENTIRE field: **Super Regionals** (Regional losers) → **Semi-State**
@@ -1149,6 +1179,88 @@ was a school marker, shipped "Baptist HS High School".
   exactly like `RENAMES` — dice/districts/identity all run on the source name), and
   the one-time pass applied to all 56 states of `high_schools.json` (13,800+
   suffixes stripped, 16 School-of names collapsed).
+- **‼️ `data/jhsaa/schools.json` CANNOT BE REGENERATED — it IS the source of record.**
+  `scripts/import_jhsaa.py` reads prep-network, and prep-network carries **840
+  schools in SEVEN classifications (7A-1A) at every revision on every ref**, with no
+  9A or 8A anywhere and a different enrollment scale (its 7A runs 2,602-4,219 against
+  the committed 9A's 2,213-2,597). The committed 857/772 across nine classes came
+  from commit `3c36b16` ("Re-imported against the rebuilt records"); those rebuilt
+  records were never committed to prep-network. Run the importer today and it emits a
+  DIFFERENT association: 637 sponsors, seven classes. So a data change is applied as a
+  TRANSFORM — `scripts/jhsaa_apply_renames.py` (names/mascots/private) and
+  `scripts/jhsaa_reclassify.py` (the enrollment cascade). **Both hold zero names or
+  numbers of their own**: every table comes from `import_jhsaa`, which stays the one
+  authority, so they become no-ops the day those records come back. Both are
+  idempotent and both have `--dry-run`; prove it before committing.
+- **‼️ RIVALRIES — pairs that must NEVER be separated (owner rule 2027-08,
+  `import_jhsaa.RIVALRIES`).** A rivalry is a fact about two programs, not about their
+  enrollments, so it outranks reclassification, league assignment and playing up alike.
+  It NEEDS a rule because a district is `(classification, name)`: once two rivals sit
+  in different classes there is no league either could join to be with the other, so
+  the split is unrepairable. Condotti Vanguard Academy (1,666) and Romero-Finniski
+  (1,526) — both Ashbury, both always Metro League — were split by a 1,638 cut line
+  with every individual number correct.
+  - **A pair is promoted only if EVERY member clears the cut**, and **the whole class
+    is decided BEFORE any of it moves**: checked row by row it splits the pair the
+    OTHER way when both qualify, because the first is promoted and the second then
+    reads its already-moved rival as no longer being in the source class.
+  - **`draw_districts` sorts a pair adjacently AND walks the block boundary past it.**
+    Adjacency alone is not enough — the boundary landing exactly between them is what
+    split those two on a 7A redraw, with nothing having moved either school.
+  - `jhsaa_reclassify.check_rivals` ASSERTS the invariant rather than repairing it: a
+    drifted pair means the mechanism that moved them is broken, and quietly pulling
+    them back together hides that.
+- **‼️ PLAYING UP — a school competes ONE class above its enrollment class (owner rule
+  2027-08).** 13 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
+  list with `overrides.set_jhsaa_playup` / `/editor/jhsaa-playup` layered on top, the
+  archetype pattern exactly ("yes" promotes, "no" holds, clearing reverts to the file).
+  - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below** (owner correction
+    2027-08): "play up is for schools at the 4A or under level to play with teams at
+    their competitive level, not already big schools". An 8A blue-blood moving to 9A is
+    not playing up, it is a big school in a slightly bigger class — and the first pass
+    shipped exactly that. 9A's exclusion falls out of the same rule.
+  - **‼️ IT MOVES `group`, NEVER `classification`.** `group` is the championship you
+    enter — leagues, the ladder, State, All-State; `classification` is how many students
+    you have, and `_TALENT` reads THAT (`School.talent_group`). Keyed on `group`, a 5A
+    blue-blood playing up to 6A is silently GENERATED with 6A talent: a free roster
+    upgrade that inverts the whole choice, since playing up must cost you a harder field.
+    Pinned by measurement in `tests/test_jhsaa_playup.py` — hold one in its own class via
+    the override and its twelve players come out identical to six decimals. Nothing else
+    catches it; the rosters look fine either way.
+  - **The LEAGUE moves with the program** (a district is `(classification, name)`, so a
+    6A competitor carrying its 5A league name is alone in a 6A district — no league
+    season at all), and **all play-ups are placed in ONE pass**: applied per school
+    independently, two 8A blue-bloods both picked the same 9A league and took it from 11
+    to 13, because neither could see the other. The running count must include the
+    play-ups already placed.
+  - **`jhsaa_playup_version()` keys the season cache beside the archetype one**, and
+    `jhsaa.reset_schools()` exists because `load_schools` bakes group and league into the
+    School objects — `reset_all()` alone does not clear them.
+- **‼️ THE PRIVATE-SCHOOL LAYER — VARIED INSTITUTIONAL GRAMMAR (owner rule 2027-08).**
+  25 of the most obvious generated-person schools became institutions, spread EVENLY
+  across all eight classifications ("about 15-25 institutional private-school names,
+  not hundreds" — never a mass rename; 297 person-named schools remain and that is
+  fine). The register lives in the MIX — Academy · Cathedral · Prep · College Prep ·
+  Catholic · Christian · bare — because a layer built from one template reads as one.
+  **Prelate names come from Jefferson's OWN surname pool** (Bishop Valera, Archbishop
+  Valois, Cardinal Mercier, Cardinal Echevarria); never coin a fresh surname.
+  Archbishop Gregory is an owner mandate. Sinkford is a UU boarding school in the
+  Juniper Highlands with an inexplicably serious tennis program, and it exists so the
+  layer is not Catholic prep and evangelical academy and nothing else.
+  - **‼️ AND STILL NO SUFFIX.** Asked directly whether these keep "High School", the
+    owner said no — "you say Archbishop Gregory, I know what you're talking about …
+    you don't have to go to school after it". `_SUFFIX_RE` is UNTOUCHED and there is
+    no exemption list; the names are simply written bare. Academy, Prep, Cathedral and
+    Catholic were never suffixes and survive on their own, which is the whole reason
+    the varied grammar needs no rule change. **Prep, never Preparatory** (owner).
+  - `MASCOTS`/`COLORS`/`PRIVATE_SCHOOLS` key on the **DISPLAY** name, so a rename
+    silently orphans a mascot entry and the school reverts to its source record's
+    (`MASCOTS["Oskar Bellini"]` did exactly that). Move the key with the name.
+  - **‼️ NEVER RENAME A REAL PERSON'S SCHOOL.** The person-named pool mixes invented
+    names with genuine ones — Theodore Roosevelt, Bayard Rustin, Octavia Butler, James
+    Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama, John
+    Lewis and every president. The presidents and justices are in `OWNER_EDICTS`; the
+    rest are NOT, so "looks like a person" is not the test.
 - **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and

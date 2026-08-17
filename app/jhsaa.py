@@ -49,6 +49,16 @@ _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                      "data", "jhsaa", "schools.json")
 
 GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
+
+
+def champ_group(classification: str) -> str:
+    """The championship group a raw classification plays in — 2A and 1A share one.
+
+    The same fold as `scripts/import_jhsaa.champ_group`; kept here because a
+    School's `group` and its `classification` are no longer always equal (a
+    play-up moves the first and not the second), so the app has to be able to
+    derive one from the other."""
+    return classification if classification in GROUPS else "2A-1A"
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -64,8 +74,8 @@ FORMATS = {
 # "super_regional" and "semi_state" are the RECOVERY rounds (owner rule 2027-08):
 # the second-chance ladder that earns the non-automatic State berths on court.
 POSTSEASON = ("sectional", "ward", "regional", "zonal",
-              "super_regional", "semi_state", "divisional", "conference",
-              "state", "toc")
+              "super_regional", "semi_state", "divisional", "semi_conference",
+              "conference", "state", "toc")
 
 
 def dual_format(phase: str) -> DualFormat:
@@ -153,14 +163,13 @@ FIDELITY = "fast"
 #      Zonal losers, minus anyone the district guarantee already admitted),
 #      never handed out by a TOSS recompute: the owner replaced the wild-card
 #      model precisely because teams sitting at home could out-rank teams still
-#      playing. Regional losers (and, where the arithmetic needs bodies — 7A —
-#      the best-TOSS Ward losers, who get another chance to PLAY, not a berth)
-#      enter at Super Regionals; Zonal losers enter at Semi-State; Semi-State's
-#      survivors take exactly the berths that remain. The arithmetic is DYNAMIC
-#      (`_recovery`): berths = state field - Zonal champions - unique non-Zonal
-#      district champions, and the two rounds together always eliminate
-#      `RECOVERY_CUT` teams, so the shape is the same statewide whatever the
-#      district-champion count happens to be.
+#      playing. Regional losers enter at Super Regionals; Zonal losers join at
+#      Semi-State; Semi-State and the Divisionals take the berths that remain;
+#      and where those still fall short, the SEMI-CONFERENCE qualifies everyone
+#      else on court for a CONFERENCE that fills the rest. The arithmetic is
+#      DYNAMIC (`_recovery`): berths = state field - Zonal champions, and every
+#      round pairs its whole field, so the shape follows the field size rather
+#      than a constant. `recovery_shape` projects it from the constants alone.
 #
 # `STATE_FIELD`: the owner's field table below — the 24 is load-bearing, because
 # a 24-team seeded draw has exactly eight first-round byes and those byes ARE the
@@ -193,7 +202,6 @@ STATE_FIELD_DEFAULT = 24
 #: STATE, not a road-to-State stage: it plays the state dual format, carries the
 #: state phase and rides on the state bracket.
 QUALIFIER_NAME = "Qualifiers Round"
-RECOVERY_CUT = 8          # teams the two recovery rounds eliminate, together
 
 
 def state_field_size(group: str) -> int:
@@ -201,6 +209,67 @@ def state_field_size(group: str) -> int:
     owner's table at full size, and a pool too small for it is a broken fixture, not
     a format to accommodate."""
     return STATE_FIELD.get(group, STATE_FIELD_DEFAULT)
+
+
+def _even(n: int) -> int:
+    """The largest even number <= n. Every recovery field is byeless, so a pool is
+    only ever used at an even size."""
+    return max(0, n - (n % 2))
+
+
+def recovery_shape(group: str) -> dict:
+    """The PROJECTED size of every recovery round for `group`, from the constants
+    alone — no season required.
+
+    ‼️ This is a projection, not the live computation. `_recovery` sizes its rounds
+    off the pools it is actually handed, because it must degrade rather than crash
+    on a thin one; this reproduces the same arithmetic on a full-size ladder so the
+    data layer can be checked BEFORE a season is played (`sponsor_floor`, and
+    `scripts/import_jhsaa.py`'s preflight). The two are bound by
+    `tests/test_jhsaa_ladder.py`, which asserts a real season lands on these
+    numbers — keep them together or this becomes a second source of truth for a
+    shape only `_recovery` really decides."""
+    ward_champs = WARD_FIELD // 2
+    regional_field = PROTECTED + ward_champs
+    reg_losers = regional_field // 2                  # Regionals halve
+    champions = zon_losers = reg_losers // 2          # Zonals halve again
+    berths = max(0, state_field_size(group) - champions)
+
+    sr = _even(reg_losers)
+    sr_w, sr_l = sr // 2, sr - sr // 2
+    need = -(-4 * berths // 3)
+    need += need % 2                                  # the Semi-State floor, EVEN
+    base = sr_w + zon_losers
+    target = min(max(need, base), 2 * berths, base + sr_l)
+    ss = _even(target)
+    ss_w, ss_l = ss // 2, ss - ss // 2
+
+    dv = _even(min(2 * max(0, berths - ss_w), ss_l))
+    dv_w, dv_l = dv // 2, dv - dv // 2
+
+    cf_seats = 2 * max(0, berths - ss_w - dv_w)
+    # District champions all take protected seats, so they are always already
+    # somewhere in the ladder — the direct pool is the Divisional losers.
+    body_seats = max(0, cf_seats - dv_l) if cf_seats else 0
+    return {"berths": berths, "champions": champions,
+            "super_regional": sr, "semi_state": ss, "divisional": dv,
+            "semi_conference": 2 * body_seats, "conference": cf_seats,
+            "body_seats": body_seats}
+
+
+def sponsor_floor(group: str) -> int:
+    """The fewest sponsors per gender a classification needs to play its own format.
+
+    ‼️ THE SEMI-CONFERENCE IS WHAT SETS THIS, and it is a DATA invariant, not a
+    format to bend (`scripts/import_jhsaa.py` preflights it and refuses to emit
+    under it). The body reservoir — everyone eliminated in Areas, Sectionals or
+    Wards, i.e. every team that can still be called back — is `programs - 32`:
+    `PROTECTED` teams skip to Regionals and `WARD_FIELD` reach Wards, of which
+    half lose there and rejoin the pool. For a 40-field class the Semi-Conference
+    wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
+    a Conference, neither round convenes, and it has no floor of its own."""
+    shape = recovery_shape(group)
+    return WARD_FIELD + shape["semi_conference"] if shape["conference"] else 0
 
 
 # --- talent ------------------------------------------------------------------
@@ -402,7 +471,7 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
     lift = upstarts(year, salt).get(school.name)
     if lift:
         # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
-        mean, _spread = _TALENT[(school.group, school.gender)]
+        mean, _spread = _TALENT[(school.talent_group, school.gender)]
         mod["mean"] += mean * lift
         mod["kind"] = mod["kind"] or "upstart"
     return mod
@@ -483,6 +552,28 @@ class School:
     def key(self) -> str:
         return f"{self.ident}|{self.gender}"
 
+    @property
+    def plays_up(self) -> bool:
+        """True when the program has chosen to compete a classification above its
+        enrollment class (owner rule 2027-08). Real associations let a school play
+        up; here it is a durable property of strong-at-tennis programs, seeded at
+        import and editable like an archetype."""
+        return champ_group(self.classification) != self.group
+
+    @property
+    def talent_group(self) -> str:
+        """The classification a roster is GENERATED at — the school's OWN size,
+        never where it competes.
+
+        ‼️ THESE COME APART FOR A PLAY-UP AND THE DIFFERENCE IS THE WHOLE POINT.
+        `group` is the championship the program enters; `classification` is how
+        many students it has, and `_TALENT` is a statement about enrollment. Key
+        the bands on `group` and a 5A blue-blood that plays up to 6A is silently
+        handed 6A talent — a free roster upgrade that inverts the choice, since
+        playing up is meant to COST you a harder field, not buy you better
+        players. A no-op for every school that is not playing up."""
+        return champ_group(self.classification)
+
 
 @dataclass
 class TeamSeason:
@@ -533,6 +624,53 @@ class TeamSeason:
 
 
 _schools_cache: dict | None = None
+_playup_cache: dict = {}
+
+#: The largest league the association will cut, mirroring
+#: `scripts/import_jhsaa.MAX_DISTRICT` — read here only so a played-up program does
+#: not join a league that is already full.
+MAX_DISTRICT = 12
+
+
+def reset_schools() -> None:
+    """Drop the school and play-up caches. Needed when a play-up override changes,
+    because `load_schools` bakes the championship group and the league INTO the
+    School objects it builds — an archetype only changes ability, so `reset_all()`
+    alone is enough for that, and was not for this."""
+    global _schools_cache
+    _schools_cache = None
+    _playup_cache.clear()
+
+
+def play_up_group(classification: str) -> str:
+    """The classification one step ABOVE `classification`'s championship group, or
+    the group itself at the top of the ladder — 9A has nothing to play up to."""
+    g = champ_group(classification)
+    i = GROUPS.index(g)
+    return GROUPS[i - 1] if i else g
+
+
+def plays_up(school_name: str, seeded: bool) -> bool:
+    """Whether `school_name` competes a class above its own — the seed list in
+    `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
+    exactly the layering `archetype()` uses."""
+    from app import overrides as ov
+    hit = _playup_map(ov.jhsaa_playup_version()).get(school_name)
+    return seeded if hit is None else hit == "yes"
+
+
+def _playup_map(version: str) -> dict:
+    """{school: "yes"|"no"}, memoised on the override table's fingerprint. Computed
+    into a LOCAL and published (the gthread rule); never read back out of the dict
+    it wrote."""
+    hit = _playup_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    fresh = ov.get_jhsaa_playups()
+    _playup_cache.clear()
+    _playup_cache[version] = fresh
+    return fresh
 
 
 def load_schools(gender: str) -> list[School]:
@@ -541,18 +679,82 @@ def load_schools(gender: str) -> list[School]:
     if _schools_cache is None:
         with open(_DATA, encoding="utf-8") as fh:
             _schools_cache = json.load(fh)["schools"]
+    moved = _playup_districts(gender, _schools_cache)
     out = []
     for r in _schools_cache:
         if not r.get(gender):
             continue
+        # ‼️ PLAYING UP MOVES `group` AND LEAVES `classification` ALONE. `group` is
+        # the championship the program enters — leagues, the ladder, State and
+        # All-State all key off it — while `classification` stays what the school
+        # actually is, which is what `School.talent_group` generates from. A school
+        # that plays up gets a HARDER FIELD, never better players.
+        group = r["group"]
+        if _plays_up_row(r):
+            group = play_up_group(r["classification"])
         out.append(School(
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
-            classification=r["classification"], group=r["group"],
+            classification=r["classification"], group=group,
             enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
-            colors=r["colors"], district=r[f"{gender}_district"], gender=gender,
-            source=r.get("source", ""),
+            colors=r["colors"],
+            # ‼️ THE LEAGUE MOVES WITH THE PROGRAM. A district is (classification,
+            # name), so a school competing in 6A while carrying its 5A league name
+            # lands in a 6A district that holds nobody else — a one-team league,
+            # which in a double round robin is a team with no league season at all.
+            district=moved.get(r["name"], r[f"{gender}_district"]),
+            gender=gender, source=r.get("source", ""),
         ))
     return out
+
+
+def _playup_districts(gender: str, rows: list[dict]) -> dict[str, str]:
+    """{school: league} for every played-up program — the leagues they join in the
+    class they compete in.
+
+    ‼️ PLACED IN ONE PASS, NOT ONE AT A TIME. Each school picks the nearest league by
+    county, then area, then the emptiest, and skips any already at `MAX_DISTRICT`.
+    Computed per school independently that rule is not enough: two 8A blue-bloods
+    playing up to 9A both looked at the same settled membership, both saw the same
+    nearest league with room, and both joined it — 11 became 13, and district size IS
+    the schedule here (a double round robin, so that is four extra duals). The
+    running count has to include the play-ups already placed, which means they are
+    one assignment rather than a rule applied N times.
+
+    Settled membership excludes every played-up school, so a school that has moved
+    out of a class is not counted as still being in it."""
+    key = f"{gender}_district"
+    size: dict[tuple[str, str], int] = {}
+    for x in rows:
+        if not x.get(gender) or not x.get(key) or _plays_up_row(x):
+            continue
+        size[(x["group"], x[key])] = size.get((x["group"], x[key]), 0) + 1
+
+    out = {}
+    movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x)),
+                    key=lambda x: x["name"])          # deterministic order
+    for row in movers:
+        group = play_up_group(row["classification"])
+        near: dict[str, list[int]] = {}
+        for x in rows:
+            if (not x.get(gender) or not x.get(key) or _plays_up_row(x)
+                    or x["group"] != group):
+                continue
+            slot = near.setdefault(x[key], [0, 0])
+            slot[0] += x["county"] == row["county"]
+            slot[1] += x["area"] == row["area"]
+        if not near:
+            out[row["name"]] = row[key]               # nothing to join: keep it
+            continue
+        best = min(near, key=lambda d: (size.get((group, d), 0) >= MAX_DISTRICT,
+                                        -near[d][0], -near[d][1],
+                                        size.get((group, d), 0), d))
+        size[(group, best)] = size.get((group, best), 0) + 1
+        out[row["name"]] = best
+    return out
+
+
+def _plays_up_row(row: dict) -> bool:
+    return plays_up(row["name"], bool(row.get("play_up")))
 
 
 def districts(gender: str, group: str) -> dict[str, list[School]]:
@@ -624,7 +826,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
                                      region_weights={"us": 1.0})()
             p = generate_prospect(rng, nm, "US", gender=sex,
-                                  talent=min(80.0, _ceiling(rng, school.group,
+                                  talent=min(80.0, _ceiling(rng, school.talent_group,
                                                             school.gender, mod)
                                              + mod.get("pot", 0.0)),
                                   maturity_range=maturity,
@@ -1560,7 +1762,20 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
     play, so every round halves it exactly and nobody gets a bye. Used for Wards
     (one round) and Regionals+Zonals (two rounds of one 32-draw).
 
-    Returns (archive_dict, survivors) like `run_sectional`."""
+    Returns (archive_dict, survivors) like `run_sectional`.
+
+    ‼️ AN EMPTY FIELD RAISES, LOUDLY. `size` starts at 1, so a field of 0 (or 1)
+    produced a one-slot draw and the pairing loop read `slots[i + 1]` off the end:
+    a bare `IndexError: list index out of range` twenty frames down, naming
+    neither the classification nor the stage. It means the ladder was fed nothing
+    — a pool at or below `PROTECTED` leaves Sectionals no entrants at all — which
+    is a broken pool, not a format to accommodate (the no-scaling rule), so the
+    caller must stop with something it can act on."""
+    if len(field) < 2:
+        raise RuntimeError(
+            f"JHSAA {phases[0]}: field of {len(field)} — the ladder was fed an "
+            f"empty or single-team pool. A classification with no more than "
+            f"PROTECTED ({PROTECTED}) programs leaves Sectionals no entrants.")
     rng = random.Random(seed)
     size = 1
     while size < len(field):
@@ -1652,10 +1867,29 @@ def _atr_key(power: dict):
 
 
 CONFERENCE_NAME = "Conference"
+#: ‼️ THE SEMI-CONFERENCE — the qualifying round in front of the Conference (owner
+#: rule 2027-08). The Conference awards the single largest block of berths in
+#: recovery (14 of 40 in a 40-field class), and 22 of its 28 entrants used to walk in
+#: off a loss having played NO recovery dual at all, level with Divisional losers who
+#: had fought through three rounds. Owner: Ward teams "should have to play a qualify
+#: match rather than giving the teams direct access when other teams will have played
+#: several matches where they've gotten wins before making it to that round."
+#:
+#: So everyone except the Divisional losers now qualifies for the Conference on court.
+#: It is deliberately NOT the retired Ward-playback rule: it grants ZERO extra bites
+#: at a berth (the Conference is still the only berth-bearing round these teams see),
+#: only one extra dual to earn the seat. Byeless like every recovery round, and
+#: conditional on the same trigger as the Conference — dormant wherever the ladder's
+#: own losers already fill the field (the 24-field classes).
+SEMI_CONFERENCE_NAME = "Semi-Conference"
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
-                   "divisional": DIVISIONAL_NAME, "conference": CONFERENCE_NAME}
+                   "divisional": DIVISIONAL_NAME,
+                   "semi_conference": SEMI_CONFERENCE_NAME,
+                   "conference": CONFERENCE_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
-                   "divisional": "Division", "conference": "Conference"}
+                   "divisional": "Division",
+                   "semi_conference": SEMI_CONFERENCE_NAME,
+                   "conference": "Conference"}
 
 
 def renumber_divisions(season: dict, start: int = 1) -> int:
@@ -1837,12 +2071,13 @@ def _recovery_round(pool: list[TeamSeason], *, phase: str,
 def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
               prestate: dict, zonal_champs: list, district_champs: list[str],
               power: dict, *,
-              seed: int) -> tuple[dict, dict, dict, list, list[str]]:
+              seed: int) -> tuple[dict, dict, dict, dict, dict,
+                                  list, list[str], dict]:
     """The whole recovery path for one group: who still needs a berth, who gets
-    another chance, and the THREE rounds that decide it.
+    another chance, and the FOUR rounds that decide it.
 
-    Returns (super_regional, semi_state, divisional, qualifiers,
-    district_qualifiers).
+    Returns (super_regional, semi_state, divisional, semi_conference, conference,
+    qualifiers, district_qualifiers, atr_used).
 
     ‼️ NOBODY REACHES STATE ON A BYE (owner rule 2027-08 — the goal the whole
     design serves). Every recovery round pairs its ENTIRE field, so a bye is
@@ -1858,6 +2093,8 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
         Super Regionals   P teams (even)          -> P/2 winners
         Semi-State        S = P/2 + Z + readmits  -> S/2 winners  (berths)
         Divisionals       2L best Semi-State losers      -> L winners  (berths)
+        Semi-Conference   2B bodies                      -> B winners  (no berths)
+        Conference        Divisional losers + those B    -> berths     (berths)
 
     with `L = berths - S/2`, which forces `4*berths/3 <= S <= 2*berths`. Bodies
     are found in preference order — readmitted Super Regional LOSERS first
@@ -1897,6 +2134,13 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                       key=_power_key(power))
         bodies += pick
         taken |= {t.school.name for t in pick}
+    # ‼️ `bodies` STARTS AT WARDS, which is exactly why it cannot be the whole
+    # Semi-Conference pool: `taken` excludes every Regional and Zonal loser, so a
+    # team the ladder dropped LATER than a Ward loser is in no tier at all and can
+    # be walked straight past. The two orphan tiers that belong ahead of it —
+    # Semi-State losers the Divisionals did not take, and Super Regional losers
+    # Semi-State did not readmit — are assembled below, where those rounds are
+    # actually played. See `_sc_tiers`.
 
     # ‼️ NO WARD PLAYBACKS (owner rule 2027-08). Ward losers used to be drafted
     # into the Super Regional pool as bodies, which handed them TWO OR THREE bites
@@ -1959,21 +2203,16 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                               "round_names": [_RECOVERY_NAMES["divisional"]]}, []
     qualifiers = list(ss_winners) + list(dv_winners)
 
-    # ‼️ THE CONFERENCE ROUND — the last rung, and the one that now fills every
-    # berth the ladder's own losers could not (owner rule 2027-08). It is ONE
-    # POOL, reseeded and paired like every other recovery round; the earlier
-    # two-pool cross-draw is gone.
+    # ‼️ THE CONFERENCE ROUND — the last rung, and the one that fills every berth
+    # the ladder's own losers could not (owner rule 2027-08). It is ONE POOL,
+    # reseeded and paired like every other recovery round.
     #
-    # Who is in it, in order of how well qualified they are:
-    #   1. DIVISIONAL LOSERS — they fought to the last berth-bearing round;
-    #   2. DISTRICT CHAMPIONS still outside the field — what is left of the
-    #      retired guarantee: a district title earns you ONE more dual, not a
-    #      berth;
-    #   3. the top WARD (then Sectional, then Area) losers by ATR — the true
-    #      last-resort clubs. They enter HERE and nowhere else. It feels like
-    #      skipping the line, and that is the trade: better one last shot at the
-    #      end than the two or three bites the old playbacks gave them, with
-    #      berths being earned off them three rounds earlier.
+    # ‼️ ONLY DIVISIONAL LOSERS ENTER IT DIRECTLY (owner rule 2027-08). They fought
+    # to the last berth-bearing round; everybody else qualifies for it on court, in
+    # the SEMI-CONFERENCE below. The Conference used to admit its whole pool
+    # directly, so 22 of 28 entrants in a 40-field class walked in off a loss
+    # having played no recovery dual at all, level with teams that had won one —
+    # and it awards the largest single block of berths in recovery.
     #
     # ‼️ RANKED ON ATR, NOT TOSS — the only place in the association that is
     # true. The last seat should reward a 20-win season, not a middling team a
@@ -1983,26 +2222,84 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # trigger" — and takes twice the outstanding berths so every entrant plays
     # exactly once and exactly that many winners come out. Byeless like the rest.
     cf_n = max(0, berths - len(qualifiers))
+    cf_seats = 2 * cf_n
     dv_won = {id(t) for t in dv_winners}
     placed = ({t.school.name for t in qualifiers}
               | {t.school.name for t in zonal_champs})
     seen: set[str] = set()
-    cf_rank: list[TeamSeason] = []
-    for tier in ([t for t in dv_pool if id(t) not in dv_won],
-                 [by_name[n] for n in district_champs if n in by_name],
-                 bodies):
+
+    def _rank(tier, out: list) -> None:
+        """Append `tier`'s unplaced teams to `out`, best ATR first. Membership is
+        strict tier priority; ATR only orders WITHIN a tier."""
         for t in sorted(tier, key=_atr_key(power)):
             if t.school.name in placed or t.school.name in seen:
                 continue
             seen.add(t.school.name)
-            cf_rank.append(t)
-    # ‼️ SNAPSHOT THE ATR THAT RANKED THIS POOL, at this moment. `t.power` is the
+            out.append(t)
+
+    cf_direct: list[TeamSeason] = []
+    _rank([t for t in dv_pool if id(t) not in dv_won], cf_direct)
+    cf_direct = cf_direct[:cf_seats]
+
+    # ‼️ THE SEMI-CONFERENCE POOL — district champions first, then the ladder walked
+    # back IN ROUND ORDER, and a survivor of a later round is never skipped.
+    #   1. DISTRICT CHAMPIONS still outside the field — what is left of the retired
+    #      guarantee: a district title earns you ONE more dual, not a berth.
+    #   2. SEMI-STATE LOSERS the Divisionals did not take, then
+    #   3. SUPER REGIONAL LOSERS Semi-State did not readmit. Both are usually empty
+    #      (the Divisionals take every Semi-State loser and Semi-State readmits
+    #      every Super Regional loser at full size) — but not always, and until now
+    #      they were in NO tier: `bodies` starts at Wards and `taken` excludes every
+    #      Regional and Zonal loser, so an orphan could never re-enter while a Ward
+    #      loser walked past it. It is live in the 24-field classes already, where
+    #      the Divisionals take 10 of 11 Semi-State losers; it goes unseen only
+    #      because those classes never convene a Conference for the orphan to enter.
+    #      They also belong ahead on merit: an orphan has had ONE berth-bearing
+    #      round where a Divisional loser had two, and a Ward loser has had none.
+    #   4-6. the top WARD, then Sectional, then Area losers — the true last-resort
+    #      clubs, and the reason this round exists.
+    sc_rank: list[TeamSeason] = []
+    for tier in ([by_name[n] for n in district_champs if n in by_name],
+                 ss_losers[len(dv_pool):],
+                 list(sr_losers),
+                 bodies):
+        _rank(tier, sc_rank)
+
+    # ‼️ SNAPSHOT THE ATR THAT RANKED THESE POOLS, at this moment. `t.power` is the
     # regular-season stamp and `t.win_pct` keeps moving until the last state dual,
     # so re-deriving ATR on read gives a number that did not select anybody — the
     # archived-not-recomputed rule the Power Index already follows, and it binds
-    # harder here because these ARE the ranks the round was built from.
+    # harder here because these ARE the ranks the rounds were built from.
     atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
-    cf_pool = cf_rank[:2 * cf_n]
+
+    # Body seats, and how many of them the Semi-Conference can contest. With a
+    # healthy reservoir every body plays in (`sc_n == body_seats`, `sc_head` empty).
+    # ‼️ `sc_head` IS A DEGRADATION PATH, NOT A PRIVILEGE TIER. A class whose
+    # reservoir cannot fill `2 * body_seats` would otherwise ship a short State
+    # field, which the format does not allow, so the best-ATR surplus is admitted
+    # directly and the rest play for what is left. It should never fire: the
+    # reservoir is a DATA invariant (`sponsor_floor`, reported per class-gender by
+    # `scripts/jhsaa_reclassify.py`), which is why a non-empty head is logged as
+    # loudly as an unfilled field.
+    body_seats = max(0, cf_seats - len(cf_direct))
+    sc_field = _even(min(2 * body_seats, 2 * max(0, len(sc_rank) - body_seats)))
+    sc_head = sc_rank[:body_seats - sc_field // 2]
+    sc_pool = sc_rank[len(sc_head):len(sc_head) + sc_field]
+    if cf_n and sc_pool:
+        sc_pool = sorted(sc_pool, key=_atr_key(power))
+        sc_arc, sc_winners = _recovery_round(sc_pool, phase="semi_conference",
+                                             rng=rng)
+    else:
+        sc_arc, sc_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["semi_conference"]]}, []
+    if cf_n and sc_head:
+        log.warning("JHSAA %s semi-conference short: %d of %d body seats admitted "
+                    "directly (reservoir %d, floor %d) — the sponsor floor is "
+                    "breached", group, len(sc_head), body_seats, len(sc_rank),
+                    sponsor_floor(group))
+
+    cf_pool = cf_direct + list(sc_head) + list(sc_winners)
+    cf_pool = cf_pool[:cf_seats]
     if len(cf_pool) % 2:
         cf_pool = cf_pool[:-1]
     if cf_n and cf_pool:
@@ -2015,10 +2312,12 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
     if len(qualifiers) != berths:
         log.warning("JHSAA %s recovery filled %d of %d berths (pool %d, "
-                    "semi-state %d, divisional %d, conference %d)", group,
+                    "semi-state %d, divisional %d, semi-conference %d, "
+                    "conference %d)", group,
                     len(qualifiers), berths, len(sr_pool), len(ss_pool),
-                    len(dv_pool), len(cf_pool))
-    return sr_arc, ss_arc, dv_arc, cf_arc, qualifiers, district_qualifiers, atr_used
+                    len(dv_pool), len(sc_pool), len(cf_pool))
+    return (sr_arc, ss_arc, dv_arc, sc_arc, cf_arc,
+            qualifiers, district_qualifiers, atr_used)
 
 
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
@@ -2418,7 +2717,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     thousands of duals. Computed into a local and published, never returned out of the
     dict, per the threaded-worker rule in CLAUDE.md."""
     from app import overrides as _ov
-    ck = (salt, gender, year, seed, _ov.jhsaa_archetype_version())
+    # ‼️ BOTH override tables key the cache. An archetype changes how good a program
+    # is; a PLAY-UP changes which championship it enters, so it moves the leagues,
+    # the ladder, the State field and All-State. Leaving it out would serve a cached
+    # season built from the old classification map with no sign anything had changed.
+    ck = (salt, gender, year, seed,
+          _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version())
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
@@ -2490,18 +2794,20 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
     # any State draw: the remaining berths are earned on court, and the State
     # seeding TOSS is recomputed once more AFTERWARD so it includes them.
-    super_regionals, semi_states, divisionals, conferences = {}, {}, {}, {}
+    super_regionals, semi_states, divisionals = {}, {}, {}
+    semi_conferences, conferences = {}, {}
     atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        sr, ss, dv, cf, quals, dq, atr_used = _recovery(
+        sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], post_power,
             seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
-        divisionals[group], conferences[group] = dv, cf
+        divisionals[group], semi_conferences[group] = dv, sc
+        conferences[group] = cf
         recovery_q[group], district_q[group] = quals, dq
         atr_snap.update(atr_used)
     final_power = power_index(every_team, prestate=True)
@@ -2589,6 +2895,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "super_regional": super_regionals[group],
             "semi_state": semi_states[group],
             "divisional": divisionals[group],
+            "semi_conference": semi_conferences[group],
             "conference": conferences[group],
             # The names admitted by the DISTRICT GUARANTEE alone (champions who
             # did not win a Zonal) — access without a bye. Replaces the retired

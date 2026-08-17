@@ -36,12 +36,24 @@ def archived(tmp_path_factory):
     real_load, real_db, real_ready = jh.load_schools, wd.WORLD_DB, wd._schema_ready_for
 
     def small(gender):
-        """Two districts per classification — a real association, a tenth the size."""
+        """A scaled association — a real one, roughly a tenth the size.
+
+        ‼️ SIZED AGAINST `PROTECTED`, NOT AT A FIXED DISTRICT COUNT. This took the
+        first TWO districts per classification, which silently assumed every pair of
+        leagues comes to more than the 16 protected seats. Leagues run 7-12, so a
+        reclassification that puts two small ones at the head of a class's alphabet
+        leaves Sectionals ZERO entrants and the ladder is handed an empty field."""
         out = []
         for grp in jh.GROUPS:
-            keep = sorted({s.district for s in real_load(gender) if s.group == grp})[:2]
-            out += [s for s in real_load(gender)
-                    if s.group == grp and s.district in keep]
+            names = sorted({s.district for s in real_load(gender) if s.group == grp})
+            pool, keep = [], set()
+            for name in names:
+                keep.add(name)
+                pool = [s for s in real_load(gender)
+                        if s.group == grp and s.district in keep]
+                if len(pool) > jh.PROTECTED + 8:
+                    break
+            out += pool
         return out
 
     real_primed, real_prime = wd.is_primed, wd.prime

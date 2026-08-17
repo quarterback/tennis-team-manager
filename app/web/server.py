@@ -2532,6 +2532,32 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-playup", methods=["POST"])
+    def editor_jhsaa_playup():
+        """Rule on whether a JHSAA program plays UP a classification.
+
+        Stored per SCHOOL NAME like the archetype above, and layered the same way over
+        the `play_up` seed list in `data/jhsaa/schools.json`: "yes" promotes a program
+        the file did not pick, "no" holds one it did in its own class, and anything
+        else clears the override so the file decides again. Two different intentions,
+        and a single "clear" could only express one of them.
+
+        ‼️ This moves which CHAMPIONSHIP a program enters, not how good it is — the
+        league, the ladder, State and All-State all follow `group` while `_TALENT`
+        keeps reading the school's own class. That is a wider blast radius than an
+        archetype, so the school cache falls too."""
+        school = request.form.get("school", "")
+        choice = request.form.get("play_up", "")
+        if school:
+            from app import jhsaa as _jh
+            if choice in ("yes", "no"):
+                ov.set_jhsaa_playup(school, choice == "yes")
+            else:
+                ov.clear_jhsaa_playup(school)
+            _jh.reset_schools()
+            reset_all()
+        return _editor_redirect()
+
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():
         school = request.form.get("school", "")

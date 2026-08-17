@@ -273,6 +273,56 @@ def jhsaa_archetype_version() -> str:
     return h.hexdigest()
 
 
+# --- PLAYING UP (owner rule 2027-08) -----------------------------------------
+# A school competing one classification ABOVE its enrollment class, the way real
+# associations let a strong program do. Stored exactly like an archetype — a seed
+# list in `data/jhsaa/schools.json` (`play_up`) with this editable table on top:
+# "yes" promotes, "no" demotes a seeded program, and clearing reverts to the file.
+#
+# ‼️ IT MOVES `group`, NEVER `classification`. `group` is the championship you
+# enter; `classification` is how many students you have, and `_TALENT` is a
+# statement about enrollment (`School.talent_group`). Move both and playing up
+# silently becomes a free roster upgrade, which inverts the choice: it is meant
+# to cost you a harder field, not buy you better players.
+
+def get_jhsaa_playups() -> dict:
+    """{school: "yes"|"no"} for every program the editor has ruled on."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_playup'").fetchall()
+    conn.close()
+    return {k: v for k, v in rows if v}
+
+
+def set_jhsaa_playup(school: str, plays_up: bool) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_playup',?,?)", (school, "yes" if plays_up else "no"))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_playup(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_playup' AND key=?",
+                 (school,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_playup_version() -> str:
+    """Fingerprint of the play-up table. It decides which CHAMPIONSHIP a program
+    enters, so the school cache and the season cache both have to fall when it
+    changes — a wider blast radius than an archetype, which only moves ability."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_playup'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
 # --- Dynamic prestige momentum (YoY drift from on-court overperformance) ------
 # A SIGNED per-(school, gender) delta, distinct from the absolute editor override
 # above. The world rollover recomputes it each year; load_division adds it to the

@@ -3630,9 +3630,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                    for g in jhsaa.GROUPS},
                 "divisional": {g: season["groups"][g].get("divisional")
                                 for g in jhsaa.GROUPS},
-                # The CONDITIONAL fourth rung — present and empty in a year that
-                # did not need it (owner rule 2027-08). `.get` because seasons
-                # archived before it existed have no key at all.
+                # The CONDITIONAL last rungs — present and empty in a year that did
+                # not need them (owner rule 2027-08), and the Semi-Conference
+                # convenes exactly when the Conference does, because it is the round
+                # that qualifies everyone but the Divisional losers FOR it. `.get`
+                # because seasons archived before they existed have no key at all.
+                "semi_conference": {g: season["groups"][g].get("semi_conference")
+                                    for g in jhsaa.GROUPS},
                 "conference": {g: season["groups"][g].get("conference")
                                 for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
@@ -4004,6 +4008,13 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
         from . import jhsaa as _jh
         out["finish"] = _jh.CONFERENCE_NAME
         return out
+    # The SEMI-CONFERENCE sits between the two: a school that won it is in the
+    # Conference field above and never reaches here, so this is exactly the set
+    # that qualified for the last rung and lost trying.
+    if school in ((grp.get("semi_conference") or {}).get("field") or ()):
+        from . import jhsaa as _jh
+        out["finish"] = _jh.SEMI_CONFERENCE_NAME
+        return out
     if school in ((grp.get("divisional") or {}).get("field") or ()):
         from . import jhsaa as _jh
         out["finish"] = _jh.DIVISIONAL_NAME
@@ -4153,7 +4164,7 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     from before units existed carry no `unit` keys and yield nothing."""
     out = []
     for key in ("sectionals", "wards", "prestate", "super_regional",
-                "semi_state", "divisional", "conference"):
+                "semi_state", "divisional", "semi_conference", "conference"):
         d = (arc.get(key) or {}).get(group) or {}
         for games in d.get("rounds") or ():
             for gm in games:
@@ -4205,6 +4216,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "super_regional": (arc.get("super_regional") or {}).get(g),
          "semi_state": (arc.get("semi_state") or {}).get(g),
          "divisional": (arc.get("divisional") or {}).get(g),
+         "semi_conference": (arc.get("semi_conference") or {}).get(g),
          "conference": (arc.get("conference") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),

@@ -398,7 +398,14 @@ RENAMES = {
     "Imani Cross": "San Borondón Heights",
     "Isaiah Booker": "Earl Warren",
     "John F. Kennedy North": "Harriman Heights",
-    "Leire Aramburu": "Echevarria",
+    # ⚠️ Was plain "Echevarria" and had to move: prep-network now carries a school
+    # of its own by that bare name (Dragons, 2,473, same city), so the two emitted
+    # one display name and `build` refused — correctly, because a display name IS
+    # the archive identity. Neither side is an owner edict, so the collision is
+    # settled inside the existing family: North and South are already taken by
+    # Foundry High and I-50 Technical, Central was free. The school's roster
+    # identity is unaffected (pids key on `source`, still "Leire Aramburu").
+    "Leire Aramburu": "Echevarria Central",
     "Lorna Booker": "Moriarty Heights",
     "Manuel Cordero": "Sonia Sotomayor",
     "Marian Cross": "Fort Valois Heights",
@@ -505,6 +512,88 @@ RENAMES = {
     "Ransom City Union": "Ransom Pass",
     "Silton Union": "Silton Ridge",
     "Wickbrook": "Salmon Bay",
+
+    # ‼️ THE PRIVATE-SCHOOL LAYER (owner rule 2027-08). Jefferson had 297 schools
+    # named after INVENTED PEOPLE and a private layer too thin to read as real. The
+    # fix is deliberately NOT a mass rename — "replace some of the more obvious
+    # generated-person schools with about 15-25 institutional private-school names,
+    # not hundreds". These 25 are it. Every target is a verifiably fictional
+    # person-named PUBLIC school; each becomes private (`PRIVATE_SCHOOLS` below).
+    #
+    # ‼️ VARIED INSTITUTIONAL GRAMMAR IS THE WHOLE POINT. Not every Catholic school
+    # is "X Catholic": the register lives in the mix — Academy · Cathedral · Prep ·
+    # College Prep · Catholic · Christian · bare. A layer built from one template
+    # reads as a template.
+    #
+    # ‼️ AND STILL NO SUFFIX. "High School"/"School" are stripped by `_SUFFIX_RE`
+    # exactly as everywhere else (owner, asked directly: "you say Archbishop Gregory
+    # I know what you're talking about … you don't have to go to school after it").
+    # So the names are written BARE here — Archbishop Gregory, Sinkford, Grace
+    # Christian — and the grammar that survives is the grammar that carries meaning:
+    # Academy, Prep, Cathedral and Catholic are not suffixes and were never stripped.
+    # Do NOT add an exemption to `_SUFFIX_RE` for these; there is nothing to exempt.
+    #
+    # ‼️ PRELATE NAMES COME FROM JEFFERSON SURNAMES (owner rule) — Valera, Valois,
+    # Mercier and Echevarria are all already in the state's own name pool, which is
+    # what makes "Cardinal Echevarria" sound like a real Catholic high school
+    # instead of an import. Never coin a fresh surname for one.
+    #
+    # ‼️ NEVER RENAME A REAL PERSON'S SCHOOL. The person-named pool mixes invented
+    # names with genuine ones — Theodore Roosevelt, Bayard Rustin, Octavia Butler,
+    # James Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama,
+    # John Lewis, and every president in there. The presidents and justices are in
+    # OWNER_EDICTS; the rest are not, so "looks like a person" is not the test.
+    # Verify fictional before adding a target here.
+    "Nikolai Orlov": "Mater Dei",                    # 9A Cañada Grande
+    "Astrid Ricci": "Jesuit",                        # 9A Mercer City
+    "Oskar Bellini": "Notre Dame",                   # 9A Boyerstown
+    "Oksana Romanov": "Archbishop Gregory",          # 8A — owner's mandatory name
+    "Zoya Orlov": "Sacred Heart Cathedral",          # 8A Santa Michaela
+    "Edith Hart": "Bellarmine Prep",                 # 8A — Prep, never Preparatory
+    "Nicolás Treviño": "Bishop Valera",              # 7A — Jefferson surname
+    "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
+    "Amos Moss": "St. Francis Catholic",             # 7A Ashbury
+    "Nikolai Markov": "Christian Brothers",          # 7A Sebastian Cape
+    "Vernon Moss": "Cardinal Mercier",               # 6A — Jefferson surname
+    "Naomi Ellison": "Providence Catholic",          # 6A Gold Valley
+    "Jon Garmendia": "Pope Leo XIV",                 # 6A Halbrook Basin
+    "Viktor Antonov": "Archbishop Valois",           # 5A — Jefferson surname
+    "Marcus Mercer": "Cascade Christian",            # 5A Vespertine
+    "Nathaniel Gaines": "St. Catherine Academy",     # 5A Ashbury
+    "Andrés Valera": "Cardinal Echevarria",          # 4A — Jefferson surname
+    "César Mendoza": "De La Salle",                  # 4A Bellacosta
+    "Irina Kovalenko": "Heritage Christian Academy", # 4A Selquah
+    # ‼️ SINKFORD (owner). A Unitarian Universalist coed boarding/day school founded
+    # by UU donors in 1974 and named for William G. Sinkford — UUA president
+    # 2001-09, the first Black leader of a predominantly white American
+    # denomination, later senior minister at First Unitarian Portland, which is what
+    # makes him land in a fictional Pacific-Northwest state. The name reads like an
+    # old New England boarding school even though the namesake is contemporary.
+    # Small, unusually strong arts and outdoor programs, kids from across the West,
+    # and for no obvious reason a very serious tennis program (hence `blue_blood` in
+    # archetypes.json). It exists to stop the private layer being Catholic prep and
+    # evangelical academy and nothing else.
+    "Xabier Arregui": "Sinkford",                    # 3A Navrang, Juniper Highlands
+    "Miren Garmendia": "Cardinal Newman",            # 3A Homecroft
+    "Janice Bennett": "Calvary Christian",           # 3A Alderwold
+    "Galina Moroz": "Our Lady of the Coast",         # 2A-1A — Sebastian Cape, coastal
+    "Mikel Zubieta": "Cornerstone Christian",        # 2A-1A Clear Springs
+    "Thomas Moreau": "Pope Francis",                 # 2A-1A Gold Valley
+}
+
+# Schools whose DISPLAY name is a religious or independent institution and which
+# therefore read as private, whatever the source record said. Keyed on the display
+# name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
+PRIVATE_SCHOOLS = {
+    "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
+    "Sacred Heart Cathedral", "Bellarmine Prep", "Bishop Valera",
+    "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
+    "Cardinal Mercier", "Providence Catholic", "Pope Leo XIV",
+    "Archbishop Valois", "St. Catherine Academy",
+    "Cardinal Echevarria", "De La Salle", "Heritage Christian Academy",
+    "Cascade Christian", "Sinkford",
+    "Cardinal Newman", "Calvary Christian", "Our Lady of the Coast",
+    "Cornerstone Christian", "Pope Francis",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -558,6 +647,95 @@ SUBSTITUTIONS = {
 # sponsors tennis or at how good anybody is.
 PROMOTE_2A_ABOVE = 300          # 2A schools at or above this enrollment become 3A
 
+# ⚠️ RECLASSIFICATION, ROUND 3 (owner rule 2027-08) — THE TOP OF THE LADDER, and the
+# reason is the Semi-Conference. `jhsaa.sponsor_floor` says a 40-field class needs 76
+# sponsors per gender to field a full qualifying round, and 9A BOYS had 72: four short,
+# the only class-gender under the line, and short for no reason but where the
+# enrollment cut lines happened to fall. The owner's call was to fix the association
+# rather than the format — "there are more than enough schools to do that so it seems
+# silly to let this be a real constraint when it's not" — by moving schools UP a class
+# and letting the gap cascade back down: 8A→9A, 7A→8A, 6A→7A, and 5A backfills 6A.
+#
+# Same mechanism and same justification as the 2A→3A promotions above: states readjust
+# their enrollment cutoffs all the time, and the line is drawn on ENROLLMENT because
+# that is what a classification IS. Nothing here looks at who sponsors tennis or at how
+# good anybody is — that is what PLAY_UP is for, and it is a different thing.
+#
+# Applied TOP-DOWN (9A first) so a school can only ever move ONE class: promote 7A into
+# 8A before 8A into 9A and a big 7A school lands in 9A in a single pass.
+#
+# ⚠️ THE CUT LINES ARE CALIBRATED TO THE COMMITTED ENROLLMENT SCALE — the one in
+# `data/jhsaa/schools.json`, which is what the nine-class records carried (9A runs
+# 2,213-2,597, 8A 1,703-2,197). They are NOT calibrated to the seven-class
+# prep-network checkout, whose 7A alone runs 2,602-4,219; dropped on that scale
+# they promote nobody. Each line takes ~12 schools, which is what carries ~10 boys'
+# programs up per step and lifts 9A boys clear of `jhsaa.sponsor_floor`.
+PROMOTE_ABOVE = {
+    "8A": 2148,        # 8A schools at or above this become 9A
+    "7A": 1638,        # ...7A become 8A
+    "6A": 1323,        # ...6A become 7A
+    "5A": 1022,        # ...5A become 6A (the backfill; 4A and below are untouched)
+}
+_PROMOTE_TO = {"8A": "9A", "7A": "8A", "6A": "7A", "5A": "6A"}
+
+# ‼️ PLAYING UP (owner rule 2027-08). Real associations let a school compete a
+# classification above its enrollment class, and here it is what a program strong at
+# tennis chooses to do. `PLAY_UP_COUNT` of them, drawn from the BLUE-BLOOD seed list
+# in `data/jhsaa/archetypes.json` — the durable "this program is good at tennis"
+# property the association already keeps — never from a hand-written list of names,
+# which is the same rule archetypes themselves follow.
+#
+# ‼️ It moves the championship GROUP and never the CLASSIFICATION (see
+# `overrides.set_jhsaa_playup` and `jhsaa.School.talent_group`): a played-up school
+# takes a harder field, it does not get better players. 9A schools are excluded
+# because there is nothing above them.
+#
+# Weighted to the TOP of each class by enrollment — a school already near the cut
+# line is the one that plausibly plays up — and seeded, so the list is reproducible.
+#
+# ‼️ PLAYING UP IS A SMALL-SCHOOL THING (owner correction 2027-08). "Play up is for
+# schools at the 4A or under level to play with teams at their competitive level, not
+# already big schools" — an 8A blue-blood moving to 9A is not playing up, it is just a
+# big school in a slightly bigger class, and the first pass shipped exactly that
+# (Condotti Vanguard Academy 8A -> 9A, Gwendolyn Brooks 8A -> 9A). The point is a small
+# program good enough that its own classification cannot give it a game.
+PLAY_UP_MAX_GROUP = "4A"        # eligible at this championship group and below
+PLAY_UP_COUNT = 14
+PLAY_UP_SEED = 90210
+
+# ‼️ RIVALRIES — schools that must NEVER be separated (owner rule 2027-08). A rivalry
+# is a fact about two programs, not about their enrollments, so it outranks every
+# mechanism here that would move one of them: reclassification, league assignment and
+# playing up all have to keep the pair together or leave it alone.
+#
+# This is not hypothetical. The 2027-08 enrollment cascade promoted Condotti Vanguard
+# Academy (1,666) past a 1,638 cut line while Romero-Finniski (1,526) stayed put, so
+# two Ashbury schools that had shared Metro League for as long as the association has
+# existed ended up in different CLASSIFICATIONS — and a district is (classification,
+# name), so nothing short of another reclassification could ever put them back in the
+# same league. Every number was correct and the result was wrong.
+#
+# Enforcement: a pair is promoted only if EVERY member clears the cut (otherwise none
+# of them move), and afterwards the whole pair takes one league.
+RIVALRIES = [
+    ("Condotti Vanguard Academy", "Romero-Finniski"),
+]
+
+
+def rival_group(name: str) -> tuple[str, ...] | None:
+    """The rivalry `name` belongs to, or None."""
+    for pair in RIVALRIES:
+        if name in pair:
+            return pair
+    return None
+
+
+def _splits_rivalry(pool: list[dict], at: int) -> bool:
+    """True if cutting `pool` at index `at` would put two rivals either side. Only
+    meaningful once the pool is sorted so rivals sit adjacent (see `draw_districts`)."""
+    before = rival_group(pool[at - 1]["name"])
+    return bool(before) and rival_group(pool[at]["name"]) is before
+
 
 def reclassify(schools: list[dict]) -> int:
     moved = 0
@@ -565,6 +743,13 @@ def reclassify(schools: list[dict]) -> int:
         if s["classification"] == "2A" and s.get("enrollment", 0) >= PROMOTE_2A_ABOVE:
             s["classification"] = "3A"
             moved += 1
+    # Top-down, so each school is considered exactly once and moves at most one class.
+    for src in ("8A", "7A", "6A", "5A"):
+        for s in schools:
+            if (s["classification"] == src
+                    and s.get("enrollment", 0) >= PROMOTE_ABOVE[src]):
+                s["classification"] = _PROMOTE_TO[src]
+                moved += 1
     return moved
 
 
@@ -781,6 +966,34 @@ def league_names(blocks: list[list[dict]], group: str) -> list[str]:
 
 
 MASCOTS = {
+    # ── the private-school layer (see the RENAMES block) ──────────────────
+    # Real-world mascots where the institution has one everybody knows, which is
+    # half of what makes the name land. ⚠️ NO AQUATIC ANIMALS (the rule at the head
+    # of this table) — so Xavier Prep's real Gators are not reproduced here.
+    "Mater Dei": "Monarchs",
+    "Jesuit": "Crusaders",
+    "Archbishop Gregory": "Griffins",
+    "Sacred Heart Cathedral": "Irish",
+    "Bellarmine Prep": "Lions",
+    "Bishop Valera": "Bulldogs",
+    "Xavier College Prep": "Cavaliers",
+    "St. Francis Catholic": "Lancers",
+    "Christian Brothers": "Falcons",
+    "Cardinal Mercier": "Mustangs",
+    "Providence Catholic": "Celtics",
+    "Pope Leo XIV": "Pilgrims",
+    "Archbishop Valois": "Knights",
+    "Cascade Christian": "Warriors",
+    "St. Catherine Academy": "Wildcats",
+    "Cardinal Echevarria": "Matadors",
+    "De La Salle": "Spartans",
+    "Heritage Christian Academy": "Eagles",
+    "Sinkford": "Chanticleers",                 # the odd one, deliberately
+    "Cardinal Newman": "Cardinals",
+    "Calvary Christian": "Chargers",
+    "Our Lady of the Coast": "Stars",           # Stella Maris, star of the sea
+    "Cornerstone Christian": "Cougars",
+    "Pope Francis": "Shepherds",
     "Evans Larsen Day": "Steeplejacks",         # owner naming, 2027-08
     "Chester A. Arthur": "Greenies",            # owner naming, 2027-08
     "Siskiyou Valley": "Prospectors",           # owner naming, 2027-08
@@ -893,7 +1106,10 @@ MASCOTS = {
     "Southridge Christian": "Lamplighters",
     "St. Sebastian Prep": "Archers",            # the saint's own iconography
     "Opal Stokes": "Glassblowers",
-    "Oskar Bellini": "Skylarks",
+    # ⚠️ Was keyed "Oskar Bellini" and had to move with the name: MASCOTS is keyed
+    # on the DISPLAY name (see the emit block), so a rename silently orphans its
+    # entry and the school quietly reverts to its source record's mascot.
+    "Notre Dame": "Fighting Irish",
     "Dolores Huerta": "Grape Pickers",
     "Los Robles": "Live Oaks",                  # los robles — the oaks
     "Norview": "Peregrines",
@@ -1330,7 +1546,26 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     # `canon`, not the display name — same reason as `sponsors`: the blocks are cut
     # off this ORDER, so sorting on a name the owner can rename moves schools
     # between districts every time one is renamed.
-    pool = sorted(pool, key=lambda s: (s["area"], county(s), s["city"], canon(s["name"])))
+    # ‼️ RIVALS SORT AS ONE SCHOOL. A rivalry has to survive a redraw, and the ordering
+    # is what the blocks are cut from, so the pair takes its representative's place in
+    # the sort and only tie-breaks among itself. Without this the two are ordered by
+    # their own names — Condotti Vanguard Academy and Romero-Finniski are both in
+    # Ashbury and sorted a whole alphabet apart, so a 7A redraw put them in different
+    # leagues even though nothing had moved them.
+    def order(s):
+        pair = rival_group(s["name"])
+        lead = by_pair.get(pair) if pair else None
+        head = lead or s
+        return (head["area"], county(head), head["city"], canon(head["name"]),
+                canon(s["name"]))
+
+    by_pair = {}
+    for pair in RIVALRIES:
+        members = sorted((s for s in pool if s["name"] in pair),
+                         key=lambda s: canon(s["name"]))
+        if members:
+            by_pair[pair] = members[0]
+    pool = sorted(pool, key=order)
     n = len(pool)
     if not n:
         return {}
@@ -1346,8 +1581,16 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     bounds, at = [], 0
     for i in range(k):
         step = base + (1 if i < big else 0)
-        bounds.append((at, at + step))
-        at += step
+        end = min(n, at + step)
+        # ‼️ AND A CUT NEVER FALLS INSIDE A RIVALRY. Sorting the pair adjacently is
+        # not enough on its own — the boundary can still land between them, which is
+        # precisely what happened — so the cut walks forward past any pair it would
+        # split. That moves at most one school per rivalry into the earlier block,
+        # keeping sizes within one of each other rather than exactly equal.
+        while 0 < end < n and _splits_rivalry(pool, end):
+            end += 1
+        bounds.append((at, end))
+        at = end
     # ‼️ THE NAME COMES FROM THE LEAGUE BANK, NOT FROM THIS BLOCK'S GEOGRAPHY
     # (owner rule 2027-08). Deriving it from the map is what produced eight
     # variations of "<area> District", and worse, an area-then-county cascade
@@ -1418,7 +1661,10 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "classification": s["classification"],
             "group": champ_group(s["classification"]),
             "enrollment": s["enrollment"],
-            "private": s["private"],
+            # Renamed schools carry their institution's status, not the source
+            # record's: a public high school that becomes Sacred Heart Cathedral
+            # is a private school (see PRIVATE_SCHOOLS).
+            "private": s["private"] or display in PRIVATE_SCHOOLS,
             "mascot": MASCOTS.get(display, s["mascot"]),
             "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,

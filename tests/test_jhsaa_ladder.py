@@ -14,12 +14,15 @@ The qualification structure (owner spec 2027-08, expanded State fields):
      PROTECTED seat and nothing at State: a champion that loses falls into the
      same recovery pools as everyone else and wins its way in, or does not go.
   4. The recovery rounds — Super Regionals → Semi-State → Divisionals, then a
-     CONDITIONAL Conference that convenes only if berths remain and fills every
-     one that does. Super Regionals is the ladder's OWN losers (no Ward
-     playbacks); the Conference is one reseeded pool of Divisional losers,
-     district champions still outside the field, and the top Ward/Sectional/Area
-     losers by ATR — their single shot. No berth is handed out by a TOSS
-     recompute; the wild-card model is retired.
+     CONDITIONAL Semi-Conference and Conference that convene only if berths
+     remain and fill every one that does. Super Regionals is the ladder's OWN
+     losers (no Ward playbacks). The CONFERENCE admits only Divisional losers
+     directly; EVERYONE ELSE qualifies for it on court in the SEMI-CONFERENCE
+     (owner rule 2027-08), whose pool walks the ladder back in round order —
+     district champions still outside, then the orphaned Semi-State and Super
+     Regional losers, then Ward → Sectional → Area — ranked by ATR within a tier
+     and never across one. No berth is handed out by a TOSS recompute; the
+     wild-card model is retired.
 
 State is 24 teams in the three largest classes and 40 in the five smaller ones
 (owner table 2027-08) — a 40 being a 24 with a Qualifiers Round in front of it.
@@ -43,13 +46,29 @@ def archived(tmp_path_factory):
     db = str(tmp_path_factory.mktemp("jhsaa_ladder") / "ladder.db")
     real_load, real_db, real_ready = jh.load_schools, wd.WORLD_DB, wd._schema_ready_for
 
+    # ‼️ SIZE THE POOL AGAINST `PROTECTED`, NOT AT A FIXED DISTRICT COUNT. This took
+    # the first TWO districts per classification, which silently assumed every pair
+    # of leagues comes to more than the 16 protected seats. Leagues run 7-12, so a
+    # reclassification that put two small ones at the head of a class's alphabet
+    # dropped 8A boys to exactly 16 — Sectionals got ZERO entrants, and the ladder
+    # was handed an empty field. The fixture is a scaled association, so it has to
+    # scale against the constant that decides whether a ladder can run at all.
+    _FLOOR = jh.PROTECTED + 8
+
     def small(gender):
-        """Two districts per classification — a real association, a tenth the size."""
+        """The fewest whole districts per classification that still leave Sectionals
+        a real field — a real association, roughly a tenth the size."""
         out = []
         for grp in jh.GROUPS:
-            keep = sorted({s.district for s in real_load(gender) if s.group == grp})[:2]
-            out += [s for s in real_load(gender)
-                    if s.group == grp and s.district in keep]
+            names = sorted({s.district for s in real_load(gender) if s.group == grp})
+            pool, keep = [], set()
+            for name in names:
+                keep.add(name)
+                pool = [s for s in real_load(gender)
+                        if s.group == grp and s.district in keep]
+                if len(pool) > _FLOOR:
+                    break
+            out += pool
         return out
 
     real_primed, real_prime = wd.is_primed, wd.prime
@@ -78,7 +97,7 @@ def _stages(archived, g):
             arc["brackets"][g], arc["protected"][g],
             arc["district_qualifiers"][g],
             arc["super_regional"][g], arc["semi_state"][g], arc["divisional"][g],
-            arc["conference"][g])
+            arc["semi_conference"][g], arc["conference"][g])
 
 
 # --- the fixed shape, per classification -------------------------------------------
@@ -87,7 +106,7 @@ def test_the_ladder_shape_is_fixed_and_proportional(archived):
     """Sectionals feeds Wards exactly; Wards halves; Regionals = Ward champions +
     protected and halves twice down to the Zonal champions."""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         assert len(ward["field"]) == jh.WARD_FIELD
         assert len(sec["survivors"]) == len(ward["field"])
         assert len(ward["survivors"]) == len(ward["field"]) // 2
@@ -106,7 +125,7 @@ def test_the_state_field_is_champions_and_recovery_survivors(archived):
     empty on every new season and the field is champions plus survivors, sized
     to the classification's State field with the champions seeded first."""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         zonal_champs = set(pre["survivors"])
         # ‼️ THE STATE FIELD IS FIXED (owner patch 2027-08): recovery conforms
         # to it — bye shortages are solved upstream with Ward-loser bodies,
@@ -129,7 +148,7 @@ def test_zonal_champions_are_the_top_seeds_byes_or_not(archived):
     byes fails on the no-bye classification."""
     checked_bye_free = False
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = list(pre["survivors"])
         field = state["field"]
         # the champions hold the top seed slots, in TOSS order among themselves
@@ -157,7 +176,7 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
     State."""
     checked = False
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = {rows[0]["school"]
                   for rows in archived["arc"]["standings"][g].values() if rows}
         earned = (set(pre["survivors"]) | set(ss["survivors"])
@@ -176,7 +195,7 @@ def test_recovery_berths_are_earned_on_court(archived):
     teams that lost in the ladder (Regional/Zonal losers, plus Ward losers where
     the arithmetic needs bodies)."""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         earned = set(state["field"]) - set(pre["survivors"])
         assert earned == (set(ss["survivors"]) | set(dv["survivors"])
                           | set(lc["survivors"]))
@@ -217,7 +236,7 @@ def test_boys_and_girls_play_the_same_format(archived):
 
 def test_protected_is_district_champions_first_then_toss(archived):
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = {rows[0]["school"]
                   for rows in archived["arc"]["standings"][g].values() if rows}
         assert champs <= set(protected)
@@ -225,7 +244,7 @@ def test_protected_is_district_champions_first_then_toss(archived):
 
 def test_protected_teams_skip_sectionals_and_wards_only(archived):
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         assert set(protected).isdisjoint(sec["field"])
         assert set(protected).isdisjoint(ward["field"])
         assert set(protected) <= set(pre["field"])   # they DO play Regionals
@@ -235,7 +254,7 @@ def test_protected_teams_skip_sectionals_and_wards_only(archived):
 
 def test_wards_regionals_and_zonals_are_byes_free(archived):
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         for br in (ward, pre):
             alive = len(br["field"])
             for games in br["rounds"]:
@@ -255,7 +274,7 @@ def test_state_byes_belong_to_the_zonal_champions(archived):
     BYE: the champions appear in none of the qualifying rounds, and the fresh
     main draw they enter is a full power of two with no byes at all."""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         names = state.get("round_names") or []
         champs = set(pre["survivors"])
         if names:
@@ -285,7 +304,7 @@ def test_state_byes_belong_to_the_zonal_champions(archived):
 
 def test_prestate_dicts_carry_their_own_round_names(archived):
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         assert ward["round_names"] == ["Wards"]
         assert pre["round_names"] == ["Regionals", "Zonals"]
         assert sr["round_names"] == ["Super Regionals"]
@@ -305,7 +324,7 @@ def test_every_prestate_dual_is_a_numbered_unit(archived):
     gender — Area 1, Section 1, Ward 1, Regional 1, restarting at 1 per stage per
     classification; Zonals letter A, B, C…"""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         for i, games in enumerate(sec["rounds"]):
             prefix = "Area" if i < len(sec["rounds"]) - 1 else "Section"
             assert [gm["unit"] for gm in games] \
@@ -327,7 +346,7 @@ def test_every_prestate_dual_is_a_numbered_unit(archived):
 
 def test_finishes_name_the_stage_a_run_ended_at(archived):
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         grp = {"sectional": sec, "ward": ward, "prestate": pre,
                "super_regional": sr, "semi_state": ss, "divisional": dv,
                "conference": lc, "state": state, "district_qualifiers": dq}
@@ -545,15 +564,20 @@ def test_recovery_draws_never_replay_the_team_that_just_eliminated_you(archived)
 
     offenders = []
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         reg, zon = opp_map(pre, {0}), opp_map(pre, {1})
         sr_opp, ss_opp = opp_map(sr), opp_map(ss)
         ward_opp, sec_opp = opp_map(ward), opp_map(sec)
         # where each round's entrants came from, nearest stage first
+        # ⚠️ The last two rungs were missing from this map, so the rule was never
+        # checked on the rounds that hand out the most berths.
+        sc_opp, dv_opp = opp_map(sc), opp_map(dv)
         sources = {
             "super_regional": (sr, [reg, ward_opp, sec_opp]),
             "semi_state": (ss, [sr_opp, zon]),
             jh.DIVISIONAL_NAME: (dv, [ss_opp]),
+            jh.SEMI_CONFERENCE_NAME: (sc, [ss_opp, sr_opp, ward_opp, sec_opp]),
+            jh.CONFERENCE_NAME: (lc, [sc_opp, dv_opp]),
         }
         for label, (stage, maps) in sources.items():
             games = (stage.get("rounds") or [[]])[0]
@@ -590,9 +614,10 @@ def test_no_recovery_round_has_a_bye(archived):
     is not disallowed — it cannot occur. This asserts the structural fact, not
     a rule about who may hold one."""
     for g in jh.GROUPS:
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         for name, arc in (("Super Regionals", sr), ("Semi-State", ss),
-                          (jh.DIVISIONAL_NAME, dv), (jh.CONFERENCE_NAME, lc)):
+                          (jh.DIVISIONAL_NAME, dv),
+                          (jh.SEMI_CONFERENCE_NAME, sc), (jh.CONFERENCE_NAME, lc)):
             played = {nm for games in arc["rounds"] for gm in games
                       for nm in (gm["home"], gm["away"])}
             assert set(arc["field"]) == played, (g, name, "bye in recovery")
@@ -603,6 +628,73 @@ def test_no_recovery_round_has_a_bye(archived):
                for games in arc["rounds"] for gm in games}
         assert earned <= won, (g, sorted(earned - won))
 
+
+def test_the_conference_is_entered_on_court(archived):
+    """‼️ ONLY DIVISIONAL LOSERS ENTER THE CONFERENCE DIRECTLY (owner rule 2027-08).
+
+    The Conference awards the largest single block of berths in recovery — 14 of
+    40 in a class that plays one — and it used to admit its whole field directly,
+    so 22 of its 28 entrants were Ward/Sectional/Area losers who had played no
+    recovery dual at all, level with 6 Divisional losers who had come through
+    three rounds. Owner: they "should have to play a qualify match rather than
+    giving the teams direct access when other teams will have played several
+    matches where they've gotten wins before making it to that round."
+
+    ‼️ Note what this does NOT assert, because it must stay false: that anybody
+    gained a second shot at a berth. The Conference is still the only
+    berth-bearing round these teams see — the Semi-Conference makes them earn the
+    SEAT, which is the whole difference between it and the retired Ward playbacks.
+    """
+    for g in jh.GROUPS:
+        *_, dv, sc, lc = _stages(archived, g)
+        if not lc["field"]:
+            assert not sc["field"], (g, "a Semi-Conference without a Conference")
+            continue
+        dv_losers = set(dv["field"]) - set(dv["survivors"])
+        stray = set(lc["field"]) - dv_losers - set(sc["survivors"])
+        # ‼️ THE ONE LEGITIMATE DIRECT ENTRY is the documented degradation path: a
+        # class whose body reservoir cannot fill 2x its body seats would otherwise
+        # ship a short State field, which the format forbids, so the best bodies by
+        # ATR come straight in and `_recovery` warns. It is a DATA fault
+        # (`jhsaa.sponsor_floor`) and never happens at full size — but this fixture
+        # is a scaled association and starves every class, so the assertion has to
+        # be the invariant that holds at BOTH scales: strays are exactly the
+        # shortfall and never one more. A Ward loser walking in makes stray exceed
+        # it, which is the regression this test exists to catch.
+        seats = len(lc["field"]) - len(dv_losers)
+        shortfall = seats - len(sc["survivors"])
+        assert len(stray) == shortfall, (
+            g, "entered the Conference having played nothing",
+            sorted(stray)[:5], f"shortfall {shortfall}")
+        # ...and when the reservoir WAS adequate, nobody skips the qualifier.
+        if len(sc["field"]) == 2 * seats:
+            assert not stray, (g, sorted(stray)[:5])
+        # ...and the Semi-Conference is a QUALIFIER, never a berth: nobody who
+        # only won there is in the State field without also winning the Conference.
+        assert not (set(sc["survivors"]) - set(lc["field"])), g
+
+
+def test_recovery_orphans_are_never_skipped_for_a_ward_loser(archived):
+    """‼️ THE BODY POOL WALKS THE LADDER BACK IN ROUND ORDER (owner catch 2027-08).
+
+    Spotted by the owner before the code showed it: "I presume that all those
+    teams would've already been exhausted but mathematically that's probably not
+    true and they should not be skipped over." `bodies` starts at WARDS and
+    `taken` excludes every Regional and Zonal loser, so a Semi-State loser the
+    Divisionals could not take — or a Super Regional loser Semi-State could not
+    readmit — belonged to no tier at all and could be walked straight past by a
+    team that got nowhere near as far. Live already in the 24-field classes, where
+    the Divisionals take 10 of 11 Semi-State losers; invisible only because those
+    classes never convene a Conference for the orphan to enter."""
+    for g in jh.GROUPS:
+        *_, sr, ss, dv, sc, lc = _stages(archived, g)
+        if not sc["field"]:
+            continue
+        orphans = (((set(ss["field"]) - set(ss["survivors"])) - set(dv["field"]))
+                   | ((set(sr["field"]) - set(sr["survivors"])) - set(ss["field"])))
+        skipped = orphans - set(sc["field"]) - set(lc["field"])
+        assert not skipped, (g, "recovery orphans passed over", sorted(skipped))
+
 def test_recovery_byes_reach_the_bracket_view(archived):
     """The Road-to-State stages carry each recovery round's byes, so a lucky
     loser's path is legible on the bracket page — and nowhere else (not the
@@ -610,7 +702,7 @@ def test_recovery_byes_reach_the_bracket_view(archived):
     from app.web.state import jhsaa_bracket_view
     for g in jh.GROUPS:
         view = jhsaa_bracket_view(wd.DEFAULT_SEED, "girls", g)
-        sec, ward, pre, state, protected, dq, sr, ss, dv, lc = _stages(archived, g)
+        sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         by_stage = {st["name"]: st for st in view["stages"]}
         for arc, name in ((sr, "Super Regionals"), (ss, "Semi-State")):
             played = {nm for games in arc["rounds"] for gm in games

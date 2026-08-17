@@ -43,7 +43,7 @@ State. Lose from there and you go into recovery with everybody else. There was
 briefly a guarantee and it was retired: a district champion could keep losing
 and still be handed a berth, which is the opposite of earning it.
 
-## Recovery: four rounds, no byes
+## Recovery: five rounds, no byes
 
 Losing does not end your season. The remaining berths are contested in a
 ladder of rounds, and **every round pairs its entire field** — there are no
@@ -54,12 +54,46 @@ byes anywhere in recovery, so nobody can advance without playing.
 | **Super Regionals** | Regional losers | advance |
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
 | **Divisionals** | the best Semi-State losers | **take the last berths** |
-| **Conference** *(only if berths remain)* | Divisional losers, then district champions outside the field, then the top Ward losers by ATR | **take every berth still outstanding** |
+| **Semi-Conference** *(only if berths remain)* | everyone still alive and outside the field except the Divisional losers | qualify for the Conference |
+| **Conference** *(only if berths remain)* | Divisional losers + Semi-Conference winners | **take every berth still outstanding** |
 
-The **Conference** convenes only when berths are still outstanding, so whether
-it happens depends on the size of the field: the 24-team classifications fill
-without it and never play one, while the 40-team classifications need it every
-year and it runs about 28 teams deep.
+The last two convene only when berths are still outstanding, so whether they
+happen depends on the size of the field: the 24-team classifications fill
+without them and never play either, while the 40-team classifications need them
+every year — a 44-team Semi-Conference into a 28-team Conference.
+
+### Why the Semi-Conference exists
+
+The Conference hands out the largest single block of berths in recovery — 14 of
+the 40 in a class that plays one. It used to admit its whole field directly, and
+that field was **22 Ward, Sectional and Area losers against 6 Divisional
+losers**: four out of five entrants walked in off a defeat having played no
+recovery dual at all, level with teams that had come through three rounds to get
+there.
+
+So everybody except the Divisional losers now **qualifies for the Conference on
+court**. Note what this does *not* do: it grants nobody an extra shot at a berth.
+The Conference is still the only berth-bearing round these teams ever see — the
+Semi-Conference just makes them earn the seat. That is the difference between
+this and the old Ward playbacks, which handed the same teams two or three bites
+while a Zonal loser got one.
+
+### Who is in the Semi-Conference, and in what order
+
+Places are filled in order of how well qualified you are, and **a team the
+ladder dropped later is never passed over for one it dropped earlier**:
+
+1. **District champions** still outside the field — what is left of the retired
+   guarantee: a title earns you one more dual, never a berth.
+2. **Semi-State losers** the Divisionals could not take.
+3. **Super Regional losers** Semi-State could not readmit.
+4. **Ward**, then **Sectional**, then **Area** losers — the true last-resort
+   clubs, and the reason the round exists.
+
+Rating orders teams *within* a tier and never across one. Tiers 1–3 are usually
+empty, because at full size the Divisionals take every Semi-State loser and
+Semi-State readmits every Super Regional loser; they exist so that when the
+arithmetic does leave somebody stranded, a Ward loser cannot walk past them.
 
 ### Why the Divisionals exist
 

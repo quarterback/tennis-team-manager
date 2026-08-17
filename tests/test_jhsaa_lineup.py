@@ -93,14 +93,28 @@ def test_the_ladder_is_a_bounded_adjustment_not_a_replacement():
 
 @pytest.fixture(scope="module")
 def season():
-    """Two districts per classification — the real sim, a tenth the size."""
+    """A scaled association — the real sim, roughly a tenth the size.
+
+    ‼️ SIZED AGAINST `PROTECTED`, NOT AT A FIXED DISTRICT COUNT (see the same note in
+    `test_jhsaa_ladder.py`). Taking the first TWO districts assumed every pair of
+    leagues comes to more than the 16 protected seats; leagues run 7-12, so a
+    reclassification that puts two small ones at the head of a class's alphabet leaves
+    Sectionals ZERO entrants and the ladder is handed an empty field."""
     real = jh.load_schools
+    floor = jh.PROTECTED + 8
 
     def small(gender):
         out = []
         for grp in jh.GROUPS:
-            keep = sorted({s.district for s in real(gender) if s.group == grp})[:2]
-            out += [s for s in real(gender) if s.group == grp and s.district in keep]
+            names = sorted({s.district for s in real(gender) if s.group == grp})
+            pool, keep = [], set()
+            for name in names:
+                keep.add(name)
+                pool = [s for s in real(gender)
+                        if s.group == grp and s.district in keep]
+                if len(pool) > floor:
+                    break
+            out += pool
         return out
 
     jh.load_schools = small
