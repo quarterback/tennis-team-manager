@@ -107,6 +107,20 @@ MATCH_FORMAT = PRESETS["high_school"]
 # needs no preset of its own. The 2-Day Tiered showcase plays the ordinary high-school
 # best-of-3, deliberately: it exists to replicate State-tournament length and endurance,
 # so scoring it any other way would defeat the point of holding it.
+#
+# ‼️ THREE INDEPENDENT SWITCHES, AND "TIEBREAK" IS TWO DIFFERENT THINGS. Tangle any two
+# and the format is silently wrong — every combination still produces plausible scores.
+#   * NO-AD is about DEUCE: next point wins the game. It says nothing about sets or
+#     match length, and it is true of ALL JHSAA play (owner rule).
+#   * A SET tiebreak (`set_tiebreak*`) is played inside a level set — at 6-6 in a
+#     standard set, 8-8 in an 8-game pro set — first to 7 by 2. The pod's is this.
+#   * A MATCH tiebreak (`final_set_tiebreak*`) is played IN LIEU OF A THIRD SET at one
+#     set all, first to 10 by 2. It is what makes a match not a full best-of-3, and no
+#     JHSAA format has one: the two-day block plays its third set for real, which is
+#     precisely what "replicates State length" means.
+#   * An ADVANTAGE set has no set tiebreak at all (win by two games, however long).
+#     Independent of the other two; nothing here uses it.
+# See `docs/AAR-jhsaa-mid-season-showcases.md`.
 SHOWCASE_FORMAT = {"showcase_pod": PRESETS["pro_set_8"],
                    "showcase_tiered": MATCH_FORMAT}
 
@@ -204,14 +218,21 @@ SHOWCASE_TWO_SHARE = 0.045    # of those, attending twice
 SHOWCASE_THREE_MAX = 3        # statewide, and elite only — 1% of a ~450-program field
 SHOWCASE_ELITE = 25           # the Top 25 get first call on every multi-event seat
 
-# ‼️ A SHOWCASE RESULT IS NOT RATED, and that is the same decision as "no title".
-# TOSS is what seeds every draw the association runs, so a rated showcase would be a
-# competitive event by the only measure that matters here, whatever the card called it.
-# The duals still count in the RECORD — they were played, and a record is a record
-# (the postseason is carried the same way: in the record, out of the cutoff TOSS) — and
-# they still feed every individual and pairing résumé the awards read, which is the
-# data the showcases exist to generate. Flip this to include them.
-SHOWCASE_RATED = False
+# ‼️ A SHOWCASE RESULT IS TOSS-RATED — THAT IS THE POINT OF PLAYING THEM (owner rule
+# 2027-08, and it reverses my first reading of "non-competitive").
+#
+# "Non-competitive" means no bracket, no advancement and no title. It does NOT mean the
+# results are thrown away: a showcase is four duals against cross-district,
+# cross-classification opposition a program would otherwise never meet, which is the
+# single most valuable thing that can happen to an opponent-strength rating. TOSS is
+# 40% APR + 40% FQI + 20% oGS and all three are opponent-weighted, so a season played
+# only inside one league is a rating computed on a nearly disconnected graph. The
+# showcases are the cross edges. Excluding them would throw away the evidence the event
+# was held to generate.
+#
+# This is why `FLIGHT_WEIGHTS` must weight D3/D4 for the CUTOFF table and not only for
+# the in-postseason recomputes — see the note there.
+SHOWCASE_RATED = True
 
 # High school runs at "fast" fidelity, deliberately. `full` resolves every POINT, which
 # is 6.7x the cost and is meant for the college season you actually watch; a season here
@@ -1695,12 +1716,17 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
     "D1": 1.00, "D2": 0.50,
-    # D3/D4 exist only in the postseason's 1S/4D duals, so they are rated only by
-    # the in-postseason recomputes (`power_index(prestate=True)` — recovery-field
-    # and State seeding); the cutoff TOSS never sees them. Same decay as above.
+    # D3/D4 appear in every 1S/4D dual — the postseason AND the mid-season showcases.
+    # They used to be rated only by the in-postseason recomputes; the showcases are
+    # rated by the CUTOFF table too (`SHOWCASE_RATED`), so these weights are now load
+    # bearing in the regular season. Same decay as above.
     "D3": 0.25, "D4": 0.10,
 }
-MAX_FLIGHT_WEIGHT = 3.70          # regular-season sum (S1..S5 + D1/D2)
+# The 5S/2D sum. ‼️ NOT the denominator FQI divides by — `rating._flight_score` totals
+# the weight actually CONTESTED in each dual, so a 1S/4D showcase (2.85) is scored
+# within its own shape and still contributes a 0..1 share like every other dual. That
+# is what lets two dual shapes sit in one rating without either being over-counted.
+MAX_FLIGHT_WEIGHT = 3.70
 
 
 def _games(score: str) -> tuple[int, int]:
@@ -1735,9 +1761,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     zonal and, once played, super_regional/semi_state — and still excludes state and
     the TOC.
 
-    The mid-season SHOWCASES are excluded from both (`SHOWCASE_RATED`): they are
-    non-competitive by rule, and TOSS is the one number in this association that
-    decides who plays whom in the postseason."""
+    The mid-season SHOWCASES are IN, in both (`SHOWCASE_RATED`). A showcase dual is a
+    real result against a program you would otherwise never play, and a different dual
+    shape does not make it less real — it is exactly the cross-league edge an
+    opponent-strength rating is starved of. `_flight_score` normalises per dual, so the
+    1S/4D shape sits in the same table without being over- or under-counted."""
     drop = ("state", "toc") if prestate else POSTSEASON
     if not SHOWCASE_RATED:
         drop = tuple(drop) + SHOWCASE

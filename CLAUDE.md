@@ -457,13 +457,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     high-school best-of-3 (it exists to replicate State length). Six, not five: a
     6-team round robin's first four rounds are four PERFECT matchings, so nobody sits
     out a session. **‼️ ALL JHSAA PLAY IS NO-AD, showcases included** — both formats.
-  - **‼️ NOT A TOURNAMENT.** No bracket, no draw, no elimination, no champion, no
-    title — and **no TOSS entry** (`SHOWCASE_RATED` False, dropped in `rating_duals`
-    for the cutoff table AND the prestate recomputes). TOSS seeds every draw the
-    association runs, so a rated showcase would be a competitive event whatever the
-    card called it. They DO count in the record (like the postseason) and DO feed
-    every individual and pairing résumé the awards read — that is the data they exist
-    to generate. If a showcase ever grows a standing, it has stopped being one.
+  - **‼️ NOT A TOURNAMENT, BUT FULLY RATED.** No bracket, no draw, no elimination, no
+    champion, no title — and **they ARE TOSS-rated, which is the point of playing
+    them** (`SHOWCASE_RATED` True; kept in the cutoff table AND the prestate
+    recomputes). "Non-competitive" means no advancement, NOT that the results are
+    thrown away: playing power programs from other leagues is precisely what a program
+    wants out of the weekend, and TOSS is 40% APR + 40% FQI + 20% oGS with all three
+    opponent-weighted — a season played only inside one league rates on a nearly
+    disconnected graph, and the showcases are the cross edges. **A different dual shape
+    does not make a result less real.** `rating._flight_score` normalises by the weight
+    actually CONTESTED per dual, so a 1S/4D showcase (2.85) and a 5S/2D league dual
+    (3.70) each contribute a 0-1 share — which is what lets two shapes share one table.
+    ‼️ `FLIGHT_WEIGHTS`'s D3/D4 are therefore load-bearing in the REGULAR season now,
+    not just in the in-postseason recomputes. They also count in the record and feed
+    every résumé the awards read.
   - **‼️ HARD DISTRICT GUARDRAIL, enforced at GROUP formation, not per pairing.** A
     group is a round robin, so every member meets every other: `_fits` rejects a
     candidate that shares a `(classification, name)` district with ANY member (and any
