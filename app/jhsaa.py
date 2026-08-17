@@ -624,6 +624,53 @@ class TeamSeason:
 
 
 _schools_cache: dict | None = None
+_playup_cache: dict = {}
+
+#: The largest league the association will cut, mirroring
+#: `scripts/import_jhsaa.MAX_DISTRICT` — read here only so a played-up program does
+#: not join a league that is already full.
+MAX_DISTRICT = 12
+
+
+def reset_schools() -> None:
+    """Drop the school and play-up caches. Needed when a play-up override changes,
+    because `load_schools` bakes the championship group and the league INTO the
+    School objects it builds — an archetype only changes ability, so `reset_all()`
+    alone is enough for that, and was not for this."""
+    global _schools_cache
+    _schools_cache = None
+    _playup_cache.clear()
+
+
+def play_up_group(classification: str) -> str:
+    """The classification one step ABOVE `classification`'s championship group, or
+    the group itself at the top of the ladder — 9A has nothing to play up to."""
+    g = champ_group(classification)
+    i = GROUPS.index(g)
+    return GROUPS[i - 1] if i else g
+
+
+def plays_up(school_name: str, seeded: bool) -> bool:
+    """Whether `school_name` competes a class above its own — the seed list in
+    `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
+    exactly the layering `archetype()` uses."""
+    from app import overrides as ov
+    hit = _playup_map(ov.jhsaa_playup_version()).get(school_name)
+    return seeded if hit is None else hit == "yes"
+
+
+def _playup_map(version: str) -> dict:
+    """{school: "yes"|"no"}, memoised on the override table's fingerprint. Computed
+    into a LOCAL and published (the gthread rule); never read back out of the dict
+    it wrote."""
+    hit = _playup_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    fresh = ov.get_jhsaa_playups()
+    _playup_cache.clear()
+    _playup_cache[version] = fresh
+    return fresh
 
 
 def load_schools(gender: str) -> list[School]:
@@ -632,18 +679,82 @@ def load_schools(gender: str) -> list[School]:
     if _schools_cache is None:
         with open(_DATA, encoding="utf-8") as fh:
             _schools_cache = json.load(fh)["schools"]
+    moved = _playup_districts(gender, _schools_cache)
     out = []
     for r in _schools_cache:
         if not r.get(gender):
             continue
+        # ‼️ PLAYING UP MOVES `group` AND LEAVES `classification` ALONE. `group` is
+        # the championship the program enters — leagues, the ladder, State and
+        # All-State all key off it — while `classification` stays what the school
+        # actually is, which is what `School.talent_group` generates from. A school
+        # that plays up gets a HARDER FIELD, never better players.
+        group = r["group"]
+        if _plays_up_row(r):
+            group = play_up_group(r["classification"])
         out.append(School(
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
-            classification=r["classification"], group=r["group"],
+            classification=r["classification"], group=group,
             enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
-            colors=r["colors"], district=r[f"{gender}_district"], gender=gender,
-            source=r.get("source", ""),
+            colors=r["colors"],
+            # ‼️ THE LEAGUE MOVES WITH THE PROGRAM. A district is (classification,
+            # name), so a school competing in 6A while carrying its 5A league name
+            # lands in a 6A district that holds nobody else — a one-team league,
+            # which in a double round robin is a team with no league season at all.
+            district=moved.get(r["name"], r[f"{gender}_district"]),
+            gender=gender, source=r.get("source", ""),
         ))
     return out
+
+
+def _playup_districts(gender: str, rows: list[dict]) -> dict[str, str]:
+    """{school: league} for every played-up program — the leagues they join in the
+    class they compete in.
+
+    ‼️ PLACED IN ONE PASS, NOT ONE AT A TIME. Each school picks the nearest league by
+    county, then area, then the emptiest, and skips any already at `MAX_DISTRICT`.
+    Computed per school independently that rule is not enough: two 8A blue-bloods
+    playing up to 9A both looked at the same settled membership, both saw the same
+    nearest league with room, and both joined it — 11 became 13, and district size IS
+    the schedule here (a double round robin, so that is four extra duals). The
+    running count has to include the play-ups already placed, which means they are
+    one assignment rather than a rule applied N times.
+
+    Settled membership excludes every played-up school, so a school that has moved
+    out of a class is not counted as still being in it."""
+    key = f"{gender}_district"
+    size: dict[tuple[str, str], int] = {}
+    for x in rows:
+        if not x.get(gender) or not x.get(key) or _plays_up_row(x):
+            continue
+        size[(x["group"], x[key])] = size.get((x["group"], x[key]), 0) + 1
+
+    out = {}
+    movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x)),
+                    key=lambda x: x["name"])          # deterministic order
+    for row in movers:
+        group = play_up_group(row["classification"])
+        near: dict[str, list[int]] = {}
+        for x in rows:
+            if (not x.get(gender) or not x.get(key) or _plays_up_row(x)
+                    or x["group"] != group):
+                continue
+            slot = near.setdefault(x[key], [0, 0])
+            slot[0] += x["county"] == row["county"]
+            slot[1] += x["area"] == row["area"]
+        if not near:
+            out[row["name"]] = row[key]               # nothing to join: keep it
+            continue
+        best = min(near, key=lambda d: (size.get((group, d), 0) >= MAX_DISTRICT,
+                                        -near[d][0], -near[d][1],
+                                        size.get((group, d), 0), d))
+        size[(group, best)] = size.get((group, best), 0) + 1
+        out[row["name"]] = best
+    return out
+
+
+def _plays_up_row(row: dict) -> bool:
+    return plays_up(row["name"], bool(row.get("play_up")))
 
 
 def districts(gender: str, group: str) -> dict[str, list[School]]:
@@ -2606,7 +2717,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     thousands of duals. Computed into a local and published, never returned out of the
     dict, per the threaded-worker rule in CLAUDE.md."""
     from app import overrides as _ov
-    ck = (salt, gender, year, seed, _ov.jhsaa_archetype_version())
+    # ‼️ BOTH override tables key the cache. An archetype changes how good a program
+    # is; a PLAY-UP changes which championship it enters, so it moves the leagues,
+    # the ladder, the State field and All-State. Leaving it out would serve a cached
+    # season built from the old classification map with no sign anything had changed.
+    ck = (salt, gender, year, seed,
+          _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version())
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit

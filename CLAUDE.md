@@ -1192,6 +1192,28 @@ was a school marker, shipped "Baptist HS High School".
   numbers of their own**: every table comes from `import_jhsaa`, which stays the one
   authority, so they become no-ops the day those records come back. Both are
   idempotent and both have `--dry-run`; prove it before committing.
+- **‼️ PLAYING UP — a school competes ONE class above its enrollment class (owner rule
+  2027-08).** 14 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
+  list (9A excluded — nothing above it) with `overrides.set_jhsaa_playup` /
+  `/editor/jhsaa-playup` layered on top, the archetype pattern exactly ("yes" promotes,
+  "no" holds, clearing reverts to the file).
+  - **‼️ IT MOVES `group`, NEVER `classification`.** `group` is the championship you
+    enter — leagues, the ladder, State, All-State; `classification` is how many students
+    you have, and `_TALENT` reads THAT (`School.talent_group`). Keyed on `group`, a 5A
+    blue-blood playing up to 6A is silently GENERATED with 6A talent: a free roster
+    upgrade that inverts the whole choice, since playing up must cost you a harder field.
+    Pinned by measurement in `tests/test_jhsaa_playup.py` — hold one in its own class via
+    the override and its twelve players come out identical to six decimals. Nothing else
+    catches it; the rosters look fine either way.
+  - **The LEAGUE moves with the program** (a district is `(classification, name)`, so a
+    6A competitor carrying its 5A league name is alone in a 6A district — no league
+    season at all), and **all play-ups are placed in ONE pass**: applied per school
+    independently, two 8A blue-bloods both picked the same 9A league and took it from 11
+    to 13, because neither could see the other. The running count must include the
+    play-ups already placed.
+  - **`jhsaa_playup_version()` keys the season cache beside the archetype one**, and
+    `jhsaa.reset_schools()` exists because `load_schools` bakes group and league into the
+    School objects — `reset_all()` alone does not clear them.
 - **‼️ THE PRIVATE-SCHOOL LAYER — VARIED INSTITUTIONAL GRAMMAR (owner rule 2027-08).**
   25 of the most obvious generated-person schools became institutions, spread EVENLY
   across all eight classifications ("about 15-25 institutional private-school names,

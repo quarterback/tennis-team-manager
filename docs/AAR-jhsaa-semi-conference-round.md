@@ -267,9 +267,45 @@ to the data that happened to be there.
   new tests were written to hold at BOTH scales, which is why they pass: they assert the
   invariant (strays are exactly the shortfall, orphans are never skipped) rather than the
   full-size numbers.
-- **Play-up** (a school competing one classification above its enrollment class) is
-  half-built: `School.plays_up`, `School.talent_group` and the `_TALENT` keying are in
-  and correct, but nothing sets the flag yet and there is no editor surface.
+*(Play-up was finished in the same session — see below.)*
+
+## Playing up
+
+14 blue-bloods compete a classification above their enrollment class, drawn from the
+archetype seed list (`scripts/jhsaa_playup.py`, weighted to the top of each class,
+9A excluded because there is nothing above it) with `overrides.set_jhsaa_playup`
+layered on top exactly as archetypes are — "yes" promotes, "no" holds, clearing
+reverts to the file.
+
+**It moves `group` and never `classification`**, and that is the entire feature.
+`group` is the championship you enter; `classification` is how many students you have,
+and `_TALENT` reads the latter. Keyed on `group`, a 5A blue-blood playing up to 6A
+would be *generated* with 6A talent — a free roster upgrade that inverts the choice,
+since playing up is meant to cost you a harder field. `tests/test_jhsaa_playup.py`
+pins it by measurement rather than by inspection: hold a played-up school in its own
+class through the override and its twelve players come out unchanged, name for name
+and to six decimal places. Nothing else would catch a regression there, because the
+rosters stay perfectly plausible either way.
+
+**The league moves with the program**, because a district is `(classification, name)`
+— a school competing in 6A while carrying its 5A league name lands in a 6A district
+holding nobody else, and a one-team league in a double round robin is no league season
+at all. It joins the nearest league of the class it plays in, skipping any at
+`MAX_DISTRICT`.
+
+‼️ **And they are placed in ONE pass, not one at a time.** Applying that rule per
+school independently is not enough: two 8A blue-bloods playing up to 9A both read the
+same settled membership, both saw the same nearest league with room, and both joined
+it — 11 became 13, four extra duals in a class where district size *is* the schedule.
+The running count has to include the play-ups already placed, which makes it one
+assignment rather than a rule applied N times. Caught by the test, not by reading.
+
+**Both override tables key the season cache.** An archetype changes how good a program
+is; a play-up changes which championship it enters, so it moves the leagues, the
+ladder, the State field and All-State. Left out, a cached season built from the old
+classification map would be served with no sign anything had changed — and
+`reset_schools()` exists because `load_schools` bakes the group and the league into
+the School objects, which `reset_all()` alone does not touch.
 
 ## Related
 

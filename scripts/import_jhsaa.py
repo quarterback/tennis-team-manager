@@ -678,6 +678,23 @@ PROMOTE_ABOVE = {
 }
 _PROMOTE_TO = {"8A": "9A", "7A": "8A", "6A": "7A", "5A": "6A"}
 
+# ‼️ PLAYING UP (owner rule 2027-08). Real associations let a school compete a
+# classification above its enrollment class, and here it is what a program strong at
+# tennis chooses to do. `PLAY_UP_COUNT` of them, drawn from the BLUE-BLOOD seed list
+# in `data/jhsaa/archetypes.json` — the durable "this program is good at tennis"
+# property the association already keeps — never from a hand-written list of names,
+# which is the same rule archetypes themselves follow.
+#
+# ‼️ It moves the championship GROUP and never the CLASSIFICATION (see
+# `overrides.set_jhsaa_playup` and `jhsaa.School.talent_group`): a played-up school
+# takes a harder field, it does not get better players. 9A schools are excluded
+# because there is nothing above them.
+#
+# Weighted to the TOP of each class by enrollment — a school already near the cut
+# line is the one that plausibly plays up — and seeded, so the list is reproducible.
+PLAY_UP_COUNT = 14
+PLAY_UP_SEED = 90210
+
 
 def reclassify(schools: list[dict]) -> int:
     moved = 0

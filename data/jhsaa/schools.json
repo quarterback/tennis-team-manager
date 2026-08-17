@@ -1172,7 +1172,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
+      "boys_district": "High Lakes League",
+      "play_up": true
     },
     {
       "name": "Barack Obama",
@@ -3086,7 +3087,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League"
+      "boys_district": "Metro League",
+      "play_up": true
     },
     {
       "name": "Cherry Hill East",
@@ -3337,7 +3339,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "boys_district": "Ambassador League",
+      "play_up": true
     },
     {
       "name": "Cook City",
@@ -5324,7 +5327,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Kajaani League",
-      "boys_district": "Kajaani League"
+      "boys_district": "Kajaani League",
+      "play_up": true
     },
     {
       "name": "Galina Romanov",
@@ -5862,7 +5866,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "play_up": true
     },
     {
       "name": "Gwendolyn Brooks North",
@@ -11731,7 +11736,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League"
+      "boys_district": "Metro League",
+      "play_up": true
     },
     {
       "name": "Ronald Reagan",
@@ -12078,7 +12084,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League"
+      "boys_district": "Narpes Interscholastic League",
+      "play_up": true
     },
     {
       "name": "Salmon Bay",
@@ -12946,7 +12953,8 @@
       "boys": true,
       "girls_district": "Juniper League",
       "boys_district": "Juniper League",
-      "source": "Xabier Arregui"
+      "source": "Xabier Arregui",
+      "play_up": true
     },
     {
       "name": "Siskiyou Valley",
@@ -13601,7 +13609,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Placer League",
-      "boys_district": "Placer League"
+      "boys_district": "Placer League",
+      "play_up": true
     },
     {
       "name": "St. Genevieve",
@@ -13889,7 +13898,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League"
+      "boys_district": "Metro League",
+      "play_up": true
     },
     {
       "name": "St. Olga College Prep",
@@ -14961,7 +14971,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League"
+      "boys_district": "Three Rivers League",
+      "play_up": true
     },
     {
       "name": "Treasure Valley North",
@@ -14999,7 +15010,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Twin Counties Athletic Association",
-      "boys_district": "Twin Counties Athletic Association"
+      "boys_district": "Twin Counties Athletic Association",
+      "play_up": true
     },
     {
       "name": "Trinity Christian",
@@ -16002,7 +16014,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Chinook League",
-      "boys_district": "Chinook League"
+      "boys_district": "Chinook League",
+      "play_up": true
     },
     {
       "name": "Wheeler Academy",
@@ -16099,7 +16112,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "boys_district": "Premier Athletic Association",
+      "play_up": true
     },
     {
       "name": "Winifred Booker North",
