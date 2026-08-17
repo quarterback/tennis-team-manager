@@ -48,19 +48,19 @@
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>
-        {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 170) }}
-        {{ th('record', 'Record', 64) }}<th style="width:64px">District</th>
-        {{ th('place', 'Place', 52) }}
-        {{ th('pf', 'PF', 62, 'Courts won per dual') }}
-        {{ th('pa', 'PA', 62, 'Courts lost per dual') }}
-        {{ th('pi', 'TOSS', 64, 'TOSS Power Index — the archived seeding number') }}
-        {{ th('atr', 'ATR', 64, 'Average Team Rating — half TOSS, half win percentage') }}
-        {{ th('seed', 'Seed', 48) }}{{ th('state_finish', 'State finish', 150) }}
-        {{ th('sc_n', 'SC n', 48, 'Mid-season 1S/4D Match Showcases played') }}
-        {{ th('sc_pct', 'SC Rating', 58, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
-        {{ th('fmt_shift', 'Fmt °', 56, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
-        {{ th('dbl_plus', 'Dbl+', 56, 'ERA+/OPS+-style index: 100 x (showcase doubles win share / regular-season doubles win share). 100 = identical to the team\'s own regular season; above 100 means doubles carries MORE of the win under 1S/4D, below means less') }}
-        {{ th('sc_stdev', 'SC Volatility', 92, 'Standard deviation of weighted win share across the team\'s showcase duals — how much one line flipping swings the whole result under the smaller 1S/4D card') }}
+        {{ th('rank', '#', 44) }}{{ th('school', 'School') }}{{ th('district', 'District', 108, 'District — hover for the full name') }}
+        {{ th('record', 'Rec', 56) }}<th style="width:52px" title="District record">Dist</th>
+        {{ th('place', 'Pl', 40) }}
+        {{ th('pf', 'PF', 50, 'Courts won per dual') }}
+        {{ th('pa', 'PA', 50, 'Courts lost per dual') }}
+        {{ th('pi', 'TOSS', 56, 'TOSS Power Index — the archived seeding number') }}
+        {{ th('atr', 'ATR', 56, 'Average Team Rating — half TOSS, half win percentage') }}
+        {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'State finish', 116) }}
+        {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played') }}
+        {{ th('sc_pct', 'Rati', 48, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
+        {{ th('fmt_shift', 'Fmt', 48, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
+        {{ th('dbl_plus', 'Dbl+', 48, 'ERA+/OPS+-style index: 100 x (showcase doubles win share / regular-season doubles win share). 100 = identical to the team\'s own regular season; above 100 means doubles carries MORE of the win under 1S/4D, below means less') }}
+        {{ th('sc_stdev', 'Vol', 48, 'Standard deviation of weighted win share across the team\'s showcase duals — how much one line flipping swings the whole result under the smaller 1S/4D card') }}
       </tr>
       {% for r in view.rows %}
       <tr class="{{ 'title' if r.state_finish == 'Champion' }}">
@@ -68,7 +68,7 @@
         <td><span class="jh-schoolcell">{{ r.mark|safe }}
           <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a>
           {% if r.toc %}<span class="jh-chip gold" title="Tournament of Champions field">TOC</span>{% endif %}</span></td>
-        <td><a href="{{ url_for('jhsaa_district', group=view.group, district=r.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.district }}</a></td>
+        <td><a title="{{ r.district }}" href="{{ url_for('jhsaa_district', group=view.group, district=r.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.district_short }}</a></td>
         <td><b>{{ r.record }}</b></td>
         <td>{{ r.drecord or '—' }}</td>
         <td>{{ r.place or '—' }}{% if r.place == 1 %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>

@@ -2475,6 +2475,7 @@ def create_app() -> Flask:
                      "overridden": school in ov.get_academics()}
         conf_ratings = conference_ratings(division, gender, conf) if conf != "All" else None
         from app.ncaa import dual_format, lineup_size
+        from app import jhsaa as _jh_editor
         return render_template("editor.html", active="Editor", u=u, uni_label=label,
                                school=school, schools=schools, rows=rows, head=head,
                                n_lineup=lineup_size(division),
@@ -2486,6 +2487,8 @@ def create_app() -> Flask:
                                staff=coaching_staff(division, gender, school),
                                move_tree=coach_move_tree(),
                                all_schools=sorted(p.school for p in div.programs),
+                               playup=_jh_editor.playup_board(),
+                               archetypes=_jh_editor.archetype_board(),
                                schol_elite=sch.limits("D3", "men", academics=0.95))
 
     def _pct01(field: str, default: float = 0.5) -> float:
@@ -2524,7 +2527,9 @@ def create_app() -> Flask:
         the owner can rewrite Jefferson's high-school pecking order as its history
         develops without touching generation code. `upstart` is deliberately absent: it
         is a temporary run the world rolls and expires by itself."""
-        school = request.form.get("school", "")
+        # ‼️ `jh_school`, not `school` — see the play-up route below. `school` on the
+        # editor page is the COLLEGE program `_editor_redirect` returns to.
+        school = request.form.get("jh_school") or request.form.get("school", "")
         kind = request.form.get("archetype", "")
         if school:
             # "none" DEMOTES a seeded program (a stored override that says "not one of
@@ -2552,10 +2557,24 @@ def create_app() -> Flask:
         league, the ladder, State and All-State all follow `group` while `_TALENT`
         keeps reading the school's own class. That is a wider blast radius than an
         archetype, so the school cache falls too."""
-        school = request.form.get("school", "")
+        # ‼️ `jh_school`, not `school`. The editor page's own `school` field is the
+        # COLLEGE program in context and `_editor_redirect` reads it to come back to
+        # the right page — posting a JHSAA name in it would send the editor to a school
+        # its division has never heard of. Falls back to `school` so an existing caller
+        # keeps working.
+        school = request.form.get("jh_school") or request.form.get("school", "")
         choice = request.form.get("play_up", "")
         if school:
             from app import jhsaa as _jh
+            # ‼️ SERVER-SIDE ELIGIBILITY. The picker only offers small schools, but a
+            # hand-rolled POST is not the picker: playing up is a 4A-and-below
+            # mechanism, so a promotion of anything larger is refused rather than
+            # stored. "no"/clear stay allowed for every school — holding a program in
+            # its own class is always legal, and refusing it would strand any row
+            # written before this check existed.
+            row = next((r for r in _jh.playup_rows() if r["name"] == school), None)
+            if choice == "yes" and not (row and _jh.can_play_up(row["classification"])):
+                return _editor_redirect()
             if choice in ("yes", "no"):
                 ov.set_jhsaa_playup(school, choice == "yes")
             else:
