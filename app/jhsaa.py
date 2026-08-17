@@ -1903,6 +1903,26 @@ def _fmt_delta(reg: dict, sc: dict, key: str) -> dict | None:
     return {"n": sc["n"], "delta": sc[key] - reg[key]}
 
 
+def _fmt_index(reg: dict, sc: dict, key: str) -> dict | None:
+    """A normalized 100-baseline index — the ERA+/OPS+ shape, not a difference. `100`
+    means the showcase sample matched the team's own regular-season `key` exactly;
+    above 100 means MORE of it under the showcase's 1S/4D card, below means less.
+    `None` if the showcase sample can't support the comparison OR the regular-season
+    baseline is exactly zero (a ratio to a zero baseline is undefined, the same
+    reason a 0.00 ERA can't produce a real ERA+ either — showing a dash beats a
+    fabricated infinity).
+
+    Ratio, not delta, on purpose: a baseball rate stat isn't indexed by subtracting
+    the league average, it's indexed by DIVIDING by it, so a below-average player
+    reads as "80% of league average" rather than "-.020 points" — this is that
+    convention applied to a team's own regular season as its baseline instead of the
+    league's. Like `_fmt_delta`, a caller must show `n` beside it; one showcase dual
+    is not a sample size an index should be read as a trend from."""
+    if not sc["n"] or not reg.get(key) or sc[key] is None:
+        return None
+    return {"n": sc["n"], "index": round(100 * sc[key] / reg[key])}
+
+
 def _fmt_volatility(sample: list[dict]) -> dict | None:
     """How much a team's weighted win share swings dual to dual within one sample —
     the standard deviation of per-dual weighted win share. 1S/4D is five contested
@@ -1925,10 +1945,13 @@ def _fmt_volatility(sample: list[dict]) -> dict | None:
 def format_profile(schedule: list[dict]) -> dict:
     """A team's format-transition profile, comparing its 5S/2D regular season against
     its mid-season 1S/4D SHOWCASES: `regular` / `showcase` (`_fmt_split`, each with its
-    own `n`), `shift` and `doubles_shift` (`_fmt_delta` on `weighted_pct` and
-    `doubles_win_share`), and `regular_volatility` / `showcase_volatility`
-    (`_fmt_volatility`). Every number that can be computed on a thin sample carries
-    its own `n`; a caller must show it, not hide behind a lone percentage.
+    own `n`), `shift` (`_fmt_delta` on `weighted_pct` — a plus/minus MARGIN swing, the
+    "temperature" reading), `doubles_index` (`_fmt_index` on `doubles_win_share` — an
+    ERA+/OPS+-style 100-baseline RATIO, not a delta: 100 is the team's own regular
+    season, above/below is more/less doubles-driven under 1S/4D), and
+    `regular_volatility` / `showcase_volatility` (`_fmt_volatility`). Every number
+    that can be computed on a thin sample carries its own `n`; a caller must show it,
+    not hide behind a lone number.
 
     Read-only and archives nothing — see the module note above. Callable on a live
     `TeamSeason.schedule` or on `world.jhsaa_schedule(...)`'s archived rows; both are
@@ -1937,7 +1960,7 @@ def format_profile(schedule: list[dict]) -> dict:
     r, s = _fmt_split(reg), _fmt_split(sc)
     return {"regular": r, "showcase": s,
             "shift": _fmt_delta(r, s, "weighted_pct"),
-            "doubles_shift": _fmt_delta(r, s, "doubles_win_share"),
+            "doubles_index": _fmt_index(r, s, "doubles_win_share"),
             "regular_volatility": _fmt_volatility(reg),
             "showcase_volatility": _fmt_volatility(sc)}
 
@@ -1945,13 +1968,16 @@ def format_profile(schedule: list[dict]) -> dict:
 def _flat_format_profile(schedule: list[dict]) -> dict:
     """`format_profile`, flattened to the plain numeric fields a standings row can
     carry (JSON, sortable, no nested dicts): `sc_n` / `sc_pct` (the showcase sample and
-    its weighted win share), `fmt_shift` / `dbl_shift` (the deltas, `None` under one
-    showcase dual), `sc_stdev` (showcase volatility, `None` under two). Missing keys
-    read back as `None` through `.get`, exactly like a pre-ATR season's `atr`."""
+    its weighted win share, 0-1 — the rankings page scales this to a 0-10 SC RATING for
+    display), `fmt_shift` (the margin delta, `None` under one showcase dual — displayed
+    as a temperature gauge), `dbl_plus` (the ERA+/OPS+-style 100-baseline doubles index,
+    `None` under one showcase dual OR a zero regular-season baseline), `sc_stdev`
+    (showcase volatility, `None` under two). Missing keys read back as `None` through
+    `.get`, exactly like a pre-ATR season's `atr`."""
     p = format_profile(schedule)
     return {"sc_n": p["showcase"]["n"], "sc_pct": p["showcase"]["weighted_pct"],
             "fmt_shift": (p["shift"] or {}).get("delta"),
-            "dbl_shift": (p["doubles_shift"] or {}).get("delta"),
+            "dbl_plus": (p["doubles_index"] or {}).get("index"),
             "sc_stdev": (p["showcase_volatility"] or {}).get("stdev")}
 
 

@@ -4166,7 +4166,7 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
                          # recomputed, same as pi/atr. `None` on any season archived before
                          # this existed, exactly like `atr` before it.
                          "sc_n": r.get("sc_n") or 0, "sc_pct": r.get("sc_pct"),
-                         "fmt_shift": r.get("fmt_shift"), "dbl_shift": r.get("dbl_shift"),
+                         "fmt_shift": r.get("fmt_shift"), "dbl_plus": r.get("dbl_plus"),
                          "sc_stdev": r.get("sc_stdev"),
                          "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
     if rated:
