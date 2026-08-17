@@ -56,11 +56,9 @@
         {{ th('pi', 'TOSS', 56, 'TOSS Power Index — the archived seeding number') }}
         {{ th('atr', 'ATR', 56, 'Average Team Rating — half TOSS, half win percentage') }}
         {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'Finish', 64, 'State tournament finish — hover for the full label') }}
-        {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played') }}
-        {{ th('sc_pct', 'Rati', 48, 'Showcase weighted win share, 0-10 — share of contested flight weight actually won in the showcases only, rescaled from 0-1') }}
-        {{ th('fmt_shift', 'Fmt', 48, 'Showcase weighted win share minus regular-season (5S/2D) weighted win share, in points x100 — positive ("warmer") means the team plays UP under the 1S/4D card State uses, negative ("colder") means down') }}
-        {{ th('dbl_plus', 'Dbl+', 48, 'ERA+/OPS+-style index: 100 x (showcase doubles win share / regular-season doubles win share). 100 = identical to the team\'s own regular season; above 100 means doubles carries MORE of the win under 1S/4D, below means less') }}
-        {{ th('sc_stdev', 'Vol', 48, 'Standard deviation of weighted win share across the team\'s showcase duals — how much one line flipping swings the whole result under the smaller 1S/4D card') }}
+        {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played. Everything right of this is built on that many duals.') }}
+        {{ th('fmt_pts', 'Fmt', 48, 'What the State format does to this team: showcase result minus its own regular-season result, in points. 0 means the 1S/4D card changes nothing for them; +15 means they play fifteen points better under it. Damped by how many showcases they played, so a three-dual sample reads near 0 rather than posting a swing it has not earned.') }}
+        {{ th('dbl_pts', 'Dbl', 48, 'How much more of the win comes from doubles under the State format, in points. 0 means doubles carries the same share it does in the regular season; +14 means it carries fourteen points more. Damped the same way.') }}
       </tr>
       {% for r in view.rows %}
       <tr class="{{ 'title' if r.state_finish == 'Champion' }}">
@@ -81,18 +79,16 @@
         <td>{{ r.seed or '—' }}</td>
         <td class="fin" title="{{ r.state_finish or 'Did not qualify' }}">{% if r.state_finish %}{{ r.state_finish_short }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}</td>
         <td class="num">{{ r.sc_n or '—' }}</td>
-        <td class="num"><span class="jh-sc10">{{ '%.1f'|format(r.sc_pct * 10) if r.sc_pct is not none else '—' }}</span></td>
-        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
-          {%- if r.fmt_shift is not none -%}
-            <span class="jh-temp {{ 'jh-up' if r.fmt_shift > 0 else 'jh-down' if r.fmt_shift < 0 }}">{{ '%+.0f°'|format(r.fmt_shift * 100) }}</span>
+        <td class="num" title="{{ 'over %d showcase duals'|format(r.sc_n) if r.sc_n }}">
+          {%- if r.fmt_pts is not none -%}
+            <span class="jh-temp {{ 'jh-up' if r.fmt_pts > 0 else 'jh-down' if r.fmt_pts < 0 }}">{{ '%+.0f'|format(r.fmt_pts * 100) }}</span>
           {%- else -%}—{%- endif -%}
         </td>
-        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">
-          {%- if r.dbl_plus is not none -%}
-            <span class="jh-plus {{ 'jh-up' if r.dbl_plus > 100 else 'jh-down' if r.dbl_plus < 100 }}">{{ r.dbl_plus }}</span>
+        <td class="num" title="{{ 'over %d showcase duals'|format(r.sc_n) if r.sc_n }}">
+          {%- if r.dbl_pts is not none -%}
+            <span class="jh-plus {{ 'jh-up' if r.dbl_pts > 0 else 'jh-down' if r.dbl_pts < 0 }}">{{ '%+.0f'|format(r.dbl_pts * 100) }}</span>
           {%- else -%}—{%- endif -%}
         </td>
-        <td class="num" title="{{ 'n=%d'|format(r.sc_n) if r.sc_n }}">{{ '%.3f'|format(r.sc_stdev) if r.sc_stdev is not none else '—' }}</td>
       </tr>
       {% endfor %}
     </table>
@@ -111,24 +107,24 @@
     the right trade for seeding a draw, the wrong one for the last seat in the field.
     Seasons archived before ATR existed show a dash.
     <br><br>
-    The SHOWCASE columns compare each team's mid-season 1S/4D Match Showcases against
-    its 5S/2D regular season — the format State is decided in against the format the
-    regular season is played in. <strong>SC Rating</strong> is the showcase weighted
-    win share on a 0-10 scale. <strong>Fmt&nbsp;°</strong> is showcase weighted win
-    share minus regular-season weighted win share, read as a signed "degree": positive
-    ("warmer") means a team plays UP once the card drops to one singles line and four
-    doubles, negative ("colder") means down. <strong>Dbl+</strong> is an ERA+/OPS+-style
-    index for how much of a team's wins come from doubles: 100 x (showcase doubles win
-    share ÷ regular-season doubles win share) — 100 means identical to the team's own
-    regular season, above 100 means doubles is carrying more of the win under 1S/4D,
-    below means less; a dash means the team won zero of its regular-season weighted
-    points on doubles, so no baseline exists to index against.
-    <strong>SC Volatility</strong> is how much a team's result swings dual to dual
-    within its showcases; a smaller card means one line flipping moves a bigger share
-    of the outcome. None of this is TOSS or ATR, none of it is archived toward a seed,
-    and none of it means anything on a thin sample — hover any of these cells for the
-    dual count (<strong>SC n</strong>) it was built on, and a team with n=1 has played
-    one dual, not established a trend.
+    The SHOWCASE columns answer one question: <strong>what does the State format do
+    to this team?</strong> State is decided at one singles line and four doubles; the
+    regular season is played at five and two. The mid-season Match Showcases are the
+    only place a team plays the State card before it counts, so these compare the two.
+    <br><br>
+    <strong>SC</strong> is how many showcases the team played. <strong>Fmt</strong> is
+    its showcase result minus its own regular-season result, in points: <strong>0 means
+    the format changes nothing for them</strong>, +15 means they play fifteen points
+    better once the card drops to 1S/4D, −15 means worse. <strong>Dbl</strong> is the
+    same reading for doubles alone — how much more of the win doubles carries under the
+    State card, 0 being the share it already carries in the regular season.
+    <br><br>
+    Both are measured against the team's OWN regular season, not against the field, so
+    a weak team and a champion can both sit at 0: it means the format suits them the
+    same either way. And both are damped by how many showcases were played — three
+    duals is not evidence of a fifteen-point swing, so a thin sample reads near 0 until
+    it earns otherwise. Hover a cell for the dual count. None of this is TOSS or ATR
+    and none of it is archived toward a seed.
   </div>
 </div>
 {% endif %}

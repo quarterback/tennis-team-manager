@@ -4227,6 +4227,11 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
                          "sc_n": r.get("sc_n") or 0, "sc_pct": r.get("sc_pct"),
                          "fmt_shift": r.get("fmt_shift"), "dbl_plus": r.get("dbl_plus"),
                          "sc_stdev": r.get("sc_stdev"),
+                         # Damped, 0-centred readings — what the table shows. A season
+                         # archived before these existed falls back to the raw delta,
+                         # so old rows still render rather than blanking.
+                         "fmt_pts": r.get("fmt_pts", r.get("fmt_shift")),
+                         "dbl_pts": r.get("dbl_pts"),
                          "pf": r.get("pf") or 0.0, "pa": r.get("pa") or 0.0})
     if rated:
         rows.sort(key=lambda r: (-(r["pi"] or 0.0), r["school"]))
