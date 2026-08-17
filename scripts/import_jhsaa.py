@@ -686,7 +686,70 @@ RENAMES = {
     "Svenja Bianchi":            "Tamarack",                # 9A Tamarack County
     "Carmen Cordero":            "Vance",                   # 9A Vance County
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
-    "Klara Marchand":            "Weller",                  # 9A Weller County
+    "Klara Marchand":            "Weller",
+
+    # ‼️ A SPECIALIZED SCHOOL'S NAME IS SHORT (owner rule 2026-08). Nobody says
+    # "Manufacturing and Technology Academy" — a tech school is "<Place> Tech" and an
+    # arts school is "<Place> Arts", the way Oakland School for the Arts is Oakland
+    # Arts. The long descriptive form is a district's paperwork, not what anyone
+    # calls it.
+    "Academy of Arts and Communication":                "Ashbury Arts",
+    "Altamonte Civic Leadership Academy":               "Altamonte Civic",
+    "Belden Springs Academy of Music and Media":        "Belden Springs Arts",
+    "Belyakov Agricultural Sciences Academy":           "Belyakov Agricultural",
+    "Belyakov Technical":                               "Belyakov Tech",
+    "Cabo Esperanza Technical Arts Academy":            "Cabo Esperanza Tech",
+    "Featherstone Institute":                           "Featherstone Tech",
+    "Fellows Mill Civic Leadership Academy":            "Fellows Mill Civic",
+    "Greaves Aviation and Engineering Academy":         "Greaves Aviation",
+    "Harrow Design":                                    "Harrow Arts",
+    "Homecroft Manufacturing and Technology Academy":   "Homecroft Tech",
+    "I-50 Technical":                                   "I-50 Tech",
+    "I-50 Technical North":                             "I-50 Tech North",
+    "Leidesdorff Academy of Music and Media":           "Leidesdorff Arts",
+    "Millrace Technical":                               "Millrace Tech",
+    "Northrup I-50 Technical":                          "Northrup I-50 Tech",
+    "Paddock Institute":                                "Paddock Tech",
+    "Perryville Civic Leadership Academy":              "Perryville Civic",
+    "Port Veles Civic Academy":                         "Port Veles Civic",
+    "Rostova Junction Technical Arts Academy":          "Rostova Junction Tech",
+    "San Borondón Civic Academy":                       "San Borondón Civic",
+    "San Telmo Agricultural Sciences Academy":          "San Telmo Agricultural",
+    "Selbyville Manufacturing and Technology Academy":  "Selbyville Tech",
+    "Southern Pacific Technical":                       "Southern Pacific Tech",
+    "Vesper Polytechnic Institute":                     "Vesper Tech",
+    "Zubieta Manufacturing and Technology Academy":     "Zubieta Tech",
+
+
+    # ‼️ A PERSON'S NAME NEVER CARRIES A CAMPUS DIRECTION (owner rule 2026-08): "no
+    # named person school should ever have more than one campus, that's not
+    # realistic". A PLACE can — Belmonte North is ordinary — so every one of these
+    # becomes a place, a neighbourhood or a landform. Names from the owner's own
+    # non-person pool; where their first choice was already a live school the town's
+    # next free direction is used instead.
+    #
+    # Ben Franklin and Hollywood are owner picks (2026-08). Jefferson's big-city
+    # districts name schools the way Portland's do — presidents and Franklin — and
+    # neighbourhoods broaden the range inside one town, which is where Hollywood comes
+    # from.
+    "Andrés Ibarra North":       "Belmonte Central",        # 4A Belmonte
+    "Elena Mendoza North":       "Cedar Ridge",             # 6A Belmonte
+    "Javier Alvarado North":     "Grandview",               # 6A Belmonte
+    "Jean Lindgren North":       "Valderra South",          # 4A Valderra
+    "Petra Weiss North":         "Las Colinas",             # 4A Valderra
+    "Thelma Moss North":         "Valderra Central",        # 7A Valderra
+    "Claudette Cole North":      "San Borondón Central",    # 5A San Borondón
+    "Tatiana Chernov North":     "Bahía Vista",             # 6A San Borondón
+    "Vernon Moss North":         "San Marcos Valley",       # 7A San Borondón
+    "Mila Chernov North":        "Belyakov Central",        # 4A Belyakov
+    "Viktor Antonov North":      "Pine Creek",              # 4A Belyakov
+    "Andrés Valera North":       "Caswell South",           # 6A Caswell
+    "Salvador Montalvo North":   "Stone Ridge",             # 6A Caswell
+    "Marcus Price North":        "Lake Esperanza West",     # 4A Lake Esperanza
+    "Ruby Stokes North":         "San Cordero West",        # 8A San Cordero
+    "Lillian Stokes":            "Ben Franklin",            # 8A Mercer City
+    "Thomas Halvorsen":          "Hollywood",               # 8A Mercer City
+                  # 9A Weller County
 }
 
 # The institutional-naming bank the pass above drew from — kept as its own list so a
