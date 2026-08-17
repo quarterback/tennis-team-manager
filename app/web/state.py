@@ -4007,11 +4007,20 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     seeds = _jh_seeds(br)
     toc_field = set((arc.get("toc") or {}).get("field") or ())
     rows = world.jhsaa_group_ranking(arc, grp)
-    rows = [{**_jh_deco(schools, r["school"], 24), **r,
-             "seed": seeds.get(r["school"], 0),
-             "state_finish": world.jhsaa_state_result(br, r["school"])["finish"],
-             "toc": r["school"] in toc_field}
-            for r in rows]
+    new_rows = []
+    for r in rows:
+        result = world.jhsaa_state_result(br, r["school"])
+        new_rows.append({**_jh_deco(schools, r["school"], 24), **r,
+                         "seed": seeds.get(r["school"], 0),
+                         "state_finish": result["finish"],
+                         # Sort key only — negated `place` (1 = champion) so this
+                         # column's click-sort shares the generic "desc = best first"
+                         # convention every other numeric column uses, without
+                         # displaying a negative number anywhere (the template still
+                         # renders `state_finish`, the label).
+                         "state_finish_rank": -result["place"] if result["place"] else None,
+                         "toc": r["school"] in toc_field})
+    rows = new_rows
     # ‼️ DISPLAY ORDER ONLY. `r["rank"]` is the archived TOSS position — it is what
     # seeded the postseason, and it never moves, whatever the table is sorted by. A
     # click-sort just reorders the ROWS the page draws; sorting by "Doubles Shift" and
@@ -4022,17 +4031,17 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     SORTABLE = {"rank": "rank", "school": "school", "district": "district",
                "record": "pct", "place": "place", "pf": "pf", "pa": "pa",
                "pi": "pi", "atr": "atr", "seed": "seed",
-               "state_finish": "state_finish",
+               "state_finish": "state_finish_rank",
                "sc_n": "sc_n", "sc_pct": "sc_pct", "fmt_shift": "fmt_shift",
                "dbl_shift": "dbl_shift", "sc_stdev": "sc_stdev"}
     key = SORTABLE.get(sort)
     if key:
         # "empty" isn't always `None` — an unqualified team's seed is 0 and a team
-        # that missed State has an empty finish string, neither of which should sort
-        # as though it beat every real value on an ascending click.
+        # that missed State has no `state_finish_rank` (place 0), neither of which
+        # should sort as though it beat every real value on an ascending click.
         def _empty(r):
             v = r.get(key)
-            return v is None or (key == "seed" and not v) or (key == "state_finish" and not v)
+            return v is None or (key == "seed" and not v)
         present = [r for r in rows if not _empty(r)]
         missing = [r for r in rows if _empty(r)]
         present.sort(key=lambda r: r[key], reverse=(dir != "asc"))

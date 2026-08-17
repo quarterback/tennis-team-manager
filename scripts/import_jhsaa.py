@@ -561,7 +561,7 @@ RENAMES = {
     "Viktor Antonov": "Archbishop Valois",           # 5A — Jefferson surname
     "Marcus Mercer": "Cascade Christian",            # 5A Vespertine
     "Nathaniel Gaines": "St. Catherine Academy",     # 5A Ashbury
-    "Andrés Valera": "Cardinal Echevarria",          # 4A — Jefferson surname
+    "Andrés Valera": "Basalt Electric",               # 4A — Jefferson surname
     "César Mendoza": "De La Salle",                  # 4A Bellacosta
     "Irina Kovalenko": "Heritage Christian Academy", # 4A Selquah
     # ‼️ SINKFORD (owner). A Unitarian Universalist coed boarding/day school founded
@@ -591,7 +591,85 @@ RENAMES = {
     "Tule": "New Bergen",
     "Rimrock Valley": "New Ballard",
     "Montelago": "Montelago Central",
+    # ‼️ NAMED FOR THINGS THAT EXISTED BEFORE THE SCHOOL, NOT FOR MORE PEOPLE
+    # (owner rule 2027-08). The invented-person families (Stokes, Belov, Tillman,
+    # Echevarria and a dozen others) were replaced with old local INSTITUTIONS —
+    # companies, co-ops, granges, mines, mills, rail lines, irrigation and power
+    # districts, civic associations — the kind of name a school picks up from a
+    # company town or a defunct utility rather than from a person. Deliberately a
+    # DIFFERENT reservoir from OWNER_EDICTS' real people: a second batch of person
+    # names would just rebuild the Stokes/Belov problem under new surnames. One
+    # survivor was kept per original surname family; these are the rest. See
+    # INSTITUTION_NAMES below for the bank this was drawn from.
+    "Amaia Echevarria": "Redwood Mutual",
+    "Anya Belov": "Arroyo Water District",
+    "Claudette Freeman": "Alder Cooperative",
+    "Eleanor Tillman": "Anchor Glass",
+    "Elias Mercier": "Cascade Mutual",
+    "Frances Gaines": "Empire Milling",
+    "Garazi Mendizabal": "Cedar Exchange",
+    "Harlan Cole": "Millrace Technical",
+    "Harold Tillman": "Copper Belt",
+    "James Gaines": "Rogue Valley Packing",
+    "Janice Cole": "Fallon Works",
+    "Jeannette Freeman": "Round Mountain Grange",
+    "Katherine Davenport": "Blue Mountain Grange",
+    "Lars Mercier": "Shasta Agricultural",
+    "Lillian Price": "North Coast Packing",
+    "Manuel Robles": "Pacific Fruit Exchange",
+    "Mikel Echevarria": "Fir Valley Grange",
+    "Naomi Price": "Crown Paper",
+    "Naomi Ward": "Golden State Packing",
+    "Nathaniel Ward": "Juniper Agricultural",
+    "Nerea Mendizabal": "Silver Creek Irrigation",
+    "Nicolás Salcedo": "Siskiyou Electric",
+    "Opal Stokes": "Dry Creek Cooperative",
+    "Opal Tillman": "Granite Water & Power",
+    "Petra Jansen": "Southern Pacific Technical",
+    "Rafael Escobedo": "Pioneer Electric",
+    "Renata Adler": "Bracken Works",
+    "Rosa Salcedo": "Quarry Workers",
+    "Ruby Stokes": "Klamath Exchange",
+    "Sadie Freeman": "High Desert Cooperative",
+    "Sergei Belov": "Red Butte Cooperative",
+    "Svenja Adler": "East Range Agricultural",
+    "Teresa Escobedo": "Cañada Irrigation",
+    "Thelma Stokes": "Iron Gate Works",
+    "Thomas Jansen": "Lone Pine Mutual",
+    "Winifred Davenport": "Lost River Irrigation",
+    "Winifred Stokes": "Mesa Cooperative",
+    "Xavier Robles": "Elk River Power",
+    "Yelena Belov": "Spring Valley Cooperative",
 }
+
+# The institutional-naming bank the pass above drew from — kept as its own list so a
+# later pass can draw more from the SAME grammar without re-deriving it. Never assign
+# a name here to a TOWN or a LEAGUE; these are school identities only, the way "Crown
+# Paper" names a school a company town built, not the town itself.
+INSTITUTION_NAMES = [
+    "Alder Cooperative", "Anchor Glass", "Arroyo Water District", "Basalt Electric",
+    "Blue Mountain Grange", "Bracken Works", "Cañada Irrigation", "Cascade Mutual",
+    "Cedar Exchange", "Copper Belt", "Crown Paper", "Dry Creek Cooperative",
+    "East Range Agricultural", "Elk River Power", "Empire Milling", "Fallon Works",
+    "Fir Valley Grange", "Golden State Packing", "Granite Water & Power",
+    "High Desert Cooperative", "Iron Gate Works", "Juniper Agricultural",
+    "Klamath Exchange", "Lone Pine Mutual", "Lost River Irrigation", "Mesa Cooperative",
+    "Millrace Technical", "North Coast Packing", "Pacific Fruit Exchange",
+    "Pioneer Electric", "Quarry Workers", "Red Butte Cooperative", "Redwood Mutual",
+    "Rogue Valley Packing", "Round Mountain Grange", "Shasta Agricultural",
+    "Silver Creek Irrigation", "Siskiyou Electric", "Southern Pacific Technical",
+    "Spring Valley Cooperative", "Summit Works", "Tule Lake Agricultural",
+    "Union Water", "Valley Packing", "West Range Cooperative", "White Pine Grange",
+    "Basin Reclamation", "Bellwood Cannery", "Blackrock Mining", "Cattlemen's Exchange",
+    "Cinder Cone Milling", "Coastal Fisheries", "Dunes Reclamation", "Foothill Grange",
+    "Gravel Belt", "Homestead Grange", "Ironwood Lumber", "Kettle Falls Power",
+    "Lakeshore Canning", "Meridian Rail", "Mill Creek Lumber", "Odd Fellows Hall",
+    "Orchard Growers", "Overland Freight", "Placer Mutual", "Prospect Milling",
+    "Range Riders Association", "Sawmill Workers", "Sheepmen's Association",
+    "Signal Ridge Telegraph", "Stockmen's Exchange", "Tidewater Cannery",
+    "Timber Cooperative", "Trading Post Grange", "Wool Growers Association",
+    "Yield Grange",
+]
 
 # Schools whose DISPLAY name is a religious or independent institution and which
 # therefore read as private, whatever the source record said. Keyed on the display
@@ -997,7 +1075,7 @@ MASCOTS = {
     "Archbishop Valois": "Knights",
     "Cascade Christian": "Warriors",
     "St. Catherine Academy": "Wildcats",
-    "Cardinal Echevarria": "Matadors",
+    "Basalt Electric": "Matadors",
     "De La Salle": "Spartans",
     "Heritage Christian Academy": "Eagles",
     "Sinkford": "Chanticleers",                 # the odd one, deliberately
@@ -1030,13 +1108,13 @@ MASCOTS = {
     "Klara Marchand": "Storm Petrels",
     "Fort Salish": "Cheesemongers",             # the dairy coast
     "Ryken": "Kingfishers",                     # Newark River
-    "Renata Adler": "Seals",                    # Wales City
+    "Bracken Works": "Seals",                    # Wales City
 
     # ── South Coast: the southern shore and its canneries ────────────────────
     "Elk Prairie": "Tule Elk",
     "Quarmont": "Stonecutters",
-    "Manuel Robles": "Sardines",                # Bahía Leal, a cannery town
-    "Rosa Salcedo": "Lightkeepers",
+    "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
+    "Quarry Workers": "Lightkeepers",
     "Adela Robles": "Sea Otters",
     "Claudette Cole": "Godwits",
     "Elena Petrov": "Moon Jellies",
@@ -1051,7 +1129,7 @@ MASCOTS = {
     "Cortland North": "Applejacks",             # Cortland, an apple
     "Elk Crossing": "Bull Elk",
     "Lake Esperanza": "Sturgeon",
-    "Eleanor Tillman": "Waterwheels",           # Las Norias — "the waterwheels"
+    "Anchor Glass": "Waterwheels",           # Las Norias — "the waterwheels"
     "Las Norias": "Ditchriders",
     "Las Norias East": "Hullers",
     "Oscar Micheaux": "Marble Cutters",         # Monte Blanco
@@ -1061,10 +1139,10 @@ MASCOTS = {
     "Moriarty": "Jackrabbits",
     "Silver Glen": "Silversmiths",
     "St. Elian": "Abbots",
-    "Lars Mercier": "Cellarmen",                # Valderra
+    "Shasta Agricultural": "Cellarmen",                # Valderra
     "Orchard Hill": "Orchardists",
     "St. Gabriel Preparatory": "Archangels",
-    "Katherine Davenport": "Millwrights",       # Fellows Mill
+    "Blue Mountain Grange": "Millwrights",       # Fellows Mill
     "Gagarin East": "Cosmonauts",
     "Tomás Marín": "Beekeepers",
 
@@ -1098,11 +1176,11 @@ MASCOTS = {
     "Belyakov South": "Beet Haulers",
     "Carmen Cordero": "Lambs",                  # cordero
     "Lorraine Calder": "Mobiles",
-    "Opal Tillman": "Fire Opals",               # Carden City
+    "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
-    "Sadie Freeman": "Sheepwagons",             # Etchartville
+    "High Desert Cooperative": "Sheepwagons",             # Etchartville
     "Viktor Gromov": "Thunderheads",            # gromov — thunder
     "Canal View": "Headgates",                  # Orellana
     "Orellana North": "Riverboats",
@@ -1117,7 +1195,7 @@ MASCOTS = {
     "Hawk Lake Southeast": "Steelhead",
     "Southridge Christian": "Lamplighters",
     "St. Sebastian Prep": "Archers",            # the saint's own iconography
-    "Opal Stokes": "Glassblowers",
+    "Dry Creek Cooperative": "Glassblowers",
     # ⚠️ Was keyed "Oskar Bellini" and had to move with the name: MASCOTS is keyed
     # on the DISPLAY name (see the emit block), so a rename silently orphans its
     # entry and the school quietly reverts to its source record's mascot.
@@ -1139,7 +1217,7 @@ MASCOTS = {
     "Orlova": "Firebirds",
     "Ransom City Union": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
-    "Ruby Stokes": "Garnets",
+    "Klamath Exchange": "Garnets",
     "San Cordero": "Lava Bears",
     "San Cordero South": "Obsidians",
     "Svenja Bianchi": "Snowcaps",
