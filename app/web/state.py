@@ -4156,14 +4156,16 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     stages = []
     # The RECOVERY rounds sit closest to State, so their folds come first
     # (the list is reverse-chronological: the stage that fed State on top).
-    for key in ("conference", "divisional", "semi_state", "super_regional"):
+    for key in ("conference", "semi_conference", "divisional", "semi_state",
+                "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
-            # A recovery round only needs to ELIMINATE its cut, so part of the
-            # pool advances on a BYE and plays nothing — invisible in the game
-            # cards, which is how a lucky loser looked like it jumped from a
-            # Regional loss straight into State. A footnote on the stage, not
-            # the schedule, and no counters (owner rule 2027-08).
+            # Recovery rounds are BYELESS BY CONSTRUCTION — each pairs its entire
+            # field — so this is empty on every season played since, and kept only
+            # because archives from the old cut-shaped rounds still carry byes and
+            # a path that showed none was how a lucky loser looked like it jumped
+            # from a Regional loss straight into State. A footnote on the stage,
+            # not the schedule, and no counters (owner rule 2027-08).
             sseeds = _jh_seeds(d)
             played = {nm for rd in d["rounds"] for gm in rd
                       for nm in (gm["home"], gm["away"])}
@@ -4253,8 +4255,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(sc.group) or {})
     ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(sc.group) or {})
     dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
+    sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(sc.group) or {})
     cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
     _KIND = {"toc": "TOC", "state": "STATE", "conference": "CONFERENCE",
+             "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
              "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
              "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
@@ -4298,6 +4302,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     toc_round = _round_of((arc or {}).get("toc") or {})
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "CONFERENCE": cf_seeds,
+              "SEMI-CONFERENCE": sc_seeds,
               "DIVISIONAL": dv_seeds,
               "SEMI-STATE": ss_seeds,
               "SUPER REGIONAL": sr_seeds, "ZONAL": pre_seeds,

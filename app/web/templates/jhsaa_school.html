@@ -121,8 +121,10 @@
             <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
             {# Three tag colours, because they are three different things: the
-               league season, the ROAD to State (Areas..Divisionals) and the State
-               event itself. A State/TOC dual also names its bracket round. #}
+               league season, the ROAD to State (Areas..Conference) and the State
+               event itself. A State/TOC dual also names its bracket round.
+               Everything that is not DIST/STATE/TOC/NON-DIST is a road stage, so
+               a new recovery round is tagged by construction. #}
             <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
                      else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'NON-DIST' }}">{{ d.kind }}</span>
               {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
