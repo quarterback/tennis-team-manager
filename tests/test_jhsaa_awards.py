@@ -17,10 +17,21 @@ def season():
     real = jh.load_schools
 
     def small(gender):
+        # ‼️ SIZED AGAINST `PROTECTED`, NOT AT A FIXED DISTRICT COUNT — see the same
+        # note in `test_jhsaa_ladder.py`. Two districts assumed every pair of leagues
+        # beats the 16 protected seats; leagues run 7-12, so a reclassification can
+        # leave Sectionals zero entrants and hand the ladder an empty field.
         out = []
         for grp in jh.GROUPS:
-            keep = sorted({s.district for s in real(gender) if s.group == grp})[:2]
-            out += [s for s in real(gender) if s.group == grp and s.district in keep]
+            names = sorted({s.district for s in real(gender) if s.group == grp})
+            pool, keep = [], set()
+            for name in names:
+                keep.add(name)
+                pool = [s for s in real(gender)
+                        if s.group == grp and s.district in keep]
+                if len(pool) > jh.PROTECTED + 8:
+                    break
+            out += pool
         return out
 
     jh.load_schools = small
