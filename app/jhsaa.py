@@ -68,27 +68,28 @@ GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
 FORMATS = {
-    "early":   DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
-    "regular": DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
+    "early":   DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
+    "regular": DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
     "state":   DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
 }
 
-# EARLY NON-DISTRICT DUALS PLAY 3S/4D (owner rule 2027-08). A JHSAA roster carries 12
-# players, but the 5S/2D league card only gives nine of them a meaningful court — real
-# high-school programs run JV/exhibition dates to get deeper into a roster, and this
-# association has no separate JV system to model that with. So the FIRST non-district
-# window (`phase="early"`, played in `play_regular_season` before any district round) is
-# 3 singles / 4 doubles instead — 11 players dress, reaching roster spots #10-11, and
-# a program gets more doubles reps ahead of the 1S/4D postseason. Every court is a real
-# result on the existing `FLIGHT_WEIGHTS` table (D4's weight is already the low one that
-# keeps an extra developmental court from moving TOSS much).
+# THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
+# it matches the 1S/4D postseason's doubles-forward character all season, not just in
+# the early window). A JHSAA roster carries 12+ players, and 3S/4D dresses eleven of
+# them every league dual — S1 plus an 8-player doubles pool split into four pairs (see
+# `_arrange_regular`) plus two more starters at S2/S3 — so a program gets real minutes
+# and doubles reps for nearly its whole roster all season, not just #1-#9. Every court
+# is a real result on the existing `FLIGHT_WEIGHTS` table.
 #
-# Once district play starts, the card goes straight back to 5S/2D — the mid-season
-# non-district window and the late tune-up are both scheduled AFTER district pass 1 has
-# begun, so they stay `phase="regular"` like every league dual. The mid-season MATCH
-# SHOWCASES (`SHOWCASE`, 1S/4D) are a different, separately-scheduled event and are
-# untouched by this — an early-window program still gets its normal showcase invites at
-# their own shape. Postseason stays 1S/4D as always.
+# The FIRST non-district window (`phase="early"`, played in `play_regular_season`
+# before any district round) plays the OTHER shape instead — 5 singles / 2 doubles,
+# the format the league card used to use — before the season settles into its regular
+# 3S/4D card. Once district play starts, the card goes to 3S/4D for good: the
+# mid-season non-district window and the late tune-up are both scheduled AFTER district
+# pass 1 has begun, so they stay `phase="regular"` like every league dual. The
+# mid-season MATCH SHOWCASES (`SHOWCASE`, 1S/4D) are a different, separately-scheduled
+# event and are untouched by any of this — an early-window program still gets its
+# normal showcase invites at their own shape. Postseason stays 1S/4D as always.
 EARLY_FORMAT_PHASE = "early"
 
 
@@ -163,10 +164,57 @@ def match_format(phase: str):
 def lineup_need(phase: str) -> int:
     """Players a program must dress for `phase` with nobody doubling up."""
     f = dual_format(phase)
-    return f.n_singles + 2 * f.n_doubles          # 5+4 = 9 regular, 1+8 = 9 state
+    return f.n_singles + 2 * f.n_doubles          # 3+8 = 11 regular, 1+8 = 9 state
 
 
-ROSTER_SIZE = 12          # 9 is the hard floor; carry depth for injuries and rotation
+ROSTER_SIZE = 12          # legacy flat default; real depth is per-classification, see below
+
+# ‼️ BIGGER SCHOOLS CARRY BIGGER ROSTERS (owner rule 2027-08) — the same pattern
+# `ncaa.ROSTER_CAP`/`ncaa.roster_cap` already uses for college divisions, extended
+# here rather than invented fresh. Depth scales with classification because a big
+# school genuinely has more kids trying out — varsity AND a JV feeder blur into one
+# deeper roster here, since the association has no separate JV system to model with.
+# On the SAME talent metrics as everyone else in the classification (`_ceiling`,
+# `talent_group`) — a bigger roster means more players at the going talent level,
+# not weaker filler bodies. That deliberately means big-classification rosters carry
+# real depth "above their station" relative to a bare lineup card; that is the
+# point of modelling depth at all, not a side effect to suppress.
+ROSTER_SIZE_BY_CLASS = {
+    "9A": 24, "8A": 23, "7A": 22, "6A": 20,
+    "5A": 19, "4A": 18, "3A": 16,
+    "2A": 14, "1A": 13,
+}
+
+
+def roster_size(classification: str) -> int:
+    """Total roster size for `classification`. Falls back to the flat
+    `ROSTER_SIZE` for anything not in the table (there shouldn't be any real
+    classification that isn't)."""
+    return ROSTER_SIZE_BY_CLASS.get(classification, ROSTER_SIZE)
+
+
+def _freshman_class_size(school_key: str, entry_year: int, classification: str,
+                         salt: str = "") -> int:
+    """How many freshmen entered `school` in `entry_year`.
+
+    ‼️ ROLLED ONCE PER (school, entry_year), NEVER PER VIEWING YEAR (owner rule
+    2027-08). This is the ONLY source of randomness in grade distribution: a
+    cohort's size is fixed for the rest of its four years no matter which
+    season you view it from — a grade's seat count in `build_roster` is simply
+    ITS OWN entry-year's roll, aged forward unchanged. Two consequences fall
+    out for free, with no separate "which year is this" branch needed:
+      * Year 1's snapshot mixes FOUR different entry years (this year's, and
+        three retroactive ones for the returning classes), each independently
+        rolled — a naturally random class mix, not an even split.
+      * Every later year's growth comes ENTIRELY from that year's own
+        freshman roll; grades 10-12 never get a separate random bump.
+    No non-freshman newcomers are procedurally generated at all — a real
+    sophomore/junior arrival is a TRANSFER (a separate mechanic, scaled from
+    the college game's transfer portal; not modelled here), never a generation
+    roll pretending to be one."""
+    target = roster_size(classification) / len(GRADES)
+    rng = random.Random(f"{salt}|jhsaa-class|{school_key}|{entry_year}")
+    return max(1, round(rng.gauss(target, target * 0.35)))
 
 # Non-district duals per team (owner rule 2027-08). The POSTSEASON IS EXEMPT.
 # This is an ALLOWANCE ON TOP of the district double round-robin, not a season total:
@@ -644,7 +692,6 @@ GRADE_FLOOR = 12.0        # below the 20-80 scale's nominal floor on purpose: 1A
 
 # High school is grades 9-12 and nothing else. A player enters at 9 and leaves after 12.
 GRADES = (9, 10, 11, 12)
-PER_CLASS = 3                                  # 3 x 4 grades = ROSTER_SIZE
 
 # MATURITY is the share of a player's ceiling that is visible as current ability, and it
 # is what keeps high school looking like high school. College freshmen already sit at
@@ -1228,6 +1275,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     out = []
     for grade in GRADES:
         entry = year - (grade - 9)
+        n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
         # A DEVELOPMENT program's edge compounds with time in the programme: the same
         # ceiling surfaces faster every year, so a freshman arrives looking ordinary and
         # a senior does not. `mature` is per grade, so it is worth four times as much to
@@ -1238,7 +1286,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         # program's whole character is that you cannot spot it in its freshmen.
         step = mod.get("mature", 0.0) * (grade - 9)
         maturity = (min(1.0, lo + step), min(1.0, hi + step))
-        for seat in range(PER_CLASS):
+        for seat in range(n_seats):
             rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
             # Keyed on (school, entry, seat) — the same identity the pid is built from —
             # so a prodigy is the SAME person every one of their four seasons rather than
@@ -1397,6 +1445,21 @@ def _order(ts: TeamSeason) -> list:
 PAIR_SUM_TOL = 2            # rank-sum gap within which real doubles ability decides
 
 
+def _pair_partitions(pool: list):
+    """Every way to split an even-length `pool` into unordered pairs — (2n-1)!!
+    of them (15 for 6 players, 105 for 8). Shared by `_arrange_state` (D2-D4,
+    6 players) and `_arrange_regular` (the 3S/4D D-pool, 8 players) so the
+    combinatorics live in one place."""
+    if not pool:
+        yield []
+        return
+    a = pool[0]
+    for k in range(1, len(pool)):
+        b = pool[k]
+        for tail in _pair_partitions(pool[1:k] + pool[k + 1:]):
+            yield [(a, b)] + tail
+
+
 def _arrange_state(nine: list) -> list:
     """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
     [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
@@ -1424,19 +1487,10 @@ def _arrange_state(nine: list) -> list:
 
     # D2-D4: every partition of #4-#9 into three pairs (15 of them), best total
     # doubles ability wins; ties break toward ladder-natural pairing.
-    def partitions(pool):
-        if not pool:
-            yield []
-            return
-        a = pool[0]
-        for k in range(1, len(pool)):
-            b = pool[k]
-            for tail in partitions(pool[1:k] + pool[k + 1:]):
-                yield [(a, b)] + tail
     def part_key(part):
         return (-sum(pair_rating(a, b) for a, b in part),
                 [rank[a.pid] + rank[b.pid] for a, b in part])
-    pairs = min(partitions(rest), key=part_key)
+    pairs = min(_pair_partitions(rest), key=part_key)
 
     pairs = _order_pairs(pairs,
                          {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
@@ -1481,54 +1535,90 @@ def _pk(pair) -> tuple:
     return tuple(getattr(p, "pid", p) for p in pair)
 
 
-# --- regular-season lineup PHILOSOPHY (owner rule 2027-08) --------------------
+# --- regular-season lineup STRATEGY (owner rule 2027-08) ----------------------
 #
-# League play is free — "regular season can do what it wants" — and because the
-# postseason format is so doubles-forward (1S/4D), programs genuinely differ in
-# how they spend their talent during the league year. Two shapes exist:
+# League play is free — "regular season can do what it wants" — and the regular
+# season plays the doubles-forward 3S/4D card (owner rule 2027-08, swapped with
+# the early non-district window's 5S/2D — see `EARLY_FORMAT_PHASE`). The LINEUP
+# ALLOCATION for that card is fixed, never a coaching choice: S1 is always the
+# top seed, the doubles pool is always exactly #2-#9, and S2/S3 are always
+# exactly #10-#11 (see `_arrange_regular`). What a program's strategy actually
+# decides is how the fixed 8-player pool pairs up into D1-D4:
 #
-#   singles-first    S1-S5 = #1-#5, doubles the tail — the classic card, and the
-#                    only shape the generator used to produce.
-#   doubles-forward  S1 = #1 · D1 = two of #2-#4 (S2 the third) · D2 = any two
-#                    of #5-#9 · the remaining three at S3-S5 in ladder order —
-#                    the owner's permutation table. S3 lands in #5-#7 by
-#                    construction (D2 removes two of the five).
+#   maximize      pick the pairing that maximises total doubles_rating summed
+#                 across all four pairs, over every legal way to split the
+#                 8-player pool into pairs (105 of them) — a real search, now
+#                 that `doubles_rating` has a genuine pair-synergy term
+#                 (`engine.doubles._pair_synergy`) worth searching for.
+#   balanced      the same search, but the objective trades a little raw total
+#                 for spreading strength more evenly across all four doubles
+#                 courts (`_BALANCE_PENALTY` on the spread between the
+#                 strongest and weakest pair) — a coach who would rather have
+#                 four solid pairs than one great one and three ordinary ones.
+#   traditional   adjacent-ladder pairing of the fixed pool — D1=#2+#3,
+#                 D2=#4+#5, D3=#6+#7, D4=#8+#9. The classic card, and the only
+#                 shape the generator used to produce before this rule existed.
 #
-# The philosophy is a durable PROGRAM trait (hashed off the school key, like a
+# The strategy is a durable PROGRAM trait (hashed off the school key, like a
 # coaching tradition — not per-dual dice, so a program's card is recognisable
-# all season), with a small per-dual flip so a coach occasionally tries the
-# other shape. Doubles-forward pairs are picked on real `doubles_rating`, so a
-# doubles-school archetype's D1 is its actual best pairing.
-_DOUBLES_FORWARD_SHARE = 0.5   # share of programs whose league card leans doubles
-_PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries the other shape
+# all season), with a small per-dual flip so a coach occasionally tries a
+# different one.
+_STRATEGIES = ("maximize", "balanced", "traditional")
+_PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries a different strategy
+_BALANCE_PENALTY = 0.5         # "balanced": how strongly |D1 rating - D2 rating| is punished
 
 
-def _doubles_forward(school_key: str) -> bool:
-    h = int(hashlib.blake2s(f"jh-philosophy|{school_key}".encode(),
+def _coach_strategy(school_key: str) -> str:
+    h = int(hashlib.blake2s(f"jh-strategy|{school_key}".encode(),
                             digest_size=4).hexdigest(), 16)
-    return (h % 1000) / 1000.0 < _DOUBLES_FORWARD_SHARE
+    return _STRATEGIES[h % len(_STRATEGIES)]
 
 
-def _arrange_regular(nine: list) -> list:
-    """The doubles-forward 5S/2D card, in SLOT ORDER
-    [S1, S2, S3, S4, S5, D1a, D1b, D2a, D2b] — same contract as
+def _flip_strategy(strategy: str) -> str:
+    """The next strategy in a fixed cycle — deterministic given which one the
+    program normally runs, so a flip is reproducible from the same seed."""
+    i = _STRATEGIES.index(strategy)
+    return _STRATEGIES[(i + 1) % len(_STRATEGIES)]
+
+
+def _arrange_regular(eleven: list, strategy: str) -> list:
+    """The 3S/4D card under `strategy`, in SLOT ORDER
+    [S1, S2, S3, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
-    back identically. Short sides play the plain order."""
-    if len(nine) < 9:
-        return nine
-    from engine.doubles import doubles_rating
-    eng = {p.pid: p.engine_player() for p in nine}
+    back identically. Short sides play the plain order.
 
-    def best_pair(pool):
-        pairs = [(pool[i], pool[j]) for i in range(len(pool))
-                 for j in range(i + 1, len(pool))]
-        return max(pairs, key=lambda pr: doubles_rating(eng[pr[0].pid],
-                                                        eng[pr[1].pid]))
-    d1 = best_pair(nine[1:4])                       # two of #2-#4
-    s2 = next(p for p in nine[1:4] if p not in d1)  # the third plays S2
-    d2 = best_pair(nine[4:9])                       # any two of #5-#9
-    rest = [p for p in nine[4:9] if p not in d2]    # S3-S5, ladder order
-    return [nine[0], s2] + rest + list(d1) + list(d2)
+    ‼️ THE ALLOCATION IS FIXED, NEVER SEARCHED (owner rule 2027-08): S1 is
+    always the top seed, the doubles pool is always exactly #2-#9, and S2/S3
+    are always exactly #10-#11. A coach does not get to decide whether the
+    team's 2nd-9th best players play singles or doubles — that's already
+    settled by the format. The only real decision, and the only thing
+    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4."""
+    if len(eleven) < 11:
+        return eleven
+    s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
+    if strategy == "traditional":
+        pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
+                 (pool[4], pool[5]), (pool[6], pool[7])]
+    else:
+        from engine.doubles import doubles_rating
+        eng = {p.pid: p.engine_player() for p in eleven}
+
+        def dr(a, b):
+            return doubles_rating(eng[a.pid], eng[b.pid])
+
+        best_score, pairs = None, None
+        for candidate in _pair_partitions(pool):        # 105 ways to split 8 into 4 pairs
+            ratings = [dr(*pr) for pr in candidate]
+            total = sum(ratings)
+            score = total if strategy == "maximize" \
+                else total - _BALANCE_PENALTY * (max(ratings) - min(ratings))
+            if best_score is None or score > best_score:
+                best_score, pairs = score, candidate
+        pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
+    out = [s1] + s23
+    for a, b in pairs:
+        out += [a, b]
+    return out
 
 
 def _postseason_nine(ts: TeamSeason) -> list:
@@ -1572,17 +1662,19 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
             pick = bench[rng.randrange(len(bench))]
             if pick is not nine[-1]:
                 nine[-2] = pick
-    # League policy: the program's philosophy decides the card's shape — but
-    # `_arrange_regular` is built for the 5S/2D card's nine positions (S1-S5/D1/D2)
-    # specifically, and only applies there. The early 3S/4D card already puts the
-    # top three players on singles and the next eight into doubles in plain ladder
-    # order, which is the whole point of the format (get #10-11 real minutes), so
-    # there is no overlay to draw for it.
+    # League policy: the program's strategy decides how the 3S/4D card's doubles
+    # pool pairs up — but `_arrange_regular` is built for THAT card's eleven
+    # positions (S1/S2-S3/D1-D4) specifically, and only applies to `phase ==
+    # "regular"`. The early window plays the OTHER shape (5S/2D, swapped with
+    # regular — see `EARLY_FORMAT_PHASE`) and gets the plain ladder order, same
+    # as `_squad`'s default positional mapping always did for that shape.
     if phase == "regular":
         # the per-dual flip draw runs either way, so the rng stream stays aligned.
         flip = rng.random() < _PHILOSOPHY_FLIP
-        if _doubles_forward(ts.school.key) != flip:
-            return _arrange_regular(nine)
+        strategy = _coach_strategy(ts.school.key)
+        if flip:
+            strategy = _flip_strategy(strategy)
+        return _arrange_regular(nine, strategy)
     return nine
 
 

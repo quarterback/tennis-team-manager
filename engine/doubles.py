@@ -152,14 +152,74 @@ def _net_winner_share(hitter: Player, loser_a: Player, loser_b: Player) -> float
     return _clamp01(t["winner_share"] + swing)
 
 
+SYNERGY_CAP = 0.06  # max pair-complementarity bonus, well below individual-talent spread
+
+
+def _pair_synergy(a: Player, b: Player) -> float:
+    """Bounded, symmetric, deterministic pair-complementarity term in [0, SYNERGY_CAP].
+
+    The additive base below (`idx(a)+idx(b))/2`) cannot distinguish partitions of
+    the same player pool — it is invariant under repartitioning by construction,
+    so a "best pairing" search over it is a no-op. This adds the piece real
+    doubles strategy actually cares about: not just how good the two players
+    are, but whether they cover for each other.
+
+    ‼️ MUST BE A CROSS TERM, NOT TWO INDEPENDENT SPREADS. An earlier version
+    used `max(sa,sb)+max(ra,rb)` for coverage and `|aa-ab|+|ca-cb|` for balance —
+    both discard WHICH player supplied which strength, so a genuinely lopsided
+    pair (one all-around-strong player + one all-around-weak one) scored
+    IDENTICALLY to a genuinely complementary pair (each strong on a different
+    axis), since both only look at the SIZE of the spread on each axis
+    independently. That let the partition search reward stacking a strong
+    player with a weak one just as often as pairing real complements — the
+    opposite of the intent. Fixed by scoring the SIGN relationship instead:
+    reward only when one player's edge on axis 1 is offset by the OTHER
+    player's edge on axis 2 (opposite-signed differences); a player who leads
+    on both axes scores zero, because that pair isn't complementary, it's just
+    unequal.
+
+    Two real dynamics, both symmetric in (a, b) and built entirely from ratings
+    the doubles engine already computes elsewhere (no new attributes invented):
+
+    1. COVERAGE (serve/return). A team is exposed if NEITHER partner can serve
+       big or NEITHER returns well. Positive only when the better SERVER and
+       the better RETURNER are different players — `-(sa-sb)*(ra-rb)`, which is
+       positive exactly when the two differences have opposite sign. Zero for
+       a cloned pair (both differences are zero) AND zero for a pair where one
+       player is ahead on both axes (same sign) — neither is complementary.
+    2. BALANCE (aggression/steadiness). A pair of two high-`attack`,
+       low-`steadiness` players (or the reverse) is fragile to the same
+       failure mode; a shot-maker next to a backboard covers more situations.
+       Same cross-term shape: positive only when the more aggressive player
+       and the steadier player are different people.
+
+    Capped well below the base term (`SYNERGY_CAP`) so individual quality stays
+    the primary factor — this is texture that lets the partition search actually
+    discriminate between options, not a second `overall`."""
+    sa, sb = serve_rating(a), serve_rating(b)
+    ra, rb = return_rating(a), return_rating(b)
+    coverage = max(0.0, -(sa - sb) * (ra - rb))
+
+    aa, ab = a.attack, b.attack
+    ca, cb = a.steadiness, b.steadiness
+    balance = max(0.0, -(aa - ab) * (ca - cb))
+
+    raw = 0.6 * coverage + 0.4 * balance
+    return max(0.0, min(SYNERGY_CAP, raw))
+
+
 def doubles_rating(a: Player, b: Player) -> float:
     """A pair's overall doubles strength in [0, 1] — the seeding / fast-model
     signal. Weighted toward serve and net play, so a serve+volley pair rates
-    above its singles level and a pair of baseline grinders below."""
+    above its singles level and a pair of baseline grinders below. A small,
+    bounded complementarity term (`_pair_synergy`) sits on top so a genuine
+    partition search over PAIRINGS of the same players has something real to
+    optimise, rather than a sum that is mathematically identical no matter how
+    the pool is split (see `_pair_synergy`'s docstring)."""
     def idx(p: Player) -> float:
         return (0.30 * serve_rating(p) + 0.40 * net_rating(p)
                 + 0.20 * return_rating(p) + 0.10 * poach_rating(p))
-    return (idx(a) + idx(b)) / 2.0
+    return (idx(a) + idx(b)) / 2.0 + _pair_synergy(a, b)
 
 
 @dataclass
