@@ -3192,15 +3192,29 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
-    # Cut to four in ONE round, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The
-    # play-in takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
+    # Cut to four, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The play-in
+    # takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
     # six the top two sit out while 3v6 and 4v5 play, and at five only 4v5 does. Playing
     # a single play-in regardless left five teams standing and produced a 6 -> 5 -> 3 -> 1
     # ladder — a three-team "semifinal" and a bye nobody earned.
+    #
+    # ‼️ A WHILE, NOT AN IF (owner rule 2027-08, nine classifications). `2*(n-4)`
+    # play-in slots only fits within an n-team field for n<=8 — the field this was
+    # ORIGINALLY written against, back when GROUPS had exactly eight entries. At
+    # nine (1A/2A split), `2*(9-4)=10` asks for more slots than the nine teams
+    # provide and reads off the end of the block list. A field this size cannot
+    # reach a clean four in ONE round without a bye somewhere, so the cut now
+    # REPEATS — capped to an even count that never exceeds what's actually
+    # alive — converging to four over as many rounds as it takes (9 -> 5 -> 4
+    # for a nine-team field) rather than assuming one pass is always enough.
+    # Behaviour is unchanged for every count <=8 the single-pass formula already
+    # covered correctly.
     rounds: list[list[dict]] = []
     alive = list(field)
-    if len(alive) > 4:
-        n_in = 2 * (len(alive) - 4)
+    while len(alive) > 4:
+        n_in = min(2 * (len(alive) - 4), len(alive))
+        if n_in % 2:
+            n_in -= 1
         block, byes = alive[-n_in:], alive[:-n_in]
         games, won = [], []
         for i in range(n_in // 2):
