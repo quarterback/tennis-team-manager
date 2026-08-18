@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<h1 class="pt-h1">The Clinch Report</h1>
+<p class="t-dek">Internal analytics on the exported Play to Clinch world — every roster, dual, and lineup slot the game has generated so far, indexed like a reference desk.</p>
+
+<div class="pt-kpis">
+  <div class="pt-kpi"><div class="pt-kpi-k">Seasons ingested</div><div class="pt-kpi-v">{{ scopes|length }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Programs on file</div><div class="pt-kpi-v">{{ team_count }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Player careers</div><div class="pt-kpi-v">{{ player_count }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Duals logged</div><div class="pt-kpi-v">{{ dual_count }}</div></div>
+</div>
+
+<h2 class="pt-h2">Seasons on file</h2>
+<div class="pt-index-grid">
+  {% for b in bundles %}
+  <a class="pt-index-card" href="leaderboards/{{ b.scope_id }}.html">
+    <h4>{{ b.label }}</h4>
+    <div class="sub">{{ b.programs|length }} programs · {{ b.duals|length }} duals · {{ b.players|length }} players</div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

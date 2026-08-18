@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Teams{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Teams</div>
+<h1 class="pt-h1">Teams</h1>
+<input class="pt-searchbox" type="search" id="q" placeholder="Filter by school or league…" onkeyup="filterCards()">
+<div class="pt-index-grid" id="cards">
+  {% for t in teams %}
+  <a class="pt-index-card" data-name="{{ t.program.name|lower }} {{ (t.program.district or t.program.conference or '')|lower }}" href="{{ t.href }}">
+    <h4><span class="pt-crest" style="background:{{ t.color }}">{{ t.initials }}</span> {{ t.program.name }}</h4>
+    <div class="sub">{{ t.bundle.label }} · {{ t.wins }}-{{ t.losses }} · {{ t.program.district or t.program.conference or '' }}</div>
+  </a>
+  {% endfor %}
+</div>
+<script>
+function filterCards(){
+  var q = document.getElementById('q').value.toLowerCase();
+  document.querySelectorAll('#cards .pt-index-card').forEach(function(c){
+    c.style.display = c.dataset.name.indexOf(q) === -1 ? 'none' : '';
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ career.name }}{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Players</a> / {{ career.name }}</div>
+<h1 class="pt-h1">{{ career.name }}</h1>
+<p class="t-dek">{{ blurb }}</p>
+
+<div class="pt-kpis">
+  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ career.wins }}-{{ career.losses }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Win %</div><div class="pt-kpi-v">{{ "%.3f"|format(pct) }}</div></div>
+  {% if career.bio.current_grade %}<div class="pt-kpi"><div class="pt-kpi-k">Current grade</div><div class="pt-kpi-v">{{ career.bio.current_grade }}</div></div>{% endif %}
+  {% if career.bio.grade %}<div class="pt-kpi"><div class="pt-kpi-k">Class</div><div class="pt-kpi-v">{{ career.bio.grade }}</div></div>{% endif %}
+  {% if career.bio.class_year %}<div class="pt-kpi"><div class="pt-kpi-k">Class</div><div class="pt-kpi-v">{{ career.bio.class_year }}</div></div>{% endif %}
+  <div class="pt-kpi"><div class="pt-kpi-k">Teams</div><div class="pt-kpi-v" style="font-size:16px">{{ career.teams|join(', ') }}</div></div>
+</div>
+
+<div class="pt-grid">
+<div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Match log</div><div class="pt-panel-meta">{{ career.matches|length }} matches on record</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>Season</th><th>Slot</th><th>Opponent (program)</th><th>Faced</th><th class="num">Result</th></tr></thead>
+        <tbody>
+        {% for m in career.matches|reverse %}
+          <tr>
+            <td>{{ m.scope_label }}</td>
+            <td><span class="pt-pill slot">{{ m.slot }}</span></td>
+            <td>{{ m.opp_program }}</td>
+            <td>{{ m.opponents|join(' / ') }}</td>
+            <td class="num">
+              {% if m.won is none %}<span class="pt-pill">{{ m.score }}</span>
+              {% else %}<span class="pt-pill {{ 'win' if m.won else 'loss' }}">{{ 'W' if m.won else 'L' }} {{ m.score }}</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Positions played</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>Slot</th><th class="num">Matches</th><th class="num">Share</th></tr></thead>
+        <tbody>
+        {% for slot, n in career.position_counts.most_common() %}
+          <tr><td><span class="pt-pill slot">{{ slot }}</span></td><td class="num">{{ n }}</td><td class="num">{{ "%.0f%%"|format(100*n/total) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

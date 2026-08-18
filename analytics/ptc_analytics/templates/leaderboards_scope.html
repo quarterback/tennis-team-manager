@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ board.bundle.label }} Leaderboard{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Leaderboards</a> / {{ board.bundle.label }}</div>
+<h1 class="pt-h1">{{ board.bundle.label }}</h1>
+
+<div class="pt-grid">
+<div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Team standings</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>#</th><th>Team</th><th class="num">W</th><th class="num">L</th><th class="num">Pct</th>{% if board.team_standings and board.team_standings[0].power is not none %}<th class="num">Power</th>{% endif %}</tr></thead>
+        <tbody>
+        {% for r in board.team_standings %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="{{ team_href(r.program_id, board.bundle.scope_id) }}">{{ r.name }}</a></td>
+            <td class="num">{{ r.wins }}</td><td class="num">{{ r.losses }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
+            {% if r.power is not none %}<td class="num t-num">{{ "%.3f"|format(r.power) }}</td>{% endif %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Top individual records</div><div class="pt-panel-meta">min. 3 matches on record</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>#</th><th>Player</th><th>Team</th><th class="num">W</th><th class="num">L</th><th class="num">Pct</th></tr></thead>
+        <tbody>
+        {% for r in board.top_players %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+            <td>{{ r.team }}</td>
+            <td class="num">{{ r.wins }}</td><td class="num">{{ r.losses }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div>
+  {% if board.awards %}
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Award winners</div></div>
+    <div class="pt-panel-body">
+      {% for cls, group in board.awards.items() %}
+        {% if group.poy %}
+        <div class="pt-award">
+          <div class="who">{{ group.poy.name }} — {{ cls }} Player of the Year</div>
+          <div class="what">{{ group.poy.school }} · {{ group.poy.wins }}-{{ group.poy.losses }} at {{ group.poy.flight }}</div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

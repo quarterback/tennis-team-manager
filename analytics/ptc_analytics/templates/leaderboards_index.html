@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Leaderboards{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Leaderboards</div>
+<h1 class="pt-h1">Leaderboards</h1>
+<div class="pt-index-grid">
+  {% for b in bundles %}
+  <a class="pt-index-card" href="{{ b.scope_id }}.html">
+    <h4>{{ b.label }}</h4>
+    <div class="sub">Standings, top records, award winners</div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

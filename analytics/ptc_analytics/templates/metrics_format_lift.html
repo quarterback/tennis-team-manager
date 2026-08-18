@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Format Lift{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Format Lift</div>
+<h1 class="pt-h1">Format Lift</h1>
+<p class="t-dek">RCI = expected court share under the regular-season card (5S/2D). SCI = expected court share under the State card (1S/4D). Fmt = SCI − RCI, in percentage points — how much the postseason format shape helps or hurts a team. State Win% is the modeled chance of winning a neutral 1S/4D dual (needs 3 of 5 courts), assuming independent courts. JHSAA only — college dual shapes are per-division and not yet modeled here.</p>
+<div class="pt-panel">
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table">
+      <thead><tr><th>Season</th><th>Team</th><th class="num">RCI</th><th class="num">SCI</th><th class="num">Fmt (pp)</th><th class="num">State Win%</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.scope_label }}</td>
+          <td><a href="{{ team_href(r.program_id, r.scope_id) }}">{{ r.name }}</a></td>
+          <td class="num t-num">{{ "%.3f"|format(r.rci) if r.rci is not none else "—" }}</td>
+          <td class="num t-num">{{ "%.3f"|format(r.sci) if r.sci is not none else "—" }}</td>
+          <td class="num t-num">{{ "%+.1f"|format(r.fmt) if r.fmt is not none else "—" }}</td>
+          <td class="num t-num">{{ "%.3f"|format(r.swp) if r.swp is not none else "—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

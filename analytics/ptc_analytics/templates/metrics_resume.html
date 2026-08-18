@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Résumé{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Résumé</div>
+<h1 class="pt-h1">Résumé</h1>
+<p class="t-dek">Opponent-power quartiles are computed within each season/gender from TOSS power. Q1 = strongest quarter of opponents faced, Q4 = weakest. League record splits JHSAA district play / college conference play from everything else on the schedule. Close duals are decided by a single point — small samples, read with caution.</p>
+<div class="pt-panel">
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table">
+      <thead><tr><th>Season</th><th>Team</th><th class="num">vs Q1</th><th class="num">vs Q4</th><th class="num">League</th><th class="num">Non-league</th><th class="num">Close</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.scope_label }}</td>
+          <td><a href="{{ team_href(r.program_id, r.scope_id) }}">{{ r.name }}</a></td>
+          <td class="num">{{ r.q1 }}</td>
+          <td class="num">{{ r.q4 }}</td>
+          <td class="num">{{ r.league }}</td>
+          <td class="num">{{ r.non_league }}</td>
+          <td class="num">{{ r.close }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

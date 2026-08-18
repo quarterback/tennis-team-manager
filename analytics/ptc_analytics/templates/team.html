@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ team.program.name }}{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Teams</a> / {{ team.program.name }}</div>
+<h1 class="pt-h1"><span class="pt-crest" style="background:{{ color }}">{{ initials }}</span> {{ team.program.name }}</h1>
+<p class="t-dek">{{ blurb }}</p>
+
+<div class="pt-kpis">
+  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}</div></div>
+  {% if team.standing %}
+  {% if team.standing.district_place %}
+  <div class="pt-kpi"><div class="pt-kpi-k">District place</div><div class="pt-kpi-v">#{{ team.standing.district_place }}</div></div>
+  {% endif %}
+  {% if team.standing.toss_power_raw %}
+  <div class="pt-kpi"><div class="pt-kpi-k">Power index</div><div class="pt-kpi-v">{{ "%.3f"|format(team.standing.toss_power_raw|float) }}</div></div>
+  {% endif %}
+  {% if team.standing.conference %}
+  <div class="pt-kpi"><div class="pt-kpi-k">Conference</div><div class="pt-kpi-v" style="font-size:16px">{{ team.standing.conference }}</div></div>
+  {% endif %}
+  {% endif %}
+  <div class="pt-kpi"><div class="pt-kpi-k">Roster size</div><div class="pt-kpi-v">{{ team.roster|length }}</div></div>
+</div>
+
+<div class="pt-grid">
+<div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Schedule</div><div class="pt-panel-meta">{{ team.bundle.label }}</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>Opponent</th><th>Site</th><th>Phase</th><th class="num">Result</th></tr></thead>
+        <tbody>
+        {% for s in team.schedule %}
+          <tr>
+            <td><a href="{{ team_href(s.opp_id, team.bundle.scope_id) }}">{{ s.opp_name }}</a></td>
+            <td>{{ "Home" if s.home else "Away" }}</td>
+            <td>{{ s.phase }}</td>
+            <td class="num"><span class="pt-pill {{ 'win' if s.won else 'loss' }}">{{ 'W' if s.won else 'L' }} {{ s.us|int }}-{{ s.them|int }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">No completed duals on record for this program in this export.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div>
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Roster</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th>Player</th><th class="num">Grade</th></tr></thead>
+        <tbody>
+        {% for p in team.roster %}
+          <tr><td><a href="{{ player_href(p.player_id) }}">{{ p.name }}</a></td><td class="num">{{ p.grade or p.class_year or '' }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
