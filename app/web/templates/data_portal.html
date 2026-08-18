@@ -56,7 +56,7 @@
       <label><span>Scope</span><select name="scope"><option value="jhsaa">JHSAA</option><option value="college" disabled>College — planned</option><option value="world" disabled>Whole world — planned</option></select></label>
       <label><span>Season year</span><input name="year" type="number" min="2020" max="2200" value="{{ portal.grad_year }}" required></label>
       <label><span>Gender</span><select name="gender"><option value="girls">Girls</option><option value="boys">Boys</option></select></label>
-      <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A-1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
+      <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A','1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
     </div>
     <div class="al-export-actions"><button type="button" onclick="this.closest('dialog').close()">Cancel</button><button type="submit" class="primary"><i class="fa-solid fa-download" aria-hidden="true"></i> Download ZIP</button></div>
   </form>

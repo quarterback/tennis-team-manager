@@ -84,7 +84,7 @@ def test_the_modifier_does_not_flatten_the_classification_model():
     model (Oregon 2026: Oregon Episcopal, smallest classification, No. 9 statewide), and
     an earlier version of this test had it backwards."""
     for tag in ("", "blue_blood", "development"):
-        rung = [_profile(_peers(g, 10), tag)["top9"] for g in ("7A", "5A", "2A-1A")]
+        rung = [_profile(_peers(g, 10), tag)["top9"] for g in ("7A", "5A", "1A")]
         assert rung == sorted(rung, reverse=True), (tag, rung)
 
 

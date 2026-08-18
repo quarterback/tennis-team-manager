@@ -34,9 +34,10 @@ def _team(name, group, home):
 
 
 def test_jhsaa_bundle_is_self_describing_and_normalized():
+    from app.jhsaa import GROUPS
+
     a, b = _team("Ace High", "7A", True), _team("Ball High", "7A", False)
-    groups = {g: {"state": {"champion": "Ace High"}} for g in
-              ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")}
+    groups = {g: {"state": {"champion": "Ace High"}} for g in GROUPS}
     files = build_jhsaa(2027, "girls", "7A",
                         season={"teams": {"a": a, "b": b}, "groups": groups, "awards": {}})
     assert {"README.md", "manifest.json", "programs.csv", "players.csv", "duals.csv",

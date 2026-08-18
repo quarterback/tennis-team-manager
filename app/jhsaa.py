@@ -49,17 +49,21 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
 
 
 def champ_group(classification: str) -> str:
-    """The championship group a raw classification plays in — 2A and 1A share one.
+    """The championship group a raw classification plays in.
 
-    The same fold as `scripts/import_jhsaa.champ_group`; kept here because a
-    School's `group` and its `classification` are no longer always equal (a
-    play-up moves the first and not the second), so the app has to be able to
-    derive one from the other."""
-    return classification if classification in GROUPS else "2A-1A"
+    2A and 1A used to share one combined "2A-1A" group (too few sponsors each
+    to run the standard 40-team format on their own); they now crown SEPARATELY
+    via the fixed 24-team shape (`_recovery_24`), so every classification maps
+    to its own group and this is an identity fold. The same fold as
+    `scripts/import_jhsaa.champ_group`; kept here because a School's `group`
+    and its `classification` are no longer always equal (a play-up moves the
+    first and not the second), so the app has to be able to derive one from
+    the other."""
+    return classification if classification in GROUPS else classification
 GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
@@ -328,7 +332,7 @@ WARD_FIELD = 32
 # This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
 # given a bye without inventing a round for everybody else to sit out.
 STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A-1A": 40}
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 24, "1A": 24}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
@@ -400,7 +404,17 @@ def sponsor_floor(group: str) -> int:
     `PROTECTED` teams skip to Regionals and `WARD_FIELD` reach Wards, of which
     half lose there and rejoin the pool. For a 40-field class the Semi-Conference
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
-    a Conference, neither round convenes, and it has no floor of its own."""
+    a Conference, neither round convenes, and it has no floor of its own.
+
+    ‼️ THE 1A/2A FIXED 24-TEAM SHAPE (`_recovery_24`) IS A DIFFERENT FORMULA. Every
+    round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
+    Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
+    — never of total sponsor count — so there is no Semi-Conference body reservoir
+    to run dry the way the dynamic 40-team shape's can. The only real requirement
+    is enough sponsors to fill the entry gates at all: `PROTECTED` district champs
+    plus `WARD_FIELD` at Wards."""
+    if state_field_size(group) == 24:
+        return PROTECTED + WARD_FIELD
     shape = recovery_shape(group)
     return WARD_FIELD + shape["semi_conference"] if shape["conference"] else 0
 
@@ -456,7 +470,8 @@ _TALENT = {
     ("5A", "boys"):   (51.0, 17.5), ("5A", "girls"):   (46.5, 16.5),
     ("4A", "boys"):   (46.0, 19.0), ("4A", "girls"):   (42.0, 18.0),
     ("3A", "boys"):    (43.5, 20.0), ("3A", "girls"):    (38.0, 19.0),
-    ("2A-1A", "boys"): (38.5, 22.0), ("2A-1A", "girls"): (34.5, 21.0),
+    ("2A", "boys"):    (41.0, 21.0), ("2A", "girls"):    (36.5, 20.0),
+    ("1A", "boys"):    (36.0, 23.0), ("1A", "girls"):    (32.5, 22.0),
 }
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
@@ -2539,9 +2554,9 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     2027-08) — every other unit counts inside its own class ("Region IX" exists
     once per classification), but there is exactly one Division 1 in Jefferson
     each year. The sequence runs **girls first, then boys**, and **bottom-up by
-    classification** (2A-1A, 3A, 4A, 5A, 6A, 7A), continuing across both, so
-    2A-1A girls hold Division 1 and the highest number lands on 7A boys — "(7A)
-    Division 11", if the state played that many that year. How many there are
+    classification** (1A up to 9A), continuing across both, so 1A girls hold
+    Division 1 and the highest number lands on 9A boys — "(9A) Division 11", if
+    the state played that many that year. How many there are
     depends on how many Divisional duals the berths actually require, which
     varies by year, so the numbers are assigned here — once both genders are
     known — rather than inside the round that plays them.
@@ -2549,7 +2564,7 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     Idempotent: the number is always recomputed and overwritten, so re-running
     against a memoised season cannot double-count."""
     n = start
-    for g in reversed(GROUPS):                    # 2A-1A up to 7A
+    for g in reversed(GROUPS):                    # 1A up to 9A
         dv = ((season.get("groups") or {}).get(g) or {}).get("divisional") or {}
         for games in dv.get("rounds") or ():
             for gm in games:
@@ -2577,14 +2592,14 @@ def reletter_conferences(season: dict, start: int = 0) -> int:
     and the unit carries its OWN classification: "6A-Z Conference", "6A-Y
     Conference"… Like the Divisions the count is statewide — letters are never
     recycled across classifications — and the sequence runs the same order:
-    girls first, then boys, classifications bottom-up (2A-1A → 9A). Z opening
+    girls first, then boys, classifications bottom-up (1A → 9A). Z opening
     the sequence instead of A is the point: the Conference is the LAST rung, and
     its labels read like it. Past A the sequence doubles (ZZ, ZY, …) rather than
     recycling. Assigned here, after both genders are known, for the Divisions'
     reason exactly; idempotent the same way (always recomputed, memoised season
     safe)."""
     n = start
-    for g in reversed(GROUPS):                    # 2A-1A up to 9A
+    for g in reversed(GROUPS):                    # 1A up to 9A
         cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
         for games in cf.get("rounds") or ():
             for gm in games:
@@ -2960,6 +2975,87 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
             qualifiers, district_qualifiers, atr_used)
 
 
+def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
+                 power: dict, *, seed: int) -> tuple[dict, dict, dict, dict, dict,
+                                                      list, list[str], dict]:
+    """The FIXED 24-team recovery/qualification shape — 1A and 2A (owner rule
+    2027-08). Same postseason philosophy as `_recovery` (byeless rounds, ATR
+    ordering, Conference = Divisional losers + Semi-Conference winners) but a
+    DIFFERENT, non-dynamic wiring: `_recovery` chains Super Regional INTO
+    Semi-State and lets berths flow with pool size; here Super Regional and
+    Semi-State are two PARALLEL, independently berth-bearing gates, because
+    Zonal no longer buys an automatic State berth (owner rule 2027-08) — a
+    Zonal win is advancement-only, so BOTH the Zonal winner and loser move on
+    to Super Regional together, while the Regional losers who never got to
+    play Zonal at all go straight to Semi-State:
+
+        Super Regional   16 = Zonal winners + Zonal losers  -> 8 qualify, 8 -> Divisional
+        Semi-State       16 = Regional losers                -> 8 qualify, 8 -> Semi-Conference
+        Divisional       8 (Super Regional losers)            -> 4 qualify, 4 -> Conference
+        Semi-Conference  8 (Semi-State losers)                -> 4 -> Conference (no berths)
+        Conference       4 Divisional losers + 4 Semi-Conference winners -> 4 qualify
+
+    8+8+4+4 = 24 — every round size is a fixed function of `PROTECTED`/
+    `WARD_FIELD` alone (never of total sponsor count, see `sponsor_floor`), so
+    unlike `_recovery` there is no dynamic sizing, no readmission window, and
+    no Semi-Conference reservoir that can run short. District champions still
+    enter the ladder at Regionals (`PROTECTED`, unchanged) but that is access
+    to the ladder, same as `_recovery` — nothing here grants a berth without a
+    qualification win. `district_qualifiers` stays in the return as an empty
+    list purely for archive-shape compatibility with `_recovery`'s callers."""
+    district_qualifiers: list[str] = []
+    rng = random.Random(seed)
+    reg_losers = [by_name[n] for n in _losers(prestate, 0)]
+    zon_losers = [by_name[n] for n in _losers(prestate, 1)]
+
+    sr_pool = sorted(list(zonal_champs) + zon_losers, key=_power_key(power))
+    sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
+    sr_won = {id(t) for t in sr_winners}
+    sr_losers = sorted((t for t in sr_pool if id(t) not in sr_won),
+                       key=_power_key(power))
+
+    ss_pool = sorted(reg_losers, key=_power_key(power))
+    ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
+    ss_won = {id(t) for t in ss_winners}
+    ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
+                       key=_power_key(power))
+
+    dv_pool = list(sr_losers)
+    if dv_pool:
+        dv_arc, dv_winners = _recovery_round(dv_pool, phase="divisional", rng=rng)
+    else:
+        dv_arc, dv_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["divisional"]]}, []
+    dv_won = {id(t) for t in dv_winners}
+    dv_losers = [t for t in dv_pool if id(t) not in dv_won]
+
+    sc_pool = sorted(ss_losers, key=_atr_key(power))
+    if sc_pool:
+        sc_arc, sc_winners = _recovery_round(sc_pool, phase="semi_conference",
+                                             rng=rng)
+    else:
+        sc_arc, sc_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["semi_conference"]]}, []
+
+    cf_pool = sorted(list(dv_losers) + list(sc_winners), key=_atr_key(power))
+    if cf_pool:
+        cf_arc, cf_winners = _recovery_round(cf_pool, phase="conference", rng=rng)
+    else:
+        cf_arc, cf_winners = {"field": [], "rounds": [[]], "survivors": [],
+                              "round_names": [_RECOVERY_NAMES["conference"]]}, []
+
+    qualifiers = list(sr_winners) + list(ss_winners) + list(dv_winners) + list(cf_winners)
+    atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
+    if len(qualifiers) != state_field_size(group):
+        log.warning("JHSAA %s (24-team) recovery filled %d of %d berths "
+                    "(super regional %d, semi-state %d, divisional %d, "
+                    "semi-conference %d, conference %d)", group, len(qualifiers),
+                    state_field_size(group), len(sr_pool), len(ss_pool),
+                    len(dv_pool), len(sc_pool), len(cf_pool))
+    return (sr_arc, ss_arc, dv_arc, sc_arc, cf_arc,
+            qualifiers, district_qualifiers, atr_used)
+
+
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
     """The State Tournament: a fresh seeded draw (24 teams in the three largest
     classes, 40 elsewhere — Zonal champions first, then the district-guarantee and
@@ -3062,8 +3158,9 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    ONE champion per classification and nobody else — six teams now that 3A and 2A-1A
-    crown separately. The field is not a `FIELD` size and never has been: it is exactly
+    ONE champion per classification and nobody else — nine teams now that every
+    classification, including 1A and 2A, crowns separately. The field is not a
+    `FIELD` size and never has been: it is exactly
     `len(GROUPS)`, and it grows or shrinks only when the association adds or merges a
     championship. (`FIELD` is the STATE tournament's bracket size per classification and
     has nothing to do with this event.)
@@ -3128,7 +3225,7 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
             "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
 
 
-_GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 7A=0 … 3A-1A=4, so |i-j| = classes apart
+_GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 9A=0 … 1A=8, so |i-j| = classes apart
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
 # not bus across Jefferson for a non-league dual — then talent, so a weak program isn't
@@ -3696,10 +3793,15 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
-            group, by_name_g, sectionals[group], wards[group], prestates[group],
-            zonal_champs[group], district_champs[group], post_power,
-            seed=seed + hash(group) % 9973 + 16223)
+        if state_field_size(group) == 24:
+            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery_24(
+                group, by_name_g, prestates[group], zonal_champs[group],
+                post_power, seed=seed + hash(group) % 9973 + 16223)
+        else:
+            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
+                group, by_name_g, sectionals[group], wards[group], prestates[group],
+                zonal_champs[group], district_champs[group], post_power,
+                seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], semi_conferences[group] = dv, sc
         conferences[group] = cf
@@ -3721,10 +3823,22 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # TWO WAYS IN AND NO OTHERS (owner rule 2027-08): win a Zonal, or win
         # your way through recovery. Everyone below the champions is a recovery
         # survivor, seeded in post-recovery TOSS order.
-        zc = sorted(zonal_champs[group], key=_power_key(final_power))
-        rest = sorted(recovery_q[group], key=_power_key(final_power))
-        states[group] = run_state(zc + rest, champions=len(zc),
-                                  seed=seed + hash(group) % 9973 + 12281)
+        #
+        # ‼️ THE 1A/2A FIXED 24-TEAM SHAPE HAS NO ZONAL GUARANTEE (owner rule
+        # 2027-08, `_recovery_24`). A Zonal win only advances a team to Super
+        # Regional there — it is not a seeding privilege — so the field is the
+        # 24 recovery qualifiers, full stop, seeded purely on post-recovery TOSS
+        # with `champions=8` giving the top 8 the State bracket's first-round
+        # byes (`run_state`'s single-draw branch, no Qualifiers Round at 24).
+        if state_field_size(group) == 24:
+            field = sorted(recovery_q[group], key=_power_key(final_power))
+            states[group] = run_state(field, champions=8,
+                                      seed=seed + hash(group) % 9973 + 12281)
+        else:
+            zc = sorted(zonal_champs[group], key=_power_key(final_power))
+            rest = sorted(recovery_q[group], key=_power_key(final_power))
+            states[group] = run_state(zc + rest, champions=len(zc),
+                                      seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]

@@ -193,7 +193,10 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
             "Regular duals use 5 singles/2 doubles; early dates use 3/4; showcases and postseason use 1/4.",
             "Every court finishes. JHSAA has no clinch abandonment.",
-            "2A and 1A compete in the combined 2A-1A championship group.",
+            "1A and 2A crown SEPARATELY via a fixed 24-team postseason shape "
+            "(Super Regional/Semi-State/Divisional/Semi-Conference/Conference all "
+            "award direct State berths, unlike the other classes' dynamic ladder); "
+            "Zonal is advancement-only there and grants no automatic State berth.",
             "Programs and rosters reflect the CURRENT association config (renames/sponsorship/"
             "play-up as they stand today), applied to the archived season's own results and "
             "roster year — a school that has since stopped sponsoring tennis or been renamed "

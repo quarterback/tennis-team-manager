@@ -2043,12 +2043,13 @@ def canon(name: str) -> str:
 
 
 def champ_group(classification: str) -> str:
-    return (classification
-            if classification in ("9A", "8A", "7A", "6A", "5A", "4A", "3A")
-            else "2A-1A")
+    """1A and 2A used to share one combined "2A-1A" group; they now crown
+    SEPARATELY via the fixed 24-team shape (`app.jhsaa._recovery_24`), so this
+    is an identity fold for every real classification."""
+    return classification
 
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A-1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:
