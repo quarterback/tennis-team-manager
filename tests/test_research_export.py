@@ -5,11 +5,13 @@ import zipfile
 from types import SimpleNamespace
 
 from app.research_export import build_jhsaa, export_zip
+from app.web.server import NAV_GROUPS, _active_nav
 
 
 def _prospect(pid, name, grade):
-    return SimpleNamespace(pid=pid, name=name, year=grade, hometown="Northbank",
-                           country="US", current_grade=42, potential_grade=55,
+    return SimpleNamespace(pid=pid, name=name, grade=grade, year=0, hometown="Northbank",
+                           country="US", current_overall=lambda: 42,
+                           ceiling_overall=lambda: 55,
                            academic_rating=81, traits={"play_style": "all_court"})
 
 
@@ -43,6 +45,10 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
     duals = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
     assert len(duals) == 1
     assert duals[0]["home_program_id"] == "Ace High|girls"
+    players = list(csv.DictReader(io.StringIO(files["players.csv"].decode())))
+    assert players[0]["grade"] == "12"
+    assert players[0]["current_grade"] == "42"
+    assert players[0]["potential_grade"] == "55"
 
 
 def test_export_zip_contains_manifest(monkeypatch):
@@ -50,3 +56,17 @@ def test_export_zip_contains_manifest(monkeypatch):
                         "tiny", lambda **scope: {"manifest.json": b"{}"})
     with zipfile.ZipFile(export_zip("tiny", year=2027)) as zf:
         assert zf.namelist() == ["manifest.json"]
+
+
+def test_export_is_discoverable_in_tools_menu():
+    tools = dict(NAV_GROUPS)["Tools"]
+    item = next(item for item in tools if item["id"] == "research_export")
+    assert item["label"] == "Export Research Data"
+    assert item["endpoint"] == "research_export"
+
+
+def test_export_page_marks_tools_item_active():
+    class Request:
+        path = "/research/export"
+
+    assert _active_nav(Request()) == "research_export"

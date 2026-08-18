@@ -73,9 +73,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             player_lookup[(s.name, p.name)] = pid
             players.append({
                 "player_id": pid, "program_id": s.key, "name": p.name,
-                "gender": gender, "grade": p.year, "hometown": p.hometown,
-                "country": p.country, "current_grade": p.current_grade,
-                "potential_grade": p.potential_grade, "academic_rating": p.academic_rating,
+                "gender": gender, "grade": p.grade, "hometown": p.hometown,
+                "country": p.country, "current_grade": p.current_overall(),
+                "potential_grade": p.ceiling_overall(), "academic_rating": p.academic_rating,
                 "style": p.traits.get("play_style", ""),
             })
 

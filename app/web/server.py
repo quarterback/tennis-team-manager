@@ -177,6 +177,7 @@ NAV_GROUPS = [
         {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
+        {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "fa-solid fa-ruler-combined", "endpoint": "methodology",      "args": {}},
@@ -191,6 +192,7 @@ def _active_nav(req) -> str:
     if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
+    if p.startswith("/research/export"):  return "research_export"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
     if p.startswith("/injuries"):         return "injuries"
@@ -1146,9 +1148,14 @@ def create_app() -> Flask:
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
 
-    @app.route("/research/export", methods=["POST"])
+    @app.route("/research/export", methods=["GET", "POST"])
     def research_export():
         """Browser-native research download; simulation state is never modified."""
+        if request.method == "GET":
+            world = wd.load_world(DEFAULT_SEED)
+            default_year = wd.jhsaa_season_year(world) if world else 2027
+            return render_template("research_export.html", active="Tools",
+                                   default_year=default_year)
         from app.research_export import ExportError, export_zip
         family = request.form.get("scope", "jhsaa").strip().lower()
         try:

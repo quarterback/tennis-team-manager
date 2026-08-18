@@ -211,26 +211,29 @@ body { background: var(--fm-app-bg); }
    the remaining width always fits:
      Class Signed → search width + "New league" text → padding → phase label →
      search → Season year → brand → nav (hamburger) */
-@media (max-width: 1900px) { .fm-gc-next { display: none; } }
-@media (max-width: 1780px) {
+/* The Juniors group added another top-level label. Start shedding secondary
+   controls before a 2048px desktop runs out of room, so the advance/play button
+   is always fully visible rather than clipped against the viewport edge. */
+@media (max-width: 2200px) { .fm-gc-next { display: none; } }
+@media (max-width: 2100px) {
   .fm-search input { width: 132px; }
   .fm-search input:focus { width: 180px; }
   .fm-newleague-label { display: none; }
   .fm-newleague { padding: 0 10px; }
 }
-@media (max-width: 1620px) {
+@media (max-width: 2000px) {
   .fm-tn-btn { padding: 0 9px; }
   .fm-gc { padding: 0 11px; }
 }
 /* The phase ("· NCAA championship", "· NIT Kickoff Weekend") is the single widest
    cell and every page states its own phase, so it goes before anything clickable. */
-@media (max-width: 1580px) { .fm-gc-sub { display: none; } }
-@media (max-width: 1430px) { .fm-search { display: none; } }
-@media (max-width: 1300px) { .fm-gc-year { display: none; } }
-@media (max-width: 1210px) { .fm-topbrand { display: none; } }
+@media (max-width: 1850px) { .fm-gc-sub { display: none; } }
+@media (max-width: 1680px) { .fm-search { display: none; } }
+@media (max-width: 1510px) { .fm-gc-year { display: none; } }
+@media (max-width: 1370px) { .fm-topbrand { display: none; } }
 
 /* Narrow screens: hide the dropdown bar and fall back to the hamburger drawer. */
-@media (max-width: 1080px) {
+@media (max-width: 1210px) {
   .fm-topnav { display: none; }
   .fm-hamburger { display: inline-flex; }
 }
