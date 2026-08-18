@@ -56,8 +56,16 @@ class Bundle:
         self.championships = t.get("jhsaa_championships", {})
 
         if self.family == "jhsaa":
-            self.scope_id = f"jhsaa-{self.scope['year']}-{self.scope['gender']}"
-            self.label = f"{self.scope['year']} JHSAA {self.scope['gender'].title()}"
+            # classification is part of the exporter's own scope (research_
+            # export.build_jhsaa year/gender/classification) — two exports for
+            # the same year/gender but different classifications are
+            # different datasets, so it has to be in the identity here too,
+            # not just in the ingest cache key, or a per-scope page (team
+            # pages, leaderboards, metrics) silently merges them.
+            classification = self.scope.get("classification", "all")
+            self.scope_id = f"jhsaa-{self.scope['year']}-{self.scope['gender']}-{slug(classification)}"
+            cls_label = "" if classification == "all" else f" {classification}"
+            self.label = f"{self.scope['year']} JHSAA {self.scope['gender'].title()}{cls_label}"
             self.year = self.scope["year"]
             self.gender = self.scope["gender"]
             self.division = None
@@ -125,8 +133,28 @@ def team_pages(bundles: list[Bundle]) -> dict:
     return out
 
 
+def _reorient_score(score: str, side_of_pid: str) -> str:
+    """The export stores a line's score HOME-first, always — but a match log
+    is read from ONE player's own perspective. Left alone, an away-side
+    winner shows a score that reads like a loss (and vice versa). Swap each
+    "a-b" component to "own-opp" order when the player was on the away side;
+    home-side stays as exported."""
+    if side_of_pid != "away" or not score:
+        return score
+    parts = []
+    for s in score.split(","):
+        s = s.strip()
+        if "-" not in s:
+            parts.append(s)
+            continue
+        a, _, b = s.partition("-")
+        parts.append(f"{b.strip()}-{a.strip()}")
+    return ", ".join(parts)
+
+
 def _line_result_for_player(line: dict, pid: str, side_of_pid: str) -> tuple[bool | None, str]:
-    """Return (won, score) for a player's own side of a line."""
+    """Return (won, score) for a player's own side of a line, score reoriented
+    to that player's own-opponent order regardless of which side was home."""
     home_won = bool(_i(line.get("home_won")))
     if side_of_pid == "home":
         won = home_won
@@ -135,7 +163,7 @@ def _line_result_for_player(line: dict, pid: str, side_of_pid: str) -> tuple[boo
     score = line.get("score")
     if score is None and "home_games" in line:
         score = f"{line.get('home_games')}-{line.get('away_games')}"
-    return won, score or ""
+    return won, _reorient_score(score or "", side_of_pid)
 
 
 def player_careers(bundles: list[Bundle]) -> dict:
@@ -217,14 +245,20 @@ def leaderboards(bundles: list[Bundle], careers: dict) -> dict:
 
         top_players = []
         for pid, c in careers.items():
-            if b.scope_id not in c["seasons"]:
-                continue
-            total = c["wins"] + c["losses"]
+            # This board is per-SCOPE, but `c["wins"]`/`c["losses"]` are the
+            # player's CAREER totals across every ingested season — using
+            # them here would rank a player on matches from other seasons
+            # entirely. Derive the record from this scope's matches only.
+            scope_matches = [m for m in c["matches"] if m["scope_id"] == b.scope_id]
+            wins = sum(1 for m in scope_matches if m["won"] is True)
+            losses = sum(1 for m in scope_matches if m["won"] is False)
+            total = wins + losses
             if total < 3:
                 continue
+            team = next((m["own_program"] for m in scope_matches), next(iter(c["teams"]), ""))
             top_players.append({
-                "player_id": pid, "name": c["name"], "wins": c["wins"], "losses": c["losses"],
-                "pct": c["wins"] / total if total else 0.0, "team": next(iter(c["teams"]), ""),
+                "player_id": pid, "name": c["name"], "wins": wins, "losses": losses,
+                "pct": wins / total if total else 0.0, "team": team,
             })
         top_players.sort(key=lambda r: (-r["pct"], -r["wins"]))
 

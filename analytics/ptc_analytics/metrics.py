@@ -28,11 +28,15 @@ from dataclasses import dataclass, field
 
 CARD_WEIGHTS = {
     "jhsaa": {"regular": (5, 2), "state": (1, 4)},
-    # College dual shape is per-division (see ncaa.DUAL_FORMATS in the game) —
-    # not modeled per-division here yet; CLASSIC 6+3 stands in until a
-    # division-aware weight table is added.
-    "college": {"regular": (6, 3), "state": (6, 3)},
 }
+# College dual shape is per-division (see ncaa.DUAL_FORMATS in the game) and
+# NOT modeled here yet. Deliberately no "college" entry in CARD_WEIGHTS — a
+# placeholder 6+3 for every division used to render RCI/SCI as if they were
+# real and Fmt as a false 0.0 (regular == state under identical weights),
+# which reads as "college has no format lift" rather than "not modeled yet."
+# card_index()/fmt_lift()/state_dual_win_prob() all return None outside
+# MODELED_FAMILIES so the templates show "—" instead of a fabricated number.
+MODELED_FAMILIES = {"jhsaa"}
 
 
 def _is_singles(slot: str) -> bool:
@@ -173,11 +177,15 @@ class TeamMetrics:
 
     def card_index(self, family: str, kind: str) -> float | None:
         """RCI/SCI: (singles_lines*pS + doubles_lines*pD) / total_lines for the
-        named card shape ('regular' or 'state')."""
+        named card shape ('regular' or 'state'). None for a family with no
+        modeled card weights (college, currently) rather than guessing —
+        see MODELED_FAMILIES."""
+        if family not in MODELED_FAMILIES:
+            return None
         pS, pD = self.s_pct, self.d_pct
         if pS is None or pD is None:
             return None
-        ns, nd = CARD_WEIGHTS.get(family, CARD_WEIGHTS["jhsaa"])[kind]
+        ns, nd = CARD_WEIGHTS[family][kind]
         return (ns * pS + nd * pD) / (ns + nd)
 
     @property
@@ -229,9 +237,9 @@ class TeamMetrics:
         return (fmt / 100) / rci
 
     def regular_dual_win_prob(self, family: str) -> float | None:
-        if self.s_pct is None or self.d_pct is None:
+        if family not in MODELED_FAMILIES or self.s_pct is None or self.d_pct is None:
             return None
-        ns, nd = CARD_WEIGHTS.get(family, CARD_WEIGHTS["jhsaa"])["regular"]
+        ns, nd = CARD_WEIGHTS[family]["regular"]
         return dual_win_prob(ns, self.s_pct, nd, self.d_pct)
 
     def format_win_prob_lift(self, family: str) -> float | None:
@@ -484,12 +492,17 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                 fl["won"] += 1 if won else 0
 
                 if "score" in line and line.get("score"):
+                    # The score string is home-first, always (see _games_from_
+                    # score_string) — orient by which COURT SIDE this team was
+                    # on, not by who won. Swapping on `won` credited a losing
+                    # home team (or a winning away team) with the OPPONENT's
+                    # game/set totals instead of its own.
                     gw, gl = _games_from_score_string(line["score"])
-                    if not won:
+                    if side == "away":
                         gw, gl = gl, gw
                     m.games_won += gw; m.games_lost += gl
                     sw, sl = _sets_from_score_string(line["score"])
-                    if not won:
+                    if side == "away":
                         sw, sl = sl, sw
                 elif line.get("home_games") not in (None, ""):
                     hg, ag = float(line.get("home_games") or 0), float(line.get("away_games") or 0)
@@ -644,6 +657,8 @@ def compute_player_value(careers: dict) -> dict:
         total = 0.0
         breakdown = []
         for key, results in per_slot.items():
+            if len(results) < 3:
+                continue    # documented threshold — a 1-2 match sample gets no PVAR contribution
             rep = replacement.get(key, 0.35)
             actual = sum(results) / len(results)
             contribution = (actual - rep) * len(results)

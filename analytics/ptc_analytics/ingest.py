@@ -25,7 +25,11 @@ def scope_key(manifest: dict) -> str:
     fam = manifest["dataset_family"]
     scope = manifest["scope"]
     if fam == "jhsaa":
-        return f"jhsaa__{scope['year']}__{scope['gender']}"
+        # classification ("all", "9A", ...) is part of the exporter's own scope
+        # (research_export.build_jhsaa) — two exports for the same year/gender
+        # but different classifications are DIFFERENT datasets and must not
+        # collide on one cache directory.
+        return f"jhsaa__{scope['year']}__{scope['gender']}__{scope.get('classification', 'all')}"
     return f"college__{scope['year']}__{scope['division']}__{scope['gender']}"
 
 
