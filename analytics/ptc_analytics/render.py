@@ -116,8 +116,8 @@ def build_site(raw_bundles: list[dict]) -> None:
         base = {"program_id": pid, "scope_id": scope_id, "name": m.name, "scope_label": b.label}
         shape_rows.append({**base, "s_pct": m.s_pct, "d_pct": m.d_pct, "dr": m.doubles_reliance,
                             "balance": m.balance, "lines_played": m.lines_played})
-        fmt_rows.append({**base, "rci": m.card_index(m.family, "regular"), "sci": m.card_index(m.family, "state"),
-                          "fmt": m.fmt_lift, "swp": m.state_dual_win_prob(m.family)})
+        fmt_rows.append({**base, "rci": m.card_index("regular"), "sci": m.card_index("state"),
+                          "fmt": m.fmt_lift, "swp": m.state_dual_win_prob()})
         q = m.quartile_record
         lg = m.league_record
         resume_rows.append({**base,

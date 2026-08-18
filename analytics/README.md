@@ -49,13 +49,14 @@ be reproduced or challenged rather than trusted blind — see
 
 Shipped in this pass:
 - **S% / D%** — singles/doubles line win rate, the foundational split.
-- **RCI / SCI / Fmt** — expected court share under the regular-season card
-  (5S/2D) vs the State postseason card (1S/4D), and the gap between them in
-  percentage points. A team with a big positive Fmt is a different, more
-  dangerous team once the postseason format kicks in.
+- **RCI / SCI / Fmt** — expected court share under the regular-season card vs
+  the state/postseason card, and the gap between them in percentage points.
+  A team with a big positive Fmt is a different, more dangerous team once the
+  postseason format kicks in.
 - **Doubles Reliance / Balance** — team shape in one number.
-- **State Dual Win Probability** — modeled chance of winning a neutral 1S/4D
-  dual (needs 3 of 5 courts), independent-court binomial approximation.
+- **State Dual Win Probability** — modeled chance of winning a neutral
+  postseason-shaped dual (needs a majority of that card's lines),
+  independent-court binomial approximation.
 - **Opponent-power quartiles, league vs non-league split, close-match
   record** — résumé questions: who are they beating, is the record padded.
 - **Storylines** — auto-flagged extremes (big Fmt, lopsided team shape,
@@ -80,12 +81,16 @@ it answers "how much was this player actually worth" rather than restating
 S%/D%. All of it lives in three new Analytics pages (Depth & Volatility,
 Predictive, Player Value) rather than piling onto the existing ones.
 
-Card weights (`ptc_analytics/metrics.CARD_WEIGHTS`) are configurable per
-family rather than hard-coded, since divisions/classifications play
-different dual shapes. Only JHSAA's 5S/2D-vs-1S/4D shape is modeled
-precisely right now (that's the data on hand); college's D1/D2/D3/D4 dual
-formats differ per division and aren't wired up to per-division weights yet
-— `Fmt`/`SCI`/State Win% only render for JHSAA until that's added.
+‼️ Card shapes (how many singles/doubles lines a "regular" or "state" dual
+plays) are **derived from the actual exported duals per scope**
+(`aggregate.Bundle.regular_shape`/`state_shape`, the most common line-count
+shape seen in each phase/round bucket), never hard-coded — an earlier
+version hard-coded JHSAA's regular card as 5S/2D, and the game swapped that
+to 3S/4D in the same session this was built, which would have silently
+rendered every Fmt/RCI/SCI number backwards. `Fmt`/`SCI`/State Win% return
+`None` (rendered "—") when a scope has no duals in that phase/round bucket
+yet — currently that's most college scopes (their postseason `NCAA` round
+isn't in the sample export), not a family-level restriction anymore.
 
 The full wishlist (opponent-adjusted S+/D+, bracket equity simulation,
 player WAR, pair chemistry, trend/form ratings, and the rest) is not built
