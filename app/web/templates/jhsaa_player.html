@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'state', view.name,
-             view.school ~ ' · ' ~ view.city ~ ', Jefferson',
+             view.school ~ ' · ' ~ (view.locality ~ ', ' if view.locality else '') ~ view.city ~ ', Jefferson',
              [('Career', view.record), ('Class of', view.grad_year or '—')]) }}
 
 <div class="jh-shell">

@@ -67,7 +67,7 @@
     "Snowline": "development",
     "St. Agnes Academy": "doubles",
     "St. Agnes Preparatory": "doubles",
-    "St. Basil Academy": "blue_blood",
+    "Cahokia Mounds Catholic": "blue_blood",
     "St. Francis Xavier Preparatory": "blue_blood",
     "St. Gabriel Preparatory": "blue_blood",
     "St. Isidore": "blue_blood",
@@ -75,12 +75,12 @@
     "St. Perpetua": "doubles",
     "St. Sebastian Prep": "blue_blood",
     "St. Vincent": "doubles",
-    "Steelbridge": "development",
+    "Hagerstown Forge": "development",
     "Summervale Northwest": "development",
     "Telfair Country Day": "development",
     "Three Saints": "doubles",
-    "Timberline": "blue_blood",
-    "Treasure Valley": "blue_blood",
+    "Monongahela Timber": "blue_blood",
+    "Caney": "blue_blood",
     "Trinity Catholic": "blue_blood",
     "Valderra": "blue_blood",
     "Valley Christian": "blue_blood",
@@ -91,6 +91,6 @@
     "Albany Park": "blue_blood",
     "Montelago": "blue_blood",
     "Seafarer": "doubles",
-    "Morro Bay": "doubles"
+    "Morne Rouge": "doubles"
   }
 }

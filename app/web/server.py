@@ -132,17 +132,23 @@ NAV_GROUPS = [
         {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
         {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
         {"id": "wire",      "label": "The Wire",      "icon": "fa-solid fa-tower-broadcast", "endpoint": "wire_page",           "args": {}},
-        {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
-        {"id": "jhsaa",     "label": "High School",  "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
-        # ‼️ The JHSAA program editor gets its OWN nav entry, not just a tab inside the
-        # section. It has now been moved twice for being unfindable — first off the
-        # college roster editor, then onto a tab rail the owner still could not see —
-        # and a tab is only findable by someone already on the page it lives on.
-        {"id": "jh_prog",   "label": "HS Programs",  "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
-        {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
         {"id": "staff",     "label": "Staff Search",  "icon": "fa-solid fa-user-tie", "endpoint": "staff_search_page","args": {}},
         {"id": "rec_econ",  "label": "Scholarship Economy","icon": "fa-solid fa-coins", "endpoint": "recruit_economy_page","args": {}},
+    ]),
+    # ‼️ JUNIOR TENNIS IS ITS OWN SECTION (owner rule 2026-08). The high-school
+    # association, the junior rankings, the junior tour and the program editor were
+    # scattered down the middle of Management, between the transfer portal and the
+    # staff search — four surfaces about players who have not signed anywhere yet,
+    # filed under managing a college roster. The editor in particular has now been
+    # moved three times for being unfindable; the nav is where the owner looks, and
+    # a thing is only findable in the nav if it sits under the heading it belongs to.
+    ("Juniors", [
+        {"id": "jhsaa",     "label": "High School",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
+        {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
+        {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
+        {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
     ]),
     ("Analytics Bureau", [
         {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
@@ -173,7 +179,6 @@ NAV_GROUPS = [
     ("Tools", [
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
-        {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-sliders", "endpoint": "junior_setup",    "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "fa-solid fa-ruler-combined", "endpoint": "methodology",      "args": {}},
     ]),
 ]
@@ -202,6 +207,10 @@ def _active_nav(req) -> str:
     if p.startswith("/doubles-championship"): return "doubles"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
+    # The programs editor is checked BEFORE the section, since /jhsaa/programs is a
+    # prefix match on /jhsaa and would otherwise light the High School entry.
+    if p.startswith("/jhsaa/programs"):   return "jh_prog"
+    if p.startswith("/jhsaa"):            return "jhsaa"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
     if p.startswith("/intel/teams"):      return "intel_teams"

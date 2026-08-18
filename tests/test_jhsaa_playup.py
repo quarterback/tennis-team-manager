@@ -158,8 +158,10 @@ def test_playing_up_does_not_overfill_a_league(clean):
 # --- the override layers over the seed ---------------------------------------------
 
 def test_the_override_can_promote_a_school_the_file_did_not_pick(clean):
+    # Eligibility is the 4A-and-below rule, not merely "not already the top class"
+    # — `can_play_up` is enforced on the READ, so a 5A pick would be refused.
     plain = next(s for s in jh.load_schools("girls")
-                 if not s.plays_up and s.classification != jh.GROUPS[0])
+                 if not s.plays_up and jh.can_play_up(s.classification))
     ov.set_jhsaa_playup(plain.name, True)
     jh.reset_schools()
     now = next(s for s in jh.load_schools("girls") if s.name == plain.name)

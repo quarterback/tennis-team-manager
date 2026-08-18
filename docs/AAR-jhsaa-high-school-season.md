@@ -171,3 +171,49 @@ draw history. (This was assumed impossible during design; it needed zero work.)
   strict best-nine. Measured appearances on a 29-dual team: [2, 3, 5, 20, 28, 29 ...].
 - `simulate_cross`-style interstate high-school play: out of scope, Jefferson is the
   only simulated association.
+
+---
+
+## Update, 2026-08 — names are an identity layer, and sponsorship is a map decision
+
+A short pass over the association's membership, worth recording because two of its
+lessons are not about naming at all. Full change list: `docs/JHSAA-name-cleanup-2027.md`
+section D.
+
+**A private school's name cannot repeat; a public school's can.** Three *Calvary
+Chapel*s in three towns read as one institution with three campuses. The reason a
+Lincoln in every state is fine and this was not is that a public school's TOWN is the
+disambiguator and a private school has no such anchor. So "is this name duplicated?"
+is the wrong check — the right one is "does anything outside the name distinguish
+these?"
+
+**A compass point on another SCHOOL's name is an annex; on the CITY's name it is a
+district.** *Northside Christian North* reads as a second campus of Northside
+Christian. *Belmonte North* reads as one of Belmonte's high schools, which is exactly
+how real districts name them. A sweep that keys on the suffix alone gets the second
+class wrong, and there are far more of those.
+
+**‼️ "Drop" meant "rename".** The owner asked to "be rid of those schools as tennis
+sponsoring" and I removed them from the association. That was wrong, and the
+correction is the general lesson: a school is a durable institution that other data
+points at, so the reversible reading of an ambiguous instruction is the one that
+CHANGES a school rather than the one that DELETES it. Nothing was lost — the drop was
+never applied — but a full turn was.
+
+**‼️ A SPONSORSHIP CHANGE REDRAWS THE LEAGUES OF THE CLASS IT TOUCHES.** This is the
+one with teeth. A district is not a slot a school can be put into: it is a cut of a
+geographic ORDER into balanced blocks of `MAX_DISTRICT`, so adding one program to a
+class re-cuts every block in it. Measured before doing anything: every league a new
+school actually belonged in was already full at 12, and every league with a spare seat
+was in another part of the state — so "just place it somewhere with room" would have
+put a Timber Valley 1A in a Gold Valley league to satisfy an arithmetic invariant, and
+nothing would have errored. `scripts/jhsaa_sponsors.py` therefore redraws the affected
+groups through `import_jhsaa.draw_districts` — the same function, the same order — and
+leaves the other seven classes alone, because the draw is per classification and they
+are independent. It checks `MAX_DISTRICT` after redrawing rather than assuming it.
+
+**The unglamorous one:** a row's `source` outlives the name prep-network uses. A
+handful name records that repo has since renamed away ("Annes Summit" still carries
+source "Harmon"), so any code that walks the association back to its source records
+needs a path for a key that no longer resolves. It is a stable IDENTITY, not a foreign
+key.

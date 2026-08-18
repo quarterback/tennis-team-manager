@@ -672,6 +672,14 @@ class School:
     colors: list
     district: str
     gender: str
+    # ‼️ THE SETTLEMENT INSIDE THE CITY, and it is NOT a second city (owner spec,
+    # 2026-08). `city` stays the metro — every district cut, geography lookup and
+    # non-district pairing reads it, and none of them should change — while
+    # `locality` names the CDP / unincorporated place / absorbed town the school
+    # actually sits in. Empty for a CORE CITY school, which is a real distinction
+    # and not a missing value. Nothing keys on it: localities repeat, both within
+    # a metro (Natchez Prep and Natchez Cliff) and across two of them.
+    locality: str = ""
     # ‼️ THE ROSTER IDENTITY, and it is NOT the name. A program's twelve players
     # are rebuilt on demand from (identity, entry year, seat) — nothing about a
     # roster is persisted — so whatever string seeds that RNG *is* the school as
@@ -1095,6 +1103,7 @@ def load_schools(gender: str) -> list[School]:
             # which in a double round robin is a team with no league season at all.
             district=moved.get(r["name"], r[f"{gender}_district"]),
             gender=gender, source=r.get("source", ""),
+            locality=r.get("locality", ""),
         ))
     # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
     # thread can clear this between the store and the return.

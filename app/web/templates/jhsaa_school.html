@@ -26,7 +26,9 @@
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
-    <div class="where">{{ view.city }}, Jefferson · {{ view.county }} County ·
+    {# A locality reads as part of the address, not as a second city: the school
+       is in Natchez, which is in Belmonte. A core-city school shows only the city. #}
+    <div class="where">{% if view.locality %}{{ view.locality }}, {% endif %}{{ view.city }}, Jefferson · {{ view.county }} County ·
       <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
       · {{ "{:,}".format(view.enrollment) }} students</div>
     <div class="now">
