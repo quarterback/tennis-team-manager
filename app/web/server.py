@@ -148,6 +148,7 @@ NAV_GROUPS = [
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
+        {"id": "jh_transfers","label": "HS Transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
     ]),
     ("Analytics Bureau", [
@@ -209,9 +210,11 @@ def _active_nav(req) -> str:
     if p.startswith("/doubles-championship"): return "doubles"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
-    # The programs editor is checked BEFORE the section, since /jhsaa/programs is a
-    # prefix match on /jhsaa and would otherwise light the High School entry.
+    # The programs editor and the transfer board are both checked BEFORE the
+    # section, since they're prefix matches on /jhsaa and would otherwise light
+    # the High School entry instead of their own nav item.
     if p.startswith("/jhsaa/programs"):   return "jh_prog"
+    if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
     if p.startswith("/jhsaa"):            return "jhsaa"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
@@ -2163,6 +2166,16 @@ def create_app() -> Flask:
                             samesite="Lax")
         return resp
 
+    @app.route("/jhsaa/transfers")
+    def jhsaa_transfers():
+        """Every recorded JHSAA offseason transfer — the index the Juniors nav
+        links to. Adding a move happens from the player's own card (it already
+        has the school/pid/entry context); this page is where to find/undo one."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa as _jh
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
         """A whole classification, ranked on TOSS — the hub's rail panel showed the
@@ -2681,6 +2694,40 @@ def create_app() -> Flask:
             _jh.reset_schools()
             reset_all()
         return _editor_redirect()
+
+    @app.route("/editor/jhsaa-transfer", methods=["POST"])
+    def editor_jhsaa_transfer():
+        """Move a JHSAA player to another program, effective an offseason. No
+        eligibility, no sit-out, no search — the owner has already decided who
+        moves; this just makes it stick every year from `jh_year` on.
+
+        Lives off the player's own card, which already has everything the record
+        needs EXCEPT the seat number (never stored — `resolve_seat` recovers it by
+        brute force over the pid, which is a one-way hash of it)."""
+        from app import jhsaa as _jh
+        gender = request.form.get("gender", "")
+        from_school = request.form.get("jh_from_school", "")
+        pid = request.form.get("jh_pid", "")
+        to_school = request.form.get("jh_to_school", "").strip()
+        try:
+            entry = int(request.form.get("jh_entry", ""))
+            year = int(request.form.get("jh_year", ""))
+        except ValueError:
+            entry = year = None
+        if from_school and pid and entry is not None and year is not None:
+            origin = next((s for s in _jh.load_schools(gender) if s.name == from_school), None)
+            if origin is not None:
+                if to_school and to_school != from_school and any(
+                        s.name == to_school for s in _jh.load_schools(gender)):
+                    seat = _jh.resolve_seat(origin, entry, pid)
+                    if seat is not None:
+                        ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
+                                              to_school, year)
+                elif not to_school:
+                    ov.clear_jhsaa_transfer(pid)
+                reset_all()
+        return redirect(url_for("jhsaa_player", school=from_school, pid=pid,
+                                u=request.form.get("u", "D1-men"), g=gender))
 
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():

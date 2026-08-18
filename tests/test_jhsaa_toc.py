@@ -90,16 +90,19 @@ def test_the_field_is_one_champion_per_classification(archived):
 
 
 def test_the_draw_halves_cleanly_to_one(archived):
-    """One champion per classification into four into two into one. A single play-in
-    regardless of field size left five standing and produced a three-team "semifinal"
-    with a bye nobody earned. The field is `len(GROUPS)` (eight since the nine-class
-    ladder), so the play-in cuts to four whatever the association's shape is."""
+    """One champion per classification, seeded into a play-in (the field is
+    `len(GROUPS)` — nine since the nine-class ladder, an odd number) and then a
+    clean 8-team bracket: #8 v #9 plays in, the winner joins #1-#7 for the
+    quarterfinal, and it halves cleanly from there. `[9, 8, 4, 2]` is the only
+    shape nine entrants CAN produce one round at a time — a single round can
+    eliminate at most `len(field) // 2` teams, so 9 can only ever drop to 8
+    (four pairs, one bye) before the bracket is a power of two."""
     toc = archived["arc"]["toc"]
     alive, shape = len(toc["field"]), []
     for games in toc["rounds"]:
         shape.append(alive)
         alive -= len(games)
-    assert shape == [len(jh.GROUPS), 4, 2] and alive == 1
+    assert shape == [len(jh.GROUPS), len(jh.GROUPS) - 1, 4, 2] and alive == 1
     assert toc["champion"] in toc["field"]
 
 

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}JHSAA Transfers{% endblock %}
+{% block content %}
+
+<div class="jh-shell">
+<div class="jh-ident" style="margin-bottom:14px">
+  <div class="jh-ident-body">
+    <h1>High School Transfers</h1>
+    <div class="where">Every recorded offseason move — manual, always-approved, no
+      eligibility rules. Add one from a player's own card; undo it here.</div>
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Recorded transfers</span></div>
+  <div class="tbl-scroll">
+    {% if rows %}
+    <table class="jh-ledger">
+      <tr><th>Player</th><th>From</th><th>To</th><th style="width:90px">Effective</th>
+        <th style="width:90px"></th></tr>
+      {% for r in rows %}
+      <tr>
+        <td><a href="{{ url_for('jhsaa_player', school=r.to, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a></td>
+        <td><a href="{{ url_for('jhsaa_school', school=r.from, u=u, g=r.gender) }}">{{ r.from }}</a></td>
+        <td><a href="{{ url_for('jhsaa_school', school=r.to, u=u, g=r.gender) }}">{{ r.to }}</a></td>
+        <td>{{ r.year }}</td>
+        <td>
+          <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}">
+            <input type="hidden" name="gender" value="{{ r.gender }}">
+            <input type="hidden" name="jh_from_school" value="{{ r.from }}">
+            <input type="hidden" name="jh_pid" value="{{ r.pid }}">
+            <input type="hidden" name="jh_entry" value="{{ r.entry }}">
+            <input type="hidden" name="jh_to_school" value="">
+            <input type="hidden" name="u" value="{{ u }}">
+            <button type="submit" class="bl-pill" style="cursor:pointer">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <div class="jh-empty">No transfers recorded yet — open a player's card to move them.</div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock %}
