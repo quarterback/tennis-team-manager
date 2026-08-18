@@ -731,11 +731,31 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     other unit (a Region IX exists once per classification; there is ONE Division
     I in Jefferson per year): `jhsaa.renumber_divisions` assigns them after BOTH
     genders have played — girls first, then boys, classifications bottom-up
-    (2A-1A → 7A) — because how many there are depends on how many berths the
+    (1A → 9A) — because how many there are depends on how many berths the
     round had to fill that year. Roman on the honours chip like the rest
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **‼️ 1A AND 2A CROWN SEPARATELY, via a FIXED 24-team shape — not the dynamic
+  format above (owner rule 2027-08).** They used to share one combined "2A-1A"
+  group (neither clears the 76-sponsor floor the dynamic Semi-Conference needs
+  on its own). `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
+  `_recovery` fed a smaller number: **Zonal is advancement-only here — a Zonal
+  win/loss both just move the team to Super Regional, no automatic State berth**
+  (the "Zonal champions are the top seeds" guarantee is retired for these two
+  classes only, never for the other seven). Regional losers (who never play
+  Zonal) go to Semi-State instead. Super Regional AND Semi-State are each
+  independent 16-team gates awarding State berths directly (unlike `_recovery`,
+  where only Semi-State/Divisional ever do) — `8 Super Regional + 8 Semi-State +
+  4 Divisional + 4 Conference = 24`, Conference pool still
+  `Divisional losers + Semi-Conference winners` exactly as the dynamic shape.
+  Every round size is a FIXED function of `PROTECTED`/`WARD_FIELD` alone, never
+  of sponsor count — so `sponsor_floor` for these two is just `PROTECTED +
+  WARD_FIELD = 48`, not the dynamic 76-body formula. `run_state` needed NO
+  changes: a 24-field with `champions=8` already selects the plain single-draw
+  branch (seeds 1-8 bye, 9-24 play in), never the Qualifiers-Round expansion.
+  District-champion `PROTECTED` entry at Regionals is unchanged. See
+  `docs/AAR-jhsaa-1a-2a-classification-split.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
   led by the DISTRICT TITLE when the program won its district (owner rule 2027-08:

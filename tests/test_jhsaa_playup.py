@@ -55,11 +55,14 @@ def test_the_top_class_has_nothing_to_play_up_to():
     assert jh.play_up_group(top) == top
 
 
-def test_a_raw_classification_folds_before_it_steps():
-    """2A and 1A share one championship, so a 1A school plays up from 2A-1A to 3A —
-    not to 2A, which is not a group anybody competes in."""
-    assert jh.champ_group("1A") == "2A-1A"
-    assert jh.play_up_group("1A") == jh.play_up_group("2A") == "3A"
+def test_a_raw_classification_is_its_own_group():
+    """1A and 2A used to share one combined "2A-1A" championship; they now crown
+    separately (the fixed 24-team shape), so a 1A school playing up steps to 2A —
+    a real intermediate group, not straight to 3A."""
+    assert jh.champ_group("1A") == "1A"
+    assert jh.champ_group("2A") == "2A"
+    assert jh.play_up_group("1A") == "2A"
+    assert jh.play_up_group("2A") == "3A"
 
 
 # --- what the seed list produces ---------------------------------------------------

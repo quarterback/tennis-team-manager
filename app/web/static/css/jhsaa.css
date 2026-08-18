@@ -66,7 +66,8 @@
 .jh-class a.on.c-5A { background: var(--brand); }
 .jh-class a.on.c-4A { background: var(--rank-bronze); }
 .jh-class a.on.c-3A { background: var(--gray-500); }
-.jh-class a.on.c-2A-1A { background: var(--gray-600); }
+.jh-class a.on.c-2A { background: var(--gray-600); }
+.jh-class a.on.c-1A { background: var(--gray-700); }
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
@@ -170,7 +171,8 @@
 .jh-chip.c-5A { background: var(--brand); }
 .jh-chip.c-4A { background: var(--rank-bronze); }
 .jh-chip.c-3A { background: var(--gray-500); }
-.jh-chip.c-2A-1A { background: var(--gray-600); }
+.jh-chip.c-2A { background: var(--gray-600); }
+.jh-chip.c-1A { background: var(--gray-700); }
 .jh-chip.gold { background: var(--rank-gold); }
 /* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
    bronze = semifinalist, BLUE = every other State finish — reaching State is an
