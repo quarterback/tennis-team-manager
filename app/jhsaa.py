@@ -843,6 +843,7 @@ class TeamSeason:
 
 _schools_cache: dict | None = None
 _playup_cache: dict = {}
+_transfer_cache: dict = {}
 # The BUILT School objects, keyed (gender, play-up version). `_schools_cache` above is
 # only the raw JSON; rebuilding the objects is what used to be free and is not any
 # more — see `load_schools`. Read-only: callers filter and group it, nobody mutates a
@@ -930,6 +931,53 @@ def _playup_map(version: str) -> dict:
     _playup_cache.clear()
     _playup_cache[version] = fresh
     return fresh
+
+
+# --- Offseason transfers (owner rule 2027-08) --------------------------------
+# Manual, always-approved, no eligibility logic — a module to MOVE a player, not to
+# find one. `overrides.set_jhsaa_transfer` is the write path (editor); everything
+# here is the read side `build_roster` consults.
+
+def _transfer_map(version: str) -> dict:
+    """{pid: {from, gender, entry, seat, to, year}}, memoised on the override
+    table's fingerprint — same shape as `_playup_map`."""
+    hit = _transfer_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    fresh = ov.get_jhsaa_transfers()
+    _transfer_cache.clear()
+    _transfer_cache[version] = fresh
+    return fresh
+
+
+def transfers() -> dict:
+    """{pid: record} for every transferred player — the version fingerprint is
+    resolved here, ONCE, never inside a per-school or per-seat loop."""
+    from app import overrides as ov
+    return _transfer_map(ov.jhsaa_transfer_version())
+
+
+#: A roster never carries more seats than this per class — plenty of headroom over
+#: the biggest classification's `ROSTER_SIZE_BY_CLASS` (24).
+_MAX_SEAT = 40
+
+
+def resolve_seat(school: School, entry: int, pid: str) -> int | None:
+    """The seat number behind a player's pid — pid is `make_pid("jhsaa", ident,
+    gender, entry, seat)`, a one-way hash, so the seat isn't recoverable from the
+    pid alone. It IS recoverable by brute force over the small seat range, which is
+    what the transfer editor needs (it only has a school, an entry year and a pid;
+    nothing stores seat numbers)."""
+    for seat in range(_MAX_SEAT):
+        if make_pid("jhsaa", school.ident, school.gender, entry, seat) == pid:
+            return seat
+    return None
+
+
+def transfer_for(pid: str) -> dict | None:
+    """This player's transfer record, or None if they haven't moved."""
+    return transfers().get(pid)
 
 
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
@@ -1260,6 +1308,50 @@ def _ceiling(rng: random.Random, group: str, gender: str,
     return max(GRADE_FLOOR, min(80.0, draw))
 
 
+def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
+              salt: str) -> Prospect:
+    """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
+    below) can regenerate the exact same person under the school they actually
+    play for now, from the ORIGIN school's identity/program modifiers. `pid`
+    stays keyed on `school` here always, whatever roster the caller ultimately
+    puts this Prospect on — that is what keeps a transferred player's pid, and
+    so their pre-transfer history and awards, resolving to the same person."""
+    from generators import make_name_picker
+    sex = "male" if school.gender == "boys" else "female"
+    lo, hi = _MATURITY[grade]
+    # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
+    # years. Keyed off 8 it would land on ninth-graders too, and a development
+    # program's whole character is that you cannot spot it in its freshmen.
+    step = mod.get("mature", 0.0) * (grade - 9)
+    maturity = (min(1.0, lo + step), min(1.0, hi + step))
+    rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+    # Keyed on (school, entry, seat) — the same identity the pid is built from —
+    # so a prodigy is the SAME person every one of their four seasons rather than
+    # a fresh dice roll each year.
+    prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
+    if prng.random() < PRODIGY_RATE:
+        lo2, hi2 = PRODIGY_MATURITY
+        maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
+    nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
+                             region_weights={"us": 1.0})()
+    p = generate_prospect(rng, nm, "US", gender=sex,
+                          talent=min(80.0, _ceiling(rng, school.talent_group,
+                                                    school.gender, mod)
+                                     + mod.get("pot", 0.0)),
+                          maturity_range=maturity,
+                          # `ident`, never `name` — a pid has to survive a
+                          # rename or every archived award points at nobody.
+                          pid=make_pid("jhsaa", school.ident, school.gender,
+                                       entry, seat))
+    p.class_year = str(grade)
+    p.grade = grade
+    p.entry_year = entry
+    p.hometown = f"{school.city}, JF"
+    p.high_school = school.name
+    p.region, p.domestic = "Jefferson", True
+    return p
+
+
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     """A program's roster for season `year` — its four classes, grades 9 through 12.
 
@@ -1268,51 +1360,44 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     matures: the junior who went 15-5 is the senior on next year's board. That is what
     makes a high-school career real without persisting every player — the world rebuilds
     an identical one from (school, gender, entry year, seat).
+
+    ‼️ OFFSEASON TRANSFERS (owner rule 2027-08) are applied here, on the read: a
+    player with a `set_jhsaa_transfer` row is dropped from their ORIGIN school's
+    build from the effective year on, and regenerated (via `_gen_seat`, same rng
+    draws — same person) onto the DESTINATION school's build instead. No
+    eligibility/search logic — the table just says who plays where and when.
     """
-    from generators import make_name_picker
-    sex = "male" if school.gender == "boys" else "female"
     mod = _program_mod(school, year, salt)
     out = []
     for grade in GRADES:
         entry = year - (grade - 9)
         n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
-        # A DEVELOPMENT program's edge compounds with time in the programme: the same
-        # ceiling surfaces faster every year, so a freshman arrives looking ordinary and
-        # a senior does not. `mature` is per grade, so it is worth four times as much to
-        # a senior as to a freshman — which is the point.
-        lo, hi = _MATURITY[grade]
-        # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
-        # years. Keyed off 8 it would land on ninth-graders too, and a development
-        # program's whole character is that you cannot spot it in its freshmen.
-        step = mod.get("mature", 0.0) * (grade - 9)
-        maturity = (min(1.0, lo + step), min(1.0, hi + step))
         for seat in range(n_seats):
-            rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
-            # Keyed on (school, entry, seat) — the same identity the pid is built from —
-            # so a prodigy is the SAME person every one of their four seasons rather than
-            # a fresh dice roll each year.
-            prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
-            if prng.random() < PRODIGY_RATE:
-                lo2, hi2 = PRODIGY_MATURITY
-                maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
-            nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
-                                     region_weights={"us": 1.0})()
-            p = generate_prospect(rng, nm, "US", gender=sex,
-                                  talent=min(80.0, _ceiling(rng, school.talent_group,
-                                                            school.gender, mod)
-                                             + mod.get("pot", 0.0)),
-                                  maturity_range=maturity,
-                                  # `ident`, never `name` — a pid has to survive a
-                                  # rename or every archived award points at nobody.
-                                  pid=make_pid("jhsaa", school.ident, school.gender,
-                                               entry, seat))
-            p.class_year = str(grade)
-            p.grade = grade
-            p.entry_year = entry
-            p.hometown = f"{school.city}, JF"
-            p.high_school = school.name
-            p.region, p.domestic = "Jefferson", True
+            p = _gen_seat(school, mod, entry, seat, grade, salt)
+            rec = transfers().get(p.pid)
+            # Left FOR somewhere else, effective this year or earlier — they play
+            # for their new school now, not this one.
+            if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
+                continue
             out.append(p)
+    # Incoming: every transfer whose DESTINATION is this school, effective by now.
+    for pid, rec in transfers().items():
+        if rec.get("to") != school.name or rec.get("year", 0) > year:
+            continue
+        entry = rec.get("entry")
+        grade = year - entry + 9
+        if grade not in GRADES:
+            continue                       # not enrolled anywhere this year (yet, or graduated)
+        origin = next((s for s in load_schools(rec.get("gender", school.gender))
+                       if s.name == rec.get("from")), None)
+        if origin is None:
+            continue                       # origin school renamed/removed since the move
+        omod = _program_mod(origin, year, salt)
+        p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt)
+        if p.pid != pid:
+            continue                       # stale/mismatched record — never invent a player
+        p.high_school = school.name
+        out.append(p)
     out.sort(key=lambda p: -p.current_overall())
     return out
 

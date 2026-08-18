@@ -3641,6 +3641,54 @@ def _jh_line_records(sched: list[dict]) -> dict:
     return rec
 
 
+def _jh_slot_records(sched: list[dict]) -> dict:
+    """Every player's W-L broken out by the actual FLIGHT they played (S1-S5,
+    D1-D4 — the union of both league formats, `EARLY_FORMAT_PHASE`'s 5S/2D and the
+    regular season's 3S/4D), off the same match-level archive `_jh_line_records`
+    reads. This is the college career-record box's per-line breakdown, ported to
+    high school — mirrors `player_career_records`'s `_box`."""
+    rec: dict = {}
+    for d in sched:
+        side = "home" if d.get("home") else "away"
+        for ln in d.get("lines") or ():
+            slot = ln.get("slot") or ""
+            if not slot:
+                continue
+            we_won = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
+            for nm in ln.get(side) or ():
+                r = rec.setdefault(nm, {})
+                wl = r.setdefault(slot, [0, 0])
+                wl[0 if we_won else 1] += 1
+    return rec
+
+
+def _jh_flight_box(seasons: list[dict]) -> dict:
+    """The player-card flight box: singles S1-S5, doubles D1-D4, one row per season
+    plus a TOTALS row — same shape as `player_career_records`'s `_box`, so the
+    template can share the `.rc-recbox` markup."""
+    def _box(kind: str, slots: list[str]):
+        rows, totals = [], {s: [0, 0] for s in slots}
+        tov = [0, 0]
+        for s in seasons:
+            cells, ov = {}, [0, 0]
+            for slot in slots:
+                wl = (s["slots"] or {}).get(slot)
+                cells[slot] = (f"{wl[0]}-{wl[1]}" if wl else "–")
+                if wl:
+                    ov[0] += wl[0]; ov[1] += wl[1]
+                    totals[slot][0] += wl[0]; totals[slot][1] += wl[1]
+            tov[0] += ov[0]; tov[1] += ov[1]
+            rows.append({"year": s["season_year"], "cells": cells,
+                        "overall": f"{ov[0]}-{ov[1]}"})
+        tcells = {s: (f"{totals[s][0]}-{totals[s][1]}" if (totals[s][0] or totals[s][1]) else "–")
+                  for s in slots}
+        return {"slots": slots, "rows": rows, "tcells": tcells,
+                "toverall": f"{tov[0]}-{tov[1]}", "any": bool(rows)}
+    singles = [f"S{i}" for i in range(1, 6)]
+    doubles = [f"D{i}" for i in range(1, 5)]
+    return {"singles": _box("singles", singles), "doubles": _box("doubles", doubles)}
+
+
 def _jh_seeds(bracket: dict) -> dict:
     return {nm: i + 1 for i, nm in enumerate((bracket or {}).get("field") or ())}
 
@@ -4620,6 +4668,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         player = player or hit
         sched = world.jhsaa_schedule(w["id"], yr, g, school)
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
+        slots = _jh_slot_records(sched).get(hit.name, {})
         aw = (arc.get("awards") or {}).get(sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -4639,11 +4688,15 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "ovr": round(hit.current_overall(), 1), "str": hit.str_value(),
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
-            "honors": honors, "team": team,
+            "honors": honors, "team": team, "slots": slots,
         })
     if player is None:
         return {"found": False, "school": school, "gender": g, "pid": pid}
     seasons.sort(key=lambda s: -s["year"])
+    # Flight box wants OLDEST-first rows (freshman year on top, like the college
+    # career-record box), so it's built before `seasons` above sorts newest-first
+    # for the ledger table.
+    flights = _jh_flight_box(sorted(seasons, key=lambda s: s["year"]))
     wins = sum(s["wins"] for s in seasons)
     losses = sum(s["losses"] for s in seasons)
     return {
@@ -4655,7 +4708,10 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
-        "honors": [h for s in seasons for h in s["honors"]],
+        "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
+        # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
+        "entry_year": player.entry_year,
+        "transfer": jh.transfer_for(pid),
         # The grad year is what the college recruit board keys a Jefferson signee on,
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])

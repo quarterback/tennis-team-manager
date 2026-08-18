@@ -61,6 +61,32 @@
         </table>
       </div>
     </div>
+
+    {% for title, box in [('Flight record — Singles', view.flights.singles),
+                          ('Flight record — Doubles', view.flights.doubles)] %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ title }}</span>
+        <span class="bit">W–L by court, S1-S5/D1-D4 cover both league formats</span></div>
+      <div class="tbl-scroll">
+        {% if box.any %}
+        <table class="rc-recbox"><thead><tr>
+          <th class="yr">Season</th>{% for sl in box.slots %}<th>{{ sl }}</th>{% endfor %}<th>Overall</th>
+        </tr></thead><tbody>
+          {% for r in box.rows %}
+          <tr><td class="yr">{{ r.year }}</td>
+            {% for sl in box.slots %}<td>{{ r.cells[sl] }}</td>{% endfor %}
+            <td class="tot">{{ r.overall }}</td></tr>
+          {% endfor %}
+          <tr class="totrow"><td class="yr">TOTALS</td>
+            {% for sl in box.slots %}<td>{{ box.tcells[sl] }}</td>{% endfor %}
+            <td>{{ box.toverall }}</td></tr>
+        </tbody></table>
+        {% else %}
+        <p class="aw-empty" style="padding:8px 2px">No matches yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
   </div>
 
   <div class="jh-stack">
@@ -94,6 +120,43 @@
         </a>
       </div>
     </div>
+
+    {% if not view.scope.pin %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Transfer</span></div>
+      <div class="bl-panel-body">
+        {% if view.transfer %}
+        <p class="bit">Moving to <b>{{ view.transfer.to }}</b>, effective the
+          {{ view.transfer.year }} offseason.</p>
+        <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}">
+          <input type="hidden" name="gender" value="{{ view.gender }}">
+          <input type="hidden" name="jh_from_school" value="{{ view.school }}">
+          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+          <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
+          <input type="hidden" name="jh_year" value="{{ view.transfer.year }}">
+          <input type="hidden" name="jh_to_school" value="">
+          <input type="hidden" name="u" value="{{ u }}">
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Cancel transfer</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}">
+          <input type="hidden" name="gender" value="{{ view.gender }}">
+          <input type="hidden" name="jh_from_school" value="{{ view.school }}">
+          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+          <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
+          <input type="hidden" name="u" value="{{ u }}">
+          <label class="s">Move to
+            <input type="text" name="jh_to_school" placeholder="Destination school" required></label>
+          <label class="s">Effective offseason
+            <input type="number" name="jh_year" value="{{ view.scope.year }}" required></label>
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Transfer</button>
+        </form>
+        <p class="bit">Manual and always-approved — no eligibility rules, no
+          sit-out. Takes effect the FOLLOWING season, never mid-year.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 </div>

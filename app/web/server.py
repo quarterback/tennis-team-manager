@@ -2682,6 +2682,40 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-transfer", methods=["POST"])
+    def editor_jhsaa_transfer():
+        """Move a JHSAA player to another program, effective an offseason. No
+        eligibility, no sit-out, no search — the owner has already decided who
+        moves; this just makes it stick every year from `jh_year` on.
+
+        Lives off the player's own card, which already has everything the record
+        needs EXCEPT the seat number (never stored — `resolve_seat` recovers it by
+        brute force over the pid, which is a one-way hash of it)."""
+        from app import jhsaa as _jh
+        gender = request.form.get("gender", "")
+        from_school = request.form.get("jh_from_school", "")
+        pid = request.form.get("jh_pid", "")
+        to_school = request.form.get("jh_to_school", "").strip()
+        try:
+            entry = int(request.form.get("jh_entry", ""))
+            year = int(request.form.get("jh_year", ""))
+        except ValueError:
+            entry = year = None
+        if from_school and pid and entry is not None and year is not None:
+            origin = next((s for s in _jh.load_schools(gender) if s.name == from_school), None)
+            if origin is not None:
+                if to_school and to_school != from_school and any(
+                        s.name == to_school for s in _jh.load_schools(gender)):
+                    seat = _jh.resolve_seat(origin, entry, pid)
+                    if seat is not None:
+                        ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
+                                              to_school, year)
+                elif not to_school:
+                    ov.clear_jhsaa_transfer(pid)
+                reset_all()
+        return redirect(url_for("jhsaa_player", school=from_school, pid=pid,
+                                u=request.form.get("u", "D1-men")))
+
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():
         school = request.form.get("school", "")
