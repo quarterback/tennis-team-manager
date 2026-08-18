@@ -3192,29 +3192,30 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
+    # ‼️ A "FIRST FOUR" PLAY-IN FOR AN OVERSIZED FIELD (owner rule 2027-08, nine
+    # classifications). `champions` grew from eight to nine at the 1A/2A split;
+    # the cut-to-four math below was written and only ever exercised at exactly
+    # eight (`2*(n-4)` play-in slots fits an n-team field only for n<=8). Rather
+    # than reworking that math for an odd field, this reduces any field bigger
+    # than eight the real-bracket way: the lowest TWO seeds play ONE game, and
+    # the winner takes the vacated 8-seed slot — so an 8/9 upset means the
+    # winner faces the 1-seed next, same as if they'd been the 8-seed all
+    # along. Everything below this is completely unchanged from the original
+    # eight-team design and is never asked to handle more than eight again.
+    rounds: list[list[dict]] = []
+    alive = list(field)
+    while len(alive) > 8:
+        w, gm = play(alive[-2], alive[-1])
+        rounds.append([gm])
+        alive = alive[:-2] + [w]
+
     # Cut to four, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The play-in
     # takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
     # six the top two sit out while 3v6 and 4v5 play, and at five only 4v5 does. Playing
     # a single play-in regardless left five teams standing and produced a 6 -> 5 -> 3 -> 1
     # ladder — a three-team "semifinal" and a bye nobody earned.
-    #
-    # ‼️ A WHILE, NOT AN IF (owner rule 2027-08, nine classifications). `2*(n-4)`
-    # play-in slots only fits within an n-team field for n<=8 — the field this was
-    # ORIGINALLY written against, back when GROUPS had exactly eight entries. At
-    # nine (1A/2A split), `2*(9-4)=10` asks for more slots than the nine teams
-    # provide and reads off the end of the block list. A field this size cannot
-    # reach a clean four in ONE round without a bye somewhere, so the cut now
-    # REPEATS — capped to an even count that never exceeds what's actually
-    # alive — converging to four over as many rounds as it takes (9 -> 5 -> 4
-    # for a nine-team field) rather than assuming one pass is always enough.
-    # Behaviour is unchanged for every count <=8 the single-pass formula already
-    # covered correctly.
-    rounds: list[list[dict]] = []
-    alive = list(field)
-    while len(alive) > 4:
-        n_in = min(2 * (len(alive) - 4), len(alive))
-        if n_in % 2:
-            n_in -= 1
+    if len(alive) > 4:
+        n_in = 2 * (len(alive) - 4)
         block, byes = alive[-n_in:], alive[:-n_in]
         games, won = [], []
         for i in range(n_in // 2):
