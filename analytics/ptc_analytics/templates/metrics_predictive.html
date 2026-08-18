@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Predictive{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Predictive</div>
+<h1 class="pt-h1">Predictive</h1>
+<p class="t-dek">A crude, auto-scaled power-based win-probability model (logistic on TOSS power, scaled to the season's own spread — only comparable within one season/gender) drives everything here. Record Luck = actual dual wins − model-expected wins; positive means the record is stronger than the model expects. Upset Value rewards wins as a clear underdog (favors small samples less than a flat "upset count"); Bad-Loss Value mirrors it for losses as a favorite. Elite Win Share = wins vs top-decile-power opponents ÷ all wins. Needs opponent power on file for both sides of a dual — thin without it.</p>
+<div class="pt-panel">
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table">
+      <thead><tr><th>Season</th><th>Team</th><th class="num">Record</th><th class="num">Expected</th><th class="num">Luck</th><th class="num">Upset Val.</th><th class="num">Bad-Loss Val.</th><th class="num">Elite Win Share</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.scope_label }}</td>
+          <td><a href="{{ team_href(r.program_id, r.scope_id) }}">{{ r.name }}</a></td>
+          <td class="num">{{ r.record }}</td>
+          <td class="num t-num">{{ "%.1f"|format(r.expected) if r.expected is not none else "—" }}</td>
+          <td class="num t-num">{{ "%+.1f"|format(r.luck) if r.luck is not none else "—" }}</td>
+          <td class="num t-num">{{ "%.2f"|format(r.uv) }}</td>
+          <td class="num t-num">{{ "%.2f"|format(r.blv) }}</td>
+          <td class="num t-num">{{ "%.3f"|format(r.ews) if r.ews is not none else "—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

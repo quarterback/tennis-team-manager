@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Players{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Players</div>
+<h1 class="pt-h1">Players</h1>
+<input class="pt-searchbox" type="search" id="q" placeholder="Filter by name or school…" onkeyup="filterCards()">
+<div class="pt-index-grid" id="cards">
+  {% for c in careers %}
+  <a class="pt-index-card" data-name="{{ c.name|lower }} {{ (c.teams|join(' '))|lower }}" href="{{ c.href }}">
+    <h4>{{ c.name }}</h4>
+    <div class="sub">{{ c.teams|join(', ') }} · {{ c.wins }}-{{ c.losses }}</div>
+  </a>
+  {% endfor %}
+</div>
+<script>
+function filterCards(){
+  var q = document.getElementById('q').value.toLowerCase();
+  document.querySelectorAll('#cards .pt-index-card').forEach(function(c){
+    c.style.display = c.dataset.name.indexOf(q) === -1 ? 'none' : '';
+  });
+}
+</script>
+{% endblock %}
