@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 import threading
 from flask import (Flask, render_template, request, abort, redirect, url_for,
-                   jsonify, make_response, Response)
+                   jsonify, make_response, Response, send_file)
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -177,6 +177,7 @@ NAV_GROUPS = [
         {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
+        {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "fa-solid fa-ruler-combined", "endpoint": "methodology",      "args": {}},
@@ -191,6 +192,7 @@ def _active_nav(req) -> str:
     if p.startswith("/preseason"):        return "preseason"
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
+    if p.startswith("/research/export"):  return "research_export"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
     if p.startswith("/injuries"):         return "injuries"
@@ -1145,6 +1147,32 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
+
+    @app.route("/research/export", methods=["GET", "POST"])
+    def research_export():
+        """Browser-native research download; simulation state is never modified."""
+        if request.method == "GET":
+            world = wd.load_world(DEFAULT_SEED)
+            default_year = wd.jhsaa_season_year(world) if world else 2027
+            return render_template("research_export.html", active="Tools",
+                                   default_year=default_year)
+        from app.research_export import ExportError, export_zip
+        family = request.form.get("scope", "jhsaa").strip().lower()
+        try:
+            year = int(request.form.get("year", ""))
+            if not 2020 <= year <= 2200:
+                raise ValueError
+        except ValueError:
+            abort(400, "Year must be between 2020 and 2200.")
+        try:
+            bundle = export_zip(family, year=year,
+                                gender=request.form.get("gender", "girls"),
+                                classification=request.form.get("classification", "all"))
+        except ExportError as exc:
+            abort(400, str(exc))
+        filename = f"play-to-clinch-{family}-{year}-{request.form.get('gender', 'girls')}.zip"
+        return send_file(bundle, mimetype="application/zip", as_attachment=True,
+                         download_name=filename, max_age=0)
 
     @app.route("/export/data_portal.json")
     def export_data_portal():

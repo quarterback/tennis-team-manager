@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Export Research Data{% endblock %}
+{% block meta_description %}Download a self-describing Play to Clinch research bundle for analysis.{% endblock %}
+{% block content %}
+<div class="bl-container research-export-page">
+  <div class="research-export-kicker"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Tools</div>
+  <h1>Export Research Data</h1>
+  <p class="research-export-intro">Download a read-only, self-describing ZIP of CSV and JSON files. Upload the ZIP directly to an analysis agent—no command line or prior game context required.</p>
+
+  <section class="bl-panel research-export-card">
+    <div class="bl-panel-head"><span class="bl-panel-title">Build a research bundle</span><span class="bl-panel-meta">JHSAA available now</span></div>
+    <form method="post" class="research-export-form" data-loading='{"title":"Building research export…","sub":"Playing and packaging a complete JHSAA season can take a little while. Your ZIP will download when it is ready.","stages":["Simulating the scoped season…","Normalizing programs and players…","Packaging CSV and JSON files…"]}'>
+      <label><span>Scope</span><select name="scope"><option value="jhsaa">JHSAA</option><option disabled>College — planned</option><option disabled>Whole world — planned</option></select><small>College and world exports will use this same page.</small></label>
+      <label><span>Season year</span><input name="year" type="number" min="2020" max="2200" value="{{ default_year }}" required></label>
+      <label><span>Gender</span><select name="gender"><option value="girls">Girls</option><option value="boys">Boys</option></select></label>
+      <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A-1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
+      <div class="research-export-submit"><button type="submit"><i class="fa-solid fa-download" aria-hidden="true"></i> Download ZIP</button></div>
+    </form>
+  </section>
+
+  <div class="research-export-notes">
+    <div><strong>Inside the ZIP</strong><span>Programs, players, duals, individual lines, line participants, standings, awards, and championships.</span></div>
+    <div><strong>Self-describing</strong><span><code>README.md</code> and <code>manifest.json</code> explain every scope, rating, and important JHSAA rule.</span></div>
+    <div><strong>Read-only</strong><span>Exporting does not advance the world or modify your save.</span></div>
+  </div>
+</div>
+<style>
+.research-export-page{max-width:980px;padding-top:42px;padding-bottom:60px}
+.research-export-kicker{color:var(--brand-strong);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.research-export-page h1{font-size:34px;margin:8px 0 10px}.research-export-intro{max-width:720px;color:var(--text-muted);font-size:16px;line-height:1.55;margin-bottom:26px}
+.research-export-card{overflow:hidden}.research-export-form{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px}
+.research-export-form label>span{display:block;margin-bottom:6px;color:var(--text-secondary);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.research-export-form select,.research-export-form input{box-sizing:border-box;width:100%;height:43px;padding:0 12px;border:1px solid var(--border-default);border-radius:7px;background:var(--surface-card);color:var(--text-primary);font:inherit}
+.research-export-form small{display:block;margin-top:6px;color:var(--text-muted)}.research-export-submit{grid-column:1/-1;display:flex;justify-content:flex-end;padding-top:4px}
+.research-export-submit button{border:0;border-radius:8px;padding:12px 18px;background:var(--brand-strong);color:white;font:inherit;font-weight:800;cursor:pointer}
+.research-export-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.research-export-notes>div{display:flex;flex-direction:column;gap:6px;padding:17px;border:1px solid var(--border-subtle);border-radius:9px;background:var(--surface-subtle)}
+.research-export-notes span{color:var(--text-muted);font-size:13px;line-height:1.45}
+@media(max-width:700px){.research-export-form,.research-export-notes{grid-template-columns:1fr}.research-export-submit{grid-column:auto}.research-export-page{padding-top:24px}}
+</style>
+{% endblock %}
