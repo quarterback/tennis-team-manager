@@ -188,6 +188,11 @@ body {
   --tint-loss-fg: oklch(0.48 0.150 27);
   --tint-even-bg: color-mix(in oklab, oklch(0.62 0.100 85) 16%, var(--paper));
   --tint-even-fg: oklch(0.45 0.085 75);
+  /* The postseason ROAD to State (Areas..Conference) — distinct from win/loss/
+     even AND from the State event's own green, so a schedule row reads as
+     "on the road" rather than as a muted version of an ordinary league dual. */
+  --tint-road-bg: color-mix(in oklab, oklch(0.52 0.130 265) 14%, var(--paper));
+  --tint-road-fg: oklch(0.45 0.120 265);
 
   /* Ranks + classification badges ride the scheme's own chip ramp. */
   --rank-silver: var(--gray-400);

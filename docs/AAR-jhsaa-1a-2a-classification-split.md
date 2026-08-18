@@ -18,53 +18,65 @@ shape, `_recovery_24`, and the classification split it made viable.
 The existing `_recovery` (the 40-team dynamic shape used by every other class) is
 a chain: Super Regional feeds Semi-State, and berths flow downstream based on how
 many the earlier rounds filled, with the whole thing sized off `state_field_size(group)`.
-Feeding it `24` directly does NOT reproduce what was wanted here, for two reasons
-that only surfaced by tracing the arithmetic by hand against real numbers rather
-than assuming a smaller field is just the same formula scaled down:
+Feeding it `24` directly does NOT reproduce what was wanted here — the new format's
+Super Regional needed to be an independent, direct-qualifying gate, which `_recovery`
+never does (there, only Semi-State and Divisional winners enter the State field
+directly; Super Regional is purely a feeder). So the correct move was a second,
+parallel function reusing every proven primitive (`_recovery_round`'s byeless
+pairing, `_power_key`/`_atr_key` ordering, `_RECOVERY_NAMES`/`_RECOVERY_UNITS`)
+rather than branching inside `_recovery` itself, which would have risked leaking
+new behavior into the classes that must keep the old one.
 
-1. In `_recovery`, **Super Regional never grants a direct State berth** — its
-   winners simply feed into Semi-State's pool. Only Semi-State and Divisional
-   winners enter the State field directly. The new format wants Super Regional
-   to be an independent, direct-qualifying gate.
-2. In `_recovery`, **a Zonal championship is a separate, automatic State-berth
-   guarantee** (`app/jhsaa.py:3713-3724`, "a SEEDING guarantee, not a side effect
-   of byes") — Zonal champions are pulled out of the recovery pool entirely and
-   seeded 1-8 regardless of anything downstream. The new format explicitly
-   retires this for 1A/2A: a Zonal win only advances a team to Super Regional.
+**Design went through two real iterations, not one, and the first shipped, was
+playtested, and was explicitly rejected** — worth recording plainly because it's
+the more instructive failure. Attempt 1 retired the Zonal-champion automatic
+State berth entirely for 1A/2A (a Zonal win only advanced a team to Super
+Regional, same as everyone else). That was implemented, tested against the
+actual live game by the owner, and rejected: *"having tested this out, i do not
+like that both zonal winners and losers go on to super regionals... i would
+prefer to bring back the zonal[ ]8 bids."* The lesson isn't "the first design was
+wrong on paper" — the arithmetic in attempt 1 was internally consistent and
+matched what had been specified in conversation. It was wrong once tried, because
+losing the Zonal-championship guarantee for exactly two classes (while every
+other class keeps it) didn't feel right in play, and that's not something prose
+specification surfaced ahead of time.
 
-Both of those are load-bearing owner rules for the OTHER seven classes (one is a
-pinned test, `test_zonal_champions_are_the_top_seeds_byes_or_not`) — so the
-correct move was a second, parallel function reusing every proven primitive
-(`_recovery_round`'s byeless pairing, `_power_key`/`_atr_key` ordering,
-`_RECOVERY_NAMES`/`_RECOVERY_UNITS`) rather than branching inside `_recovery`
-itself, which would have risked leaking the new behavior into the classes that
-must keep the old one.
-
-**The final shape** (`app/jhsaa.py::_recovery_24`), confirmed field-by-field
-against the owner before writing any code — three separate designs were
-proposed and revised in conversation before this one locked, because the
-arithmetic only closes at exactly 24 under one specific reading of where each
-round's LOSERS (not winners) go next:
+**The shape that shipped** (`app/jhsaa.py::_recovery_24`) restores the Zonal
+guarantee — 1A/2A Zonal champions are an automatic State berth and top-8 seed
+exactly like every other class — and changes only which Regional losers reach
+which recovery round:
 
 ```
 Regional (32 in: PROTECTED 16 + Ward champs 16) -> 16 winners, 16 losers
-  Regional winners play Zonal -> 8 Zonal winners + 8 Zonal losers
-    both together (16)                -> SUPER REGIONAL
-  Regional losers (16, never played Zonal) -> SEMI-STATE
+  Regional winners play Zonal -> 8 winners AUTOMATIC State berths (top 8 seeds,
+                                  same guarantee every other class has)
+                               -> 8 losers -> Super Regional
 
-Super Regional  16 -> 8 qualify for State, 8 losers -> Divisional
-Semi-State      16 -> 8 qualify for State, 8 losers -> Semi-Conference
-Divisional       8 -> 4 qualify for State, 4 losers -> Conference
-Semi-Conference  8 -> 4 winners -> Conference (no berths, same as `_recovery`)
+  Regional losers (16), split by recovery PRIORITY:
+    preferred (8):  district-champion Regional losers first (best-TOSS if
+                    more than 8 of them lost), then highest-TOSS other
+                    Regional losers to fill out 8      -> Super Regional
+    held back (8):  everyone else                       -> Semi-State
+
+Super Regional  16 (8 Zonal losers + 8 preferred Regional losers)
+                -> 8 qualify for State, 8 losers -> Semi-State
+Semi-State      16 (8 held-back Regional losers + 8 Super Regional losers)
+                -> 8 -> Divisional, 8 -> Semi-Conference
+Divisional       8 (Semi-State winners)   -> 4 qualify for State, 4 losers -> Conference
+Semi-Conference  8 (Semi-State losers)    -> 4 winners -> Conference (no berths)
 Conference       8 (4 Divisional losers + 4 Semi-Conference winners) -> 4 qualify
 
-8 + 8 + 4 + 4 = 24
+8 (Zonal) + 8 (Super Regional) + 4 (Divisional) + 4 (Conference) = 24
 ```
 
-`Zonal` therefore keeps existing as a real round — it still plays a match and
-still determines seeding weight going forward — it simply stopped being a
-State-berth gate. District champions still enter at Regionals (`PROTECTED`,
-unchanged) — that rule was never in question, only the Zonal guarantee was.
+This gives district champions the strongest recovery protection available (first
+claim on the Super Regional slots) without making them automatic qualifiers —
+they still have to win. Every named round stays in play; nothing was deleted,
+only re-plumbed. `_recovery_24` now returns only the 16 EARNED qualifiers (not
+24) — the caller adds the 8 automatic Zonal champions on top, using the exact
+same seeding code path every other class already uses (`zc + rest,
+champions=len(zc)`), so the special-cased "1A/2A has no Zonal guarantee" branch
+that attempt 1 needed in the State-seeding loop was deleted along with it.
 
 ## ‼️ Every round size here is a CONSTANT, not a function of sponsor count
 
@@ -83,12 +95,14 @@ doesn't apply here at all (`app/jhsaa.py::sponsor_floor`, the new `state_field_s
 ## What actually changed
 
 - **`_recovery_24`** (`app/jhsaa.py`, new function beside `_recovery`) — the
-  shape above, dispatched by `state_field_size(group) == 24` in both the
-  recovery loop and the State-seeding loop (`run_state` needed ZERO changes —
-  traced by hand: for a 24-team field with `champions=8`, `size - len(field) ==
-  champions` (32-24==8) already selects `run_state`'s plain single-seeded-draw
-  branch, not the Qualifiers-Round expansion, so "seeds 1-8 bye, 9-24 play in"
-  falls out of existing code for free).
+  shape above, dispatched by `state_field_size(group) == 24` in the recovery
+  loop only. The State-seeding loop needed NO 1A/2A branch at all in the end —
+  it uses the exact same code every other class does (`zc = zonal champs
+  sorted by TOSS; run_state(zc + rest, champions=len(zc))`). `run_state` itself
+  needed ZERO changes: for a 24-team field with `champions=8`, `size -
+  len(field) == champions` (32-24==8) already selects `run_state`'s plain
+  single-seeded-draw branch, not the Qualifiers-Round expansion, so "seeds 1-8
+  bye, 9-24 play in" falls out of existing code for free.
 - **`GROUPS`** (`app/jhsaa.py` and its independent duplicate in
   `scripts/import_jhsaa.py`) went from 8 entries ending `..., "3A", "2A-1A"` to
   9 ending `..., "3A", "2A", "1A"`. `champ_group()` in both files is now an
@@ -124,14 +138,25 @@ doesn't apply here at all (`app/jhsaa.py::sponsor_floor`, the new `state_field_s
 
 ## What this AAR is really documenting
 
-This wasn't a case of a bug hiding in the code — it's a record of the DESIGN
-being genuinely ambiguous in prose until the arithmetic was worked through
-against concrete numbers. Three successive spec revisions in conversation (an
-independent three-gate design, then a version where Super Regional/Semi-State
-fed into a single downstream chain, then the final parallel-gates version)
-looked equally plausible in English and only one of them summed to 24 under a
-consistent rule for "which pool feeds which round." The lesson for next time:
-when a postseason topology is specified in prose, checking that the round
-sizes actually sum to the stated field total — by hand, before writing any
-code — surfaces the real ambiguity faster than implementing a plausible
-reading and finding out later it doesn't add up.
+Two different lessons, from two different phases of the same feature.
+
+**Getting the arithmetic right is necessary but not sufficient.** Before
+`_recovery_24` was implemented at all, three successive prose specs for the
+"which pool feeds which round" question looked equally plausible in English and
+only one of them summed to 24 under a consistent rule — checking that round
+sizes actually add up to the stated field total, by hand, before writing code,
+caught that.
+
+**But the arithmetic checking out doesn't mean the design is right.** Attempt 1
+(no Zonal guarantee for 1A/2A) was internally consistent, matched what had been
+specified, passed every hand-check — and was still wrong, discovered only once
+it was actually playtested. Retiring an owner rule that holds for every other
+class, even for a well-reasoned structural reason (sponsor floors), is the kind
+of change whose correctness is a JUDGMENT CALL under play, not a fact derivable
+from the spec alone. The second design — same underlying goal (give district
+champions strong recovery protection without an automatic bid), same "every
+round stays in play" constraint, different plumbing — is what actually felt
+right once tried. Where a change touches something players *experience*
+directly (does winning your Zonal mean something, not just "is the bracket math
+consistent"), plan for a design to need a real playtest before it's done, even
+after every number has been checked twice.
