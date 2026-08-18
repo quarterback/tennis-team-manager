@@ -774,6 +774,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   branch (seeds 1-8 bye, 9-24 play in), never the Qualifiers-Round expansion.
   District-champion `PROTECTED` entry at Regionals is unchanged. See
   `docs/AAR-jhsaa-1a-2a-classification-split.md`.
+- **‼️ THE LEAGUE SEASON PLAYS 3S/4D, NOT 5S/2D (owner rule 2027-08, swapped).**
+  `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
+  the postseason's doubles-forward shape, not just the early non-district
+  window (which now plays the OLD 5S/2D card instead). The 3S/4D lineup
+  ALLOCATION is fixed, never searched: S1 = top seed, doubles pool = exactly
+  #2-#9, S2/S3 = exactly #10-#11 — a coach's `maximize`/`balanced`/`traditional`
+  strategy only decides how the fixed 8-player pool pairs into D1-D4 (105
+  partitions via `jhsaa._pair_partitions`, shared with `_arrange_state`), never
+  who plays singles vs. doubles. `doubles_rating` needed a real pair-synergy
+  term (`engine.doubles._pair_synergy`) for that search to mean anything — the
+  bare `(idx(a)+idx(b))/2` base is invariant across every partition of a fixed
+  pool, so "best pairing" was previously undefined. ‼️ A COMPLEMENTARITY TERM
+  MUST BE A CROSS TERM (`-(a1-a2)*(b1-b2)`-shaped), never two independent
+  per-axis spreads summed — the first version used `max(sa,sb)+max(ra,rb)` and
+  `|aa-ab|+|ca-cb|`, which score a lopsided pair (one player strong at
+  everything, partner weak at everything) IDENTICALLY to a genuinely
+  complementary pair, since neither knows which player owns which strength.
+  Roster depth now scales by classification (`ROSTER_SIZE_BY_CLASS`, 9A 24 down
+  to 1A 13 — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not weaker
+  filler) because 3S/4D dressing 11-of-12 left almost no bench. Grade
+  distribution is no longer an even ~3-per-grade split — `_freshman_class_size`
+  rolls ONCE per `(school, entry_year)`, so year 1 shows a naturally random
+  class mix (four independent entry-year rolls) while every later year's growth
+  comes ONLY from that year's own freshman roll; no non-freshman players are
+  ever procedurally generated — a real sophomore/junior arrival is meant to be
+  a TRANSFER (scaled from the college portal, not built yet), never a
+  generation roll pretending to be one. See
+  `docs/AAR-jhsaa-doubles-lineup-and-league-format.md`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
   led by the DISTRICT TITLE when the program won its district (owner rule 2027-08:
