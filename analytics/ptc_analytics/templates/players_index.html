@@ -6,7 +6,7 @@
 <input class="pt-searchbox" type="search" id="q" placeholder="Filter by name or school…" onkeyup="filterCards()">
 <div class="pt-index-grid" id="cards">
   {% for c in careers %}
-  <a class="pt-index-card" data-name="{{ c.name|lower }} {{ (c.teams|join(' '))|lower }}" href="{{ c.player_id }}.html">
+  <a class="pt-index-card" data-name="{{ c.name|lower }} {{ (c.teams|join(' '))|lower }}" href="{{ c.href }}">
     <h4>{{ c.name }}</h4>
     <div class="sub">{{ c.teams|join(', ') }} · {{ c.wins }}-{{ c.losses }}</div>
   </a>

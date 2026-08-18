@@ -88,7 +88,8 @@ def build_site(raw_bundles: list[dict]) -> None:
     # players/index.html + player pages
     career_list = sorted(careers.values(), key=lambda c: c["name"])
     cards = [{"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
-              "wins": c["wins"], "losses": c["losses"]} for pid, c in
+              "wins": c["wins"], "losses": c["losses"],
+              "href": f"{aggregate.slug(pid)}.html"} for pid, c in
              sorted(careers.items(), key=lambda kv: kv[1]["name"])]
     w("players_index.html", SITE / "players" / "index.html", rel="../", careers=cards)
 
