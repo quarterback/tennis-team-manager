@@ -152,14 +152,59 @@ def _net_winner_share(hitter: Player, loser_a: Player, loser_b: Player) -> float
     return _clamp01(t["winner_share"] + swing)
 
 
+SYNERGY_CAP = 0.06  # max pair-complementarity bonus, well below individual-talent spread
+
+
+def _pair_synergy(a: Player, b: Player) -> float:
+    """Bounded, symmetric, deterministic pair-complementarity term in [0, SYNERGY_CAP].
+
+    The additive base below (`idx(a)+idx(b))/2`) cannot distinguish partitions of
+    the same player pool — it is invariant under repartitioning by construction,
+    so a "best pairing" search over it is a no-op. This adds the piece real
+    doubles strategy actually cares about: not just how good the two players
+    are, but whether they cover for each other.
+
+    Two real dynamics, both symmetric in (a, b) and built entirely from ratings
+    the doubles engine already computes elsewhere (no new attributes invented):
+
+    1. COVERAGE (serve/return). A team is exposed if NEITHER partner can serve
+       big or NEITHER returns well; it is fine if the two specialise
+       differently, so long as the team covers both. Rewards the pair's PEAK on
+       each axis relative to their average — two identical all-rounders score
+       zero here regardless of how good they are, while a big-serve/big-return
+       pairing of the same average ability scores positive. This is genuinely
+       zero for a cloned pair, which is the point: cloning talent buys nothing
+       a real doubles coach couldn't already get from one great player twice.
+    2. BALANCE (aggression/steadiness). A pair of two high-`attack`,
+       low-`steadiness` players (or the reverse) is fragile to the same
+       failure mode; a shot-maker next to a backboard covers more situations.
+       Rewards spread on that axis.
+
+    Capped well below the base term (`SYNERGY_CAP`) so individual quality stays
+    the primary factor — this is texture that lets the partition search actually
+    discriminate between options, not a second `overall`."""
+    sa, sb = serve_rating(a), serve_rating(b)
+    ra, rb = return_rating(a), return_rating(b)
+    coverage = (max(sa, sb) + max(ra, rb)) / 2 - (sa + sb + ra + rb) / 4
+
+    balance = (abs(a.attack - b.attack) + abs(a.steadiness - b.steadiness)) / 4
+
+    raw = 0.6 * coverage + 0.4 * balance
+    return max(0.0, min(SYNERGY_CAP, raw))
+
+
 def doubles_rating(a: Player, b: Player) -> float:
     """A pair's overall doubles strength in [0, 1] — the seeding / fast-model
     signal. Weighted toward serve and net play, so a serve+volley pair rates
-    above its singles level and a pair of baseline grinders below."""
+    above its singles level and a pair of baseline grinders below. A small,
+    bounded complementarity term (`_pair_synergy`) sits on top so a genuine
+    partition search over PAIRINGS of the same players has something real to
+    optimise, rather than a sum that is mathematically identical no matter how
+    the pool is split (see `_pair_synergy`'s docstring)."""
     def idx(p: Player) -> float:
         return (0.30 * serve_rating(p) + 0.40 * net_rating(p)
                 + 0.20 * return_rating(p) + 0.10 * poach_rating(p))
-    return (idx(a) + idx(b)) / 2.0
+    return (idx(a) + idx(b)) / 2.0 + _pair_synergy(a, b)
 
 
 @dataclass

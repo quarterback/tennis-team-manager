@@ -1481,54 +1481,86 @@ def _pk(pair) -> tuple:
     return tuple(getattr(p, "pid", p) for p in pair)
 
 
-# --- regular-season lineup PHILOSOPHY (owner rule 2027-08) --------------------
+# --- regular-season lineup STRATEGY (owner rule 2027-08) ----------------------
 #
 # League play is free — "regular season can do what it wants" — and because the
 # postseason format is so doubles-forward (1S/4D), programs genuinely differ in
-# how they spend their talent during the league year. Two shapes exist:
+# how they spend their talent during the league year. Three explicit coaching
+# strategies exist, all searching the SAME space (S1 = #1 always; the remaining
+# eight — #2-#9 — split into four who play doubles as two pairs and four who
+# fill S2-S5 in their own ladder order):
 #
-#   singles-first    S1-S5 = #1-#5, doubles the tail — the classic card, and the
-#                    only shape the generator used to produce.
-#   doubles-forward  S1 = #1 · D1 = two of #2-#4 (S2 the third) · D2 = any two
-#                    of #5-#9 · the remaining three at S3-S5 in ladder order —
-#                    the owner's permutation table. S3 lands in #5-#7 by
-#                    construction (D2 removes two of the five).
+#   maximize      pick the split-and-pairing that maximises total doubles_rating
+#                 (D1 rating + D2 rating) over every legal way to choose 4-of-8
+#                 for doubles and pair them — a real search, not a constrained
+#                 "D1 from #2-#4" band, now that `doubles_rating` has a genuine
+#                 pair-synergy term (`engine.doubles._pair_synergy`) worth
+#                 searching for.
+#   balanced      the same search, but the objective trades a little raw total
+#                 for spreading strength across both doubles courts instead of
+#                 stacking it all on D1 (`_BALANCE_PENALTY` on |D1 - D2|) — a
+#                 coach who would rather have two solid pairs than one great
+#                 one and one weak one.
+#   traditional   the straight ladder — S1-S5 = #1-#5, doubles the tail
+#                 (`_squad`'s plain positional mapping does the rest). The
+#                 classic card, and the only shape the generator used to
+#                 produce before this rule existed.
 #
-# The philosophy is a durable PROGRAM trait (hashed off the school key, like a
+# The strategy is a durable PROGRAM trait (hashed off the school key, like a
 # coaching tradition — not per-dual dice, so a program's card is recognisable
-# all season), with a small per-dual flip so a coach occasionally tries the
-# other shape. Doubles-forward pairs are picked on real `doubles_rating`, so a
-# doubles-school archetype's D1 is its actual best pairing.
-_DOUBLES_FORWARD_SHARE = 0.5   # share of programs whose league card leans doubles
-_PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries the other shape
+# all season), with a small per-dual flip so a coach occasionally tries a
+# different one.
+_STRATEGIES = ("maximize", "balanced", "traditional")
+_PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries a different strategy
+_BALANCE_PENALTY = 0.5         # "balanced": how strongly |D1 rating - D2 rating| is punished
 
 
-def _doubles_forward(school_key: str) -> bool:
-    h = int(hashlib.blake2s(f"jh-philosophy|{school_key}".encode(),
+def _coach_strategy(school_key: str) -> str:
+    h = int(hashlib.blake2s(f"jh-strategy|{school_key}".encode(),
                             digest_size=4).hexdigest(), 16)
-    return (h % 1000) / 1000.0 < _DOUBLES_FORWARD_SHARE
+    return _STRATEGIES[h % len(_STRATEGIES)]
 
 
-def _arrange_regular(nine: list) -> list:
-    """The doubles-forward 5S/2D card, in SLOT ORDER
+def _flip_strategy(strategy: str) -> str:
+    """The next strategy in a fixed cycle — deterministic given which one the
+    program normally runs, so a flip is reproducible from the same seed."""
+    i = _STRATEGIES.index(strategy)
+    return _STRATEGIES[(i + 1) % len(_STRATEGIES)]
+
+
+def _arrange_regular(nine: list, strategy: str) -> list:
+    """The 5S/2D card under `strategy`, in SLOT ORDER
     [S1, S2, S3, S4, S5, D1a, D1b, D2a, D2b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
     back identically. Short sides play the plain order."""
-    if len(nine) < 9:
+    if len(nine) < 9 or strategy == "traditional":
         return nine
     from engine.doubles import doubles_rating
     eng = {p.pid: p.engine_player() for p in nine}
+    pool = nine[1:9]                                # #2-#9, eight players
 
-    def best_pair(pool):
-        pairs = [(pool[i], pool[j]) for i in range(len(pool))
-                 for j in range(i + 1, len(pool))]
-        return max(pairs, key=lambda pr: doubles_rating(eng[pr[0].pid],
-                                                        eng[pr[1].pid]))
-    d1 = best_pair(nine[1:4])                       # two of #2-#4
-    s2 = next(p for p in nine[1:4] if p not in d1)  # the third plays S2
-    d2 = best_pair(nine[4:9])                       # any two of #5-#9
-    rest = [p for p in nine[4:9] if p not in d2]    # S3-S5, ladder order
-    return [nine[0], s2] + rest + list(d1) + list(d2)
+    def dr(a, b):
+        return doubles_rating(eng[a.pid], eng[b.pid])
+
+    best_score, best = None, None
+    for i in range(len(pool)):
+        for j in range(i + 1, len(pool)):
+            d1 = (pool[i], pool[j])
+            rest8 = [p for k, p in enumerate(pool) if k not in (i, j)]
+            for x in range(len(rest8)):
+                for y in range(x + 1, len(rest8)):
+                    d2 = (rest8[x], rest8[y])
+                    s_rest = [p for k, p in enumerate(rest8) if k not in (x, y)]
+                    d1r, d2r = dr(*d1), dr(*d2)
+                    total = d1r + d2r
+                    score = total if strategy == "maximize" \
+                        else total - _BALANCE_PENALTY * abs(d1r - d2r)
+                    if best_score is None or score > best_score:
+                        best_score, best = score, (d1, d2, s_rest)
+    d1, d2, s_rest = best
+    if dr(*d2) > dr(*d1):                            # stronger pair plays D1
+        d1, d2 = d2, d1
+    return [nine[0]] + s_rest + list(d1) + list(d2)
 
 
 def _postseason_nine(ts: TeamSeason) -> list:
@@ -1581,8 +1613,10 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
     if phase == "regular":
         # the per-dual flip draw runs either way, so the rng stream stays aligned.
         flip = rng.random() < _PHILOSOPHY_FLIP
-        if _doubles_forward(ts.school.key) != flip:
-            return _arrange_regular(nine)
+        strategy = _coach_strategy(ts.school.key)
+        if flip:
+            strategy = _flip_strategy(strategy)
+        return _arrange_regular(nine, strategy)
     return nine
 
 

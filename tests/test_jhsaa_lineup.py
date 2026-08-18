@@ -224,33 +224,54 @@ def test_the_regular_season_still_runs_on_the_live_ladder():
     assert not ts.order_of_ability
 
 
-# --- regular-season philosophy (owner rule 2027-08) ----------------------------------
+# --- regular-season strategy (owner rule 2027-08) ----------------------------------
 #
-# League play is free: some programs run the classic singles-first card, others the
-# doubles-forward shape (S1=#1, D1 = two of #2-#4, S2 the third, D2 = any two of
-# #5-#9, remainder at S3-S5 in ladder order). The philosophy is a durable program
-# trait; the postseason Order of Ability is untouched by it.
+# League play is free: a program runs one of three explicit coaching strategies —
+# maximize (best total doubles_rating over every legal split of #2-#9 into two
+# doubles pairs + four singles), balanced (same search, penalised for a lopsided
+# D1/D2 split), or traditional (the straight ladder). The strategy is a durable
+# program trait; the postseason Order of Ability is untouched by it.
 
-def test_both_regular_season_philosophies_exist():
+def test_all_three_regular_season_strategies_exist():
     keys = [s.key for s in jh.load_schools("boys")]
-    leans = {jh._doubles_forward(k) for k in keys}
-    assert leans == {True, False}
+    strategies = {jh._coach_strategy(k) for k in keys}
+    assert strategies == {"maximize", "balanced", "traditional"}
 
 
-def test_the_doubles_forward_card_matches_the_owner_permutation_table():
-    ts = next(_real_ts(i) for i in range(60)
-              if jh._doubles_forward(_real_ts(i).school.key))
-    order = jh._order(ts)[:9]
+def test_traditional_strategy_is_the_straight_ladder():
+    order = jh._order(_real_ts(0))[:9]
     rank = {p.pid: k + 1 for k, p in enumerate(order)}
-    lu = jh._arrange_regular(order)
-    assert {p.pid for p in lu} == {p.pid for p in order}
-    assert rank[lu[0].pid] == 1                               # S1 = top player
-    assert rank[lu[1].pid] in (2, 3, 4)                       # S2 from 2-4
-    assert {rank[lu[5].pid], rank[lu[6].pid]} <= {2, 3, 4}    # D1 = two of 2-4
-    assert rank[lu[2].pid] in (5, 6, 7)                       # S3 from 5-7
-    assert {rank[lu[7].pid], rank[lu[8].pid]} <= {5, 6, 7, 8, 9}   # D2 from 5-9
-    s345 = [rank[lu[k].pid] for k in (2, 3, 4)]
-    assert s345 == sorted(s345)                               # S3-S5 in ladder order
+    lu = jh._arrange_regular(order, "traditional")
+    assert [rank[p.pid] for p in lu] == list(range(1, 10))
+
+
+def test_maximize_and_balanced_produce_a_legal_permutation_with_top_seed_on_s1():
+    order = jh._order(_real_ts(0))[:9]
+    ids = {p.pid for p in order}
+    for strategy in ("maximize", "balanced"):
+        lu = jh._arrange_regular(order, strategy)
+        assert {p.pid for p in lu} == ids
+        assert lu[0].pid == order[0].pid                       # S1 always the top seed
+        assert len(lu) == 9
+
+
+def test_maximize_never_scores_worse_than_the_straight_ladder():
+    """The whole point of the search: 'maximize' picks from every legal split of
+    #2-#9, so its D1+D2 total can never be beaten by the one split the straight
+    ladder happens to use (D1 = ranks 6+7, D2 = ranks 8+9)."""
+    from engine.doubles import doubles_rating
+    for i in (0, 5, 12, 27, 41):
+        ts = _real_ts(i)
+        order = jh._order(ts)[:9]
+        if len(order) < 9:
+            continue
+        eng = {p.pid: p.engine_player() for p in order}
+        def total(lu):
+            return (doubles_rating(eng[lu[5].pid], eng[lu[6].pid])
+                    + doubles_rating(eng[lu[7].pid], eng[lu[8].pid]))
+        ladder = jh._arrange_regular(order, "traditional")
+        best = jh._arrange_regular(order, "maximize")
+        assert total(best) >= total(ladder) - 1e-9
 
 
 def test_the_pair_boundary_is_adjacent_only_and_tolerance_may_chain():
