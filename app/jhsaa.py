@@ -2976,51 +2976,67 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
 
 def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
-                 power: dict, *, seed: int) -> tuple[dict, dict, dict, dict, dict,
-                                                      list, list[str], dict]:
+                 district_champs: list[str], power: dict, *,
+                 seed: int) -> tuple[dict, dict, dict, dict, dict,
+                                     list, list[str], dict]:
     """The FIXED 24-team recovery/qualification shape — 1A and 2A (owner rule
-    2027-08). Same postseason philosophy as `_recovery` (byeless rounds, ATR
-    ordering, Conference = Divisional losers + Semi-Conference winners) but a
-    DIFFERENT, non-dynamic wiring: `_recovery` chains Super Regional INTO
-    Semi-State and lets berths flow with pool size; here Super Regional and
-    Semi-State are two PARALLEL, independently berth-bearing gates, because
-    Zonal no longer buys an automatic State berth (owner rule 2027-08) — a
-    Zonal win is advancement-only, so BOTH the Zonal winner and loser move on
-    to Super Regional together, while the Regional losers who never got to
-    play Zonal at all go straight to Semi-State:
+    2027-08). Zonal champions are an automatic State berth here exactly as in
+    every other class (`zonal_champs` — the caller seeds them 1-8, same as
+    `_recovery`'s callers do) — this function returns only the 16 EARNED
+    qualifiers on top of those 8. Every named round stays in play; what moves
+    is which Regional losers reach which recovery round:
 
-        Super Regional   16 = Zonal winners + Zonal losers  -> 8 qualify, 8 -> Divisional
-        Semi-State       16 = Regional losers                -> 8 qualify, 8 -> Semi-Conference
-        Divisional       8 (Super Regional losers)            -> 4 qualify, 4 -> Conference
-        Semi-Conference  8 (Semi-State losers)                -> 4 -> Conference (no berths)
+        Zonal            16 (Regional winners) -> 8 qualify (handled by caller), 8 losers -> Super Regional
+
+        Regional losers  16, split by PREFERRED recovery priority:
+          preferred (8):  district-champion Regional losers first (best-TOSS
+                          if more than 8), then highest-TOSS other Regional
+                          losers to fill out 8 -> Super Regional
+          held back (8):  everyone else                           -> Semi-State
+
+        Super Regional   16 = 8 Zonal losers + 8 preferred Regional losers -> 8 qualify, 8 -> Semi-State
+        Semi-State       16 = 8 held-back Regional losers + 8 Super Regional losers
+                              -> 8 -> Divisional, 8 -> Semi-Conference
+        Divisional       8 (Semi-State winners)                -> 4 qualify, 4 -> Conference
+        Semi-Conference  8 (Semi-State losers)                 -> 4 -> Conference (no berths)
         Conference       4 Divisional losers + 4 Semi-Conference winners -> 4 qualify
 
-    8+8+4+4 = 24 — every round size is a fixed function of `PROTECTED`/
-    `WARD_FIELD` alone (never of total sponsor count, see `sponsor_floor`), so
-    unlike `_recovery` there is no dynamic sizing, no readmission window, and
-    no Semi-Conference reservoir that can run short. District champions still
-    enter the ladder at Regionals (`PROTECTED`, unchanged) but that is access
-    to the ladder, same as `_recovery` — nothing here grants a berth without a
-    qualification win. `district_qualifiers` stays in the return as an empty
-    list purely for archive-shape compatibility with `_recovery`'s callers."""
+    8 (Zonal) + 8 (Super Regional) + 4 (Divisional) + 4 (Conference) = 24. This
+    gives district champions the strongest recovery protection (first crack at
+    the Super Regional slots) without making them automatic State qualifiers —
+    they still have to win their way through. `district_qualifiers` stays in
+    the return as an empty list purely for archive-shape compatibility with
+    `_recovery`'s callers."""
     district_qualifiers: list[str] = []
     rng = random.Random(seed)
     reg_losers = [by_name[n] for n in _losers(prestate, 0)]
     zon_losers = [by_name[n] for n in _losers(prestate, 1)]
 
-    sr_pool = sorted(list(zonal_champs) + zon_losers, key=_power_key(power))
+    dc_names = set(district_champs)
+    dc_losers = sorted((t for t in reg_losers if t.school.name in dc_names),
+                       key=_power_key(power))
+    other_losers = sorted((t for t in reg_losers if t.school.name not in dc_names),
+                          key=_power_key(power))
+    preferred = list(dc_losers[:8])
+    if len(preferred) < 8:
+        need = 8 - len(preferred)
+        preferred += other_losers[:need]
+        held_back = other_losers[need:]
+    else:
+        held_back = dc_losers[8:] + other_losers
+
+    sr_pool = sorted(list(zon_losers) + preferred, key=_power_key(power))
     sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
     sr_won = {id(t) for t in sr_winners}
-    sr_losers = sorted((t for t in sr_pool if id(t) not in sr_won),
-                       key=_power_key(power))
+    sr_losers = [t for t in sr_pool if id(t) not in sr_won]
 
-    ss_pool = sorted(reg_losers, key=_power_key(power))
+    ss_pool = sorted(list(held_back) + list(sr_losers), key=_power_key(power))
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
-                       key=_power_key(power))
+                       key=_atr_key(power))
 
-    dv_pool = list(sr_losers)
+    dv_pool = list(ss_winners)
     if dv_pool:
         dv_arc, dv_winners = _recovery_round(dv_pool, phase="divisional", rng=rng)
     else:
@@ -3044,13 +3060,14 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
         cf_arc, cf_winners = {"field": [], "rounds": [[]], "survivors": [],
                               "round_names": [_RECOVERY_NAMES["conference"]]}, []
 
-    qualifiers = list(sr_winners) + list(ss_winners) + list(dv_winners) + list(cf_winners)
+    qualifiers = list(sr_winners) + list(dv_winners) + list(cf_winners)
     atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
-    if len(qualifiers) != state_field_size(group):
-        log.warning("JHSAA %s (24-team) recovery filled %d of %d berths "
+    earned = state_field_size(group) - len(zonal_champs)
+    if len(qualifiers) != earned:
+        log.warning("JHSAA %s (24-team) recovery filled %d of %d earned berths "
                     "(super regional %d, semi-state %d, divisional %d, "
                     "semi-conference %d, conference %d)", group, len(qualifiers),
-                    state_field_size(group), len(sr_pool), len(ss_pool),
+                    earned, len(sr_pool), len(ss_pool),
                     len(dv_pool), len(sc_pool), len(cf_pool))
     return (sr_arc, ss_arc, dv_arc, sc_arc, cf_arc,
             qualifiers, district_qualifiers, atr_used)
@@ -3811,7 +3828,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         if state_field_size(group) == 24:
             sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery_24(
                 group, by_name_g, prestates[group], zonal_champs[group],
-                post_power, seed=seed + hash(group) % 9973 + 16223)
+                district_champs[group], post_power,
+                seed=seed + hash(group) % 9973 + 16223)
         else:
             sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
                 group, by_name_g, sectionals[group], wards[group], prestates[group],
@@ -3837,23 +3855,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         #
         # TWO WAYS IN AND NO OTHERS (owner rule 2027-08): win a Zonal, or win
         # your way through recovery. Everyone below the champions is a recovery
-        # survivor, seeded in post-recovery TOSS order.
-        #
-        # ‼️ THE 1A/2A FIXED 24-TEAM SHAPE HAS NO ZONAL GUARANTEE (owner rule
-        # 2027-08, `_recovery_24`). A Zonal win only advances a team to Super
-        # Regional there — it is not a seeding privilege — so the field is the
-        # 24 recovery qualifiers, full stop, seeded purely on post-recovery TOSS
-        # with `champions=8` giving the top 8 the State bracket's first-round
-        # byes (`run_state`'s single-draw branch, no Qualifiers Round at 24).
-        if state_field_size(group) == 24:
-            field = sorted(recovery_q[group], key=_power_key(final_power))
-            states[group] = run_state(field, champions=8,
-                                      seed=seed + hash(group) % 9973 + 12281)
-        else:
-            zc = sorted(zonal_champs[group], key=_power_key(final_power))
-            rest = sorted(recovery_q[group], key=_power_key(final_power))
-            states[group] = run_state(zc + rest, champions=len(zc),
-                                      seed=seed + hash(group) % 9973 + 12281)
+        # survivor, seeded in post-recovery TOSS order. This holds for 1A/2A's
+        # fixed 24-team shape too (`_recovery_24`) — Zonal champions are an
+        # automatic State berth there exactly like every other class; only the
+        # RECOVERY ladder underneath them is wired differently. `champions=
+        # len(zc)` (8) on a 24-team field lands on `run_state`'s single-draw
+        # branch (no Qualifiers Round), so "seeds 1-8 bye" falls out for free.
+        zc = sorted(zonal_champs[group], key=_power_key(final_power))
+        rest = sorted(recovery_q[group], key=_power_key(final_power))
+        states[group] = run_state(zc + rest, champions=len(zc),
+                                  seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts
               if t.school.name == st["champion"]]

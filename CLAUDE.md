@@ -740,15 +740,33 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   format above (owner rule 2027-08).** They used to share one combined "2A-1A"
   group (neither clears the 76-sponsor floor the dynamic Semi-Conference needs
   on its own). `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
-  `_recovery` fed a smaller number: **Zonal is advancement-only here — a Zonal
-  win/loss both just move the team to Super Regional, no automatic State berth**
-  (the "Zonal champions are the top seeds" guarantee is retired for these two
-  classes only, never for the other seven). Regional losers (who never play
-  Zonal) go to Semi-State instead. Super Regional AND Semi-State are each
-  independent 16-team gates awarding State berths directly (unlike `_recovery`,
-  where only Semi-State/Divisional ever do) — `8 Super Regional + 8 Semi-State +
-  4 Divisional + 4 Conference = 24`, Conference pool still
-  `Divisional losers + Semi-Conference winners` exactly as the dynamic shape.
+  `_recovery` fed a smaller number — but **the Zonal-champion guarantee is
+  UNCHANGED here, same as every other class**: an early design retired it for
+  1A/2A only (Zonal win = advancement only, no automatic berth), shipped, was
+  playtested, and was explicitly rejected by the owner — do not reintroduce
+  that version. **Zonal champions are still 8 automatic State berths, seeded
+  1-8** exactly like the other seven classes; only the RECOVERY ladder
+  underneath them is re-plumbed:
+  ```
+  Zonal 16 (Regional winners) -> 8 winners AUTOMATIC state berths, 8 losers -> Super Regional
+  Regional losers (16), split by PRIORITY: district-champion losers first
+    (best-TOSS if >8), then highest-TOSS others, until 8 -> Super Regional
+    (the "preferred" 8); the other 8 -> Semi-State directly (the "held-back" 8)
+  Super Regional 16 (8 Zonal losers + 8 preferred Regional losers)
+    -> 8 qualify, 8 losers -> Semi-State
+  Semi-State 16 (8 held-back Regional losers + 8 Super Regional losers)
+    -> 8 -> Divisional, 8 -> Semi-Conference
+  Divisional 8 -> 4 qualify, 4 losers -> Conference
+  Semi-Conference 8 -> 4 winners -> Conference (no berths)
+  Conference 8 (4 Divisional losers + 4 Semi-Conference winners) -> 4 qualify
+  8 (Zonal) + 8 (Super Regional) + 4 (Divisional) + 4 (Conference) = 24
+  ```
+  This gives district champions the strongest recovery protection (first claim
+  on Super Regional slots) WITHOUT an automatic State berth — they still have
+  to win. `_recovery_24` returns only the 16 EARNED qualifiers; the caller adds
+  the 8 automatic Zonal champions using the SAME seeding code every other class
+  uses (`zc + rest, champions=len(zc)`) — there is no 1A/2A-specific branch in
+  the State-seeding loop, only in the recovery loop.
   Every round size is a FIXED function of `PROTECTED`/`WARD_FIELD` alone, never
   of sponsor count — so `sponsor_floor` for these two is just `PROTECTED +
   WARD_FIELD = 48`, not the dynamic 76-body formula. `run_state` needed NO
