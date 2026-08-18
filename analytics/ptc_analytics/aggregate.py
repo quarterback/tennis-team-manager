@@ -11,6 +11,14 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 
+def _is_singles_slot(slot: str) -> bool:
+    return slot.upper().startswith("S")
+
+
+_REGULAR_BUCKET = "regular"
+_POSTSEASON_BUCKET = "state"
+
+
 def _f(v, default=0.0):
     try:
         return float(v)
@@ -84,6 +92,43 @@ class Bundle:
                 players = self.line_players.get(line["line_id"], [])
                 lines.append({**line, "players": players})
             self.duals_full[did] = {**d, "lines": lines}
+
+        # ‼️ Card shapes (how many singles/doubles lines a "regular" or
+        # "postseason" dual plays) are DERIVED from the actual exported lines,
+        # never hard-coded — the game has already swapped its own regular-vs-
+        # early JHSAA shapes once (5S/2D <-> 3S/4D), and a fixed assumption
+        # here would go stale silently the same way a fixed flight-weight
+        # table did in the game itself (see CLAUDE.md's TOSS flight-weight
+        # AAR). regular_shape/state_shape are (n_singles, n_doubles) or None
+        # if the bucket has no duals on record in this scope.
+        self.regular_shape = self._derive_card_shape(_REGULAR_BUCKET)
+        self.state_shape = self._derive_card_shape(_POSTSEASON_BUCKET)
+
+    def _dual_bucket(self, d: dict) -> str | None:
+        if self.family == "jhsaa":
+            phase = d.get("phase")
+            if phase == "regular":
+                return _REGULAR_BUCKET
+            if phase in ("state", "toc"):
+                return _POSTSEASON_BUCKET
+            return None   # early / showcases / challenge: a real third shape, not noise to blend in
+        round_ = d.get("round")
+        if round_ == "REG":
+            return _REGULAR_BUCKET
+        if round_ == "NCAA":
+            return _POSTSEASON_BUCKET
+        return None       # CT / ITAK / ITAI: not modeled as either card shape
+
+    def _derive_card_shape(self, bucket: str) -> tuple[int, int] | None:
+        counts = Counter()
+        for d in self.duals_full.values():
+            if self._dual_bucket(d) != bucket:
+                continue
+            ns = sum(1 for line in d["lines"] if _is_singles_slot(line["slot"]))
+            nd = sum(1 for line in d["lines"] if not _is_singles_slot(line["slot"]))
+            if ns or nd:
+                counts[(ns, nd)] += 1
+        return counts.most_common(1)[0][0] if counts else None
 
     def program_name(self, pid: str) -> str:
         p = self.programs.get(pid)
