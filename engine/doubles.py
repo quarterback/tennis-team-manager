@@ -164,30 +164,45 @@ def _pair_synergy(a: Player, b: Player) -> float:
     doubles strategy actually cares about: not just how good the two players
     are, but whether they cover for each other.
 
+    ‼️ MUST BE A CROSS TERM, NOT TWO INDEPENDENT SPREADS. An earlier version
+    used `max(sa,sb)+max(ra,rb)` for coverage and `|aa-ab|+|ca-cb|` for balance —
+    both discard WHICH player supplied which strength, so a genuinely lopsided
+    pair (one all-around-strong player + one all-around-weak one) scored
+    IDENTICALLY to a genuinely complementary pair (each strong on a different
+    axis), since both only look at the SIZE of the spread on each axis
+    independently. That let the partition search reward stacking a strong
+    player with a weak one just as often as pairing real complements — the
+    opposite of the intent. Fixed by scoring the SIGN relationship instead:
+    reward only when one player's edge on axis 1 is offset by the OTHER
+    player's edge on axis 2 (opposite-signed differences); a player who leads
+    on both axes scores zero, because that pair isn't complementary, it's just
+    unequal.
+
     Two real dynamics, both symmetric in (a, b) and built entirely from ratings
     the doubles engine already computes elsewhere (no new attributes invented):
 
     1. COVERAGE (serve/return). A team is exposed if NEITHER partner can serve
-       big or NEITHER returns well; it is fine if the two specialise
-       differently, so long as the team covers both. Rewards the pair's PEAK on
-       each axis relative to their average — two identical all-rounders score
-       zero here regardless of how good they are, while a big-serve/big-return
-       pairing of the same average ability scores positive. This is genuinely
-       zero for a cloned pair, which is the point: cloning talent buys nothing
-       a real doubles coach couldn't already get from one great player twice.
+       big or NEITHER returns well. Positive only when the better SERVER and
+       the better RETURNER are different players — `-(sa-sb)*(ra-rb)`, which is
+       positive exactly when the two differences have opposite sign. Zero for
+       a cloned pair (both differences are zero) AND zero for a pair where one
+       player is ahead on both axes (same sign) — neither is complementary.
     2. BALANCE (aggression/steadiness). A pair of two high-`attack`,
        low-`steadiness` players (or the reverse) is fragile to the same
        failure mode; a shot-maker next to a backboard covers more situations.
-       Rewards spread on that axis.
+       Same cross-term shape: positive only when the more aggressive player
+       and the steadier player are different people.
 
     Capped well below the base term (`SYNERGY_CAP`) so individual quality stays
     the primary factor — this is texture that lets the partition search actually
     discriminate between options, not a second `overall`."""
     sa, sb = serve_rating(a), serve_rating(b)
     ra, rb = return_rating(a), return_rating(b)
-    coverage = (max(sa, sb) + max(ra, rb)) / 2 - (sa + sb + ra + rb) / 4
+    coverage = max(0.0, -(sa - sb) * (ra - rb))
 
-    balance = (abs(a.attack - b.attack) + abs(a.steadiness - b.steadiness)) / 4
+    aa, ab = a.attack, b.attack
+    ca, cb = a.steadiness, b.steadiness
+    balance = max(0.0, -(aa - ab) * (ca - cb))
 
     raw = 0.6 * coverage + 0.4 * balance
     return max(0.0, min(SYNERGY_CAP, raw))

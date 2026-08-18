@@ -136,22 +136,28 @@ def test_no_program_finishes_the_season_benching_its_best_player(season):
     assert not buried, buried[:5]
 
 
-def test_the_top_of_a_roster_plays_far_more_than_the_bottom(season):
-    """Rotation is meant to hand the ninth seat around, not to hand a starting job to
-    the twelfth man. Measured on the old key the two were within a few matches."""
+def test_the_top_of_a_roster_plays_far_more_than_the_bench(season):
+    """Rotation is meant to hand the bench seat around, not hand a starting job to
+    a true reserve. 3S/4D dresses eleven of a twelve-man roster (owner rule
+    2027-08 — the regular season swapped to the doubles-forward card), so 'the
+    bottom of the roster' is no longer a fixed bottom-3: ranks #10-#11 are
+    guaranteed S2/S3 starters now, not bench. Compare against whoever actually
+    sits beyond `lineup_need('regular')` instead, so this holds under either
+    format."""
     def played(t, p):
         w, l = t.records.get(p.pid, [0, 0])
         return w + l
 
-    top, bottom = [], []
+    need = jh.lineup_need("regular")
+    top, bench = [], []
     for t in season["teams"].values():
         by_ovr = sorted(t.roster, key=lambda p: -p.current_overall())
-        if len(by_ovr) < 12:
+        if len(by_ovr) <= need:
             continue
         top += [played(t, p) for p in by_ovr[:3]]
-        bottom += [played(t, p) for p in by_ovr[-3:]]
-    assert top and bottom
-    assert sum(top) / len(top) > 3 * (sum(bottom) / len(bottom))
+        bench += [played(t, p) for p in by_ovr[need:]]
+    assert top and bench
+    assert sum(top) / len(top) > 3 * (sum(bench) / len(bench))
 
 
 def test_the_bench_still_gets_matches(season):
@@ -226,10 +232,12 @@ def test_the_regular_season_still_runs_on_the_live_ladder():
 
 # --- regular-season strategy (owner rule 2027-08) ----------------------------------
 #
-# League play is free: a program runs one of three explicit coaching strategies —
-# maximize (best total doubles_rating over every legal split of #2-#9 into two
-# doubles pairs + four singles), balanced (same search, penalised for a lopsided
-# D1/D2 split), or traditional (the straight ladder). The strategy is a durable
+# League play is free: a program runs one of three explicit coaching strategies for
+# the 3S/4D card. The ALLOCATION is fixed (S1 = #1, doubles pool = #2-#9, S2/S3 =
+# #10-#11) — strategy only decides how the 8-player pool pairs into D1-D4: maximize
+# (best total doubles_rating over all 105 splits), balanced (same search, penalised
+# for a lopsided spread across the four pairs), or traditional (adjacent-ladder
+# pairing: D1=#2+#3, D2=#4+#5, D3=#6+#7, D4=#8+#9). The strategy is a durable
 # program trait; the postseason Order of Ability is untouched by it.
 
 def test_all_three_regular_season_strategies_exist():
@@ -238,37 +246,46 @@ def test_all_three_regular_season_strategies_exist():
     assert strategies == {"maximize", "balanced", "traditional"}
 
 
-def test_traditional_strategy_is_the_straight_ladder():
-    order = jh._order(_real_ts(0))[:9]
+def test_traditional_strategy_is_adjacent_ladder_pairing_with_fixed_allocation():
+    order = jh._order(_real_ts(0))[:11]
     rank = {p.pid: k + 1 for k, p in enumerate(order)}
     lu = jh._arrange_regular(order, "traditional")
-    assert [rank[p.pid] for p in lu] == list(range(1, 10))
+    assert len(lu) == 11
+    assert rank[lu[0].pid] == 1                                 # S1 = top seed
+    assert {rank[lu[1].pid], rank[lu[2].pid]} == {10, 11}       # S2/S3 = #10-#11
+    # D1-D4 = adjacent pairs of the #2-#9 pool, in ladder order
+    doubles_ranks = [rank[p.pid] for p in lu[3:11]]
+    assert doubles_ranks == [2, 3, 4, 5, 6, 7, 8, 9]
 
 
-def test_maximize_and_balanced_produce_a_legal_permutation_with_top_seed_on_s1():
-    order = jh._order(_real_ts(0))[:9]
+def test_maximize_and_balanced_produce_a_legal_permutation_with_the_fixed_allocation():
+    order = jh._order(_real_ts(0))[:11]
     ids = {p.pid for p in order}
+    rank = {p.pid: k + 1 for k, p in enumerate(order)}
     for strategy in ("maximize", "balanced"):
         lu = jh._arrange_regular(order, strategy)
         assert {p.pid for p in lu} == ids
-        assert lu[0].pid == order[0].pid                       # S1 always the top seed
-        assert len(lu) == 9
+        assert len(lu) == 11
+        assert lu[0].pid == order[0].pid                        # S1 always the top seed
+        assert {rank[lu[1].pid], rank[lu[2].pid]} == {10, 11}   # S2/S3 always #10-#11
+        doubles_ranks = {rank[p.pid] for p in lu[3:11]}
+        assert doubles_ranks == {2, 3, 4, 5, 6, 7, 8, 9}        # pool is always #2-#9
 
 
-def test_maximize_never_scores_worse_than_the_straight_ladder():
+def test_maximize_never_scores_worse_than_traditional():
     """The whole point of the search: 'maximize' picks from every legal split of
-    #2-#9, so its D1+D2 total can never be beaten by the one split the straight
-    ladder happens to use (D1 = ranks 6+7, D2 = ranks 8+9)."""
+    the fixed #2-#9 pool (105 of them), so its four-pair total can never be beaten
+    by the one split the adjacent-ladder pairing happens to use."""
     from engine.doubles import doubles_rating
     for i in (0, 5, 12, 27, 41):
         ts = _real_ts(i)
-        order = jh._order(ts)[:9]
-        if len(order) < 9:
+        order = jh._order(ts)[:11]
+        if len(order) < 11:
             continue
         eng = {p.pid: p.engine_player() for p in order}
         def total(lu):
-            return (doubles_rating(eng[lu[5].pid], eng[lu[6].pid])
-                    + doubles_rating(eng[lu[7].pid], eng[lu[8].pid]))
+            return sum(doubles_rating(eng[lu[k].pid], eng[lu[k + 1].pid])
+                       for k in (3, 5, 7, 9))
         ladder = jh._arrange_regular(order, "traditional")
         best = jh._arrange_regular(order, "maximize")
         assert total(best) >= total(ladder) - 1e-9
