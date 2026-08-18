@@ -105,14 +105,13 @@ def test_college_bundle_is_self_describing_and_normalized(played_season):
     assert any(lp["player_id"] in player_ids for lp in line_players)
 
 
-def test_college_bundle_rejects_bad_scope(played_season):
-    import app.seasonmode as sm
-
-    sid = sm.find_season("D1", "men", seed=2026)
+def test_college_bundle_rejects_bad_scope():
+    # division/gender are validated before any DB access, so this needs no played
+    # season — a real season_id would never even be reached.
     with pytest.raises(ExportError):
-        build_college(2026, "D5", "men", season_id=sid)
+        build_college(2026, "D5", "men")
     with pytest.raises(ExportError):
-        build_college(2026, "D1", "coed", season_id=sid)
+        build_college(2026, "D1", "coed")
 
 
 def test_college_export_without_a_world_errors_loudly(monkeypatch):

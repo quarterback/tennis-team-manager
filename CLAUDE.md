@@ -258,6 +258,17 @@ siblings "for later"; they caused §2b. `grep -rn "return _.*cache\[" app/`.
    fingerprint-keyed invalidation protocol consulted per school per pass. Diagnose by COUNTING calls
    for the smallest unit of work (one `build_roster`) and multiplying — never by trying to
    reproduce a full season. See `docs/AAR-jhsaa-playup-fingerprint-query-storm.md`.
+6. **‼️ A "read-only export" is still on the request thread — it must READ, never
+   RESIMULATE.** `research_export.build_jhsaa` had no season to read, so it defaulted to
+   `jhsaa.run_season(...)` — replaying an entire ~600-program state championship
+   (district double round robin + the full postseason recovery ladder) from scratch on
+   every export click. That season is already archived at world week 0
+   (`world_jhsaa`/`world_jhsaa_dual`); nothing needed resimulating. On the one-gthread
+   design this isn't just a slow request — it's the ONE thread gone for minutes, so it
+   reads as the whole site hanging, not just the export. Any new export/report/snapshot
+   feature must read the persisted archive (or an existing cache) the way every other
+   page in that section already does — never reach for the simulator "because it's
+   right there and simpler." See `docs/AAR-jhsaa-research-export-resimulation-hang.md`.
 
 ## ⚠️ ONE WORLD PER SAVE — "seed" means three different things (cost a corrupted save)
 A save has exactly ONE real world (`world.start_new` resets before creating; the
