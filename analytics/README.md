@@ -63,6 +63,23 @@ Shipped in this pass:
   English explanations, sorted by how extreme the number is. This is meant
   to work like a tip sheet, not a ranking.
 
+Second pass, added the same session: Format Dependency, Format Win-Probability
+Lift, State score profile / three-court / sweep probability, Expected State
+Margin, Dominance Margin, split singles/doubles game share and set share
+(JHSAA only — college's export has no set-level detail), Line Conversion,
+per-flight win-rate curves feeding Top-End/Depth/Star-Dependence, Singles/
+Doubles Depth Slope, Floor/Ceiling, Blowout/Resistance rate, and a crude
+auto-scaled power-based win-probability model (logistic on TOSS power,
+scaled to that season's own spread) driving Expected Record/Record Luck,
+Upset Rate/Value, Bad-Loss Value, and Elite Win Share. Plus a first-cut
+**Player Value Above Replacement (PVAR)**: for every slot a player logged 3+
+matches at, replacement level is the 25th-percentile win rate among other
+players at that same slot/season; PVAR sums (actual − replacement) × matches
+across every slot and season — deliberately not split by singles/doubles, so
+it answers "how much was this player actually worth" rather than restating
+S%/D%. All of it lives in three new Analytics pages (Depth & Volatility,
+Predictive, Player Value) rather than piling onto the existing ones.
+
 Card weights (`ptc_analytics/metrics.CARD_WEIGHTS`) are configurable per
 family rather than hard-coded, since divisions/classifications play
 different dual shapes. Only JHSAA's 5S/2D-vs-1S/4D shape is modeled

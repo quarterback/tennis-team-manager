@@ -57,6 +57,7 @@ def build_site(raw_bundles: list[dict]) -> None:
     boards = aggregate.leaderboards(bundles, careers)
     team_metrics = metrics_mod.compute_team_metrics(bundles, careers)
     stories = metrics_mod.storylines(team_metrics)
+    player_value = metrics_mod.compute_player_value(careers)
 
     def w(tmpl: str, out: Path, rel: str, **ctx):
         html = env.get_template(tmpl).render(rel=rel, **ctx)
@@ -96,7 +97,7 @@ def build_site(raw_bundles: list[dict]) -> None:
         pct = c["wins"] / total if total else 0.0
         fname = f"{aggregate.slug(pid)}.html"
         w("player.html", SITE / "players" / fname, rel="../", career=c, blurb=prose.player_blurb(c),
-          pct=pct, total=total or 1)
+          pct=pct, total=total or 1, pvar=player_value.get(pid))
 
     # leaderboards
     w("leaderboards_index.html", SITE / "leaderboards" / "index.html", rel="../", bundles=bundles)
@@ -133,7 +134,32 @@ def build_site(raw_bundles: list[dict]) -> None:
     w("metrics_format_lift.html", SITE / "metrics" / "format-lift.html", rel="../", rows=fmt_rows)
     w("metrics_resume.html", SITE / "metrics" / "resume.html", rel="../", rows=resume_rows)
 
-    kinds = [("format-lift", "Format Lift"), ("team-shape", "Team Shape"), ("close-matches", "Close Matches"),
+    depth_rows = []
+    pred_rows = []
+    for (pid, scope_id), m in team_metrics.items():
+        b = next(bb for bb in bundles if bb.scope_id == scope_id)
+        base = {"program_id": pid, "scope_id": scope_id, "name": m.name, "scope_label": b.label}
+        depth_rows.append({**base, "top": m.top_end_index, "depth": m.depth_index,
+                            "star_dep": m.star_dependence, "floor": m.floor, "ceiling": m.ceiling,
+                            "vol": m.volatility, "blowout": m.blowout_rate, "resist": m.resistance_rate})
+        pred_rows.append({**base, "record": f"{m.dual_wins}-{m.duals - m.dual_wins}",
+                           "expected": m.expected_wins, "luck": m.record_luck,
+                           "uv": m.upset_value, "blv": m.bad_loss_value, "ews": m.elite_win_share})
+    depth_rows.sort(key=lambda r: -(r["star_dep"] or -999) if r["star_dep"] is not None else 999)
+    pred_rows.sort(key=lambda r: -(r["luck"] if r["luck"] is not None else -999))
+    w("metrics_depth.html", SITE / "metrics" / "depth.html", rel="../", rows=depth_rows)
+    w("metrics_predictive.html", SITE / "metrics" / "predictive.html", rel="../", rows=pred_rows)
+
+    value_rows = []
+    for pid, pv in player_value.items():
+        c = careers[pid]
+        value_rows.append({"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
+                            "wins": c["wins"], "losses": c["losses"], "pvar": pv["total"]})
+    value_rows.sort(key=lambda r: -r["pvar"])
+    w("metrics_value.html", SITE / "metrics" / "value.html", rel="../", rows=value_rows[:100])
+
+    kinds = [("format-lift", "Format Lift"), ("team-shape", "Team Shape"), ("record-luck", "Record Luck"),
+             ("upsets", "Upsets"), ("close-matches", "Close Matches"),
              ("volatility", "Volatility"), ("quality-wins", "Quality Wins"), ("bad-losses", "Bad Losses")]
     stories_by_kind = {}
     for s in stories:

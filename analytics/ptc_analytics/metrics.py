@@ -57,9 +57,60 @@ def _games_from_score_string(score: str) -> tuple[int, int]:
     return won, lost
 
 
+def _sets_from_score_string(score: str) -> tuple[int, int]:
+    """Sets won/lost for the line's own side, parsed from the same '6-0, 6-1'
+    string. JHSAA-only — college's export gives one aggregate game count per
+    line, no set-level detail, so set share only ever renders for JHSAA."""
+    won = lost = 0
+    for s in (score or "").split(","):
+        s = s.strip()
+        if "-" not in s:
+            continue
+        a, _, b = s.partition("-")
+        try:
+            ai, bi = int(a.strip()), int(b.strip())
+        except ValueError:
+            continue
+        if ai > bi:
+            won += 1
+        elif bi > ai:
+            lost += 1
+    return won, lost
+
+
 def binom_at_least(n: int, p: float, k: int) -> float:
     """P(Binomial(n, p) >= k)."""
     return sum(math.comb(n, i) * (p ** i) * ((1 - p) ** (n - i)) for i in range(k, n + 1))
+
+
+def binom_pmf(n: int, p: float, k: int) -> float:
+    return math.comb(n, k) * (p ** k) * ((1 - p) ** (n - k))
+
+
+def mixed_win_dist(ns: int, pS: float, nd: int, pD: float) -> dict:
+    """Distribution of total lines won when ns independent singles lines each
+    land at rate pS and nd independent doubles lines each land at rate pD —
+    the convolution of two binomials. Returns {total_won: probability}."""
+    from collections import defaultdict as _dd
+    dist = _dd(float)
+    for si in range(ns + 1):
+        ps = binom_pmf(ns, pS, si)
+        if ps <= 0:
+            continue
+        for di in range(nd + 1):
+            pd = binom_pmf(nd, pD, di)
+            if pd <= 0:
+                continue
+            dist[si + di] += ps * pd
+    return dict(dist)
+
+
+def dual_win_prob(ns: int, pS: float, nd: int, pD: float) -> float:
+    """P(win a dual of this shape) = P(win more than half the lines)."""
+    total = ns + nd
+    dist = mixed_win_dist(ns, pS, nd, pD)
+    need = total // 2 + 1
+    return sum(p for k, p in dist.items() if k >= need)
 
 
 @dataclass
@@ -94,6 +145,23 @@ class TeamMetrics:
     postseason: list = field(default_factory=list)
 
     volatility: float | None = None    # stdev of per-dual line share
+    floor: float | None = None         # 25th percentile of per-dual line share
+    ceiling: float | None = None       # 75th percentile of per-dual line share
+
+    blowout_wins: int = 0              # wins by 80%+ of that dual's lines
+    resistance_losses: int = 0         # losses where the team still won >=40% of lines
+
+    singles_games_won: int = 0; singles_games_lost: int = 0
+    doubles_games_won: int = 0; doubles_games_lost: int = 0
+    singles_sets_won: int = 0; singles_sets_lost: int = 0
+    doubles_sets_won: int = 0; doubles_sets_lost: int = 0
+
+    expected_wins: float | None = None   # sum of pre-dual win probabilities (power-based)
+    upsets: int = 0; upset_opportunities: int = 0    # wins/opportunities where team was <35% favorite
+    upset_value: float = 0.0             # Sigma max(0, 0.5 - pre-match win prob) over wins
+    bad_loss_value: float = 0.0          # Sigma max(0, pre-match win prob - 0.5) over losses
+    elite_win_share_num: int = 0         # wins vs top-decile-power opponents
+    elite_win_share_den: int = 0         # all wins with an opponent power on file
 
     @property
     def s_pct(self) -> float | None:
@@ -149,6 +217,203 @@ class TeamMetrics:
     def close_win_pct(self) -> float | None:
         return self.close_wins / self.close_duals if self.close_duals else None
 
+    # ---- tier 2: what happens under the state card, in more detail ----
+
+    def format_dependency(self, family: str) -> float | None:
+        """FD = Fmt / RCI — normalizes the format lift by underlying quality.
+        The same +15pp lift means more on a .50 team than an .85 one."""
+        fmt = self.fmt_lift
+        rci = self.card_index(family, "regular")
+        if fmt is None or not rci:
+            return None
+        return (fmt / 100) / rci
+
+    def regular_dual_win_prob(self, family: str) -> float | None:
+        if self.s_pct is None or self.d_pct is None:
+            return None
+        ns, nd = CARD_WEIGHTS.get(family, CARD_WEIGHTS["jhsaa"])["regular"]
+        return dual_win_prob(ns, self.s_pct, nd, self.d_pct)
+
+    def format_win_prob_lift(self, family: str) -> float | None:
+        """FWPL = P(win the State-card dual) - P(win the regular-card dual).
+        Stronger signal than raw Fmt because duals have a win THRESHOLD —
+        moving court share from .55 to .65 can flip a lot more duals than
+        moving .30 to .40 does."""
+        if family != "jhsaa":
+            return None
+        swp = self.state_dual_win_prob(family)
+        rwp = self.regular_dual_win_prob(family)
+        if swp is None or rwp is None:
+            return None
+        return swp - rwp
+
+    def state_score_profile(self, family: str) -> dict | None:
+        """Distribution of State-card (1S/4D) final margins: {lines_won: prob}."""
+        if family != "jhsaa" or self.s_pct is None or self.d_pct is None:
+            return None
+        return mixed_win_dist(1, self.s_pct, 4, self.d_pct)
+
+    def three_court_prob(self, family: str) -> float | None:
+        """P(exactly 3 of 5 State courts) — high P3 = a knife-edge team, lots
+        of plausible 3-2s rather than blowouts either way."""
+        profile = self.state_score_profile(family)
+        return profile.get(3) if profile else None
+
+    def sweep_prob(self, family: str) -> float | None:
+        """P(5-0 sweep) under the State card."""
+        if family != "jhsaa" or self.s_pct is None or self.d_pct is None:
+            return None
+        return self.s_pct * (self.d_pct ** 4)
+
+    def expected_state_margin(self, family: str) -> float | None:
+        """ESM = expected State lines won minus expected lines lost = 5*(2*SCI-1).
+        +1.4 reads immediately as "roughly a 3.2-1.8 card"."""
+        sci = self.card_index(family, "state")
+        if sci is None:
+            return None
+        return 5 * (2 * sci - 1)
+
+    @property
+    def dominance_margin(self) -> float | None:
+        """DM = (lines won - lines lost) / lines played. -1..+1; much better
+        than dual record alone for spotting teams that win comfortably."""
+        if not self.lines_played:
+            return None
+        return (self.lines_won - (self.lines_played - self.lines_won)) / self.lines_played
+
+    @property
+    def singles_game_share(self) -> float | None:
+        t = self.singles_games_won + self.singles_games_lost
+        return self.singles_games_won / t if t else None
+
+    @property
+    def doubles_game_share(self) -> float | None:
+        t = self.doubles_games_won + self.doubles_games_lost
+        return self.doubles_games_won / t if t else None
+
+    @property
+    def singles_set_share(self) -> float | None:
+        t = self.singles_sets_won + self.singles_sets_lost
+        return self.singles_sets_won / t if t else None
+
+    @property
+    def doubles_set_share(self) -> float | None:
+        t = self.doubles_sets_won + self.doubles_sets_lost
+        return self.doubles_sets_won / t if t else None
+
+    @property
+    def line_conversion(self) -> float | None:
+        """LineWin% - GameShare, both 0-1. Positive = the team wins close lines
+        and/or loses ugly ones; negative = wins ugly and loses close ones.
+        Descriptive, not yet claimed as a repeatable skill."""
+        if self.game_share is None:
+            return None
+        return self.line_share - self.game_share
+
+    def _numbered_flight(self, prefix: str) -> list[tuple[int, float, int]]:
+        """[(flight_number, win_pct, played)] for slots starting with prefix
+        (e.g. 'S' -> S1, S2, ...), sorted by flight number. Skips slots with no
+        trailing digit (shouldn't happen in this schema) or zero appearances."""
+        out = []
+        for slot, fl in self.flight.items():
+            if not slot.upper().startswith(prefix) or fl["pct"] is None:
+                continue
+            digits = "".join(c for c in slot if c.isdigit())
+            if digits:
+                out.append((int(digits), fl["pct"], fl["played"]))
+        return sorted(out)
+
+    @property
+    def singles_flight_curve(self) -> list[tuple[int, float, int]]:
+        return self._numbered_flight("S")
+
+    @property
+    def doubles_flight_curve(self) -> list[tuple[int, float, int]]:
+        return self._numbered_flight("D")
+
+    @staticmethod
+    def _slope(points: list[tuple[int, float, int]]) -> float | None:
+        """Least-squares slope of win% against flight number. Sign flipped so
+        larger = deeper (less drop-off top to bottom), matching the wishlist's
+        framing; strongly negative in the raw sense (steep decline) becomes a
+        strongly negative "depth" score here too — 0 = perfectly flat/deep."""
+        if len(points) < 2:
+            return None
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        n = len(xs)
+        mx, my = sum(xs) / n, sum(ys) / n
+        denom = sum((x - mx) ** 2 for x in xs)
+        if denom == 0:
+            return None
+        num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+        return num / denom   # already "larger (less negative) = deeper"
+
+    @property
+    def singles_depth_slope(self) -> float | None:
+        return self._slope(self.singles_flight_curve)
+
+    @property
+    def doubles_depth_slope(self) -> float | None:
+        return self._slope(self.doubles_flight_curve)
+
+    @property
+    def top_end_index(self) -> float | None:
+        """Top = .6*S1% + .4*D1% — who has stars."""
+        s1 = self.flight.get("S1", {}).get("pct")
+        d1 = self.flight.get("D1", {}).get("pct")
+        if s1 is None and d1 is None:
+            return None
+        if d1 is None:
+            return s1
+        if s1 is None:
+            return d1
+        return 0.6 * s1 + 0.4 * d1
+
+    @property
+    def depth_index(self) -> float | None:
+        """Mean win% across the lower flights actually on record (S3+, D2+) —
+        who survives when the match needs more than the stars."""
+        vals = [fl["pct"] for slot, fl in self.flight.items() if fl["pct"] is not None and (
+            (slot.upper().startswith("S") and slot[1:].isdigit() and int(slot[1:]) >= 3) or
+            (slot.upper().startswith("D") and slot[1:].isdigit() and int(slot[1:]) >= 2))]
+        return sum(vals) / len(vals) if vals else None
+
+    @property
+    def star_dependence(self) -> float | None:
+        """StarDep = TopEnd - Depth. Big positive = one or two players carrying
+        the program; near zero/negative = unusually even quality."""
+        top, depth = self.top_end_index, self.depth_index
+        if top is None or depth is None:
+            return None
+        return top - depth
+
+    @property
+    def blowout_rate(self) -> float | None:
+        return self.blowout_wins / self.dual_wins if self.dual_wins else None
+
+    @property
+    def resistance_rate(self) -> float | None:
+        losses = self.duals - self.dual_wins
+        return self.resistance_losses / losses if losses else None
+
+    @property
+    def record_luck(self) -> float | None:
+        """Actual dual wins minus power-model expected wins. Positive = the
+        record is stronger than a neutral power-based model expects; negative
+        = the team may be better than its record."""
+        if self.expected_wins is None:
+            return None
+        return self.dual_wins - self.expected_wins
+
+    @property
+    def upset_rate(self) -> float | None:
+        return self.upsets / self.upset_opportunities if self.upset_opportunities else None
+
+    @property
+    def elite_win_share(self) -> float | None:
+        return self.elite_win_share_num / self.elite_win_share_den if self.elite_win_share_den else None
+
 
 def compute_team_metrics(bundles, careers: dict) -> dict:
     """Returns {(program_id, scope_id): TeamMetrics}. Uses `careers` (from
@@ -165,6 +430,13 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                 except ValueError:
                     pass
         power_values = sorted(opp_power.values())
+        # crude, auto-scaled Elo-style win-probability model: teams are only
+        # comparable within one scope, so the logistic scale is the spread of
+        # power actually observed here rather than an arbitrary constant.
+        power_scale = statistics.pstdev(power_values) or 1.0
+
+        def win_prob(own: float, opp: float) -> float:
+            return 1 / (1 + math.exp(-(own - opp) / power_scale))
 
         def quartile_of(v: float) -> str:
             if not power_values:
@@ -178,6 +450,12 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
             if rank >= 0.25:
                 return "Q3"
             return "Q4"
+
+        def decile_of(v: float) -> int:
+            if not power_values:
+                return -1
+            import bisect
+            return int(bisect.bisect_left(power_values, v) / len(power_values) * 10)
 
         per_program_lines = defaultdict(list)   # program_id -> list of (line, side, dual)
         per_program_duals = defaultdict(list)
@@ -210,10 +488,27 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                     if not won:
                         gw, gl = gl, gw
                     m.games_won += gw; m.games_lost += gl
+                    sw, sl = _sets_from_score_string(line["score"])
+                    if not won:
+                        sw, sl = sl, sw
                 elif line.get("home_games") not in (None, ""):
                     hg, ag = float(line.get("home_games") or 0), float(line.get("away_games") or 0)
                     gw, gl = (hg, ag) if side == "home" else (ag, hg)
                     m.games_won += gw; m.games_lost += gl
+                    sw = sl = None    # no set-level detail in the college export
+                else:
+                    gw = gl = sw = sl = None
+
+                if gw is not None:
+                    if _is_singles(line["slot"]):
+                        m.singles_games_won += gw; m.singles_games_lost += gl
+                    else:
+                        m.doubles_games_won += gw; m.doubles_games_lost += gl
+                if sw is not None:
+                    if _is_singles(line["slot"]):
+                        m.singles_sets_won += sw; m.singles_sets_lost += sl
+                    else:
+                        m.doubles_sets_won += sw; m.doubles_sets_lost += sl
 
             for slot, fl in m.flight.items():
                 fl["pct"] = fl["won"] / fl["played"] if fl["played"] else None
@@ -238,9 +533,15 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
 
                 dual_lines = [(line, s, dd) for line, s, dd in per_program_lines.get(pid, []) if dd is d]
                 if dual_lines:
-                    w = sum(1 for line, s, dd in dual_lines
-                            if (bool(int(float(line.get("home_won") or 0))) == (s == "home")))
-                    per_dual_share.append(w / len(dual_lines))
+                    dw_ = sum(1 for line, s, dd in dual_lines
+                             if (bool(int(float(line.get("home_won") or 0))) == (s == "home")))
+                    dp_ = len(dual_lines)
+                    share = dw_ / dp_
+                    per_dual_share.append(share)
+                    if won and share >= 0.8:
+                        m.blowout_wins += 1
+                    if not won and share >= 0.4:
+                        m.resistance_losses += 1
 
                 # JHSAA `district` = in-league play (the association's league
                 # schedule); college `is_conference` = in-conference play. Both
@@ -261,6 +562,26 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                     rec = m.quartile_record.setdefault(q, {"w": 0, "l": 0})
                     rec["w" if won else "l"] += 1
 
+                # power-based pre-match win-probability model, for expected
+                # record / upset / elite-win-share — only where both teams
+                # have an archived power number in this scope.
+                if pid in opp_power and opp_id in opp_power:
+                    p = win_prob(opp_power[pid], opp_power[opp_id])
+                    if m.expected_wins is None:
+                        m.expected_wins = 0.0
+                    m.expected_wins += p
+                    m.upset_opportunities += 1 if p < 0.35 else 0
+                    if won and p < 0.35:
+                        m.upsets += 1
+                    if won:
+                        m.upset_value += max(0.0, 0.5 - p)
+                    else:
+                        m.bad_loss_value += max(0.0, p - 0.5)
+                if won:
+                    m.elite_win_share_den += 1
+                    if opp_id in opp_power and decile_of(opp_power[opp_id]) >= 9:
+                        m.elite_win_share_num += 1
+
                 phase = d.get("phase") or d.get("round") or ""
                 if phase and phase not in ("regular", "early", "REG", "district"):
                     m.postseason.append({"opp": b.program_name(opp_id), "phase": phase,
@@ -273,9 +594,64 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                 m.avg_opp_power = sum(opp_powers) / len(opp_powers)
             if len(per_dual_share) >= 2:
                 m.volatility = statistics.pstdev(per_dual_share)
+            if len(per_dual_share) >= 4:
+                s = sorted(per_dual_share)
+                m.floor = s[max(0, round(0.25 * (len(s) - 1)))]
+                m.ceiling = s[max(0, round(0.75 * (len(s) - 1)))]
 
             out[(pid, b.scope_id)] = m
     return out
+
+
+def compute_player_value(careers: dict) -> dict:
+    """Crude Player Value Above Replacement (owner wishlist #58): for every
+    (scope, slot) a player appeared in, replacement level is the 25th-
+    percentile win rate among OTHER players who logged 3+ matches at that
+    same slot in that same scope — so it's read off the data on hand, not an
+    arbitrary constant. A player's value is (their win rate at that slot -
+    replacement) * matches played there, summed across every slot and season
+    they appeared in. This is deliberately NOT limited to singles or doubles
+    separately — the whole point (per the owner) is a number that looks past
+    the S%/D% split at what a player is actually worth on court, wherever
+    they were used.
+
+    Crude on purpose: no opponent adjustment, no positional replacement curve
+    beyond the flat percentile — a first cut, not a finished WAR model."""
+    by_slot = defaultdict(lambda: defaultdict(list))   # (scope_id, slot) -> pid -> [won,...]
+    for pid, c in careers.items():
+        for m in c["matches"]:
+            if m["won"] is None:
+                continue
+            by_slot[(m["scope_id"], m["slot"])][pid].append(m["won"])
+
+    replacement = {}
+    for key, players in by_slot.items():
+        rates = sorted(sum(r) / len(r) for r in players.values() if len(r) >= 3)
+        if len(rates) >= 4:
+            replacement[key] = rates[max(0, round(0.25 * (len(rates) - 1)))]
+        elif rates:
+            replacement[key] = rates[0]
+        else:
+            replacement[key] = 0.35   # thin-sample fallback prior, not a claim
+
+    pvar = {}
+    for pid, c in careers.items():
+        per_slot = defaultdict(list)
+        for m in c["matches"]:
+            if m["won"] is None:
+                continue
+            per_slot[(m["scope_id"], m["slot"])].append(m["won"])
+        total = 0.0
+        breakdown = []
+        for key, results in per_slot.items():
+            rep = replacement.get(key, 0.35)
+            actual = sum(results) / len(results)
+            contribution = (actual - rep) * len(results)
+            total += contribution
+            breakdown.append({"scope_id": key[0], "slot": key[1], "matches": len(results),
+                               "actual": actual, "replacement": rep, "value": contribution})
+        pvar[pid] = {"total": total, "breakdown": sorted(breakdown, key=lambda x: -abs(x["value"]))}
+    return pvar
 
 
 def storylines(metrics: dict) -> list[dict]:
@@ -318,6 +694,22 @@ def storylines(metrics: dict) -> list[dict]:
                 "value": m.volatility,
                 "text": f"{m.name}'s court share swings hard match to match (stdev {m.volatility:.3f} "
                         f"across {m.duals} duals) — a volatile team, not a steady one.",
+            })
+        luck = m.record_luck
+        if luck is not None and m.duals >= 6 and abs(luck) >= 2.5:
+            tone = "outperforming" if luck > 0 else "underperforming"
+            stories.append({
+                "kind": "record-luck", "program_id": pid, "scope_id": scope_id, "name": m.name,
+                "value": luck,
+                "text": f"{m.name} is {m.dual_wins}-{m.duals - m.dual_wins}, {tone} a power-based "
+                        f"expected record of {m.expected_wins:.1f} wins by {abs(luck):.1f}.",
+            })
+        if m.upset_value >= 1.0:
+            stories.append({
+                "kind": "upsets", "program_id": pid, "scope_id": scope_id, "name": m.name,
+                "value": m.upset_value,
+                "text": f"{m.name} has banked {m.upsets} win(s) as a clear underdog (upset value "
+                        f"{m.upset_value:.2f}) — a résumé worth more than its raw record.",
             })
         q1 = m.quartile_record.get("Q1")
         q4 = m.quartile_record.get("Q4")

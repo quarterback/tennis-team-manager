@@ -11,8 +11,31 @@
   {% if career.bio.current_grade %}<div class="pt-kpi"><div class="pt-kpi-k">Current grade</div><div class="pt-kpi-v">{{ career.bio.current_grade }}</div></div>{% endif %}
   {% if career.bio.grade %}<div class="pt-kpi"><div class="pt-kpi-k">Class</div><div class="pt-kpi-v">{{ career.bio.grade }}</div></div>{% endif %}
   {% if career.bio.class_year %}<div class="pt-kpi"><div class="pt-kpi-k">Class</div><div class="pt-kpi-v">{{ career.bio.class_year }}</div></div>{% endif %}
+  {% if pvar is not none %}<div class="pt-kpi"><div class="pt-kpi-k">Value (PVAR)</div><div class="pt-kpi-v">{{ "%+.2f"|format(pvar.total) }}</div></div>{% endif %}
   <div class="pt-kpi"><div class="pt-kpi-k">Teams</div><div class="pt-kpi-v" style="font-size:16px">{{ career.teams|join(', ') }}</div></div>
 </div>
+{% if pvar is not none and pvar.breakdown %}
+<div class="pt-panel">
+  <div class="pt-panel-head"><div class="pt-panel-title">Value by slot</div><div class="pt-panel-meta">vs. replacement-level at that slot/season</div></div>
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table">
+      <thead><tr><th>Season</th><th>Slot</th><th class="num">Matches</th><th class="num">Win rate</th><th class="num">Replacement</th><th class="num">Value</th></tr></thead>
+      <tbody>
+      {% for b in pvar.breakdown %}
+        <tr>
+          <td>{{ b.scope_id }}</td>
+          <td><span class="pt-pill slot">{{ b.slot }}</span></td>
+          <td class="num">{{ b.matches }}</td>
+          <td class="num t-num">{{ "%.3f"|format(b.actual) }}</td>
+          <td class="num t-num">{{ "%.3f"|format(b.replacement) }}</td>
+          <td class="num t-num">{{ "%+.2f"|format(b.value) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 <div class="pt-grid">
 <div>

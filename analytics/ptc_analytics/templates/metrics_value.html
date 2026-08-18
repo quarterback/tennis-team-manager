@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Player Value{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Player Value</div>
+<h1 class="pt-h1">Player Value (PVAR)</h1>
+<p class="t-dek">Crude Player Value Above Replacement: for every slot a player logged 3+ matches at, replacement level is the 25th-percentile win rate among other players at that same slot in that same season. PVAR = (their win rate − replacement) × matches played, summed across every slot and season on record. Deliberately not split by singles/doubles — the point is a number that looks past S%/D% at what a player was worth wherever the coach used them. No opponent adjustment yet; a first cut, not a finished model.</p>
+<div class="pt-panel">
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table">
+      <thead><tr><th>#</th><th>Player</th><th>Team(s)</th><th class="num">Record</th><th class="num">PVAR</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+          <td>{{ r.teams|join(', ') }}</td>
+          <td class="num">{{ r.wins }}-{{ r.losses }}</td>
+          <td class="num t-num">{{ "%+.2f"|format(r.pvar) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
