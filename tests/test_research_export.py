@@ -9,8 +9,9 @@ from app.web.server import NAV_GROUPS, _active_nav
 
 
 def _prospect(pid, name, grade):
-    return SimpleNamespace(pid=pid, name=name, year=grade, hometown="Northbank",
-                           country="US", current_grade=42, potential_grade=55,
+    return SimpleNamespace(pid=pid, name=name, grade=grade, year=0, hometown="Northbank",
+                           country="US", current_overall=lambda: 42,
+                           ceiling_overall=lambda: 55,
                            academic_rating=81, traits={"play_style": "all_court"})
 
 
@@ -44,6 +45,10 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
     duals = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
     assert len(duals) == 1
     assert duals[0]["home_program_id"] == "Ace High|girls"
+    players = list(csv.DictReader(io.StringIO(files["players.csv"].decode())))
+    assert players[0]["grade"] == "12"
+    assert players[0]["current_grade"] == "42"
+    assert players[0]["potential_grade"] == "55"
 
 
 def test_export_zip_contains_manifest(monkeypatch):
