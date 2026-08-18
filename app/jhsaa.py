@@ -980,6 +980,32 @@ def transfer_for(pid: str) -> dict | None:
     return transfers().get(pid)
 
 
+def transfer_rows() -> list[dict]:
+    """Every recorded transfer, with the mover's NAME resolved for display — the
+    list the `/jhsaa/transfers` board reads. Player identity is regenerated (same
+    rng draws as `build_roster`) rather than stored, same as everywhere else in
+    JHSAA; the record itself carries no name."""
+    rows = []
+    for pid, rec in transfers().items():
+        gender = rec.get("gender", "")
+        origin = next((s for s in load_schools(gender) if s.name == rec.get("from")), None)
+        name = ""
+        if origin is not None:
+            entry = rec.get("entry")
+            # `grade` only steers maturity/talent in `_gen_seat`, not identity or pid
+            # (both keyed on entry+seat alone) — 9 is an arbitrary valid choice here,
+            # this call exists only to read the name back off the regenerated Prospect.
+            mod = _program_mod(origin, rec.get("year", 0), "")
+            p = _gen_seat(origin, mod, entry, rec.get("seat"), 9, "")
+            if p.pid == pid:
+                name = p.name
+        rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
+                     "from": rec.get("from"), "to": rec.get("to"), "year": rec.get("year"),
+                     "entry": rec.get("entry")})
+    rows.sort(key=lambda r: (-(r["year"] or 0), r["name"]))
+    return rows
+
+
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.

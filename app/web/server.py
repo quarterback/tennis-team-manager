@@ -148,6 +148,7 @@ NAV_GROUPS = [
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
+        {"id": "jh_transfers","label": "HS Transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
     ]),
     ("Analytics Bureau", [
@@ -209,9 +210,11 @@ def _active_nav(req) -> str:
     if p.startswith("/doubles-championship"): return "doubles"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
-    # The programs editor is checked BEFORE the section, since /jhsaa/programs is a
-    # prefix match on /jhsaa and would otherwise light the High School entry.
+    # The programs editor and the transfer board are both checked BEFORE the
+    # section, since they're prefix matches on /jhsaa and would otherwise light
+    # the High School entry instead of their own nav item.
     if p.startswith("/jhsaa/programs"):   return "jh_prog"
+    if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
     if p.startswith("/jhsaa"):            return "jhsaa"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
@@ -2162,6 +2165,16 @@ def create_app() -> Flask:
             resp.set_cookie("jh_recent", "|".join(recent), max_age=60 * 60 * 24 * 90,
                             samesite="Lax")
         return resp
+
+    @app.route("/jhsaa/transfers")
+    def jhsaa_transfers():
+        """Every recorded JHSAA offseason transfer — the index the Juniors nav
+        links to. Adding a move happens from the player's own card (it already
+        has the school/pid/entry context); this page is where to find/undo one."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa as _jh
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
