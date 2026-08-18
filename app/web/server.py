@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 import threading
 from flask import (Flask, render_template, request, abort, redirect, url_for,
-                   jsonify, make_response, Response)
+                   jsonify, make_response, Response, send_file)
 
 from .rankings_data import all_schools, crest, get_row
 from .sim import run_dual_view, FIDELITIES, programs_for
@@ -1145,6 +1145,27 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
+
+    @app.route("/research/export", methods=["POST"])
+    def research_export():
+        """Browser-native research download; simulation state is never modified."""
+        from app.research_export import ExportError, export_zip
+        family = request.form.get("scope", "jhsaa").strip().lower()
+        try:
+            year = int(request.form.get("year", ""))
+            if not 2020 <= year <= 2200:
+                raise ValueError
+        except ValueError:
+            abort(400, "Year must be between 2020 and 2200.")
+        try:
+            bundle = export_zip(family, year=year,
+                                gender=request.form.get("gender", "girls"),
+                                classification=request.form.get("classification", "all"))
+        except ExportError as exc:
+            abort(400, str(exc))
+        filename = f"play-to-clinch-{family}-{year}-{request.form.get('gender', 'girls')}.zip"
+        return send_file(bundle, mimetype="application/zip", as_attachment=True,
+                         download_name=filename, max_age=0)
 
     @app.route("/export/data_portal.json")
     def export_data_portal():

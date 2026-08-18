@@ -27,6 +27,7 @@
         <a href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Juniors</a>
         <a href="{{ url_for('intel_teams', u=u) }}">Team Scanner</a>
         <a href="{{ url_for('junior_feed_json', u=u, grad_year=portal.grad_year) }}">JSON</a>
+        <button type="button" class="al-export-trigger" onclick="document.getElementById('research-export').showModal()"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Export Research Data</button>
       </div>
     </div>
     <div class="al-hero-card">
@@ -46,6 +47,20 @@
     <a class="al-kpi al-kpi-link" href="{{ url_for('recruiting_hub_page', u=u, grad_year=portal.grad_year) }}"><div class="al-kpi-k">Junior Pool</div><div class="al-kpi-v">{{ "{:,}".format(portal.junior_kpis.class_size) }}</div><div class="al-kpi-sub">{{ portal.junior_kpis.bluechips }} blue chips · {{ portal.junior_kpis.nations }} nations</div></a>
   </div>
 </div>
+
+<dialog id="research-export" class="al-export-dialog">
+  <form method="post" action="{{ url_for('research_export') }}">
+    <div class="al-export-head"><div><div class="al-eyebrow">Portable research bundle</div><h2>Export Research Data</h2></div><button type="button" class="al-export-close" onclick="this.closest('dialog').close()" aria-label="Close">×</button></div>
+    <p>Download a self-describing ZIP of read-only CSV and JSON files, ready to upload to an analysis agent.</p>
+    <div class="al-export-fields">
+      <label><span>Scope</span><select name="scope"><option value="jhsaa">JHSAA</option><option value="college" disabled>College — planned</option><option value="world" disabled>Whole world — planned</option></select></label>
+      <label><span>Season year</span><input name="year" type="number" min="2020" max="2200" value="{{ portal.grad_year }}" required></label>
+      <label><span>Gender</span><select name="gender"><option value="girls">Girls</option><option value="boys">Boys</option></select></label>
+      <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A-1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
+    </div>
+    <div class="al-export-actions"><button type="button" onclick="this.closest('dialog').close()">Cancel</button><button type="submit" class="primary"><i class="fa-solid fa-download" aria-hidden="true"></i> Download ZIP</button></div>
+  </form>
+</dialog>
 
 <div class="bl-container">
   <div class="al-score-strip">
@@ -282,5 +297,20 @@
 .al-sublabel.out { color: #b4452f; }
 .al-leadrow.out .al-leadval, .al-leadval.win { font-weight: 800; }
 .al-leadval.win { color: #1f7a4d; }
+.al-export-trigger { border:0; background:none; color:inherit; font:inherit; font-weight:700; cursor:pointer; padding:0; }
+.al-export-dialog { width:min(540px,calc(100vw - 32px)); border:1px solid var(--border); border-radius:12px; padding:0; color:var(--text); background:var(--surface); box-shadow:0 24px 70px #0005; }
+.al-export-dialog::backdrop { background:#101820aa; }
+.al-export-dialog form { padding:24px; }
+.al-export-head { display:flex; justify-content:space-between; gap:20px; align-items:start; }
+.al-export-head h2 { margin:3px 0 0; }
+.al-export-close { border:0; background:none; color:var(--text-muted); font-size:28px; cursor:pointer; }
+.al-export-dialog p { color:var(--text-muted); line-height:1.5; }
+.al-export-fields { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0; }
+.al-export-fields label span { display:block; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-muted); margin-bottom:5px; }
+.al-export-fields select,.al-export-fields input { box-sizing:border-box; width:100%; padding:9px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); }
+.al-export-actions { display:flex; justify-content:flex-end; gap:9px; }
+.al-export-actions button { padding:9px 14px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); cursor:pointer; font-weight:700; }
+.al-export-actions .primary { background:var(--accent); border-color:var(--accent); color:white; }
+@media(max-width:560px){.al-export-fields{grid-template-columns:1fr}}
 </style>
 {% endblock %}
