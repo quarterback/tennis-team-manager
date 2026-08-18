@@ -817,6 +817,17 @@ def advance(season_id: int) -> dict:
     s = load_season(season_id)
     if not s or s["phase"] == "complete":
         return {"phase": "complete"}
+    # Warm worldconfig's in-process cache BEFORE `conn` opens its write transaction
+    # below. `dual_between` (via `_fidelity`/`_box_stats_on`/`_coached_pin`/
+    # `_coached_doubles`) reads worldconfig mid-loop while playing each dual, and a
+    # cold `worldconfig.get()` opens its OWN connection and issues a lazy
+    # `CREATE TABLE IF NOT EXISTS` — a second writer against the same SQLite file
+    # `conn` is already mid-transaction on. That deadlocks into "database is
+    # locked" (same hazard `gtt_seasonmode._prime_world_config` documents and
+    # guards against for the pro league). Priming here — not just at world-advance
+    # entry — also covers a standalone `sm.advance()` call (tests, calibration).
+    from app import worldconfig
+    worldconfig.prime_cache(worldconfig.snapshot())
     conn = _db()
     progs = _programs(s["division"], s["gender"])
 

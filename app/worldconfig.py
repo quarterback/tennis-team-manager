@@ -38,10 +38,25 @@ _VALID = {b for b, _ in BANDS}
 _DEFAULTS = {"name_preset": "global_college"}
 _cache: dict[str, str] = {}
 
+_SCHEMA = "CREATE TABLE IF NOT EXISTS world_setting (key TEXT PRIMARY KEY, value TEXT)"
+
+
+def init_schema() -> None:
+    """Create `world_setting` eagerly with a short-lived, auto-committing
+    connection. Call this at startup BEFORE any long write transaction — the
+    lazy CREATE TABLE IF NOT EXISTS in `_conn()` is itself a write, and issuing
+    it for the first time while `world`/`seasonmode` hold a connection open
+    mid-transaction deadlocks the two writers ("database is locked"), same
+    hazard as `overrides.init_schema` / `gtt_seasonmode._prime_world_config`."""
+    conn = dbpath.connect(dbpath.resolve_db_path())
+    conn.execute(_SCHEMA)
+    conn.commit()
+    conn.close()
+
 
 def _conn():
     conn = dbpath.connect(dbpath.resolve_db_path())
-    conn.execute("CREATE TABLE IF NOT EXISTS world_setting (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute(_SCHEMA)
     return conn
 
 

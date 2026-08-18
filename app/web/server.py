@@ -348,6 +348,18 @@ SCHEMES = [
     ("pitch",      "Pitch",      "Mint · sea green · amber · black"),
 ]
 
+# Serializes `/world/advance` (and its standalone-season fallback) across
+# gthreads. Stepping the world (or a standalone season, in seasonmode) can hold
+# a single open SQLite write transaction across MANY duals (every active
+# universe's whole week, sometimes a full postseason round) — easily longer
+# than the 5s busy timeout. A second overlapping POST (a double-click, a slow
+# first request plus a retry, two tabs) used to open its own writer against the
+# same file mid-transaction and die with sqlite3.OperationalError: database is
+# locked deep in the per-dual write. One button, one clock — so a duplicate
+# advance while one is already running is a no-op, not a second writer. Mirrors
+# `world._prime_lock`'s reason for existing.
+_advance_lock = threading.Lock()
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
@@ -816,21 +828,32 @@ def create_app() -> Flask:
         stepped one universe on its own is what forked a save into universes
         sitting at different weeks. Pass `back=1` to return to the referring page
         instead of the World hub."""
-        import app.honors as honors
-        if not wd.exists():
-            # No world: a standalone season (dev / tests) is self-contained — there
-            # is no other universe to fall out of step with, and no world to build.
-            division, gender, _label, _u = _universe(request)
-            sm.advance(sm.get_or_create(division, gender, seed=wd.current_year_seed()))
-        else:
-            # Once the active seasons are complete, hold at the awards step until honors
-            # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
-            # honors never stamp — that would jam a single-gender save here forever).
-            year = wd.BASE_YEAR + wd.load_world()["year"]
-            pending = (wd.season_complete()
-                       and not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis()))
-            if not pending:
-                wd.advance_week()
+        if not _advance_lock.acquire(blocking=False):
+            # An advance is already in flight (double-click, a slow first request
+            # plus a retry, two tabs) — drop this duplicate rather than opening a
+            # second SQLite writer against the transaction the first request
+            # already holds open. The in-flight advance already covers this click.
+            if request.form.get("back") or request.args.get("back"):
+                return redirect(request.referrer or url_for("world_view"))
+            return redirect(url_for("world_view"))
+        try:
+            import app.honors as honors
+            if not wd.exists():
+                # No world: a standalone season (dev / tests) is self-contained — there
+                # is no other universe to fall out of step with, and no world to build.
+                division, gender, _label, _u = _universe(request)
+                sm.advance(sm.get_or_create(division, gender, seed=wd.current_year_seed()))
+            else:
+                # Once the active seasons are complete, hold at the awards step until honors
+                # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
+                # honors never stamp — that would jam a single-gender save here forever).
+                year = wd.BASE_YEAR + wd.load_world()["year"]
+                pending = (wd.season_complete()
+                           and not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis()))
+                if not pending:
+                    wd.advance_week()
+        finally:
+            _advance_lock.release()
         if request.form.get("back") or request.args.get("back"):
             return redirect(request.referrer or url_for("world_view"))
         return redirect(url_for("world_view"))
