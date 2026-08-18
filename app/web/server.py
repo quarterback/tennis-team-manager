@@ -1164,13 +1164,17 @@ def create_app() -> Flask:
                 raise ValueError
         except ValueError:
             abort(400, "Year must be between 2020 and 2200.")
+        gender = request.form.get("gender", "girls" if family == "jhsaa" else "men")
         try:
-            bundle = export_zip(family, year=year,
-                                gender=request.form.get("gender", "girls"),
-                                classification=request.form.get("classification", "all"))
+            if family == "college":
+                bundle = export_zip(family, year=year, gender=gender,
+                                    division=request.form.get("division", "D1"))
+            else:
+                bundle = export_zip(family, year=year, gender=gender,
+                                    classification=request.form.get("classification", "all"))
         except ExportError as exc:
             abort(400, str(exc))
-        filename = f"play-to-clinch-{family}-{year}-{request.form.get('gender', 'girls')}.zip"
+        filename = f"play-to-clinch-{family}-{year}-{gender}.zip"
         return send_file(bundle, mimetype="application/zip", as_attachment=True,
                          download_name=filename, max_age=0)
 

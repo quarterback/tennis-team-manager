@@ -4,7 +4,9 @@ import json
 import zipfile
 from types import SimpleNamespace
 
-from app.research_export import build_jhsaa, export_zip
+import pytest
+
+from app.research_export import ExportError, build_college, build_jhsaa, export_zip
 from app.web.server import NAV_GROUPS, _active_nav
 
 
@@ -41,7 +43,7 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
             "lines.csv", "line_players.csv", "jhsaa_standings.csv"} <= files.keys()
     manifest = json.loads(files["manifest.json"])
     assert manifest["dataset_family"] == "jhsaa"
-    assert manifest["college_plan"]["status"] == "not implemented"
+    assert manifest["college_plan"]["status"] == "available"
     duals = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
     assert len(duals) == 1
     assert duals[0]["home_program_id"] == "Ace High|girls"
@@ -70,3 +72,51 @@ def test_export_page_marks_tools_item_active():
         path = "/research/export"
 
     assert _active_nav(Request()) == "research_export"
+
+
+def test_college_bundle_is_self_describing_and_normalized(played_season):
+    import app.seasonmode as sm
+
+    sid = sm.find_season("D1", "men", seed=2026)
+    assert sid is not None
+    files = build_college(2026, "D1", "men", season_id=sid)
+    assert {"README.md", "manifest.json", "programs.csv", "players.csv", "duals.csv",
+            "lines.csv", "line_players.csv", "college_standings.csv",
+            "college_scholarships.csv", "college_rankings.csv"} <= files.keys()
+
+    manifest = json.loads(files["manifest.json"])
+    assert manifest["dataset_family"] == "college"
+    assert manifest["scope"] == {"year": 2026, "division": "D1", "gender": "men"}
+
+    duals = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
+    assert len(duals) > 0
+    assert {"REG", "CT", "NCAA"} & {d["round"] for d in duals}
+
+    programs = list(csv.DictReader(io.StringIO(files["programs.csv"].decode())))
+    program_ids = {p["program_id"] for p in programs}
+    assert all(d["home_program_id"] in program_ids for d in duals)
+
+    players = list(csv.DictReader(io.StringIO(files["players.csv"].decode())))
+    assert len(players) > 0
+
+    line_players = list(csv.DictReader(io.StringIO(files["line_players.csv"].decode())))
+    player_ids = {p["player_id"] for p in players}
+    # every recorded line participant is a real, currently-rostered pid
+    assert any(lp["player_id"] in player_ids for lp in line_players)
+
+
+def test_college_bundle_rejects_bad_scope():
+    # division/gender are validated before any DB access, so this needs no played
+    # season — a real season_id would never even be reached.
+    with pytest.raises(ExportError):
+        build_college(2026, "D5", "men")
+    with pytest.raises(ExportError):
+        build_college(2026, "D1", "coed")
+
+
+def test_college_export_without_a_world_errors_loudly(monkeypatch):
+    import app.world as wd
+
+    monkeypatch.setattr(wd, "load_world", lambda seed: None)
+    with pytest.raises(ExportError):
+        build_college(2026, "D1", "men")
