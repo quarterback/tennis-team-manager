@@ -132,10 +132,14 @@ def test_the_toc_stays_out_of_the_toss_rating(archived):
     season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
                            salt=wd.active_salt(wd.DEFAULT_SEED))
     rated = jh.rating_duals(list(season["teams"].values()))
+    # ‼️ ON THE PHASE, NOT ON THE COURT COUNT. This asserted that no five-court dual
+    # between two TOC-field teams was rated, which reads as a proxy for "no TOC dual"
+    # and is not one: the mid-season SHOWCASES are 1S/4D too, are deliberately rated,
+    # and can pair two programs that both go on to win their classification. It
+    # passed only until a rename shuffled which programs met in a showcase.
+    assert not [d for d in rated if d.get("phase") in jh.POSTSEASON]
     champs = set(season["toc"]["field"])
-    for d in rated:
-        assert not (d["home"] in champs and d["away"] in champs
-                    and d["home_points"] + d["away_points"] == 5)
+    assert champs, "the TOC field is empty — the fixture did not play one"
 
 
 def test_a_toc_run_lands_on_the_season_record(archived):

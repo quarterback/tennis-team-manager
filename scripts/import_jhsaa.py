@@ -269,15 +269,15 @@ OWNER_EDICTS = frozenset({
 # drawing — runs on the source name; only the written row carries the new one.
 RENAMES = {
     "Bahía Leal Costa Verde": "Housatonic",      # keeps its Warthogs
-    "Belyakov Academy of Music and Media": "Belyakov North",
-    "Belyakov Environmental Sciences Academy": "Belyakov South",
+    "Belyakov Academy of Music and Media": "Walter-Kenny School",
+    "Belyakov Environmental Sciences Academy": "Friendship City",
     "Belyakov I-50 Technical": "Belyakov East",
-    "Belyakov Polytechnic Institute": "Belyakov West",
-    "Belyakov School of Design and Engineering": "Theodore Roosevelt",
+    "Belyakov Polytechnic Institute": "Morne Caribou Polytechnic",
+    "Belyakov School of Design and Engineering": "Grande-Savane Arts",
     "Belyakov School of Public Service": "Abraham Lincoln",
-    "Belyakov School of Science and Industry": "Belyakov Tech",
+    "Belyakov School of Science and Industry": "Kongisburg",
     "Belmonte Agricultural Sciences Academy": "Belmonte North",
-    "Belmonte Applied Sciences Institute": "Belmonte South",
+    "Belmonte Applied Sciences Institute": "Yazoo",
     "Belmonte Civic Leadership Academy": "Belmonte East",
     "Belmonte Health Sciences Academy": "Belmonte West",
     "Belmonte Classical Academy": "James Madison",
@@ -297,9 +297,9 @@ RENAMES = {
     "Orellana Foundry High": "Orellana North",
     "Orellana School of Commerce": "Orellana South",
     "Eagleton School of Science and Industry": "Eagleton West",
-    "Port Veles Agricultural Sciences Academy": "Joe Biden",
-    "Port Veles Civic Leadership Academy": "Veles Landing",
-    "Nadia Sidorov": "John Adams",
+    "Port Veles Agricultural Sciences Academy": "Biden",
+    "Port Veles Civic Leadership Academy": "Severn",
+    "Nadia Sidorov": "Adams",
     "Port Meridian Polytechnic": "Port Meridian North",
     "San Borondón Agricultural Sciences Academy": "San Borondón North",
     "San Borondón Environmental Sciences Academy": "San Borondón South",
@@ -394,8 +394,8 @@ RENAMES = {
     "Evelyn Booker": "William Howard Taft",
     "Geraldine Cross": "Port Veles Episcopal",
     "Iker Aramburu": "Sandra Day O'Connor",
-    "Iker Aramburu North": "Belmonte Heights",
-    "Imani Cross": "San Borondón Heights",
+    "Iker Aramburu North": "Allegheny Heights",
+    "Imani Cross": "Apalachicola",
     "Isaiah Booker": "Earl Warren",
     "John F. Kennedy North": "Harriman Heights",
     # ⚠️ Was plain "Echevarria" and had to move: prep-network now carries a school
@@ -413,8 +413,8 @@ RENAMES = {
     "Nathaniel Cross North": "Port Veles Lutheran",
     "Nicolás Cordero": "Ruth Bader Ginsburg",
     "Pauli Booker": "Vespertine Heights",
-    "Ralph Booker": "Barack Obama",
-    "Ralph Booker North": "Port Veles Christian",
+    "Ralph Booker": "Obama",
+    "Ralph Booker North": "Christchurch Episcopal",
     "Sofía Cordero": "John Quincy Adams",
 
     # ‼️ REAL PEOPLE, NOT INVENTED ONES (owner rule 2027-08: "the fictional
@@ -430,10 +430,10 @@ RENAMES = {
     # fine and always was — Amelia Freeman stays; it was the FAMILIES of
     # unrelated invented people that broke immersion, and "<person> North"
     # is never a school name.
-    "Amelia Freeman North": "Veles Area",
-    "Anneliese Halvorsen": "George Washington",
+    "Amelia Freeman North": "Casco",
+    "Anneliese Halvorsen": "Washington",
     "Baptist HS": "Baptist",
-    "Belmonte International School": "Belmonte International",
+    "Belmonte International School": "Belmonte Collegiate",
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Carroway Public Service",
     "Dahlberg School of Science and Industry": "Dahlberg Science",
@@ -444,29 +444,29 @@ RENAMES = {
     "Henrik Keller": "William Henry Harrison",
     "Housatonic HS": "Housatonic",
     "Igor Chernov": "Zachary Taylor",
-    "Igor Chernov North": "Millard Fillmore",
+    "Igor Chernov North": "Fillmore",
     "Jefferson School of Science and Technology": "Jefferson Science",
     "Katherine Williams": "Franklin Pierce",
-    "Marcus Langston": "Rutherford B. Hayes",
-    "Marcus Langston North": "James Garfield",
-    "Marina Moroz": "Grover Cleveland",
+    "Marcus Langston": "Rutherford Hayes",
+    "Marcus Langston North": "Garfield",
+    "Marina Moroz": "Cleveland",
     "Marina Moroz North": "Benjamin Harrison",
     "Metropolitan Country Day School": "Metropolitan Country Day",
     "Nadia Chernov": "Calvin Coolidge",
-    "Nadia Chernov North": "Franklin D. Roosevelt",
+    "Nadia Chernov North": "Roosevelt",
     "Opal Avery": "Gerald Ford",
     "Opal Avery North": "George H. W. Bush",
     "Pacific Friends School": "Pacific Friends",
     "Pinecrest School": "Pinecrest",
-    "Port Veles East": "Bill Clinton",
+    "Port Veles East": "Clinton",
     "Puerto Gallego School of Science and Industry": "Puerto Gallego Science",
-    "Roscoe Bennett North": "Veles Point",
-    "San Borondón Country Day School": "San Borondón Country Day",
-    "Sofia Romanov": "Veles Basin",
-    "Sofia Romanov North": "Veles Wharf",
+    "Roscoe Bennett North": "Narragansett",
+    "San Borondón Country Day School": "Hazel Country Day",
+    "Sofia Romanov": "Chesapeake",
+    "Sofia Romanov North": "Cheney",
     "St. Brigid School": "St. Brigid",
     "St. Casimir High School": "St. Casimir",
-    "St. Elias School": "St. Elias",
+    "St. Elias School": "Tidewater Catholic",
     "St. Helena School": "St. Helena",
     "St. Sophia School": "St. Sophia",
     "St. Teresa High School": "St. Teresa",
@@ -474,8 +474,8 @@ RENAMES = {
     "Starlight School of Science and Industry": "Starlight Science",
     "Telfair Country Day School": "Telfair Country Day",
     "Thelma Avery": "Veles Cove",
-    "Walter Hart": "Veles Narrows",
-    "Walter Hart North": "Veles Quay",
+    "Walter Hart": "Kittery",
+    "Walter Hart North": "Wicomico",
     "Wolf Gap International School": "Wolf Gap International",
     "Alder Landing Beacon Hill": "Bay Oregon",
     "Aspen Harbor": "East Simmons",
@@ -554,7 +554,7 @@ RENAMES = {
     "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
     "Amos Moss": "St. Francis Catholic",             # 7A Ashbury
     "Nikolai Markov": "Christian Brothers",          # 7A Sebastian Cape
-    "Vernon Moss": "Cardinal Mercier",               # 6A — Jefferson surname
+    "Vernon Moss": "Pointe Coupee Catholic",               # 6A — Jefferson surname
     "Naomi Ellison": "Providence Catholic",          # 6A Gold Valley
     "Jon Garmendia": "Pope Leo XIV",                 # 6A Halbrook Basin
     "Viktor Antonov": "Archbishop Valois",           # 5A — Jefferson surname
@@ -591,6 +591,58 @@ RENAMES = {
     # Northside Christian, Welsh Plains NORTHWEST next to Welsh Plains — so each
     # gets a name of its own. All owner-dictated.
     "Northside Christian North": "Toussaint",               # 4A Halbrook
+
+    # ‼️ FIVE-METRO LOCALITY REDISTRIBUTION (owner spec, 2026-08). Belmonte,
+    # Port Veles, San Borondón, Belyakov and Ashbury carried 28-44 tennis
+    # programs each, most of them annexes of one another. 51 stay CORE CITY
+    # schools; the other 121 take the identity of a settlement inside the metro
+    # (`LOCALITIES` below) — a CDP, an unincorporated place, an absorbed town —
+    # which is how a city that size actually holds that many high schools. The
+    # core city stays the row's `city`; the locality is a second field.
+    #
+    # ‼️ A LOCALITY REPEATS ACROSS METROS AND A SCHOOL NAME CANNOT. Five names
+    # collided; each is qualified in the spec's own grammar (Natchez Prep,
+    # Biloxi Heights, Cahaba Fork) with a word from the school's OWN previous
+    # name — Allegheny Heights, Bowerstock Beach, Cahaba Butte, Petoskey Rock —
+    # and Port Veles's Calvin Coolidge simply keeps its full name, since Olive
+    # Reach already has a Coolidge.
+    #
+    # Real people keep their names and take a locality instead of a rename.
+    "Timberline North": "Allegheny",                             # 4A Ashbury
+    "Ashbury Heights": "Ashbury",                                # 9A Ashbury
+    "North Fork": "Cahaba Fork",                                 # 8A Ashbury
+    "Steelbridge": "Hagerstown Forge",                           # 4A Ashbury
+    "Timberline": "Monongahela Timber",                          # 4A Ashbury
+    "Mercy Academy": "Natchez Mercy",                            # 9A Ashbury
+    "St. Sebastian Prep North": "Sherwood Bench",                # 8A Ashbury
+    "Ashbury Central": "Tallulah Central",                       # 7A Ashbury
+    "Providence Academy North": "Wyalusing Providence",          # 5A Ashbury
+    "St. Basil Academy": "Cahokia Mounds Catholic",              # 4A Belmonte
+    "Treasure Valley": "Caney",                        # 6A Belmonte
+    "Belmonte River Plain": "Chillicothe",              # 8A Belmonte
+    "River Plain": "Kinnickinny",                       # 9A Belmonte
+    "Belmonte Northwest": "Kokomo",                              # 6A Belmonte
+    "Treasure Valley North": "Petoskey",                         # 5A Belmonte
+    "Belmonte Collegiate Academy": "Rock on the Hill Christian Academy", # 5A Belmonte
+    "Vernal Falls": "Tippah",                                    # 4A Belmonte
+    "Buckeye Bend": "Wyalusing",                                 # 4A Belmonte
+    "Orchard Gate": "Bellefontaine",                             # 7A Belyakov
+    "Orchard Gate North": "Bois Neuf",                           # 6A Belyakov
+    "Belyakov": "East Moscow",                                   # 8A Belyakov
+    "Belyakov River Plain": "Grand Fond",                        # 5A Belyakov
+    "Sycamore Flat": "La Savane",                                # 4A Belyakov
+    "Belyakov River Plain North": "Lycee Valmont",               # 6A Belyakov
+    "Coyote Draw": "Savane Brulee",                              # 6A Belyakov
+    "José Martí": "Trois Ilets",                                 # 7A Belyakov
+    "Port Veles Maritime Academy": "Port Veles Area Vo-Tech",    # 9A Port Veles
+    "Port Veles International Academy": "Seminary High School",  # 3A Port Veles
+    "Redwood Coast": "Bienville",                                # 9A San Borondon
+    "St. Nicholas College Prep": "Natchez Prep",                 # 6A San Borondon
+    "Las Palmas North": "Natchitoches",                          # 8A San Borondon
+    "St. Casimir Preparatory": "Natchitoches Catholic",          # 5A San Borondon
+    "St. Sophia Preparatory": "St. Sophia Prep",                 # 8A San Borondon
+    "Blackbird Canyon": "Tallulah Canyon",                       # 4A San Borondon
+    "Las Palmas": "Tuscaloosa",                                  # 8A San Borondon
     "Welsh Plains Northwest": "Grayston",                   # 3A Paddock
     "Calvary Chapel Kilbride Switch": "Gottschalk-Herman",  # 1A Olivet
     "Calvary Chapel Olivet": "Banfield Day",                # 1A Olivet
@@ -637,7 +689,7 @@ RENAMES = {
     "Naomi Price": "Crown Paper",
     "Naomi Ward": "Golden State Packing",
     "Nathaniel Ward": "Juniper Agricultural",
-    "Nerea Mendizabal": "Silver Creek Irrigation",
+    "Nerea Mendizabal": "Sparrowhawk",
     "Nicolás Salcedo": "Siskiyou Electric",
     "Opal Stokes": "Dry Creek Cooperative",
     "Opal Tillman": "Granite Water & Power",
@@ -647,7 +699,7 @@ RENAMES = {
     "Rosa Salcedo": "Quarry Workers",
     "Ruby Stokes": "Klamath Exchange",
     "Sadie Freeman": "High Desert Cooperative",
-    "Sergei Belov": "Red Butte Cooperative",
+    "Sergei Belov": "Cahaba Butte",
     "Svenja Adler": "East Range Agricultural",
     "Teresa Escobedo": "Cañada Irrigation",
     "Thelma Stokes": "Iron Gate Works",
@@ -655,7 +707,7 @@ RENAMES = {
     "Winifred Davenport": "Lost River Irrigation",
     "Winifred Stokes": "Mesa Cooperative",
     "Xavier Robles": "Elk River Power",
-    "Yelena Belov": "Spring Valley Cooperative",
+    "Yelena Belov": "Pennsauke",
 
     # ‼️ SCHOOLS THAT TAKE THEIR OWN PLACE NAME (owner rule 2026-08). Naming a school
     # for the town or county it sits in is the commonest real convention there is, so
@@ -695,12 +747,12 @@ RENAMES = {
     "Gabriel Montoya":           "Marlow",                  # 4A Marlow County
     "Matteo Dahl":               "Bywater",               # 7A Montelago
     "Petra Bianchi":             "Perryville",              # 6A Perryville
-    "Daniel Gaines North":       "San Borondón West",       # 7A San Borondón
-    "Elena Petrov":              "San Marcos",              # 9A San Marcos County
+    "Daniel Gaines North":       "Tensas",       # 7A San Borondón
+    "Elena Petrov":              "Talladega",              # 9A San Marcos County
     "Irina Kovalenko North":     "Santa Michaela North",    # 4A Santa Michaela
     "Galina Romanov":            "Stagewater",              # 9A Stagewater County
     "Svenja Bianchi":            "Tamarack",                # 9A Tamarack County
-    "Carmen Cordero":            "Vance",                   # 9A Vance County
+    "Carmen Cordero":            "Bannock",                   # 9A Vance County
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Weller",
 
@@ -715,10 +767,10 @@ RENAMES = {
     # word doubles as. A surname that is also a town cannot hide a given name in
     # front of it.
     "Aitor Echevarria":            "Point Loma",              # 9A Aldecoa
-    "Aitor Zubieta":               "Ocean Beach",             # 8A Belyakov
+    "Aitor Zubieta":               "Bowerstock Beach",             # 8A Belyakov
     "Ander Arrieta":               "Bolinas",                 # 6A Weissburg
     "Harold Calder":               "Tomales Bay",             # 6A San Telmo
-    "Lorraine Calder":             "Morro Bay",               # 7A Belyakov
+    "Lorraine Calder":             "Morne Rouge",               # 7A Belyakov
 
     # ‼️ THE INVENTED PEOPLE THEMSELVES (owner, 2026-08). The campus sweeps kept
     # finding "<fake person> North", renaming the CAMPUS, and leaving the person's own
@@ -739,7 +791,7 @@ RENAMES = {
     # Names are CALIFORNIAN — neighbourhoods, streets and water — which is the register
     # Jefferson's own coast already reads in. Seaside Heights, Cape Jean and Charles Harbor
     # are owner picks (2026-08).
-    "Adela Robles":                "Seaside Heights",         # 4A San Borondón
+    "Adela Robles":                "Biloxi Heights",         # 4A San Borondón
     "Adela Villaseñor":            "Cape Jean",               # 7A Caswell
     "Ainhoa Mendizabal":           "Charles Harbor",               # 6A Simmons
     # ‼️ TWO KEYS, ONE SCHOOL. `Javier Villalba` is the prep-network identity and
@@ -751,9 +803,9 @@ RENAMES = {
     "Javier Villalba":             "Los Feliz",               # 9A Llerena
     "Alonso Villalba":             "Los Feliz",               # migration alias
     "Amaia Etxeberria":            "Boyle Heights",           # 8A Carden City
-    "Amalia Escobedo":             "Eagle Rock",              # 7A Belyakov
+    "Amalia Escobedo":             "Petoskey Rock",              # 7A Belyakov
     "Anya Antonov":                "Mar Vista",               # 9A San Cordero
-    "Anya Orlov":                  "Playa Vista",             # 6A Belyakov
+    "Anya Orlov":                  "Riviere Salee",             # 6A Belyakov
     "Esteban Téllez":              "Sawtelle",                # 6A Aldecoa
     "Garazi Aramburu":             "Ocean Park",              # 2A Lieksa
     "Greta Adler":                 "Topanga",                 # 7A Valderra
@@ -770,7 +822,7 @@ RENAMES = {
     "Maksim Karev":                "Excelsior",               # 4A Los Maderos
     "Mikel Garmendia":             "Portola",                 # 5A Rostova Junction
     "Mila Melnick":                "Sea Cliff",               # 5A Orlova
-    "Miren Elorriaga":             "West Portal",             # 9A Belmonte
+    "Miren Elorriaga":             "Pennsauken",             # 9A Belmonte
     "Nicolás Ordoñez":             "Rockridge",               # 9A Belmonte
     "Nicolás Villalba":            "Temescal",                # 8A Starlight
     "Sofía Aranda":                "Montclair",               # 8A Puerto de los Reyes
@@ -790,31 +842,31 @@ RENAMES = {
     #
     # And the suffix rule, which had strays of its own: NO "High" and no "High School",
     # ever — plus "Ashbury Central North", which carried two directions at once.
-    "Adela Robles North":          "Oak Cliff",               # 4A San Borondón
+    "Adela Robles North":          "Natchez Cliff",               # 4A San Borondón
     "Anya Belov North":            "Preston Hollow",          # 4A Llerena
-    "Benjamin Banneker North":     "Deep Ellum",              # 5A Belmonte
+    "Benjamin Banneker North":     "Pascagoula",              # 5A Belmonte
     "Harry S. Truman North":       "Fair Park",               # 4A Cortland
-    "James Madison North":         "Bryan Place",             # 7A Belmonte
+    "James Madison North":         "Hagerstown",             # 7A Belmonte
     "Javier Cárdenas North":       "Casa Linda",              # 5A Llerena
-    "Jon Etxeberria North":        "White Rock",              # 5A Belmonte
-    "José Martí North":            "Redbird",                 # 5A Belyakov
-    "Naomi Langston North":        "Garden District",         # 3A San Borondón
+    "Jon Etxeberria North":        "Chickasaw",              # 5A Belmonte
+    "José Martí North":            "Belle Rive",                 # 5A Belyakov
+    "Naomi Langston North":        "Pointe des Brumes",         # 3A San Borondón
     "Nikolai Markov North":        "Marigny",                 # 6A San Borondón
     "Thurgood Marshall North":     "Carrollton",              # 6A San Cordero
     "Vasquez North":               "Fontainebleau",           # 4A Halbrook
-    "Woodrow Wilson North":        "Mid-City",                # 5A Belmonte
-    "Belyakov Depot High":         "Belyakov Depot",          # 8A Belyakov
-    "Depot High":                  "Depot",                   # 4A Belmonte
-    "Depot High North":            "Depot North",             # 6A Belmonte
+    "Woodrow Wilson North":        "Hackensack",                # 5A Belmonte
+    "Belyakov Depot High":         "Anse Doree",          # 8A Belyakov
+    "Depot High":                  "Passaic",                   # 4A Belmonte
+    "Depot High North":            "Natchez",             # 6A Belmonte
     "Drayfield Foundry High":      "Drayfield Foundry",       # 5A Drayfield
     "Fort Meriwether Foundry High": "Fort Meriwether Foundry", # 6A Fort Meriwether
     "Fort Meriwether Foundry High North": "Westfield Friends",  # 4A Fort Meriwether
     "Foundry High":                "Foundry",                 # 9A Lake Esperanza
     "Frontier High":               "Frontier",                # 5A Harriman
-    "Port Veles Foundry High":     "Port Veles Foundry",      # 8A Port Veles
+    "Port Veles Foundry High":     "Port Veles Science",      # 8A Port Veles
     "Seafarer High":               "Seafarer",                # 9A Port Veles
     "St. Casimir High School North": "St. Casimir North",       # 3A Harriman
-    "Ashbury Central North":       "Ashbury Highlands",       # 4A Ashbury
+    "Ashbury Central North":       "Kishwaukee",       # 4A Ashbury
 
     # ‼️ AND THE RULE APPLIES TO REAL PEOPLE TOO (owner, 2026-08). A campus direction
     # on a person's name is unrealistic whoever the person was — a school honouring
@@ -830,11 +882,11 @@ RENAMES = {
     # Orleans and the Gulf Coast.
     "Pavel Kovalenko":           "Coles Creek",             # 7A Aldecoa
     "Elena Petrenko":            "Kingsway",                # 6A Aurelia
-    "Andrés Ibarra":             "Hyde Park",               # 7A Belmonte
-    "Javier Alvarado":           "Lincoln Park",            # 8A Belmonte
-    "Rosa Castañeda":            "Wicker Park",             # 9A Belmonte
-    "Yelena Sokolov":            "Ravenswood",              # 8A Belmonte
-    "Mikhail Sidorov":           "Southampton",             # 6A Belyakov
+    "Andrés Ibarra":             "Monongahela",               # 7A Belmonte
+    "Javier Alvarado":           "Okefenokee",            # 8A Belmonte
+    "Rosa Castañeda":            "Tippecanoe",             # 9A Belmonte
+    "Yelena Sokolov":            "Bowerstock",              # 8A Belmonte
+    "Mikhail Sidorov":           "Saint Marc",             # 6A Belyakov
     "Nicolás Quiñones":          "Covenant",                # 7A Calder
     "Katherine Whitaker":        "Brookside",               # 6A Carroway
     "Oskar Weiss":               "Waldo",                   # 8A Cortland
@@ -853,12 +905,12 @@ RENAMES = {
     "Ruby Mercer":               "Pendleton Heights",       # 7A Moriarty
     "Lev Volkov":                "Sherwood Estates",        # 4A Newark River
     "Alina Antonov":             "River Oaks",              # 8A Orellana
-    "Amelia Freeman":            "Montrose",                # 5A Port Veles
+    "Amelia Freeman":            "Nanticoke",                # 5A Port Veles
     "Alejandro Zamora":          "Morgan Park",             # 9A Puerto de los Reyes
     "César Peralta":             "Avalon Park",             # 8A Puerto de los Reyes
     "Alina Belov":               "Clear Lake",              # 3A Rilland
-    "Daniel Gaines":             "Lafayette Square",        # 7A San Borondón
-    "Harold Williams":           "Soulard",                 # 9A San Borondón
+    "Daniel Gaines":             "Vicksburg",        # 7A San Borondón
+    "Harold Williams":           "Tuskegee",                 # 9A San Borondón
     "Emilia Jansen":             "Sharpstown",              # 4A San Dámaso
     "Naomi Moss":                "Meyerland",               # 5A San Tomás
     "Winifred Ellison":          "Kingwood",                # 5A Santa Cruz del Norte
@@ -885,21 +937,21 @@ RENAMES = {
     "Academy of Arts and Communication":                "Ashbury Arts",
     "Altamonte Civic Leadership Academy":               "Altamonte Civic",
     "Belden Springs Academy of Music and Media":        "Belden Springs Arts",
-    "Belyakov Agricultural Sciences Academy":           "Belyakov Agricultural",
+    "Belyakov Agricultural Sciences Academy":           "Mickey Mantle",
     "Cabo Esperanza Technical Arts Academy":            "Cabo Esperanza Tech",
     "Featherstone Institute":                           "Featherstone Tech",
     "Fellows Mill Civic Leadership Academy":            "Fellows Mill Civic",
     "Greaves Aviation and Engineering Academy":         "Greaves Aviation",
     "Homecroft Manufacturing and Technology Academy":   "Homecroft Tech",
     "I-50 Technical":                                   "I-50 Tech",
-    "I-50 Technical North":                             "I-50 Tech North",
+    "I-50 Technical North":                             "Tuscarora",
     "Leidesdorff Academy of Music and Media":           "Leidesdorff Arts",
     "Northrup I-50 Technical":                          "Northrup I-50 Tech",
     "Paddock Institute":                                "Paddock Tech",
     "Perryville Civic Leadership Academy":              "Perryville Civic",
-    "Port Veles Civic Academy":                         "Port Veles Civic",
+    "Port Veles Civic Academy":                         "Henson Prep",
     "Rostova Junction Technical Arts Academy":          "Rostova Junction Tech",
-    "San Borondón Civic Academy":                       "San Borondón Civic",
+    "San Borondón Civic Academy":                       "Rumsfeld Hill School",
     "San Telmo Agricultural Sciences Academy":          "San Telmo Agricultural",
     "Selbyville Manufacturing and Technology Academy":  "Selbyville Tech",
     "Vesper Polytechnic Institute":                     "Vesper Tech",
@@ -918,16 +970,16 @@ RENAMES = {
     # neighbourhoods broaden the range inside one town, which is where Hollywood comes
     # from.
     "Andrés Ibarra North":       "Belmonte Central",        # 4A Belmonte
-    "Elena Mendoza North":       "Cedar Ridge",             # 6A Belmonte
-    "Javier Alvarado North":     "Grandview",               # 6A Belmonte
+    "Elena Mendoza North":       "Cahaba",             # 6A Belmonte
+    "Javier Alvarado North":     "Shenango",               # 6A Belmonte
     "Jean Lindgren North":       "Valderra South",          # 4A Valderra
     "Petra Weiss North":         "Las Colinas",             # 4A Valderra
     "Thelma Moss North":         "Valderra Central",        # 7A Valderra
-    "Claudette Cole North":      "San Borondón Central",    # 5A San Borondón
+    "Claudette Cole North":      "Pointe Coupee Central",    # 5A San Borondón
     "Tatiana Chernov North":     "Bahía Vista",             # 6A San Borondón
-    "Vernon Moss North":         "San Marcos Valley",       # 7A San Borondón
-    "Mila Chernov North":        "Belyakov Central",        # 4A Belyakov
-    "Viktor Antonov North":      "Pine Creek",              # 4A Belyakov
+    "Vernon Moss North":         "Bogue Chitto",       # 7A San Borondón
+    "Mila Chernov North":        "Siberia",        # 4A Belyakov
+    "Viktor Antonov North":      "Bois Rouge",              # 4A Belyakov
     "Andrés Valera North":       "Caswell South",           # 6A Caswell
     "Salvador Montalvo North":   "Stone Ridge",             # 6A Caswell
     "Marcus Price North":        "Lake Esperanza West",     # 4A Lake Esperanza
@@ -981,6 +1033,10 @@ PRIVATE_SCHOOLS = {
     "Cornerstone Christian", "Pope Francis",
     # Converted from public by owner decision, 2026-08.
     "Westfield Friends", "Summervale Northwest",
+    # Converted with the locality redistribution (owner spec, 2026-08).
+    "Belmonte Collegiate",
+    "Walter-Kenny",
+    "Lycee Valmont",
 }
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
@@ -1010,6 +1066,145 @@ NEVER_SPONSOR = frozenset()
 EXTRA_SPONSORS = frozenset({
     "Whistle Stop",   # 1A 152 — Whistle Stop, Antler. The town's only school, and
 })                    # the town had no tennis at all.
+
+# ‼️ LOCALITY — the settlement a school belongs to INSIDE its city (owner spec,
+# 2026-08). The five big metros hold 28-44 tennis programs each, which no single
+# municipality does; in life those schools sit in CDPs, unincorporated places and
+# absorbed towns that the city has grown around. So `city` stays the metro — it is
+# the game tag, and districts, geography and every existing lookup keep reading it
+# — and `locality` is the settlement identity shown beside it.
+#
+# Keyed on the DISPLAY name, like MASCOTS and COLORS, so a rename moves this key
+# with it. A school with no entry is a CORE CITY school and shows only its city;
+# that is a real distinction, not a missing value, so there is no default.
+#
+# ‼️ LOCALITIES REPEAT ON PURPOSE — two schools can share one (Natchez Prep and
+# Natchez Cliff), and the same locality name can appear in two different metros.
+# It is not an identity and nothing keys on it. School NAMES are the identity and
+# they are unique; see `build()`, which refuses to emit a collision.
+LOCALITIES = {
+    "Allegheny":                             "Allegheny",
+    "Cahaba Fork":                           "Cahaba",
+    "Chaminade":                             "Pointe Coupee",
+    "Condotti Vanguard Academy":             "Condotti",
+    "Covenant Christian":                    "Tuskegee",
+    "Dogpatch":                              "Hackensack",
+    "Evans Larsen Day":                      "Bannock",
+    "Hagerstown Forge":                      "Hagerstown",
+    "Jefferson Science":                     "Tuscaloosa",
+    "Kishwaukee":                            "Kishwaukee",
+    "Monongahela Timber":                    "Monongahela",
+    "Natchez Mercy":                         "Natchez",
+    "Pacific Friends":                       "Vicksburg",
+    "Romero-Finniski":                       "Finiski",
+    "Sherwood Bench":                        "Sherwood",
+    "Sisters of Mercy":                      "Natchez",
+    "St. Norbert Abbey":                     "Natchitoches",
+    "Tallulah Central":                      "Tallulah",
+    "Vista Terrace":                         "Biloxi",
+    "Wyalusing Providence":                  "Wyalusing",
+    "Allegheny Heights":                     "Allegheny",
+    "Benjamin Banneker":                     "Banneker",
+    "Bowerstock":                            "Bowerstock",
+    "Cahaba":                                "Cahaba",
+    "Cahokia Mounds Catholic":               "Cahokia",
+    "Caney":                                 "Caney",
+    "Chickasaw":                             "Chickasaw",
+    "Chillicothe":                           "Chillicothe",
+    "Hackensack":                            "Hackensack",
+    "Hagerstown":                            "Hagerstown",
+    "James Madison":                         "Kishwaukee",
+    "Ketanji Brown Jackson":                 "Pontotoc",
+    "Kinnickinny":                           "Kinnickinny",
+    "Kokomo":                                "Kokomo",
+    "Monongahela":                           "Monongahela",
+    "Natchez":                               "Natchez",
+    "Okefenokee":                            "Okefenokee",
+    "Pascagoula":                            "Pascagoula",
+    "Passaic":                               "Passaic",
+    "Pennsauken":                            "Pennsauken",
+    "Petoskey":                              "Petoskey",
+    "Sandra Day O'Connor":                   "Choctaw",
+    "Shenango":                              "Shenango",
+    "Shirley Chisholm":                      "Burroughs",
+    "Sparrowhawk":                           "Sparrowhawk",
+    "Tippah":                                "Tippah",
+    "Tippecanoe":                            "Tippecanoe",
+    "Tuscarora":                             "Tuscarora",
+    "Woodrow Wilson":                        "Tallulah",
+    "Wyalusing":                             "Wyalusing",
+    "Yazoo":                                 "Yazoo",
+    "Anse Doree":                            "Anse Doree",
+    "Bannock":                               "Bannock",
+    "Bayard Rustin":                         "Wilberforce",
+    "Belle Rive":                            "Belle Rive",
+    "Bellefontaine":                         "Bellefontaine",
+    "Bois Neuf":                             "Bois Neuf",
+    "Bois Rouge":                            "Bois Rouge",
+    "Bowerstock Beach":                      "Bowerstock",
+    "Friendship City":                       "Friendship",
+    "Grand Fond":                            "Grand Fond",
+    "La Savane":                             "La Savane",
+    "Lycee Valmont":                         "Valmont",
+    "Morne Caribou Polytechnic":             "Morne Caribou",
+    "Morne Rouge":                           "Morne Rouge",
+    "Pennsauke":                             "Pennsauke",
+    "Petoskey Rock":                         "Petoskey",
+    "Riviere Salee":                         "Riviere Salee",
+    "Saint Marc":                            "Saint Marc",
+    "Savane Brulee":                         "Savane Brulee",
+    "Trois Ilets":                           "Trois Ilets",
+    "Adams":                                 "Roanoke",
+    "Benjamin Harrison":                     "Schuylkill",
+    "Biden":                                 "Choptank",
+    "Calvin Coolidge":                       "Shenandoah",
+    "Casco":                                 "Casco",
+    "Cheney":                                "Penobscot",
+    "Chesapeake":                            "Chesapeake",
+    "Christchurch Episcopal":                "Christchurch",
+    "Cleveland":                             "Pocomoke",
+    "Clinton":                               "Occoquan",
+    "Fillmore":                              "Mattaponi",
+    "Franklin Pierce":                       "Patuxent",
+    "Garfield":                              "Buzzards Bay",
+    "George H. W. Bush":                     "Hackensack",
+    "Gerald Ford":                           "Sassafras",
+    "James Monroe":                          "Susquehanna",
+    "Kittery":                               "Kittery",
+    "Martin Van Buren":                      "Piscataway",
+    "Nanticoke":                             "Nanticoke",
+    "Narragansett":                          "Narragansett",
+    "Obama":                                 "Chickahominy",
+    "Roosevelt":                             "Potomac",
+    "Rutherford Hayes":                      "Wethersfield",
+    "Severn":                                "Severn",
+    "St. Helena College Prep":               "Brandywine",
+    "Tidewater Catholic":                    "Tidewater",
+    "Washington":                            "Taunton",
+    "Wicomico":                              "Wicomico",
+    "William Henry Harrison":                "Rappahannock",
+    "Zachary Taylor":                        "Pamunkey",
+    "Apalachicola":                          "Apalachicola",
+    "Bahía Vista":                           "Biloxi",
+    "Bienville":                             "Bienville",
+    "Biloxi Heights":                        "Biloxi",
+    "Bogue Chitto":                          "Bogue Chitto",
+    "Cahaba Butte":                          "Cahaba",
+    "Marigny":                               "Marigny",
+    "Natchez Cliff":                         "Natchez",
+    "Natchez Prep":                          "Natchez",
+    "Natchitoches":                          "Natchitoches",
+    "Natchitoches Catholic":                 "Natchitoches",
+    "Pointe Coupee Catholic":                "Pointe Coupee",
+    "Pointe Coupee Central":                 "Pointe Coupee",
+    "Pointe des Brumes":                     "Pointe des Brumes",
+    "Talladega":                             "Talladega",
+    "Tallulah Canyon":                       "Tallulah",
+    "Tensas":                                "Tensas",
+    "Tuscaloosa":                            "Tuscaloosa",
+    "Tuskegee":                              "Tuskegee",
+    "Vicksburg":                             "Vicksburg",
+}
 
 SUBSTITUTIONS = {
     "Altamonte School of Commerce": "Altamonte",
@@ -1380,7 +1575,7 @@ MASCOTS = {
     "Xavier College Prep": "Cavaliers",
     "St. Francis Catholic": "Lancers",
     "Christian Brothers": "Falcons",
-    "Cardinal Mercier": "Mustangs",
+    "Pointe Coupee Catholic": "Mustangs",
     "Providence Catholic": "Celtics",
     "Pope Leo XIV": "Pilgrims",
     "Archbishop Valois": "Knights",
@@ -1403,14 +1598,14 @@ MASCOTS = {
     "Port Meridian South": "Mariners",
     "Port Veles": "Chinook",                    # the port itself
     "Port Veles North": "Whalers",
-    "George Washington": "Sockeye",
+    "Washington": "Sockeye",
     "Roscoe Bennett": "Cutthroat",
     "Gerald Ford": "Pelicans",
     "James Monroe": "Anchors",
     "St. Vincent": "Sailors",
     "Zachary Taylor": "Gillnetters",
     "Franklin Pierce": "Deckhands",
-    "Veles Narrows": "Fishmongers",               # the Port Veles fish market
+    "Kittery": "Fishmongers",               # the Port Veles fish market
     "Seafarer": "Trawlers",
     "Santa Michaela Admiralty High": "Commodores",
     "Bay Oregon": "Ospreys",
@@ -1426,9 +1621,9 @@ MASCOTS = {
     "Quarmont": "Stonecutters",
     "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
-    "Seaside Heights": "Sea Otters",
+    "Biloxi Heights": "Sea Otters",
     "Claudette Cole": "Godwits",
-    "San Marcos": "Moon Jellies",
+    "Talladega": "Moon Jellies",
     "Mission Bay": "Sea Lions",
     "San Borondón North": "Rockfish",
     "St. Jerome Academy": "Albatross",
@@ -1460,12 +1655,12 @@ MASCOTS = {
     # ── Halbrook Basin: canals, beet and onion ground, Basque country ────────
     "Ketanji Brown Jackson": "Pelotaris",              # Basque jai alai
     "Belmonte": "Canalmen",
-    "Belmonte River Plain": "River Otters",
-    "Belmonte South": "Sandhill Cranes",
-    "Lincoln Park": "Onion Toppers",
-    "West Portal": "Stone Lifters",         # harri-jasotzaile
-    "River Plain": "Rapids",
-    "Treasure Valley": "Sugar Beets",
+    "Chillicothe": "River Otters",
+    "Yazoo": "Sandhill Cranes",
+    "Okefenokee": "Onion Toppers",
+    "Pennsauken": "Stone Lifters",         # harri-jasotzaile
+    "Kinnickinny": "Rapids",
+    "Caney": "Sugar Beets",
     "Berrio": "Brambles",
     "Cherry Hill": "Cherry Pickers",
     "Paul Robeson": "Rivermen",
@@ -1481,11 +1676,11 @@ MASCOTS = {
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Serrano North": "Sidewinders",             # and the snake
     "Coles Creek": "Sunflowers",
-    "Ocean Beach": "Woodchoppers",            # aizkolari
-    "Eagle Rock": "Burrowing Owls",
-    "Belyakov South": "Beet Haulers",
-    "Vance": "Lambs",                  # cordero
-    "Morro Bay": "Mobiles",
+    "Bowerstock Beach": "Woodchoppers",            # aizkolari
+    "Petoskey Rock": "Burrowing Owls",
+    "Friendship City": "Beet Haulers",
+    "Bannock": "Lambs",                  # cordero
+    "Morne Rouge": "Mobiles",
     "Granite Water & Power": "Fire Opals",               # Carden City
     "Drayfield": "Draymen",
     "Mae Jemison": "Orbiters",
@@ -1579,7 +1774,7 @@ MASCOTS = {
 COLORS = {
     # rainbow trout: olive back over a silver flank
     "Trout Lake": ["#2F3328", "#C0C5CE"],
-    "Treasure Valley": ["#4E1533", "#DED3B4"],      # beet root over refined sugar
+    "Caney": ["#4E1533", "#DED3B4"],      # beet root over refined sugar
     "Bahía Azúl": ["#173A5E", "#E0733A"],           # bay water, cooked crab
     "Yarmere": ["#2B2118", "#E08A2E"],              # the ensatina's orange
     "Pellmont": ["#3A2A1C", "#D96A2B"],             # a rough-skinned newt's belly
@@ -1939,6 +2134,17 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
             if magnet in side:
                 side.discard(magnet)
                 side.add(flagship)
+    # ‼️ AND THE SPONSORSHIP OVERRIDES, ALSO AFTER THE DRAW. Same reason as the
+    # substitutions: the dice are positional over the name-sorted list, so adding
+    # or removing a school before the roll reshuffles every school after it. These
+    # have to be applied HERE and not only in `scripts/jhsaa_sponsors.py`, or a
+    # full rebuild silently reverts them — a forced-in school the dice never drew
+    # would vanish and a removed one would come back, with nothing to notice it.
+    for side in (girls, boys):
+        for name in EXTRA_SPONSORS:
+            side.add(name)
+        for name in NEVER_SPONSOR:
+            side.discard(name)
     return girls, boys
 
 
@@ -2083,6 +2289,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "classification": s["classification"],
             "group": champ_group(s["classification"]),
             "enrollment": s["enrollment"],
+            # Only written when the school has one — absent means a core-city school.
+            **({"locality": LOCALITIES[display]} if display in LOCALITIES else {}),
             # Renamed schools carry their institution's status, not the source
             # record's: a public high school that becomes Sacred Heart Cathedral
             # is a private school (see PRIVATE_SCHOOLS).

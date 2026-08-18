@@ -77,6 +77,13 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
             r["mascot"] = m.MASCOTS[display]
         if display in m.COLORS:
             r["colors"] = m.COLORS[display]
+        # LOCALITY is keyed on the display name too, so it moves with a rename.
+        # Absent means a CORE CITY school — a real distinction, so the key is
+        # removed rather than blanked when a school no longer has one.
+        if display in m.LOCALITIES:
+            r["locality"] = m.LOCALITIES[display]
+        else:
+            r.pop("locality", None)
     rows.sort(key=lambda r: r["name"])      # renamed rows land at their NEW name
     return moved
 
