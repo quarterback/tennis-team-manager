@@ -1394,21 +1394,33 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     eligibility/search logic — the table just says who plays where and when.
     """
     mod = _program_mod(school, year, salt)
+    # Resolved ONCE per roster build, not per seat — `transfers()` re-resolves the
+    # override table's fingerprint on every call, which is a SQLite connect+query
+    # even on a cache hit (the playup-fingerprint trap, `AAR-jhsaa-playup-fingerprint
+    # -query-storm.md`). A season builds 1,600+ rosters; per-seat would multiply that
+    # by every seat on every one of them.
+    tmap = transfers()
     out = []
     for grade in GRADES:
         entry = year - (grade - 9)
         n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
         for seat in range(n_seats):
             p = _gen_seat(school, mod, entry, seat, grade, salt)
-            rec = transfers().get(p.pid)
+            rec = tmap.get(p.pid)
             # Left FOR somewhere else, effective this year or earlier — they play
             # for their new school now, not this one.
             if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
                 continue
             out.append(p)
-    # Incoming: every transfer whose DESTINATION is this school, effective by now.
-    for pid, rec in transfers().items():
-        if rec.get("to") != school.name or rec.get("year", 0) > year:
+    # Incoming: every transfer whose DESTINATION is this school AND this gender,
+    # effective by now. School names are shared across a boys' and a girls' program
+    # (the display identity is per-team, not per-school), so the name match alone
+    # would append a boys' mover to the girls' roster of the same name and vice
+    # versa — `_gen_seat` would then place an origin-gender Prospect straight onto
+    # the opposite-gender team.
+    for pid, rec in tmap.items():
+        if (rec.get("to") != school.name or rec.get("gender") != school.gender
+                or rec.get("year", 0) > year):
             continue
         entry = rec.get("entry")
         grade = year - entry + 9

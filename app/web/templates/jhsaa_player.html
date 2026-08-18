@@ -148,7 +148,12 @@
           <label class="s">Move to
             <input type="text" name="jh_to_school" placeholder="Destination school" required></label>
           <label class="s">Effective offseason
-            <input type="number" name="jh_year" value="{{ view.scope.year }}" required></label>
+            {# `build_roster` compares `jh_year` against the CALENDAR season
+               (`scope.season_year`), never the zero-based world/archive index
+               `scope.year` — that mismatch made an entered transfer effective
+               against every season back to year zero, since the small index is
+               always <= any real calendar year. #}
+            <input type="number" name="jh_year" value="{{ view.scope.season_year + 1 }}" required></label>
           <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Transfer</button>
         </form>
         <p class="bit">Manual and always-approved — no eligibility rules, no

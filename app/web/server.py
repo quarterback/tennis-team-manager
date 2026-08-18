@@ -2727,7 +2727,7 @@ def create_app() -> Flask:
                     ov.clear_jhsaa_transfer(pid)
                 reset_all()
         return redirect(url_for("jhsaa_player", school=from_school, pid=pid,
-                                u=request.form.get("u", "D1-men")))
+                                u=request.form.get("u", "D1-men"), g=gender))
 
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():
