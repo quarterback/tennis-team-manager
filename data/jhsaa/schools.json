@@ -102,8 +102,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League"
     },
     {
       "name": "Albany Park",
@@ -594,8 +594,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Archbishop Valois",
@@ -789,8 +789,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "Assay",
@@ -1140,8 +1140,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Basalt Prairie Union",
@@ -1178,8 +1178,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Alder Landing Beacon Hill"
     },
     {
@@ -1928,8 +1928,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League",
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League",
       "source": "Nerea Urrutia"
     },
     {
@@ -2151,8 +2151,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Brackwood Union"
     },
     {
@@ -2471,8 +2471,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Lewis & Clark League",
-      "boys_district": "Lewis & Clark League",
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League",
       "source": "Ashfield"
     },
     {
@@ -2767,8 +2767,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Lewis & Clark League",
-      "boys_district": "Lewis & Clark League",
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League",
       "source": "Elk Prairie"
     },
     {
@@ -3565,8 +3565,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Lewis & Clark League",
-      "boys_district": "Lewis & Clark League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "Cole Valley",
@@ -3799,8 +3799,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Copperview",
@@ -4875,8 +4875,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "Etchartville",
@@ -5785,8 +5785,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League",
       "source": "Sage Meadows"
     },
     {
@@ -6044,8 +6044,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Goldbank County",
@@ -6239,8 +6239,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Granite Water & Power",
@@ -6356,8 +6356,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "Gruesome Ridge",
@@ -6573,8 +6573,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "Halfway House",
@@ -7057,8 +7057,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "Hollywood",
@@ -7529,8 +7529,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League"
     },
     {
       "name": "Jesuit",
@@ -8080,8 +8080,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League",
       "source": "Millview"
     },
     {
@@ -8412,8 +8412,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Alderfield"
     },
     {
@@ -8490,8 +8490,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League"
     },
     {
       "name": "Lone Pine Mutual",
@@ -8664,8 +8664,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Los Remolinos Mission Bay",
@@ -9192,8 +9192,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "Meridian Regional",
@@ -9348,8 +9348,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League",
       "source": "Wheatley"
     },
     {
@@ -9705,8 +9705,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Huckle Lake"
     },
     {
@@ -10144,8 +10144,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "Noe Valley",
@@ -10183,8 +10183,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "North Coast Packing",
@@ -10242,8 +10242,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League",
       "source": "Trout Point"
     },
     {
@@ -10418,8 +10418,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League",
       "source": "Elmfield"
     },
     {
@@ -10499,8 +10499,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League",
       "source": "Garazi Aramburu"
     },
     {
@@ -10926,8 +10926,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association",
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League",
       "source": "Paddock Institute"
     },
     {
@@ -11897,8 +11897,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League",
       "source": "Stone Meadows"
     },
     {
@@ -11936,8 +11936,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Ransom City Union"
     },
     {
@@ -12052,8 +12052,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association"
+      "girls_district": "Lewis & Clark League",
+      "boys_district": "Lewis & Clark League"
     },
     {
       "name": "Rimrock",
@@ -12665,8 +12665,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Lewis & Clark League",
-      "boys_district": "Lewis & Clark League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "San Borondón",
@@ -13211,8 +13211,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Gold Junction"
     },
     {
@@ -13570,8 +13570,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "Simmons",
@@ -13786,8 +13786,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League",
       "source": "Milldale Union"
     },
     {
@@ -14120,8 +14120,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League"
     },
     {
       "name": "St. Elian",
@@ -14216,8 +14216,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "St. Francis Xavier Preparatory",
@@ -14293,8 +14293,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "St. Genevieve San Cordero",
@@ -14603,8 +14603,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Lewis & Clark League",
-      "boys_district": "Lewis & Clark League"
+      "girls_district": "Big Basin League",
+      "boys_district": "Big Basin League"
     },
     {
       "name": "St. Raphael College Prep",
@@ -14622,8 +14622,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "St. Sebastian Prep",
@@ -15249,8 +15249,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Big Basin League",
-      "boys_district": "Big Basin League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Garrity"
     },
     {
@@ -15663,8 +15663,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
+      "girls_district": "Basalt League",
+      "boys_district": "Basalt League"
     },
     {
       "name": "Tunnel Diggings",
@@ -15783,8 +15783,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League"
     },
     {
       "name": "Ulysses Grant",
@@ -16294,8 +16294,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League"
     },
     {
       "name": "Washington",
@@ -16649,8 +16649,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Woodrow Wilson",
@@ -16770,8 +16770,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Yazoo",
@@ -16927,8 +16927,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
       "name": "Windrow",
@@ -16965,8 +16965,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     }
   ]
 }
