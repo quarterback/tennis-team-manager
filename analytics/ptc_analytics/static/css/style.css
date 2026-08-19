@@ -180,3 +180,39 @@ h3.pt-h3 { font-family: var(--font-display); font-weight: var(--fw-bold); font-s
 .pt-searchbox { width: 100%; padding: 10px 12px; border: 1px solid var(--border-default); border-radius: 8px; font-size: var(--fs-body-m); margin-bottom: 14px; }
 
 footer.pt-footer { max-width: var(--container); margin: 0 auto; padding: 20px var(--gutter) 60px; color: var(--text-faint); font-size: var(--fs-caption); }
+
+/* Season / classification / league cascading filter bar (Teams hub) */
+.pt-filterbar {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius); background: var(--surface-subtle);
+  padding: 14px 16px; margin-bottom: 8px;
+}
+.pt-filterbar label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-muted); }
+.pt-filterbar select {
+  font: inherit; font-size: var(--fs-body-s); padding: 7px 10px; border: 1px solid var(--border-default);
+  border-radius: 6px; background: var(--surface-card); color: var(--text-primary); min-width: 200px;
+}
+.pt-filterbar select:disabled { opacity: 0.5; }
+.pt-filterbar-search { flex: 1 1 260px; min-width: 220px; }
+.pt-filterbar-search .pt-searchbox { margin: 0; }
+.pt-index-grid--tight { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+
+/* Favorites star (client-side, localStorage — no server) */
+.pt-index-card { position: relative; }
+.pt-star {
+  position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer;
+  font-size: 16px; line-height: 1; color: var(--text-faint); padding: 2px;
+}
+.pt-star:hover { color: var(--rank-gold); }
+.pt-star.is-fav { color: var(--rank-gold); }
+
+.pt-myteams { margin-bottom: 24px; }
+.pt-myteams-empty { color: var(--text-muted); font-size: var(--fs-body-s); }
+
+/* Bracket rounds */
+.pt-bracket-rounds { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 8px; }
+.pt-bracket-round { flex: 0 0 220px; }
+.pt-bracket-round h4 { font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--text-muted); margin: 0 0 8px; }
+.pt-bracket-game { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; background: var(--surface-card); font-size: var(--fs-body-s); }
+.pt-bracket-side { display: flex; justify-content: space-between; padding: 2px 0; }
+.pt-bracket-side.winner { font-weight: var(--fw-bold); color: var(--tint-win-fg); }

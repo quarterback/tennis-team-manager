@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ cls.name }} Bracket{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Brackets</a> / {{ scope_label }} {{ cls.name }}</div>
+<h1 class="pt-h1">{{ scope_label }} — {{ cls.name }} State Bracket</h1>
+{% if cls.champion %}<p class="t-dek">Champion: <strong>{{ cls.champion }}</strong></p>{% endif %}
+
+<div class="pt-bracket-rounds">
+  {% for round_name, games in cls.rounds %}
+  <div class="pt-bracket-round">
+    <h4>{{ round_name }}</h4>
+    {% for g in games %}
+    <div class="pt-bracket-game">
+      <div class="pt-bracket-side {{ 'winner' if g.winner == g.home }}">
+        <span>{{ g.home }}</span><span>{{ g.home_points }}</span>
+      </div>
+      <div class="pt-bracket-side {{ 'winner' if g.winner == g.away }}">
+        <span>{{ g.away }}</span><span>{{ g.away_points }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

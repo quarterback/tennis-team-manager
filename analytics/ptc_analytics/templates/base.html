@@ -16,6 +16,7 @@
     <nav class="pt-nav">
       <a href="{{ rel }}index.html">Home</a>
       <a href="{{ rel }}teams/index.html">Teams</a>
+      <a href="{{ rel }}brackets/index.html">Brackets</a>
       <a href="{{ rel }}players/index.html">Players</a>
       <a href="{{ rel }}leaderboards/index.html">Leaderboards</a>
       <details class="pt-dd">
@@ -41,5 +42,30 @@
   Generated from Play to Clinch research exports · not affiliated with any real school, league, or association ·
   data reflects exported snapshots, re-run the build after new exports to refresh.
 </footer>
+<script>
+// "My Teams" — pinned favorites, stored in this browser only (localStorage,
+// no server). A team is identified by its page's relative href off /teams/,
+// which is stable across rebuilds as long as the scope+program don't change.
+var PT_FAV_KEY = 'ptc_fav_teams';
+function ptFavs(){
+  try { return JSON.parse(localStorage.getItem(PT_FAV_KEY) || '{}'); } catch(e) { return {}; }
+}
+function ptSetFavs(obj){ localStorage.setItem(PT_FAV_KEY, JSON.stringify(obj)); }
+function toggleFav(evt, btn){
+  evt.preventDefault(); evt.stopPropagation();
+  var id = btn.dataset.teamId, name = btn.dataset.teamName;
+  var favs = ptFavs();
+  if (favs[id]) { delete favs[id]; btn.classList.remove('is-fav'); btn.textContent = '☆'; }
+  else { favs[id] = name; btn.classList.add('is-fav'); btn.textContent = '★'; }
+  ptSetFavs(favs);
+  return false;
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var favs = ptFavs();
+  document.querySelectorAll('.pt-star').forEach(function(btn){
+    if (favs[btn.dataset.teamId]) { btn.classList.add('is-fav'); btn.textContent = '★'; }
+  });
+});
+</script>
 </body>
 </html>

@@ -23,6 +23,29 @@ no arguments to re-render from everything already ingested, or pass more zips
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
+## Navigation (owner rewrite, 2027-08)
+
+The first pass flatly listed every program (~1,600) and every player (~19,700
+statewide) — closer to a raw database dump than an analytics tool, and it made
+the site nearly unusable at real scale. Rebuilt to look like the actual pro-
+team scouting tools this is modeled on (StatsBomb IQ / Wyscout-style: a
+persistent season → competition → team scope picker, not a flat list, plus
+pinned favorites) rather than a Football Manager save browser:
+
+- **Teams** — cascading Season → Classification → League `<select>`s, plus an
+  independent global search box that ignores the pickers. Nothing renders
+  until you pick a season or start typing — never a silent 1,600-card dump.
+- **Brackets** — new section, reading `jhsaa_championships.json` (was
+  ingested and completely unused before this pass) straight from the export:
+  the real archived postseason draw, round by round, per classification —
+  the same "look at the playoff bracket" the game itself offers.
+- **My Teams** — a star/pin button on any team card or team page, stored in
+  the browser's `localStorage` (no server, no account) and surfaced on the
+  home page, so you don't re-search your own team/league every visit.
+- **Players** — search-only by design (a flat index at this scale is not
+  useful); the real way in is a team's roster page, where every name already
+  links out.
+
 ## What's here
 
 - `teams/` — one page per program per exported season: record, schedule,

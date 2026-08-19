@@ -3,20 +3,104 @@
 {% block content %}
 <div class="pt-crumbs"><a href="../index.html">Home</a> / Teams</div>
 <h1 class="pt-h1">Teams</h1>
-<input class="pt-searchbox" type="search" id="q" placeholder="Filter by school or league…" onkeyup="filterCards()">
-<div class="pt-index-grid" id="cards">
+<p class="t-dek">Isolate a season, classification, and league — or search across all of them at once. Nothing loads until you pick something.</p>
+
+<div class="pt-filterbar">
+  <label>Season
+    <select id="f-scope" onchange="onScopeChange()">
+      <option value="">Choose a season…</option>
+      {% for scope in scope_groups %}
+      <option value="{{ scope.scope_id }}">{{ scope.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Classification
+    <select id="f-class" onchange="onClassChange()" disabled>
+      <option value="">All classifications</option>
+    </select>
+  </label>
+  <label>League
+    <select id="f-league" onchange="applyFilters()" disabled>
+      <option value="">All leagues</option>
+    </select>
+  </label>
+  <label class="pt-filterbar-search">Search (works across every season/class/league, ignores the pickers above)
+    <input class="pt-searchbox" type="search" id="q" placeholder="School or league name…" oninput="applyFilters()">
+  </label>
+</div>
+
+<div id="empty-state" class="pt-myteams-empty" style="margin:24px 0">Pick a season above (or start typing in Search) to see teams.</div>
+<div class="pt-index-grid" id="cards" style="display:none">
   {% for t in teams %}
-  <a class="pt-index-card" data-name="{{ t.program.name|lower }} {{ (t.program.district or t.program.conference or '')|lower }}" href="{{ t.href }}">
+  <a class="pt-index-card" data-scope="{{ t.bundle.scope_id }}" data-class="{{ t.classification }}" data-league="{{ t.league }}"
+     data-name="{{ t.program.name|lower }} {{ t.league|lower }}" href="{{ t.href }}">
+    <button class="pt-star" data-team-id="{{ t.href }}" data-team-name="{{ t.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
     <h4><span class="pt-crest" style="background:{{ t.color }}">{{ t.initials }}</span> {{ t.program.name }}</h4>
-    <div class="sub">{{ t.bundle.label }} · {{ t.wins }}-{{ t.losses }} · {{ t.program.district or t.program.conference or '' }}</div>
+    <div class="sub">{{ t.bundle.label }} · {{ t.classification }} · {{ t.league }} · {{ t.wins }}-{{ t.losses }}</div>
   </a>
   {% endfor %}
 </div>
+
 <script>
-function filterCards(){
-  var q = document.getElementById('q').value.toLowerCase();
+var SCOPE_DATA = {
+  {% for scope in scope_groups %}
+  "{{ scope.scope_id }}": {
+    label: {{ scope.label|tojson }},
+    classes: {
+      {% for cls in scope.classifications %}
+      "{{ cls.name }}": [{% for lg in cls.leagues %}{{ lg.name|tojson }}{{ "," if not loop.last }}{% endfor %}]{{ "," if not loop.last }}
+      {% endfor %}
+    }
+  }{{ "," if not loop.last }}
+  {% endfor %}
+};
+
+function fillSelect(sel, options, placeholder){
+  sel.innerHTML = '<option value="">' + placeholder + '</option>';
+  options.forEach(function(o){
+    var opt = document.createElement('option'); opt.value = o; opt.textContent = o; sel.appendChild(opt);
+  });
+  sel.disabled = options.length === 0;
+}
+
+function onScopeChange(){
+  var scopeId = document.getElementById('f-scope').value;
+  var classSel = document.getElementById('f-class'), leagueSel = document.getElementById('f-league');
+  var classes = scopeId ? Object.keys(SCOPE_DATA[scopeId].classes) : [];
+  fillSelect(classSel, classes, scopeId ? 'All classifications' : 'Choose a season first');
+  fillSelect(leagueSel, [], 'All leagues');
+  applyFilters();
+}
+function onClassChange(){
+  var scopeId = document.getElementById('f-scope').value;
+  var cls = document.getElementById('f-class').value;
+  var leagueSel = document.getElementById('f-league');
+  var leagues = (scopeId && cls) ? SCOPE_DATA[scopeId].classes[cls] : [];
+  fillSelect(leagueSel, leagues, 'All leagues');
+  applyFilters();
+}
+
+function applyFilters(){
+  var scopeId = document.getElementById('f-scope').value;
+  var cls = document.getElementById('f-class').value;
+  var league = document.getElementById('f-league').value;
+  var q = document.getElementById('q').value.toLowerCase().trim();
+
+  var active = !!(scopeId || q);
+  document.getElementById('cards').style.display = active ? '' : 'none';
+  document.getElementById('empty-state').style.display = active ? 'none' : '';
+  if (!active) return;
+
   document.querySelectorAll('#cards .pt-index-card').forEach(function(c){
-    c.style.display = c.dataset.name.indexOf(q) === -1 ? 'none' : '';
+    var show = true;
+    if (q) {
+      show = c.dataset.name.indexOf(q) !== -1;
+    } else {
+      if (scopeId && c.dataset.scope !== scopeId) show = false;
+      if (show && cls && c.dataset.class !== cls) show = false;
+      if (show && league && c.dataset.league !== league) show = false;
+    }
+    c.style.display = show ? '' : 'none';
   });
 }
 </script>

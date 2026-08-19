@@ -20,4 +20,29 @@
   </a>
   {% endfor %}
 </div>
+
+<h2 class="pt-h2">My Teams</h2>
+<div class="pt-myteams">
+  <div id="myteams-empty" class="pt-myteams-empty">
+    No pinned teams yet — star ☆ a team on its page or on the <a href="teams/index.html">Teams</a> list to keep it here.
+  </div>
+  <div class="pt-index-grid" id="myteams-grid" style="display:none"></div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var favs = ptFavs();
+  var ids = Object.keys(favs);
+  if (!ids.length) return;
+  document.getElementById('myteams-empty').style.display = 'none';
+  var grid = document.getElementById('myteams-grid');
+  grid.style.display = '';
+  ids.forEach(function(id){
+    var a = document.createElement('a');
+    a.className = 'pt-index-card';
+    a.href = 'teams/' + id;
+    a.innerHTML = '<h4>' + favs[id] + '</h4><div class="sub">Pinned</div>';
+    grid.appendChild(a);
+  });
+});
+</script>
 {% endblock %}
