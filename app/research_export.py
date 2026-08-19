@@ -191,7 +191,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender."
         },
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
-            "Regular duals use 5 singles/2 doubles; early dates use 3/4; showcases and postseason use 1/4.",
+            "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4.",
             "Every court finishes. JHSAA has no clinch abandonment.",
             "1A and 2A crown SEPARATELY via a fixed 24-team postseason shape "
             "(Super Regional/Semi-State/Divisional/Semi-Conference/Conference all "

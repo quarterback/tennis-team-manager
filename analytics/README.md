@@ -18,10 +18,47 @@ pip install -r requirements.txt   # just Jinja2
 python3 build.py path/to/export.zip [more.zip ...]
 ```
 
-Open `analytics/site/index.html` in a browser. Re-run `python3 build.py` with
-no arguments to re-render from everything already ingested, or pass more zips
+**Browse it over a local server, not by double-clicking the file.** `cd site &&
+python3 -m http.server 8000`, then open `http://localhost:8000/`. This isn't
+optional cosmetics: "My Teams" (the pin/star feature) stores its data in
+`localStorage`, and browsers scope `localStorage` per ORIGIN — a `file://`
+page has no real origin, so several browsers (Firefox in particular; Chromium
+is inconsistent about it) silently give every `file://…/teams/x.html` and
+`file://…/index.html` its OWN separate storage bucket. Pin a team from a team
+page and it can look empty on the home page's My Teams panel even though
+nothing failed — the star toggled, the write happened, it just didn't land
+anywhere the next page can see. A shared `http://localhost` origin is the
+actual fix; nothing in this app can paper over a browser storage-partitioning
+policy from inside a static page. Everything else on the site (browsing pages,
+filters, search) works fine either way — only the cross-page favorites feature
+needs the server.
+
+Re-run `python3 build.py` with no arguments to re-render from everything already ingested, or pass more zips
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
+
+## Navigation (owner rewrite, 2027-08)
+
+The first pass flatly listed every program (~1,600) and every player (~19,700
+statewide) — closer to a raw database dump than an analytics tool, and it made
+the site nearly unusable at real scale. Rebuilt to look like the actual pro-
+team scouting tools this is modeled on (StatsBomb IQ / Wyscout-style: a
+persistent season → competition → team scope picker, not a flat list, plus
+pinned favorites) rather than a Football Manager save browser:
+
+- **Teams** — cascading Season → Classification → League `<select>`s, plus an
+  independent global search box that ignores the pickers. Nothing renders
+  until you pick a season or start typing — never a silent 1,600-card dump.
+- **Brackets** — new section, reading `jhsaa_championships.json` (was
+  ingested and completely unused before this pass) straight from the export:
+  the real archived postseason draw, round by round, per classification —
+  the same "look at the playoff bracket" the game itself offers.
+- **My Teams** — a star/pin button on any team card or team page, stored in
+  the browser's `localStorage` (no server, no account) and surfaced on the
+  home page, so you don't re-search your own team/league every visit.
+- **Players** — search-only by design (a flat index at this scale is not
+  useful); the real way in is a team's roster page, where every name already
+  links out.
 
 ## What's here
 

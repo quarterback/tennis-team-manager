@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ team.program.name }}{% endblock %}
 {% block content %}
-<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Teams</a> / {{ team.program.name }}</div>
-<h1 class="pt-h1"><span class="pt-crest" style="background:{{ color }}">{{ initials }}</span> {{ team.program.name }}</h1>
+<div class="pt-crumbs">
+  <a href="../index.html">Home</a> / <a href="index.html">Teams</a> /
+  <a href="index.html">{{ classification }}</a> / {{ team.program.name }}
+</div>
+<h1 class="pt-h1">
+  <span class="pt-crest" style="background:{{ color }}">{{ initials }}</span> {{ team.program.name }}
+  <button class="pt-star" style="position:static;font-size:20px;vertical-align:middle" data-team-id="{{ own_href }}" data-team-name="{{ team.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
+</h1>
 <p class="t-dek">{{ blurb }}</p>
 
 <div class="pt-kpis">
   <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Classification</div><div class="pt-kpi-v">{{ classification }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">League</div><div class="pt-kpi-v" style="font-size:16px">{{ league }}</div></div>
   {% if team.standing %}
   {% if team.standing.district_place %}
   <div class="pt-kpi"><div class="pt-kpi-k">District place</div><div class="pt-kpi-v">#{{ team.standing.district_place }}</div></div>
@@ -14,12 +22,12 @@
   {% if team.standing.toss_power_raw %}
   <div class="pt-kpi"><div class="pt-kpi-k">Power index</div><div class="pt-kpi-v">{{ "%.3f"|format(team.standing.toss_power_raw|float) }}</div></div>
   {% endif %}
-  {% if team.standing.conference %}
-  <div class="pt-kpi"><div class="pt-kpi-k">Conference</div><div class="pt-kpi-v" style="font-size:16px">{{ team.standing.conference }}</div></div>
-  {% endif %}
   {% endif %}
   <div class="pt-kpi"><div class="pt-kpi-k">Roster size</div><div class="pt-kpi-v">{{ team.roster|length }}</div></div>
 </div>
+{% if bracket_href %}
+<p><a href="{{ rel }}brackets/{{ bracket_href }}">View the {{ classification }} state bracket →</a></p>
+{% endif %}
 
 <div class="pt-grid">
 <div>

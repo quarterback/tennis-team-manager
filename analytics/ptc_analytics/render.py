@@ -37,6 +37,35 @@ def player_href(pid: str) -> str:
     return f"../players/{aggregate.slug(pid)}.html"
 
 
+def _round_names(n: int, explicit: list[str] | None = None) -> list[str]:
+    """Label archived bracket rounds. `explicit` is the export's own
+    `round_names` for a classification's PRELIMINARY rounds (e.g. a 40-field
+    class's "Qualifiers Round" / "First Round" ahead of where the Qualifiers
+    and main-draw byes converge — see jhsaa.run_state) and must be used
+    verbatim: those rounds are NOT a continuation of the same single-
+    elimination sequence the tail is, so distance-from-final labeling would
+    misname them (and silently present two separate draws as one). Whatever
+    rounds remain after the explicit prefix get Final/Semifinals/Quarterfinals/
+    Octofinals by distance from the end, same as before."""
+    prefix = list(explicit or [])
+    remaining = max(0, n - len(prefix))
+    labels_from_end = ["Final", "Semifinals", "Quarterfinals", "Octofinals", "Round of 32"]
+    tail = []
+    for i in range(remaining):
+        from_end = remaining - 1 - i
+        tail.append(labels_from_end[from_end] if from_end < len(labels_from_end) else f"Round {i + 1}")
+    return prefix + tail
+
+
+def _classification_sort_key(cls: str):
+    """Biggest/most-competitive classification first: JHSAA '9A'..'1A' by the
+    leading number descending, college 'D1'..'D4' likewise. Falls back to the
+    raw string for anything else so an unrecognized value doesn't crash the
+    build, it just sorts last alphabetically."""
+    digits = "".join(c for c in cls if c.isdigit())
+    return (0, -int(digits)) if digits else (1, cls)
+
+
 def build_site(raw_bundles: list[dict]) -> None:
     if SITE.exists():
         shutil.rmtree(SITE)
@@ -44,6 +73,7 @@ def build_site(raw_bundles: list[dict]) -> None:
     (SITE / "players").mkdir(parents=True, exist_ok=True)
     (SITE / "leaderboards").mkdir(parents=True, exist_ok=True)
     (SITE / "metrics").mkdir(parents=True, exist_ok=True)
+    (SITE / "brackets").mkdir(parents=True, exist_ok=True)
     shutil.copytree(STATIC, SITE / "static")
 
     env = Environment(loader=FileSystemLoader(TEMPLATES),
@@ -69,21 +99,79 @@ def build_site(raw_bundles: list[dict]) -> None:
       team_count=len({k[0] for k in teams}), player_count=len(careers),
       dual_count=sum(len(b.duals) for b in bundles))
 
-    # teams/index.html + team pages
+    # brackets — read straight off jhsaa_championships.json (already-decided
+    # postseason draws), never recomputed. JHSAA-only: the college export has
+    # no equivalent bracket table yet. Computed BEFORE team pages so each
+    # team page can link to its own classification's bracket.
+    bracket_scopes = []   # [{scope_id, label, classifications: [{name, champion, rounds}]}]
+    for b in bundles:
+        if not b.championships:
+            continue
+        classes = []
+        for cls, data in sorted(b.championships.items(), key=lambda kv: _classification_sort_key(kv[0])):
+            rounds = data.get("rounds") or []
+            if not rounds:
+                continue
+            names = _round_names(len(rounds), data.get("round_names"))
+            fname = f"{aggregate.slug(b.scope_id)}__{aggregate.slug(cls)}.html"
+            classes.append({"name": cls, "champion": data.get("champion") or "",
+                             "rounds": list(zip(names, rounds)), "href": fname})
+        if classes:
+            bracket_scopes.append({"scope_id": b.scope_id, "label": b.label, "classifications": classes})
+            for cls in classes:
+                w("bracket_scope.html", SITE / "brackets" / cls["href"], rel="../",
+                  scope_label=b.label, cls=cls)
+    w("bracket_index.html", SITE / "brackets" / "index.html", rel="../", bracket_scopes=bracket_scopes)
+
+    # teams/index.html + team pages — grouped by season -> classification/division
+    # -> league, never a flat list of everything. A classification/division is
+    # `program["classification"]` (JHSAA) or `program["division"]` (college,
+    # constant within a scope but included for a uniform template); the league
+    # is `district` (JHSAA) or `conference` (college).
     team_cards = []
     for (pid, scope_id), t in teams.items():
         b = t["bundle"]
-        team_cards.append({"program": t["program"], "bundle": b, "wins": t["wins"], "losses": t["losses"],
-                            "color": crest_color(t["program"]["name"]), "initials": initials(t["program"]["name"]),
+        prog = t["program"]
+        classification = prog.get("classification") or prog.get("division") or "—"
+        league = prog.get("district") or prog.get("conference") or "—"
+        team_cards.append({"program": prog, "bundle": b, "wins": t["wins"], "losses": t["losses"],
+                            "color": crest_color(prog["name"]), "initials": initials(prog["name"]),
+                            "classification": classification, "league": league,
                             "href": f"{aggregate.slug(scope_id)}__{aggregate.slug(pid)}.html"})
     team_cards.sort(key=lambda c: c["program"]["name"])
-    w("teams_index.html", SITE / "teams" / "index.html", rel="../", teams=team_cards)
+
+    scope_groups = []   # [{label, classifications: [{name, count, leagues: [{name, teams}]}]}]
+    for b in bundles:
+        scope_cards = [c for c in team_cards if c["bundle"].scope_id == b.scope_id]
+        by_class = {}
+        for c in scope_cards:
+            by_class.setdefault(c["classification"], {}).setdefault(c["league"], []).append(c)
+        classifications = []
+        for cls, leagues in sorted(by_class.items(), key=lambda kv: _classification_sort_key(kv[0])):
+            league_list = [{"name": lg, "teams": sorted(tms, key=lambda x: x["program"]["name"])}
+                           for lg, tms in sorted(leagues.items(), key=lambda kv: kv[0])]
+            classifications.append({"name": cls, "count": sum(len(lg["teams"]) for lg in league_list),
+                                     "leagues": league_list})
+        scope_groups.append({"scope_id": b.scope_id, "label": b.label, "classifications": classifications})
+    w("teams_index.html", SITE / "teams" / "index.html", rel="../", scope_groups=scope_groups,
+      teams=team_cards)
 
     for (pid, scope_id), t in teams.items():
         fname = f"{aggregate.slug(scope_id)}__{aggregate.slug(pid)}.html"
         name = t["program"]["name"]
+        prog = t["program"]
+        classification = prog.get("classification") or prog.get("division") or "—"
+        league = prog.get("district") or prog.get("conference") or "—"
+        bracket_href = None
+        for scope in bracket_scopes:
+            if scope["scope_id"] != scope_id:
+                continue
+            for cls in scope["classifications"]:
+                if cls["name"] == classification:
+                    bracket_href = cls["href"]
         w("team.html", SITE / "teams" / fname, rel="../", team=t,
-          blurb=prose.team_blurb(t), color=crest_color(name), initials=initials(name))
+          blurb=prose.team_blurb(t), color=crest_color(name), initials=initials(name),
+          classification=classification, league=league, own_href=fname, bracket_href=bracket_href)
 
     # players/index.html + player pages
     career_list = sorted(careers.values(), key=lambda c: c["name"])
