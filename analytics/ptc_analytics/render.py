@@ -37,16 +37,24 @@ def player_href(pid: str) -> str:
     return f"../players/{aggregate.slug(pid)}.html"
 
 
-def _round_names(n: int) -> list[str]:
-    """Label archived bracket rounds by distance from the final, since field
-    sizes vary by classification (see jhsaa.STATE_FIELD) and this data has no
-    round-name field of its own — only a list of matchup lists in play order."""
-    labels_from_end = ["Final", "Semifinals", "Quarterfinals"]
-    out = []
-    for i in range(n):
-        from_end = n - 1 - i
-        out.append(labels_from_end[from_end] if from_end < len(labels_from_end) else f"Round {i + 1}")
-    return out
+def _round_names(n: int, explicit: list[str] | None = None) -> list[str]:
+    """Label archived bracket rounds. `explicit` is the export's own
+    `round_names` for a classification's PRELIMINARY rounds (e.g. a 40-field
+    class's "Qualifiers Round" / "First Round" ahead of where the Qualifiers
+    and main-draw byes converge — see jhsaa.run_state) and must be used
+    verbatim: those rounds are NOT a continuation of the same single-
+    elimination sequence the tail is, so distance-from-final labeling would
+    misname them (and silently present two separate draws as one). Whatever
+    rounds remain after the explicit prefix get Final/Semifinals/Quarterfinals/
+    Octofinals by distance from the end, same as before."""
+    prefix = list(explicit or [])
+    remaining = max(0, n - len(prefix))
+    labels_from_end = ["Final", "Semifinals", "Quarterfinals", "Octofinals", "Round of 32"]
+    tail = []
+    for i in range(remaining):
+        from_end = remaining - 1 - i
+        tail.append(labels_from_end[from_end] if from_end < len(labels_from_end) else f"Round {i + 1}")
+    return prefix + tail
 
 
 def _classification_sort_key(cls: str):
@@ -104,7 +112,7 @@ def build_site(raw_bundles: list[dict]) -> None:
             rounds = data.get("rounds") or []
             if not rounds:
                 continue
-            names = _round_names(len(rounds))
+            names = _round_names(len(rounds), data.get("round_names"))
             fname = f"{aggregate.slug(b.scope_id)}__{aggregate.slug(cls)}.html"
             classes.append({"name": cls, "champion": data.get("champion") or "",
                              "rounds": list(zip(names, rounds)), "href": fname})

@@ -4448,10 +4448,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                       "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
                       # ‼️ ONLY a BRACKET ROUND earns the second chip (owner, 2026-08).
                       # It carried the showcase KIND (Pod/Tiered) and the early
-                      # window's 3S/4D shape too, and both restated what the reader
+                      # window's 5S/2D shape too, and both restated what the reader
                       # already knew from the primary tag and the season: "I know what
                       # an invite and a showcase are, and I know all programs' early
-                      # season games use 3/4". A chip that repeats its own row is noise.
+                      # season games use 5/2". A chip that repeats its own row is noise.
                       # R32 / QF / SF stay, because which round a State dual was cannot
                       # be read off the row.
                       "round": (state_round if k == "STATE" else

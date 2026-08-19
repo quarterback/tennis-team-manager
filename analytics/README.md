@@ -18,8 +18,22 @@ pip install -r requirements.txt   # just Jinja2
 python3 build.py path/to/export.zip [more.zip ...]
 ```
 
-Open `analytics/site/index.html` in a browser. Re-run `python3 build.py` with
-no arguments to re-render from everything already ingested, or pass more zips
+**Browse it over a local server, not by double-clicking the file.** `cd site &&
+python3 -m http.server 8000`, then open `http://localhost:8000/`. This isn't
+optional cosmetics: "My Teams" (the pin/star feature) stores its data in
+`localStorage`, and browsers scope `localStorage` per ORIGIN — a `file://`
+page has no real origin, so several browsers (Firefox in particular; Chromium
+is inconsistent about it) silently give every `file://…/teams/x.html` and
+`file://…/index.html` its OWN separate storage bucket. Pin a team from a team
+page and it can look empty on the home page's My Teams panel even though
+nothing failed — the star toggled, the write happened, it just didn't land
+anywhere the next page can see. A shared `http://localhost` origin is the
+actual fix; nothing in this app can paper over a browser storage-partitioning
+policy from inside a static page. Everything else on the site (browsing pages,
+filters, search) works fine either way — only the cross-page favorites feature
+needs the server.
+
+Re-run `python3 build.py` with no arguments to re-render from everything already ingested, or pass more zips
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
