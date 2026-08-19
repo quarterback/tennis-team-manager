@@ -4740,25 +4740,7 @@ def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: s
     league; `grade` filters by class year; `q` matches name, school, or hometown.
     Sort by ceiling (potential), current OVR, stars, or name."""
     import app.jhsaa as jh
-    import app.world as world
-    w = world.get_or_create(seed)
-    salt = world.active_salt(seed)
-    season_year = world.jhsaa_season_year(w)
-    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
-
-    rows = []
-    for g in genders:
-        for sc in jh.load_schools(g):
-            for p in jh.build_roster(sc, season_year, salt):
-                rows.append({
-                    "pid": p.pid, "name": p.name, "grade": p.grade,
-                    "gender": g, "school": sc.name, "group": sc.group,
-                    "district": sc.district, "classification": sc.classification,
-                    "hometown": p.hometown,
-                    "ovr": round(p.current_overall(), 1),
-                    "ceiling": round(p.ceiling_overall(), 1),
-                    "stars": p.star_rating(),
-                })
+    rows = _jhsaa_all_players(seed, gender)
 
     if group != "All":
         rows = [r for r in rows if r["group"] == group]
@@ -4792,6 +4774,142 @@ def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: s
         "grades": ["All", "9", "10", "11", "12"],
         "group": group, "district": district, "grade": grade, "sort": sort, "q": q,
     }
+
+
+# A player is genuinely mismatched (JHSAA's version of the college "buried"
+# board) when their ceiling clears their own classification's typical level by
+# this much, and clears a floor so a raw 1A pool full of low numbers doesn't
+# flag its own top player as a mismatch against nobody.
+MISAPPLIED_MIN_GAP = 10.0
+MISAPPLIED_MIN_CEILING = 55.0
+
+
+def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
+    """Every rostered JHSAA player for `gender` ('boys'|'girls'|'all'), current
+    season. Shared building block for the players directory, the talent-mismatch
+    board and the lineup lab — one loop, no resimulation, same shape every time."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    salt = world.active_salt(seed)
+    season_year = world.jhsaa_season_year(w)
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+    rows = []
+    for g in genders:
+        for sc in jh.load_schools(g):
+            for p in jh.build_roster(sc, season_year, salt):
+                rows.append({
+                    "pid": p.pid, "name": p.name, "grade": p.grade,
+                    "gender": g, "school": sc.name, "group": sc.group,
+                    "district": sc.district, "classification": sc.classification,
+                    "hometown": p.hometown,
+                    "ovr": round(p.current_overall(), 1),
+                    "ceiling": round(p.ceiling_overall(), 1),
+                    "stars": p.star_rating(),
+                })
+    return rows
+
+
+def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
+                             sort: str = "gap") -> dict:
+    """Talent mismatches — players whose ceiling far outstrips the level their
+    OWN classification typically plays at, the JHSAA analogue of the college
+    Underplaced board (a D1-caliber player stuck in D3). There's no division
+    ladder here, so the comparison is against the classification's own average
+    ceiling: a gap this size means the player would be a standout several
+    classes up, not just a good player at a weak program.
+
+    `sort`: 'gap' (most mismatched), 'ceiling' (highest ceiling), 'now' (highest
+    current OVR — who's already dominating below their level)."""
+    import app.jhsaa as jh
+    rows = _jhsaa_all_players(seed, gender)
+
+    group_ceilings: dict[str, list[float]] = {}
+    for r in rows:
+        group_ceilings.setdefault(r["group"], []).append(r["ceiling"])
+    group_avg = {g: sum(v) / len(v) for g, v in group_ceilings.items()}
+
+    for r in rows:
+        r["group_avg"] = round(group_avg.get(r["group"], 0.0), 1)
+        r["gap"] = round(r["ceiling"] - r["group_avg"], 1)
+
+    flagged = [r for r in rows if r["gap"] >= MISAPPLIED_MIN_GAP
+               and r["ceiling"] >= MISAPPLIED_MIN_CEILING]
+    if group != "All":
+        flagged = [r for r in flagged if r["group"] == group]
+
+    keys = {
+        "gap": (lambda r: (r["gap"], r["ceiling"]), True),
+        "ceiling": (lambda r: (r["ceiling"], r["gap"]), True),
+        "now": (lambda r: (r["ovr"], r["gap"]), True),
+    }
+    key, rev = keys.get(sort, keys["gap"])
+    flagged.sort(key=key, reverse=rev)
+
+    return {"gender": gender, "rows": flagged, "total": len(flagged),
+            "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort}
+
+
+def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
+                     pool: str = "mismatched", n_squads: int = 3) -> dict:
+    """The scouting-department view for JHSAA — deal mismatched talent into whole
+    9-player rosters for a target classification and rank each hypothetical squad
+    against that classification's REAL programs, by average current OVR of their
+    own dressed nine.
+
+    `pool`: 'mismatched' (Talent-Mismatch qualifiers only) or 'any' (every player,
+    best ceiling first — useful once the mismatch pool runs dry for a class).
+    Squads are non-overlapping, dealt best-first. 9 is the association's own
+    dressed-lineup size (3 singles + 4 doubles pairs)."""
+    import app.jhsaa as jh
+    SQUAD_SIZE = 9
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+
+    if pool == "mismatched":
+        cands = []
+        for g in genders:
+            cands.extend(jhsaa_misapplied_players(seed, g)["rows"])
+    else:
+        cands = _jhsaa_all_players(seed, gender)
+        for r in cands:
+            r.setdefault("gap", 0.0)
+    cands.sort(key=lambda r: (r["ceiling"], r["ovr"]), reverse=True)
+
+    # The target classification's real programs, by average current OVR of their
+    # own top nine — the same lens a squad is judged against.
+    div_levels = []
+    for g in genders:
+        import app.world as world
+        w = world.get_or_create(seed)
+        salt = world.active_salt(seed)
+        season_year = world.jhsaa_season_year(w)
+        for sc in jh.load_schools(g):
+            if sc.group != target_group:
+                continue
+            roster = sorted((round(p.current_overall(), 1)
+                             for p in jh.build_roster(sc, season_year, salt)),
+                            reverse=True)[:SQUAD_SIZE]
+            if roster:
+                div_levels.append(sum(roster) / len(roster))
+    div_levels.sort(reverse=True)
+    n_div = len(div_levels)
+
+    squads = []
+    for k in range(max(1, n_squads)):
+        block = cands[k * SQUAD_SIZE:(k + 1) * SQUAD_SIZE]
+        if len(block) < SQUAD_SIZE:
+            break
+        avg_ovr = sum(r["ovr"] for r in block) / SQUAD_SIZE
+        avg_ceiling = sum(r["ceiling"] for r in block) / SQUAD_SIZE
+        rank = sum(1 for lvl in div_levels if lvl > avg_ovr) + 1
+        squads.append({
+            "players": block, "avg_ovr": round(avg_ovr, 1),
+            "avg_ceiling": round(avg_ceiling, 1),
+            "rank": rank, "n_div": n_div,
+        })
+
+    return {"gender": gender, "target_group": target_group, "pool": pool,
+            "squads": squads, "groups": list(jh.GROUPS), "n_div": n_div}
 
 
 def jhsaa_past_winners(seed: int, gender: str) -> dict:
