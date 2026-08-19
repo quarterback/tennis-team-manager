@@ -11,8 +11,8 @@ are the kids who just finished four years in this association, carrying their re
 `graduating_class()` is that hand-off.
 
 FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by literal:
-  * early non-district  3 singles / 4 doubles → 7 points
-  * regular season      5 singles / 2 doubles → 7 points
+  * early non-district  5 singles / 2 doubles → 7 points
+  * regular season      3 singles / 4 doubles → 7 points
   * state tournament    1 singles / 4 doubles → 5 points
 All totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
 Every match plays to completion — there is no clinch in high school
@@ -1570,9 +1570,12 @@ PAIR_SUM_TOL = 2            # rank-sum gap within which real doubles ability dec
 
 def _pair_partitions(pool: list):
     """Every way to split an even-length `pool` into unordered pairs — (2n-1)!!
-    of them (15 for 6 players, 105 for 8). Shared by `_arrange_state` (D2-D4,
-    6 players) and `_arrange_regular` (the 3S/4D D-pool, 8 players) so the
-    combinatorics live in one place."""
+    of them (15 for 6 players). Used by `_arrange_state` (D2-D4, a small
+    postseason qualifying field) to search for the best pairing. `_arrange_regular`
+    (the 3S/4D D-pool, 8 players — 105 partitions) used to share this for the
+    same kind of search, but that ran on every regular-season dual for the
+    whole association and the search was never worth its cost (owner
+    correction 2027-08, see the AAR) — it now decides directly instead."""
     if not pool:
         yield []
         return
@@ -1668,19 +1671,26 @@ def _pk(pair) -> tuple:
 # exactly #10-#11 (see `_arrange_regular`). What a program's strategy actually
 # decides is how the fixed 8-player pool pairs up into D1-D4:
 #
-#   maximize      pick the pairing that maximises total doubles_rating summed
-#                 across all four pairs, over every legal way to split the
-#                 8-player pool into pairs (105 of them) — a real search, now
-#                 that `doubles_rating` has a genuine pair-synergy term
-#                 (`engine.doubles._pair_synergy`) worth searching for.
-#   balanced      the same search, but the objective trades a little raw total
-#                 for spreading strength more evenly across all four doubles
-#                 courts (`_BALANCE_PENALTY` on the spread between the
-#                 strongest and weakest pair) — a coach who would rather have
-#                 four solid pairs than one great one and three ordinary ones.
+#   maximize      snake-pair the pool by serve-vs-return skew (best server with
+#                 best returner, and so on) — a cheap stand-in for the engine's
+#                 coverage synergy term (`engine.doubles._pair_synergy`), picked
+#                 directly rather than searched for.
+#   balanced      snake-pair by overall ability (strongest with weakest, and so
+#                 on) — spreads strength evenly across all four doubles courts
+#                 for a coach who would rather have four solid pairs than one
+#                 great one and three ordinary ones.
 #   traditional   adjacent-ladder pairing of the fixed pool — D1=#2+#3,
 #                 D2=#4+#5, D3=#6+#7, D4=#8+#9. The classic card, and the only
 #                 shape the generator used to produce before this rule existed.
+#
+# ‼️ NONE OF THESE SEARCH (owner correction 2027-08). The first cut of
+# `maximize`/`balanced` scored all 105 ways to split the 8-player pool into
+# pairs, on EVERY regular-season dual, for every program in the association —
+# real coaches do not run a permutation search before a match, they just pair
+# people up, and `doubles_rating`'s synergy term is capped tiny (`SYNERGY_CAP`
+# in `engine/doubles.py`) specifically so it stays a minor factor, not
+# something worth 105-way scoring for. Each strategy is now one direct,
+# ability-ordered decision. See `_arrange_regular`.
 #
 # The strategy is a durable PROGRAM trait (hashed off the school key, like a
 # coaching tradition — not per-dual dice, so a program's card is recognisable
@@ -1688,7 +1698,6 @@ def _pk(pair) -> tuple:
 # different one.
 _STRATEGIES = ("maximize", "balanced", "traditional")
 _PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries a different strategy
-_BALANCE_PENALTY = 0.5         # "balanced": how strongly |D1 rating - D2 rating| is punished
 
 
 def _coach_strategy(school_key: str) -> str:
@@ -1715,7 +1724,21 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
     are always exactly #10-#11. A coach does not get to decide whether the
     team's 2nd-9th best players play singles or doubles — that's already
     settled by the format. The only real decision, and the only thing
-    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4."""
+    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4.
+
+    ‼️ THE PAIRING ITSELF IS A CHEAP, DIRECT CALL — NOT A SEARCH (owner
+    correction 2027-08, after the first cut exhaustively enumerated all 105
+    ways to split the 8-player pool and scored each one against every other
+    program's pool, every regular-season dual, all season: real-life coaches
+    do not run a permutation search before every match, they just pair people
+    up, and the payoff was never there to justify it anyway — `doubles_rating`'s
+    own docstring caps the synergy term at `SYNERGY_CAP` (0.06) specifically so
+    individual quality stays the primary factor, i.e. the thing 105 partitions
+    were being searched to eke out is capped tiny by design. `maximize` and
+    `balanced` now each make ONE direct decision (a sort, snake-paired or
+    skew-paired) instead of scoring every partition; only the final "strongest
+    pair plays D1" ordering still touches the real engine rating, and that's 4
+    calls, not 420."""
     if len(eleven) < 11:
         return eleven
     s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
@@ -1723,20 +1746,28 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
     else:
-        from engine.doubles import doubles_rating
+        from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
 
         def dr(a, b):
             return doubles_rating(eng[a.pid], eng[b.pid])
 
-        best_score, pairs = None, None
-        for candidate in _pair_partitions(pool):        # 105 ways to split 8 into 4 pairs
-            ratings = [dr(*pr) for pr in candidate]
-            total = sum(ratings)
-            score = total if strategy == "maximize" \
-                else total - _BALANCE_PENALTY * (max(ratings) - min(ratings))
-            if best_score is None or score > best_score:
-                best_score, pairs = score, candidate
+        if strategy == "balanced":
+            # Snake-pair strongest with weakest, next-strongest with
+            # next-weakest, and so on -- spreads ability evenly across the
+            # four courts without scoring a single combination.
+            ranked = sorted(pool, key=lambda p: -eng[p.pid].overall)
+        else:  # "maximize"
+            # A cheap stand-in for the engine's coverage synergy (pairing the
+            # better server with the better returner): rank the pool by
+            # serve-minus-return skew and snake-pair across it, so a
+            # serve-heavy player lands with a return-heavy one instead of
+            # searching for the combination that scores best.
+            ranked = sorted(pool, key=lambda p: (serve_rating(eng[p.pid])
+                                                 - return_rating(eng[p.pid])),
+                            reverse=True)
+        pairs = [(ranked[0], ranked[7]), (ranked[1], ranked[6]),
+                 (ranked[2], ranked[5]), (ranked[3], ranked[4])]
         pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
     out = [s1] + s23
     for a, b in pairs:
