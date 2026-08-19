@@ -4784,29 +4784,83 @@ MISAPPLIED_MIN_GAP = 10.0
 MISAPPLIED_MIN_CEILING = 55.0
 
 
-def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
-    """Every rostered JHSAA player for `gender` ('boys'|'girls'|'all'), current
-    season. Shared building block for the players directory, the talent-mismatch
-    board and the lineup lab — one loop, no resimulation, same shape every time."""
+# ‼️ P1 — the association-wide player CENSUS is cached, per gender, keyed on
+# everything that can change it (CLAUDE.md's module-global-cache rules: compute
+# into a local, publish, never `cache[key]` after a possible evict). Building it
+# is CPU-bound and real (14.6k Boys players / 7.6s, 31.1k Both / 15.9s measured on
+# a scratch world) — without a cache, the players directory, mismatch board and
+# lineup lab each rebuild the WHOLE gender's rosters on every request, including
+# every pagination click and filter change.
+#
+# Keyed per SINGLE gender ('boys'/'girls'), never 'all' — 'all' concatenates the
+# two cached lists instead of building a third combined entry, so switching the
+# gender filter back and forth never doubles the cache's memory or duplicates a
+# build already paid for.
+_JH_CENSUS_CACHE: dict[tuple, list[dict]] = {}
+
+
+def _jhsaa_census_key(seed: int, g: str) -> tuple:
+    """Resolved ONCE per call (never inside a per-school/per-player loop — the
+    `jhsaa_playup_version()` fingerprint-in-a-loop trap this codebase already hit
+    once). Everything that can change a roster's shape: the world's identity/year/
+    salt (a new world or a year rollover ages every player), plus the three
+    override tables `jh.build_roster` reads through (`jh.load_schools` bakes
+    archetype/play-up into `School`, and a JHSAA transfer moves a player)."""
+    import app.overrides as ov
+    import app.world as world
+    w = world.get_or_create(seed)
+    salt = world.active_salt(seed)
+    return (seed, g, w["id"], w["year"], salt,
+            ov.jhsaa_archetype_version(), ov.jhsaa_playup_version(),
+            ov.jhsaa_transfer_version())
+
+
+def _jhsaa_build_census(seed: int, g: str) -> list[dict]:
+    """The actual roster-build loop for one gender — only ever called on a cache
+    miss."""
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
     salt = world.active_salt(seed)
     season_year = world.jhsaa_season_year(w)
-    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
     rows = []
+    for sc in jh.load_schools(g):
+        for p in jh.build_roster(sc, season_year, salt):
+            rows.append({
+                "pid": p.pid, "name": p.name, "grade": p.grade,
+                "gender": g, "school": sc.name, "group": sc.group,
+                "district": sc.district, "classification": sc.classification,
+                "hometown": p.hometown,
+                "ovr": round(p.current_overall(), 1),
+                "ceiling": round(p.ceiling_overall(), 1),
+                "stars": p.star_rating(),
+            })
+    return rows
+
+
+def _jhsaa_census_for(seed: int, g: str) -> list[dict]:
+    """The cached census for one gender ('boys'|'girls') — compute-then-publish,
+    read with `.get()`, never `key in cache` + `cache[key]` (a sibling request can
+    evict between the two)."""
+    key = _jhsaa_census_key(seed, g)
+    cached = _JH_CENSUS_CACHE.get(key)
+    if cached is not None:
+        return cached
+    built = _jhsaa_build_census(seed, g)
+    _JH_CENSUS_CACHE[key] = built
+    return built
+
+
+def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
+    """Every rostered JHSAA player for `gender` ('boys'|'girls'|'all'), current
+    season. Shared building block for the players directory, the talent-mismatch
+    board and the lineup lab — one cached census per gender, no resimulation, same
+    shape every time. Returns a fresh list (never the cached list object itself),
+    so callers are free to sort/filter without mutating the cache."""
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+    rows: list[dict] = []
     for g in genders:
-        for sc in jh.load_schools(g):
-            for p in jh.build_roster(sc, season_year, salt):
-                rows.append({
-                    "pid": p.pid, "name": p.name, "grade": p.grade,
-                    "gender": g, "school": sc.name, "group": sc.group,
-                    "district": sc.district, "classification": sc.classification,
-                    "hometown": p.hometown,
-                    "ovr": round(p.current_overall(), 1),
-                    "ceiling": round(p.ceiling_overall(), 1),
-                    "stars": p.star_rating(),
-                })
+        rows.extend(_jhsaa_census_for(seed, g))
     return rows
 
 
@@ -4896,21 +4950,20 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
     cands.sort(key=lambda r: (r["ceiling"], r["ovr"]), reverse=True)
 
     # The target classification's real programs, by average current OVR of their
-    # own top nine — the same lens a squad is judged against.
-    div_levels = []
+    # own top nine — the same lens a squad is judged against. Reuses the cached
+    # census (grouped by school) instead of re-calling `jh.build_roster`, which
+    # would otherwise redo the whole gender's roster build a second time in the
+    # same request.
+    by_school: dict[str, list[float]] = {}
     for g in genders:
-        import app.world as world
-        w = world.get_or_create(seed)
-        salt = world.active_salt(seed)
-        season_year = world.jhsaa_season_year(w)
-        for sc in jh.load_schools(g):
-            if sc.group != target_group:
-                continue
-            roster = sorted((round(p.current_overall(), 1)
-                             for p in jh.build_roster(sc, season_year, salt)),
-                            reverse=True)[:SQUAD_SIZE]
-            if roster:
-                div_levels.append(sum(roster) / len(roster))
+        for r in _jhsaa_census_for(seed, g):
+            if r["group"] == target_group:
+                by_school.setdefault(r["school"], []).append(r["ovr"])
+    div_levels = []
+    for ovrs in by_school.values():
+        top = sorted(ovrs, reverse=True)[:SQUAD_SIZE]
+        if top:
+            div_levels.append(sum(top) / len(top))
     div_levels.sort(reverse=True)
     n_div = len(div_levels)
 
