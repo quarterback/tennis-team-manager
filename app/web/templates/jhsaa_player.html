@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
+{% from "_stars.html" import stars %}
 {% block title %}{{ view.name }} — {{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 
@@ -29,6 +30,7 @@
     <div class="now">
       <span class="rec">{{ view.record }}</span>
       <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>
+      <span class="bit">OVR {{ view.ovr }} · Pot {{ view.ceiling }} · {{ stars(view.stars) }}</span>
       {% for h in view.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}">{{ h }}</span>{% endfor %}
     </div>
   </div>

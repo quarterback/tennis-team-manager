@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header, jh_player, jh_award_names %}
+{% from "_stars.html" import stars %}
 {% block title %}{{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 {% set t = view.history.totals %}
@@ -181,7 +182,8 @@
       <div class="tbl-scroll">
         <table class="jh-roster">
           <tr><th>Player</th><th style="width:44px">Gr</th><th class="num" style="width:56px">Singles</th>
-            <th class="num" style="width:56px">Doubles</th><th class="num" style="width:42px">OVR</th></tr>
+            <th class="num" style="width:56px">Doubles</th><th class="num" style="width:42px">OVR</th>
+            <th class="num" style="width:42px">Pot</th><th style="width:78px">Rating</th></tr>
           {% for p in view.roster %}
           <tr>
             <td class="pl">
@@ -192,6 +194,8 @@
             <td class="num">{{ p.singles }}</td>
             <td class="num">{{ p.doubles }}</td>
             <td class="num">{{ p.ovr }}</td>
+            <td class="num">{{ p.ceiling }}</td>
+            <td>{{ stars(p.stars) }}</td>
           </tr>
           {% endfor %}
         </table>

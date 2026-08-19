@@ -41,7 +41,7 @@ from .state import preseason_view as preseason_view_data
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
-                    jhsaa_rankings_view, jhsaa_player_view)
+                    jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2177,6 +2177,30 @@ def create_app() -> Flask:
             resp.set_cookie("jh_recent", "|".join(recent), max_age=60 * 60 * 24 * 90,
                             samesite="Lax")
         return resp
+
+    @app.route("/jhsaa/players")
+    def jhsaa_players():
+        """Searchable directory of every JHSAA player — talent/potential visibility
+        the college side already had via Portal Search, ported here (owner request)."""
+        gender, label, u, _g, _group, _year = _jh_scope_args()
+        g = request.args.get("gender", _g)
+        if g not in ("boys", "girls", "all"):
+            g = _g
+        group = request.args.get("group", "All")
+        district = request.args.get("district", "All")
+        grade = request.args.get("grade", "All")
+        sort = request.args.get("sort", "ceiling")
+        q = request.args.get("q", "")
+        res = jhsaa_players_search(DEFAULT_SEED, g, group=group, district=district,
+                                   grade=grade, sort=sort, q=q)
+        pg = paginate(res["rows"], request.args.get("page", 1))
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        return render_template("jhsaa_players.html", active="High School",
+                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               gender=gender, gender_f=g, group=group, district=district,
+                               grade=grade, sort=sort, q=q,
+                               groups=res["groups"], districts=res["districts"],
+                               grades=res["grades"], u=u, uni_label=label)
 
     @app.route("/jhsaa/transfers")
     def jhsaa_transfers():

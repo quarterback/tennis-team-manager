@@ -4507,6 +4507,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
+                    # Talent/potential visibility (owner request) — the ceiling and
+                    # star rating were already computed by `Prospect` (the same
+                    # methods the college recruit board reads), just never surfaced
+                    # here. Pure display: no new simulation.
+                    "ceiling": round(p.ceiling_overall(), 1),
+                    "stars": p.star_rating(),
                     "str": p.str_value(),
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
                     "doubles": "{}-{}".format(*lines.get(p.name, {}).get("d", (0, 0))),
@@ -4702,6 +4708,9 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     return {
         "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
         "hometown": player.hometown, "grade": player.grade,
+        "ovr": round(player.current_overall(), 1),
+        "ceiling": round(player.ceiling_overall(), 1),
+        "stars": player.star_rating(),
         "mark": jh.mark(sc, 44), "group": sc.group, "district": sc.district,
         "classification": sc.classification, "city": sc.city,
         "locality": sc.locality,
@@ -4716,6 +4725,72 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])
                       if seasons else None),
+    }
+
+
+def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: str = "All",
+                         grade: str = "All", sort: str = "ceiling", q: str = "") -> dict:
+    """A searchable directory of the WHOLE JHSAA player pool — the high-school
+    counterpart of `scout_intel.portal_search`. Reads the live current-season roster
+    for every program (via `jh.build_roster`, the same call every roster page already
+    makes — no resimulation, no new archive), so it's cheap and always in sync with
+    the season on the field.
+
+    `gender`: 'boys' | 'girls' | 'all'. `group`/`district` filter by classification/
+    league; `grade` filters by class year; `q` matches name, school, or hometown.
+    Sort by ceiling (potential), current OVR, stars, or name."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    salt = world.active_salt(seed)
+    season_year = world.jhsaa_season_year(w)
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+
+    rows = []
+    for g in genders:
+        for sc in jh.load_schools(g):
+            for p in jh.build_roster(sc, season_year, salt):
+                rows.append({
+                    "pid": p.pid, "name": p.name, "grade": p.grade,
+                    "gender": g, "school": sc.name, "group": sc.group,
+                    "district": sc.district, "classification": sc.classification,
+                    "hometown": p.hometown,
+                    "ovr": round(p.current_overall(), 1),
+                    "ceiling": round(p.ceiling_overall(), 1),
+                    "stars": p.star_rating(),
+                })
+
+    if group != "All":
+        rows = [r for r in rows if r["group"] == group]
+    # Districts offered in the filter are scoped to the classification picked (a
+    # district is (classification, name), same rule as everywhere else in JHSAA),
+    # captured BEFORE the district filter itself narrows `rows` further.
+    districts = ["All"] + sorted({r["district"] for r in rows})
+    if district != "All":
+        rows = [r for r in rows if r["district"] == district]
+    if grade != "All":
+        rows = [r for r in rows if str(r["grade"]) == str(grade)]
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in r["name"].lower() or ql in r["school"].lower()
+                or ql in (r["hometown"] or "").lower()]
+
+    keys = {
+        "ceiling": (lambda r: (r["ceiling"], r["ovr"]), True),
+        "ovr": (lambda r: (r["ovr"], r["ceiling"]), True),
+        "stars": (lambda r: (r["stars"], r["ovr"]), True),
+        "name": (lambda r: r["name"].lower(), False),
+        "school": (lambda r: (r["school"].lower(), r["name"].lower()), False),
+    }
+    key, rev = keys.get(sort, keys["ceiling"])
+    rows.sort(key=key, reverse=rev)
+
+    return {
+        "gender": gender, "rows": rows, "total": len(rows),
+        "groups": ["All"] + list(jh.GROUPS),
+        "districts": districts,
+        "grades": ["All", "9", "10", "11", "12"],
+        "group": group, "district": district, "grade": grade, "sort": sort, "q": q,
     }
 
 
