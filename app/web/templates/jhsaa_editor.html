@@ -73,6 +73,48 @@
   {% endif %}
 </div>
 
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Bulk edit archetypes</span></div>
+  <div style="padding:12px 16px">
+    <p class="bit" style="margin-bottom:10px">
+      Paste many school names at once (one per line) instead of one-by-one.
+      This writes the SEED FILE, not a per-save override — it sticks even if
+      you start over with a brand-new save/database, so you never have to
+      redo it. Unrecognized names are skipped and reported, never invented.
+    </p>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <form method="post" action="{{ url_for('editor_jhsaa_archetype_bulk') }}"
+            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="action" value="add">
+        <label class="bl-schol-f">Add to
+          <span class="bl-select-wrap"><select class="bl-select" name="archetype">
+            {% for k in ed.kinds %}
+            <option value="{{ k }}">{{ k|replace('_', ' ') }}</option>
+            {% endfor %}
+          </select></span></label>
+        <textarea class="bl-input" name="names" rows="8" placeholder="One school name per line"
+                  style="font-family:inherit;resize:vertical"></textarea>
+        <button class="bl-run-big" style="width:auto;height:32px;padding:0 14px;font-size:14.5px;align-self:flex-start">
+          Add all
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('editor_jhsaa_archetype_bulk') }}"
+            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="action" value="remove">
+        <label class="bl-schol-f" style="color:var(--text-muted)">Remove from the seed list (any kind)</label>
+        <textarea class="bl-input" name="names" rows="8" placeholder="One school name per line"
+                  style="font-family:inherit;resize:vertical"></textarea>
+        <button class="bl-pill" style="align-self:flex-start;cursor:pointer">Remove all</button>
+      </form>
+    </div>
+    {% if request.cookies.get('jh_bulk_result') %}
+    <p class="bit" style="margin-top:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_bulk_result') }}</p>
+    {% endif %}
+  </div>
+</div>
+
 {% if ed.selected %}
 {% set s = ed.selected %}
 <div class="bl-panel">

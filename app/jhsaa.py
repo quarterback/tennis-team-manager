@@ -603,6 +603,48 @@ def _arch_seed() -> dict:
         return {}
 
 
+def bulk_edit_archetype_seed(kind: str | None, names: list[str], remove: bool = False) -> dict:
+    """Add or remove MANY schools' archetype tag in ONE pass, writing the SEED FILE
+    itself (`data/jhsaa/archetypes.json`) rather than the per-save override table.
+
+    ‼️ WHY THE SEED FILE, NOT AN OVERRIDE (owner request): the override table lives
+    in the SAME sqlite file as the world, and the owner routinely starts over with a
+    brand-new database file rather than resetting the existing save — a per-save
+    override cannot survive that, since there is no "the save" for it to attach to
+    the next time. The seed list, by contrast, ships with the code and is read fresh
+    by every database. One-by-one editing through `/editor/jhsaa-archetype` (which
+    DOES write a per-save override, and still exists for a single quick change) was
+    "massively tedious" for a real list and had to be redone after every fresh save
+    — this is the fix for both problems in one move: bulk, and permanent.
+
+    Unknown names are silently skipped (never invents a school); returns
+    {"applied": [...], "unknown": [...]} so the caller can report both. Existing
+    per-save overrides for a touched school are NOT cleared — an override still
+    wins over the seed on read (`_arch_map`), exactly as before."""
+    valid_names = {r["name"] for r in playup_rows()}
+    applied, unknown = [], []
+    with open(_ARCH_SEED_PATH, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    programs = doc.setdefault("programs", {})
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        if name not in valid_names:
+            unknown.append(name)
+            continue
+        if remove:
+            programs.pop(name, None)
+        else:
+            programs[name] = kind
+        applied.append(name)
+    with open(_ARCH_SEED_PATH, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    _arch_cache.clear()
+    return {"applied": applied, "unknown": unknown}
+
+
 def archetype(school: str) -> str:
     """A program's archetype tag, or "" — the seed list with the editable table on top."""
     from app import overrides as ov

@@ -3570,18 +3570,31 @@ def advance_jhsaa_lab(seed: int) -> dict:
     same mechanism a normal world uses, just without anything college
     attached to it.
 
-    Returns the new (post-increment) world row."""
+    Returns the new (post-increment) world row.
+
+    ‼️ THE ARCHIVE COMMITS BEFORE THE YEAR POINTER MOVES, not after. If
+    `run_jhsaa` raises — or the process is killed — partway through a long
+    simulation, persisting `year+1` first would leave that year permanently
+    un-simulated: the world row would already claim it, so the NEXT advance
+    would skip straight past it to `year+2`, and `jhsaa_lab`'s archived-count
+    (`world["year"] + 1`) would overcount by exactly the missing season. So
+    `run_jhsaa` is called against an in-memory `year+1` dict FIRST (it only
+    reads `world["id"]`/`["year"]`, never the DB row's own value, so this
+    needs no real world-row mutation to work) — only once that succeeds does
+    the `UPDATE` make `year+1` the persisted world. A crash before that point
+    leaves the world row at its old year, so the next `/jhsaa-lab/advance`
+    call recomputes the SAME `new_year` and retries the missing season,
+    rather than skipping it."""
     w = load_world(seed)
     if not w:
         raise ValueError(f"No lab world at seed {seed} — generate one first.")
     new_year = w["year"] + 1
+    run_jhsaa(seed, {**w, "year": new_year})
     conn = _db()
     conn.execute("UPDATE world SET year=?, week=0 WHERE id=?", (new_year, w["id"]))
     conn.commit()
     conn.close()
-    w = load_world(seed)
-    run_jhsaa(seed, w)
-    return w
+    return load_world(seed)
 
 
 def jhsaa_season_year(world: dict) -> int:

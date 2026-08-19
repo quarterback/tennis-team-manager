@@ -35,8 +35,21 @@ def clean():
     jh.reset_schools()
 
 
+#: Condotti Vanguard Academy and Romero-Finniski are a deliberate, owner-named
+#: exception to the play-up mechanism (their real-world enrollment sizes them 7A,
+#: but per the owner's lore for these two specific programs they are 9A-CALIBER
+#: talent choosing to compete in the smaller 7A class — the opposite direction
+#: from an ordinary play-up, which is a small school reaching for a bigger one).
+#: They still trip `School.plays_up` (a raw classification/group mismatch
+#: detector, direction-agnostic by construction) but are not "playing up" in the
+#: small-school sense every other test in this file is about — same pattern as
+#: `import_jhsaa.OWNER_EDICTS`/`RIVALRIES`, a named exception rather than a rule.
+_PLAY_DOWN_EXCEPTIONS = {"Condotti Vanguard Academy", "Romero-Finniski"}
+
+
 def _ups(gender="girls"):
-    return [s for s in jh.load_schools(gender) if s.plays_up]
+    return [s for s in jh.load_schools(gender)
+            if s.plays_up and s.name not in _PLAY_DOWN_EXCEPTIONS]
 
 
 # --- the ladder step ---------------------------------------------------------------

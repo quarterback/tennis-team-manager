@@ -2734,6 +2734,33 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-archetype-bulk", methods=["POST"])
+    def editor_jhsaa_archetype_bulk():
+        """Add or remove MANY schools' archetype tag at once, writing the SEED FILE
+        (`data/jhsaa/archetypes.json`) so the list survives a brand-new database
+        file, not just a reset of the current one — see
+        `jhsaa.bulk_edit_archetype_seed`. One name per line (blank lines ignored)."""
+        from app import jhsaa as _jh
+        kind = request.form.get("archetype", "")
+        action = request.form.get("action", "add")
+        names = (request.form.get("names") or "").splitlines()
+        result = {"applied": [], "unknown": []}
+        if action == "remove":
+            result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
+        elif kind in ("blue_blood", "development", "doubles"):
+            result = _jh.bulk_edit_archetype_seed(kind, names, remove=False)
+        reset_all()
+        resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                board="archetype"))
+        # A quick confirmation of what stuck, in a cookie flash rather than a query
+        # string — a bulk paste can be dozens of names and would blow past a URL's
+        # practical length.
+        resp.set_cookie("jh_bulk_result",
+                        f"{len(result['applied'])} applied"
+                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
+                        max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():
         """Rule on whether — and to WHICH classification — a JHSAA program plays up.
