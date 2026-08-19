@@ -2736,13 +2736,16 @@ def create_app() -> Flask:
 
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():
-        """Rule on whether a JHSAA program plays UP a classification.
+        """Rule on whether — and to WHICH classification — a JHSAA program plays up.
 
         Stored per SCHOOL NAME like the archetype above, and layered the same way over
-        the `play_up` seed list in `data/jhsaa/schools.json`: "yes" promotes a program
-        the file did not pick, "no" holds one it did in its own class, and anything
-        else clears the override so the file decides again. Two different intentions,
-        and a single "clear" could only express one of them.
+        the `play_up` seed list in `data/jhsaa/schools.json`. `play_up` is either:
+        "yes" (the seed-list one-step-up default, kept for backward compatibility),
+        a real group string ("7A") naming exactly where the program should compete —
+        owner rule 2027-09, since real associations approve play-up applications
+        annually and for a program can move more than one class — "no" (hold a
+        seeded program in its own class), or empty (clear the override so the file
+        decides again). Four different intentions, never conflated into one field.
 
         ‼️ This moves which CHAMPIONSHIP a program enters, not how good it is — the
         league, the ladder, State and All-State all follow `group` while `_TALENT`
@@ -2754,20 +2757,24 @@ def create_app() -> Flask:
         # its division has never heard of. Falls back to `school` so an existing caller
         # keeps working.
         school = request.form.get("jh_school") or request.form.get("school", "")
-        choice = request.form.get("play_up", "")
+        choice = (request.form.get("play_up", "") or "").strip()
         if school:
             from app import jhsaa as _jh
-            # ‼️ SERVER-SIDE ELIGIBILITY. The picker only offers small schools, but a
-            # hand-rolled POST is not the picker: playing up is a 4A-and-below
-            # mechanism, so a promotion of anything larger is refused rather than
-            # stored. "no"/clear stay allowed for every school — holding a program in
-            # its own class is always legal, and refusing it would strand any row
-            # written before this check existed.
             row = next((r for r in _jh.playup_rows() if r["name"] == school), None)
-            if choice == "yes" and not (row and _jh.can_play_up(row["classification"])):
-                return _editor_redirect()
-            if choice in ("yes", "no"):
-                ov.set_jhsaa_playup(school, choice == "yes")
+            if choice == "no":
+                ov.set_jhsaa_playup(school, "no")
+            elif choice == "yes":
+                # The seed-list one-step default, stored as an explicit target so
+                # it re-validates the same way any other stored group does.
+                if row and _jh.can_play_up(row["classification"]):
+                    ov.set_jhsaa_playup(school, _jh.play_up_group(row["classification"]))
+            elif choice in _jh.GROUPS:
+                # ‼️ SERVER-SIDE ELIGIBILITY, same principle as before, generalized:
+                # a hand-rolled POST is not the picker, so the target is re-checked
+                # against `valid_playup_target` (eligible AND strictly above the
+                # program's own class) rather than trusted from the form.
+                if row and _jh.valid_playup_target(row["classification"], choice):
+                    ov.set_jhsaa_playup(school, choice)
             else:
                 ov.clear_jhsaa_playup(school)
             _jh.reset_schools()

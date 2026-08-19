@@ -273,11 +273,20 @@ def jhsaa_archetype_version() -> str:
     return h.hexdigest()
 
 
-# --- PLAYING UP (owner rule 2027-08) -----------------------------------------
-# A school competing one classification ABOVE its enrollment class, the way real
+# --- PLAYING UP (owner rule 2027-08, multi-step 2027-09) ----------------------
+# A school competing a classification ABOVE its enrollment class, the way real
 # associations let a strong program do. Stored exactly like an archetype — a seed
-# list in `data/jhsaa/schools.json` (`play_up`) with this editable table on top:
-# "yes" promotes, "no" demotes a seeded program, and clearing reverts to the file.
+# list in `data/jhsaa/schools.json` (`play_up`) with this editable table on top.
+#
+# ‼️ THE STORED VALUE IS A TARGET GROUP, NOT A BOOL (owner rule 2027-09). Real
+# associations approve play-up applications annually and for all kinds of reasons,
+# not just "one class up" — a 3A program can play in 7A. The value is either a real
+# group string ("7A") naming exactly where the program competes, or "no" (an
+# explicit hold, reverting a seeded play-up to its own class); clearing the row
+# reverts to the seed list's one-step default. `jhsaa.plays_up` re-validates a
+# stored group on every read (never sideways, never down, never past
+# `PLAY_UP_MAX_GROUP` eligibility) so a stale or crafted row can't promote past
+# what the rule allows.
 #
 # ‼️ IT MOVES `group`, NEVER `classification`. `group` is the championship you
 # enter; `classification` is how many students you have, and `_TALENT` is a
@@ -286,7 +295,7 @@ def jhsaa_archetype_version() -> str:
 # to cost you a harder field, not buy you better players.
 
 def get_jhsaa_playups() -> dict:
-    """{school: "yes"|"no"} for every program the editor has ruled on."""
+    """{school: target_group|"no"} for every program the editor has ruled on."""
     conn = _db()
     rows = conn.execute(
         "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_playup'").fetchall()
@@ -294,10 +303,13 @@ def get_jhsaa_playups() -> dict:
     return {k: v for k, v in rows if v}
 
 
-def set_jhsaa_playup(school: str, plays_up: bool) -> None:
+def set_jhsaa_playup(school: str, target: str) -> None:
+    """`target` is a real group string ("7A") to play up TO, or "no" to hold the
+    program in its own class. Validated on the READ side (`jhsaa.plays_up`), not
+    here — see the module note above."""
     conn = _db()
     conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
-                 " VALUES ('jhsaa_playup',?,?)", (school, "yes" if plays_up else "no"))
+                 " VALUES ('jhsaa_playup',?,?)", (school, target))
     conn.commit(); conn.close()
 
 

@@ -886,24 +886,42 @@ def can_play_up(classification: str) -> bool:
 
 def play_up_group(classification: str) -> str:
     """The classification one step ABOVE `classification`'s championship group, or
-    the group itself at the top of the ladder — 9A has nothing to play up to."""
+    the group itself at the top of the ladder — 9A has nothing to play up to. This
+    is the SEED-LIST default (a school with `play_up: true` and no editor override
+    moves exactly one class) — an explicit override can name any class further up;
+    see `plays_up`."""
     g = champ_group(classification)
     i = GROUPS.index(g)
     return GROUPS[i - 1] if i else g
 
 
-def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
-             classification: str | None = None) -> bool:
-    """Whether `school_name` competes a class above its own — the seed list in
-    `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
-    exactly the layering `archetype()` uses.
+def valid_playup_target(classification: str, target: str) -> bool:
+    """Whether `target` is a legal play-up destination for a program of this
+    `classification`: the program must be eligible to play up at all
+    (`can_play_up` — 4A and below), and `target` must be a real group STRICTLY
+    above the program's own championship group (never sideways, never down —
+    owner rule: play-up is never play-down)."""
+    if not can_play_up(classification) or target not in GROUPS:
+        return False
+    return GROUPS.index(target) < GROUPS.index(champ_group(classification))
 
-    ‼️ ELIGIBILITY IS ENFORCED HERE, not only where a promotion is written. Pass
-    `classification` and a program too big to play up (`can_play_up`) returns False
-    whatever the seed list or the override table says. Validating only at the editor
-    would leave the invariant one crafted POST — or one stale row written before the
-    rule existed — away from a 9A school being "promoted" into 9A, or an 8A into a
-    championship it has no business entering. The rule belongs on the read.
+
+def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
+             classification: str | None = None) -> str | None:
+    """The group `school_name` actually competes in if it's playing up, or None if
+    it isn't — the seed list in `schools.json` with the editor table on top
+    (`overrides.set_jhsaa_playup`), exactly the layering `archetype()` uses.
+
+    ‼️ AN OVERRIDE NAMES A REAL TARGET GROUP, NOT JUST "yes"/"no" (owner rule
+    2027-08, multi-step play-up). Real associations approve play-up/play-down
+    applications annually and for all kinds of reasons — a program is not
+    limited to exactly one class up. The stored value is either a group string
+    ("7A") or "no" (an explicit hold, reverting a seeded play-up to its own
+    class); anything else falls back to the seed list's one-step default via
+    `seeded`. A stored group is re-validated on every read (`valid_playup_target`)
+    so a program that shrinks below `PLAY_UP_MAX_GROUP`, or a stale/crafted row
+    naming an illegal target, can never promote — the rule belongs on the read,
+    not only where a promotion is written.
 
     ‼️ PASS `pmap` WHEN ASKING ABOUT MORE THAN ONE SCHOOL. Without it this resolves
     the override table's fingerprint itself, and that fingerprint costs a SQLite
@@ -913,10 +931,18 @@ def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
     per pass. See `load_schools`."""
     from app import overrides as ov
     if classification is not None and not can_play_up(classification):
-        return False
+        return None
     m = _playup_map(ov.jhsaa_playup_version()) if pmap is None else pmap
     hit = m.get(school_name)
-    return seeded if hit is None else hit == "yes"
+    if hit is None:
+        return play_up_group(classification) if (seeded and classification is not None) else None
+    if hit == "no":
+        return None
+    # A stored explicit target — validate it every read; classification is
+    # required to validate, so no classification means "trust nothing".
+    if classification is None or not valid_playup_target(classification, hit):
+        return None
+    return hit
 
 
 def _playup_map(version: str) -> dict:
@@ -1097,13 +1123,22 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         r = by_name.get(name)
         if not r:
             return None
-        return {"name": name, "classification": r["classification"], "city": r["city"],
+        target = plays_up(name, bool(r.get("play_up")), pmap, r["classification"])
+        cls = r["classification"]
+        # Every group strictly above the program's own class — the picker's real
+        # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
+        targets = ([g for g in GROUPS[:GROUPS.index(champ_group(cls))]]
+                  if can_play_up(cls) else [])
+        return {"name": name, "classification": cls, "city": r["city"],
                 "district": r.get("girls_district") or r.get("boys_district") or "",
                 "archetype": amap.get(name, ""),
-                "plays_up": plays_up(name, bool(r.get("play_up")), pmap,
-                                     r["classification"]),
-                "can_play_up": can_play_up(r["classification"]),
-                "competes": play_up_group(r["classification"]),
+                # `plays_up` truthy = the string of the group they're IN; None = not.
+                "plays_up": bool(target),
+                "can_play_up": can_play_up(cls),
+                # The group actually competed in — an explicit override target if
+                # one is set, else the seed-list one-step default.
+                "competes": target or play_up_group(cls),
+                "targets": targets,
                 "arch_edited": name in arch_ov, "play_edited": name in play_ov}
 
     up = {r["name"] for r in _schools_cache
@@ -1173,9 +1208,10 @@ def playup_board() -> dict:
         if can_play_up(r["classification"]):
             names.append(r["name"])
         seeded = bool(r.get("play_up"))
-        if plays_up(r["name"], seeded, pmap, r["classification"]):
+        target = plays_up(r["name"], seeded, pmap, r["classification"])
+        if target:
             up.append({"name": r["name"], "classification": r["classification"],
-                       "competes": play_up_group(r["classification"]),
+                       "competes": target,
                        # Where this program's play-up comes from, because REMOVING it
                        # means two different things: a seeded one is HELD ("no"), an
                        # added one is CLEARED. A single "remove" could express only one.
@@ -1226,8 +1262,9 @@ def load_schools(gender: str) -> list[School]:
         # actually is, which is what `School.talent_group` generates from. A school
         # that plays up gets a HARDER FIELD, never better players.
         group = r["group"]
-        if _plays_up_row(r, pmap):
-            group = play_up_group(r["classification"])
+        target = _plays_up_row(r, pmap)
+        if target:
+            group = target
         out.append(School(
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
             classification=r["classification"], group=group,
@@ -1275,7 +1312,8 @@ def _playup_districts(gender: str, rows: list[dict],
     movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x, pmap)),
                     key=lambda x: x["name"])          # deterministic order
     for row in movers:
-        group = play_up_group(row["classification"])
+        group = _plays_up_row(row, pmap)              # the RESOLVED target, not
+                                                        # always one step up
         near: dict[str, list[int]] = {}
         for x in rows:
             if (not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap)
@@ -1295,9 +1333,10 @@ def _playup_districts(gender: str, rows: list[dict],
     return out
 
 
-def _plays_up_row(row: dict, pmap: dict | None = None) -> bool:
-    """`pmap` is the resolved play-up map. Omit it ONLY for a one-off question about a
-    single school — without it every call costs a database round trip."""
+def _plays_up_row(row: dict, pmap: dict | None = None) -> str | None:
+    """The resolved target group, or None — see `plays_up`. `pmap` is the resolved
+    play-up map. Omit it ONLY for a one-off question about a single school — without
+    it every call costs a database round trip."""
     return plays_up(row["name"], bool(row.get("play_up")), pmap,
                     row.get("classification"))
 

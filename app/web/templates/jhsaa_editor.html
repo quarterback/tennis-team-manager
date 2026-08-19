@@ -110,7 +110,9 @@
           {% if s.can_play_up %}
           <span class="bl-select-wrap"><select class="bl-select" name="play_up" style="min-width:200px">
             <option value="no"{% if not s.plays_up %} selected{% endif %}>no — stays in {{ s.classification }}</option>
-            <option value="yes"{% if s.plays_up %} selected{% endif %}>yes — competes in {{ s.competes }}</option>
+            {% for g in s.targets %}
+            <option value="{{ g }}"{% if s.plays_up and s.competes == g %} selected{% endif %}>competes in {{ g }}</option>
+            {% endfor %}
           </select></span>
           {% else %}
           <span style="display:block;color:var(--text-muted);font-size:13.5px;padding-top:6px">
