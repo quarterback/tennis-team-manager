@@ -5,7 +5,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'misapplied', 'Talent Mismatches',
-             "Players whose ceiling clears their own classification's typical level — the ones playing well below where their talent belongs") }}
+             'Players whose ceiling clears a BETTER classification\'s average — treating 9A-1A as a real ladder, the same way college divisions rank') }}
 
 <div class="jh-shell">
 <div class="bl-panel" style="margin-bottom:14px">
@@ -41,9 +41,10 @@
     <span class="bit">{{ total }} flagged</span></div>
   <div class="tbl-scroll">
     <table class="jh-roster">
-      <tr><th>Player</th><th>School</th><th style="width:44px">Class</th>
+      <tr><th>Player</th><th>School</th><th style="width:44px">Plays In</th>
         <th class="num" style="width:42px">OVR</th><th class="num" style="width:42px">Pot</th>
-        <th style="width:78px">Rating</th><th class="num" style="width:64px">Class Avg Pot</th>
+        <th style="width:78px">Rating</th><th style="width:64px">Fits In</th>
+        <th class="num" style="width:70px">That Class Avg</th>
         <th class="num" style="width:52px">Gap</th></tr>
       {% for r in rows %}
       <tr>
@@ -55,7 +56,8 @@
         <td class="num">{{ r.ovr }}</td>
         <td class="num">{{ r.ceiling }}</td>
         <td>{{ stars(r.stars) }}</td>
-        <td class="num">{{ r.group_avg }}</td>
+        <td><b>{{ r.fits_in }}</b></td>
+        <td class="num">{{ r.fit_avg }}</td>
         <td class="num"><b>+{{ r.gap }}</b></td>
       </tr>
       {% endfor %}

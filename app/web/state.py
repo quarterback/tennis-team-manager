@@ -4812,15 +4812,20 @@ def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
 
 def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
                              sort: str = "gap") -> dict:
-    """Talent mismatches — players whose ceiling far outstrips the level their
-    OWN classification typically plays at, the JHSAA analogue of the college
-    Underplaced board (a D1-caliber player stuck in D3). There's no division
-    ladder here, so the comparison is against the classification's own average
-    ceiling: a gap this size means the player would be a standout several
-    classes up, not just a good player at a weak program.
+    """Talent mismatches — the JHSAA analogue of the college Underplaced board (a
+    D1-caliber player stuck in D3). JHSAA classifications ARE a real ladder here,
+    same as `_TALENT`'s own division-shaped design (9A the deepest/strongest down
+    to 1A) — `jh.GROUPS` is already ordered best to worst — so this reads exactly
+    like the college check: is this player's CEILING better than a level they are
+    NOT currently playing at? Comparing a player only to their own classification's
+    average (the first cut of this) just finds "best fish in a small pond" and
+    missed the actual college analogy; the real signal is clearing a BETTER
+    classification's bar, the same way a college riser must clear a higher
+    division's median (`world.div_level`) to be flagged.
 
-    `sort`: 'gap' (most mismatched), 'ceiling' (highest ceiling), 'now' (highest
-    current OVR — who's already dominating below their level)."""
+    `sort`: 'gap' (most mismatched — biggest jump above where they'd fit), 'ceiling'
+    (highest ceiling), 'now' (highest current OVR — who's already dominating below
+    their level)."""
     import app.jhsaa as jh
     rows = _jhsaa_all_players(seed, gender)
 
@@ -4828,13 +4833,28 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
     for r in rows:
         group_ceilings.setdefault(r["group"], []).append(r["ceiling"])
     group_avg = {g: sum(v) / len(v) for g, v in group_ceilings.items()}
+    # jh.GROUPS is 9A..1A, best to worst — the same order the college division
+    # ladder ranks D1..D4 on.
+    order = [g for g in jh.GROUPS if g in group_avg]
 
+    flagged = []
     for r in rows:
-        r["group_avg"] = round(group_avg.get(r["group"], 0.0), 1)
-        r["gap"] = round(r["ceiling"] - r["group_avg"], 1)
+        own_idx = order.index(r["group"]) if r["group"] in order else len(order)
+        # Best (lowest-index / toughest) classification this player's ceiling
+        # clears by the gap threshold — never their own or a WORSE one, since
+        # that isn't a mismatch, it's just being good at your own level.
+        best_fit = None
+        for g in order[:own_idx]:
+            if r["ceiling"] - group_avg[g] >= MISAPPLIED_MIN_GAP:
+                best_fit = g
+                break
+        if best_fit is None or r["ceiling"] < MISAPPLIED_MIN_CEILING:
+            continue
+        r = {**r, "fits_in": best_fit,
+             "fit_avg": round(group_avg[best_fit], 1),
+             "gap": round(r["ceiling"] - group_avg[best_fit], 1)}
+        flagged.append(r)
 
-    flagged = [r for r in rows if r["gap"] >= MISAPPLIED_MIN_GAP
-               and r["ceiling"] >= MISAPPLIED_MIN_CEILING]
     if group != "All":
         flagged = [r for r in flagged if r["group"] == group]
 
