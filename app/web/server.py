@@ -2209,9 +2209,13 @@ def create_app() -> Flask:
             abort(404)
         w = wd.load_world(wd.DEFAULT_SEED)
         season_year = wd.jhsaa_season_year(w) if w else None
+        # `world["year"] + 1` — every lab year from 0 up through the current one
+        # has an archived season (advance never skips a year), so this is the
+        # count of seasons on record without a second query.
+        years_archived = (w["year"] + 1) if w else 0
         return render_template("jhsaa_lab.html", active="Tools",
                                exists=bool(w), season_year=season_year,
-                               db_path=str(wd.WORLD_DB))
+                               years_archived=years_archived, db_path=str(wd.WORLD_DB))
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():
@@ -2220,13 +2224,35 @@ def create_app() -> Flask:
         (`skip_college=True`), so this is fast and touches nothing but the JHSAA
         tables. `world.reset` + `get_or_create_jhsaa_only` never runs anywhere
         but a lab-mode process (gated above), and a lab process's database is
-        never the real save's."""
+        never the real save's. Use this to start a FRESH multi-year run (a new
+        salt = a whole new set of programs/cohorts); use `/jhsaa-lab/advance`
+        to continue the current one."""
         if not _jhsaa_lab_mode():
             abort(404)
         salt = (request.form.get("salt") or "").strip() or None
         wd.reset(wd.DEFAULT_SEED)
         w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
         wd.run_jhsaa(wd.DEFAULT_SEED, w)
+        return redirect(url_for("jhsaa_lab"))
+
+    @app.route("/jhsaa-lab/advance", methods=["POST"])
+    def jhsaa_lab_advance():
+        """Advance the CURRENT lab world forward N years, simulating and
+        archiving one JHSAA season per year — the same cohorts age up,
+        graduate, and get replaced by new freshmen (`world.advance_jhsaa_lab`),
+        so this is how you build a real multi-year history to analyze instead
+        of N disconnected one-off seasons. `years` is capped so a fat-fingered
+        request can't turn into an unbounded loop on the request thread."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        if not wd.load_world(wd.DEFAULT_SEED):
+            return redirect(url_for("jhsaa_lab"))
+        try:
+            years = max(1, min(50, int(request.form.get("years", "1"))))
+        except ValueError:
+            years = 1
+        for _ in range(years):
+            wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
         return redirect(url_for("jhsaa_lab"))
 
     @app.route("/jhsaa/rankings")
@@ -2708,15 +2734,45 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-archetype-bulk", methods=["POST"])
+    def editor_jhsaa_archetype_bulk():
+        """Add or remove MANY schools' archetype tag at once, writing the SEED FILE
+        (`data/jhsaa/archetypes.json`) so the list survives a brand-new database
+        file, not just a reset of the current one — see
+        `jhsaa.bulk_edit_archetype_seed`. One name per line (blank lines ignored)."""
+        from app import jhsaa as _jh
+        kind = request.form.get("archetype", "")
+        action = request.form.get("action", "add")
+        names = (request.form.get("names") or "").splitlines()
+        result = {"applied": [], "unknown": []}
+        if action == "remove":
+            result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
+        elif kind in ("blue_blood", "development", "doubles"):
+            result = _jh.bulk_edit_archetype_seed(kind, names, remove=False)
+        reset_all()
+        resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                board="archetype"))
+        # A quick confirmation of what stuck, in a cookie flash rather than a query
+        # string — a bulk paste can be dozens of names and would blow past a URL's
+        # practical length.
+        resp.set_cookie("jh_bulk_result",
+                        f"{len(result['applied'])} applied"
+                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
+                        max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():
-        """Rule on whether a JHSAA program plays UP a classification.
+        """Rule on whether — and to WHICH classification — a JHSAA program plays up.
 
         Stored per SCHOOL NAME like the archetype above, and layered the same way over
-        the `play_up` seed list in `data/jhsaa/schools.json`: "yes" promotes a program
-        the file did not pick, "no" holds one it did in its own class, and anything
-        else clears the override so the file decides again. Two different intentions,
-        and a single "clear" could only express one of them.
+        the `play_up` seed list in `data/jhsaa/schools.json`. `play_up` is either:
+        "yes" (the seed-list one-step-up default, kept for backward compatibility),
+        a real group string ("7A") naming exactly where the program should compete —
+        owner rule 2027-09, since real associations approve play-up applications
+        annually and for a program can move more than one class — "no" (hold a
+        seeded program in its own class), or empty (clear the override so the file
+        decides again). Four different intentions, never conflated into one field.
 
         ‼️ This moves which CHAMPIONSHIP a program enters, not how good it is — the
         league, the ladder, State and All-State all follow `group` while `_TALENT`
@@ -2728,20 +2784,24 @@ def create_app() -> Flask:
         # its division has never heard of. Falls back to `school` so an existing caller
         # keeps working.
         school = request.form.get("jh_school") or request.form.get("school", "")
-        choice = request.form.get("play_up", "")
+        choice = (request.form.get("play_up", "") or "").strip()
         if school:
             from app import jhsaa as _jh
-            # ‼️ SERVER-SIDE ELIGIBILITY. The picker only offers small schools, but a
-            # hand-rolled POST is not the picker: playing up is a 4A-and-below
-            # mechanism, so a promotion of anything larger is refused rather than
-            # stored. "no"/clear stay allowed for every school — holding a program in
-            # its own class is always legal, and refusing it would strand any row
-            # written before this check existed.
             row = next((r for r in _jh.playup_rows() if r["name"] == school), None)
-            if choice == "yes" and not (row and _jh.can_play_up(row["classification"])):
-                return _editor_redirect()
-            if choice in ("yes", "no"):
-                ov.set_jhsaa_playup(school, choice == "yes")
+            if choice == "no":
+                ov.set_jhsaa_playup(school, "no")
+            elif choice == "yes":
+                # The seed-list one-step default, stored as an explicit target so
+                # it re-validates the same way any other stored group does.
+                if row and _jh.can_play_up(row["classification"]):
+                    ov.set_jhsaa_playup(school, _jh.play_up_group(row["classification"]))
+            elif choice in _jh.GROUPS:
+                # ‼️ SERVER-SIDE ELIGIBILITY, same principle as before, generalized:
+                # a hand-rolled POST is not the picker, so the target is re-checked
+                # against `valid_playup_target` (eligible AND strictly above the
+                # program's own class) rather than trusted from the form.
+                if row and _jh.valid_playup_target(row["classification"], choice):
+                    ov.set_jhsaa_playup(school, choice)
             else:
                 ov.clear_jhsaa_playup(school)
             _jh.reset_schools()

@@ -3554,6 +3554,49 @@ def departing_now(seed: int = DEFAULT_SEED) -> list[tuple]:
     return rows
 
 
+def advance_jhsaa_lab(seed: int) -> dict:
+    """Advance a JHSAA-only lab world ONE year and simulate+archive that year's
+    season — the lab equivalent of the year-rollover step, but with none of
+    `_finalize_year`'s college machinery (grad, recruiting, prestige, cups,
+    pro offseason). A lab world was built with `skip_college=True`, so it has
+    no `world_roster` to roll over, no graduating class to bank, nothing for
+    any of that to act on — this is the whole rollover a JHSAA-only world
+    needs: bump the year, play the next season, done.
+
+    Existing cohorts age up and graduate naturally: `jhsaa.build_roster` keys
+    a player on (school, gender, ENTRY YEAR, seat), and `year - entry_year`
+    IS their grade, so incrementing the season year alone walks a freshman to
+    a sophomore, ages a senior out, and a new freshman class rolls in — the
+    same mechanism a normal world uses, just without anything college
+    attached to it.
+
+    Returns the new (post-increment) world row.
+
+    ‼️ THE ARCHIVE COMMITS BEFORE THE YEAR POINTER MOVES, not after. If
+    `run_jhsaa` raises — or the process is killed — partway through a long
+    simulation, persisting `year+1` first would leave that year permanently
+    un-simulated: the world row would already claim it, so the NEXT advance
+    would skip straight past it to `year+2`, and `jhsaa_lab`'s archived-count
+    (`world["year"] + 1`) would overcount by exactly the missing season. So
+    `run_jhsaa` is called against an in-memory `year+1` dict FIRST (it only
+    reads `world["id"]`/`["year"]`, never the DB row's own value, so this
+    needs no real world-row mutation to work) — only once that succeeds does
+    the `UPDATE` make `year+1` the persisted world. A crash before that point
+    leaves the world row at its old year, so the next `/jhsaa-lab/advance`
+    call recomputes the SAME `new_year` and retries the missing season,
+    rather than skipping it."""
+    w = load_world(seed)
+    if not w:
+        raise ValueError(f"No lab world at seed {seed} — generate one first.")
+    new_year = w["year"] + 1
+    run_jhsaa(seed, {**w, "year": new_year})
+    conn = _db()
+    conn.execute("UPDATE world SET year=?, week=0 WHERE id=?", (new_year, w["id"]))
+    conn.commit()
+    conn.close()
+    return load_world(seed)
+
+
 def jhsaa_season_year(world: dict) -> int:
     """The calendar year of the JHSAA season for this world-year — IDENTICAL to
     `recruiting_grad_year` (BASE_YEAR + year + 1), because the season's seniors ARE
