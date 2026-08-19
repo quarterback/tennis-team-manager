@@ -376,7 +376,16 @@ def _build_universe(args):
              for school, roster in uni.items()})
 
 
-def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
+def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None,
+                  skip_college: bool = False) -> dict:
+    """`skip_college=True` inserts a legitimate world row (every reader that does
+    `SELECT * FROM world WHERE seed=?` keeps working unmodified) but skips building
+    the college universes entirely — for a JHSAA-only "lab" world used to run
+    standalone high-school seasons for analysis (`scripts/jhsaa_lab.py`). Never
+    pass this from an ordinary call site: a save with no college rosters is not a
+    real league. Lab worlds are expected to live in their OWN scratch database
+    (via `TENNIS_DB_PATH`), never the real save's — see
+    `docs/PLAN-jhsaa-standalone-lab-mode.md`."""
     conn = _db()
     row = conn.execute("SELECT * FROM world WHERE seed=?", (seed,)).fetchone()
     if row:
@@ -394,6 +403,10 @@ def get_or_create(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
     conn.execute("DELETE FROM world_roster WHERE world_id=? AND year=?", (wid, 0))
     conn.commit()                  # make the world row visible to child processes
     reset_caches()
+    if skip_college:
+        row = conn.execute("SELECT * FROM world WHERE id=?", (wid,)).fetchone()
+        conn.close()
+        return dict(row)
     # Seed year-0 rosters for all universes IN PARALLEL — each is independent and
     # deterministic from the salt, so child processes rebuild them byte-identically
     # (serial fallback inside pmap if no pool). Worker count is capped: each holds a
@@ -497,13 +510,25 @@ def reset(seed: int = DEFAULT_SEED) -> None:
         _c.clear()
 
 
-def start_new(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
+def start_new(seed: int = DEFAULT_SEED, salt: str | None = None,
+              skip_college: bool = False) -> dict:
     """Reset and create a brand-new league at preseason (week 0, nothing
     played). The onboarding 'Start new league' action. A fresh random salt
     (unless one is supplied, e.g. for tests) means the new league's rosters and
-    recruits differ from every previous save."""
+    recruits differ from every previous save. `skip_college` — see
+    `get_or_create` — is for JHSAA-only lab worlds only."""
     reset(seed)
-    return get_or_create(seed, salt=salt)
+    return get_or_create(seed, salt=salt, skip_college=skip_college)
+
+
+def get_or_create_jhsaa_only(seed: int = DEFAULT_SEED, salt: str | None = None) -> dict:
+    """A world row with NO college universes built — just enough for
+    `run_jhsaa`/the JHSAA archive tables to work, at a fraction of the cost of a
+    real league. Thin wrapper so `skip_college=True` never appears at an
+    ordinary call site by accident. Intended ONLY against a scratch database
+    dedicated to lab runs (`scripts/jhsaa_lab.py`), never the real save — see
+    `docs/PLAN-jhsaa-standalone-lab-mode.md`."""
+    return get_or_create(seed, salt=salt, skip_college=True)
 
 
 def current_year_seed(seed: int = DEFAULT_SEED) -> int:
