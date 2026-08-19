@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}JHSAA Lab{% endblock %}
+{% block content %}
+
+<div class="jh-shell">
+<div class="jh-ident" style="margin-bottom:14px">
+  <div class="jh-ident-body">
+    <h1>JHSAA Lab</h1>
+    <div class="where">
+      Standalone JHSAA seasons, decoupled from the college/pro sim — no world
+      advance, no college universe built. This process is bound to its own
+      database (<code>{{ db_path }}</code>), separate from your real save.
+    </div>
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Current lab season</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    {% if exists %}
+    <p class="bit">Season {{ season_year }} is archived here.
+      <a href="{{ url_for('jhsaa_page') }}">Browse it at /jhsaa</a> ·
+      <a href="{{ url_for('research_export') }}">Export it as CSV/JSON</a>.</p>
+    {% else %}
+    <p class="bit">No season generated yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Generate a new season</span></div>
+  <div class="bl-panel-body">
+    <form method="post" action="{{ url_for('jhsaa_lab_generate') }}">
+      <label class="s">Salt (optional — leave blank for a fresh random one)
+        <input type="text" name="salt" placeholder="e.g. run-014"></label>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px">
+        Generate new season (both genders)
+      </button>
+    </form>
+    <p class="bit" style="margin-top:10px">
+      Replaces this database's current lab season with a brand-new,
+      independent one (a fresh salt if none is given). Takes roughly as long
+      as one JHSAA rung — both genders, full districts through the TOC — with
+      no college universe built alongside it. Browse the result at
+      <a href="{{ url_for('jhsaa_page') }}">/jhsaa</a> or download it at
+      <a href="{{ url_for('research_export') }}">/research/export</a> once it
+      finishes; this page will show you which season is currently archived.
+    </p>
+  </div>
+</div>
+</div>
+{% endblock %}

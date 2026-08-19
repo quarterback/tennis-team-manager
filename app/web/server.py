@@ -185,6 +185,17 @@ NAV_GROUPS = [
     ]),
 ]
 
+# The JHSAA Lab entry only exists in the nav of a process actually launched in
+# lab mode (`scripts/jhsaa_lab_server.sh`, env `JHSAA_LAB_MODE`) — never on a
+# real save. `os.environ` is read here at import time, before the app starts
+# serving, so this is fixed for the process's whole lifetime like `WORLD_DB`.
+if os.environ.get("JHSAA_LAB_MODE"):
+    for _grp_name, _items in NAV_GROUPS:
+        if _grp_name == "Tools":
+            _items.insert(0, {"id": "jhsaa_lab", "label": "JHSAA Lab",
+                              "icon": "fa-solid fa-flask-vial", "endpoint": "jhsaa_lab", "args": {}})
+            break
+
 
 def _active_nav(req) -> str:
     p = req.path
@@ -215,6 +226,7 @@ def _active_nav(req) -> str:
     # the High School entry instead of their own nav item.
     if p.startswith("/jhsaa/programs"):   return "jh_prog"
     if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
+    if p.startswith("/jhsaa-lab"):        return "jhsaa_lab"
     if p.startswith("/jhsaa"):            return "jhsaa"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
@@ -2175,6 +2187,47 @@ def create_app() -> Flask:
         from app import jhsaa as _jh
         return render_template("jhsaa_transfers.html", active="HS Transfers",
                                rows=_jh.transfer_rows(), gender=gender, u=u, uni_label=label)
+
+    def _jhsaa_lab_mode() -> bool:
+        """Gate for the standalone JHSAA lab surface (see
+        docs/PLAN-jhsaa-standalone-lab-mode.md). Set ONLY on a process launched
+        against a dedicated scratch database (`scripts/jhsaa_lab_server.sh`) —
+        never on the real save's process. `/jhsaa-lab*` 404s unless this is set,
+        so the destructive "generate" action can never reach a real save even if
+        this code ships to every instance."""
+        return bool(os.environ.get("JHSAA_LAB_MODE"))
+
+    @app.route("/jhsaa-lab")
+    def jhsaa_lab():
+        """A standalone JHSAA season generator, decoupled from the college/pro
+        sim: click to produce a brand-new, full-fidelity, both-gender season in
+        THIS process's own (scratch) database, browsable at the ordinary /jhsaa
+        pages and exportable via the ordinary /research/export page — neither
+        needs any change, since this process's DEFAULT_SEED world IS the lab
+        season once one exists."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        w = wd.load_world(wd.DEFAULT_SEED)
+        season_year = wd.jhsaa_season_year(w) if w else None
+        return render_template("jhsaa_lab.html", active="Tools",
+                               exists=bool(w), season_year=season_year,
+                               db_path=str(wd.WORLD_DB))
+
+    @app.route("/jhsaa-lab/generate", methods=["POST"])
+    def jhsaa_lab_generate():
+        """Wipe this (scratch) database's world and simulate a brand-new,
+        independent JHSAA season for both genders — no college universe built
+        (`skip_college=True`), so this is fast and touches nothing but the JHSAA
+        tables. `world.reset` + `get_or_create_jhsaa_only` never runs anywhere
+        but a lab-mode process (gated above), and a lab process's database is
+        never the real save's."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        salt = (request.form.get("salt") or "").strip() or None
+        wd.reset(wd.DEFAULT_SEED)
+        w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
+        wd.run_jhsaa(wd.DEFAULT_SEED, w)
+        return redirect(url_for("jhsaa_lab"))
 
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
