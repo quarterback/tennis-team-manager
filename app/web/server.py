@@ -2209,9 +2209,13 @@ def create_app() -> Flask:
             abort(404)
         w = wd.load_world(wd.DEFAULT_SEED)
         season_year = wd.jhsaa_season_year(w) if w else None
+        # `world["year"] + 1` — every lab year from 0 up through the current one
+        # has an archived season (advance never skips a year), so this is the
+        # count of seasons on record without a second query.
+        years_archived = (w["year"] + 1) if w else 0
         return render_template("jhsaa_lab.html", active="Tools",
                                exists=bool(w), season_year=season_year,
-                               db_path=str(wd.WORLD_DB))
+                               years_archived=years_archived, db_path=str(wd.WORLD_DB))
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():
@@ -2220,13 +2224,35 @@ def create_app() -> Flask:
         (`skip_college=True`), so this is fast and touches nothing but the JHSAA
         tables. `world.reset` + `get_or_create_jhsaa_only` never runs anywhere
         but a lab-mode process (gated above), and a lab process's database is
-        never the real save's."""
+        never the real save's. Use this to start a FRESH multi-year run (a new
+        salt = a whole new set of programs/cohorts); use `/jhsaa-lab/advance`
+        to continue the current one."""
         if not _jhsaa_lab_mode():
             abort(404)
         salt = (request.form.get("salt") or "").strip() or None
         wd.reset(wd.DEFAULT_SEED)
         w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
         wd.run_jhsaa(wd.DEFAULT_SEED, w)
+        return redirect(url_for("jhsaa_lab"))
+
+    @app.route("/jhsaa-lab/advance", methods=["POST"])
+    def jhsaa_lab_advance():
+        """Advance the CURRENT lab world forward N years, simulating and
+        archiving one JHSAA season per year — the same cohorts age up,
+        graduate, and get replaced by new freshmen (`world.advance_jhsaa_lab`),
+        so this is how you build a real multi-year history to analyze instead
+        of N disconnected one-off seasons. `years` is capped so a fat-fingered
+        request can't turn into an unbounded loop on the request thread."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        if not wd.load_world(wd.DEFAULT_SEED):
+            return redirect(url_for("jhsaa_lab"))
+        try:
+            years = max(1, min(50, int(request.form.get("years", "1"))))
+        except ValueError:
+            years = 1
+        for _ in range(years):
+            wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
         return redirect(url_for("jhsaa_lab"))
 
     @app.route("/jhsaa/rankings")
