@@ -179,18 +179,48 @@ ROSTER_SIZE = 12          # legacy flat default; real depth is per-classificatio
 # not weaker filler bodies. That deliberately means big-classification rosters carry
 # real depth "above their station" relative to a bare lineup card; that is the
 # point of modelling depth at all, not a side effect to suppress.
-ROSTER_SIZE_BY_CLASS = {
-    "9A": 24, "8A": 23, "7A": 22, "6A": 20,
-    "5A": 19, "4A": 18, "3A": 16,
-    "2A": 14, "1A": 13,
+#: Roster depth is a BAND per classification (owner rule 2027-08, "we can go
+#: bigger"), not one classification-wide number — the same shape as the college
+#: side's recruiting-budget bands. Two classes share a band (9A/8A, 7A/6A, 5A/4A);
+#: 3A, 2A and 1A each get their own, since the old flat 16/14/13 compressed the
+#: bottom of the ladder the most. Every band was raised versus the old flat
+#: targets (9A 24→20-24, 8A 23→20-24, 7A 22→19-22, 6A 20→19-22, 5A 19→18-20,
+#: 4A 18→18-20, 3A 16→17-19, 2A 14→15-17, 1A 13→14-16) — smallest classes gained
+#: the most, which is exactly where `ROSTER_FLOOR` was getting hit.
+ROSTER_SIZE_BAND_BY_CLASS = {
+    "9A": (20, 24), "8A": (20, 24),
+    "7A": (19, 22), "6A": (19, 22),
+    "5A": (18, 20), "4A": (18, 20),
+    "3A": (17, 19),
+    "2A": (15, 17),
+    "1A": (14, 16),
 }
 
 
-def roster_size(classification: str) -> int:
-    """Total roster size for `classification`. Falls back to the flat
-    `ROSTER_SIZE` for anything not in the table (there shouldn't be any real
-    classification that isn't)."""
-    return ROSTER_SIZE_BY_CLASS.get(classification, ROSTER_SIZE)
+def roster_size(classification: str, school_key: str = "", salt: str = "") -> int:
+    """A program's TARGET total roster depth for `classification` — a STABLE
+    per-program draw within the classification's band, not one number shared by
+    every school in it. Real programs inside one classification support
+    noticeably different squad depth (a big feeder program vs. a thin rural
+    one), so each school draws ONE point in its band and keeps it — seeded on
+    the SCHOOL alone, NEVER the year, so it reads as a durable program trait
+    (the same idiom as a recruiting budget) rather than something that
+    reshuffles season to season. `_freshman_class_size` is what actually turns
+    this into player counts, one grade's worth at a time.
+
+    `school_key` is optional: omit it for a bare classification-level query (an
+    band midpoint) — nothing in the roster-build path does this, but division-
+    level reporting/analysis code might. Falls back to the flat `ROSTER_SIZE`
+    for anything not in the table (there shouldn't be any real classification
+    that isn't)."""
+    band = ROSTER_SIZE_BAND_BY_CLASS.get(classification)
+    if band is None:
+        return ROSTER_SIZE
+    lo, hi = band
+    if not school_key:
+        return round((lo + hi) / 2)
+    rng = random.Random(f"{salt}|jhsaa-roster-band|{school_key}")
+    return rng.randint(lo, hi)
 
 
 #: The regular-season league card's distinct-player count (S1 + the doubles pool
@@ -200,8 +230,9 @@ def roster_size(classification: str) -> int:
 #: college side's `ncaa.lineup_size`/`refill_walkons`.
 #:
 #: ‼️ WHY THIS EXISTS: `_freshman_class_size` rolls each grade INDEPENDENTLY with
-#: real downside variance (35% of a mean as low as ~3.25/grade in 1A), so a real,
-#: unlucky run of four grades can and does land a program's roster below what the
+#: real downside variance (35% of a mean as low as ~3.5/grade even at 1A's raised
+#: 14-16 band), so a real, unlucky run of four grades can and does land a program's
+#: roster below what the
 #: format needs — not a "the generation code isn't running" bug, a missing floor
 #: under code that otherwise works exactly as designed. Below this floor, `_squad`
 #: has no choice but to wrap (`r[i % len(r)]`, "degrade, never crash, on a short
@@ -234,7 +265,7 @@ def _freshman_class_size(school_key: str, entry_year: int, classification: str,
     sophomore/junior arrival is a TRANSFER (a separate mechanic, scaled from
     the college game's transfer portal; not modelled here), never a generation
     roll pretending to be one."""
-    target = roster_size(classification) / len(GRADES)
+    target = roster_size(classification, school_key, salt) / len(GRADES)
     rng = random.Random(f"{salt}|jhsaa-class|{school_key}|{entry_year}")
     return max(1, round(rng.gauss(target, target * 0.35)))
 
