@@ -47,7 +47,8 @@ backwards; see the AAR.
 
 | Phase | Format | Points | Ties |
 |---|---|---:|---|
-| Regular season | **5 singles / 2 doubles** | 7 | impossible |
+| Early non-district window | **5 singles / 2 doubles** | 7 | impossible |
+| Regular season (district + everything after the early window) | **3 singles / 4 doubles** (owner rule 2027-08, swapped from the original 5/2 so the league year trains the postseason's doubles-forward shape all season) | 7 | impossible |
 | Postseason (dual-team state tournament) | **1 singles / 4 doubles** | 5 | impossible |
 
 Both totals are **odd**, so a tie cannot occur and no tie-breaking logic is needed

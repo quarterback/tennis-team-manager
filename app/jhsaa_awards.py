@@ -196,7 +196,57 @@ TEAM_NAMES = ["First Team", "Second Team", "Third Team", "Fourth Team"]
 # the district up also opened the state and region lists to #4s with fat records
 # against nobody. The floor is what makes flight structural instead of a dial.
 FLIGHT_ALPHA = {"state": 1.0, "region": 0.90, "district": 0.70}
+# NOT rescaled for the 2027-08 regular-season swap to 3S/4D, and deliberately so:
+# floor is a cut on a literal SEAT NUMBER (S1, S2, ...), and a school always fields
+# exactly one S1 and one S2 whatever the ladder's total depth — tried tightening
+# this to "top-1-of-3"/"top-2-of-3" on the theory that a 3-deep ladder needs a
+# tighter percentile cut than the old 5-deep one, and it starved every tier below
+# First Team of enough eligible singles players to fill its fixed 10 slots
+# (measured: 9A Third Team came up 7 of 10). Per-seat headcount, not ladder-depth
+# percentage, is the thing the floor was ever gating. See FLIGHT_S2S3_REGULAR below
+# for the actual fix the format swap needed — it's a weighting problem, not an
+# eligibility one.
 FLIGHT_FLOOR = {"state": 2, "region": 3, "district": 0}    # 0 = no floor
+
+# ‼️ S2/S3 IN THE REGULAR SEASON ARE THE TEAM'S WORST TWO STARTERS, NOT ITS
+# 2nd/3rd-BEST (owner rule 2027-08, the doubles-lineup/format swap). The fixed 3S/4D
+# lineup allocation (`jhsaa._arrange_regular`/`_arrange_state`) is S1 = the team's
+# #1 seed, the DOUBLES pool = exactly seeds #2-#9, and S2/S3 = exactly seeds #10/
+# #11 — the two players who didn't make the doubles pool. Before the swap, S2-S5
+# WERE the team's 2nd-5th-best players, which is what justified this section's own
+# stated résumé principle ("#1 spent the year playing every other program's best
+# player" — position implied opponent quality). That premise is now backwards for
+# S2/S3: `jhsaa.FLIGHT_WEIGHTS` still prices them at 0.75/0.25, nearly S1-tier,
+# while the genuinely strong players (#2-#9) who used to fill S2-S5 now play
+# doubles, most of them at D3/D4 (priced at only 0.25/0.10) despite being far
+# better players than a regular-season S2/S3. Left alone, All-District/Region/State
+# selection systematically overrates a roster's two weakest starters and underrates
+# its actual depth.
+#
+# Awards-only override — does NOT touch the shared `jhsaa.FLIGHT_WEIGHTS` table,
+# which stays exactly as the association wrote it for TOSS/seeding. TOSS is scoring
+# a COURT's contribution to a team result regardless of who is rostered there, not
+# crediting an individual's résumé, so it isn't broken by the allocation swap the
+# same way an awards selection built on "position implies opposition quality" is.
+# Scoped to `phase == "regular"` ONLY: the early window (`EARLY_FORMAT_PHASE`)
+# still plays real 5-deep S1-S5, where S2/S3 genuinely are depth stars, and the
+# postseason's frozen Order of Ability puts S1+D1 at ranks #1-#3 as a group, not
+# S2/S3 specifically at #10/#11 — neither shares the regular season's allocation,
+# so neither should share this override.
+#
+# Values are a first cut, not a tuned constant. Priced in D4's ballpark (0.10)
+# rather than below it: an earlier attempt priced them BELOW D4 (0.08/0.05, on the
+# theory that a regular-season S2/S3 is weaker than anyone who made the doubles
+# pool) and it broke HM's own runaway guard — crushing two flights that close to
+# zero collapsed a wide tail of low-résumé singles players into a near-tied mass
+# right at HM_DROP's cutoff, so HM stopped being a threshold and started being
+# "everyone who's bad at singles," growing without bound however far the guard
+# was raised. Landing S3 at D4's own weight and S2 a step above it corrects the
+# ordering (S2/S3 no longer read as near-S1-tier depth stars) without flattening
+# their score distribution into that degenerate mass. Revisit if All-District/
+# Region/State honorees start reading as implausibly light on S2/S3 names, or if
+# HM sizes drift back toward the guard — both would mean this still needs a pass.
+FLIGHT_S2S3_REGULAR = {"S2": 0.15, "S3": 0.10}
 EXTRAORDINARY_PCT = 0.88       # a below-floor singles résumé must be near-perfect…
 # …and must contain a win over somebody who played at or above the floor.
 
@@ -227,7 +277,10 @@ def _flight_no(slot: str) -> int:
 
 def _weight(slot: str, phase: str, postseason, alpha: float = 1.0) -> float:
     from .jhsaa import FLIGHT_WEIGHTS
-    w = FLIGHT_WEIGHTS.get(slot, 0.25) ** alpha
+    base = FLIGHT_WEIGHTS.get(slot, 0.25)
+    if phase == "regular" and slot in FLIGHT_S2S3_REGULAR:
+        base = FLIGHT_S2S3_REGULAR[slot]
+    w = base ** alpha
     return w * (PHASE_WEIGHT if phase in postseason else 1.0)
 
 
@@ -581,10 +634,23 @@ def row_pids(row: dict) -> list:
 def _hm_cut(scores: list[float]) -> float:
     """The statewide-recognition line for one discipline, from the numbered
     teams' own spread — see `HM_DROP`. Everything below this stops being an
-    award and starts being a list."""
+    award and starts being a list.
+
+    `last` is a LOW PERCENTILE of the numbered teams' scores, not the literal
+    minimum. It used to be the minimum, and it broke the moment
+    FLIGHT_S2S3_REGULAR made an `_extraordinary`-admitted regular-season S2/S3
+    (a below-floor exception, not the norm — see `_extraordinary`) score far
+    below every other numbered-team member in its discipline: one outlier
+    became `last`, `top - last` ballooned to most of the score range, and the
+    cut fell to a near-zero (sometimes negative) threshold that admitted almost
+    every candidate — the guard on `_honorable_mention`'s total then clamped
+    what should have been a natural, discipline-specific threshold. A single
+    exceptional admit floor-testing the reference point is exactly the kind of
+    outlier a percentile is robust to and a literal min is not."""
     if not scores:
         return float("inf")
-    top, last = max(scores), min(scores)
+    ordered = sorted(scores)
+    top, last = ordered[-1], ordered[max(0, len(ordered) // 10)]
     return last - HM_DROP * max(0.0, top - last)
 
 

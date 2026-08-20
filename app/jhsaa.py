@@ -1,8 +1,9 @@
 """
 JHSAA — Jefferson's high-school tennis association.
 
-The one place a high-school season is played. Jefferson's ~335 girls' and ~292 boys'
-programs play a district schedule and a state dual-team tournament here, in this engine,
+The one place a high-school season is played. Jefferson's 862 girls' and 777 boys'
+programs (nine classifications, 1A-9A) play a district schedule and a state
+dual-team tournament here, in this engine,
 with players generated and developed here. `prep-network` supplied the institutions only
 (see `scripts/import_jhsaa.py`); nothing about a player comes from that repo.
 
@@ -11,8 +12,8 @@ are the kids who just finished four years in this association, carrying their re
 `graduating_class()` is that hand-off.
 
 FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by literal:
-  * early non-district  3 singles / 4 doubles → 7 points
-  * regular season      5 singles / 2 doubles → 7 points
+  * early non-district  5 singles / 2 doubles → 7 points
+  * regular season      3 singles / 4 doubles → 7 points
   * state tournament    1 singles / 4 doubles → 5 points
 All totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
 Every match plays to completion — there is no clinch in high school
@@ -115,8 +116,8 @@ def dual_format(phase: str) -> DualFormat:
     """The dual shape for `phase` ("early" | "regular" | a showcase | one of
     `POSTSEASON`). District duals play the regular-season shape (they are always
     `phase="regular"`); the postseason switches — and so do the showcases, which exist
-    precisely to play the 1S/4D card in the middle of a 5S/2D league season. The early
-    non-district window switches the other way, to 3S/4D."""
+    precisely to play the 1S/4D card in the middle of a 3S/4D league season. The early
+    non-district window switches the other way, to 5S/2D."""
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
@@ -250,12 +251,13 @@ CHALLENGE_GEO_WEIGHT = 6.0    # travel matters, but less than getting the level 
 
 # --- the mid-season MATCH SHOWCASES (owner spec 2027-08) ----------------------
 #
-# ‼️ THE ASSOCIATION'S POSTSEASON IS A DIFFERENT SPORT FROM ITS LEAGUE SEASON. League
-# play is 5S/2D and rewards singles depth; State is 1S/4D and is decided by four doubles
-# pairings. A program that only ever plays its league card arrives at Sectionals having
-# never fielded the lineup it must win with, and its coach has no evidence at all about
-# which of #4-#9 play well together. The showcases are where that evidence is generated,
-# and they are the ONLY 1S/4D duals in the regular season.
+# ‼️ THE ASSOCIATION'S POSTSEASON IS A DIFFERENT SPORT FROM ITS LEAGUE SEASON... or it
+# was, before the 2027-08 swap moved the league card to 3S/4D too — see EARLY_FORMAT_
+# PHASE above. League play now shares State's doubles-forward shape all season (only
+# the early non-district window still plays the old 5S/2D singles-heavy card); the
+# showcases exist so a program still fields the exact 1S/4D card before Sectionals asks
+# for it, since even 3S/4D never puts a #4-#9 pairing through a full four-doubles dual.
+# The showcases are the ONLY 1S/4D duals before the postseason.
 #
 # ‼️ THEY ARE NOT A TOURNAMENT. No bracket, no draw, no compass, no elimination, no
 # champion, no title, no seed and nothing at stake — a program attends to play a fixed
@@ -1651,9 +1653,12 @@ PAIR_SUM_TOL = 2            # rank-sum gap within which real doubles ability dec
 
 def _pair_partitions(pool: list):
     """Every way to split an even-length `pool` into unordered pairs — (2n-1)!!
-    of them (15 for 6 players, 105 for 8). Shared by `_arrange_state` (D2-D4,
-    6 players) and `_arrange_regular` (the 3S/4D D-pool, 8 players) so the
-    combinatorics live in one place."""
+    of them (15 for 6 players). Used by `_arrange_state` (D2-D4, a small
+    postseason qualifying field) to search for the best pairing. `_arrange_regular`
+    (the 3S/4D D-pool, 8 players — 105 partitions) used to share this for the
+    same kind of search, but that ran on every regular-season dual for the
+    whole association and the search was never worth its cost (owner
+    correction 2027-08, see the AAR) — it now decides directly instead."""
     if not pool:
         yield []
         return
@@ -1749,19 +1754,26 @@ def _pk(pair) -> tuple:
 # exactly #10-#11 (see `_arrange_regular`). What a program's strategy actually
 # decides is how the fixed 8-player pool pairs up into D1-D4:
 #
-#   maximize      pick the pairing that maximises total doubles_rating summed
-#                 across all four pairs, over every legal way to split the
-#                 8-player pool into pairs (105 of them) — a real search, now
-#                 that `doubles_rating` has a genuine pair-synergy term
-#                 (`engine.doubles._pair_synergy`) worth searching for.
-#   balanced      the same search, but the objective trades a little raw total
-#                 for spreading strength more evenly across all four doubles
-#                 courts (`_BALANCE_PENALTY` on the spread between the
-#                 strongest and weakest pair) — a coach who would rather have
-#                 four solid pairs than one great one and three ordinary ones.
+#   maximize      snake-pair the pool by serve-vs-return skew (best server with
+#                 best returner, and so on) — a cheap stand-in for the engine's
+#                 coverage synergy term (`engine.doubles._pair_synergy`), picked
+#                 directly rather than searched for.
+#   balanced      snake-pair by overall ability (strongest with weakest, and so
+#                 on) — spreads strength evenly across all four doubles courts
+#                 for a coach who would rather have four solid pairs than one
+#                 great one and three ordinary ones.
 #   traditional   adjacent-ladder pairing of the fixed pool — D1=#2+#3,
 #                 D2=#4+#5, D3=#6+#7, D4=#8+#9. The classic card, and the only
 #                 shape the generator used to produce before this rule existed.
+#
+# ‼️ NONE OF THESE SEARCH (owner correction 2027-08). The first cut of
+# `maximize`/`balanced` scored all 105 ways to split the 8-player pool into
+# pairs, on EVERY regular-season dual, for every program in the association —
+# real coaches do not run a permutation search before a match, they just pair
+# people up, and `doubles_rating`'s synergy term is capped tiny (`SYNERGY_CAP`
+# in `engine/doubles.py`) specifically so it stays a minor factor, not
+# something worth 105-way scoring for. Each strategy is now one direct,
+# ability-ordered decision. See `_arrange_regular`.
 #
 # The strategy is a durable PROGRAM trait (hashed off the school key, like a
 # coaching tradition — not per-dual dice, so a program's card is recognisable
@@ -1769,7 +1781,6 @@ def _pk(pair) -> tuple:
 # different one.
 _STRATEGIES = ("maximize", "balanced", "traditional")
 _PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries a different strategy
-_BALANCE_PENALTY = 0.5         # "balanced": how strongly |D1 rating - D2 rating| is punished
 
 
 def _coach_strategy(school_key: str) -> str:
@@ -1796,7 +1807,21 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
     are always exactly #10-#11. A coach does not get to decide whether the
     team's 2nd-9th best players play singles or doubles — that's already
     settled by the format. The only real decision, and the only thing
-    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4."""
+    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4.
+
+    ‼️ THE PAIRING ITSELF IS A CHEAP, DIRECT CALL — NOT A SEARCH (owner
+    correction 2027-08, after the first cut exhaustively enumerated all 105
+    ways to split the 8-player pool and scored each one against every other
+    program's pool, every regular-season dual, all season: real-life coaches
+    do not run a permutation search before every match, they just pair people
+    up, and the payoff was never there to justify it anyway — `doubles_rating`'s
+    own docstring caps the synergy term at `SYNERGY_CAP` (0.06) specifically so
+    individual quality stays the primary factor, i.e. the thing 105 partitions
+    were being searched to eke out is capped tiny by design. `maximize` and
+    `balanced` now each make ONE direct decision (a sort, snake-paired or
+    skew-paired) instead of scoring every partition; only the final "strongest
+    pair plays D1" ordering still touches the real engine rating, and that's 4
+    calls, not 420."""
     if len(eleven) < 11:
         return eleven
     s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
@@ -1804,20 +1829,28 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
     else:
-        from engine.doubles import doubles_rating
+        from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
 
         def dr(a, b):
             return doubles_rating(eng[a.pid], eng[b.pid])
 
-        best_score, pairs = None, None
-        for candidate in _pair_partitions(pool):        # 105 ways to split 8 into 4 pairs
-            ratings = [dr(*pr) for pr in candidate]
-            total = sum(ratings)
-            score = total if strategy == "maximize" \
-                else total - _BALANCE_PENALTY * (max(ratings) - min(ratings))
-            if best_score is None or score > best_score:
-                best_score, pairs = score, candidate
+        if strategy == "balanced":
+            # Snake-pair strongest with weakest, next-strongest with
+            # next-weakest, and so on -- spreads ability evenly across the
+            # four courts without scoring a single combination.
+            ranked = sorted(pool, key=lambda p: -eng[p.pid].overall)
+        else:  # "maximize"
+            # A cheap stand-in for the engine's coverage synergy (pairing the
+            # better server with the better returner): rank the pool by
+            # serve-minus-return skew and snake-pair across it, so a
+            # serve-heavy player lands with a return-heavy one instead of
+            # searching for the combination that scores best.
+            ranked = sorted(pool, key=lambda p: (serve_rating(eng[p.pid])
+                                                 - return_rating(eng[p.pid])),
+                            reverse=True)
+        pairs = [(ranked[0], ranked[7]), (ranked[1], ranked[6]),
+                 (ranked[2], ranked[5]), (ranked[3], ranked[4])]
         pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
     out = [s1] + s23
     for a, b in pairs:
@@ -1929,7 +1962,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     as counting toward district place as well as the overall record.
 
     `challenge` is a LABEL on a non-district dual, not a phase: the mid-season challenge
-    is played under the ordinary 5S/2D regular-season rules and counts everywhere a
+    is played under the ordinary 3S/4D regular-season rules and counts everywhere a
     non-district dual counts (overall record, TOSS, at-large selection). Making it a
     `phase` would have quietly changed its dual format and dropped it out of the rating,
     which is the opposite of why it exists.
@@ -1993,7 +2026,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
 
 def run_district(schools: list[School], year: int, *, seed: int,
                  salt: str = "") -> list[TeamSeason]:
-    """A district's regular season: DOUBLE round-robin, 5S/2D, every match completed.
+    """A district's regular season: DOUBLE round-robin, 3S/4D, every match completed.
     Returns its teams ordered by finish (win %, then point differential).
 
     You play every league opponent home AND away (owner rule 2027-08); the rest of the
@@ -2333,11 +2366,13 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 # weak one, and a 4-3 win where you took the premier flights rates above a 4-3 win
 # where you took the bottom of the lineup.
 #
-# Flight weights for the JHSAA's 5 singles / 2 doubles dual (owner rule 2027-08).
+# Flight weights for the JHSAA's dual shapes (owner rule 2027-08). One table shared
+# across all three cards — early 5S/2D, regular-season 3S/4D, state/showcase 1S/4D —
+# since only the SLOT is weighted, never the dual shape it was played under; see
+# `dual_format`/`FORMATS` for which shape a given phase plays.
 # #1 singles and #1 doubles carry EQUAL top weight, and the tail is deliberately steep:
 # a team that wins the two premier flights has done most of the work, while depth at
-# #4/#5 singles moves the number very little. They sum to a max of 3.70 per dual, which
-# is the denominator of a fully contested match.
+# #4/#5 singles moves the number very little.
 #
 # These are the association's own numbers, not the college table (flatter across
 # singles, doubles below #1 singles) and not Oregon's (a 4S/4D format that does not
@@ -2345,16 +2380,20 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
     "D1": 1.00, "D2": 0.50,
-    # D3/D4 appear in every 1S/4D dual — the postseason AND the mid-season showcases.
-    # They used to be rated only by the in-postseason recomputes; the showcases are
-    # rated by the CUTOFF table too (`SHOWCASE_RATED`), so these weights are now load
-    # bearing in the regular season. Same decay as above.
+    # D3/D4 appear in every 1S/4D dual (postseason + showcases) AND, since the
+    # 2027-08 regular-season swap to 3S/4D, in EVERY ordinary league dual too —
+    # they used to be rated only by the in-postseason recomputes and the showcase
+    # cutoff table (`SHOWCASE_RATED`); now they are load-bearing for the whole
+    # regular season, not just those two carve-outs. Same decay as above.
     "D3": 0.25, "D4": 0.10,
 }
-# The 5S/2D sum. ‼️ NOT the denominator FQI divides by — `rating._flight_score` totals
-# the weight actually CONTESTED in each dual, so a 1S/4D showcase (2.85) is scored
-# within its own shape and still contributes a 0..1 share like every other dual. That
-# is what lets two dual shapes sit in one rating without either being over-counted.
+# ‼️ NOT a shared denominator FQI divides by, and NOT the max for any one dual shape
+# any more (the three cards — 5S/2D early, 3S/4D regular, 1S/4D state/showcase — each
+# contest a different weight total now that D3/D4 are load-bearing everywhere).
+# `rating._flight_score` totals the weight actually CONTESTED in each dual and
+# normalises per-dual, so every shape contributes a 0..1 share to the same table
+# without either being over- or under-counted. This constant is historical/
+# documentary only — the 5S/2D-era max — and nothing in the pipeline reads it.
 MAX_FLIGHT_WEIGHT = 3.70
 
 
@@ -2413,12 +2452,18 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     return out
 
 
-# --- format profile: 5S/2D vs the mid-season 1S/4D SHOWCASES -------------------
-# A team's regular season is played 5S/2D; the mid-season showcases and the whole
-# postseason are played 1S/4D. Doubles is 1.5 of 3.70 possible weighted points in the
-# regular shape and up to 1.85 of 2.85 in the showcase/postseason shape — a team that
-# lives off a deep #3-#5 singles bench looks strong all season and can fall apart the
-# moment the card flips, and the showcases exist so that shows up BEFORE State does.
+# --- format profile: 3S/4D regular season vs the mid-season 1S/4D SHOWCASES ----
+# A team's regular season is played 3S/4D (owner rule 2027-08, swapped from the
+# original 5S/2D); the mid-season showcases and the whole postseason are played
+# 1S/4D. Doubles is 1.85 of 3.85 possible weighted points in the regular shape and
+# up to 1.85 of 2.85 in the showcase/postseason shape — roughly 48% vs 65% of the
+# dual. That gap is real but far narrower than it was pre-swap (the old 5S/2D
+# regular card carried only 1.5 of 3.70, ~41%): the two shapes are now much closer
+# in character, so this metric mostly measures how a team performs at ONE singles
+# line and full doubles depth versus THREE singles lines and full doubles depth,
+# not the old singles-vs-doubles flip. A team that lives off a deep #4-#9 doubles
+# bench can still look different at the extra singles court the showcases drop to
+# one — the showcases exist so that still shows up BEFORE State does.
 #
 # ‼️ DISPLAY ONLY, computed fresh every call off `t.schedule` — never archived, never
 # read back into TOSS/ATR or any seeding decision. It works whether or not showcase
@@ -2448,16 +2493,17 @@ def _weighted_lines(d: dict) -> tuple[float, float, float, float]:
 
 
 def _fmt_sample(schedule: list[dict], *, showcase: bool) -> list[dict]:
-    """The 5S/2D regular-season duals (`showcase=False`) or the mid-season 1S/4D
+    """The 3S/4D regular-season duals (`showcase=False`) or the mid-season 1S/4D
     SHOWCASE duals (`showcase=True`) out of one team's schedule. The postseason plays
     1S/4D too but is deliberately excluded from both samples — it is the event these
     numbers exist to help a team prepare FOR, not more data to fold into the same
     average, and it has its own bracket-round display already.
 
     The early non-district window (`EARLY_FORMAT_PHASE`) is EXCLUDED from the regular
-    sample too, for the same reason — it plays its own 3S/4D shape, not the 5S/2D card
-    this metric means by "regular season". Folding it in would quietly average two
-    different formats into one number and call it the team's regular-season baseline."""
+    sample too, for the same reason — it plays its own 5S/2D shape (the old regular-
+    season card, pre-2027-08), not the 3S/4D card this metric means by "regular
+    season". Folding it in would quietly average two different formats into one
+    number and call it the team's regular-season baseline."""
     if showcase:
         return [d for d in schedule if d.get("phase") in SHOWCASE]
     return [d for d in schedule
@@ -2553,7 +2599,7 @@ def _fmt_volatility(sample: list[dict]) -> dict | None:
 
 
 def format_profile(schedule: list[dict]) -> dict:
-    """A team's format-transition profile, comparing its 5S/2D regular season against
+    """A team's format-transition profile, comparing its 3S/4D regular season against
     its mid-season 1S/4D SHOWCASES: `regular` / `showcase` (`_fmt_split`, each with its
     own `n`), `shift` (`_fmt_delta` on `weighted_pct` — a plus/minus MARGIN swing, the
     "temperature" reading), `doubles_index` (`_fmt_index` on `doubles_win_share` — an
@@ -3626,7 +3672,7 @@ def _play_pairs(pairs: list[tuple], rng: random.Random, *, challenge: bool = Fal
                 phase: str = "regular") -> None:
     """Play a window's non-district pairs. Never district, so district place is
     untouched whatever else these results feed. `phase` defaults to the ordinary
-    5S/2D card; the early window passes `EARLY_FORMAT_PHASE` for the 3S/4D one."""
+    3S/4D card; the early window passes `EARLY_FORMAT_PHASE` for the 5S/2D one."""
     for a, b in pairs:
         play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase,
                   district=False, challenge=challenge)
@@ -3657,10 +3703,10 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
-    # The early window plays 3S/4D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
+    # The early window plays 5S/2D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
     # ONLY block of the season that does. Everything from district pass 1 on, including
     # the mid-season non-district window and the late tune-up below, is back to the
-    # ordinary 5S/2D `phase="regular"` because district play has already started by then.
+    # ordinary 3S/4D `phase="regular"` because district play has already started by then.
     _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng,
                phase=EARLY_FORMAT_PHASE)
 

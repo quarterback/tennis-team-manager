@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Team Stat Center{% endblock %}
+{% macro num(v, spec="%.3f") -%}
+{%- if v is none %}<td class="num t-num v-{{ varargs[0] }}" data-sort="">—</td>
+{%- else %}<td class="num t-num v-{{ varargs[0] }}" data-sort="{{ v }}">{{ spec|format(v) }}</td>
+{%- endif -%}
+{%- endmacro %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Team Stat Center</div>
+<h1 class="pt-h1">Team Stat Center</h1>
+
+<div class="pt-filterbar">
+  <label>Season
+    <select id="f-scope" onchange="onScopeChange()">
+      <option value="">Choose a season…</option>
+      {% for s in scopes %}
+      <option value="{{ s.scope_id }}">{{ s.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Classification
+    <select id="f-class" onchange="onClassChange()" disabled>
+      <option value="">Choose a season first</option>
+    </select>
+  </label>
+  <label>District / conference
+    <select id="f-league" onchange="applyFilters()" disabled>
+      <option value="">All</option>
+    </select>
+  </label>
+  <label class="pt-filterbar-search">Search
+    <input class="pt-searchbox" type="search" id="q" placeholder="School name…" oninput="applyFilters()">
+  </label>
+</div>
+
+<div class="pt-tabs" id="view-tabs">
+  <button type="button" data-view="shape" class="active">Team shape</button>
+  <button type="button" data-view="format">Format lift</button>
+  <button type="button" data-view="resume">Résumé</button>
+  <button type="button" data-view="depth">Depth &amp; volatility</button>
+  <button type="button" data-view="pred">Predictive</button>
+</div>
+
+<div id="empty-state" class="pt-myteams-empty" style="margin:24px 0">Pick a season above to load the grid.</div>
+
+<div class="pt-panel" id="grid" style="display:none">
+  <div class="pt-panel-body pt-tablewrap">
+    <table class="pt-table pt-sortable" id="stat-table" data-view="shape">
+      <thead><tr>
+        <th data-nosort>Team</th><th>Cls</th><th data-nosort>District</th><th class="num">Rec</th>
+        <th class="num v-shape">S%</th><th class="num v-shape">D%</th>
+        <th class="num v-shape" title="Doubles reliance: D% − S%, points">DR</th>
+        <th class="num v-shape" title="1 − |D% − S%|">Balance</th>
+        <th class="num v-shape">Lines</th>
+        <th class="num v-format" title="Expected court share on the regular card">RCI</th>
+        <th class="num v-format" title="Expected court share on the State card">SCI</th>
+        <th class="num v-format" title="SCI − RCI, points">Fmt</th>
+        <th class="num v-format" title="P(win a neutral State-card dual)">State WP</th>
+        <th class="num v-format" title="State-card win prob minus regular-card win prob">WP lift</th>
+        <th class="num v-resume" title="vs top-quartile power">Q1</th>
+        <th class="num v-resume" title="vs bottom-quartile power">Q4</th>
+        <th class="num v-resume">League</th>
+        <th class="num v-resume">Non-lg</th>
+        <th class="num v-resume" title="one-point duals">Close</th>
+        <th class="num v-resume" title="average opponent power">Opp pwr</th>
+        <th class="num v-depth" title=".6·S1% + .4·D1%">Top</th>
+        <th class="num v-depth" title="mean win% at S3+/D2+">Depth</th>
+        <th class="num v-depth" title="Top − Depth">StarDep</th>
+        <th class="num v-depth" title="25th pct of per-dual court share">Floor</th>
+        <th class="num v-depth" title="75th pct of per-dual court share">Ceiling</th>
+        <th class="num v-depth" title="stdev of per-dual court share">Vol</th>
+        <th class="num v-pred" title="power-model expected wins">xW</th>
+        <th class="num v-pred" title="actual wins − expected wins">Luck</th>
+        <th class="num v-pred" title="Σ max(0, .5 − p) over wins">Upset val</th>
+        <th class="num v-pred" title="Σ max(0, p − .5) over losses">Bad loss</th>
+        <th class="num v-pred" title="share of wins vs top-decile power">Elite%</th>
+      </tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr data-scope="{{ r.scope_id }}" data-class="{{ r.classification }}" data-league="{{ r.league }}"
+            data-name="{{ r.name|lower }}">
+          <td><a href="{{ team_href(r.program_id, r.scope_id) }}">{{ r.name }}</a></td>
+          <td><span class="pt-chip">{{ r.classification }}</span></td>
+          <td>{{ r.league }}</td>
+          <td class="num t-num" data-sort="{{ r.record.split('-')[0] }}">{{ r.record }}</td>
+          {{ num(r.s_pct, "%.3f", "shape") }}
+          {{ num(r.d_pct, "%.3f", "shape") }}
+          {{ num(r.dr, "%+.1f", "shape") }}
+          {{ num(r.balance, "%.3f", "shape") }}
+          {{ num(r.lines_played, "%d", "shape") }}
+          {{ num(r.rci, "%.3f", "format") }}
+          {{ num(r.sci, "%.3f", "format") }}
+          {{ num(r.fmt, "%+.1f", "format") }}
+          {{ num(r.swp, "%.3f", "format") }}
+          {{ num(r.fwpl, "%+.3f", "format") }}
+          <td class="num t-num v-resume" data-sort="{{ r.q1.split('-')[0] if r.q1 != '—' else '' }}">{{ r.q1 }}</td>
+          <td class="num t-num v-resume" data-sort="{{ r.q4.split('-')[0] if r.q4 != '—' else '' }}">{{ r.q4 }}</td>
+          <td class="num t-num v-resume">{{ r.league_rec }}</td>
+          <td class="num t-num v-resume">{{ r.non_league_rec }}</td>
+          <td class="num t-num v-resume">{{ r.close }}</td>
+          {{ num(r.avg_opp_power, "%.3f", "resume") }}
+          {{ num(r.top, "%.3f", "depth") }}
+          {{ num(r.depth, "%.3f", "depth") }}
+          {{ num(r.star_dep, "%+.3f", "depth") }}
+          {{ num(r.floor, "%.3f", "depth") }}
+          {{ num(r.ceiling, "%.3f", "depth") }}
+          {{ num(r.vol, "%.3f", "depth") }}
+          {{ num(r.expected, "%.1f", "pred") }}
+          {{ num(r.luck, "%+.1f", "pred") }}
+          {{ num(r.uv, "%.2f", "pred") }}
+          {{ num(r.blv, "%.2f", "pred") }}
+          {{ num(r.ews, "%.3f", "pred") }}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var SCOPES = {
+  {% for s in scopes %}
+  {{ s.scope_id|tojson }}: {
+    classes: [{% for c in s.classes %}{{ c|tojson }}{{ "," if not loop.last }}{% endfor %}],
+    leagues: {
+      {% for c in s.classes %}
+      {{ c|tojson }}: [{% for lg in s.leagues[c] %}{{ lg|tojson }}{{ "," if not loop.last }}{% endfor %}]{{ "," if not loop.last }}
+      {% endfor %}
+    }
+  }{{ "," if not loop.last }}
+  {% endfor %}
+};
+
+document.querySelectorAll('#view-tabs button[data-view]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('#view-tabs button').forEach(function(o){ o.classList.remove('active'); });
+    b.classList.add('active');
+    document.getElementById('stat-table').dataset.view = b.dataset.view;
+  });
+});
+
+function fill(sel, options, placeholder, withAll){
+  sel.innerHTML = '';
+  if (withAll || !options.length){
+    var o0 = document.createElement('option'); o0.value = ''; o0.textContent = placeholder; sel.appendChild(o0);
+  }
+  options.forEach(function(o){
+    var opt = document.createElement('option'); opt.value = o; opt.textContent = o; sel.appendChild(opt);
+  });
+  sel.disabled = options.length === 0;
+}
+
+function onScopeChange(){
+  var scope = document.getElementById('f-scope').value;
+  var classes = scope ? SCOPES[scope].classes : [];
+  // Classification is REQUIRED once a season is up: the grid opens on the
+  // biggest class, never on the whole state at once.
+  fill(document.getElementById('f-class'), classes, 'Choose a season first', false);
+  onClassChange();
+}
+function onClassChange(){
+  var scope = document.getElementById('f-scope').value;
+  var cls = document.getElementById('f-class').value;
+  var leagues = (scope && cls) ? SCOPES[scope].leagues[cls] : [];
+  fill(document.getElementById('f-league'), leagues, 'All', true);
+  applyFilters();
+}
+function applyFilters(){
+  var scope = document.getElementById('f-scope').value;
+  var cls = document.getElementById('f-class').value;
+  var lg = document.getElementById('f-league').value;
+  var q = document.getElementById('q').value.toLowerCase().trim();
+  var active = !!scope;
+  document.getElementById('grid').style.display = active ? '' : 'none';
+  document.getElementById('empty-state').style.display = active ? 'none' : '';
+  if (!active) return;
+  document.querySelectorAll('#stat-table tbody tr').forEach(function(r){
+    var show = r.dataset.scope === scope;
+    if (show && cls && r.dataset.class !== cls) show = false;
+    if (show && lg && r.dataset.league !== lg) show = false;
+    if (show && q && r.dataset.name.indexOf(q) === -1) show = false;
+    r.style.display = show ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

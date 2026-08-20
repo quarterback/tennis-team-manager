@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Brackets{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Brackets</div>
+<h1 class="pt-h1">State Brackets</h1>
+<p class="t-dek">The archived postseason draw for every classification with a bracket on record — read straight from the export, not recomputed.</p>
+{% if not bracket_scopes %}
+<p>No bracket data in this export yet.</p>
+{% endif %}
+{% for scope in bracket_scopes %}
+<h2 class="pt-h2">{{ scope.label }}</h2>
+<div class="pt-index-grid">
+  {% for cls in scope.classifications %}
+  <a class="pt-index-card" href="{{ cls.href }}">
+    <h4>{{ cls.name }}</h4>
+    <div class="sub">Champion: {{ cls.champion or "TBD" }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

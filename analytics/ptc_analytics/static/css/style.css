@@ -180,3 +180,107 @@ h3.pt-h3 { font-family: var(--font-display); font-weight: var(--fw-bold); font-s
 .pt-searchbox { width: 100%; padding: 10px 12px; border: 1px solid var(--border-default); border-radius: 8px; font-size: var(--fs-body-m); margin-bottom: 14px; }
 
 footer.pt-footer { max-width: var(--container); margin: 0 auto; padding: 20px var(--gutter) 60px; color: var(--text-faint); font-size: var(--fs-caption); }
+
+/* Season / classification / league cascading filter bar (Teams hub) */
+.pt-filterbar {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius); background: var(--surface-subtle);
+  padding: 14px 16px; margin-bottom: 8px;
+}
+.pt-filterbar label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-muted); }
+.pt-filterbar select {
+  font: inherit; font-size: var(--fs-body-s); padding: 7px 10px; border: 1px solid var(--border-default);
+  border-radius: 6px; background: var(--surface-card); color: var(--text-primary); min-width: 200px;
+}
+.pt-filterbar select:disabled { opacity: 0.5; }
+.pt-filterbar-search { flex: 1 1 260px; min-width: 220px; }
+.pt-filterbar-search .pt-searchbox { margin: 0; }
+.pt-index-grid--tight { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+
+/* Favorites star (client-side, localStorage — no server) */
+.pt-index-card { position: relative; }
+.pt-star {
+  position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer;
+  font-size: 16px; line-height: 1; color: var(--text-faint); padding: 2px;
+}
+.pt-star:hover { color: var(--rank-gold); }
+.pt-star.is-fav { color: var(--rank-gold); }
+
+.pt-myteams { margin-bottom: 24px; }
+.pt-myteams-empty { color: var(--text-muted); font-size: var(--fs-body-s); }
+
+/* Bracket rounds */
+.pt-bracket-rounds { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 8px; }
+.pt-bracket-round { flex: 0 0 220px; }
+.pt-bracket-round h4 { font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--text-muted); margin: 0 0 8px; }
+.pt-bracket-game { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; background: var(--surface-card); font-size: var(--fs-body-s); }
+.pt-bracket-side { display: flex; justify-content: space-between; padding: 2px 0; }
+.pt-bracket-side.winner { font-weight: var(--fw-bold); color: var(--tint-win-fg); }
+
+/* ---- season dashboards, stat center, in-game-style schedule cards ---- */
+
+/* Chip/tag semantic aliases — palette slots only, per the token discipline. */
+:root {
+  --tag-dist-bg: var(--brand-tint);        --tag-dist-fg: var(--brand-strong);
+  --tag-invite-bg: var(--gray-150);        --tag-invite-fg: var(--gray-600);
+  --tag-showcase-bg: hsla(240, 100%, 16%, 0.08); --tag-showcase-fg: var(--twilight);
+  --tag-road-bg: hsla(358, 80%, 40%, 0.10); --tag-road-fg: var(--oxblood);
+  --tag-state-bg: var(--tint-win-bg);      --tag-state-fg: var(--tint-win-fg);
+  --tag-toc-bg: hsla(45, 90%, 50%, 0.18);  --tag-toc-fg: color-mix(in oklab, var(--rank-gold) 80%, var(--ink));
+}
+
+.pt-subline { color: var(--text-muted); font-size: var(--fs-body-s); margin: -6px 0 10px; }
+
+.pt-chip {
+  display: inline-block; padding: 0 7px; border-radius: 5px;
+  background: var(--surface-th); color: var(--text-secondary);
+  font-size: var(--fs-micro); font-weight: var(--fw-bold); line-height: 1.6;
+}
+
+.pt-tagchip {
+  display: inline-block; padding: 1px 7px; border-radius: 5px; white-space: nowrap;
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold); letter-spacing: 0.02em;
+}
+.pt-tagchip.tag-dist { background: var(--tag-dist-bg); color: var(--tag-dist-fg); }
+.pt-tagchip.tag-invite { background: var(--tag-invite-bg); color: var(--tag-invite-fg); }
+.pt-tagchip.tag-showcase { background: var(--tag-showcase-bg); color: var(--tag-showcase-fg); }
+.pt-tagchip.tag-road { background: var(--tag-road-bg); color: var(--tag-road-fg); }
+.pt-tagchip.tag-state { background: var(--tag-state-bg); color: var(--tag-state-fg); }
+.pt-tagchip.tag-toc { background: var(--tag-toc-bg); color: var(--tag-toc-fg); }
+
+/* Schedule section header rows — the in-game card's "LEAGUE PLAY" bands. */
+.pt-table tr.pt-section-row td {
+  background: var(--surface-th); color: var(--text-muted);
+  font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+  text-transform: uppercase; letter-spacing: var(--ls-eyebrow); padding: 5px 12px;
+}
+.pt-venue { color: var(--text-faint); font-size: var(--fs-caption); width: 24px; }
+
+/* Tab strips — parallel views of one dataset, never a stacked scroll. */
+.pt-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+.pt-tabs button {
+  font: inherit; font-size: var(--fs-body-s); font-weight: var(--fw-semibold);
+  padding: 7px 14px; border: 1px solid var(--border-default); border-radius: 999px;
+  background: var(--surface-card); color: var(--text-secondary); cursor: pointer;
+}
+.pt-tabs button:hover { border-color: var(--brand-strong); color: var(--brand-strong); }
+.pt-tabs button.active { background: var(--brand); border-color: var(--brand); color: var(--text-inverse); }
+
+/* Sortable headers */
+.pt-table th.pt-sort { cursor: pointer; user-select: none; }
+.pt-table th.pt-sort:hover { color: var(--text-primary); }
+.pt-table th.pt-sort.sorted::after { content: " ▲"; font-size: 9px; }
+.pt-table th.pt-sort.sorted[data-dir="desc"]::after { content: " ▼"; }
+
+/* Team-page season analytics list */
+.pt-statlist td:first-child { color: var(--text-secondary); }
+
+/* Stat Center view switching: identity columns always show; metric columns
+   belong to one view each and show only when the table is in that view. */
+#stat-table .v-shape, #stat-table .v-format, #stat-table .v-resume,
+#stat-table .v-depth, #stat-table .v-pred { display: none; }
+#stat-table[data-view="shape"] .v-shape { display: table-cell; }
+#stat-table[data-view="format"] .v-format { display: table-cell; }
+#stat-table[data-view="resume"] .v-resume { display: table-cell; }
+#stat-table[data-view="depth"] .v-depth { display: table-cell; }
+#stat-table[data-view="pred"] .v-pred { display: table-cell; }
