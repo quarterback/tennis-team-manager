@@ -894,11 +894,10 @@ _transfer_cache: dict = {}
 # School, and handing out the same list is the entire point.
 _schoolobj_cache: dict = {}
 _upstart_cache: dict = {}
-
-#: The largest league the association will cut, mirroring
-#: `scripts/import_jhsaa.MAX_DISTRICT` — read here only so a played-up program does
-#: not join a league that is already full.
-MAX_DISTRICT = 12
+# {version: {school: league}} for every played-up program's shared league — see
+# `_playup_league`. Keyed on the play-up fingerprint ALONE (never per gender): the
+# whole point is that both genders read the identical dict.
+_playup_league_cache: dict = {}
 
 
 def reset_schools() -> None:
@@ -911,6 +910,7 @@ def reset_schools() -> None:
     _playup_cache.clear()
     _schoolobj_cache.clear()
     _upstart_cache.clear()
+    _playup_league_cache.clear()
 
 
 #: Playing up is a SMALL-SCHOOL mechanism (owner correction 2027-08): eligible at this
@@ -1158,7 +1158,14 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     if _schools_cache is None:
         with open(_DATA, encoding="utf-8") as fh:
             _schools_cache = json.load(fh)["schools"]
-    pmap = _playup_map(ov.jhsaa_playup_version())
+    version = ov.jhsaa_playup_version()
+    pmap = _playup_map(version)
+    # The league a played-up program actually competes in — LIVE, via the same
+    # cached mapping `load_schools` uses, never the raw stored field. The stored
+    # `girls_district`/`boys_district` names the program's OLD class's league;
+    # reading it here is what made this card disagree with the district page for
+    # every played-up program on the board.
+    moved = _playup_league(version, _schools_cache, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
     by_name = {r["name"]: r for r in _schools_cache}
@@ -1173,8 +1180,9 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
         targets = ([g for g in GROUPS[:GROUPS.index(champ_group(cls))]]
                   if can_play_up(cls) else [])
+        district = moved.get(name) if target else _row_league(r)
         return {"name": name, "classification": cls, "city": r["city"],
-                "district": r.get("girls_district") or r.get("boys_district") or "",
+                "district": district or "",
                 "archetype": amap.get(name, ""),
                 # `plays_up` truthy = the string of the group they're IN; None = not.
                 "plays_up": bool(target),
@@ -1275,7 +1283,7 @@ def load_schools(gender: str) -> list[School]:
     cached and why nobody noticed when it stopped being free: `_plays_up_row` went into
     the per-row loop, and each call resolved the override table's FINGERPRINT with its
     own SQLite connect + query + close. One call to this function did ~20,000 database
-    round trips — the row loop, plus `_playup_districts` walking the rows twice more.
+    round trips — the row loop, plus `_playup_league` walking the rows twice more.
 
     `build_roster` then calls `upstarts()`, which called this twice per program, so a
     single program's roster cost 39,776 queries and 6.2 seconds, and the JHSAA rung —
@@ -1295,7 +1303,7 @@ def load_schools(gender: str) -> list[School]:
         with open(_DATA, encoding="utf-8") as fh:
             _schools_cache = json.load(fh)["schools"]
     pmap = _playup_map(version)
-    moved = _playup_districts(gender, _schools_cache, pmap)
+    moved = _playup_league(version, _schools_cache, pmap)
     out = []
     for r in _schools_cache:
         if not r.get(gender):
@@ -1329,50 +1337,85 @@ def load_schools(gender: str) -> list[School]:
     return out
 
 
-def _playup_districts(gender: str, rows: list[dict],
-                      pmap: dict | None = None) -> dict[str, str]:
-    """{school: league} for every played-up program — the leagues they join in the
-    class they compete in.
+def _row_league(row: dict) -> str | None:
+    """A settled row's ONE league name — girls and boys share it by construction
+    (a league belongs to the SCHOOL, drawn once per classification over the
+    girls-inclusive superset), so either field names the same string. Prefer
+    girls' since it's the superset; fall back for a boys-only sponsor."""
+    return row.get("girls_district") or row.get("boys_district")
 
-    ‼️ PLACED IN ONE PASS, NOT ONE AT A TIME. Each school picks the nearest league by
-    county, then area, then the emptiest, and skips any already at `MAX_DISTRICT`.
-    Computed per school independently that rule is not enough: two 8A blue-bloods
-    playing up to 9A both looked at the same settled membership, both saw the same
-    nearest league with room, and both joined it — 11 became 13, and district size IS
-    the schedule here (a double round robin, so that is four extra duals). The
-    running count has to include the play-ups already placed, which means they are
-    one assignment rather than a rule applied N times.
+
+def _playup_league(version: str, rows: list[dict],
+                   pmap: dict | None = None) -> dict[str, str]:
+    """{school: league} for every played-up program's SHARED league — memoised on the
+    play-up fingerprint alone (never per gender), so both genders read the identical
+    dict and always land on the identical league. Never call `_compute_playup_league`
+    directly; this is the caching wrapper `load_schools` uses."""
+    hit = _playup_league_cache.get(version)
+    if hit is not None:
+        return hit
+    fresh = _compute_playup_league(rows, pmap)
+    # Compute into a local, publish, return the LOCAL (the gthread rule).
+    _playup_league_cache.clear()
+    _playup_league_cache[version] = fresh
+    return fresh
+
+
+def _compute_playup_league(rows: list[dict],
+                           pmap: dict | None = None) -> dict[str, str]:
+    """{school: league} for every played-up program — the ONE league (not one per
+    gender) they join in the class they compete in.
+
+    ‼️ ONE LEAGUE PER SCHOOL, NOT PER GENDER (owner rule — a league belongs to the
+    SCHOOL, same as an unplayed-up program's). The old version ran once per gender
+    and picked independently, which could and did put a program's girls team in one
+    league and its boys team in another — invisible unless you compared both team
+    pages for the same school. Computed ONCE here, gender-agnostic, and cached on
+    the play-up fingerprint alone (`_playup_league` above) so `load_schools("girls")`
+    and `load_schools("boys")` are guaranteed to read the identical dict.
+
+    ‼️ GEOGRAPHY IS A PREFERENCE, NEVER A GATE (owner rule). A played-up program
+    joins the CLOSEST existing league in its new class — county match first, then
+    area match — with no capacity cap and no maximum distance. Real high-school
+    sport already crosses state lines this freely (WIAA fields Oregon border
+    schools, Oregon fields Washington ones, Nevada and California and Arizona
+    programs cross both ways) — there is no rule here stricter than that. District
+    size is not a constraint to protect: `run_season` builds each district's double
+    round-robin from whoever is actually IN it that year, so a league one program
+    larger just plays a longer, still-perfectly-valid season. Nothing overflows,
+    nothing needs spreading across leagues, and there is no such thing as "a league
+    with no room" — only nearer and farther ones.
+
+    ‼️ THIS CANNOT LEGITIMATELY COME UP EMPTY. `near` is populated from every
+    settled (non-played-up) program in the target class; it is empty only if that
+    whole classification has no settled programs at all, which cannot happen for a
+    real class on this data — so that case raises loudly rather than silently
+    parking the program on its OLD league (a one-team league in a double round
+    robin is a season with no games, and it used to fail exactly that quietly).
 
     Settled membership excludes every played-up school, so a school that has moved
     out of a class is not counted as still being in it."""
-    key = f"{gender}_district"
-    size: dict[tuple[str, str], int] = {}
-    for x in rows:
-        if not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap):
-            continue
-        size[(x["group"], x[key])] = size.get((x["group"], x[key]), 0) + 1
+    settled = [x for x in rows if _row_league(x) and not _plays_up_row(x, pmap)]
+    movers = sorted((x for x in rows if _plays_up_row(x, pmap)),
+                    key=lambda x: x["name"])          # deterministic order
 
     out = {}
-    movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x, pmap)),
-                    key=lambda x: x["name"])          # deterministic order
     for row in movers:
         group = _plays_up_row(row, pmap)              # the RESOLVED target, not
                                                         # always one step up
         near: dict[str, list[int]] = {}
-        for x in rows:
-            if (not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap)
-                    or x["group"] != group):
+        for x in settled:
+            if x["group"] != group:
                 continue
-            slot = near.setdefault(x[key], [0, 0])
+            slot = near.setdefault(_row_league(x), [0, 0])
             slot[0] += x["county"] == row["county"]
             slot[1] += x["area"] == row["area"]
         if not near:
-            out[row["name"]] = row[key]               # nothing to join: keep it
-            continue
-        best = min(near, key=lambda d: (size.get((group, d), 0) >= MAX_DISTRICT,
-                                        -near[d][0], -near[d][1],
-                                        size.get((group, d), 0), d))
-        size[(group, best)] = size.get((group, best), 0) + 1
+            raise ValueError(
+                f"{row['name']!r} plays up to {group!r}, but {group} has no "
+                "settled league to join at all — a real classification always "
+                "has one; check the play-up target and the schools data.")
+        best = min(near, key=lambda d: (-near[d][0], -near[d][1], d))
         out[row["name"]] = best
     return out
 

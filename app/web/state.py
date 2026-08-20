@@ -4657,39 +4657,70 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         return {"found": False, "school": school, "gender": g}
     salt = world.active_salt(seed)
     years = world.jhsaa_years(w["id"], g)
-    # The school's ledger is read ONCE and indexed by year. Reading it inside the loop
-    # made the page quadratic in seasons — every year re-walking every year's archive.
-    team_by_year = {r["year"]: r
-                    for r in world.jhsaa_school_seasons(w["id"], g, school)}
+    # ‼️ A CAREER CAN SPAN TWO SCHOOLS. A transferred pid is generated from its
+    # ORIGIN school's identity (`build_roster`'s own transfer handling), so it
+    # sits on the origin's roster every year BEFORE the move and the
+    # destination's roster every year AT/AFTER it — never the URL's `school`
+    # alone for the whole career. Reading every season off the fixed `sc` (the
+    # old behaviour) silently DROPPED every pre-transfer season from the page
+    # entirely whenever you viewed the player at their new school, and every
+    # post-transfer season when viewed at their old one — not a missing label,
+    # missing rows. `moved` resolves the (at most one) transfer this pid has;
+    # `_school_for_year` below picks origin vs destination per season.
+    moved = jh.transfer_for(pid)
+    origin_sc = dest_sc = None
+    if moved:
+        origin_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("from")), None)
+        dest_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("to")), None)
+
+    def _school_for_year(season_year):
+        if moved and moved.get("year") is not None:
+            if season_year < moved["year"]:
+                return origin_sc or sc
+            return dest_sc or sc
+        return sc
+
+    # Per-school ledgers, built lazily and cached by school name — a two-school
+    # career needs both, a one-school career needs only the one it always did.
+    _team_by_year_cache: dict[str, dict] = {}
+    def _team_by_year(sch_name):
+        hit = _team_by_year_cache.get(sch_name)
+        if hit is None:
+            hit = {r["year"]: r for r in world.jhsaa_school_seasons(w["id"], g, sch_name)}
+            _team_by_year_cache[sch_name] = hit
+        return hit
+
     seasons, player = [], None
     for yr in years:
         arc = world.get_jhsaa(w["id"], yr, g)
         if not arc:
             continue
         season_year = arc.get("season_year") or world.jhsaa_season_year(w)
-        roster = jh.build_roster(sc, season_year, salt)
+        yr_sc = _school_for_year(season_year)
+        roster = jh.build_roster(yr_sc, season_year, salt)
         hit = next((p for p in roster if p.pid == pid), None)
         if hit is None:
             continue                       # not enrolled that year (pre-9th, or graduated)
         player = player or hit
-        sched = world.jhsaa_schedule(w["id"], yr, g, school)
+        sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
         slots = _jh_slot_records(sched).get(hit.name, {})
-        aw = (arc.get("awards") or {}).get(sc.group) or {}
+        aw = (arc.get("awards") or {}).get(yr_sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
         # region because it is class-blind — so both are merged in here.
         honors = jh.honors_for(pid, {
             **aw,
-            "all_district": (arc.get("all_district") or {}).get(sc.group, {}),
+            "all_district": (arc.get("all_district") or {}).get(yr_sc.group, {}),
             "all_region": arc.get("all_region") or aw.get("all_region") or {},
-        }, sc.group)
-        team = team_by_year.get(yr)
+        }, yr_sc.group)
+        team = _team_by_year(yr_sc.name).get(yr)
         w_, l_ = rec["s"][0] + rec["d"][0], rec["s"][1] + rec["d"][1]
         seasons.append({
             "year": yr, "season_year": season_year, "grade": hit.grade,
-            "class": {9: "Freshman", 10: "Sophomore", 11: "Junior", 12: "Senior"}
-                     .get(hit.grade, str(hit.grade)),
+            "class": str(hit.grade),
+            "school": yr_sc.name, "school_mark": jh.mark(yr_sc, 20),
+            "transferred": bool(moved) and yr_sc.name != school,
             "ladder": next((i for i, p in enumerate(roster, 1) if p.pid == pid), 0),
             "ovr": round(hit.current_overall(), 1), "str": hit.str_value(),
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
