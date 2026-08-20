@@ -106,12 +106,21 @@ def test_only_small_schools_play_up(clean):
 
 def test_boys_and_girls_play_up_together(clean):
     """Playing up belongs to the SCHOOL, like its league and its archetype — a
-    program cannot compete in 6A for girls and 5A for boys."""
-    g = {s.name for s in _ups("girls")}
-    b = {s.name for s in _ups("boys")}
-    for s in jh.load_schools("boys"):
-        if s.name in g:
-            assert s.name in b, s.name
+    program cannot compete in 6A for girls and 5A for boys, and it cannot land in
+    two DIFFERENT leagues of that 6A either. The split-league form of this bug was
+    invisible unless you compared both team pages for the same school side by
+    side — `_playup_league` is computed once, gender-agnostic, so both reads are
+    guaranteed to see the identical assignment rather than two independent ones."""
+    girls = {s.name: s for s in jh.load_schools("girls")}
+    boys = {s.name: s for s in jh.load_schools("boys")}
+    g_up = {s.name for s in _ups("girls")}
+    b_up = {s.name for s in _ups("boys")}
+    for name in g_up:
+        if name in boys:
+            assert name in b_up, name
+    for name in (g_up & boys.keys() & girls.keys()):
+        assert girls[name].group == boys[name].group, name
+        assert girls[name].district == boys[name].district, name
 
 
 # --- ‼️ the invariant ---------------------------------------------------------------
@@ -159,16 +168,36 @@ def test_a_played_up_school_joins_a_real_league_of_its_new_class(clean):
             assert len(mates) >= 4, (s.name, s.group, s.district, len(mates))
 
 
-def test_playing_up_does_not_overfill_a_league(clean):
-    """Capacity is a hard constraint: district size IS the schedule here, so a
-    played-up program must not push a league past MAX_DISTRICT while an emptier
-    neighbour sits beside it."""
+def test_playing_up_ignores_league_size_and_prefers_geography(clean):
+    """Geography is a preference, never a gate (owner rule): a played-up program
+    joins the CLOSEST existing league in its new class — county match first, then
+    area — with no capacity cap and no maximum distance, the same way real
+    high-school sport already crosses state lines (WIAA fields Oregon border
+    schools; Nevada, California and Arizona programs cross both ways). If there is
+    a same-COUNTY league in the target class, the program must land in one of
+    them, however full it already is — `jh.MAX_DISTRICT` no longer gates this
+    path at all."""
+    assert not hasattr(jh, "MAX_DISTRICT"), \
+        "a capacity constant reappeared on the play-up path — size must stay a non-factor"
+    # The candidate pool is SCHOOL-level, not per gender (a girls-only sponsor is
+    # still a real member of its league and county) — so build it by UNIONING both
+    # genders' settled schools, the same pool `_compute_playup_league` itself sees,
+    # rather than either gender's `load_schools` alone (which would silently drop
+    # every school that doesn't field THAT gender's team).
+    settled_by_group, seen = {}, set()
     for gender in ("girls", "boys"):
-        sizes = {}
-        for s in jh.load_schools(gender):
-            sizes[(s.group, s.district)] = sizes.get((s.group, s.district), 0) + 1
-        over = {k: v for k, v in sizes.items() if v > jh.MAX_DISTRICT}
-        assert not over, over
+        for x in jh.load_schools(gender):
+            if x.plays_up or x.name in seen:
+                continue
+            seen.add(x.name)
+            settled_by_group.setdefault(x.group, []).append(x)
+    for gender in ("girls", "boys"):
+        for s in _ups(gender):
+            mates = settled_by_group.get(s.group, [])
+            same_county_districts = {m.district for m in mates if m.county == s.county}
+            if same_county_districts:
+                assert s.district in same_county_districts, \
+                    (s.name, s.district, same_county_districts)
 
 
 # --- the override layers over the seed ---------------------------------------------
