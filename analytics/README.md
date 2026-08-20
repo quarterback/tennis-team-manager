@@ -37,56 +37,6 @@ Re-run `python3 build.py` with no arguments to re-render from everything already
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
-## Navigation (owner rewrite, 2027-08)
-
-The first pass flatly listed every program (~1,600) and every player (~19,700
-statewide) — closer to a raw database dump than an analytics tool, and it made
-the site nearly unusable at real scale. Rebuilt to look like the actual pro-
-team scouting tools this is modeled on (StatsBomb IQ / Wyscout-style: a
-persistent season → competition → team scope picker, not a flat list, plus
-pinned favorites) rather than a Football Manager save browser:
-
-- **Teams** — cascading Season → Classification → League `<select>`s, plus an
-  independent global search box that ignores the pickers. Nothing renders
-  until you pick a season or start typing — never a silent 1,600-card dump.
-- **Brackets** — new section, reading `jhsaa_championships.json` (was
-  ingested and completely unused before this pass) straight from the export:
-  the real archived postseason draw, round by round, per classification —
-  the same "look at the playoff bracket" the game itself offers. Round
-  labels use the export's own `round_names` field verbatim wherever it's
-  present (`_round_names()` in `render.py`) — an expanded 40-team
-  classification prepends "Qualifiers Round"/"First Round" ahead of a
-  converged Octofinals-onward bracket, and those two rounds are NOT a
-  continuation of the same single-elimination sequence as the rest, so
-  they're never relabeled by distance-from-final the way the tail is.
-- **My Teams** — a star/pin button on any team card or team page, stored in
-  the browser's `localStorage` (no server, no account) and surfaced on the
-  home page, so you don't re-search your own team/league every visit.
-- **Players** — search-only by design (a flat index at this scale is not
-  useful); the real way in is a team's roster page, where every name already
-  links out.
-
-## What's here
-
-- `teams/` — one page per program per exported season: record, schedule,
-  roster, a one-line sports-desk summary. **JHSAA roster sizes are no longer
-  flat** (owner rule, `ROSTER_SIZE_BY_CLASS`): they now scale by
-  classification, 9A 24 down to 1A 13, mirroring the college side's
-  `roster_cap` pattern — don't read a shallow 1A roster next to a full 9A one
-  as missing data, it's the format. Grade distribution is no longer an even
-  ~3-per-grade split either (each class's freshman count is now rolled once
-  per school/entry-year and ages forward), so a season's grade mix will look
-  naturally uneven rather than symmetric.
-- `players/` — one page per player, stitched across every season ingested
-  (player_id is stable across a career), with a full match log **and** an
-  aggregated positions-played table — the JHSAA gap that started this: the
-  in-game college app shows a player's position history across a season, the
-  JHSAA side didn't.
-- `leaderboards/` — per-season team standings, top individual records, award
-  winners pulled straight from the exported award JSON.
-- `metrics/` — the analytics library (see below), split into its own
-  dropdown menu rather than one long page, since the metric list is meant to
-  grow.
 ## Structure (owner rewrite ×2: 2027-08 nav, 2028-08 data organization)
 
 ‼️ **CLASSIFICATION → DISTRICT IS THE ORGANIZING HIERARCHY ON EVERY PAGE,
@@ -94,7 +44,11 @@ LIST AND MENU** (owner rule 2028-08) — the exact parallel of the college
 game's division → conference. Nothing may ever render a statewide splat: the
 first pass listed 861 teams in one standings table ranked on win% and seven
 single-metric pages each dumping every (team, season) row statewide, and the
-owner's verdict was "impossible to really parse and navigate." The mental
+owner's verdict was "impossible to really parse and navigate." (An earlier
+intermediate pass, 2027-08, had already moved off the original flat 1,600-
+program/19,700-player dump toward cascading Season → Classification → League
+pickers — that pass fixed the "no navigation at all" problem; this one fixed
+"navigation exists but still dumps a statewide table per page.") The mental
 model is **Football Manager / FMRTE**: dashboards with tabbed views, dense
 sortable grids scoped by pickers, and entity pages that carry their own
 stats in panels. Two corollaries, also owner rules from the same session:
@@ -105,7 +59,7 @@ senior), and **no tutorial help text** on the pages themselves.
 - **Seasons** (`seasons/`) — one dashboard per exported season, four tabbed
   views of it: **Rankings** (class-first — the page opens on the biggest
   classification, statewide is an explicit option — ranked on the ARCHIVED
-  TOSS power exactly like the game's own rankings page, win%% only as the
+  TOSS power exactly like the game's own rankings page, win% only as the
   pre-TOSS fallback; every row carries class rank, state rank, district and
   district record/place), **District standings** (one panel per
   (classification, district), ordered on the archived district place — the
@@ -122,11 +76,27 @@ senior), and **no tutorial help text** on the pages themselves.
   winner-first scores per the game's scoreline convention), a roster with
   per-player grade + singles/doubles season records, and a Season analytics
   panel so a team's own metrics live on its page instead of seven league
-  tables away.
+  tables away. **JHSAA roster sizes are no longer flat** (owner rule,
+  `ROSTER_SIZE_BY_CLASS`): they now scale by classification, 9A 24 down to
+  1A 13, mirroring the college side's `roster_cap` pattern — don't read a
+  shallow 1A roster next to a full 9A one as missing data, it's the format.
+  Grade distribution is no longer an even ~3-per-grade split either (each
+  class's freshman count is now rolled once per school/entry-year and ages
+  forward), so a season's grade mix will look naturally uneven rather than
+  symmetric.
 - **Brackets** — the archived postseason draw per classification, straight
-  from `jhsaa_championships.json`.
-- **Players** — search-only by design; rosters are the real way in.
-- **My Teams** — localStorage pin/star, unchanged.
+  from `jhsaa_championships.json` (was ingested and completely unused before
+  the 2027-08 pass). Round labels use the export's own `round_names` field
+  verbatim wherever it's present (`_round_names()` in `render.py`) — an
+  expanded 40-team classification prepends "Qualifiers Round"/"First Round"
+  ahead of a converged Octofinals-onward bracket, and those two rounds are
+  NOT a continuation of the same single-elimination sequence as the rest,
+  so they're never relabeled by distance-from-final the way the tail is.
+- **Players** — search-only by design (a flat index at this scale is not
+  useful); rosters are the real way in.
+- **My Teams** — a star/pin button on any team card or team page, stored in
+  the browser's `localStorage` (no server, no account) and surfaced on the
+  home page, so you don't re-search your own team/league every visit.
 
 ### Schedule ordering: `duals.date` (export schema addition, 2028-08)
 
@@ -149,13 +119,13 @@ re-export a season to get real dates.
   (season → classification → district scoped, switchable column-group views:
   Shape / Format lift / Résumé / Depth & volatility / Predictive, every
   column sortable) plus **Player Value (PVAR)**. The seven separate
-  single-metric pages are gone — a new metric is a new column (or view) in
-  the grid, never a new page of everything.
+  single-metric pages of the first analytics pass are gone — a new metric is
+  a new column (or view) in the grid, never a new page of everything.
 - **Storylines are ARCHIVED, not rendered** (owner call 2028-08: "not useful
   as rendered at all") — `metrics_mod.storylines()` still runs on every
-  build and writes `analytics/data/storylines.json`; there is no page.
+  build and writes `analytics/data/storylines.json`; there is no page for it.
 
-## Analytics library (first pass)
+## Analytics library
 
 Past "are they good" (record / TOSS power) into "how are they good," "is this
 record lying," and "what happens when the postseason card changes." Every
@@ -164,7 +134,7 @@ win rate, opponent power) rather than baked in, specifically so a metric can
 be reproduced or challenged rather than trusted blind — see
 `ptc_analytics/metrics.py`.
 
-Shipped in this pass:
+First pass:
 - **S% / D%** — singles/doubles line win rate, the foundational split.
 - **RCI / SCI / Fmt** — expected court share under the regular-season card vs
   the state/postseason card, and the gap between them in percentage points.
@@ -178,21 +148,16 @@ Shipped in this pass:
   record** — résumé questions: who are they beating, is the record padded.
 - **Storylines** — auto-flagged extremes (big Fmt, lopsided team shape,
   volatile results, suspiciously good/bad quality-win splits) with plain-
-  English explanations, sorted by how extreme the number is. This is meant
-  to work like a tip sheet, not a ranking.
+  English explanations, sorted by how extreme the number is. Archived, not
+  rendered — see above.
 
-Tests: `python3 -m pytest analytics/tests -q` (from the repo root) runs
-data-bearing coverage — a synthetic multi-class season is pushed through the
-GAME's own export builder, ingested, rendered, and the assertions read the
-HTML (an empty-state test cannot see a page; that lesson is the game's own).
-
-Second pass, added the same session: Format Dependency, Format Win-Probability
-Lift, State score profile / three-court / sweep probability, Expected State
-Margin, Dominance Margin, split singles/doubles game share and set share
-(JHSAA only — college's export has no set-level detail), Line Conversion,
-per-flight win-rate curves feeding Top-End/Depth/Star-Dependence, Singles/
-Doubles Depth Slope, Floor/Ceiling, Blowout/Resistance rate, and a crude
-auto-scaled power-based win-probability model (logistic on TOSS power,
+Second pass, added the same session as the first: Format Dependency, Format
+Win-Probability Lift, State score profile / three-court / sweep probability,
+Expected State Margin, Dominance Margin, split singles/doubles game share and
+set share (JHSAA only — college's export has no set-level detail), Line
+Conversion, per-flight win-rate curves feeding Top-End/Depth/Star-Dependence,
+Singles/Doubles Depth Slope, Floor/Ceiling, Blowout/Resistance rate, and a
+crude auto-scaled power-based win-probability model (logistic on TOSS power,
 scaled to that season's own spread) driving Expected Record/Record Luck,
 Upset Rate/Value, Bad-Loss Value, and Elite Win Share. Plus a first-cut
 **Player Value Above Replacement (PVAR)**: for every slot a player logged 3+
@@ -200,8 +165,8 @@ matches at, replacement level is the 25th-percentile win rate among other
 players at that same slot/season; PVAR sums (actual − replacement) × matches
 across every slot and season — deliberately not split by singles/doubles, so
 it answers "how much was this player actually worth" rather than restating
-S%/D%. All of it lives in three new Analytics pages (Depth & Volatility,
-Predictive, Player Value) rather than piling onto the existing ones.
+S%/D%. All of it now lives in the Team Stat Center grid / PVAR page (see
+"What's here" above), not the original separate pages.
 
 ‼️ Card shapes (how many singles/doubles lines a "regular" or "state" dual
 plays) are **derived from the actual exported duals per scope**
@@ -235,6 +200,11 @@ player WAR, pair chemistry, trend/form ratings, and the rest) is not built
 yet — this first pass is the substrate everything else in that list gets
 computed from. Add new metrics as functions against `TeamMetrics`/`Bundle`
 rather than a fresh ad-hoc pass over the raw tables.
+
+Tests: `python3 -m pytest analytics/tests -q` (from the repo root) runs
+data-bearing coverage — a synthetic multi-class season is pushed through the
+GAME's own export builder, ingested, rendered, and the assertions read the
+HTML (an empty-state test cannot see a page; that lesson is the game's own).
 
 ## Design system
 
