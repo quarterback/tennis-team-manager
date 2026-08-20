@@ -193,6 +193,28 @@ def roster_size(classification: str) -> int:
     return ROSTER_SIZE_BY_CLASS.get(classification, ROSTER_SIZE)
 
 
+#: The regular-season league card's distinct-player count (S1 + the doubles pool
+#: #2-#9 + S2 + S3 = 11 — the biggest single-dual roster requirement in the whole
+#: JHSAA calendar; the early 5S/2D window and the 1S/4D postseason both need only
+#: 9). A HARD FLOOR on `build_roster`'s total output, same invariant as the
+#: college side's `ncaa.lineup_size`/`refill_walkons`.
+#:
+#: ‼️ WHY THIS EXISTS: `_freshman_class_size` rolls each grade INDEPENDENTLY with
+#: real downside variance (35% of a mean as low as ~3.25/grade in 1A), so a real,
+#: unlucky run of four grades can and does land a program's roster below what the
+#: format needs — not a "the generation code isn't running" bug, a missing floor
+#: under code that otherwise works exactly as designed. Below this floor, `_squad`
+#: has no choice but to wrap (`r[i % len(r)]`, "degrade, never crash, on a short
+#: side") and put the SAME player on two lines of the SAME dual at once — which a
+#: real tennis rule never allows and which corrupts that dual's stats permanently
+#: once archived. `build_roster` tops the CURRENT year's incoming freshman class up
+#: to this floor when short (never grades 10-12, whose sizes are already fixed from
+#: a PRIOR year's roll — touching them would break `_freshman_class_size`'s "rolled
+#: once per (school, entry_year)" contract and desync from anything already
+#: archived against that class).
+ROSTER_FLOOR = 11
+
+
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,
                          salt: str = "") -> int:
     """How many freshmen entered `school` in `entry_year`.
@@ -1525,9 +1547,12 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # by every seat on every one of them.
     tmap = transfers()
     out = []
+    fresh9_seats = 0
     for grade in GRADES:
         entry = year - (grade - 9)
         n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
+        if grade == 9:
+            fresh9_seats = n_seats
         for seat in range(n_seats):
             p = _gen_seat(school, mod, entry, seat, grade, salt)
             rec = tmap.get(p.pid)
@@ -1536,6 +1561,12 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
                 continue
             out.append(p)
+    # ‼️ THE HARD FLOOR — see `ROSTER_FLOOR` above. Grown on THIS year's freshman
+    # class only, continuing its own seat numbering (`fresh9_seats` on) so it never
+    # collides with the seats `_freshman_class_size` already rolled for it.
+    if len(out) < ROSTER_FLOOR:
+        for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
+            out.append(_gen_seat(school, mod, year, seat, 9, salt))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
