@@ -4916,6 +4916,7 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
         "gap": (lambda r: (r["gap"], r["ceiling"]), True),
         "ceiling": (lambda r: (r["ceiling"], r["gap"]), True),
         "now": (lambda r: (r["ovr"], r["gap"]), True),
+        "grade": (lambda r: (r["grade"], r["gap"]), True),   # seniors first
     }
     key, rev = keys.get(sort, keys["gap"])
     flagged.sort(key=key, reverse=rev)

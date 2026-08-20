@@ -9,7 +9,7 @@
 <div class="pt-index-grid" id="cards" style="display:none">
   {% for c in careers %}
   <a class="pt-index-card" data-name="{{ c.name|lower }} {{ (c.teams|join(' '))|lower }}" href="{{ c.href }}">
-    <h4>{{ c.name }}</h4>
+    <h4>{{ c.name }}{% if c.grade %} <span class="pt-chip">{{ c.grade }}</span>{% endif %}</h4>
     <div class="sub">{{ c.teams|join(', ') }} · {{ c.wins }}-{{ c.losses }}</div>
   </a>
   {% endfor %}

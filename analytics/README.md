@@ -37,43 +37,73 @@ Re-run `python3 build.py` with no arguments to re-render from everything already
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
-## Navigation (owner rewrite, 2027-08)
+## Structure (owner rewrite ×2: 2027-08 nav, 2028-08 data organization)
 
-The first pass flatly listed every program (~1,600) and every player (~19,700
-statewide) — closer to a raw database dump than an analytics tool, and it made
-the site nearly unusable at real scale. Rebuilt to look like the actual pro-
-team scouting tools this is modeled on (StatsBomb IQ / Wyscout-style: a
-persistent season → competition → team scope picker, not a flat list, plus
-pinned favorites) rather than a Football Manager save browser:
+‼️ **CLASSIFICATION → DISTRICT IS THE ORGANIZING HIERARCHY ON EVERY PAGE,
+LIST AND MENU** (owner rule 2028-08) — the exact parallel of the college
+game's division → conference. Nothing may ever render a statewide splat: the
+first pass listed 861 teams in one standings table ranked on win% and seven
+single-metric pages each dumping every (team, season) row statewide, and the
+owner's verdict was "impossible to really parse and navigate." The mental
+model is **Football Manager / FMRTE**: dashboards with tabbed views, dense
+sortable grids scoped by pickers, and entity pages that carry their own
+stats in panels. Two corollaries, also owner rules from the same session:
+**a player's grade shows in every list a player appears in** (JHSAA "12th" /
+college class year, sortable — no clicking through to discover someone's a
+senior), and **no tutorial help text** on the pages themselves.
 
-- **Teams** — cascading Season → Classification → League `<select>`s, plus an
-  independent global search box that ignores the pickers. Nothing renders
-  until you pick a season or start typing — never a silent 1,600-card dump.
-- **Brackets** — new section, reading `jhsaa_championships.json` (was
-  ingested and completely unused before this pass) straight from the export:
-  the real archived postseason draw, round by round, per classification —
-  the same "look at the playoff bracket" the game itself offers.
-- **My Teams** — a star/pin button on any team card or team page, stored in
-  the browser's `localStorage` (no server, no account) and surfaced on the
-  home page, so you don't re-search your own team/league every visit.
-- **Players** — search-only by design (a flat index at this scale is not
-  useful); the real way in is a team's roster page, where every name already
-  links out.
+- **Seasons** (`seasons/`) — one dashboard per exported season, four tabbed
+  views of it: **Rankings** (class-first — the page opens on the biggest
+  classification, statewide is an explicit option — ranked on the ARCHIVED
+  TOSS power exactly like the game's own rankings page, win%% only as the
+  pre-TOSS fallback; every row carries class rank, state rank, district and
+  district record/place), **District standings** (one panel per
+  (classification, district), ordered on the archived district place — the
+  association's own tiebreak ladder decided it, never re-derived),
+  **Individual leaders**, **Awards**. Classification/district pickers +
+  search filter all tabs.
+- **Teams** — cascading Season → Classification → League pickers; the card
+  grid renders only once a classification narrows it (or a search does).
+- **Team pages** — the FM club screen: KPI tiles (record, district record +
+  place, class rank of N, power + statewide rank), the schedule presented
+  the way the game presents it (sectioned League play / Invitationals /
+  Showcases / Road to State / State / TOC, real dates from the export's
+  `duals.date`, vs/at, type chips — never raw phase strings — and
+  winner-first scores per the game's scoreline convention), a roster with
+  per-player grade + singles/doubles season records, and a Season analytics
+  panel so a team's own metrics live on its page instead of seven league
+  tables away.
+- **Brackets** — the archived postseason draw per classification, straight
+  from `jhsaa_championships.json`.
+- **Players** — search-only by design; rosters are the real way in.
+- **My Teams** — localStorage pin/star, unchanged.
+
+### Schedule ordering: `duals.date` (export schema addition, 2028-08)
+
+The JHSAA export now carries `duals.date` — the game's own display calendar
+(`world.jhsaa_match_dates`, one date per dual, identical from both sides).
+Without it the sidecar had NO play order for JHSAA (there is no clock inside
+a JHSAA season) and fell back to export-file order, which lists a team's
+home duals first and its away duals wherever the opponents' cards put them —
+that's why every schedule read "Home, Home, Home…" down the page. Old zips
+without the column still render (sectioned, card order within a section);
+re-export a season to get real dates.
 
 ## What's here
 
-- `teams/` — one page per program per exported season: record, schedule,
-  roster, a one-line sports-desk summary.
-- `players/` — one page per player, stitched across every season ingested
-  (player_id is stable across a career), with a full match log **and** an
-  aggregated positions-played table — the JHSAA gap that started this: the
-  in-game college app shows a player's position history across a season, the
-  JHSAA side didn't.
-- `leaderboards/` — per-season team standings, top individual records, award
-  winners pulled straight from the exported award JSON.
-- `metrics/` — the analytics library (see below), split into its own
-  dropdown menu rather than one long page, since the metric list is meant to
-  grow.
+- `teams/`, `players/` — entity pages as above; player pages stitch a career
+  across every season ingested on the stable player_id, with the full match
+  log (dated, type-chipped) and positions-played table.
+- `seasons/` — the per-season dashboards.
+- `metrics/` — the analytics library: ONE **Team Stat Center** grid
+  (season → classification → district scoped, switchable column-group views:
+  Shape / Format lift / Résumé / Depth & volatility / Predictive, every
+  column sortable) plus **Player Value (PVAR)**. The seven separate
+  single-metric pages are gone — a new metric is a new column (or view) in
+  the grid, never a new page of everything.
+- **Storylines are ARCHIVED, not rendered** (owner call 2028-08: "not useful
+  as rendered at all") — `metrics_mod.storylines()` still runs on every
+  build and writes `analytics/data/storylines.json`; there is no page.
 
 ## Analytics library (first pass)
 
@@ -100,6 +130,11 @@ Shipped in this pass:
   volatile results, suspiciously good/bad quality-win splits) with plain-
   English explanations, sorted by how extreme the number is. This is meant
   to work like a tip sheet, not a ranking.
+
+Tests: `python3 -m pytest analytics/tests -q` (from the repo root) runs
+data-bearing coverage — a synthetic multi-class season is pushed through the
+GAME's own export builder, ingested, rendered, and the assertions read the
+HTML (an empty-state test cannot see a page; that lesson is the game's own).
 
 Second pass, added the same session: Format Dependency, Format Win-Probability
 Lift, State score profile / three-court / sweep probability, Expected State

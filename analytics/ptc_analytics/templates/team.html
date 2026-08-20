@@ -2,28 +2,37 @@
 {% block title %}{{ team.program.name }}{% endblock %}
 {% block content %}
 <div class="pt-crumbs">
-  <a href="../index.html">Home</a> / <a href="index.html">Teams</a> /
-  <a href="index.html">{{ classification }}</a> / {{ team.program.name }}
+  <a href="../index.html">Home</a> /
+  <a href="../seasons/{{ team.bundle.scope_id }}.html">{{ team.bundle.label }}</a> /
+  <a href="../seasons/{{ team.bundle.scope_id }}.html">{{ classification }}</a> / {{ team.program.name }}
 </div>
 <h1 class="pt-h1">
   <span class="pt-crest" style="background:{{ color }}">{{ initials }}</span> {{ team.program.name }}
   <button class="pt-star" style="position:static;font-size:20px;vertical-align:middle" data-team-id="{{ own_href }}" data-team-name="{{ team.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
 </h1>
+<div class="pt-subline">
+  {% if team.program.mascot %}{{ team.program.mascot }} · {% endif %}
+  {% if team.program.city %}{{ team.program.city }}{% if team.program.county %}, {{ team.program.county }} County{% endif %} · {% endif %}
+  <span class="pt-chip">{{ classification }}</span> {{ league }}
+  {% if team.program.enrollment %} · {{ team.program.enrollment }} students{% endif %}
+</div>
 <p class="t-dek">{{ blurb }}</p>
 
 <div class="pt-kpis">
-  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}</div></div>
-  <div class="pt-kpi"><div class="pt-kpi-k">Classification</div><div class="pt-kpi-v">{{ classification }}</div></div>
-  <div class="pt-kpi"><div class="pt-kpi-k">League</div><div class="pt-kpi-v" style="font-size:16px">{{ league }}</div></div>
-  {% if team.standing %}
-  {% if team.standing.district_place %}
-  <div class="pt-kpi"><div class="pt-kpi-k">District place</div><div class="pt-kpi-v">#{{ team.standing.district_place }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}</div>
+    <div class="pt-kpi-sub">overall</div></div>
+  {% if standing %}
+  <div class="pt-kpi"><div class="pt-kpi-k">District</div><div class="pt-kpi-v">{{ standing.league_wins }}-{{ standing.league_losses }}</div>
+    <div class="pt-kpi-sub">{% if standing.league_place %}#{{ standing.league_place }} · {% endif %}{{ league }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">{{ classification }} rank</div><div class="pt-kpi-v">No. {{ standing.class_rank }}</div>
+    <div class="pt-kpi-sub">of {{ standing.class_size }} in {{ classification }}</div></div>
+  {% if standing.power is not none %}
+  <div class="pt-kpi"><div class="pt-kpi-k">Power index</div><div class="pt-kpi-v">{{ "%.3f"|format(standing.power) }}</div>
+    <div class="pt-kpi-sub">No. {{ standing.state_rank }} statewide</div></div>
   {% endif %}
-  {% if team.standing.toss_power_raw %}
-  <div class="pt-kpi"><div class="pt-kpi-k">Power index</div><div class="pt-kpi-v">{{ "%.3f"|format(team.standing.toss_power_raw|float) }}</div></div>
   {% endif %}
-  {% endif %}
-  <div class="pt-kpi"><div class="pt-kpi-k">Roster size</div><div class="pt-kpi-v">{{ team.roster|length }}</div></div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Roster</div><div class="pt-kpi-v">{{ roster|length }}</div>
+    <div class="pt-kpi-sub">players used or listed</div></div>
 </div>
 {% if bracket_href %}
 <p><a href="{{ rel }}brackets/{{ bracket_href }}">View the {{ classification }} state bracket →</a></p>
@@ -35,17 +44,22 @@
     <div class="pt-panel-head"><div class="pt-panel-title">Schedule</div><div class="pt-panel-meta">{{ team.bundle.label }}</div></div>
     <div class="pt-panel-body pt-tablewrap">
       <table class="pt-table">
-        <thead><tr><th>Opponent</th><th>Site</th><th>Phase</th><th class="num">Result</th></tr></thead>
+        <thead><tr><th>Date</th><th></th><th>Opponent</th><th>Type</th><th class="num">Res</th><th class="num">Score</th></tr></thead>
         <tbody>
-        {% for s in team.schedule %}
+        {% for sec in sections %}
+          <tr class="pt-section-row"><td colspan="6">{{ sec.heading }}</td></tr>
+          {% for s in sec.rows %}
           <tr>
+            <td class="t-num">{{ s.date_label or ("Wk " ~ s.week if s.week not in (none, "") else "") }}</td>
+            <td class="pt-venue">{{ "vs" if s.home else "at" }}</td>
             <td><a href="{{ team_href(s.opp_id, team.bundle.scope_id) }}">{{ s.opp_name }}</a></td>
-            <td>{{ "Home" if s.home else "Away" }}</td>
-            <td>{{ s.phase }}</td>
-            <td class="num"><span class="pt-pill {{ 'win' if s.won else 'loss' }}">{{ 'W' if s.won else 'L' }} {{ s.us|int }}-{{ s.them|int }}</span></td>
+            <td><span class="pt-tagchip tag-{{ s.tag_kind }}">{{ s.tag }}</span></td>
+            <td class="num"><span class="{{ 'pt-win' if s.won else 'pt-loss' }}">{{ 'W' if s.won else 'L' }}</span></td>
+            <td class="num t-num">{{ s.score }}</td>
           </tr>
+          {% endfor %}
         {% else %}
-          <tr><td colspan="4">No completed duals on record for this program in this export.</td></tr>
+          <tr><td colspan="6">No completed duals on record for this program in this export.</td></tr>
         {% endfor %}
         </tbody>
       </table>
@@ -54,18 +68,46 @@
 </div>
 <div>
   <div class="pt-panel">
-    <div class="pt-panel-head"><div class="pt-panel-title">Roster</div></div>
+    <div class="pt-panel-head"><div class="pt-panel-title">Roster</div><div class="pt-panel-meta">season records</div></div>
     <div class="pt-panel-body pt-tablewrap">
-      <table class="pt-table">
-        <thead><tr><th>Player</th><th class="num">Grade</th></tr></thead>
+      <table class="pt-table pt-sortable">
+        <thead><tr><th data-nosort>Player</th><th class="num">Gr</th><th class="num">Singles</th><th class="num">Doubles</th></tr></thead>
         <tbody>
-        {% for p in team.roster %}
-          <tr><td><a href="{{ player_href(p.player_id) }}">{{ p.name }}</a></td><td class="num">{{ p.grade or p.class_year or '' }}</td></tr>
+        {% for p in roster %}
+          <tr>
+            <td><a href="{{ player_href(p.player_id) }}">{{ p.name }}</a></td>
+            <td class="num t-num" data-sort="{{ p.grade_sort }}">{{ p.grade_label }}</td>
+            <td class="num t-num">{{ p.s_rec }}</td>
+            <td class="num t-num">{{ p.d_rec }}</td>
+          </tr>
         {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+  {% if m and m.duals %}
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Season analytics</div>
+      <div class="pt-panel-meta"><a href="{{ rel }}metrics/teams.html">Stat Center →</a></div></div>
+    <div class="pt-panel-body">
+      <table class="pt-table pt-statlist">
+        <tbody>
+        <tr><td>Singles line win%</td><td class="num t-num">{{ "%.3f"|format(m.s_pct) if m.s_pct is not none else "—" }}</td></tr>
+        <tr><td>Doubles line win%</td><td class="num t-num">{{ "%.3f"|format(m.d_pct) if m.d_pct is not none else "—" }}</td></tr>
+        <tr><td>Doubles reliance (D% − S%)</td><td class="num t-num">{{ "%+.1f pts"|format(m.doubles_reliance) if m.doubles_reliance is not none else "—" }}</td></tr>
+        <tr><td>Format lift (regular → State card)</td><td class="num t-num {{ 'pt-win' if m.fmt_lift and m.fmt_lift > 0 else ('pt-loss' if m.fmt_lift and m.fmt_lift < 0) }}">{{ "%+.1f pts"|format(m.fmt_lift) if m.fmt_lift is not none else "—" }}</td></tr>
+        <tr><td>State-card dual win prob.</td><td class="num t-num">{{ "%.3f"|format(m.state_dual_win_prob()) if m.state_dual_win_prob() is not none else "—" }}</td></tr>
+        <tr><td>vs top-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q1", {}).get("w", 0) }}-{{ m.quartile_record.get("Q1", {}).get("l", 0) }}</td></tr>
+        <tr><td>vs bottom-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q4", {}).get("w", 0) }}-{{ m.quartile_record.get("Q4", {}).get("l", 0) }}</td></tr>
+        <tr><td>One-point duals</td><td class="num t-num">{{ m.close_wins }}-{{ m.close_duals - m.close_wins }}</td></tr>
+        <tr><td>Expected wins (power model)</td><td class="num t-num">{{ "%.1f"|format(m.expected_wins) if m.expected_wins is not none else "—" }}</td></tr>
+        <tr><td>Record luck</td><td class="num t-num {{ 'pt-win' if m.record_luck and m.record_luck > 0 else ('pt-loss' if m.record_luck and m.record_luck < 0) }}">{{ "%+.1f"|format(m.record_luck) if m.record_luck is not none else "—" }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
 </div>
 </div>
 {% endblock %}

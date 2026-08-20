@@ -1,6 +1,7 @@
 """Render the static site from ingested bundles + computed aggregates."""
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,6 +13,7 @@ HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 STATIC = HERE / "static"
 SITE = HERE.parent / "site"
+DATA = HERE.parent / "data"
 
 CREST_COLORS = [f"var(--crest-{i})" for i in range(12)]
 
@@ -57,13 +59,63 @@ def _round_names(n: int, explicit: list[str] | None = None) -> list[str]:
     return prefix + tail
 
 
-def _classification_sort_key(cls: str):
-    """Biggest/most-competitive classification first: JHSAA '9A'..'1A' by the
-    leading number descending, college 'D1'..'D4' likewise. Falls back to the
-    raw string for anything else so an unrecognized value doesn't crash the
-    build, it just sorts last alphabetically."""
-    digits = "".join(c for c in cls if c.isdigit())
-    return (0, -int(digits)) if digits else (1, cls)
+def _roster_records(careers: dict) -> dict:
+    """(scope_id, program_id, player_id) -> {'s': [w, l], 'd': [w, l]} — the
+    per-player singles/doubles season records the in-game roster panel shows.
+    One pass over every career, never a per-team rescan."""
+    out: dict[tuple, dict] = {}
+    for pid, c in careers.items():
+        for m in c["matches"]:
+            if m["won"] is None or not m.get("own_program_id"):
+                continue
+            key = (m["scope_id"], m["own_program_id"], pid)
+            rec = out.setdefault(key, {"s": [0, 0], "d": [0, 0]})
+            half = "s" if m["slot"].upper().startswith("S") else "d"
+            rec[half][0 if m["won"] else 1] += 1
+    return out
+
+
+def _fmt_opt(v, spec="%.3f"):
+    return spec % v if v is not None else None
+
+
+def _team_stat_row(pid: str, scope_id: str, m, b) -> dict:
+    """One Stat Center row: identity + every first-pass team metric, formatted
+    for the grid (None -> None, rendered as em-dash by the template)."""
+    prog = b.programs.get(pid, {})
+    q = m.quartile_record
+    lg = m.league_record
+
+    def rec(d):
+        return f"{d.get('w', 0)}-{d.get('l', 0)}" if d else "—"
+
+    return {
+        "program_id": pid, "scope_id": scope_id, "name": m.name,
+        "scope_label": b.label,
+        "classification": aggregate.program_class(prog),
+        "league": aggregate.program_league(prog),
+        "record": f"{m.dual_wins}-{m.duals - m.dual_wins}",
+        "lines_played": m.lines_played,
+        # shape
+        "s_pct": m.s_pct, "d_pct": m.d_pct, "dr": m.doubles_reliance,
+        "balance": m.balance,
+        # format
+        "rci": m.card_index("regular"), "sci": m.card_index("state"),
+        "fmt": m.fmt_lift, "swp": m.state_dual_win_prob(),
+        "fwpl": m.format_win_prob_lift(),
+        # résumé
+        "q1": rec(q.get("Q1")), "q4": rec(q.get("Q4")),
+        "league_rec": rec(lg.get("league")), "non_league_rec": rec(lg.get("non_league")),
+        "close": f"{m.close_wins}-{m.close_duals - m.close_wins}" if m.close_duals else "—",
+        "avg_opp_power": m.avg_opp_power,
+        # depth & volatility
+        "top": m.top_end_index, "depth": m.depth_index, "star_dep": m.star_dependence,
+        "floor": m.floor, "ceiling": m.ceiling, "vol": m.volatility,
+        "blowout": m.blowout_rate, "resist": m.resistance_rate,
+        # predictive
+        "expected": m.expected_wins, "luck": m.record_luck,
+        "uv": m.upset_value, "blv": m.bad_loss_value, "ews": m.elite_win_share,
+    }
 
 
 def build_site(raw_bundles: list[dict]) -> None:
@@ -71,7 +123,7 @@ def build_site(raw_bundles: list[dict]) -> None:
         shutil.rmtree(SITE)
     (SITE / "teams").mkdir(parents=True, exist_ok=True)
     (SITE / "players").mkdir(parents=True, exist_ok=True)
-    (SITE / "leaderboards").mkdir(parents=True, exist_ok=True)
+    (SITE / "seasons").mkdir(parents=True, exist_ok=True)
     (SITE / "metrics").mkdir(parents=True, exist_ok=True)
     (SITE / "brackets").mkdir(parents=True, exist_ok=True)
     shutil.copytree(STATIC, SITE / "static")
@@ -86,8 +138,15 @@ def build_site(raw_bundles: list[dict]) -> None:
     careers = aggregate.player_careers(bundles)
     boards = aggregate.leaderboards(bundles, careers)
     team_metrics = metrics_mod.compute_team_metrics(bundles, careers)
-    stories = metrics_mod.storylines(team_metrics)
     player_value = metrics_mod.compute_player_value(careers)
+    roster_records = _roster_records(careers)
+
+    # Storylines are ARCHIVED, not rendered (owner call 2028-08: the prose
+    # list was unusable on screen). The computation stays — it's substrate
+    # for later passes — and lands beside the ingest cache as JSON.
+    DATA.mkdir(parents=True, exist_ok=True)
+    (DATA / "storylines.json").write_text(json.dumps(
+        metrics_mod.storylines(team_metrics), indent=2, ensure_ascii=False))
 
     def w(tmpl: str, out: Path, rel: str, **ctx):
         html = env.get_template(tmpl).render(rel=rel, **ctx)
@@ -108,7 +167,8 @@ def build_site(raw_bundles: list[dict]) -> None:
         if not b.championships:
             continue
         classes = []
-        for cls, data in sorted(b.championships.items(), key=lambda kv: _classification_sort_key(kv[0])):
+        for cls, data in sorted(b.championships.items(),
+                                key=lambda kv: aggregate.classification_sort_key(kv[0])):
             rounds = data.get("rounds") or []
             if not rounds:
                 continue
@@ -124,16 +184,16 @@ def build_site(raw_bundles: list[dict]) -> None:
     w("bracket_index.html", SITE / "brackets" / "index.html", rel="../", bracket_scopes=bracket_scopes)
 
     # teams/index.html + team pages — grouped by season -> classification/division
-    # -> league, never a flat list of everything. A classification/division is
-    # `program["classification"]` (JHSAA) or `program["division"]` (college,
-    # constant within a scope but included for a uniform template); the league
-    # is `district` (JHSAA) or `conference` (college).
+    # -> league, never a flat list of everything. Classification is the
+    # CHAMPIONSHIP group (program_class — play-ups list under the class they
+    # compete in, same as the game's hub); the league is `district` (JHSAA)
+    # or `conference` (college).
     team_cards = []
     for (pid, scope_id), t in teams.items():
         b = t["bundle"]
         prog = t["program"]
-        classification = prog.get("classification") or prog.get("division") or "—"
-        league = prog.get("district") or prog.get("conference") or "—"
+        classification = aggregate.program_class(prog)
+        league = aggregate.program_league(prog)
         team_cards.append({"program": prog, "bundle": b, "wins": t["wins"], "losses": t["losses"],
                             "color": crest_color(prog["name"]), "initials": initials(prog["name"]),
                             "classification": classification, "league": league,
@@ -147,7 +207,8 @@ def build_site(raw_bundles: list[dict]) -> None:
         for c in scope_cards:
             by_class.setdefault(c["classification"], {}).setdefault(c["league"], []).append(c)
         classifications = []
-        for cls, leagues in sorted(by_class.items(), key=lambda kv: _classification_sort_key(kv[0])):
+        for cls, leagues in sorted(by_class.items(),
+                                   key=lambda kv: aggregate.classification_sort_key(kv[0])):
             league_list = [{"name": lg, "teams": sorted(tms, key=lambda x: x["program"]["name"])}
                            for lg, tms in sorted(leagues.items(), key=lambda kv: kv[0])]
             classifications.append({"name": cls, "count": sum(len(lg["teams"]) for lg in league_list),
@@ -160,8 +221,9 @@ def build_site(raw_bundles: list[dict]) -> None:
         fname = f"{aggregate.slug(scope_id)}__{aggregate.slug(pid)}.html"
         name = t["program"]["name"]
         prog = t["program"]
-        classification = prog.get("classification") or prog.get("division") or "—"
-        league = prog.get("district") or prog.get("conference") or "—"
+        b = t["bundle"]
+        classification = aggregate.program_class(prog)
+        league = aggregate.program_league(prog)
         bracket_href = None
         for scope in bracket_scopes:
             if scope["scope_id"] != scope_id:
@@ -169,14 +231,24 @@ def build_site(raw_bundles: list[dict]) -> None:
             for cls in scope["classifications"]:
                 if cls["name"] == classification:
                     bracket_href = cls["href"]
+        standing_row = boards.get(scope_id, {}).get("by_program", {}).get(pid)
+        roster = []
+        for p in t["roster"]:
+            rec = roster_records.get((scope_id, pid, p["player_id"]))
+            glabel, gsort = aggregate.grade_label(p)
+            roster.append({**p, "grade_label": glabel, "grade_sort": gsort,
+                            "s_rec": f"{rec['s'][0]}-{rec['s'][1]}" if rec and sum(rec["s"]) else "—",
+                            "d_rec": f"{rec['d'][0]}-{rec['d'][1]}" if rec and sum(rec["d"]) else "—"})
         w("team.html", SITE / "teams" / fname, rel="../", team=t,
           blurb=prose.team_blurb(t), color=crest_color(name), initials=initials(name),
-          classification=classification, league=league, own_href=fname, bracket_href=bracket_href)
+          classification=classification, league=league, own_href=fname, bracket_href=bracket_href,
+          standing=standing_row, sections=aggregate.schedule_sections(t["schedule"]),
+          roster=roster, m=team_metrics.get((pid, scope_id)))
 
     # players/index.html + player pages
-    career_list = sorted(careers.values(), key=lambda c: c["name"])
     cards = [{"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
               "wins": c["wins"], "losses": c["losses"],
+              "grade": aggregate.grade_label(c["bio"])[0],
               "href": f"{aggregate.slug(pid)}.html"} for pid, c in
              sorted(careers.items(), key=lambda kv: kv[1]["name"])]
     w("players_index.html", SITE / "players" / "index.html", rel="../", careers=cards)
@@ -188,70 +260,43 @@ def build_site(raw_bundles: list[dict]) -> None:
         w("player.html", SITE / "players" / fname, rel="../", career=c, blurb=prose.player_blurb(c),
           pct=pct, total=total or 1, pvar=player_value.get(pid))
 
-    # leaderboards
-    w("leaderboards_index.html", SITE / "leaderboards" / "index.html", rel="../", bundles=bundles)
+    # seasons — one dashboard per scope: class-first rankings on the archived
+    # power index, league standings, individual leaders and awards as views
+    # of one season, never a statewide splat.
+    w("seasons_index.html", SITE / "seasons" / "index.html", rel="../", bundles=bundles,
+      boards=boards)
     for scope_id, board in boards.items():
-        w("leaderboards_scope.html", SITE / "leaderboards" / f"{scope_id}.html", rel="../", board=board)
+        w("season.html", SITE / "seasons" / f"{scope_id}.html", rel="../", board=board)
 
-    # metrics / analytics
+    # metrics / analytics — ONE sortable, filterable Stat Center grid over
+    # every (team, season), plus Player Value. The seven single-metric splat
+    # pages this replaces were unparseable at real scale.
+    stat_rows = []
+    for (pid, scope_id), m in team_metrics.items():
+        if m.duals == 0:
+            continue    # context-only program rows (scope_member=0) have no season here
+        b = next(bb for bb in bundles if bb.scope_id == scope_id)
+        stat_rows.append(_team_stat_row(pid, scope_id, m, b))
+    stat_rows.sort(key=lambda r: (r["scope_label"], r["classification"], r["name"]))
+    stat_scopes = []
+    for b in bundles:
+        classes = sorted({r["classification"] for r in stat_rows if r["scope_id"] == b.scope_id},
+                         key=aggregate.classification_sort_key)
+        leagues = {cls: sorted({r["league"] for r in stat_rows
+                                if r["scope_id"] == b.scope_id and r["classification"] == cls})
+                   for cls in classes}
+        stat_scopes.append({"scope_id": b.scope_id, "label": b.label,
+                             "classes": classes, "leagues": leagues})
     w("metrics_index.html", SITE / "metrics" / "index.html", rel="../")
-
-    shape_rows = []
-    fmt_rows = []
-    resume_rows = []
-    for (pid, scope_id), m in team_metrics.items():
-        b = next(bb for bb in bundles if bb.scope_id == scope_id)
-        base = {"program_id": pid, "scope_id": scope_id, "name": m.name, "scope_label": b.label}
-        shape_rows.append({**base, "s_pct": m.s_pct, "d_pct": m.d_pct, "dr": m.doubles_reliance,
-                            "balance": m.balance, "lines_played": m.lines_played})
-        fmt_rows.append({**base, "rci": m.card_index("regular"), "sci": m.card_index("state"),
-                          "fmt": m.fmt_lift, "swp": m.state_dual_win_prob()})
-        q = m.quartile_record
-        lg = m.league_record
-        resume_rows.append({**base,
-            "q1": f"{q.get('Q1', {}).get('w', 0)}-{q.get('Q1', {}).get('l', 0)}",
-            "q4": f"{q.get('Q4', {}).get('w', 0)}-{q.get('Q4', {}).get('l', 0)}",
-            "league": f"{lg.get('league', {}).get('w', 0)}-{lg.get('league', {}).get('l', 0)}",
-            "non_league": f"{lg.get('non_league', {}).get('w', 0)}-{lg.get('non_league', {}).get('l', 0)}",
-            "close": f"{m.close_wins}-{m.close_duals - m.close_wins}" if m.close_duals else "—",
-        })
-    shape_rows.sort(key=lambda r: -(r["dr"] or -999) if r["dr"] is not None else 999)
-    fmt_rows.sort(key=lambda r: -(r["fmt"] if r["fmt"] is not None else -999))
-    resume_rows.sort(key=lambda r: r["name"])
-
-    w("metrics_shape.html", SITE / "metrics" / "shape.html", rel="../", rows=shape_rows)
-    w("metrics_format_lift.html", SITE / "metrics" / "format-lift.html", rel="../", rows=fmt_rows)
-    w("metrics_resume.html", SITE / "metrics" / "resume.html", rel="../", rows=resume_rows)
-
-    depth_rows = []
-    pred_rows = []
-    for (pid, scope_id), m in team_metrics.items():
-        b = next(bb for bb in bundles if bb.scope_id == scope_id)
-        base = {"program_id": pid, "scope_id": scope_id, "name": m.name, "scope_label": b.label}
-        depth_rows.append({**base, "top": m.top_end_index, "depth": m.depth_index,
-                            "star_dep": m.star_dependence, "floor": m.floor, "ceiling": m.ceiling,
-                            "vol": m.volatility, "blowout": m.blowout_rate, "resist": m.resistance_rate})
-        pred_rows.append({**base, "record": f"{m.dual_wins}-{m.duals - m.dual_wins}",
-                           "expected": m.expected_wins, "luck": m.record_luck,
-                           "uv": m.upset_value, "blv": m.bad_loss_value, "ews": m.elite_win_share})
-    depth_rows.sort(key=lambda r: -(r["star_dep"] or -999) if r["star_dep"] is not None else 999)
-    pred_rows.sort(key=lambda r: -(r["luck"] if r["luck"] is not None else -999))
-    w("metrics_depth.html", SITE / "metrics" / "depth.html", rel="../", rows=depth_rows)
-    w("metrics_predictive.html", SITE / "metrics" / "predictive.html", rel="../", rows=pred_rows)
+    w("metrics_teams.html", SITE / "metrics" / "teams.html", rel="../",
+      rows=stat_rows, scopes=stat_scopes)
 
     value_rows = []
     for pid, pv in player_value.items():
         c = careers[pid]
+        glabel, gsort = aggregate.grade_label(c["bio"])
         value_rows.append({"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
-                            "wins": c["wins"], "losses": c["losses"], "pvar": pv["total"]})
+                            "wins": c["wins"], "losses": c["losses"], "pvar": pv["total"],
+                            "grade": glabel, "grade_sort": gsort})
     value_rows.sort(key=lambda r: -r["pvar"])
     w("metrics_value.html", SITE / "metrics" / "value.html", rel="../", rows=value_rows[:100])
-
-    kinds = [("format-lift", "Format Lift"), ("team-shape", "Team Shape"), ("record-luck", "Record Luck"),
-             ("upsets", "Upsets"), ("close-matches", "Close Matches"),
-             ("volatility", "Volatility"), ("quality-wins", "Quality Wins"), ("bad-losses", "Bad Losses")]
-    stories_by_kind = {}
-    for s in stories:
-        stories_by_kind.setdefault(s["kind"], []).append(s)
-    w("metrics_storylines.html", SITE / "metrics" / "storylines.html", rel="../",
-      stories=stories, kinds=kinds, stories_by_kind=stories_by_kind)

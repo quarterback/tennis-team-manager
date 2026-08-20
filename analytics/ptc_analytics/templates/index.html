@@ -14,7 +14,7 @@
 <h2 class="pt-h2">Seasons on file</h2>
 <div class="pt-index-grid">
   {% for b in bundles %}
-  <a class="pt-index-card" href="leaderboards/{{ b.scope_id }}.html">
+  <a class="pt-index-card" href="seasons/{{ b.scope_id }}.html">
     <h4>{{ b.label }}</h4>
     <div class="sub">{{ b.programs|length }} programs · {{ b.duals|length }} duals · {{ b.players|length }} players</div>
   </a>

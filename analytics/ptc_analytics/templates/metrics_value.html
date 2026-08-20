@@ -5,17 +5,22 @@
 <h1 class="pt-h1">Player Value (PVAR)</h1>
 <p class="t-dek">Crude Player Value Above Replacement: for every slot a player logged 3+ matches at, replacement level is the 25th-percentile win rate among other players at that same slot in that same season. PVAR = (their win rate − replacement) × matches played, summed across every slot and season on record. Deliberately not split by singles/doubles — the point is a number that looks past S%/D% at what a player was worth wherever the coach used them. No opponent adjustment yet; a first cut, not a finished model.</p>
 <div class="pt-panel">
+  <div class="pt-panel-head"><div class="pt-panel-title">Top 100 careers by PVAR</div>
+    <div class="pt-panel-meta">across every season ingested</div></div>
   <div class="pt-panel-body pt-tablewrap">
-    <table class="pt-table">
-      <thead><tr><th>#</th><th>Player</th><th>Team(s)</th><th class="num">Record</th><th class="num">PVAR</th></tr></thead>
+    <input class="pt-searchbox" type="search" id="q" placeholder="Filter by player or team…"
+           oninput="var q=this.value.toLowerCase();document.querySelectorAll('#pvar-table tbody tr').forEach(function(r){r.style.display=r.dataset.name.indexOf(q)===-1?'none':'';})">
+    <table class="pt-table pt-sortable" id="pvar-table">
+      <thead><tr><th class="num">#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team(s)</th><th class="num">Record</th><th class="num">PVAR</th></tr></thead>
       <tbody>
       {% for r in rows %}
-        <tr>
-          <td>{{ loop.index }}</td>
+        <tr data-name="{{ r.name|lower }} {{ r.teams|join(' ')|lower }}">
+          <td class="num t-num">{{ loop.index }}</td>
           <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+          <td class="num t-num" data-sort="{{ r.grade_sort }}">{{ r.grade }}</td>
           <td>{{ r.teams|join(', ') }}</td>
-          <td class="num">{{ r.wins }}-{{ r.losses }}</td>
-          <td class="num t-num">{{ "%+.2f"|format(r.pvar) }}</td>
+          <td class="num t-num" data-sort="{{ r.wins }}">{{ r.wins }}-{{ r.losses }}</td>
+          <td class="num t-num" data-sort="{{ r.pvar }}">{{ "%+.2f"|format(r.pvar) }}</td>
         </tr>
       {% endfor %}
       </tbody>

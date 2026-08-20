@@ -27,7 +27,7 @@
       </label>
       <label>Sort
         <select name="sort">
-          {% for val, lbl in [('gap','Mismatch gap'), ('ceiling','Ceiling'), ('now','Current OVR')] %}
+          {% for val, lbl in [('gap','Mismatch gap'), ('ceiling','Ceiling'), ('now','Current OVR'), ('grade','Grade')] %}
           <option value="{{ val }}" {{ 'selected' if sort == val }}>{{ lbl }}</option>
           {% endfor %}
         </select>
@@ -42,7 +42,7 @@
     <span class="bit">{{ total }} flagged</span></div>
   <div class="tbl-scroll">
     <table class="jh-roster">
-      <tr><th>Player</th><th>School</th><th style="width:44px">Plays In</th>
+      <tr><th>Player</th><th style="width:40px">Gr</th><th>School</th><th style="width:44px">Plays In</th>
         <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
         <th class="jh-scout" style="width:78px">Rating</th><th style="width:64px">Fits In</th>
         <th class="num jh-scout" style="width:70px">That Class Avg</th>
@@ -52,6 +52,7 @@
         <td class="pl">
           <a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>
         </td>
+        <td>{{ r.grade }}th</td>
         <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
         <td>{{ r.group }}</td>
         <td class="num jh-scout">{{ r.ovr }}</td>
