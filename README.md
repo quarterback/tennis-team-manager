@@ -185,6 +185,11 @@ From the page:
 - **Advance N years** — ages the *same* cohorts forward (1–50 years at a time),
   graduating and replacing them, to build a real multi-year history to browse.
 
+Both run in the background and the page polls for progress — expect **~10
+minutes per season, cold**. That's not a bug: the normal app hides this
+behind a boot-time cache warm that isn't there in a fresh lab process, so
+this is the real cost of simulating ~600 programs across both genders.
+
 ---
 
 ## Layout

@@ -2262,6 +2262,39 @@ def create_app() -> Flask:
         this code ships to every instance."""
         return bool(os.environ.get("JHSAA_LAB_MODE"))
 
+    # A full JHSAA season is genuinely slow to simulate from a cold cache
+    # (~600 programs × both genders, double round-robin + showcases + the full
+    # postseason recovery ladder — measured ~10 minutes). In the normal app
+    # this is invisible because `jhsaa.run_season` is memoised and the boot-time
+    # `warm_caches()` thread (see above) primes that exact cache entry off the
+    # request path before anyone clicks "Advance" — so the real click is a cache
+    # hit. The lab has no such warm-up (a fresh process, an empty cache), so it
+    # pays the full cost — and running that synchronously on the request thread
+    # left the button looking hung for 10 minutes with zero feedback. Fixed the
+    # same way `warm_caches` is: off the request thread, in a daemon thread,
+    # with a status the page polls instead of a blocked POST.
+    _jhsaa_lab_job = {"running": False, "kind": None, "started": None, "error": None}
+    _jhsaa_lab_job_lock = __import__("threading").Lock()
+
+    def _jhsaa_lab_run_job(kind, fn):
+        import threading, time
+        with _jhsaa_lab_job_lock:
+            if _jhsaa_lab_job["running"]:
+                return False
+            _jhsaa_lab_job.update(running=True, kind=kind, started=time.time(), error=None)
+
+        def _work():
+            try:
+                fn()
+            except Exception as e:
+                _jhsaa_lab_job["error"] = str(e)
+            finally:
+                with _jhsaa_lab_job_lock:
+                    _jhsaa_lab_job["running"] = False
+
+        threading.Thread(target=_work, name="jhsaa-lab-job", daemon=True).start()
+        return True
+
     @app.route("/jhsaa-lab")
     def jhsaa_lab():
         """A standalone JHSAA season generator, decoupled from the college/pro
@@ -2278,26 +2311,35 @@ def create_app() -> Flask:
         # has an archived season (advance never skips a year), so this is the
         # count of seasons on record without a second query.
         years_archived = (w["year"] + 1) if w else 0
+        import time as _time
+        job = dict(_jhsaa_lab_job)
+        elapsed = int(_time.time() - job["started"]) if job["running"] and job["started"] else None
         return render_template("jhsaa_lab.html", active="Tools",
                                exists=bool(w), season_year=season_year,
-                               years_archived=years_archived, db_path=str(wd.WORLD_DB))
+                               years_archived=years_archived, db_path=str(wd.WORLD_DB),
+                               job_running=job["running"], job_kind=job["kind"],
+                               job_elapsed=elapsed, job_error=job["error"])
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():
         """Wipe this (scratch) database's world and simulate a brand-new,
         independent JHSAA season for both genders — no college universe built
-        (`skip_college=True`), so this is fast and touches nothing but the JHSAA
-        tables. `world.reset` + `get_or_create_jhsaa_only` never runs anywhere
-        but a lab-mode process (gated above), and a lab process's database is
-        never the real save's. Use this to start a FRESH multi-year run (a new
-        salt = a whole new set of programs/cohorts); use `/jhsaa-lab/advance`
-        to continue the current one."""
+        (`skip_college=True`). `world.reset` + `get_or_create_jhsaa_only` never
+        runs anywhere but a lab-mode process (gated above), and a lab process's
+        database is never the real save's. Use this to start a FRESH multi-year
+        run (a new salt = a whole new set of programs/cohorts); use
+        `/jhsaa-lab/advance` to continue the current one. Runs in a background
+        thread (see `_jhsaa_lab_run_job` above) — this can take ~10 minutes from
+        a cold cache, and the page polls for completion instead of blocking."""
         if not _jhsaa_lab_mode():
             abort(404)
         salt = (request.form.get("salt") or "").strip() or None
-        wd.reset(wd.DEFAULT_SEED)
-        w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
-        wd.run_jhsaa(wd.DEFAULT_SEED, w)
+
+        def _do():
+            wd.reset(wd.DEFAULT_SEED)
+            w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
+            wd.run_jhsaa(wd.DEFAULT_SEED, w)
+        _jhsaa_lab_run_job("generate", _do)
         return redirect(url_for("jhsaa_lab"))
 
     @app.route("/jhsaa-lab/advance", methods=["POST"])
@@ -2307,7 +2349,9 @@ def create_app() -> Flask:
         graduate, and get replaced by new freshmen (`world.advance_jhsaa_lab`),
         so this is how you build a real multi-year history to analyze instead
         of N disconnected one-off seasons. `years` is capped so a fat-fingered
-        request can't turn into an unbounded loop on the request thread."""
+        request can't turn into an unbounded loop. Runs in a background thread,
+        same as generate — expect roughly one JHSAA-rung's worth of time
+        (~10 minutes cold) PER YEAR requested."""
         if not _jhsaa_lab_mode():
             abort(404)
         if not wd.load_world(wd.DEFAULT_SEED):
@@ -2316,8 +2360,11 @@ def create_app() -> Flask:
             years = max(1, min(50, int(request.form.get("years", "1"))))
         except ValueError:
             years = 1
-        for _ in range(years):
-            wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
+
+        def _do():
+            for _ in range(years):
+                wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
+        _jhsaa_lab_run_job("advance", _do)
         return redirect(url_for("jhsaa_lab"))
 
     @app.route("/jhsaa/rankings")
