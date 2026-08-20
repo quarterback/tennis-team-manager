@@ -363,16 +363,16 @@ def _str_scale_rows():
 # "Ensign" carries no attribute at all. Ported from the Varsity Apex sheet along
 # with the palettes themselves; ten light schemes, no dark mode.
 SCHEMES = [
-    ("default",    "Ensign",     "Deep twilight · cobalt · white · red"),
-    ("laurel",     "Laurel",     "Evergreen · crimson · parchment · amber"),
-    ("apex",       "Apex",       "Prussian · steel blue · amber · flag red"),
-    ("rally",      "Rally",      "Blue bell · aqua · lemon · racing red"),
+    ("default",    "Ensign",     "Deep twilight · cobalt · white · red · oxblood"),
+    ("laurel",     "Laurel",     "Evergreen · crimson · parchment · pink · amber"),
+    ("apex",       "Apex",       "Prussian · amber · snow · flag red · steel blue"),
+    ("rally",      "Rally",      "Blue bell · aqua · lemon · tiger flame · racing red"),
     ("clay",       "Clay",       "Neon pink · coral · petal · sand · olive"),
     ("floodlight", "Floodlight", "Shadow · indigo · canary · mint · cherry"),
     ("ember",      "Ember",      "Bordeaux · iron · peach · caramel · teal"),
-    ("harbor",     "Harbor",     "Dark teal · peach · red"),
-    ("citrus",     "Citrus",     "Aqua · beige · pumpkin"),
-    ("pitch",      "Pitch",      "Mint · sea green · amber · black"),
+    ("harbor",     "Harbor",     "Ink · ocean · jungle teal · peach · red"),
+    ("citrus",     "Citrus",     "Electric aqua · pearl aqua · beige · pumpkin · harvest"),
+    ("pitch",      "Pitch",      "Mint · olive · sea green · amber · black"),
 ]
 
 # Serializes `/world/advance` (and its standalone-season fallback) across
