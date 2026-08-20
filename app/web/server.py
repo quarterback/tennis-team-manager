@@ -496,6 +496,14 @@ def create_app() -> Flask:
         # minute, fly marks the machine unhealthy, and it recycles (the 503 loop).
         if request.endpoint in ("health", "ready", "static"):
             return
+        # A JHSAA-lab process never builds the college roster cache at all
+        # (skip_college=True — see `_jhsaa_lab_mode` below), so `is_primed()`
+        # can never go true here (see `/api/ready` above for why) and every
+        # page would be served the cold-start loader forever. Nothing on
+        # `/jhsaa-lab*` reads the college roster cache, so there is nothing
+        # to prime — skip this whole mechanism in lab mode.
+        if os.environ.get("JHSAA_LAB_MODE"):
+            return
         if not wd.exists():
             # No league yet → first-login lands on onboarding via the dashboard.
             if request.endpoint == "dashboard":
@@ -1781,6 +1789,14 @@ def create_app() -> Flask:
     def ready():
         # The loader polls this. Ready = no league yet (loader hands off to
         # onboarding) or the world is warm. Cheap + read-only; never primes.
+        # A JHSAA-lab process (see `_jhsaa_lab_mode` below) deliberately never
+        # builds a college roster cache at all (`skip_college=True`), so
+        # `is_primed()`'s `bool(_roster_cache)` check can NEVER go true here —
+        # the loader would poll forever and every page in lab mode would be
+        # permanently stuck behind "Warming up the league…". There is no
+        # college cache to wait for in this mode, so it's always ready.
+        if os.environ.get("JHSAA_LAB_MODE"):
+            return {"ready": True}, 200
         return {"ready": (not wd.exists()) or wd.is_primed()}, 200
 
     @app.route("/methodology")
