@@ -140,7 +140,8 @@ misallocations, best-fit landing spots), plus a **Lineup Lab** strip-plot compar
 every team's singles ladder across a conference and ranking relative league strength.
 
 **The JHSAA** — Jefferson, a fictional US state, runs its own high-school tennis
-association *inside this engine*: ~335 girls'/292 boys' programs playing a full
+association *inside this engine*: 862 girls'/777 boys' programs across nine
+classifications (1A-9A) playing a full
 simulated season, browsable at `/jhsaa`, whose graduating seniors are Jefferson's
 entries on the college recruiting board. Its own dual formats, double round-robin
 district schedule, TOSS-based seeding, a multi-round State postseason with earned

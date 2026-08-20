@@ -670,11 +670,12 @@ identity.
 
 ### 21. The JHSAA — Jefferson's High School Season <a id="jhsaa"></a>
 
-Jefferson's own high-school athletic association — roughly 335 girls' and 292
-boys' programs — plays a **complete season inside this engine**, browsable at
-`/jhsaa`, and its graduating seniors *are* Jefferson's entries on the college
-recruiting board. It's simulated once per year, in one step, at the very
-start of the offseason ladder — before the recruit board needs its output.
+Jefferson's own high-school athletic association — 862 girls' and 777 boys'
+programs across nine classifications (1A-9A) — plays a **complete season
+inside this engine**, browsable at `/jhsaa`, and its graduating seniors *are*
+Jefferson's entries on the college recruiting board. It's simulated once per
+year, in one step, at the very start of the offseason ladder — before the
+recruit board needs its output.
 
 - **Two separate format axes.** The dual **shape**: the regular season plays
   3 singles + 4 doubles, the early non-district window (a program's first
@@ -804,9 +805,11 @@ start of the offseason ladder — before the recruit board needs its output.
   *(classification, name)*, so those two are per class; a region is neither, and
   selecting one per classification made it a second All-District — four or five
   schools per class-region, roughly a thousand honours a season on an association
-  of ~300 programs, every school placing somebody. Region-wide it is one team per
-  region drawn from ~40 programs, so it sits where it belongs: harder to make
-  than All-District, and open to a 2A school that produced a regional #1.
+  of 800+ programs a gender, every school placing somebody. Region-wide it is one
+  team per region drawn from dozens of programs (regions vary widely in size —
+  Halbrook Basin alone has 199 boys'/219 girls' programs, the smallest under 30),
+  so it sits where it belongs: harder to make than All-District, and open to a
+  2A school that produced a regional #1.
 
   **The regions are nowhere near the same size, so the honour scales with them.**
   Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25. A region

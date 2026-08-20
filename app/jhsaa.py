@@ -1,8 +1,9 @@
 """
 JHSAA — Jefferson's high-school tennis association.
 
-The one place a high-school season is played. Jefferson's ~335 girls' and ~292 boys'
-programs play a district schedule and a state dual-team tournament here, in this engine,
+The one place a high-school season is played. Jefferson's 862 girls' and 777 boys'
+programs (nine classifications, 1A-9A) play a district schedule and a state
+dual-team tournament here, in this engine,
 with players generated and developed here. `prep-network` supplied the institutions only
 (see `scripts/import_jhsaa.py`); nothing about a player comes from that repo.
 
