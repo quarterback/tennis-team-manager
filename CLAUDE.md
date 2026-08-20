@@ -790,28 +790,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `|aa-ab|+|ca-cb|`, which score a lopsided pair (one player strong at
   everything, partner weak at everything) IDENTICALLY to a genuinely
   complementary pair, since neither knows which player owns which strength.
-  ‼️ **THE PAIRING IS A DIRECT DECISION, NOT A SEARCH (owner correction
-  2027-08, cost a hung world advance).** The first cut of `maximize`/`balanced`
-  scored all 105 ways to split the 8-player pool via `jhsaa._pair_partitions`
-  (shared with `_arrange_state`) — fine for the old early-window-only 3S/4D,
-  but the swap above puts this format on EVERY regular-season dual for
-  ~1,600 JHSAA programs (~26 duals each), so a search that used to run a
-  handful of times a team now ran thousands of times across a world advance:
-  measured, forcing the cheap `traditional` branch alone cut a season slice's
-  wall time by half. The owner's fix, in their own words: "it needs to not do
-  that, you can just cheaply decide on the fly … it doesn't need to run
-  permutations like that … just make a decision, it doesn't have to be
-  optimal, real life isn't optimal." `_arrange_regular` now makes ONE direct
-  ability-ordered decision per strategy (`maximize` snake-pairs by
-  serve-vs-return skew, `balanced` snake-pairs by overall) instead of scoring
-  every partition — consistent with `SYNERGY_CAP` already capping the term
-  those 105 partitions were fighting over to a minor factor by design (see
-  `engine/doubles.py`). `_arrange_state`'s postseason search (15 partitions, a
-  small qualifying field) is untouched — it was never the cost driver. Do NOT
-  reintroduce an exhaustive search over the regular-season pool.
-  Roster depth now scales by classification (`ROSTER_SIZE_BY_CLASS`, 9A 24 down
-  to 1A 13 — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not weaker
-  filler) because 3S/4D dressing 11-of-12 left almost no bench. Grade
+  Roster depth now scales by classification (`ROSTER_SIZE_BAND_BY_CLASS`, a BAND
+  per class — 9A/8A 20-24 down to 1A 14-16, each program drawing one stable point
+  in its band via `roster_size(classification, school_key, salt)`, same idiom as a
+  recruiting budget band — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not
+  weaker filler) because 3S/4D dressing 11-of-12 left almost no bench.
+  **`ROSTER_FLOOR` (11, the regular-season card's distinct-player count) is a HARD
+  floor UNDER that band** — `_freshman_class_size` rolls each grade independently
+  with real downside variance, so `build_roster` tops a short roster up to 11 by
+  growing ONLY the current year's incoming freshman class (never grades 10-12,
+  already fixed from a prior roll) — without it, a program that rolled thin across
+  its four grades could and did drop below what a dual needs, forcing the same
+  player onto two lines of one match at once. See
+  `docs/AAR-jhsaa-roster-floor-and-depth-bands.md`. Grade
   distribution is no longer an even ~3-per-grade split — `_freshman_class_size`
   rolls ONCE per `(school, entry_year)`, so year 1 shows a naturally random
   class mix (four independent entry-year rolls) while every later year's growth
