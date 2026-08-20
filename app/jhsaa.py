@@ -271,11 +271,12 @@ def _freshman_class_size(school_key: str, entry_year: int, classification: str,
     return max(1, round(rng.gauss(target, target * 0.35)))
 
 # Non-district duals per team (owner rule 2027-08). The POSTSEASON IS EXEMPT.
-# This is an ALLOWANCE ON TOP of the district double round-robin, not a season total:
-# district size already sets most of the schedule (a 12-team district is 22 league duals,
-# a 6-team one is 10), so a fixed season total would force wildly different non-league
-# loads on schools of different districts. To shorten seasons, shrink the districts —
-# `MAX_DISTRICT` in `scripts/import_jhsaa.py` — not this.
+# This is an ALLOWANCE ON TOP of the district card, not a season total: district
+# size sets most of the schedule (a 12-team district is 18 league duals under
+# `DISTRICT_DUAL_CAP`, a 6-team one is 10), so a fixed season total would force
+# wildly different non-league loads on schools of different districts. To shorten
+# seasons, lower `DISTRICT_DUAL_CAP` or shrink the districts (`MAX_DISTRICT` in
+# `scripts/import_jhsaa.py`) — not this.
 NONDISTRICT_MIN, NONDISTRICT_MAX = 4, 8
 
 # How that allowance is spread across the season (owner rule 2027-08). A high-school
@@ -2134,11 +2135,11 @@ def run_district(schools: list[School], year: int, *, seed: int,
     """A district's regular season: DOUBLE round-robin, 3S/4D, every match completed.
     Returns its teams ordered by finish (win %, then point differential).
 
-    You play every league opponent home AND away (owner rule 2027-08); the rest of the
-    card is out-of-district, in `_crossover`. District size therefore sets the season
-    length on its own — a 12-team district is 22 league duals before a single non-league
-    one — so if seasons need to be shorter, shrink `MAX_DISTRICT` in
-    `scripts/import_jhsaa.py`, don't cut the second leg.
+    You meet every league opponent at least once, and rematch as many as fit under
+    `DISTRICT_DUAL_CAP` (owner rule 2026-08 — a league of 10 or fewer still plays the
+    full home-and-away double; a bigger one plays pass 1 complete plus a truncated
+    second leg, capped at 16-18 district duals). The rest of the card is
+    out-of-district, in `_crossover`.
 
     Split from `district_teams` so `run_season` can play the NON-district card first —
     see `_crossover`. Standalone (tests, a single district) this still does both."""
@@ -2290,14 +2291,42 @@ def _orient(order: list[list[tuple[int, int]]], mirror: list[int], n: int,
     return flip
 
 
+#: ‼️ THE DISTRICT SEASON IS CAPPED (owner rule 2026-08, REVERSING the earlier
+#: "never cut the second league leg"): "double round robins are bad when leagues
+#: are more than 10 teams… i don't want teams playing more than 16-18 district
+#: matches in a year." A 12-team league's full double round robin is 22 league
+#: duals — too many. So: a league whose full double fits under this cap plays it
+#: unchanged (10 teams = 18, exactly at the line); a bigger league plays pass 1
+#: COMPLETE — everyone still meets everyone, which is what a league season IS —
+#: and then only the first rounds of the mirrored pass 2 until the cap is
+#: reached. The second leg becomes UNBALANCED (you rematch some opponents, not
+#: all), which is exactly how real oversized high-school leagues schedule; the
+#: tiebreak ladder already reads head-to-head and series aggregate off the
+#: meetings actually played, so 1-vs-2 meetings need no special casing.
+DISTRICT_DUAL_CAP = 18
+
+
+def district_pass1_rounds(n: int) -> int:
+    """Rounds in the FIRST pass of an n-team district card — n-1 for even n, n
+    for odd (each odd-n round sits one team out). This is the split point
+    `play_regular_season` puts the mid-season window at; `len(rounds) // 2` is
+    no longer that point once the cap truncates the second pass."""
+    return n if n % 2 else n - 1
+
+
 def district_rounds(teams: list[TeamSeason], year: int, salt: str = "") -> list[list[tuple]]:
     """The district's league card as an ordered list of ROUNDS of (home, away) teams —
-    the first pass, then the second pass mirrored with venues reversed.
+    the first pass, then the second pass mirrored with venues reversed, the second
+    pass truncated where the full double would exceed `DISTRICT_DUAL_CAP`.
 
     The caller decides what goes BETWEEN the two passes (`run_season` puts the
-    mid-season window there); playing the list straight through is a plain double round
-    robin. The pass-2 rotation varies by season so a program's opponent order is not the
-    same every year, and every variant is reproducible from the save seed."""
+    mid-season window there — the split point is `district_pass1_rounds`, NOT
+    `len // 2`, which lands mid-pass-1 on a capped league); playing the list
+    straight through is the league season. The pass-2 rotation varies by season so
+    a program's opponent order is not the same every year, and every variant is
+    reproducible from the save seed. Because pass 2 is truncated from its own
+    seasonally-rotated order, WHICH opponents a program meets twice also varies by
+    year rather than freezing one privileged rematch set."""
     n = len(teams)
     if n < 2:
         return []
@@ -2309,6 +2338,12 @@ def district_rounds(teams: list[TeamSeason], year: int, salt: str = "") -> list[
     mirror = variants[rng.randrange(len(variants))]
     flip = _orient(order, mirror, n, rng)
     passes = [order, [order[i] for i in mirror]]
+    # The cap: pass 1 always plays out in full (n-1 duals per team); pass 2 only
+    # until the per-team total reaches DISTRICT_DUAL_CAP. Even n: exactly the cap.
+    # Odd n: each kept round sits one team out, so totals land at cap or cap-1 —
+    # inside the owner's 16-18 window, never over it.
+    if 2 * (n - 1) > DISTRICT_DUAL_CAP:
+        passes[1] = passes[1][:max(0, DISTRICT_DUAL_CAP - (n - 1))]
     out = []
     for pass_no, rounds in enumerate(passes):
         for rnd in rounds:
@@ -3815,9 +3850,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng,
                phase=EARLY_FORMAT_PHASE)
 
-    rounds = {(g, d): district_rounds(teams, year, salt)
-              for g, st in by_group.items() for d, teams in st.items()}
-    half = {k: len(v) // 2 for k, v in rounds.items()}
+    # The mid-season window sits at the END OF PASS 1 — `district_pass1_rounds`,
+    # never `len // 2`: on a cap-truncated league (DISTRICT_DUAL_CAP) the list is
+    # asymmetric, and a halfway split would break pass 1 in the middle while
+    # gluing its tail onto pass 2.
+    rounds, half = {}, {}
+    for g, st in by_group.items():
+        for d, teams in st.items():
+            rounds[(g, d)] = district_rounds(teams, year, salt)
+            half[(g, d)] = district_pass1_rounds(len(teams))
     for key, rr in rounds.items():
         play_rounds(rr[:half[key]], year, salt, key[1])
 

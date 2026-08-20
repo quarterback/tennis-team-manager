@@ -73,15 +73,29 @@ def _peers(t, played):
 
 # --- the round robin itself ---------------------------------------------------
 
-def test_district_play_is_a_double_round_robin(played):
-    """Every league opponent exactly twice, once home and once away."""
+def test_district_play_is_a_capped_double_round_robin(played):
+    """Every league opponent at least once, at most twice — and no more than
+    `DISTRICT_DUAL_CAP` league duals in the year (owner rule 2026-08, reversing
+    "never cut the second leg"). A league whose full double fits under the cap
+    still plays every pairing twice with one home and one away; a bigger league
+    completes pass 1 and rematches only until the cap. A pairing met twice is
+    still one home + one away either way."""
     for t in played:
         legs = collections.defaultdict(list)
         for x in _district(t):
             legs[x["opp"]].append(x["home"])
-        assert len(legs) == _peers(t, played), (t.school.name, len(legs))
+        n_peers = _peers(t, played)
+        assert len(legs) == n_peers, (t.school.name, len(legs))
+        total = sum(len(v) for v in legs.values())
+        full = 2 * n_peers
+        if full <= jhsaa.DISTRICT_DUAL_CAP:
+            assert total == full, (t.school.name, total)
+        else:
+            assert 16 <= total <= jhsaa.DISTRICT_DUAL_CAP, (t.school.name, total)
         for opp, homes in legs.items():
-            assert sorted(homes) == [False, True], (t.school.name, opp, homes)
+            assert len(homes) in (1, 2), (t.school.name, opp, homes)
+            if len(homes) == 2:
+                assert sorted(homes) == [False, True], (t.school.name, opp, homes)
 
 
 def test_the_second_meeting_reverses_the_venue(played):
@@ -93,6 +107,8 @@ def test_the_second_meeting_reverses_the_venue(played):
         for i, x in enumerate(_district(t)):
             met[x["opp"]].append((i, x["home"]))
         for opp, ms in met.items():
+            if len(ms) < 2:      # capped leagues rematch only some opponents
+                continue
             (_, first), (_, second) = sorted(ms)
             assert first != second, (t.school.name, opp, ms)
 
@@ -116,17 +132,23 @@ def test_the_two_meetings_are_a_meaningful_part_of_the_season_apart(played):
         met = collections.defaultdict(list)
         for i, x in enumerate(dates):
             met[x["opp"]].append(i)
-        for opp, (first, second) in ((o, sorted(v)) for o, v in met.items()):
+        for opp, ms in met.items():
+            if len(ms) < 2:      # capped leagues rematch only some opponents
+                continue
+            first, second = sorted(ms)
             assert second - first >= n // 4, (t.school.name, opp, first, second, n)
 
 
 def test_district_home_and_away_dates_are_balanced(played):
-    """A double round robin gives every team exactly one home and one away date against
-    every opponent, so the totals are even by construction — what needs checking is that
-    they are not clumped into long runs of one venue."""
+    """A FULL double round robin balances home/away exactly; a cap-truncated one
+    keeps only a subset of the mirrored second leg, so the totals can drift a
+    little — measured over the whole association the worst drift is 3, so 4 is
+    the honest bound. Clumping into long runs of one venue stays checked either
+    way."""
     for t in played:
         seq = [x["home"] for x in _district(t)]
-        assert abs(2 * sum(seq) - len(seq)) <= 1, (t.school.name, seq)
+        full = 2 * _peers(t, played) <= jhsaa.DISTRICT_DUAL_CAP
+        assert abs(2 * sum(seq) - len(seq)) <= (1 if full else 4), (t.school.name, seq)
         run = worst = 1
         for a, b in zip(seq, seq[1:]):
             run = run + 1 if a == b else 1
@@ -135,13 +157,16 @@ def test_district_home_and_away_dates_are_balanced(played):
 
 
 def test_the_district_card_is_two_passes_not_a_series(played):
-    """Structural: the first half of a team's league dates hits every opponent once, and
-    so does the second. That is what makes it two passes rather than a home-and-home."""
+    """Structural: a team's first n-1 league dates hit every opponent exactly once
+    (pass 1 always completes, cap or no cap), and everything after is a set of
+    distinct opponents again (the — possibly truncated — mirrored second leg).
+    The split is the END OF PASS 1, not len//2: on a capped league the card is
+    asymmetric and a halfway split would land inside pass 1."""
     for t in played:
         dates = [x["opp"] for x in _district(t)]
-        half = len(dates) // 2
-        assert len(set(dates[:half])) == half, (t.school.name, dates[:half])
-        assert len(set(dates[half:])) == len(dates) - half, (t.school.name, dates[half:])
+        p1 = _peers(t, played)
+        assert len(set(dates[:p1])) == p1, (t.school.name, dates[:p1])
+        assert len(set(dates[p1:])) == len(dates) - p1, (t.school.name, dates[p1:])
 
 
 # --- the windows --------------------------------------------------------------
