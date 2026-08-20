@@ -2252,6 +2252,12 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     # mis-recorded 9A back down on their own.
     OWNER_SIZES = {
         "Jefferson School of Science and Technology North": (792, "4A"),
+        # The rival pair (owner rule 2026-08): enrollment-level 3A academies.
+        # Their DRAW classification stays 7A — that is the championship they
+        # compete in, and the league draw runs on classification — with the
+        # 3A truth and the 9A talent decree stamped at emit (OWNER_EMIT below).
+        "Condotti Vanguard Academy": (531, "7A"),
+        "Romero-Finniski": (507, "7A"),
     }
     for s in schools:
         if s["name"] in OWNER_SIZES:
@@ -2328,6 +2334,20 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "girls_district": dist["girls"].get(name, ""),
             "boys_district": dist["boys"].get(name, ""),
         })
+    # ‼️ OWNER EMIT DECREES (owner rule 2026-08) — final-record corrections for
+    # the rival pair, applied AFTER the draw ran on their competing class (7A,
+    # via OWNER_SIZES above): the emitted record carries their TRUE size (3A)
+    # while `group` keeps the 7A championship the draw placed them in, and
+    # `talent` pins roster generation at the owner's stated 9A caliber —
+    # `School.talent_group` reads it ahead of classification. Keyed on the
+    # display name (this runs after renames).
+    OWNER_EMIT = {
+        "Condotti Vanguard Academy": {"classification": "3A", "talent": "9A"},
+        "Romero-Finniski": {"classification": "3A", "talent": "9A"},
+    }
+    for r in out:
+        if r["name"] in OWNER_EMIT:
+            r.update(OWNER_EMIT[r["name"]])
     out.sort(key=lambda r: r["name"])     # renamed rows land at their NEW name
     # ‼️ A DISPLAY NAME IS THE ARCHIVE'S IDENTITY — it keys `run_season`'s teams
     # dict, `world_jhsaa_dual.school`, the school routes and the pid space. Two

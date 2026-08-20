@@ -858,6 +858,16 @@ class School:
     # transplant" true by construction — the invariant is cheap here and
     # expensive to retrofit once a save DOES carry history across one.
     source: str = ""
+    # ‼️ TALENT OVERRIDE (owner rule 2026-08) — the classification a roster
+    # GENERATES at when the owner decrees it differs from enrollment. Empty for
+    # every ordinary school (talent comes from `classification`, as always).
+    # Exists for exactly the Condotti Vanguard Academy / Romero-Finniski pair:
+    # enrollment-level 3A academies that compete in 7A while producing
+    # 9A-caliber rosters — the owner's lore, not a size relationship any
+    # existing field could express (classification drives ROSTER SIZE and, by
+    # default, talent; group drives the championship; this decouples talent
+    # alone). Read ONLY through `talent_group`.
+    talent: str = ""
 
     @property
     def ident(self) -> str:
@@ -887,8 +897,12 @@ class School:
         the bands on `group` and a 5A blue-blood that plays up to 6A is silently
         handed 6A talent — a free roster upgrade that inverts the choice, since
         playing up is meant to COST you a harder field, not buy you better
-        players. A no-op for every school that is not playing up."""
-        return champ_group(self.classification)
+        players. A no-op for every school that is not playing up.
+
+        The one exception is an explicit owner `talent` decree (see the field
+        above) — a stated generation class that outranks enrollment for the
+        named pair and nobody else."""
+        return champ_group(self.talent or self.classification)
 
 
 @dataclass
@@ -1375,7 +1389,7 @@ def load_schools(gender: str) -> list[School]:
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
             classification=r["classification"], group=group,
             enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
-            colors=r["colors"],
+            colors=r["colors"], talent=r.get("talent", ""),
             # ‼️ THE LEAGUE MOVES WITH THE PROGRAM. A district is (classification,
             # name), so a school competing in 6A while carrying its 5A league name
             # lands in a 6A district that holds nobody else — a one-team league,

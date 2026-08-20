@@ -36,14 +36,14 @@ def clean():
 
 
 #: Condotti Vanguard Academy and Romero-Finniski are a deliberate, owner-named
-#: exception to the play-up mechanism (their real-world enrollment sizes them 7A,
-#: but per the owner's lore for these two specific programs they are 9A-CALIBER
-#: talent choosing to compete in the smaller 7A class — the opposite direction
-#: from an ordinary play-up, which is a small school reaching for a bigger one).
-#: They still trip `School.plays_up` (a raw classification/group mismatch
-#: detector, direction-agnostic by construction) but are not "playing up" in the
-#: small-school sense every other test in this file is about — same pattern as
-#: `import_jhsaa.OWNER_EDICTS`/`RIVALRIES`, a named exception rather than a rule.
+#: exception to the play-up mechanism (owner correction 2026-08: they are
+#: enrollment-level 3A academies competing in 7A while GENERATING 9A-caliber
+#: rosters — `School.talent` pins the generation class by decree, the one place
+#: in the association talent is decoupled from enrollment). They trip
+#: `School.plays_up` (a raw classification/group mismatch detector) but arrived
+#: in 7A by owner edict, not through the play-up override system this file
+#: tests — same pattern as `import_jhsaa.OWNER_EDICTS`/`RIVALRIES`, a named
+#: exception rather than a rule.
 _PLAY_DOWN_EXCEPTIONS = {"Condotti Vanguard Academy", "Romero-Finniski"}
 
 
