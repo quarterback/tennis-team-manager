@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}{{ board.bundle.label }}{% endblock %}
+{% block content %}
+{% set classes = board.classifications %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Seasons</a> / {{ board.bundle.label }}</div>
+<h1 class="pt-h1">{{ board.bundle.label }}</h1>
+
+<div class="pt-filterbar">
+  <label>Classification
+    <select id="f-class" onchange="onClassChange()">
+      {% for cls in classes %}
+      <option value="{{ cls.name }}">{{ cls.name }} ({{ cls.teams|length }} programs)</option>
+      {% endfor %}
+      {% if classes|length > 1 %}
+      <option value="">Statewide (all {{ board.rows|length }})</option>
+      {% endif %}
+    </select>
+  </label>
+  <label>District
+    <select id="f-district" onchange="applyFilters()">
+      <option value="">All districts</option>
+    </select>
+  </label>
+  <label class="pt-filterbar-search">Search this season
+    <input class="pt-searchbox" type="search" id="q" placeholder="School or district name…" oninput="applyFilters()">
+  </label>
+</div>
+
+<div class="pt-tabs" id="season-tabs">
+  <button type="button" data-tab="rankings">Rankings</button>
+  <button type="button" data-tab="standings">District standings</button>
+  <button type="button" data-tab="leaders">Individual leaders</button>
+  {% if board.awards %}<button type="button" data-tab="awards">Awards</button>{% endif %}
+</div>
+
+<div data-tabpane="rankings">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Rankings</div>
+      <div class="pt-panel-meta" id="rank-meta"></div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table pt-sortable" id="rank-table">
+        <thead><tr>
+          <th class="num">Cls#</th><th class="num">St#</th><th data-nosort>Team</th>
+          <th>Class</th><th>District</th>
+          <th class="num">W-L</th><th class="num">Pct</th>
+          <th class="num">District</th><th class="num">Power</th>
+        </tr></thead>
+        <tbody>
+        {% for r in board.rows %}
+          <tr data-class="{{ r.classification }}" data-district="{{ r.league }}"
+              data-name="{{ r.name|lower }} {{ r.league|lower }}">
+            <td class="num t-num">{{ r.class_rank }}</td>
+            <td class="num t-num">{{ r.state_rank }}</td>
+            <td><a href="{{ team_href(r.program_id, board.bundle.scope_id) }}">{{ r.name }}</a></td>
+            <td><span class="pt-chip">{{ r.classification }}</span></td>
+            <td>{{ r.league }}</td>
+            <td class="num t-num" data-sort="{{ r.wins }}">{{ r.wins }}-{{ r.losses }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
+            <td class="num t-num" data-sort="{{ r.league_pct }}">{{ r.league_wins }}-{{ r.league_losses }}{% if r.league_place %} · {{ r.league_place }}{{ ["th","st","nd","rd"][r.league_place % 10] if r.league_place % 10 < 4 and r.league_place % 100 not in (11,12,13) else "th" }}{% endif %}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.power) if r.power is not none else "—" }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div data-tabpane="standings">
+  {% for cls in classes %}
+  {% for d in cls.districts %}
+  <div class="pt-panel pt-district" data-class="{{ cls.name }}" data-district="{{ d.name }}">
+    <div class="pt-panel-head">
+      <div class="pt-panel-title">{{ d.name }}</div>
+      <div class="pt-panel-meta">{{ cls.name }} · {{ d.teams|length }} programs</div>
+    </div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table">
+        <thead><tr><th class="num">Pl</th><th>Team</th><th class="num">District</th><th class="num">Overall</th><th class="num">Pct</th><th class="num">Power</th><th class="num">Cls#</th></tr></thead>
+        <tbody>
+        {% for r in d.teams %}
+          <tr>
+            <td class="num t-num">{{ r.league_place or loop.index }}</td>
+            <td><a href="{{ team_href(r.program_id, board.bundle.scope_id) }}">{{ r.name }}</a></td>
+            <td class="num t-num">{{ r.league_wins }}-{{ r.league_losses }}</td>
+            <td class="num t-num">{{ r.wins }}-{{ r.losses }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.power) if r.power is not none else "—" }}</td>
+            <td class="num t-num">{{ r.class_rank }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+  {% endfor %}
+</div>
+
+<div data-tabpane="leaders">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Individual leaders</div>
+      <div class="pt-panel-meta">best match records this season · min. 3 on record</div></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table pt-sortable">
+        <thead><tr><th class="num">#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team</th><th>Class</th><th class="num">W</th><th class="num">L</th><th class="num">Pct</th></tr></thead>
+        <tbody>
+        {% for r in board.top_players %}
+          <tr data-class="{{ r.classification }}" data-district="" data-name="{{ r.name|lower }} {{ r.team|lower }}">
+            <td class="num t-num">{{ loop.index }}</td>
+            <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+            <td class="num t-num" data-sort="{{ r.grade_sort }}">{{ r.grade }}</td>
+            <td>{{ r.team }}</td>
+            <td><span class="pt-chip">{{ r.classification }}</span></td>
+            <td class="num t-num">{{ r.wins }}</td><td class="num t-num">{{ r.losses }}</td>
+            <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if board.awards %}
+<div data-tabpane="awards">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Award winners</div>
+      <div class="pt-panel-meta">read straight from the exported awards, per classification</div></div>
+    <div class="pt-panel-body">
+      {% for cls, group in board.awards.items() %}
+        {% if group.poy %}
+        <div class="pt-award" data-class="{{ cls }}" data-district="" data-name="{{ group.poy.name|lower }}">
+          <div class="who">{{ group.poy.name }} — {{ cls }} Player of the Year</div>
+          <div class="what">{{ group.poy.school }} · {{ group.poy.wins }}-{{ group.poy.losses }} at {{ group.poy.flight }}</div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// class -> its district names, for the cascading district <select>
+var DISTRICTS = {
+  {% for cls in classes %}
+  {{ cls.name|tojson }}: [{% for d in cls.districts %}{{ d.name|tojson }}{{ "," if not loop.last }}{% endfor %}]{{ "," if not loop.last }}
+  {% endfor %}
+};
+
+function onClassChange(){
+  var cls = document.getElementById('f-class').value;
+  var dsel = document.getElementById('f-district');
+  var opts = cls ? (DISTRICTS[cls] || []) : [];
+  dsel.innerHTML = '<option value="">' + (cls ? 'All districts' : 'Pick a classification first') + '</option>';
+  opts.forEach(function(d){
+    var o = document.createElement('option'); o.value = d; o.textContent = d; dsel.appendChild(o);
+  });
+  dsel.disabled = !cls;
+  applyFilters();
+}
+
+function applyFilters(){
+  var cls = document.getElementById('f-class').value;
+  var district = document.getElementById('f-district').value;
+  var q = document.getElementById('q').value.toLowerCase().trim();
+
+  document.querySelectorAll('[data-tabpane="rankings"] tbody tr, [data-tabpane="leaders"] tbody tr, .pt-award').forEach(function(row){
+    var show = true;
+    if (cls && row.dataset.class !== cls) show = false;
+    // rows that belong to a district (rankings) filter on it; rows that
+    // don't (leaders, awards) ignore the district picker
+    if (show && district && row.dataset.district && row.dataset.district !== district) show = false;
+    if (show && q && row.dataset.name && row.dataset.name.indexOf(q) === -1) show = false;
+    row.style.display = show ? '' : 'none';
+  });
+  // District standings: show the selected district's panel(s) — one district
+  // when picked, the whole class's districts otherwise.
+  document.querySelectorAll('.pt-district').forEach(function(p){
+    var show = true;
+    if (cls && p.dataset.class !== cls) show = false;
+    if (!cls) show = false;   // statewide view: districts only make sense inside a class
+    if (show && district && p.dataset.district !== district) show = false;
+    if (show && q){
+      var hit = (p.dataset.district || '').toLowerCase().indexOf(q) !== -1 ||
+        Array.prototype.some.call(p.querySelectorAll('tbody a'), function(a){
+          return a.textContent.toLowerCase().indexOf(q) !== -1; });
+      if (!hit) show = false;
+    }
+    p.style.display = show ? '' : 'none';
+  });
+  var meta = document.getElementById('rank-meta');
+  if (meta) meta.textContent = cls
+    ? cls + (district ? ' · ' + district : '') + ' — ranked on archived power'
+    : 'statewide — ranked on archived power';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  onClassChange();   // default view: the biggest classification, never a statewide splat
+});
+</script>
+{% endblock %}

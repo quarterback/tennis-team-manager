@@ -64,6 +64,10 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             (world["id"], world_year, gender)).fetchall()
     finally:
         conn.close()
+    # The display calendar the game's own schedule pages show (one date per
+    # dual, identical from both sides — world.jhsaa_match_dates). Resolved
+    # ONCE here and threaded down, never per row.
+    dates = wd.jhsaa_match_dates(world["id"], world_year, gender, season_year)
     schedule_by_school = {}
     for r in rows:
         d = dict(r)
@@ -71,6 +75,8 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         d["won"] = bool(d["won"])
         d["district"] = bool(d["district"])
         d["lines"] = json.loads(d.pop("lines") or "[]")
+        played = dates.get(wd.jh_match_key(d))
+        d["date"] = played.isoformat() if played else ""
         schedule_by_school.setdefault(d.pop("school"), []).append(d)
 
     standings_by_school = {}
@@ -156,6 +162,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "dual_id": dual_id, "year": year, "gender": gender,
                 "home_program_id": team.school.key,
                 "away_program_id": next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
+                "date": dual.get("date") or "",
                 "phase": dual["phase"], "district": int(bool(dual.get("district"))),
                 "home_points": dual["pf"], "away_points": dual["pa"],
                 "winner_program_id": team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
@@ -191,6 +198,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender."
         },
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
+            "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
+            "per dual, identical from both sides); empty on seasons archived before dates existed. "
+            "It is the play order: there is no clock inside a JHSAA season.",
             "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4.",
             "Every court finishes. JHSAA has no clinch abandonment.",
             "1A and 2A crown SEPARATELY via a fixed 24-team postseason shape "

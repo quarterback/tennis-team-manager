@@ -3,7 +3,6 @@
 {% block content %}
 <div class="pt-crumbs"><a href="../index.html">Home</a> / Teams</div>
 <h1 class="pt-h1">Teams</h1>
-<p class="t-dek">Isolate a season, classification, and league — or search across all of them at once. Nothing loads until you pick something.</p>
 
 <div class="pt-filterbar">
   <label>Season
@@ -29,7 +28,7 @@
   </label>
 </div>
 
-<div id="empty-state" class="pt-myteams-empty" style="margin:24px 0">Pick a season above (or start typing in Search) to see teams.</div>
+<div id="empty-state" class="pt-myteams-empty" style="margin:24px 0">Pick a season and classification, or search.</div>
 <div class="pt-index-grid" id="cards" style="display:none">
   {% for t in teams %}
   <a class="pt-index-card" data-scope="{{ t.bundle.scope_id }}" data-class="{{ t.classification }}" data-league="{{ t.league }}"
@@ -86,7 +85,10 @@ function applyFilters(){
   var league = document.getElementById('f-league').value;
   var q = document.getElementById('q').value.toLowerCase().trim();
 
-  var active = !!(scopeId || q);
+  // A season alone is still ~a thousand programs — the grid only renders
+  // once a CLASSIFICATION narrows it (or a search does). Classification →
+  // league is the browsing hierarchy on every page here.
+  var active = !!((scopeId && cls) || q);
   document.getElementById('cards').style.display = active ? '' : 'none';
   document.getElementById('empty-state').style.display = active ? 'none' : '';
   if (!active) return;
