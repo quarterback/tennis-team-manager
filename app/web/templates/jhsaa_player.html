@@ -42,13 +42,18 @@
       <div class="bl-panel-head"><span class="bl-panel-title">High school career</span></div>
       <div class="tbl-scroll">
         <table class="jh-ledger">
-          <tr><th style="width:66px">Season</th><th style="width:88px">Class</th><th style="width:58px">Ladder</th>
+          <tr><th style="width:66px">Season</th><th style="width:44px">Class</th><th style="width:140px">School</th>
+            <th style="width:58px">Ladder</th>
             <th style="width:64px">Singles</th><th style="width:66px">Doubles</th><th style="width:58px">Total</th>
             <th class="jh-scout" style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
           {% for s in view.seasons %}
-          <tr>
-            <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
+          <tr{% if s.transferred %} style="opacity:.72"{% endif %}>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
+            <td style="font-size:12.5px">
+              <a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}"
+                 style="display:inline-flex;align-items:center;gap:5px;color:inherit">
+                {{ s.school_mark|safe }}{{ s.school }}</a></td>
             <td>{{ s.ladder }}</td>
             <td>{{ s.singles }}</td>
             <td>{{ s.doubles }}</td>
