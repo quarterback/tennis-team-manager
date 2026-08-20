@@ -127,6 +127,9 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Transfer</span></div>
       <div class="bl-panel-body">
+        {% if request.cookies.get('jh_transfer_result') %}
+        <p class="bit" style="margin-bottom:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_transfer_result') }}</p>
+        {% endif %}
         {% if view.transfer %}
         <p class="bit">Moving to <b>{{ view.transfer.to }}</b>, effective the
           {{ view.transfer.year }} offseason.</p>
@@ -148,7 +151,11 @@
           <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
           <input type="hidden" name="u" value="{{ u }}">
           <label class="s">Move to
-            <input type="text" name="jh_to_school" placeholder="Destination school" required></label>
+            <input type="text" name="jh_to_school" list="jh-transfer-schools"
+                   placeholder="Start typing a school…" autocomplete="off" required></label>
+          <datalist id="jh-transfer-schools">
+            {% for n in school_names %}<option value="{{ n }}">{% endfor %}
+          </datalist>
           <label class="s">Effective offseason
             {# `build_roster` compares `jh_year` against the CALENDAR season
                (`scope.season_year`), never the zero-based world/archive index
