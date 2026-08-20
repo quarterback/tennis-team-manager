@@ -52,7 +52,13 @@ pinned favorites) rather than a Football Manager save browser:
 - **Brackets** — new section, reading `jhsaa_championships.json` (was
   ingested and completely unused before this pass) straight from the export:
   the real archived postseason draw, round by round, per classification —
-  the same "look at the playoff bracket" the game itself offers.
+  the same "look at the playoff bracket" the game itself offers. Round
+  labels use the export's own `round_names` field verbatim wherever it's
+  present (`_round_names()` in `render.py`) — an expanded 40-team
+  classification prepends "Qualifiers Round"/"First Round" ahead of a
+  converged Octofinals-onward bracket, and those two rounds are NOT a
+  continuation of the same single-elimination sequence as the rest, so
+  they're never relabeled by distance-from-final the way the tail is.
 - **My Teams** — a star/pin button on any team card or team page, stored in
   the browser's `localStorage` (no server, no account) and surfaced on the
   home page, so you don't re-search your own team/league every visit.
@@ -128,6 +134,22 @@ rendered every Fmt/RCI/SCI number backwards. `Fmt`/`SCI`/State Win% return
 `None` (rendered "—") when a scope has no duals in that phase/round bucket
 yet — currently that's most college scopes (their postseason `NCAA` round
 isn't in the sample export), not a family-level restriction anymore.
+
+**A note for JHSAA seasons exported after the format swap**: the game's
+regular-season card is now 3 singles/4 doubles (was 5S/2D — the early
+non-district window now plays the old 5S/2D shape instead, a straight
+swap). Nothing in this sidecar hard-codes either shape (see above), so no
+code here needed to change for the swap itself. What it does mean for
+reading the numbers: under 3S/4D the S2/S3 lines are a team's *weakest*
+two starters (the doubles pool takes the real #2-#9), not its 2nd/3rd
+best — the opposite of what they meant under 5S/2D. Keep that in mind
+comparing a player's S2/S3 stat line across seasons exported before vs.
+after the swap; this sidecar reports raw per-slot performance and doesn't
+attempt to normalize across the swap. Award data ingested from
+`jhsaa_awards.json` already reflects the game's own post-swap reweighting
+(regular-season S2/S3 down-weighted relative to doubles in selection) —
+see the game repo's `docs/AAR-jhsaa-awards-3s4d-format-swap.md` if you
+need the mechanics.
 
 The full wishlist (opponent-adjusted S+/D+, bracket equity simulation,
 player WAR, pair chemistry, trend/form ratings, and the rest) is not built
