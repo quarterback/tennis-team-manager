@@ -58,6 +58,15 @@
       {% for m in meta %}<div><span class="k">{{ m[0] }}</span><span class="v">{{ m[1] }}</span></div>{% endfor %}
     </div>
     {% endif %}
+    {# Scouting data (OVR/potential/stars) is a god-mode view, hidden by default
+       everywhere it appears on this section — this is the one switch for it,
+       so it always sits beside the title rather than being re-added per page. #}
+    <label class="jh-scout-toggle" title="OVR, potential and star ratings — a scouting view kept obscured by default">
+      <input type="checkbox" data-jh-scout-checkbox
+             onchange="document.documentElement.setAttribute('data-jh-scout',this.checked?'on':'off');try{localStorage.setItem('jh-scout',this.checked?'on':'off')}catch(e){}">
+      <span>Show ratings</span>
+    </label>
+    <script>document.querySelector('[data-jh-scout-checkbox]').checked = document.documentElement.getAttribute('data-jh-scout') === 'on';</script>
   </div>
 
   <div class="jh-scope">

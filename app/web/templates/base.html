@@ -39,6 +39,11 @@
      deferred, the page paints in the default palette and then snaps to the
      chosen one, which is worse than a few milliseconds of parse. -->
 <script>try{var t=localStorage.getItem('ptc-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<!-- JHSAA scouting data (OVR/potential/stars) is OFF by default — it's a god-mode
+     view the owner never intended visible on the high-school side, kept obscured
+     unless explicitly switched on. Restored BEFORE first paint, same reasoning as
+     the theme above: a flash of visible data reads worse than the parse cost. -->
+<script>try{if(localStorage.getItem('jh-scout')==='on')document.documentElement.setAttribute('data-jh-scout','on');}catch(e){}</script>
 </head>
 <body>
   <div class="fm-shell">

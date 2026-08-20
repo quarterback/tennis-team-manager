@@ -542,3 +542,20 @@
    100 baseline it lands on. No bar; the number IS the whole idea (100 = the team's
    own regular season, unitless from there), so a meter would just restate it. */
 .jh-plus { font-weight: 700; }
+
+/* ---- Scouting data visibility (OVR/potential/stars) — OFF by default -------
+   Owner rule: this data (ceiling, star rating, current OVR) is a god-mode view
+   never meant to be visible on the high-school side. It exists for the owner's
+   own use, so it's hidden by default and switched on/off per-browser via the
+   toggle in jh_header, restored pre-paint by the inline script in base.html.
+   `visibility: hidden` (not `display: none`) on purpose — a table cell keeps its
+   column width whether the toggle is on or off, so switching it never reflows
+   the table underneath it. */
+.jh-scout { visibility: hidden; }
+html[data-jh-scout="on"] .jh-scout { visibility: visible; }
+
+.jh-scout-toggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 12.5px; color: var(--text-secondary); user-select: none;
+}
+.jh-scout-toggle input { margin: 0; cursor: pointer; }

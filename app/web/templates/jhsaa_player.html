@@ -30,7 +30,7 @@
     <div class="now">
       <span class="rec">{{ view.record }}</span>
       <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>
-      <span class="bit">OVR {{ view.ovr }} · Pot {{ view.ceiling }} · {{ stars(view.stars) }}</span>
+      <span class="bit jh-scout">OVR {{ view.ovr }} · Pot {{ view.ceiling }} · {{ stars(view.stars) }}</span>
       {% for h in view.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}">{{ h }}</span>{% endfor %}
     </div>
   </div>
@@ -44,7 +44,7 @@
         <table class="jh-ledger">
           <tr><th style="width:66px">Season</th><th style="width:88px">Class</th><th style="width:58px">Ladder</th>
             <th style="width:64px">Singles</th><th style="width:66px">Doubles</th><th style="width:58px">Total</th>
-            <th style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
+            <th class="jh-scout" style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
           {% for s in view.seasons %}
           <tr>
             <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
@@ -53,7 +53,7 @@
             <td>{{ s.singles }}</td>
             <td>{{ s.doubles }}</td>
             <td><b>{{ s.record }}</b></td>
-            <td>{{ s.ovr }}</td>
+            <td class="jh-scout">{{ s.ovr }}</td>
             <td>{{ s.team.record if s.team else '—' }}</td>
             <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">
               {% if s.team and s.team.champion %}<span class="jh-chip gold">{{ s.team.group }} CHAMPION</span> {% endif %}
