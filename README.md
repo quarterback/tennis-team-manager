@@ -139,11 +139,28 @@ player's true ceiling beside where they actually sit (buried studs, aid
 misallocations, best-fit landing spots), plus a **Lineup Lab** strip-plot comparing
 every team's singles ladder across a conference and ranking relative league strength.
 
+**The JHSAA** — Jefferson, a fictional US state, runs its own high-school tennis
+association *inside this engine*: ~335 girls'/292 boys' programs playing a full
+simulated season, browsable at `/jhsaa`, whose graduating seniors are Jefferson's
+entries on the college recruiting board. Its own dual formats, double round-robin
+district schedule, TOSS-based seeding, a multi-round State postseason with earned
+(never bye-only) recovery rounds, résumé-based postseason awards (All-State/
+All-Region/All-District), program archetypes, and a "playing up" mechanic for
+small blue-bloods. See `docs/DESIGN-jhsaa-high-school-season.md` and the many
+`docs/AAR-jhsaa-*.md` reports.
+
 **More** — a season-long **recruiting** pipeline (a junior pool, signings, the
 transfer portal), **coaches** (careers, localism, moves), an ATP/WTA-style **Data
 Portal** newsroom, a **Pro Tour** (GTT) college-to-pro pipeline, program **honors /
 hall of fame / archives**, and a live **editor** to move players, set lineups, and
 override prestige, academics, and scholarship limits.
+
+**The Clinch Report** (`analytics/`) — a separate static-site analytics sidecar
+that ingests the game's `/research/export` zips and builds a Football Manager/
+StatsBomb-style scouting tool out of them: season → classification → district
+dashboards, team/player pages, postseason brackets, a sortable Team Stat Center
+metrics grid, and Player Value (PVAR) — entirely offline, no server, no access to
+the live save. See [`analytics/README.md`](analytics/README.md).
 
 ---
 
@@ -162,6 +179,7 @@ app/               the world: divisions, programs, rosters, prestige, season + p
   gtt_seasonmode.py  the Pro Tour league
   web/               the Flask app — server.py (routes), state.py (data), templates/
 docs/              DESIGN doc + ~70 AARs (one per change, the running changelog)
+analytics/         The Clinch Report — offline static-site analytics sidecar (see analytics/README.md)
 CLAUDE.md          agent guardrails — the recruiting/prestige economy invariants
 manage.py          CLI;  wsgi.py / Dockerfile / fly.toml / Procfile  — deploy (Fly)
 tests/             determinism, scoring, economy, bracket, world-rollover invariants
