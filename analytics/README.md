@@ -69,7 +69,14 @@ pinned favorites) rather than a Football Manager save browser:
 ## What's here
 
 - `teams/` — one page per program per exported season: record, schedule,
-  roster, a one-line sports-desk summary.
+  roster, a one-line sports-desk summary. **JHSAA roster sizes are no longer
+  flat** (owner rule, `ROSTER_SIZE_BY_CLASS`): they now scale by
+  classification, 9A 24 down to 1A 13, mirroring the college side's
+  `roster_cap` pattern — don't read a shallow 1A roster next to a full 9A one
+  as missing data, it's the format. Grade distribution is no longer an even
+  ~3-per-grade split either (each class's freshman count is now rolled once
+  per school/entry-year and ages forward), so a season's grade mix will look
+  naturally uneven rather than symmetric.
 - `players/` — one page per player, stitched across every season ingested
   (player_id is stable across a career), with a full match log **and** an
   aggregated positions-played table — the JHSAA gap that started this: the
