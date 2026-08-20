@@ -43,10 +43,10 @@
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th>School</th><th style="width:44px">Plays In</th>
-        <th class="num" style="width:42px">OVR</th><th class="num" style="width:42px">Pot</th>
-        <th style="width:78px">Rating</th><th style="width:64px">Fits In</th>
-        <th class="num" style="width:70px">That Class Avg</th>
-        <th class="num" style="width:52px">Gap</th></tr>
+        <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
+        <th class="jh-scout" style="width:78px">Rating</th><th style="width:64px">Fits In</th>
+        <th class="num jh-scout" style="width:70px">That Class Avg</th>
+        <th class="num jh-scout" style="width:52px">Gap</th></tr>
       {% for r in rows %}
       <tr>
         <td class="pl">
@@ -54,12 +54,12 @@
         </td>
         <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
         <td>{{ r.group }}</td>
-        <td class="num">{{ r.ovr }}</td>
-        <td class="num">{{ r.ceiling }}</td>
-        <td>{{ stars(r.stars) }}</td>
+        <td class="num jh-scout">{{ r.ovr }}</td>
+        <td class="num jh-scout">{{ r.ceiling }}</td>
+        <td class="jh-scout">{{ stars(r.stars) }}</td>
         <td><b>{{ r.fits_in }}</b></td>
-        <td class="num">{{ r.fit_avg }}</td>
-        <td class="num"><b>+{{ r.gap }}</b></td>
+        <td class="num jh-scout">{{ r.fit_avg }}</td>
+        <td class="num jh-scout"><b>+{{ r.gap }}</b></td>
       </tr>
       {% endfor %}
     </table>

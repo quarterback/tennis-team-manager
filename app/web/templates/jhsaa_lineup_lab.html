@@ -48,14 +48,14 @@
 <div class="bl-panel" style="margin-bottom:14px">
   <div class="bl-panel-head">
     <span class="bl-panel-title">Squad {{ loop.index }}</span>
-    <span class="bit">avg OVR {{ sq.avg_ovr }} · avg Pot {{ sq.avg_ceiling }} ·
+    <span class="bit jh-scout">avg OVR {{ sq.avg_ovr }} · avg Pot {{ sq.avg_ceiling }} ·
       would rank ~#{{ sq.rank }} of {{ sq.n_div }} in {{ target }}</span>
   </div>
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th>School</th><th style="width:44px">Class</th>
-        <th class="num" style="width:42px">OVR</th><th class="num" style="width:42px">Pot</th>
-        <th style="width:78px">Rating</th></tr>
+        <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
+        <th class="jh-scout" style="width:78px">Rating</th></tr>
       {% for r in sq.players %}
       <tr>
         <td class="pl">
@@ -63,9 +63,9 @@
         </td>
         <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
         <td>{{ r.group }}</td>
-        <td class="num">{{ r.ovr }}</td>
-        <td class="num">{{ r.ceiling }}</td>
-        <td>{{ stars(r.stars) }}</td>
+        <td class="num jh-scout">{{ r.ovr }}</td>
+        <td class="num jh-scout">{{ r.ceiling }}</td>
+        <td class="jh-scout">{{ stars(r.stars) }}</td>
       </tr>
       {% endfor %}
     </table>
