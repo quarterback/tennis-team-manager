@@ -2381,12 +2381,17 @@ def create_app() -> Flask:
     def jhsaa_player(school, pid):
         """One player's four high-school years. Keyed by pid at their school, which is
         stable across all of them — the continuity the section exists for."""
+        from app import jhsaa as _jh
         gender, label, u, g, _group, _year = _jh_scope_args()
         view = jhsaa_player_view(DEFAULT_SEED, g, school, pid)
         if not view.get("found"):
             abort(404)
+        # The Transfer form's "Move to" field — a type-ahead over the real school
+        # list (same pattern as the Programs editor's `jh-names` datalist), so a
+        # transfer target is PICKED, never typed exact-and-hope.
+        school_names = sorted(s.name for s in _jh.load_schools(g) if s.name != school)
         return render_template("jhsaa_player.html", active="High School", view=view,
-                               gender=gender, u=u, uni_label=label)
+                               gender=gender, u=u, uni_label=label, school_names=school_names)
 
     @app.route("/jhsaa/champions")
     def jhsaa_champions():
@@ -2892,20 +2897,38 @@ def create_app() -> Flask:
             year = int(request.form.get("jh_year", ""))
         except ValueError:
             entry = year = None
+        # A flash cookie, same pattern as the archetype bulk editor's
+        # `jh_bulk_result`: the form used to fail SILENTLY on a misspelled or
+        # unrecognized destination — a redirect back to an unchanged page with
+        # nothing to say why. Every branch below now leaves a one-line result.
+        result = None
         if from_school and pid and entry is not None and year is not None:
             origin = next((s for s in _jh.load_schools(gender) if s.name == from_school), None)
-            if origin is not None:
-                if to_school and to_school != from_school and any(
-                        s.name == to_school for s in _jh.load_schools(gender)):
-                    seat = _jh.resolve_seat(origin, entry, pid)
-                    if seat is not None:
-                        ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
-                                              to_school, year)
-                elif not to_school:
-                    ov.clear_jhsaa_transfer(pid)
+            if origin is None:
+                result = f"Could not find {from_school} — try again."
+            elif not to_school:
+                ov.clear_jhsaa_transfer(pid)
                 reset_all()
-        return redirect(url_for("jhsaa_player", school=from_school, pid=pid,
+                result = "Transfer cancelled."
+            elif to_school == from_school:
+                result = f"{to_school} is already their current school."
+            elif not any(s.name == to_school for s in _jh.load_schools(gender)):
+                result = f'No {gender} program named "{to_school}" — pick one from the list.'
+            else:
+                seat = _jh.resolve_seat(origin, entry, pid)
+                if seat is None:
+                    result = "Could not resolve this player's roster seat — transfer not saved."
+                else:
+                    ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
+                                          to_school, year)
+                    reset_all()
+                    result = f"Moving to {to_school}, effective the {year} offseason."
+        else:
+            result = "Missing information — transfer not saved."
+        resp = redirect(url_for("jhsaa_player", school=from_school, pid=pid,
                                 u=request.form.get("u", "D1-men"), g=gender))
+        resp.set_cookie("jh_transfer_result", result, max_age=30, samesite="Lax")
+        return resp
 
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():
