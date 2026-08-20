@@ -4903,9 +4903,9 @@
       "city": "Ashbury",
       "county": "Marlow",
       "area": "Ashbury Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2181,
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 792,
       "private": false,
       "mascot": "Steeplejacks",
       "colors": [
@@ -4914,8 +4914,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
+      "girls_district": "Quarry League",
+      "boys_district": "Quarry League",
       "locality": "Bannock"
     },
     {

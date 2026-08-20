@@ -2236,6 +2236,26 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
                 f"{name} is keyed on {len(stale)} name(s) that RENAMES moves; move the "
                 f"key to the new display name or the override is silently dropped: "
                 + repr(stale[:5]))
+    # ‼️ OWNER SIZE EDICTS (owner rule 2026-08) — schools whose prep-network
+    # enrollment record is simply WRONG for what the school is in Jefferson's
+    # fiction, corrected by decree. Keyed on the CANONICAL prep-network name
+    # (renames land at emit, after this). Applied BEFORE reclassify() and the
+    # district draw so classification, cut-line promotion and league placement
+    # all run on the corrected number — patching the committed JSON alone would
+    # last exactly one re-import.
+    #
+    # Evans Larsen Day: a day school of ~800, not the 2,181-student record its
+    # source campus (the Ashbury science magnet's North split) carried — owner:
+    # "Evans Larsen is a 4A school… the file has it wrong." Classification is
+    # stated alongside the enrollment (both by decree) rather than re-derived:
+    # the promotion cut lines only move schools UP, so they could never take a
+    # mis-recorded 9A back down on their own.
+    OWNER_SIZES = {
+        "Jefferson School of Science and Technology North": (792, "4A"),
+    }
+    for s in schools:
+        if s["name"] in OWNER_SIZES:
+            s["enrollment"], s["classification"] = OWNER_SIZES[s["name"]]
     moved = reclassify(schools)
     girls, boys = sponsors(schools)
     by_name = {s["name"]: s for s in schools}
