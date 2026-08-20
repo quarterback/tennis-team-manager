@@ -37,6 +37,56 @@ Re-run `python3 build.py` with no arguments to re-render from everything already
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
+## Navigation (owner rewrite, 2027-08)
+
+The first pass flatly listed every program (~1,600) and every player (~19,700
+statewide) — closer to a raw database dump than an analytics tool, and it made
+the site nearly unusable at real scale. Rebuilt to look like the actual pro-
+team scouting tools this is modeled on (StatsBomb IQ / Wyscout-style: a
+persistent season → competition → team scope picker, not a flat list, plus
+pinned favorites) rather than a Football Manager save browser:
+
+- **Teams** — cascading Season → Classification → League `<select>`s, plus an
+  independent global search box that ignores the pickers. Nothing renders
+  until you pick a season or start typing — never a silent 1,600-card dump.
+- **Brackets** — new section, reading `jhsaa_championships.json` (was
+  ingested and completely unused before this pass) straight from the export:
+  the real archived postseason draw, round by round, per classification —
+  the same "look at the playoff bracket" the game itself offers. Round
+  labels use the export's own `round_names` field verbatim wherever it's
+  present (`_round_names()` in `render.py`) — an expanded 40-team
+  classification prepends "Qualifiers Round"/"First Round" ahead of a
+  converged Octofinals-onward bracket, and those two rounds are NOT a
+  continuation of the same single-elimination sequence as the rest, so
+  they're never relabeled by distance-from-final the way the tail is.
+- **My Teams** — a star/pin button on any team card or team page, stored in
+  the browser's `localStorage` (no server, no account) and surfaced on the
+  home page, so you don't re-search your own team/league every visit.
+- **Players** — search-only by design (a flat index at this scale is not
+  useful); the real way in is a team's roster page, where every name already
+  links out.
+
+## What's here
+
+- `teams/` — one page per program per exported season: record, schedule,
+  roster, a one-line sports-desk summary. **JHSAA roster sizes are no longer
+  flat** (owner rule, `ROSTER_SIZE_BY_CLASS`): they now scale by
+  classification, 9A 24 down to 1A 13, mirroring the college side's
+  `roster_cap` pattern — don't read a shallow 1A roster next to a full 9A one
+  as missing data, it's the format. Grade distribution is no longer an even
+  ~3-per-grade split either (each class's freshman count is now rolled once
+  per school/entry-year and ages forward), so a season's grade mix will look
+  naturally uneven rather than symmetric.
+- `players/` — one page per player, stitched across every season ingested
+  (player_id is stable across a career), with a full match log **and** an
+  aggregated positions-played table — the JHSAA gap that started this: the
+  in-game college app shows a player's position history across a season, the
+  JHSAA side didn't.
+- `leaderboards/` — per-season team standings, top individual records, award
+  winners pulled straight from the exported award JSON.
+- `metrics/` — the analytics library (see below), split into its own
+  dropdown menu rather than one long page, since the metric list is meant to
+  grow.
 ## Structure (owner rewrite ×2: 2027-08 nav, 2028-08 data organization)
 
 ‼️ **CLASSIFICATION → DISTRICT IS THE ORGANIZING HIERARCHY ON EVERY PAGE,
@@ -163,6 +213,22 @@ rendered every Fmt/RCI/SCI number backwards. `Fmt`/`SCI`/State Win% return
 `None` (rendered "—") when a scope has no duals in that phase/round bucket
 yet — currently that's most college scopes (their postseason `NCAA` round
 isn't in the sample export), not a family-level restriction anymore.
+
+**A note for JHSAA seasons exported after the format swap**: the game's
+regular-season card is now 3 singles/4 doubles (was 5S/2D — the early
+non-district window now plays the old 5S/2D shape instead, a straight
+swap). Nothing in this sidecar hard-codes either shape (see above), so no
+code here needed to change for the swap itself. What it does mean for
+reading the numbers: under 3S/4D the S2/S3 lines are a team's *weakest*
+two starters (the doubles pool takes the real #2-#9), not its 2nd/3rd
+best — the opposite of what they meant under 5S/2D. Keep that in mind
+comparing a player's S2/S3 stat line across seasons exported before vs.
+after the swap; this sidecar reports raw per-slot performance and doesn't
+attempt to normalize across the swap. Award data ingested from
+`jhsaa_awards.json` already reflects the game's own post-swap reweighting
+(regular-season S2/S3 down-weighted relative to doubles in selection) —
+see the game repo's `docs/AAR-jhsaa-awards-3s4d-format-swap.md` if you
+need the mechanics.
 
 The full wishlist (opponent-adjusted S+/D+, bracket equity simulation,
 player WAR, pair chemistry, trend/form ratings, and the rest) is not built
