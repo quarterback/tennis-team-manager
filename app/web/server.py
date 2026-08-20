@@ -2229,12 +2229,15 @@ def create_app() -> Flask:
             g = _g
         group = request.args.get("group", "All")
         sort = request.args.get("sort", "gap")
-        res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort)
+        grade = request.args.get("grade", "All")
+        res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort,
+                                       grade=grade)
         pg = paginate(res["rows"], request.args.get("page", 1))
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
         return render_template("jhsaa_misapplied.html", active="High School",
                                view=scope_view, rows=pg.items, p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, sort=sort,
+                               grade=grade, grades=res["grades"],
                                groups=res["groups"], u=u, uni_label=label)
 
     @app.route("/jhsaa/lineup-lab")
@@ -2251,12 +2254,14 @@ def create_app() -> Flask:
             target = "5A"
         pool = request.args.get("pool", "mismatched")
         n_squads = max(1, min(10, request.args.get("squads", 3, type=int) or 3))
+        grades = request.args.get("grades", "all")
         lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
-                               pool=pool, n_squads=n_squads)
+                               pool=pool, n_squads=n_squads, grades=grades)
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
         return render_template("jhsaa_lineup_lab.html", active="High School",
                                view=scope_view, lab=lab, gender=gender, gender_f=g,
                                target=target, pool=pool, n_squads=n_squads,
+                               grades=grades,
                                groups=lab["groups"], u=u, uni_label=label)
 
     @app.route("/jhsaa/transfers")

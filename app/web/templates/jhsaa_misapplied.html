@@ -25,6 +25,13 @@
           {% for gp in groups %}<option value="{{ gp }}" {{ 'selected' if group == gp }}>{{ gp }}</option>{% endfor %}
         </select>
       </label>
+      <label>Grade
+        <select name="grade">
+          {% for gr in grades %}
+          <option value="{{ gr }}" {{ 'selected' if grade == gr }}>{{ gr if gr == 'All' else gr ~ 'th' }}</option>
+          {% endfor %}
+        </select>
+      </label>
       <label>Sort
         <select name="sort">
           {% for val, lbl in [('gap','Mismatch gap'), ('ceiling','Ceiling'), ('now','Current OVR'), ('grade','Grade')] %}
