@@ -829,7 +829,11 @@ start of the offseason ladder — before the recruit board needs its output.
   scratch DB and starts a brand-new multi-year run (optional `salt` to vary
   the draw); **Advance N years** (1–50) ages the *same* cohorts forward,
   graduating and replacing players, building a real multi-year history to
-  browse with the ordinary `/jhsaa` pages against that database.
+  browse with the ordinary `/jhsaa` pages against that database. Both run in
+  a background thread and the page polls itself until done — expect ~10
+  minutes per season from a cold process. That cost is real (~600 programs
+  across both genders); the normal app just hides it behind a boot-time
+  cache warm the lab doesn't have.
 
 ### 22. The Pro Tour (GTT) <a id="gtt"></a>
 

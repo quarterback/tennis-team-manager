@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}JHSAA Lab{% endblock %}
+{% block head_extra %}
+{% if job_running %}<meta http-equiv="refresh" content="5">{% endif %}
+{% endblock %}
 {% block content %}
 
 <div class="jh-shell">
@@ -13,6 +16,24 @@
     </div>
   </div>
 </div>
+
+{% if job_running %}
+<div class="bl-panel" style="border-color:var(--brand-strong)">
+  <div class="bl-panel-body" style="padding:12px">
+    <p class="bit"><b>{{ 'Generating a new season' if job_kind == 'generate' else 'Advancing the season' }}…</b>
+      {{ job_elapsed }}s elapsed. A cold run takes roughly 10 minutes per
+      season (~600 programs, both genders) — the normal app hides this behind
+      a background cache warm the lab doesn't have. This page refreshes itself
+      every 5 seconds; no need to resubmit anything.</p>
+  </div>
+</div>
+{% elif job_error %}
+<div class="bl-panel" style="border-color:#c0392b">
+  <div class="bl-panel-body" style="padding:12px">
+    <p class="bit"><b>Last run failed:</b> {{ job_error }}</p>
+  </div>
+</div>
+{% endif %}
 
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Current lab world</span></div>
@@ -35,8 +56,8 @@
   <div class="bl-panel-body">
     <form method="post" action="{{ url_for('jhsaa_lab_advance') }}">
       <label class="s">Years to advance
-        <input type="number" name="years" value="1" min="1" max="50" {{ 'disabled' if not exists }}></label>
-      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if not exists }}>
+        <input type="number" name="years" value="1" min="1" max="50" {{ 'disabled' if not exists or job_running }}></label>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if not exists or job_running }}>
         Advance
       </button>
     </form>
@@ -45,8 +66,9 @@
       world: existing cohorts age up and graduate, new freshmen arrive, and
       program records/honours build up across every year — a real 20+ year
       history to analyze, not 20 unrelated one-off seasons. Each year takes
-      roughly as long as one JHSAA rung, so advancing 20 at once will sit for
-      a while; the page just reloads with the updated total when it's done.
+      roughly 10 minutes cold, so advancing 20 at once will run in the
+      background for a while — this page will show progress and refresh
+      itself until it's done.
       {% if not exists %}Generate a season first.{% endif %}
     </p>
   </div>
@@ -57,8 +79,8 @@
   <div class="bl-panel-body">
     <form method="post" action="{{ url_for('jhsaa_lab_generate') }}">
       <label class="s">Salt (optional — leave blank for a fresh random one)
-        <input type="text" name="salt" placeholder="e.g. run-014"></label>
-      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px">
+        <input type="text" name="salt" placeholder="e.g. run-014" {{ 'disabled' if job_running }}></label>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if job_running }}>
         Generate new season (both genders)
       </button>
     </form>
@@ -66,7 +88,8 @@
       Wipes this database and starts an entirely new lab world at year one —
       new programs' cohorts, a fresh salt if none is given. Use this to begin
       a different run, not to add a season to the current one — for that use
-      Advance above.
+      Advance above. Runs in the background (~10 minutes cold) — this page
+      will show progress and refresh itself until it's done.
     </p>
   </div>
 </div>

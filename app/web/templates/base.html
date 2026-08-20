@@ -44,6 +44,7 @@
      unless explicitly switched on. Restored BEFORE first paint, same reasoning as
      the theme above: a flash of visible data reads worse than the parse cost. -->
 <script>try{if(localStorage.getItem('jh-scout')==='on')document.documentElement.setAttribute('data-jh-scout','on');}catch(e){}</script>
+{% block head_extra %}{% endblock %}
 </head>
 <body>
   <div class="fm-shell">
