@@ -41,7 +41,8 @@ from .state import preseason_view as preseason_view_data
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
-                    jhsaa_rankings_view, jhsaa_player_view)
+                    jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
+                    jhsaa_misapplied_players, jhsaa_lineup_lab)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -148,6 +149,7 @@ NAV_GROUPS = [
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
+        {"id": "jh_transfers","label": "HS Transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
     ]),
     ("Analytics Bureau", [
@@ -184,6 +186,17 @@ NAV_GROUPS = [
     ]),
 ]
 
+# The JHSAA Lab entry only exists in the nav of a process actually launched in
+# lab mode (`scripts/jhsaa_lab_server.sh`, env `JHSAA_LAB_MODE`) — never on a
+# real save. `os.environ` is read here at import time, before the app starts
+# serving, so this is fixed for the process's whole lifetime like `WORLD_DB`.
+if os.environ.get("JHSAA_LAB_MODE"):
+    for _grp_name, _items in NAV_GROUPS:
+        if _grp_name == "Tools":
+            _items.insert(0, {"id": "jhsaa_lab", "label": "JHSAA Lab",
+                              "icon": "fa-solid fa-flask-vial", "endpoint": "jhsaa_lab", "args": {}})
+            break
+
 
 def _active_nav(req) -> str:
     p = req.path
@@ -209,9 +222,12 @@ def _active_nav(req) -> str:
     if p.startswith("/doubles-championship"): return "doubles"
     if p.startswith("/bracket"):          return "bracket"
     if p.startswith("/tools/junior"):     return "junior_setup"
-    # The programs editor is checked BEFORE the section, since /jhsaa/programs is a
-    # prefix match on /jhsaa and would otherwise light the High School entry.
+    # The programs editor and the transfer board are both checked BEFORE the
+    # section, since they're prefix matches on /jhsaa and would otherwise light
+    # the High School entry instead of their own nav item.
     if p.startswith("/jhsaa/programs"):   return "jh_prog"
+    if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
+    if p.startswith("/jhsaa-lab"):        return "jhsaa_lab"
     if p.startswith("/jhsaa"):            return "jhsaa"
     if p.startswith("/juniors/tour") or p.startswith("/juniors/tournament"): return "jrtour"
     if p.startswith("/intel/lineups"):    return "intel_lineups"
@@ -347,16 +363,16 @@ def _str_scale_rows():
 # "Ensign" carries no attribute at all. Ported from the Varsity Apex sheet along
 # with the palettes themselves; ten light schemes, no dark mode.
 SCHEMES = [
-    ("default",    "Ensign",     "Deep twilight · cobalt · white · red"),
-    ("laurel",     "Laurel",     "Evergreen · crimson · parchment · amber"),
-    ("apex",       "Apex",       "Prussian · steel blue · amber · flag red"),
-    ("rally",      "Rally",      "Blue bell · aqua · lemon · racing red"),
+    ("default",    "Ensign",     "Deep twilight · cobalt · white · red · oxblood"),
+    ("laurel",     "Laurel",     "Evergreen · crimson · parchment · pink · amber"),
+    ("apex",       "Apex",       "Prussian · amber · snow · flag red · steel blue"),
+    ("rally",      "Rally",      "Blue bell · aqua · lemon · tiger flame · racing red"),
     ("clay",       "Clay",       "Neon pink · coral · petal · sand · olive"),
     ("floodlight", "Floodlight", "Shadow · indigo · canary · mint · cherry"),
     ("ember",      "Ember",      "Bordeaux · iron · peach · caramel · teal"),
-    ("harbor",     "Harbor",     "Dark teal · peach · red"),
-    ("citrus",     "Citrus",     "Aqua · beige · pumpkin"),
-    ("pitch",      "Pitch",      "Mint · sea green · amber · black"),
+    ("harbor",     "Harbor",     "Ink · ocean · jungle teal · peach · red"),
+    ("citrus",     "Citrus",     "Electric aqua · pearl aqua · beige · pumpkin · harvest"),
+    ("pitch",      "Pitch",      "Mint · olive · sea green · amber · black"),
 ]
 
 # Serializes `/world/advance` (and its standalone-season fallback) across
@@ -2163,6 +2179,147 @@ def create_app() -> Flask:
                             samesite="Lax")
         return resp
 
+    @app.route("/jhsaa/players")
+    def jhsaa_players():
+        """Searchable directory of every JHSAA player — talent/potential visibility
+        the college side already had via Portal Search, ported here (owner request)."""
+        gender, label, u, _g, _group, _year = _jh_scope_args()
+        g = request.args.get("gender", _g)
+        if g not in ("boys", "girls", "all"):
+            g = _g
+        group = request.args.get("group", "All")
+        district = request.args.get("district", "All")
+        grade = request.args.get("grade", "All")
+        sort = request.args.get("sort", "ceiling")
+        q = request.args.get("q", "")
+        res = jhsaa_players_search(DEFAULT_SEED, g, group=group, district=district,
+                                   grade=grade, sort=sort, q=q)
+        pg = paginate(res["rows"], request.args.get("page", 1))
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        return render_template("jhsaa_players.html", active="High School",
+                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               gender=gender, gender_f=g, group=group, district=district,
+                               grade=grade, sort=sort, q=q,
+                               groups=res["groups"], districts=res["districts"],
+                               grades=res["grades"], u=u, uni_label=label)
+
+    @app.route("/jhsaa/misapplied")
+    def jhsaa_misapplied():
+        """Talent mismatches — players whose ceiling clears their classification's
+        own typical level, the JHSAA analogue of the college Underplaced board."""
+        gender, label, u, _g, _group, _year = _jh_scope_args()
+        g = request.args.get("gender", _g)
+        if g not in ("boys", "girls", "all"):
+            g = _g
+        group = request.args.get("group", "All")
+        sort = request.args.get("sort", "gap")
+        res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort)
+        pg = paginate(res["rows"], request.args.get("page", 1))
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        return render_template("jhsaa_misapplied.html", active="High School",
+                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               gender=gender, gender_f=g, group=group, sort=sort,
+                               groups=res["groups"], u=u, uni_label=label)
+
+    @app.route("/jhsaa/lineup-lab")
+    def jhsaa_lineup_lab_route():
+        """Deal mismatched talent into hypothetical squads for a target
+        classification and rank them against that classification's real programs."""
+        gender, label, u, _g, _group, _year = _jh_scope_args()
+        g = request.args.get("gender", _g)
+        if g not in ("boys", "girls", "all"):
+            g = _g
+        import app.jhsaa as _jh
+        target = request.args.get("group", "5A")
+        if target not in _jh.GROUPS:
+            target = "5A"
+        pool = request.args.get("pool", "mismatched")
+        n_squads = max(1, min(10, request.args.get("squads", 3, type=int) or 3))
+        lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
+                               pool=pool, n_squads=n_squads)
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        return render_template("jhsaa_lineup_lab.html", active="High School",
+                               view=scope_view, lab=lab, gender=gender, gender_f=g,
+                               target=target, pool=pool, n_squads=n_squads,
+                               groups=lab["groups"], u=u, uni_label=label)
+
+    @app.route("/jhsaa/transfers")
+    def jhsaa_transfers():
+        """Every recorded JHSAA offseason transfer — the index the Juniors nav
+        links to. Adding a move happens from the player's own card (it already
+        has the school/pid/entry context); this page is where to find/undo one."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa as _jh
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u, uni_label=label)
+
+    def _jhsaa_lab_mode() -> bool:
+        """Gate for the standalone JHSAA lab surface (see
+        docs/PLAN-jhsaa-standalone-lab-mode.md). Set ONLY on a process launched
+        against a dedicated scratch database (`scripts/jhsaa_lab_server.sh`) —
+        never on the real save's process. `/jhsaa-lab*` 404s unless this is set,
+        so the destructive "generate" action can never reach a real save even if
+        this code ships to every instance."""
+        return bool(os.environ.get("JHSAA_LAB_MODE"))
+
+    @app.route("/jhsaa-lab")
+    def jhsaa_lab():
+        """A standalone JHSAA season generator, decoupled from the college/pro
+        sim: click to produce a brand-new, full-fidelity, both-gender season in
+        THIS process's own (scratch) database, browsable at the ordinary /jhsaa
+        pages and exportable via the ordinary /research/export page — neither
+        needs any change, since this process's DEFAULT_SEED world IS the lab
+        season once one exists."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        w = wd.load_world(wd.DEFAULT_SEED)
+        season_year = wd.jhsaa_season_year(w) if w else None
+        # `world["year"] + 1` — every lab year from 0 up through the current one
+        # has an archived season (advance never skips a year), so this is the
+        # count of seasons on record without a second query.
+        years_archived = (w["year"] + 1) if w else 0
+        return render_template("jhsaa_lab.html", active="Tools",
+                               exists=bool(w), season_year=season_year,
+                               years_archived=years_archived, db_path=str(wd.WORLD_DB))
+
+    @app.route("/jhsaa-lab/generate", methods=["POST"])
+    def jhsaa_lab_generate():
+        """Wipe this (scratch) database's world and simulate a brand-new,
+        independent JHSAA season for both genders — no college universe built
+        (`skip_college=True`), so this is fast and touches nothing but the JHSAA
+        tables. `world.reset` + `get_or_create_jhsaa_only` never runs anywhere
+        but a lab-mode process (gated above), and a lab process's database is
+        never the real save's. Use this to start a FRESH multi-year run (a new
+        salt = a whole new set of programs/cohorts); use `/jhsaa-lab/advance`
+        to continue the current one."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        salt = (request.form.get("salt") or "").strip() or None
+        wd.reset(wd.DEFAULT_SEED)
+        w = wd.get_or_create_jhsaa_only(wd.DEFAULT_SEED, salt=salt)
+        wd.run_jhsaa(wd.DEFAULT_SEED, w)
+        return redirect(url_for("jhsaa_lab"))
+
+    @app.route("/jhsaa-lab/advance", methods=["POST"])
+    def jhsaa_lab_advance():
+        """Advance the CURRENT lab world forward N years, simulating and
+        archiving one JHSAA season per year — the same cohorts age up,
+        graduate, and get replaced by new freshmen (`world.advance_jhsaa_lab`),
+        so this is how you build a real multi-year history to analyze instead
+        of N disconnected one-off seasons. `years` is capped so a fat-fingered
+        request can't turn into an unbounded loop on the request thread."""
+        if not _jhsaa_lab_mode():
+            abort(404)
+        if not wd.load_world(wd.DEFAULT_SEED):
+            return redirect(url_for("jhsaa_lab"))
+        try:
+            years = max(1, min(50, int(request.form.get("years", "1"))))
+        except ValueError:
+            years = 1
+        for _ in range(years):
+            wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
+        return redirect(url_for("jhsaa_lab"))
+
     @app.route("/jhsaa/rankings")
     def jhsaa_rankings():
         """A whole classification, ranked on TOSS — the hub's rail panel showed the
@@ -2224,12 +2381,17 @@ def create_app() -> Flask:
     def jhsaa_player(school, pid):
         """One player's four high-school years. Keyed by pid at their school, which is
         stable across all of them — the continuity the section exists for."""
+        from app import jhsaa as _jh
         gender, label, u, g, _group, _year = _jh_scope_args()
         view = jhsaa_player_view(DEFAULT_SEED, g, school, pid)
         if not view.get("found"):
             abort(404)
+        # The Transfer form's "Move to" field — a type-ahead over the real school
+        # list (same pattern as the Programs editor's `jh-names` datalist), so a
+        # transfer target is PICKED, never typed exact-and-hope.
+        school_names = sorted(s.name for s in _jh.load_schools(g) if s.name != school)
         return render_template("jhsaa_player.html", active="High School", view=view,
-                               gender=gender, u=u, uni_label=label)
+                               gender=gender, u=u, uni_label=label, school_names=school_names)
 
     @app.route("/jhsaa/champions")
     def jhsaa_champions():
@@ -2642,15 +2804,45 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-archetype-bulk", methods=["POST"])
+    def editor_jhsaa_archetype_bulk():
+        """Add or remove MANY schools' archetype tag at once, writing the SEED FILE
+        (`data/jhsaa/archetypes.json`) so the list survives a brand-new database
+        file, not just a reset of the current one — see
+        `jhsaa.bulk_edit_archetype_seed`. One name per line (blank lines ignored)."""
+        from app import jhsaa as _jh
+        kind = request.form.get("archetype", "")
+        action = request.form.get("action", "add")
+        names = (request.form.get("names") or "").splitlines()
+        result = {"applied": [], "unknown": []}
+        if action == "remove":
+            result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
+        elif kind in ("blue_blood", "development", "doubles"):
+            result = _jh.bulk_edit_archetype_seed(kind, names, remove=False)
+        reset_all()
+        resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                board="archetype"))
+        # A quick confirmation of what stuck, in a cookie flash rather than a query
+        # string — a bulk paste can be dozens of names and would blow past a URL's
+        # practical length.
+        resp.set_cookie("jh_bulk_result",
+                        f"{len(result['applied'])} applied"
+                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
+                        max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():
-        """Rule on whether a JHSAA program plays UP a classification.
+        """Rule on whether — and to WHICH classification — a JHSAA program plays up.
 
         Stored per SCHOOL NAME like the archetype above, and layered the same way over
-        the `play_up` seed list in `data/jhsaa/schools.json`: "yes" promotes a program
-        the file did not pick, "no" holds one it did in its own class, and anything
-        else clears the override so the file decides again. Two different intentions,
-        and a single "clear" could only express one of them.
+        the `play_up` seed list in `data/jhsaa/schools.json`. `play_up` is either:
+        "yes" (the seed-list one-step-up default, kept for backward compatibility),
+        a real group string ("7A") naming exactly where the program should compete —
+        owner rule 2027-09, since real associations approve play-up applications
+        annually and for a program can move more than one class — "no" (hold a
+        seeded program in its own class), or empty (clear the override so the file
+        decides again). Four different intentions, never conflated into one field.
 
         ‼️ This moves which CHAMPIONSHIP a program enters, not how good it is — the
         league, the ladder, State and All-State all follow `group` while `_TALENT`
@@ -2662,25 +2854,81 @@ def create_app() -> Flask:
         # its division has never heard of. Falls back to `school` so an existing caller
         # keeps working.
         school = request.form.get("jh_school") or request.form.get("school", "")
-        choice = request.form.get("play_up", "")
+        choice = (request.form.get("play_up", "") or "").strip()
         if school:
             from app import jhsaa as _jh
-            # ‼️ SERVER-SIDE ELIGIBILITY. The picker only offers small schools, but a
-            # hand-rolled POST is not the picker: playing up is a 4A-and-below
-            # mechanism, so a promotion of anything larger is refused rather than
-            # stored. "no"/clear stay allowed for every school — holding a program in
-            # its own class is always legal, and refusing it would strand any row
-            # written before this check existed.
             row = next((r for r in _jh.playup_rows() if r["name"] == school), None)
-            if choice == "yes" and not (row and _jh.can_play_up(row["classification"])):
-                return _editor_redirect()
-            if choice in ("yes", "no"):
-                ov.set_jhsaa_playup(school, choice == "yes")
+            if choice == "no":
+                ov.set_jhsaa_playup(school, "no")
+            elif choice == "yes":
+                # The seed-list one-step default, stored as an explicit target so
+                # it re-validates the same way any other stored group does.
+                if row and _jh.can_play_up(row["classification"]):
+                    ov.set_jhsaa_playup(school, _jh.play_up_group(row["classification"]))
+            elif choice in _jh.GROUPS:
+                # ‼️ SERVER-SIDE ELIGIBILITY, same principle as before, generalized:
+                # a hand-rolled POST is not the picker, so the target is re-checked
+                # against `valid_playup_target` (eligible AND strictly above the
+                # program's own class) rather than trusted from the form.
+                if row and _jh.valid_playup_target(row["classification"], choice):
+                    ov.set_jhsaa_playup(school, choice)
             else:
                 ov.clear_jhsaa_playup(school)
             _jh.reset_schools()
             reset_all()
         return _editor_redirect()
+
+    @app.route("/editor/jhsaa-transfer", methods=["POST"])
+    def editor_jhsaa_transfer():
+        """Move a JHSAA player to another program, effective an offseason. No
+        eligibility, no sit-out, no search — the owner has already decided who
+        moves; this just makes it stick every year from `jh_year` on.
+
+        Lives off the player's own card, which already has everything the record
+        needs EXCEPT the seat number (never stored — `resolve_seat` recovers it by
+        brute force over the pid, which is a one-way hash of it)."""
+        from app import jhsaa as _jh
+        gender = request.form.get("gender", "")
+        from_school = request.form.get("jh_from_school", "")
+        pid = request.form.get("jh_pid", "")
+        to_school = request.form.get("jh_to_school", "").strip()
+        try:
+            entry = int(request.form.get("jh_entry", ""))
+            year = int(request.form.get("jh_year", ""))
+        except ValueError:
+            entry = year = None
+        # A flash cookie, same pattern as the archetype bulk editor's
+        # `jh_bulk_result`: the form used to fail SILENTLY on a misspelled or
+        # unrecognized destination — a redirect back to an unchanged page with
+        # nothing to say why. Every branch below now leaves a one-line result.
+        result = None
+        if from_school and pid and entry is not None and year is not None:
+            origin = next((s for s in _jh.load_schools(gender) if s.name == from_school), None)
+            if origin is None:
+                result = f"Could not find {from_school} — try again."
+            elif not to_school:
+                ov.clear_jhsaa_transfer(pid)
+                reset_all()
+                result = "Transfer cancelled."
+            elif to_school == from_school:
+                result = f"{to_school} is already their current school."
+            elif not any(s.name == to_school for s in _jh.load_schools(gender)):
+                result = f'No {gender} program named "{to_school}" — pick one from the list.'
+            else:
+                seat = _jh.resolve_seat(origin, entry, pid)
+                if seat is None:
+                    result = "Could not resolve this player's roster seat — transfer not saved."
+                else:
+                    ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
+                                          to_school, year)
+                    reset_all()
+                    result = f"Moving to {to_school}, effective the {year} offseason."
+        else:
+            result = "Missing information — transfer not saved."
+        resp = redirect(url_for("jhsaa_player", school=from_school, pid=pid,
+                                u=request.form.get("u", "D1-men"), g=gender))
+        resp.set_cookie("jh_transfer_result", result, max_age=30, samesite="Lax")
+        return resp
 
     @app.route("/editor/academics", methods=["POST"])
     def editor_academics():

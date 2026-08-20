@@ -3641,6 +3641,54 @@ def _jh_line_records(sched: list[dict]) -> dict:
     return rec
 
 
+def _jh_slot_records(sched: list[dict]) -> dict:
+    """Every player's W-L broken out by the actual FLIGHT they played (S1-S5,
+    D1-D4 — the union of both league formats, `EARLY_FORMAT_PHASE`'s 5S/2D and the
+    regular season's 3S/4D), off the same match-level archive `_jh_line_records`
+    reads. This is the college career-record box's per-line breakdown, ported to
+    high school — mirrors `player_career_records`'s `_box`."""
+    rec: dict = {}
+    for d in sched:
+        side = "home" if d.get("home") else "away"
+        for ln in d.get("lines") or ():
+            slot = ln.get("slot") or ""
+            if not slot:
+                continue
+            we_won = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
+            for nm in ln.get(side) or ():
+                r = rec.setdefault(nm, {})
+                wl = r.setdefault(slot, [0, 0])
+                wl[0 if we_won else 1] += 1
+    return rec
+
+
+def _jh_flight_box(seasons: list[dict]) -> dict:
+    """The player-card flight box: singles S1-S5, doubles D1-D4, one row per season
+    plus a TOTALS row — same shape as `player_career_records`'s `_box`, so the
+    template can share the `.rc-recbox` markup."""
+    def _box(kind: str, slots: list[str]):
+        rows, totals = [], {s: [0, 0] for s in slots}
+        tov = [0, 0]
+        for s in seasons:
+            cells, ov = {}, [0, 0]
+            for slot in slots:
+                wl = (s["slots"] or {}).get(slot)
+                cells[slot] = (f"{wl[0]}-{wl[1]}" if wl else "–")
+                if wl:
+                    ov[0] += wl[0]; ov[1] += wl[1]
+                    totals[slot][0] += wl[0]; totals[slot][1] += wl[1]
+            tov[0] += ov[0]; tov[1] += ov[1]
+            rows.append({"year": s["season_year"], "cells": cells,
+                        "overall": f"{ov[0]}-{ov[1]}"})
+        tcells = {s: (f"{totals[s][0]}-{totals[s][1]}" if (totals[s][0] or totals[s][1]) else "–")
+                  for s in slots}
+        return {"slots": slots, "rows": rows, "tcells": tcells,
+                "toverall": f"{tov[0]}-{tov[1]}", "any": bool(rows)}
+    singles = [f"S{i}" for i in range(1, 6)]
+    doubles = [f"D{i}" for i in range(1, 5)]
+    return {"singles": _box("singles", singles), "doubles": _box("doubles", doubles)}
+
+
 def _jh_seeds(bracket: dict) -> dict:
     return {nm: i + 1 for i, nm in enumerate((bracket or {}).get("field") or ())}
 
@@ -4459,6 +4507,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
+                    # Talent/potential visibility (owner request) — the ceiling and
+                    # star rating were already computed by `Prospect` (the same
+                    # methods the college recruit board reads), just never surfaced
+                    # here. Pure display: no new simulation.
+                    "ceiling": round(p.ceiling_overall(), 1),
+                    "stars": p.star_rating(),
                     "str": p.str_value(),
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
                     "doubles": "{}-{}".format(*lines.get(p.name, {}).get("d", (0, 0))),
@@ -4620,6 +4674,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         player = player or hit
         sched = world.jhsaa_schedule(w["id"], yr, g, school)
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
+        slots = _jh_slot_records(sched).get(hit.name, {})
         aw = (arc.get("awards") or {}).get(sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -4639,28 +4694,296 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "ovr": round(hit.current_overall(), 1), "str": hit.str_value(),
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
-            "honors": honors, "team": team,
+            "honors": honors, "team": team, "slots": slots,
         })
     if player is None:
         return {"found": False, "school": school, "gender": g, "pid": pid}
     seasons.sort(key=lambda s: -s["year"])
+    # Flight box wants OLDEST-first rows (freshman year on top, like the college
+    # career-record box), so it's built before `seasons` above sorts newest-first
+    # for the ledger table.
+    flights = _jh_flight_box(sorted(seasons, key=lambda s: s["year"]))
     wins = sum(s["wins"] for s in seasons)
     losses = sum(s["losses"] for s in seasons)
     return {
         "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
         "hometown": player.hometown, "grade": player.grade,
+        "ovr": round(player.current_overall(), 1),
+        "ceiling": round(player.ceiling_overall(), 1),
+        "stars": player.star_rating(),
         "mark": jh.mark(sc, 44), "group": sc.group, "district": sc.district,
         "classification": sc.classification, "city": sc.city,
         "locality": sc.locality,
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
-        "honors": [h for s in seasons for h in s["honors"]],
+        "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
+        # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
+        "entry_year": player.entry_year,
+        "transfer": jh.transfer_for(pid),
         # The grad year is what the college recruit board keys a Jefferson signee on,
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])
                       if seasons else None),
     }
+
+
+def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: str = "All",
+                         grade: str = "All", sort: str = "ceiling", q: str = "") -> dict:
+    """A searchable directory of the WHOLE JHSAA player pool — the high-school
+    counterpart of `scout_intel.portal_search`. Reads the live current-season roster
+    for every program (via `jh.build_roster`, the same call every roster page already
+    makes — no resimulation, no new archive), so it's cheap and always in sync with
+    the season on the field.
+
+    `gender`: 'boys' | 'girls' | 'all'. `group`/`district` filter by classification/
+    league; `grade` filters by class year; `q` matches name, school, or hometown.
+    Sort by ceiling (potential), current OVR, stars, or name."""
+    import app.jhsaa as jh
+    rows = _jhsaa_all_players(seed, gender)
+
+    if group != "All":
+        rows = [r for r in rows if r["group"] == group]
+    # Districts offered in the filter are scoped to the classification picked (a
+    # district is (classification, name), same rule as everywhere else in JHSAA),
+    # captured BEFORE the district filter itself narrows `rows` further.
+    districts = ["All"] + sorted({r["district"] for r in rows})
+    if district != "All":
+        rows = [r for r in rows if r["district"] == district]
+    if grade != "All":
+        rows = [r for r in rows if str(r["grade"]) == str(grade)]
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in r["name"].lower() or ql in r["school"].lower()
+                or ql in (r["hometown"] or "").lower()]
+
+    keys = {
+        "ceiling": (lambda r: (r["ceiling"], r["ovr"]), True),
+        "ovr": (lambda r: (r["ovr"], r["ceiling"]), True),
+        "stars": (lambda r: (r["stars"], r["ovr"]), True),
+        "name": (lambda r: r["name"].lower(), False),
+        "school": (lambda r: (r["school"].lower(), r["name"].lower()), False),
+    }
+    key, rev = keys.get(sort, keys["ceiling"])
+    rows.sort(key=key, reverse=rev)
+
+    return {
+        "gender": gender, "rows": rows, "total": len(rows),
+        "groups": ["All"] + list(jh.GROUPS),
+        "districts": districts,
+        "grades": ["All", "9", "10", "11", "12"],
+        "group": group, "district": district, "grade": grade, "sort": sort, "q": q,
+    }
+
+
+# A player is genuinely mismatched (JHSAA's version of the college "buried"
+# board) when their ceiling clears their own classification's typical level by
+# this much, and clears a floor so a raw 1A pool full of low numbers doesn't
+# flag its own top player as a mismatch against nobody.
+MISAPPLIED_MIN_GAP = 10.0
+MISAPPLIED_MIN_CEILING = 55.0
+
+
+# ‼️ P1 — the association-wide player CENSUS is cached, per gender, keyed on
+# everything that can change it (CLAUDE.md's module-global-cache rules: compute
+# into a local, publish, never `cache[key]` after a possible evict). Building it
+# is CPU-bound and real (14.6k Boys players / 7.6s, 31.1k Both / 15.9s measured on
+# a scratch world) — without a cache, the players directory, mismatch board and
+# lineup lab each rebuild the WHOLE gender's rosters on every request, including
+# every pagination click and filter change.
+#
+# Keyed per SINGLE gender ('boys'/'girls'), never 'all' — 'all' concatenates the
+# two cached lists instead of building a third combined entry, so switching the
+# gender filter back and forth never doubles the cache's memory or duplicates a
+# build already paid for.
+_JH_CENSUS_CACHE: dict[tuple, list[dict]] = {}
+
+
+def _jhsaa_census_key(seed: int, g: str) -> tuple:
+    """Resolved ONCE per call (never inside a per-school/per-player loop — the
+    `jhsaa_playup_version()` fingerprint-in-a-loop trap this codebase already hit
+    once). Everything that can change a roster's shape: the world's identity/year/
+    salt (a new world or a year rollover ages every player), plus the three
+    override tables `jh.build_roster` reads through (`jh.load_schools` bakes
+    archetype/play-up into `School`, and a JHSAA transfer moves a player)."""
+    import app.overrides as ov
+    import app.world as world
+    w = world.get_or_create(seed)
+    salt = world.active_salt(seed)
+    return (seed, g, w["id"], w["year"], salt,
+            ov.jhsaa_archetype_version(), ov.jhsaa_playup_version(),
+            ov.jhsaa_transfer_version())
+
+
+def _jhsaa_build_census(seed: int, g: str) -> list[dict]:
+    """The actual roster-build loop for one gender — only ever called on a cache
+    miss."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    salt = world.active_salt(seed)
+    season_year = world.jhsaa_season_year(w)
+    rows = []
+    for sc in jh.load_schools(g):
+        for p in jh.build_roster(sc, season_year, salt):
+            rows.append({
+                "pid": p.pid, "name": p.name, "grade": p.grade,
+                "gender": g, "school": sc.name, "group": sc.group,
+                "district": sc.district, "classification": sc.classification,
+                "hometown": p.hometown,
+                "ovr": round(p.current_overall(), 1),
+                "ceiling": round(p.ceiling_overall(), 1),
+                "stars": p.star_rating(),
+            })
+    return rows
+
+
+def _jhsaa_census_for(seed: int, g: str) -> list[dict]:
+    """The cached census for one gender ('boys'|'girls') — compute-then-publish,
+    read with `.get()`, never `key in cache` + `cache[key]` (a sibling request can
+    evict between the two)."""
+    key = _jhsaa_census_key(seed, g)
+    cached = _JH_CENSUS_CACHE.get(key)
+    if cached is not None:
+        return cached
+    built = _jhsaa_build_census(seed, g)
+    _JH_CENSUS_CACHE[key] = built
+    return built
+
+
+def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
+    """Every rostered JHSAA player for `gender` ('boys'|'girls'|'all'), current
+    season. Shared building block for the players directory, the talent-mismatch
+    board and the lineup lab — one cached census per gender, no resimulation, same
+    shape every time. Returns a fresh list (never the cached list object itself),
+    so callers are free to sort/filter without mutating the cache."""
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+    rows: list[dict] = []
+    for g in genders:
+        rows.extend(_jhsaa_census_for(seed, g))
+    return rows
+
+
+def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
+                             sort: str = "gap") -> dict:
+    """Talent mismatches — the JHSAA analogue of the college Underplaced board (a
+    D1-caliber player stuck in D3). JHSAA classifications ARE a real ladder here,
+    same as `_TALENT`'s own division-shaped design (9A the deepest/strongest down
+    to 1A) — `jh.GROUPS` is already ordered best to worst — so this reads exactly
+    like the college check: is this player's CEILING better than a level they are
+    NOT currently playing at? Comparing a player only to their own classification's
+    average (the first cut of this) just finds "best fish in a small pond" and
+    missed the actual college analogy; the real signal is clearing a BETTER
+    classification's bar, the same way a college riser must clear a higher
+    division's median (`world.div_level`) to be flagged.
+
+    `sort`: 'gap' (most mismatched — biggest jump above where they'd fit), 'ceiling'
+    (highest ceiling), 'now' (highest current OVR — who's already dominating below
+    their level)."""
+    import app.jhsaa as jh
+    rows = _jhsaa_all_players(seed, gender)
+
+    group_ceilings: dict[str, list[float]] = {}
+    for r in rows:
+        group_ceilings.setdefault(r["group"], []).append(r["ceiling"])
+    group_avg = {g: sum(v) / len(v) for g, v in group_ceilings.items()}
+    # jh.GROUPS is 9A..1A, best to worst — the same order the college division
+    # ladder ranks D1..D4 on.
+    order = [g for g in jh.GROUPS if g in group_avg]
+
+    flagged = []
+    for r in rows:
+        own_idx = order.index(r["group"]) if r["group"] in order else len(order)
+        # Best (lowest-index / toughest) classification this player's ceiling
+        # clears by the gap threshold — never their own or a WORSE one, since
+        # that isn't a mismatch, it's just being good at your own level.
+        best_fit = None
+        for g in order[:own_idx]:
+            if r["ceiling"] - group_avg[g] >= MISAPPLIED_MIN_GAP:
+                best_fit = g
+                break
+        if best_fit is None or r["ceiling"] < MISAPPLIED_MIN_CEILING:
+            continue
+        r = {**r, "fits_in": best_fit,
+             "fit_avg": round(group_avg[best_fit], 1),
+             "gap": round(r["ceiling"] - group_avg[best_fit], 1)}
+        flagged.append(r)
+
+    if group != "All":
+        flagged = [r for r in flagged if r["group"] == group]
+
+    keys = {
+        "gap": (lambda r: (r["gap"], r["ceiling"]), True),
+        "ceiling": (lambda r: (r["ceiling"], r["gap"]), True),
+        "now": (lambda r: (r["ovr"], r["gap"]), True),
+        "grade": (lambda r: (r["grade"], r["gap"]), True),   # seniors first
+    }
+    key, rev = keys.get(sort, keys["gap"])
+    flagged.sort(key=key, reverse=rev)
+
+    return {"gender": gender, "rows": flagged, "total": len(flagged),
+            "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort}
+
+
+def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
+                     pool: str = "mismatched", n_squads: int = 3) -> dict:
+    """The scouting-department view for JHSAA — deal mismatched talent into whole
+    9-player rosters for a target classification and rank each hypothetical squad
+    against that classification's REAL programs, by average current OVR of their
+    own dressed nine.
+
+    `pool`: 'mismatched' (Talent-Mismatch qualifiers only) or 'any' (every player,
+    best ceiling first — useful once the mismatch pool runs dry for a class).
+    Squads are non-overlapping, dealt best-first. 9 is the association's own
+    dressed-lineup size (3 singles + 4 doubles pairs)."""
+    import app.jhsaa as jh
+    SQUAD_SIZE = 9
+    genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
+
+    if pool == "mismatched":
+        cands = []
+        for g in genders:
+            cands.extend(jhsaa_misapplied_players(seed, g)["rows"])
+    else:
+        cands = _jhsaa_all_players(seed, gender)
+        for r in cands:
+            r.setdefault("gap", 0.0)
+    cands.sort(key=lambda r: (r["ceiling"], r["ovr"]), reverse=True)
+
+    # The target classification's real programs, by average current OVR of their
+    # own top nine — the same lens a squad is judged against. Reuses the cached
+    # census (grouped by school) instead of re-calling `jh.build_roster`, which
+    # would otherwise redo the whole gender's roster build a second time in the
+    # same request.
+    by_school: dict[str, list[float]] = {}
+    for g in genders:
+        for r in _jhsaa_census_for(seed, g):
+            if r["group"] == target_group:
+                by_school.setdefault(r["school"], []).append(r["ovr"])
+    div_levels = []
+    for ovrs in by_school.values():
+        top = sorted(ovrs, reverse=True)[:SQUAD_SIZE]
+        if top:
+            div_levels.append(sum(top) / len(top))
+    div_levels.sort(reverse=True)
+    n_div = len(div_levels)
+
+    squads = []
+    for k in range(max(1, n_squads)):
+        block = cands[k * SQUAD_SIZE:(k + 1) * SQUAD_SIZE]
+        if len(block) < SQUAD_SIZE:
+            break
+        avg_ovr = sum(r["ovr"] for r in block) / SQUAD_SIZE
+        avg_ceiling = sum(r["ceiling"] for r in block) / SQUAD_SIZE
+        rank = sum(1 for lvl in div_levels if lvl > avg_ovr) + 1
+        squads.append({
+            "players": block, "avg_ovr": round(avg_ovr, 1),
+            "avg_ceiling": round(avg_ceiling, 1),
+            "rank": rank, "n_div": n_div,
+        })
+
+    return {"gender": gender, "target_group": target_group, "pool": pool,
+            "squads": squads, "groups": list(jh.GROUPS), "n_div": n_div}
 
 
 def jhsaa_past_winners(seed: int, gender: str) -> dict:

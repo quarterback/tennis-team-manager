@@ -31,12 +31,25 @@ def clean():
     for school in list(ov.get_jhsaa_playups()):
         ov.clear_jhsaa_playup(school)
     for school, v in before.items():
-        ov.set_jhsaa_playup(school, v == "yes")
+        ov.set_jhsaa_playup(school, v)
     jh.reset_schools()
 
 
+#: Condotti Vanguard Academy and Romero-Finniski are a deliberate, owner-named
+#: exception to the play-up mechanism (their real-world enrollment sizes them 7A,
+#: but per the owner's lore for these two specific programs they are 9A-CALIBER
+#: talent choosing to compete in the smaller 7A class — the opposite direction
+#: from an ordinary play-up, which is a small school reaching for a bigger one).
+#: They still trip `School.plays_up` (a raw classification/group mismatch
+#: detector, direction-agnostic by construction) but are not "playing up" in the
+#: small-school sense every other test in this file is about — same pattern as
+#: `import_jhsaa.OWNER_EDICTS`/`RIVALRIES`, a named exception rather than a rule.
+_PLAY_DOWN_EXCEPTIONS = {"Condotti Vanguard Academy", "Romero-Finniski"}
+
+
 def _ups(gender="girls"):
-    return [s for s in jh.load_schools(gender) if s.plays_up]
+    return [s for s in jh.load_schools(gender)
+            if s.plays_up and s.name not in _PLAY_DOWN_EXCEPTIONS]
 
 
 # --- the ladder step ---------------------------------------------------------------
@@ -121,7 +134,7 @@ def test_the_roster_is_identical_with_and_without_the_flag(clean):
     was = [(p.name, round(p.current_overall(), 6))
            for p in jh.build_roster(up, 2029)]
 
-    ov.set_jhsaa_playup(up.name, False)          # hold it in its own class
+    ov.set_jhsaa_playup(up.name, "no")            # hold it in its own class
     jh.reset_schools()
     down = next(s for s in jh.load_schools("girls") if s.name == up.name)
     assert not down.plays_up and down.group == jh.champ_group(down.classification)
@@ -165,7 +178,7 @@ def test_the_override_can_promote_a_school_the_file_did_not_pick(clean):
     # — `can_play_up` is enforced on the READ, so a 5A pick would be refused.
     plain = next(s for s in jh.load_schools("girls")
                  if not s.plays_up and jh.can_play_up(s.classification))
-    ov.set_jhsaa_playup(plain.name, True)
+    ov.set_jhsaa_playup(plain.name, jh.play_up_group(plain.classification))
     jh.reset_schools()
     now = next(s for s in jh.load_schools("girls") if s.name == plain.name)
     assert now.plays_up
@@ -174,7 +187,7 @@ def test_the_override_can_promote_a_school_the_file_did_not_pick(clean):
 
 def test_the_override_can_hold_a_seeded_school_in_its_own_class(clean):
     seeded = _ups()[0]
-    ov.set_jhsaa_playup(seeded.name, False)
+    ov.set_jhsaa_playup(seeded.name, "no")
     jh.reset_schools()
     now = next(s for s in jh.load_schools("girls") if s.name == seeded.name)
     assert not now.plays_up
@@ -186,7 +199,7 @@ def test_clearing_reverts_to_the_seed_list_rather_than_to_off(clean):
     only express one of them, which is why the store keeps "no" rather than deleting
     the row (the archetype table's rule)."""
     seeded = _ups()[0]
-    ov.set_jhsaa_playup(seeded.name, False)
+    ov.set_jhsaa_playup(seeded.name, "no")
     jh.reset_schools()
     assert not next(s for s in jh.load_schools("girls")
                     if s.name == seeded.name).plays_up
@@ -203,5 +216,5 @@ def test_the_season_cache_falls_when_a_play_up_changes(clean):
     alone would not have noticed."""
     before = ov.jhsaa_playup_version()
     plain = next(s for s in jh.load_schools("girls") if not s.plays_up)
-    ov.set_jhsaa_playup(plain.name, True)
+    ov.set_jhsaa_playup(plain.name, jh.play_up_group(plain.classification))
     assert ov.jhsaa_playup_version() != before

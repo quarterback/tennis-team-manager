@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Seasons{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Seasons</div>
+<h1 class="pt-h1">Seasons</h1>
+<div class="pt-index-grid">
+  {% for b in bundles %}
+  <a class="pt-index-card" href="{{ b.scope_id }}.html">
+    <h4>{{ b.label }}</h4>
+    <div class="sub">{{ boards[b.scope_id].classifications|length }} classification{{ 's' if boards[b.scope_id].classifications|length != 1 }} ·
+      {{ boards[b.scope_id].rows|length }} programs · rankings, standings, leaders, awards</div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

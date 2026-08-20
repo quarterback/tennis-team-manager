@@ -58,6 +58,15 @@
       {% for m in meta %}<div><span class="k">{{ m[0] }}</span><span class="v">{{ m[1] }}</span></div>{% endfor %}
     </div>
     {% endif %}
+    {# Scouting data (OVR/potential/stars) is a god-mode view, hidden by default
+       everywhere it appears on this section — this is the one switch for it,
+       so it always sits beside the title rather than being re-added per page. #}
+    <label class="jh-scout-toggle" title="OVR, potential and star ratings — a scouting view kept obscured by default">
+      <input type="checkbox" data-jh-scout-checkbox
+             onchange="document.documentElement.setAttribute('data-jh-scout',this.checked?'on':'off');try{localStorage.setItem('jh-scout',this.checked?'on':'off')}catch(e){}">
+      <span>Show ratings</span>
+    </label>
+    <script>document.querySelector('[data-jh-scout-checkbox]').checked = document.documentElement.getAttribute('data-jh-scout') === 'on';</script>
   </div>
 
   <div class="jh-scope">
@@ -111,6 +120,12 @@
          both properties belong to the SCHOOL and outlive any one season. #}
       <a class="{{ 'on' if tab == 'programs' }}" title="Archetypes and play-up"
          href="{{ url_for('jhsaa_programs', u=u, g=scope.gender) }}">Programs</a>
+      <a class="{{ 'on' if tab == 'players' }}" title="Searchable directory — talent, potential, stars"
+         href="{{ url_for('jhsaa_players', u=u, g=scope.gender) }}">Players</a>
+      <a class="{{ 'on' if tab == 'misapplied' }}" title="Talent mismatches — buried above their classification's level"
+         href="{{ url_for('jhsaa_misapplied', u=u, g=scope.gender) }}">Mismatches</a>
+      <a class="{{ 'on' if tab == 'lineup_lab' }}" title="Assemble hypothetical squads from mismatched talent"
+         href="{{ url_for('jhsaa_lineup_lab_route', u=u, g=scope.gender) }}">Lineup Lab</a>
     </div>
   </div>
 </div></div>

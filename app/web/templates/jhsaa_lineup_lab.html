@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% from "_stars.html" import stars %}
+{% block title %}JHSAA Lineup Lab{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'lineup_lab', 'Lineup Lab',
+             'Deal mismatched talent into hypothetical nine-player squads and see where they would rank against a classification\'s real programs') }}
+
+<div class="jh-shell">
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-body" style="padding:12px">
+    <form method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end">
+      <input type="hidden" name="u" value="{{ u }}">
+      <label>Gender
+        <select name="gender">
+          {% for val, lbl in [('boys','Boys'), ('girls','Girls'), ('all','Both')] %}
+          <option value="{{ val }}" {{ 'selected' if gender_f == val }}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Target class
+        <select name="group">
+          {% for gp in groups %}<option value="{{ gp }}" {{ 'selected' if target == gp }}>{{ gp }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Pool
+        <select name="pool">
+          <option value="mismatched" {{ 'selected' if pool == 'mismatched' }}>Mismatched talent only</option>
+          <option value="any" {{ 'selected' if pool == 'any' }}>Every player (best ceiling first)</option>
+        </select>
+      </label>
+      <label>Squads
+        <input type="number" name="squads" min="1" max="10" value="{{ n_squads }}" style="width:56px">
+      </label>
+      <button type="submit" class="bl-btn">Build</button>
+    </form>
+  </div>
+</div>
+
+{% if not lab.squads %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
+  <p class="jh-empty">Not enough qualifying players in the pool to fill a nine-player squad. Try "Every player" or a different gender.</p>
+</div></div>
+{% endif %}
+
+{% for sq in lab.squads %}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">Squad {{ loop.index }}</span>
+    <span class="bit jh-scout">avg OVR {{ sq.avg_ovr }} · avg Pot {{ sq.avg_ceiling }} ·
+      would rank ~#{{ sq.rank }} of {{ sq.n_div }} in {{ target }}</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-roster">
+      <tr><th>Player</th><th>School</th><th style="width:44px">Class</th>
+        <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
+        <th class="jh-scout" style="width:78px">Rating</th></tr>
+      {% for r in sq.players %}
+      <tr>
+        <td class="pl">
+          <a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>
+        </td>
+        <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
+        <td>{{ r.group }}</td>
+        <td class="num jh-scout">{{ r.ovr }}</td>
+        <td class="num jh-scout">{{ r.ceiling }}</td>
+        <td class="jh-scout">{{ stars(r.stars) }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

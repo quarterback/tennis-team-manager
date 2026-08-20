@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}JHSAA Lab{% endblock %}
+{% block content %}
+
+<div class="jh-shell">
+<div class="jh-ident" style="margin-bottom:14px">
+  <div class="jh-ident-body">
+    <h1>JHSAA Lab</h1>
+    <div class="where">
+      Standalone JHSAA seasons, decoupled from the college/pro sim — no world
+      advance, no college universe built. This process is bound to its own
+      database (<code>{{ db_path }}</code>), separate from your real save.
+    </div>
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Current lab world</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    {% if exists %}
+    <p class="bit"><b>{{ years_archived }}</b> season{{ '' if years_archived == 1 else 's' }}
+      archived here, latest is {{ season_year }}.
+      <a href="{{ url_for('jhsaa_page') }}">Browse it at /jhsaa</a> ·
+      <a href="{{ url_for('research_export') }}">Export any of them as CSV/JSON</a>.
+      Program history, honours and records accumulate across every season
+      you advance through — this is one continuous world, not separate runs.</p>
+    {% else %}
+    <p class="bit">No lab world yet — generate one below to start.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Advance the season (multi-year runs)</span></div>
+  <div class="bl-panel-body">
+    <form method="post" action="{{ url_for('jhsaa_lab_advance') }}">
+      <label class="s">Years to advance
+        <input type="number" name="years" value="1" min="1" max="50" {{ 'disabled' if not exists }}></label>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if not exists }}>
+        Advance
+      </button>
+    </form>
+    <p class="bit" style="margin-top:10px">
+      Plays and archives one more JHSAA season per year, on the SAME lab
+      world: existing cohorts age up and graduate, new freshmen arrive, and
+      program records/honours build up across every year — a real 20+ year
+      history to analyze, not 20 unrelated one-off seasons. Each year takes
+      roughly as long as one JHSAA rung, so advancing 20 at once will sit for
+      a while; the page just reloads with the updated total when it's done.
+      {% if not exists %}Generate a season first.{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Start a fresh world</span></div>
+  <div class="bl-panel-body">
+    <form method="post" action="{{ url_for('jhsaa_lab_generate') }}">
+      <label class="s">Salt (optional — leave blank for a fresh random one)
+        <input type="text" name="salt" placeholder="e.g. run-014"></label>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px">
+        Generate new season (both genders)
+      </button>
+    </form>
+    <p class="bit" style="margin-top:10px">
+      Wipes this database and starts an entirely new lab world at year one —
+      new programs' cohorts, a fresh salt if none is given. Use this to begin
+      a different run, not to add a season to the current one — for that use
+      Advance above.
+    </p>
+  </div>
+</div>
+</div>
+{% endblock %}

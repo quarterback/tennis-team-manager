@@ -604,6 +604,48 @@ def _arch_seed() -> dict:
         return {}
 
 
+def bulk_edit_archetype_seed(kind: str | None, names: list[str], remove: bool = False) -> dict:
+    """Add or remove MANY schools' archetype tag in ONE pass, writing the SEED FILE
+    itself (`data/jhsaa/archetypes.json`) rather than the per-save override table.
+
+    ‼️ WHY THE SEED FILE, NOT AN OVERRIDE (owner request): the override table lives
+    in the SAME sqlite file as the world, and the owner routinely starts over with a
+    brand-new database file rather than resetting the existing save — a per-save
+    override cannot survive that, since there is no "the save" for it to attach to
+    the next time. The seed list, by contrast, ships with the code and is read fresh
+    by every database. One-by-one editing through `/editor/jhsaa-archetype` (which
+    DOES write a per-save override, and still exists for a single quick change) was
+    "massively tedious" for a real list and had to be redone after every fresh save
+    — this is the fix for both problems in one move: bulk, and permanent.
+
+    Unknown names are silently skipped (never invents a school); returns
+    {"applied": [...], "unknown": [...]} so the caller can report both. Existing
+    per-save overrides for a touched school are NOT cleared — an override still
+    wins over the seed on read (`_arch_map`), exactly as before."""
+    valid_names = {r["name"] for r in playup_rows()}
+    applied, unknown = [], []
+    with open(_ARCH_SEED_PATH, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    programs = doc.setdefault("programs", {})
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        if name not in valid_names:
+            unknown.append(name)
+            continue
+        if remove:
+            programs.pop(name, None)
+        else:
+            programs[name] = kind
+        applied.append(name)
+    with open(_ARCH_SEED_PATH, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    _arch_cache.clear()
+    return {"applied": applied, "unknown": unknown}
+
+
 def archetype(school: str) -> str:
     """A program's archetype tag, or "" — the seed list with the editable table on top."""
     from app import overrides as ov
@@ -844,6 +886,7 @@ class TeamSeason:
 
 _schools_cache: dict | None = None
 _playup_cache: dict = {}
+_transfer_cache: dict = {}
 # The BUILT School objects, keyed (gender, play-up version). `_schools_cache` above is
 # only the raw JSON; rebuilding the objects is what used to be free and is not any
 # more — see `load_schools`. Read-only: callers filter and group it, nobody mutates a
@@ -886,24 +929,42 @@ def can_play_up(classification: str) -> bool:
 
 def play_up_group(classification: str) -> str:
     """The classification one step ABOVE `classification`'s championship group, or
-    the group itself at the top of the ladder — 9A has nothing to play up to."""
+    the group itself at the top of the ladder — 9A has nothing to play up to. This
+    is the SEED-LIST default (a school with `play_up: true` and no editor override
+    moves exactly one class) — an explicit override can name any class further up;
+    see `plays_up`."""
     g = champ_group(classification)
     i = GROUPS.index(g)
     return GROUPS[i - 1] if i else g
 
 
-def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
-             classification: str | None = None) -> bool:
-    """Whether `school_name` competes a class above its own — the seed list in
-    `schools.json` with the editor table on top (`overrides.set_jhsaa_playup`),
-    exactly the layering `archetype()` uses.
+def valid_playup_target(classification: str, target: str) -> bool:
+    """Whether `target` is a legal play-up destination for a program of this
+    `classification`: the program must be eligible to play up at all
+    (`can_play_up` — 4A and below), and `target` must be a real group STRICTLY
+    above the program's own championship group (never sideways, never down —
+    owner rule: play-up is never play-down)."""
+    if not can_play_up(classification) or target not in GROUPS:
+        return False
+    return GROUPS.index(target) < GROUPS.index(champ_group(classification))
 
-    ‼️ ELIGIBILITY IS ENFORCED HERE, not only where a promotion is written. Pass
-    `classification` and a program too big to play up (`can_play_up`) returns False
-    whatever the seed list or the override table says. Validating only at the editor
-    would leave the invariant one crafted POST — or one stale row written before the
-    rule existed — away from a 9A school being "promoted" into 9A, or an 8A into a
-    championship it has no business entering. The rule belongs on the read.
+
+def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
+             classification: str | None = None) -> str | None:
+    """The group `school_name` actually competes in if it's playing up, or None if
+    it isn't — the seed list in `schools.json` with the editor table on top
+    (`overrides.set_jhsaa_playup`), exactly the layering `archetype()` uses.
+
+    ‼️ AN OVERRIDE NAMES A REAL TARGET GROUP, NOT JUST "yes"/"no" (owner rule
+    2027-08, multi-step play-up). Real associations approve play-up/play-down
+    applications annually and for all kinds of reasons — a program is not
+    limited to exactly one class up. The stored value is either a group string
+    ("7A") or "no" (an explicit hold, reverting a seeded play-up to its own
+    class); anything else falls back to the seed list's one-step default via
+    `seeded`. A stored group is re-validated on every read (`valid_playup_target`)
+    so a program that shrinks below `PLAY_UP_MAX_GROUP`, or a stale/crafted row
+    naming an illegal target, can never promote — the rule belongs on the read,
+    not only where a promotion is written.
 
     ‼️ PASS `pmap` WHEN ASKING ABOUT MORE THAN ONE SCHOOL. Without it this resolves
     the override table's fingerprint itself, and that fingerprint costs a SQLite
@@ -913,10 +974,18 @@ def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
     per pass. See `load_schools`."""
     from app import overrides as ov
     if classification is not None and not can_play_up(classification):
-        return False
+        return None
     m = _playup_map(ov.jhsaa_playup_version()) if pmap is None else pmap
     hit = m.get(school_name)
-    return seeded if hit is None else hit == "yes"
+    if hit is None:
+        return play_up_group(classification) if (seeded and classification is not None) else None
+    if hit == "no":
+        return None
+    # A stored explicit target — validate it every read; classification is
+    # required to validate, so no classification means "trust nothing".
+    if classification is None or not valid_playup_target(classification, hit):
+        return None
+    return hit
 
 
 def _playup_map(version: str) -> dict:
@@ -931,6 +1000,79 @@ def _playup_map(version: str) -> dict:
     _playup_cache.clear()
     _playup_cache[version] = fresh
     return fresh
+
+
+# --- Offseason transfers (owner rule 2027-08) --------------------------------
+# Manual, always-approved, no eligibility logic — a module to MOVE a player, not to
+# find one. `overrides.set_jhsaa_transfer` is the write path (editor); everything
+# here is the read side `build_roster` consults.
+
+def _transfer_map(version: str) -> dict:
+    """{pid: {from, gender, entry, seat, to, year}}, memoised on the override
+    table's fingerprint — same shape as `_playup_map`."""
+    hit = _transfer_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    fresh = ov.get_jhsaa_transfers()
+    _transfer_cache.clear()
+    _transfer_cache[version] = fresh
+    return fresh
+
+
+def transfers() -> dict:
+    """{pid: record} for every transferred player — the version fingerprint is
+    resolved here, ONCE, never inside a per-school or per-seat loop."""
+    from app import overrides as ov
+    return _transfer_map(ov.jhsaa_transfer_version())
+
+
+#: A roster never carries more seats than this per class — plenty of headroom over
+#: the biggest classification's `ROSTER_SIZE_BY_CLASS` (24).
+_MAX_SEAT = 40
+
+
+def resolve_seat(school: School, entry: int, pid: str) -> int | None:
+    """The seat number behind a player's pid — pid is `make_pid("jhsaa", ident,
+    gender, entry, seat)`, a one-way hash, so the seat isn't recoverable from the
+    pid alone. It IS recoverable by brute force over the small seat range, which is
+    what the transfer editor needs (it only has a school, an entry year and a pid;
+    nothing stores seat numbers)."""
+    for seat in range(_MAX_SEAT):
+        if make_pid("jhsaa", school.ident, school.gender, entry, seat) == pid:
+            return seat
+    return None
+
+
+def transfer_for(pid: str) -> dict | None:
+    """This player's transfer record, or None if they haven't moved."""
+    return transfers().get(pid)
+
+
+def transfer_rows() -> list[dict]:
+    """Every recorded transfer, with the mover's NAME resolved for display — the
+    list the `/jhsaa/transfers` board reads. Player identity is regenerated (same
+    rng draws as `build_roster`) rather than stored, same as everywhere else in
+    JHSAA; the record itself carries no name."""
+    rows = []
+    for pid, rec in transfers().items():
+        gender = rec.get("gender", "")
+        origin = next((s for s in load_schools(gender) if s.name == rec.get("from")), None)
+        name = ""
+        if origin is not None:
+            entry = rec.get("entry")
+            # `grade` only steers maturity/talent in `_gen_seat`, not identity or pid
+            # (both keyed on entry+seat alone) — 9 is an arbitrary valid choice here,
+            # this call exists only to read the name back off the regenerated Prospect.
+            mod = _program_mod(origin, rec.get("year", 0), "")
+            p = _gen_seat(origin, mod, entry, rec.get("seat"), 9, "")
+            if p.pid == pid:
+                name = p.name
+        rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
+                     "from": rec.get("from"), "to": rec.get("to"), "year": rec.get("year"),
+                     "entry": rec.get("entry")})
+    rows.sort(key=lambda r: (-(r["year"] or 0), r["name"]))
+    return rows
 
 
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
@@ -1024,13 +1166,22 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         r = by_name.get(name)
         if not r:
             return None
-        return {"name": name, "classification": r["classification"], "city": r["city"],
+        target = plays_up(name, bool(r.get("play_up")), pmap, r["classification"])
+        cls = r["classification"]
+        # Every group strictly above the program's own class — the picker's real
+        # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
+        targets = ([g for g in GROUPS[:GROUPS.index(champ_group(cls))]]
+                  if can_play_up(cls) else [])
+        return {"name": name, "classification": cls, "city": r["city"],
                 "district": r.get("girls_district") or r.get("boys_district") or "",
                 "archetype": amap.get(name, ""),
-                "plays_up": plays_up(name, bool(r.get("play_up")), pmap,
-                                     r["classification"]),
-                "can_play_up": can_play_up(r["classification"]),
-                "competes": play_up_group(r["classification"]),
+                # `plays_up` truthy = the string of the group they're IN; None = not.
+                "plays_up": bool(target),
+                "can_play_up": can_play_up(cls),
+                # The group actually competed in — an explicit override target if
+                # one is set, else the seed-list one-step default.
+                "competes": target or play_up_group(cls),
+                "targets": targets,
                 "arch_edited": name in arch_ov, "play_edited": name in play_ov}
 
     up = {r["name"] for r in _schools_cache
@@ -1100,9 +1251,10 @@ def playup_board() -> dict:
         if can_play_up(r["classification"]):
             names.append(r["name"])
         seeded = bool(r.get("play_up"))
-        if plays_up(r["name"], seeded, pmap, r["classification"]):
+        target = plays_up(r["name"], seeded, pmap, r["classification"])
+        if target:
             up.append({"name": r["name"], "classification": r["classification"],
-                       "competes": play_up_group(r["classification"]),
+                       "competes": target,
                        # Where this program's play-up comes from, because REMOVING it
                        # means two different things: a seeded one is HELD ("no"), an
                        # added one is CLEARED. A single "remove" could express only one.
@@ -1153,8 +1305,9 @@ def load_schools(gender: str) -> list[School]:
         # actually is, which is what `School.talent_group` generates from. A school
         # that plays up gets a HARDER FIELD, never better players.
         group = r["group"]
-        if _plays_up_row(r, pmap):
-            group = play_up_group(r["classification"])
+        target = _plays_up_row(r, pmap)
+        if target:
+            group = target
         out.append(School(
             name=r["name"], city=r["city"], county=r["county"], area=r["area"],
             classification=r["classification"], group=group,
@@ -1202,7 +1355,8 @@ def _playup_districts(gender: str, rows: list[dict],
     movers = sorted((x for x in rows if x.get(gender) and _plays_up_row(x, pmap)),
                     key=lambda x: x["name"])          # deterministic order
     for row in movers:
-        group = play_up_group(row["classification"])
+        group = _plays_up_row(row, pmap)              # the RESOLVED target, not
+                                                        # always one step up
         near: dict[str, list[int]] = {}
         for x in rows:
             if (not x.get(gender) or not x.get(key) or _plays_up_row(x, pmap)
@@ -1222,9 +1376,10 @@ def _playup_districts(gender: str, rows: list[dict],
     return out
 
 
-def _plays_up_row(row: dict, pmap: dict | None = None) -> bool:
-    """`pmap` is the resolved play-up map. Omit it ONLY for a one-off question about a
-    single school — without it every call costs a database round trip."""
+def _plays_up_row(row: dict, pmap: dict | None = None) -> str | None:
+    """The resolved target group, or None — see `plays_up`. `pmap` is the resolved
+    play-up map. Omit it ONLY for a one-off question about a single school — without
+    it every call costs a database round trip."""
     return plays_up(row["name"], bool(row.get("play_up")), pmap,
                     row.get("classification"))
 
@@ -1261,6 +1416,50 @@ def _ceiling(rng: random.Random, group: str, gender: str,
     return max(GRADE_FLOOR, min(80.0, draw))
 
 
+def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
+              salt: str) -> Prospect:
+    """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
+    below) can regenerate the exact same person under the school they actually
+    play for now, from the ORIGIN school's identity/program modifiers. `pid`
+    stays keyed on `school` here always, whatever roster the caller ultimately
+    puts this Prospect on — that is what keeps a transferred player's pid, and
+    so their pre-transfer history and awards, resolving to the same person."""
+    from generators import make_name_picker
+    sex = "male" if school.gender == "boys" else "female"
+    lo, hi = _MATURITY[grade]
+    # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
+    # years. Keyed off 8 it would land on ninth-graders too, and a development
+    # program's whole character is that you cannot spot it in its freshmen.
+    step = mod.get("mature", 0.0) * (grade - 9)
+    maturity = (min(1.0, lo + step), min(1.0, hi + step))
+    rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+    # Keyed on (school, entry, seat) — the same identity the pid is built from —
+    # so a prodigy is the SAME person every one of their four seasons rather than
+    # a fresh dice roll each year.
+    prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
+    if prng.random() < PRODIGY_RATE:
+        lo2, hi2 = PRODIGY_MATURITY
+        maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
+    nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
+                             region_weights={"us": 1.0})()
+    p = generate_prospect(rng, nm, "US", gender=sex,
+                          talent=min(80.0, _ceiling(rng, school.talent_group,
+                                                    school.gender, mod)
+                                     + mod.get("pot", 0.0)),
+                          maturity_range=maturity,
+                          # `ident`, never `name` — a pid has to survive a
+                          # rename or every archived award points at nobody.
+                          pid=make_pid("jhsaa", school.ident, school.gender,
+                                       entry, seat))
+    p.class_year = str(grade)
+    p.grade = grade
+    p.entry_year = entry
+    p.hometown = f"{school.city}, JF"
+    p.high_school = school.name
+    p.region, p.domestic = "Jefferson", True
+    return p
+
+
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     """A program's roster for season `year` — its four classes, grades 9 through 12.
 
@@ -1269,51 +1468,56 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     matures: the junior who went 15-5 is the senior on next year's board. That is what
     makes a high-school career real without persisting every player — the world rebuilds
     an identical one from (school, gender, entry year, seat).
+
+    ‼️ OFFSEASON TRANSFERS (owner rule 2027-08) are applied here, on the read: a
+    player with a `set_jhsaa_transfer` row is dropped from their ORIGIN school's
+    build from the effective year on, and regenerated (via `_gen_seat`, same rng
+    draws — same person) onto the DESTINATION school's build instead. No
+    eligibility/search logic — the table just says who plays where and when.
     """
-    from generators import make_name_picker
-    sex = "male" if school.gender == "boys" else "female"
     mod = _program_mod(school, year, salt)
+    # Resolved ONCE per roster build, not per seat — `transfers()` re-resolves the
+    # override table's fingerprint on every call, which is a SQLite connect+query
+    # even on a cache hit (the playup-fingerprint trap, `AAR-jhsaa-playup-fingerprint
+    # -query-storm.md`). A season builds 1,600+ rosters; per-seat would multiply that
+    # by every seat on every one of them.
+    tmap = transfers()
     out = []
     for grade in GRADES:
         entry = year - (grade - 9)
         n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
-        # A DEVELOPMENT program's edge compounds with time in the programme: the same
-        # ceiling surfaces faster every year, so a freshman arrives looking ordinary and
-        # a senior does not. `mature` is per grade, so it is worth four times as much to
-        # a senior as to a freshman — which is the point.
-        lo, hi = _MATURITY[grade]
-        # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
-        # years. Keyed off 8 it would land on ninth-graders too, and a development
-        # program's whole character is that you cannot spot it in its freshmen.
-        step = mod.get("mature", 0.0) * (grade - 9)
-        maturity = (min(1.0, lo + step), min(1.0, hi + step))
         for seat in range(n_seats):
-            rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
-            # Keyed on (school, entry, seat) — the same identity the pid is built from —
-            # so a prodigy is the SAME person every one of their four seasons rather than
-            # a fresh dice roll each year.
-            prng = random.Random(f"{salt}|jhsaa-prodigy|{school.key}|{entry}|{seat}")
-            if prng.random() < PRODIGY_RATE:
-                lo2, hi2 = PRODIGY_MATURITY
-                maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
-            nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
-                                     region_weights={"us": 1.0})()
-            p = generate_prospect(rng, nm, "US", gender=sex,
-                                  talent=min(80.0, _ceiling(rng, school.talent_group,
-                                                            school.gender, mod)
-                                             + mod.get("pot", 0.0)),
-                                  maturity_range=maturity,
-                                  # `ident`, never `name` — a pid has to survive a
-                                  # rename or every archived award points at nobody.
-                                  pid=make_pid("jhsaa", school.ident, school.gender,
-                                               entry, seat))
-            p.class_year = str(grade)
-            p.grade = grade
-            p.entry_year = entry
-            p.hometown = f"{school.city}, JF"
-            p.high_school = school.name
-            p.region, p.domestic = "Jefferson", True
+            p = _gen_seat(school, mod, entry, seat, grade, salt)
+            rec = tmap.get(p.pid)
+            # Left FOR somewhere else, effective this year or earlier — they play
+            # for their new school now, not this one.
+            if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
+                continue
             out.append(p)
+    # Incoming: every transfer whose DESTINATION is this school AND this gender,
+    # effective by now. School names are shared across a boys' and a girls' program
+    # (the display identity is per-team, not per-school), so the name match alone
+    # would append a boys' mover to the girls' roster of the same name and vice
+    # versa — `_gen_seat` would then place an origin-gender Prospect straight onto
+    # the opposite-gender team.
+    for pid, rec in tmap.items():
+        if (rec.get("to") != school.name or rec.get("gender") != school.gender
+                or rec.get("year", 0) > year):
+            continue
+        entry = rec.get("entry")
+        grade = year - entry + 9
+        if grade not in GRADES:
+            continue                       # not enrolled anywhere this year (yet, or graduated)
+        origin = next((s for s in load_schools(rec.get("gender", school.gender))
+                       if s.name == rec.get("from")), None)
+        if origin is None:
+            continue                       # origin school renamed/removed since the move
+        omod = _program_mod(origin, year, salt)
+        p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt)
+        if p.pid != pid:
+            continue                       # stale/mismatched record — never invent a player
+        p.high_school = school.name
+        out.append(p)
     out.sort(key=lambda p: -p.current_overall())
     return out
 
@@ -1448,9 +1652,12 @@ PAIR_SUM_TOL = 2            # rank-sum gap within which real doubles ability dec
 
 def _pair_partitions(pool: list):
     """Every way to split an even-length `pool` into unordered pairs — (2n-1)!!
-    of them (15 for 6 players, 105 for 8). Shared by `_arrange_state` (D2-D4,
-    6 players) and `_arrange_regular` (the 3S/4D D-pool, 8 players) so the
-    combinatorics live in one place."""
+    of them (15 for 6 players). Used by `_arrange_state` (D2-D4, a small
+    postseason qualifying field) to search for the best pairing. `_arrange_regular`
+    (the 3S/4D D-pool, 8 players — 105 partitions) used to share this for the
+    same kind of search, but that ran on every regular-season dual for the
+    whole association and the search was never worth its cost (owner
+    correction 2027-08, see the AAR) — it now decides directly instead."""
     if not pool:
         yield []
         return
@@ -1546,19 +1753,26 @@ def _pk(pair) -> tuple:
 # exactly #10-#11 (see `_arrange_regular`). What a program's strategy actually
 # decides is how the fixed 8-player pool pairs up into D1-D4:
 #
-#   maximize      pick the pairing that maximises total doubles_rating summed
-#                 across all four pairs, over every legal way to split the
-#                 8-player pool into pairs (105 of them) — a real search, now
-#                 that `doubles_rating` has a genuine pair-synergy term
-#                 (`engine.doubles._pair_synergy`) worth searching for.
-#   balanced      the same search, but the objective trades a little raw total
-#                 for spreading strength more evenly across all four doubles
-#                 courts (`_BALANCE_PENALTY` on the spread between the
-#                 strongest and weakest pair) — a coach who would rather have
-#                 four solid pairs than one great one and three ordinary ones.
+#   maximize      snake-pair the pool by serve-vs-return skew (best server with
+#                 best returner, and so on) — a cheap stand-in for the engine's
+#                 coverage synergy term (`engine.doubles._pair_synergy`), picked
+#                 directly rather than searched for.
+#   balanced      snake-pair by overall ability (strongest with weakest, and so
+#                 on) — spreads strength evenly across all four doubles courts
+#                 for a coach who would rather have four solid pairs than one
+#                 great one and three ordinary ones.
 #   traditional   adjacent-ladder pairing of the fixed pool — D1=#2+#3,
 #                 D2=#4+#5, D3=#6+#7, D4=#8+#9. The classic card, and the only
 #                 shape the generator used to produce before this rule existed.
+#
+# ‼️ NONE OF THESE SEARCH (owner correction 2027-08). The first cut of
+# `maximize`/`balanced` scored all 105 ways to split the 8-player pool into
+# pairs, on EVERY regular-season dual, for every program in the association —
+# real coaches do not run a permutation search before a match, they just pair
+# people up, and `doubles_rating`'s synergy term is capped tiny (`SYNERGY_CAP`
+# in `engine/doubles.py`) specifically so it stays a minor factor, not
+# something worth 105-way scoring for. Each strategy is now one direct,
+# ability-ordered decision. See `_arrange_regular`.
 #
 # The strategy is a durable PROGRAM trait (hashed off the school key, like a
 # coaching tradition — not per-dual dice, so a program's card is recognisable
@@ -1566,7 +1780,6 @@ def _pk(pair) -> tuple:
 # different one.
 _STRATEGIES = ("maximize", "balanced", "traditional")
 _PHILOSOPHY_FLIP = 0.15        # per-dual chance the coach tries a different strategy
-_BALANCE_PENALTY = 0.5         # "balanced": how strongly |D1 rating - D2 rating| is punished
 
 
 def _coach_strategy(school_key: str) -> str:
@@ -1593,7 +1806,21 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
     are always exactly #10-#11. A coach does not get to decide whether the
     team's 2nd-9th best players play singles or doubles — that's already
     settled by the format. The only real decision, and the only thing
-    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4."""
+    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4.
+
+    ‼️ THE PAIRING ITSELF IS A CHEAP, DIRECT CALL — NOT A SEARCH (owner
+    correction 2027-08, after the first cut exhaustively enumerated all 105
+    ways to split the 8-player pool and scored each one against every other
+    program's pool, every regular-season dual, all season: real-life coaches
+    do not run a permutation search before every match, they just pair people
+    up, and the payoff was never there to justify it anyway — `doubles_rating`'s
+    own docstring caps the synergy term at `SYNERGY_CAP` (0.06) specifically so
+    individual quality stays the primary factor, i.e. the thing 105 partitions
+    were being searched to eke out is capped tiny by design. `maximize` and
+    `balanced` now each make ONE direct decision (a sort, snake-paired or
+    skew-paired) instead of scoring every partition; only the final "strongest
+    pair plays D1" ordering still touches the real engine rating, and that's 4
+    calls, not 420."""
     if len(eleven) < 11:
         return eleven
     s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
@@ -1601,20 +1828,28 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
     else:
-        from engine.doubles import doubles_rating
+        from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
 
         def dr(a, b):
             return doubles_rating(eng[a.pid], eng[b.pid])
 
-        best_score, pairs = None, None
-        for candidate in _pair_partitions(pool):        # 105 ways to split 8 into 4 pairs
-            ratings = [dr(*pr) for pr in candidate]
-            total = sum(ratings)
-            score = total if strategy == "maximize" \
-                else total - _BALANCE_PENALTY * (max(ratings) - min(ratings))
-            if best_score is None or score > best_score:
-                best_score, pairs = score, candidate
+        if strategy == "balanced":
+            # Snake-pair strongest with weakest, next-strongest with
+            # next-weakest, and so on -- spreads ability evenly across the
+            # four courts without scoring a single combination.
+            ranked = sorted(pool, key=lambda p: -eng[p.pid].overall)
+        else:  # "maximize"
+            # A cheap stand-in for the engine's coverage synergy (pairing the
+            # better server with the better returner): rank the pool by
+            # serve-minus-return skew and snake-pair across it, so a
+            # serve-heavy player lands with a return-heavy one instead of
+            # searching for the combination that scores best.
+            ranked = sorted(pool, key=lambda p: (serve_rating(eng[p.pid])
+                                                 - return_rating(eng[p.pid])),
+                            reverse=True)
+        pairs = [(ranked[0], ranked[7]), (ranked[1], ranked[6]),
+                 (ranked[2], ranked[5]), (ranked[3], ranked[4])]
         pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
     out = [s1] + s23
     for a, b in pairs:

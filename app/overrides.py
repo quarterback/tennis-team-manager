@@ -273,11 +273,20 @@ def jhsaa_archetype_version() -> str:
     return h.hexdigest()
 
 
-# --- PLAYING UP (owner rule 2027-08) -----------------------------------------
-# A school competing one classification ABOVE its enrollment class, the way real
+# --- PLAYING UP (owner rule 2027-08, multi-step 2027-09) ----------------------
+# A school competing a classification ABOVE its enrollment class, the way real
 # associations let a strong program do. Stored exactly like an archetype — a seed
-# list in `data/jhsaa/schools.json` (`play_up`) with this editable table on top:
-# "yes" promotes, "no" demotes a seeded program, and clearing reverts to the file.
+# list in `data/jhsaa/schools.json` (`play_up`) with this editable table on top.
+#
+# ‼️ THE STORED VALUE IS A TARGET GROUP, NOT A BOOL (owner rule 2027-09). Real
+# associations approve play-up applications annually and for all kinds of reasons,
+# not just "one class up" — a 3A program can play in 7A. The value is either a real
+# group string ("7A") naming exactly where the program competes, or "no" (an
+# explicit hold, reverting a seeded play-up to its own class); clearing the row
+# reverts to the seed list's one-step default. `jhsaa.plays_up` re-validates a
+# stored group on every read (never sideways, never down, never past
+# `PLAY_UP_MAX_GROUP` eligibility) so a stale or crafted row can't promote past
+# what the rule allows.
 #
 # ‼️ IT MOVES `group`, NEVER `classification`. `group` is the championship you
 # enter; `classification` is how many students you have, and `_TALENT` is a
@@ -286,7 +295,7 @@ def jhsaa_archetype_version() -> str:
 # to cost you a harder field, not buy you better players.
 
 def get_jhsaa_playups() -> dict:
-    """{school: "yes"|"no"} for every program the editor has ruled on."""
+    """{school: target_group|"no"} for every program the editor has ruled on."""
     conn = _db()
     rows = conn.execute(
         "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_playup'").fetchall()
@@ -294,10 +303,13 @@ def get_jhsaa_playups() -> dict:
     return {k: v for k, v in rows if v}
 
 
-def set_jhsaa_playup(school: str, plays_up: bool) -> None:
+def set_jhsaa_playup(school: str, target: str) -> None:
+    """`target` is a real group string ("7A") to play up TO, or "no" to hold the
+    program in its own class. Validated on the READ side (`jhsaa.plays_up`), not
+    here — see the module note above."""
     conn = _db()
     conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
-                 " VALUES ('jhsaa_playup',?,?)", (school, "yes" if plays_up else "no"))
+                 " VALUES ('jhsaa_playup',?,?)", (school, target))
     conn.commit(); conn.close()
 
 
@@ -315,6 +327,64 @@ def jhsaa_playup_version() -> str:
     import hashlib
     conn = _db()
     rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_playup'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
+# --- JHSAA offseason transfers (owner rule 2027-08) ---------------------------
+# A JHSAA player is not a persisted row — `jhsaa.build_roster` rebuilds them fresh
+# from (school identity, gender, entry year, seat) every call — so "moving" one
+# means recording enough to REGENERATE the same person under a different school
+# rather than mutating a roster list the way the college editor's `set_move` does.
+# Deliberately no eligibility/search logic here (owner rule 2027-08): this is a
+# manual, always-approved, offseason-only relocation — the owner picks who moves,
+# the module just makes it stick every year from `year` onward. Keyed on pid.
+
+def get_jhsaa_transfers() -> dict:
+    """{pid: {from, gender, entry, seat, to, year}} for every transferred player."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_transfer'").fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        if not v:
+            continue
+        try:
+            out[k] = json.loads(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def set_jhsaa_transfer(pid: str, from_school: str, gender: str, entry: int, seat: int,
+                       to_school: str, year: int) -> None:
+    """Record that `pid` (a real seat: school+gender+entry year+seat, so their
+    generated identity can be rebuilt) plays for `to_school` starting `year`."""
+    value = json.dumps({"from": from_school, "gender": gender, "entry": entry,
+                        "seat": seat, "to": to_school, "year": year})
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_transfer',?,?)", (pid, value))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_transfer(pid: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_transfer' AND key=?", (pid,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_transfer_version() -> str:
+    """Fingerprint of the transfer table — rosters are generated from it, so the
+    JHSAA season cache has to fall when it changes, same as archetype/play-up."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_transfer'"
                         " ORDER BY key").fetchall()
     conn.close()
     h = hashlib.md5()
