@@ -444,10 +444,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   OOWP. The format-profile metrics below deliberately EXCLUDE this phase from their
   "regular" sample — it is a third shape, not noise to average into the 5S/2D baseline.
   See `docs/AAR-jhsaa-early-nondistrict-3s4d.md`.
-- **SCHEDULE (owner rule 2027-08): district DOUBLE round-robin + 4-8 non-district.** You
-  play every league opponent home AND away, so DISTRICT SIZE sets the season length (a
-  12-team district is 22 league duals; ~26 total). To shorten seasons shrink
-  `MAX_DISTRICT` in `scripts/import_jhsaa.py` — never cut the second league leg.
+- **SCHEDULE (owner rule 2027-08, CAPPED 2026-08): district double round-robin UNDER
+  `jhsaa.DISTRICT_DUAL_CAP` (18) + 4-8 non-district.** A league of ≤10 teams plays the
+  full home-and-away double; a bigger one plays pass 1 COMPLETE (everyone meets
+  everyone — that is what a league season is) plus only the first rounds of the
+  mirrored pass 2 until the cap — an unbalanced second leg, 16-18 district duals,
+  never more (owner: "double round robins are bad when leagues are more than 10
+  teams"). This REVERSED the earlier "never cut the second league leg" rule. The
+  mid-season split point is `district_pass1_rounds`, NEVER `len(rounds)//2` — on a
+  capped league the list is asymmetric and a halfway split breaks pass 1 mid-stride.
+  Which opponents rematch varies by season (truncation runs on the seasonally-rotated
+  pass-2 order). To shorten seasons further, lower the cap or shrink `MAX_DISTRICT`
+  in `scripts/import_jhsaa.py`.
   `NONDISTRICT_MIN/MAX` is an ALLOWANCE ON TOP, not a season total. Non-district
   opponents are drawn on **geography** (same county → area → anywhere), then **talent**
   (nearest strength off this year's roster, so weak teams aren't fed to teams that beat

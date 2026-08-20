@@ -30,6 +30,13 @@
           <option value="any" {{ 'selected' if pool == 'any' }}>Every player (best ceiling first)</option>
         </select>
       </label>
+      <label>Grades
+        <select name="grades">
+          {% for val, lbl in lab.grade_pools %}
+          <option value="{{ val }}" {{ 'selected' if grades == val }}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </label>
       <label>Squads
         <input type="number" name="squads" min="1" max="10" value="{{ n_squads }}" style="width:56px">
       </label>
@@ -53,7 +60,7 @@
   </div>
   <div class="tbl-scroll">
     <table class="jh-roster">
-      <tr><th>Player</th><th>School</th><th style="width:44px">Class</th>
+      <tr><th>Player</th><th>School</th><th style="width:40px">Gr</th><th style="width:44px">Class</th>
         <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
         <th class="jh-scout" style="width:78px">Rating</th></tr>
       {% for r in sq.players %}
@@ -62,6 +69,7 @@
           <a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>
         </td>
         <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
+        <td>{{ r.grade }}th</td>
         <td>{{ r.group }}</td>
         <td class="num jh-scout">{{ r.ovr }}</td>
         <td class="num jh-scout">{{ r.ceiling }}</td>

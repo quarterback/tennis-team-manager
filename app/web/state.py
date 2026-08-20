@@ -4896,7 +4896,7 @@ def _jhsaa_all_players(seed: int, gender: str) -> list[dict]:
 
 
 def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
-                             sort: str = "gap") -> dict:
+                             sort: str = "gap", grade: str = "All") -> dict:
     """Talent mismatches — the JHSAA analogue of the college Underplaced board (a
     D1-caliber player stuck in D3). JHSAA classifications ARE a real ladder here,
     same as `_TALENT`'s own division-shaped design (9A the deepest/strongest down
@@ -4942,6 +4942,11 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
 
     if group != "All":
         flagged = [r for r in flagged if r["group"] == group]
+    # Grade is a FILTER beside gender/class, not only a sort key (owner report:
+    # "it doesn't make sense to sort by grade without access to the other
+    # conditions") — same behaviour the players directory already has.
+    if grade != "All":
+        flagged = [r for r in flagged if str(r["grade"]) == str(grade)]
 
     keys = {
         "gap": (lambda r: (r["gap"], r["ceiling"]), True),
@@ -4953,11 +4958,23 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
     flagged.sort(key=key, reverse=rev)
 
     return {"gender": gender, "rows": flagged, "total": len(flagged),
-            "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort}
+            "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort,
+            "grades": ["All", "9", "10", "11", "12"], "grade": grade}
+
+
+#: Lineup Lab grade-pool options: which grades a hypothetical squad may draw
+#: from. A scouting squad built around seniors is a one-year mirage, so the lab
+#: can exclude them (or go younger still) — label beside the set it keeps.
+JHSAA_LAB_GRADE_POOLS = {
+    "all":   ("All grades", (9, 10, 11, 12)),
+    "no12":  ("Exclude seniors", (9, 10, 11)),
+    "under": ("Underclassmen (9-10)", (9, 10)),
+}
 
 
 def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
-                     pool: str = "mismatched", n_squads: int = 3) -> dict:
+                     pool: str = "mismatched", n_squads: int = 3,
+                     grades: str = "all") -> dict:
     """The scouting-department view for JHSAA — deal mismatched talent into whole
     9-player rosters for a target classification and rank each hypothetical squad
     against that classification's REAL programs, by average current OVR of their
@@ -4965,8 +4982,10 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
 
     `pool`: 'mismatched' (Talent-Mismatch qualifiers only) or 'any' (every player,
     best ceiling first — useful once the mismatch pool runs dry for a class).
-    Squads are non-overlapping, dealt best-first. 9 is the association's own
-    dressed-lineup size (3 singles + 4 doubles pairs)."""
+    `grades`: a `JHSAA_LAB_GRADE_POOLS` key — 'all', 'no12' (exclude seniors, the
+    scouting default question: what does this squad look like NEXT year too), or
+    'under' (9th-10th only). Squads are non-overlapping, dealt best-first. 9 is
+    the association's own dressed-lineup size (3 singles + 4 doubles pairs)."""
     import app.jhsaa as jh
     SQUAD_SIZE = 9
     genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
@@ -4979,6 +4998,8 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
         cands = _jhsaa_all_players(seed, gender)
         for r in cands:
             r.setdefault("gap", 0.0)
+    keep = JHSAA_LAB_GRADE_POOLS.get(grades, JHSAA_LAB_GRADE_POOLS["all"])[1]
+    cands = [r for r in cands if r["grade"] in keep]
     cands.sort(key=lambda r: (r["ceiling"], r["ovr"]), reverse=True)
 
     # The target classification's real programs, by average current OVR of their
@@ -5014,7 +5035,9 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
         })
 
     return {"gender": gender, "target_group": target_group, "pool": pool,
-            "squads": squads, "groups": list(jh.GROUPS), "n_div": n_div}
+            "squads": squads, "groups": list(jh.GROUPS), "n_div": n_div,
+            "grades": grades,
+            "grade_pools": [(k, lbl) for k, (lbl, _) in JHSAA_LAB_GRADE_POOLS.items()]}
 
 
 def jhsaa_past_winners(seed: int, gender: str) -> dict:
