@@ -135,6 +135,19 @@ def test_nav_has_no_flat_leaderboards(site):
     assert not (site / "leaderboards").exists()
 
 
+def test_leaders_are_capped_per_class_and_carry_their_district(site):
+    html = read(site, f"seasons/{SCOPE}.html")
+    pane = html[html.index('data-tabpane="leaders"'):html.index('data-tabpane="awards"')]
+    # per-classification cap, never a statewide slice: a smaller class's
+    # qualifiers must survive even when the top of the statewide list is all
+    # one class — both classes appear among leader rows.
+    assert 'data-class="9A"' in pane and 'data-class="5A"' in pane
+    # every leader row carries its team's district so the district picker
+    # filters this tab too (an empty data-district opts a row out).
+    assert 'data-district="Gold Valley League"' in pane
+    assert 'data-district=""' not in pane
+
+
 def test_every_archived_program_row_carries_class_and_district(site):
     html = read(site, f"seasons/{SCOPE}.html")
     # 16 programs, one rankings row each, every one classed and districted

@@ -100,14 +100,15 @@
 <div data-tabpane="leaders">
   <div class="pt-panel">
     <div class="pt-panel-head"><div class="pt-panel-title">Individual leaders</div>
-      <div class="pt-panel-meta">best match records this season · min. 3 on record</div></div>
+      <div class="pt-panel-meta">top 25 per classification · min. 3 matches</div></div>
     <div class="pt-panel-body pt-tablewrap">
       <table class="pt-table pt-sortable">
-        <thead><tr><th class="num">#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team</th><th>Class</th><th class="num">W</th><th class="num">L</th><th class="num">Pct</th></tr></thead>
+        <thead><tr><th class="num">Cls#</th><th class="num">St#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team</th><th>Class</th><th class="num">W</th><th class="num">L</th><th class="num">Pct</th></tr></thead>
         <tbody>
         {% for r in board.top_players %}
-          <tr data-class="{{ r.classification }}" data-district="" data-name="{{ r.name|lower }} {{ r.team|lower }}">
-            <td class="num t-num">{{ loop.index }}</td>
+          <tr data-class="{{ r.classification }}" data-district="{{ r.league }}" data-name="{{ r.name|lower }} {{ r.team|lower }}">
+            <td class="num t-num">{{ r.class_rank }}</td>
+            <td class="num t-num">{{ r.state_rank }}</td>
             <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
             <td class="num t-num" data-sort="{{ r.grade_sort }}">{{ r.grade }}</td>
             <td>{{ r.team }}</td>

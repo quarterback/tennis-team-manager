@@ -529,14 +529,28 @@ def leaderboards(bundles: list[Bundle], careers: dict) -> dict:
                 "player_id": pid, "name": c["name"], "wins": wins, "losses": losses,
                 "pct": wins / total if total else 0.0, "team": team,
                 "classification": program_class(team_prog) if team_prog else "—",
+                "league": program_league(team_prog) if team_prog else "",
                 "grade": glabel, "grade_sort": gsort,
             })
         top_players.sort(key=lambda r: (-r["pct"], -r["wins"]))
+        # Cap leaders PER CLASSIFICATION, never statewide: the page filters
+        # this list by class, so a statewide top-50 slice would leave a small
+        # classification's view sparse or empty even when it has plenty of
+        # qualifying players. Ranks are stamped before the trim so both
+        # numbers stay honest (a 3A player can be #4 in class, #212 statewide).
+        per_class = Counter()
+        leaders = []
+        for i, r in enumerate(top_players, 1):
+            r["state_rank"] = i
+            per_class[r["classification"]] += 1
+            r["class_rank"] = per_class[r["classification"]]
+            if r["class_rank"] <= 25:
+                leaders.append(r)
 
         boards[b.scope_id] = {
             "bundle": b, "rows": rows, "classifications": classifications,
             "by_program": {r["program_id"]: r for r in rows},
-            "top_players": top_players[:50],
+            "top_players": leaders,
             "awards": b.awards,
         }
     return boards
