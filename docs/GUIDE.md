@@ -814,6 +814,22 @@ start of the offseason ladder — before the recruit board needs its output.
   represent facilities, coaching tradition, and program culture — not a
   school's classification or public/private status, and never hardcoded to a
   specific school name.
+- **JHSAA Lab** — a separate standalone tool for simulating JHSAA seasons *on
+  their own*, decoupled from the college/pro world, meant for offline analysis
+  (many independent seasons, multi-year cohort aging/graduation) without
+  building a whole college universe just to get one season. Launch it with:
+  ```bash
+  scripts/jhsaa_lab_server.sh [db-path] [port]   # defaults: /tmp/jhsaa_lab.db, port 5050
+  ```
+  then open `http://localhost:<port>/jhsaa-lab` in a browser. It runs against
+  its **own scratch database** — never your real save — and is safe to run
+  alongside your normal app instance (which defaults to port 5000). The
+  `/jhsaa-lab*` routes only exist when `JHSAA_LAB_MODE=1`, which the launcher
+  script sets automatically. On the page: **Generate new season** wipes that
+  scratch DB and starts a brand-new multi-year run (optional `salt` to vary
+  the draw); **Advance N years** (1–50) ages the *same* cohorts forward,
+  graduating and replacing players, building a real multi-year history to
+  browse with the ordinary `/jhsaa` pages against that database.
 
 ### 22. The Pro Tour (GTT) <a id="gtt"></a>
 
