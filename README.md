@@ -156,12 +156,34 @@ Portal** newsroom, a **Pro Tour** (GTT) college-to-pro pipeline, program **honor
 hall of fame / archives**, and a live **editor** to move players, set lineups, and
 override prestige, academics, and scholarship limits.
 
-**The Clinch Report** (`analytics/`) — a separate static-site analytics sidecar
-that ingests the game's `/research/export` zips and builds a Football Manager/
-StatsBomb-style scouting tool out of them: season → classification → district
-dashboards, team/player pages, postseason brackets, a sortable Team Stat Center
-metrics grid, and Player Value (PVAR) — entirely offline, no server, no access to
-the live save. See [`analytics/README.md`](analytics/README.md).
+**The JHSAA** — Jefferson's high-school season, simulated and browsable at `/jhsaa`
+(districts, brackets, TOSS rankings, awards, program pages). Its graduating
+seniors feed the college recruit board. For offline analysis of many independent
+seasons without touching the college/pro world, see **JHSAA Lab** below.
+
+---
+
+## JHSAA Lab — simulate standalone high-school seasons
+
+A separate tool for generating and multi-year-advancing JHSAA seasons **on their
+own**, decoupled from the college/pro sim — useful for offline data analysis
+(many seasons, cohort aging/graduation) without building a whole college world
+each time.
+
+```bash
+scripts/jhsaa_lab_server.sh [db-path] [port]   # defaults: /tmp/jhsaa_lab.db, port 5050
+```
+
+Then open `http://localhost:<port>/jhsaa-lab`. It's always safe to run alongside
+your real app (default port 5000) — it's bound to its **own scratch database**
+(never your real save) and the `/jhsaa-lab*` routes only exist when
+`JHSAA_LAB_MODE=1`, which the launcher script sets for you.
+
+From the page:
+- **Generate new season** — wipes this scratch DB and starts a fresh multi-year
+  run with a new set of programs/cohorts (optional `salt` to vary the draw).
+- **Advance N years** — ages the *same* cohorts forward (1–50 years at a time),
+  graduating and replacing them, to build a real multi-year history to browse.
 
 ---
 
