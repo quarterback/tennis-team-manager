@@ -15,20 +15,16 @@
     </div>
     <nav class="pt-nav">
       <a href="{{ rel }}index.html">Home</a>
+      <a href="{{ rel }}seasons/index.html">Seasons</a>
       <a href="{{ rel }}teams/index.html">Teams</a>
+      <a href="{{ rel }}brackets/index.html">Brackets</a>
       <a href="{{ rel }}players/index.html">Players</a>
-      <a href="{{ rel }}leaderboards/index.html">Leaderboards</a>
       <details class="pt-dd">
         <summary>Analytics</summary>
         <div class="pt-dd-menu">
           <a href="{{ rel }}metrics/index.html">Overview</a>
-          <a href="{{ rel }}metrics/shape.html">Team Shape (S% / D% / Balance)</a>
-          <a href="{{ rel }}metrics/format-lift.html">Format Lift (Fmt / RCI / SCI)</a>
-          <a href="{{ rel }}metrics/resume.html">Résumé (opponent quartiles, close matches)</a>
-          <a href="{{ rel }}metrics/depth.html">Depth &amp; Volatility (flight curve, floor/ceiling)</a>
-          <a href="{{ rel }}metrics/predictive.html">Predictive (expected record, upsets, luck)</a>
+          <a href="{{ rel }}metrics/teams.html">Team Stat Center</a>
           <a href="{{ rel }}metrics/value.html">Player Value (PVAR)</a>
-          <a href="{{ rel }}metrics/storylines.html">Storylines</a>
         </div>
       </details>
     </nav>
@@ -41,5 +37,90 @@
   Generated from Play to Clinch research exports · not affiliated with any real school, league, or association ·
   data reflects exported snapshots, re-run the build after new exports to refresh.
 </footer>
+<script>
+// "My Teams" — pinned favorites, stored in this browser only (localStorage,
+// no server). A team is identified by its page's relative href off /teams/,
+// which is stable across rebuilds as long as the scope+program don't change.
+var PT_FAV_KEY = 'ptc_fav_teams';
+function ptFavs(){
+  try { return JSON.parse(localStorage.getItem(PT_FAV_KEY) || '{}'); } catch(e) { return {}; }
+}
+function ptSetFavs(obj){ localStorage.setItem(PT_FAV_KEY, JSON.stringify(obj)); }
+function toggleFav(evt, btn){
+  evt.preventDefault(); evt.stopPropagation();
+  var id = btn.dataset.teamId, name = btn.dataset.teamName;
+  var favs = ptFavs();
+  if (favs[id]) { delete favs[id]; btn.classList.remove('is-fav'); btn.textContent = '☆'; }
+  else { favs[id] = name; btn.classList.add('is-fav'); btn.textContent = '★'; }
+  ptSetFavs(favs);
+  return false;
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var favs = ptFavs();
+  document.querySelectorAll('.pt-star').forEach(function(btn){
+    if (favs[btn.dataset.teamId]) { btn.classList.add('is-fav'); btn.textContent = '★'; }
+  });
+});
+
+// Sortable tables — any table.pt-sortable gets click-to-sort headers.
+// A cell's sort value is its data-sort attribute when present, else its
+// text; numeric-looking values compare numerically. Hidden (filtered-out)
+// rows keep their positions relative to visible ones — sorting reorders
+// the whole tbody, filters just control display.
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('table.pt-sortable').forEach(function(tbl){
+    tbl.querySelectorAll('thead th').forEach(function(th, idx){
+      if (th.dataset.nosort !== undefined) return;
+      th.classList.add('pt-sort');
+      th.addEventListener('click', function(){
+        var tbody = tbl.tBodies[0];
+        var dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+        tbl.querySelectorAll('thead th').forEach(function(o){ delete o.dataset.dir; o.classList.remove('sorted'); });
+        th.dataset.dir = dir; th.classList.add('sorted');
+        var rows = Array.prototype.slice.call(tbody.rows);
+        function key(row){
+          var cell = row.cells[idx];
+          if (!cell) return '';
+          var v = cell.dataset.sort !== undefined ? cell.dataset.sort : cell.textContent.trim();
+          if (v === '' || v === '—') return null;
+          var n = parseFloat(v.replace(/[^0-9.eE+-]/g, ''));
+          return isNaN(n) || !/[0-9]/.test(v) ? v.toLowerCase() : n;
+        }
+        rows.sort(function(a, b){
+          var ka = key(a), kb = key(b);
+          if (ka === null && kb === null) return 0;
+          if (ka === null) return 1;          // blanks/em-dashes always sink
+          if (kb === null) return -1;
+          if (ka < kb) return dir === 'asc' ? -1 : 1;
+          if (ka > kb) return dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        rows.forEach(function(r){ tbody.appendChild(r); });
+      });
+    });
+  });
+});
+
+// Tab strips — .pt-tabs button[data-tab] shows the matching [data-tabpane].
+function ptShowTab(strip, name){
+  strip.querySelectorAll('button[data-tab]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  var scope = strip.dataset.tabscope ? document.getElementById(strip.dataset.tabscope) : document;
+  scope.querySelectorAll('[data-tabpane]').forEach(function(p){
+    p.style.display = p.dataset.tabpane === name ? '' : 'none';
+  });
+}
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.pt-tabs').forEach(function(strip){
+    strip.querySelectorAll('button[data-tab]').forEach(function(b){
+      b.addEventListener('click', function(){ ptShowTab(strip, b.dataset.tab); });
+    });
+    var first = strip.querySelector('button[data-tab]');
+    if (first) ptShowTab(strip, first.dataset.tab);
+  });
+});
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

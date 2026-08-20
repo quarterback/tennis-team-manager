@@ -136,3 +136,62 @@ that now runs all season. Fixed at the source, not the symptom:
   displayed roster doesn't match its classification's target, check what
   classification was actually passed in (play-up moves `group`, not
   `classification` — see the play-up rules elsewhere in this file).
+
+## Follow-up (owner correction, same day): the pairing search itself was the bug
+
+This shipped `maximize`/`balanced` as an exhaustive search — score all 105 ways
+to split the 8-player doubles pool, keep the best — which was a reasonable cost
+when only the early non-district window played 3S/4D (a handful of duals per
+team). The format swap above puts 3S/4D on EVERY regular-season dual instead,
+for ~1,600 JHSAA programs playing ~26 duals each. Nobody re-costed the search
+against its new call volume: the first world advance after this landed ran for
+7+ minutes and counting instead of the usual ~60s, and it wasn't a bug in the
+search — it finished, correctly, it was just doing 105-way scoring roughly
+30,000+ times a season across the association.
+
+Measured directly (a ~35%-of-association slice, both strategies exercised):
+forcing the cheap `traditional` branch alone — no other change — cut the
+slice's wall time in half. `doubles_rating` itself profiled at ~19µs/call, so
+420 calls (105 partitions × 4 pairs) per lineup decision, twice a dual, was the
+entire story.
+
+The first fix attempted was a per-team memo cache (player ability is constant
+for a `TeamSeason`'s whole life, so the same 8-identity pool under the same
+strategy always resolves to the same pairing — a legitimate, behavior-preserving
+optimization). It worked, but the owner's correction cut deeper than "make the
+search cheaper to repeat": **the search should not exist at all**. Direct quote:
+"it needs to not do that you can just cheaply decide on the fly, it doesn't
+need to run permutations like that... just make a decision it doesn't have to
+be optimal, real life isn't optimal." Two things made this the right call, not
+just an available one:
+
+- `doubles_rating`'s own synergy term is capped tiny by design (`SYNERGY_CAP`
+  in `engine/doubles.py`, "well below individual-talent spread") specifically
+  so pairing choice stays a minor factor. A 105-way exhaustive search was
+  spending real per-dual compute, at world-advance scale, to optimize a term
+  the engine deliberately keeps small.
+- This codebase already has a standing precedent for exactly this trade
+  (`showcase_schedule`'s group dealing, "GROUPS ARE SHUFFLED AND DEALT —
+  SIMPLER MATCHING BEATS PRECISE MATCHING HERE," owner rule 2026-08): where a
+  choice's precision doesn't materially change the outcome, a cheap direct
+  decision beats a search for the same reason it did there.
+
+`_arrange_regular` now makes one direct, ability-ordered decision per strategy
+instead of searching: `maximize` snake-pairs the pool by serve-minus-return
+skew (best server with best returner, and so on down); `balanced` snake-pairs
+by overall ability (strongest with weakest). Both still call `doubles_rating`
+exactly 4 times per lineup — to order the four pairs onto the card, strongest
+plays D1 — never to search. `traditional` (already a fixed adjacent pairing)
+and `_arrange_state`'s postseason search (15 partitions over a small qualifying
+field, never the cost driver here) are untouched.
+
+**What to check first if this resurfaces**: a search or optimization loop whose
+input pool scales with a format/schedule change should be re-costed against the
+NEW call volume, not just validated for correctness at the old one — a change
+can alter a function's cost class while leaving its signature identical (the
+same lesson CLAUDE.md's `plays_up()` fingerprint-query-storm entry names for a
+memoized DB read; this is the same shape one level up, for a CPU-bound search
+instead of a DB round trip). And before reaching for a cache to make an
+expensive computation cheaper to repeat, ask whether the computation needs to
+happen at all — capped-impact objectives (like `SYNERGY_CAP` here) are a signal
+that a direct decision was always going to be good enough.

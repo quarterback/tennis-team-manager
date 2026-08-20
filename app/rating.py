@@ -127,9 +127,11 @@ def _flight_score(lines: list[dict], side: str, weights: dict | None = None) -> 
     """Flight-weighted share of lines won by `side` ('home'/'away').
 
     The weight table is a parameter because a league's flights are its own: college
-    duals are 6-10 singles and 3-5 doubles, high school is 5 singles and 2 doubles
-    (1 and 4 in the state format). Only the total contested weight is used as the
-    denominator, so a short or forfeited dual is scored on what was actually played.
+    duals are 6-10 singles and 3-5 doubles, high school's regular season is 3 singles
+    and 4 doubles (5 and 2 in the early non-district window, 1 and 4 in the state/
+    showcase format — see `jhsaa.FORMATS`). Only the total contested weight is used
+    as the denominator, so a short or forfeited dual is scored on what was actually
+    played.
 
     An unrecognised flight RAISES. There used to be a 0.30 fallback, and it is what let
     the per-division formats go unweighted for a release: nothing errored while a D1
@@ -164,8 +166,9 @@ def _game_share(lines: list[dict], side: str) -> float | None:
 def compute_ratings(duals: list[dict], *,
                     weights: dict | None = None) -> dict[str, RatingLine]:
     """Power Index over a list of dual dicts. `weights` overrides the flight table
-    for a league whose dual isn't shaped like a college one (the JHSAA's 5S/2D and
-    1S/4D); omitted, college is unchanged."""
+    for a league whose dual isn't shaped like a college one (the JHSAA's 3S/4D
+    regular season, 5S/2D early window, and 1S/4D state/showcase card all share
+    one weight table — see `jhsaa.FLIGHT_WEIGHTS`); omitted, college is unchanged."""
     teams: dict[str, RatingLine] = {}
     opps: dict[str, list[str]] = {}
 

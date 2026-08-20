@@ -43,12 +43,14 @@
     <div class="pt-panel-head"><div class="pt-panel-title">Match log</div><div class="pt-panel-meta">{{ career.matches|length }} matches on record</div></div>
     <div class="pt-panel-body pt-tablewrap">
       <table class="pt-table">
-        <thead><tr><th>Season</th><th>Slot</th><th>Opponent (program)</th><th>Faced</th><th class="num">Result</th></tr></thead>
+        <thead><tr><th>Season</th><th>Date</th><th>Slot</th><th>Type</th><th>Opponent (program)</th><th>Faced</th><th class="num">Result</th></tr></thead>
         <tbody>
         {% for m in career.matches|reverse %}
           <tr>
             <td>{{ m.scope_label }}</td>
+            <td class="t-num">{{ m.date_label or ("Wk " ~ m.week if m.week not in (none, "") else "") }}</td>
             <td><span class="pt-pill slot">{{ m.slot }}</span></td>
+            <td>{% if m.tag %}<span class="pt-tagchip tag-{{ m.tag_kind }}">{{ m.tag }}</span>{% endif %}</td>
             <td>{{ m.opp_program }}</td>
             <td>{{ m.opponents|join(' / ') }}</td>
             <td class="num">

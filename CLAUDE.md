@@ -780,10 +780,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   window (which now plays the OLD 5S/2D card instead). The 3S/4D lineup
   ALLOCATION is fixed, never searched: S1 = top seed, doubles pool = exactly
   #2-#9, S2/S3 = exactly #10-#11 — a coach's `maximize`/`balanced`/`traditional`
-  strategy only decides how the fixed 8-player pool pairs into D1-D4 (105
-  partitions via `jhsaa._pair_partitions`, shared with `_arrange_state`), never
-  who plays singles vs. doubles. `doubles_rating` needed a real pair-synergy
-  term (`engine.doubles._pair_synergy`) for that search to mean anything — the
+  strategy only decides how the fixed 8-player pool pairs into D1-D4, never who
+  plays singles vs. doubles. `doubles_rating` needed a real pair-synergy term
+  (`engine.doubles._pair_synergy`) for the pairing choice to mean anything — the
   bare `(idx(a)+idx(b))/2` base is invariant across every partition of a fixed
   pool, so "best pairing" was previously undefined. ‼️ A COMPLEMENTARITY TERM
   MUST BE A CROSS TERM (`-(a1-a2)*(b1-b2)`-shaped), never two independent

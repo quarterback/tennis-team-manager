@@ -5,13 +5,16 @@ Design rules (owner spec, first-pass library):
   - Every derived stat stores its COMPONENTS alongside the number, not just
     the finished metric — an analyst should be able to reproduce or challenge
     it without reverse-engineering the calc. See TeamMetrics fields below.
-  - Card weights (how many singles/doubles lines a format plays) are
-    CONFIGURABLE, not hard-coded — see CARD_WEIGHTS. Different divisions/
-    classifications play different shapes (see the game's own per-division
-    dual-format rule); this module defaults to the JHSAA regular (5S/2D) vs
-    State (1S/4D) shapes because that's the data on hand, and is written so a
-    per-division weight table can be dropped in later without touching the
-    formulas.
+  - ‼️ Card shapes (how many singles/doubles lines a "regular" or "state"
+    dual plays) are DERIVED PER SCOPE from the actual exported duals
+    (`aggregate.Bundle.regular_shape`/`state_shape`), never hard-coded here.
+    The game has already swapped its own JHSAA regular-vs-early shapes once
+    (5S/2D <-> 3S/4D) — a fixed table in this module would have gone stale
+    the exact same way `rating.FLIGHT_WEIGHTS` did in the game itself (see
+    CLAUDE.md's TOSS per-division flight-weight AAR: "a missing/wrong weight
+    is a missing DECISION"). RCI/SCI/Fmt/State-Win% all return None when a
+    bundle's derived shape is unknown (empty scope, or a family/round bucket
+    with no duals on record) rather than guessing — see TeamMetrics.
   - This is a first pass, not the full 70-metric wishlist: it computes the
     raw substrate (S%/D%, per-flight win%, line/game share) plus the first
     tier of derived stats (RCI/SCI/Fmt, Doubles Reliance/Balance, State Dual
@@ -25,18 +28,6 @@ import math
 import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-
-CARD_WEIGHTS = {
-    "jhsaa": {"regular": (5, 2), "state": (1, 4)},
-}
-# College dual shape is per-division (see ncaa.DUAL_FORMATS in the game) and
-# NOT modeled here yet. Deliberately no "college" entry in CARD_WEIGHTS — a
-# placeholder 6+3 for every division used to render RCI/SCI as if they were
-# real and Fmt as a false 0.0 (regular == state under identical weights),
-# which reads as "college has no format lift" rather than "not modeled yet."
-# card_index()/fmt_lift()/state_dual_win_prob() all return None outside
-# MODELED_FAMILIES so the templates show "—" instead of a fabricated number.
-MODELED_FAMILIES = {"jhsaa"}
 
 
 def _is_singles(slot: str) -> bool:
@@ -82,11 +73,6 @@ def _sets_from_score_string(score: str) -> tuple[int, int]:
     return won, lost
 
 
-def binom_at_least(n: int, p: float, k: int) -> float:
-    """P(Binomial(n, p) >= k)."""
-    return sum(math.comb(n, i) * (p ** i) * ((1 - p) ** (n - i)) for i in range(k, n + 1))
-
-
 def binom_pmf(n: int, p: float, k: int) -> float:
     return math.comb(n, k) * (p ** k) * ((1 - p) ** (n - k))
 
@@ -123,6 +109,11 @@ class TeamMetrics:
     scope_id: str
     name: str
     family: str
+    # Derived (never hard-coded) card shapes for this scope — see aggregate.
+    # Bundle.regular_shape/state_shape. None means the bucket had no duals on
+    # record here (e.g. college's postseason round not yet exported/played).
+    regular_shape: tuple | None = None
+    state_shape: tuple | None = None
 
     sp: int = 0; sw: int = 0
     dp: int = 0; dw: int = 0
@@ -175,25 +166,29 @@ class TeamMetrics:
     def d_pct(self) -> float | None:
         return self.dw / self.dp if self.dp else None
 
-    def card_index(self, family: str, kind: str) -> float | None:
+    def card_index(self, kind: str) -> float | None:
         """RCI/SCI: (singles_lines*pS + doubles_lines*pD) / total_lines for the
-        named card shape ('regular' or 'state'). None for a family with no
-        modeled card weights (college, currently) rather than guessing —
-        see MODELED_FAMILIES."""
-        if family not in MODELED_FAMILIES:
+        named card shape ('regular' or 'state'), using THIS SCOPE's derived
+        shape (aggregate.Bundle.regular_shape/state_shape). None if the shape
+        is unknown (no duals in that bucket for this scope) rather than
+        guessing at a fixed table."""
+        shape = self.regular_shape if kind == "regular" else self.state_shape
+        if shape is None:
             return None
         pS, pD = self.s_pct, self.d_pct
         if pS is None or pD is None:
             return None
-        ns, nd = CARD_WEIGHTS[family][kind]
+        ns, nd = shape
+        if ns + nd == 0:
+            return None
         return (ns * pS + nd * pD) / (ns + nd)
 
     @property
     def fmt_lift(self) -> float | None:
         """State-card expectation minus regular-card expectation, in percentage
         points. Positive = the postseason format shape favors this team."""
-        sci = self.card_index(self.family, "state")
-        rci = self.card_index(self.family, "regular")
+        sci = self.card_index("state")
+        rci = self.card_index("regular")
         if sci is None or rci is None:
             return None
         return (sci - rci) * 100
@@ -210,16 +205,14 @@ class TeamMetrics:
             return None
         return 1 - abs(self.d_pct - self.s_pct)
 
-    def state_dual_win_prob(self, family: str) -> float | None:
-        """P(win a neutral State-format dual) under equal-opponent, independent-
-        court assumptions: needs 3 of 5 courts in a 1S/4D card."""
-        if family != "jhsaa":
+    def state_dual_win_prob(self) -> float | None:
+        """P(win a neutral state-card dual) under equal-opponent, independent-
+        court assumptions, using THIS SCOPE's derived state shape (needs a
+        majority of that shape's total lines)."""
+        if self.state_shape is None or self.s_pct is None or self.d_pct is None:
             return None
-        pS, pD = self.s_pct, self.d_pct
-        if pS is None or pD is None:
-            return None
-        # win = take S + at least 2 of 4 doubles, OR lose S + at least 3 of 4
-        return pS * binom_at_least(4, pD, 2) + (1 - pS) * binom_at_least(4, pD, 3)
+        ns, nd = self.state_shape
+        return dual_win_prob(ns, self.s_pct, nd, self.d_pct)
 
     @property
     def close_win_pct(self) -> float | None:
@@ -227,59 +220,67 @@ class TeamMetrics:
 
     # ---- tier 2: what happens under the state card, in more detail ----
 
-    def format_dependency(self, family: str) -> float | None:
+    def format_dependency(self) -> float | None:
         """FD = Fmt / RCI — normalizes the format lift by underlying quality.
         The same +15pp lift means more on a .50 team than an .85 one."""
         fmt = self.fmt_lift
-        rci = self.card_index(family, "regular")
+        rci = self.card_index("regular")
         if fmt is None or not rci:
             return None
         return (fmt / 100) / rci
 
-    def regular_dual_win_prob(self, family: str) -> float | None:
-        if family not in MODELED_FAMILIES or self.s_pct is None or self.d_pct is None:
+    def regular_dual_win_prob(self) -> float | None:
+        if self.regular_shape is None or self.s_pct is None or self.d_pct is None:
             return None
-        ns, nd = CARD_WEIGHTS[family]["regular"]
+        ns, nd = self.regular_shape
         return dual_win_prob(ns, self.s_pct, nd, self.d_pct)
 
-    def format_win_prob_lift(self, family: str) -> float | None:
-        """FWPL = P(win the State-card dual) - P(win the regular-card dual).
+    def format_win_prob_lift(self) -> float | None:
+        """FWPL = P(win the state-card dual) - P(win the regular-card dual).
         Stronger signal than raw Fmt because duals have a win THRESHOLD —
         moving court share from .55 to .65 can flip a lot more duals than
         moving .30 to .40 does."""
-        if family != "jhsaa":
-            return None
-        swp = self.state_dual_win_prob(family)
-        rwp = self.regular_dual_win_prob(family)
+        swp = self.state_dual_win_prob()
+        rwp = self.regular_dual_win_prob()
         if swp is None or rwp is None:
             return None
         return swp - rwp
 
-    def state_score_profile(self, family: str) -> dict | None:
-        """Distribution of State-card (1S/4D) final margins: {lines_won: prob}."""
-        if family != "jhsaa" or self.s_pct is None or self.d_pct is None:
+    def state_score_profile(self) -> dict | None:
+        """Distribution of state-card final margins: {lines_won: prob}, using
+        this scope's derived state shape."""
+        if self.state_shape is None or self.s_pct is None or self.d_pct is None:
             return None
-        return mixed_win_dist(1, self.s_pct, 4, self.d_pct)
+        ns, nd = self.state_shape
+        return mixed_win_dist(ns, self.s_pct, nd, self.d_pct)
 
-    def three_court_prob(self, family: str) -> float | None:
-        """P(exactly 3 of 5 State courts) — high P3 = a knife-edge team, lots
-        of plausible 3-2s rather than blowouts either way."""
-        profile = self.state_score_profile(family)
-        return profile.get(3) if profile else None
-
-    def sweep_prob(self, family: str) -> float | None:
-        """P(5-0 sweep) under the State card."""
-        if family != "jhsaa" or self.s_pct is None or self.d_pct is None:
+    def three_court_prob(self) -> float | None:
+        """P(the state card splits one court short of a full sweep) — the
+        traditional "3 of 5" reading only holds for a 5-line card; named
+        generically so it still means something if the state shape isn't
+        5 lines. High P(total-1) = a knife-edge team, lots of plausible
+        near-splits rather than blowouts either way."""
+        profile = self.state_score_profile()
+        if not profile or self.state_shape is None:
             return None
-        return self.s_pct * (self.d_pct ** 4)
+        total = sum(self.state_shape)
+        return profile.get(total - 1)
 
-    def expected_state_margin(self, family: str) -> float | None:
-        """ESM = expected State lines won minus expected lines lost = 5*(2*SCI-1).
-        +1.4 reads immediately as "roughly a 3.2-1.8 card"."""
-        sci = self.card_index(family, "state")
-        if sci is None:
+    def sweep_prob(self) -> float | None:
+        """P(win every line) under the state card."""
+        if self.state_shape is None or self.s_pct is None or self.d_pct is None:
             return None
-        return 5 * (2 * sci - 1)
+        ns, nd = self.state_shape
+        return (self.s_pct ** ns) * (self.d_pct ** nd)
+
+    def expected_state_margin(self) -> float | None:
+        """ESM = expected state-card lines won minus expected lines lost =
+        total_lines*(2*SCI-1). +1.4 on a 5-line card reads immediately as
+        "roughly a 3.2-1.8 card"."""
+        sci = self.card_index("state")
+        if sci is None or self.state_shape is None:
+            return None
+        return sum(self.state_shape) * (2 * sci - 1)
 
     @property
     def dominance_margin(self) -> float | None:
@@ -475,7 +476,8 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                     per_program_lines[pid].append((line, side, d))
 
         for pid, prog in b.programs.items():
-            m = TeamMetrics(program_id=pid, scope_id=b.scope_id, name=prog["name"], family=b.family)
+            m = TeamMetrics(program_id=pid, scope_id=b.scope_id, name=prog["name"], family=b.family,
+                             regular_shape=b.regular_shape, state_shape=b.state_shape)
             per_dual_share = []
 
             for line, side, d in per_program_lines.get(pid, []):
@@ -678,11 +680,13 @@ def storylines(metrics: dict) -> list[dict]:
         fmt = m.fmt_lift
         if fmt is not None and abs(fmt) >= 10:
             direction = "gains" if fmt > 0 else "loses"
+            reg_txt = "%dS/%dD" % m.regular_shape if m.regular_shape else "regular"
+            state_txt = "%dS/%dD" % m.state_shape if m.state_shape else "State"
             stories.append({
                 "kind": "format-lift", "program_id": pid, "scope_id": scope_id, "name": m.name,
                 "value": fmt,
                 "text": f"{m.name} {direction} {abs(fmt):.1f} points of expected court share when "
-                        f"the card shifts from the regular 5S/2D shape to 1S/4D State weighting "
+                        f"the card shifts from the {reg_txt} shape to {state_txt} weighting "
                         f"(S% {m.s_pct:.3f}, D% {m.d_pct:.3f})." if m.s_pct is not None else "",
             })
         dr = m.doubles_reliance

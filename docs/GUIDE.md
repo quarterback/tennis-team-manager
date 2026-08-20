@@ -670,18 +670,26 @@ identity.
 
 ### 21. The JHSAA — Jefferson's High School Season <a id="jhsaa"></a>
 
-Jefferson's own high-school athletic association — roughly 335 girls' and 292
-boys' programs — plays a **complete season inside this engine**, browsable at
-`/jhsaa`, and its graduating seniors *are* Jefferson's entries on the college
-recruiting board. It's simulated once per year, in one step, at the very
-start of the offseason ladder — before the recruit board needs its output.
+Jefferson's own high-school athletic association — 862 girls' and 777 boys'
+programs across nine classifications (1A-9A) — plays a **complete season
+inside this engine**, browsable at `/jhsaa`, and its graduating seniors *are*
+Jefferson's entries on the college recruiting board. It's simulated once per
+year, in one step, at the very start of the offseason ladder — before the
+recruit board needs its output.
 
-- **Two separate format axes.** The dual **shape**: regular season is 5
-  singles + 2 doubles, the state tournament is 1 singles + 4 doubles — both
-  intentionally odd numbers, so a dual can never tie. The **scoring**: every
-  JHSAA match is no-ad, and doubles is a full best-of-3 (not the college
-  8-game pro set) — high-school tennis, correctly modeled as its own format
-  rather than a shrunk college one.
+- **Two separate format axes.** The dual **shape**: the regular season plays
+  3 singles + 4 doubles, the early non-district window (a program's first
+  handful of duals) plays 5 singles + 2 doubles, and the state tournament
+  (and the mid-season Match Showcases) plays 1 singles + 4 doubles — all
+  intentionally odd numbers, so a dual can never tie. Under the 3S/4D
+  regular-season card the lineup allocation is fixed: S1 is the team's top
+  seed, the doubles pool is exactly seeds #2-#9, and S2/S3 are seeds
+  #10-#11 — so in the regular season S2/S3 are a team's *weakest* two
+  starters, not its 2nd/3rd best, the opposite of what they meant under the
+  old 5S/2D card. The **scoring**: every JHSAA match is no-ad, and doubles
+  is a full best-of-3 (not the college 8-game pro set) — high-school
+  tennis, correctly modeled as its own format rather than a shrunk college
+  one.
 - **A real double round-robin schedule.** Every district opponent is played
   home and away, so district size sets season length (roughly 22 league
   duals in a 12-team district, ~26 total with non-district games added on
@@ -692,42 +700,52 @@ start of the offseason ladder — before the recruit board needs its output.
   uses, computed over the whole gender at once (crossing classification
   lines, since non-district play does too) and over the regular season only
   (postseason results don't feed back into the seeding that produced them).
-- **State qualification is a ladder**, the same shape for every classification
-  and both genders: **Sectionals** (every non-protected team; byes/play-ins as
-  needed; cuts to 32 — a multi-round Sectionals opens with **Areas**) →
-  **Wards** (32→16) → **Regionals** (the 16 Ward champions + 16 protected
-  entrants — district champions first, then best cutoff TOSS) → **Zonals**
-  (16→8). Three ways into State:
-  1. The eight **Zonal champions** qualify automatically and take **seeds 1-8
-     of the State draw**. That is a seeding guarantee in its own right, not a
-     byproduct of byes: in a 24-team field the top eight seeds also collect the
-     eight first-round byes, but 7A's field is 32 — a clean bracket with no
-     byes at all — and the Zonal champions are still seeded 1 through 8 there.
-  2. A **district champion is guaranteed access** even if it loses in the
-     ladder — access, never a bye or a seed. This is a geographic safeguard:
-     no district is excluded from State because TOSS dislikes it.
-  3. Every remaining berth is **earned on court in the recovery rounds**, and
-     **nobody reaches State on a bye** — the rounds each pair their *entire*
-     field, so advancing without playing is impossible rather than merely
-     disallowed. Regional losers enter **Super Regionals**; the winners, the
-     **Zonal losers** and the best-TOSS readmitted Super Regional losers meet at
-     **Semi-State**; and the berths Semi-State cannot fill are contested in the
-     **Divisionals**, drawn from the best Semi-State losers. That third round
-     also evens the chances — a Regional loser used to get two or three cracks
-     while a Zonal loser, a better team, got one. Extra bodies are drawn
-     best-pool-first: readmitted Super Regional losers, then Ward, Sectional
-     and Area losers by TOSS — another chance to *play*, never a berth. Recovery
-     draws avoid immediate rematches with the opponent that just eliminated a
-     team, and same-district pairings where practical.
+- **State qualification is earned on court** — a district title buys a
+  **protected seat** at Regionals (skipping Sectionals and Wards) and
+  *nothing* at State; a champion that then loses falls into the same
+  recovery pools as everyone else. The ladder, for every classification and
+  both genders: **Sectionals/Wards/Areas** feed **Regionals** (Ward
+  champions + protected district champions) → **Zonals** (16→8). Three ways
+  into State:
+  1. The eight **Zonal champions** qualify automatically and take **seeds
+     1-8 of the State draw** — a seeding guarantee, not a bye rule; a
+     power-of-two field has no byes at all and the Zonal champions are
+     still seeded 1-8 there.
+  2. Every remaining berth is **earned on court in the recovery rounds**,
+     and **nobody reaches State on a bye** — each round pairs its *entire*
+     field. Regional losers enter **Super Regionals**; the winners, the
+     Zonal losers, and the best-TOSS readmitted Super Regional losers meet
+     at **Semi-State**; the berths Semi-State can't fill go to the
+     **Divisionals**, drawn from the best Semi-State losers; and if berths
+     still remain, a byeless **Semi-Conference** (Ward/Sectional/Area
+     losers only — no Ward playbacks anywhere else) feeds a final
+     **Conference** round alongside the Divisional losers. Extra bodies are
+     drawn best-pool-first, by TOSS within each tier, walking the ladder
+     back in round order. Recovery draws avoid immediate rematches with the
+     team that just eliminated you.
      Divisional units are numbered **statewide** (girls first, then boys,
-     classifications bottom-up), so there is exactly one Division I in Jefferson
-     each year — unlike Regions and Wards, which are numbered within a class.
-  State is **32 teams in 7A, 24 in every other classification** (no reseeding
-  between rounds). The retired wild-card model — top post-Zonal TOSS
-  non-champions straight into a 16-team field — is gone precisely because it
-  let teams sitting at home out-qualify teams still playing.
+     classifications bottom-up), so there is exactly one Division I in
+     Jefferson each year; Conference units are lettered statewide,
+     backwards from Z.
+  3. **1A and 2A crown separately**, via a fixed 24-team recovery shape
+     (Zonal → Super Regional → Semi-State → Divisional/Semi-Conference →
+     Conference sized off constants, not the dynamic sponsor-count formula
+     the other seven classes use) — they're too small individually to
+     clear the dynamic ladder's sponsor floor on their own, but the Zonal-
+     champion automatic-berth guarantee is identical to every other class.
+  **State is 40 teams in every classification** (raised from the old
+  24/32-team fields so deep classes stopped leaving good teams home) — a
+  40-field is a 24-field with a Qualifiers Round in front of it: the Zonal
+  champions take a double bye while seeds 9-40 play the Qualifiers, then a
+  First Round, and the eight survivors join the top eight in a fresh draw
+  at the Octofinals. No reseeding between rounds.
+  A small number of blue-blood programs at 4A and below **play up** one
+  classification above their enrollment class (an editable, owner-curated
+  list) — they compete, and are talent-generated, at the harder class, not
+  their own.
   The **Tournament of Champions** is its own event on top of State, reserved
-  for the six classification champions.
+  for the nine classification champions (a First Four play-in seeds it down
+  to a clean field).
 - **Postseason awards are résumé selections, on the Honors tab.** Per
   classification and gender, in one pass off the **completed** season — every
   dual including the state tournament and the TOC: **State Player of the
@@ -774,6 +792,11 @@ start of the offseason ladder — before the recruit board needs its output.
   smaller pond, but the hierarchy still holds. Every season archives a **Flight
   check**, visible on the Honors page: how many selections came from each flight
   at each level, and every below-band pick named with its position and record.
+  Under the 3S/4D regular-season card, regular-season S2/S3 are down-weighted
+  relative to their old value (they're now a team's weakest two starters, not
+  its 2nd/3rd best — see the format note above), so doubles pairings weigh
+  correctly against them in selection; postseason scoring (always 1S/4D) is
+  unaffected.
 
   **All-Region is the whole region, every classification.** There is no 7A
   All-Region team — there is a Gold Valley All-Region team, drawn from every
@@ -782,9 +805,11 @@ start of the offseason ladder — before the recruit board needs its output.
   *(classification, name)*, so those two are per class; a region is neither, and
   selecting one per classification made it a second All-District — four or five
   schools per class-region, roughly a thousand honours a season on an association
-  of ~300 programs, every school placing somebody. Region-wide it is one team per
-  region drawn from ~40 programs, so it sits where it belongs: harder to make
-  than All-District, and open to a 2A school that produced a regional #1.
+  of 800+ programs a gender, every school placing somebody. Region-wide it is one
+  team per region drawn from dozens of programs (regions vary widely in size —
+  Halbrook Basin alone has 199 boys'/219 girls' programs, the smallest under 30),
+  so it sits where it belongs: harder to make than All-District, and open to a
+  2A school that produced a regional #1.
 
   **The regions are nowhere near the same size, so the honour scales with them.**
   Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25. A region
