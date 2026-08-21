@@ -1011,25 +1011,6 @@
       "source": "Andrés Valera"
     },
     {
-      "name": "Basalt Fork",
-      "city": "Basalt Fork",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 144,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Greater Ashbury Interscholastic League",
-      "boys_district": "Greater Ashbury Interscholastic League"
-    },
-    {
       "name": "Basalt Prairie Union",
       "city": "Basalt Prairie",
       "county": "Stagewater",
@@ -4586,26 +4567,6 @@
       "source": "Isabel Lucero"
     },
     {
-      "name": "Elias Boudinot",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1751,
-      "private": false,
-      "mascot": "Kokanee",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "South Coast League",
-      "boys_district": "",
-      "source": "Sergei Belov"
-    },
-    {
       "name": "Elk Bluff",
       "city": "Elk Bluff",
       "county": "Windrow",
@@ -5060,25 +5021,6 @@
       "source": "Carmen Valera"
     },
     {
-      "name": "Fig Gap",
-      "city": "Fig Gap",
-      "county": "Bardsley",
-      "area": "Yarrowmere",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 261,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Greater Ashbury Interscholastic League",
-      "boys_district": "Greater Ashbury Interscholastic League"
-    },
-    {
       "name": "Fillmore",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -5160,7 +5102,7 @@
     },
     {
       "name": "Foothills Christian",
-      "city": "Gulch Bend",
+      "city": "West El Paso",
       "county": "Goldbank",
       "area": "Southern Jefferson",
       "classification": "1A",
@@ -6325,25 +6267,6 @@
       "girls_district": "Lewis & Clark League",
       "boys_district": "Lewis & Clark League",
       "source": "Ashwood"
-    },
-    {
-      "name": "Gulch Bend",
-      "city": "Gulch Bend",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1297,
-      "private": false,
-      "mascot": "Chamois",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ostrobothnia League",
-      "boys_district": "Ostrobothnia League"
     },
     {
       "name": "Gwendolyn Brooks",
@@ -8807,19 +8730,19 @@
       "area": "Sebastian Cape",
       "classification": "8A",
       "group": "8A",
-      "enrollment": 2128,
+      "enrollment": 1751,
       "private": false,
-      "mascot": "Olallie",
+      "mascot": "Kokanee",
       "colors": [
-        "#1e5631",
-        "#f2f2ee"
+        "#14532d",
+        "#e8c46b"
       ],
       "girls": true,
-      "boys": true,
+      "boys": false,
       "girls_district": "South Coast League",
-      "boys_district": "South Coast League",
-      "source": "Las Palmas North",
-      "locality": "Natchitoches"
+      "boys_district": "",
+      "source": "Sergei Belov",
+      "locality": "Cahaba"
     },
     {
       "name": "Malheur Flat",
@@ -9910,6 +9833,27 @@
       "boys_district": "Mariners League",
       "source": "St. Nicholas College Prep",
       "locality": "Natchez"
+    },
+    {
+      "name": "Natchitoches",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2128,
+      "private": false,
+      "mascot": "Olallie",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League",
+      "source": "Las Palmas North",
+      "locality": "Natchitoches"
     },
     {
       "name": "Natchitoches Catholic",
@@ -12064,25 +12008,6 @@
       "source": "Ransom City Union"
     },
     {
-      "name": "Ransom Spur",
-      "city": "Ransom Spur",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 349,
-      "private": false,
-      "mascot": "Lyrebirds",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Coastal Range League",
-      "boys_district": "Coastal Range League"
-    },
-    {
       "name": "Ransoms Landing",
       "city": "Ransoms Landing",
       "county": "Antler",
@@ -12754,6 +12679,66 @@
       "boys": true,
       "girls_district": "Quarry League",
       "boys_district": "Quarry League"
+    },
+    {
+      "name": "Río Salado",
+      "city": "Río Salado",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 144,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League",
+      "source": "Basalt Fork"
+    },
+    {
+      "name": "Río Seco",
+      "city": "Río Seco",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 349,
+      "private": false,
+      "mascot": "Lyrebirds",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Coastal Range League",
+      "boys_district": "Coastal Range League",
+      "source": "Ransom Spur"
+    },
+    {
+      "name": "Río Verde",
+      "city": "Río Verde",
+      "county": "Bardsley",
+      "area": "Yarrowmere",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 261,
+      "private": false,
+      "mascot": "Falcons",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League",
+      "source": "Fig Gap"
     },
     {
       "name": "Sablewood Union",
@@ -16522,6 +16507,26 @@
       "girls_district": "Dual County League",
       "boys_district": "Dual County League",
       "source": "Homecroft Manufacturing and Technology Academy"
+    },
+    {
+      "name": "West El Paso",
+      "city": "West El Paso",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1297,
+      "private": false,
+      "mascot": "Chamois",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ostrobothnia League",
+      "boys_district": "Ostrobothnia League",
+      "source": "Gulch Bend"
     },
     {
       "name": "Western Sky",

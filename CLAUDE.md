@@ -1571,6 +1571,51 @@ was a school marker, shipped "Baptist HS High School".
   same "Jefferson Science" as its sibling — the collapse now keeps a trailing
   campus qualifier, `import_jhsaa.build` refuses to emit a collision, and
   `test_display_names_are_unique_identities` pins the data).
+- **‼️ AND `source or name` — THE ROSTER IDENTITY — MUST BE UNIQUE TOO (2026-08).**
+  The display name is one identity; the SOURCE is the other, and it is the one that
+  keys `RENAMES` and seeds the RNG that builds a program's players. Two consequences,
+  both live faults that shipped:
+  - **Two rows sharing one identity string** are two schools that a single `RENAMES`
+    entry catches together and that generate the same twelve people. One school kept
+    `source: "Wheatley"` from a rename whose source prep-network had since renamed
+    away, while a DIFFERENT school was simply CALLED Wheatley.
+  - **A `RENAMES` key that is a live school's own name** reaches that school. It lies
+    dormant until some school carries the string and fires the day one does — so a
+    DEAD entry (key matching neither prep-network nor any school here) is not history
+    worth keeping, it is a loaded gun; 16 were removed. Prune them.
+  `scripts/jhsaa_apply_renames.py` asserts both BEFORE renaming (`check_identities`,
+  `check_rename_keys`) and exits naming the offender. The Wheatley case surfaced only
+  because the two then collided on a DISPLAY name; had the targets differed it would
+  have been silent.
+- **‼️ LOCALITY — the settlement inside the city, and NOT a second city (owner spec
+  2026-08, `import_jhsaa.LOCALITIES` → the row's `locality` → `jhsaa.School`).** The
+  five big metros carried 28-44 tennis programs each, which no single municipality
+  does; in life those schools sit in CDPs, unincorporated places and absorbed towns.
+  So `city` stays the metro — every district cut, geography lookup and non-district
+  pairing reads it and none of them change — and `locality` names the settlement,
+  shown ahead of the city in the address line. Keyed on the DISPLAY name like MASCOTS,
+  so it moves with a rename. **Empty means a CORE CITY school**, a real distinction
+  rather than a missing value, so there is no default. Localities REPEAT by design,
+  within a metro (Natchez Prep and Natchez Cliff) and across two of them; nothing keys
+  on one. 121 of 862 programs carry one.
+- **‼️ WHO SPONSORS TENNIS IS A MAP DECISION** (`import_jhsaa.EXTRA_SPONSORS` /
+  `NEVER_SPONSOR`, applied in `sponsors()` AFTER the draw beside `SUBSTITUTIONS`, and
+  to the committed data by `scripts/jhsaa_sponsors.py`). 83 Jefferson towns had a high
+  school and no tennis at all while five cities carried 28-44 programs. ‼️ Both tables
+  must be applied in `sponsors()` and not only in the transform, or a full rebuild
+  silently drops a forced-in school the dice never drew. **A sponsorship change redraws
+  the leagues of the classes it touches** and that is not avoidable: a district is a cut
+  of a geographic ORDER into blocks of `MAX_DISTRICT`, so there is no seat to slot into
+  — measured, every league a new school belonged in was already full at 12 and every
+  league with room was elsewhere in the state. The script redraws the affected groups
+  through `draw_districts` and checks `MAX_DISTRICT` after, leaving other classes alone.
+- **The current name list is GENERATED, never hand-kept** — `scripts/jhsaa_name_list.py`
+  → `docs/JHSAA-school-names.txt`. Renaming is an ongoing owner pass, so a typed list is
+  stale the moment one lands. It groups by city and leads with the NEAR-DUPLICATES,
+  because a name is a problem when it fails to DIFFERENTIATE, which is a property of a
+  pair. ‼️ A compass point on the CITY's own name (Belmonte North) is how real districts
+  name schools and is deliberately NOT the target; the fault is the same words plus a
+  word carrying no identity (Harrow Works beside Harrow). Re-run after any batch.
 - `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes

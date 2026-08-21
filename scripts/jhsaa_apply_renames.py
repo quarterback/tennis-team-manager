@@ -36,6 +36,7 @@ archived award points at nobody.
 """
 import argparse
 import importlib.util
+import collections
 import json
 import os
 import sys
@@ -72,18 +73,55 @@ def check_identities(rows: list[dict]) -> None:
 
 
 def check_rename_keys(rows: list[dict], m) -> None:
-    """‼️ A RENAMES KEY MUST NOT BE A LIVE SCHOOL'S OWN NAME — the second half of the
-    same fault. The key is matched against `source or name`, so an entry keyed on a
-    string that some OTHER school is simply CALLED reaches that school too. It stays
-    dormant for as long as no school carries the string and fires the day one does,
-    which is why it cannot be left to be noticed: rename the school, or retire the
-    entry. Dead entries — keys matching neither prep-network nor any school here —
-    are the fuel for this and were removed rather than kept as history."""
-    own = {r["name"] for r in rows if not r.get("source")}
-    bad = {k: v for k, v in m.RENAMES.items() if k in own and k != v}
-    if bad:
-        sys.exit("RENAMES keys that are a live school's own name — these would rename "
-                 f"the wrong school: {bad}")
+    """‼️ A RENAMES KEY MUST NAME EXACTLY ONE SCHOOL.
+
+    The key is matched against `source or name`, and renaming a school that has never
+    been renamed before means keying on its own name — that is the ORDINARY path, not
+    a fault. The fault is AMBIGUITY: a key that matches one school's own name AND
+    another school's `source`, so a single entry reaches two schools. `Wheatley` did
+    exactly that. `check_identities` already forbids two rows sharing an identity,
+    which makes that impossible; this is the second lock on the same door, stated in
+    terms of the table rather than the data.
+
+    Dead keys — matching neither any school here nor prep-network — are reported but
+    do not stop the run: they cannot fire today, and they are only dangerous once a
+    school is named that string, which the ambiguity check above would then catch.
+    """
+    ident = collections.Counter((r.get("source") or r["name"]) for r in rows)
+    ambiguous = {k: v for k, v in m.RENAMES.items() if ident[k] > 1}
+    if ambiguous:
+        sys.exit("RENAMES keys that match more than one school — one entry would "
+                 f"rename both: {ambiguous}")
+
+
+def check_display_keyed_tables(rows: list[dict], m) -> None:
+    """‼️ EVERY DISPLAY-KEYED TABLE MUST NAME A LIVE SCHOOL. MASCOTS, COLORS,
+    PRIVATE_SCHOOLS and LOCALITIES all key on the display name, so a rename that
+    misses one leaves an orphan and the school silently falls back to its source
+    record's value — a mascot reverts, a locality disappears. It is invisible in the
+    committed JSON, which is why it is asserted here rather than left to be noticed:
+    a second rename of an already-renamed school (Cahaba Butte -> Gravity Falls ->
+    Elias Boudinot) moved the RENAMES target and left LOCALITIES behind."""
+    # ‼️ ONLY LOCALITIES CAN BE HARD-CHECKED. MASCOTS and COLORS are keyed over every
+    # prep-network school, most of which sponsor no tennis, so a key naming no PROGRAM
+    # is normal there and always will be. LOCALITIES is association-only, so an orphan
+    # in it is always a rename that missed a table.
+    # ‼️ A DUPLICATE KEY IN A DICT LITERAL IS SILENT — the last wins and one school
+    # loses its locality with nothing to see. Renaming a school twice produced exactly
+    # that. Counting the literal's entries against the loaded dict catches it.
+    import re as _re
+    with open(os.path.join(_HERE, "import_jhsaa.py"), encoding="utf-8") as fh:
+        text = fh.read()
+    lo = text.index("\nLOCALITIES = {")
+    entries = _re.findall(r'^\s*"[^"]+":', text[lo:text.index("\n}\n", lo)], _re.M)
+    if len(entries) != len(m.LOCALITIES):
+        sys.exit(f"LOCALITIES has {len(entries)} entries but {len(m.LOCALITIES)} keys "
+                 "— a duplicate key is silently dropping a school's locality")
+
+    live = {r["name"] for r in rows}
+    orphan = sorted(k for k in m.LOCALITIES if k not in live)
+    if orphan:
+        sys.exit(f"LOCALITIES keys naming no school (a rename left them behind): {orphan}")
 
 
 def apply(rows: list[dict], m) -> list[tuple[str, str]]:
@@ -103,6 +141,10 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
             r["source"] = src
         else:
             r.pop("source", None)
+        # ‼️ TOWNS RENAME TOO, and the key is the SOURCE town — so this is idempotent
+        # only because a town already renamed is no longer a key. Applied here rather
+        # than left to a full import, which is not the path this file takes.
+        r["city"] = m.CITY_RENAMES.get(r["city"], r["city"])
         r["private"] = bool(r.get("private")) or display in m.PRIVATE_SCHOOLS
         if display in m.MASCOTS:
             r["mascot"] = m.MASCOTS[display]
@@ -165,6 +207,7 @@ def main() -> None:
     check_rename_keys(rows, m)
     moved = apply(rows, m)
     check_unique(rows)
+    check_display_keyed_tables(rows, m)
 
     for old, new in moved:
         r = next(x for x in rows if x["name"] == new)

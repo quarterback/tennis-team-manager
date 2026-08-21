@@ -615,6 +615,12 @@ RENAMES = {
     # Northside Christian, Welsh Plains NORTHWEST next to Welsh Plains — so each
     # gets a name of its own. All owner-dictated.
     "Northside Christian North": "Toussaint",               # 4A Halbrook
+    # The four towns renamed for the El Paso / Rio pass (CITY_RENAMES) take their
+    # town-named schools with them.
+    "Gulch Bend": "West El Paso",                           # 6A Southern Jefferson
+    "Ransom Spur": "Río Seco",                              # 3A Sebastian Cape
+    "Basalt Fork": "Río Salado",                            # 1A Gold Valley
+    "Fig Gap": "Río Verde",                                 # 2A Yarrowmere
 
     # ‼️ THE 2032 TERRAIN PASS (owner spec, 111 families). Two public schools in one
     # city whose names differed only by a word carrying no identity — Altamonte
@@ -742,7 +748,7 @@ RENAMES = {
     "Port Veles International Academy": "Seminary High School",  # 3A Port Veles
     "Redwood Coast": "Bienville",                                # 9A San Borondon
     "St. Nicholas College Prep": "Natchez Prep",                 # 6A San Borondon
-    "Las Palmas North": "Malcolm X Shabazz",                          # 8A San Borondon
+    "Las Palmas North": "Natchitoches",                          # 8A San Borondon
     "St. Casimir Preparatory": "Natchitoches Catholic",          # 5A San Borondon
     "St. Sophia Preparatory": "Marshfield Prep",                 # 8A San Borondon
     "Blackbird Canyon": "Tallulah Canyon",                       # 4A San Borondon
@@ -803,7 +809,7 @@ RENAMES = {
     "Rosa Salcedo": "Quarry Workers",
     "Ruby Stokes": "Klamath Exchange",
     "Sadie Freeman": "High Desert Cooperative",
-    "Sergei Belov": "Elias Boudinot",
+    "Sergei Belov": "Malcolm X Shabazz",
     "Svenja Adler": "East Range Agricultural",
     "Teresa Escobedo": "Cañada Irrigation",
     "Thelma Stokes": "Iron Gate Works",
@@ -1293,11 +1299,11 @@ LOCALITIES = {
     "Bienville":                             "Bienville",
     "Biloxi Heights":                        "Biloxi",
     "Bogue Chitto":                          "Bogue Chitto",
-    "Gravity Falls":                          "Cahaba",
+    "Malcolm X Shabazz":                          "Cahaba",
     "Marigny":                               "Marigny",
     "Cliffside":                         "Natchez",
     "Natchez Prep":                          "Natchez",
-    "Malcolm X Shabazz":                          "Natchitoches",
+    "Natchitoches":                          "Natchitoches",
     "Natchitoches Catholic":                 "Natchitoches",
     "Pointe Coupee Catholic":                "Pointe Coupee",
     "Pointe Coupee":                 "Pointe Coupee",
@@ -1954,6 +1960,17 @@ AREA_RENAMES = {
 # and Alderfield the towns) and a one-school fishing port besides, so it takes
 # the cape: CAPE ANGELES, and its high school with it.
 CITY_RENAMES = {
+    # ‼️ THE STATE NEEDS AN EL PASO AND A FEW RIOS (owner, 2026-08) — a western state
+    # of Jefferson's latitude and history would have them, and it had NONE: 283 towns,
+    # 21 Spanish-form names, not one Rio and not one Paso. WEST El Paso deliberately,
+    # so it is never mistaken for the Texas city. The four are spread across four
+    # areas rather than clustered, and each keeps its town-named school in step —
+    # a town called Rio Seco whose high school is still Ransom Spur is worse than
+    # either name alone.
+    "Gulch Bend": "West El Paso",     # Southern Jefferson, Goldbank — a gap in dry country
+    "Ransom Spur": "Río Seco",        # Sebastian Cape, beside the state's other Spanish names
+    "Basalt Fork": "Río Salado",      # Gold Valley, Ferris
+    "Fig Gap": "Río Verde",           # Yarrowmere, Bardsley — orchard country
     "Aldermont": "Cape Angeles",
     # ‼️ REAL FINNISH CITIES, UNACCENTED (owner rule 2027-08). Small Finnish
     # towns with no American namesake, in the Kangas interior where the state's

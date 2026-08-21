@@ -302,3 +302,77 @@ Only **D1** — the seven renames — join the pending sync described above. The
 already in `import_jhsaa.RENAMES`, so `scripts/rename_prep_network.py` picks them
 up with no further work; nothing needs to be transcribed by hand. D2 and D3 are
 association-side properties and stop here.
+
+---
+
+# E. 2026-08 — the terrain pass, locality, and the identity guards
+
+The largest naming pass the association has had, and the one that finally stated the
+rule the earlier ones were groping at: **a name is a problem when it fails to
+DIFFERENTIATE**, which is a property of a PAIR and not of a name. Two public schools
+in one city whose names are the same words plus something carrying no identity —
+*Altamonte* beside *Altamonte Civic*, *Archbishop Doyle Prep* beside *Archbishop Doyle
+Prep North*, *Harrow* beside *Harrow Works* — do not tell a reader them apart. A
+compass point on the CITY's own name does (*Belmonte North*), and is left alone.
+
+Measured on the generated list (`scripts/jhsaa_name_list.py`), same-city
+near-duplicate groups went **58 → 20 → 8**.
+
+## E1. The five-metro locality redistribution (121 programs)
+
+Belmonte, Port Veles, San Borondón, Belyakov and Ashbury carried 28-44 tennis
+programs each. 51 stay core-city schools; the other 121 take the identity of a
+settlement inside the metro — a CDP, an unincorporated place, an absorbed town —
+which is how a city that size actually holds that many high schools.
+
+`city` stays the metro; `locality` is a new optional field. It repeats by design and
+nothing keys on it. Absent means a core-city school.
+
+## E2. The 2032 terrain pass (111 families, 157 renames)
+
+Owner-supplied, applied whole. Five spec names collided with another school and were
+qualified in the spec's own grammar using a word from the school's own previous name
+(Allegheny Heights, Bowerstock Beach, Cahaba Butte, Petoskey Rock); Port Veles's
+Calvin Coolidge simply kept its full name, since Olive Reach already had a Coolidge.
+
+## E3. The last thirteen
+
+Drawn from a bank of the owner's own names — Springfield, Bridgewater, Hartford City,
+New Boston, West/East Burlington, Charlotte, Montpelier, Harrisburgh, Funtsville,
+Pacersburg, Readbury, Malcolm X Shabazz. Walshmere and Heterport remain unused.
+
+Left alone deliberately: a denominational or institutional word DOES differentiate, so
+Belmonte / Belmonte Catholic / Belmonte Collegiate, Olive Reach / Olive Reach Baptist,
+Pointe Coupee / Pointe Coupee Catholic and Port Veles Episcopal / Lutheran all stay.
+So do Belyakov's Bois Neuf / Bois Rouge and Morne Caribou / Morne Rouge — that is its
+French-Caribbean locality register, not an accident. The ~36 St. schools are flagged
+only because they share a leading word; nearly all are distinct saints in distinct
+towns.
+
+## E4. ‼️ The identity guards — the part worth reading
+
+Renaming this much exposed that a school has TWO identities and only one of them was
+being checked.
+
+The DISPLAY name was already guarded (it is the archive identity). The other is
+`source or name` — the ROSTER identity, which keys `RENAMES` and seeds the RNG that
+builds a program's twelve players. It was not guarded, and two faults followed:
+
+1. **Two rows shared one identity string.** One school kept `source: "Wheatley"` from a
+   rename whose source prep-network had since renamed away; a DIFFERENT school was
+   simply called Wheatley. `RENAMES["Wheatley"]` reached both. It surfaced only because
+   the two then collided on a display name — had the targets differed, two schools
+   would have quietly generated the same twelve people.
+2. **Sixteen dead `RENAMES` keys.** Each keyed a prep-network name that repo has since
+   renamed away, so none could fire — and each was waiting for some school to be named
+   that string. Removed. `RENAMES` is a permanent record of renames that are still
+   REACHABLE; an entry matching neither prep-network nor any school here is debris.
+
+`scripts/jhsaa_apply_renames.py` now asserts both BEFORE renaming and exits naming the
+offender. Verified by planting the exact bad shape.
+
+## E5. What prep-network needs from this
+
+Nothing new to transcribe. Every rename is in `import_jhsaa.RENAMES`, so
+`scripts/rename_prep_network.py` picks the whole pass up when the sync is finally run.
+Locality and sponsorship are association-side properties and stop here.

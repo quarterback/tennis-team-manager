@@ -31,7 +31,7 @@ RENAMING IS SAFE AND IS THE DESIGNED PATH — but key it on the right thing:
 NEAR-DUPLICATES — pairs sharing a leading word, same city first
 ==============================================================================
 
--- SAME CITY — LOOK HERE FIRST (8 groups)
+-- SAME CITY — LOOK HERE FIRST (9 groups)
     5A  1010  Belmonte                               Belmonte               Belmonte
     6A  1233  Belmonte Catholic                      Belmonte               Amaia Aramburu North
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
@@ -41,6 +41,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     5A   961  Morne Caribou Polytechnic              Belyakov               Belyakov Polytechnic Institute
     7A  1370  Morne Rouge                            Belyakov               Lorraine Calder
+
+    8A  2128  Natchitoches                           San Borondón           Las Palmas North
+    5A   894  Natchitoches Catholic                  San Borondón           St. Casimir Preparatory
 
     7A  1423  Olive Head                             Olive Head             Olive Head
     5A   998  Olive Reach                            Olive Reach            Olive Reach
@@ -98,7 +101,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (89 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (90 groups)
     3A   348  Abbey Vale Orchard Hill                Abbey Vale             Abbey Vale Orchard Hill
     5A   923  Abbey Prep                             Port Meridian          Abbey Prep
 
@@ -120,7 +123,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A    59  Barley Gap                             Barley Gap             Barley Gap
     5A   896  Barley Point                           Rye                    Rye Academy of Arts and Letters
 
-    1A   144  Basalt Fork                            Basalt Fork            Basalt Fork
     1A   128  Basalt Prairie Union                   Basalt Prairie         Basalt Prairie Union
     4A   762  Basalt Electric                        Caswell                Andrés Valera
 
@@ -341,9 +343,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1185  Puerto Gallego                         Puerto Gallego         Puerto Gallego
     8A  1848  Puerto de los Reyes                    Puerto de los Reyes    Puerto de los Reyes
 
-    1A   176  Ransom Pass                            Ransom Pass            Ransom City Union
-    3A   349  Ransom Spur                            Ransom Spur            Ransom Spur
-
     8A  1729  Red Bluff                              Echevarria             Echevarria I-50 Technical
     8A  1713  Red Mesa                               Valderra               Clara Cross
 
@@ -354,6 +353,10 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   386  River North                            Newark River           Newark River North
     8A  1996  River Oaks                             Orellana               Alina Antonov
     6A  1316  River Plain                            Zubieta                Zubieta River Plain
+
+    1A   144  Río Salado                             Río Salado             Basalt Fork
+    3A   349  Río Seco                               Río Seco               Ransom Spur
+    2A   261  Río Verde                              Río Verde              Fig Gap
 
     6A  1297  Saint Marc                             Belyakov               Mikhail Sidorov
     5A   966  Saint Francis                          Port Meridian          Saint Francis
@@ -408,6 +411,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2271  Weller                                 Fort Meriwether        Klara Marchand
     3A   414  Weller Independent                     Fort Weller            Fort Salish Independent School
     1A   187  Weller Regional                        Yandell City           Weller Regional
+
+    3A   393  West Burlington                        Homecroft              Homecroft Manufacturing and Technology Academy
+    6A  1297  West El Paso                           West El Paso           Gulch Bend
 
     6A  1249  Western Sky                            Northrup               Ander Aramburu
     3A   447  Western Slope Christian                Redfork                Western Slope Christian
@@ -543,9 +549,6 @@ Barleyfield — 3 programs (Kernwood County, Yarrowmere)
     4A   591 pub  Barleyfield                                               Quarry League                      Barleyfield
     3A   480 pub  Steelhead Divide                                          Assay Athletic Association         Steelhead Divide
     1A   141 priv Kernwood Lutheran                                         Greater Ashbury Interscholastic League Kernwood Lutheran
-
-Basalt Fork — 1 program (Ferris County, Gold Valley)
-    1A   144 pub  Basalt Fork                                               Greater Ashbury Interscholastic League Basalt Fork
 
 Basalt Prairie — 1 program (Stagewater County, Kangas)
     1A   128 pub  Basalt Prairie Union                                      Sluice League                      Basalt Prairie Union
@@ -890,9 +893,6 @@ Fellows Mill — 4 programs (Sablewood County, Gold Valley)
 Ferris — 1 program (Galena County, Millersylvania)
     1A   189 pub  Union Prairie                                             Sage Plains League                 Ferris Union
 
-Fig Gap — 1 program (Bardsley County, Yarrowmere)
-    2A   261 pub  Fig Gap                                                   Greater Ashbury Interscholastic League Fig Gap
-
 Fort Bardsley — 1 program (Paddock County, Yarrowmere)
     3A   522 pub  Fort Bardsley                                             Ironwood League                    Goodman
 
@@ -991,10 +991,6 @@ Greaves Junction — 1 program (Halbrook County, Halbrook Basin)
 
 Gruesome Ridge — 1 program (Antler County, Alderwold)
     2A   297 pub  Gruesome Ridge                                            Lewis & Clark League               Ashwood
-
-Gulch Bend — 2 programs (Goldbank County, Southern Jefferson)
-    6A  1297 pub  Gulch Bend                                                Ostrobothnia League                Gulch Bend
-    1A   177 priv Foothills Christian                                       Basalt League                      Foothills Christian
 
 Haddon Siding — 1 program (Barlowe County, Halbrook Basin)
     2A   291 pub  Haddon Siding                                             Valle Vista League                 Haddon Siding
@@ -1488,9 +1484,6 @@ Raahe — 1 program (Stagewater County, Kangas)
 Ransom Pass — 1 program (Tamarack County, Cascade Divide)
     1A   176 pub  Ransom Pass                                               Rim Country League                 Ransom City Union
 
-Ransom Spur — 1 program (San Marcos County, Sebastian Cape)
-    3A   349 pub  Ransom Spur                                               Coastal Range League               Ransom Spur
-
 Ransoms Landing — 1 program (Antler County, Alderwold)
     1A   189 pub  Ransoms Landing                                           Timber Valley League               Ransoms Landing
 
@@ -1516,6 +1509,15 @@ Rye — 4 programs (Marlow County, Ashbury Metro)
     5A   896 pub  Barley Point                                              Ambassador League                  Rye Academy of Arts and Letters
     4A   640 pub  Cañada Irrigation                                         Valle Vista League                 Teresa Escobedo
 
+Río Salado — 1 program (Ferris County, Gold Valley)
+    1A   144 pub  Río Salado                                                Greater Ashbury Interscholastic League Basalt Fork
+
+Río Seco — 1 program (San Marcos County, Sebastian Cape)
+    3A   349 pub  Río Seco                                                  Coastal Range League               Ransom Spur
+
+Río Verde — 1 program (Bardsley County, Yarrowmere)
+    2A   261 pub  Río Verde                                                 Greater Ashbury Interscholastic League Fig Gap
+
 Sage Village — 1 program (Windrow County, Millersylvania)
     1A   107 pub  Sage Village                                              Rim Country League                 Sage Lake
 
@@ -1533,12 +1535,12 @@ San Borondón — 29 programs (San Marcos County, Sebastian Cape)
     9A  2480 pub  Tuskegee                               Tuskegee           Del Rey Athletic Association       Harold Williams
     9A  2410 pub  Bienville                              Bienville          Del Rey Athletic Association       Redwood Coast
     9A  2238 pub  Mission Bay                                               Del Rey Athletic Association       Mission Bay
-    8A  2128 pub  Malcolm X Shabazz                      Natchitoches       South Coast League                 Las Palmas North
+    8A  2128 pub  Natchitoches                           Natchitoches       South Coast League                 Las Palmas North
     8A  2082 pub  Tuscaloosa                             Tuscaloosa         South Coast League                 Las Palmas
     8A  2007 pub  Sotavento                                                 South Coast League                 San Borondón Environmental Sciences Academy
     8A  1908 pub  Apalachicola                           Apalachicola       South Coast League                 Imani Cross
     8A  1892 priv Marshfield Prep                                           South Coast League                 St. Sophia Preparatory
-    8A  1751 pub  Elias Boudinot                                            South Coast League                 Sergei Belov
+    8A  1751 pub  Malcolm X Shabazz                      Cahaba             South Coast League                 Sergei Belov
     8A  1669 priv Hazel Country Day                                         South Coast League                 San Borondón Country Day School
     8A  1655 priv St. Jerome Academy                                        Del Rey Athletic Association       St. Jerome Academy
     7A  1533 pub  Vicksburg                              Vicksburg          Coastal Range League               Daniel Gaines
@@ -1829,6 +1831,10 @@ Welsh Plains — 3 programs (Paddock County, Yarrowmere)
     5A  1019 pub  Welsh Plains                                              Quarry League                      Welsh Plains
     3A   420 pub  Grayston                                                  Ironwood League                    Welsh Plains Northwest
     2A   292 priv Paddock Tech                                              East Cascades League               Paddock Institute
+
+West El Paso — 2 programs (Goldbank County, Southern Jefferson)
+    6A  1297 pub  West El Paso                                              Ostrobothnia League                Gulch Bend
+    1A   177 priv Foothills Christian                                       Basalt League                      Foothills Christian
 
 Wheatley — 1 program (Cinder County, Cascade Divide)
     1A   134 pub  Wheatley                                                  Rim Country League                 Wheatley
