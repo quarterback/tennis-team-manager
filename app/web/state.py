@@ -4974,18 +4974,27 @@ JHSAA_LAB_GRADE_POOLS = {
 
 def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
                      pool: str = "mismatched", n_squads: int = 3,
-                     grades: str = "all") -> dict:
-    """The scouting-department view for JHSAA — deal mismatched talent into whole
-    9-player rosters for a target classification and rank each hypothetical squad
-    against that classification's REAL programs, by average current OVR of their
-    own dressed nine.
+                     grades: str = "all", from_group: str = "All",
+                     min_ovr: int | None = None, max_ovr: int | None = None,
+                     min_pot: int | None = None, max_pot: int | None = None,
+                     q: str = "") -> dict:
+    """The scouting-department view for JHSAA — deal a SEARCHED player pool into
+    whole 9-player rosters for a target classification and rank each hypothetical
+    squad against that classification's REAL programs, by average current OVR of
+    their own dressed nine.
 
-    `pool`: 'mismatched' (Talent-Mismatch qualifiers only) or 'any' (every player,
-    best ceiling first — useful once the mismatch pool runs dry for a class).
-    `grades`: a `JHSAA_LAB_GRADE_POOLS` key — 'all', 'no12' (exclude seniors, the
-    scouting default question: what does this squad look like NEXT year too), or
-    'under' (9th-10th only). Squads are non-overlapping, dealt best-first. 9 is
-    the association's own dressed-lineup size (3 singles + 4 doubles pairs)."""
+    Works on the college Portal Search model (owner request 2026-08: "search by
+    talent level so that i can find all kinds of players" — the old lab could
+    only ever see the top of the pool): the candidate pool is filterable by
+    TALENT BAND (min/max current OVR and min/max ceiling), source classification,
+    grade pool and a name/school search, and the filtered pool itself is returned
+    (`cands`) so the page doubles as a finder, not just a squad dealer.
+
+    `pool`: 'mismatched' (Talent-Mismatch qualifiers only) or 'any' (every
+    player). `grades`: a `JHSAA_LAB_GRADE_POOLS` key. Squads are non-overlapping,
+    dealt best-first WITHIN the filter — a 40-50-ceiling band deals 40-50-ceiling
+    squads, which is the point. 9 is the association's own dressed-lineup size
+    (3 singles + 4 doubles pairs)."""
     import app.jhsaa as jh
     SQUAD_SIZE = 9
     genders = ("boys", "girls") if gender == "all" else (_jh_g(gender),)
@@ -5000,6 +5009,20 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
             r.setdefault("gap", 0.0)
     keep = JHSAA_LAB_GRADE_POOLS.get(grades, JHSAA_LAB_GRADE_POOLS["all"])[1]
     cands = [r for r in cands if r["grade"] in keep]
+    if from_group != "All":
+        cands = [r for r in cands if r["group"] == from_group]
+    if min_ovr is not None:
+        cands = [r for r in cands if r["ovr"] >= min_ovr]
+    if max_ovr is not None:
+        cands = [r for r in cands if r["ovr"] <= max_ovr]
+    if min_pot is not None:
+        cands = [r for r in cands if r["ceiling"] >= min_pot]
+    if max_pot is not None:
+        cands = [r for r in cands if r["ceiling"] <= max_pot]
+    if q:
+        ql = q.strip().lower()
+        cands = [r for r in cands
+                 if ql in r["name"].lower() or ql in r["school"].lower()]
     cands.sort(key=lambda r: (r["ceiling"], r["ovr"]), reverse=True)
 
     # The target classification's real programs, by average current OVR of their
@@ -5036,7 +5059,9 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
 
     return {"gender": gender, "target_group": target_group, "pool": pool,
             "squads": squads, "groups": list(jh.GROUPS), "n_div": n_div,
-            "grades": grades,
+            "grades": grades, "cands": cands, "total": len(cands),
+            "from_group": from_group, "min_ovr": min_ovr, "max_ovr": max_ovr,
+            "min_pot": min_pot, "max_pot": max_pot, "q": q,
             "grade_pools": [(k, lbl) for k, (lbl, _) in JHSAA_LAB_GRADE_POOLS.items()]}
 
 
