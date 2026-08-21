@@ -176,13 +176,52 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                         line_players.append({"line_id": line_id, "side": side, "position": pos,
                                              "player_id": _player_id(school, name, player_lookup), "player_name": name})
 
+    # PROGRAM HISTORY — the multi-year ledger the app's program pages show
+    # (`world.jhsaa_school_history`), which the zip never carried: the export
+    # used to be a single-season snapshot only, so "the zip has no program
+    # history" and "the app shows it fine" were both true. One row per program
+    # per ARCHIVED season (all years, not just this export's scope year —
+    # history is the point), read off the persisted archive in one bulk pass,
+    # never resimulated. Empty when no archive exists (injected seasons/tests).
+    history = []
+    from app import world as wd
+    w = wd.load_world(wd.DEFAULT_SEED)
+    if w:
+        key_by_name = {t.school.name: t.school.key for t in all_teams}
+        for school, rows_ in sorted(wd.jhsaa_history_rows(w["id"], gender).items()):
+            if school not in included_names:
+                continue
+            for r in rows_:
+                history.append({
+                    "program_id": key_by_name.get(school, school),
+                    "program_name": school,
+                    "season_year": r.get("season_year") or "",
+                    "world_year": r["year"],
+                    "classification": r["group"], "district": r["district"],
+                    "record": r["record"], "district_record": r["district_record"],
+                    "district_place": r["place"],
+                    "district_title": int(r["district_title"]),
+                    "courts_won": r["courts_won"], "courts_lost": r["courts_lost"],
+                    "toss_power_raw": r["pi"] if r["pi"] is not None else "",
+                    "class_rank": r["state_rank"],
+                    "made_state": int(r["made_state"]), "state_seed": r["seed"],
+                    "state_place": r["state_place"], "state_finish": r["state_finish"],
+                    "state_champion": int(r["champion"]),
+                    "made_toc": int(r["made_toc"]), "toc_place": r["toc_place"],
+                    "toc_finish": r["toc_finish"],
+                    "toc_champion": int(r["toc_champion"]),
+                    "unit_wins": "; ".join(r["unit_wins"]),
+                    "honors": "; ".join(r["honors"]),
+                })
+
     json_files = {
         "jhsaa_championships.json": {g: season["groups"][g].get("state", {}) for g in jhsaa.GROUPS},
         "jhsaa_awards.json": season.get("awards", {}),
     }
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
-              "jhsaa_standings.csv": standings}
+              "jhsaa_standings.csv": standings,
+              "jhsaa_program_history.csv": history}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
                   for name, value in json_files.items()})
@@ -198,6 +237,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender."
         },
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
+            "jhsaa_program_history.csv spans EVERY archived season for this gender (one row "
+            "per program per year — the app's program-history ledger), not just this export's "
+            "scope year; it is empty only when the save has no archived seasons.",
             "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
             "per dual, identical from both sides); empty on seasons archived before dates existed. "
             "It is the play order: there is no clock inside a JHSAA season.",
