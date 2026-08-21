@@ -1907,7 +1907,14 @@ _CANONICAL = {new: src for src, new in RENAMES.items()}   # display -> roster id
 # name is a different namespace; a region and a program can share a compass
 # point the way a real state's do.)
 AREA_RENAMES = {
-    "Mother Lode": "Southern Jefferson",
+    # ‼️ KEYED ON PREP-NETWORK'S CURRENT NAME. This read "Mother Lode" until 2026-08,
+    # which that repo has since renamed to Siskiyou Valley — so the entry no longer
+    # fired and a re-import would have emitted "Siskiyou Valley" for an area the
+    # association has always called Southern Jefferson. Nothing showed it: the
+    # committed data already held the right string, so only a full import would have
+    # surfaced it. `scripts/jefferson_gazetteer.py` now compares the two area sets
+    # on every run, which is what caught this.
+    "Siskiyou Valley": "Southern Jefferson",
     # A wooded northern range deserves better than a compass bearing
     # (owner rule 2027-08). "North Range League" survives in the league
     # bank on purpose — a league name outliving the geography it was
