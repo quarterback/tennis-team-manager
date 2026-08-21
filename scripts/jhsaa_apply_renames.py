@@ -55,6 +55,22 @@ def _import_jhsaa():
     return mod
 
 
+def check_identities(rows: list[dict]) -> None:
+    """‼️ `source or name` IS THE IDENTITY AND MUST BE UNIQUE. It keys RENAMES and it
+    seeds the RNG that builds a program's players, so two rows sharing one string are
+    two schools that a single rename catches together and that generate the same
+    twelve people. This shipped once: a school kept `source: "Wheatley"` from a rename
+    whose source prep-network had since renamed away, and a DIFFERENT school was
+    actually named Wheatley — so `RENAMES["Wheatley"]` reached both. Caught only
+    because the two then collided on the display name; had the targets differed it
+    would have been silent."""
+    import collections
+    dup = {k: v for k, v in collections.Counter(
+        (r.get("source") or r["name"]) for r in rows).items() if v > 1}
+    if dup:
+        sys.exit(f"rows sharing one identity (source or name): {dup}")
+
+
 def apply(rows: list[dict], m) -> list[tuple[str, str]]:
     """Rewrite `rows` in place; return the (old, new) pairs that actually moved."""
     moved = []
@@ -130,6 +146,7 @@ def main() -> None:
         doc = json.load(fh)
     rows = doc["schools"]
 
+    check_identities(rows)          # before the rename, not after
     moved = apply(rows, m)
     check_unique(rows)
 
