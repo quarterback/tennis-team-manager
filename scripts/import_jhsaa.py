@@ -461,11 +461,11 @@ RENAMES = {
     "Belmonte International School": "Belmonte Collegiate",
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Liberty Hill",
-    "Dahlberg School of Science and Industry": "Bookcliff",
+    "Dahlberg School of Science and Industry": "Hartford City",
     "Fort Valois School of Public Service": "Sagebrush",
     "Galina Markov": "James Monroe",
     "Harbor Gate North": "Martin Van Buren",
-    "Harrow School of Design and Engineering": "Cinder Flats",
+    "Harrow School of Design and Engineering": "New Boston",
     "Henrik Keller": "William Henry Harrison",
     "Housatonic HS": "Housatonic",
     "Igor Chernov": "Zachary Taylor",
@@ -498,7 +498,7 @@ RENAMES = {
     "St. Vincent School": "St. Vincent",
     "Starlight School of Science and Industry": "Observatory",
     "Telfair Country Day School": "Telfair Country Day",
-    "Thelma Avery": "Salt Landing",
+    "Thelma Avery": "Readbury",
     "Walter Hart": "Kittery",
     "Walter Hart North": "Wicomico",
     "Wolf Gap International School": "Wolf Gap International",
@@ -636,11 +636,11 @@ RENAMES = {
     "Boyerstown North": "Alder Crossing",                      # 7A Boyerstown
     "Breakwater": "Tide Point",                                # 5A Fort Meriwether
     "Breakwater North": "Lighthouse",                          # 7A Fort Meriwether
-    "Canal View": "Millrace",                               # 6A Orellana
+    "Canal View": "Springfield",                               # 6A Orellana
     "Canal View North": "Lateral Seven",                       # 5A Orellana
     "Carden City West Bench": "Buckhorn",                      # 4A Carden City
     "Cherry Hill East": "Oakhurst",                            # 7A Caswell
-    "Copper Lake East": "Redbank",                         # 6A Copper Lake
+    "Copper Lake East": "Bridgewater",                         # 6A Copper Lake
     "Copper Lake West": "Azurite",                             # 7A Copper Lake
     "Costa Verde North": "Verde Highlands",                    # 5A Bahía Leal
     "Emigrant Trail": "Trailhead",                             # 5A Rostova Junction
@@ -657,7 +657,7 @@ RENAMES = {
     "Kilbride Switch South": "Switchback",                     # 3A Kilbride Switch
     "Lake Esperanza South": "Malheur Flat",                    # 7A Lake Esperanza
     "Llerena East": "Juniper Well",                            # 5A Llerena
-    "Loomis City North": "Elk Horn",                    # 6A Loomis City
+    "Loomis City North": "Charlotte",                    # 6A Loomis City
     "Los Remolinos Mission Bay": "Estuary Bay",                # 2A Los Remolinos
     "Madrigal Maritime Academy": "Maritime",                   # 6A Madrigal
     "Madrigal West Bench": "Benchlands",                       # 5A Madrigal
@@ -688,9 +688,9 @@ RENAMES = {
     "Summervale Northwest": "Star Hollow",                     # 3A Summervale
     "Tamarack Harbor": "Tidewater",                            # 3A Tamarack Harbor
     "Tamarack Springs": "Mineral Springs",                     # 2A Tamarack Springs
-    "Telfair": "Prairie Crossing",                              # 4A Telfair
+    "Telfair": "Pacersburg",                              # 4A Telfair
     "Timber Crest North": "Crestline",                         # 4A Fort Carden
-    "Tindall Heights": "Sage Junction",                        # 5A Tindall
+    "Tindall Heights": "Montpelier",                        # 5A Tindall
     "Tule Flat Lutheran": "Tumbleweed Lutheran",               # 1A Tule Flat
     "Valley Forge North": "Forge Hollow",                      # 3A Valderra
     "Vessey Junction-Tailingford Union": "Tailingford Union",  # 1A Tailingford
@@ -742,7 +742,7 @@ RENAMES = {
     "Port Veles International Academy": "Seminary High School",  # 3A Port Veles
     "Redwood Coast": "Bienville",                                # 9A San Borondon
     "St. Nicholas College Prep": "Natchez Prep",                 # 6A San Borondon
-    "Las Palmas North": "Shabazz",                          # 8A San Borondon
+    "Las Palmas North": "Malcolm X Shabazz",                          # 8A San Borondon
     "St. Casimir Preparatory": "Natchitoches Catholic",          # 5A San Borondon
     "St. Sophia Preparatory": "Marshfield Prep",                 # 8A San Borondon
     "Blackbird Canyon": "Tallulah Canyon",                       # 4A San Borondon
@@ -1046,10 +1046,10 @@ RENAMES = {
     "Featherstone Institute":                           "Featherstone Tech",
     "Fellows Mill Civic Leadership Academy":            "Millworks",
     "Greaves Aviation and Engineering Academy":         "Skypark",
-    "Homecroft Manufacturing and Technology Academy":   "Railspur",
+    "Homecroft Manufacturing and Technology Academy":   "West Burlington",
     "I-50 Technical":                                   "I-50 Tech",
     "I-50 Technical North":                             "Tuscarora",
-    "Leidesdorff Academy of Music and Media":           "Willowmere",
+    "Leidesdorff Academy of Music and Media":           "East Burlington",
     "Northrup I-50 Technical":                          "Northrup I-50 Tech",
     "Paddock Institute":                                "Paddock Tech",
     "Perryville Civic Leadership Academy":              "Perry Green",
@@ -1058,7 +1058,7 @@ RENAMES = {
     "San Borondón Civic Academy":                       "Rumsfeld Hill School",
     "San Telmo Agricultural Sciences Academy":          "Orchard Union",
     "Selbyville Manufacturing and Technology Academy":  "Selby Tech",
-    "Vesper Polytechnic Institute":                     "Cottonwood Bend",
+    "Vesper Polytechnic Institute":                     "Funtsville",
     "Zubieta Manufacturing and Technology Academy":     "Sluice Gate",
 
 
@@ -1076,7 +1076,7 @@ RENAMES = {
     "Andrés Ibarra North":       "Saddleback Central",        # 4A Belmonte
     "Elena Mendoza North":       "Cahaba",             # 6A Belmonte
     "Javier Alvarado North":     "Shenango",               # 6A Belmonte
-    "Jean Lindgren North":       "Cattle Ford",          # 4A Valderra
+    "Jean Lindgren North":       "Harrisburgh",          # 4A Valderra
     "Petra Weiss North":         "Las Colinas",             # 4A Valderra
     "Thelma Moss North":         "Serenity Valley",        # 7A Valderra
     "Claudette Cole North":      "Pointe Coupee",    # 5A San Borondón
@@ -1297,7 +1297,7 @@ LOCALITIES = {
     "Marigny":                               "Marigny",
     "Cliffside":                         "Natchez",
     "Natchez Prep":                          "Natchez",
-    "Shabazz":                          "Natchitoches",
+    "Malcolm X Shabazz":                          "Natchitoches",
     "Natchitoches Catholic":                 "Natchitoches",
     "Pointe Coupee Catholic":                "Pointe Coupee",
     "Pointe Coupee":                 "Pointe Coupee",
@@ -1791,7 +1791,7 @@ MASCOTS = {
     "William McKinley": "Buckeyes",
     "High Desert Cooperative": "Sheepwagons",             # Etchartville
     "Armour Fields": "Thunderheads",            # gromov — thunder
-    "Millrace": "Headgates",                  # Orellana
+    "Springfield": "Headgates",                  # Orellana
     "Grizzly Gulch": "Riverboats",
     "Starlake": "Bull Trout",
     "Simmons": "Springers",               # a spring chinook, on a Springs town
@@ -1842,7 +1842,7 @@ MASCOTS = {
     "High Desert Christian": "Sojourners",
     "Marshall": "Jackalopes",
     "Meridian Regional": "Tinsmiths",           # Stovepipe
-    "Prairie Crossing": "Kangaroo Rats",
+    "Pacersburg": "Kangaroo Rats",
     "Dry Lake": "Mirages",
     "Trout Lake": "Silverlegs",             # the ask: named for its own fish
 
