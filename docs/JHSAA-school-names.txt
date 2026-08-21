@@ -31,7 +31,7 @@ RENAMING IS SAFE AND IS THE DESIGNED PATH — but key it on the right thing:
 NEAR-DUPLICATES — pairs sharing a leading word, same city first
 ==============================================================================
 
--- SAME CITY — LOOK HERE FIRST (20 groups)
+-- SAME CITY — LOOK HERE FIRST (8 groups)
     5A  1010  Belmonte                               Belmonte               Belmonte
     6A  1233  Belmonte Catholic                      Belmonte               Amaia Aramburu North
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
@@ -39,36 +39,8 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1181  Bois Neuf                              Belyakov               Orchard Gate North
     4A   639  Bois Rouge                             Belyakov               Viktor Antonov North
 
-    9A  2578  Canal View                             Orellana               Orellana Canal View
-    6A  1281  Canal Works                            Orellana               Canal View
-    3A   352  Canal Lock                             Starlake               Starlake Canal View
-
-    1A    68  Copper Gap                             Copper Gap             Copper Crossing
-    6A  1306  Copper Flat                            Copper Lake            Copper Lake East
-    7A  1489  Copper Lake                            Copper Lake            Copper Lake
-    1A   188  Copper Prairie                         Copper Prairie         Copper Prairie
-    5A  1019  Copper Belt                            Echevarria             Harold Tillman
-
-    3A   473  Dahlberg Science                       Dahlberg Summit        Dahlberg School of Science and Industry
-    3A   446  Dahlberg Summit                        Dahlberg Summit        Dahlberg
-
-    4A   553  Harrow                                 Harrow                 Harrow
-    5A   913  Harrow Works                           Harrow                 Harrow School of Design and Engineering
-
-    8A  1643  Homecroft                              Homecroft              Homecroft
-    3A   393  Homecroft Tech                         Homecroft              Homecroft Manufacturing and Technology Academy
-
-    3A   511  Leidesdorff                            Leidesdorff            Leidesdorff
-    5A   953  Leidesdorff Works                      Leidesdorff            Leidesdorff Academy of Music and Media
-
-    5A   877  Loomis City                            Loomis City            Loomis City
-    6A  1049  Loomis Junction                        Loomis City            Loomis City North
-
     5A   961  Morne Caribou Polytechnic              Belyakov               Belyakov Polytechnic Institute
     7A  1370  Morne Rouge                            Belyakov               Lorraine Calder
-
-    8A  2128  Natchitoches                           San Borondón           Las Palmas North
-    5A   894  Natchitoches Catholic                  San Borondón           St. Casimir Preparatory
 
     7A  1423  Olive Head                             Olive Head             Olive Head
     5A   998  Olive Reach                            Olive Reach            Olive Reach
@@ -121,25 +93,12 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A   179  St. Josephine Bakhita                  Vessey Switch          St. Perpetua Preparatory
     2A   431  St. Dominic Academy                    Vonjo City             St. Dominic Academy
 
-    4A   557  Telfair Central                        Telfair                Telfair
-    3A   415  Telfair Country Day                    Telfair                Telfair Country Day School
-
-    5A   931  Tindall                                Tindall                Tindall
-    5A   851  Tindall Bluff                          Tindall                Tindall Heights
-
-    8A  1888  Valderra                               Valderra               Valderra
-    4A   731  Valderra Wash                          Valderra               Jean Lindgren North
-
     5A   862  Veles Central                          Port Veles             Port Veles
-    9A  2178  Veles Cove                             Port Veles             Thelma Avery
     7A  1582  Veles Harbor                           Port Veles             Nathaniel Cross
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
-    4A   612  Vesper                                 Vesper                 Salvador Figueroa
-    3A   430  Vesper Tech                            Vesper                 Vesper Polytechnic Institute
 
-
--- SAME LEADING WORD, DIFFERENT CITIES (87 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (91 groups)
     3A   348  Abbey Vale Orchard Hill                Abbey Vale             Abbey Vale Orchard Hill
     5A   923  Abbey Prep                             Port Meridian          Abbey Prep
 
@@ -184,6 +143,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A   139  California Beach                       California Beach       Ashfield
     3A   399  California Canyons                     California Canyons     Sage Point
 
+    9A  2578  Canal View                             Orellana               Orellana Canal View
+    3A   352  Canal Lock                             Starlake               Starlake Canal View
+
     3A   309  Cape Angeles                           Cape Angeles           Aldermont
     7A  1636  Cape Jean                              Caswell                Adela Villaseñor
 
@@ -201,6 +163,11 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     2A   261  Chaff Crossing                         Chaff Crossing         Chaff Crossing
     3A   314  Chaff Head                             Chaff Head             Chaff Head
+
+    1A    68  Copper Gap                             Copper Gap             Copper Crossing
+    7A  1489  Copper Lake                            Copper Lake            Copper Lake
+    1A   188  Copper Prairie                         Copper Prairie         Copper Prairie
+    5A  1019  Copper Belt                            Echevarria             Harold Tillman
 
     8A  1878  Covenant Christian                     Ashbury                Covenant Christian
     7A  1501  Covenant                               Calder                 Nicolás Quiñones
@@ -224,6 +191,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     3A   396  Elk Bluff                              Elk Bluff              Elk Bluff
     3A   461  Elk Crossing                           Elk Crossing           Elk Crossing
+    6A  1049  Elk Horn                               Loomis City            Loomis City North
     5A   879  Elk River Power                        San Tomás              Xavier Robles
 
     6A  1185  Empire Milling                         Carroway               Frances Gaines
@@ -365,6 +333,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   248  Pope Francis                           Elk Crossing           Thomas Moreau
     6A  1280  Pope Victor I                          San Cordero            St. Genevieve High School
 
+    7A  1418  Prairie Union                          Halbrook               Halbrook Union
+    4A   557  Prairie Crossing                       Telfair                Telfair
+
     5A   888  Providence Academy                     Ashbury                Providence Academy
     6A  1319  Providence Catholic                    Gagarin                Naomi Ellison
 
@@ -385,6 +356,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   386  River North                            Newark River           Newark River North
     8A  1996  River Oaks                             Orellana               Alina Antonov
     6A  1316  River Plain                            Zubieta                Zubieta River Plain
+
+    1A   107  Sage Village                           Sage Village           Sage Lake
+    5A   851  Sage Junction                          Tindall                Tindall Heights
 
     6A  1297  Saint Marc                             Belyakov               Mikhail Sidorov
     5A   966  Saint Francis                          Port Meridian          Saint Francis
@@ -810,7 +784,7 @@ Copper Gap — 1 program (Juniper County, Juniper Highlands)
 Copper Lake — 3 programs (Camas County, Ashbury Metro)
     7A  1550 pub  Azurite                                                   Metro League                       Copper Lake West
     7A  1489 pub  Copper Lake                                               Metro League                       Copper Lake
-    6A  1306 pub  Copper Flat                                               Metro League                       Copper Lake East
+    6A  1306 pub  Redbank                                                   Metro League                       Copper Lake East
 
 Copper Prairie — 2 programs (Sablewood County, Gold Valley)
     4A   554 pub  Siskiyou Valley                                           Mission League                     Mother Lode
@@ -838,7 +812,7 @@ Cradle Reach — 1 program (Goldbank County, Southern Jefferson)
     2A   282 pub  Cradle Reach                                              Basalt League                      Cradle Reach
 
 Dahlberg Summit — 2 programs (Tamarack County, Cascade Divide)
-    3A   473 pub  Dahlberg Science                                          Sky-Em League                      Dahlberg School of Science and Industry
+    3A   473 pub  Bookcliff                                                 Sky-Em League                      Dahlberg School of Science and Industry
     3A   446 pub  Dahlberg Summit                                           Sky-Em League                      Dahlberg
 
 Diamante — 1 program (Emigrant County, Kangas)
@@ -1073,7 +1047,7 @@ Harriman — 16 programs (Emigrant County, Kangas)
     3A   372 pub  Casimir Creek                                             Kajaani League                     St. Casimir High School North
 
 Harrow — 3 programs (Emigrant County, Kangas)
-    5A   913 pub  Harrow Works                                              Valley Coast Interscholastic League Harrow School of Design and Engineering
+    5A   913 pub  Cinder Flats                                              Valley Coast Interscholastic League Harrow School of Design and Engineering
     4A   553 pub  Harrow                                                    Surf League                        Harrow
     3A   412 priv St. Brigid                                                Kajaani League                     St. Brigid School
 
@@ -1095,7 +1069,7 @@ High Bar — 1 program (Ferris County, Gold Valley)
 Homecroft — 3 programs (Vance County, Halbrook Basin)
     8A  1643 pub  Homecroft                                                 Halbrook Basin League              Homecroft
     3A   520 priv Cardinal Newman                                           Dual County League                 Miren Garmendia
-    3A   393 pub  Homecroft Tech                                            Dual County League                 Homecroft Manufacturing and Technology Academy
+    3A   393 pub  Railspur                                                  Dual County League                 Homecroft Manufacturing and Technology Academy
 
 Huckle Butte — 1 program (Galena County, Millersylvania)
     1A   181 pub  Huckle Butte                                              Sage Plains League                 Huckle Butte
@@ -1165,7 +1139,7 @@ Latgaway — 2 programs (Stagewater County, Kangas)
     1A    93 priv Southern Jefferson Christian                              Sluice League                      Southern Jefferson Christian
 
 Leidesdorff — 2 programs (Sablewood County, Gold Valley)
-    5A   953 pub  Leidesdorff Works                                         Placer League                      Leidesdorff Academy of Music and Media
+    5A   953 pub  Willowmere                                                Placer League                      Leidesdorff Academy of Music and Media
     3A   511 pub  Leidesdorff                                               Gold Valley League                 Leidesdorff
 
 Levee Bluff — 1 program (Bardsley County, Yarrowmere)
@@ -1194,7 +1168,7 @@ Lodestone — 1 program (Emigrant County, Kangas)
     2A   250 pub  Lodestone                                                 Lewis & Clark League               Lodestone
 
 Loomis City — 3 programs (Camas County, Ashbury Metro)
-    6A  1049 pub  Loomis Junction                                           Mariners League                    Loomis City North
+    6A  1049 pub  Elk Horn                                                  Mariners League                    Loomis City North
     5A   881 pub  Cascade Mutual                                            Metro League                       Elias Mercier
     5A   877 pub  Loomis City                                               Metro League                       Loomis City
 
@@ -1384,7 +1358,7 @@ Orellana — 11 programs (Vance County, Halbrook Basin)
     9A  2150 pub  Malpais                                                   Sunbelt League                     Orellana School of Commerce
     8A  2116 pub  Orellana Central                                          Halbrook Basin League              Orellana
     8A  1996 pub  River Oaks                                                Halbrook Basin League              Alina Antonov
-    6A  1281 pub  Canal Works                                               Dual County League                 Canal View
+    6A  1281 pub  Millrace                                                  Dual County League                 Canal View
     5A   913 pub  Lateral Seven                                             Big Basin League                   Canal View North
     4A   798 pub  Sulphur Springs                                           Twin Counties Athletic Association Sulphur Springs
     4A   552 pub  Grizzly Gulch                                             Twin Counties Athletic Association Orellana Foundry High
@@ -1437,7 +1411,7 @@ Port Veles — 43 programs (Bidwell County, Selquah)
     9A  2458 pub  Veles Vo-Tech                                             Mariners League                    Port Veles Maritime Academy
     9A  2348 pub  James Monroe                           Susquehanna        Mariners League                    Galina Markov
     9A  2213 pub  Franklin Pierce                        Patuxent           Mariners League                    Katherine Williams
-    9A  2178 pub  Veles Cove                                                Mariners League                    Thelma Avery
+    9A  2178 pub  Salt Landing                                              Mariners League                    Thelma Avery
     9A  2148 pub  Martin Van Buren                       Piscataway         Mariners League                    Harbor Gate North
     8A  2090 pub  William Henry Harrison                 Rappahannock       Narpes Interscholastic League      Henrik Keller
     8A  1939 priv Port Veles Episcopal                                      Narpes Interscholastic League      Geraldine Cross
@@ -1564,7 +1538,7 @@ San Borondón — 29 programs (San Marcos County, Sebastian Cape)
     9A  2480 pub  Tuskegee                               Tuskegee           Del Rey Athletic Association       Harold Williams
     9A  2410 pub  Bienville                              Bienville          Del Rey Athletic Association       Redwood Coast
     9A  2238 pub  Mission Bay                                               Del Rey Athletic Association       Mission Bay
-    8A  2128 pub  Natchitoches                           Natchitoches       South Coast League                 Las Palmas North
+    8A  2128 pub  Shabazz                                Natchitoches       South Coast League                 Las Palmas North
     8A  2082 pub  Tuscaloosa                             Tuscaloosa         South Coast League                 Las Palmas
     8A  2007 pub  Sotavento                                                 South Coast League                 San Borondón Environmental Sciences Academy
     8A  1908 pub  Apalachicola                           Apalachicola       South Coast League                 Imani Cross
@@ -1751,7 +1725,7 @@ Tamarack Springs — 1 program (Tamarack County, Cascade Divide)
 Telfair — 4 programs (Rimrock County, Juniper Highlands)
     5A   992 pub  Central West End                                          Far West League                    Edith Ward
     5A   977 pub  Fairgrounds                                               Far West League                    Tomás Mendoza
-    4A   557 pub  Telfair Central                                           Twin Counties Athletic Association Telfair
+    4A   557 pub  Prairie Crossing                                          Twin Counties Athletic Association Telfair
     3A   415 priv Telfair Country Day                                       Juniper League                     Telfair Country Day School
 
 Texas Beach — 1 program (Weller County, Selquah)
@@ -1767,7 +1741,7 @@ Three Saints — 3 programs (Rimrock County, Juniper Highlands)
 
 Tindall — 3 programs (Camas County, Ashbury Metro)
     5A   931 pub  Tindall                                                   Metro League                       Tindall
-    5A   851 pub  Tindall Bluff                                             Metro League                       Tindall Heights
+    5A   851 pub  Sage Junction                                             Metro League                       Tindall Heights
     4A   728 pub  Camas                                                     Gateway League                     Renata Dahl
 
 Tolland — 1 program (Vance County, Halbrook Basin)
@@ -1815,13 +1789,13 @@ Valderra — 19 programs (Ferris County, Gold Valley)
     6A  1243 pub  Bridgeport                                                Placer League                      Jean Lindgren
     6A  1179 pub  Rita Moreno                                               Placer League                      Rita Moreno
     5A   863 pub  Roscoe Village                                            Placer League                      Thelma Moss
-    4A   731 pub  Valderra Wash                                             Mission League                     Jean Lindgren North
+    4A   731 pub  Cattle Ford                                               Mission League                     Jean Lindgren North
     4A   611 pub  Las Colinas                                               Mission League                     Petra Weiss North
     3A   416 pub  Forge Hollow                                              Gold Valley League                 Valley Forge North
 
 Vesper — 2 programs (Rimrock County, Juniper Highlands)
     4A   612 pub  Vesper                                                    Surf League                        Salvador Figueroa
-    3A   430 pub  Vesper Tech                                               Juniper League                     Vesper Polytechnic Institute
+    3A   430 pub  Cottonwood Bend                                           Juniper League                     Vesper Polytechnic Institute
 
 Vespertine — 3 programs (Sablewood County, Gold Valley)
     7A  1534 pub  Vespertine                                                Three Rivers League                Vespertine
