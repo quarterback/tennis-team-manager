@@ -479,6 +479,15 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # in the next save — the new league's first rollover also lands on year 1 — and
     # its first graduating class would never be drafted. Clear the value AND the memo.
     worldconfig.set("pros_rolled_year", "")
+    # The JHSAA name-era cutover is per-save the same way: this reset deletes the
+    # world_jhsaa archive below but keeps world_setting, so a stale
+    # "jhsaa_name_era" would carry the PRIOR league's cutoff (a calendar year)
+    # into the new one and hold its opening cohorts on legacy names for seasons.
+    # Clear the value AND the memo (`_name_era_cache` clears with the school
+    # caches in `reset_schools`).
+    worldconfig.set("jhsaa_name_era", "")
+    from . import jhsaa as _jhsaa
+    _jhsaa.reset_schools()
     # Stored individual championships AND the national-team cups (Davis / BJK) are
     # off-season snapshots keyed by world_id — and SQLite REUSES world_id=1 after
     # this reset drops the world row, so the next save's get_or_create() lands on

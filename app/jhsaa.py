@@ -1042,7 +1042,15 @@ def name_era() -> int:
             finally:
                 conn.close()
             if r and r[0] is not None:
-                era = int(r[0]) + 1
+                # ‼️ `world_jhsaa.year` is the ZERO-BASED WORLD INDEX (the DB
+                # key), while `entry` in `_gen_seat` is a CALENDAR year — the
+                # same conversion `world.jhsaa_season_year` makes. Stored raw,
+                # the era would be e.g. 5 and every existing cohort would
+                # satisfy `entry >= era` — the archive-wide rename this gate
+                # exists to prevent. Season year of the newest archive is
+                # BASE_YEAR + index + 1; the first NEW cohort is one later.
+                from .world import BASE_YEAR
+                era = BASE_YEAR + int(r[0]) + 2
         except sqlite3.Error:
             era = 0                      # no archive yet — a fresh save, all new
         worldconfig.set("jhsaa_name_era", str(era))
