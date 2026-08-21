@@ -4672,6 +4672,46 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
     }
 
 
+def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
+    """EVERY program's season ledger for every archived year, in ONE pass over
+    the archive — the bulk counterpart of `jhsaa_school_seasons` for the research
+    export. Per archived year the season blob is parsed once and the dual table
+    read once (grouped by school), then `_season_row` runs per program over
+    those parsed structures — never one blob parse per (school, year), which is
+    what looping `jhsaa_school_seasons` over ~850 programs would cost. Rows per
+    school come newest-first, matching `jhsaa_school_seasons`."""
+    from collections import defaultdict
+    conn = _db()
+    out: dict[str, list[dict]] = {}
+    try:
+        years = [r["year"] for r in conn.execute(
+            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?"
+            " ORDER BY year DESC", (world_id, gender)).fetchall()]
+        for year in years:
+            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                             " AND gender=?", (world_id, year, gender)).fetchone()
+            if not r:
+                continue
+            arc = json.loads(r["data"])
+            sched: dict[str, list[dict]] = defaultdict(list)
+            for d in conn.execute(
+                    "SELECT school, home, lines FROM world_jhsaa_dual"
+                    " WHERE world_id=? AND year=? AND gender=?",
+                    (world_id, year, gender)):
+                sched[d["school"]].append({"home": bool(d["home"]),
+                                           "lines": json.loads(d["lines"] or "[]")})
+            schools = {row["school"]
+                       for dists in (arc.get("standings") or {}).values()
+                       for rows_ in (dists or {}).values() for row in rows_}
+            for school in schools:
+                row = _season_row(arc, year, school, sched.get(school, []))
+                if row:
+                    out.setdefault(school, []).append(row)
+    finally:
+        conn.close()
+    return out
+
+
 def jhsaa_school_history(world_id: int, gender: str, school: str) -> dict:
     """A program's whole history, as the two DISTINCT things it is:
 
