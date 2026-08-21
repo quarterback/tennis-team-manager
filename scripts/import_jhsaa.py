@@ -300,13 +300,19 @@ OWNER_EDICTS = frozenset({
 # a chunk of the association. Everything internal — forcing, dice, district
 # drawing — runs on the source name; only the written row carries the new one.
 RENAMES = {
-    "Bahía Leal Costa Verde": "Housatonic",      # keeps its Warthogs
+    # ‼️ A DEAD KEY IS NOT HARMLESS — it is the fuel for the next mis-fire. Sixteen
+    # entries were removed here (2026-08): each keyed a prep-network name that repo
+    # has since renamed away, so the entry could never fire — until some OTHER school
+    # happened to be called that string, at which point the rename reached the wrong
+    # school. That is exactly what "Wheatley" did. `RENAMES` is a permanent record of
+    # renames that are STILL REACHABLE; an entry whose key matches nothing in
+    # prep-network AND nothing in the association is debris, and `build()` now refuses
+    # to let a key collide with a live school's own identity at all.
+
     "Belyakov Academy of Music and Media": "Walter-Kenny School",
     "Belyakov Environmental Sciences Academy": "Friendship City",
-    "Belyakov I-50 Technical": "Belyakov East",
     "Belyakov Polytechnic Institute": "Morne Caribou Polytechnic",
     "Belyakov School of Design and Engineering": "Grande-Savane Arts",
-    "Belyakov School of Public Service": "Abraham Lincoln",
     "Belyakov School of Science and Industry": "Kongisburg",
     "Belmonte Agricultural Sciences Academy": "Pelican Town",
     "Belmonte Applied Sciences Institute": "Yazoo",
@@ -315,7 +321,6 @@ RENAMES = {
     "Belmonte Classical Academy": "James Madison",
     "Belmonte Technical Arts Academy": "Woodrow Wilson",
     "St. Basil School": "St. Ignatius",
-    "Caswell Classical School": "Cherry Hill",
     "Caswell Depot High": "Maple Run",
     "Caswell I-50 Technical": "Haddon Green",
     "Caswell School of Science and Industry": "Chester A. Arthur",
@@ -325,34 +330,22 @@ RENAMES = {
     "Aldecoa Depot High": "Ulysses Grant",
     "Echevarria Foundry High": "Bitterroot",
     "Echevarria I-50 Technical": "Red Bluff",
-    "Echevarria School of Commerce": "William McKinley",
     "Orellana Foundry High": "Grizzly Gulch",
     "Orellana School of Commerce": "Malpais",
-    "Eagleton School of Science and Industry": "Eagleton West",
     "Port Veles Agricultural Sciences Academy": "Biden",
     "Port Veles Civic Leadership Academy": "Severn",
     "Nadia Sidorov": "Adams",
     "Port Meridian Polytechnic": "Port Meridian North",
-    "San Borondón Agricultural Sciences Academy": "San Borondón North",
     "San Borondón Environmental Sciences Academy": "Sotavento",
-    "Puerto de los Reyes International School": "Puerto de los Reyes North",
     "Puerto de los Reyes School of Commerce": "Reyes Landing",
-    "Llerena Civic Leadership Academy": "Llerena North",
     "Llerena School of Science and Industry": "Crow Basin",
     "Serrano Applied Sciences Institute": "Arroyo Seco",
     "Serrano Depot High": "Cholla Flats",
     "Halbrook Technical": "Basin Gate",
-    "Greaves Junction Treasure Valley": "Greaves Junction South",
-    "Cortland Environmental Sciences Academy": "Cortland North",
-    "Cortland Foundry High": "Harry S. Truman",
     "Valderra Aviation and Engineering Academy": "Coyote Bend",
     "Valderra Technical Arts Academy": "Dwight Eisenhower",
     "Mercer City Technical Arts Academy": "Twin Mills",
-    "Montelago Agricultural Sciences Academy": "Montelago South",
     "Moriarty Foundry High": "Windmill Ridge",
-    "Las Norias Foundry High": "Las Norias East",
-    "Lake Esperanza School of Science and Industry": "Lake Esperanza North",
-    "Harriman Civic Leadership Academy": "Harriman North",
     "Harriman Maritime Academy": "John F. Kennedy",
     "San Cordero Maritime Academy": "Mission Butte",
     "San Cordero School of Commerce": "Mesa Verde",

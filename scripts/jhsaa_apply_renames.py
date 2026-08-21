@@ -71,6 +71,21 @@ def check_identities(rows: list[dict]) -> None:
         sys.exit(f"rows sharing one identity (source or name): {dup}")
 
 
+def check_rename_keys(rows: list[dict], m) -> None:
+    """‼️ A RENAMES KEY MUST NOT BE A LIVE SCHOOL'S OWN NAME — the second half of the
+    same fault. The key is matched against `source or name`, so an entry keyed on a
+    string that some OTHER school is simply CALLED reaches that school too. It stays
+    dormant for as long as no school carries the string and fires the day one does,
+    which is why it cannot be left to be noticed: rename the school, or retire the
+    entry. Dead entries — keys matching neither prep-network nor any school here —
+    are the fuel for this and were removed rather than kept as history."""
+    own = {r["name"] for r in rows if not r.get("source")}
+    bad = {k: v for k, v in m.RENAMES.items() if k in own and k != v}
+    if bad:
+        sys.exit("RENAMES keys that are a live school's own name — these would rename "
+                 f"the wrong school: {bad}")
+
+
 def apply(rows: list[dict], m) -> list[tuple[str, str]]:
     """Rewrite `rows` in place; return the (old, new) pairs that actually moved."""
     moved = []
@@ -147,6 +162,7 @@ def main() -> None:
     rows = doc["schools"]
 
     check_identities(rows)          # before the rename, not after
+    check_rename_keys(rows, m)
     moved = apply(rows, m)
     check_unique(rows)
 
