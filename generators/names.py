@@ -151,6 +151,66 @@ def _pick_weighted_key(rng: random.Random, weights: dict[str, float]) -> str:
 DIASPORA_SHARE = 0.12
 
 
+# ---------------------------------------------------------------------------
+# Frequency-weighted US draw (owner rule 2026-08 — "do like OOTP and other
+# games do where more common names come first")
+# ---------------------------------------------------------------------------
+#
+# The flat `rng.choice` inside `make_name_picker` gives every name in a bucket
+# identical odds, so a 15,000-player league lands every first name ~10 uses
+# whether it is James or Marcelino, and rare hyphenated surnames repeat exactly
+# as often as Smith. `us_freq.json` (built by `scripts/build_us_name_freq.py`
+# from real Census 2010 surname counts + SSA rank-shares) supplies a weighted
+# HEAD; the legacy curated buckets stay untouched underneath as the long tail.
+# `US_FREQ_SHARE` is the blend: most draws come off the real-frequency tables,
+# the rest fall through to the ordinary flat curated draw — nothing is removed
+# from the pools, common names simply come first the way they do in life.
+US_FREQ_SHARE = 0.80
+
+_us_freq_cache: Optional[dict] = None
+
+
+def _load_us_freq() -> dict:
+    """Cumulative-weight arrays for `rng.choices` — compute into a local and
+    publish (the threaded-worker cache rule)."""
+    global _us_freq_cache
+    cached = _us_freq_cache
+    if cached is None:
+        with open(os.path.join(_NAMES_DIR, "us_freq.json"), encoding="utf-8") as fh:
+            doc = json.load(fh)
+        built: dict = {}
+        for kind in ("male_first", "female_first", "surnames"):
+            table = doc.get(kind, {})
+            names = list(table.keys())
+            cum: list[float] = []
+            total = 0.0
+            for n in names:
+                total += float(table[n])
+                cum.append(total)
+            built[kind] = (names, cum)
+        _us_freq_cache = built
+        cached = built
+    return cached
+
+
+def draw_us_weighted(rng: random.Random, gender: str = "male") -> tuple[str, str]:
+    """One US name with REAL frequency weighting, blended `US_FREQ_SHARE` freq /
+    the rest legacy flat curated draw. Returns (full_name, "US")."""
+    g = (gender or "male").lower()
+    g = {"men": "male", "women": "female"}.get(g, g)
+    if g not in ("male", "female"):
+        g = "male" if rng.random() < 0.5 else "female"
+    if rng.random() >= US_FREQ_SHARE:
+        full, _c = make_name_picker(rng, gender=g, region_weights={"us": 1.0})()
+        return full, "US"
+    pools = _load_us_freq()
+    firsts, fcum = pools["male_first" if g == "male" else "female_first"]
+    lasts, lcum = pools["surnames"]
+    first = rng.choices(firsts, cum_weights=fcum, k=1)[0]
+    last = rng.choices(lasts, cum_weights=lcum, k=1)[0]
+    return f"{first} {last}", "US"
+
+
 def make_name_picker(
     rng: random.Random,
     *,

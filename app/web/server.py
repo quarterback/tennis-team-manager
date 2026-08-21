@@ -2255,13 +2255,28 @@ def create_app() -> Flask:
         pool = request.args.get("pool", "mismatched")
         n_squads = max(1, min(10, request.args.get("squads", 3, type=int) or 3))
         grades = request.args.get("grades", "all")
+        from_group = request.args.get("from_group", "All")
+        if from_group != "All" and from_group not in _jh.GROUPS:
+            from_group = "All"
+        min_ovr = request.args.get("min_ovr", type=int)
+        max_ovr = request.args.get("max_ovr", type=int)
+        min_pot = request.args.get("min_pot", type=int)
+        max_pot = request.args.get("max_pot", type=int)
+        q = request.args.get("q", "")
         lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
-                               pool=pool, n_squads=n_squads, grades=grades)
+                               pool=pool, n_squads=n_squads, grades=grades,
+                               from_group=from_group, min_ovr=min_ovr,
+                               max_ovr=max_ovr, min_pot=min_pot,
+                               max_pot=max_pot, q=q)
+        pg = paginate(lab["cands"], request.args.get("page", 1))
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
         return render_template("jhsaa_lineup_lab.html", active="High School",
                                view=scope_view, lab=lab, gender=gender, gender_f=g,
                                target=target, pool=pool, n_squads=n_squads,
-                               grades=grades,
+                               grades=grades, from_group=from_group,
+                               min_ovr=min_ovr, max_ovr=max_ovr, min_pot=min_pot,
+                               max_pot=max_pot, q=q, cand_rows=pg.items, p=pg,
+                               total=lab["total"],
                                groups=lab["groups"], u=u, uni_label=label)
 
     @app.route("/jhsaa/transfers")

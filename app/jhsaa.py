@@ -979,6 +979,83 @@ def reset_schools() -> None:
     _schoolobj_cache.clear()
     _upstart_cache.clear()
     _playup_league_cache.clear()
+    _name_era_cache.clear()
+
+
+# --- name-generation era (owner rule 2026-08, mid-save cutover) ----------------------
+#
+# The broadened, frequency-weighted name draw (see `_gen_seat`) must NOT rename
+# players who already exist: JHSAA players are regenerated deterministically from
+# (school, entry, seat), so changing the draw retroactively renames every archived
+# season's rosters — awards, brackets and school pages would all point at strangers.
+# The cutover is therefore keyed on ENTRY YEAR: cohorts entering from `name_era()`
+# on draw with the new mix, everyone earlier keeps their exact old name.
+#
+# The era self-configures ONCE per save and persists (`worldconfig`): on first read
+# it becomes (latest archived JHSAA season year + 1) — so every cohort a live save
+# has already seen keeps its names and only future freshmen classes broaden — or 0
+# on a fresh save with no archive, where everything is new anyway.
+#
+# ‼️ Memoised keyed on the DB path and cleared in `reset_schools()` — NEVER resolve
+# this per seat (the play-up fingerprint query storm, CLAUDE.md caches §5).
+_name_era_cache: dict = {}
+
+#: New-era mix: overwhelmingly US, a real Canadian slice, and a thin international
+#: remainder ("IRL there are exchange students who play HS for a year"). ~90/5/5.
+NAME_V2_US = 0.90
+NAME_V2_CANADA = 0.05
+
+_intl_weights_cache: dict | None = None
+
+
+def _intl_weights() -> dict:
+    """The exchange-student mix: the owner's tennis_global preset minus the two
+    shares that draw separately. Static data — computed once, published whole."""
+    global _intl_weights_cache
+    w = _intl_weights_cache
+    if w is None:
+        from generators import region_preset
+        w = {k: v for k, v in region_preset("tennis_global").items()
+             if k not in ("us", "canada")}
+        _intl_weights_cache = w
+    return w
+
+
+def name_era() -> int:
+    """The first entry year that draws new-era names for this save (see above)."""
+    from .dbpath import resolve_db_path
+    key = resolve_db_path()
+    got = _name_era_cache.get(key)
+    if got is not None:
+        return got
+    from . import worldconfig
+    raw = worldconfig.get("jhsaa_name_era")
+    if raw is not None and str(raw).strip():
+        era = int(raw)
+    else:
+        import sqlite3
+        era = 0
+        try:
+            conn = sqlite3.connect(key)
+            try:
+                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+            finally:
+                conn.close()
+            if r and r[0] is not None:
+                # ‼️ `world_jhsaa.year` is the ZERO-BASED WORLD INDEX (the DB
+                # key), while `entry` in `_gen_seat` is a CALENDAR year — the
+                # same conversion `world.jhsaa_season_year` makes. Stored raw,
+                # the era would be e.g. 5 and every existing cohort would
+                # satisfy `entry >= era` — the archive-wide rename this gate
+                # exists to prevent. Season year of the newest archive is
+                # BASE_YEAR + index + 1; the first NEW cohort is one later.
+                from .world import BASE_YEAR
+                era = BASE_YEAR + int(r[0]) + 2
+        except sqlite3.Error:
+            era = 0                      # no archive yet — a fresh save, all new
+        worldconfig.set("jhsaa_name_era", str(era))
+    _name_era_cache[key] = era
+    return era
 
 
 #: Playing up is a SMALL-SCHOOL mechanism (owner correction 2027-08): eligible at this
@@ -1552,8 +1629,32 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     if prng.random() < PRODIGY_RATE:
         lo2, hi2 = PRODIGY_MATURITY
         maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
-    nm, _ = make_name_picker(random.Random(rng.randrange(1 << 30)), gender=sex,
-                             region_weights={"us": 1.0})()
+    # ‼️ EXACTLY ONE draw off the main rng, in BOTH eras — the name stream is a
+    # separate rng seeded off it, so widening the name draw cannot shift a single
+    # talent/attribute roll for anyone, either side of the cutover.
+    nrng = random.Random(rng.randrange(1 << 30))
+    if entry >= name_era():
+        # New-era draw (owner rule 2026-08): frequency-weighted US head over the
+        # untouched curated pools, plus the exchange-student slices. ~90/5/5.
+        from generators import draw_us_weighted
+        roll = nrng.random()
+        if roll < NAME_V2_US:
+            nm, country = draw_us_weighted(nrng, sex)
+        elif roll < NAME_V2_US + NAME_V2_CANADA:
+            nm, country = make_name_picker(nrng, gender=sex,
+                                           region_weights={"canada": 1.0})()
+        else:
+            nm, country = make_name_picker(nrng, gender=sex,
+                                           region_weights=_intl_weights())()
+        country = country or "US"
+    else:
+        # Legacy draw, byte-identical — existing cohorts keep their exact names.
+        nm, _ = make_name_picker(nrng, gender=sex, region_weights={"us": 1.0})()
+        country = "US"
+    # ‼️ Always generated AS "US": `generate_prospect` branches on country (talent
+    # shift, elite roll, academics, hometown path) and consumes the rng differently,
+    # so passing the exchange student's country would shift every attribute roll.
+    # The name era must move NAMES ONLY — the flag is stamped on afterwards.
     p = generate_prospect(rng, nm, "US", gender=sex,
                           talent=min(80.0, _ceiling(rng, school.talent_group,
                                                     school.gender, mod)
@@ -1563,6 +1664,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                           # rename or every archived award points at nobody.
                           pid=make_pid("jhsaa", school.ident, school.gender,
                                        entry, seat))
+    p.country = country                  # the flag only — see above
     p.class_year = str(grade)
     p.grade = grade
     p.entry_year = entry

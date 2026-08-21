@@ -1361,6 +1361,23 @@ See `docs/AAR-international-distribution-and-name-pools.md`.
     Flask test client cannot see a Blob download. `tests/test_region_mix_presets.py`
     covers the document, the drift report and the routes.
 - Names are not save state — this changes future-generated worlds only.
+- **‼️ US NAMES ARE FREQUENCY-WEIGHTED (owner rule 2026-08, OOTP-style).**
+  `generators.names.draw_us_weighted` blends a real-frequency HEAD
+  (`us_freq.json` — Census 2010 surname counts + SSA rank-shares, regenerate with
+  `scripts/build_us_name_freq.py`, never hand-edit; the scrubber never touches it)
+  at `US_FREQ_SHARE` 0.80 over the untouched curated buckets (the long tail). The
+  curated pools were NOT removed — do not "dedupe" them against the freq file.
+- **‼️ JHSAA NAMES ARE ERA-GATED BY ENTRY YEAR (`jhsaa.name_era()`).** Players are
+  regenerated deterministically, so a draw change RENAMES every archived roster
+  unless gated: cohorts entering ≥ the era draw the new ~90% weighted-US / 5%
+  Canada / 5% international (exchange students) mix; earlier cohorts keep their
+  exact old names. The era self-configures once per save (latest archived JHSAA
+  year + 1, else 0) and persists in `worldconfig`; memoised, cleared by
+  `reset_schools()`. ‼️ `_gen_seat` consumes EXACTLY ONE main-rng draw for naming
+  in both eras, and always calls `generate_prospect` with country "US" (stamping
+  `p.country` after) — passing the real country shifts talent/academic/hometown
+  rolls and changes attributes, which the gate exists to prevent. Verified by
+  byte-comparing rosters across the change.
 
 ## ⚠️ HOMETOWNS — generated from real place data, never hand-typed (owner rule 2027-08)
 `generators/data/names/hometowns.json` holds two tiers with DIFFERENT key spaces that
