@@ -2139,6 +2139,30 @@ PLAY_UP_SEED = 90210
 #
 # Enforcement: a pair is promoted only if EVERY member clears the cut (otherwise none
 # of them move), and afterwards the whole pair takes one league.
+# ‼️ COMPETITIVE MOVES — a program may be placed BELOW its enrollment class (owner
+# rule 2026-08). Real associations do this: a school that cannot be competitive where
+# its enrollment puts it petitions down, and the association grants it. Here the
+# JHSAA grants it outright, and the ENROLLMENT is scaled to match rather than the
+# other way round — the enrollments are fictional and nothing about them is permanent,
+# so the number follows the decision instead of blocking it.
+#
+# This is the mirror of PLAY_UP, which lets a small strong program go UP. Together
+# they mean a program's class is what it can COMPETE in, with enrollment as the
+# default rather than the rule.
+#
+# ‼️ IT MOVES `group`, NEVER `classification` — the same invariant play-up rests on.
+# `group` is the championship you enter; `classification` is how many students you
+# have, and `_TALENT` generates from THAT. Keyed on `group`, a demoted school would
+# also be generated with the weaker class's talent, which would make the move a
+# self-fulfilling collapse instead of a fairer field.
+#
+# Candidates come from RESULTS, not from a guess — `scripts/jhsaa_competitive.py`
+# reads an archived save and reports the programs that have been beaten for years.
+COMPETITIVE_MOVES: dict[str, str] = {
+    # "School name": "target group",
+}
+
+
 RIVALRIES = [
     ("Condotti Vanguard Academy", "Romero-Finniski"),
 ]
