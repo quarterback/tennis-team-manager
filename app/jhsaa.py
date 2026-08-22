@@ -57,8 +57,9 @@ def champ_group(classification: str) -> str:
     """The championship group a raw classification plays in.
 
     2A and 1A used to share one combined "2A-1A" group (too few sponsors each
-    to run the standard 40-team format on their own); they now crown SEPARATELY
-    via the fixed 24-team shape (`_recovery_24`), so every classification maps
+    to run the standard 40-team format on their own); they now crown SEPARATELY,
+    2A on the standard ladder and 1A on the fixed 24-team shape
+    (`_recovery_24`), so every classification maps
     to its own group and this is an identity fold. The same fold as
     `scripts/import_jhsaa.champ_group`; kept here because a School's `group`
     and its `classification` are no longer always equal (a play-up moves the
@@ -435,8 +436,16 @@ WARD_FIELD = 32
 #
 # This is what a 32 could never do: 32 is a full bracket, so a champion cannot be
 # given a bye without inventing a round for everybody else to sit out.
+#
+# 2A joined them in the 2033 realignment (owner rule 2026-08): it was the class the
+# 1A/2A split was meant to leave viable and it had 63 programs to 3A's 125, so 3A
+# crowned from 40 and 2A from 24. The realignment moved 32 schools down, and once 2A
+# is a 95-program class its playoff "mirrors every other classification" (owner) —
+# the dynamic recovery ladder, not the fixed 24-team shape. It clears
+# `sponsor_floor` comfortably: 95 girls' programs and 87 boys' against a floor of 76.
+# 1A is unchanged and stays the one class on the 24 (`_recovery_24`).
 STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 24, "1A": 24}
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 24}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
@@ -510,7 +519,7 @@ def sponsor_floor(group: str) -> int:
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
     a Conference, neither round convenes, and it has no floor of its own.
 
-    ‼️ THE 1A/2A FIXED 24-TEAM SHAPE (`_recovery_24`) IS A DIFFERENT FORMULA. Every
+    ‼️ 1A's FIXED 24-TEAM SHAPE (`_recovery_24`) IS A DIFFERENT FORMULA. Every
     round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
     Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
     — never of total sponsor count — so there is no Semi-Conference body reservoir
@@ -3623,8 +3632,9 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
                  district_champs: list[str], power: dict, *,
                  seed: int) -> tuple[dict, dict, dict, dict, dict,
                                      list, list[str], dict]:
-    """The FIXED 24-team recovery/qualification shape — 1A and 2A (owner rule
-    2027-08). Zonal champions are an automatic State berth here exactly as in
+    """The FIXED 24-team recovery/qualification shape — 1A alone (owner rule
+    2027-08; 2A left it for the standard ladder in the 2033 realignment, which
+    took it to 95 programs and a 40-team field). Zonal champions are an automatic State berth here exactly as in
     every other class (`zonal_champs` — the caller seeds them 1-8, same as
     `_recovery`'s callers do) — this function returns only the 16 EARNED
     qualifiers on top of those 8. Every named round stays in play; what moves
@@ -4505,7 +4515,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         #
         # TWO WAYS IN AND NO OTHERS (owner rule 2027-08): win a Zonal, or win
         # your way through recovery. Everyone below the champions is a recovery
-        # survivor, seeded in post-recovery TOSS order. This holds for 1A/2A's
+        # survivor, seeded in post-recovery TOSS order. This holds for 1A's
         # fixed 24-team shape too (`_recovery_24`) — Zonal champions are an
         # automatic State berth there exactly like every other class; only the
         # RECOVERY ladder underneath them is wired differently. `champions=

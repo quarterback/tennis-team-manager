@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Redraw league MEMBERSHIP inside chosen classifications, keeping the league NAMES.
+"""Redraw the leagues of chosen classifications — membership, count and names.
 
     python3 scripts/jhsaa_redistrict.py 8A 7A 6A [--dry-run] [--prep-network PATH]
 
@@ -11,12 +11,25 @@ ten leagues spanned more than 250 miles and the worst three about 400: a "league
 whose members are four hours apart is not a league, and its members play a schedule
 nobody would drive.
 
-‼️ THE NAMES STAY. League identity is a curated dataset (`LEAGUE_NAMES`, owner rule
-2027-08 — real league names persist through realignment, and the drift IS the
-realism). So this does not draw new leagues: it keeps exactly the leagues a class
-already has and moves SCHOOLS between them. Each redrawn block inherits the name of
-whichever existing league it overlaps most, so a league keeps its historical core and
-its name follows the schools that have always been in it.
+‼️ LEAGUES REALIGN **AND REBRAND** (owner rule 2026-08). The first version of this
+script held the names fixed as an absolute — it kept exactly the leagues a class had
+and only moved schools between them. That is half the rule. Real associations redraw
+on a cycle and names come and go with the map: the OSAA runs a four-year
+classification-and-districting period, and its 2026-30 redraw did not merely reshuffle
+membership, it created a brand-new seven-team 6A/5A **Southwest Hybrid** out of
+Ashland, Crater and Eagle Point beside Grants Pass, Roseburg and the two Medfords.
+So a block still INHERITS the name it most overlaps — a league keeps its historical
+core, which is what makes a realignment read as a realignment — but a class that
+gains leagues draws new names from `LEAGUE_NAMES`, and a class that loses them
+retires names. The bank is the authority on what a league may be called; the
+alignment is the authority on how many there are.
+
+‼️ AND STRICT GEOGRAPHY IS NOT THE CONSTRAINT (same rule). Distance is a cost, not a
+rule: the OSAA puts Bend's schools in leagues that involve real driving, and the
+Southwest Hybrid above spans two classifications precisely because the geography left
+no tidy answer. The redraw minimises span, but SIZE wins — a league near
+`DISTRICT_TARGET` with one distant member is a better league than a tight one with
+six, because district size IS the schedule here.
 
 ‼️ BOYS AND GIRLS ALWAYS SHARE A LEAGUE. A league belongs to the SCHOOL, so membership
 is decided once per school and both gender fields are written from it.
@@ -163,32 +176,72 @@ def redistrict(rows, cls, pos, m, rng):
     if missing:
         print(f"  ! {cls}: {len(missing)} schools have no coordinates and are left put: "
               f"{[r['name'] for r in missing][:5]}")
+    # ‼️ HOW MANY LEAGUES IS `district_count`'s DECISION, NOT THE CLASS'S HISTORY.
+    # Taking `k = len(existing names)` made every redraw preserve whatever the old
+    # cut-line arithmetic had produced — leagues packed to 11-12 because the old draw
+    # took the FEWEST blocks under the cap. The class is cut into the number of
+    # leagues its size wants, and the difference is drawn from or returned to the
+    # name bank.
     names = collections.Counter(r["girls_district"] for r in members)
-    k = len(names)
+    k = m.district_count(len(members))
     items = [(r["name"], pos[r["city"]]) for r in members]
     groups = cluster(items, k, m.MAX_DISTRICT, rng)
-    # A floor one under the even split: even sizes are the goal, but forcing exact
-    # evenness would drag distant schools in to satisfy arithmetic.
-    floor = max(1, len(items) // k - 1)
+    # ‼️ THE FLOOR IS THE TARGET, not an even split of whatever the class happens to
+    # hold. A league is a double round robin, so its size IS its season; pulling a
+    # short league up to strength is worth a longer drive for the school that moves,
+    # which is the trade real associations make. One under the target, because the
+    # last league of an odd division has to be allowed to be the small one.
+    floor = max(1, min(m.DISTRICT_TARGET - 1, len(items) // k))
     groups = balance(groups, items, m.MAX_DISTRICT, floor)
     rivals = [(a, b) for a, b in getattr(m, "RIVALRIES", ())]
     groups = keep_rivals(groups, items, {r["name"]: pos[r["city"]] for r in members},
                          rivals, m.MAX_DISTRICT)
 
-    # ‼️ A BLOCK INHERITS THE NAME IT MOST OVERLAPS. Assigning names by centroid or
-    # alphabetically would shuffle a class's league names wholesale; overlap keeps each
-    # name on the schools that have always carried it, which is what makes a
-    # realignment read as a realignment rather than a rebrand.
+    # ‼️ A BLOCK INHERITS THE NAME IT MOST OVERLAPS, AND ONLY THEN REBRANDS.
+    # Assigning names by centroid or alphabetically would shuffle a class's league
+    # names wholesale; overlap keeps each name on the schools that have always
+    # carried it, which is what makes most of a realignment read as a realignment.
+    # But when the class has GAINED leagues there is no historical core left to
+    # inherit from, and a block that has to reach for some unrelated leftover name is
+    # a worse outcome than a new league: it puts a name on schools that never carried
+    # it while an unused bank name sits there. So a block with no free overlap draws
+    # from `LEAGUE_NAMES` — the same authority the importer names from — respecting
+    # the bank's own rules (unused in this class, and no two leagues in a class
+    # sharing a LEADING WORD, so none of them read as one).
     by_name = {r["name"]: r["girls_district"] for r in members}
+    by_area = {r["name"]: r["area"] for r in members}
     taken, out = set(), {}
+    # Seeded with every EXISTING name's leading word, not only the ones kept: which
+    # survive is not known until the loop ends, and a new league reading as an old
+    # one is the failure this rule exists to prevent.
+    heads = {n.split()[0] for n in names}
+    bank = m.LEAGUE_NAMES[:]
+    rng.shuffle(bank)
     order = sorted(groups.items(), key=lambda kv: -len(kv[1]))
     for ci, idx in order:
         counts = collections.Counter(by_name[items[i][0]] for i in idx)
         pick = next((n for n, _ in counts.most_common() if n not in taken), None)
-        pick = pick or next(n for n in names if n not in taken)
+        if pick is None:
+            area = collections.Counter(
+                by_area[items[i][0]] for i in idx).most_common(1)[0][0]
+            free = [(n, aff) for n, aff in bank
+                    if n not in taken and n not in names
+                    and n.split()[0] not in heads]
+            pick = (next((n for n, aff in free if aff == area), None)
+                    or next((n for n, _ in free), None)
+                    or f"District {ci + 1}")
         taken.add(pick)
+        heads.add(pick.split()[0])
         out[ci] = pick
-    return {items[i][0]: out[ci] for ci, idx in groups.items() for i in idx}, members
+    notes = []
+    retired = sorted(set(names) - taken)
+    if retired:
+        notes.append(f"   retired {len(retired)}: {', '.join(retired)}")
+    new = sorted(n for n in taken if n not in names)
+    if new:
+        notes.append(f"   new     {len(new)}: {', '.join(new)}")
+    return ({items[i][0]: out[ci] for ci, idx in groups.items() for i in idx},
+            members, notes)
 
 
 def main() -> None:
@@ -219,7 +272,7 @@ def main() -> None:
         before = collections.defaultdict(list)
         for r in members:
             before[r["girls_district"]].append(r)
-        assign, placed = redistrict(rows, cls, pos, m, rng)
+        assign, placed, notes = redistrict(rows, cls, pos, m, rng)
 
         after = collections.defaultdict(list)
         for r in members:
@@ -237,6 +290,8 @@ def main() -> None:
         print(f"   span  worst {b[-1][0]:.0f} -> {a[-1][0]:.0f} mi · "
               f"mean {sum(x for x, _ in b)/len(b):.0f} -> {sum(x for x, _ in a)/len(a):.0f} mi · "
               f"over 250mi {sum(1 for x, _ in b if x > 250)} -> {sum(1 for x, _ in a if x > 250)}")
+        for note in notes:
+            print(note)
         for span, name in reversed(a):
             areas = collections.Counter(x["area"] for x in after[name])
             print(f"   {span:6.0f} mi  {name:<40} {len(after[name]):2}  {dict(areas)}")

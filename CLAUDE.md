@@ -744,10 +744,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
-- **‼️ 1A AND 2A CROWN SEPARATELY, via a FIXED 24-team shape — not the dynamic
-  format above (owner rule 2027-08).** They used to share one combined "2A-1A"
-  group (neither clears the 76-sponsor floor the dynamic Semi-Conference needs
-  on its own). `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
+- **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
+  rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
+  combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic
+  Semi-Conference needs on its own), then crowned separately on this shape. **2A
+  now plays the standard ladder** — the realignment took it to 95 programs, 95
+  girls'/87 boys' sponsors against the 76 floor, and the owner's rule is that its
+  playoff "mirrors every other classification"; 1A is the only class left on the
+  24. `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
   `_recovery` fed a smaller number — but **the Zonal-champion guarantee is
   UNCHANGED here, same as every other class**: an early design retired it for
   1A/2A only (Zonal win = advancement only, no automatic berth), shipped, was
@@ -1645,16 +1649,55 @@ was a school marker, shipped "Baptist HS High School".
     `AREA_RENAMES` entry silently stopped firing; the committed data already held the
     right string, so only a re-import would have shown it. `jefferson_gazetteer.py`
     compares the two area sets on every run and caught it immediately.
-- **‼️ REDISTRICTING KEEPS THE LEAGUE NAMES AND MOVES THE SCHOOLS**
+- **‼️ REDISTRICTING: LEAGUES REALIGN **AND REBRAND**, AND SIZE OUTRANKS GEOGRAPHY**
   (`scripts/jhsaa_redistrict.py`, owner rule 2026-08). Leagues are cut from a geographic
   ORDER into blocks, which leaves the REMAINDER as geographic leftovers: ten leagues in
-  6A/7A/8A spanned over 250 miles, the worst about 400. The redraw keeps exactly the
-  leagues a class has (identity is curated — names persist through realignment) and each
-  block inherits the name it most OVERLAPS, so a realignment reads as a realignment and
-  not a rebrand. Assignment order is REGRET, not nearest-centroid (which hands one metro
-  every seat while its neighbour starves); **league size IS the schedule**, so a floor
-  pass pulls a rump back to strength using its NEAREST available member; rivalries are
-  repaired last and outrank geography.
+  6A/7A/8A spanned over 250 miles, the worst about 400. A block still INHERITS the name
+  it most OVERLAPS — a league keeps its historical core, which is what makes most of a
+  realignment read as a realignment — but the first version held the names FIXED as an
+  absolute, and that is half the rule. Real associations redraw on a cycle and names
+  come and go: the OSAA runs a four-year classification-and-districting period, and its
+  2026-30 redraw created a brand-new seven-team 6A/5A **Southwest Hybrid** rather than
+  merely reshuffling membership. So a class that GAINS leagues draws new names from
+  `LEAGUE_NAMES` (the same authority the importer names from, same rules — unused in
+  the class, no two sharing a LEADING WORD) and a class that loses them retires names;
+  a block with no free overlap rebrands rather than reaching for an unrelated leftover.
+  **‼️ AND STRICT GEOGRAPHY IS NOT THE CONSTRAINT** (same rule): distance is a cost,
+  not a rule — the OSAA puts Bend's schools in leagues that involve real driving. The
+  redraw minimises span, but SIZE wins: a league near `DISTRICT_TARGET` with one distant
+  member beats a tight one with six, because **league size IS the schedule**. Assignment
+  order is REGRET, not nearest-centroid (which hands one metro every seat while its
+  neighbour starves); the floor pass pulls a short league up to strength using its
+  NEAREST available member; rivalries are repaired last and outrank geography.
+- **‼️ `MAX_DISTRICT` (12) IS A CAP, `DISTRICT_TARGET` (10) IS THE SIZE** (owner rule
+  2026-08). `draw_districts` took `k = ceil(n / MAX_DISTRICT)` — the FEWEST blocks that
+  fit under the cap — which quietly turned a ceiling into a target: every class packed
+  its leagues to 11-12 and the cap became the design. Owner: "no conference should be
+  over 12 teams like I said before, with 40 teams there's no reason for some weird cap
+  on districts when smaller ones (around 10 teams) would be fine." `import_jhsaa.
+  district_count(n)` is now the ONE authority on how many leagues a pool wants — aim at
+  ten, never exceed twelve — and both the importer and the redistricter read it. A class
+  is redrawn whenever its league count no longer matches it **in EITHER direction**: the
+  old condition was "does it still fit under the cap", which only ever fires on GROWTH,
+  so the class a realignment takes schools OUT of kept whatever leagues it had at
+  whatever sizes were left. Every class now runs 9-12.
+- **‼️ THE 2033 2A/3A REALIGNMENT — a RECLASSIFICATION, not a competitive move**
+  (`import_jhsaa.RECLASSIFY_TO_2A`, owner rule 2026-08). 2A carried 63 programs to 3A's
+  125, so 3A crowned from 40 and 2A from 24 — and 2A was the class the 1A/2A split was
+  meant to leave viable. 32 named schools moved down; 2A is 95 programs in 10 leagues
+  with a 40-team field, 3A is 93 in 9, 1A is untouched. **It moves `classification` AS
+  WELL AS `group`, and that is the whole distinction from `COMPETITIVE_MOVES`**:
+  `_TALENT` generates from `classification`, so a school moved on `group` alone keeps
+  its old class's players — right for a program petitioning down on RESULTS, wrong here,
+  where the association is saying these schools are 2A-SIZED. They are: every one
+  already sat inside 2A's committed enrollment band (306-375 against 86-431), so nothing
+  needed scaling. It is a NAMED TABLE rather than a moved cut line because the owner
+  named the schools — a line at ~380 takes a different 32 (3A's smallest is 303 and
+  stays 3A), and the association's judgement is the input, not a threshold
+  reverse-engineered to approximate it. Keyed on the DISPLAY name (everything else in
+  `reclassify()` is on prep-network's canonical name), and it runs LAST, because every
+  school it names sits above `PROMOTE_2A_ABOVE` and would otherwise be promoted straight
+  back.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number

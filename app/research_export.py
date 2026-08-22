@@ -245,10 +245,12 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "It is the play order: there is no clock inside a JHSAA season.",
             "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4.",
             "Every court finishes. JHSAA has no clinch abandonment.",
-            "1A and 2A crown SEPARATELY via a fixed 24-team postseason shape "
-            "(Super Regional/Semi-State/Divisional/Semi-Conference/Conference all "
-            "award direct State berths, unlike the other classes' dynamic ladder); "
-            "Zonal is advancement-only there and grants no automatic State berth.",
+            "1A crowns from a 24-team field on a fixed recovery shape (Super Regional/"
+            "Semi-State/Divisional/Semi-Conference/Conference all award direct State "
+            "berths, unlike the other classes' dynamic ladder). Every other class, 2A "
+            "included since the 2033 realignment, crowns from 40 on the dynamic ladder. "
+            "The eight Zonal champions are automatic State berths, seeded 1-8, in every "
+            "class and under both shapes.",
             "Programs and rosters reflect the CURRENT association config (renames/sponsorship/"
             "play-up as they stand today), applied to the archived season's own results and "
             "roster year — a school that has since stopped sponsoring tennis or been renamed "

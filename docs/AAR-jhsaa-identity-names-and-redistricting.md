@@ -158,16 +158,126 @@ about them is permanent, so **the number follows the decision instead of blockin
 
 ---
 
+---
+
+# Round two — the 2033 realignment, and three corrections that were all one correction
+
+Everything above was written before the owner read it. Three of its conclusions were
+wrong, and they were wrong the same way: **each had taken an implementation detail and
+promoted it to a rule.**
+
+## Correction 1 — "THE NAMES STAY" was half a rule
+
+I wrote that in capitals. The owner: *"in real life leagues realign and rebrand all of
+the time, do a search on OSAA."*
+
+That search settles it. The OSAA runs a **four-year classification-and-districting
+period**, and the current one — [approved for 2026-30 and effective 2026-27
+](https://www.osaa.org/news/4704) after a four-month review, 300+ written submissions
+and testimony from 171 groups — did not merely reshuffle membership. It created a
+brand-new **seven-team 6A/5A Southwest Hybrid**: Ashland, Crater and Eagle Point
+alongside Grants Pass, Roseburg and both Medfords, the state's [second hybrid
+conference](https://www.osaa.org/news/4601) after the Midwestern. A league that did not
+exist before now does, and the schools in it did not previously share one.
+
+So the rule is the half I had: **a block INHERITS the name it most overlaps**, because
+a league keeps its historical core. What I had wrongly made absolute is the rest — a
+class that GAINS leagues draws new names from `LEAGUE_NAMES`, a class that loses them
+retires names, and a block with no free overlap **rebrands** rather than reaching for
+some unrelated leftover name and putting it on schools that never carried it.
+
+> ⚠️ I had turned "names persist through realignment" — which is true of *a* league —
+> into "a class has the leagues it has forever", which is true of no association
+> anywhere. **A property of an object is not a property of the set.**
+
+## Correction 2 — a cap I had been treating as a target
+
+`draw_districts` took `k = ceil(n / MAX_DISTRICT)`: the FEWEST blocks that fit under the
+cap. So every class packed its leagues to 11-12 and **the ceiling silently became the
+design.** The owner had said this before: *"no conference should be over 12 teams like
+I said before, with 40 teams there's no reason for some weird cap on districts when
+smaller ones (around 10 teams) would be fine."*
+
+`import_jhsaa.district_count(n)` is now the one authority — aim at `DISTRICT_TARGET`
+(10), never exceed `MAX_DISTRICT` (12) — and both the importer and the redistricter read
+it. Every class in the association now runs 9-12, none over.
+
+**And the redraw trigger was the same mistake.** The condition for "this class needs a
+redraw" was *does it still fit under the cap*, which can only ever fire on GROWTH. So
+the class a realignment takes schools OUT of kept whatever leagues it had at whatever
+sizes were left over — 3A would have come out of this at eleven leagues averaging 8.5,
+one of them at six. It is `district_count` in **either direction** now.
+
+That same fix swept up something four rounds old: 1A's **Rim Country League had 13
+members** since the 1A/2A split, listed as "still open" above precisely because no
+reclassification was ever going to touch a class where nothing had changed. A cap is
+enforced wherever it is broken, not only where a pass happens to be looking.
+
+## Correction 3 — strict geography was never the constraint
+
+The redraw minimised span. The owner: *"strict geography isn't a major constraint here,
+no different than real life (see what the OSAA does to the Bend schools or others due
+to distance)."* Correct — and the Southwest Hybrid above exists **because** the
+geography left no tidy answer.
+
+Distance is a cost, not a rule. **Size wins:** a league near the target with one distant
+member is a better league than a tight one with six, because district size IS the
+schedule. The floor is now the target rather than an even split of whatever the class
+happens to hold. 2A comes out with two leagues over 250 miles and that is the right
+answer, not a defect to iterate on.
+
+---
+
+## The realignment itself
+
+32 named 3A schools move to 2A. 2A: 63 → **95 programs, 10 leagues, a 40-team field**.
+3A: 125 → **93 in 9**. 1A untouched. Every class clears `sponsor_floor` (2A at 95
+girls'/87 boys' against 76), no league is over 12, and 305 schools changed league across
+the nine-class redraw.
+
+| class | worst span | mean span | over 250mi |
+|---|---|---|---|
+| 9A | 429 → 122 mi | 158 → 62 | 2 → 0 |
+| 5A | 389 → 243 mi | 147 → 83 | 2 → 0 |
+| 4A | 387 → 227 mi | 197 → 90 | 4 → 0 |
+| 3A | 419 → 256 mi | 225 → 112 | 5 → 1 |
+| 2A | 373 → 303 mi | 229 → 149 | 5 → 2 |
+| 1A | 369 → 218 mi | 205 → 129 | 3 → 0 |
+
+> ⚠️ **It is a RECLASSIFICATION, and that is why it moves `classification` as well as
+> `group`.** The distinction from `COMPETITIVE_MOVES` is not bookkeeping: `_TALENT`
+> generates from `classification`, so a school moved on `group` alone keeps its old
+> class's players and would walk its new class. That is *correct* for a program
+> petitioning down on RESULTS — it is supposed to keep the roster it has — and wrong
+> here, where the association is saying these schools are 2A-SIZED. They are: every one
+> already sat inside 2A's committed enrollment band (306-375 against 86-431), so the
+> owner's "scale the enrollment to justify it" lever was available and not needed.
+
+It is a NAMED TABLE rather than a moved cut line because the owner named the schools. A
+line at ~380 takes a different 32 — 3A's smallest program is 303 and stays 3A — and the
+association's judgement about which programs belong where is the input, not a threshold
+reverse-engineered to approximate it.
+
+## The one that was already fixed
+
+*"the boys & girls separate leagues thing needs to be fixed, i've only said it a million
+times."* This AAR said 30 schools in 3A/4A/5A still had it. **They did not.** All 30
+were schools that sponsor GIRLS tennis and not boys, so `boys_district` is empty — which
+is not a mismatch, it is the correct representation of not having a boys' programme.
+Measured both ways: zero rows where both fields are populated and differ, and zero
+runtime mismatches across 862 girls' and 777 boys' schools.
+
+> ⚠️ I generated that finding with a `girls_district != boys_district` filter and wrote
+> it into an AAR as an open defect without ever looking at a row. **An empty field is
+> not a different value**, and a count is not a finding until you have read one of the
+> things it counted.
+
 ## Still open
 
-- **1A's Rim Country League has 13 members**, one over `MAX_DISTRICT`. Pre-existing,
-  outside the classes this run touched.
-- **30 schools in 3A/4A/5A have different boys' and girls' leagues**, which the
-  association's own rule forbids. The 6A/7A/8A redraw fixed 20 incidentally by deciding
-  membership once per school, which is what that rule means. The rest need the same
-  treatment — but 2A/3A were being realigned separately, so they were left alone.
 - **`COMPETITIVE_MOVES` is empty.** Candidates come from results, and the working copy
-  here has no archived season to read them from.
+  here has no archived season to read them from. Unchanged from round one — and note
+  that the 2033 realignment is NOT it: that was a reclassification, and the two are
+  deliberately different mechanisms.
 
 ## The generated documents this run added
 

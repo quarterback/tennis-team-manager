@@ -52,6 +52,30 @@ _OUT = os.path.join(_OUT_DIR, "schools.json")
 SEED = 11
 MAX_DISTRICT = 12
 
+# ‼️ A LEAGUE IS AIMED AT `DISTRICT_TARGET`, AND ONLY CAPPED AT `MAX_DISTRICT`
+# (owner rule 2026-08). The draw used to take `k = ceil(n / MAX_DISTRICT)` — the
+# FEWEST blocks that fit under the cap — which quietly turned a ceiling into a
+# target: every class packed its leagues to 11-12 and the cap became the design.
+# The owner's correction: "no conference should be over 12 teams like I said
+# before, with 40 teams there's no reason for some weird cap on districts when
+# smaller ones (around 10 teams) would be fine." So the block count is chosen to
+# land near TEN and the cap is what it says it is — a limit that must not be
+# exceeded, not a size to fill. A ten-team league plays an 18-dual double round
+# robin under `jhsaa.DISTRICT_DUAL_CAP`, which is a full league season.
+DISTRICT_TARGET = 10
+
+
+def district_count(n: int) -> int:
+    """How many leagues a pool of `n` schools is cut into.
+
+    Aim at `DISTRICT_TARGET`, never exceed `MAX_DISTRICT`. `round` rather than
+    `ceil` because both sides of the target are fine — nine is as good a league as
+    eleven — and the max() floor is what keeps the cap a hard one.
+    """
+    if n <= 0:
+        return 0
+    return max(round(n / DISTRICT_TARGET), -(-n // MAX_DISTRICT), 1)
+
 # Girls sponsorship rate by classification; boys is a subset of the girls sponsors.
 # 2A and 1A are deliberately well above a realistic sponsorship rate (owner rule
 # 2027-08). Splitting 3A-1A into two championships left 2A-1A with 18 programs and an
@@ -2072,6 +2096,44 @@ SUBSTITUTIONS = {
 # sponsors tennis or at how good anybody is.
 PROMOTE_2A_ABOVE = 300          # 2A schools at or above this enrollment become 3A
 
+# ⚠️ THE 2033 2A/3A REALIGNMENT (owner rule 2026-08) — the reverse of the cascade
+# above, and for the same reason it was run in the first place: the classes had
+# drifted far apart. 2A carried 63 programs while 3A carried 125, so 3A crowned from
+# a 40-team field and 2A from 24 — and 2A, the class the 1A/2A split was supposed to
+# leave viable, was the association's smallest by a wide margin.
+#
+# ‼️ IT MOVES `classification` AS WELL AS `group`, and that is what makes it a
+# RECLASSIFICATION rather than a COMPETITIVE_MOVE. The distinction is not
+# bookkeeping: `_TALENT` generates from `classification` (`School.talent_group`), so
+# a school moved on `group` alone keeps its old class's players and would walk its
+# new one. That is correct for a program petitioning DOWN on results — it is
+# supposed to keep the roster it has — and wrong here, where the association is
+# saying these schools are 2A-SIZED. Every school named below already sits inside
+# 2A's committed enrollment band (306-375 against a 2A range of 86-431), so nothing
+# needs scaling to justify it; the schools were above an outdated 300 cut line, not
+# above 2A.
+#
+# It is a NAMED TABLE rather than a moved cut line because the owner named the
+# schools. A line at ~380 would take a different 32 — 3A's smallest is 303 and stays
+# 3A — and the association's judgement about which programs belong where is the
+# input, not an enrollment threshold reverse-engineered to approximate it.
+#
+# ‼️ AND THE LEAGUES ARE REDRAWN, not joined one by one. A promoted school JOINS a
+# league in its new class (`scripts/jhsaa_reclassify.py`), which is what happens
+# when one school reclassifies; thirty-two schools arriving into six leagues that
+# already hold 63 is not that. 2A grows from six leagues to ten, so the class is
+# redrawn through `scripts/jhsaa_redistrict.py` — leagues realign and rebrand, and
+# a class that gains a third of its membership is exactly when they do.
+RECLASSIFY_TO_2A = (
+    "Abbey Vale Orchard Hill", "Alben Barkley", "Benton Cross", "Canal Lock",
+    "Cape Angeles", "Chaff Head", "Diamante", "Eagleton", "Fort Lassiter",
+    "Gilhooly", "Halfway House", "Hawk Bar", "Iisalmi Union", "Latgaway",
+    "Lieksa", "Los Maderos", "Madison", "Mt Jacqueline", "Netherwood",
+    "New Ballard", "Newark River", "Oak Meyer", "Pointe des Brumes",
+    "Porterfield", "Río Seco", "River Market", "South Simmons", "Springdale",
+    "Starlake", "Trout Lake", "Willowbrook", "Yazoo",
+)
+
 # ⚠️ RECLASSIFICATION, ROUND 3 (owner rule 2027-08) — THE TOP OF THE LADDER, and the
 # reason is the Semi-Conference. `jhsaa.sponsor_floor` says a 40-field class needs 76
 # sponsors per gender to field a full qualifying round, and 9A BOYS had 72: four short,
@@ -2199,6 +2261,17 @@ def reclassify(schools: list[dict]) -> int:
                     and s.get("enrollment", 0) >= PROMOTE_ABOVE[src]):
                 s["classification"] = _PROMOTE_TO[src]
                 moved += 1
+    # ‼️ THE 2033 REALIGNMENT RUNS LAST, and it has to: every school it names sits
+    # above `PROMOTE_2A_ABOVE`, so run first they would be promoted straight back.
+    # ‼️ AND IT IS KEYED ON THE DISPLAY NAME — the owner named the schools as the
+    # app shows them, while everything before this point is on prep-network's
+    # canonical name (renames land at emit). Match on the emitted name and the
+    # table means what it says whichever end you read it from.
+    down = set(RECLASSIFY_TO_2A)
+    for s in schools:
+        if _display_name(RENAMES.get(s["name"], s["name"])) in down:
+            s["classification"] = "2A"
+            moved += 1
     return moved
 
 
@@ -2914,7 +2987,8 @@ def canon(name: str) -> str:
 
 def champ_group(classification: str) -> str:
     """1A and 2A used to share one combined "2A-1A" group; they now crown
-    SEPARATELY via the fixed 24-team shape (`app.jhsaa._recovery_24`), so this
+    SEPARATELY — 2A on the standard 40-team ladder since the 2033 realignment,
+    1A on the fixed 24-team shape (`app.jhsaa._recovery_24`) — so this
     is an identity fold for every real classification."""
     return classification
 
@@ -3053,7 +3127,7 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     n = len(pool)
     if not n:
         return {}
-    k = max(1, -(-n // MAX_DISTRICT))
+    k = district_count(n)
     # ⚠️ SPREAD THE REMAINDER, don't dump it in the last block. Filling `k` blocks
     # of a fixed `ceil(n/k)` leaves the tail whatever is left over, which is fine
     # when it divides evenly and awful when it doesn't: 100 7A boys into blocks of
