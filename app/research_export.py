@@ -425,7 +425,50 @@ def build_college(year: int, division: str, gender: str, *, season_id: int | Non
     return files
 
 
-BUILDERS = {"jhsaa": build_jhsaa, "college": build_college}
+def build_underplayed(year: int, gender: str, classification: str = "all") -> dict[str, bytes]:
+    """The transfer-candidates export: every 9th/10th grader in the archived
+    `year` season with under a dozen matches, best OVR first — the input an
+    analysis agent turns into the `player_id, destination` pairs the batch
+    importer (`/jhsaa/transfers` paste panel, `scripts/jhsaa_transfers_import.py`)
+    accepts. READ off the archive + deterministic roster rebuild, never
+    re-simulated; read-only like every export here."""
+    from app import world as wd
+
+    world = wd.load_world(wd.DEFAULT_SEED)
+    if not world:
+        raise ExportError("No world exists yet to export candidates from.")
+    board = wd.jhsaa_underplayed(world["id"], gender,
+                                 wd.active_salt(wd.DEFAULT_SEED), season_year=year)
+    if board["season_year"] is None:
+        raise ExportError(f"No JHSAA {gender} season was played for {year}.")
+    rows = board["rows"]
+    if classification != "all":
+        rows = [r for r in rows if r["group"] == classification]
+    csv_rows = [{"player_id": r["pid"], "name": r["name"], "school": r["school"],
+                 "classification": r["group"], "grade": r["grade"],
+                 "ladder": r["ladder"], "ovr": r["ovr"], "str": r["str"],
+                 "matches": r["matches"], "season_year": year}
+                for r in rows]
+    readme = f"""# Play to Clinch — JHSAA transfer candidates ({year} {gender})
+
+Every 9th and 10th grader on a {year} roster who played fewer than 12 matches,
+sorted best-OVR first. `matches` counts every archived line appearance (singles
+or doubles); 0 means they never took a court. `ladder` is their seat on their
+own team's ability ladder that season.
+
+To move players: produce lines of `player_id, destination school` (destination
+must be a JHSAA program of the same gender, exact display name) and either
+paste them into the Batch import panel on /jhsaa/transfers or run
+`python3 scripts/jhsaa_transfers_import.py moves.csv --apply`. Moves are
+effective the NEXT season ({year + 1}) and are validated row by row — an
+invalid row is reported and skipped, never silently dropped.
+"""
+    return {"underplayed_candidates.csv": _csv(csv_rows),
+            "README.md": readme.encode()}
+
+
+BUILDERS = {"jhsaa": build_jhsaa, "college": build_college,
+            "underplayed": build_underplayed}
 
 
 def export_zip(family: str, **scope) -> io.BytesIO:
