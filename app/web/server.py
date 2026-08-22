@@ -42,7 +42,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
-                    jhsaa_misapplied_players, jhsaa_lineup_lab)
+                    jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -148,6 +148,7 @@ NAV_GROUPS = [
         {"id": "jhsaa",     "label": "High School",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
+        {"id": "jh_schools","label": "HS Schools",     "icon": "fa-solid fa-building-columns", "endpoint": "jhsaa_schools",    "args": {}},
         {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
         {"id": "jh_transfers","label": "HS Transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
         {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
@@ -225,6 +226,7 @@ def _active_nav(req) -> str:
     # The programs editor and the transfer board are both checked BEFORE the
     # section, since they're prefix matches on /jhsaa and would otherwise light
     # the High School entry instead of their own nav item.
+    if p.startswith("/jhsaa/schools"):    return "jh_schools"
     if p.startswith("/jhsaa/programs"):   return "jh_prog"
     if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
     if p.startswith("/jhsaa-lab"):        return "jhsaa_lab"
@@ -2141,6 +2143,80 @@ def create_app() -> Flask:
         year = request.args.get("year", type=int)
         return gender, label, u, g, request.args.get("group"), year
 
+    # ---- the scope bar is STICKY (owner rule 2026-08) ------------------------
+    # Changing gender, class or season must keep you on the surface you are ON,
+    # swapped for that scope — the bar used to send every page back to the state
+    # hub, so comparing the boys' and girls' rankings meant hub → rankings again.
+    #
+    # Two tables, because "stay here" is not always meaningful. A class switch on a
+    # page keyed to ONE program (a school, a player) has nowhere to stay, so it
+    # lands on the nearest page that IS about a class. A class-BLIND page (the TOC,
+    # the history board) is different and stays put: the class it carries is only
+    # the scope bar's memory, so switching there keeps your place for the way out.
+    _JH_CLASS_FALLBACK = {"jhsaa_school": "jhsaa_page", "jhsaa_player": "jhsaa_page",
+                          "jhsaa_transfers": "jhsaa_page",
+                          "jhsaa_lineup_lab_route": "jhsaa_page",
+                          # a league is (classification, name): the same league name
+                          # in another class is a DIFFERENT league, so a class switch
+                          # goes to that class's league index, never to a same-named
+                          # league that may not exist.
+                          "jhsaa_district": "jhsaa_districts"}
+    # A pid is a seat on ONE gender's roster, so it cannot follow a gender switch;
+    # the same school's other program can.
+    _JH_GENDER_FALLBACK = {"jhsaa_player": "jhsaa_school"}
+    #: Path arguments that identify WHICH page this is — carried through a scope
+    #: change, dropped when the change falls back to another endpoint.
+    _JH_PATH_ARGS = {"jhsaa_district": ("group", "district"),
+                     "jhsaa_school": ("school", "year"),
+                     "jhsaa_player": ("school", "pid")}
+
+    def jh_scope_url(scope, u, **change):
+        """This page, with ONE scope axis changed. `change` is `g=`, `group=` or
+        `year=` — whichever control the reader just used."""
+        ep = request.endpoint or "jhsaa_page"
+        if not ep.startswith("jhsaa"):
+            ep = "jhsaa_page"
+        args = {"u": u, "g": scope["gender"], "group": scope["group"],
+                "year": scope["pin"]}
+        for k in _JH_PATH_ARGS.get(ep, ()):
+            v = (request.view_args or {}).get(k)
+            if v is not None:
+                args[k] = v
+        # The page's OWN query state (a sort, a district select, a filter mode) rides
+        # along: switching gender should not also reset how the table is sorted.
+        for k, v in request.args.items():
+            # `page` is a position in a list the change is about to re-make, and
+            # `gender` is the Players/Mismatches directory's OWN gender filter — kept,
+            # it would silently outrank the gender the reader just picked up here.
+            if k == "page" or (k == "gender" and "g" in change):
+                continue
+            args.setdefault(k, v)
+        args.update(change)
+        fallback = (_JH_CLASS_FALLBACK.get(ep) if "group" in change else
+                    _JH_GENDER_FALLBACK.get(ep) if "g" in change else None)
+        if fallback:
+            keep = {"school"} if fallback == "jhsaa_school" else set()
+            args = {k: v for k, v in args.items()
+                    if k in {"u", "g", "group", "year"} | keep}
+            ep = fallback
+        return url_for(ep, **{k: v for k, v in args.items() if v is not None})
+
+    app.jinja_env.globals["jh_scope_url"] = jh_scope_url
+
+    @app.route("/jhsaa/schools")
+    def jhsaa_schools():
+        """The program directory — every school in the association, grouped by county
+        or by classification and league, with a filter box over the lot.
+
+        There was no way to see all the programs: the only full list was the Rankings
+        page, one class at a time and ordered on TOSS, so finding a program by town or
+        league meant ctrl-F. Modelled on the OSAA's two schools pages."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_schools_view(DEFAULT_SEED, g, mode=request.args.get("mode", ""),
+                                  group=group, year=year)
+        return render_template("jhsaa_schools.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa")
     def jhsaa_page():
         """The state high-school home: the selected classification's state tournament
@@ -2164,7 +2240,8 @@ def create_app() -> Flask:
         """The Tournament of Champions — its own bracket, per gender."""
         gender, label, u, g, group, year = _jh_scope_args()
         return render_template("jhsaa_toc.html", active="High School",
-                               view=jhsaa_toc_view(DEFAULT_SEED, g, year), u=u)
+                               view=jhsaa_toc_view(DEFAULT_SEED, g, year, group),
+                               gender=gender, uni_label=label, u=u)
 
     @app.route("/jhsaa/programs")
     def jhsaa_programs():
@@ -2211,7 +2288,10 @@ def create_app() -> Flask:
         res = jhsaa_players_search(DEFAULT_SEED, g, group=group, district=district,
                                    grade=grade, sort=sort, q=q)
         pg = paginate(res["rows"], request.args.get("page", 1))
-        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        # `group` is this page's own class FILTER and also the header's class rail —
+        # one control, so the rail must show what the filter is set to ("All" is not
+        # a class, and falls back to the first).
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group)
         return render_template("jhsaa_players.html", active="High School",
                                view=scope_view, rows=pg.items, p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, district=district,
@@ -2233,7 +2313,7 @@ def create_app() -> Flask:
         res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort,
                                        grade=grade)
         pg = paginate(res["rows"], request.args.get("page", 1))
-        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group)
         return render_template("jhsaa_misapplied.html", active="High School",
                                view=scope_view, rows=pg.items, p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, sort=sort,
@@ -2614,8 +2694,8 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa/champions")
     def jhsaa_champions():
-        gender, label, u, g, _group, _year = _jh_scope_args()
-        view = jhsaa_past_winners(DEFAULT_SEED, g)
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_past_winners(DEFAULT_SEED, g, group)
         return render_template("jhsaa_champions.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 

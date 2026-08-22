@@ -3733,7 +3733,8 @@ def _jh_bye_card(name: str, seeds: dict, schools: dict) -> dict:
             "home_won": True, "winner": name, "score": "", "bye": True}
 
 
-def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
+def jhsaa_toc_view(seed: int, gender: str, year: int | None = None,
+                   group: str | None = None) -> dict:
     """The Tournament of Champions bracket — its own event, not a classification's.
 
     One champion per classification, seeded on the TOSS Power Index rather than on
@@ -3754,7 +3755,12 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None) -> dict:
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    scope = _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS), yr, years, None, None)
+    # `group` is carried for the SCOPE BAR only — the event itself is class-blind
+    # (it fields every classification's champion). Without it the class rail reset to
+    # the first class on the way in, so leaving the TOC dropped whatever class you
+    # had been browsing.
+    scope = _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                      list(jh.GROUPS), yr, years, None, None)
     if not arc or not (arc.get("toc") or {}).get("rounds"):
         return {"ready": False, "gender": g, "year": yr, "years": years, "scope": scope}
     toc = arc["toc"]
@@ -4648,6 +4654,94 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
             "districts": rows}
 
 
+#: The school directory's views. The first two are the OSAA's two schools pages —
+#: /schools/counties and /schools/classifications-districts — which is the model the
+#: owner asked for; A–Z is the third question a directory gets asked.
+JH_DIRECTORY_MODES = (("county", "By County"),
+                      ("class", "Classifications & Leagues"),
+                      ("az", "A–Z"))
+
+
+def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
+                       group: str | None = None, year: int | None = None) -> dict:
+    """EVERY program in the association, in one browsable page.
+
+    The section had no directory: to find a program by where it is or what class it
+    plays in you opened Rankings — one classification at a time, ranked on TOSS — and
+    ctrl-F'd it. So this reads the SCHOOL LIST and nothing else: no archive, no
+    standings, no rating. That is deliberate and not a gap — a directory answers
+    "which programs are there and where", it is available before a season has been
+    played, and every row links to the program page where the results live.
+
+    Three groupings of ONE list (`JH_DIRECTORY_MODES`), never three pages: the same
+    rows regrouped. Every row also carries a lower-cased `q` haystack — name, town,
+    locality, county, area, league, class — because the filter box on the page is the
+    thing replacing ctrl-F, and ctrl-F could only ever match the name.
+    """
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    mode = mode if mode in dict(JH_DIRECTORY_MODES) else JH_DIRECTORY_MODES[0][0]
+
+    rows = []
+    for s in jh.load_schools(g):
+        r = {"name": s.name, "mark": jh.mark(s, 22), "city": s.city,
+             "locality": s.locality, "county": s.county, "area": s.area,
+             "classification": s.classification, "group": s.group,
+             "district": s.district, "enrollment": s.enrollment,
+             "private": s.private, "plays_up": s.plays_up}
+        r["where"] = f"{s.locality}, {s.city}" if s.locality else s.city
+        r["q"] = " ".join((s.name, s.city, s.locality, s.county, s.area,
+                           s.district, s.group, s.classification)).lower()
+        rows.append(r)
+
+    # A section is (heading, meta, subsections). A flat grouping carries one unnamed
+    # subsection so the template has ONE shape to render whatever the mode is.
+    def _flat(key_of, meta_of, order):
+        buckets: dict = {}
+        for r in rows:
+            buckets.setdefault(key_of(r), []).append(r)
+        return [{"key": k, "meta": meta_of(k, v), "n": len(v),
+                 "subs": [{"key": "", "rows": sorted(v, key=lambda x: x["name"])}]}
+                for k, v in sorted(buckets.items(), key=order)]
+
+    if mode == "county":
+        by_area = {r["county"]: r["area"] for r in rows}
+        sections = _flat(lambda r: r["county"],
+                         lambda k, v: by_area.get(k, ""),
+                         lambda kv: (by_area.get(kv[0], ""), kv[0]))
+    elif mode == "az":
+        sections = _flat(lambda r: (r["name"][:1] or "#").upper(),
+                         lambda k, v: "", lambda kv: kv[0])
+    else:
+        # ‼️ A LEAGUE IS `(classification, name)` — the association reuses its league
+        # names across classes, so a district heading only means anything under the
+        # class it sits in. That is exactly why this mode nests rather than listing
+        # leagues flat.
+        order = {gp: i for i, gp in enumerate(jh.GROUPS)}
+        buckets: dict = {}
+        for r in rows:
+            buckets.setdefault(r["group"], {}).setdefault(r["district"], []).append(r)
+        sections = []
+        for gp in sorted(buckets, key=lambda x: order.get(x, 99)):
+            subs = [{"key": d, "rows": sorted(v, key=lambda x: x["name"])}
+                    for d, v in sorted(buckets[gp].items())]
+            sections.append({"key": gp, "meta": f"{len(subs)} leagues",
+                             "n": sum(len(s["rows"]) for s in subs), "subs": subs})
+
+    return {"ready": True, "gender": g, "group": grp, "groups": list(jh.GROUPS),
+            "year": yr, "years": years, "mode": mode,
+            "modes": [{"key": k, "label": lbl} for k, lbl in JH_DIRECTORY_MODES],
+            "sections": sections, "total": len(rows),
+            "counties": len({r["county"] for r in rows}),
+            "season_year": world.jhsaa_season_year(w),
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+
+
 def _family_row(fam_map: dict, pid: str) -> dict | None:
     """The compact family tie a roster row shows — label plus the other members.
     Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself."""
@@ -5084,7 +5178,7 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
             "grade_pools": [(k, lbl) for k, (lbl, _) in JHSAA_LAB_GRADE_POOLS.items()]}
 
 
-def jhsaa_past_winners(seed: int, gender: str) -> dict:
+def jhsaa_past_winners(seed: int, gender: str, group: str | None = None) -> dict:
     """Champions and Players of the Year for every archived JHSAA year — the
     high-school analogue of the college past-winners boards."""
     import app.jhsaa as jh
@@ -5103,6 +5197,9 @@ def jhsaa_past_winners(seed: int, gender: str) -> dict:
                           "poy": {grp: (aw.get("poy") or {})
                                   for grp, aw in (arc.get("awards") or {}).items()}})
     return {"gender": g, "groups": list(jh.GROUPS), "years": years,
-            "scope": _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS),
+            # class-blind page; `group` rides the scope bar so the class you were
+            # browsing is still selected when you leave.
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS),
                                years[0]["year"] if years else 0,
                                [y["year"] for y in years], None, None)}

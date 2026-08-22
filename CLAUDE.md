@@ -1042,6 +1042,41 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   (`year=y`) — that is how you pick a season; everything else pins. Every roster / All-State / POY / bracket name links to
   `/jhsaa/player/<school>/<pid>` — **by PID, not name**: a pid keys on (school, gender,
   entry year, seat), so it is stable across all four years and matches the award rows.
+- **‼️ THE SCOPE BAR SWITCHES SCOPE, NOT PAGE (owner rule 2026-08).** Gender, class and
+  season all go to the page you are **ON**, swapped for that axis — `server.
+  jh_scope_url` (a Jinja global) resolves `request.endpoint` and re-emits it, carrying
+  the page's own query state (a sort, a filter, a district select) so a gender switch
+  does not also re-sort the table you were reading. They were hardcoded to `jhsaa_page`,
+  so comparing the boys' and girls' rankings meant hub → rankings again, on every page
+  for every axis. Two fallback tables, for where "stay here" has no meaning: a class
+  switch on a page keyed to ONE program (`jhsaa_school`, `jhsaa_player`) goes to the
+  hub, on a `jhsaa_district` to that class's league index (a league is
+  `(classification, name)` — the same name in another class is a different league, and
+  may not exist), and a GENDER switch on `jhsaa_player` goes to the school (a pid is a
+  seat on one gender's roster). A class-BLIND page (TOC, History) is NOT a fallback and
+  stays put — `jhsaa_toc_view`/`jhsaa_past_winners` take `group` for the rail alone, so
+  the class you were browsing survives the visit. ⚠️ `page` and the Players directory's
+  own `gender` filter are deliberately DROPPED from the carried args: kept, `gender`
+  silently outranks the gender just picked in the header.
+- **Sport is a DROPDOWN** (owner, 2026-08), like the season — not a two-button rail.
+- **‼️ ONE "CHAMPIONSHIP" TAB, THREE VIEWS OF IT (owner, 2026-08).** State, Bracket and
+  TOC each led with the same champion hero and the same draw, so three of twelve tabs
+  asked one question. They are still three PAGES (an index, a full tree, a different
+  event) reached as ONE destination and switched on the `jh-subrail` under the tabs —
+  the section's own layout rule for parallel views. Don't promote one back to a tab.
+- **‼️ THE PROGRAM DIRECTORY (`/jhsaa/schools`, `jhsaa_schools_view`) — owner rule
+  2026-08, modelled on the OSAA's two schools pages.** There was no way to see all the
+  programs: the only full list was Rankings, one class at a time and ordered on TOSS, so
+  finding a program by town or league meant ctrl-F. Three groupings of ONE list
+  (`JH_DIRECTORY_MODES`: county · classification & leagues · A–Z), never three pages.
+  It reads `load_schools` and NOTHING else — no archive, no standings, no rating — which
+  is deliberate: a directory answers "which programs are there and where", and it must
+  render before a season has been played. Every row carries a lower-cased `q` haystack
+  (name, town, locality, county, area, league, class) because the filter box is the
+  thing replacing ctrl-F and ctrl-F could only ever match the NAME; narrow `q` back to
+  the name and the page stops answering its question while looking perfectly correct.
+  Pinned by `tests/test_jhsaa_routes.py` — the one JHSAA surface a route test CAN fully
+  see, since it depends on no archive.
 - **Layout rules the JHSAA surfaces are built on (they were each a long scroll first):**
   parallel views of ONE set of teams are **tabs**, not a stack (`_jhsaa.html::jh_tabs` —
   a district's standings / head-to-head / results); a parent page gets an **index** of

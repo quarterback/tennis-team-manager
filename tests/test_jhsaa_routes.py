@@ -99,3 +99,69 @@ def test_every_classification_has_its_own_class_colour():
     for g in jh.GROUPS:
         assert f".jh-class a.on.c-{g} " in css, g
         assert f".jh-chip.c-{g} " in css, g
+
+
+# --- the program directory ---------------------------------------------------------
+
+DIRECTORY_MODES = ["county", "class", "az"]
+
+
+@pytest.mark.parametrize("mode", DIRECTORY_MODES)
+def test_the_directory_lists_every_program(warm_client, mode):
+    """‼️ A DIRECTORY THAT DROPS PROGRAMS IS WORSE THAN NO DIRECTORY — you would go on
+    believing the association has no school in that county. Every grouping is the SAME
+    list regrouped, so all three must show all of it, and this is the only page in the
+    section where that is checkable without playing a season (it reads the school list,
+    never an archive)."""
+    import re
+    from app import jhsaa as jh
+    html = warm_client.get(f"/jhsaa/schools?g=boys&mode={mode}").get_data(as_text=True)
+    assert html.count('class="jh-dirrow"') == len(jh.load_schools("boys"))
+    # and the rows are LINKS to program pages, not inert text
+    assert re.search(r'class="jh-dirrow"[^>]*href="/jhsaa/school/', html, re.S) or \
+        'href="/jhsaa/school/' in html
+
+
+def test_a_directory_row_is_findable_by_more_than_its_name(warm_client):
+    """The filter box is what replaces ctrl-F, and ctrl-F could only match the NAME.
+    Each row carries a lower-cased haystack of everything you might search a school by;
+    if that ever narrows back to the name, the page stops answering the question it
+    exists for and still looks completely correct."""
+    from app import jhsaa as jh
+    html = warm_client.get("/jhsaa/schools?g=boys").get_data(as_text=True)
+    s = jh.load_schools("boys")[0]
+    hay = next(h for h in html.split('data-q="')[1:] if h.startswith(s.name.lower()))
+    hay = hay.split('"')[0]
+    for part in (s.city, s.county, s.area, s.district, s.group):
+        if part:
+            assert part.lower() in hay, (s.name, part)
+
+
+# --- the scope bar is sticky -------------------------------------------------------
+
+STICKY = ["/jhsaa/rankings", "/jhsaa/honors", "/jhsaa/districts", "/jhsaa/bracket",
+          "/jhsaa/schools", "/jhsaa/toc", "/jhsaa/champions"]
+
+
+@pytest.mark.parametrize("path", STICKY)
+def test_a_scope_switch_keeps_you_on_the_page(warm_client, path):
+    """‼️ THE SCOPE BAR SWITCHES SCOPE, NOT PAGE (owner rule 2026-08). Every control in
+    it used to be hardcoded to `jhsaa_page`, so comparing the boys' and girls' rankings
+    meant going back to the hub and walking in again — on every page, for every axis.
+    A page keyed to one program (a school, a player) legitimately falls back; these are
+    the ones that have somewhere to stay."""
+    import re
+    html = warm_client.get(path + "?g=boys").get_data(as_text=True)
+    hrefs = re.findall(r'(?:href|value)="([^"]*)"', html.replace("&amp;", "&"))
+    assert any(h.startswith(path) and "g=girls" in h for h in hrefs), path
+
+
+def test_a_scope_switch_keeps_the_pages_own_query_state(warm_client):
+    """A sort is part of where you are. Switching gender to compare two tables must not
+    also re-sort the one you were reading."""
+    import re
+    html = warm_client.get("/jhsaa/rankings?g=boys&group=5A&sort=rec&dir=asc") \
+        .get_data(as_text=True).replace("&amp;", "&")
+    girls = [h for h in re.findall(r'value="(/jhsaa/rankings[^"]*)"', html)
+             if "g=girls" in h]
+    assert girls and all("sort=rec" in h and "dir=asc" in h for h in girls), girls

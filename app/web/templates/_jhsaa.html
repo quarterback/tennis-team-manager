@@ -69,14 +69,24 @@
     <script>document.querySelector('[data-jh-scout-checkbox]').checked = document.documentElement.getAttribute('data-jh-scout') === 'on';</script>
   </div>
 
+  {# ‼️ THE SCOPE BAR IS STICKY (owner rule 2026-08). Every control here goes to the
+     page you are ON with that one axis changed — `jh_scope_url` (server.py) resolves
+     the current endpoint and swaps the axis, falling back only where "stay here" has
+     no meaning (a pid belongs to one gender; a league name belongs to one class).
+     These used to be hardcoded to `jhsaa_page`, so any switch dumped you back on the
+     state hub and you re-walked the section to get where you already were. #}
   <div class="jh-scope">
     <div class="jh-scope-group">
       <span class="jh-scope-label">Sport</span>
-      <span class="jh-seg">
-        {% for g in ['boys','girls'] %}
-        <a class="{{ 'on' if scope.gender == g }}"
-           href="{{ url_for('jhsaa_page', u=u, g=g, group=scope.group, year=scope.pin) }}">{{ g|capitalize }}</a>
-        {% endfor %}
+      {# A DROPDOWN, not a two-button rail (owner, 2026-08) — the same control the
+         season uses, so the whole bar reads one way. #}
+      <span class="bl-select-wrap">
+        <select class="bl-select" onchange="location.href=this.value">
+          {% for g in ['boys','girls'] %}
+          <option value="{{ jh_scope_url(scope, u, g=g) }}"
+                  {% if scope.gender == g %}selected{% endif %}>{{ g|capitalize }}</option>
+          {% endfor %}
+        </select>
       </span>
     </div>
     <div class="jh-scope-group">
@@ -84,7 +94,7 @@
       <span class="jh-class">
         {% for gp in scope.groups %}
         <a class="{{ 'on c-' ~ gp if scope.group == gp }}"
-           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=gp, year=scope.pin) }}">{{ gp }}</a>
+           href="{{ jh_scope_url(scope, u, group=gp) }}">{{ gp }}</a>
         {% endfor %}
       </span>
     </div>
@@ -100,7 +110,7 @@
         <select class="bl-select jh-season-pick"
                 onchange="location.href=this.value">
           {% for y in scope.years %}
-          <option value="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=y) }}"
+          <option value="{{ jh_scope_url(scope, u, year=y) }}"
                   {% if scope.year == y %}selected{% endif %}>{{ scope.season_years[y] }}</option>
           {% endfor %}
         </select>
@@ -108,19 +118,26 @@
     </div>
     {% endif %}
     <div class="jh-tabs">
-      <a class="{{ 'on' if tab == 'state' }}"
-         href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">State</a>
-      <a class="{{ 'on' if tab == 'bracket' }}"
-         href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Bracket</a>
-      {# The TOC is its own event, not a classification's, so it carries no `group`. #}
-      <a class="{{ 'on' if tab == 'toc' }}" title="Tournament of Champions"
-         href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, year=scope.pin) }}">TOC</a>
+      {# ‼️ ONE CHAMPIONSHIP TAB, THREE VIEWS OF IT (owner, 2026-08). State, Bracket
+         and TOC each led with the same champion hero and the same draw, so three of
+         the twelve tabs asked one question. They stay three PAGES — the hub is an
+         index, the draw is a full tree, the TOC is a different event — but they are
+         reached as one destination and switched between on the sub-rail below,
+         which is the layout rule this section already uses for parallel views. #}
+      <a class="{{ 'on' if tab in ('state', 'bracket', 'toc') }}"
+         title="State tournament, the full draw and the Tournament of Champions"
+         href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Championship</a>
       <a class="{{ 'on' if tab == 'rankings' }}"
          href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Rankings</a>
       <a class="{{ 'on' if tab == 'honors' }}" title="Player of the Year, All-State, All-District"
          href="{{ url_for('jhsaa_honors', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Honors</a>
       <a class="{{ 'on' if tab == 'districts' }}"
          href="{{ url_for('jhsaa_districts', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Districts</a>
+      {# The DIRECTORY — every program in the association, by county or by class and
+         league. Carries no group or year: it is the school list, which is a fact
+         about the association rather than about one season. #}
+      <a class="{{ 'on' if tab == 'schools' }}" title="Every program — by county, class and league"
+         href="{{ url_for('jhsaa_schools', u=u, g=scope.gender) }}">Schools</a>
       <a class="{{ 'on' if tab == 'history' }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
       {# The section's own settings — archetypes and play-up. A tab, because the panels
@@ -136,6 +153,22 @@
          href="{{ url_for('jhsaa_lineup_lab_route', u=u, g=scope.gender) }}">Lineup Lab</a>
     </div>
   </div>
+
+  {# The championship's three views. A sub-rail rather than three top-level tabs:
+     they are one destination, and which of them you want is a question you ask
+     once you are there. #}
+  {% if tab in ('state', 'bracket', 'toc') %}
+  <div class="jh-subrail">
+    <a class="{{ 'on' if tab == 'state' }}"
+       href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Overview</a>
+    <a class="{{ 'on' if tab == 'bracket' }}"
+       href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">{{ scope.group }} Draw</a>
+    {# The TOC fields every class's champion, so it is not a classification's page
+       and carries no `group`. #}
+    <a class="{{ 'on' if tab == 'toc' }}"
+       href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, year=scope.pin) }}">Tournament of Champions</a>
+  </div>
+  {% endif %}
 </div></div>
 {% endmacro %}
 
