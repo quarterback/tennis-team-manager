@@ -1402,6 +1402,94 @@ def transfer_rows() -> list[dict]:
     return rows
 
 
+# --- batch transfers (owner tool, 2026-08) ------------------------------------
+# The owner is this league's only market maker: every offseason ~40-50 buried
+# players are redistributed by hand, one player card at a time. The batch path
+# accepts the artifact that analysis already produces — (pid, destination) pairs
+# — validates every row, and writes the same `set_jhsaa_transfer` rows the player
+# card does, so nothing downstream changes. Rows are DECLARATIVE (applied on read
+# by `build_roster` from the effective year on), so "apply" is just writing them.
+
+_pid_idx_cache: dict = {}
+
+
+def roster_pid_index(gender: str, year: int, salt: str = "") -> dict:
+    """pid -> (school name, entry year, grade, player name) for everyone enrolled
+    in season `year`, over the whole gender — the lookup a bare (pid, destination)
+    pair needs. A full-association roster build (~7s cold), so it is memoised;
+    the transfer fingerprint is resolved ONCE here, never per row."""
+    from app import overrides as ov
+    from .dbpath import resolve_db_path
+    key = (resolve_db_path(), gender, year, salt, ov.jhsaa_transfer_version())
+    got = _pid_idx_cache.get(key)
+    if got is not None:
+        return got
+    idx = {}
+    for school in load_schools(gender):
+        for p in build_roster(school, year, salt):
+            idx[p.pid] = (school.name, p.entry_year, p.grade, p.name)
+    # Prune THIS (db, gender)'s stale entries only — a global clear() would evict
+    # the sibling gender between the two builds one batch call makes, so every
+    # preview→apply round would pay all four builds again.
+    for k in [k for k in _pid_idx_cache if k[:2] == key[:2]]:
+        _pid_idx_cache.pop(k, None)
+    _pid_idx_cache[key] = idx
+    return idx
+
+
+def transfer_batch(pairs: list[tuple[str, str]], year: int, salt: str = "",
+                   apply: bool = False) -> list[dict]:
+    """Validate (and with `apply`, write) a batch of transfers, effective season
+    `year`. `pairs` is [(pid, destination school)], both genders welcome — the
+    pid says which gender it is. Returns one report row per pair, in order:
+    {pid, name, gender, from, to, year, ok, msg}. Invalid rows never block valid
+    ones and are never silently dropped — the report is the contract.
+
+    A row is rejected when: the pid is on no roster for season `year` (wrong pid,
+    or the player graduates before then), the destination is not a sponsoring
+    program of that gender, or the destination is where they already play. A pid
+    that already has a transfer record keeps its stored origin/seat (the pid is
+    generated from the ORIGIN school, so a re-transfer must not re-resolve the
+    seat against the school they merely play for now)."""
+    from app import overrides as ov
+    idx = {g: roster_pid_index(g, year, salt) for g in ("girls", "boys")}
+    schools = {g: {s.name: s for s in load_schools(g)} for g in ("girls", "boys")}
+    existing = transfers()
+    out = []
+    for pid, to_school in pairs:
+        pid, to_school = (pid or "").strip(), (to_school or "").strip()
+        gender = next((g for g in ("girls", "boys") if pid in idx[g]), None)
+        row = {"pid": pid, "name": "", "gender": gender or "", "from": "",
+               "to": to_school, "year": year, "ok": False, "msg": ""}
+        out.append(row)
+        if gender is None:
+            row["msg"] = f"no player with this pid is enrolled anywhere in {year}"
+            continue
+        school_name, entry, grade, name = idx[gender][pid]
+        row["name"], row["from"] = name, school_name
+        rec = existing.get(pid)
+        if rec:
+            origin_name, entry, seat = rec.get("from"), rec.get("entry"), rec.get("seat")
+        else:
+            origin = schools[gender][school_name]
+            origin_name, seat = school_name, resolve_seat(origin, entry, pid)
+        if not to_school:
+            row["msg"] = "no destination given"
+        elif to_school == school_name:
+            row["msg"] = f"{to_school} is already their school"
+        elif to_school not in schools[gender]:
+            row["msg"] = f'no {gender} program named "{to_school}"'
+        elif seat is None:
+            row["msg"] = "could not resolve this player's roster seat"
+        else:
+            row["ok"] = True
+            row["msg"] = f"grade {grade} in {year}; moves {origin_name} → {to_school}"
+            if apply:
+                ov.set_jhsaa_transfer(pid, origin_name, gender, entry, seat,
+                                      to_school, year)
+    return out
+
+
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.

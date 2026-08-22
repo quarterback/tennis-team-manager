@@ -7,7 +7,8 @@
   <div class="jh-ident-body">
     <h1>High School Transfers</h1>
     <div class="where">Every recorded offseason move — manual, always-approved, no
-      eligibility rules. Add one from a player's own card; undo it here.</div>
+      eligibility rules. Add one from a player's card, the candidates board below,
+      or a pasted batch; undo it here.</div>
   </div>
 </div>
 
@@ -40,6 +41,116 @@
     </table>
     {% else %}
     <div class="jh-empty">No transfers recorded yet — open a player's card to move them.</div>
+    {% endif %}
+  </div>
+</div>
+
+{# One datalist serves the batch panel and every candidate row's move form. #}
+<datalist id="jh-batch-schools">
+  {% for s in dest_schools %}<option value="{{ s }}">{% endfor %}
+</datalist>
+
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Batch import</span></div>
+  <div style="padding:10px 12px">
+    <div class="where" style="margin-bottom:8px">One move per line:
+      <code>pid, Destination School</code> — pids as on the player card or the research
+      export's <code>player_id</code>. Preview validates without writing anything.</div>
+    <form method="post" action="{{ url_for('editor_jhsaa_transfer_batch') }}">
+      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="g" value="{{ g }}">
+      <textarea name="batch" rows="6" style="width:100%;font-family:monospace"
+        placeholder="jh_ab12cd34, Cliffside">{{ batch_text }}</textarea>
+      <div style="margin-top:8px;display:flex;gap:10px;align-items:center">
+        <label>Effective season
+          <input type="number" name="jh_year" value="{{ batch_year or next_year or '' }}"
+                 style="width:90px" required></label>
+        <button type="submit" name="do" value="preview" class="bl-pill"
+                style="cursor:pointer">Preview</button>
+        <button type="submit" name="do" value="apply" class="bl-pill"
+                style="cursor:pointer">Apply</button>
+      </div>
+    </form>
+    {% if report is not none and report_head %}
+    <div style="margin-top:10px;font-weight:600">{{ report_head }}</div>
+    {% if report %}
+    <div class="tbl-scroll">
+      <table class="jh-ledger">
+        <tr><th></th><th>Player</th><th>From</th><th>To</th><th>Result</th></tr>
+        {% for r in report %}
+        <tr>
+          <td>{{ "✓" if r.ok else "✗" }}</td>
+          <td>{{ r.name or r.pid }}</td>
+          <td>{{ r.from }}</td>
+          <td>{{ r.to }}</td>
+          <td>{{ r.msg }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Underplayed candidates
+    {%- if season_year %} · {{ season_year }} {{ "girls" if g == "girls" else "boys" }}{% endif %}</span></div>
+  <div style="padding:10px 12px">
+    <div class="where" style="margin-bottom:8px">9th and 10th graders off the most
+      recent season who barely played — skill high, matches low. Moves are effective
+      {{ next_year or "next season" }}.</div>
+    <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="g" value="{{ g }}">
+      <input type="hidden" name="find" value="1">
+      <label>Grade
+        <select name="gr">
+          <option value="both" {{ "selected" if gr == "both" }}>9th + 10th</option>
+          <option value="9" {{ "selected" if gr == "9" }}>9th</option>
+          <option value="10" {{ "selected" if gr == "10" }}>10th</option>
+        </select></label>
+      <label>Max matches
+        <input type="number" name="mm" value="{{ mm }}" min="0" max="11" style="width:70px"></label>
+      <button type="submit" class="bl-pill" style="cursor:pointer">Find candidates</button>
+    </form>
+    {% if candidates is not none %}
+    <div style="margin:10px 0 4px;font-weight:600">{{ candidates | length }} candidates
+      {%- if candidates | length > 400 %} — showing the top 400 by OVR, tighten the filter{% endif %}</div>
+    <div class="tbl-scroll">
+      <table class="jh-ledger">
+        <tr><th>Player</th><th>School</th><th style="width:50px">Gr</th>
+          <th style="width:60px">Ladder</th><th style="width:60px">OVR</th>
+          <th style="width:70px">Matches</th><th>Move to</th></tr>
+        {% for r in candidates[:400] %}
+        <tr>
+          <td><a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=g) }}">{{ r.name }}</a></td>
+          <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=g) }}">{{ r.school }}</a></td>
+          <td>{{ r.grade }}</td>
+          <td>#{{ r.ladder }}</td>
+          <td>{{ r.ovr }}</td>
+          <td>{{ r.matches }}</td>
+          <td>
+            <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}"
+                  style="display:flex;gap:6px">
+              <input type="hidden" name="gender" value="{{ g }}">
+              <input type="hidden" name="jh_from_school" value="{{ r.school }}">
+              <input type="hidden" name="jh_pid" value="{{ r.pid }}">
+              <input type="hidden" name="jh_entry" value="{{ r.entry }}">
+              <input type="hidden" name="jh_year" value="{{ next_year }}">
+              <input type="hidden" name="u" value="{{ u }}">
+              <input type="hidden" name="back" value="transfers">
+              <input type="hidden" name="mm" value="{{ mm }}">
+              <input type="hidden" name="gr" value="{{ gr }}">
+              <input type="text" name="jh_to_school" list="jh-batch-schools"
+                     placeholder="destination" style="width:180px">
+              <button type="submit" class="bl-pill" style="cursor:pointer">Move</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
     {% endif %}
   </div>
 </div>
