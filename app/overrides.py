@@ -817,3 +817,65 @@ def any_overrides() -> bool:
     n = conn.execute("SELECT COUNT(*) FROM roster_overrides").fetchone()[0]
     conn.close()
     return n > 0
+
+
+# --- FAMILY TIES (owner rule 2026-08) ----------------------------------------
+# Siblings, twins, cousins and — once a save runs long enough — a former player's
+# child. Stored as narrative METADATA over pids that already exist: a tie NEVER
+# rewrites a name. That is not merely tidier, it is required. `world_jhsaa_dual.
+# lines` archives player NAMES rather than pids, and `state._jh_line_records` keys
+# its whole season-record lookup off them, so renaming a player would silently
+# zero their archived record — no error, plausible-looking wrong data, the failure
+# this codebase keeps relearning. Metadata makes that impossible instead of fixing
+# it, and needs no era gate (unlike `jhsaa.name_era`): a tie shifts no rng draw and
+# no generated name, so every archived season is untouched by construction.
+#
+# ONE ROW PER FAMILY, keyed on an opaque id — never a slug built from a school
+# name, because schools get renamed and the slug would rot. Family-keyed rather
+# than player-keyed so the label and note live in exactly one place.
+
+def get_jhsaa_families() -> dict:
+    """{family_id: {label, relation, note, members:[{pid, gender, school, name, entry}]}}"""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_family'").fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        if not v:
+            continue
+        try:
+            out[k] = json.loads(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def set_jhsaa_family(family_id: str, data: dict) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_family',?,?)", (family_id, json.dumps(data)))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_family(family_id: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_family' AND key=?",
+                 (family_id,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_family_version() -> str:
+    """Fingerprint of the family table. Ties are DISPLAY-only — they change no
+    roster and no generated player — so this does NOT need to key the roster cache
+    the way the archetype fingerprint does; it exists so the memo in
+    `jhsaa.families()` falls when a tie is added or removed."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_family'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()

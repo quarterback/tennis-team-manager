@@ -1226,6 +1226,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   resting below the card wraps one player onto two lines). A weak-LOOKING roster
   that is actually winning is never rested on. Pinned by
   `tests/test_jhsaa_rest.py`.
+- **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
+  / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
+  required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
+  off them, so a surname rewrite silently zeroes an archived record. **NO generator, NO
+  suggestion pass, NO same-surname candidate scan — the owner rejected all three
+  explicitly**; the association is made by hand on the player page (roster picker, not
+  a search). One row per family, opaque id, members carry denormalised name/school/
+  entry (a parent need not be enrolled); older/younger/twin is DERIVED from entry
+  years. Works cross-gender, cross-school and cross-era by construction. Doubles:
+  `FAMILY_CHEMISTRY` (0.025, ~¼ sd of pair-rating spread) is a TIEBREAK in both
+  arrangers, applied under the anti-stacking boundary; `TeamSeason.family_ids` is
+  resolved once in `district_teams`, never per dual. ‼️ `_resolve_member` NEVER
+  defaults the salt — the name draw is salted but `make_pid` is not, so the wrong salt
+  resolves the same pid to a DIFFERENT PERSON and stores the stranger's name. ‼️ A
+  JHSAA POST route reads gender off the FORM: `_jh_scope_args` reads `request.args`,
+  which a POST does not have. See `docs/AAR-jhsaa-family-ties-and-honours-tabs.md`.
+- **Team trophies and player honours are TWO TABS, and team-level text goes in
+  `team_honors`** (`_season_row`): a TOC finish short of the title is a TEAM result and
+  must never ride in the individual `honors` list. The active tab is the one with
+  content — `jh_tabs` activates the first pane, and most programs have player honours
+  but no trophy. Same AAR.
 - **An empty-state route test cannot see a page.** `tests/test_jhsaa_routes.py` renders
   every JHSAA surface with nothing archived and stayed green through four faults that only
   exist once there is data. `tests/test_jhsaa_toc.py` runs a REAL season (two districts per

@@ -128,6 +128,96 @@
       </div>
     </div>
 
+{# ‼️ FAMILY TIES ARE METADATA, NEVER A NAMING MECHANIC (owner rule 2026-08). A tie
+   links two pids and rewrites nobody's name — which is required, not merely tidy:
+   `world_jhsaa_dual.lines` archives player NAMES and `_jh_line_records` keys off
+   them, so renaming a player would silently zero their archived record.
+   Because a tie is just two pids it works unchanged across genders, across schools
+   and across ERAS (a former player's child), and the other member need not be
+   enrolled at all — which is why the stored member carries its own name/school.
+   ‼️ The picker below is a PICKER, not a search: the owner decides who is related.
+   No candidate scan exists anywhere in the app and none may be added. #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Family</span></div>
+      <div class="bl-panel-body">
+        {% if request.cookies.get('jh_family_result') %}
+        <p class="bit" style="margin-bottom:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_family_result') }}</p>
+        {% endif %}
+        {% if family %}
+        <p class="bit"><b>{{ family.label }}</b>{% if family.note %} · {{ family.note }}{% endif %}</p>
+        {% for o in family.others %}
+        <p class="bit">{{ o.relation }} of
+          <a href="{{ url_for('jhsaa_player', school=o.school, pid=o.pid, u=u, g=o.gender) }}">{{ o.name }}</a>
+          {%- if o.school != view.school %} · {{ o.school }}{% endif %}
+          {%- if o.gender != view.gender %} · {{ o.gender }}{% endif %}</p>
+        {% endfor %}
+        {% if not view.scope.pin %}
+        <form method="post" action="{{ url_for('editor_jhsaa_family') }}">
+          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+          <input type="hidden" name="jh_player_school" value="{{ view.school }}">
+          <input type="hidden" name="g" value="{{ view.gender }}">
+          <input type="hidden" name="family_id" value="{{ family.family_id }}">
+          <input type="hidden" name="drop_pid" value="{{ view.pid }}">
+          <input type="hidden" name="do" value="remove">
+          <input type="hidden" name="u" value="{{ u }}">
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Remove tie</button>
+        </form>
+        {% endif %}
+        {% elif not view.scope.pin %}
+        {# Choosing the roster to pick from is a GET, so it round-trips without
+           writing anything; the association itself is the POST below. #}
+        <form method="get" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <input type="hidden" name="u" value="{{ u }}">
+          <input type="hidden" name="g" value="{{ view.gender }}">
+          <label class="s">Team
+            <input type="text" name="fam_school" value="{{ fam_school }}"
+                   list="jh-family-schools" autocomplete="off" style="width:200px"></label>
+          <label class="s">Gender
+            <select name="fam_g">
+              {% for x in ('girls', 'boys') %}<option value="{{ x }}"{{ ' selected' if x == fam_g }}>{{ x }}</option>{% endfor %}
+            </select></label>
+          <label class="s">Season
+            <input type="number" name="fam_season" value="{{ fam_season }}" style="width:90px"></label>
+          <button type="submit" class="bl-pill" style="cursor:pointer">Show roster</button>
+        </form>
+        <datalist id="jh-family-schools">
+          {% for n in all_schools %}<option value="{{ n }}">{% endfor %}
+        </datalist>
+        {% if picker_msg %}<p class="bit">{{ picker_msg }}</p>{% endif %}
+        {% if picker %}
+        <form method="post" action="{{ url_for('editor_jhsaa_family') }}"
+              style="margin-top:8px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+          <input type="hidden" name="jh_player_school" value="{{ view.school }}">
+          <input type="hidden" name="g" value="{{ view.gender }}">
+          <input type="hidden" name="fam_g" value="{{ fam_g }}">
+          <input type="hidden" name="fam_season" value="{{ fam_season }}">
+          {# The team the picker was showing — lets the server resolve the chosen
+             player with one roster build instead of scanning the association. #}
+          <input type="hidden" name="fam_school" value="{{ fam_school }}">
+          {# THIS player's own season, which is not the picker's: a cross-era tie
+             looks at an old roster while this page stays in the current one. #}
+          <input type="hidden" name="player_season" value="{{ view.scope.season_year }}">
+          <input type="hidden" name="u" value="{{ u }}">
+          <label class="s">Related to
+            <select name="other_pid" required style="max-width:260px">
+              {% for opid, lbl in picker %}<option value="{{ opid }}">{{ lbl }}</option>{% endfor %}
+            </select></label>
+          <label class="s">As
+            <select name="relation">
+              {% for r in relations %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+            </select></label>
+          <label class="s">Note
+            <input type="text" name="note" placeholder="optional" style="width:170px"></label>
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Associate</button>
+        </form>
+        <p class="bit">Twins are derived — two members who entered the same year are
+          shown as twins. Siblings need not share a surname or a school.</p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
     {% if not view.scope.pin %}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Transfer</span></div>
