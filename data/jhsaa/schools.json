@@ -3062,6 +3062,65 @@
       "locality": "Penobscot"
     },
     {
+      "name": "Cherry Hill East",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1398,
+      "private": false,
+      "mascot": "Creamery",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League"
+    },
+    {
+      "name": "Cherry Hill North",
+      "source": "Caswell Depot High",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2139,
+      "private": false,
+      "mascot": "Grainmen",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Four Rivers Interscholastic League",
+      "boys_district": "Four Rivers Interscholastic League"
+    },
+    {
+      "name": "Cherry Hill South",
+      "source": "Caswell I-50 Technical",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 915,
+      "private": false,
+      "mascot": "Spartans",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Twin Counties Athletic Association",
+      "boys_district": ""
+    },
+    {
       "name": "Chesapeake",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -6309,26 +6368,6 @@
       "locality": "Hackensack"
     },
     {
-      "name": "Haddon Green",
-      "source": "Caswell I-50 Technical",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 915,
-      "private": false,
-      "mascot": "Spartans",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Twin Counties Athletic Association",
-      "boys_district": ""
-    },
-    {
       "name": "Haddon Siding",
       "city": "Haddon Siding",
       "county": "Barlowe",
@@ -8823,26 +8862,6 @@
       "boys_district": "Big Basin League"
     },
     {
-      "name": "Maple Run",
-      "source": "Caswell Depot High",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2139,
-      "private": false,
-      "mascot": "Grainmen",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Four Rivers Interscholastic League",
-      "boys_district": "Four Rivers Interscholastic League"
-    },
-    {
       "name": "Mar Vista",
       "city": "San Cordero",
       "county": "Tamarack",
@@ -10404,26 +10423,6 @@
       "girls_district": "Metro League",
       "boys_district": "Metro League",
       "source": "Hawk Lake Eastgate"
-    },
-    {
-      "name": "Oakhurst",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1398,
-      "private": false,
-      "mascot": "Creamery",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League",
-      "source": "Cherry Hill East"
     },
     {
       "name": "Obama",

@@ -559,3 +559,20 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
   font-size: 12.5px; color: var(--text-secondary); user-select: none;
 }
 .jh-scout-toggle input { margin: 0; cursor: pointer; }
+
+/* ‼️ THE CHAMPIONS TABLE LETS A NAME WRAP (owner, 2026-08). Everywhere else a school
+   cell truncates, because it sits in a dense row where one line is the whole point.
+   This table is nine narrow columns of nothing BUT school names, so truncation took
+   the identity out of the only thing on screen — "Halfway Ho…", "Benjamin B…". Here
+   the row grows instead. Scoped to this cell so no other list changes. */
+.jh-champ-cell { font-variant-numeric: normal; vertical-align: top; }
+.jh-champ-cell .jh-schoolcell { align-items: flex-start; }
+.jh-champ-cell .jh-schoolcell a {
+  white-space: normal; overflow: visible; text-overflow: clip;
+  overflow-wrap: anywhere; line-height: 1.25;
+}
+.jh-champ-cell .jh-schoolcell .mk { margin-top: 1px; }
+
+/* The season picker sits in the scope rail beside two segmented controls, so it has
+   to read as their sibling rather than as a form field dropped into a header. */
+.jh-season-pick { height: 30px; padding: 0 26px 0 10px; font-size: 14px; font-weight: 700; }

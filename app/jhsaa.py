@@ -968,6 +968,50 @@ _upstart_cache: dict = {}
 _playup_league_cache: dict = {}
 
 
+# ‼️ A RENAME MUST NOT COST A SCHOOL ITS HISTORY (owner rule 2026-08). The archive
+# keys on the DISPLAY NAME at the moment a season was written, so renaming a program
+# orphans every row it has already earned — its page finds nothing under the new name,
+# and the old name is no longer a school, so that page 404s too. A 2031 state champion
+# vanished from its own program page exactly that way. **Nothing was lost but the
+# link**, and this is the link.
+#
+# Generated from the git history of RENAMES by `scripts/jhsaa_former_names.py` — it
+# cannot be typed, because renaming a school twice REWRITES the target in place (the
+# rule: never chain), so intermediate names survive only in git.
+_FORMER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       "data", "jhsaa", "former_names.json")
+_former_cache: dict | None = None
+
+
+def former_names() -> dict[str, str]:
+    """Old display name -> the name that school goes by now."""
+    global _former_cache
+    if _former_cache is None:
+        try:
+            with open(_FORMER, encoding="utf-8") as fh:
+                built = json.load(fh)["former_names"]
+        except (FileNotFoundError, ValueError, KeyError):
+            built = {}
+        _former_cache = built          # publish a local (the gthread rule)
+    return _former_cache
+
+
+def current_name(name: str, gender: str = "girls") -> str:
+    """‼️ A LIVE NAME ALWAYS WINS. An alias must never outrank a school that exists —
+    `Ashbury` is both a name some school used to have AND, today, nobody's; but the
+    general case (a retired name reissued to another program) is exactly how a lookup
+    would silently serve the wrong school's record."""
+    if any(s.name == name for s in load_schools(gender)):
+        return name
+    return former_names().get(name, name)
+
+
+def known_names(name: str, gender: str = "girls") -> list[str]:
+    """Every name this program's archived rows could be filed under — current first."""
+    now = current_name(name, gender)
+    return [now] + sorted(o for o, n in former_names().items() if n == now and o != now)
+
+
 def reset_schools() -> None:
     """Drop the school and play-up caches. Needed when a play-up override changes,
     because `load_schools` bakes the championship group and the league INTO the
@@ -980,6 +1024,8 @@ def reset_schools() -> None:
     _upstart_cache.clear()
     _playup_league_cache.clear()
     _name_era_cache.clear()
+    global _former_cache
+    _former_cache = None
 
 
 # --- name-generation era (owner rule 2026-08, mid-save cutover) ----------------------

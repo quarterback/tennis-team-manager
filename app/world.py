@@ -3749,6 +3749,52 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     return {"event": "jhsaa", "year": year, "champions": champs}
 
 
+# ‼️ AN ARCHIVED SEASON IS RELABELLED INTO TODAY'S NAMES ON READ (owner rule 2026-08).
+# The archive stores the display name a school had when the season was written, so a
+# rename orphans everything it had already won: its program page finds nothing, and
+# the old name is nobody's school, so that page 404s. A 2031 state champion vanished
+# from its own page exactly that way. Renaming a school is not creating a franchise.
+#
+# Relabelling on READ, not migrating the rows, is deliberate: the archive stays the
+# record of what was written, and the next rename needs no migration at all.
+#
+# ‼️ IT IS KEY-DRIVEN, NOT A BLANKET STRING SWAP. Ten former school names are ALSO
+# live town names — Port Veles, Ashbury, Telfair, Orellana — so replacing every string
+# that matches a former name would rewrite addresses. Everything is a school name here
+# EXCEPT the places and units, which is the safer way round: a shape this misses keeps
+# an old name (a broken link, visible), while a blanket swap would quietly move a
+# school to another town.
+_NOT_A_SCHOOL = frozenset({
+    "city", "locality", "town", "county", "area", "district", "districts",
+    "league", "group", "classification", "unit", "units", "unit_wins", "phase",
+    "region", "state", "mascot", "colors", "name_era", "season_year",
+})
+
+
+def _relabel(obj, key=None, _map=None):
+    """Rewrite every school name in an archived structure to what that school is
+    called now. Returns a new structure; the stored rows are untouched."""
+    if _map is None:
+        from . import jhsaa as _jh
+        _map = _jh.former_names()
+        if not _map:
+            return obj
+    if isinstance(obj, str):
+        return obj if key in _NOT_A_SCHOOL else _map.get(obj, obj)
+    if isinstance(obj, list):
+        return [_relabel(v, key, _map) for v in obj]
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            # A dict KEYED by school name (standings by district, champions by class)
+            # has to move its key too, or the row is filed under a school nobody can
+            # look up. Keys that are places or units are left exactly alone.
+            nk = k if (key in _NOT_A_SCHOOL or not isinstance(k, str)) else _map.get(k, k)
+            out[nk] = _relabel(v, k, _map)
+        return out
+    return obj
+
+
 def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
     """The archived JHSAA season for a world-year, or None."""
     conn = _db()
@@ -3757,7 +3803,8 @@ def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
                          " AND gender=?", (world_id, year, gender)).fetchone()
     finally:
         conn.close()
-    return json.loads(r["data"]) if r else None
+    # Relabelled into today's names so a renamed program keeps every row it earned.
+    return _relabel(json.loads(r["data"])) if r else None
 
 
 def jhsaa_years(world_id: int, gender: str) -> list[int]:
@@ -3775,13 +3822,23 @@ def jhsaa_years(world_id: int, gender: str) -> list[int]:
 def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> list[dict]:
     """One school's duals for a year, in the order they were played, on an OPEN
     connection — so a caller walking many seasons opens one, not one per year."""
+    # ‼️ EVERY NAME THIS PROGRAM HAS EVER CARRIED. The archive is keyed on the display
+    # name at the time the season was written, so a renamed school's older duals sit
+    # under the old string. Querying the current name alone silently returns an empty
+    # season for a program that played a full one.
+    from . import jhsaa as _jh
+    names = _jh.known_names(school, gender)
     rows = conn.execute(
         "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
-        " WHERE world_id=? AND year=? AND gender=? AND school=? ORDER BY rowid",
-        (world_id, year, gender, school)).fetchall()
+        " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
+        % ",".join("?" * len(names)),
+        (world_id, year, gender, *names)).fetchall()
+    from . import jhsaa as _jh2
+    alias = _jh2.former_names()
     out = []
     for r in rows:
         d = dict(r)
+        d["opp"] = alias.get(d["opp"], d["opp"])     # an opponent renamed since
         # The row is one SIDE of a dual; carrying its own school makes it
         # self-describing, so `jh_match_key` can identify the match from either
         # side without the caller threading the school through.
@@ -4604,7 +4661,9 @@ def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
                              " AND gender=?", (world_id, year, gender)).fetchone()
             if not r:
                 continue
-            row = _season_row(json.loads(r["data"]), year, school,
+            # Relabelled, so a season this program played under an older name is
+            # still ITS season — the whole point of the fix.
+            row = _season_row(_relabel(json.loads(r["data"])), year, school,
                               _schedule_rows(conn, world_id, year, gender, school))
             if row:
                 out.append(row)
@@ -4681,6 +4740,8 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
     what looping `jhsaa_school_seasons` over ~850 programs would cost. Rows per
     school come newest-first, matching `jhsaa_school_seasons`."""
     from collections import defaultdict
+    from . import jhsaa as _jh
+    _alias = _jh.former_names()
     conn = _db()
     out: dict[str, list[dict]] = {}
     try:
@@ -4692,14 +4753,17 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
                              " AND gender=?", (world_id, year, gender)).fetchone()
             if not r:
                 continue
-            arc = json.loads(r["data"])
+            arc = _relabel(json.loads(r["data"]))
             sched: dict[str, list[dict]] = defaultdict(list)
             for d in conn.execute(
                     "SELECT school, home, lines FROM world_jhsaa_dual"
                     " WHERE world_id=? AND year=? AND gender=?",
                     (world_id, year, gender)):
-                sched[d["school"]].append({"home": bool(d["home"]),
-                                           "lines": json.loads(d["lines"] or "[]")})
+                # Grouped under the CURRENT name, matching the relabelled standings —
+                # otherwise a renamed program's duals never meet its own season row.
+                sched[_alias.get(d["school"], d["school"])].append(
+                    {"home": bool(d["home"]),
+                     "lines": json.loads(d["lines"] or "[]")})
             schools = {row["school"]
                        for dists in (arc.get("standings") or {}).values()
                        for rows_ in (dists or {}).values() for row in rows_}

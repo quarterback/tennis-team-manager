@@ -88,14 +88,22 @@
         {% endfor %}
       </span>
     </div>
+    {# ‼️ SEASONS ARE A DROPDOWN, NOT A SEGMENTED RAIL (owner, 2026-08). Sport is two
+       and Class is nine — both bounded, so a rail is right for them. Seasons grow by
+       one every year forever, so a rail that fits today wraps the header next year
+       and keeps getting worse. The one control that has no ceiling gets the one
+       control that does not care how many options it holds. #}
     {% if scope.years and scope.years|length > 1 %}
     <div class="jh-scope-group">
       <span class="jh-scope-label">Season</span>
-      <span class="jh-seg">
-        {% for y in scope.years %}
-        <a class="{{ 'on' if scope.year == y }}"
-           href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=y) }}">{{ scope.season_years[y] }}</a>
-        {% endfor %}
+      <span class="bl-select-wrap">
+        <select class="bl-select jh-season-pick"
+                onchange="location.href=this.value">
+          {% for y in scope.years %}
+          <option value="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=y) }}"
+                  {% if scope.year == y %}selected{% endif %}>{{ scope.season_years[y] }}</option>
+          {% endfor %}
+        </select>
       </span>
     </div>
     {% endif %}
