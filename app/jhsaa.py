@@ -37,6 +37,7 @@ import json
 import logging
 import os
 import random
+import uuid
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -1022,6 +1023,12 @@ class TeamSeason:
     # first postseason dual and FROZEN for the rest of the season. Empty until
     # then; the regular season runs on the live ladder. See `_postseason_nine`.
     order_of_ability: list = field(default_factory=list)
+    # {pid: family_id} for THIS roster only — the doubles nudge's whole input.
+    # ‼️ Resolved once when the team is built, never inside `_lineup`. `families()`
+    # resolves an override fingerprint, which costs a SQLite connect+query: called
+    # per dual that is ~5,100 queries a gender, the exact shape of the play-up
+    # fingerprint storm. A dual reads this dict instead.
+    family_ids: dict = field(default_factory=dict)
 
     @property
     def record(self) -> str:
@@ -1045,6 +1052,7 @@ class TeamSeason:
 _schools_cache: dict | None = None
 _playup_cache: dict = {}
 _transfer_cache: dict = {}
+_family_cache: dict = {}
 # The BUILT School objects, keyed (gender, play-up version). `_schools_cache` above is
 # only the raw JSON; rebuilding the objects is what used to be free and is not any
 # more — see `load_schools`. Read-only: callers filter and group it, nobody mutates a
@@ -2203,7 +2211,7 @@ def _pair_partitions(pool: list):
             yield [(a, b)] + tail
 
 
-def _arrange_state(nine: list) -> list:
+def _arrange_state(nine: list, family_ids: dict | None = None) -> list:
     """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
     [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
     and `_slot_players` reads it back the same way, so this list IS the lineup.
@@ -2214,8 +2222,17 @@ def _arrange_state(nine: list) -> list:
     eng = {p.pid: p.engine_player() for p in nine}
     rank = {p.pid: i + 1 for i, p in enumerate(nine)}          # frozen OoA rank
 
+    fam = family_ids or {}
+
     def pair_rating(a, b):
-        return doubles_rating(eng[a.pid], eng[b.pid])
+        r = doubles_rating(eng[a.pid], eng[b.pid])
+        # Siblings partner SOMETIMES. `FAMILY_CHEMISTRY` is ~1/4 sd of the observed
+        # pair-rating spread, so it settles a near-tie and never overrides a real
+        # difference — and `_order_pairs` still enforces the anti-stacking rank-sum
+        # boundary afterwards, so this cannot produce an illegal lineup.
+        if fam.get(a.pid) and fam.get(a.pid) == fam.get(b.pid):
+            r += FAMILY_CHEMISTRY
+        return r
 
     # S1 + D1 consume ranks #1-#3: the coach picks which of the three plays
     # singles by what it does for the two points those players cover.
@@ -2330,7 +2347,8 @@ def _flip_strategy(strategy: str) -> str:
     return _STRATEGIES[(i + 1) % len(_STRATEGIES)]
 
 
-def _arrange_regular(eleven: list, strategy: str) -> list:
+def _arrange_regular(eleven: list, strategy: str,
+                     family_ids: dict | None = None) -> list:
     """The 3S/4D card under `strategy`, in SLOT ORDER
     [S1, S2, S3, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
@@ -2366,8 +2384,13 @@ def _arrange_regular(eleven: list, strategy: str) -> list:
         from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
 
+        fam = family_ids or {}
+
         def dr(a, b):
-            return doubles_rating(eng[a.pid], eng[b.pid])
+            r = doubles_rating(eng[a.pid], eng[b.pid])
+            if fam.get(a.pid) and fam.get(a.pid) == fam.get(b.pid):
+                r += FAMILY_CHEMISTRY      # see `_arrange_state` — a tiebreak only
+            return r
 
         if strategy == "balanced":
             # Snake-pair strongest with weakest, next-strongest with
@@ -2409,7 +2432,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
     TeamSeason, regular season only) lets the coach rest starters against a
     truly weaker side — see `_rest_count`."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
-        return _arrange_state(_postseason_nine(ts))
+        return _arrange_state(_postseason_nine(ts), ts.family_ids)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -2424,7 +2447,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
-        return _arrange_state(nine)
+        return _arrange_state(nine, ts.family_ids)
     order = _order(ts)
     need = lineup_need(phase)
     # Talent-aware staffing: sit 1-2 from the TOP against a truly weaker side and
@@ -2453,7 +2476,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         strategy = _coach_strategy(ts.school.key)
         if flip:
             strategy = _flip_strategy(strategy)
-        return _arrange_regular(nine, strategy)
+        return _arrange_regular(nine, strategy, ts.family_ids)
     return nine
 
 
@@ -2586,7 +2609,14 @@ def run_district(schools: list[School], year: int, *, seed: int,
 
 def district_teams(schools: list[School], year: int, salt: str = "") -> list[TeamSeason]:
     """A district's programs with this year's rosters, before a ball is struck."""
-    return [TeamSeason(school=s, roster=build_roster(s, year, salt)) for s in schools]
+    fam = families()          # resolved ONCE here, never per team and never per dual
+    out = []
+    for s in schools:
+        roster = build_roster(s, year, salt)
+        out.append(TeamSeason(
+            school=s, roster=roster,
+            family_ids={p.pid: fam[p.pid][0] for p in roster if p.pid in fam}))
+    return out
 
 
 # --- the district round robin ------------------------------------------------
@@ -4987,3 +5017,228 @@ def career(school_name: str, gender: str, name: str, grad_year: int,
                             "district": school.district})
                 break
     return out
+
+
+# --- FAMILY TIES (owner rule 2026-08) ----------------------------------------
+# Siblings on a high-school tennis team are unusually common in life, including as
+# doubles partners, and a save run long enough eventually rosters a former player's
+# child. A tie is narrative METADATA over two pids that already exist.
+#
+# ‼️ NEVER A NAMING MECHANIC, and never a dice roll. Two rules, both owner-stated:
+#   * A tie does not touch a name. `world_jhsaa_dual.lines` archives player NAMES
+#     rather than pids and `_jh_line_records` keys off them, so rewriting a surname
+#     would silently zero that player's archived record. Metadata makes that
+#     impossible rather than fixing it — and needs no era gate (unlike `name_era`),
+#     since nothing about generation changes.
+#   * There is NO candidate search, suggestion pass or "likely siblings" scan, and
+#     none may be added. The owner decides who is related and associates them by
+#     hand; the sim's whole job is to store the tie and show it.
+#
+# Because a tie is just two pids, and a pid is f(school, gender, entry, seat) over
+# deterministic rosters, it works unchanged across GENDERS (a brother and sister on
+# the school's two teams), across SCHOOLS, and across ERAS — a 2052 freshman can be
+# tied to their parent's 2027 pid. A parent tie usually will NOT share a surname,
+# which is the last argument for the relationship being explicit.
+
+#: What a tie can be. `twin` is not offered separately — it is DERIVED, since two
+#: members sharing an entry year are in the same grade all four years.
+FAMILY_RELATIONS = ("sibling", "cousin", "parent")
+
+#: The doubles nudge. Siblings partner SOMETIMES, never by mandate: measured over an
+#: eight-player doubles pool `doubles_rating` runs 0.36-0.75 with sd 0.10, so this is
+#: about a quarter of a standard deviation — enough to settle a near-tie and nothing
+#: more. Applied in the pair SCORING both arrangers already run, so it adds a
+#: constant to a pair's score and mutates no Prospect (unlike the `doubles`
+#: archetype, which needs a clone). `_order_pairs`'s rank-sum boundary still runs
+#: afterwards, so the anti-stacking rule cannot be violated by this.
+FAMILY_CHEMISTRY = 0.025
+
+
+def _family_map(version: str) -> dict:
+    """{pid: (family_id, family)}, memoised on the override table's fingerprint —
+    the `_transfer_map` shape exactly."""
+    hit = _family_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    fresh = {}
+    for fid, fam in ov.get_jhsaa_families().items():
+        for m in fam.get("members") or ():
+            if m.get("pid"):
+                fresh[m["pid"]] = (fid, fam)
+    _family_cache.clear()
+    _family_cache[version] = fresh
+    return fresh
+
+
+def families() -> dict:
+    """{pid: (family_id, family)} — the fingerprint is resolved HERE, once, never
+    inside a per-school or per-player loop (`AAR-jhsaa-playup-fingerprint-query-
+    storm.md`: a memo is only as cheap as its key)."""
+    from app import overrides as ov
+    return _family_map(ov.jhsaa_family_version())
+
+
+def family_for(pid: str) -> dict | None:
+    """This player's family, or None. The returned dict carries `family_id` and a
+    `others` list — every OTHER member, with the relation each bears to `pid`."""
+    hit = families().get(pid)
+    if not hit:
+        return None
+    fid, fam = hit
+    members = fam.get("members") or []
+    me = next((m for m in members if m.get("pid") == pid), None)
+    others = []
+    for m in members:
+        if m.get("pid") == pid:
+            continue
+        others.append({**m, "relation": _relation_from(fam, me, m)})
+    return {"family_id": fid, "label": fam.get("label", ""),
+            "relation": fam.get("relation", "sibling"), "note": fam.get("note", ""),
+            "members": members, "others": others}
+
+
+def _relation_from(fam: dict, me: dict | None, them: dict) -> str:
+    """How `them` reads FROM `me`'s point of view — derived from entry years rather
+    than stored, so an 'older'/'younger' field can never disagree with itself."""
+    rel = fam.get("relation", "sibling")
+    if rel == "cousin" or me is None:
+        return rel
+    a, b = me.get("entry"), them.get("entry")
+    if a is None or b is None:
+        return rel
+    if rel == "parent":
+        return "parent" if b < a else "child"
+    if a == b:
+        return "twin"
+    return "older sibling" if b < a else "younger sibling"
+
+
+def _family_pairs(a_pid: str, b_pid: str, fam_map: dict | None = None) -> bool:
+    """True when these two share a family — the doubles nudge's only question.
+    Takes a PRE-RESOLVED map so a lineup call never re-resolves the fingerprint."""
+    m = families() if fam_map is None else fam_map
+    ha, hb = m.get(a_pid), m.get(b_pid)
+    return bool(ha and hb and ha[0] == hb[0])
+
+
+def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
+               label: str = "", note: str = "", *, salt: str | None = None,
+               where_a: dict | None = None, where_b: dict | None = None) -> dict:
+    """Associate two players. Creates a family, or joins `pid_b` to whichever
+    family `pid_a` already belongs to (and vice versa). Returns a result dict
+    {ok, msg, family_id}; it never raises on a bad input, because every caller
+    wants to report the reason rather than 500.
+
+    ‼️ NO same-school and NO same-surname rule. Siblings at different schools are
+    ordinary, a brother and sister sit on two different teams, a parent played
+    twenty seasons ago, and siblings routinely do not share a surname. The only
+    hard rules are that both pids resolve to real players and that a pid belongs
+    to at most one family.
+
+    ‼️ EACH MEMBER CARRIES ITS OWN `where` — {gender, year, school} — and they are
+    NOT interchangeable. A single (gender, year) for both is wrong in exactly the
+    two cases this feature exists to serve: a cross-GENDER tie has one member on
+    the girls' roster and one on the boys', and a cross-ERA tie (a former player's
+    child) has one member in this season and one twenty seasons back, whose seat
+    need not exist in the other's year at all. Sharing the context does not
+    misresolve, it simply fails to find the second member."""
+    from app import overrides as ov
+    if relation not in FAMILY_RELATIONS:
+        return {"ok": False, "msg": f"unknown relation {relation!r}", "family_id": ""}
+    if not pid_a or not pid_b or pid_a == pid_b:
+        return {"ok": False, "msg": "need two different players", "family_id": ""}
+    m = families()
+    fa, fb = m.get(pid_a), m.get(pid_b)
+    if fa and fb:
+        if fa[0] == fb[0]:
+            return {"ok": False, "msg": "already in the same family", "family_id": fa[0]}
+        return {"ok": False, "msg": "both already belong to different families",
+                "family_id": ""}
+    wa, wb = where_a or {}, where_b or {}
+    info = {pid_a: _resolve_member(pid_a, salt=salt, **_where(wa)),
+            pid_b: _resolve_member(pid_b, salt=salt, **_where(wb))}
+    for p, rec in info.items():
+        if rec is None:
+            return {"ok": False, "msg": f"no player found for pid {p}", "family_id": ""}
+    existing = fa or fb
+    if existing:
+        fid, fam = existing
+        joiner = pid_b if fa else pid_a
+        fam = {**fam, "members": list(fam.get("members") or []) + [info[joiner]]}
+        ov.set_jhsaa_family(fid, fam)
+        return {"ok": True, "msg": f"added to the {fam.get('label') or 'family'}",
+                "family_id": fid}
+    fid = uuid.uuid4().hex[:12]        # opaque — NEVER a slug built from a school name
+    if not label:
+        # Default to the shared surname when there is one, else both surnames.
+        sa = info[pid_a]["name"].split(" ", 1)[-1]
+        sb = info[pid_b]["name"].split(" ", 1)[-1]
+        label = sa if sa == sb else f"{sa}-{sb}"
+    fam = {"label": label, "relation": relation, "note": note,
+           "members": [info[pid_a], info[pid_b]]}
+    ov.set_jhsaa_family(fid, fam)
+    return {"ok": True, "msg": f"{label} family created", "family_id": fid}
+
+
+def family_remove(family_id: str, pid: str = "") -> dict:
+    """Drop one member, or the whole family when `pid` is empty. A family that
+    falls below two members is deleted outright — a tie needs two ends."""
+    from app import overrides as ov
+    fams = ov.get_jhsaa_families()
+    fam = fams.get(family_id)
+    if fam is None:
+        return {"ok": False, "msg": "no such family"}
+    if not pid:
+        ov.clear_jhsaa_family(family_id)
+        return {"ok": True, "msg": "family removed"}
+    members = [m for m in (fam.get("members") or []) if m.get("pid") != pid]
+    if len(members) < 2:
+        ov.clear_jhsaa_family(family_id)
+        return {"ok": True, "msg": "family removed (a tie needs two)"}
+    ov.set_jhsaa_family(family_id, {**fam, "members": members})
+    return {"ok": True, "msg": "member removed"}
+
+
+def _where(w: dict) -> dict:
+    """Normalise one member's lookup context to `_resolve_member`'s keywords."""
+    return {"gender": w.get("gender", ""), "year": w.get("year"),
+            "school": w.get("school", "")}
+
+
+def _resolve_member(pid: str, *, gender: str = "", year: int | None = None,
+                    salt: str | None = None, school: str = "") -> dict | None:
+    """The stored member record for a pid: identity plus the DENORMALISED name,
+    school and entry year a tie is rendered from.
+
+    ‼️ Denormalised on purpose. A member may not be enrolled at all — a parent from
+    twenty seasons back, or a graduate — so a tie has to render without finding them
+    on any current roster. That is safe precisely BECAUSE a tie never rewrites a
+    name: a stored name cannot drift from the generated one.
+
+    ‼️ THE SALT IS NOT OPTIONAL AND IS NEVER DEFAULTED TO "". `make_pid` does NOT
+    fold in the salt but `_gen_seat`'s NAME draw and `_freshman_class_size` both do,
+    so resolving under the wrong salt does not fail — it finds the same pid attached
+    to a DIFFERENT PERSON, and stores that stranger's name on the tie (measured:
+    "Janet Allister" stored for Kanika McNeal), or misses a seat the real roster has.
+    Silent wrong data, which is the failure this codebase keeps relearning. So an
+    unset salt is resolved from the WORLD here rather than assumed; pass one
+    explicitly only in a test with its own world."""
+    if salt is None:
+        from app import world as _wd
+        salt = _wd.active_salt(_wd.DEFAULT_SEED)
+    if not year:
+        return None                     # a season is required to build a roster
+    genders = (gender,) if gender in ("girls", "boys") else ("girls", "boys")
+    for g in genders:
+        schools = load_schools(g)
+        # The caller almost always knows the team (it is the roster the picker was
+        # showing), which turns a whole-association scan into one roster build.
+        if school:
+            schools = sorted(schools, key=lambda s: s.name != school)
+        for sc in schools:
+            for p in build_roster(sc, year, salt):
+                if p.pid == pid:
+                    return {"pid": pid, "gender": g, "school": sc.name,
+                            "name": p.name, "entry": p.entry_year}
+    return None

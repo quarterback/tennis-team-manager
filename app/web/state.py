@@ -4450,6 +4450,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
               "AREA": sec_seeds}
 
     awards = ((arc or {}).get("awards") or {}).get(sc.group) or {}
+    # Family ties for this roster — the fingerprint resolved ONCE per page, never
+    # inside the per-player comprehension below (`AAR-jhsaa-playup-fingerprint-
+    # query-storm.md`: a memo is only as cheap as its key).
+    fam_map = jh.families()
     honor_pids = {}
     # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
     # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
@@ -4516,7 +4520,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     "str": p.str_value(),
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
                     "doubles": "{}-{}".format(*lines.get(p.name, {}).get("d", (0, 0))),
-                    "honors": honor_pids.get(p.pid, [])}
+                    "honors": honor_pids.get(p.pid, []),
+                    # A recorded family tie, for the roster chip. `fam_map` is
+                    # resolved ONCE above, never per player — `families()` reads an
+                    # override fingerprint, which is a SQLite round trip.
+                    "family": _family_row(fam_map, p.pid)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
         "history": hist,
@@ -4638,6 +4646,17 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
                                (arc or {}).get("season_year")),
             "districts": rows}
+
+
+def _family_row(fam_map: dict, pid: str) -> dict | None:
+    """The compact family tie a roster row shows — label plus the other members.
+    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself."""
+    hit = fam_map.get(pid)
+    if not hit:
+        return None
+    _fid, fam = hit
+    return {"label": fam.get("label", ""),
+            "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
 
 
 def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:

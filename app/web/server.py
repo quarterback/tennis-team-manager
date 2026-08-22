@@ -2314,6 +2314,50 @@ def create_app() -> Flask:
                 "dest_schools": sorted(s.name for s in _jh.load_schools(g)),
                 "report": report, "batch_text": batch_text}
 
+    @app.route("/editor/jhsaa-family", methods=["POST"])
+    def editor_jhsaa_family():
+        """Associate two players, or drop a tie. The owner's own association —
+        there is no suggestion pass anywhere in the app and none may be added.
+
+        A tie is DISPLAY metadata: it renames nobody and changes no roster, so
+        unlike an archetype or a play-up it needs no `reset_all()` and cannot
+        disturb an archived season."""
+        from app import jhsaa as _jh
+        gender, _label, u, g, _group, _year = _jh_scope_args()
+        # ‼️ THE PLAYER'S GENDER COMES OFF THE FORM, NOT THE SCOPE. `_jh_scope_args`
+        # reads `request.args`, and this is a POST with no query string — so it fell
+        # back to the universe default ("boys") and every girls' tie failed to
+        # resolve. `editor_jhsaa_transfer` reads `gender` from the form for exactly
+        # this reason; do the same rather than trusting the scope on a POST.
+        g = request.form.get("g") or request.form.get("gender") or g
+        pid = request.form.get("jh_pid", "")
+        school = request.form.get("jh_player_school", "")
+        action = request.form.get("do", "add")
+        if action == "remove":
+            res = _jh.family_remove(request.form.get("family_id", ""),
+                                    request.form.get("drop_pid", ""))
+        else:
+            # Each member gets its OWN lookup context: this page's player lives in
+            # the page's gender and season, the chosen one in whatever gender and
+            # season the picker was showing. Sharing one context breaks precisely
+            # the cross-gender and cross-era ties this exists for. Naming both
+            # schools also makes resolution two roster builds, not a scan.
+            res = _jh.family_add(
+                pid, request.form.get("other_pid", ""),
+                request.form.get("relation", "sibling"),
+                request.form.get("label", "").strip(),
+                request.form.get("note", "").strip(),
+                salt=wd.active_salt(DEFAULT_SEED),
+                where_a={"gender": g, "school": school,
+                         "year": request.form.get("player_season", type=int)},
+                where_b={"gender": request.form.get("fam_g", g),
+                         "school": request.form.get("fam_school", ""),
+                         "year": request.form.get("fam_season", type=int)})
+        resp = redirect(url_for("jhsaa_player", school=school, pid=pid, u=u, g=g))
+        resp.set_cookie("jh_family_result", res.get("msg", ""), max_age=30,
+                        samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-transfer-batch", methods=["POST"])
     def editor_jhsaa_transfer_batch():
         """Apply (or preview) a pasted batch of `pid, destination` lines as one
@@ -2537,8 +2581,36 @@ def create_app() -> Flask:
         # list (same pattern as the Programs editor's `jh-names` datalist), so a
         # transfer target is PICKED, never typed exact-and-hope.
         school_names = sorted(s.name for s in _jh.load_schools(g) if s.name != school)
+        # The Family block. `fam_school`/`fam_season` drive the PICKER — the roster
+        # you choose the other member from — and default to this player's own team
+        # and season, so a sibling on the same roster is two clicks. Naming another
+        # school covers a cross-school tie; naming an older season covers a parent.
+        # ‼️ A picker, never a search: no candidate scan exists and none may be added
+        # (owner rule). A statewide type-ahead is not offered either — 31k players is
+        # not a dropdown, so the roster is fetched one team at a time.
+        fam_g = request.args.get("fam_g", g)
+        fam_school = request.args.get("fam_school", school)
+        fam_season = request.args.get("fam_season", type=int) or view["scope"]["season_year"]
+        picker, picker_msg = [], ""
+        fam_sc = next((s for s in _jh.load_schools(fam_g) if s.name == fam_school), None)
+        if fam_sc is None:
+            picker_msg = f'No {fam_g} program named "{fam_school}".'
+        else:
+            salt = wd.active_salt(DEFAULT_SEED)
+            picker = [(p.pid, f"{p.name} · {p.grade}th")
+                      for p in _jh.build_roster(fam_sc, fam_season, salt)
+                      if p.pid != pid]
+            if not picker:
+                picker_msg = f"{fam_school} fielded nobody in {fam_season}."
         return render_template("jhsaa_player.html", active="High School", view=view,
-                               gender=gender, u=u, uni_label=label, school_names=school_names)
+                               gender=gender, u=u, uni_label=label,
+                               school_names=school_names,
+                               family=_jh.family_for(pid),
+                               relations=_jh.FAMILY_RELATIONS,
+                               fam_g=fam_g, fam_school=fam_school,
+                               fam_season=fam_season, picker=picker,
+                               picker_msg=picker_msg,
+                               all_schools=sorted(s.name for s in _jh.load_schools(fam_g)))
 
     @app.route("/jhsaa/champions")
     def jhsaa_champions():

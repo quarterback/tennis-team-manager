@@ -4610,7 +4610,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
            "toc_champion": False, "honoured": False, "unit_wins": [],
-           "poy": [], "all_state": [], "all_district": [], "honors": []}
+           "poy": [], "all_state": [], "all_district": [], "honors": [],
+           # Team-level honours that are TEXT rather than a chip (today just a TOC
+           # finish short of the title). Kept apart from `honors`, which is
+           # individual awards only — the school page renders them in two tabs.
+           "team_honors": []}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
             for r in rows:
@@ -4680,8 +4684,14 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # The TOC CHAMPION gets a gold chip of its own in the honours panel, exactly as the
     # state champion does — so the text line here is for the programs that MADE the
     # field without winning it. Emitting both listed the title twice, one row apart.
+    # ‼️ A TOC FINISH IS A TEAM HONOUR AND GOES IN ITS OWN LIST. It used to be
+    # appended to `honors` beside the individual awards, which was harmless only
+    # while both were rendered as one undifferentiated panel. Now that the school
+    # page separates Team trophies from Player honours, a list that mixes them
+    # files "Tournament of Champions — Semifinal" under the PLAYERS and drops it
+    # from the team side entirely. `honors` is individual awards, full stop.
     if row["made_toc"] and not row["toc_champion"]:
-        row["honors"].append(
+        row["team_honors"].append(
             f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
             f" (No. {row['toc_seed']} seed)")
     aw = (arc.get("awards") or {}).get(row["group"]) or {}
@@ -4738,7 +4748,8 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # ...and the TEAM tournament honours widen it further (owner rule 2027-08):
     # a unit win or a State appearance is an honour too — only champions and TOC
     # sides earning anything "wasn't realistic".
-    row["honoured"] = (bool(row["honors"]) or row["champion"] or row["toc_champion"]
+    row["honoured"] = (bool(row["honors"]) or bool(row["team_honors"])
+                       or row["champion"] or row["toc_champion"]
                        or bool(row["unit_wins"]) or row["made_state"])
     return row
 

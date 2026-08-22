@@ -189,6 +189,10 @@
             <td class="pl">
               <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
               {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+              {# A family tie, if the owner has recorded one. `title` carries the
+                 detail so the row itself stays one short chip wide. #}
+              {% if p.family %}<span class="jh-chip unit" style="margin-left:4px"
+                title="{{ p.family.label }}: {{ p.family.others | map(attribute='name') | join(', ') }}">{{ p.family.label }}</span>{% endif %}
             </td>
             <td>{{ p.grade }}th</td>
             <td class="num">{{ p.singles }}</td>
@@ -306,14 +310,23 @@
   {% if s.toc_champion %}{% set ns.team = ns.team + 1 %}{% endif %}
   {% if s.made_state and not s.champion %}{% set ns.team = ns.team + 1 %}{% endif %}
   {% if s.unit_wins %}{% set ns.team = ns.team + 1 %}{% endif %}
+  {% set ns.team = ns.team + (s.team_honors|length) %}
   {% set ns.players = ns.players + s.honors|length %}
 {% endfor %}
+{# ‼️ THE FIRST TAB IS THE ACTIVE ONE, so it must not be the empty one. `jh_tabs`
+   always activates the first pane, and a program with All-District players but no
+   title, State trip or unit win has honours while `ns.team` is zero — that page
+   opened on "No team trophies yet" with every real honour hidden behind a tab.
+   Common, not an edge case: most programs never win anything team-level. So the
+   panes are ORDERED by which has content rather than fixed. #}
+{% set team_first = ns.team > 0 or ns.players == 0 %}
 <div class="bl-panel" style="margin-top:14px">
-  {{ jh_tabs([('team', 'Team trophies', ns.team),
-               ('players', 'Player honours', ns.players)],
+  {% set team_tab = ('team', 'Team trophies', ns.team) %}
+  {% set player_tab = ('players', 'Player honours', ns.players) %}
+  {{ jh_tabs([team_tab, player_tab] if team_first else [player_tab, team_tab],
               'jhhon') }}
 
-  <div class="jh-pane" data-pane="team">
+  <div class="jh-pane" data-pane="team"{{ '' if team_first else ' hidden' }}>
     {% if ns.team %}
     {% for s in honor_years %}
     {% if s.champion %}
@@ -340,13 +353,18 @@
     <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
       <span>{% for u in s.unit_wins %}<span class="jh-chip unit">{{ u }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
     {% endif %}
+    {# Team results carried as text rather than a chip — a TOC finish short of the
+       title. These belong HERE, not among the individual awards. #}
+    {% for h in s.team_honors %}
+    <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
+    {% endfor %}
     {% endfor %}
     {% else %}
     <p class="jh-empty">No team trophies yet.</p>
     {% endif %}
   </div>
 
-  <div class="jh-pane" data-pane="players" hidden>
+  <div class="jh-pane" data-pane="players"{{ ' hidden' if team_first else '' }}>
     {% if ns.players %}
     {% for s in honor_years %}
     {% for h in s.honors %}
