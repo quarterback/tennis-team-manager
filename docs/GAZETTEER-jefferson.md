@@ -486,7 +486,7 @@ class, enrollment, and locality where the school carries one.
 
 ### Antler County — Douglas County, OR
 
-- **Mount Henson** — 84,323 · 43.22N 123.34W
+- **Plainfield** — 84,323 · 43.22N 123.34W
     - Plainfield — 6A, 1,297 · Quarry League
     - George Washington Carver — 6A, 1,140 · Quarry League
     - Calasanz Prep — 4A, 769 · Valle Vista League

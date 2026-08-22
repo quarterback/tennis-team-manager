@@ -303,7 +303,9 @@ OWNER_EDICTS = frozenset({
     # the uplands the owner named outright
     "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit",
     "Meridian Passage", "Mount Ruth", "Mount Dylan Lake", "Corey Canyon",
-    "Aftdahl Ridge", "Brynildson Hill", "Mount Henson",
+    "Aftdahl Ridge", "Brynildson Hill",
+    # NOT "Mount Henson" — that rename was agent work, not an edict, and the owner
+    # reversed it (2026-08): the town keeps prep-network's own name, Plainfield.
     # areas
     "Southern Jefferson", "Millersylvania",
     "Salmon Bay",
@@ -1053,7 +1055,7 @@ RENAMES = {
     # to let a key collide with a live school's own identity at all.
 
     # Owner picks, 2026-08 — both enter the association via EXTRA_SPONSORS:
-    "Plainfield Science": "Plainfield",              # 6A Mount Henson (was Plainfield)
+    "Plainfield Science": "Plainfield",              # 6A Plainfield
     "Abraham Lincoln": "Lincoln",                    # 9A Belyakov — the state's Lincoln
 
     "Belyakov Academy of Music and Media": "Walter-Kenny School",
@@ -1923,7 +1925,7 @@ NEVER_SPONSOR = frozenset()
 EXTRA_SPONSORS = frozenset({
     "Whistle Stop",       # 1A 152 — Whistle Stop, Antler. The town's only school, and
                           # the town had no tennis at all.
-    "Plainfield Science",  # 6A 1297 — Mount Henson, Antler. Owner add (2026-08),
+    "Plainfield Science",  # 6A 1297 — Plainfield, Antler. Owner add (2026-08),
                           # displayed "Plainfield" (RENAMES).
     "Abraham Lincoln",    # 9A 2347 — Belyakov. Owner add (2026-08): the state had no
                           # Lincoln at all. Displayed "Lincoln" (RENAMES), the
@@ -2884,7 +2886,6 @@ CITY_RENAMES = {
     "Hetfield": "Brynildson Hill",
     "Huckle Lake": "Mount Dylan Lake",
     "Norford": "Meridian Passage",
-    "Plainfield": "Mount Henson",
     "Ransom City": "Ransom Pass",
     "Silton": "Silton Ridge",
     "Thornford": "Thorn Summit",

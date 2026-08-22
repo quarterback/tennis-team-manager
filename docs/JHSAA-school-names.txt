@@ -216,7 +216,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     4A   729  Fort Weller                            Fort Weller            Fort Salish
     1A   118  Fort Wren                              Fort Wren              Silvale
 
-    6A  1140  George Washington Carver               Mount Henson           George Washington Carver
+    6A  1140  George Washington Carver               Plainfield             George Washington Carver
     5A   852  George H. W. Bush                      Port Veles             Opal Avery North
 
     3A   451  Goldbank County                        Hydraulic Gap          Goldbank County
@@ -1253,11 +1253,6 @@ Mount Clambake — 1 program (Antler County, Alderwold)
 Mount Dylan Lake — 1 program (Cinder County, Cascade Divide)
     1A    76 pub  Mount Dylan Lake                                          South Coast League                 Huckle Lake
 
-Mount Henson — 3 programs (Antler County, Alderwold)
-    6A  1297 pub  Plainfield                                                Quarry League                      Plainfield Science
-    6A  1140 pub  George Washington Carver                                  Quarry League                      George Washington Carver
-    4A   769 priv Calasanz Prep                                             Valle Vista League                 Calasanz Prep
-
 Mount Horeb — 3 programs (Marlow County, Ashbury Metro)
     4A   727 pub  Sonia Sotomayor                                           Gateway League                     Manuel Cordero
     4A   593 pub  Mount Horeb                                               Gateway League                     Mount Horeb
@@ -1379,6 +1374,11 @@ Pine Siding — 1 program (Antler County, Alderwold)
 
 Placer — 1 program (Windrow County, Millersylvania)
     1A    57 pub  High Prairie                                              High Lakes League                  High Prairie
+
+Plainfield — 3 programs (Antler County, Alderwold)
+    6A  1297 pub  Plainfield                                                Quarry League                      Plainfield Science
+    6A  1140 pub  George Washington Carver                                  Quarry League                      George Washington Carver
+    4A   769 priv Calasanz Prep                                             Valle Vista League                 Calasanz Prep
 
 Pomar — 2 programs (Halbrook County, Halbrook Basin)
     3A   532 pub  Pomar                                                     Gold Valley League                 Pomar
