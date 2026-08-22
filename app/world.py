@@ -3837,7 +3837,8 @@ def jhsaa_latest_season_year(world_id: int, gender: str) -> int | None:
 _underplayed_cache: dict = {}
 
 
-def jhsaa_underplayed(world_id: int, gender: str, salt: str = "") -> dict:
+def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
+                      season_year: int | None = None) -> dict:
     """The transfer-portal search: every 9th/10th grader in the newest archived
     season with under a dozen matches, best first — READ off the archive, never
     re-simulated. Match counts come from the same `world_jhsaa_dual.lines` rows
@@ -3851,11 +3852,16 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "") -> dict:
     move can't change last season's board, so it must not evict this)."""
     from collections import defaultdict
     from . import jhsaa as _jh
-    latest = jhsaa_years(world_id, gender)
-    if not latest:
+    years = jhsaa_years(world_id, gender)
+    if season_year is not None:
+        year = season_year - BASE_YEAR - 1      # inverse of jhsaa_season_year
+        if year not in years:
+            return {"season_year": None, "rows": []}
+    elif not years:
         return {"season_year": None, "rows": []}
-    year = latest[0]
-    season_year = jhsaa_latest_season_year(world_id, gender)
+    else:
+        year = years[0]
+        season_year = jhsaa_latest_season_year(world_id, gender)
     # Only transfer rows already effective by this season can move this board.
     past_moves = tuple(sorted((pid, r.get("to"), r.get("year"))
                               for pid, r in _jh.transfers().items()
@@ -3889,6 +3895,7 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "") -> dict:
             if n >= 12:
                 continue
             rows.append({"pid": p.pid, "name": p.name, "school": school.name,
+                         "group": school.group,
                          "grade": p.grade, "entry": p.entry_year, "ladder": i,
                          "ovr": round(p.current_overall(), 1),
                          "str": round(p.str_value(), 1), "matches": n})

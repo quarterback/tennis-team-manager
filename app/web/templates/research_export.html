@@ -10,7 +10,7 @@
   <section class="bl-panel research-export-card">
     <div class="bl-panel-head"><span class="bl-panel-title">Build a research bundle</span><span class="bl-panel-meta">JHSAA &amp; College available</span></div>
     <form method="post" class="research-export-form" id="research-export-form" data-loading='{"title":"Building research export…","sub":"Packaging a complete season can take a little while. Your ZIP will download when it is ready.","stages":["Reading the scoped season…","Normalizing programs and players…","Packaging CSV and JSON files…"]}'>
-      <label><span>Scope</span><select name="scope" id="rx-scope"><option value="jhsaa">JHSAA</option><option value="college">College</option><option disabled>Whole world — planned</option></select><small>College reads an already-played season; it will not create or advance one.</small></label>
+      <label><span>Scope</span><select name="scope" id="rx-scope"><option value="jhsaa">JHSAA</option><option value="underplayed">JHSAA transfer candidates</option><option value="college">College</option><option disabled>Whole world — planned</option></select><small>College reads an already-played season; it will not create or advance one.</small></label>
       <label><span>Season year</span><input name="year" type="number" min="2020" max="2200" value="{{ default_year }}" required></label>
       <label><span>Gender</span>
         <select name="gender" id="rx-gender-jhsaa"><option value="girls">Girls</option><option value="boys">Boys</option></select>
