@@ -1310,6 +1310,36 @@ list is `server.SCHEMES`.
   `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
 See `docs/AAR-design-port-readability-and-suite-hermeticity.md`.
 
+## ⚠️ VOCABULARY — "card" is NOT how tennis talks about a lineup (owner rule 2026-08)
+An agent introduced "card" for a team's lineup/format and every later agent copied it
+out of the code comments; it is now ~120 occurrences and it is **wrong**. Nobody in
+high-school tennis says it. GHSA states the format as three singles and two doubles and
+names the positions No. 1 through No. 3 singles / No. 1-No. 2 doubles; coverage says
+"No. 1 singles spot", "second flight", "singles lineup". "Lineup Card" exists as KHSAA
+*paperwork* (a form you hand the official) and some scorecards use it — administrative
+language, never the natural noun for a team's competitive structure.
+
+The real vocabulary: **lineup · dual format · singles lineup · doubles lineup ·
+No. 1 singles · No. 1 doubles · flight · court · position · playoff roster ·
+state lineup**.
+
+| Wrong | Right |
+|---|---|
+| state card | state format · state lineup · 1S/4D format |
+| regular-season card | regular-season format · 3S/4D format · league lineup |
+| doubles-forward card | doubles-forward format |
+| championship card | postseason format · state lineup |
+
+‼️ **"card" has THREE senses here and only the lineup one is the mistake.** A **UI card**
+(bracket card, player card, matchup card, `.brk-card`/`.jh-card`) is ordinary interface
+language and is correct. A **schedule** sense ("a dual on a card") is real sports English
+but not tennis — prefer *schedule* or *slate*. So this is never a blanket find-and-replace:
+a sweep that rewrote `cv.cards` or `card_w` would break the bracket geometry.
+
+**Not worth a migration on its own** (owner: the microcopy is all bad anyway) — the code
+is unchanged and this is filed so it stops spreading. Fix the wording in files you are
+already editing for another reason; don't open a rename PR for it.
+
 ## ⚠️ NAMES — the pools are curated data with THREE authorities that must agree
 `generators/names.py` draws a player's name from `regions.json` (regions, subregions
 and the owner's international-distribution PRESETS) over three bucket-keyed pools
