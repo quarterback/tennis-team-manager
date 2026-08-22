@@ -644,3 +644,65 @@ def test_an_expanded_bracket_page_renders_two_draws(archived):
     html24 = archived["client"].get(
         f"/jhsaa/bracket?g=girls&group={plain[0]}").get_data(as_text=True)
     assert 'data-view="qual"' not in html24
+
+
+# --- the title board -----------------------------------------------------------
+
+def test_the_title_board_agrees_with_the_program_pages(archived):
+    """‼️ THE BOARD IS A FOLD, AND A FOLD THAT DISAGREES WITH WHAT IT FOLDS IS THE
+    WHOLE RISK. `jhsaa_title_board` walks each season's archive ONCE and credits
+    whoever it names, because asking `_season_row` per program would re-read the year
+    ~860 times; that speed is bought by re-deriving numbers the program page derives
+    its own way, so the two must land on the same answer. Checked against the ledger
+    rows themselves — district titles, unit wins, State finishes, the TOC — not
+    against a second copy of this function's arithmetic."""
+    w = archived["world"]
+    board = {r["school"]: r for r in wd.jhsaa_title_board(w["id"], "girls")["rows"]}
+    assert board, "a played season archived no programs at all"
+    seen_state = seen_units = 0
+    for school in list(board)[:40]:
+        seasons = wd.jhsaa_school_seasons(w["id"], "girls", school)
+        r = board[school]
+        assert r["seasons"] == len(seasons), school
+        assert r["dist"] == sum(1 for s in seasons if s["district_title"]), school
+        assert r["state_apps"] == sum(1 for s in seasons if s["made_state"]), school
+        assert r["CHAMP"] == sum(1 for s in seasons if s["champion"]), school
+        assert r["toc"] == sum(1 for s in seasons if s["toc_champion"]), school
+        assert r["toc_apps"] == sum(1 for s in seasons if s["made_toc"]), school
+        # The road: the board buckets a unit win by the stage that named it, the
+        # program page renders the same wins as honour chips. The COUNTS must match
+        # even though neither knows how the other groups them.
+        units = sum(len(s["unit_wins"]) for s in seasons)
+        # `unit_wins` leads with the district title, which is its own column here.
+        stage_total = sum(r[s] for _n, s, _l in wd.jhsaa_title_stages())
+        assert stage_total + r["dist"] == units, (school, stage_total, units)
+        seen_state += r["state_apps"]
+        seen_units += stage_total
+    assert seen_state and seen_units, "no State runs or unit wins in the sample"
+
+
+def test_a_state_finish_lands_in_exactly_one_column(archived):
+    """A finish is counted DOWN from teams still alive, so the columns are BANDS, not
+    round indices — a field that is not a power of two does not halve out of the gate.
+    Every entrant must fall in exactly one band: a program that appeared and was
+    counted nowhere is a silently short row, which reads as a program that never
+    played rather than as a bug."""
+    w = archived["world"]
+    from app.world import JH_STATE_COLUMNS
+    for r in wd.jhsaa_title_board(w["id"], "girls")["rows"]:
+        assert sum(r[k] for k, _l in JH_STATE_COLUMNS) == r["state_apps"], r["school"]
+
+
+def test_the_title_board_page_renders_its_champions(archived):
+    """The page, not the function: a table this wide is exactly where a template
+    dereferences a key that isn't there and Jinja prints nothing at all."""
+    html = archived["client"].get("/jhsaa/titles?g=girls").get_data(as_text=True)
+    champs = [nm for nm in (archived["arc"].get("champions") or {}).values() if nm]
+    assert champs, "the season crowned nobody"
+    for nm in champs:
+        assert nm in html, nm
+    # every column the view promises is really in the header
+    for _n, short, _l in wd.jhsaa_title_stages():
+        assert f'data-k="{short}"' in html, short
+    # and a champion's row carries a real count, not an empty cell
+    assert 'data-k="CHAMP" data-v="1"' in html

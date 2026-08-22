@@ -114,6 +114,40 @@
 .jh-dirrow .rt .lg { font-size: 11.5px; color: var(--text-faint); max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 720px) { .jh-dirrow .rt .lg { display: none; } }
 
+/* ---- Title board (/jhsaa/titles) ----
+   Twenty small integers per row, so the row has to stay quiet: tabular numerals,
+   a faint dot for zero (an empty cell reads as missing data, a 0 reads as noise),
+   and the school column pinned so a count is never orphaned from its program. */
+.jh-ttfilter { display: flex; align-items: center; gap: 6px; }
+.jh-ttfilter .k { font-size: 11.5px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-tt { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.jh-tt th, .jh-tt td { padding: 6px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
+.jh-tt thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--surface-th);
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted);
+  cursor: pointer; user-select: none;
+}
+.jh-tt thead tr.grp th {
+  top: 0; text-align: center; cursor: default; color: var(--text-faint);
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase;
+  border-bottom: 1px solid var(--border-default);
+}
+.jh-tt thead tr:last-child th { top: 27px; }
+.jh-tt thead th:hover { color: var(--brand-strong); }
+.jh-tt th.sorted-desc::after { content: " ↓"; color: var(--brand); }
+.jh-tt th.sorted-asc::after { content: " ↑"; color: var(--brand); }
+.jh-tt .nm {
+  position: sticky; left: 0; z-index: 1; text-align: left; min-width: 250px;
+  background: var(--surface-card); cursor: pointer;
+}
+.jh-tt thead .nm { z-index: 3; background: var(--surface-th); }
+.jh-tt tbody tr:hover td { background: var(--surface-hover); }
+.jh-tt tbody tr:hover .nm { background: var(--surface-hover); }
+.jh-tt .nm .sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 11.5px; color: var(--text-muted); }
+.jh-tt td { font-size: 13px; color: var(--text-primary); }
+.jh-tt td.tot { font-weight: 800; }
+.jh-tt .z { color: var(--text-faint); }
+
 /* ---- Page shell + layout ---- */
 .jh-shell { max-width: 1320px; margin: 0 auto; padding: 18px 20px 52px; }
 .jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 322px; gap: 16px; align-items: start; }

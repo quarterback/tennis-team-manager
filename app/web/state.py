@@ -4654,6 +4654,57 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
             "districts": rows}
 
 
+def jhsaa_titles_view(seed: int, gender: str, group: str | None = None,
+                      year: int | None = None) -> dict:
+    """THE TITLE BOARD: one row per program, one column per thing there is to win —
+    the TOC, the State event's finishes, and every round of the road to it.
+
+    It sits beside the champions grid under History because it answers the other half
+    of that question: the grid is "who won 9A in 2035", this is "what has this program
+    ever won". Both are folds over the SAME archive (`world.jhsaa_title_board`) —
+    there is no store here to disagree with the season pages.
+
+    The whole board ships in one page and sorts/filters in the browser: ~860 rows of
+    twenty small integers is a table, not a paginated query, and the reason the page
+    exists at all is to be sorted and scanned.
+    """
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    # ‼️ THE BOARD IS ALL-TIME, AND IT STILL CARRIES THE SEASON. Nothing here is
+    # scoped to one year — that is the point of a career table — but the scope bar's
+    # season control now keeps you on the page you are on, so a view that rebuilt its
+    # scope on the newest season would snap the dropdown back the moment it was used.
+    # The season is scope memory for the way out; the page says the table is all-time.
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    board = world.jhsaa_title_board(w["id"], g)
+    schools = _jh_schools(g)
+    rows = []
+    for r in board["rows"]:
+        s = schools.get(r["school"])
+        rows.append({**r, "mark": jh.mark(s, 20) if s else "",
+                     "city": s.city if s else "", "county": s.county if s else "",
+                     "district": s.district if s else "",
+                     # The class filter reads the class the program LAST PLAYED IN as
+                     # archived — a reclassified or playing-up program is where the
+                     # association put it that season, not where its enrollment says.
+                     "q": " ".join((r["school"], r["group"],
+                                    s.city if s else "", s.county if s else "",
+                                    s.district if s else "")).lower()})
+    return {"ready": bool(years), "gender": g, "group": grp, "groups": list(jh.GROUPS),
+            "years": years,
+            "seasons": len(years),
+            "stages": [{"key": short, "label": lbl}
+                       for _n, short, lbl in world.jhsaa_title_stages()],
+            "state_cols": [{"key": k, "label": lbl}
+                           for k, lbl in world.JH_STATE_COLUMNS],
+            "rows": rows, "total": len(rows),
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+
+
 #: The school directory's views. The first two are the OSAA's two schools pages —
 #: /schools/counties and /schools/classifications-districts — which is the model the
 #: owner asked for; A–Z is the third question a directory gets asked.

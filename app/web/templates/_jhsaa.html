@@ -138,7 +138,10 @@
          about the association rather than about one season. #}
       <a class="{{ 'on' if tab == 'schools' }}" title="Every program — by county, class and league"
          href="{{ url_for('jhsaa_schools', u=u, g=scope.gender) }}">Schools</a>
-      <a class="{{ 'on' if tab == 'history' }}"
+      {# History is TWO pages on its own sub-rail (owner, 2026-08): the champions
+         grid (who won each class each season) and the title board (what a program
+         has ever won). Same question from the two ends. #}
+      <a class="{{ 'on' if tab in ('history', 'titles') }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
       {# The section's own settings — archetypes and play-up. A tab, because the panels
          were on /editor and nobody could find them there. Carries no group or year:
@@ -163,10 +166,22 @@
        href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Overview</a>
     <a class="{{ 'on' if tab == 'bracket' }}"
        href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">{{ scope.group }} Draw</a>
-    {# The TOC fields every class's champion, so it is not a classification's page
-       and carries no `group`. #}
+    {# ‼️ THE TOC IS CLASS-BLIND AND STILL CARRIES `group`. The event fields every
+       classification's champion, so the class does not choose what is on screen —
+       but it is the scope bar's MEMORY, and dropping it here reset the rail to the
+       first class on the way in, so leaving the TOC sent you to 9A rather than back
+       to the class you were browsing. #}
     <a class="{{ 'on' if tab == 'toc' }}"
-       href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, year=scope.pin) }}">Tournament of Champions</a>
+       href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Tournament of Champions</a>
+  </div>
+  {% endif %}
+
+  {% if tab in ('history', 'titles') %}
+  <div class="jh-subrail">
+    <a class="{{ 'on' if tab == 'history' }}"
+       href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
+    <a class="{{ 'on' if tab == 'titles' }}"
+       href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title Board</a>
   </div>
   {% endif %}
 </div></div>

@@ -1064,6 +1064,36 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   asked one question. They are still three PAGES (an index, a full tree, a different
   event) reached as ONE destination and switched on the `jh-subrail` under the tabs —
   the section's own layout rule for parallel views. Don't promote one back to a tab.
+- **‼️ THE TITLE BOARD (`/jhsaa/titles`, `world.jhsaa_title_board`) — owner rule
+  2026-08.** One row per program, one column per thing there is to win: the TOC, each
+  STATE finish (CHAMP · F · SF · QF · OF · R1 · QUAL — `world.JH_STATE_COLUMNS`, the
+  same short set as `state._FINISH_SHORT`), each round of the ROAD (Areas · Sectionals
+  · Wards · Regionals · Zonals · Super Regionals · Semi-State · Divisionals ·
+  Semi-Conference · Conference), and the league title. Sortable and filterable in the
+  browser; it lives on the **History** sub-rail beside the champions grid, which
+  answers the same question from the other end ("who won 9A in 2035" vs "what has this
+  program ever won").
+  - **‼️ ROAD CELLS ARE TITLES, STATE CELLS ARE FINISHES.** A unit won is an honour
+    the program keeps, so the road counts wins; the State event has exactly ONE title
+    per class, so the rest of that group is how often a program got that far.
+  - **‼️ ONE PASS PER SEASON, NOT ONE PER SCHOOL.** `_season_row` answers this for ONE
+    program and reads the whole year's archive to do it — asking it for ~860 programs
+    across every season re-reads each season ~860 times. The board walks each season's
+    archive ONCE and credits whoever it names, which costs what the program-history
+    page costs instead of 860 of them.
+  - **It is a FOLD, not a store** — the same rule as `jhsaa_school_history`. Do NOT add
+    a `world_jhsaa_titles` table: the archive already determines every number, and a
+    second store is a second source of truth for a decision already recorded.
+  - **‼️ STAGE NAMES COME FROM `jhsaa`'S OWN CONSTANTS** (`jhsaa_title_stages` reads
+    `_STAGE_NAMES` / `_RECOVERY_NAMES`), because a unit win is bucketed by the stage's
+    archived `round_names`: rename a round (`DIVISIONAL_NAME` has moved once already)
+    and a typed column would silently stop counting, which looks exactly like an
+    association that stopped playing that round.
+  - **The class filter is the PAGE's, and it ignores the header's class rail** — the
+    All-Region call, for the same reason: reclassification and play-up move a program,
+    so its 4A titles and its 5A titles are one cabinet. Pinned by
+    `tests/test_jhsaa_toc.py` against the program ledgers themselves, never against a
+    second copy of the board's arithmetic.
 - **‼️ THE PROGRAM DIRECTORY (`/jhsaa/schools`, `jhsaa_schools_view`) — owner rule
   2026-08, modelled on the OSAA's two schools pages.** There was no way to see all the
   programs: the only full list was Rankings, one class at a time and ordered on TOSS, so

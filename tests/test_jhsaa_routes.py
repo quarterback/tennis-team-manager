@@ -165,3 +165,46 @@ def test_a_scope_switch_keeps_the_pages_own_query_state(warm_client):
     girls = [h for h in re.findall(r'value="(/jhsaa/rankings[^"]*)"', html)
              if "g=girls" in h]
     assert girls and all("sort=rec" in h and "dir=asc" in h for h in girls), girls
+
+
+def test_a_gender_switch_keeps_an_All_class_filter(warm_client):
+    """‼️ THE PAGE'S OWN ARGS OUTRANK THE SCOPE'S NORMALISATION. Players and Mismatches
+    run on `group=All`, which `jhsaa_scope_view` normalises to the first classification
+    for the RAIL — there is no "All" tab to light up. Seeding the switcher's args from
+    the scope and filling the request in afterwards rewrote All → 9A, so switching
+    gender silently narrowed the directory to one class while appearing to change only
+    gender: every row on screen was correct, and most of them were missing."""
+    import re
+    for path in ("/jhsaa/players", "/jhsaa/misapplied"):
+        html = warm_client.get(path + "?g=boys&group=All").get_data(as_text=True) \
+            .replace("&amp;", "&")
+        girls = [h for h in re.findall(r'value="(%s[^"]*)"' % re.escape(path), html)
+                 if "g=girls" in h]
+        assert girls, path
+        assert all("group=All" in h for h in girls), (path, girls)
+
+
+def test_the_toc_link_carries_the_class_it_was_taken_from(warm_client):
+    """The TOC is class-BLIND — it fields every classification's champion — but the
+    class is the scope bar's memory, and a link that drops it resets the rail on the
+    way in, so leaving the TOC lands you on the first class instead of the one you
+    were browsing."""
+    html = warm_client.get("/jhsaa?g=boys&group=5A").get_data(as_text=True) \
+        .replace("&amp;", "&")
+    assert "/jhsaa/toc?u=" in html or "/jhsaa/toc?" in html
+    toc = [h for h in html.split('href="') if h.startswith("/jhsaa/toc")]
+    assert toc and all("group=5A" in h.split('"')[0] for h in toc), toc
+
+
+def test_the_season_switch_is_not_thrown_away(warm_client):
+    """‼️ A ROUTE THAT PARSES `year` AND DOESN'T PASS IT resets the control that sent
+    it. The scope bar's season now keeps you on the page, so these two rebuilt their
+    scope on the LATEST season and the dropdown snapped back the moment it was used —
+    the page looked right, and the one thing the reader had just asked for was gone."""
+    import inspect
+    from app.web import server
+    src = inspect.getsource(server.create_app)
+    for name in ("jhsaa_players.html", "jhsaa_misapplied.html"):
+        block = src.split(name)[0]
+        call = block.rsplit("jhsaa_scope_view(", 1)[1].split(")")[0]
+        assert call.rstrip().endswith("year"), (name, call)
