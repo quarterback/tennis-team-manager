@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'history', 'JHSAA History',
-             'State champions and Players of the Year, every archived season.',
+             'State champions, every archived season.',
              [('Seasons', view.years|length)]) }}
 
 <div class="jh-shell">
@@ -22,18 +22,20 @@
         <td class="yr"><a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year }}</a></td>
         {% for gp in view.groups %}
         {% set ch = y.champions.get(gp) %}
-        <td style="font-variant-numeric:normal">
+        {# ‼️ CHAMPIONS ONLY, AND THE NAME MUST FIT (owner, 2026-08). Nine
+           classifications across one row leaves each column narrow, and stacking a
+           Player of the Year under every champion made both unreadable — the school
+           names truncated to "Halfway Ho…" and the POY line competed with them for
+           the same few pixels. The champion is what this table is FOR; the POY has
+           its own place on the honours page. Names WRAP rather than truncate: a
+           table of champions whose champions cannot be read is not a table. #}
+        <td class="jh-champ-cell">
           {% if ch %}
           {# Each row is a DIFFERENT season, so a champion links to the season it won,
              not to whatever the newest archived one happens to be. #}
           <span class="jh-schoolcell">{{ ch.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender, year=y.year) }}">{{ ch.name }}</a></span>
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
-          {% set poy = y.poy.get(gp) %}
-          {% if poy and poy.get('name') %}
-          <div style="font-size:11.5px;color:var(--text-muted);padding-left:28px">
-            POY {{ jh_player(poy.name, poy.school, poy.pid, u, view.gender) }}</div>
-          {% endif %}
         </td>
         {% endfor %}
       </tr>

@@ -744,10 +744,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
-- **‼️ 1A AND 2A CROWN SEPARATELY, via a FIXED 24-team shape — not the dynamic
-  format above (owner rule 2027-08).** They used to share one combined "2A-1A"
-  group (neither clears the 76-sponsor floor the dynamic Semi-Conference needs
-  on its own). `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
+- **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
+  rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
+  combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic
+  Semi-Conference needs on its own), then crowned separately on this shape. **2A
+  now plays the standard ladder** — the realignment took it to 95 programs, 95
+  girls'/87 boys' sponsors against the 76 floor, and the owner's rule is that its
+  playoff "mirrors every other classification"; 1A is the only class left on the
+  24. `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
   `_recovery` fed a smaller number — but **the Zonal-champion guarantee is
   UNCHANGED here, same as every other class**: an early design retired it for
   1A/2A only (Zonal win = advancement only, no automatic berth), shipped, was
@@ -1609,6 +1613,117 @@ was a school marker, shipped "Baptist HS High School".
   — measured, every league a new school belonged in was already full at 12 and every
   league with room was elsewhere in the state. The script redraws the affected groups
   through `draw_districts` and checks `MAX_DISTRICT` after, leaving other classes alone.
+- **‼️ A SCHOOL HAS THREE IDENTITIES AND THEY ARE ALL `str`** (owner rule 2026-08,
+  four faults — `docs/AAR-jhsaa-identity-names-and-redistricting.md`): `source or name`
+  is the ROSTER identity (seeds the players and their pids), the DISPLAY name is the
+  ARCHIVE identity (keys `world_jhsaa`, the routes), and prep-network's name is the
+  SOURCE identity (what `RENAMES` and `AREA_RENAMES` are keyed on). Nothing tells them
+  apart at runtime.
+  - **A rename must not cost a school its history.** The archive keys on the display
+    name at the moment a season was written, so a rename orphans everything the program
+    already earned — a 2031 state champion vanished from its own page. Archived seasons
+    are RELABELLED INTO TODAY'S NAMES ON READ (`world._relabel`, in `get_jhsaa` and the
+    dual rows), never migrated: the archive stays the record of what was written and the
+    next rename needs no migration. ‼️ The relabel is KEY-DRIVEN, not a blanket string
+    swap — ten former school names are also live TOWN names (Port Veles, Ashbury,
+    Telfair, Orellana), so matching on the string alone rewrites addresses. A missed
+    shape keeps an old name (a visible broken link); a blanket swap moves a school to
+    another town silently.
+  - **The alias table cannot be typed** — renaming twice REWRITES the target in place,
+    so intermediate names live only in git. `scripts/jhsaa_former_names.py` walks every
+    revision of `import_jhsaa.py` and emits `data/jhsaa/former_names.json` (the app reads
+    data files, not `scripts/`). ‼️ **A LIVE NAME ALWAYS WINS** (`jhsaa.current_name`):
+    a retired name reissued to another program must never serve the wrong record.
+  - **A DEAD KEY IS A LOADED GUN, not history.** A `RENAMES` key matching neither
+    prep-network nor any school here cannot fire — until some school is named that
+    string, which is exactly what "Wheatley" did (one entry reached two schools; it
+    surfaced only because they then collided on a display name, and would otherwise have
+    had both generate the same twelve people). 16 were pruned;
+    `jhsaa_apply_renames.check_identities` / `check_rename_keys` assert it now.
+  - ‼️ **A GUARD WRITTEN FROM ONE INCIDENT TENDS TO FORBID THE INCIDENT, NOT THE FAULT.**
+    The first version of that check refused any key that was a live school's own name —
+    which is the ORDINARY path, since a school never renamed IS its own identity — and
+    it blocked four legitimate renames.
+  - **A rename table keyed on ANOTHER repo's names is a foreign reference with no
+    constraint behind it.** prep-network renamed Mother Lode to Siskiyou Valley and the
+    `AREA_RENAMES` entry silently stopped firing; the committed data already held the
+    right string, so only a re-import would have shown it. `jefferson_gazetteer.py`
+    compares the two area sets on every run and caught it immediately.
+- **‼️ REDISTRICTING: LEAGUES REALIGN **AND REBRAND**, AND SIZE OUTRANKS GEOGRAPHY**
+  (`scripts/jhsaa_redistrict.py`, owner rule 2026-08). Leagues are cut from a geographic
+  ORDER into blocks, which leaves the REMAINDER as geographic leftovers: ten leagues in
+  6A/7A/8A spanned over 250 miles, the worst about 400. A block still INHERITS the name
+  it most OVERLAPS — a league keeps its historical core, which is what makes most of a
+  realignment read as a realignment — but the first version held the names FIXED as an
+  absolute, and that is half the rule. Real associations redraw on a cycle and names
+  come and go: the OSAA runs a four-year classification-and-districting period, and its
+  2026-30 redraw created a brand-new seven-team 6A/5A **Southwest Hybrid** rather than
+  merely reshuffling membership. So a class that GAINS leagues draws new names from
+  `LEAGUE_NAMES` (the same authority the importer names from, same rules — unused in
+  the class, no two sharing a LEADING WORD) and a class that loses them retires names;
+  a block with no free overlap rebrands rather than reaching for an unrelated leftover.
+  **‼️ AND STRICT GEOGRAPHY IS NOT THE CONSTRAINT** (same rule): distance is a cost,
+  not a rule — the OSAA puts Bend's schools in leagues that involve real driving. The
+  redraw minimises span, but SIZE wins: a league near `DISTRICT_TARGET` with one distant
+  member beats a tight one with six, because **league size IS the schedule**. Assignment
+  order is REGRET, not nearest-centroid (which hands one metro every seat while its
+  neighbour starves); the floor pass pulls a short league up to strength using its
+  NEAREST available member; rivalries are repaired last and outrank geography.
+- **‼️ `MAX_DISTRICT` (12) IS A CAP, `DISTRICT_TARGET` (10) IS THE SIZE** (owner rule
+  2026-08). `draw_districts` took `k = ceil(n / MAX_DISTRICT)` — the FEWEST blocks that
+  fit under the cap — which quietly turned a ceiling into a target: every class packed
+  its leagues to 11-12 and the cap became the design. Owner: "no conference should be
+  over 12 teams like I said before, with 40 teams there's no reason for some weird cap
+  on districts when smaller ones (around 10 teams) would be fine." `import_jhsaa.
+  district_count(n)` is now the ONE authority on how many leagues a pool wants — aim at
+  ten, never exceed twelve — and both the importer and the redistricter read it. A class
+  is redrawn whenever its league count no longer matches it **in EITHER direction**: the
+  old condition was "does it still fit under the cap", which only ever fires on GROWTH,
+  so the class a realignment takes schools OUT of kept whatever leagues it had at
+  whatever sizes were left. Every class now runs 9-12.
+- **‼️ THE 2033 2A/3A REALIGNMENT — a RECLASSIFICATION, not a competitive move**
+  (`import_jhsaa.RECLASSIFY_TO_2A`, owner rule 2026-08). 2A carried 63 programs to 3A's
+  125, so 3A crowned from 40 and 2A from 24 — and 2A was the class the 1A/2A split was
+  meant to leave viable. 32 named schools moved down; 2A is 95 programs in 10 leagues
+  with a 40-team field, 3A is 93 in 9, 1A is untouched. **It moves `classification` AS
+  WELL AS `group`, and that is the whole distinction from `COMPETITIVE_MOVES`**:
+  `_TALENT` generates from `classification`, so a school moved on `group` alone keeps
+  its old class's players — right for a program petitioning down on RESULTS, wrong here,
+  where the association is saying these schools are 2A-SIZED. They are: every one
+  already sat inside 2A's committed enrollment band (306-375 against 86-431), so nothing
+  needed scaling. It is a NAMED TABLE rather than a moved cut line because the owner
+  named the schools — a line at ~380 takes a different 32 (3A's smallest is 303 and
+  stays 3A), and the association's judgement is the input, not a threshold
+  reverse-engineered to approximate it. Keyed on the DISPLAY name (everything else in
+  `reclassify()` is on prep-network's canonical name), and it runs LAST, because every
+  school it names sits above `PROMOTE_2A_ABOVE` and would otherwise be promoted straight
+  back.
+- **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
+  enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
+  scaled to match rather than the other way round (the numbers are fictional; the number
+  follows the decision instead of blocking it). Like play-up it moves `group`, NEVER
+  `classification`: keyed on `group` a demoted school would also be GENERATED with the
+  weaker class's talent, turning a fairer field into a self-fulfilling collapse.
+- **‼️ WHERE A SCHOOL IS: `docs/GAZETTEER-jefferson.md`, generated by
+  `scripts/jefferson_gazetteer.py`.** Read it before working on a school. The
+  geography is REAL — each fictional county stands on a real one in southern
+  Oregon / northern California / northern Nevada / western Idaho and every town has
+  real coordinates — so bearings and distances are answerable, and are COMPUTED in
+  the document rather than asserted (a hand-written "X is in the south" rots the
+  moment a county moves). Four layers that are not interchangeable: **area** →
+  **county** → **town** (`city`) → **locality** (a settlement INSIDE a big city). A
+  DISTRICT is a fifth thing and is NOT geography — drawn per classification over a
+  geographic order and named from an independent bank.
+  ‼️ prep-network has its own, richer gazetteer, but under ITS names — which is
+  exactly why one was needed here; a reader looking a town up there will not find
+  what the app shows. The generator asserts the two AREA sets agree on every run,
+  and that check immediately caught a dead `AREA_RENAMES` key: prep-network had
+  renamed Mother Lode to Siskiyou Valley, so the entry no longer fired and a full
+  import would have emitted the wrong area name for Southern Jefferson. Nothing
+  else could have shown it — the committed data already held the right string.
+- **The mapping prep-network carries is generated too** —
+  `scripts/prep_network_name_map.py` writes `docs/JHSAA-name-map.txt` into that repo.
+  Run it beside the two above after any rename batch.
 - **The current name list is GENERATED, never hand-kept** — `scripts/jhsaa_name_list.py`
   → `docs/JHSAA-school-names.txt`. Renaming is an ongoing owner pass, so a typed list is
   stale the moment one lands. It groups by city and leads with the NEAR-DUPLICATES,

@@ -92,6 +92,36 @@ def promote(rows: list[dict], m) -> list[tuple[dict, str, str]]:
     return moved
 
 
+def demote(rows: list[dict], m) -> list[tuple[dict, str, str]]:
+    """Apply `import_jhsaa.RECLASSIFY_TO_2A` — the 2033 realignment, the reverse of
+    the cut-line cascade above.
+
+    ‼️ IT MOVES `classification` AS WELL AS `group`. That is what separates a
+    RECLASSIFICATION from a COMPETITIVE_MOVE, and it is not bookkeeping: `_TALENT`
+    generates from `classification`, so a school moved on `group` alone keeps its old
+    class's players. Right for a program petitioning down on results; wrong here,
+    where the association is saying these schools are 2A-SIZED — and they are, every
+    one already inside 2A's committed enrollment band.
+
+    ‼️ AND THE ENROLLMENT IS NOT TOUCHED. The owner's standing rule is that the
+    number follows the decision (enrollments are fictional and nothing about them is
+    permanent), so scaling is available — but it is only needed when the number would
+    otherwise contradict the move, and here it does not.
+    """
+    down = set(m.RECLASSIFY_TO_2A)
+    by_name = {r["name"] for r in rows}
+    unknown = sorted(down - by_name)
+    if unknown:
+        sys.exit(f"RECLASSIFY_TO_2A names {len(unknown)} school(s) that do not "
+                 f"exist: {unknown}")
+    moved = []
+    for r in rows:
+        if r["name"] in down and r["group"] != "2A":
+            moved.append((r, r["group"], "2A"))
+            r["classification"] = r["group"] = "2A"
+    return moved
+
+
 def check_rivals(rows: list[dict], m) -> None:
     """Rivals share a classification AND a league, in both genders. ASSERTED rather
     than repaired: if a pair has drifted apart, the mechanism that moved them is what
@@ -128,21 +158,42 @@ def rehome(rows: list[dict], moved: list[tuple[dict, str, str]], m) -> None:
     # through `import_jhsaa.draw_districts`, which is the authority for cutting
     # balanced blocks and naming them from the bank. That renames that class's
     # leagues — accepted, and only for a class that genuinely realigned by ~15%.
+    # ‼️ A CLASS THAT SHRANK NEEDS THE REDRAW JUST AS MUCH. The condition used to be
+    # "does it still fit under the cap", which only ever fires on growth — so the
+    # class a realignment takes schools OUT of kept whatever leagues it had, at
+    # whatever sizes were left. The 2033 realignment took 32 schools out of 3A and
+    # left eleven leagues averaging 8.5, one of them at 6. `district_count` is the
+    # authority on how many leagues a pool of n wants; a class is redrawn whenever
+    # it no longer has that many, in either direction.
     cities = {r["city"]: {"county": r["county"]} for r in rows}
-    grew = {r["group"] for r, _s, _d in moved}
+    # ‼️ AND `MAX_DISTRICT` IS A HARD CAP WHEREVER IT IS BROKEN, not only in the
+    # classes this pass moved schools between. 1A's Rim Country League has carried
+    # 13 members since the 1A/2A split and no reclassification was ever going to
+    # touch it, because nothing about 1A had changed — a league over the cap plays a
+    # 24-dual double round robin against its neighbours' 18, which is the schedule
+    # the cap exists to prevent.
+    over = {r["group"] for r in rows if r["girls"]
+            and collections.Counter(x["girls_district"] for x in rows
+                                    if x["girls"] and x["group"] == r["group"]
+                                    )[r["girls_district"]] > m.MAX_DISTRICT}
+    touched = ({r["group"] for r, _s, _d in moved}
+               | {s for _r, s, _d in moved} | over)
     redrawn = set()
-    for g in grew:
+    for g in sorted(touched):
         pool = [r for r in rows if r["group"] == g and (r["girls"] or r["boys"])]
         have = len({r["girls_district"] for r in pool
                     if id(r) not in {id(x) for x, _s, _d in moved}})
-        if have and len(pool) > have * m.MAX_DISTRICT:
+        biggest = max(collections.Counter(r["girls_district"] for r in pool
+                                          if r["girls"]).values(), default=0)
+        if have and (have != m.district_count(len(pool))
+                     or biggest > m.MAX_DISTRICT):
             for name, league in m.draw_districts(pool, cities, g).items():
                 for r in pool:
                     if r["name"] == name:
                         r["girls_district"] = r["boys_district"] = league
             redrawn.add(g)
-            print(f"  ({g} redrawn: {len(pool)} sponsors needed more than "
-                  f"{have} leagues)")
+            print(f"  ({g} redrawn: {len(pool)} sponsors want "
+                  f"{m.district_count(len(pool))} leagues, it had {have})")
 
     pending = {id(r) for r, _s, _d in moved if r["group"] not in redrawn}
     for r, _src, _dst in moved:
@@ -216,7 +267,7 @@ def main() -> None:
         doc = json.load(fh)
     rows = doc["schools"]
 
-    moved = promote(rows, m)
+    moved = promote(rows, m) + demote(rows, m)
     rehome(rows, moved, m)
     for r, src, dst in moved:
         print(f"  {r['name'][:30]:30} {src} -> {dst}  {r['enrollment']:5}  "
