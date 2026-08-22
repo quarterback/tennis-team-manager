@@ -2287,7 +2287,71 @@ def create_app() -> Flask:
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
         return render_template("jhsaa_transfers.html", active="HS Transfers",
-                               rows=_jh.transfer_rows(), gender=gender, u=u, uni_label=label)
+                               rows=_jh.transfer_rows(), gender=gender, u=u,
+                               uni_label=label, **_jh_transfer_extras(g))
+
+    def _jh_transfer_extras(g: str, report=None, batch_text: str = "") -> dict:
+        """Everything the transfers page shows beyond the recorded-moves ledger:
+        the underplayed-candidates board (computed only when asked — `find=1` —
+        the full-gender roster build behind it is seconds, not free) and the
+        batch panel's state. Shared by the GET view and the batch POST so both
+        render the one template the same way."""
+        import app.world as wd
+        w = wd.load_world(DEFAULT_SEED)
+        season_year = wd.jhsaa_latest_season_year(w["id"], g) if w else None
+        next_year = (season_year + 1) if season_year else None
+        candidates = None
+        mm = request.values.get("mm", default=5, type=int)
+        gr = request.values.get("gr", "both")
+        if w and season_year and request.values.get("find"):
+            board = wd.jhsaa_underplayed(w["id"], g, wd.active_salt(DEFAULT_SEED))
+            grades = (9,) if gr == "9" else (10,) if gr == "10" else (9, 10)
+            candidates = [r for r in board["rows"]
+                          if r["grade"] in grades and r["matches"] <= mm]
+        from app import jhsaa as _jh
+        return {"g": g, "season_year": season_year, "next_year": next_year,
+                "candidates": candidates, "mm": mm, "gr": gr,
+                "dest_schools": sorted(s.name for s in _jh.load_schools(g)),
+                "report": report, "batch_text": batch_text}
+
+    @app.route("/editor/jhsaa-transfer-batch", methods=["POST"])
+    def editor_jhsaa_transfer_batch():
+        """Apply (or preview) a pasted batch of `pid, destination` lines as one
+        offseason operation — the delegate-an-agent path. Every line gets a
+        report row; nothing is ever silently dropped. Renders the transfers page
+        directly (a multi-row report doesn't fit the flash-cookie pattern)."""
+        from app import jhsaa as _jh
+        import app.world as wd
+        gender, label, u, g, group, _ = _jh_scope_args()
+        text = request.form.get("batch", "")
+        do_apply = request.form.get("do") == "apply"
+        year = request.form.get("jh_year", type=int)
+        pairs = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = [p.strip() for p in line.replace("\t", ",").split(",", 1)]
+            if parts[0].lower() in ("pid", "player_id"):
+                continue                       # a pasted CSV header
+            pairs.append((parts[0], parts[1] if len(parts) > 1 else ""))
+        if year and pairs:
+            report = _jh.transfer_batch(pairs, year,
+                                        wd.active_salt(DEFAULT_SEED), apply=do_apply)
+            applied = do_apply and any(r["ok"] for r in report)
+            if applied:
+                reset_all()
+            head = (f"Applied {sum(r['ok'] for r in report)} of {len(report)}"
+                    if do_apply else
+                    f"Preview: {sum(r['ok'] for r in report)} of {len(report)} valid")
+        else:
+            report, head = [], "Nothing to do — need an effective year and at least one line."
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u,
+                               uni_label=label,
+                               **{**_jh_transfer_extras(g, report=report,
+                                                        batch_text="" if do_apply else text),
+                                  "report_head": head, "batch_year": year})
 
     def _jhsaa_lab_mode() -> bool:
         """Gate for the standalone JHSAA lab surface (see
@@ -3008,8 +3072,15 @@ def create_app() -> Flask:
                     result = f"Moving to {to_school}, effective the {year} offseason."
         else:
             result = "Missing information — transfer not saved."
-        resp = redirect(url_for("jhsaa_player", school=from_school, pid=pid,
-                                u=request.form.get("u", "D1-men"), g=gender))
+        # A move made inline from the transfers page's candidates board returns
+        # THERE (with its search re-run), not to a player card nobody was on.
+        if request.form.get("back") == "transfers":
+            resp = redirect(url_for("jhsaa_transfers", u=request.form.get("u", "D1-men"),
+                                    g=gender, find=1, mm=request.form.get("mm", 5),
+                                    gr=request.form.get("gr", "both")))
+        else:
+            resp = redirect(url_for("jhsaa_player", school=from_school, pid=pid,
+                                    u=request.form.get("u", "D1-men"), g=gender))
         resp.set_cookie("jh_transfer_result", result, max_age=30, samesite="Lax")
         return resp
 

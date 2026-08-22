@@ -3824,6 +3824,82 @@ def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
     return _relabel(json.loads(r["data"])) if r else None
 
 
+def jhsaa_latest_season_year(world_id: int, gender: str) -> int | None:
+    """The CALENDAR year of the newest archived JHSAA season, or None with no
+    archive. An offseason transfer's default effective year is this + 1."""
+    years = jhsaa_years(world_id, gender)
+    if not years:
+        return None
+    arc = get_jhsaa(world_id, years[0], gender)
+    return (arc or {}).get("season_year") or (BASE_YEAR + years[0] + 1)
+
+
+_underplayed_cache: dict = {}
+
+
+def jhsaa_underplayed(world_id: int, gender: str, salt: str = "") -> dict:
+    """The transfer-portal search: every 9th/10th grader in the newest archived
+    season with under a dozen matches, best first — READ off the archive, never
+    re-simulated. Match counts come from the same `world_jhsaa_dual.lines` rows
+    the player card's season record reads (appearances by name within the
+    school's own card); ability comes off the deterministic roster rebuild.
+
+    Returns {"season_year", "rows"} — rows are every candidate under the CEILING
+    (11 matches); the view applies the owner's actual threshold, so changing it
+    on screen never re-pays the full-gender roster build. Memoised on the
+    archive year plus the transfers effective BY that season (a new offseason
+    move can't change last season's board, so it must not evict this)."""
+    from collections import defaultdict
+    from . import jhsaa as _jh
+    latest = jhsaa_years(world_id, gender)
+    if not latest:
+        return {"season_year": None, "rows": []}
+    year = latest[0]
+    season_year = jhsaa_latest_season_year(world_id, gender)
+    # Only transfer rows already effective by this season can move this board.
+    past_moves = tuple(sorted((pid, r.get("to"), r.get("year"))
+                              for pid, r in _jh.transfers().items()
+                              if (r.get("year") or 0) <= season_year))
+    key = (world_id, gender, year, salt, past_moves)
+    got = _underplayed_cache.get(key)
+    if got is not None:
+        return got
+    alias = _jh.former_names()
+    conn = _db()
+    try:
+        played: dict[str, dict] = defaultdict(lambda: defaultdict(int))
+        for d in conn.execute(
+                "SELECT school, home, lines FROM world_jhsaa_dual"
+                " WHERE world_id=? AND year=? AND gender=?",
+                (world_id, year, gender)):
+            side = "home" if d["home"] else "away"
+            school = alias.get(d["school"], d["school"])
+            for ln in json.loads(d["lines"] or "[]"):
+                for nm in ln.get(side) or ():
+                    played[school][nm] += 1
+    finally:
+        conn.close()
+    rows = []
+    for school in _jh.load_schools(gender):
+        counts = played.get(school.name, {})
+        for i, p in enumerate(_jh.build_roster(school, season_year, salt), 1):
+            if p.grade not in (9, 10):
+                continue
+            n = counts.get(p.name, 0)
+            if n >= 12:
+                continue
+            rows.append({"pid": p.pid, "name": p.name, "school": school.name,
+                         "grade": p.grade, "entry": p.entry_year, "ladder": i,
+                         "ovr": round(p.current_overall(), 1),
+                         "str": round(p.str_value(), 1), "matches": n})
+    rows.sort(key=lambda r: -r["ovr"])
+    out = {"season_year": season_year, "rows": rows}
+    for k in [k for k in _underplayed_cache if k[:2] == key[:2]]:
+        _underplayed_cache.pop(k, None)
+    _underplayed_cache[key] = out
+    return out
+
+
 def jhsaa_years(world_id: int, gender: str) -> list[int]:
     """Every world-year with an archived JHSAA season, newest first."""
     conn = _db()
