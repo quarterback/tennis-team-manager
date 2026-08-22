@@ -1194,6 +1194,38 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `_arrange_regular`, with a 0.15 per-dual flip. Do not "simplify" the league back to
   one shape. Pinned by `tests/test_jhsaa_lineup.py`; see
   `docs/AAR-jhsaa-order-of-ability.md`.
+- **‼️ DEVELOPMENT IS PER-PLAYER TRAJECTORIES, ERA-GATED (owner rule 2026-08,
+  `jhsaa._dev_maturity` / `jhsaa.dev_era()`).** New-era cohorts (entry ≥ the era —
+  the `name_era()` idiom exactly: self-configured from the newest archive,
+  persisted as `worldconfig` `jhsaa_dev_era`, memoised, cleared by
+  `reset_schools()`) roll a whole four-year maturity path at entry on their OWN
+  rng stream (`jhsaa-dev`): wide overlapping arrival (`DEV_READY_RATE` 0.24 of
+  freshmen arrive ready to play — ordinary, distinct from the 1-in-100 PRODIGY),
+  wide finish, a curve SHAPE (steady/early/late/spike so players PASS each other
+  between seasons), and a `DEV_MIN_STEP` floor so every kid on a roster visibly
+  improves every year. Pre-era cohorts keep the legacy `_MATURITY` lockstep bands
+  byte-for-byte — that gate protects every archived season's ladders and player
+  cards; do not remove it. **‼️ The bands are DELIBERATELY NOT MEAN-PRESERVING**
+  (owner, a real HS coach, rejected a mean-preserving draft as too conservative:
+  four playable years beat preserving the association's level) — freshmen ~0.57
+  of ceiling, seniors ~0.85; don't "correct" them back to the legacy means. The
+  HM runaway guard `HM_MAX_MULT` was raised 2.5→3.5 because deeper fields now
+  legitimately clear the merit threshold in bigger numbers — if HM sizes ever hug
+  the cap again, fix the guard, not the merit bar. Pinned by
+  `tests/test_jhsaa_development.py`; see
+  `docs/AAR-jhsaa-development-curves-and-rest-staffing.md`.
+- **‼️ TALENT-AWARE REST STAFFING vs. truly bad teams (owner rule 2026-08,
+  `jhsaa._rest_count`).** In lieu of V2 squads / injuries / fatigue (all owner-
+  declined for the JHSAA): against a clearly weaker regular-season opponent — a
+  `REST_GAP` (10 OVR top-nine-mean) strength gap ALWAYS, plus a ≤.300 record once
+  the opponent has `REST_MIN_SAMPLE` duals (gap alone before that) — a coach
+  rests 1-2 starters from the TOP of the ladder at `REST_RATE` 0.75; everyone
+  shifts up a rung so the card still reads as the ladder. **NEVER in the
+  postseason or at a showcase** (both branches sit above the check in `_lineup`
+  by construction — keep it that way), and never past the bench (`spare` guard —
+  resting below the card wraps one player onto two lines). A weak-LOOKING roster
+  that is actually winning is never rested on. Pinned by
+  `tests/test_jhsaa_rest.py`.
 - **An empty-state route test cannot see a page.** `tests/test_jhsaa_routes.py` renders
   every JHSAA surface with nothing archived and stayed green through four faults that only
   exist once there is data. `tests/test_jhsaa_toc.py` runs a REAL season (two districts per

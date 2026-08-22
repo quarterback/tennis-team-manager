@@ -826,6 +826,86 @@ _MATURITY = {9: (0.40, 0.48), 10: (0.50, 0.58), 11: (0.60, 0.68), 12: (0.70, 0.7
 PRODIGY_RATE = 0.01
 PRODIGY_MATURITY = (0.84, 0.93)
 
+# --- PER-PLAYER DEVELOPMENT CURVES (owner rule 2026-08, era-gated) --------------------
+#
+# The old model above is LOCKSTEP: every player's maturity is one uniform draw mapped
+# into their grade's band, so the whole association climbs the same four steps together
+# and the ladder barely reorders between seasons — a freshman behind a senior in year
+# one is behind that senior for four years, and "waiting your turn" is baked into the
+# arithmetic. Six live seasons in, the owner's report was exactly that: senior-heavy
+# lineups, underclassmen who never surface, and no way to even SEE what a young player
+# is until the roster ahead of him graduates.
+#
+# New-era cohorts (entry year >= `dev_era()`, the `name_era()` idiom exactly) instead
+# get a whole TRAJECTORY rolled once at entry, on its own rng stream:
+#   * ARRIVAL is a wide, overlapping draw — a real share of freshmen arrive at
+#     sophomore/junior maturity and crack a lineup on day one (`DEV_READY_RATE`,
+#     distinct from the 1-in-100 PRODIGY, who still arrives nearly finished);
+#     others arrive rawer than the old floor.
+#   * FINISH is wide too — some seniors max out, some never fully arrive.
+#   * The PATH between them has a per-player SHAPE: steady climbers, early bloomers
+#     who arrive fast and flatten, late bloomers invisible until junior year, and a
+#     thin senior-year spike. So players PASS each other between seasons, which is
+#     what makes a ladder move.
+#   * `DEV_MIN_STEP` is the program-wide floor: nobody stagnates outright — every kid
+#     on a roster banks a visible minimum year over year, playing time or not.
+# Bands are chosen MEAN-PRESERVING against `_MATURITY` (~0.44/0.54/0.64/0.74 by
+# grade), so the association's overall level and the classification talent shape are
+# unchanged — only the VARIANCE of who is good when moves.
+#
+# ‼️ ERA-GATED for the same reason names are: players are regenerated from seed, so an
+# ungated curve change re-rates every archived season's rosters — ladders, player
+# cards and awards would all disagree with the seasons that were actually played.
+# Cohorts already in the building keep the old lockstep model byte-for-byte; the new
+# model phases in over four seasons as classes turn over.
+# ‼️ Rolled on its OWN rng stream (`jhsaa-dev`), like the prodigy roll — never off the
+# main roster rng, which would shift every subsequent draw and regenerate everyone.
+# ‼️ DELIBERATELY NOT MEAN-PRESERVING (owner numbers, 2026-08). A first draft held
+# each grade's mean to the legacy bands; the owner — a real high-school coach —
+# rejected it as too conservative: "you need them able to contribute and play …
+# the whole point of a high school sim is to watch 4-year player development, that
+# gets broken if they're only getting 1-2 years to play." So the whole association
+# plays closer to its ceiling than the legacy cohorts do (freshman mean ~0.57 of
+# ceiling vs 0.44; senior ~0.85 vs 0.74), a level shift on top of the wider spread.
+DEV_ARRIVAL = (0.40, 0.64)         # base freshman arrival band
+DEV_READY_RATE = 0.24              # share of freshmen who arrive ready to play
+DEV_READY_ARRIVAL = (0.66, 0.82)   # their arrival band
+DEV_FINISH = (0.76, 0.94)          # senior maturity band
+DEV_MIN_RISE = 0.16                # a senior always sits at least this above arrival
+DEV_MIN_STEP = 0.045               # the per-year development floor (nobody stagnates)
+DEV_CAP = 0.98                     # nobody plays at full ceiling in high school
+#: (shape, probability, exponent) — the curve m(g) = m9 + (m12-m9) * t**exp over
+#: t = (grade-9)/3.
+DEV_SHAPES = (("steady", 0.38, 1.0), ("early", 0.36, 0.55),
+              ("late", 0.21, 1.75), ("spike", 0.05, 3.0))
+
+
+def _dev_maturity(school_key: str, entry: int, seat: int, grade: int,
+                  salt: str) -> float:
+    """This player's maturity at `grade` under the new-era trajectory model.
+    Deterministic from the same identity the pid is built from, so the whole
+    four-year path is fixed at entry and each season just reads it off."""
+    drng = random.Random(f"{salt}|jhsaa-dev|{school_key}|{entry}|{seat}")
+    if drng.random() < DEV_READY_RATE:
+        m9 = drng.uniform(*DEV_READY_ARRIVAL)
+    else:
+        m9 = drng.uniform(*DEV_ARRIVAL)
+    m12 = max(drng.uniform(*DEV_FINISH), m9 + DEV_MIN_RISE)
+    roll = drng.random()
+    exp = DEV_SHAPES[-1][2]
+    for _name, p, e in DEV_SHAPES:
+        if roll < p:
+            exp = e
+            break
+        roll -= p
+    # Walk the curve from arrival to the requested grade, applying the per-year
+    # floor along the way so a late bloomer still visibly improves every season.
+    m = m9
+    for g in range(10, grade + 1):
+        t = (g - 9) / 3.0
+        m = max(m9 + (m12 - m9) * (t ** exp), m + DEV_MIN_STEP)
+    return min(DEV_CAP, m)
+
 
 @dataclass
 class School:
@@ -1033,6 +1113,7 @@ def reset_schools() -> None:
     _upstart_cache.clear()
     _playup_league_cache.clear()
     _name_era_cache.clear()
+    _dev_era_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -1110,6 +1191,51 @@ def name_era() -> int:
             era = 0                      # no archive yet — a fresh save, all new
         worldconfig.set("jhsaa_name_era", str(era))
     _name_era_cache[key] = era
+    return era
+
+
+# --- development era (owner rule 2026-08) — the name_era idiom, for the growth model
+#
+# The per-player development-curve model (see `_dev_maturity` above) must not re-rate
+# cohorts that already exist: like names, current ability is regenerated from seed, so
+# an ungated change rewrites every archived roster's ladder. Same self-configuration:
+# first read on a save with an archive sets the era to the first UNSEEN cohort, a
+# fresh save gets 0 (everything new). Memoised on the DB path, cleared by
+# `reset_schools()` — never resolved per seat.
+_dev_era_cache: dict = {}
+
+
+def dev_era() -> int:
+    """The first entry year that develops on the per-player curve model."""
+    from .dbpath import resolve_db_path
+    key = resolve_db_path()
+    got = _dev_era_cache.get(key)
+    if got is not None:
+        return got
+    from . import worldconfig
+    raw = worldconfig.get("jhsaa_dev_era")
+    if raw is not None and str(raw).strip():
+        era = int(raw)
+    else:
+        import sqlite3
+        era = 0
+        try:
+            conn = sqlite3.connect(key)
+            try:
+                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+            finally:
+                conn.close()
+            if r and r[0] is not None:
+                # Same conversion as name_era(): world_jhsaa.year is the
+                # ZERO-BASED WORLD INDEX; entry years are calendar years. The
+                # newest archive's season year is BASE_YEAR + index + 1, its
+                # freshmen entered THAT year, so the first new cohort is +2.
+                from .world import BASE_YEAR
+                era = BASE_YEAR + int(r[0]) + 2
+        except sqlite3.Error:
+            era = 0                      # no archive yet — a fresh save, all new
+        worldconfig.set("jhsaa_dev_era", str(era))
+    _dev_era_cache[key] = era
     return era
 
 
@@ -1670,12 +1796,20 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     so their pre-transfer history and awards, resolving to the same person."""
     from generators import make_name_picker
     sex = "male" if school.gender == "boys" else "female"
-    lo, hi = _MATURITY[grade]
     # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
     # years. Keyed off 8 it would land on ninth-graders too, and a development
     # program's whole character is that you cannot spot it in its freshmen.
     step = mod.get("mature", 0.0) * (grade - 9)
-    maturity = (min(1.0, lo + step), min(1.0, hi + step))
+    if entry >= dev_era():
+        # New-era cohorts develop on their own rolled trajectory (see
+        # `_dev_maturity`) — an exact point, passed as a degenerate band so
+        # `generate_prospect` consumes the SAME one uniform draw either era.
+        m = min(DEV_CAP, _dev_maturity(school.key, entry, seat, grade, salt) + step)
+        maturity = (m, m)
+    else:
+        # Legacy lockstep bands — existing cohorts keep their exact numbers.
+        lo, hi = _MATURITY[grade]
+        maturity = (min(1.0, lo + step), min(1.0, hi + step))
     rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
     # Keyed on (school, entry, seat) — the same identity the pid is built from —
     # so a prodigy is the SAME person every one of their four seasons rather than
@@ -1856,6 +1990,41 @@ _SLOT = re.compile(r"^([SD])(\d+)$")
 # your best nine, no rotation. (No injuries here — the JHSAA has no injury system.)
 _ROTATE_ONE = 0.45          # chance the 9th seat goes to a bench player, per dual
 _ROTATE_TWO = 0.15          # chance the 8th seat does too
+
+# TALENT-AWARE STAFFING vs. truly bad teams (owner rule 2026-08). Colorado's big
+# programs field V2/V3 squads; everywhere else the same depth is exercised by coaches
+# SITTING starters against overmatched opponents and moving everyone up a rung. We do
+# not model a V2 — instead, in the REGULAR SEASON ONLY, a coach facing a clearly weaker
+# side (a strength gap always, plus a .300-or-worse record once the opponent has a real
+# sample; before that the gap alone decides) rests one — sometimes two — starters from
+# the TOP of the ladder. Everybody shifts up one, so the card still reads as the ladder
+# (the clear-ladder requirement) and the bottom seats reach two more bench players than
+# the ordinary `_ROTATE_*` churn alone. ‼️ NEVER in the postseason (the Order of
+# Ability is frozen and strict) and never at a showcase (the whole point of the weekend
+# is playing your best against power programs) — both branches of `_lineup` sit above
+# this check by construction. Guarded so a thin roster never rests below the card —
+# resting past the bench would wrap the same player onto two lines of one dual.
+REST_OPP_PCT = 0.300        # the record that marks an opponent "truly bad"
+REST_MIN_SAMPLE = 6         # duals before a record means anything
+REST_GAP = 10.0             # OVR gap (top-nine mean) that must ALWAYS hold
+REST_RATE = 0.75            # chance a qualifying dual actually rests anyone
+REST_TWO = 0.35             # ...and that a second starter sits too
+
+
+def _rest_count(ts: TeamSeason, opp, rng: random.Random, spare: int) -> int:
+    """How many starters sit this dual: 0 most of the time, 1-2 against a truly
+    weaker side, never more than the bench can absorb (`spare`)."""
+    if opp is None or spare <= 0:
+        return 0
+    if _strength(ts) - _strength(opp) < REST_GAP:
+        return 0
+    n = opp.wins + opp.losses
+    if n >= REST_MIN_SAMPLE and opp.win_pct > REST_OPP_PCT:
+        return 0                       # a real record says they aren't that bad
+    if rng.random() >= REST_RATE:
+        return 0
+    k = 2 if (spare > 1 and rng.random() < REST_TWO) else 1
+    return min(k, spare)
 
 
 # ‼️ A CHALLENGE LADDER IS SEEDED ON ABILITY AND MOVED BY RESULTS — never ranked on a
@@ -2147,8 +2316,10 @@ def _postseason_nine(ts: TeamSeason) -> list:
     return ranked[:lineup_need("state")]
 
 
-def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
-    """The nine who dress for THIS dual, in slot order."""
+def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
+    """The nine who dress for THIS dual, in slot order. `opp` (the opposing
+    TeamSeason, regular season only) lets the coach rest starters against a
+    truly weaker side — see `_rest_count`."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
         return _arrange_state(_postseason_nine(ts))
     if phase in SHOWCASE:
@@ -2168,6 +2339,12 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random) -> list:
         return _arrange_state(nine)
     order = _order(ts)
     need = lineup_need(phase)
+    # Talent-aware staffing: sit 1-2 from the TOP against a truly weaker side and
+    # shift everyone up a rung — the ladder ORDER is untouched, so the card still
+    # reads as the ladder. Regular-season phases only (this branch).
+    rest = _rest_count(ts, opp, rng, len(order) - need)
+    if rest:
+        order = order[rest:]
     nine, bench = order[:need], order[need:]
     if bench:
         if rng.random() < _ROTATE_ONE:
@@ -2251,7 +2428,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     and so the tests can assert it never reaches a district record. If a view ever needs
     to mark it, the column comes first — do not infer it from position in the card."""
     lrng = random.Random(f"lineup|{seed}")
-    la, lb = _lineup(a, phase, lrng), _lineup(b, phase, lrng)
+    la, lb = _lineup(a, phase, lrng, b), _lineup(b, phase, lrng, a)
     fmt = match_format(phase)
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
                         play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase),
