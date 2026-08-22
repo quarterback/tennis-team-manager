@@ -76,8 +76,12 @@ def collect(m, live: set[str]) -> dict[str, str]:
             continue
         now = m._display_name(now)
         # The SOURCE name is itself a former display name whenever the school was
-        # emitted under it before the rename landed.
-        for old in [source, *targets[:-1]]:
+        # emitted under it before the rename landed. ‼️ ALL targets, not
+        # `targets[:-1]`: run pre-commit (as documented), git history ends at the
+        # previous revision, so the LAST target in the chain is the name being
+        # renamed AWAY right now — dropping it omits exactly the alias the commit
+        # needs. `old != now` already excludes the current name when it is present.
+        for old in [source, *targets]:
             old = m._display_name(old)
             if old != now and old not in live:
                 former[old] = now

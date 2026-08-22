@@ -3768,7 +3768,18 @@ _NOT_A_SCHOOL = frozenset({
     "city", "locality", "town", "county", "area", "district", "districts",
     "league", "group", "classification", "unit", "units", "unit_wins", "phase",
     "region", "state", "mascot", "colors", "name_era", "season_year",
+    # ‼️ PEOPLE ARE NOT SCHOOLS. Award rows carry the PLAYER under "name"/"names"
+    # and the school under "school" — and Jefferson names its schools after people,
+    # so an athlete who happens to share a former school's name would be silently
+    # renamed to that school's current one on every read.
+    "name", "names",
 })
+
+# Subtrees that contain NO school names at all, skipped whole rather than walked
+# key by key. A dual's "lines" hold PLAYER lists under "home"/"away" — the same
+# keys a bracket game uses for its two SCHOOLS — so the key alone cannot tell the
+# two apart; the subtree can.
+_NOT_A_SCHOOL_SUBTREE = frozenset({"lines"})
 
 
 def _relabel(obj, key=None, _map=None):
@@ -3779,6 +3790,8 @@ def _relabel(obj, key=None, _map=None):
         _map = _jh.former_names()
         if not _map:
             return obj
+    if key in _NOT_A_SCHOOL_SUBTREE:
+        return obj
     if isinstance(obj, str):
         return obj if key in _NOT_A_SCHOOL else _map.get(obj, obj)
     if isinstance(obj, list):
