@@ -486,6 +486,10 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # Clear the value AND the memo (`_name_era_cache` clears with the school
     # caches in `reset_schools`).
     worldconfig.set("jhsaa_name_era", "")
+    # The development-era cutover (`jhsaa.dev_era`) is the same idiom with the
+    # same failure mode: left behind, a prior save's cutoff would hold the new
+    # save's opening cohorts on the legacy lockstep maturity bands for years.
+    worldconfig.set("jhsaa_dev_era", "")
     from . import jhsaa as _jhsaa
     _jhsaa.reset_schools()
     # Stored individual championships AND the national-team cups (Davis / BJK) are
