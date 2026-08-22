@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Title Board{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'titles', 'Title Board',
+             "Every program against everything there is to win — the Tournament of Champions, each State finish, and each round of the road to State.",
+             [('Programs', view.total), ('Seasons', view.seasons)]) }}
+{# The board folds EVERY archived season, so the scope bar's season does not narrow
+   it — it is carried so the season you were browsing survives the visit. #}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">
+  Nothing archived yet — the board is a fold over played seasons, so it fills in as
+  the association plays them.
+</div></div>
+{% else %}
+
+<div class="jh-dirbar">
+  {# ‼️ THE CLASS FILTER IS THE PAGE'S OWN, and it deliberately ignores the header's
+     class rail — the same call the honours page's All-Region tab makes, for the same
+     reason. A program's title history CROSSES classifications: reclassification and
+     play-up both move a program, so its 4A titles and its 5A titles are one cabinet.
+     Filtering on "the class it last played in" is a useful cut, not the identity of
+     the row, so it defaults to every class. #}
+  <label class="jh-ttfilter"><span class="k">Class</span>
+    <select class="bl-select" id="jh-ttclass">
+      <option value="">All classes</option>
+      {% for gp in view.groups %}<option value="{{ gp }}">{{ gp }}</option>{% endfor %}
+    </select>
+  </label>
+  <input class="jh-dirfind" id="jh-ttfind" type="search" autocomplete="off"
+         placeholder="Filter by school, town, county or league…"
+         aria-label="Filter programs">
+  <span class="jh-dircount" id="jh-ttcount">{{ view.total }} programs</span>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">All-time — every archived season</span>
+    <span class="bl-panel-meta">Road cells are TITLES — units won. The State event has
+      one title a class (STATE), so the rest of its columns count how far a program
+      got: reaching the final, the semis, and so on down to the qualifying round.</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-tt" id="jh-tt">
+      <thead>
+        {# Two header rows: the groups, then the columns. Twenty small integers in a
+           row only read as four questions if the page says which four. #}
+        {# ‼️ TWO COLUMNS THIS TABLE DELIBERATELY DOES NOT HAVE. A TOC APPEARANCE is a
+           State championship — the field IS every class's champion — so a column for
+           it would repeat CHAMP exactly, and "state + TOC titles" is CHAMP + TOC, two
+           cells along the same row. The board still folds both (they are what the
+           archive says), but a table that answers one question twice is the thing the
+           section's layout rule deletes. #}
+        <tr class="grp">
+          <th class="nm"></th>
+          <th colspan="2">Championships</th>
+          <th colspan="{{ view.state_cols|length }}">State runs</th>
+          <th colspan="{{ view.stages|length }}">Road to State</th>
+          <th colspan="2">League &amp; total</th>
+        </tr>
+        <tr>
+          <th class="nm" data-sort="s" data-dir="asc">School</th>
+          <th data-sort="n" data-k="toc" title="Tournament of Champions titles — the overall championship of Jefferson">TOC</th>
+          {% for c in view.state_cols %}
+          <th data-sort="n" data-k="{{ c.key }}" title="{{ c.label }}">{{ 'STATE' if c.key == 'CHAMP' else c.key }}</th>
+          {% endfor %}
+          {% for st in view.stages %}
+          <th data-sort="n" data-k="{{ st.key }}" title="{{ st.label }}">{{ st.key }}</th>
+          {% endfor %}
+          <th data-sort="n" data-k="dist" title="District (league) titles">DIST</th>
+          <th data-sort="n" data-k="titles" title="Every trophy — league, road, State and TOC">ALL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in view.rows %}
+        <tr data-q="{{ r.q }}" data-group="{{ r.group }}">
+          <td class="nm">
+            <span class="jh-schoolcell">{{ r.mark|safe }}
+              <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender) }}">{{ r.school }}</a></span>
+            <span class="sub">{% if r.group %}<span class="jh-chip c-{{ r.group }}">{{ r.group }}</span>{% endif %}
+              {{ r.city }}{% if r.district %} · {{ r.district }}{% endif %}</span>
+          </td>
+          <td data-k="toc" data-v="{{ r.toc }}">{% if r.toc %}{{ r.toc }}{% else %}<span class="z">·</span>{% endif %}</td>
+          {% for c in view.state_cols %}
+          <td data-k="{{ c.key }}" data-v="{{ r[c.key] }}">{% if r[c.key] %}{{ r[c.key] }}{% else %}<span class="z">·</span>{% endif %}</td>
+          {% endfor %}
+          {% for st in view.stages %}
+          <td data-k="{{ st.key }}" data-v="{{ r[st.key] }}">{% if r[st.key] %}{{ r[st.key] }}{% else %}<span class="z">·</span>{% endif %}</td>
+          {% endfor %}
+          <td data-k="dist" data-v="{{ r.dist }}">{% if r.dist %}{{ r.dist }}{% else %}<span class="z">·</span>{% endif %}</td>
+          <td class="tot" data-k="titles" data-v="{{ r.titles }}">{% if r.titles %}{{ r.titles }}{% else %}<span class="z">·</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="jh-empty" id="jh-ttnone" hidden>No program matches that.</div>
+{% endif %}
+</div>
+
+<script>
+(function () {
+  var tbl = document.getElementById('jh-tt');
+  if (!tbl) return;
+  var body = tbl.tBodies[0];
+  var rows = Array.prototype.slice.call(body.rows);
+  var find = document.getElementById('jh-ttfind');
+  var cls = document.getElementById('jh-ttclass');
+  var count = document.getElementById('jh-ttcount');
+  var none = document.getElementById('jh-ttnone');
+
+  function apply() {
+    var terms = find.value.toLowerCase().split(/\s+/).filter(Boolean);
+    var g = cls.value, shown = 0;
+    rows.forEach(function (r) {
+      var hit = (!g || r.dataset.group === g) &&
+        terms.every(function (t) { return r.dataset.q.indexOf(t) >= 0; });
+      r.hidden = !hit;
+      if (hit) shown++;
+    });
+    count.textContent = shown + (shown === 1 ? ' program' : ' programs');
+    none.hidden = shown > 0;
+  }
+
+  // Sorting is on the VALUE, never the rendered cell: a zero prints as a dot, and
+  // sorting the text would file every empty cell under "·".
+  function sortBy(k, desc) {
+    var val = k === null
+      ? function (r) { return r.cells[0].innerText.trim().toLowerCase(); }
+      : function (r) { return +r.querySelector('[data-k="' + k + '"]').dataset.v; };
+    var sorted = rows.slice().sort(function (a, b) {
+      var x = val(a), y = val(b);
+      if (x < y) return desc ? 1 : -1;
+      if (x > y) return desc ? -1 : 1;
+      // A stable tie-break on the name, so two programs on the same count do not
+      // swap places every time the table is re-sorted.
+      var an = a.cells[0].innerText.trim(), bn = b.cells[0].innerText.trim();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+    sorted.forEach(function (r) { body.appendChild(r); });
+  }
+
+  tbl.querySelectorAll('th[data-sort]').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var numeric = th.dataset.sort === 'n';
+      // A count column opens on its biggest values (that is the question being
+      // asked of it); a name column opens A-Z.
+      var desc = th.classList.contains('sorted-desc') ? false
+        : th.classList.contains('sorted-asc') ? true : numeric;
+      tbl.querySelectorAll('th').forEach(function (o) {
+        o.classList.remove('sorted-desc', 'sorted-asc');
+      });
+      th.classList.add(desc ? 'sorted-desc' : 'sorted-asc');
+      sortBy(numeric ? th.dataset.k : null, desc);
+    });
+  });
+
+  find.addEventListener('input', apply);
+  cls.addEventListener('change', apply);
+})();
+</script>
+{% endblock %}

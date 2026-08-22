@@ -4496,6 +4496,163 @@ def jhsaa_toc_result(toc: dict, school: str) -> dict:
             "toc_champion": st["champion"]}
 
 
+def jhsaa_title_stages() -> list[tuple[str, str, str]]:
+    """The ROAD's rounds, in ladder order, as `(archived round name, short column,
+    full label)`.
+
+    ‼️ THE NAMES COME FROM `jhsaa`'S OWN CONSTANTS, never typed here. A stage's
+    archived `round_names` entry is what a unit win is bucketed by, so a renamed
+    round (`DIVISIONAL_NAME` has moved once already) must move the column with it
+    rather than silently emptying it — a title board that quietly stops counting
+    Divisionals looks exactly like an association that stopped playing them."""
+    import app.jhsaa as jh
+    return [("Areas", "AREA", "Area titles"),
+            ("Sectionals", "SECT", "Sectional titles"),
+            (jh._STAGE_NAMES["ward"], "WARD", "Ward titles"),
+            (jh._STAGE_NAMES["regional"], "REG", "Regional titles"),
+            (jh._STAGE_NAMES["zonal"], "ZONE", "Zonal titles — an automatic State berth"),
+            (jh._RECOVERY_NAMES["super_regional"], "S-REG", "Super Regional titles"),
+            (jh._RECOVERY_NAMES["semi_state"], "S-ST", "Semi-State titles — a State berth"),
+            (jh._RECOVERY_NAMES["divisional"], "DIV", "Divisional titles — a State berth"),
+            (jh._RECOVERY_NAMES["semi_conference"], "S-CON",
+             "Semi-Conference wins — a seat in the Conference, never a berth"),
+            (jh._RECOVERY_NAMES["conference"], "CON", "Conference titles — a State berth")]
+
+
+#: The archive keys every unit-bearing stage is written under, in ladder order.
+_JH_STAGE_KEYS = ("sectionals", "wards", "prestate", "super_regional", "semi_state",
+                  "divisional", "semi_conference", "conference")
+
+#: A State finish, as a title-board column: `(key, full label)`. Keyed on the
+#: `_finish_label` BAND rather than on a round index, because a field that is not a
+#: power of two does not halve out of the gate — the same reason a finish is counted
+#: down from teams still alive. The short keys are `state._FINISH_SHORT`'s, so the
+#: board's columns and the FINISH column on the rankings page read the same.
+JH_STATE_COLUMNS = (("CHAMP", "State championships"), ("F", "State finals reached"),
+                    ("SF", "State semifinals reached"),
+                    ("QF", "State quarterfinals reached"),
+                    ("OF", "State octofinals reached"),
+                    ("R1", "State first round"),
+                    ("QUAL", "State qualifying round"))
+_JH_STATE_COLS = tuple(k for k, _l in JH_STATE_COLUMNS)
+
+
+def _jh_state_col(place: int) -> str:
+    """Which State column a finish falls in. `_finish_short` (the display helper) is
+    the same banding; this returns the KEY, so the two cannot drift apart."""
+    if place <= 0:
+        return ""
+    if place == 1:
+        return "CHAMP"
+    if place == 2:
+        return "F"
+    if place <= 4:
+        return "SF"
+    if place <= 8:
+        return "QF"
+    if place <= 16:
+        return "OF"
+    # Both "Round of N" labels are real ROUNDS, not one: every field converges on the
+    # same 24-team main draw at the Octofinals, so a team still alive above 24 went out
+    # in the QUALIFIERS and one out at 24 went out in the First Round.
+    return "QUAL" if place > 24 else "R1"
+
+
+def jhsaa_title_board(world_id: int, gender: str) -> dict:
+    """Every trophy every program has won, folded out of the archive.
+
+    ‼️ ONE PASS PER SEASON, NOT ONE PER SCHOOL. `_season_row` answers this question
+    for ONE program and reads the whole year's archive to do it, so asking it for ~860
+    programs across every archived season would re-read each season ~860 times. This
+    walks each season's archive ONCE and credits whoever it names — the same numbers,
+    at the cost of the program-history page rather than 860 of them.
+
+    ‼️ AND IT IS A FOLD, NOT A STORE (the rule that governs the whole section):
+    the archive already determines every number here, so there is no
+    `world_jhsaa_titles` table to drift from it. A season is counted by being
+    archived, and a re-read of the same archive gives the same board.
+
+    Cells are COUNTS. The road's are TITLES — units won (`unit` on the archived dual,
+    bucketed by the stage's own `round_names`) — while State's are FINISHES, because
+    the State event has exactly one title per class and "how often did they reach the
+    semis" is the question a championship column can answer.
+    """
+    # ‼️ RESOLVED ONCE, not per row and not per season: `jhsaa_title_stages` reads
+    # another module's constants, and the whole point of this function is that the
+    # per-season work happens once.
+    stages = jhsaa_title_stages()
+    stage_col = {name: short for name, short, _lbl in stages}
+    rows: dict = {}
+
+    def row(school: str) -> dict:
+        r = rows.get(school)
+        if r is None:
+            r = rows[school] = {
+                "school": school, "group": "", "first": None, "last": None,
+                "seasons": 0, "dist": 0, "state_apps": 0, "toc_apps": 0, "toc": 0,
+                "titles": 0, "trophies": 0,
+                **{c: 0 for c in _JH_STATE_COLS},
+                **{s: 0 for _n, s, _l in stages}}
+        return r
+
+    years = jhsaa_years(world_id, gender)
+    for year in years:
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        # --- the league season: who played, in what class, and who won it ---
+        for grp, dists in (arc.get("standings") or {}).items():
+            for dname, teams in (dists or {}).items():
+                for t in teams or ():
+                    r = row(t.get("school", ""))
+                    r["seasons"] += 1
+                    # `group` is the class the program last played in AS ARCHIVED —
+                    # reclassification and play-up both move a program, so the class
+                    # filter must read the season, never today's school list.
+                    r["group"] = grp
+                    r["first"] = year if r["first"] is None else min(r["first"], year)
+                    r["last"] = year if r["last"] is None else max(r["last"], year)
+                    if t.get("place") == 1 and dname:
+                        r["dist"] += 1
+        # --- the road: every unit won, bucketed by the stage that named it ---
+        for key in _JH_STAGE_KEYS:
+            for _grp, d in ((arc.get(key) or {}).items()):
+                names = (d or {}).get("round_names") or ()
+                for i, games in enumerate((d or {}).get("rounds") or ()):
+                    col = stage_col.get(names[i] if i < len(names) else "")
+                    if not col:
+                        continue
+                    for gm in games:
+                        if gm.get("winner") and gm.get("unit"):
+                            row(gm["winner"])[col] += 1
+        # --- the State event: a finish for every entrant ---
+        for _grp, br in ((arc.get("brackets") or {}).items()):
+            for school in (br or {}).get("field") or ():
+                st = jhsaa_state_result(br, school)
+                r = row(school)
+                r["state_apps"] += 1
+                col = _jh_state_col(st["place"])
+                if col:
+                    r[col] += 1
+        # --- the Tournament of Champions: its own event, so its own columns ---
+        toc = arc.get("toc") or {}
+        for school in toc.get("field") or ():
+            r = row(school)
+            r["toc_apps"] += 1
+            if jhsaa_state_result(toc, school)["champion"]:
+                r["toc"] += 1
+
+    for r in rows.values():
+        # Two totals, because they answer different questions: `titles` is every
+        # trophy in the cabinet (league, road, State, TOC), `trophies` the ones a
+        # program hangs a banner for — a State or TOC championship.
+        r["titles"] = (r["dist"] + r["CHAMP"] + r["toc"]
+                       + sum(r[s] for _n, s, _l in stages))
+        r["trophies"] = r["CHAMP"] + r["toc"]
+    return {"rows": sorted(rows.values(), key=lambda r: (-r["titles"], r["school"])),
+            "years": years}
+
+
 def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
     """Every program in one classification, ordered the way the JHSAA itself orders
     them — by the TOSS Power Index the season was seeded on (`jhsaa.power_index`).

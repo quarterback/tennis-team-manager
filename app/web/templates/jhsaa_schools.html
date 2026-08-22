@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Schools{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'schools', 'Schools',
+             "Every program in the association — grouped by county, or by classification and league.",
+             [('Programs', view.total), ('Counties', view.counties)]) }}
+
+<div class="jh-shell">
+
+  {# The toolbar: which GROUPING, and one filter box over the whole list.
+     The filter is the point of the page — it matches a row's name, town, locality,
+     county, area, league and class, so "Ashbury", "Metro League" and "7A" all find
+     something. Finding a program used to mean opening Rankings (one class at a time,
+     ordered on TOSS) and ctrl-F, which could only ever match the name. #}
+  <div class="jh-dirbar">
+    <span class="jh-seg">
+      {% for m in view.modes %}
+      <a class="{{ 'on' if view.mode == m.key }}"
+         href="{{ url_for('jhsaa_schools', u=u, g=view.gender, mode=m.key) }}">{{ m.label }}</a>
+      {% endfor %}
+    </span>
+    <input class="jh-dirfind" id="jh-dirfind" type="search" autocomplete="off"
+           placeholder="Filter by school, town, county or league…"
+           aria-label="Filter programs">
+    <span class="jh-dircount" id="jh-dircount">{{ view.total }} programs</span>
+  </div>
+
+  <div id="jh-dir">
+    {% for sec in view.sections %}
+    <div class="bl-panel jh-dirsec" data-sec>
+      <div class="bl-panel-head">
+        <span class="bl-panel-title">{{ sec.key }}</span>
+        {% if sec.meta %}<span class="bl-panel-meta">{{ sec.meta }}</span>{% endif %}
+        <span class="bl-panel-meta" style="margin-left:auto" data-n>{{ sec.n }}</span>
+      </div>
+      <div class="bl-panel-body" style="padding:0">
+        {% for sub in sec.subs %}
+        <div data-sub>
+          {% if sub.key %}<div class="jh-modsplit" data-subhead>{{ sub.key }}</div>{% endif %}
+          <div class="jh-dirgrid">
+            {% for r in sub.rows %}
+            {# ‼️ A row is data-q'd for the filter and nothing else keys on it. The
+               link carries no year: a directory is a fact about the association,
+               and the program page opens on the season the world is in. #}
+            <a class="jh-dirrow" data-q="{{ r.q }}"
+               href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender) }}">
+              {{ r.mark|safe }}
+              <span class="bd">
+                <span class="n">{{ r.name }}</span>
+                {# ‼️ A ROW NEVER REPEATS ITS OWN HEADING. Grouped by county, every row
+                   would end "· Antler" under a heading that says Antler; grouped by
+                   class, every chip would say 9A under a 9A heading. Both read as data
+                   and carry none. #}
+                <span class="s">{{ r.where }}{% if r.county and view.mode != 'county' %} · {{ r.county }}{% endif %}</span>
+              </span>
+              <span class="rt">
+                {# The chip is the class the program COMPETES in (`group`), which is not
+                   always its enrollment class — a play-up moves `group` alone, so the
+                   chip is kept in class mode for exactly those rows: the heading is
+                   then telling you something the enrollment does not. The title carries
+                   the enrollment behind both. #}
+                {% if view.mode != 'class' or r.plays_up %}
+                <span class="jh-chip c-{{ r.group }}"
+                      title="{{ r.enrollment }} students{% if r.private %} · private{% endif %}{% if r.plays_up %} · plays up from {{ r.classification }}{% endif %}">{{ r.group }}{% if r.plays_up %} ↑{% endif %}</span>
+                {% endif %}
+                {# Under a league sub-heading the league is already on screen — the
+                   row would be repeating the row above it. #}
+                {% if view.mode != 'class' %}<span class="lg">{{ r.district }}</span>{% endif %}
+              </span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="jh-empty" id="jh-dirnone" hidden>No program matches that.</div>
+</div>
+
+<script>
+(function () {
+  var box = document.getElementById('jh-dir');
+  var find = document.getElementById('jh-dirfind');
+  var count = document.getElementById('jh-dircount');
+  var none = document.getElementById('jh-dirnone');
+  if (!box || !find) return;
+  var rows = Array.prototype.slice.call(box.querySelectorAll('.jh-dirrow'));
+  var secs = Array.prototype.slice.call(box.querySelectorAll('[data-sec]'));
+
+  function apply() {
+    // Every token must match, so "ashbury 7a" narrows instead of widening.
+    var terms = find.value.toLowerCase().split(/\s+/).filter(Boolean);
+    var shown = 0;
+    rows.forEach(function (r) {
+      var q = r.dataset.q, hit = terms.every(function (t) { return q.indexOf(t) >= 0; });
+      r.hidden = !hit;
+      if (hit) shown++;
+    });
+    // A heading with nothing under it is worse than no heading: hide empty
+    // sub-groups and sections rather than leaving a page of bare county names.
+    secs.forEach(function (sec) {
+      var n = 0;
+      sec.querySelectorAll('[data-sub]').forEach(function (sub) {
+        var k = sub.querySelectorAll('.jh-dirrow:not([hidden])').length;
+        sub.hidden = !k;
+        n += k;
+      });
+      sec.hidden = !n;
+      var tag = sec.querySelector('[data-n]');
+      if (tag) tag.textContent = n;
+    });
+    count.textContent = shown + (shown === 1 ? ' program' : ' programs');
+    none.hidden = shown > 0;
+  }
+  find.addEventListener('input', apply);
+})();
+</script>
+{% endblock %}
