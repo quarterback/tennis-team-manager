@@ -56,11 +56,15 @@ def test_all_state_and_all_district_teams_are_the_same_size(season):
             assert len(s) <= aw.TEAM_SINGLES and len(rows) - len(s) <= aw.TEAM_DOUBLES
 
 
-def test_7a_gets_a_fourth_team_and_everyone_else_three(season):
-    assert [t["name"] for t in season["awards"]["7A"]["teams"]][:4] == \
+def test_largest_class_gets_a_fourth_team_and_everyone_else_three(season):
+    # The fourth team belongs to the LARGEST classification — 7A before the
+    # nine-class realignment, 9A since (`aw.AS_TIERS` is the authority). The
+    # test went stale on the class NAME when the realignment landed.
+    (big,) = aw.AS_TIERS
+    assert [t["name"] for t in season["awards"][big]["teams"]][:4] == \
         ["First Team", "Second Team", "Third Team", "Fourth Team"]
     for g in jh.GROUPS:
-        if g != "7A":
+        if g != big:
             assert len(season["awards"][g]["teams"]) == aw.AS_TIERS_DEFAULT, g
 
 

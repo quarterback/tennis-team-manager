@@ -154,7 +154,14 @@ AS_TIERS_DEFAULT = 3
 # ⚠️ The two-per-school cap counts ENTRIES, not athletes: a doubles pairing from
 # a school is ONE entry against the cap even though it honours two players.
 HM_DROP = 0.10
-HM_MAX_MULT = 2.5              # runaway guard on the TOTAL, never a target
+HM_MAX_MULT = 3.5              # runaway guard on the TOTAL, never a target.
+                               # Raised 2.5 → 3.5 with the 2026-08 development-curve
+                               # model: more underclassmen and rested-in bench players
+                               # log real matches now, so deeper classes legitimately
+                               # clear the merit threshold in larger numbers and the
+                               # deepest was CLIPPED at the old guard — which turned
+                               # the guard into a slot count, the thing the design
+                               # (and its test) forbids.
 HM_PER_SCHOOL = 2              # HM only — the numbered teams have no such cap
 # ‼️ THE REGION'S HM IS CAPPED AT ONE ENTRY PER SCHOOL (owner rule 2027-08), half
 # the All-State cap. All-Region HM exists in exactly one region, and that region
