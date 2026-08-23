@@ -158,8 +158,9 @@ def test_a_toc_run_lands_on_the_season_record(archived):
     try:
         for school in archived["arc"]["toc"]["field"]:
             row = wd.jhsaa_school_history(w["id"], "girls", school)["seasons"][0]
+            # level='v': the JV season shares this table and is not on this record.
             n = conn.execute("SELECT COUNT(*) c FROM world_jhsaa_dual WHERE world_id=?"
-                             " AND year=? AND gender='girls' AND school=?",
+                             " AND year=? AND gender='girls' AND school=? AND level='v'",
                              (w["id"], w["year"], school)).fetchone()["c"]
             assert row["wins"] + row["losses"] == n, (school, row["record"], n)
             assert row["made_toc"]
@@ -175,9 +176,11 @@ def test_every_archived_record_covers_every_dual_played(archived):
     conn.row_factory = sqlite3.Row
     w, off = archived["world"], []
     try:
+        # Varsity rows only: the JV season shares this table.
         played = {r["school"]: r["n"] for r in conn.execute(
             "SELECT school, COUNT(*) n FROM world_jhsaa_dual WHERE world_id=? AND"
-            " year=? AND gender='girls' GROUP BY school", (w["id"], w["year"]))}
+            " year=? AND gender='girls' AND level='v' GROUP BY school",
+            (w["id"], w["year"]))}
     finally:
         conn.close()
     for grp, dists in (archived["arc"]["standings"] or {}).items():
@@ -706,3 +709,50 @@ def test_the_title_board_page_renders_its_champions(archived):
         assert f'data-k="{short}"' in html, short
     # and a champion's row carries a real count, not an empty cell
     assert 'data-k="CHAMP" data-v="1"' in html
+
+
+# --- the JV participation record -----------------------------------------------
+
+def test_played_survives_the_archive_and_reaches_the_player_page(archived):
+    """The JV column on a career, end to end: simulated -> `world_jhsaa_dual.played`
+    -> the ledger. A unit test cannot see this — the column has to round-trip SQLite
+    and the row has to come back through `_schedule_rows`."""
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    sched = wd.jhsaa_schedule(w["id"], w["year"], g, school)
+    jv = [d for d in sched if (d.get("level") or "v") == "jv"]
+    assert jv, "no JV duals archived for this program"
+    assert all(d["played"] for d in jv), "played did not survive the archive"
+    assert all(d["lines"] for d in jv), "the JV box score did not survive the archive"
+
+    # somebody who actually dressed, and their record off the archive
+    name = jv[0]["played"][0]
+    jw, jl, jt = wd.jhsaa_jv_player_record(sched, name)
+    assert jw + jl + jt > 0
+
+    # ‼️ THE SALT, NOT "". The name draw is salted, so `build_roster` on a bare salt
+    # returns the right pids attached to DIFFERENT PEOPLE and the lookup by name finds
+    # nobody — the `_resolve_member` trap, one layer up.
+    salt = wd.active_salt(wd.DEFAULT_SEED)
+    sc = next(s for s in jh.load_schools(g) if s.name == school)
+    roster = jh.build_roster(sc, archived["arc"]["season_year"], salt)
+    hit = next((p for p in roster if p.name == name), None)
+    assert hit is not None, "a JV participant is not on the program's roster"
+
+    html = archived["client"].get(
+        f"/jhsaa/player/{school}/{hit.pid}?g={g}").get_data(as_text=True)
+    assert "<th style=\"width:58px\">JV</th>" in html
+    assert (f"{jw}-{jl}-{jt}" if jt else f"{jw}-{jl}") in html
+
+
+def test_a_jv_dual_never_lands_on_the_varsity_record(archived):
+    """The whole reason `played` is its own field. `state`'s player view hands the
+    WHOLE schedule — both levels — to `_jh_line_records`; only empty `lines` keeps JV
+    out of the singles/doubles record and the flight box."""
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    sched = wd.jhsaa_schedule(w["id"], w["year"], g, school)
+    varsity = [d for d in sched if (d.get("level") or "v") != "jv"]
+    from app.web.state import _jh_line_records
+    both, only_v = _jh_line_records(sched), _jh_line_records(varsity)
+    assert both == only_v, "filtering by level changed the varsity records — JV leaked"
