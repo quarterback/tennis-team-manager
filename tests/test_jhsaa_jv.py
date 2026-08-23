@@ -149,3 +149,48 @@ def test_the_jv_pool_is_the_ladder_below_varsity():
     top = order[0]
     t.records[top.pid] = [0, 40]
     assert jh._order(t)[0] is not top
+
+
+# --- participation -----------------------------------------------------------
+
+def test_a_jv_row_records_who_dressed_and_lines_stays_empty():
+    """`played` is what makes a player page able to say "played JV, 8-3"; `lines`
+    staying empty is what stops it reaching a varsity card."""
+    jv = jh.play_jv_season(_slice(groups=("9A",), per=1), 0, "girls", "jvtest")
+    rows = [d for t in jv.values() for d in t.schedule]
+    assert rows
+    for d in rows:
+        assert d["lines"] == []
+        assert d["played"], d
+        assert len(d["played"]) == jh.jv_lineup_need(
+            jh.jv_format(len(d["played"]))), d["shape"]
+
+
+def test_a_player_takes_the_teams_result_in_the_duals_they_dressed_for():
+    jv = jh.play_jv_season(_slice(groups=("9A",), per=1), 0, "girls", "jvtest")
+    t = next(t for t in jv.values() if t.schedule)
+    name = t.schedule[0]["played"][0]
+    w, l, ti = world.jhsaa_jv_player_record(t.schedule, name)
+    mine = [d for d in t.schedule if name in d["played"]]
+    assert w + l + ti == len(mine) > 0
+    assert w == sum(1 for d in mine if d["won"] and not d["tied"])
+    assert ti == sum(1 for d in mine if d["tied"])
+    # never credited a dual they did not dress for
+    assert w + l + ti <= len(t.schedule)
+    assert world.jhsaa_jv_player_record(t.schedule, "Nobody At All") == (0, 0, 0)
+
+
+def test_a_varsity_row_carries_no_played_so_the_fold_cannot_reach_it():
+    teams = _teams(_slice(groups=("9A",), per=1))
+    jh.play_dual(teams[0], teams[1], seed=7)
+    d = teams[0].schedule[0]
+    assert not d.get("played")
+    nm = d["lines"][0]["home"][0]
+    assert world.jhsaa_jv_player_record(teams[0].schedule, nm) == (0, 0, 0)
+
+
+def test_a_season_archived_before_played_folds_to_nothing_not_to_the_teams_record():
+    old = [{"level": "jv", "won": True, "tied": False},          # no `played` key
+           {"level": "jv", "won": False, "tied": False}]
+    assert world.jhsaa_jv_record(old) == (1, 1, 0)               # team record still reads
+    assert world.jhsaa_jv_player_record(old, "Anyone") == (0, 0, 0)

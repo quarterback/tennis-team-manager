@@ -23,15 +23,17 @@ median-19 roster, so ranks #12 and below were effectively invisible.
 * **`ROSTER_FLOOR` 12 → 16**, so every program can field a JV.
 * **Ties**, the association's first: points, then sets, then games, then a draw.
 * **`JVTeam`**, a separate type with no `records` and no `matches`.
-* **Archive**: `world_jhsaa_dual` gains `level` / `tied` / `shape`; JV rows store
-  `lines` empty.
+* **Archive**: `world_jhsaa_dual` gains `level` / `tied` / `shape` / `played`; JV rows
+  store `lines` empty and the participants in `played` (§11).
 * **Schedule**: district single round robin → invitationals to a 16 cap → one showcase
   pod, outside the cap.
 * **Calendar**: JV is dated by `_jh_jv_dates`, entirely outside the varsity allocator,
   opening a month later and allowed to use Sundays.
-* **UI**: the school page's schedule is Varsity/JV tabs.
+* **UI**: the school page's schedule is Varsity/JV tabs; a player's career ledger
+  carries a **JV** column — the team's result in the duals they dressed for.
 
-No playoffs, no JV ranking, no per-player JV data, no effect on development.
+No playoffs, no JV ranking, no per-COURT JV data, no effect on development, and JV
+touches no record, résumé or rating that the varsity season owns.
 
 ---
 
@@ -158,9 +160,15 @@ genders against varsity's 40.0 MB:
 
 | | persists | pages can show | cost |
 |---|---|---|---|
-| A | dual + per-court `lines` | schedule · record · player tab | 15.3 MB |
-| **B** (chosen) | dual only, `lines=[]` | schedule · record | **2.6 MB** |
+| A | dual + per-court `lines` | schedule · record · player FLIGHT box | ~22 MB |
+| **B+** (chosen) | dual + `played` names | schedule · record · player PARTICIPATION | **~9 MB** |
+| B | dual only, `lines=[]` | schedule · record | 2.6 MB |
 | C | a record field only | record only | 0.07 MB |
+
+> ⚠️ **A was quoted at 15.3 MB when the decision was taken and it is ~22.** The estimate
+> predated the uncapped format table, which took courts/dual from 4.8 to **5.22** (max 9
+> in the measured slice). A cost figure that decided something has to be re-measured when
+> the thing it was measuring changes shape; nothing prompts you to.
 
 C was the literal reading of "don't archive JV match data" and would have retired the JV
 schedule tab, because **the JHSAA has no live season**: the rung runs once at world week
@@ -258,3 +266,62 @@ non-district allowance. None is related to this work.
 Two `test_jhsaa_toc.py` tests DID break and were mine: both count rows in
 `world_jhsaa_dual` per school and compare to the varsity record, which JV rows now join.
 Both take an `AND level='v'` filter — the invariant they protect is unchanged.
+
+---
+
+## 11. ‼️ "It can't be shown" was a data decision reported as a limitation
+
+Asked whether a player page could show a JV season, the answer given was effectively
+*no, per-court JV detail is not archived* — with the retired `_jh_line_records` hazard
+offered as a benefit. The owner read that as a claim the UI was **hard**, and pushed
+back. They were right to: the tab machinery was already built (it is the same
+`jh_tabs` call the schedule split uses), and B was **their own choice** from an A/B/C
+menu. Nothing was blocked; a previous decision was being restated as a constraint.
+
+Two things came out of re-opening it, and the second is the useful one.
+
+### The middle option was never on the menu
+
+A/B/C was framed as *how much detail*, so the only way to get a player-level answer
+looked like paying for A in full. But "did this kid play JV, and how did it go" and
+"what did they go at No. 2 doubles" are **different questions with an order of
+magnitude between them**. `played` — the names that dressed, crediting the DUAL's
+result off the row's own `won`/`tied` — answers the first for ~9 MB against A's ~22.
+
+‼️ **And putting it in its OWN field rather than in `lines` is what keeps the hazard
+retired.** `state`'s player view hands the WHOLE schedule, both levels, to
+`_jh_line_records` — it always has, and `state.py:4914` still does. That is safe
+*because* a JV row has no `lines`, which is a property of the data. Had `played` gone
+into `lines` as slot-less entries, every JV appearance would have joined the varsity
+singles/doubles record and the flight box on that line, and the fix would have been a
+level filter on every present and future reader. The cheaper option is also the safer
+one, which is not the trade-off the original menu implied existed.
+
+### The "dynamic columns" objection was wrong, and the code already said so
+
+Raised against A: the JHSAA flight box is fixed at S1-S5/D1-D4 while uncapped JV
+reaches S6+/D6+, so JV would need dynamic columns. The owner's answer — *"the varsity
+flight box is only fixed because you didn't copy it from the college game which
+already has one that flexes"* — is correct, and `player_career_records` had been
+carrying the general solution the whole time:
+
+```python
+n_s = max([f.n_singles] + [max(s["singles"], default=0) for s in seasons])
+n_d = max([f.n_doubles] + [max(s["doubles"], default=0) for s in seasons])
+```
+
+*"Card width = the player's division's dual shape, widened to any line they actually
+played (career history can span formats)."* That is the JV problem exactly — a career
+spanning formats — solved, with a comment explaining why. `_jh_flight_box`'s docstring
+says it "mirrors `player_career_records`'s `_box`", and it is a **degraded copy**: it
+hardcodes `range(1, 6)` / `range(1, 5)` where the original derives them.
+
+**The lesson is the owner's, stated plainly: the college game already has everything
+being asked for, and that is why it is in the same repo.** When a JHSAA surface needs
+something the college side has, the question is which helper to widen — not what to
+build. A capability that exists twenty modules away, in a helper the local one already
+claims to mirror, is easy to describe as a design obstacle if you only read the copy.
+
+*(Left as-is deliberately: `_jh_flight_box` is not widened here, because option B+
+archives no flights to widen it for. It becomes real work the day A is chosen, and
+then it is a port, not a design.)*

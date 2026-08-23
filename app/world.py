@@ -214,7 +214,8 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, opp TEXT,
   home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER,
   lines TEXT DEFAULT '[]',
-  level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT ''
+  level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT '',
+  played TEXT DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
@@ -274,8 +275,12 @@ def init_schema() -> None:
     # carry an empty `lines` — JV by design (no per-court detail is archived) and
     # varsity on any dual whose lines failed to record. Defaulting to 'v' is what makes
     # every row written before this migration read correctly as varsity.
+    # `played` is the JV participation record — the names that dressed, so a player
+    # page can say "played JV, 8-3". It is deliberately NOT part of `lines`: see
+    # `jhsaa.play_jv_dual`. A season archived before it reads back as '[]', which is
+    # honestly "we did not record who played", not "nobody played".
     for col, typ in (("level", "TEXT DEFAULT 'v'"), ("tied", "INTEGER DEFAULT 0"),
-                     ("shape", "TEXT DEFAULT ''")):
+                     ("shape", "TEXT DEFAULT ''"), ("played", "TEXT DEFAULT '[]'")):
         try:
             conn.execute(f"ALTER TABLE world_jhsaa_dual ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
@@ -3754,24 +3759,29 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # ‼️ VARSITY AND JV GO IN THE SAME TABLE, separated by `level` and nothing
             # else. A JV row carries `lines` as '[]' DELIBERATELY (owner rule 2026-08):
             # the dual persists so the JV schedule and record survive every season, the
-            # per-court detail does not. That is 2.6 MB a season against 15.3 — and,
-            # more usefully, it makes it structurally impossible for
-            # `state._jh_line_records` to merge a JV appearance into a varsity player
-            # card, since that reads by NAME out of `lines` and finds none here.
+            # per-court detail does not. That is ~2.6 MB a season against ~22 MEASURED
+            # (not the 15.3 first estimated — the uncapped format table took
+            # courts/dual from 4.8 to 5.22) — and, more usefully, it makes it
+            # structurally impossible for `state._jh_line_records` to merge a JV
+            # appearance into a varsity player card, since that reads by NAME out of
+            # `lines` and finds none here. WHO dressed rides in `played` instead, which
+            # is ~7 MB and answers the participation question without the courts.
             rows = [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                      json.dumps(d.get("lines", [])), d.get("level", "v"),
-                     int(bool(d.get("tied"))), d.get("shape", ""))
+                     int(bool(d.get("tied"))), d.get("shape", ""), "[]")
                     for t in season["teams"].values() for d in t.schedule]
+            # A varsity row's participants are already IN its lines; only JV carries
+            # `played`, which is the whole reason the column is cheap.
             rows += [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                       d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                       "[]", d.get("level", "jv"), int(bool(d.get("tied"))),
-                      d.get("shape", ""))
+                      d.get("shape", ""), json.dumps(d.get("played", [])))
                      for t in (season.get("jv") or {}).values() for d in t.schedule]
             conn.executemany(
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
-                " home, phase, pf, pa, won, district, lines, level, tied, shape)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                " home, phase, pf, pa, won, district, lines, level, tied, shape, played)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
         conn.commit()
     finally:
         conn.close()
@@ -3964,8 +3974,8 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     from . import jhsaa as _jh
     names = _jh.known_names(school, gender)
     rows = conn.execute(
-        "SELECT opp, home, phase, pf, pa, won, district, lines, level, tied, shape"
-        " FROM world_jhsaa_dual"
+        "SELECT opp, home, phase, pf, pa, won, district, lines, level, tied, shape,"
+        " played FROM world_jhsaa_dual"
         " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
         % ",".join("?" * len(names)),
         (world_id, year, gender, *names)).fetchall()
@@ -3979,10 +3989,11 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
         # self-describing, so `jh_match_key` can identify the match from either
         # side without the caller threading the school through.
         d["school"] = school
-        try:
-            d["lines"] = json.loads(d.get("lines") or "[]")
-        except ValueError:
-            d["lines"] = []
+        for k in ("lines", "played"):
+            try:
+                d[k] = json.loads(d.get(k) or "[]")
+            except ValueError:
+                d[k] = []
         out.append(d)
     return out
 
@@ -4881,6 +4892,37 @@ def jhsaa_jv_record(sched: list[dict]) -> tuple[int, int, int]:
     w = l = t = 0
     for d in sched:
         if (d.get("level") or "v") != "jv":
+            continue
+        if d.get("tied"):
+            t += 1
+        elif d.get("won"):
+            w += 1
+        else:
+            l += 1
+    return w, l, t
+
+
+def jhsaa_jv_player_record(sched: list[dict], name: str) -> tuple[int, int, int]:
+    """(wins, losses, ties) over the JV duals ONE player dressed for — the same fold as
+    `jhsaa_jv_record`, narrowed by `played`.
+
+    ‼️ A JV RECORD IS THE TEAM'S, NOT THE PLAYER'S. `played` records who dressed and
+    nothing else, so a player takes the DUAL's result: there is no per-court detail to
+    say whether they personally won (owner rule 2026-08 — the archive answers "did this
+    kid play JV and how did that go", not "what did they go at No. 2 doubles"). Never
+    present this as an individual W-L beside the varsity singles/doubles record, which
+    IS per-court and means something different.
+
+    Keyed by NAME, like every other JHSAA per-player read — a line and now a `played`
+    entry both carry names rather than pids, which is why `overrides` refuses to rewrite
+    a surname on an archived season.
+
+    A season archived before `played` existed folds to (0, 0, 0) and the caller shows
+    nothing, which is right: it does not know who played, and inventing a record from
+    the team's would credit every JV dual to all sixteen of them."""
+    w = l = t = 0
+    for d in sched:
+        if (d.get("level") or "v") != "jv" or name not in (d.get("played") or ()):
             continue
         if d.get("tied"):
             t += 1

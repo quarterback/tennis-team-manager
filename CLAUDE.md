@@ -884,15 +884,42 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `world._jh_jv_dates`, may use **Sundays** (varsity never does), and opens a month
     late (girls April, boys September) — which also steps past the early window where
     `lineup_need` is nine rather than eleven.
-  - **‼️ THE ARCHIVE PERSISTS THE DUAL, NOT THE COURTS** (`world_jhsaa_dual` gains
-    `level`/`tied`/`shape`; JV rows store `lines` EMPTY). 2.6 MB a season against
-    varsity's 40.0. Record-only was the literal reading of "don't archive JV match data"
-    and would have retired the JV schedule tab, because **the JHSAA has no live season**
-    — every surface reads the archive, so an unarchived dual cannot be shown AT ALL.
-    Empty `lines` also **retires a hazard rather than guarding it**: `_jh_line_records`
-    merges by NAME inside `lines`, so a JV appearance structurally cannot reach a
-    varsity player card, and `jhsaa_underplayed` keeps counting varsity-only for free.
-    ‼️ **That hazard RETURNS the moment anyone archives per-court JV detail.**
+  - **‼️ THE ARCHIVE PERSISTS THE DUAL AND WHO DRESSED, NEVER THE COURTS**
+    (`world_jhsaa_dual` gains `level`/`tied`/`shape`/`played`; JV rows store `lines`
+    EMPTY). ~9 MB a season against varsity's 40.0; full per-court JV detail would be
+    **~22 MB, MEASURED** — not the 15.3 first estimated, which predated the uncapped
+    table taking courts/dual from 4.8 to 5.22. ‼️ **A cost figure that DECIDED
+    something has to be re-measured when the thing it measured changes shape** —
+    nothing prompts you to. Record-only was the literal reading of "don't archive JV
+    match data" and would have retired the JV schedule tab, because **the JHSAA has no
+    live season** — every surface reads the archive, so an unarchived dual cannot be
+    shown AT ALL.
+  - **‼️ `played` IS ITS OWN FIELD AND MUST NEVER MOVE INTO `lines`.** It holds the
+    names that dressed; a player takes the DUAL's result off the row's own `won`/`tied`
+    (`world.jhsaa_jv_player_record`), which is enough for the **JV column on the career
+    ledger** without the courts. Keeping it out of `lines` is what keeps
+    `_jh_line_records` and `_jh_slot_records` STRUCTURALLY blind to JV: both iterate
+    `lines`, and `state.py`'s player view hands them the WHOLE schedule, both levels,
+    unfiltered — and always has. Put participants in `lines` as slot-less entries and
+    every JV appearance silently joins the varsity singles/doubles record and the
+    flight box on that one line; `jhsaa_underplayed` would start counting them too.
+    **The cheap option is also the safe one** — a level filter on every present and
+    future reader is not. ‼️ A JV record is the TEAM's result, so never render it as
+    though it were a per-court W-L beside the varsity singles/doubles figures. A season
+    archived before `played` folds to (0,0,0) and shows nothing, which is honest: it
+    does not know who played, and synthesising one from the team's would credit every
+    JV dual to all sixteen of them.
+  - **‼️ AND WHEN THE JHSAA NEEDS SOMETHING, CHECK WHAT THE COLLEGE SIDE ALREADY HAS.**
+    Full per-court JV detail was argued against partly on "the JHSAA flight box is
+    fixed at S1-S5/D1-D4 and elastic JV needs dynamic columns" — which was WRONG:
+    `state.player_career_records` has flexed since divisions stopped sharing a lineup
+    size (`n_s = max([f.n_singles] + [...])`, *"widened to any line they actually
+    played … career history can span formats"*), the exact problem. `_jh_flight_box`'s
+    own docstring says it mirrors that helper and it is a DEGRADED COPY that hardcodes
+    the ranges. Owner: *"the college game has everything i'm asking for (save for JV)
+    and works perfectly fine, which is why it's all in the same repo."* Widen the
+    shared helper; do not describe a solved problem as a design obstacle because you
+    only read the copy.
   - **`JVTeam` is a SEPARATE type** with no `records` and no `matches` — a JV result
     cannot reach a varsity counter, an award résumé or TOSS by construction. JV is
     excluded from TOSS, seeding, awards, development and the recruit hand-off entirely.

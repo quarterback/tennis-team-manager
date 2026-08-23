@@ -2900,9 +2900,19 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     side that cannot field five spare never reaches here.
 
     ‼️ IT WRITES NOTHING TO THE VARSITY SEASON. No `_credit`, so nothing reaches
-    `records` (the ladder) or `matches` (the awards); no `lines`, so nothing reaches a
-    player's page. That is not restraint on this function's part — `JVTeam` simply has
-    nowhere to put them, which is why it is a separate type."""
+    `records` (the ladder) or `matches` (the awards). That is not restraint on this
+    function's part — `JVTeam` simply has nowhere to put them, which is why it is a
+    separate type.
+
+    ‼️ WHO PLAYED GOES IN `played`, NEVER IN `lines` (owner rule 2026-08). A player's
+    JV season is a participation record — "played JV, 8-3" — so the archive needs the
+    names and the row's own `won`/`tied`, not the per-court detail. Keeping them in a
+    SEPARATE field is what makes that cheap AND safe: `lines` stays empty, so
+    `state._jh_line_records` and `_jh_slot_records` remain STRUCTURALLY unable to see a
+    JV appearance at all, and a varsity player card cannot absorb one however the
+    schedule is sliced upstream. Put these names in `lines` instead and that immunity
+    becomes a level filter somebody has to remember on every reader — `state.py`'s
+    player view hands the WHOLE schedule to `_jh_line_records` and always has."""
     fmt = jv_dual_format(jv_spare(a.team), jv_spare(b.team))
     if fmt is None:
         return
@@ -2921,17 +2931,20 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     # ‼️ `lines` is EMPTY BY DESIGN, not unfinished (owner rule 2026-08, option B in
     # `docs/BRIEF-jhsaa-jv-and-varsity-2-feasibility.md` §8a). The dual row persists so
     # the JV schedule and record survive every season; the per-court detail does not,
-    # which is 2.6 MB a season against 15.3 and — the part that matters — makes it
-    # STRUCTURALLY impossible for `state._jh_line_records` to merge a JV appearance
-    # into a varsity player card, since that reads by NAME out of `lines`.
+    # which is ~2.6 MB a season against ~22 (measured) — and, the part that matters,
+    # keeps `_jh_line_records` structurally blind to JV. `played` carries WHO dressed,
+    # which is a different and much cheaper question than who played which court: the
+    # names alone, credited W-L-T off this row's own `won`/`tied`.
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
                        "won": out > 0, "tied": out == 0, "district": district,
-                       "level": LEVEL_JV, "shape": shape, "lines": []})
+                       "level": LEVEL_JV, "shape": shape, "lines": [],
+                       "played": [p.name for p in la]})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
                        "won": out < 0, "tied": out == 0, "district": district,
-                       "level": LEVEL_JV, "shape": shape, "lines": []})
+                       "level": LEVEL_JV, "shape": shape, "lines": [],
+                       "played": [p.name for p in lb]})
     if out > 0:
         a.wins += 1
         b.losses += 1
