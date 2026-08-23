@@ -45,6 +45,7 @@
           <tr><th style="width:66px">Season</th><th style="width:44px">Class</th><th style="width:140px">School</th>
             <th style="width:58px">Ladder</th>
             <th style="width:64px">Singles</th><th style="width:66px">Doubles</th><th style="width:58px">Total</th>
+            {% if view.any_jv %}<th style="width:58px">JV</th>{% endif %}
             <th class="jh-scout" style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
           {% for s in view.seasons %}
           <tr{% if s.transferred %} style="opacity:.72"{% endif %}>
@@ -58,6 +59,7 @@
             <td>{{ s.singles }}</td>
             <td>{{ s.doubles }}</td>
             <td><b>{{ s.record }}</b></td>
+            {% if view.any_jv %}<td style="color:var(--text-secondary)">{{ s.jv or '—' }}</td>{% endif %}
             <td class="jh-scout">{{ s.ovr }}</td>
             <td>{{ s.team.record if s.team else '—' }}</td>
             <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">

@@ -101,7 +101,12 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
-      <div class="tbl-scroll">
+      {# Varsity and JV are two views of one season, so they are tabs. #}
+      {% if view.jv_schedule %}
+      {{ jh_tabs([('v', 'Varsity', view.schedule|length),
+                  ('jv', 'JV ' ~ view.jv_record, view.jv_schedule|length)], 'jhsch') }}
+      {% endif %}
+      <div class="jh-pane tbl-scroll" data-pane="v">
         {% if view.schedule %}
         <table class="jh-sched">
           <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
@@ -191,6 +196,53 @@
         <p class="jh-empty">Season not played yet this world year.</p>
         {% endif %}
       </div>
+      {% if view.jv_schedule %}
+      <div class="jh-pane tbl-scroll" data-pane="jv" hidden>
+        <table class="jh-sched">
+          <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
+            <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
+          {% for d in view.jv_schedule %}
+          {# The JV box score expands exactly as the varsity one does. `data-lines`
+             must not collide with the varsity pane's indices — `jh-linerow` is matched
+             on it — so the JV rows are keyed on a prefixed value of their own. #}
+          <tr class="{{ 'dist' if d.district }}{{ ' has-lines' if d.lines }}"
+              {% if d.lines %}data-lines="jv{{ loop.index }}" title="line scores"{% endif %}>
+            <td class="dt">{{ d.date }}</td>
+            <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
+            <td class="op">
+              <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+                </span>
+            </td>
+            {# Three outcomes: a JV dual can be drawn. #}
+            <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
+            <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+            {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
+            <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
+              {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
+              {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
+          </tr>
+          {% if d.lines %}
+          <tr class="jh-linerow" data-for="jv{{ loop.index }}" hidden><td colspan="6" style="padding:0">
+            <div class="jh-lines">
+              {% for ln in d.lines %}
+              {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+              {% set we = ln.home_won if d.home else not ln.home_won %}
+              <div class="jh-line">
+                <span class="sl">{{ ln.slot }}</span>
+                <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+                <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+                <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+                <span class="st">{{ ln.score }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </td></tr>
+          {% endif %}
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -396,6 +448,8 @@
   </div>
 </div>
 {{ jh_tabs_script('jhhon') }}
+{# The schedule's Varsity/JV switcher. Its own id — two tab bars on one page. #}
+{{ jh_tabs_script('jhsch') }}
 {% endif %}
 </div>
 {% endblock %}
